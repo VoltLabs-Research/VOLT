@@ -36,7 +36,8 @@ export type UploadSessionDrainCallback = (
     teamId: string,
     teamClusterId: string,
     trajectoryName: string,
-    failedCount: number
+    failedCount: number,
+    successfulTimesteps: number[]
 ) => Promise<void>;
 
 @injectable()
@@ -115,6 +116,9 @@ export default class CloudUploadQueueService {
                     trajectoryName,
                     timestep
                 });
+
+                // Track successful timestep
+                await this.trackSuccessfulTimestep(trajectoryId, timestep);
 
                 // Decrement session counter and fire drain callback if all settled
                 await this.decrementSession(job.data);
@@ -237,10 +241,15 @@ export default class CloudUploadQueueService {
         return `cloud-upload-session:${trajectoryId}:failed`;
     }
 
+    private successfulTimestepsKey(trajectoryId: string): string {
+        return `cloud-upload-session:${trajectoryId}:successful-timesteps`;
+    }
+
     private async initializeSession(trajectoryId: string, totalJobs: number): Promise<void> {
         const pipeline = this.redis.pipeline();
         pipeline.set(this.sessionKey(trajectoryId), totalJobs.toString(), 'EX', SESSION_TTL_SECONDS);
         pipeline.del(this.failedKey(trajectoryId));
+        pipeline.del(this.successfulTimestepsKey(trajectoryId));
         await pipeline.exec();
 
         logger.info(
@@ -253,6 +262,15 @@ export default class CloudUploadQueueService {
         await this.redis.incr(this.failedKey(trajectoryId));
     }
 
+    private async trackSuccessfulTimestep(trajectoryId: string, timestep: number): Promise<void> {
+        await this.redis.sadd(this.successfulTimestepsKey(trajectoryId), timestep.toString());
+    }
+
+    private async getSuccessfulTimesteps(trajectoryId: string): Promise<number[]> {
+        const members = await this.redis.smembers(this.successfulTimestepsKey(trajectoryId));
+        return members.map((m) => parseInt(m, 10)).filter((n) => Number.isFinite(n));
+    }
+
     private async decrementSession(jobData: CloudUploadJobData): Promise<void> {
         const remaining = await this.redis.decr(this.sessionKey(jobData.trajectoryId));
 
@@ -261,11 +279,13 @@ export default class CloudUploadQueueService {
         // Session drained — all upload jobs have settled
         const failedStr = await this.redis.get(this.failedKey(jobData.trajectoryId));
         const failedCount = failedStr ? parseInt(failedStr, 10) : 0;
+        const successfulTimesteps = await this.getSuccessfulTimesteps(jobData.trajectoryId);
 
         logger.info(
             {
                 trajectoryId: jobData.trajectoryId,
-                failedCount
+                failedCount,
+                successfulTimesteps: successfulTimesteps.length
             },
             '@cloud-upload-queue: upload session drained'
         );
@@ -273,7 +293,8 @@ export default class CloudUploadQueueService {
         // Cleanup session keys
         await this.redis.del(
             this.sessionKey(jobData.trajectoryId),
-            this.failedKey(jobData.trajectoryId)
+            this.failedKey(jobData.trajectoryId),
+            this.successfulTimestepsKey(jobData.trajectoryId)
         );
 
         // Fire callback
@@ -284,7 +305,8 @@ export default class CloudUploadQueueService {
                     jobData.teamId,
                     jobData.teamClusterId,
                     jobData.trajectoryName,
-                    failedCount
+                    failedCount,
+                    successfulTimesteps
                 );
             } catch (error) {
                 logger.error(

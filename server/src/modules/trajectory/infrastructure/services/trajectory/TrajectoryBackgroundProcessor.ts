@@ -86,7 +86,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         this.drainCallbackRegistered = true;
 
         this.cloudUploadQueueService.onSessionDrain(
-            async (trajectoryId, teamId, teamClusterId, _trajectoryName, failedCount) => {
+            async (trajectoryId, teamId, teamClusterId, _trajectoryName, failedCount, successfulTimesteps) => {
                 const trajectory = await this.trajectoryRepo.findById(trajectoryId);
                 if (!trajectory) {
                     logger.warn(
@@ -96,22 +96,33 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
                     return;
                 }
 
-                if (failedCount > 0) {
-                    logger.warn(
-                        { trajectoryId, failedCount },
-                        '@trajectory-background-processor: some upload jobs failed, proceeding with GLB enqueue for successful frames'
-                    );
-                }
-
-                const frames = (trajectory.props.frames ?? []).map((f) => ({
+                const allFrames = (trajectory.props.frames ?? []).map((f) => ({
                     timestep: f.timestep,
                     natoms: f.natoms,
                     simulationCell: f.simulationCell
                 })) as Array<{ timestep: number; [key: string]: unknown }>;
+
+                // Filter frames to only include those whose uploads succeeded
+                const successfulTimestepSet = new Set(successfulTimesteps);
+                const frames = allFrames.filter((f) => successfulTimestepSet.has(f.timestep));
+
+                if (failedCount > 0) {
+                    logger.warn(
+                        {
+                            trajectoryId,
+                            failedCount,
+                            totalFrames: allFrames.length,
+                            successfulFrames: frames.length,
+                            droppedFrames: allFrames.length - frames.length
+                        },
+                        '@trajectory-background-processor: some upload jobs failed, only enqueueing GLB for successfully uploaded frames'
+                    );
+                }
+
                 if (frames.length === 0) {
                     logger.warn(
-                        { trajectoryId },
-                        '@trajectory-background-processor: drain callback — no frames found on trajectory'
+                        { trajectoryId, failedCount },
+                        '@trajectory-background-processor: drain callback — no successfully uploaded frames, skipping GLB enqueue'
                     );
                     return;
                 }

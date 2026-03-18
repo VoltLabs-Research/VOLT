@@ -105,7 +105,7 @@ export const upload = multer({
 export const uploadTrajectory = multer({
     storage: trajectoryUploadStorage,
     limits: {
-        fields: 50,
+        fields: Infinity,
         files: TRAJECTORY_MAX_FILES,
         fieldSize: 1024 * 1024
     }
@@ -123,13 +123,15 @@ export const uploadTrajectoryFiles = (fieldName: string) => (
             return next();
         }
 
-        if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_COUNT') {
-            return BaseResponse.error(
-                response,
-                `Trajectory upload supports up to ${TRAJECTORY_MAX_FILES} files per request.`,
-                HttpStatus.BadRequest,
-                ErrorCodes.TRAJECTORY_UPLOAD_FILE_LIMIT_EXCEEDED
-            );
+        if (error instanceof multer.MulterError) {
+            if (error.code === 'LIMIT_FILE_COUNT') {
+                return BaseResponse.error(
+                    response,
+                    `Trajectory upload supports up to ${TRAJECTORY_MAX_FILES} files per request.`,
+                    HttpStatus.BadRequest,
+                    ErrorCodes.TRAJECTORY_UPLOAD_FILE_LIMIT_EXCEEDED
+                );
+            }
         }
 
         return createUploadErrorResponse(response, error);

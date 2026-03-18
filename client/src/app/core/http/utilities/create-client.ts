@@ -19,12 +19,14 @@ const apiBaseUrl = buildBackendUrl('/api');
  */
 export const http = new AxiosHttpClient({
     baseUrl: apiBaseUrl,
-    credential
+    credential,
+    timeout: 0
 });
 
 const rootApiClient = createVoltClient(apiBaseUrl, {
     adapter: 'axios',
-    credential
+    credential,
+    timeout: 0
 });
 
 /**
