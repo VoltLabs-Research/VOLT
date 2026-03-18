@@ -71,6 +71,13 @@ export class VoltCloudConnection {
                     })
                 })
             },
+            socket: {
+                reconnect: true,
+                maxReconnectAttempts: Infinity,
+                reconnectBaseDelayMs: 500,
+                reconnectMaxDelayMs: 30_000,
+                randomizationFactor: 0.3
+            },
             commandTimeout: 30_000
         });
 
