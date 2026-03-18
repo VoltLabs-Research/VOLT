@@ -13,6 +13,7 @@ import { ImportTrajectoryFromSSHInputDTO } from '@modules/ssh/application/dtos/I
 import { ImportTrajectoryFromSSHOutputDTO } from '@modules/ssh/application/dtos/ImportTrajectoryFromSSHOutputDTO';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
+import logger from '@shared/infrastructure/logger';
 import { v4 } from 'uuid';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import type { IEventBus } from '@shared/application/events/IEventBus';
@@ -71,6 +72,7 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
         }
 
         const trajectoryId = v4();
+        let queued = false;
 
         try {
             const trajectoryName = `Import: ${remotePath.split('/').pop() || remotePath}`;
@@ -110,20 +112,28 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
                     trajectoryName
                 }
             });
+            queued = true;
 
             await this.eventBus.publish(new TrajectoryCreatedEvent({
                 trajectoryId,
                 trajectoryName,
                 teamId,
                 userId
-            }));
+            })).catch((publishError: unknown) => {
+                logger.warn(
+                    { err: publishError, trajectoryId, teamId },
+                    'Failed to publish trajectory.created after SSH import queue dispatch'
+                );
+            });
 
             return Result.ok({
                 message: 'Import request sent to the team cluster daemon',
                 trajectoryId
             });
         } catch (error: unknown) {
-            await this.trajectoryRepository.deleteById(trajectoryId).catch(() => undefined);
+            if (!queued) {
+                await this.trajectoryRepository.deleteById(trajectoryId).catch(() => undefined);
+            }
 
             return Result.fail(new ApplicationError(
                 ErrorCodes.SSH_IMPORT_ERROR,
