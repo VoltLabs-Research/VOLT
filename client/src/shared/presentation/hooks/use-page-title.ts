@@ -5,7 +5,7 @@ interface PageTitleRegistration {
     title: string;
 };
 
-const APP_NAME = 'Volt';
+const APP_NAME = 'VOLT';
 const FALLBACK_PAGE_TITLE_PRIORITY = 0;
 const PAGE_TITLE_PRIORITY = 1;
 
