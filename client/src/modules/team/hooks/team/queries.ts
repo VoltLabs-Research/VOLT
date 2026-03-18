@@ -11,6 +11,10 @@ import type { LeaveTeamInputDTO } from '../../api/dtos/team/leave-team';
 import type { GenerateInviteCodeInputDTO } from '../../api/dtos/team/generate-invite-code';
 import type { DeleteInviteCodeInputDTO } from '../../api/dtos/team/delete-invite-code';
 import type { JoinByInviteCodeInputDTO, JoinByInviteCodeOutputDTO } from '../../api/dtos/team/join-by-invite-code';
+import type {
+    PreviewJoinByInviteCodeInputDTO,
+    PreviewJoinByInviteCodeOutputDTO
+} from '../../api/dtos/team/preview-join-by-invite-code';
 import queryClient from '@/shared/infrastructure/query/query-client';
 
 type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
@@ -29,7 +33,8 @@ const permissionKeys = buildKeys<{
 export const TEAM_QUERY_KEYS = {
     teams: teamKeys.teams,
     permissions: permissionKeys.permissions,
-    teamPermissions: permissionKeys.teamPermissions
+    teamPermissions: permissionKeys.teamPermissions,
+    joinByCodePreview: (code: string) => ['team-join-by-code-preview', code] as const
 };
 
 registerPreservedQueryKey(TEAM_QUERY_KEYS.teams()[0] as string);
@@ -115,6 +120,17 @@ export const useTeamPermissionsQuery = (teamId: string, options?: QueryOptions<s
     return useQuery({
         queryKey: TEAM_QUERY_KEYS.teamPermissions(teamId),
         queryFn: () => teamService.getMyPermissions({ teamId }),
+        ...options
+    });
+};
+
+export const usePreviewJoinByCodeQuery = (
+    params: PreviewJoinByInviteCodeInputDTO,
+    options?: QueryOptions<PreviewJoinByInviteCodeOutputDTO>
+) => {
+    return useQuery({
+        queryKey: TEAM_QUERY_KEYS.joinByCodePreview(params.code),
+        queryFn: () => teamService.previewJoinByCode(params),
         ...options
     });
 };

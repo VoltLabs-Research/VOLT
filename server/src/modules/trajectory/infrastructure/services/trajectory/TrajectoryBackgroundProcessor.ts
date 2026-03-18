@@ -1,16 +1,9 @@
 import { getTrajectoryBackgroundProcessorConcurrency } from '@core/config/trajectory';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
 import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
-import { ITrajectoryBackgroundProcessor, ProcessorContext, TrajectoryUploadFile } from '@modules/trajectory/domain/port/trajectory/ITrajectoryBackgroundProcessor';
-import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { normalizeTrajectoryWorkerFailure } from '@modules/trajectory/utilities/trajectory/trajectory-worker-failure';
-import { IEventBus } from '@shared/application/events/IEventBus';
-import { IFileExtractorService } from '@shared/domain/port/IFileExtractorService';
-import { ITempFileService } from '@shared/domain/port/ITempFileService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
@@ -26,7 +19,15 @@ import path from 'node:path';
 import pLimit from 'p-limit';
 
 import type { ErrorCode } from '@core/constants/error-codes';
+import type { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
+import type { ITrajectoryBackgroundProcessor, ProcessorContext, TrajectoryUploadFile } from '@modules/trajectory/domain/port/trajectory/ITrajectoryBackgroundProcessor';
+import type { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import type { ITrajectoryUploadStagingService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryUploadStagingService';
+import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { ExtractedFile } from '@shared/domain/port/IFileExtractorService';
+import type { IFileExtractorService } from '@shared/domain/port/IFileExtractorService';
+import type { ITempFileService } from '@shared/domain/port/ITempFileService';
 
 type ParsedFrame = {
     timestep: number;
@@ -66,6 +67,9 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
 
         @inject(SHARED_TOKENS.FileExtractorService)
         private readonly extractor: IFileExtractorService,
+
+        @inject(TRAJECTORY_TOKENS.TrajectoryUploadStagingService)
+        private readonly uploadStagingService: ITrajectoryUploadStagingService,
 
         @inject(TRAJECTORY_TOKENS.TrajectoryDumpStorageService)
         private readonly dumpStorage: ITrajectoryDumpStorageService,
@@ -153,8 +157,9 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
                 teamId,
                 TrajectoryStatus.Processing
             );
-            
-            const extractedFiles = await this.extractor.extractFiles(files, ctx.workingDir);
+
+            const stagedFiles = await this.uploadStagingService.stageUploads(trajectoryId, files);
+            const extractedFiles = await this.extractor.extractFiles(stagedFiles, ctx.workingDir);
             const frames = await this.buildFrames(trajectoryId, teamId, extractedFiles);
             this.ensureValidFrames(frames);
 
@@ -196,12 +201,18 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
     }
 
     /**
-     * Creates an insolated working directory for trajectory processing.
+     * Creates an isolated working directory for trajectory processing.
      */
     private async createContext(trajectoryId: string): Promise<ProcessorContext>{
         const workingDir = this.tempFileService.getDirPath(`trajectory-uploads/${trajectoryId}`);
-        await fs.mkdir(workingDir, { recursive: true });
-        return { workingDir };
+        const incomingDir = path.join(workingDir, 'incoming');
+
+        await this.tempFileService.ensureDir(incomingDir);
+
+        return {
+            workingDir,
+            incomingDir
+        };
     }
 
     /**
@@ -209,7 +220,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
      * Cleanup failures are intentionally ignored.
      */
     private async cleanup(ctx: ProcessorContext){
-        await fs.rm(ctx.workingDir, {
+        await this.tempFileService.delete(ctx.workingDir, {
             recursive: true,
             force: true
         }).catch(() => {});
