@@ -1,0 +1,372 @@
+[{
+  "_id": {
+    "$oid": "6979f9bcd3dcbe5b383ea990"
+  },
+  "email": "contact@rodyherrera.com",
+  "password": "$2b$12$s5o5p6NTpImAs.9wT2usVeI.TNeZkgiUMNnuBc2oK6FfPX6Kwfqbq",
+  "role": "user",
+  "firstName": "rodolfo",
+  "lastName": "herrera",
+  "teams": [],
+  "analyses": [],
+  "oauthProvider": null,
+  "avatar": "https://storage.voltcloud.dev:443/opendxa-avatars/6979f9bcd3dcbe5b383ea990_default.svg",
+  "createdAt": {
+    "$date": "2026-01-28T11:57:48.304Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-01T02:24:36.362Z"
+  },
+  "__v": 0,
+  "lastLoginAt": {
+    "$date": "2026-02-01T02:24:36.362Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "697a243ed3dcbe5b383ed6fd"
+  },
+  "email": "nicolasenriquezc@gmail.com",
+  "password": "$2b$12$D1D/1cG46p4tfKyBQ5TfyOgp3vG69GhgcqUQ4xfmUF7I2P.ehiDei",
+  "role": "user",
+  "firstName": "nicolas",
+  "lastName": "enriquez",
+  "teams": [],
+  "analyses": [],
+  "oauthProvider": null,
+  "avatar": "https://storage.voltcloud.dev:443/opendxa-avatars/697a243ed3dcbe5b383ed6fd_default.svg",
+  "createdAt": {
+    "$date": "2026-01-28T14:59:10.639Z"
+  },
+  "updatedAt": {
+    "$date": "2026-01-28T14:59:10.654Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "697a264ed3dcbe5b383edb1f"
+  },
+  "email": "patricio.inostroza.b@gmail.com",
+  "password": "$2b$12$kNl/IQGx0veHwuYoBnOwBebiioHmn7ujkpxoPWun.iTyzMjD9eJdi",
+  "role": "user",
+  "firstName": "patricio",
+  "lastName": "inostroza",
+  "teams": [],
+  "analyses": [],
+  "oauthProvider": null,
+  "avatar": "https://storage.voltcloud.dev:443/opendxa-avatars/697a264ed3dcbe5b383edb1f_default.svg",
+  "createdAt": {
+    "$date": "2026-01-28T15:07:58.372Z"
+  },
+  "updatedAt": {
+    "$date": "2026-01-28T15:07:58.384Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "697a264ed3dcbe5b383edb6e"
+  },
+  "email": "rodolfo.herrera@alumnos.ucm.cl",
+  "password": "$2b$12$eUQ.59MMuKpZRH/iRg8hceYkoh1kYsau8v13tnDd12hFyTbN9qXkm",
+  "role": "user",
+  "firstName": "rodolfo",
+  "lastName": "herrera",
+  "teams": [],
+  "analyses": [],
+  "oauthProvider": null,
+  "avatar": "https://storage.voltcloud.dev:443/opendxa-avatars/697a264ed3dcbe5b383edb6e_default.svg",
+  "createdAt": {
+    "$date": "2026-01-28T15:07:58.890Z"
+  },
+  "updatedAt": {
+    "$date": "2026-01-28T15:07:58.904Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "697a2662d3dcbe5b383ede22"
+  },
+  "email": "felipe.valenciad@gmail.com",
+  "password": "$2b$12$Un/Txeeo.RkYymoM64BxeeIURtsc1YE8oTGW4LUhZlHiucyB6XmMm",
+  "role": "user",
+  "firstName": "felipe",
+  "lastName": "valencia",
+  "teams": [],
+  "analyses": [],
+  "oauthProvider": null,
+  "avatar": "https://storage.voltcloud.dev:443/opendxa-avatars/697a2662d3dcbe5b383ede22_default.svg",
+  "createdAt": {
+    "$date": "2026-01-28T15:08:18.215Z"
+  },
+  "updatedAt": {
+    "$date": "2026-01-28T15:16:55.549Z"
+  },
+  "__v": 0,
+  "lastLoginAt": {
+    "$date": "2026-01-28T15:16:55.548Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "697a2675d3dcbe5b383edfae"
+  },
+  "email": "vaytiareaguilera7@gmail.com",
+  "password": "$2b$12$IuQMdT40gAlV6Z8hQ9BXO.j9MEXYfaTRWtsCDFiRrCfwi3Gsv7eYW",
+  "role": "user",
+  "firstName": "vaytiare",
+  "lastName": "pacheco velásquez",
+  "teams": [],
+  "analyses": [],
+  "oauthProvider": null,
+  "avatar": "https://storage.voltcloud.dev:443/opendxa-avatars/697a2675d3dcbe5b383edfae_default.svg",
+  "createdAt": {
+    "$date": "2026-01-28T15:08:37.170Z"
+  },
+  "updatedAt": {
+    "$date": "2026-01-28T15:08:37.186Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "697a2677d3dcbe5b383ee128"
+  },
+  "email": "wschmidt2021@gmail.com",
+  "password": "$2b$12$vod3/kCOMsObtaF4w8mtdOf2PUOBgUq477HJ69TAMEQmoUyf4BXmq",
+  "role": "user",
+  "firstName": "walter",
+  "lastName": "schmidt",
+  "teams": [],
+  "analyses": [],
+  "oauthProvider": null,
+  "avatar": "https://storage.voltcloud.dev:443/opendxa-avatars/697a2677d3dcbe5b383ee128_default.svg",
+  "createdAt": {
+    "$date": "2026-01-28T15:08:39.314Z"
+  },
+  "updatedAt": {
+    "$date": "2026-01-28T15:11:19.797Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "697a2681d3dcbe5b383ee2a7"
+  },
+  "email": "contrerasdoraliza@gmail.com",
+  "password": "$2b$12$yr6Q6P6F7jmkkdzBAi2l7.fVgbN3X8GHWoYCEcbLDS8rT/zUYh1T2",
+  "role": "user",
+  "firstName": "doraliza",
+  "lastName": "contreras",
+  "teams": [],
+  "analyses": [],
+  "oauthProvider": null,
+  "avatar": "https://storage.voltcloud.dev:443/opendxa-avatars/697a2681d3dcbe5b383ee2a7_default.svg",
+  "createdAt": {
+    "$date": "2026-01-28T15:08:49.620Z"
+  },
+  "updatedAt": {
+    "$date": "2026-01-28T15:08:49.635Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "697a268ed3dcbe5b383ee44a"
+  },
+  "email": "joaquin.gonzaleza.24@alumnos.ucm.cl",
+  "password": "$2b$12$WBivWHTDtVJZK8jMtCr5r.tPTkTmVkQ1qSw6Zdn3MzEW.UfIYel/a",
+  "role": "user",
+  "firstName": "joaquín",
+  "lastName": "gonzález",
+  "teams": [],
+  "analyses": [],
+  "oauthProvider": null,
+  "avatar": "https://storage.voltcloud.dev:443/opendxa-avatars/697a268ed3dcbe5b383ee44a_default.svg",
+  "createdAt": {
+    "$date": "2026-01-28T15:09:02.870Z"
+  },
+  "updatedAt": {
+    "$date": "2026-01-28T15:09:02.884Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "697a268fd3dcbe5b383ee4d0"
+  },
+  "email": "matiassebastiannavarrobravo@gmail.com",
+  "password": "$2b$12$cNZeMHX77YzG8OEKOqO/tOrdkzb0gt7CApRfY6caE.OAYkf085JWm",
+  "role": "user",
+  "firstName": "matias",
+  "lastName": "sebastian navarro bravo",
+  "teams": [],
+  "analyses": [],
+  "oauthProvider": null,
+  "avatar": "https://storage.voltcloud.dev:443/opendxa-avatars/697a268fd3dcbe5b383ee4d0_default.svg",
+  "createdAt": {
+    "$date": "2026-01-28T15:09:03.641Z"
+  },
+  "updatedAt": {
+    "$date": "2026-01-28T15:09:03.659Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "697a26e8d3dcbe5b383ee90e"
+  },
+  "email": "cimas@ucm.cl",
+  "password": "$2b$12$nW2kJdCWa9FBXYlYZldd3eQ/JCTb9EnI.q8gVBrX.7gmDwcSa9X0K",
+  "role": "user",
+  "firstName": "carlos",
+  "lastName": "imas",
+  "teams": [],
+  "analyses": [],
+  "oauthProvider": null,
+  "avatar": "https://storage.voltcloud.dev:443/opendxa-avatars/697a26e8d3dcbe5b383ee90e_default.svg",
+  "createdAt": {
+    "$date": "2026-01-28T15:10:32.789Z"
+  },
+  "updatedAt": {
+    "$date": "2026-01-28T15:10:32.802Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "697a2705d3dcbe5b383eead7"
+  },
+  "email": "krishna.queirolo@mayor.cl",
+  "password": "$2b$12$OD9.hADorC0i3v6DZEpr8uipqo/T13e7xRGlULezUiSgqDLqTURae",
+  "role": "user",
+  "firstName": "krishna",
+  "lastName": "queirolo heise",
+  "teams": [],
+  "analyses": [],
+  "oauthProvider": null,
+  "avatar": "https://storage.voltcloud.dev:443/opendxa-avatars/697a2705d3dcbe5b383eead7_default.svg",
+  "createdAt": {
+    "$date": "2026-01-28T15:11:01.644Z"
+  },
+  "updatedAt": {
+    "$date": "2026-01-28T15:11:01.661Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "697a2708d3dcbe5b383eec55"
+  },
+  "email": "dapraden@gmail.com",
+  "password": "$2b$12$5REDYVRftaPFEO2Ok.vlY.HhsHrruxNPTT3m0K7IZ4WzcZlmm3XbC",
+  "role": "user",
+  "firstName": "daniel",
+  "lastName": "pradenas",
+  "teams": [],
+  "analyses": [],
+  "oauthProvider": null,
+  "avatar": "https://storage.voltcloud.dev:443/opendxa-avatars/697a2708d3dcbe5b383eec55_default.svg",
+  "createdAt": {
+    "$date": "2026-01-28T15:11:04.860Z"
+  },
+  "updatedAt": {
+    "$date": "2026-01-28T15:41:01.398Z"
+  },
+  "__v": 0,
+  "lastLoginAt": {
+    "$date": "2026-01-28T15:41:01.398Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "697a27844a06e3523669e8f5"
+  },
+  "email": "jsepulvedam@ucm.cl",
+  "password": "$2b$12$mbUbi2sHpmlqSie/BDogyeyDb8d.P6TlM9TCKRSM6XcdwDujV46ZG",
+  "role": "user",
+  "firstName": "jose",
+  "lastName": "sepúlveda musalem",
+  "teams": [],
+  "analyses": [],
+  "oauthProvider": null,
+  "avatar": "https://storage.voltcloud.dev:443/opendxa-avatars/697a27844a06e3523669e8f5_default.svg",
+  "createdAt": {
+    "$date": "2026-01-28T15:13:08.300Z"
+  },
+  "updatedAt": {
+    "$date": "2026-01-28T15:13:08.315Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "697a27b04a06e3523669ebec"
+  },
+  "email": "nicolle.coria@alumnos.ucm.cl",
+  "password": "$2b$12$q4EuUbOGFpZg5PLmAvonmuQNav9q05aPCGPuoRmA45pRF6PD6spuO",
+  "role": "user",
+  "firstName": "nicolle",
+  "lastName": "coria",
+  "teams": [],
+  "analyses": [],
+  "oauthProvider": null,
+  "avatar": "https://storage.voltcloud.dev:443/opendxa-avatars/697a27b04a06e3523669ebec_default.svg",
+  "createdAt": {
+    "$date": "2026-01-28T15:13:52.273Z"
+  },
+  "updatedAt": {
+    "$date": "2026-01-28T15:16:13.932Z"
+  },
+  "__v": 0,
+  "lastLoginAt": {
+    "$date": "2026-01-28T15:16:13.931Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "697a29ab4a06e3523669f7cd"
+  },
+  "email": "jose.rogan@gmail.com",
+  "password": "$2b$12$I6C1SgJtdirHogrTFC1k6uZf.WFmUq/oZJrqY6EwsBOVIjSd1lIVy",
+  "role": "user",
+  "firstName": "josé",
+  "lastName": "rogan",
+  "teams": [],
+  "analyses": [],
+  "oauthProvider": null,
+  "avatar": "https://storage.voltcloud.dev:443/opendxa-avatars/697a29ab4a06e3523669f7cd_default.svg",
+  "createdAt": {
+    "$date": "2026-01-28T15:22:19.638Z"
+  },
+  "updatedAt": {
+    "$date": "2026-01-28T15:26:06.671Z"
+  },
+  "__v": 0,
+  "lastLoginAt": {
+    "$date": "2026-01-28T15:26:06.667Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "697a2b474a06e352366a01ed"
+  },
+  "email": "maxramirezgonzalez@uchile.cl",
+  "password": "$2b$12$WARHQHJeenBHnWo3G0GS/eDcB2GOi7.0WnJF2Bjt50DPrjHt5LV.u",
+  "role": "user",
+  "firstName": "maximiliano",
+  "lastName": "ramirez",
+  "teams": [],
+  "analyses": [],
+  "oauthProvider": null,
+  "avatar": "https://storage.voltcloud.dev:443/opendxa-avatars/697a2b474a06e352366a01ed_default.svg",
+  "createdAt": {
+    "$date": "2026-01-28T15:29:11.993Z"
+  },
+  "updatedAt": {
+    "$date": "2026-01-28T15:29:12.010Z"
+  },
+  "__v": 0
+}]

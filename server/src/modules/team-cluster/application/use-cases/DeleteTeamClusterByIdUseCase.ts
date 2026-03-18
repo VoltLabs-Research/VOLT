@@ -18,6 +18,7 @@ import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamCluster
 import { inject, injectable } from 'tsyringe';
 import type { IPasswordHasher } from '@modules/auth/domain/port/IPasswordHasher';
 import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
+import type { TeamClusterDaemonSemanticCommandResult } from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
 const shouldRequireManualUninstall = (status: TeamClusterStatus, installedVersion: string | null, daemonPort: number | null): boolean => {
     if (status === TeamClusterStatus.WaitingForConnection) {
@@ -73,10 +74,19 @@ export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeam
         }
 
         if (teamCluster.props.status === TeamClusterStatus.Connected) {
+            let uninstallCommandResult: TeamClusterDaemonSemanticCommandResult<{ accepted?: boolean; reason?: string; message?: string; }>;
+
             try {
-                await this.teamClusterDaemonClient.command<{ accepted: boolean; }>(input.teamClusterId, 'runtime.uninstall', {
-                    reason: `Delete requested by user ${input.userId}`
-                });
+                uninstallCommandResult = await this.teamClusterDaemonClient.commandWithSemanticResult<{ accepted?: boolean; reason?: string; message?: string; }>(
+                    input.teamClusterId,
+                    'runtime.uninstall',
+                    {
+                        reason: `Delete requested by user ${input.userId}`
+                    },
+                    {
+                        timeoutClass: 'long-running-control-plane'
+                    }
+                );
             } catch (error: unknown) {
                 logger.warn({
                     action: 'team-cluster.delete.remote-request-failed',
@@ -89,6 +99,26 @@ export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeam
                 return Result.fail(ApplicationError.conflict(
                     'TeamCluster::RemoteUninstallRequestFailed',
                     'Failed to request uninstall from the connected cluster daemon'
+                ));
+            }
+
+            if (!uninstallCommandResult.accepted) {
+                const rejectionReason = uninstallCommandResult.reason
+                    || uninstallCommandResult.data?.reason
+                    || uninstallCommandResult.data?.message
+                    || 'The daemon rejected the uninstall request.';
+
+                logger.warn({
+                    action: 'team-cluster.delete.remote-request-rejected',
+                    teamClusterId: input.teamClusterId,
+                    teamId: input.teamId,
+                    userId: input.userId,
+                    reason: rejectionReason
+                }, 'Cluster daemon rejected runtime.uninstall command');
+
+                return Result.fail(ApplicationError.conflict(
+                    'TeamCluster::RemoteUninstallRejected',
+                    rejectionReason
                 ));
             }
 

@@ -11,7 +11,8 @@ import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import logger from '@shared/infrastructure/logger';
 import { ISocketModule } from '@modules/socket/domain/port/ISocketModule';
 import AuthenticateSocketConnectionUseCase from '@modules/socket/application/use-cases/AuthenticateSocketConnectionUseCase';
-import type { ISocketConnectionData } from '@modules/socket/domain/port/ISocketModule';
+import type { ISocketAuthenticationResult, ISocketConnectionData, ISocketConnectionUser } from '@modules/socket/domain/port/ISocketModule';
+import { ErrorCodes } from '@core/constants/error-codes';
 import type { ISocketConnectionMapper } from '@modules/socket/infrastructure/contracts/ISocketConnectionMapper';
 import type { ISocketEmitterRuntime } from '@modules/socket/infrastructure/contracts/ISocketEmitterRuntime';
 import type { ISocketEventRegistryRuntime } from '@modules/socket/infrastructure/contracts/ISocketEventRegistryRuntime';
@@ -23,7 +24,7 @@ const SOCKET_CORS_ORIGINS = [
 ].filter((origin): origin is string => Boolean(origin));
 
 export interface AuthenticatedSocket extends Socket{
-    user?: Awaited<ReturnType<AuthenticateSocketConnectionUseCase['execute']>>;
+    user?: ISocketConnectionUser | null;
 };
 
 /**
@@ -209,27 +210,59 @@ export default class SocketGateway{
     ): Promise<void>{
         try{
             const token = socket.handshake.auth?.token;
-            if(!token){
+            const auth = await this.authenticateSocketConnectionUseCase.execute(token);
+
+            socket.data = (socket.data ?? {}) as ISocketConnectionData;
+            socket.data.auth = auth;
+
+            if(auth.state === 'guest'){
                 socket.user = null;
-                logger.info(`@socket-gateway - anonymous user connected: ${socket.id}`);
+                logger.info({ outcome: 'guest', socketId: socket.id }, '@socket-auth');
                 return next();
             }
 
-            const user = await this.authenticateSocketConnectionUseCase.execute(token);
-            if(!user){
+            if(auth.state === 'rejected' || !auth.user){
                 socket.user = null;
-                logger.info(`@socket-gateway - user not found, allowing anonymous: ${socket.id}`);
-                return next();
+                logger.warn({ outcome: 'rejected', reason: auth.reason, socketId: socket.id }, '@socket-auth');
+                return next(this.createSocketAuthenticationError(auth));
             }
 
-            socket.user = user;
+            socket.user = auth.user;
 
-            logger.info(`@socket-gateway - authenticated user connected: ${user.firstName} ${user.lastName} (${socket.id})`);
+            logger.info({ outcome: 'authenticated', socketId: socket.id, userId: auth.user._id }, '@socket-auth');
             next();
         }catch(error){
             socket.user = null;
-            next();
+            logger.error({ err: error, socketId: socket.id }, '@socket-auth');
+            next(this.createSocketAuthenticationError({
+                state: 'rejected',
+                reason: 'invalid_token'
+            }));
         }
+    }
+
+    private createSocketAuthenticationError(auth: ISocketAuthenticationResult): Error {
+        const code = auth.reason === 'user_not_found'
+            ? ErrorCodes.USER_NOT_FOUND
+            : ErrorCodes.AUTHENTICATION_UNAUTHORIZED;
+        const details = auth.reason === 'password_changed'
+            ? 'Socket token is no longer valid after password change'
+            : auth.reason === 'user_not_found'
+                ? ErrorCodes.USER_NOT_FOUND
+                : ErrorCodes.AUTHENTICATION_UNAUTHORIZED;
+        const error = new Error(details) as Error & {
+            data?: {
+                code: string;
+                reason?: ISocketAuthenticationResult['reason'];
+            };
+        };
+
+        error.data = {
+            code,
+            reason: auth.reason
+        };
+
+        return error;
     }
 
     private getSocketEmitterRuntime(): ISocketEmitterRuntime {

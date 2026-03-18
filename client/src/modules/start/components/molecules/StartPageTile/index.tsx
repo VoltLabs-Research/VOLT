@@ -1,5 +1,6 @@
 import { useStartPageTile } from '../../../hooks/use-start-page-tile';
 import './StartPageTile.css';
+import { format, formatDistanceToNowStrict } from 'date-fns';
 import { X } from 'lucide-react';
 import type { AccessedPage } from '../../../stores/use-start-accessed-pages-store';
 
@@ -18,8 +19,11 @@ export default function StartPageTile({ page }: StartPageTileProps) {
         handleRemove
     } = useStartPageTile(page.path);
 
-    const timeAgo = Math.floor((Date.now() - page.lastAccessed) / 60000);
-    const timeString = timeAgo < 1 ? 'Just now' : `${timeAgo}m ago`;
+    const lastOpenedDate = new Date(page.lastAccessed);
+    const timeString = Date.now() - page.lastAccessed < 60_000
+        ? 'Just now'
+        : formatDistanceToNowStrict(lastOpenedDate, { addSuffix: true });
+    const lastOpenedExact = format(lastOpenedDate, "MMM d, yyyy 'at' h:mm a");
 
     const previewLabel = page.snapshot ? 'Preview available' : 'Preview unavailable';
 
@@ -36,6 +40,7 @@ export default function StartPageTile({ page }: StartPageTileProps) {
                 className='metro-tile'
                 onClick={handleClick}
                 aria-label={`Open ${page.title}. ${previewLabel}. Last opened ${timeString}.`}
+                title={`${page.title} - last opened ${lastOpenedExact}`}
             >
                 {page.snapshot && (
                     <div

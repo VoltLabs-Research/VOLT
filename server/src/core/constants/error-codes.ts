@@ -108,6 +108,8 @@ export const ErrorCodes = createErrorCodes({
     COLOR_CODING_DUMP_NOT_FOUND: 'ColorCoding::DumpNotFound',
 
     PARTICLE_FILTER_INVALID_ACTION: 'ParticleFilter::InvalidAction',
+    PARTICLE_FILTER_PLUGIN_PROPERTY_UNAVAILABLE: 'ParticleFilter::PluginPropertyUnavailable',
+    PARTICLE_FILTER_PLUGIN_PROPERTY_UNMAPPABLE: 'ParticleFilter::PluginPropertyUnmappable',
 
     DOCKER_CREATE_ERROR: 'Docker::Create::Error',
     DOCKER_EXEC_ERROR: 'Docker::Exec::Error',

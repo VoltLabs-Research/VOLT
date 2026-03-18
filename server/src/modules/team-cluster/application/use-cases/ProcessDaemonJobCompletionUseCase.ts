@@ -11,6 +11,7 @@ type RasterJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Faile
 type GlbJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
 
 interface DaemonAnalysisJobCompletionPayload {
+    teamClusterId: string;
     jobId: string;
     name: string;
     analysisId: string;
@@ -23,6 +24,7 @@ interface DaemonAnalysisJobCompletionPayload {
 };
 
 interface DaemonRasterJobStatusPayload {
+    teamClusterId: string;
     jobId: string;
     teamId: string;
     trajectoryId: string;
@@ -33,6 +35,7 @@ interface DaemonRasterJobStatusPayload {
 };
 
 interface DaemonGlbJobStatusPayload {
+    teamClusterId: string;
     jobId: string;
     teamId: string;
     trajectoryId: string;
@@ -43,6 +46,7 @@ interface DaemonGlbJobStatusPayload {
 };
 
 interface DaemonAnalysisJobStatusPayload {
+    teamClusterId: string;
     jobId: string;
     name: string;
     analysisId: string;
@@ -156,6 +160,7 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
 
             if (this.isAnalysisJobStatusInput(input)) {
                 await this.daemonAnalysisCompletionService.handleAnalysisJobStatus({
+                    teamClusterId: input.teamClusterId,
                     jobId: input.jobId,
                     name: input.name,
                     analysisId: input.analysisId,
@@ -172,6 +177,7 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
 
             if (this.isAnalysisJobCompletionInput(input)) {
                 await this.daemonAnalysisCompletionService.handleJobCompletion({
+                    teamClusterId: input.teamClusterId,
                     jobId: input.jobId,
                     name: input.name,
                     analysisId: input.analysisId,
@@ -188,6 +194,7 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
 
             if (this.isGlbJobStatusInput(input)) {
                 await this.daemonAnalysisCompletionService.handleGlbJobStatus({
+                    teamClusterId: input.teamClusterId,
                     jobId: input.jobId,
                     teamId: input.teamId,
                     trajectoryId: input.trajectoryId,
@@ -202,6 +209,7 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
 
             if (this.isRasterJobStatusInput(input)) {
                 await this.daemonAnalysisCompletionService.handleRasterJobStatus({
+                    teamClusterId: input.teamClusterId,
                     jobId: input.jobId,
                     teamId: input.teamId,
                     trajectoryId: input.trajectoryId,

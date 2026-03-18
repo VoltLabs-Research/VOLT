@@ -30,6 +30,11 @@ interface FractalEngineState {
     loadError: string | null;
 };
 
+interface TraversalCache {
+    pointClouds: THREE.Points[];
+    meshes: THREE.Mesh[];
+}
+
 export type FractalParams = {
     url?: string | null;
     sliceClippingPlanes: Plane[];
@@ -128,6 +133,10 @@ export class FractalEngine {
     private lastOpacitySceneKey: string | undefined = undefined;
     private lastOpacityValue: number = 1;
     private lastPointOpacityValue: number = 1;
+    private traversalCache: TraversalCache = {
+        pointClouds: [],
+        meshes: []
+    };
 
     constructor(
         private surface: FractalSurface,
@@ -175,7 +184,8 @@ export class FractalEngine {
 
         const currentLoadGeneration = ++this.loadGeneration;
         this.loadAbortController?.abort();
-        this.loadAbortController = new AbortController();
+        const currentAbortController = new AbortController();
+        this.loadAbortController = currentAbortController;
         this.state.isLoading = true;
         this.state.loadProgress = 0;
         this.state.loadError = null;
@@ -194,7 +204,7 @@ export class FractalEngine {
                     progress: pct,
                     error: null
                 });
-            }, this.loadAbortController.signal);
+            }, currentAbortController.signal);
 
             if (this.isDisposed || currentLoadGeneration !== this.loadGeneration) {
                 loadedModel.removeFromParent();
@@ -234,6 +244,7 @@ export class FractalEngine {
             this.state.mesh = newMesh;
             this.state.bounds = bounds;
             this.state.lastLoadedUrl = url;
+            this.traversalCache = this.buildTraversalCache(loadedModel);
             this.consecutiveLoadFailures = 0;
 
             // Reset caches so the first application on the new model always runs.
@@ -274,7 +285,9 @@ export class FractalEngine {
                 error: message
             });
         } finally {
-            this.loadAbortController = null;
+            if (this.loadAbortController === currentAbortController) {
+                this.loadAbortController = null;
+            }
             this.state.isLoading = false;
 
             if (!this.isDisposed) {
@@ -314,7 +327,7 @@ export class FractalEngine {
     }
 
     updatePointCloudSettings(settings: PointCloudSceneSettings | undefined, fallbackPointSizeMultiplier: number) {
-        if (!this.state.model) {
+        if (!this.state.model || this.traversalCache.pointClouds.length === 0) {
             return;
         }
 
@@ -334,12 +347,12 @@ export class FractalEngine {
         };
         const styleUniforms = getPointCloudStyleUniforms(pointCloudSettings);
 
-        this.state.model.traverse((child) => {
-            if (!(child instanceof THREE.Points) || !child.material) {
+        this.traversalCache.pointClouds.forEach((pointCloud) => {
+            if (!pointCloud.material) {
                 return;
             }
 
-            const material = child.material;
+            const material = pointCloud.material;
             if (!(material instanceof THREE.ShaderMaterial)) {
                 return;
             }
@@ -357,13 +370,13 @@ export class FractalEngine {
                 material.uniforms.lightingMix.value = styleUniforms.lightingMix;
             }
 
-            const positions = child.geometry.getAttribute('position');
+            const positions = pointCloud.geometry.getAttribute('position');
             const pointCount = positions?.count ?? 0;
             const drawRatio = pointCloudSettings.overridesEnabled
                 ? getPointCloudDetailRatio(pointCloudSettings.detailLevel, pointCount)
                 : 1;
 
-            child.geometry.setDrawRange(0, Math.max(1, Math.floor(pointCount * drawRatio)));
+            pointCloud.geometry.setDrawRange(0, Math.max(1, Math.floor(pointCount * drawRatio)));
         });
 
         this.surface.invalidate();
@@ -389,56 +402,64 @@ export class FractalEngine {
         this.lastOpacityValue = opacity;
         this.lastPointOpacityValue = pointOpacity;
 
-        this.state.model.traverse((child) => {
-            if (child instanceof THREE.Points && child.material) {
-                const mat = child.material;
-                if (!(mat instanceof THREE.ShaderMaterial)) {
-                    return;
-                }
-
-                if (mat.uniforms?.opacity) {
-                    mat.uniforms.opacity.value = pointOpacity;
-                }
-
-                if (pointOpacity < 1) {
-                    mat.depthWrite = false;
-                    mat.alphaTest = Math.max(0.01, 0.5 * pointOpacity);
-                } else {
-                    mat.depthWrite = true;
-                    mat.alphaTest = 0.5;
-                }
-                mat.needsUpdate = true;
-
-                const positions = child.geometry.getAttribute('position');
-                const pointCount = positions?.count ?? 0;
-                const detailRatio = pointCloudSettings?.overridesEnabled
-                    ? getPointCloudDetailRatio(pointCloudSettings.detailLevel, pointCount)
-                    : 1;
-                child.geometry.setDrawRange(0, Math.max(1, Math.floor(pointCount * detailRatio)));
-            } else if (child instanceof THREE.Mesh && child.material) {
-                const mat = child.material;
-                if (Array.isArray(mat)) {
-                    mat.forEach((material) => {
-                        material.transparent = opacity < 1.0;
-                        material.opacity = opacity;
-                        material.needsUpdate = true;
-                    });
-                    return;
-                }
-
-                mat.transparent = opacity < 1.0;
-                mat.opacity = opacity;
-                mat.needsUpdate = true;
+        this.traversalCache.pointClouds.forEach((pointCloud) => {
+            if (!pointCloud.material) {
+                return;
             }
+
+            const mat = pointCloud.material;
+            if (!(mat instanceof THREE.ShaderMaterial)) {
+                return;
+            }
+
+            if (mat.uniforms?.opacity) {
+                mat.uniforms.opacity.value = pointOpacity;
+            }
+
+            if (pointOpacity < 1) {
+                mat.depthWrite = false;
+                mat.alphaTest = Math.max(0.01, 0.5 * pointOpacity);
+            } else {
+                mat.depthWrite = true;
+                mat.alphaTest = 0.5;
+            }
+            mat.needsUpdate = true;
+
+            const positions = pointCloud.geometry.getAttribute('position');
+            const pointCount = positions?.count ?? 0;
+            const detailRatio = pointCloudSettings?.overridesEnabled
+                ? getPointCloudDetailRatio(pointCloudSettings.detailLevel, pointCount)
+                : 1;
+            pointCloud.geometry.setDrawRange(0, Math.max(1, Math.floor(pointCount * detailRatio)));
+        });
+
+        this.traversalCache.meshes.forEach((mesh) => {
+            if (!mesh.material) {
+                return;
+            }
+
+            const mat = mesh.material;
+            if (Array.isArray(mat)) {
+                mat.forEach((material) => {
+                    material.transparent = opacity < 1.0;
+                    material.opacity = opacity;
+                    material.needsUpdate = true;
+                });
+                return;
+            }
+
+            mat.transparent = opacity < 1.0;
+            mat.opacity = opacity;
+            mat.needsUpdate = true;
         });
         this.surface.invalidate();
     }
 
     updateCameraPosition(cameraPosition: THREE.Vector3) {
-        if (!this.state.model) return;
-        this.state.model.traverse((child) => {
-            if (!(child instanceof THREE.Points) || !child.material) return;
-            const mat = child.material;
+        if (!this.state.model || this.traversalCache.pointClouds.length === 0) return;
+        this.traversalCache.pointClouds.forEach((pointCloud) => {
+            if (!pointCloud.material) return;
+            const mat = pointCloud.material;
             if (!(mat instanceof THREE.ShaderMaterial) || !mat.uniforms?.cameraPosition) return;
             mat.uniforms.cameraPosition.value.copy(cameraPosition);
         });
@@ -464,19 +485,17 @@ export class FractalEngine {
     }
 
     private applyClippingToModel(root: THREE.Object3D, planes: Plane[]) {
-        root.traverse((obj) => {
-            if (!(obj instanceof THREE.Mesh || obj instanceof THREE.Points)) {
-                return;
-            }
+        const traversalCache = root === this.state.model
+            ? this.traversalCache
+            : this.buildTraversalCache(root);
 
-            const meshOrPoints = obj;
+        [...traversalCache.pointClouds, ...traversalCache.meshes].forEach((meshOrPoints) => {
             if (!meshOrPoints.material) return;
-            let mats: THREE.Material[] = [meshOrPoints.material];
-            if (Array.isArray(meshOrPoints.material)) {
-                mats = meshOrPoints.material;
-            }
+            const materials = Array.isArray(meshOrPoints.material)
+                ? meshOrPoints.material
+                : [meshOrPoints.material];
 
-            mats.forEach((material: THREE.Material) => {
+            materials.forEach((material: THREE.Material) => {
                 material.clippingPlanes = planes;
                 material.needsUpdate = true;
             });
@@ -488,6 +507,10 @@ export class FractalEngine {
         if (!this.state.model) {
             this.state.mesh = null;
             this.state.bounds = null;
+            this.traversalCache = {
+                pointClouds: [],
+                meshes: []
+            };
             return;
         }
 
@@ -496,5 +519,29 @@ export class FractalEngine {
         this.state.model = null;
         this.state.mesh = null;
         this.state.bounds = null;
+        this.traversalCache = {
+            pointClouds: [],
+            meshes: []
+        };
+    }
+
+    private buildTraversalCache(root: THREE.Object3D): TraversalCache {
+        const traversalCache: TraversalCache = {
+            pointClouds: [],
+            meshes: []
+        };
+
+        root.traverse((child) => {
+            if (child instanceof THREE.Points) {
+                traversalCache.pointClouds.push(child);
+                return;
+            }
+
+            if (child instanceof THREE.Mesh) {
+                traversalCache.meshes.push(child);
+            }
+        });
+
+        return traversalCache;
     }
 };

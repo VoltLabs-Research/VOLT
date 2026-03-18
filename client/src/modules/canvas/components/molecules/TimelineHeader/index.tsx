@@ -49,6 +49,7 @@ interface TimelineHeaderProps {
     onRangeEndChange: (value: number | undefined) => void;
     playSpeed: number;
     onPlaySpeedChange: (speed: number) => void;
+    helperText?: string;
     onDownloadExposureListing?: (params: DownloadPluginListingParams) => void;
     downloadContext?: TimelineDownloadContext;
 };
@@ -93,6 +94,7 @@ const TimelineHeader = ({
     onRangeEndChange,
     playSpeed,
     onPlaySpeedChange,
+    helperText,
     onDownloadExposureListing,
     downloadContext
 }: TimelineHeaderProps) => {
@@ -220,6 +222,11 @@ const TimelineHeader = ({
                 <Container className="canvas-timeline-tabs scrollbar-none d-flex items-center" role="tablist" aria-label="Timeline tabs">
                     {resolvedTabs.map(renderResolvedTab)}
                 </Container>
+                {helperText ? (
+                    <span className="canvas-timeline-helper font-size-1 color-secondary" aria-live="polite">
+                        {helperText}
+                    </span>
+                ) : null}
             </Container>
 
             <Container className="canvas-timeline-controls-region d-flex items-center content-center">

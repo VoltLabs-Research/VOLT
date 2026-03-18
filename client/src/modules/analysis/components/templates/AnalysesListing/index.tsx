@@ -113,7 +113,7 @@ const AnalysesListing = () => {
             view: {
                 label: 'View Scene',
                 handler: ({ item: analysis }) => {
-                    navigate(`/canvas/${analysis.trajectory._id}`);
+                    navigate(`/canvas/${analysis.trajectory._id}?analysis=${encodeURIComponent(analysis._id)}`);
                 },
                 requiredPermission: 'analysis:read'
             },

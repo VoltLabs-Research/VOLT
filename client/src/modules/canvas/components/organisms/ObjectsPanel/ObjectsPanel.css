@@ -153,6 +153,57 @@
     color: var(--color-text-primary);
 }
 
+.canvas-tree-config-tooltip {
+    white-space: normal;
+    max-width: 320px;
+    padding: 0;
+    pointer-events: auto;
+}
+
+.canvas-tree-config-tooltip__list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    max-height: 240px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.canvas-tree-config-tooltip__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+
+.canvas-tree-config-tooltip__key {
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+}
+
+.canvas-tree-config-tooltip__value {
+    color: var(--color-text-primary);
+    text-align: right;
+    word-break: break-word;
+    font-variant-numeric: tabular-nums;
+}
+
+.canvas-tree-config-tooltip__empty {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.canvas-tree-config-tooltip__warning {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+    color: var(--accent-yellow);
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
 @media (prefers-reduced-motion: reduce) {
     .canvas-tree-group-chevron {
         transition: none;

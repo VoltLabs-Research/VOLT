@@ -4,22 +4,23 @@
     position: relative;
     outline: none;
     transition: background-color 0.15s ease, box-shadow 0.15s ease;
+    touch-action: none;
 }
 
 .canvas-resize-handle--horizontal{
-    width: 12px;
-    margin-inline: -5px;
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
+    width: 16px;
+    margin-inline: -7px;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
     background-clip: padding-box;
     cursor: col-resize;
 }
 
 .canvas-resize-handle--vertical{
-    height: 12px;
-    margin-block: -5px;
-    border-top: 5px solid transparent;
-    border-bottom: 5px solid transparent;
+    height: 16px;
+    margin-block: -7px;
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
     background-clip: padding-box;
     cursor: row-resize;
 }
@@ -33,10 +34,28 @@
     box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--accent-blue);
 }
 
-.canvas-resize-handle::after {
-    content: '';
+.canvas-resize-handle__grip {
     position: absolute;
     inset: 0;
+}
+
+.canvas-resize-handle::before {
+    content: '';
+    position: absolute;
+    inset: 50% auto auto 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-text-muted) 75%, transparent);
+}
+
+.canvas-resize-handle--horizontal::before {
+    width: 3px;
+    height: 26px;
+}
+
+.canvas-resize-handle--vertical::before {
+    width: 26px;
+    height: 3px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -45,18 +64,18 @@
     }
 }
 
-@media (max-width: 1024px) {
+@media (pointer: coarse) {
     .canvas-resize-handle--horizontal {
-        width: 16px;
-        margin-inline: -7px;
-        border-left-width: 7px;
-        border-right-width: 7px;
+        width: 24px;
+        margin-inline: -11px;
+        border-left-width: 11px;
+        border-right-width: 11px;
     }
 
     .canvas-resize-handle--vertical {
-        height: 16px;
-        margin-block: -7px;
-        border-top-width: 7px;
-        border-bottom-width: 7px;
+        height: 24px;
+        margin-block: -11px;
+        border-top-width: 11px;
+        border-bottom-width: 11px;
     }
 }

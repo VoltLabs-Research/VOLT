@@ -59,6 +59,7 @@ export const deriveColumns = (rows: DaemonListingRow[]): ColumnDef[] => {
     }
 
     return Array.from(seen).map((label) => ({
+        key: label,
         label,
         sortable: true
     }));

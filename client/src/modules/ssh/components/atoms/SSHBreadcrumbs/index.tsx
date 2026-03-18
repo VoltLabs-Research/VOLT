@@ -57,6 +57,7 @@ const SSHBreadcrumbs = ({ cwd, onNavigate }: SSHBreadcrumbsProps) => {
                                     className='ssh-breadcrumbs-trigger color-muted'
                                     onClick={() => onNavigate(crumb.path)}
                                     title={crumb.name}
+                                    aria-label={`Open ${crumb.name}`}
                                 >
                                     {label}
                                 </button>

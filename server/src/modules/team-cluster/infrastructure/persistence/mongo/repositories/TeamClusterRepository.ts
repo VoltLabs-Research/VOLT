@@ -1,8 +1,12 @@
 import TeamCluster, { TeamClusterProps, TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import type {
+    ITeamClusterRepository,
+    TeamClusterLifecycleUpdatePreconditions
+} from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import teamClusterMapper from '@modules/team-cluster/infrastructure/persistence/mongo/mappers/TeamClusterMapper';
 import TeamClusterModel, { TeamClusterDocument } from '@modules/team-cluster/infrastructure/persistence/mongo/models/TeamClusterModel';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+import type { FilterQuery, UpdateQuery } from 'mongoose';
 import { injectable } from 'tsyringe';
 
 const SENSITIVE_FIELDS_SELECTION = [
@@ -47,7 +51,25 @@ export default class TeamClusterRepository
     async findHeartbeatTimedOutDeletingClusters(cutoff: Date): Promise<TeamCluster[]> {
         const documents = await this.model.find({
             status: TeamClusterStatus.Deleting,
-            lastHeartbeatAt: {
+            $or: [
+                {
+                    lastHeartbeatAt: {
+                        $lt: cutoff
+                    }
+                },
+                {
+                    lastHeartbeatAt: null
+                }
+            ]
+        }).exec();
+
+        return documents.map((document) => this.mapper.toDomain(document));
+    }
+
+    async findDeletingTimedOutClusters(cutoff: Date): Promise<TeamCluster[]> {
+        const documents = await this.model.find({
+            status: TeamClusterStatus.Deleting,
+            updatedAt: {
                 $lt: cutoff
             }
         }).exec();
@@ -73,5 +95,41 @@ export default class TeamClusterRepository
                 $ne: null
             }
         }));
+    }
+
+    async updateLifecycleById(
+        teamClusterId: string,
+        data: Partial<TeamClusterProps>,
+        preconditions?: TeamClusterLifecycleUpdatePreconditions
+    ): Promise<TeamCluster | null> {
+        const filter: FilterQuery<TeamClusterDocument> = {
+            _id: teamClusterId
+        };
+
+        if (preconditions?.allowedCurrentStatuses?.length) {
+            filter.status = {
+                $in: preconditions.allowedCurrentStatuses
+            };
+        }
+
+        if (preconditions?.requireHeartbeatBefore) {
+            filter.lastHeartbeatAt = {
+                $lt: preconditions.requireHeartbeatBefore
+            };
+        }
+
+        if (preconditions?.requireUpdatedBefore) {
+            filter.updatedAt = {
+                $lt: preconditions.requireUpdatedBefore
+            };
+        }
+
+        const document = await this.model.findOneAndUpdate(
+            filter,
+            this.mapper.toPersistence(data) as UpdateQuery<TeamClusterDocument>,
+            { new: true }
+        ).exec();
+
+        return document ? this.mapper.toDomain(document) : null;
     }
 };

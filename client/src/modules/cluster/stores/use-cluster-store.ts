@@ -1,13 +1,12 @@
-import { DEFAULT_CLUSTER_ID } from './constants';
 import { create } from 'zustand';
 
 interface ClusterState {
-    selectedClusterId: string;
+    selectedClusterId: string | null;
     isConnected: boolean;
 };
 
 interface ClusterActions {
-    setSelectedClusterId: (id: string) => void;
+    setSelectedClusterId: (id: string | null) => void;
     setConnected: (connected: boolean) => void;
     reset: () => void;
 };
@@ -15,7 +14,7 @@ interface ClusterActions {
 type ClusterStore = ClusterState & ClusterActions;
 
 const initialState: ClusterState = {
-    selectedClusterId: DEFAULT_CLUSTER_ID,
+    selectedClusterId: null,
     isConnected: false
 };
 

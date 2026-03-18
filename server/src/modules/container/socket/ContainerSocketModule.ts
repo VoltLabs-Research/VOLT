@@ -25,10 +25,9 @@ export class ContainerSocketModule extends BaseSocketModule {
 
     onConnection(connection: ISocketConnection): void {
         if (connection.nativeSocket) {
-            const socket = connection.nativeSocket;
-            const terminalClient = new SocketTerminalClient(socket);
+            const terminalClient = new SocketTerminalClient(connection.nativeSocket);
 
-            socket.on('container:terminal:attach', async (payload: ContainerTerminalAttachPayload) => {
+            this.on(connection.id, 'container:terminal:attach', async (conn, payload: ContainerTerminalAttachPayload) => {
                 if (!payload?.containerId) {
                     terminalClient.emitError({
                         code: ErrorCodes.VALIDATION_INVALID_INPUT,
@@ -38,7 +37,31 @@ export class ContainerSocketModule extends BaseSocketModule {
                     return;
                 }
 
-                await this.terminalService.attach(terminalClient, payload.containerId);
+                if (!conn.user?._id) {
+                    terminalClient.emitError({
+                        code: ErrorCodes.AUTHENTICATION_REQUIRED,
+                        details: ErrorCodes.AUTHENTICATION_REQUIRED
+                    });
+                    return;
+                }
+
+                const teamId = typeof conn.data.currentTeamId === 'string'
+                    ? conn.data.currentTeamId
+                    : undefined;
+
+                if (!teamId) {
+                    terminalClient.emitError({
+                        code: ErrorCodes.TEAM_ID_REQUIRED,
+                        details: ErrorCodes.TEAM_ID_REQUIRED
+                    });
+                    return;
+                }
+
+                await this.terminalService.attach(terminalClient, {
+                    containerId: payload.containerId,
+                    userId: conn.user._id,
+                    teamId
+                });
             });
         }
     }

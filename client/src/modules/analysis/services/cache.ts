@@ -14,6 +14,12 @@ export interface PatchAnalysisStatusInput {
     totalFrames?: number;
 };
 
+interface FindCachedAnalysisByIdInput {
+    analysisId: string;
+    trajectoryId?: string;
+    fallbackAnalyses?: Analysis[];
+};
+
 const getTrajectoryParams = (queryKey: readonly unknown[]): GetAnalysesByTrajectoryParams | undefined => {
     const candidate = queryKey[2];
 
@@ -85,6 +91,43 @@ export const upsertAnalysisCaches = (analysis: Analysis): void => {
         next[existingIndex] = { ...next[existingIndex], ...analysis };
         return { ...trajectory, analysis: next };
     });
+};
+
+export const findCachedAnalysisById = ({ analysisId, trajectoryId, fallbackAnalyses = [] }: FindCachedAnalysisByIdInput): Analysis | undefined => {
+    const fallbackMatch = fallbackAnalyses.find((analysis) => analysis._id === analysisId);
+    if (fallbackMatch) {
+        return fallbackMatch;
+    }
+
+    const detailMatch = queryClient.getQueryData<Analysis>(KEYS.detail(analysisId));
+    if (detailMatch) {
+        return detailMatch;
+    }
+
+    for (const [queryKey, page] of queryClient.getQueriesData<PaginatedResponse<Analysis>>({ queryKey: KEYS.byTrajectory() })) {
+        if (!page?.data?.length) {
+            continue;
+        }
+
+        const params = getTrajectoryParams(queryKey);
+        if (trajectoryId && params?.trajectoryId !== trajectoryId) {
+            continue;
+        }
+
+        const match = page.data.find((analysis) => analysis._id === analysisId);
+        if (match) {
+            return match;
+        }
+    }
+
+    for (const [, page] of queryClient.getQueriesData<PaginatedResponse<Analysis>>({ queryKey: analysisQuery.QUERY_KEYS.lists() })) {
+        const match = page?.data?.find((analysis) => analysis._id === analysisId);
+        if (match) {
+            return match;
+        }
+    }
+
+    return undefined;
 };
 
 export const updateAnalysisStatusCaches = (patch: PatchAnalysisStatusInput): void => {

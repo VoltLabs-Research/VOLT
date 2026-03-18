@@ -18,7 +18,7 @@ interface MessageListProps {
 const MessageList = ({ messages, isLoading, hasMore, onLoadMore, renderMessage }: MessageListProps) => {
     let loadMoreIndicator: ReactNode = null;
 
-    if (hasMore) {
+    if (hasMore && isLoading) {
         loadMoreIndicator = (
             <Container className='d-flex flex-center p-1'>
                 <Paragraph className='font-size-2 color-muted'>Loading more...</Paragraph>
@@ -35,6 +35,7 @@ const MessageList = ({ messages, isLoading, hasMore, onLoadMore, renderMessage }
             hasMore={hasMore}
             onLoadMore={onLoadMore}
             className='message-list'
+            preserveScrollOnPrepend
             renderLoading={<MessageListSkeleton />}
             renderEmpty={<EmptyState title='No messages yet' description='Start the conversation!' />}
             loadMoreIndicator={loadMoreIndicator}

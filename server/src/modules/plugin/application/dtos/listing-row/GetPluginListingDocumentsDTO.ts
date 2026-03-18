@@ -24,7 +24,9 @@ export interface ExportPluginListingDocumentsInputDTO {
 };
 
 export interface ColumnDef {
+    key?: string;
     label: string;
+    title?: string;
     sortable: boolean;
     width?: number;
 };

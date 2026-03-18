@@ -1,4 +1,3 @@
-import { DEFAULT_CLUSTER_ID } from '@/modules/cluster/stores/constants';
 import { useClusterStore } from '@/modules/cluster/stores/use-cluster-store';
 import { useTeamClusterSocket } from '@/modules/cluster/hooks/team-cluster/use-team-cluster-socket';
 import {
@@ -10,6 +9,7 @@ import {
 } from '@/modules/cluster/hooks/team-cluster/queries';
 import { teamClusterService } from '@/modules/cluster/api/service/team-cluster';
 import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluster-waiting';
+import { resolveSelectedClusterId } from '@/modules/cluster/utilities/resolve-selected-cluster-id';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useMemo, useEffect } from 'react';
@@ -94,8 +94,8 @@ export interface ClusterManagementResult {
     clusters: TeamCluster[];
     selectedTeamId: string | null;
     selectedCluster: TeamCluster | null;
-    selectedClusterId: string;
-    setSelectedClusterId: (clusterId: string) => void;
+    selectedClusterId: string | null;
+    setSelectedClusterId: (clusterId: string | null) => void;
     waitingCluster: TeamCluster | null;
     isLoading: boolean;
     createCluster: (name: string) => Promise<{ teamCluster: TeamCluster; enrollmentToken: string }>;
@@ -150,25 +150,19 @@ const useClusterManagement = (): ClusterManagementResult => {
     const updateMutation = useRequestClusterUpdateMutation();
 
     const clusters = teamClustersQuery.data?.data ?? [];
+    const resolvedSelectedClusterId = useMemo(() => {
+        return resolveSelectedClusterId(selectedClusterId, clusters);
+    }, [clusters, selectedClusterId]);
 
     useEffect(() => {
-        if (!clusters.length) {
-            if (selectedClusterId !== DEFAULT_CLUSTER_ID) {
-                setSelectedClusterId(DEFAULT_CLUSTER_ID);
-            }
-            return;
+        if (selectedClusterId !== resolvedSelectedClusterId) {
+            setSelectedClusterId(resolvedSelectedClusterId);
         }
-
-        const hasSelectedCluster = clusters.some((cluster) => cluster._id === selectedClusterId);
-
-        if (!hasSelectedCluster) {
-            setSelectedClusterId(clusters[0]._id);
-        }
-    }, [clusters, selectedClusterId, setSelectedClusterId]);
+    }, [resolvedSelectedClusterId, selectedClusterId, setSelectedClusterId]);
 
     const selectedCluster = useMemo(() => {
-        return clusters.find((cluster) => cluster._id === selectedClusterId) ?? clusters[0] ?? null;
-    }, [clusters, selectedClusterId]);
+        return clusters.find((cluster) => cluster._id === resolvedSelectedClusterId) ?? null;
+    }, [clusters, resolvedSelectedClusterId]);
 
     const waitingCluster = useMemo(() => {
         return clusters.find((cluster) => isTeamClusterWaiting(cluster.status)) ?? null;
@@ -326,7 +320,7 @@ const useClusterManagement = (): ClusterManagementResult => {
         clusters,
         selectedTeamId,
         selectedCluster,
-        selectedClusterId,
+        selectedClusterId: resolvedSelectedClusterId,
         setSelectedClusterId,
         waitingCluster,
         isLoading: teamClustersQuery.isLoading,

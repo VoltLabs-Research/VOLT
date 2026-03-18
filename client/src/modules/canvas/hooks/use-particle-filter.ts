@@ -62,6 +62,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
         analysisId,
         currentTimestep,
         property,
+        propertyValue,
         exposureId,
         propertyOptions,
         isLoading: isLoadingProperties,
@@ -164,8 +165,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
             return;
         }
 
-        const selectedOption = propertyOptions.find((opt) => opt.value === property);
-        if (selectedOption?.exposureId && !analysisId) {
+        if (exposureId && !analysisId) {
             setError('Analysis required for modifier properties');
             return;
         }
@@ -278,6 +278,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
 
     return {
         property,
+        propertyValue,
         propertyOptions,
         handlePropertyChange,
         isLoadingProperties,

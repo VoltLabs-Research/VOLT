@@ -19,7 +19,7 @@ const DashboardRecentAnalyses = () => {
             variant='ghost'
             intent='neutral'
             className='dashboard-recent-analyses-item list-item-hoverable d-flex items-center content-between gap-075'
-            onClick={() => openAnalysis(item.trajectoryId)}
+            onClick={() => openAnalysis(item.trajectoryId, item.id)}
         >
             <Container className='dashboard-recent-analyses-item-info d-flex column flex-1'>
                 <span className='font-size-2 color-primary font-weight-5 text-truncate'>

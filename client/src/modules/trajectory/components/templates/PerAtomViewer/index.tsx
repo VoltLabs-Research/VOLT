@@ -1,14 +1,20 @@
+import { extractTrajectoryTimesteps } from '@/modules/canvas/utilities/selected-timestep-analysis';
 import useGetAtoms from '@/modules/trajectory/hooks/trajectory/use-get-atoms';
+import useGetTrajectoryById from '@/modules/trajectory/hooks/trajectory/use-get-trajectory-by-id';
 import { TRAJECTORY_QUERY_KEYS, trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import formatAtomValue from '@/modules/trajectory/shared/format-atom-value';
+import Container from '@/shared/presentation/components/Container';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
+import Paragraph from '@/shared/presentation/components/Paragraph';
+import Select from '@/shared/presentation/components/Select';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import AtomTypeBadge from '../../atoms/AtomTypeBadge';
 import type { AtomData } from '@/modules/trajectory/api/dtos/trajectory';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
+import type { SelectOption } from '@/shared/presentation/components/Select';
 
 interface PerAtomViewerContext {
     trajectoryId: string;
@@ -50,21 +56,50 @@ const renderAtomTypeBadge = (value: unknown) => {
     return <AtomTypeBadge type={value} />;
 };
 
+const parseTimestepParam = (value: string | null): number | undefined => {
+    if (value === null) {
+        return undefined;
+    }
+
+    const parsedValue = Number(value);
+    if (!Number.isFinite(parsedValue)) {
+        return undefined;
+    }
+
+    return parsedValue;
+};
+
 export default function PerAtomViewer() {
     const { trajectoryId } = useParams();
-    const { searchParams } = useSearchParamsState();
-    const hasTimestep = searchParams.has('timestep');
-    const timestep = Number(searchParams.get('timestep')) || 0;
+    const { searchParams, updateSearchParams } = useSearchParamsState();
     const analysisId = searchParams.get('analysisId') ?? undefined;
+    const requestedTimestep = parseTimestepParam(searchParams.get('timestep'));
 
     const getAtoms = useGetAtoms();
-    const isEnabled = Boolean(trajectoryId && hasTimestep && Number.isFinite(timestep));
+    const { trajectory } = useGetTrajectoryById({ trajectoryId, enabled: Boolean(trajectoryId) });
+    const availableTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
+    const timestep = useMemo(() => {
+        if (requestedTimestep !== undefined && availableTimesteps.includes(requestedTimestep)) {
+            return requestedTimestep;
+        }
+
+        return availableTimesteps[0];
+    }, [availableTimesteps, requestedTimestep]);
+    const isEnabled = Boolean(trajectoryId && timestep !== undefined);
+
+    useEffect(() => {
+        if (timestep === undefined || searchParams.get('timestep') === String(timestep)) {
+            return;
+        }
+
+        updateSearchParams({ timestep }, { replace: true });
+    }, [searchParams, timestep, updateSearchParams]);
 
     const firstPageAtomsQuery = trajectoryAtomsQuery(
         {
             trajectoryId: trajectoryId ?? '',
             analysisId,
-            timestep,
+            timestep: timestep ?? 0,
             page: 1,
             limit: 100
         },
@@ -74,6 +109,22 @@ export default function PerAtomViewer() {
     );
 
     const properties = firstPageAtomsQuery.data?._meta?.properties ?? [];
+
+    const timestepOptions = useMemo<SelectOption[]>(() => {
+        return availableTimesteps.map((availableTimestep) => ({
+            value: String(availableTimestep),
+            title: String(availableTimestep)
+        }));
+    }, [availableTimesteps]);
+
+    const handleTimestepChange = useCallback((value: string) => {
+        const nextTimestep = Number(value);
+        if (!Number.isFinite(nextTimestep)) {
+            return;
+        }
+
+        updateSearchParams({ timestep: nextTimestep });
+    }, [updateSearchParams]);
 
     const fetchData = async (params: PerAtomViewerFetchParams): Promise<PaginatedResponse<AtomListingRow>> => {
         const result = await getAtoms({
@@ -142,18 +193,42 @@ export default function PerAtomViewer() {
     const listingContext: PerAtomViewerContext = useMemo(() => ({
         trajectoryId: trajectoryId ?? '',
         analysisId,
-        timestep
+        timestep: timestep ?? 0
     }), [trajectoryId, analysisId, timestep]);
+
+    const headerActions = useMemo(() => {
+        if (timestep === undefined || !timestepOptions.length) {
+            return null;
+        }
+
+        return (
+            <Container className='d-flex items-center gap-075'>
+                <Paragraph className='font-size-1 color-muted'>Timestep</Paragraph>
+                <Select
+                    isEditable
+                    options={timestepOptions}
+                    value={String(timestep)}
+                    onChange={handleTimestepChange}
+                    placeholder={String(timestep)}
+                    className='form-field-canvas-input--compact'
+                    showSelectionIcon={false}
+                    title='Select timestep'
+                    aria-label='Select timestep'
+                />
+            </Container>
+        );
+    }, [handleTimestepChange, timestep, timestepOptions]);
 
     return (
         <DocumentListing<AtomListingRow, PerAtomViewerContext>
-            title={`Per-Atom Properties - Frame ${timestep}`}
+            title={`Per-Atom Properties - Frame ${timestep ?? '-'}`}
             queryKey={TRAJECTORY_QUERY_KEYS.perAtom()}
             columns={columns}
             fetchData={fetchData}
             context={listingContext}
             defaultLimit={100}
             enabled={isEnabled}
+            headerActions={headerActions}
             emptyMessage='No atoms data found.'
         />
     );

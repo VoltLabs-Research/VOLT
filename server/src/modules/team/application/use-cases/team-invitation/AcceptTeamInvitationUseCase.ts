@@ -1,9 +1,11 @@
 import { ErrorCodes } from '@core/constants/error-codes';
+import { SystemRoleNames } from '@core/constants/system-roles';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { AcceptTeamInvitationInputDTO, AcceptTeamInvitationOutputDTO } from '@modules/team/application/dtos/team-invitation/AcceptTeamInvitationDTO';
 import { ITeamInvitationRepository } from '@modules/team/domain/port/team-invitation/ITeamInvitationRepository';
 import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
+import { ITeamRoleRepository } from '@modules/team/domain/port/team-role/ITeamRoleRepository';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IEventBus } from '@shared/application/events/IEventBus';
@@ -22,6 +24,9 @@ export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamI
 
         @inject(TEAM_TOKENS.TeamRepository)
         private readonly teamRepository: ITeamRepository,
+
+        @inject(TEAM_TOKENS.TeamRoleRepository)
+        private readonly teamRoleRepository: ITeamRoleRepository,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
@@ -60,12 +65,18 @@ export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamI
         }
 
         const teamId = invitation.getTeamId();
-        const roleId = invitation.getRoleId();
+        const ownerRole = await this.teamRoleRepository.findOne({ name: SystemRoleNames.OWNER, team: teamId });
+        if (!ownerRole) {
+            return Result.fail(ApplicationError.notFound(
+                ErrorCodes.TEAM_ROLE_NOT_FOUND,
+                'Owner role not found'
+            ));
+        }
 
         const teamMember = await this.teamMemberRepository.create({
             team: teamId,
             user: userId,
-            role: roleId,
+            role: ownerRole._id,
             joinedAt: new Date()
         });
 

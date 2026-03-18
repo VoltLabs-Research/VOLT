@@ -16,6 +16,7 @@ import { ListWhiteboardFoldersUseCase } from '@modules/whiteboards/application/u
 import { UpdateWhiteboardFolderUseCase } from '@modules/whiteboards/application/use-cases/UpdateWhiteboardFolderUseCase';
 import { DeleteWhiteboardFolderUseCase } from '@modules/whiteboards/application/use-cases/DeleteWhiteboardFolderUseCase';
 import { MoveWhiteboardUseCase } from '@modules/whiteboards/application/use-cases/MoveWhiteboardUseCase';
+import WhiteboardRealtimeStateService from '@modules/whiteboards/infrastructure/services/WhiteboardRealtimeStateService';
 import { WHITEBOARD_TOKENS } from './WhiteboardTokens';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
@@ -25,6 +26,7 @@ export const registerWhiteboardDependencies = (): void => {
         singletons: [
             [WHITEBOARD_TOKENS.WhiteboardRepository, WhiteboardRepository],
             [WHITEBOARD_TOKENS.WhiteboardFolderRepository, WhiteboardFolderRepository],
+            [WHITEBOARD_TOKENS.WhiteboardRealtimeStateService, WhiteboardRealtimeStateService],
             [WHITEBOARD_TOKENS.WhiteboardSocketModule, WhiteboardSocketModule],
             CreateWhiteboardUseCase,
             ListWhiteboardsUseCase,

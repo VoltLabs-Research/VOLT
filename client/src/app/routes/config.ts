@@ -1,22 +1,15 @@
 import AnalysesListing from '@/modules/analysis/components/templates/AnalysesListing';
 import AuthenticationSettings from '@/modules/auth/components/templates/AuthenticationSettings';
-import AIPage from '@/modules/ai/components/templates/AIPage';
 import GeneralSettings from '@/modules/auth/components/templates/GeneralSettings';
 import OAuthCallbackPage from '@/modules/auth/components/templates/OAuthCallback';
 import SignInPage from '@/modules/auth/components/templates/SignIn';
 import ThemeSettings from '@/modules/auth/components/templates/ThemeSettings';
-import MessagesPage from '@/modules/chat/components/templates/MessagesPage';
-import ClusterMonitoringPage from '@/modules/cluster/components/templates/ClusterMonitoringPage';
 import ClusterOnboardingPage from '@/modules/cluster/components/templates/ClusterOnboardingPage';
 import ClustersListing from '@/modules/cluster/components/templates/ClustersListing';
 import CreateContainer from '@/modules/container/components/templates/CreateContainer';
 import ContainerDetailsLayout from '@/modules/container/components/templates/ContainerDetailsLayout';
 import ContainerOverviewPage from '@/modules/container/components/templates/ContainerDetailsRoutes/container-overview-route';
 import ContainerProcessesPage from '@/modules/container/components/templates/ContainerDetailsRoutes/container-processes-route';
-import ContainerRemoteDesktopPage from '@/modules/container/components/templates/ContainerDetailsRoutes/container-remote-desktop-route';
-import ContainerLogsPage from '@/modules/container/components/templates/ContainerDetailsRoutes/container-logs-route';
-import ContainerStoragePage from '@/modules/container/components/templates/ContainerDetailsRoutes/container-storage-route';
-import ContainerTerminalPage from '@/modules/container/components/templates/ContainerDetailsRoutes/container-terminal-route';
 import ContainersListing from '@/modules/container/components/templates/ContainersListing';
 import DashboardLayout from '@/modules/dashboard/components/organisms/DashboardLayout';
 import Dashboard from '@/modules/dashboard/components/templates/Dashboard';
@@ -24,12 +17,9 @@ import LatexDocumentsListing from '@/modules/latex/components/templates/LatexDoc
 import NotebooksListing from '@/modules/scripting/components/templates/NotebooksListing';
 import WhiteboardsListing from '@/modules/whiteboards/components/templates/WhiteboardsListing';
 import SSHConnectionsPage from '@/modules/ssh/components/templates/SSHConnectionsPage';
-import SSHFileExplorerPage from '@/modules/ssh/components/templates/SSHFileExplorerPage';
 import StartPage from '@/modules/start/components/templates/StartPage';
 import PostAuthOnboarding from '@/modules/onboarding/components/templates/PostAuthOnboarding';
-import PluginListingPage from '@/modules/plugin/components/listing/templates/PluginListingPage';
 import PluginsListing from '@/modules/plugin/components/listing/templates/PluginsListing';
-import PluginBuilderPage from '@/modules/plugin/components/plugin/templates/PluginBuilderPage';
 import SessionSettings from '@/modules/session/components/templates/SessionSettings';
 import IntegrationsSettings from '@/modules/team/components/templates/IntegrationsSettings';
 import ManageRolesTemplate from '@/modules/team/components/templates/ManageRoles';
@@ -177,19 +167,19 @@ export const routesConfig: RouteGroup = {
         {
             path: '/plugins/builder',
             title: 'Plugin Builder',
-            component: PluginBuilderPage,
+            loader: () => import('@/modules/plugin/components/plugin/templates/PluginBuilderPage'),
             requiredPermissions: ['plugin:create']
         },
         {
             path: '/dashboard/plugins/:pluginId/exposure/:exposureId/listing',
             title: 'Plugin Listing',
-            component: PluginListingPage,
+            loader: () => import('@/modules/plugin/components/listing/templates/PluginListingPage'),
             requiredPermissions: ['plugin:read']
         },
         {
             path: '/dashboard/trajectory/:trajectoryId/plugins/:pluginId/exposure/:exposureId/listing',
             title: 'Plugin Listing',
-            component: PluginListingPage,
+            loader: () => import('@/modules/plugin/components/listing/templates/PluginListingPage'),
             requiredPermissions: ['plugin:read', 'trajectory:read'],
             permissionMode: RoutePermissionMode.All
         },
@@ -211,7 +201,7 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/clusters/:clusterId',
             title: 'Cluster Monitoring',
-            component: ClusterMonitoringPage
+            loader: () => import('@/modules/cluster/components/templates/ClusterMonitoringPage')
         },
         {
             path: '/dashboard/clusters/:clusterId/terminal',
@@ -253,10 +243,26 @@ export const routesConfig: RouteGroup = {
             children: [
                 { path: 'overview', title: 'Container Overview', component: ContainerOverviewPage, index: true },
                 { path: 'processes', title: 'Container Processes', component: ContainerProcessesPage },
-                { path: 'terminal', title: 'Container Terminal', component: ContainerTerminalPage },
-                { path: 'logs', title: 'Container Logs', component: ContainerLogsPage },
-                { path: 'storage', title: 'Container Storage', component: ContainerStoragePage },
-                { path: 'remote-desktop', title: 'Container Remote Desktop', component: ContainerRemoteDesktopPage }
+                {
+                    path: 'terminal',
+                    title: 'Container Terminal',
+                    loader: () => import('@/modules/container/components/templates/ContainerDetailsRoutes/container-terminal-route')
+                },
+                {
+                    path: 'logs',
+                    title: 'Container Logs',
+                    loader: () => import('@/modules/container/components/templates/ContainerDetailsRoutes/container-logs-route')
+                },
+                {
+                    path: 'storage',
+                    title: 'Container Storage',
+                    loader: () => import('@/modules/container/components/templates/ContainerDetailsRoutes/container-storage-route')
+                },
+                {
+                    path: 'remote-desktop',
+                    title: 'Container Remote Desktop',
+                    loader: () => import('@/modules/container/components/templates/ContainerDetailsRoutes/container-remote-desktop-route')
+                }
             ]
         },
         {
@@ -268,18 +274,18 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/ssh-connections/:connectionId/file-explorer',
             title: 'SSH File Explorer',
-            component: SSHFileExplorerPage,
+            loader: () => import('@/modules/ssh/components/templates/SSHFileExplorerPage'),
             requiredPermissions: ['ssh-connection:read']
         },
         {
             path: '/dashboard/messages/:chatId?',
             title: 'Messages',
-            component: MessagesPage
+            loader: () => import('@/modules/chat/components/templates/MessagesPage')
         },
         {
             path: '/dashboard/ai/:conversationId?',
             title: 'AI',
-            component: AIPage,
+            loader: () => import('@/modules/ai/components/templates/AIPage'),
             requiredPermissions: ['ai-conversation:read']
         },
         {

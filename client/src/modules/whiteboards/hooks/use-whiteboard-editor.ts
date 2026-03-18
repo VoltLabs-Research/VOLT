@@ -1,34 +1,30 @@
 import service from '@/modules/whiteboards/api/service';
 import { useUpdateWhiteboardMutation, whiteboardQuery } from '@/modules/whiteboards/hooks/queries';
-import { filterPersistableAppState } from '@/modules/whiteboards/utilities/whiteboards';
+import {
+    extractWhiteboardFileIds,
+    filterPersistableAppState,
+    mergeWhiteboardAppState,
+    mergeWhiteboardElements
+} from '@/modules/whiteboards/utilities/whiteboards';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { sileo } from 'sileo';
 import type { Whiteboard } from '@/modules/whiteboards/api/entities/whiteboard';
 
 type ExcalidrawElements = Record<string, unknown>[];
 type AppState = Record<string, unknown>;
-
-interface SerializedFileData {
-    id: string;
-    mimeType: string;
-    dataURL: string;
-    created: number;
-};
+type ExcalidrawFiles = Record<string, unknown>;
 
 interface WhiteboardState {
     elements: ExcalidrawElements;
     appState: AppState;
-    files?: Record<string, SerializedFileData>;
+    files?: ExcalidrawFiles;
+    revision?: number;
 };
 
 interface UseWhiteboardEditorProps {
     whiteboardId: string;
 };
 
-/** Auto-save debounce interval in ms */
-const SAVE_DEBOUNCE_MS = 500;
-/** Periodic full-save checkpoint interval in ms */
-const FULL_SAVE_INTERVAL_MS = 30_000;
 /** Title save debounce interval in ms */
 const TITLE_SAVE_DEBOUNCE_MS = 1_000;
 
@@ -40,16 +36,6 @@ const blobToDataURL = (blob: Blob): Promise<string> =>
         reader.readAsDataURL(blob);
     });
 
-const extractImageFileIds = (elements: ExcalidrawElements): string[] => {
-    const ids: string[] = [];
-    for (const el of elements) {
-        if (el['type'] === 'image' && typeof el['fileId'] === 'string' && el['fileId']) {
-            ids.push(el['fileId'] as string);
-        }
-    }
-    return ids;
-};
-
 const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
     const [whiteboard, setWhiteboard] = useState<Whiteboard | null>(null);
     const [initialState, setInitialState] = useState<WhiteboardState | null>(null);
@@ -57,12 +43,55 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
 
     const { mutateAsync: updateWhiteboard } = useUpdateWhiteboardMutation();
 
-    const pendingStateRef = useRef<WhiteboardState | null>(null);
-    const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const fullSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const titleRef = useRef<string | null>(null);
     const titleSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const [hasPendingLocalChanges, setHasPendingLocalChanges] = useState(false);
+    const currentElementsRef = useRef<ExcalidrawElements>([]);
+    const currentAppStateRef = useRef<AppState>({});
+    const currentFilesRef = useRef<ExcalidrawFiles>({});
+    const loadingFileIdsRef = useRef(new Set<string>());
+
+    const updateSceneState = useCallback((nextState: WhiteboardState) => {
+        currentElementsRef.current = nextState.elements;
+        currentAppStateRef.current = nextState.appState;
+        currentFilesRef.current = nextState.files ?? {};
+        setInitialState(nextState);
+    }, []);
+
+    const hydrateFiles = useCallback(async (elements: ExcalidrawElements) => {
+        const requestedFileIds = extractWhiteboardFileIds(elements);
+        if (requestedFileIds.length === 0) {
+            return currentFilesRef.current;
+        }
+
+        const loadedFiles = { ...currentFilesRef.current };
+
+        await Promise.allSettled(
+            requestedFileIds.map(async (assetId) => {
+                if (loadedFiles[assetId] || loadingFileIdsRef.current.has(assetId)) {
+                    return;
+                }
+
+                loadingFileIdsRef.current.add(assetId);
+
+                try {
+                    const blob = await service.getWhiteboardAsset({ whiteboardId, assetId });
+                    const dataURL = await blobToDataURL(blob);
+
+                    loadedFiles[assetId] = {
+                        id: assetId,
+                        mimeType: blob.type || 'image/png',
+                        dataURL,
+                        created: Date.now()
+                    };
+                } finally {
+                    loadingFileIdsRef.current.delete(assetId);
+                }
+            })
+        );
+
+        currentFilesRef.current = loadedFiles;
+        return loadedFiles;
+    }, [whiteboardId]);
 
     useEffect(() => {
         let cancelled = false;
@@ -79,22 +108,8 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
                     return;
                 }
 
-                const parsed = (state as WhiteboardState) ?? { elements: [], appState: {} };
-                const fileIds = extractImageFileIds(parsed.elements ?? []);
-                const files: Record<string, SerializedFileData> = {};
-
-                await Promise.allSettled(
-                    fileIds.map(async (assetId) => {
-                        const blob = await service.getWhiteboardAsset({ whiteboardId, assetId });
-                        const dataURL = await blobToDataURL(blob);
-                        files[assetId] = {
-                            id: assetId,
-                            mimeType: blob.type || 'image/png',
-                            dataURL,
-                            created: Date.now()
-                        };
-                    })
-                );
+                const parsed = (state as WhiteboardState) ?? { elements: [], appState: {}, revision: 0 };
+                const files = await hydrateFiles(parsed.elements ?? []);
 
                 if (cancelled) {
                     return;
@@ -102,10 +117,21 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
 
                 setWhiteboard(meta);
                 titleRef.current = meta.title ?? null;
-                setInitialState({
-                    ...parsed,
+                const loadedState = {
+                    elements: parsed.elements ?? [],
                     appState: filterPersistableAppState(parsed.appState ?? {}),
-                    files
+                    files,
+                    revision: typeof parsed.revision === 'number' ? parsed.revision : 0
+                } satisfies WhiteboardState;
+
+                updateSceneState({
+                    elements: mergeWhiteboardElements(loadedState.elements, currentElementsRef.current),
+                    appState: mergeWhiteboardAppState(loadedState.appState, currentAppStateRef.current),
+                    files: {
+                        ...loadedState.files,
+                        ...currentFilesRef.current
+                    },
+                    revision: loadedState.revision
                 });
             } catch {
                 if (!cancelled) {
@@ -123,38 +149,12 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
         return () => {
             cancelled = true;
         };
-    }, [whiteboardId]);
+    }, [hydrateFiles, updateSceneState, whiteboardId]);
 
-    const saveState = useCallback(async (state: WhiteboardState) => {
-        try {
-            await service.saveWhiteboardState({ whiteboardId, state });
-            if (pendingStateRef.current === state) {
-                pendingStateRef.current = null;
-                setHasPendingLocalChanges(false);
-            }
-        } catch {
-            sileo.error({ title: 'Auto-save failed' });
-        }
-    }, [whiteboardId]);
-
-    const handleChange = useCallback((elements: ExcalidrawElements, appState: AppState) => {
-        pendingStateRef.current = {
-            elements,
-            appState: filterPersistableAppState(appState)
-        };
-        setHasPendingLocalChanges(true);
-
-        if (saveTimerRef.current) {
-            clearTimeout(saveTimerRef.current);
-        }
-
-        saveTimerRef.current = setTimeout(() => {
-            saveTimerRef.current = null;
-            const state = pendingStateRef.current;
-            if (state) {
-                saveState(state);
-            }
-        }, SAVE_DEBOUNCE_MS);
+    const handleChange = useCallback((elements: ExcalidrawElements, appState: AppState, files?: ExcalidrawFiles) => {
+        currentElementsRef.current = elements;
+        currentAppStateRef.current = appState;
+        currentFilesRef.current = files ?? currentFilesRef.current;
 
         const incomingTitle = typeof appState['name'] === 'string' ? appState['name'] : null;
         if (incomingTitle && incomingTitle !== titleRef.current) {
@@ -170,37 +170,29 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
                 });
             }, TITLE_SAVE_DEBOUNCE_MS);
         }
-    }, [saveState, updateWhiteboard, whiteboardId]);
+    }, [updateWhiteboard, whiteboardId]);
+
+    const mergeRemoteState = useCallback(async (elements: ExcalidrawElements, appState: AppState, revision: number) => {
+        const files = await hydrateFiles(elements);
+        const nextState = {
+            elements: mergeWhiteboardElements(currentElementsRef.current, elements),
+            appState: mergeWhiteboardAppState(currentAppStateRef.current, appState),
+            files,
+            revision
+        } satisfies WhiteboardState;
+
+        updateSceneState(nextState);
+        return nextState;
+    }, [hydrateFiles, updateSceneState]);
 
     useEffect(() => {
-        fullSaveTimerRef.current = setInterval(() => {
-            const state = pendingStateRef.current;
-            if (state) {
-                saveState(state);
-            }
-        }, FULL_SAVE_INTERVAL_MS);
-
         return () => {
-            if (saveTimerRef.current) {
-                clearTimeout(saveTimerRef.current);
-            }
-
-            if (fullSaveTimerRef.current) {
-                clearInterval(fullSaveTimerRef.current);
-            }
-
             if (titleSaveTimerRef.current) {
                 clearTimeout(titleSaveTimerRef.current);
             }
         };
-    }, [saveState]);
+    }, []);
 
-    /**
-     * Uploads a file to the server and returns its server-assigned ID.
-     * This is the Excalidraw `generateIdForFile` integration point - the
-     * returned ID becomes the element's `fileId` and is later used to
-     * fetch the asset via the authenticated API route.
-     */
     const generateIdForFile = useCallback(async (file: File): Promise<string> => {
         try {
             const result = await service.uploadWhiteboardAsset({ whiteboardId, file });
@@ -215,8 +207,8 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
         whiteboard,
         initialState,
         isLoading,
-        hasPendingLocalChanges,
         handleChange,
+        mergeRemoteState,
         generateIdForFile
     };
 };

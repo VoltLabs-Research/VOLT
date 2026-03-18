@@ -1,127 +1,178 @@
 import { filterPersistableAppState } from '@/modules/whiteboards/utilities/whiteboards';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
 type ExcalidrawElement = Record<string, unknown>;
 type AppState = Record<string, unknown>;
 
-interface WhiteboardDeltaPayload {
+interface WhiteboardPatchPayload {
     whiteboardId: string;
+    clientId: string;
+    baseRevision: number;
     elements: ExcalidrawElement[];
     appState: AppState;
-    version: number;
+};
+
+interface WhiteboardStatePayload {
+    whiteboardId: string;
+    revision: number;
+    elements: ExcalidrawElement[];
+    appState: AppState;
     senderId?: string;
+    clientId?: string;
+};
+
+interface QueuedWhiteboardState {
+    elements: ExcalidrawElement[];
+    appState: AppState;
 };
 
 interface UseWhiteboardSyncProps {
     whiteboardId?: string;
     enabled?: boolean;
-    hasPendingLocalChanges?: boolean;
-    onRemoteDelta?: (elements: ExcalidrawElement[], appState: AppState) => void;
+    onRemoteState?: (elements: ExcalidrawElement[], appState: AppState, revision: number) => Promise<void> | void;
 };
 
-interface PendingWhiteboardDelta {
-    elements: ExcalidrawElement[];
-    appState: AppState;
-    version: number;
-};
-
-/** Delta-broadcast debounce interval in ms (V1: last-write-wins) */
 const DELTA_DEBOUNCE_MS = 80;
 
 const useWhiteboardSync = ({
     whiteboardId,
     enabled = true,
-    hasPendingLocalChanges = false,
-    onRemoteDelta
+    onRemoteState
 }: UseWhiteboardSyncProps) => {
     const socketService = useSocket();
-    const versionRef = useRef(0);
+    const clientIdRef = useRef(uuidv4());
+    const revisionRef = useRef(0);
+    const isConnectedRef = useRef(socketService.isConnected());
+    const isSubscribedRef = useRef(false);
+    const hasSnapshotRef = useRef(false);
     const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const pendingRemoteDeltaRef = useRef<PendingWhiteboardDelta | null>(null);
-    const [pendingRemoteDeltaVersion, setPendingRemoteDeltaVersion] = useState(0);
+    const queuedStateRef = useRef<QueuedWhiteboardState | null>(null);
+    const remoteApplyChainRef = useRef(Promise.resolve());
+
+    const flushQueuedState = useCallback(() => {
+        const queuedState = queuedStateRef.current;
+        if (!queuedState || !enabled || !whiteboardId || !isConnectedRef.current || !isSubscribedRef.current || !hasSnapshotRef.current) {
+            return;
+        }
+
+        queuedStateRef.current = null;
+
+        const payload: WhiteboardPatchPayload = {
+            whiteboardId,
+            clientId: clientIdRef.current,
+            baseRevision: revisionRef.current,
+            elements: queuedState.elements,
+            appState: queuedState.appState
+        };
+
+        socketService.emit('whiteboard_patch', payload).catch(() => {
+            queuedStateRef.current = queuedState;
+        });
+    }, [enabled, whiteboardId, socketService]);
+
+    const subscribeToWhiteboard = useCallback(() => {
+        if (!enabled || !whiteboardId || !isConnectedRef.current || isSubscribedRef.current) {
+            return;
+        }
+
+        isSubscribedRef.current = true;
+        hasSnapshotRef.current = false;
+        socketService.emit('subscribe_to_whiteboard', { whiteboardId }).catch(() => {
+            isSubscribedRef.current = false;
+        });
+    }, [enabled, whiteboardId, socketService]);
 
     const sendDelta = useCallback((elements: ExcalidrawElement[], appState: AppState) => {
         if (!enabled || !whiteboardId) {
             return;
         }
 
+        queuedStateRef.current = {
+            elements,
+            appState: filterPersistableAppState(appState)
+        };
+
         if (debounceTimerRef.current) {
             clearTimeout(debounceTimerRef.current);
         }
 
         debounceTimerRef.current = setTimeout(() => {
-            versionRef.current += 1;
-            socketService.emit('whiteboard_delta', {
-                whiteboardId,
-                elements,
-                appState: filterPersistableAppState(appState),
-                version: versionRef.current
-            }).catch(console.warn);
+            debounceTimerRef.current = null;
+            flushQueuedState();
         }, DELTA_DEBOUNCE_MS);
-    }, [enabled, whiteboardId, socketService]);
-
-    const applyPendingRemoteDelta = useCallback(() => {
-        const pendingDelta = pendingRemoteDeltaRef.current;
-        if (!pendingDelta) {
-            return;
-        }
-
-        pendingRemoteDeltaRef.current = null;
-        setPendingRemoteDeltaVersion(0);
-        versionRef.current = Math.max(versionRef.current, pendingDelta.version);
-        onRemoteDelta?.(pendingDelta.elements, pendingDelta.appState);
-    }, [onRemoteDelta]);
-
-    const dismissPendingRemoteDelta = useCallback(() => {
-        pendingRemoteDeltaRef.current = null;
-        setPendingRemoteDeltaVersion(0);
-    }, []);
+    }, [enabled, flushQueuedState, whiteboardId]);
 
     useEffect(() => {
         if (!enabled || !whiteboardId) {
             return;
         }
 
-        const unsubscribeDelta = socketService.on<[WhiteboardDeltaPayload]>(
-            'whiteboard_delta',
+        const unsubscribeConnection = socketService.onConnectionChange((connected) => {
+            isConnectedRef.current = connected;
+            if (connected) {
+                isSubscribedRef.current = false;
+                subscribeToWhiteboard();
+                return;
+            }
+
+            hasSnapshotRef.current = false;
+        });
+
+        socketService.connect().catch(() => undefined);
+
+        return () => {
+            unsubscribeConnection();
+        };
+    }, [enabled, subscribeToWhiteboard, whiteboardId, socketService]);
+
+    useEffect(() => {
+        if (!enabled || !whiteboardId) {
+            return;
+        }
+
+        const unsubscribeState = socketService.on<[WhiteboardStatePayload]>(
+            'whiteboard_sync_state',
             (payload) => {
-                if (!payload || payload.whiteboardId !== whiteboardId) {
+                if (!payload || payload.whiteboardId !== whiteboardId || payload.revision < revisionRef.current) {
                     return;
                 }
 
-                if (payload.version < versionRef.current) {
-                    return;
-                }
-
-                if (hasPendingLocalChanges || debounceTimerRef.current) {
-                    pendingRemoteDeltaRef.current = {
-                        elements: payload.elements,
-                        appState: payload.appState,
-                        version: payload.version
-                    };
-                    setPendingRemoteDeltaVersion(payload.version);
-                    return;
-                }
-
-                versionRef.current = Math.max(versionRef.current, payload.version);
-                onRemoteDelta?.(payload.elements, payload.appState);
+                revisionRef.current = payload.revision;
+                hasSnapshotRef.current = true;
+                remoteApplyChainRef.current = remoteApplyChainRef.current
+                    .catch(() => undefined)
+                    .then(() => onRemoteState?.(payload.elements, payload.appState, payload.revision))
+                    .finally(() => {
+                        flushQueuedState();
+                    });
             }
         );
 
+        subscribeToWhiteboard();
+
         return () => {
-            unsubscribeDelta();
+            unsubscribeState();
+
             if (debounceTimerRef.current) {
                 clearTimeout(debounceTimerRef.current);
             }
+
+            if (isConnectedRef.current && isSubscribedRef.current) {
+                socketService.emit('unsubscribe_from_whiteboard', { whiteboardId }).catch(() => undefined);
+            }
+
+            revisionRef.current = 0;
+            isSubscribedRef.current = false;
+            hasSnapshotRef.current = false;
+            queuedStateRef.current = null;
         };
-    }, [whiteboardId, enabled, hasPendingLocalChanges, socketService, onRemoteDelta]);
+    }, [enabled, flushQueuedState, onRemoteState, subscribeToWhiteboard, whiteboardId, socketService]);
 
     return {
         sendDelta,
-        hasPendingRemoteDelta: pendingRemoteDeltaVersion > 0,
-        applyPendingRemoteDelta,
-        dismissPendingRemoteDelta
+        clientId: clientIdRef.current
     };
 };
 

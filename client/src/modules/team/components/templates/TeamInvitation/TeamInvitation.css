@@ -5,9 +5,6 @@
 .team-invitation-card{
     max-width: 480px;
     padding: 2.5rem;
-    background-color: var(--color-surface-1);
-    border: 1px solid var(--color-border-soft);
-    box-shadow: var(--shadow-elevated);
 }
 
 .team-invitation-badge{

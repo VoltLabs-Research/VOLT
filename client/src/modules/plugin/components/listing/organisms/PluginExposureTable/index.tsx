@@ -52,6 +52,7 @@ const CompactPluginExposureTable = ({
     trajectoryId,
     analysisId,
     teamId,
+    showTrajectoryColumn,
     onDataReady
 }: PluginExposureTableProps) => {
     const navigate = useNavigate();
@@ -96,15 +97,22 @@ const CompactPluginExposureTable = ({
     const compactColumns = useMemo<ListingColumnConfig[]>(() => {
         if (!infiniteData?.pages?.length) return [];
 
+        const shouldShowTrajectory = showTrajectoryColumn ?? !trajectoryId;
+
         for (const page of infiniteData.pages) {
             const cols = page._meta?.columns;
             if (!cols?.length) continue;
 
-            return normalizeListingColumns(cols);
+            const normalizedColumns = normalizeListingColumns(cols);
+            if (shouldShowTrajectory) {
+                return normalizedColumns;
+            }
+
+            return normalizedColumns.filter((column) => String(column.key) !== 'trajectoryName');
         }
 
         return [];
-    }, [infiniteData]);
+    }, [infiniteData, showTrajectoryColumn, trajectoryId]);
 
     const subListingNames = useMemo<string[]>(() => {
         if (!infiniteData?.pages?.length) return [];

@@ -2,7 +2,7 @@ import './ThemeSelector.css';
 import ThemeCard from '@/modules/auth/components/molecules/ThemeCard';
 import Container from '@/shared/presentation/components/Container';
 import { Theme, useTheme } from '@/shared/presentation/hooks/use-theme';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Monitor } from 'lucide-react';
 import { useRef } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { ReactNode } from 'react';
@@ -15,9 +15,15 @@ interface ThemeOption {
 };
 
 const ThemeSelector = () => {
-    const { theme, setTheme } = useTheme();
+    const { preference, setTheme } = useTheme();
     const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
     const options: ThemeOption[] = [
+        {
+            theme: Theme.System,
+            label: 'System',
+            previewClassName: 'system-preview',
+            icon: <Monitor size={32} />
+        },
         {
             theme: Theme.Light,
             label: 'Light',
@@ -32,7 +38,7 @@ const ThemeSelector = () => {
         }
     ];
 
-    const selectedIndex = options.findIndex((option) => option.theme === theme);
+    const selectedIndex = options.findIndex((option) => option.theme === preference);
 
     const focusOption = (index: number): void => {
         optionRefs.current[index]?.focus();
@@ -82,7 +88,7 @@ const ThemeSelector = () => {
                     label={option.label}
                     icon={option.icon}
                     previewClassName={option.previewClassName}
-                    isSelected={theme === option.theme}
+                    isSelected={preference === option.theme}
                     onClick={() => setTheme(option.theme)}
                     onKeyDown={handleKeyDown(index)}
                     tabIndex={index === selectedIndex ? 0 : -1}

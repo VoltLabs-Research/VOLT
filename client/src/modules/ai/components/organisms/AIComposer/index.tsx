@@ -89,15 +89,17 @@ const AIComposer = ({
             </span>
 
             <Container className='d-flex items-center gap-05 ai-composer-input-wrapper'>
-                <button
-                    type='button'
-                    className='ai-composer-side-icon d-flex flex-center'
-                    aria-label='Attachments unavailable'
-                    title='Attachments unavailable'
-                    disabled={disabled}
-                >
-                    <IoAddOutline size={18} />
-                </button>
+                <Tooltip content='Attachments coming soon'>
+                    <button
+                        type='button'
+                        className='ai-composer-side-icon d-flex flex-center'
+                        aria-label='Attachments coming soon'
+                        title='Attachments coming soon'
+                        disabled
+                    >
+                        <IoAddOutline size={18} />
+                    </button>
+                </Tooltip>
 
                 <input
                     id={inputId}

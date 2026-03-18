@@ -46,8 +46,8 @@ export const useDashboardRecentAnalyses = () => {
         navigate('/dashboard/analysis-configs/list');
     };
 
-    const openAnalysis = (trajectoryId: string) => {
-        navigate(`/canvas/${trajectoryId}`);
+    const openAnalysis = (trajectoryId: string, analysisId: string) => {
+        navigate(`/canvas/${trajectoryId}?analysis=${encodeURIComponent(analysisId)}`);
     };
 
     return {

@@ -15,14 +15,25 @@
 }
 
 .ai-conversation-item {
+    width: 100%;
     padding: 0.6rem 0.7rem;
+    border: 0;
     border-radius: var(--radius-md);
+    background: transparent;
+    text-align: left;
+    appearance: none;
     transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .ai-conversation-item:hover,
+.ai-conversation-item:focus-visible,
 .ai-conversation-item.is-active {
     background: var(--hover-bg);
+}
+
+.ai-conversation-item:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 
 .ai-conversation-title {

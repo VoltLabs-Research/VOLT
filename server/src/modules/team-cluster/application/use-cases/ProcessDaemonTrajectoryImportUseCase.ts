@@ -13,6 +13,7 @@ import { inject, injectable } from 'tsyringe';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 
 interface ImportedFrameInput {
     timestep: number;
@@ -60,13 +61,41 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
 
     async execute(input: ProcessDaemonTrajectoryImportInputDTO): Promise<Result<ProcessDaemonTrajectoryImportOutputDTO, ApplicationError>> {
         try {
-            await this.daemonCredentialGuard.requireByDaemonPassword(input.teamClusterId, input.daemonPassword);
+            const authenticatedTeamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(
+                input.teamClusterId,
+                input.daemonPassword
+            );
+
+            if (input.teamId !== authenticatedTeamCluster.props.team) {
+                throw ApplicationError.forbidden(
+                    'TEAM_CLUSTER_DAEMON_TRAJECTORY_IMPORT_TEAM_MISMATCH',
+                    'Trajectory import payload does not belong to the authenticated team cluster'
+                );
+            }
 
             const existingTrajectory = await this.trajectoryRepository.findById(input.trajectoryId);
+            if (existingTrajectory) {
+                this.assertTrajectoryOwnership(existingTrajectory, input);
+
+                const targetStatus = input.success
+                    ? TrajectoryStatus.Completed
+                    : TrajectoryStatus.Failed;
+                if (existingTrajectory.props.status === targetStatus) {
+                    return Result.ok({ acknowledged: true });
+                }
+
+                if (this.isTerminalStatus(existingTrajectory.props.status)) {
+                    throw ApplicationError.conflict(
+                        'TEAM_CLUSTER_DAEMON_TRAJECTORY_IMPORT_ALREADY_FINALIZED',
+                        'Trajectory import has already been finalized'
+                    );
+                }
+            }
+
             const trajectory = existingTrajectory || await this.trajectoryRepository.createWithId(input.trajectoryId, {
                 name: input.trajectoryName,
-                team: input.teamId,
-                teamCluster: input.teamClusterId,
+                team: authenticatedTeamCluster.props.team,
+                teamCluster: authenticatedTeamCluster.id,
                 createdBy: input.userId,
                 status: TrajectoryStatus.WaitingForProcess,
                 frames: [],
@@ -85,7 +114,7 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
                 await this.eventBus.publish(new TrajectoryCreatedEvent({
                     trajectoryId: trajectory.id,
                     trajectoryName: input.trajectoryName,
-                    teamId: input.teamId,
+                    teamId: authenticatedTeamCluster.props.team,
                     userId: input.userId
                 }));
             }
@@ -97,7 +126,7 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
 
                 await this.eventBus.publish(new TrajectoryUpdatedEvent({
                     trajectoryId: trajectory.id,
-                    teamId: input.teamId,
+                    teamId: trajectory.props.team,
                     updates: {
                         status: TrajectoryStatus.Failed,
                         failureCode: input.failureCode as typeof ErrorCodes[keyof typeof ErrorCodes] | undefined,
@@ -119,7 +148,7 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
                 if (frame.simulationCell) {
                     const simulationCell = await this.simulationCellRepository.create({
                         ...(frame.simulationCell as Record<string, unknown>),
-                        team: input.teamId,
+                        team: trajectory.props.team,
                         trajectory: trajectory.id,
                         timestep: frame.timestep
                     });
@@ -145,7 +174,7 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
 
             await this.eventBus.publish(new TrajectoryUpdatedEvent({
                 trajectoryId: trajectory.id,
-                teamId: input.teamId,
+                teamId: trajectory.props.team,
                 updates: {
                     status: TrajectoryStatus.Completed,
                     frames: persistedFrames,
@@ -165,5 +194,28 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
 
             return Result.fail(ApplicationError.internalServerError('Failed to process daemon trajectory import'));
         }
+    }
+
+    private assertTrajectoryOwnership(
+        trajectory: Trajectory,
+        input: ProcessDaemonTrajectoryImportInputDTO
+    ): void {
+        if (trajectory.props.team !== input.teamId) {
+            throw ApplicationError.forbidden(
+                'TEAM_CLUSTER_DAEMON_TRAJECTORY_IMPORT_TEAM_MISMATCH',
+                'Trajectory does not belong to the provided team'
+            );
+        }
+
+        if (trajectory.props.teamCluster && trajectory.props.teamCluster !== input.teamClusterId) {
+            throw ApplicationError.forbidden(
+                'TEAM_CLUSTER_DAEMON_TRAJECTORY_IMPORT_CLUSTER_MISMATCH',
+                'Trajectory does not belong to the authenticated team cluster'
+            );
+        }
+    }
+
+    private isTerminalStatus(status: TrajectoryStatus): boolean {
+        return status === TrajectoryStatus.Completed || status === TrajectoryStatus.Failed;
     }
 }

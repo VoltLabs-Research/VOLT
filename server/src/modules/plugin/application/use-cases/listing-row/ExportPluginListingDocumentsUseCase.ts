@@ -1,10 +1,13 @@
 import {
     ExportPluginListingDocumentsInputDTO
 } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
+import { buildListingExportColumns, enrichDaemonListingRows } from '@modules/plugin/application/use-cases/listing-row/listing-row-enrichment';
 import { createSerializedDownloadResponse } from '@shared/infrastructure/http/responses/download-response';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import { deriveColumns, mapDaemonRow } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+
+import { mapDaemonRow } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
 
 import { IUseCase } from '@shared/application/IUseCase';
 import { ExportType } from '@shared/domain/port/IBaseRepository';
@@ -16,6 +19,7 @@ import { inject, injectable } from 'tsyringe';
 import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
 import type { ListingRowData } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
 import type { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 
 const DAEMON_PAGE_SIZE = 200;
 
@@ -27,6 +31,8 @@ export class ExportPluginListingDocumentsUseCase implements IUseCase<
     constructor(
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
         private readonly analysisRepository: IAnalysisRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
+        private readonly trajectoryRepository: ITrajectoryRepository,
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
         private readonly daemonClient: TeamClusterDaemonClient
     ){}
@@ -69,21 +75,15 @@ export class ExportPluginListingDocumentsUseCase implements IUseCase<
             currentPage++;
         } while (currentPage <= totalPages);
 
-        const data: ListingRowData[] = allRows.map(mapDaemonRow);
-        const derivedColumns = deriveColumns(allRows);
-
-        const orderedColumns = [
-            '_id',
-            'timestep',
-            'analysisId',
-            'trajectoryId',
-            'exposureId',
-            'trajectoryName',
-            ...derivedColumns.map((column) => column.label)
-        ];
-
-        const columns = Array.from(new Set(orderedColumns));
-        const exposureId = input.exposureId || allRows[0]?.exposureId || '';
+        const rows = await enrichDaemonListingRows({
+            rows: allRows,
+            analysisRepository: this.analysisRepository,
+            trajectoryRepository: this.trajectoryRepository,
+            fallbackAnalysisId: resolved.analysisId
+        });
+        const data: ListingRowData[] = rows.map(mapDaemonRow);
+        const columns = buildListingExportColumns(rows);
+        const exposureId = input.exposureId || rows[0]?.exposureId || '';
 
         return Result.ok(createSerializedDownloadResponse({
             filename: `${input.pluginId}_${exposureId}_listing`,

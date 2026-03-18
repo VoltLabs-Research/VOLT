@@ -1,49 +1,45 @@
 import { formatNetworkSpeed } from './format-network';
 import { formatUptime } from './format-uptime';
-import { ClusterStatus } from '../api/entities/cluster-metrics';
+import { getClusterLiveMetricsStatus } from '@/modules/cluster/utilities/cluster-live-metrics-status';
 import type { ClusterMetrics } from '../api/entities/cluster-metrics';
 import type { TeamCluster, TeamClusterStatus } from '../api/entities/team-cluster';
+import type { ClusterLiveMetricsLabel } from '@/modules/cluster/utilities/cluster-live-metrics-status';
 
 export interface ServerRow {
     _id: string;
     teamCluster: TeamCluster;
     id: string;
     name: string;
-    status: ClusterStatus;
-    statusClass: string;
+    status: ClusterLiveMetricsLabel;
+    statusVariant: 'success' | 'warning' | 'danger' | 'inactive';
     lifecycleStatus: TeamClusterStatus;
     installedVersion: string | null;
     lastHeartbeatAt: Date | string | null;
     lastDisconnectAt: Date | string | null;
     daemonPort: number | null;
-    cpu: number;
-    memory: number;
-    diskFree: number;
-    diskUsagePercent: number;
+    cpu: number | null;
+    memory: number | null;
+    diskFree: number | null;
+    diskUsagePercent: number | null;
     network: string;
     uptime: string;
-    analysisCount: number;
-};
-
-const STATUS_CLASS_MAP: Record<ClusterStatus, string> = {
-    [ClusterStatus.Healthy]: 'server-table-status-healthy',
-    [ClusterStatus.Warning]: 'server-table-status-warning',
-    [ClusterStatus.Critical]: 'server-table-status-critical'
+    analysisCount: number | null;
 };
 
 interface TransformClusterToRowParams {
     teamCluster: TeamCluster;
     metrics: ClusterMetrics | null;
+    isMetricsConnected: boolean;
 };
 
-const calculateCpuUsage = (metrics: ClusterMetrics | null): number => {
+const calculateCpuUsage = (metrics: ClusterMetrics | null): number | null => {
     if (!metrics) {
-        return 0;
+        return null;
     }
 
     const { coresUsage, usage } = metrics.cpu;
     
-    if(coresUsage?.length){
+    if (coresUsage?.length) {
         const sum = coresUsage.reduce((acc, val) => acc + val, 0);
         return Math.round(sum / coresUsage.length);
     }
@@ -51,38 +47,34 @@ const calculateCpuUsage = (metrics: ClusterMetrics | null): number => {
     return Math.round(usage);
 };
 
-const getStatusClass = (metrics: ClusterMetrics | null): string => {
-    if (!metrics) {
-        return 'server-table-status-warning';
-    }
+export const transformClusterToRow = ({ teamCluster, metrics, isMetricsConnected }: TransformClusterToRowParams): ServerRow => {
+    const liveMetrics = isMetricsConnected ? metrics : null;
+    const liveMetricsStatus = getClusterLiveMetricsStatus({
+        metrics: liveMetrics,
+        isMetricsConnected
+    });
 
-    return STATUS_CLASS_MAP[metrics.status];
+    return {
+        _id: teamCluster._id,
+        teamCluster,
+        id: teamCluster._id,
+        name: teamCluster.name,
+        status: liveMetricsStatus.label,
+        statusVariant: liveMetricsStatus.variant,
+        lifecycleStatus: teamCluster.status,
+        installedVersion: teamCluster.installedVersion,
+        lastHeartbeatAt: teamCluster.lastHeartbeatAt,
+        lastDisconnectAt: teamCluster.lastDisconnectAt,
+        daemonPort: teamCluster.services.daemon.port,
+        cpu: calculateCpuUsage(liveMetrics),
+        memory: liveMetrics ? Math.round(liveMetrics.memory.usagePercent) : null,
+        diskFree: liveMetrics ? Math.round(liveMetrics.disk.free) : null,
+        diskUsagePercent: liveMetrics ? Math.round(liveMetrics.disk.usagePercent) : null,
+        network: liveMetrics ? formatNetworkSpeed(liveMetrics.network.incoming + liveMetrics.network.outgoing) : '--',
+        uptime: liveMetrics ? formatUptime(liveMetrics.uptime) : '--',
+        analysisCount: liveMetrics?.analysisCount ?? null
+    };
 };
-
-const getMetricsStatus = (metrics: ClusterMetrics | null): ClusterStatus => {
-    return metrics?.status ?? ClusterStatus.Warning;
-};
-
-export const transformClusterToRow = ({ teamCluster, metrics }: TransformClusterToRowParams): ServerRow => ({
-    _id: teamCluster._id,
-    teamCluster,
-    id: teamCluster._id,
-    name: teamCluster.name,
-    status: getMetricsStatus(metrics),
-    statusClass: getStatusClass(metrics),
-    lifecycleStatus: teamCluster.status,
-    installedVersion: teamCluster.installedVersion,
-    lastHeartbeatAt: teamCluster.lastHeartbeatAt,
-    lastDisconnectAt: teamCluster.lastDisconnectAt,
-    daemonPort: teamCluster.services.daemon.port,
-    cpu: calculateCpuUsage(metrics),
-    memory: Math.round(metrics?.memory.usagePercent ?? 0),
-    diskFree: Math.round(metrics?.disk.free ?? 0),
-    diskUsagePercent: Math.round(metrics?.disk.usagePercent ?? 0),
-    network: metrics ? formatNetworkSpeed(metrics.network.incoming + metrics.network.outgoing) : '--',
-    uptime: metrics ? formatUptime(metrics.uptime) : '--',
-    analysisCount: metrics?.analysisCount ?? 0
-});
 
 export const transformClustersToRows = (clusters: TransformClusterToRowParams[]): ServerRow[] => {
     return clusters.map(transformClusterToRow);

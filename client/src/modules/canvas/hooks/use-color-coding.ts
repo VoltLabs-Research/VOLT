@@ -18,6 +18,7 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
         analysisId,
         currentTimestep,
         property,
+        propertyValue,
         exposureId,
         propertyOptions,
         isLoading: isLoadingProperties,
@@ -64,12 +65,7 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
         }
     }, []);
 
-    const selectedOption = useMemo(() =>
-        propertyOptions.find((opt) => opt.value === property),
-        [propertyOptions, property]
-    );
-
-    const statsType = selectedOption?.exposureId ? 'modifier' : 'base';
+    const statsType = exposureId ? 'modifier' : 'base';
     const canFetchStats = !!property && !!trajectoryId && currentTimestep !== undefined
         && (statsType !== 'modifier' || !!analysisId);
 
@@ -80,7 +76,7 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
             timestep: currentTimestep!,
             property: property!,
             type: statsType,
-            exposureId: selectedOption?.exposureId ?? undefined
+            exposureId: exposureId ?? undefined
         },
         { enabled: automaticRange && canFetchStats }
     );
@@ -172,6 +168,7 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
 
     return {
         property,
+        propertyValue,
         propertyOptions,
         handlePropertyChange,
         isLoadingProperties,

@@ -14,8 +14,8 @@ const ThemeToggleButton = ({
     size = 'sm',
     variant = 'ghost'
 }: ThemeToggleButtonProps) => {
-    const { theme, setTheme } = useTheme();
-    const isDarkTheme = theme === Theme.Dark;
+    const { theme: effectiveTheme, setTheme } = useTheme();
+    const isDarkTheme = effectiveTheme === Theme.Dark;
     const nextTheme = isDarkTheme ? Theme.Light : Theme.Dark;
     const label = isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode';
 

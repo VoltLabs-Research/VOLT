@@ -16,11 +16,12 @@ type EdgesUpdater = Edge[] | ((prev: Edge[]) => Edge[]);
 type BuilderHistoryState = {
     nodes: Node<INodeData>[];
     edges: Edge[];
+    graphVersion: number;
 };
 
 const DEFAULT_EDGE_STYLE = { animated: true, style: { stroke: '#64748b', strokeWidth: 2 } };
 
-const serializeHistoryState = (state: Pick<PluginBuilderState, 'nodes' | 'edges'>): BuilderHistoryState => {
+const serializeHistoryState = (state: Pick<PluginBuilderState, 'nodes' | 'edges' | 'graphVersion'>): BuilderHistoryState => {
     return {
         nodes: state.nodes.map((node) => ({
             id: node.id,
@@ -35,7 +36,8 @@ const serializeHistoryState = (state: Pick<PluginBuilderState, 'nodes' | 'edges'
             sourceHandle: edge.sourceHandle ?? undefined,
             targetHandle: edge.targetHandle ?? undefined,
             ...DEFAULT_EDGE_STYLE
-        }))
+        })),
+        graphVersion: state.graphVersion
     };
 };
 
@@ -46,6 +48,7 @@ interface PluginBuilderState {
     isSaving: boolean;
     saveError: string | null;
     validationResult: ValidationResult | null;
+    graphVersion: number;
 };
 
 interface PluginBuilderActions {
@@ -81,45 +84,24 @@ const initialState: PluginBuilderState = {
     selectedNode: null,
     isSaving: false,
     saveError: null,
-    validationResult: null
+    validationResult: null,
+    graphVersion: 0
 };
 
 const areHistoryStatesEqual = (pastState: BuilderHistoryState, currentState: BuilderHistoryState) => {
-    if (pastState.nodes.length !== currentState.nodes.length || pastState.edges.length !== currentState.edges.length) {
+    return pastState.graphVersion === currentState.graphVersion;
+};
+
+const bumpGraphVersion = (currentVersion: number): number => currentVersion + 1;
+
+const hasNodeDataChanges = (currentData: INodeData, nextData: Partial<INodeData>): boolean => {
+    const nextEntries = Object.entries(nextData);
+
+    if (nextEntries.length === 0) {
         return false;
     }
 
-    for (let index = 0; index < pastState.nodes.length; index += 1) {
-        const pastNode = pastState.nodes[index];
-        const currentNode = currentState.nodes[index];
-
-        if (
-            pastNode.id !== currentNode.id ||
-            pastNode.type !== currentNode.type ||
-            pastNode.position.x !== currentNode.position.x ||
-            pastNode.position.y !== currentNode.position.y ||
-            JSON.stringify(pastNode.data) !== JSON.stringify(currentNode.data)
-        ) {
-            return false;
-        }
-    }
-
-    for (let index = 0; index < pastState.edges.length; index += 1) {
-        const pastEdge = pastState.edges[index];
-        const currentEdge = currentState.edges[index];
-
-        if (
-            pastEdge.id !== currentEdge.id ||
-            pastEdge.source !== currentEdge.source ||
-            pastEdge.target !== currentEdge.target ||
-            pastEdge.sourceHandle !== currentEdge.sourceHandle ||
-            pastEdge.targetHandle !== currentEdge.targetHandle
-        ) {
-            return false;
-        }
-    }
-
-    return true;
+    return nextEntries.some(([key, value]) => !Object.is(currentData[key], value));
 };
 
 const usePluginBuilderStore = create<PluginBuilderStore>()(
@@ -155,33 +137,63 @@ const usePluginBuilderStore = create<PluginBuilderStore>()(
                 }
             };
 
+            const _setGraphState = (updater: (state: PluginBuilderState) => Partial<PluginBuilderState> | null) => {
+                const currentState = get();
+                const nextState = updater(currentState);
+
+                if (!nextState) {
+                    return;
+                }
+
+                set({
+                    ...nextState,
+                    graphVersion: bumpGraphVersion(currentState.graphVersion)
+                });
+
+                _validate();
+            };
+
             return {
             ...initialState,
 
             setNodes: (nodesOrUpdater) => {
-                set(typeof nodesOrUpdater === 'function'
-                    ? (s) => ({ nodes: nodesOrUpdater(s.nodes) })
-                    : { nodes: nodesOrUpdater });
-                _validate();
+                _setGraphState((state) => {
+                    const nextNodes = typeof nodesOrUpdater === 'function'
+                        ? nodesOrUpdater(state.nodes)
+                        : nodesOrUpdater;
+
+                    if (nextNodes === state.nodes) {
+                        return null;
+                    }
+
+                    return { nodes: nextNodes };
+                });
             },
 
             setEdges: (edgesOrUpdater) => {
-                set(typeof edgesOrUpdater === 'function'
-                    ? (s) => ({ edges: edgesOrUpdater(s.edges) })
-                    : { edges: edgesOrUpdater });
-                _validate();
+                _setGraphState((state) => {
+                    const nextEdges = typeof edgesOrUpdater === 'function'
+                        ? edgesOrUpdater(state.edges)
+                        : edgesOrUpdater;
+
+                    if (nextEdges === state.edges) {
+                        return null;
+                    }
+
+                    return { edges: nextEdges };
+                });
             },
 
             onNodesChange: (changes) => {
-                set((s) => ({ nodes: applyNodeChanges(changes, s.nodes) as Node<INodeData>[] }));
-                _validate();
+                _setGraphState((state) => ({
+                    nodes: applyNodeChanges(changes, state.nodes) as Node<INodeData>[]
+                }));
             },
 
             onEdgesChange: (changes) => {
-                set((s) => ({
-                    edges: applyEdgeChanges(changes, s.edges)
+                _setGraphState((state) => ({
+                    edges: applyEdgeChanges(changes, state.edges)
                 }));
-                _validate();
             },
 
             validateConnection(connection) {
@@ -224,8 +236,7 @@ const usePluginBuilderStore = create<PluginBuilderStore>()(
                     ...DEFAULT_EDGE_STYLE
                 };
 
-                set((s) => ({ edges: addEdge(edge, s.edges) }));
-                _validate();
+                _setGraphState((state) => ({ edges: addEdge(edge, state.edges) }));
             },
 
             onNodeClick: (_, node) => set({ selectedNode: node }),
@@ -235,34 +246,55 @@ const usePluginBuilderStore = create<PluginBuilderStore>()(
             selectNode: (node) => set({ selectedNode: node }),
 
             addNode: (type, position) => {
-                set((s) => ({ nodes: [...s.nodes, createNode(type, position)] }));
-                _validate();
+                _setGraphState((state) => ({ nodes: [...state.nodes, createNode(type, position)] }));
             },
 
             updateNodeData(nodeId, data) {
-                set((s) => {
-                    const nodes = s.nodes.map((n) =>
-                        n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n
+                _setGraphState((state) => {
+                    const targetNode = state.nodes.find((node) => node.id === nodeId);
+
+                    if (!targetNode || !hasNodeDataChanges(targetNode.data, data)) {
+                        return null;
+                    }
+
+                    const mergedNodeData = { ...targetNode.data, ...data };
+                    const nodes = state.nodes.map((node) =>
+                        node.id === nodeId ? { ...node, data: mergedNodeData } : node
                     );
-                    const selectedNode = s.selectedNode?.id === nodeId
-                        ? { ...s.selectedNode, data: { ...s.selectedNode.data, ...data } }
-                        : s.selectedNode;
+                    const selectedNode = state.selectedNode?.id === nodeId
+                        ? { ...state.selectedNode, data: mergedNodeData }
+                        : state.selectedNode;
+
                     return { nodes, selectedNode };
                 });
             },
 
             deleteNode: (nodeId) => {
-                set((s) => ({
-                    nodes: s.nodes.filter((n) => n.id !== nodeId),
-                    edges: s.edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
-                    selectedNode: s.selectedNode?.id === nodeId ? null : s.selectedNode
-                }));
-                _validate();
+                _setGraphState((state) => {
+                    const hasNode = state.nodes.some((node) => node.id === nodeId);
+
+                    if (!hasNode) {
+                        return null;
+                    }
+
+                    return {
+                        nodes: state.nodes.filter((node) => node.id !== nodeId),
+                        edges: state.edges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId),
+                        selectedNode: state.selectedNode?.id === nodeId ? null : state.selectedNode
+                    };
+                });
             },
 
             deleteEdge: (edgeId) => {
-                set((s) => ({ edges: s.edges.filter((e) => e.id !== edgeId) }));
-                _validate();
+                _setGraphState((state) => {
+                    const hasEdge = state.edges.some((edge) => edge.id === edgeId);
+
+                    if (!hasEdge) {
+                        return null;
+                    }
+
+                    return { edges: state.edges.filter((edge) => edge.id !== edgeId) };
+                });
             },
 
             getWorkflow() {

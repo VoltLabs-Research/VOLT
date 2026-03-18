@@ -41,7 +41,7 @@ const ClusterRemoteTerminalContent = ({ teamCluster, session }: ClusterRemoteTer
                 return;
             }
 
-            socketService.emit('team-cluster:terminal:detach').catch(() => undefined);
+            socketService.emitWithoutAck('team-cluster:terminal:detach');
             isAttachedRef.current = false;
         };
     }, [session.sessionId, socketService]);
@@ -52,9 +52,9 @@ const ClusterRemoteTerminalContent = ({ teamCluster, session }: ClusterRemoteTer
                 return;
             }
 
-            socketService.emit('team-cluster:terminal:attach', {
+            socketService.emitWithoutAck('team-cluster:terminal:attach', {
                 sessionId: session.sessionId
-            }).catch(() => undefined);
+            });
             isAttachedRef.current = true;
         };
 
@@ -104,7 +104,7 @@ const ClusterRemoteTerminalContent = ({ teamCluster, session }: ClusterRemoteTer
     }, [session.sessionId, socketService]);
 
     const handleTerminalData = (data: string) => {
-        socketService.emit('team-cluster:terminal:input', data).catch(() => undefined);
+        socketService.emitWithoutAck('team-cluster:terminal:input', data);
     };
 
     return (

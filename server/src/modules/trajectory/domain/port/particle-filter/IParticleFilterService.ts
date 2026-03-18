@@ -7,7 +7,7 @@ export interface IParticleFilterService {
         trajectoryId: string,
         timestep: string | number,
         analysisId?: string
-    ): Promise<{ dump: string[]; perAtom: Record<string, string[]> }>;
+    ): Promise<{ dump: string[]; perAtom: Record<string, string[]>; exposureNames: Record<string, string> }>;
 
     getUniqueValues(
         trajectoryId: string,

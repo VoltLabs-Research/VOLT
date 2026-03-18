@@ -6,7 +6,7 @@ import queryClient from '@/shared/infrastructure/query/query-client';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useCallback, useRef, useEffect, useMemo } from 'react';
 import type { PaginationParams } from './use-pagination-params';
-import type { QueryKey, InfiniteData } from '@tanstack/react-query';
+import type { InfiniteData, QueryKey } from '@tanstack/react-query';
 
 /**
  * Props for useDocumentListingPagination hook.

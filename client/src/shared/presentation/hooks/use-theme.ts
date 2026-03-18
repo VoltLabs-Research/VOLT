@@ -3,11 +3,15 @@ import { useEffect, useState } from 'react';
 /** Supported application themes. */
 export enum Theme {
     Light = 'light',
-    Dark = 'dark'
+    Dark = 'dark',
+    System = 'system'
 };
 
 interface UseThemeReturn {
+    /** Effective theme applied to the document (always Light or Dark). */
     theme: Theme;
+    /** User preference stored in localStorage (Light, Dark, or System). */
+    preference: Theme;
     setTheme: (theme: Theme) => void;
 };
 
@@ -23,7 +27,7 @@ const getSystemTheme = (): Theme => {
 const getSavedTheme = (): Theme | null => {
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
 
-    if (savedTheme === Theme.Light || savedTheme === Theme.Dark) {
+    if (savedTheme === Theme.Light || savedTheme === Theme.Dark || savedTheme === Theme.System) {
         return savedTheme;
     }
 
@@ -34,20 +38,23 @@ const getSavedTheme = (): Theme | null => {
     return null;
 };
 
+/** Resolves a theme preference into the concrete theme to apply (Light or Dark). */
+const getEffectiveTheme = (preference: Theme): Theme => {
+    if (preference === Theme.System) {
+        return getSystemTheme();
+    }
+
+    return preference;
+};
+
 /** Updates the document theme contract attribute. */
 const applyTheme = (theme: Theme): void => {
     document.documentElement.setAttribute('data-theme', theme);
 };
 
-/** Resolves the active theme from persisted user preference or system preference. */
-const resolveTheme = (): Theme => {
-    const savedTheme = getSavedTheme();
-
-    if (savedTheme) {
-        return savedTheme;
-    }
-
-    return getSystemTheme();
+/** Returns the user preference, defaulting to System on first launch. */
+const resolvePreference = (): Theme => {
+    return getSavedTheme() ?? Theme.System;
 };
 
 /** Syncs browser chrome color with the active theme background token. */
@@ -70,7 +77,7 @@ const syncThemeColorMeta = (): void => {
 
 /** Applies the resolved theme contract during app bootstrap. */
 export const initializeTheme = (): void => {
-    applyTheme(resolveTheme());
+    applyTheme(getEffectiveTheme(resolvePreference()));
 };
 
 /**
@@ -85,7 +92,9 @@ export const useThemeInitialization = (): void => {
         const mediaQueryList = window.matchMedia(THEME_MEDIA_QUERY);
 
         const handleSystemThemeChange = (): void => {
-            if (getSavedTheme()) {
+            const preference = getSavedTheme() ?? Theme.System;
+
+            if (preference !== Theme.System) {
                 return;
             }
 
@@ -103,25 +112,31 @@ export const useThemeInitialization = (): void => {
 
 /**
  * Resolves and persists the active application theme while following OS theme
- * changes when no explicit user override is stored.
+ * changes when the System preference is active.
  */
 export const useTheme = (): UseThemeReturn => {
-    const [theme, setThemeState] = useState<Theme>(resolveTheme);
+    const [preference, setPreferenceState] = useState<Theme>(resolvePreference);
+    const [effectiveTheme, setEffectiveTheme] = useState<Theme>(() => getEffectiveTheme(preference));
 
     useEffect(() => {
-        applyTheme(theme);
+        const effective = getEffectiveTheme(preference);
+        setEffectiveTheme(effective);
+        applyTheme(effective);
         syncThemeColorMeta();
-    }, [theme]);
+    }, [preference]);
 
     useEffect(() => {
+        if (preference !== Theme.System) {
+            return;
+        }
+
         const mediaQueryList = window.matchMedia(THEME_MEDIA_QUERY);
 
         const handleSystemThemeChange = (event: MediaQueryListEvent): void => {
-            if (getSavedTheme()) {
-                return;
-            }
-
-            setThemeState(event.matches ? Theme.Dark : Theme.Light);
+            const newEffective = event.matches ? Theme.Dark : Theme.Light;
+            setEffectiveTheme(newEffective);
+            applyTheme(newEffective);
+            syncThemeColorMeta();
         };
 
         mediaQueryList.addEventListener('change', handleSystemThemeChange);
@@ -129,12 +144,12 @@ export const useTheme = (): UseThemeReturn => {
         return () => {
             mediaQueryList.removeEventListener('change', handleSystemThemeChange);
         };
-    }, []);
+    }, [preference]);
 
     const setTheme = (newTheme: Theme): void => {
-        setThemeState(newTheme);
+        setPreferenceState(newTheme);
         localStorage.setItem(THEME_STORAGE_KEY, newTheme);
     };
 
-    return { theme, setTheme };
+    return { theme: effectiveTheme, preference, setTheme };
 };
