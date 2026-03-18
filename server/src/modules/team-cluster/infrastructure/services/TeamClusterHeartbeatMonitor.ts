@@ -39,15 +39,13 @@ export default class TeamClusterHeartbeatMonitor {
         this.interval = undefined;
     }
 
-    async runSweep(): Promise<number> {
+    async runSweep(): Promise<void> {
         const heartbeatCutoff = new Date(Date.now() - TEAM_CLUSTER_HEARTBEAT_TIMEOUT_MS);
         const updateCutoff = new Date(Date.now() - TEAM_CLUSTER_UPDATE_TIMEOUT_MS);
         const deleteCutoff = new Date(Date.now() - TEAM_CLUSTER_DELETE_TIMEOUT_MS);
-        const disconnectedClusters = await this.teamClusterLifecycleService.markHeartbeatTimeouts(heartbeatCutoff);
-        const deletedClusters = await this.teamClusterLifecycleService.finalizeDeletingClustersByEvidence(heartbeatCutoff);
-        const deleteFailedClusters = await this.teamClusterLifecycleService.markDeletingTimeouts(deleteCutoff);
-        const updateFailedClusters = await this.teamClusterLifecycleService.markUpdatingTimeouts(updateCutoff);
-
-        return disconnectedClusters + deletedClusters + deleteFailedClusters + updateFailedClusters;
+        await this.teamClusterLifecycleService.markHeartbeatTimeouts(heartbeatCutoff);
+        await this.teamClusterLifecycleService.finalizeDeletingClustersByEvidence(heartbeatCutoff);
+        await this.teamClusterLifecycleService.markDeletingTimeouts(deleteCutoff);
+        await this.teamClusterLifecycleService.markUpdatingTimeouts(updateCutoff);
     }
 };
