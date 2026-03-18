@@ -3,7 +3,6 @@
     box-sizing: border-box;
     position: relative;
     outline: none;
-    transition: background-color 0.15s ease, box-shadow 0.15s ease;
     touch-action: none;
 }
 
@@ -26,42 +25,16 @@
 }
 
 .canvas-resize-handle--active {
-    background: var(--accent-blue);
+    background: var(--color-border-soft);
 }
 
 .canvas-resize-handle:focus-visible {
-    background: var(--accent-blue);
-    box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--accent-blue);
+    box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 35%, transparent);
 }
 
 .canvas-resize-handle__grip {
     position: absolute;
     inset: 0;
-}
-
-.canvas-resize-handle::before {
-    content: '';
-    position: absolute;
-    inset: 50% auto auto 50%;
-    transform: translate(-50%, -50%);
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--color-text-muted) 75%, transparent);
-}
-
-.canvas-resize-handle--horizontal::before {
-    width: 3px;
-    height: 26px;
-}
-
-.canvas-resize-handle--vertical::before {
-    width: 26px;
-    height: 3px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .canvas-resize-handle {
-        transition: none;
-    }
 }
 
 @media (pointer: coarse) {

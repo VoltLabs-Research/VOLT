@@ -1,4 +1,5 @@
 import Container from '@/shared/presentation/components/Container';
+import '@/shared/presentation/styles/resize-handle.css';
 
 import type { ResizeDirectionValue } from '../../../hooks/use-resizable';
 
@@ -30,7 +31,7 @@ const ResizeHandle = ({ direction, isDragging, onPointerDown, onKeyDown, label, 
         aria-valuemax={valueMax}
         aria-valuenow={valueNow}
     >
-        <span className='canvas-resize-handle__grip' aria-hidden='true' />
+        <span className={`canvas-resize-handle__grip volt-resize-handle__grip volt-resize-handle__grip--${direction}`} aria-hidden='true' />
     </Container>
 );
 
