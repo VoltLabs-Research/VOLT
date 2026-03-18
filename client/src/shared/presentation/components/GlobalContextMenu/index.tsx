@@ -1,5 +1,6 @@
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import Container from '@/shared/presentation/components/Container';
+import { BookOpen, Braces, FileCode, Home, PlugZap } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { MouseEvent, ReactNode } from 'react';
@@ -33,22 +34,27 @@ const GlobalContextMenu = ({ children }: GlobalContextMenuProps) => {
         return [
             {
                 label: 'Startpage',
+                icon: Home,
                 onClick: () => navigate('/start')
             },
             {
                 label: 'Connect new cluster',
+                icon: PlugZap,
                 onClick: () => navigate('/onboarding/cluster/setup')
             },
             {
                 label: 'Read the docs',
+                icon: BookOpen,
                 onClick: () => openExternalUrl('https://docs.voltcloud.dev')
             },
             {
                 label: 'Open Source Ecosystem',
+                icon: Braces,
                 onClick: () => openExternalUrl('https://github.com/voltlabs-research')
             },
             {
                 label: 'API Spec',
+                icon: FileCode,
                 onClick: () => openExternalUrl('https://server.voltcloud.dev/api-docs')
             }
         ];

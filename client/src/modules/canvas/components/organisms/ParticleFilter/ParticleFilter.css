@@ -6,3 +6,8 @@
 .canvas-filter-error {
     color: var(--accent-red);
 }
+
+.canvas-filter-condition {
+    border: 1px solid var(--color-border-primary);
+    padding: 6px;
+}
