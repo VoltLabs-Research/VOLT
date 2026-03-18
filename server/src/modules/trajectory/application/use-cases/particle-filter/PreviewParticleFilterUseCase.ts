@@ -1,6 +1,6 @@
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { PreviewParticleFilterInputDTO, PreviewParticleFilterOutputDTO } from '@modules/trajectory/application/dtos/particle-filter';
-import { IParticleFilterService } from '@modules/trajectory/domain/port/particle-filter/IParticleFilterService';
+import { IParticleFilterService, ParticleFilterCombinator } from '@modules/trajectory/domain/port/particle-filter/IParticleFilterService';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -19,12 +19,17 @@ export class PreviewParticleFilterUseCase implements IUseCase<PreviewParticleFil
             input.trajectoryId,
             input.timestep,
             {
-                property: input.property,
-                operator: input.operator,
-                value: input.value
+                combinator: input.combinator || ParticleFilterCombinator.And,
+                conditions: input.conditions && input.conditions.length > 0
+                    ? input.conditions
+                    : [{
+                        property: input.property || '',
+                        operator: input.operator || '==',
+                        value: input.value ?? 0,
+                        ...(input.exposureId ? { exposureId: input.exposureId } : {})
+                    }]
             },
-            input.analysisId,
-            input.exposureId
+            input.analysisId
         );
 
         return Result.ok(result);

@@ -2,6 +2,20 @@ import { FilterExpression } from '@modules/trajectory/domain/port/trajectory/IAt
 
 import { Readable } from 'node:stream';
 
+export enum ParticleFilterCombinator {
+    And = 'AND',
+    Or = 'OR'
+};
+
+export interface ParticleFilterCondition extends FilterExpression {
+    exposureId?: string;
+};
+
+export interface ParticleFilterGroup {
+    combinator: ParticleFilterCombinator;
+    conditions: ParticleFilterCondition[];
+};
+
 export interface IParticleFilterService {
     getProperties(
         trajectoryId: string,
@@ -21,28 +35,23 @@ export interface IParticleFilterService {
     preview(
         trajectoryId: string,
         timestep: string | number,
-        expression: FilterExpression,
-        analysisId?: string,
-        exposureId?: string
+        filterGroup: ParticleFilterGroup,
+        analysisId?: string
     ): Promise<{ matchCount: number; totalAtoms: number }>;
 
     applyAction(
         trajectoryId: string,
         timestep: string | number,
         action: 'delete' | 'highlight',
-        expression: FilterExpression,
-        analysisId?: string,
-        exposureId?: string
+        filterGroup: ParticleFilterGroup,
+        analysisId?: string
     ): Promise<{ fileId: string; atomsResult: number; action: string }>;
 
     getModelStream(
         trajectoryId: string,
         timestep: string | number,
-        property: string,
-        operator: string,
-        value: string | number,
+        filterGroup: ParticleFilterGroup,
         action?: string,
-        analysisId?: string,
-        exposureId?: string
+        analysisId?: string
     ): Promise<Readable>;
 };

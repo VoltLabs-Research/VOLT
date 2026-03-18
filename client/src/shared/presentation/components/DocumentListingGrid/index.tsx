@@ -1,11 +1,14 @@
 import Container from '@/shared/presentation/components/Container';
+import DocumentListingGridItem from '@/shared/presentation/components/DocumentListingGridItem';
+import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
 import getListingDisplayState from '@/shared/presentation/components/DocumentListing/listing-state';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import useInfiniteScroll from '@/shared/presentation/hooks/use-infinite-scroll';
 import './DocumentListingGrid.css';
+import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { FileText } from 'lucide-react';
-import { useRef } from 'react';
-import React from 'react';
+import { useCallback, useMemo, useRef } from 'react';
+import type { DragEndEvent } from '@dnd-kit/core';
 
 interface DocumentListingGridProps<T extends { _id: string }> {
     data: T[];
@@ -22,6 +25,7 @@ interface DocumentListingGridProps<T extends { _id: string }> {
     emptyButtonIsLoading?: boolean;
     onEmptyButtonClick?: () => void;
     className?: string;
+    dragAndDrop?: DocumentListingDragAndDropConfig<T>;
     errorMessage?: string | null;
     isAccessDenied?: boolean;
     onRetry?: () => void;
@@ -43,12 +47,20 @@ const DocumentListingGrid = <T extends { _id: string },>({
     emptyButtonIsLoading = false,
     onEmptyButtonClick,
     className = '',
+    dragAndDrop,
     errorMessage,
     isAccessDenied = false,
     onRetry,
     retryButtonText
 }: DocumentListingGridProps<T>) => {
     const containerRef = useRef<HTMLDivElement>(null);
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: dragAndDrop?.activationDistance ?? 6
+            }
+        })
+    );
     const { sentinelRef } = useInfiniteScroll({
         rootRef: containerRef,
         hasMore,
@@ -68,6 +80,98 @@ const DocumentListingGrid = <T extends { _id: string },>({
         errorMessage,
         isAccessDenied
     });
+
+    const draggableIdsByItemId = useMemo(() => {
+        const nextMap = new Map<string, string>();
+        if (!dragAndDrop) {
+            return nextMap;
+        }
+
+        data.forEach((item) => {
+            const draggableId = dragAndDrop.getDraggableId(item);
+            if (draggableId) {
+                nextMap.set(item._id, draggableId);
+            }
+        });
+
+        return nextMap;
+    }, [data, dragAndDrop]);
+
+    const droppableIdsByItemId = useMemo(() => {
+        const nextMap = new Map<string, string>();
+        if (!dragAndDrop) {
+            return nextMap;
+        }
+
+        data.forEach((item) => {
+            const droppableId = dragAndDrop.getDroppableId(item);
+            if (droppableId) {
+                nextMap.set(item._id, droppableId);
+            }
+        });
+
+        return nextMap;
+    }, [data, dragAndDrop]);
+
+    const draggableItemsById = useMemo(() => {
+        const nextMap = new Map<string, T>();
+        if (!dragAndDrop) {
+            return nextMap;
+        }
+
+        data.forEach((item) => {
+            const draggableId = dragAndDrop.getDraggableId(item);
+            if (draggableId) {
+                nextMap.set(draggableId, item);
+            }
+        });
+
+        return nextMap;
+    }, [data, dragAndDrop]);
+
+    const droppableItemsById = useMemo(() => {
+        const nextMap = new Map<string, T>();
+        if (!dragAndDrop) {
+            return nextMap;
+        }
+
+        data.forEach((item) => {
+            const droppableId = dragAndDrop.getDroppableId(item);
+            if (droppableId) {
+                nextMap.set(droppableId, item);
+            }
+        });
+
+        return nextMap;
+    }, [data, dragAndDrop]);
+
+    const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+        if (!dragAndDrop) {
+            return;
+        }
+
+        const activeId = String(event.active.id);
+        const overId = event.over ? String(event.over.id) : null;
+
+        await dragAndDrop.onDragEnd({
+            event,
+            activeId,
+            overId,
+            activeItem: draggableItemsById.get(activeId) ?? null,
+            overItem: overId ? droppableItemsById.get(overId) ?? null : null
+        });
+    }, [dragAndDrop, draggableItemsById, droppableItemsById]);
+
+    const content = shouldShowContent && data.map((item, index) => (
+        <DocumentListingGridItem
+            key={item._id}
+            itemId={item._id}
+            draggableId={draggableIdsByItemId.get(item._id) ?? null}
+            droppableId={droppableIdsByItemId.get(item._id) ?? null}
+        >
+            {renderItem(item, index)}
+        </DocumentListingGridItem>
+    ));
 
     return (
         <Container
@@ -112,11 +216,11 @@ const DocumentListingGrid = <T extends { _id: string },>({
                 </Container>
             )}
 
-            {shouldShowContent && data.map((item, index) => (
-                <React.Fragment key={item._id}>
-                    {renderItem(item, index)}
-                </React.Fragment>
-            ))}
+            {dragAndDrop ? (
+                <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+                    {content}
+                </DndContext>
+            ) : content}
 
             {isFetchingMore && renderSkeleton?.()}
 

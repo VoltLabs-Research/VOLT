@@ -7,6 +7,23 @@
     align-content: start;
 }
 
+.document-listing-grid-item {
+    min-width: 0;
+}
+
+.document-listing-grid-item.is-draggable {
+    cursor: grab;
+}
+
+.document-listing-grid-item.is-dragging {
+    z-index: 10;
+}
+
+.document-listing-grid-item.is-drag-over > * {
+    border-color: color-mix(in srgb, var(--focus-ring) 60%, var(--color-border-soft));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--focus-ring) 28%, transparent), var(--shadow-elevated);
+}
+
 .document-listing-grid-empty {
     grid-column: 1 / -1;
     min-height: 300px;

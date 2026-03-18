@@ -371,6 +371,7 @@ const useTrajectoriesListing = () => {
         canCreate,
         context,
         currentFolder,
+        currentFolderId,
         dragAndDrop,
         fetchData,
         fileInputRef,
@@ -390,6 +391,7 @@ const useTrajectoriesListing = () => {
         listMoveFolders,
         movingTrajectory,
         navigateToFolder,
+        openFolder,
         queryKey: trajectoryQuery.QUERY_KEYS.lists(),
         renamingFolder
     };

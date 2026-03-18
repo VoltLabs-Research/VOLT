@@ -10,20 +10,26 @@ import { DashboardQuickActions } from '@/modules/dashboard/components/molecules/
 import DashboardRecentAnalyses from '@/modules/dashboard/components/molecules/DashboardRecentAnalyses';
 import DashboardTeamPresence from '@/modules/dashboard/components/molecules/DashboardTeamPresence';
 import DashboardTeamTimeline from '@/modules/dashboard/components/molecules/DashboardTeamTimeline';
+import StatusCounts from '@/modules/canvas/components/molecules/StatusCounts';
+import useJobStatusCounts from '@/modules/canvas/hooks/use-job-status-counts';
 import useDashboardMetrics from '@/modules/dashboard/hooks/use-dashboard-metrics';
 import JobsHistoryViewer from '@/modules/jobs/components/organisms/JobsHistoryViewer';
+import { NEW_TRAJECTORY_FOLDER_MODAL_ID } from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import SimulationGrid from '@/modules/trajectory/components/molecules/SimulationGrid';
 import TrajectoryUploaderContainer from '@/modules/trajectory/components/organisms/TrajectoryUploaderContainer';
+import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
+import { openModal } from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import Title from '@/shared/presentation/components/Title';
+import usePermission from '@/shared/presentation/hooks/use-permission';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import './Dashboard.css';
-import { FlaskConical, Puzzle } from 'lucide-react';
+import { FlaskConical, FolderPlus, Puzzle } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { HiOutlineServerStack } from 'react-icons/hi2';
 import type { DashboardCard as DashboardMetricsCard } from '@/modules/dashboard/api/entities/dashboard';
@@ -71,10 +77,12 @@ const DashboardPage = () => {
 
     const selectedTeam = useSelectedTeam();
     const user = useCurrentUser();
+    const canCreateTrajectoryFolders = usePermission(['trajectory:create']);
     const { loading, error, cards, accessDenied, accessDeniedMessage } = useDashboardMetrics(selectedTeam?._id);
     const sharedPanelsRef = useRef<HTMLDivElement | null>(null);
     const [hoveredPanel, setHoveredPanel] = useState<DashboardBottomPanel | null>(null);
     const [focusedPanel, setFocusedPanel] = useState<DashboardBottomPanel | null>(null);
+    const jobsStatusCounts = useJobStatusCounts();
 
     useTip('dashboard-drag-upload', {
         enabled: Boolean(selectedTeam)
@@ -252,10 +260,15 @@ const DashboardPage = () => {
                             onFocusCapture={handleJobsPanelFocusCapture}
                             tabIndex={0}
                         >
-                            <Container className='d-flex items-center content-between w-max dashboard-jobs-card-header'>
+                            <Container className='dashboard-jobs-card-header d-flex items-center content-between gap-1'>
                                 <Title className='font-size-2 color-primary font-weight-6'>
                                     Jobs History
                                 </Title>
+                                <StatusCounts
+                                    queued={jobsStatusCounts.queued}
+                                    running={jobsStatusCounts.running}
+                                    completed={jobsStatusCounts.completed}
+                                />
                             </Container>
                             <Container className='dashboard-jobs-card-body dashboard-shared-panel-body d-flex column flex-1 min-h-0'>
                                 <JobsHistoryViewer
@@ -278,7 +291,22 @@ const DashboardPage = () => {
                 </Container>
 
                 <Container className='dashboard-simulations-section'>
-                    <Title className='font-size-4 color-primary font-weight-5'>Trajectories</Title>
+                    <Container className='dashboard-simulations-header d-flex items-center content-between gap-1'>
+                        <Title className='font-size-4 color-primary font-weight-5'>Trajectories</Title>
+                        {canCreateTrajectoryFolders && (
+                            <Button
+                                variant='ghost'
+                                intent='neutral'
+                                size='sm'
+                                shape='rounded'
+                                className='dashboard-simulations-new-folder-btn'
+                                onClick={() => openModal(NEW_TRAJECTORY_FOLDER_MODAL_ID)}
+                            >
+                                <FolderPlus size={14} />
+                                New folder
+                            </Button>
+                        )}
+                    </Container>
                     <SimulationGrid />
                 </Container>
             </Container>
