@@ -5,7 +5,6 @@ import CompleteTeamClusterDeletionUseCase from '@modules/team-cluster/applicatio
 import ProcessDaemonJobCompletionUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonJobCompletionUseCase';
 import ProcessDaemonSceneArtifactUpsertUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonSceneArtifactUpsertUseCase';
 import ProcessDaemonTrajectoryImportUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonTrajectoryImportUseCase';
-import ProcessTeamClusterHealthcheckUseCase from '@modules/team-cluster/application/use-cases/ProcessTeamClusterHealthcheckUseCase';
 import RecordTeamClusterHeartbeatUseCase from '@modules/team-cluster/application/use-cases/RecordTeamClusterHeartbeatUseCase';
 import UpdateTeamClusterLifecycleUseCase from '@modules/team-cluster/application/use-cases/UpdateTeamClusterLifecycleUseCase';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
@@ -34,6 +33,7 @@ import type { ISocketRoomManager } from '@modules/socket/domain/port/ISocketRoom
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import type ApplicationError from '@shared/application/errors/ApplicationErrors';
 import type { Result } from '@shared/domain/port/Result';
+import logger from '@shared/infrastructure/logger';
 
 interface SubscribeToTeamClusterSocketPayload {
     teamClusterIds: string[];
@@ -78,10 +78,6 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
 
         @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
         private readonly teamClusterRepository: ITeamClusterRepository,
-
-        @inject(ProcessTeamClusterHealthcheckUseCase)
-        private readonly processTeamClusterHealthcheckUseCase: ProcessTeamClusterHealthcheckUseCase,
-
         @inject(UpdateTeamClusterLifecycleUseCase)
         private readonly updateTeamClusterLifecycleUseCase: UpdateTeamClusterLifecycleUseCase,
 
@@ -202,6 +198,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
                     parsed.data.daemonPassword
                 );
 
+                await this.teamClusterLifecycleService.markDaemonConnected(parsed.data.teamClusterId);
                 this.teamClusterReverseChannelService.registerDaemonConnection(conn.id, parsed.data.teamClusterId);
                 this.emitToSocket(conn.id, TEAM_CLUSTER_DAEMON_REGISTERED_EVENT, {
                     teamClusterId: parsed.data.teamClusterId
@@ -224,7 +221,14 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
 
         this.onDisconnect(connection.id, async (conn) => {
             delete conn.data.teamClusterIds;
-            this.teamClusterReverseChannelService.unregisterDaemonConnection(connection.id);
+            const teamClusterId = this.teamClusterReverseChannelService.unregisterDaemonConnection(connection.id);
+            if (teamClusterId) {
+                try {
+                    await this.teamClusterLifecycleService.markDaemonDisconnected(teamClusterId);
+                } catch (error: unknown) {
+                    logger.warn({ err: error, teamClusterId }, 'Failed to mark team cluster disconnected after daemon socket close');
+                }
+            }
         });
     }
 
@@ -266,12 +270,6 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
 
         if (payload.command === 'trajectory.import-complete') {
             const result = await this.processDaemonTrajectoryImportUseCase.execute(payload.payload as never);
-            this.emitUseCaseResult(socketId, payload.requestId, result);
-            return;
-        }
-
-        if (payload.command === 'runtime.healthcheck') {
-            const result = await this.processTeamClusterHealthcheckUseCase.execute(payload.payload as never);
             this.emitUseCaseResult(socketId, payload.requestId, result);
             return;
         }

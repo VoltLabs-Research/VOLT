@@ -9,11 +9,25 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
 import { Result } from '@shared/domain/port/Result';
+import IORedis from 'ioredis';
 import { inject, injectable } from 'tsyringe';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
+
+const PENDING_DAEMON_TRAJECTORY_IMPORT_TTL_SECONDS = 86400;
+
+interface PendingDaemonTrajectoryImportRecord {
+    teamId: string;
+    userId: string;
+    trajectoryName: string;
+    teamClusterId: string;
+}
+
+const pendingDaemonTrajectoryImportKey = (trajectoryId: string): string => {
+    return `daemon-trajectory-import:${trajectoryId}:pending`;
+};
 
 interface ImportedFrameInput {
     timestep: number;
@@ -55,6 +69,9 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
         @inject(SIMULATION_CELL_TOKENS.SimulationCellRepository)
         private readonly simulationCellRepository: ISimulationCellRepository,
 
+        @inject(SHARED_TOKENS.RedisClient)
+        private readonly redis: IORedis,
+
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}
@@ -92,30 +109,41 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
                 }
             }
 
-            const trajectory = existingTrajectory || await this.trajectoryRepository.createWithId(input.trajectoryId, {
-                name: input.trajectoryName,
-                team: authenticatedTeamCluster.props.team,
-                teamCluster: authenticatedTeamCluster.id,
-                createdBy: input.userId,
-                status: TrajectoryStatus.WaitingForProcess,
-                frames: [],
-                stats: {
-                    totalFiles: 0,
-                    totalSize: 0
-                },
-                analysis: [],
-                rasterSceneViews: 0,
-                isPublic: true,
-                updatedAt: new Date(),
-                createdAt: new Date()
-            });
+            let trajectory = existingTrajectory;
+            let pendingImportRecord: PendingDaemonTrajectoryImportRecord | null = null;
+
+            if (!trajectory) {
+                pendingImportRecord = await this.requirePendingImportRecord(input.trajectoryId, authenticatedTeamCluster.id);
+                trajectory = await this.trajectoryRepository.createWithId(input.trajectoryId, {
+                    name: pendingImportRecord.trajectoryName,
+                    team: pendingImportRecord.teamId,
+                    teamCluster: authenticatedTeamCluster.id,
+                    createdBy: pendingImportRecord.userId,
+                    status: TrajectoryStatus.WaitingForProcess,
+                    frames: [],
+                    stats: {
+                        totalFiles: 0,
+                        totalSize: 0
+                    },
+                    analysis: [],
+                    rasterSceneViews: 0,
+                    isPublic: true,
+                    updatedAt: new Date(),
+                    createdAt: new Date()
+                });
+            }
 
             if (!existingTrajectory) {
+                const createdTrajectoryRecord = pendingImportRecord;
+                if (!createdTrajectoryRecord) {
+                    throw ApplicationError.internalServerError('Missing pending trajectory import reservation');
+                }
+
                 await this.eventBus.publish(new TrajectoryCreatedEvent({
                     trajectoryId: trajectory.id,
-                    trajectoryName: input.trajectoryName,
-                    teamId: authenticatedTeamCluster.props.team,
-                    userId: input.userId
+                    trajectoryName: createdTrajectoryRecord.trajectoryName,
+                    teamId: createdTrajectoryRecord.teamId,
+                    userId: createdTrajectoryRecord.userId
                 }));
             }
 
@@ -135,6 +163,7 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
                     updatedAt: new Date()
                 }));
 
+                await this.clearPendingImportRecord(input.trajectoryId);
                 return Result.ok({ acknowledged: true });
             }
 
@@ -186,6 +215,8 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
                 updatedAt: new Date()
             }));
 
+            await this.clearPendingImportRecord(input.trajectoryId);
+
             return Result.ok({ acknowledged: true });
         } catch (error: unknown) {
             if (error instanceof ApplicationError) {
@@ -217,5 +248,60 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
 
     private isTerminalStatus(status: TrajectoryStatus): boolean {
         return status === TrajectoryStatus.Completed || status === TrajectoryStatus.Failed;
+    }
+
+    private async requirePendingImportRecord(
+        trajectoryId: string,
+        authenticatedTeamClusterId: string
+    ): Promise<PendingDaemonTrajectoryImportRecord> {
+        const serializedRecord = await this.redis.get(pendingDaemonTrajectoryImportKey(trajectoryId));
+        if (!serializedRecord) {
+            throw ApplicationError.notFound(
+                'TEAM_CLUSTER_DAEMON_TRAJECTORY_IMPORT_NOT_RESERVED',
+                'Trajectory import reservation was not found'
+            );
+        }
+
+        const parsed = this.parsePendingImportRecord(serializedRecord);
+        if (!parsed || parsed.teamClusterId !== authenticatedTeamClusterId) {
+            throw ApplicationError.forbidden(
+                'TEAM_CLUSTER_DAEMON_TRAJECTORY_IMPORT_RESERVATION_MISMATCH',
+                'Trajectory import reservation does not belong to the authenticated team cluster'
+            );
+        }
+
+        await this.redis.expire(
+            pendingDaemonTrajectoryImportKey(trajectoryId),
+            PENDING_DAEMON_TRAJECTORY_IMPORT_TTL_SECONDS
+        );
+
+        return parsed;
+    }
+
+    private parsePendingImportRecord(serializedRecord: string): PendingDaemonTrajectoryImportRecord | null {
+        try {
+            const parsed = JSON.parse(serializedRecord) as Partial<PendingDaemonTrajectoryImportRecord>;
+            if (
+                typeof parsed.teamId !== 'string'
+                || typeof parsed.userId !== 'string'
+                || typeof parsed.trajectoryName !== 'string'
+                || typeof parsed.teamClusterId !== 'string'
+            ) {
+                return null;
+            }
+
+            return {
+                teamId: parsed.teamId,
+                userId: parsed.userId,
+                trajectoryName: parsed.trajectoryName,
+                teamClusterId: parsed.teamClusterId
+            };
+        } catch {
+            return null;
+        }
+    }
+
+    private async clearPendingImportRecord(trajectoryId: string): Promise<void> {
+        await this.redis.del(pendingDaemonTrajectoryImportKey(trajectoryId));
     }
 }

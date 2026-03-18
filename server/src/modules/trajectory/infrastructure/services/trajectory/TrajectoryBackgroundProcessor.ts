@@ -127,7 +127,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
                         trajectory.props.team,
                         TrajectoryStatus.Failed,
                         {
-                            failureCode: ErrorCodes.TRAJECTORY_UPLOAD_FAILED,
+                            failureCode: ErrorCodes.WORKER_FAILURE,
                             failureDetails: 'One or more trajectory frame uploads failed before GLB preprocessing.'
                         }
                     );
@@ -146,7 +146,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
                         trajectory.props.team,
                         TrajectoryStatus.Failed,
                         {
-                            failureCode: ErrorCodes.TRAJECTORY_UPLOAD_FAILED,
+                            failureCode: ErrorCodes.WORKER_FAILURE,
                             failureDetails: 'No trajectory frames were uploaded successfully.'
                         }
                     );

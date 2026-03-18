@@ -5,7 +5,6 @@ import type TeamCluster from '@modules/team-cluster/domain/entities/TeamCluster'
 import type { ITeamClusterCredentialsCipher } from '@modules/team-cluster/domain/port/ITeamClusterCredentialsCipher';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import type {
-    ResolvedTeamClusterDaemonConnection,
     ResolvedTeamClusterMinioConnection,
     ResolvedTeamClusterRedisConnection,
     ResolvedTeamClusterServices
@@ -28,25 +27,12 @@ export default class TeamClusterServiceResolver {
         }
 
         return {
-            daemon: this.resolveDaemonConnection(teamCluster),
+            daemon: {
+                teamClusterId: teamCluster.id
+            },
             redis: await this.resolveRedisConnection(teamCluster),
             minio: await this.resolveMinioConnection(teamCluster),
             services: teamCluster.props.services
-        };
-    }
-
-    private resolveDaemonConnection(teamCluster: TeamCluster): ResolvedTeamClusterDaemonConnection {
-        const daemonPort = teamCluster.props.services.daemon.port;
-        const daemonPassword = teamCluster.props.services.daemon.password;
-        if (daemonPort === null || !daemonPassword) {
-            throw ApplicationError.conflict(
-                'TeamCluster::DaemonUnavailable',
-                'Team cluster daemon connection is not ready yet'
-            );
-        }
-
-        return {
-            teamClusterId: teamCluster.id
         };
     }
 

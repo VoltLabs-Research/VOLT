@@ -301,7 +301,7 @@ export default class TeamClusterReverseChannelService {
         }
     }
 
-    unregisterDaemonConnection(socketId: string): void {
+    unregisterDaemonConnection(socketId: string): string | null {
         const teamClusterId = this.teamClusterIdsBySocketId.get(socketId);
         if (teamClusterId && this.daemonSocketIdsByTeamClusterId.get(teamClusterId) === socketId) {
             this.daemonSocketIdsByTeamClusterId.delete(teamClusterId);
@@ -318,10 +318,16 @@ export default class TeamClusterReverseChannelService {
 
             this.rejectPendingEntry(correlationId, entry, new Error('Team cluster daemon connection was lost'));
         }
+
+        return teamClusterId ?? null;
     }
 
     isRegisteredDaemonSocket(socketId: string): boolean {
         return this.teamClusterIdsBySocketId.has(socketId);
+    }
+
+    getRegisteredTeamClusterId(socketId: string): string | null {
+        return this.teamClusterIdsBySocketId.get(socketId) ?? null;
     }
 
     async command(
@@ -1076,7 +1082,7 @@ export default class TeamClusterReverseChannelService {
             if (!this.connectionWaiters.has(teamClusterId)) {
                 this.connectionWaiters.set(teamClusterId, []);
             }
-            this.connectionWaiters.get(teamClusterId)?.push(onConnected);
+            this.connectionWaiters.get(teamClusterId)!.push(onConnected);
         });
     }
 

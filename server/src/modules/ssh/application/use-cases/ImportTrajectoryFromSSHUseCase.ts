@@ -11,8 +11,15 @@ import { ImportTrajectoryFromSSHOutputDTO } from '@modules/ssh/application/dtos/
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { v4 } from 'uuid';
+import IORedis from 'ioredis';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+
+const PENDING_DAEMON_TRAJECTORY_IMPORT_TTL_SECONDS = 86400;
+
+const pendingDaemonTrajectoryImportKey = (trajectoryId: string): string => {
+    return `daemon-trajectory-import:${trajectoryId}:pending`;
+};
 
 @injectable()
 export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTrajectoryFromSSHInputDTO, ImportTrajectoryFromSSHOutputDTO, ApplicationError>{
@@ -22,6 +29,9 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
 
         @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
         private readonly teamClusterRepository: ITeamClusterRepository,
+
+        @inject(SHARED_TOKENS.RedisClient)
+        private readonly redis: IORedis,
 
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
@@ -59,9 +69,22 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
             ));
         }
 
+        const trajectoryId = v4();
+
         try {
-            const trajectoryId = v4();
             const trajectoryName = `Import: ${remotePath.split('/').pop() || remotePath}`;
+
+            await this.redis.set(
+                pendingDaemonTrajectoryImportKey(trajectoryId),
+                JSON.stringify({
+                    teamId,
+                    userId,
+                    trajectoryName,
+                    teamClusterId: connectedTeamCluster.id
+                }),
+                'EX',
+                PENDING_DAEMON_TRAJECTORY_IMPORT_TTL_SECONDS
+            );
 
             await this.teamClusterDaemonClient.command(connectedTeamCluster.id, 'queue.dispatch', {
                 queueName: 'ssh_import',
@@ -84,6 +107,8 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
                 trajectoryId
             });
         } catch (error: unknown) {
+            await this.redis.del(pendingDaemonTrajectoryImportKey(trajectoryId)).catch(() => undefined);
+
             return Result.fail(new ApplicationError(
                 ErrorCodes.SSH_IMPORT_ERROR,
                 'Failed to queue SSH import job',
