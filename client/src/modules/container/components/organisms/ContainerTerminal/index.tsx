@@ -161,7 +161,7 @@ export const ContainerTerminal = ({ container, onClose, embedded = false, append
                     </Tooltip>
                 </Container>
             )}
-            <Container className='flex-1 overflow-hidden p-relative container-terminal-body p-1'>
+            <Container className='flex-1 overflow-hidden p-relative container-terminal-body'>
                 <Terminal ref={terminalRef} onData={handleTerminalData} />
             </Container>
         </Container>

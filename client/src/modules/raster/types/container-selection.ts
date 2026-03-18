@@ -17,19 +17,23 @@ export const DEFAULT_RASTER_SCENE: DefaultScene = {
     source: 'default'
 };
 
+const CONTAINER_TITLES: Record<RasterContainerId, string> = {
+    'container-1': 'Container 1',
+    'container-2': 'Container 2'
+};
+
+export const createDefaultRasterContainerSelection = (containerId: RasterContainerId): RasterContainerSelection => {
+    return {
+        id: containerId,
+        title: CONTAINER_TITLES[containerId],
+        label: 'Trajectory',
+        scene: DEFAULT_RASTER_SCENE
+    };
+};
+
 export const createInitialRasterContainerSelections = (): RasterContainerSelection[] => {
     return [
-        {
-            id: 'container-1',
-            title: 'Container 1',
-            label: 'Trajectory',
-            scene: DEFAULT_RASTER_SCENE
-        },
-        {
-            id: 'container-2',
-            title: 'Container 2',
-            label: 'Trajectory',
-            scene: DEFAULT_RASTER_SCENE
-        }
+        createDefaultRasterContainerSelection('container-1'),
+        createDefaultRasterContainerSelection('container-2')
     ];
 };
