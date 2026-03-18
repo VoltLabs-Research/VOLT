@@ -68,6 +68,14 @@ export const createCloudControlModule = (deps: {
     // Lazy reference resolved after voltCloudConnection is constructed below.
     let voltCloudConnectionRef: VoltCloudConnection | null = null;
 
+    const requireVoltCloudConnection = (): VoltCloudConnection => {
+        if (!voltCloudConnectionRef) {
+            throw new Error('VoltCloudConnection is not initialized');
+        }
+
+        return voltCloudConnectionRef;
+    };
+
     const handlers = [
         ...createAnalysisHandlers({ analysisDispatchService: deps.analysisDispatchService }),
         ...createDebugHandlers({ debugSessionManager: deps.debugSessionManager }),
@@ -98,9 +106,9 @@ export const createCloudControlModule = (deps: {
             dockerRuntimeService: deps.dockerRuntimeService,
             hostShellService: deps.hostShellService,
             emitLifecycle: (type, details) => {
-                voltCloudConnectionRef?.emitLifecycleEvent(type, details);
+                requireVoltCloudConnection().emitLifecycleEvent(type, details);
             },
-            reportUpdateFailed: (details) => voltCloudConnectionRef?.reportUpdateFailed(details) ?? Promise.resolve()
+            reportUpdateFailed: (details) => requireVoltCloudConnection().reportUpdateFailed(details)
         })
     ];
 

@@ -15,7 +15,7 @@ const createAsyncStream = (...messages: unknown[]): AsyncIterable<Uint8Array> =>
     };
 };
 
-test('buildPluginIndexForAtomIds returns a serializable atom-id index', async () => {
+test('buildPluginIndexForAtomIds joins rows with numeric string ids', async () => {
     const minioService = {
         getObjectStream: async () => createAsyncStream({
             'per-atom-properties': [
@@ -36,10 +36,10 @@ test('buildPluginIndexForAtomIds returns a serializable atom-id index', async ()
         targetIds: [10, 20]
     });
 
-    assert.deepEqual(result, {
-        10: { id: '10', charge: 1.5 },
-        20: { id: '20', charge: 2.5 }
-    });
+    assert.ok(result instanceof Map);
+    assert.equal(result?.get(10)?.charge, 1.5);
+    assert.equal(result?.get(20)?.charge, 2.5);
+    assert.equal(result?.has(30), false);
 });
 
 test('getModifierValues and getAnalysisAllPerAtomData normalize string ids consistently', async () => {

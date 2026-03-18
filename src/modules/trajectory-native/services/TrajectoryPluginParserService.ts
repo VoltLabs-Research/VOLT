@@ -74,7 +74,11 @@ export interface PluginAnalysisAllAtomsRequest {
 export interface PluginAnalysisAllAtomsResponse {
     propertyNames: string[];
     atoms: Record<string, unknown>[];
-}
+};
+
+interface PluginAtomIndex {
+    [atomId: number]: Record<string, unknown>;
+};
 
 interface ExposureData {
     exposureId: string;
@@ -182,7 +186,7 @@ export class TrajectoryPluginParserService {
         return Array.from(uniqueSet).sort((a, b) => a - b);
     }
 
-    async buildPluginIndexForAtomIds(request: PluginAtomIndexRequest): Promise<Map<number, Record<string, unknown>> | null> {
+    async buildPluginIndexForAtomIds(request: PluginAtomIndexRequest): Promise<PluginAtomIndex | null> {
         const { trajectoryId, analysisId, exposureId, timestep, targetIds } = request;
         const targetIdsSet = new Set(targetIds);
         
@@ -192,7 +196,8 @@ export class TrajectoryPluginParserService {
         
         try {
             const pluginStream = await this.minioService.getObjectStream(ObjectBucketName.Plugins, key);
-            const pluginIndex = new Map<number, Record<string, unknown>>();
+            const pluginIndex: PluginAtomIndex = {};
+            let matchedAtomCount = 0;
             const stream = pluginStream as unknown as AsyncIterable<Uint8Array>;
 
             for await (const message of decodeMultiStream(stream)) {
@@ -210,10 +215,12 @@ export class TrajectoryPluginParserService {
                     const id = this.normalizeAtomId((item as Record<string, unknown>)?.id);
                     if (id === null) continue;
                     if (!targetIdsSet.has(id)) continue;
+                    if (pluginIndex[id]) continue;
 
-                    pluginIndex.set(id, item as Record<string, unknown>);
+                    pluginIndex[id] = item as Record<string, unknown>;
+                    matchedAtomCount += 1;
 
-                    if (pluginIndex.size >= targetIdsSet.size) {
+                    if (matchedAtomCount >= targetIdsSet.size) {
                         shouldBreak = true;
                     }
                 }
@@ -227,7 +234,7 @@ export class TrajectoryPluginParserService {
                 }
             }
 
-            return pluginIndex.size > 0 ? pluginIndex : null;
+            return matchedAtomCount > 0 ? pluginIndex : null;
         } catch (error) {
             return null;
         }

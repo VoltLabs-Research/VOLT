@@ -48,10 +48,7 @@ export interface DaemonConfig {
     enrollmentToken?: string;
     installedVersion: string;
     voltCloudUrl: string;
-    heartbeatPath: string;
-    lifecyclePath: string;
     healthcheckPath?: string;
-    deleteCompletionPath?: string;
     controlSocketUrl?: string;
     heartbeatIntervalMs: number;
     metricsIntervalMs: number;
@@ -168,10 +165,7 @@ export const loadConfig = (): DaemonConfig => {
         enrollmentToken: readOptionalString('TEAM_CLUSTER_ENROLLMENT_TOKEN'),
         installedVersion: process.env.VOLT_CLUSTER_INSTALL_MANIFEST_VERSION?.trim() || '1.0.0',
         voltCloudUrl,
-        heartbeatPath: readRequiredString('TEAM_CLUSTER_HEARTBEAT_PATH'),
-        lifecyclePath: readRequiredString('TEAM_CLUSTER_LIFECYCLE_PATH'),
         healthcheckPath: readOptionalString('TEAM_CLUSTER_HEALTHCHECK_PATH'),
-        deleteCompletionPath: readOptionalString('TEAM_CLUSTER_DELETE_COMPLETION_PATH'),
         controlSocketUrl: readOptionalString('VOLT_CLOUD_DAEMON_SOCKET_URL'),
         heartbeatIntervalMs: readNumber('TEAM_CLUSTER_HEARTBEAT_INTERVAL_MS', DEFAULT_HEARTBEAT_INTERVAL_MS),
         metricsIntervalMs: readNumber('TEAM_CLUSTER_METRICS_INTERVAL_MS', DEFAULT_METRICS_INTERVAL_MS),

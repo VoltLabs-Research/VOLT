@@ -38,7 +38,6 @@ type NonCommandMessage = Exclude<TeamClusterDaemonMessage, { type: 'command' }>;
  * `RuntimeEventBroker`, and the higher-level reporting helpers.
  */
 export class VoltCloudConnection {
-    private latestLatencyMs: number | null = null;
     private connectedToCloud = false;
 
     readonly client: ClusterDaemonClient;
@@ -67,7 +66,7 @@ export class VoltCloudConnection {
                     daemonPassword: this.client.getDaemonPassword(),
                     installedVersion: config.installedVersion,
                     metrics: await this.metricsService.collectSnapshot({
-                        cloudLatencyMs: this.latestLatencyMs,
+                        cloudLatencyMs: null,
                         connectedToCloud: this.connectedToCloud
                     })
                 })
@@ -83,13 +82,11 @@ export class VoltCloudConnection {
             })
             .onDisconnected((reason) => {
                 this.connectedToCloud = false;
-                this.latestLatencyMs = null;
                 this.emitLifecycleEvent('cloud-socket-disconnected', `Outbound cloud socket disconnected (${reason})`);
             })
             .onError((err: DaemonClientError) => {
                 if (err.message.includes('heartbeat')) {
                     this.connectedToCloud = false;
-                    this.latestLatencyMs = null;
                     this.emitLifecycleEvent('heartbeat-failed', err.message);
                     logger.warn(`Heartbeat failed: ${err.message}`);
                     return;
@@ -120,10 +117,6 @@ export class VoltCloudConnection {
 
     stop(): void {
         this.client.disconnect();
-    }
-
-    getLatestLatencyMs(): number | null {
-        return this.latestLatencyMs;
     }
 
     isConnectedToCloud(): boolean {
