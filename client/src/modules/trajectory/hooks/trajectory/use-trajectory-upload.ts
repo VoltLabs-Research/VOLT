@@ -34,10 +34,6 @@ export default function useTrajectoryUpload(folderId?: string | null): UseTrajec
                 { name: folderName }
             );
 
-            files.forEach(({ path }) => {
-                formData.append('paths', path);
-            });
-
             if (folderId) {
                 formData.append('folderId', folderId);
             }
