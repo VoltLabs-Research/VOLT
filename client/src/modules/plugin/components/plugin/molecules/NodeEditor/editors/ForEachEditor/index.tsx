@@ -1,7 +1,7 @@
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import { createNodeEditorForm } from '@/modules/plugin/components/plugin/molecules/NodeEditor/hooks/use-node-editor-form';
 import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node-reference-autocomplete';
-import { createNodeEditorForm } from '@/shared/forms';
 import type { EditorProps } from '../types';
 import { FOR_EACH_EDITOR_DEFAULT_VALUES, forEachEditorSchema, type ForEachEditorFormValues } from './schema';
 

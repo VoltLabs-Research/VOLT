@@ -5,7 +5,6 @@ import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
 import { toggleSelection } from '@/shared/utils/selection';
 import type { User } from '@/modules/auth/api/entities/user';
 
@@ -19,20 +18,28 @@ const CreateGroupModal = ({ teamMembers, currentUserId, onCreateGroup }: CreateG
     const [groupName, setGroupName] = useState('');
     const [groupDescription, setGroupDescription] = useState('');
     const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
-    const { isLoading, execute } = useAsyncAction();
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleToggleMember = (memberId: string) => {
         setSelectedMembers((prev) => toggleSelection(prev, memberId));
     };
 
-    const handleCreate = () => execute(async () => {
+    const handleCreate = async () => {
         if (!groupName.trim() || selectedMembers.length === 0) return;
 
-        await onCreateGroup(groupName.trim(), groupDescription.trim(), selectedMembers);
-        setGroupName('');
-        setGroupDescription('');
-        setSelectedMembers([]);
-    });
+        setIsLoading(true);
+
+        try {
+            await onCreateGroup(groupName.trim(), groupDescription.trim(), selectedMembers);
+            setGroupName('');
+            setGroupDescription('');
+            setSelectedMembers([]);
+        } catch {
+            // The caller already handles user-facing failures.
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <Modal

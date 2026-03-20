@@ -1,10 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { IoClose } from 'react-icons/io5';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
+import { useSocketTerminalSession } from '@/modules/socket/core/hooks/use-socket-terminal-session';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
 import Tooltip from '@/shared/presentation/components/Tooltip';
-import { sileo } from 'sileo';
 import Terminal from '@/shared/presentation/components/Terminal';
 import type { TerminalHandle } from '@/shared/presentation/components/Terminal';
 import './ContainerTerminal.css';
@@ -23,11 +23,6 @@ interface ContainerTerminalProps {
     } | null;
 };
 
-interface TerminalConnectionState {
-    isAttached: boolean;
-    detachTimer: ReturnType<typeof setTimeout> | null;
-};
-
 interface ContainerTerminalSocketError {
     code: string;
     message: string;
@@ -40,107 +35,34 @@ const isContainerTerminalSocketError = (value: unknown): value is ContainerTermi
 
 export const ContainerTerminal = ({ container, onClose, embedded = false, appendOutput = null }: ContainerTerminalProps) => {
     const terminalRef = useRef<TerminalHandle>(null);
-    const isAttachedRef = useRef(false);
     const socketService = useSocket();
-    const connectionStateRef = useRef<TerminalConnectionState>({
-        isAttached: false,
-        detachTimer: null
-    });
-
-    useEffect(() => {
-        const connectionState = connectionStateRef.current;
-
-        if (connectionState.detachTimer) {
-            clearTimeout(connectionState.detachTimer);
-            connectionState.detachTimer = null;
-        }
-
-        socketService.connect().catch(() => undefined);
-
-        return () => {
-            if (connectionState.detachTimer) {
-                clearTimeout(connectionState.detachTimer);
-            }
-
-            connectionState.detachTimer = setTimeout(() => {
-                if (!connectionState.isAttached) {
-                    connectionState.detachTimer = null;
-                    return;
-                }
-
-                socketService.emitWithoutAck('container:terminal:detach');
-                connectionState.isAttached = false;
-                isAttachedRef.current = false;
-                connectionState.detachTimer = null;
-            }, 100);
-        };
-    }, [container._id, socketService]);
-
-    useEffect(() => {
-        const id = container._id;
-        const connectionState = connectionStateRef.current;
-
-        const attach = () => {
-            if (isAttachedRef.current || connectionState.isAttached) {
-                return;
-            }
-
-            if (!socketService.isConnected()) {
-                return;
-            }
-
-            socketService.emitWithoutAck('container:terminal:attach', { containerId: id });
-            connectionState.isAttached = true;
-            isAttachedRef.current = true;
-        };
-
-        const handleData = (...args: unknown[]) => {
-            const [data] = args;
-            if (typeof data !== 'string') {
-                return;
-            }
-
-            terminalRef.current?.write(data);
-        };
-
-        const handleError = (...args: unknown[]) => {
-            const [error] = args;
-            let description = 'Terminal error';
-
+    const attachPayload = useMemo(() => ({ containerId: container._id }), [container._id]);
+    const resolveErrorMessage = useMemo(() => {
+        return (error: unknown): string => {
             if (typeof error === 'string') {
-                description = error;
-            } else if (isContainerTerminalSocketError(error)) {
-                if (error.details) {
-                    description = error.details;
-                } else {
-                    description = error.message;
-                }
+                return error;
             }
 
-            terminalRef.current?.write(`\r\n\x1b[31mError: ${description}\x1b[0m\r\n`);
-            sileo.error({ title: 'Terminal error', description });
+            if (isContainerTerminalSocketError(error)) {
+                return error.details || error.message;
+            }
+
+            return 'Terminal error';
         };
-
-        const unsubData = socketService.on('container:terminal:data', handleData);
-        const unsubError = socketService.on('container:error', handleError);
-        const unsubConnection = socketService.onConnectionChange((connected) => {
-            if(connected && !isAttachedRef.current) attach();
-        });
-
-        if(socketService.isConnected()) {
-            attach();
-        }
-
-        return () => {
-            unsubData();
-            unsubError();
-            unsubConnection();
-        };
-    }, [container._id, socketService]);
-
-    const handleTerminalData = (data: string) => {
-        socketService.emitWithoutAck('container:terminal:input', data);
-    };
+    }, []);
+    const { handleTerminalData } = useSocketTerminalSession({
+        socketService,
+        sessionKey: container._id,
+        terminalRef,
+        attachEvent: 'container:terminal:attach',
+        attachPayload,
+        detachEvent: 'container:terminal:detach',
+        detachDelayMs: 100,
+        dataEvent: 'container:terminal:data',
+        errorEvent: 'container:error',
+        inputEvent: 'container:terminal:input',
+        resolveErrorMessage
+    });
 
     useEffect(() => {
         if (!appendOutput?.data) return;
@@ -167,7 +89,7 @@ export const ContainerTerminal = ({ container, onClose, embedded = false, append
         </Container>
     );
 
-    if(embedded) return content;
+    if (embedded) return content;
 
     return (
         <Container className='p-fixed inset-0 d-flex items-center content-center container-terminal-overlay' role='dialog' aria-modal='true' aria-label={`Terminal for ${container.name}`}>

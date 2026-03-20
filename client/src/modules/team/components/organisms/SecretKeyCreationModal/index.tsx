@@ -7,7 +7,7 @@ import Modal from '@/shared/presentation/components/Modal';
 import useCreateSecretKey from '@/modules/team/hooks/secret-key/use-create-secret-key';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamRoleData from '@/modules/team/hooks/role/use-team-role-data';
-import useModalForm from '@/shared/presentation/hooks/use-modal-form';
+import { resetModal } from '@/shared/presentation/components/Modal';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
@@ -51,17 +51,16 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
         setErrors({});
     };
 
-    const modalForm = useModalForm({
-        modalId: SECRET_KEY_CREATION_MODAL_ID,
-        reset: resetState
-    });
+    const closeSecretKeyCreationModal = () => {
+        resetModal(SECRET_KEY_CREATION_MODAL_ID, resetState);
+    };
 
     const handleClose = () => {
         if (generatedKey && !hasConfirmedCopy) {
             return;
         }
 
-        modalForm.close();
+        closeSecretKeyCreationModal();
     };
 
     const handleSubmit = async () => {

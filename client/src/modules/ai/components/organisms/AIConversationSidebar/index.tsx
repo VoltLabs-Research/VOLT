@@ -7,7 +7,7 @@ import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/componen
 import SearchInput from '@/shared/presentation/components/SearchInput';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import Tooltip from '@/shared/presentation/components/Tooltip';
-import useConfirm from '@/shared/presentation/hooks/use-confirm';
+import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import { formatDistanceToNow } from 'date-fns';
 import { useMemo, useState } from 'react';
 import { CiChat1 } from 'react-icons/ci';
@@ -46,8 +46,6 @@ const AIConversationSidebar = ({
     const [query, setQuery] = useState('');
     const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
     const [draftTitle, setDraftTitle] = useState('');
-    const { confirm } = useConfirm();
-
     const filteredConversations = useMemo(() => {
         return conversations.filter((conversation) => (
             matchesQuery(conversation.title, query)

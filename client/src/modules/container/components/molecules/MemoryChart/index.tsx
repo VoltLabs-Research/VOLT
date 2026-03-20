@@ -1,6 +1,7 @@
 import { formatChartTime } from '../../../utilities/format-chart-time';
 import { useEffect, useMemo } from 'react';
 import { CHART_COLORS } from '@/modules/cluster/utilities/chart-colors';
+import useTimeSeriesBuffer from '@/modules/container/hooks/use-time-series-buffer';
 import {
     AreaChart,
     Area,
@@ -13,7 +14,6 @@ import {
 import { MemoryStick } from 'lucide-react';
 import ChartContainer from '@/shared/presentation/components/ChartContainer';
 import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
-import useTimeSeriesBuffer from '@/shared/presentation/hooks/use-time-series-buffer';
 import type { MemoryData } from '../../../services/container-stats-view';
 
 const MAX_HISTORY_POINTS = 60;

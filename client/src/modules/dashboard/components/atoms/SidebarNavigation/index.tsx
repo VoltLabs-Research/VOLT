@@ -1,4 +1,6 @@
 import './SidebarNavigation.css';
+import { getDashboardNavigationItems } from '@/app/routes/metadata';
+import { DashboardNavigationIconKey, DashboardNavigationSection, RoutePermissionMode } from '@/app/routes/types';
 import ClusterCredentialsModal from '@/modules/cluster/components/organisms/ClusterCredentialsModal';
 import UpdateClusterModal from '@/modules/cluster/components/organisms/UpdateClusterModal';
 import useSidebarClusters from '@/modules/cluster/hooks/use-sidebar-clusters';
@@ -25,6 +27,7 @@ import { TbCube3dSphere, TbFileTypePdf } from 'react-icons/tb';
 import { PiUserPlus, PiPaintBrushBold } from 'react-icons/pi';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { IconType } from 'react-icons';
+import type { DashboardNavigationItem } from '@/app/routes/metadata';
 
 interface SidebarNavigationProps {
     setSidebarOpen: (status: boolean) => void;
@@ -32,105 +35,23 @@ interface SidebarNavigationProps {
     onExpandSidebar?: () => void;
 };
 
-interface NavItem {
-    label: string;
-    icon: IconType;
-    to: string;
-    requiredPermissions?: string[];
-    permissionMode?: PermissionMode;
-    disabledReason?: string;
+const DASHBOARD_NAVIGATION_ICONS: Record<DashboardNavigationIconKey, IconType> = {
+    [DashboardNavigationIconKey.AI]: MdAutoAwesome,
+    [DashboardNavigationIconKey.Containers]: IoCubeOutline,
+    [DashboardNavigationIconKey.Dashboard]: RiHomeSmile2Fill,
+    [DashboardNavigationIconKey.Import]: MdImportExport,
+    [DashboardNavigationIconKey.Latex]: TbFileTypePdf,
+    [DashboardNavigationIconKey.ManageRoles]: IoKeyOutline,
+    [DashboardNavigationIconKey.Messages]: CiChat1,
+    [DashboardNavigationIconKey.MyTeam]: IoPeopleOutline,
+    [DashboardNavigationIconKey.Notebooks]: IoBookOutline,
+    [DashboardNavigationIconKey.Plugins]: GoWorkflow,
+    [DashboardNavigationIconKey.SecretKeys]: IoLockClosedOutline,
+    [DashboardNavigationIconKey.Whiteboards]: PiPaintBrushBold
 };
 
-enum PermissionMode {
-    Any = 'any',
-    All = 'all'
-};
-
-const MAIN_NAV_ITEMS: NavItem[] = [
-    {
-        label: 'Dashboard',
-        icon: RiHomeSmile2Fill,
-        to: '/dashboard'
-    },
-    {
-        label: 'Containers',
-        icon: IoCubeOutline,
-        to: '/dashboard/containers',
-        requiredPermissions: ['container:read'],
-        disabledReason: 'You do not have permission to view containers.'
-    },
-    {
-        label: 'Notebooks',
-        icon: IoBookOutline,
-        to: '/dashboard/notebooks',
-        requiredPermissions: ['plugin:read'],
-        disabledReason: 'You do not have permission to view notebooks.'
-    },
-    {
-        label: 'LaTeX',
-        icon: TbFileTypePdf,
-        to: '/dashboard/latex',
-        requiredPermissions: ['latex:read'],
-        disabledReason: 'You do not have permission to view LaTeX documents.'
-    }
-];
-
-const SECONDARY_NAV_ITEMS: NavItem[] = [
-    {
-        label: 'Whiteboards',
-        icon: PiPaintBrushBold,
-        to: '/dashboard/whiteboards',
-        requiredPermissions: ['whiteboard:read'],
-        disabledReason: 'You do not have permission to view whiteboards.'
-    },
-    {
-        label: 'Plugins',
-        icon: GoWorkflow,
-        to: '/dashboard/plugins/list',
-        requiredPermissions: ['plugin:read'],
-        disabledReason: 'You do not have permission to view plugins.'
-    },
-    {
-        label: 'Messages',
-        icon: CiChat1,
-        to: '/dashboard/messages'
-    },
-    {
-        label: 'Volt AI',
-        icon: MdAutoAwesome,
-        to: '/dashboard/ai',
-        requiredPermissions: ['ai-conversation:read'],
-        disabledReason: 'You do not have permission to access Volt AI.'
-    },
-    {
-        label: 'Import',
-        icon: MdImportExport,
-        to: '/dashboard/ssh-connections',
-        requiredPermissions: ['ssh-connection:read'],
-        disabledReason: 'You do not have permission to view SSH connections.'
-    },
-    {
-        label: 'My Team',
-        icon: IoPeopleOutline,
-        to: '/dashboard/my-team',
-        requiredPermissions: ['team:read'],
-        disabledReason: 'You do not have permission to view team details.'
-    },
-    {
-        label: 'Manage Roles',
-        icon: IoKeyOutline,
-        to: '/dashboard/manage-roles',
-        requiredPermissions: ['team-role:read'],
-        disabledReason: 'You do not have permission to view role management.'
-    },
-    {
-        label: 'Secret Keys',
-        icon: IoLockClosedOutline,
-        to: '/dashboard/secret-keys',
-        requiredPermissions: ['team-secret-key:read'],
-        disabledReason: 'You do not have permission to view secret keys.'
-    }
-];
+const MAIN_NAVIGATION_ITEMS = getDashboardNavigationItems(DashboardNavigationSection.Main);
+const SECONDARY_NAVIGATION_ITEMS = getDashboardNavigationItems(DashboardNavigationSection.Secondary);
 
 const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar }: SidebarNavigationProps) => {
     const { searchParams } = useSearchParamsState();
@@ -156,8 +77,10 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
         return selected;
     };
 
-    const canAccess = (item: NavItem): boolean => {
-        return canAccessPermissions(item.requiredPermissions, item.permissionMode);
+    const canAccess = (item: DashboardNavigationItem): boolean => {
+        const permissionMode = item.permissionMode === RoutePermissionMode.All ? 'all' : 'any';
+
+        return canAccessPermissions(item.requiredPermissions, permissionMode);
     };
 
     const trajectoriesSubItems = useMemo(() => [
@@ -273,30 +196,35 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
 
     const canAccessTrajectories = canAccess({
         label: '',
-        icon: TbCube3dSphere,
-        to: '',
+        path: '',
+        icon: undefined,
         requiredPermissions: ['trajectory:read']
     });
     const canAccessAnalysis = canAccess({
         label: '',
-        icon: IoAnalytics,
-        to: '',
+        path: '',
+        icon: undefined,
         requiredPermissions: ['analysis:read']
     });
 
-    const renderNavItem = (item: NavItem) => {
+    const renderNavItem = (item: DashboardNavigationItem) => {
         const isAllowed = canAccess(item);
+        const Icon = item.icon ? DASHBOARD_NAVIGATION_ICONS[item.icon] : null;
         let onClick: (() => void) | undefined;
         if (isAllowed) {
-            onClick = () => handleNavigate(item.to);
+            onClick = () => handleNavigate(item.path);
+        }
+
+        if (!Icon) {
+            return null;
         }
 
         const content = (
             <Container className='sidebar-nav-item-wrapper'>
                 <SidebarNavItem
                     label={item.label}
-                    icon={item.icon}
-                    isSelected={isSelected(item.to)}
+                    icon={Icon}
+                    isSelected={isSelected(item.path)}
                     onClick={onClick}
                     disabled={!isAllowed}
                 />
@@ -305,7 +233,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
 
         return (
             <Tooltip
-                key={item.to}
+                key={item.path}
                 content={item.disabledReason ?? 'You do not have permission to access this section.'}
                 placement='right'
                 disabled={isAllowed}
@@ -317,7 +245,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
 
     return (
         <nav className='sidebar-nav y-auto'>
-            {MAIN_NAV_ITEMS.map(renderNavItem)}
+            {MAIN_NAVIGATION_ITEMS.map(renderNavItem)}
 
             <Tooltip
                 content='You do not have permission to view trajectories.'
@@ -357,7 +285,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
                 onRequestSidebarExpand={onExpandSidebar}
             />
 
-            {SECONDARY_NAV_ITEMS.map(renderNavItem)}
+            {SECONDARY_NAVIGATION_ITEMS.map(renderNavItem)}
 
             <Divider className={`sidebar-divider ${collapsed ? 'is-hidden' : ''}`} />
 

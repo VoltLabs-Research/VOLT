@@ -4,9 +4,10 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import WarningZone from '@/shared/presentation/components/WarningZone';
-import useZodForm from '@/shared/presentation/hooks/use-zod-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, Lock, Key } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import type { ChangePasswordInputDTO } from '@/modules/auth/api/dtos/change-password';
 import type { PasswordChangeForm as PasswordChangeFormType, PasswordInfo } from './validation-schema';
 
@@ -26,8 +27,8 @@ const PasswordChangeForm = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
 
-    const { control, handleSubmit, reset, watch } = useZodForm<PasswordChangeFormType>({
-        schema: passwordChangeSchema,
+    const { control, handleSubmit, reset, watch } = useForm<PasswordChangeFormType>({
+        resolver: zodResolver(passwordChangeSchema),
         defaultValues: {
             currentPassword: '',
             newPassword: '',

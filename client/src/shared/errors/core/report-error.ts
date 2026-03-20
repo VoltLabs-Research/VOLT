@@ -1,28 +1,53 @@
-import { isApiError, isHandledApiError, markApiErrorHandled } from '@/shared/errors/core/api-error-guards';
-import { normalizeError } from '@/shared/errors/core/normalize-error';
-import { mapErrorToUserMessage } from '@/shared/errors/core/map-error-to-user-message';
+import { ApiError, getErrorMessage } from '@voltstack/voltclient';
 import { ErrorSurface } from '@/shared/errors/core/types';
 import { sileo } from 'sileo';
 import type { ReportErrorOptions, UserFacingError } from '@/shared/errors/core/types';
 
-/** Minimal no-op result returned when the error was already handled. */
+const DEFAULT_ERROR_TITLE = 'Something went wrong. Please try again.';
+
 const HANDLED_NOOP: UserFacingError = Object.freeze({
     title: '',
-    retryable: false,
     surface: ErrorSurface.Silent
 });
 
-/**
- * Central error reporting entry point.
- *
- * Normalizes any thrown value, maps it to a user-facing message, and
- * optionally surfaces it as a toast. Returns the structured result so
- * callers can render inline or page-level feedback when needed.
- *
- * @param error - The raw error from a catch block or rejection handler.
- * @param options - Presentation and fallback overrides.
- * @returns The resolved UserFacingError for further use by the caller.
- */
+export const isApiError = (error: unknown): error is ApiError => {
+    return error instanceof ApiError;
+};
+
+export const isAccessDeniedCode = (code: string): boolean => {
+    return ApiError.isCodePermissionDenied(code);
+};
+
+export const isAccessDeniedError = (error: unknown): error is ApiError => {
+    return isApiError(error) && error.isPermissionDenied();
+};
+
+export const isHandledApiError = (error: unknown): error is ApiError => {
+    return isApiError(error) && error.isHandled();
+};
+
+export const markApiErrorHandled = (error: unknown): void => {
+    if (isApiError(error)) {
+        error.markHandled();
+    }
+};
+
+const resolveErrorTitle = (error: unknown, fallbackTitle?: string): string => {
+    if (isApiError(error)) {
+        return getErrorMessage(error.code, fallbackTitle ?? DEFAULT_ERROR_TITLE);
+    }
+
+    if (error instanceof Error && error.message.trim().length > 0) {
+        return error.message;
+    }
+
+    if (typeof error === 'string' && error.trim().length > 0) {
+        return error;
+    }
+
+    return fallbackTitle ?? DEFAULT_ERROR_TITLE;
+};
+
 export const reportError = (
     error: unknown,
     options?: ReportErrorOptions
@@ -31,8 +56,11 @@ export const reportError = (
         return HANDLED_NOOP;
     }
 
-    const appError = normalizeError(error);
-    const userError = mapErrorToUserMessage(appError, options);
+    const userError: UserFacingError = {
+        title: resolveErrorTitle(error, options?.fallbackTitle),
+        description: options?.fallbackDescription,
+        surface: options?.surface ?? ErrorSurface.Toast
+    };
 
     if (userError.surface === ErrorSurface.Toast) {
         sileo.error({
@@ -44,9 +72,6 @@ export const reportError = (
             markApiErrorHandled(error);
         }
     }
-
-    // 'silent', 'inline', and 'page' surfaces: no toast shown.
-    // The caller is responsible for rendering inline/page feedback.
 
     options?.onError?.(userError);
 

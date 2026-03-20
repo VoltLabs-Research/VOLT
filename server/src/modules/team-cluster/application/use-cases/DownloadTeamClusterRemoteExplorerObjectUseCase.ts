@@ -3,22 +3,18 @@ import {
     DownloadTeamClusterRemoteExplorerObjectOutputDTO
 } from '@modules/team-cluster/application/dtos/DownloadTeamClusterRemoteExplorerObjectDTO';
 import { TeamClusterRemoteAccessTargetDTO } from '@modules/team-cluster/application/dtos/TeamClusterRemoteAccessDTO';
+import { preflightRemoteExplorerAccess } from '@modules/team-cluster/application/utilities/remote-explorer-access';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import RemoteExplorerDaemonGateway from '@modules/team-cluster/infrastructure/services/RemoteExplorerDaemonGateway';
 import TeamClusterRemoteAccessSessionService from '@modules/team-cluster/infrastructure/services/TeamClusterRemoteAccessSessionService';
 import { TeamClusterDaemonStreamError } from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { Result } from '@shared/domain/port/Result';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { inject, injectable } from 'tsyringe';
 
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
-
-const isExplorerTarget = (target: TeamClusterRemoteAccessTargetDTO): boolean => {
-    return target !== TeamClusterRemoteAccessTargetDTO.HostTerminal;
-};
 
 /**
  * Derives a human-readable filename from the object path when the daemon
@@ -41,6 +37,25 @@ const deriveFallbackFilename = (target: TeamClusterRemoteAccessTargetDTO, path: 
     return lastSegment;
 };
 
+const readFilenameFromContentDisposition = (value: string | undefined): string | undefined => {
+    if (!value) {
+        return undefined;
+    }
+
+    const utf8Match = value.match(/filename\*=UTF-8''([^;]+)/i);
+    if (utf8Match?.[1]) {
+        return decodeURIComponent(utf8Match[1]);
+    }
+
+    const quotedMatch = value.match(/filename="([^"]+)"/i);
+    if (quotedMatch?.[1]) {
+        return quotedMatch[1];
+    }
+
+    const bareMatch = value.match(/filename=([^;]+)/i);
+    return bareMatch?.[1]?.trim();
+};
+
 @injectable()
 export default class DownloadTeamClusterRemoteExplorerObjectUseCase implements IUseCase<
     DownloadTeamClusterRemoteExplorerObjectInputDTO,
@@ -54,48 +69,28 @@ export default class DownloadTeamClusterRemoteExplorerObjectUseCase implements I
         @inject(TEAM_CLUSTER_TOKENS.TeamClusterRemoteAccessSessionService)
         private readonly sessionService: TeamClusterRemoteAccessSessionService,
 
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
+        @inject(TEAM_CLUSTER_TOKENS.RemoteExplorerDaemonGateway)
+        private readonly remoteExplorerDaemonGateway: RemoteExplorerDaemonGateway
     ) {}
 
     async execute(
         input: DownloadTeamClusterRemoteExplorerObjectInputDTO
     ): Promise<Result<DownloadTeamClusterRemoteExplorerObjectOutputDTO, ApplicationError>> {
-        if (!isExplorerTarget(input.target)) {
-            return Result.fail(ApplicationError.badRequest(
-                'TeamCluster::RemoteExplorerUnsupportedTarget',
-                'The selected remote target does not support explorer navigation'
-            ));
-        }
-
-        const teamCluster = await this.teamClusterRepository.findById(input.teamClusterId);
-        if (!teamCluster || teamCluster.props.team !== input.teamId) {
-            return Result.fail(ApplicationError.notFound(
-                'TeamCluster::NotFound',
-                'Team cluster not found'
-            ));
-        }
-
-        const sessionResult = this.sessionService.validateSession({
-            sessionId: input.sessionId,
-            userId: input.userId,
-            teamId: input.teamId,
-            teamClusterId: input.teamClusterId,
-            target: input.target
-        });
-        if (sessionResult instanceof Error) {
-            return Result.fail(sessionResult);
+        const preflight = await preflightRemoteExplorerAccess(
+            this.teamClusterRepository,
+            this.sessionService,
+            input
+        );
+        if (preflight instanceof ApplicationError) {
+            return Result.fail(preflight);
         }
 
         try {
-            const response = await this.teamClusterDaemonClient.commandResponseStream(
-                input.teamClusterId,
-                'remote.explorer.download',
-                {
-                    target: input.target,
-                    path: input.path
-                }
-            );
+            const response = await this.remoteExplorerDaemonGateway.downloadObject({
+                teamClusterId: preflight.teamClusterId,
+                target: preflight.target,
+                path: input.path
+            });
 
             const contentType = response.headers['content-type'] || 'application/octet-stream';
             const contentLengthHeader = response.headers['content-length'];
@@ -103,7 +98,8 @@ export default class DownloadTeamClusterRemoteExplorerObjectUseCase implements I
                 ? Number(contentLengthHeader)
                 : undefined;
 
-            const filename = deriveFallbackFilename(input.target, input.path);
+            const filename = readFilenameFromContentDisposition(response.headers['content-disposition'])
+                || deriveFallbackFilename(preflight.target, input.path);
 
             return Result.ok(createDownloadStreamResponse({
                 stream: response.stream,
@@ -115,6 +111,10 @@ export default class DownloadTeamClusterRemoteExplorerObjectUseCase implements I
                 disposition: 'attachment'
             }));
         } catch (error: unknown) {
+            if (error instanceof ApplicationError) {
+                return Result.fail(error);
+            }
+
             if (error instanceof TeamClusterDaemonStreamError && error.status === 404) {
                 return Result.fail(ApplicationError.notFound(
                     'TeamCluster::RemoteExplorerObjectNotFound',

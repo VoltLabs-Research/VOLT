@@ -1,13 +1,29 @@
 import { Theme } from '@/shared/presentation/hooks/use-theme';
 import { getActiveAppTheme } from '@/shared/presentation/utilities/app-theme';
 import { loader } from '@monaco-editor/react';
-import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
-import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
-import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
-import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
-import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 
 import type * as Monaco from 'monaco-editor';
+
+type MonacoWorkerFactory = new () => Worker;
+
+interface MonacoWorkerModule {
+    default: MonacoWorkerFactory;
+};
+
+const hasWorkerFactoryDefault = (value: unknown): value is MonacoWorkerModule => {
+    return typeof value === 'object'
+        && value !== null
+        && 'default' in value
+        && typeof value.default === 'function';
+};
+
+const readWorkerFactory = (value: unknown, workerName: string): MonacoWorkerFactory => {
+    if (!hasWorkerFactoryDefault(value)) {
+        throw new Error(`Failed to load Monaco worker module: ${workerName}`);
+    }
+
+    return value.default;
+};
 
 interface MonacoThemeTokens {
     background: string;
@@ -141,7 +157,27 @@ export const ensureMonaco = (): Promise<typeof Monaco> => {
         return monacoSetupPromise;
     }
 
-    monacoSetupPromise = import('monaco-editor').then((monaco: typeof Monaco) => {
+    monacoSetupPromise = Promise.all([
+        import('monaco-editor'),
+        import('monaco-editor/esm/vs/editor/editor.worker?worker'),
+        import('monaco-editor/esm/vs/language/css/css.worker?worker'),
+        import('monaco-editor/esm/vs/language/html/html.worker?worker'),
+        import('monaco-editor/esm/vs/language/json/json.worker?worker'),
+        import('monaco-editor/esm/vs/language/typescript/ts.worker?worker')
+    ]).then(([
+        monaco,
+        editorWorkerModule,
+        cssWorkerModule,
+        htmlWorkerModule,
+        jsonWorkerModule,
+        tsWorkerModule
+    ]) => {
+        const editorWorker = readWorkerFactory(editorWorkerModule, 'editor');
+        const cssWorker = readWorkerFactory(cssWorkerModule, 'css');
+        const htmlWorker = readWorkerFactory(htmlWorkerModule, 'html');
+        const jsonWorker = readWorkerFactory(jsonWorkerModule, 'json');
+        const tsWorker = readWorkerFactory(tsWorkerModule, 'typescript');
+
         self.MonacoEnvironment = {
             getWorker(_, label) {
                 if (label === 'json') {
@@ -168,6 +204,9 @@ export const ensureMonaco = (): Promise<typeof Monaco> => {
         registerMonacoThemes(monaco);
 
         return monaco;
+    }).catch((error) => {
+        monacoSetupPromise = null;
+        throw error;
     });
 
     return monacoSetupPromise;

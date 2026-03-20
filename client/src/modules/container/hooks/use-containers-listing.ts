@@ -19,13 +19,13 @@ import {
     isContainerItemRow,
     type ContainerListingRow
 } from '@/modules/container/utilities/listing';
+import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
 import useFolderedListing, { type FolderedListingContext } from '@/shared/presentation/hooks/use-foldered-listing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import usePermission from '@/shared/presentation/hooks/use-permission';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { createCrudToastOptions } from '@/shared/presentation/toast-options';
@@ -108,8 +108,9 @@ const getDeleteConfirmationMessage = (selectedItems: ContainerEntity[]): string 
 const useContainersListing = () => {
     const navigate = useNavigate();
     const teamId = useSelectedTeamId();
-    const canCreate = usePermission(['container:create']);
-    const canMoveContainers = usePermission(['container:update']);
+    const { canAccess } = useTeamPermissions();
+    const canCreate = canAccess(['container:create']);
+    const canMoveContainers = canAccess(['container:update']);
     const updateContainerMutation = containerQuery.useUpdateMutation();
     const deleteContainerMutation = containerQuery.useDeleteMutation();
     const { mutateAsync: createFolder } = useCreateContainerFolderMutation();

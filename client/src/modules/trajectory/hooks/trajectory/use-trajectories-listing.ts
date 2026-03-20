@@ -11,6 +11,7 @@ import {
     type TrajectoryListingRow
 } from '@/modules/trajectory/utilities/listing';
 import { buildAtomsViewerPath } from '@/modules/trajectory/utilities/build-atoms-viewer-path';
+import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import { runAction } from '@/shared/presentation/actions/run-action';
@@ -18,9 +19,7 @@ import { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
 import useFolderedListing, { type FolderedListingContext } from '@/shared/presentation/hooks/use-foldered-listing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
-import useConfirm from '@/shared/presentation/hooks/use-confirm';
-import usePermission from '@/shared/presentation/hooks/use-permission';
+import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import type { MenuOption } from '@/shared/presentation/types/menu';
@@ -111,10 +110,10 @@ const buildDeleteTrajectoryMenuOption = (
 const useTrajectoriesListing = () => {
     const navigate = useNavigate();
     const teamId = useSelectedTeamId();
-    const canCreate = usePermission(['trajectory:create']);
-    const canDeleteTrajectories = usePermission(['trajectory:delete']);
-    const canMoveTrajectories = usePermission(['trajectory:update']);
-    const { confirm } = useConfirm();
+    const { canAccess } = useTeamPermissions();
+    const canCreate = canAccess(['trajectory:create']);
+    const canDeleteTrajectories = canAccess(['trajectory:delete']);
+    const canMoveTrajectories = canAccess(['trajectory:update']);
     const deleteTrajectoryMutation = trajectoryQuery.useDeleteMutation();
     const { mutateAsync: createFolder } = useCreateTrajectoryFolderMutation();
     const { mutateAsync: updateFolder } = useUpdateTrajectoryFolderMutation();

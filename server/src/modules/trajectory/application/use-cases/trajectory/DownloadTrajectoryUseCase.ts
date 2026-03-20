@@ -1,6 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { Result } from '@shared/domain/port/Result';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -46,7 +47,7 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
             }
 
             const objectName = this.dumpStorage.getObjectName(trajectoryId, String(firstFrame.timestep));
-            const stream = await this.teamClusterDaemonClient.commandStream(trajectory.props.teamCluster, 'object.get', {
+            const stream = await this.teamClusterDaemonClient.commandStream(trajectory.props.teamCluster, TEAM_CLUSTER_DAEMON_COMMAND.object.get, {
                 bucket: 'volt-dumps',
                 objectKey: objectName
             });

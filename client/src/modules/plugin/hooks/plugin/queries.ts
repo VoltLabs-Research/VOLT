@@ -13,7 +13,7 @@ import {
     patchInfinitePages,
     batchInvalidateQueries
 } from '@/shared/infrastructure/query/cache-utils';
-import { createManagedMutation, createMutation, buildKeys } from '@/shared/infrastructure/query';
+import { createMutation, buildKeys } from '@/shared/infrastructure/query';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import pluginService from '../../api/services/plugin';
 import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
@@ -241,7 +241,7 @@ export const invalidatePluginEntityQueries = async (): Promise<void> => {
 const managePluginEntityMutation = <TVariables, TData = Plugin>(
     mutationFn: (variables: TVariables) => Promise<TData>,
     applySuccess: (data: TData, variables: TVariables) => void
-) => createManagedMutation<TData, TVariables>(mutationFn, async (data, variables) => {
+) => createMutation<TData, TVariables>(mutationFn, async (data, variables) => {
     applySuccess(data, variables);
     await invalidatePluginEntityQueries();
 });

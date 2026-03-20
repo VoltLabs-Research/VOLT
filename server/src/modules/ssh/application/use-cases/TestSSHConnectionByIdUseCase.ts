@@ -2,20 +2,21 @@ import { Result } from '@shared/domain/port/Result';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
 import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
-import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
 import { TestSSHConnectionByIdInputDTO, TestSSHConnectionByIdOutputDTO } from '@modules/ssh/application/dtos/TestSSHConnectionByIdDTO';
+import { SSHConnectionOwnershipService } from '@modules/ssh/application/services/SSHConnectionOwnershipService';
 import { ISSHConnectionService } from '@modules/ssh/domain/port/ISSHConnectionService';
-import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { resolveSSHServiceError } from '@modules/ssh/application/utils/ssh-error-utils';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 @injectable()
 export class TestSSHConnectionByIdUseCase implements IUseCase<TestSSHConnectionByIdInputDTO, TestSSHConnectionByIdOutputDTO, ApplicationError> {
     constructor(
-        @inject(SSH_TOKENS.SSHConnectionRepository)
-        private sshConnRepository: ISSHConnectionRepository,
+        @inject(SSHConnectionOwnershipService)
+        private readonly sshConnectionOwnershipService: SSHConnectionOwnershipService,
+
         @inject(SSH_TOKENS.SSHConnectionService)
-        private sshConnService: ISSHConnectionService
+        private readonly sshConnService: ISSHConnectionService
     ){}
 
     async execute(input: TestSSHConnectionByIdInputDTO): Promise<Result<TestSSHConnectionByIdOutputDTO, ApplicationError>> {
@@ -23,17 +24,14 @@ export class TestSSHConnectionByIdUseCase implements IUseCase<TestSSHConnectionB
             sshConnectionId,
             teamId
         } = input;
-        const sshConnection = await this.sshConnRepository.findByIdWithCredentials(sshConnectionId);
+        const sshConnectionResult = await this.sshConnectionOwnershipService.getOwnedByTeamWithCredentials(sshConnectionId, teamId);
 
-        if (!sshConnection || sshConnection.props.team !== teamId) {
-            return Result.fail(ApplicationError.notFound(
-                ErrorCodes.SSH_CONNECTION_NOT_FOUND,
-                'SSH connection not found'
-            ));
+        if (!sshConnectionResult.success) {
+            return Result.fail(sshConnectionResult.error);
         }
 
         try {
-            await this.sshConnService.testConnection(sshConnection);
+            await this.sshConnService.testConnection(sshConnectionResult.value);
             return Result.ok({ valid: true });
         } catch (error: unknown) {
             return Result.fail(resolveSSHServiceError(

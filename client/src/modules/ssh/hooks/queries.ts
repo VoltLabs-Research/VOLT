@@ -1,7 +1,6 @@
 import {
     batchInvalidateQueries,
     buildKeys,
-    createManagedMutation,
     createMutation,
     createQuery
 } from '@/shared/infrastructure/query';
@@ -36,17 +35,17 @@ export const invalidateSSHConnectionQueries = () => {
     ]);
 };
 
-export const useCreateSSHConnectionMutation = createManagedMutation<SSHConnection, CreateSSHConnectionParams>(
+export const useCreateSSHConnectionMutation = createMutation<SSHConnection, CreateSSHConnectionParams>(
     service.createConnection,
     () => invalidateSSHConnectionQueries()
 );
 
-export const useUpdateSSHConnectionMutation = createManagedMutation<SSHConnection, UpdateSSHConnectionInputDTO>(
+export const useUpdateSSHConnectionMutation = createMutation<SSHConnection, UpdateSSHConnectionInputDTO>(
     service.updateConnection,
     () => invalidateSSHConnectionQueries()
 );
 
-export const useDeleteSSHConnectionMutation = createManagedMutation<void, DeleteSSHConnectionInputDTO>(
+export const useDeleteSSHConnectionMutation = createMutation<void, DeleteSSHConnectionInputDTO>(
     service.deleteConnection,
     () => invalidateSSHConnectionQueries()
 );

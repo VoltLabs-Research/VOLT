@@ -1,6 +1,6 @@
-export interface DeleteWhiteboardFolderInputDTO {
-    teamId: string;
-    folderId: string;
+import type { DeleteCatalogFolderInputDTO } from '@shared/application/catalog/catalog-folder-dto';
+
+export interface DeleteWhiteboardFolderInputDTO extends DeleteCatalogFolderInputDTO {
     userId: string;
 };
 

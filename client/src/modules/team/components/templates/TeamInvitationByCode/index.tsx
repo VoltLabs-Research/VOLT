@@ -8,7 +8,7 @@ import {
 import { refreshSocketSession } from '@/modules/socket/core/services/socket-auth-session';
 import { useJoinByCodeMutation, usePreviewJoinByCodeQuery } from '@/modules/team/hooks/team/queries';
 import { switchSelectedTeam } from '@/modules/team/stores/team/use-team-store';
-import { normalizeError } from '@/shared/errors/core';
+import { ErrorSurface, reportError } from '@/shared/errors/core';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
@@ -73,7 +73,10 @@ const TeamInvitationByCodeTemplate = () => {
 
             navigate(getOnboardingRedirectPath(nextDestination), { replace: true });
         } catch (error: unknown) {
-            const friendlyMessage = normalizeError(error).friendlyMessage;
+            const friendlyMessage = reportError(error, {
+                surface: ErrorSurface.Silent,
+                fallbackTitle: 'This invite link is invalid or has expired.'
+            }).title;
 
             if (isAlreadyMemberError(friendlyMessage)) {
                 setJoinErrorMessage('You are already a member of this team. You can continue to your dashboard.');
@@ -93,7 +96,10 @@ const TeamInvitationByCodeTemplate = () => {
             return null;
         }
 
-        return normalizeError(previewQuery.error).friendlyMessage || 'This invite link is invalid or has expired.';
+        return reportError(previewQuery.error, {
+            surface: ErrorSurface.Silent,
+            fallbackTitle: 'This invite link is invalid or has expired.'
+        }).title;
     }, [normalizedCode, previewQuery.error]);
 
     let status = TeamInvitationByCodeStatus.Ready;

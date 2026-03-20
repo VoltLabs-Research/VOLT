@@ -1,11 +1,13 @@
 import { Resource } from '@core/constants/resources';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
 import { buildJupyterProxyUrl, persistJupyterProxyAccessCookieFromUrl } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
 import { ErrorCodes } from '@core/constants/error-codes';
 import scriptingControllers from '@modules/scripting/infrastructure/http/controllers';
 import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
+import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
@@ -213,7 +215,7 @@ const handleDeleteScriptingSession = async (
             try {
                 await teamClusterDaemonClient.command(
                     teamClusterId,
-                    'notebook.delete',
+                    TEAM_CLUSTER_DAEMON_COMMAND.notebook.delete,
                     { notebookId: runtimeNotebookId }
                 );
             } catch {
@@ -238,6 +240,7 @@ const handleDeleteScriptingSession = async (
 export default createHttpModule({
     basePath: '/api/scripting/:teamId',
     resource: Resource.SCRIPTING,
+    teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
         router.get('/notebooks', scriptingControllers.listNotebooks.handle);
         router.post('/notebooks', scriptingControllers.createNotebook.handle);

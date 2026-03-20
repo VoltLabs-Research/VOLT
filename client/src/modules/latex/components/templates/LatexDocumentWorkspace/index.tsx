@@ -1,5 +1,5 @@
 import useLatexWorkspace from '@/modules/latex/hooks/use-latex-workspace';
-import { DASHBOARD_LAYOUT_EVENTS } from '@/modules/dashboard/utilities/layout-events';
+import useDashboardWorkspaceChrome from '@/modules/dashboard/hooks/use-dashboard-workspace-chrome';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import Avatar from '@/shared/presentation/components/Avatar';
 import Button from '@/shared/presentation/components/Button';
@@ -43,6 +43,11 @@ interface KeyboardResizeConfig {
     key: string;
 };
 
+interface LoadingPlaceholderBlock {
+    key: string;
+    width: string;
+};
+
 const STORAGE_KEY = 'volt:latex-panel-widths';
 const FILES_MIN = 160;
 const FILES_MAX = 400;
@@ -51,6 +56,23 @@ const PREVIEW_MAX = 600;
 const AI_MIN = 100;
 const AI_MAX = 600;
 const DEFAULT_WIDTHS: PanelWidths = { files: 220, preview: PREVIEW_MAX, ai: 300 };
+const LOADING_FILE_PANEL_BLOCKS: LoadingPlaceholderBlock[] = [
+    { key: 'file-1', width: '72%' },
+    { key: 'file-2', width: '88%' },
+    { key: 'file-3', width: '64%' },
+    { key: 'file-4', width: '81%' }
+];
+const LOADING_EDITOR_BLOCKS: LoadingPlaceholderBlock[] = [
+    { key: 'editor-1', width: '94%' },
+    { key: 'editor-2', width: '86%' },
+    { key: 'editor-3', width: '91%' },
+    { key: 'editor-4', width: '67%' }
+];
+const LOADING_PREVIEW_BLOCKS: LoadingPlaceholderBlock[] = [
+    { key: 'preview-1', width: '100%' },
+    { key: 'preview-2', width: '100%' },
+    { key: 'preview-3', width: '82%' }
+];
 const LATEX_TEMPLATE_CONTENT = `\\documentclass{article}
 
 \\begin{document}
@@ -145,17 +167,7 @@ const LatexDocumentWorkspace = () => {
     } = useLatexWorkspace({ documentId });
 
     usePageTitle(latexDocument?.title ?? 'LaTeX Workspace');
-
-    /** Collapse the dashboard sidebar while the editor is mounted. */
-    useEffect(() => {
-        window.dispatchEvent(new CustomEvent(DASHBOARD_LAYOUT_EVENTS.requestSidebarCollapse));
-        window.dispatchEvent(new CustomEvent(DASHBOARD_LAYOUT_EVENTS.requestHeaderHide));
-
-        return () => {
-            window.dispatchEvent(new CustomEvent(DASHBOARD_LAYOUT_EVENTS.requestSidebarExpand));
-            window.dispatchEvent(new CustomEvent(DASHBOARD_LAYOUT_EVENTS.requestHeaderShow));
-        };
-    }, []);
+    useDashboardWorkspaceChrome({ collapseSidebar: true, hideHeader: true });
 
     /** Pointer Capture drag — files panel handle. */
     const handleFilesPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>): void => {
@@ -255,7 +267,7 @@ const LatexDocumentWorkspace = () => {
         } finally {
             setIsCreatingTemplate(false);
         }
-    }, [handleCreateFile, latexDocument?.title]);
+    }, [handleCreateFile]);
 
     const handleUploadProject = useCallback((): void => {
         folderInputRef.current?.click();
@@ -351,9 +363,113 @@ const LatexDocumentWorkspace = () => {
 
     if (isLoading) {
         return (
-            <Container className='d-flex column flex-center items-center gap-1 h-max'>
-                <Loader scale={0.6} isFixed={false} />
-                <Paragraph className='color-muted'>Loading document...</Paragraph>
+            <Container className='latex-workspace d-flex column'>
+                <Container className='latex-workspace__toolbar d-flex items-center content-between gap-1'>
+                    <Container className='d-flex column gap-025'>
+                        <Paragraph>Opening LaTeX workspace</Paragraph>
+                        <Paragraph className='color-muted'>Loading files, preview, and collaboration state.</Paragraph>
+                    </Container>
+                    <Container className='d-flex items-center gap-075'>
+                        <span className='latex-workspace__status-text color-muted' aria-live='polite'>Preparing panels</span>
+                        <Button variant='ghost' intent='neutral' size='sm' shape='rounded' disabled>
+                            <IoSparklesOutline size={14} />
+                            Write with AI
+                        </Button>
+                        <Button variant='ghost' intent='neutral' size='sm' shape='rounded' disabled>
+                            <Play size={14} />
+                            Compile
+                        </Button>
+                    </Container>
+                </Container>
+
+                <Container className='latex-workspace__layout d-flex flex-1 min-h-0'>
+                    <Container
+                        className='d-flex column gap-1 min-h-0'
+                        style={{
+                            width: panelWidths.files,
+                            padding: '1rem',
+                            borderRight: '1px solid var(--color-border-primary, rgba(127, 127, 127, 0.2))'
+                        }}
+                    >
+                        <Paragraph className='color-muted'>Project files</Paragraph>
+                        {LOADING_FILE_PANEL_BLOCKS.map((block) => <div
+                            key={block.key}
+                            style={{
+                                width: block.width,
+                                height: '0.875rem',
+                                borderRadius: '999px',
+                                background: 'var(--color-surface-tertiary, rgba(127, 127, 127, 0.18))'
+                            }}
+                        />)}
+                    </Container>
+
+                    <Container className='latex-workspace__main-content d-flex column flex-1 min-w-0'>
+                        <Container className='d-flex column flex-center gap-1 flex-1 min-h-0' style={{ padding: '1.5rem' }}>
+                            <Loader scale={0.6} isFixed={false} />
+                            <Paragraph>Restoring editor session...</Paragraph>
+                            <Paragraph className='color-muted'>Your document tabs and preview will appear as soon as the workspace is ready.</Paragraph>
+                            <Container className='d-flex column gap-075 w-max' style={{ maxWidth: '42rem' }}>
+                                {LOADING_EDITOR_BLOCKS.map((block) => <div
+                                    key={block.key}
+                                    style={{
+                                        width: block.width,
+                                        height: '0.9rem',
+                                        borderRadius: '999px',
+                                        background: 'var(--color-surface-tertiary, rgba(127, 127, 127, 0.18))'
+                                    }}
+                                />)}
+                            </Container>
+                        </Container>
+
+                        <Container
+                            id='latex-ai-panel'
+                            className='latex-ai-panel d-flex column gap-075'
+                            style={{
+                                height: panelWidths.ai,
+                                padding: '1rem',
+                                borderTop: '1px solid var(--color-border-primary, rgba(127, 127, 127, 0.2))'
+                            }}
+                        >
+                            <Paragraph className='color-muted'>AI assistant</Paragraph>
+                            <div
+                                style={{
+                                    width: '42%',
+                                    height: '0.875rem',
+                                    borderRadius: '999px',
+                                    background: 'var(--color-surface-tertiary, rgba(127, 127, 127, 0.18))'
+                                }}
+                            />
+                            <div
+                                style={{
+                                    width: '75%',
+                                    height: '0.875rem',
+                                    borderRadius: '999px',
+                                    background: 'var(--color-surface-tertiary, rgba(127, 127, 127, 0.18))'
+                                }}
+                            />
+                        </Container>
+                    </Container>
+
+                    <Container
+                        className='d-flex column gap-1 min-h-0'
+                        style={{
+                            width: panelWidths.preview,
+                            padding: '1rem',
+                            borderLeft: '1px solid var(--color-border-primary, rgba(127, 127, 127, 0.2))'
+                        }}
+                    >
+                        <Paragraph className='color-muted'>PDF preview</Paragraph>
+                        {LOADING_PREVIEW_BLOCKS.map((block) => <div
+                            key={block.key}
+                            style={{
+                                width: block.width,
+                                height: block.key === 'preview-1' ? '9rem' : '1rem',
+                                borderRadius: '0.75rem',
+                                background: 'var(--color-surface-tertiary, rgba(127, 127, 127, 0.18))'
+                            }}
+                        />)}
+                    </Container>
+                </Container>
             </Container>
         );
     }

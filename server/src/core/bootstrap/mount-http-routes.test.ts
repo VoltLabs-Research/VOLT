@@ -3,10 +3,13 @@ import 'reflect-metadata';
 import { Resource } from '@core/constants/resources';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import User from '@modules/auth/domain/entities/User';
+import Session, { SessionActivityType } from '@modules/session/domain/entities/Session';
+import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import TeamMember from '@modules/team/domain/entities/team-member/TeamMember';
 import Trajectory, { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import Module from 'node:module';
@@ -14,6 +17,7 @@ import express, { Router } from 'express';
 import { container } from 'tsyringe';
 
 import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
+import type { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
 import type { ITokenService, TokenPayload } from '@modules/auth/domain/port/ITokenService';
 import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
@@ -223,9 +227,51 @@ const createUserRepository = (): IUserRepository => {
     };
 };
 
+const createSessionRepository = (): ISessionRepository => {
+    const activeSession = new Session('507f1f77bcf86cd799439029', {
+        action: SessionActivityType.Login,
+        createdAt: new Date(),
+        ip: '127.0.0.1',
+        isActive: true,
+        lastActivity: new Date(),
+        success: true,
+        token: 'valid-user-token',
+        updatedAt: new Date(),
+        user: USER_ID,
+        userAgent: 'test'
+    });
+
+    return {
+        findById: async () => activeSession,
+        findOne: async () => null,
+        findAll: async () => ({ data: [], total: 0, page: 1, totalPages: 0, limit: 10 }),
+        export: async () => [],
+        create: async () => activeSession,
+        updateById: async () => activeSession,
+        updateMany: async () => 0,
+        insertMany: async () => {},
+        deleteById: async () => false,
+        deleteMany: async () => 0,
+        count: async () => 0,
+        countGroupedBy: async () => new Map(),
+        exists: async () => false,
+        findByToken: async (token: string) => {
+            return token === 'valid-user-token' ? activeSession : null;
+        },
+        findActiveByUserId: async () => [activeSession],
+        findLoginActivity: async () => [activeSession],
+        deactivateByToken: async () => {},
+        deactivateAllExcept: async () => 0,
+        deactivateAll: async () => 0,
+        createFailedLogin: async () => activeSession,
+        updateActivity: async () => {}
+    };
+};
+
 const registerRouteDependencies = (options: RouteDependencyOptions): void => {
     container.clearInstances();
     container.registerInstance(TRAJECTORY_TOKENS.TrajectoryRepository, createTrajectoryRepository(options.trajectoryVisibility));
+    container.registerInstance(SESSION_TOKENS.SessionRepository, createSessionRepository());
     container.registerInstance(TEAM_TOKENS.TeamMemberRepository, createTeamMemberRepository(options.hasMembership, options.permissions));
     container.registerInstance(AUTH_TOKENS.TokenService, createTokenService(options.tokenPayload));
     container.registerInstance(AUTH_TOKENS.UserRepository, createUserRepository());
@@ -245,8 +291,10 @@ const createTeamMemberHttpModule = () => {
 
     return {
         basePath: '/api/teams/:teamId/members',
+        protected: true,
         resource: Resource.TEAM_MEMBER,
-        router
+        router,
+        teamScope: HttpModuleTeamScope.BasePath
     };
 };
 

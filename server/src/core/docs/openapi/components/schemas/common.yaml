@@ -97,21 +97,17 @@ Folder:
   type: object
   required:
   - _id
-  - name
-  - teamId
+  - title
   - createdAt
   - updatedAt
   properties:
     _id:
       type: string
       description: Unique identifier of the folder
-    name:
+    title:
       type: string
-      description: Display name of the folder
-    teamId:
-      type: string
-      description: ID of the team that owns this folder
-    parentId:
+      description: Display title of the folder
+    parent:
       type:
       - string
       - 'null'

@@ -120,13 +120,6 @@ export const confirmDelete = (itemName: string, customMessage?: string): Promise
     return confirmAction(getConfirmDeleteOptions(itemName, customMessage));
 };
 
-const useConfirm = () => {
-    return {
-        confirm,
-        confirmDelete
-    };
-};
-
 export const useConfirmActionState = (): boolean => {
     return useSyncExternalStore(
         subscribeToConfirmActionOpenState,
@@ -134,5 +127,3 @@ export const useConfirmActionState = (): boolean => {
         getConfirmActionOpenState
     );
 };
-
-export default useConfirm;

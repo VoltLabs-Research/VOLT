@@ -1,3 +1,4 @@
+import { resolveConfiguredRouteTitle } from '@/app/routes/metadata';
 import Container from '@/shared/presentation/components/Container';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
@@ -23,36 +24,18 @@ interface ContainerDetailsRouteParams extends Record<string, string | undefined>
     id: string;
 };
 
-interface ContainerSectionTitleMap {
-    [key: string]: string;
-};
-
-const CONTAINER_SECTION_TITLES: ContainerSectionTitleMap = {
-    overview: 'Overview',
-    processes: 'Processes',
-    terminal: 'Terminal',
-    storage: 'Storage',
-    'remote-desktop': 'Remote Desktop'
-};
-
-const resolveContainerSectionTitle = (pathname: string, containerId?: string): string => {
-    if (!containerId) {
+const resolveContainerSectionTitle = (pathname: string): string => {
+    if (/^\/dashboard\/containers\/[^/]+\/?$/u.test(pathname)) {
         return 'Details';
     }
 
-    const containerDetailsPath = `/dashboard/containers/${containerId}`;
-    if (pathname === containerDetailsPath || pathname === `${containerDetailsPath}/`) {
+    const routeTitle = resolveConfiguredRouteTitle(pathname);
+
+    if (!routeTitle || routeTitle === 'Container Details') {
         return 'Details';
     }
 
-    if (!pathname.startsWith(`${containerDetailsPath}/`)) {
-        return 'Details';
-    }
-
-    const nestedPath = pathname.slice(containerDetailsPath.length + 1);
-    const sectionKey = nestedPath.split('/')[0];
-
-    return CONTAINER_SECTION_TITLES[sectionKey] ?? 'Details';
+    return routeTitle.replace(/^Container\s+/u, '');
 };
 
 const ContainerDetailsLayout = () => {
@@ -79,7 +62,7 @@ const ContainerDetailsLayout = () => {
         enabled: !!id
     });
 
-    const fallbackSectionTitle = resolveContainerSectionTitle(pathname, id);
+    const fallbackSectionTitle = resolveContainerSectionTitle(pathname);
     const fallbackTitle = fallbackSectionTitle === 'Details'
         ? 'Container Details'
         : `Container ${fallbackSectionTitle}`;

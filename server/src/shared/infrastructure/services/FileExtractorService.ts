@@ -31,6 +31,17 @@ const isJunkEntry = (entryPath: string): boolean => {
     );
 };
 
+const resolvePathWithinBase = (baseDir: string, targetPath: string): string | null => {
+    const resolvedBase = path.resolve(baseDir);
+    const resolvedTarget = path.resolve(baseDir, targetPath);
+
+    if (!resolvedTarget.startsWith(resolvedBase + path.sep) && resolvedTarget !== resolvedBase) {
+        return null;
+    }
+
+    return resolvedTarget;
+};
+
 @injectable()
 export default class FileExtractorService implements IFileExtractorService {
     /**
@@ -77,7 +88,18 @@ export default class FileExtractorService implements IFileExtractorService {
                 }
             } else {
                 if (!file.path && file.buffer) {
-                    const tempPath = path.join(workingDir, file.originalname || `upload_${Date.now()}`);
+                    const targetName = file.originalname || `upload_${Date.now()}`;
+                    const tempPath = resolvePathWithinBase(workingDir, targetName);
+
+                    if (!tempPath) {
+                        logger.warn(
+                            { originalname: file.originalname },
+                            '@file-extractor: skipping buffered file with path traversal'
+                        );
+                        continue;
+                    }
+
+                    await fs.mkdir(path.dirname(tempPath), { recursive: true });
                     await fs.writeFile(tempPath, file.buffer);
                     file.path = tempPath;
                 }
@@ -118,15 +140,22 @@ export default class FileExtractorService implements IFileExtractorService {
             '@file-extractor: opened ZIP via central directory'
         );
 
-        const resolvedBase = path.resolve(outputDir);
-
         // Pre-collect the unique parent directories so concurrent entries
         // don't race on mkdir for the same path.
         const dirsToCreate = new Set<string>();
         for (const entry of directory.files) {
             if (entry.type === 'Directory' || isJunkEntry(entry.path)) continue;
-            const outputPath = path.join(outputDir, entry.path);
-            dirsToCreate.add(path.dirname(path.resolve(outputPath)));
+            const resolvedOutput = resolvePathWithinBase(outputDir, entry.path);
+
+            if (!resolvedOutput) {
+                logger.warn(
+                    { entry: entry.path },
+                    '@file-extractor: skipping entry with path traversal'
+                );
+                continue;
+            }
+
+            dirsToCreate.add(path.dirname(resolvedOutput));
         }
         await Promise.all(
             [...dirsToCreate].map((dir) => fs.mkdir(dir, { recursive: true }))
@@ -137,11 +166,8 @@ export default class FileExtractorService implements IFileExtractorService {
                 if (entry.type === 'Directory') return null;
                 if (isJunkEntry(entry.path)) return null;
 
-                const outputPath = path.join(outputDir, entry.path);
-
-                // Guard against zip-slip (path traversal)
-                const resolvedOutput = path.resolve(outputPath);
-                if (!resolvedOutput.startsWith(resolvedBase + path.sep) && resolvedOutput !== resolvedBase) {
+                const resolvedOutput = resolvePathWithinBase(outputDir, entry.path);
+                if (!resolvedOutput) {
                     logger.warn(
                         { entry: entry.path },
                         '@file-extractor: skipping entry with path traversal'
@@ -149,13 +175,13 @@ export default class FileExtractorService implements IFileExtractorService {
                     return null;
                 }
 
-                await pipeline(entry.stream(), createWriteStream(outputPath));
+                await pipeline(entry.stream(), createWriteStream(resolvedOutput));
 
-                const stats = await fs.stat(outputPath);
+                const stats = await fs.stat(resolvedOutput);
                 if (stats.size === 0) return null;
 
                 return {
-                    path: outputPath,
+                    path: resolvedOutput,
                     originalname: path.basename(entry.path),
                     size: stats.size
                 };

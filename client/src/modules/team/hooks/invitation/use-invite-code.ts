@@ -1,5 +1,4 @@
 import { useGenerateInviteCodeMutation, useDeleteInviteCodeMutation, useTeamsQuery } from '@/modules/team/hooks/team/queries';
-import { ErrorSurface, executeTask } from '@/shared/errors/core';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { runAction } from '@/shared/presentation/actions/run-action';
@@ -56,20 +55,19 @@ export default function useInviteCode(): UseInviteCodeReturn {
 
     const handleGenerate = useCallback(async () => {
         if (!teamId) return;
-        await executeTask({
-            action: () => runAction({
+        try {
+            await runAction({
                 action: () => generateMutation.mutateAsync({ teamId }),
                 toast: GENERATE_INVITE_CODE_TOAST_OPTIONS
-            }),
-            surface: ErrorSurface.Silent,
-            rethrow: false
-        });
+            });
+        } catch {
+        }
     }, [generateMutation, teamId]);
 
     const handleDelete = useCallback(async () => {
         if (!teamId) return;
-        await executeTask({
-            action: () => runAction({
+        try {
+            await runAction({
                 action: () => deleteMutation.mutateAsync({ teamId }),
                 confirm: {
                     title: 'Delete this invite code?',
@@ -79,10 +77,9 @@ export default function useInviteCode(): UseInviteCodeReturn {
                     tone: ConfirmActionTone.Danger
                 },
                 toast: DELETE_INVITE_CODE_TOAST_OPTIONS
-            }),
-            surface: ErrorSurface.Silent,
-            rethrow: false
-        });
+            });
+        } catch {
+        }
     }, [deleteMutation, teamId]);
 
     const handleCopy = useCallback(async () => {

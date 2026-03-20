@@ -2,6 +2,7 @@ import {
     RegenerateTeamClusterEnrollmentTokenInputDTO,
     RegenerateTeamClusterEnrollmentTokenOutputDTO
 } from '@modules/team-cluster/application/dtos/RegenerateTeamClusterEnrollmentTokenDTO';
+import { requireOwnedTeamCluster } from '@modules/team-cluster/application/utilities/team-cluster-ownership';
 import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
@@ -15,7 +16,8 @@ import { inject, injectable } from 'tsyringe';
 const WAITING_STATUSES = new Set<TeamClusterStatus>([
     TeamClusterStatus.WaitingForConnection,
     TeamClusterStatus.HealthcheckReceived,
-    TeamClusterStatus.PreparingEnvironment
+    TeamClusterStatus.PreparingEnvironment,
+    TeamClusterStatus.Disconnected
 ]);
 
 @injectable()
@@ -30,18 +32,15 @@ export default class RegenerateTeamClusterEnrollmentTokenUseCase
     async execute(
         input: RegenerateTeamClusterEnrollmentTokenInputDTO
     ): Promise<Result<RegenerateTeamClusterEnrollmentTokenOutputDTO, ApplicationError>> {
-        const teamCluster = await this.teamClusterRepository.findById(input.teamClusterId);
-        if (!teamCluster || teamCluster.props.team !== input.teamId) {
-            return Result.fail(ApplicationError.notFound(
-                'TeamCluster::NotFound',
-                'Team cluster not found'
-            ));
+        const teamCluster = await requireOwnedTeamCluster(this.teamClusterRepository, input);
+        if (teamCluster instanceof ApplicationError) {
+            return Result.fail(teamCluster);
         }
 
         if (!WAITING_STATUSES.has(teamCluster.props.status)) {
             return Result.fail(ApplicationError.conflict(
                 'TeamCluster::InvalidStatusForTokenRegeneration',
-                'Enrollment token can only be regenerated for clusters in a waiting state'
+                'Enrollment token can only be regenerated for clusters in a waiting or disconnected state'
             ));
         }
 

@@ -1,21 +1,16 @@
+export { ApiError, ERROR_CODE_MESSAGES, getErrorMessage } from '@voltstack/voltclient';
+export { reportError } from '@/shared/errors/core/report-error';
 export {
     isAccessDeniedCode,
     isAccessDeniedError,
     isApiError,
     isHandledApiError,
     markApiErrorHandled
-} from '@/shared/errors/core/api-error-guards';
-export { normalizeError } from '@/shared/errors/core/normalize-error';
-export { mapErrorToUserMessage } from '@/shared/errors/core/map-error-to-user-message';
-export { reportError } from '@/shared/errors/core/report-error';
-export { executeTask } from '@/shared/errors/core/execute-task';
+} from '@/shared/errors/core/report-error';
 export {
-    ErrorKind,
     ErrorSurface
 } from '@/shared/errors/core/types';
 export type {
-    AppError,
     UserFacingError,
-    ReportErrorOptions,
-    ExecuteTaskOptions
+    ReportErrorOptions
 } from '@/shared/errors/core/types';

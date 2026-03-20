@@ -1,11 +1,11 @@
 import secretKeyService from '../../api/services/secret-key';
-import { createInvalidatingMutation, createQueryResource } from '@/shared/api/query-resources';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
-import type { SecretKey } from '../../api/entities/secret-key/secret-key';
-import type { TeamUsageMetrics, KeyUsageMetrics } from '../../api/entities/secret-key/secret-key-metrics';
+import { buildKeys, createMutation, createQuery, queryClient } from '@/shared/infrastructure/query';
 import type { CreateSecretKeyInputDTO, CreateSecretKeyResponse } from '../../api/dtos/secret-key/create-secret-key';
 import type { DeleteSecretKeyInputDTO } from '../../api/dtos/secret-key/delete-secret-key';
 import type { RevokeSecretKeyInputDTO } from '../../api/dtos/secret-key/revoke-secret-key';
+import type { SecretKey } from '../../api/entities/secret-key/secret-key';
+import type { KeyUsageMetrics, TeamUsageMetrics } from '../../api/entities/secret-key/secret-key-metrics';
+import type { PaginatedResponse } from '@/shared/domain/pagination';
 
 interface SecretKeysQueryParams {
     teamId: string;
@@ -36,70 +36,87 @@ interface SecretKeyTeamMetricsKeyParams {
     days?: number;
 };
 
-const secretKeysResource = createQueryResource<SecretKeysQueryParams, string, PaginatedResponse<SecretKey>>({
-    baseKey: 'secret-keys',
-    rootKey: 'secretKeys',
-    itemKey: 'secretKeysListing',
-    getKeyParam: ({ teamId }) => teamId,
-    query: secretKeyService.listByTeamId
-});
-
-const secretKeyUsageResource = createQueryResource<SecretKeyUsageQueryParams, SecretKeyUsageKeyParams, KeyUsageMetrics>({
-    baseKey: 'secret-key-usage',
-    rootKey: 'secretKeyUsage',
-    itemKey: 'secretKeyUsageByParams',
-    getKeyParam: ({ teamId, secretKeyId, days }) => ({ teamId, secretKeyId, days }),
-    query: secretKeyService.getKeyUsage
-});
-
-const secretKeyTeamMetricsResource = createQueryResource<
-    SecretKeyTeamMetricsQueryParams,
-    SecretKeyTeamMetricsKeyParams,
-    TeamUsageMetrics
->({
-    baseKey: 'secret-key-team-metrics',
-    rootKey: 'secretKeyTeamMetrics',
-    itemKey: 'secretKeyTeamMetricsByParams',
-    getKeyParam: ({ teamId, days }) => ({ teamId, days }),
-    query: secretKeyService.getTeamMetrics
-});
-
-export const SECRET_KEY_QUERY_KEYS = {
-    secretKeys: secretKeysResource.keys.root,
-    secretKeysListing: secretKeysResource.keys.item,
-    secretKeyUsage: secretKeyUsageResource.keys.root,
-    secretKeyTeamMetrics: secretKeyTeamMetricsResource.keys.root
+interface SecretKeyQueryKeyMap {
+    secretKeysListing: string;
 };
 
-const invalidateSecretKeysQuery = secretKeysResource.invalidate;
+interface SecretKeyUsageQueryKeyMap {
+    secretKeyUsageByParams: SecretKeyUsageKeyParams;
+};
 
-export const useSecretKeysQuery = secretKeysResource.query;
+interface SecretKeyTeamMetricsQueryKeyMap {
+    secretKeyTeamMetricsByParams: SecretKeyTeamMetricsKeyParams;
+};
 
-export const buildSecretKeysQueryOptions = secretKeysResource.query.buildOptions;
+const secretKeyKeys = buildKeys<SecretKeyQueryKeyMap>('secret-keys');
 
-export const fetchSecretKeys = secretKeysResource.query.fetch;
+const secretKeyUsageKeys = buildKeys<SecretKeyUsageQueryKeyMap>('secret-key-usage');
 
-export const useSecretKeyUsageQuery = secretKeyUsageResource.query;
+const secretKeyTeamMetricsKeys = buildKeys<SecretKeyTeamMetricsQueryKeyMap>('secret-key-team-metrics');
 
-export const useSecretKeyTeamMetricsQuery = secretKeyTeamMetricsResource.query;
+export const SECRET_KEY_QUERY_KEYS = {
+    secretKeysListing: secretKeyKeys.secretKeysListing,
+    secretKeyUsageByParams: secretKeyUsageKeys.secretKeyUsageByParams,
+    secretKeyTeamMetricsByParams: secretKeyTeamMetricsKeys.secretKeyTeamMetricsByParams
+};
 
-export const useCreateSecretKeyMutation = createInvalidatingMutation<CreateSecretKeyResponse, CreateSecretKeyInputDTO>({
-    mutationFn: secretKeyService.create,
-    onSuccess: (_data, variables) => {
-        void invalidateSecretKeysQuery(variables.teamId);
+const getSecretKeysQueryKey = (params: SecretKeysQueryParams) => {
+    return SECRET_KEY_QUERY_KEYS.secretKeysListing(params.teamId);
+};
+
+const getSecretKeyUsageQueryKey = (params: SecretKeyUsageQueryParams) => {
+    return SECRET_KEY_QUERY_KEYS.secretKeyUsageByParams({
+        teamId: params.teamId,
+        secretKeyId: params.secretKeyId,
+        days: params.days
+    });
+};
+
+const getSecretKeyTeamMetricsQueryKey = (params: SecretKeyTeamMetricsQueryParams) => {
+    return SECRET_KEY_QUERY_KEYS.secretKeyTeamMetricsByParams({
+        teamId: params.teamId,
+        days: params.days
+    });
+};
+
+const invalidateSecretKeysQuery = (teamId: string) => {
+    return queryClient.invalidateQueries({
+        queryKey: SECRET_KEY_QUERY_KEYS.secretKeysListing(teamId)
+    });
+};
+
+export const useSecretKeysQuery = createQuery<SecretKeysQueryParams, PaginatedResponse<SecretKey>>(
+    getSecretKeysQueryKey,
+    secretKeyService.listByTeamId
+);
+
+export const useSecretKeyUsageQuery = createQuery<SecretKeyUsageQueryParams, KeyUsageMetrics>(
+    getSecretKeyUsageQueryKey,
+    secretKeyService.getKeyUsage
+);
+
+export const useSecretKeyTeamMetricsQuery = createQuery<SecretKeyTeamMetricsQueryParams, TeamUsageMetrics>(
+    getSecretKeyTeamMetricsQueryKey,
+    secretKeyService.getTeamMetrics
+);
+
+export const useCreateSecretKeyMutation = createMutation<CreateSecretKeyResponse, CreateSecretKeyInputDTO>(
+    secretKeyService.create,
+    async (_data, variables) => {
+        await invalidateSecretKeysQuery(variables.teamId);
     }
-});
+);
 
-export const useDeleteSecretKeyMutation = createInvalidatingMutation<void, DeleteSecretKeyInputDTO>({
-    mutationFn: secretKeyService.deleteById,
-    onSuccess: (_data, variables) => {
-        void invalidateSecretKeysQuery(variables.teamId);
+export const useDeleteSecretKeyMutation = createMutation<void, DeleteSecretKeyInputDTO>(
+    secretKeyService.deleteById,
+    async (_data, variables) => {
+        await invalidateSecretKeysQuery(variables.teamId);
     }
-});
+);
 
-export const useRevokeSecretKeyMutation = createInvalidatingMutation<void, RevokeSecretKeyInputDTO>({
-    mutationFn: secretKeyService.revokeById,
-    onSuccess: (_data, variables) => {
-        void invalidateSecretKeysQuery(variables.teamId);
+export const useRevokeSecretKeyMutation = createMutation<void, RevokeSecretKeyInputDTO>(
+    secretKeyService.revokeById,
+    async (_data, variables) => {
+        await invalidateSecretKeysQuery(variables.teamId);
     }
-});
+);

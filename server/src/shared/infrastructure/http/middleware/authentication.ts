@@ -1,10 +1,18 @@
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import type { ITokenService } from '@modules/auth/domain/port/ITokenService';
+import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';
+import type { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
 import { isPopulatedSecretKeyRole } from '@modules/team/domain/entities/secret-key/SecretKey';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import type { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
 import type { ISecretKeyUsageLogRepository } from '@modules/team/domain/port/secret-key/ISecretKeyUsageLogRepository';
+import {
+    HttpRequestAuthType,
+    setHttpRequestContextAuth,
+    type HttpRequestAuthContext,
+    type HttpRequestContext
+} from '@shared/infrastructure/http/request-context';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
 import { ErrorCodes } from '@core/constants/error-codes';
@@ -27,6 +35,18 @@ export interface AuthenticatedRequest extends Request {
     secretKeyRoleId?: string;
     /** Cached permissions from checkTeamMembership (populated role) */
     teamPermissions?: string[];
+    requestContext?: HttpRequestContext;
+};
+
+const setRequestAuthContext = (
+    request: AuthenticatedRequest,
+    authContext: HttpRequestAuthContext
+): void => {
+    if (request.requestContext) {
+        request.requestContext.auth = authContext;
+    }
+
+    setHttpRequestContextAuth(authContext);
 };
 
 const isAuthenticatedRequest = (req: AuthenticatedRequest): boolean => {
@@ -75,6 +95,22 @@ const authenticateWithSecretKey = async (
 
     await secretKeyRepository.touchLastUsed(secretKey.id);
 
+    const authContext: HttpRequestAuthContext = {
+        authType: HttpRequestAuthType.SecretKey,
+        subjectId: secretKey.id,
+        durationMs: Date.now() - startTime,
+        cached: false
+    };
+
+    setRequestAuthContext(req, authContext);
+    logger.info({
+        traceId: req.requestContext?.traceId,
+        authType: AuthenticationType.SecretKey,
+        secretKeyId: secretKey.id,
+        teamId: req.secretKeyTeamId,
+        durationMs: authContext.durationMs
+    }, '@authentication');
+
     res.on('finish', () => {
         const usageLogRepository = container.resolve<ISecretKeyUsageLogRepository>(TEAM_TOKENS.SecretKeyUsageLogRepository);
         const userAgentHeader = req.headers['user-agent'];
@@ -100,6 +136,7 @@ const authenticateWithUserToken = async (
     res: Response,
     token: string
 ): Promise<boolean> => {
+    const startTime = Date.now();
     const tokenService = container.resolve<ITokenService>(AUTH_TOKENS.TokenService);
     const decoded = tokenService.verify(token);
     if (!decoded) {
@@ -108,6 +145,7 @@ const authenticateWithUserToken = async (
     }
 
     const userRepository = container.resolve<IUserRepository>(AUTH_TOKENS.UserRepository);
+    const sessionRepository = container.resolve<ISessionRepository>(SESSION_TOKENS.SessionRepository);
     const user = await userRepository.findById(decoded.id);
     if (!user) {
         BaseResponse.error(res, ErrorCodes.USER_NOT_FOUND, 401, ErrorCodes.USER_NOT_FOUND);
@@ -119,10 +157,31 @@ const authenticateWithUserToken = async (
         return false;
     }
 
+    const session = await sessionRepository.findByToken(token);
+    if (!session || !session.props.isActive) {
+        BaseResponse.error(res, ErrorCodes.AUTHENTICATION_UNAUTHORIZED, 401, ErrorCodes.AUTHENTICATION_UNAUTHORIZED);
+        return false;
+    }
+
     req.authType = AuthenticationType.User;
     req.user = user;
     req.userId = user.id;
     req.token = token;
+
+    const authContext: HttpRequestAuthContext = {
+        authType: HttpRequestAuthType.User,
+        subjectId: user.id,
+        durationMs: Date.now() - startTime,
+        cached: false
+    };
+
+    setRequestAuthContext(req, authContext);
+    logger.info({
+        traceId: req.requestContext?.traceId,
+        authType: AuthenticationType.User,
+        userId: user.id,
+        durationMs: authContext.durationMs
+    }, '@authentication');
 
     return true;
 };
@@ -145,19 +204,45 @@ export const protect = async (
     next: NextFunction
 ): Promise<void> => {
     if (isAuthenticatedRequest(req)) {
+        const authContext: HttpRequestAuthContext = {
+            authType: req.authType === AuthenticationType.SecretKey
+                ? HttpRequestAuthType.SecretKey
+                : HttpRequestAuthType.User,
+            subjectId: req.authType === AuthenticationType.SecretKey
+                ? req.secretKeyId || 'unknown'
+                : req.userId || 'unknown',
+            durationMs: 0,
+            cached: true
+        };
+
+        setRequestAuthContext(req, authContext);
+        logger.debug({
+            traceId: req.requestContext?.traceId,
+            authType: req.authType,
+            cached: true
+        }, '@authentication');
         next();
         return;
     }
 
+    const authenticationStartedAt = Date.now();
     const token = getBearerToken(req);
 
     if (!token) {
+        logger.warn({
+            traceId: req.requestContext?.traceId,
+            durationMs: Date.now() - authenticationStartedAt
+        }, '@authentication: missing bearer token');
         BaseResponse.error(res, ErrorCodes.AUTHENTICATION_REQUIRED, 401, ErrorCodes.AUTHENTICATION_REQUIRED);
         return;
     }
 
     const isAuthenticated = await authenticateFromToken(req, res, token);
     if (!isAuthenticated) {
+        logger.warn({
+            traceId: req.requestContext?.traceId,
+            durationMs: Date.now() - authenticationStartedAt
+        }, '@authentication: rejected');
         return;
     }
 
@@ -173,6 +258,18 @@ export const authenticateOptional = async (
     next: NextFunction
 ): Promise<void> => {
     if (isAuthenticatedRequest(req)) {
+        const authContext: HttpRequestAuthContext = {
+            authType: req.authType === AuthenticationType.SecretKey
+                ? HttpRequestAuthType.SecretKey
+                : HttpRequestAuthType.User,
+            subjectId: req.authType === AuthenticationType.SecretKey
+                ? req.secretKeyId || 'unknown'
+                : req.userId || 'unknown',
+            durationMs: 0,
+            cached: true
+        };
+
+        setRequestAuthContext(req, authContext);
         next();
         return;
     }

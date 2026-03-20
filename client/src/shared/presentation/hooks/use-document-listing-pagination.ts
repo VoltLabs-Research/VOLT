@@ -1,7 +1,7 @@
 import { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import { deduplicateById } from '@/shared/domain/utils/deduplicateById';
 import usePaginationParams from './use-pagination-params';
-import { ErrorSurface, isApiError, normalizeError, reportError } from '@/shared/errors/core';
+import { ErrorSurface, isApiError, reportError } from '@/shared/errors/core';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useCallback, useRef, useEffect, useMemo } from 'react';
@@ -121,7 +121,7 @@ export function useDocumentListingPagination<T extends { _id: string }, TContext
 
     const errorCode = useMemo<string | null>(() => {
         if (!queryError) return null;
-        return normalizeError(queryError).code;
+        return isApiError(queryError) ? queryError.code : null;
     }, [queryError]);
 
     const hasMore = hasNextPage ?? false;

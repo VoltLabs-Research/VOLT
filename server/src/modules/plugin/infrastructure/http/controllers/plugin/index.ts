@@ -12,7 +12,10 @@ import { UploadBinaryUseCase } from '@modules/plugin/application/use-cases/plugi
 import { ValidateWorkflowUseCase } from '@modules/plugin/application/use-cases/plugin/ValidateWorkflowUseCase';
 
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import { createController, createStreamController } from '@shared/infrastructure/http/controllers/createController';
+import {
+    createController,
+    createPreparedDownloadStreamController
+} from '@shared/infrastructure/http/controllers/createController';
 import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
@@ -32,12 +35,7 @@ const DeletePluginByIdController = createController(DeletePluginByIdUseCase, Htt
 const ExecutePluginController = createController(ExecutePluginUseCase, {
     extendParams: withAuthenticatedUserId
 });
-const ExportPluginController = createStreamController(ExportPluginUseCase, {
-    getHeaders: (resultValue) => resultValue.headers,
-    prepareOutput: async (resultValue) => {
-        await resultValue.prepare?.();
-    }
-});
+const ExportPluginController = createPreparedDownloadStreamController(ExportPluginUseCase);
 const GetPluginByIdController = createController(GetPluginByIdUseCase);
 const ImportPluginController = createController(ImportPluginUseCase, HttpStatus.Created);
 const ListPluginsController = createController(ListPluginsUseCase);

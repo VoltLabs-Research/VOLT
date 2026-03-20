@@ -1,17 +1,19 @@
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
+import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import IORedis from 'ioredis';
-import { inject, injectable } from 'tsyringe';
-import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
+import { inject, injectable } from 'tsyringe';
+import IORedis from 'ioredis';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const SAFE_FALLBACK_GROUP_TIMESTAMP = '1970-01-01T00:00:00.000Z';
+const TEAM_JOBS_INITIAL_CACHE_TTL_MS = 2_000;
 
 type TeamJobStatus = JobStatus | 'retrying' | 'partial';
 type TeamJobSource = 'daemon' | 'projected' | 'merged';
@@ -78,8 +80,16 @@ interface DaemonTeamJobsResponse {
     data: TeamJobSummary[];
 };
 
+interface TeamJobsInitialCacheEntry {
+    expiresAt: number;
+    groupedJobsPromise?: Promise<TrajectoryJobGroup[]>;
+    groupedJobsValue?: TrajectoryJobGroup[];
+};
+
 @injectable()
 export default class TeamJobsService {
+    private readonly teamJobsInitialCache = new Map<string, TeamJobsInitialCacheEntry>();
+
     constructor(
         @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
         private readonly teamClusterRepository: ITeamClusterRepository,
@@ -96,6 +106,53 @@ export default class TeamJobsService {
 
     async getTeamJobs(teamId: string): Promise<TrajectoryJobGroup[]> {
         return this.groupJobsByTrajectory(await this.getFlatTeamJobs(teamId));
+    }
+
+    async getInitialTeamJobs(teamId: string): Promise<TrajectoryJobGroup[]> {
+        const cachedEntry = this.teamJobsInitialCache.get(teamId);
+        const now = Date.now();
+
+        if (cachedEntry?.groupedJobsValue && cachedEntry.expiresAt > now) {
+            logger.debug({ action: 'team.jobs.initial.cache-hit', teamId }, 'Serving cached initial team jobs');
+            return cachedEntry.groupedJobsValue;
+        }
+
+        if (cachedEntry?.groupedJobsPromise && cachedEntry.expiresAt > now) {
+            logger.debug({ action: 'team.jobs.initial.cache-hit', teamId, source: 'in-flight' }, 'Joining in-flight initial team jobs request');
+            return cachedEntry.groupedJobsPromise;
+        }
+
+        logger.debug({ action: 'team.jobs.initial.cache-miss', teamId }, 'Refreshing initial team jobs cache');
+
+        const groupedJobsPromise = this.getTeamJobs(teamId)
+            .then((groupedJobs) => {
+                this.teamJobsInitialCache.set(teamId, {
+                    expiresAt: Date.now() + TEAM_JOBS_INITIAL_CACHE_TTL_MS,
+                    groupedJobsValue: groupedJobs
+                });
+
+                return groupedJobs;
+            })
+            .catch((error: unknown) => {
+                this.teamJobsInitialCache.delete(teamId);
+                throw error;
+            });
+
+        this.teamJobsInitialCache.set(teamId, {
+            expiresAt: now + TEAM_JOBS_INITIAL_CACHE_TTL_MS,
+            groupedJobsPromise
+        });
+
+        return groupedJobsPromise;
+    }
+
+    invalidateInitialTeamJobs(teamId?: string): void {
+        if (teamId) {
+            this.teamJobsInitialCache.delete(teamId);
+            return;
+        }
+
+        this.teamJobsInitialCache.clear();
     }
 
     async getFlatTeamJobs(teamId: string): Promise<TeamJobSummary[]> {
@@ -125,9 +182,13 @@ export default class TeamJobsService {
             try {
                 const response = await this.teamClusterDaemonClient.command<DaemonTeamJobsResponse>(
                     teamCluster.id,
-                    'jobs.list',
+                    TEAM_CLUSTER_DAEMON_COMMAND.jobs.list,
                     {
                         teamId
+                    },
+                    {
+                        timeoutClass: 'interactive',
+                        timeoutMs: 5_000
                     }
                 );
 
@@ -174,9 +235,13 @@ export default class TeamJobsService {
 
         const records = await this.redis.mget(jobIds.map((jobId) => `${JOB_STATUS_KEY_PREFIX}${jobId}`));
         const jobs: TeamJobSummary[] = [];
+        const staleJobIds: string[] = [];
 
-        for (const record of records) {
+        for (const [index, record] of records.entries()) {
             if (!record) {
+                if (jobIds[index]) {
+                    staleJobIds.push(jobIds[index]);
+                }
                 continue;
             }
 
@@ -193,6 +258,12 @@ export default class TeamJobsService {
             }
         }
 
+        if (staleJobIds.length > 0) {
+            this.redis.srem(`team:${teamId}:jobs`, ...staleJobIds).catch((error) => {
+                logger.warn({ err: error, staleJobCount: staleJobIds.length, teamId }, 'Failed to prune stale projected team jobs');
+            });
+        }
+
         return jobs;
     }
 
@@ -201,14 +272,22 @@ export default class TeamJobsService {
 
         for (const job of jobs) {
             const trajectoryId = this.resolveTrajectoryId(job);
-            const trajectoryName = this.resolveTrajectoryName(job);
 
             if (!trajectoryId) {
                 continue;
             }
 
-            if (typeof trajectoryName !== 'string') {
-                throw new Error(`Missing trajectory name for team job ${job.jobId}`);
+            let trajectoryName = this.resolveTrajectoryName(job);
+            if (typeof trajectoryName !== 'string' || trajectoryName.trim().length === 0) {
+                logger.warn({
+                    action: 'team.jobs.missing-trajectory-name',
+                    jobId: job.jobId,
+                    teamId: job.teamId,
+                    trajectoryId,
+                    teamClusterId: job.teamClusterId,
+                    source: job.source
+                }, 'Missing trajectory name for team job; using trajectory id as fallback');
+                trajectoryName = trajectoryId;
             }
 
             if (!trajectoryMap.has(trajectoryId)) {
@@ -359,13 +438,28 @@ export default class TeamJobsService {
         }
 
         const trajectoryNames = new Map<string, string>();
-        await Promise.all(missingTrajectoryIds.map(async (trajectoryId) => {
-            const trajectory = await this.trajectoryRepository.findById(trajectoryId);
-            const trajectoryName = trajectory?.props.name;
-            if (trajectoryName) {
-                trajectoryNames.set(trajectoryId, trajectoryName);
+        logger.debug({
+            action: 'team.jobs.trajectory-name-batch-enrichment',
+            trajectoryCount: missingTrajectoryIds.length,
+            jobCount: jobs.length
+        }, 'Batch enriching missing trajectory names for team jobs');
+
+        const trajectories = await this.trajectoryRepository.findAll({
+            filter: {
+                _id: {
+                    $in: missingTrajectoryIds
+                }
+            },
+            page: 1,
+            limit: missingTrajectoryIds.length,
+            select: ['name']
+        });
+
+        for (const trajectory of trajectories.data) {
+            if (trajectory.props.name) {
+                trajectoryNames.set(trajectory.id, trajectory.props.name);
             }
-        }));
+        }
 
         return jobs.map((job) => {
             if (this.resolveTrajectoryName(job)) {

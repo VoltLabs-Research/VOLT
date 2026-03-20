@@ -1,19 +1,23 @@
 import DashboardHeader from '@/modules/dashboard/components/molecules/DashboardHeader';
 import DashboardSidebar from '@/modules/dashboard/components/organisms/DashboardSidebar';
-import { DASHBOARD_LAYOUT_EVENTS } from '@/modules/dashboard/utilities/layout-events';
+import useGlobalSocketCacheSync from '@/modules/dashboard/hooks/use-global-socket-cache-sync';
+import {
+    DASHBOARD_LAYOUT_EVENTS,
+    getDashboardWorkspaceChromeState,
+    subscribeToDashboardWorkspaceChromeState
+} from '@/modules/dashboard/utilities/layout-events';
 import { TeamCreatorModal } from '@/modules/team/components/organisms/TeamCreatorModal';
 import { JoinTeamModal } from '@/modules/team/components/organisms/JoinTeamModal';
 import Container from '@/shared/presentation/components/Container';
 import PageTransition from '@/shared/presentation/components/PageTransition';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
-import useGlobalSocketCacheSync from '@/shared/presentation/hooks/use-global-socket-cache-sync';
 import useTip from '@/shared/tips/use-tip';
-import type { DashboardHeaderContext } from '@/modules/dashboard/hooks/use-dashboard-header-context';
-import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
-import './DashboardLayout.css';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { sileo } from 'sileo';
+import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
+import type { DashboardHeaderContext } from '@/modules/dashboard/hooks/use-dashboard-header-context';
+import './DashboardLayout.css';
 
 interface DashboardLocationState {
     fromNotFound?: boolean;
@@ -34,18 +38,27 @@ const DashboardLayout = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [headerHidden, setHeaderHidden] = useState(false);
+    const [headerHiddenOverride, setHeaderHiddenOverride] = useState(false);
     const [globalSearchBreadcrumb, setGlobalSearchBreadcrumb] = useState<DashboardGlobalSearchBreadcrumb | null>(null);
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const [sidebarCollapsedOverride, setSidebarCollapsedOverride] = useState(false);
+    const [sidebarCollapsedPreference, setSidebarCollapsedPreference] = useState(() => {
         return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
     });
+    const workspaceChromeState = useSyncExternalStore(
+        subscribeToDashboardWorkspaceChromeState,
+        getDashboardWorkspaceChromeState,
+        getDashboardWorkspaceChromeState
+    );
+
+    const headerHidden = workspaceChromeState.headerHidden || headerHiddenOverride;
+    const sidebarCollapsed = workspaceChromeState.sidebarCollapsed || sidebarCollapsedOverride || sidebarCollapsedPreference;
 
     useTip('dashboard-sidebar-collapse', {
         enabled: !headerHidden
     });
 
     const toggleSidebarCollapsed = useCallback(() => {
-        setSidebarCollapsed((prev) => {
+        setSidebarCollapsedPreference((prev) => {
             const next = !prev;
             localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next));
             return next;
@@ -53,7 +66,7 @@ const DashboardLayout = () => {
     }, []);
 
     const expandSidebar = useCallback(() => {
-        setSidebarCollapsed((prev) => {
+        setSidebarCollapsedPreference((prev) => {
             if (prev) {
                 localStorage.setItem(SIDEBAR_COLLAPSED_KEY, 'false');
                 return false;
@@ -81,21 +94,19 @@ const DashboardLayout = () => {
 
     useEffect(() => {
         const handleSidebarCollapseRequest = () => {
-            setSidebarCollapsed(true);
-            localStorage.setItem(SIDEBAR_COLLAPSED_KEY, 'true');
+            setSidebarCollapsedOverride(true);
         };
 
         const handleSidebarExpandRequest = () => {
-            setSidebarCollapsed(false);
-            localStorage.setItem(SIDEBAR_COLLAPSED_KEY, 'false');
+            setSidebarCollapsedOverride(false);
         };
 
         const handleHeaderHideRequest = () => {
-            setHeaderHidden(true);
+            setHeaderHiddenOverride(true);
         };
 
         const handleHeaderShowRequest = () => {
-            setHeaderHidden(false);
+            setHeaderHiddenOverride(false);
         };
 
         window.addEventListener(DASHBOARD_LAYOUT_EVENTS.requestSidebarCollapse, handleSidebarCollapseRequest);

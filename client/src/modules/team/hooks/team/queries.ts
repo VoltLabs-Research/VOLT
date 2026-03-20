@@ -1,5 +1,5 @@
 import teamService from '../../api/services/team';
-import { buildKeys, createCachePolicy } from '@/shared/infrastructure/query';
+import { buildKeys } from '@/shared/infrastructure/query';
 import { registerPreservedQueryKey } from '@/shared/utils/app-cleanup-registry';
 import type { UseQueryOptions } from '@tanstack/react-query';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -18,6 +18,8 @@ import type {
 import queryClient from '@/shared/infrastructure/query/query-client';
 
 type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
+
+const TEAM_BOOT_STALE_TIME = 5 * 60 * 1000;
 
 /** Team query keys. */
 
@@ -86,13 +88,11 @@ const matchesTeamScopedQuery = (queryKey: readonly unknown[], teamId: string) =>
 
 /** Team cache helpers. */
 
-const teamsCache = createCachePolicy<void>(TEAM_QUERY_KEYS.teams);
-
 const setTeamsQueryData = (updater: (previous?: Team[]) => Team[] | undefined) => {
-    teamsCache.set<Team[]>(undefined, updater);
+    queryClient.setQueryData<Team[]>(TEAM_QUERY_KEYS.teams(), updater);
 };
 
-export const invalidateTeamsQuery = () => teamsCache.invalidate(undefined);
+export const invalidateTeamsQuery = () => queryClient.invalidateQueries({ queryKey: TEAM_QUERY_KEYS.teams() });
 
 const invalidateTeamScopedQueries = (teamId: string) => {
     return queryClient.invalidateQueries({
@@ -112,6 +112,7 @@ export const useTeamsQuery = (_params?: void, options?: QueryOptions<Team[]>) =>
     return useQuery({
         queryKey: TEAM_QUERY_KEYS.teams(),
         queryFn: () => teamService.getAll({}),
+        staleTime: TEAM_BOOT_STALE_TIME,
         ...options
     });
 };
@@ -120,6 +121,7 @@ export const useTeamPermissionsQuery = (teamId: string, options?: QueryOptions<s
     return useQuery({
         queryKey: TEAM_QUERY_KEYS.teamPermissions(teamId),
         queryFn: () => teamService.getMyPermissions({ teamId }),
+        staleTime: TEAM_BOOT_STALE_TIME,
         ...options
     });
 };
@@ -191,7 +193,7 @@ export const useLeaveTeamMutation = () => {
         },
         onError: (_error, _variables, context) => {
             if (context?.previousTeams) {
-                teamsCache.restore(undefined, context.previousTeams);
+                queryClient.setQueryData<Team[]>(TEAM_QUERY_KEYS.teams(), context.previousTeams);
             }
         },
         onSuccess: (_data, variables) => {

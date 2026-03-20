@@ -1,4 +1,3 @@
-import TeamJobsService from './TeamJobsService';
 import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 import { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';
@@ -8,6 +7,7 @@ import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import logger from '@shared/infrastructure/logger';
+import TeamJobsService from './TeamJobsService';
 import { inject, singleton } from 'tsyringe';
 import type { SubscribeToTeamSocketPayload } from '@modules/socket/domain/contracts/team-subscription';
 
@@ -39,6 +39,7 @@ export default class TeamJobsSocketModule extends BaseSocketModule {
 
     async onShutdown(): Promise<void> {
         this.unsubscribeFromTeamSubscription?.();
+        this.teamJobsService.invalidateInitialTeamJobs();
     }
 
     onConnection(connection: ISocketConnection): void {
@@ -55,7 +56,7 @@ export default class TeamJobsSocketModule extends BaseSocketModule {
         logger.info(`[TeamJobsSocketModule] Connection ${connection.id} joined team room: ${teamRoom}`);
 
         try {
-            const groupedJobs = await this.teamJobsService.getTeamJobs(payload.teamId);
+            const groupedJobs = await this.teamJobsService.getInitialTeamJobs(payload.teamId);
             this.emitToSocket(connection.id, 'team.jobs.initial', groupedJobs);
             logger.debug(`[TeamJobsSocketModule] Sent ${groupedJobs.length} job groups to connection ${connection.id}`);
         } catch (error) {

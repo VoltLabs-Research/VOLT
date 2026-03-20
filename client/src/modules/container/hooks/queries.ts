@@ -1,12 +1,13 @@
 import service from '../api/service';
 import {
     buildKeys,
-    createCachePolicy,
-    createManagedMutation,
+    createFolderResourceQueries,
+    createMutation,
     createPaginatedQuery,
     createQuery
 } from '@/shared/infrastructure/query';
 import queryClient from '@/shared/infrastructure/query/query-client';
+import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { CreateContainerParams } from '../api/dtos/create-container';
 import type { CreateContainerFolderParams } from '../api/dtos/create-container-folder';
 import type { DeleteContainerFolderParams } from '../api/dtos/delete-container-folder';
@@ -46,39 +47,43 @@ export const containerQuery = createPaginatedQuery<Container, GetContainersParam
     }
 });
 
-const containerFoldersCache = createCachePolicy<void>(() => KEYS.folders());
-const containerFolderCache = createCachePolicy<GetContainerFolderParams>((params) => KEYS.folder(params));
-
-export const containerFoldersQuery = createQuery(KEYS.folders, service.listFolders);
-export const containerFolderQuery = createQuery(KEYS.folder, service.getFolder);
-
-export const invalidateContainerFoldersQuery = () => containerFoldersCache.invalidate(undefined);
-export const invalidateContainerFolderQuery = (params: GetContainerFolderParams) => containerFolderCache.invalidate(params);
-
-export const useCreateContainerFolderMutation = createManagedMutation<ContainerFolder, CreateContainerFolderParams>(
-    service.createFolder,
-    () => invalidateContainerFoldersQuery()
-);
-
-export const useUpdateContainerFolderMutation = createManagedMutation<ContainerFolder, UpdateContainerFolderParams>(
-    service.updateFolder,
-    (_data, variables) => {
-        invalidateContainerFoldersQuery();
+const containerFolderQueries = createFolderResourceQueries<
+    ContainerFolder,
+    PaginatedResponse<ContainerFolder>,
+    ListContainerFoldersParams,
+    GetContainerFolderParams,
+    CreateContainerFolderParams,
+    UpdateContainerFolderParams,
+    DeleteContainerFolderParams
+>({
+    baseKey: `${BASE_KEY}-folder`,
+    service: {
+        listFolders: service.listFolders,
+        getFolder: service.getFolder,
+        createFolder: service.createFolder,
+        updateFolder: service.updateFolder,
+        deleteFolder: service.deleteFolder
+    },
+    buildFolderParams: (folderId) => ({ folderId }),
+    afterUpdate: () => {
         queryClient.invalidateQueries({ queryKey: containerQuery.QUERY_KEYS.lists() });
-        invalidateContainerFolderQuery({ folderId: variables.folderId });
-    }
-);
-
-export const useDeleteContainerFolderMutation = createManagedMutation<void, DeleteContainerFolderParams>(
-    service.deleteFolder,
-    (_data, variables) => {
-        invalidateContainerFoldersQuery();
+    },
+    afterDelete: () => {
         queryClient.invalidateQueries({ queryKey: containerQuery.QUERY_KEYS.lists() });
-        invalidateContainerFolderQuery({ folderId: variables.folderId });
     }
-);
+});
 
-export const useMoveContainerMutation = createManagedMutation<void, MoveContainerParams>(
+export const containerFoldersQueryKey = containerFolderQueries.foldersQueryKey;
+export const containerFolderQueryKey = containerFolderQueries.folderQueryKey;
+export const containerFoldersQuery = containerFolderQueries.foldersQuery;
+export const containerFolderQuery = containerFolderQueries.folderQuery;
+export const invalidateContainerFoldersQuery = containerFolderQueries.invalidateFoldersQuery;
+export const invalidateContainerFolderQuery = containerFolderQueries.invalidateFolderQuery;
+export const useCreateContainerFolderMutation = containerFolderQueries.useCreateFolderMutation;
+export const useUpdateContainerFolderMutation = containerFolderQueries.useUpdateFolderMutation;
+export const useDeleteContainerFolderMutation = containerFolderQueries.useDeleteFolderMutation;
+
+export const useMoveContainerMutation = createMutation<void, MoveContainerParams>(
     service.move,
     () => queryClient.invalidateQueries({ queryKey: containerQuery.QUERY_KEYS.lists() })
 );

@@ -11,12 +11,23 @@ import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import logger from '@shared/infrastructure/logger';
 import { ISocketModule } from '@modules/socket/domain/port/ISocketModule';
 import AuthenticateSocketConnectionUseCase from '@modules/socket/application/use-cases/AuthenticateSocketConnectionUseCase';
+import { TRACE_ID_HEADER } from '@shared/infrastructure/http/middleware/request-context';
 import type { ISocketAuthenticationResult, ISocketConnectionData, ISocketConnectionUser } from '@modules/socket/domain/port/ISocketModule';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { randomUUID } from 'node:crypto';
 import type { ISocketConnectionMapper } from '@modules/socket/infrastructure/contracts/ISocketConnectionMapper';
 import type { ISocketEmitterRuntime } from '@modules/socket/infrastructure/contracts/ISocketEmitterRuntime';
 import type { ISocketEventRegistryRuntime } from '@modules/socket/infrastructure/contracts/ISocketEventRegistryRuntime';
 import type { ISocketRoomManagerRuntime } from '@modules/socket/infrastructure/contracts/ISocketRoomManagerRuntime';
+
+interface SocketConnectionRuntimeData extends ISocketConnectionData {
+    traceId?: string;
+    connectedAt?: number;
+    authenticatedAt?: number;
+    authDurationMs?: number;
+    authState?: ISocketAuthenticationResult['state'];
+    authReason?: ISocketAuthenticationResult['reason'];
+};
 
 const SOCKET_CORS_ORIGINS = [
     process.env.CLIENT_DEV_HOST,
@@ -127,9 +138,15 @@ export default class SocketGateway{
      * Handle new socket connection.
      */
     private handleConnection(socket: Socket): void{
-        logger.info(`@socket-gateway - connected: ${socket.id}`);
+        const socketData = this.getSocketConnectionData(socket);
 
-        socket.data = socket.data as ISocketConnectionData;
+        logger.info({
+            socketId: socket.id,
+            traceId: socketData.traceId,
+            userId: socketData.auth?.user?._id
+        }, '@socket-gateway - connected');
+
+        socket.data = socketData;
 
         this.getSocketEmitterRuntime().registerConnection(socket);
         this.getSocketRoomManagerRuntime().registerConnection(socket);
@@ -148,7 +165,10 @@ export default class SocketGateway{
             this.getSocketEmitterRuntime().unregisterConnection(socket.id);
             this.getSocketRoomManagerRuntime().unregisterConnection(socket.id);
             this.getSocketEventRegistryRuntime().unregisterConnection(socket.id);
-            logger.info(`@socket-gateway - disconnected ${socket.id}`);
+            logger.info({
+                socketId: socket.id,
+                traceId: socketData.traceId
+            }, '@socket-gateway - disconnected');
         });
     }
 
@@ -209,31 +229,60 @@ export default class SocketGateway{
         next: (error?: Error) => void
     ): Promise<void>{
         try{
+            const socketData = this.getSocketConnectionData(socket);
+            const startedAt = Date.now();
             const token = socket.handshake.auth?.token;
+            socketData.traceId = this.resolveSocketTraceId(socket);
+            socketData.connectedAt = socketData.connectedAt ?? startedAt;
+
             const auth = await this.authenticateSocketConnectionUseCase.execute(token);
 
-            socket.data = socket.data as ISocketConnectionData;
-            socket.data.auth = auth;
+            socketData.auth = auth;
+            socketData.authenticatedAt = Date.now();
+            socketData.authDurationMs = socketData.authenticatedAt - startedAt;
+            socketData.authState = auth.state;
+            socketData.authReason = auth.reason;
 
             if(auth.state === 'guest'){
                 socket.user = null;
-                logger.info({ outcome: 'guest', socketId: socket.id }, '@socket-auth');
+                logger.info({
+                    outcome: 'guest',
+                    socketId: socket.id,
+                    traceId: socketData.traceId,
+                    durationMs: socketData.authDurationMs
+                }, '@socket-auth');
                 return next();
             }
 
             if(auth.state === 'rejected' || !auth.user){
                 socket.user = null;
-                logger.warn({ outcome: 'rejected', reason: auth.reason, socketId: socket.id }, '@socket-auth');
+                logger.warn({
+                    outcome: 'rejected',
+                    reason: auth.reason,
+                    socketId: socket.id,
+                    traceId: socketData.traceId,
+                    durationMs: socketData.authDurationMs
+                }, '@socket-auth');
                 return next(this.createSocketAuthenticationError(auth));
             }
 
             socket.user = auth.user;
 
-            logger.info({ outcome: 'authenticated', socketId: socket.id, userId: auth.user._id }, '@socket-auth');
+            logger.info({
+                outcome: 'authenticated',
+                socketId: socket.id,
+                userId: auth.user._id,
+                traceId: socketData.traceId,
+                durationMs: socketData.authDurationMs
+            }, '@socket-auth');
             next();
         }catch(error){
             socket.user = null;
-            logger.error({ err: error, socketId: socket.id }, '@socket-auth');
+            logger.error({
+                err: error,
+                socketId: socket.id,
+                traceId: this.getSocketConnectionData(socket).traceId
+            }, '@socket-auth');
             next(this.createSocketAuthenticationError({
                 state: 'rejected',
                 reason: 'invalid_token'
@@ -267,6 +316,34 @@ export default class SocketGateway{
 
     private getSocketEmitterRuntime(): ISocketEmitterRuntime {
         return this.socketEmitter as ISocketEmitterRuntime;
+    }
+
+    private getSocketConnectionData(socket: Socket): SocketConnectionRuntimeData {
+        return socket.data as SocketConnectionRuntimeData;
+    }
+
+    private resolveSocketTraceId(socket: Socket): string {
+        const headerTraceId = socket.handshake.headers[TRACE_ID_HEADER];
+
+        if (Array.isArray(headerTraceId)) {
+            const traceId = headerTraceId[0]?.trim();
+
+            if (traceId) {
+                return traceId;
+            }
+        }
+
+        if (typeof headerTraceId === 'string' && headerTraceId.trim()) {
+            return headerTraceId.trim();
+        }
+
+        const authTraceId = socket.handshake.auth?.traceId;
+
+        if (typeof authTraceId === 'string' && authTraceId.trim()) {
+            return authTraceId.trim();
+        }
+
+        return randomUUID();
     }
 
     private getSocketRoomManagerRuntime(): ISocketRoomManagerRuntime {

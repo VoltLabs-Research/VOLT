@@ -5,6 +5,7 @@ import { subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
 import { FitAddon } from 'xterm-addon-fit';
 import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Terminal as XTerm } from 'xterm';
+import type { IDisposable } from 'xterm';
 
 interface TerminalTheme {
     background: string;
@@ -56,10 +57,27 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
     const xtermRef = useRef<XTerm | null>(null);
     const fitAddonRef = useRef<FitAddon | null>(null);
     const onDataRef = useRef(onData);
+    const onDataDisposableRef = useRef<IDisposable | null>(null);
     const prefersReducedMotion = usePrefersReducedMotion();
 
     useEffect(() => {
         onDataRef.current = onData;
+    }, [onData]);
+
+    useEffect(() => {
+        onDataDisposableRef.current?.dispose();
+
+        if (!xtermRef.current || !onData) {
+            onDataDisposableRef.current = null;
+            return;
+        }
+
+        onDataDisposableRef.current = xtermRef.current.onData(onData);
+
+        return () => {
+            onDataDisposableRef.current?.dispose();
+            onDataDisposableRef.current = null;
+        };
     }, [onData]);
 
     useImperativeHandle(ref, () => ({
@@ -72,11 +90,29 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
     useEffect(() => {
         let term: XTerm | null = null;
         let fitAddon: FitAddon | null = null;
-        let fitTimer: number | null = null;
+        let resizeObserver: ResizeObserver | null = null;
+        let animationFrameId: number | null = null;
         let isDisposed = false;
         let disposeThemeSubscription: (() => void) | null = null;
 
-        const initTimer = window.setTimeout(() => {
+        const fitTerminal = () => {
+            if (!isDisposed && fitAddonRef.current) {
+                fitAddonRef.current.fit();
+            }
+        };
+
+        const scheduleFit = () => {
+            if (animationFrameId !== null) {
+                window.cancelAnimationFrame(animationFrameId);
+            }
+
+            animationFrameId = window.requestAnimationFrame(() => {
+                animationFrameId = null;
+                fitTerminal();
+            });
+        };
+
+        animationFrameId = window.requestAnimationFrame(() => {
             if (isDisposed || !containerRef.current || xtermRef.current) return;
 
             const theme = getTerminalTheme();
@@ -96,6 +132,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
 
             xtermRef.current = term;
             fitAddonRef.current = fitAddon;
+            onDataDisposableRef.current = onDataRef.current ? term.onData(onDataRef.current) : null;
 
             disposeThemeSubscription = subscribeToAppTheme(() => {
                 const activeTerminal = xtermRef.current;
@@ -105,38 +142,30 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
                 }
 
                 activeTerminal.options.theme = getTerminalTheme();
-                fitAddonRef.current?.fit();
+                scheduleFit();
             });
 
-            if (onDataRef.current) {
-                term.onData(onDataRef.current);
+            resizeObserver = new ResizeObserver(() => {
+                scheduleFit();
+            });
+            resizeObserver.observe(containerRef.current);
+
+            if (document.visibilityState === 'visible') {
+                scheduleFit();
             }
-
-            fitTimer = window.setTimeout(() => {
-                if (!isDisposed && fitAddonRef.current) {
-                    fitAddonRef.current.fit();
-                }
-            }, 100);
-        }, 0);
-
-        const handleResize = () => {
-            if (!isDisposed && fitAddonRef.current) {
-                fitAddonRef.current.fit();
-            }
-        };
-
-        window.addEventListener('resize', handleResize);
+        });
 
         return () => {
             isDisposed = true;
-            window.clearTimeout(initTimer);
+            onDataDisposableRef.current?.dispose();
+            onDataDisposableRef.current = null;
 
-            if (fitTimer !== null) {
-                window.clearTimeout(fitTimer);
+            if (animationFrameId !== null) {
+                window.cancelAnimationFrame(animationFrameId);
             }
 
+            resizeObserver?.disconnect();
             disposeThemeSubscription?.();
-            window.removeEventListener('resize', handleResize);
             term?.dispose();
             xtermRef.current = null;
             fitAddonRef.current = null;

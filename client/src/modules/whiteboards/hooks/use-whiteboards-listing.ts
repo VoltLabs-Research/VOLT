@@ -13,6 +13,7 @@ import {
     whiteboardsQuery,
     whiteboardsQueryKey
 } from '@/modules/whiteboards/hooks/queries';
+import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
@@ -20,7 +21,6 @@ import { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import useFolderedListing, { type FolderedListingContext } from '@/shared/presentation/hooks/use-foldered-listing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import usePermission from '@/shared/presentation/hooks/use-permission';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import type { MenuOption } from '@/shared/presentation/types/menu';
@@ -94,7 +94,8 @@ const getDeleteFolderConfirmDescription = (folderTitle: string): string => {
 const useWhiteboardsListing = () => {
     const navigate = useNavigate();
     const teamId = useSelectedTeamId();
-    const canMoveWhiteboards = usePermission(['whiteboard:update']);
+    const { canAccess } = useTeamPermissions();
+    const canMoveWhiteboards = canAccess(['whiteboard:update']);
     const { mutateAsync: deleteWhiteboard } = useDeleteWhiteboardMutation();
     const { mutateAsync: createWhiteboard } = useCreateWhiteboardMutation();
     const { mutateAsync: updateWhiteboard } = useUpdateWhiteboardMutation();

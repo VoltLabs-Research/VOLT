@@ -16,6 +16,7 @@ import useDashboardMetrics from '@/modules/dashboard/hooks/use-dashboard-metrics
 import JobsHistoryViewer from '@/modules/jobs/components/organisms/JobsHistoryViewer';
 import { NEW_TRAJECTORY_FOLDER_MODAL_ID } from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
+import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import SimulationGrid from '@/modules/trajectory/components/molecules/SimulationGrid';
 import TrajectoryUploaderContainer from '@/modules/trajectory/components/organisms/TrajectoryUploaderContainer';
 import Button from '@/shared/presentation/components/Button';
@@ -25,7 +26,6 @@ import { openModal } from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import Title from '@/shared/presentation/components/Title';
-import usePermission from '@/shared/presentation/hooks/use-permission';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import './Dashboard.css';
@@ -77,7 +77,8 @@ const DashboardPage = () => {
 
     const selectedTeam = useSelectedTeam();
     const user = useCurrentUser();
-    const canCreateTrajectoryFolders = usePermission(['trajectory:create']);
+    const { canAccess } = useTeamPermissions();
+    const canCreateTrajectoryFolders = canAccess(['trajectory:create']);
     const { loading, error, cards, accessDenied, accessDeniedMessage } = useDashboardMetrics(selectedTeam?._id);
     const sharedPanelsRef = useRef<HTMLDivElement | null>(null);
     const [hoveredPanel, setHoveredPanel] = useState<DashboardBottomPanel | null>(null);

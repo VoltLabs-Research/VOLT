@@ -1,4 +1,4 @@
-import { useTeamMembersQuery } from '@/modules/team/hooks/member/queries';
+import { useAllTeamMembersQuery } from '@/modules/team/hooks/member/queries';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { useEffect, useMemo } from 'react';
@@ -9,7 +9,7 @@ interface UseTeamMemberDataOptions {
     limit?: number;
 };
 
-export default function useTeamMemberData({ teamId, page = 1, limit = 100 }: UseTeamMemberDataOptions = {}) {
+export default function useTeamMemberData({ teamId, limit = 100 }: UseTeamMemberDataOptions = {}) {
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
     const queryParams = useMemo(() => {
         if (!teamId) {
@@ -18,12 +18,11 @@ export default function useTeamMemberData({ teamId, page = 1, limit = 100 }: Use
 
         return {
             teamId,
-            page,
             limit
         };
-    }, [teamId, page, limit]);
+    }, [teamId, limit]);
 
-    const membersQuery = useTeamMembersQuery(queryParams ?? { teamId: '', page, limit }, {
+    const membersQuery = useAllTeamMembersQuery(queryParams ?? { teamId: '', limit }, {
         enabled: !!queryParams
     });
 
@@ -42,7 +41,7 @@ export default function useTeamMemberData({ teamId, page = 1, limit = 100 }: Use
     }
 
     return {
-        members: membersQuery.data?.data ?? [],
+        members: membersQuery.data ?? [],
         isLoading: membersQuery.isLoading || membersQuery.isFetching,
         error,
         accessDenied,

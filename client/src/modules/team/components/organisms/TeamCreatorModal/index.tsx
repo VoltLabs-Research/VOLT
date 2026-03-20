@@ -1,15 +1,16 @@
 import Container from '@/shared/presentation/components/Container';
 import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
-import { normalizeError } from '@/shared/errors/core';
+import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Modal from '@/shared/presentation/components/Modal';
-import useModalForm from '@/shared/presentation/hooks/use-modal-form';
+import Modal, { resetModal } from '@/shared/presentation/components/Modal';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
-import useZodForm from '@/shared/presentation/hooks/use-zod-form';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import type { Resolver } from 'react-hook-form';
 import { teamCreatorSchema } from './validation-schema';
 import type { TeamCreatorForm } from './validation-schema';
 import './TeamCreatorModal.css';
@@ -39,8 +40,8 @@ export const TeamCreatorModal = ({
     const createTeamMutation = useCreateTeamMutation();
     const setSelectedTeamId = useTeamStore((state) => state.setSelectedTeamId);
 
-    const form = useZodForm<TeamCreatorForm>({
-        schema: teamCreatorSchema,
+    const form = useForm<TeamCreatorForm>({
+        resolver: zodResolver(teamCreatorSchema) as unknown as Resolver<TeamCreatorForm>,
         defaultValues: {
             name: '',
             description: ''
@@ -49,14 +50,13 @@ export const TeamCreatorModal = ({
 
     const nameValue = form.watch('name');
 
-    const modalForm = useModalForm({
-        modalId: MODAL_ID,
-        reset: () => {
+    const closeTeamCreatorModal = () => {
+        resetModal(MODAL_ID, () => {
             form.reset();
             setApiError(null);
-        },
-        onAfterClose: onClose
-    });
+            onClose?.();
+        });
+    };
 
     const onSubmit = async (data: TeamCreatorForm) => {
         setApiError(null);
@@ -69,18 +69,21 @@ export const TeamCreatorModal = ({
                 toast: TEAM_CREATOR_TOAST_OPTIONS,
                 afterSuccess: (team) => {
                     setSelectedTeamId(team._id);
-                    modalForm.close();
+                    closeTeamCreatorModal();
                     onSuccess?.();
                 }
             });
         } catch (error: unknown) {
-            setApiError(normalizeError(error).friendlyMessage);
+            setApiError(reportError(error, {
+                surface: ErrorSurface.Silent,
+                fallbackTitle: 'Failed to create team'
+            }).title);
         }
     };
 
     const handleClose = () => {
         if (isRequired) return;
-        modalForm.close();
+        closeTeamCreatorModal();
     };
 
     return (

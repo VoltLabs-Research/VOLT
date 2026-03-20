@@ -1,6 +1,10 @@
 import jwt from 'jsonwebtoken';
 import type { JwtPayload, Secret, SignOptions } from 'jsonwebtoken';
 
+interface ContainerPortProxyAccessTokenSignOptions extends SignOptions {
+    expiresIn: number;
+};
+
 interface ContainerPortProxyAccessTokenContext {
     sessionId: string;
     relayPort: number;
@@ -29,6 +33,7 @@ export interface VerifiedContainerPortProxyAccessToken {
 export const CONTAINER_PORT_PROXY_ACCESS_TOKEN_QUERY_PARAM = 'access_token';
 export const CONTAINER_PORT_PROXY_ACCESS_TOKEN_COOKIE_NAME = 'voltContainerPortProxyAccessToken';
 
+const DEFAULT_CONTAINER_PORT_PROXY_SESSION_TTL_MS = 600_000;
 const RELAY_URL_ORIGIN = 'http://volt.local';
 
 const getSecretKey = (): Secret => {
@@ -50,6 +55,20 @@ const isClaimsPayload = (value: unknown): value is ContainerPortProxyAccessToken
         && typeof payload.sessionId === 'string'
         && typeof payload.relayPort === 'number'
         && typeof payload.userId === 'string';
+};
+
+const readPositiveIntegerEnv = (name: string, fallback: number): number => {
+    const rawValue = process.env[name]?.trim();
+    if (!rawValue) {
+        return fallback;
+    }
+
+    const value = Number(rawValue);
+    if (!Number.isInteger(value) || value <= 0) {
+        throw new Error(`${name} must be a positive integer`);
+    }
+
+    return value;
 };
 
 export const resolveContainerPortProxyRelayProtocol = (): 'http' | 'https' => {
@@ -91,8 +110,13 @@ export const readContainerPortProxyAccessTokenFromUrl = (requestUrl: string): st
 
 export class ContainerPortProxyAccessTokenService {
     private readonly secret = getSecretKey();
-    private readonly signOptions: SignOptions = {
-        expiresIn: '2m'
+    private readonly signOptions: ContainerPortProxyAccessTokenSignOptions = {
+        expiresIn: Math.ceil(
+            readPositiveIntegerEnv(
+                'CONTAINER_PORT_PROXY_SESSION_TTL_MS',
+                DEFAULT_CONTAINER_PORT_PROXY_SESSION_TTL_MS
+            ) / 1000
+        )
     };
 
     create(input: ContainerPortProxyAccessTokenContext): string {

@@ -1,0 +1,536 @@
+{
+  "workflow": {
+    "nodes": [
+      {
+        "id": "modifier-1-1765422622995",
+        "type": "modifier",
+        "position": {
+          "x": 608,
+          "y": 208
+        },
+        "data": {
+          "modifier": {
+            "name": "Dislocation Analysis",
+            "icon": "PiLineSegmentThin",
+            "author": "Rodolfo Herrera",
+            "license": "MIT",
+            "version": "1.0.0",
+            "homepage": "https://github.com/rodyherrera/Volterra",
+            "description": "Identifies all dislocations line defects in an atomistic crystal, determines their Burgers vectors, and outputs a line representation of the dislocations."
+          }
+        }
+      },
+      {
+        "id": "arguments-3-1765423179935",
+        "type": "arguments",
+        "position": {
+          "x": 912,
+          "y": 288
+        },
+        "data": {
+          "arguments": {
+            "arguments": [
+              {
+                "argument": "crystalStructure",
+                "type": "select",
+                "label": "Crystal Structure",
+                "default": "BCC",
+                "options": [
+                  {
+                    "key": "BCC",
+                    "label": "Body-Centered Cubic (BCC)"
+                  },
+                  {
+                    "key": "FCC",
+                    "label": "Face-Centered Cubic (FCC)"
+                  },
+                  {
+                    "key": "HEX_DIAMOND",
+                    "label": "Hex Diamond"
+                  },
+                  {
+                    "key": "CUBIC_DIAMOND",
+                    "label": "Cubic Diamond"
+                  },
+                  {
+                    "key": "HCP",
+                    "label": "Hexagonal Close Packed (HCP)"
+                  },
+                  {
+                    "key": "SC",
+                    "label": "Simple Cubic (SC)"
+                  }
+                ]
+              },
+              {
+                "argument": "identificationMode",
+                "type": "select",
+                "label": "Identification Mode",
+                "default": "PTM",
+                "options": [
+                  {
+                    "key": "PTM",
+                    "label": "Polyhedral Template Matching (PTM)"
+                  },
+                  {
+                    "key": "CNA",
+                    "label": "Common Neighbor Analysis (CNA)"
+                  },
+                  {
+                    "key": "DIAMOND",
+                    "label": "Diamond Identifier"
+                  }
+                ]
+              },
+              {
+                "argument": "rmsd",
+                "type": "number",
+                "label": "RMSD",
+                "default": 0.1,
+                "options": []
+              },
+              {
+                "argument": "maxTrialCircuitSize",
+                "type": "number",
+                "label": "Max Trial Circuit Size",
+                "default": 14,
+                "options": [],
+                "step": 1
+              },
+              {
+                "argument": "circuitStretchability",
+                "type": "number",
+                "label": "Circuit Stretchability",
+                "default": 9,
+                "options": []
+              },
+              {
+                "argument": "lineSmoothingLevel",
+                "type": "number",
+                "label": "Line Smoothing Level",
+                "default": 1,
+                "options": []
+              },
+              {
+                "argument": "linePointInterval",
+                "type": "number",
+                "label": "Line Point Interval",
+                "default": 2.5,
+                "options": []
+              },
+              {
+                "argument": "onlyPerfectDislocations",
+                "type": "boolean",
+                "label": "Only Perfect Dislocations",
+                "options": []
+              },
+              {
+                "argument": "markCoreAtoms",
+                "type": "boolean",
+                "label": "Mark Core Atoms",
+                "options": []
+              },
+              {
+                "argument": "threads",
+                "type": "number",
+                "label": "Threads",
+                "default": 0,
+                "value": 8,
+                "options": []
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "context-6-1765423306790",
+        "type": "context",
+        "position": {
+          "x": 1104,
+          "y": 224
+        },
+        "data": {
+          "context": {
+            "source": "trajectory_dumps"
+          }
+        }
+      },
+      {
+        "id": "forEach-7-1765423322555",
+        "type": "forEach",
+        "position": {
+          "x": 1328,
+          "y": 304
+        },
+        "data": {
+          "forEach": {
+            "iterableSource": "{{ context-6-1765423306790.trajectory_dumps }}"
+          }
+        }
+      },
+      {
+        "id": "exposure-2-1765425249136",
+        "type": "exposure",
+        "position": {
+          "x": 1888,
+          "y": 208
+        },
+        "data": {
+          "exposure": {
+            "name": "Defect Mesh",
+            "icon": "SiTraefikmesh",
+            "results": "defect_mesh.msgpack",
+            "iterable": ""
+          }
+        }
+      },
+      {
+        "id": "exposure-1-1765426083575",
+        "type": "exposure",
+        "position": {
+          "x": 1888,
+          "y": 528
+        },
+        "data": {
+          "exposure": {
+            "name": "Interface Mesh",
+            "icon": "PiTriangleDashedThin",
+            "results": "interface_mesh.msgpack",
+            "iterable": ""
+          }
+        }
+      },
+      {
+        "id": "exposure-2-1765426099927",
+        "type": "exposure",
+        "position": {
+          "x": 1888,
+          "y": 416
+        },
+        "data": {
+          "exposure": {
+            "name": "Simulation Cell",
+            "results": "simulation_cell.msgpack",
+            "iterable": ""
+          }
+        }
+      },
+      {
+        "id": "exposure-3-1765426126536",
+        "type": "exposure",
+        "position": {
+          "x": 1888,
+          "y": 304
+        },
+        "data": {
+          "exposure": {
+            "name": "Structure Stats",
+            "results": "structure_analysis_stats.msgpack",
+            "iterable": ""
+          }
+        }
+      },
+      {
+        "id": "exposure-5-1765426236422",
+        "type": "exposure",
+        "position": {
+          "x": 1888,
+          "y": 112
+        },
+        "data": {
+          "exposure": {
+            "name": "Dislocations",
+            "icon": "PiLineSegmentThin",
+            "results": "dislocations.msgpack",
+            "iterable": ""
+          }
+        }
+      },
+      {
+        "id": "export-1-1765426785184",
+        "type": "export",
+        "position": {
+          "x": 2192,
+          "y": 112
+        },
+        "data": {
+          "export": {
+            "exporter": "DislocationExporter",
+            "type": "glb",
+            "options": {
+              "lineWidth": 0.8,
+              "colorByType": true,
+              "material": {
+                "metallic": 0,
+                "roughness": 0.8,
+                "emissive": [
+                  0,
+                  0,
+                  0
+                ],
+                "baseColor": [
+                  1,
+                  0.5,
+                  0,
+                  1
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        "id": "export-2-1765426841324",
+        "type": "export",
+        "position": {
+          "x": 2192,
+          "y": 208
+        },
+        "data": {
+          "export": {
+            "exporter": "MeshExporter",
+            "type": "glb",
+            "options": {
+              "smoothIterations": 8,
+              "generateNormals": true,
+              "enableDoubleSided": true,
+              "material": {
+                "metallic": 0,
+                "roughness": 0,
+                "emissive": [
+                  0,
+                  0,
+                  0
+                ],
+                "baseColor": [
+                  1,
+                  1,
+                  1,
+                  1
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        "id": "export-3-1765426863238",
+        "type": "export",
+        "position": {
+          "x": 2208,
+          "y": 528
+        },
+        "data": {
+          "export": {
+            "exporter": "MeshExporter",
+            "type": "glb",
+            "options": {
+              "smoothIterations": 8,
+              "generateNormals": true,
+              "enableDoubleSided": true,
+              "material": {
+                "metallic": 0,
+                "roughness": 0,
+                "emissive": [
+                  0,
+                  0,
+                  0
+                ],
+                "baseColor": [
+                  1,
+                  1,
+                  1,
+                  1
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        "id": "a04496d9-e23f-4367-962f-999c80bc0cfa",
+        "type": "entrypoint",
+        "position": {
+          "x": 1616,
+          "y": 304
+        },
+        "data": {
+          "entrypoint": {
+            "binary": "opendxa",
+            "binaryObjectPath": "plugin-binaries/69b65eb5e0b5faca05eca988/b9f68a91-aafb-43dd-8b48-b36ff55252ba",
+            "binaryFileName": "opendxa",
+            "arguments": "{{ forEach-7-1765423322555.currentValue.path }} {{ forEach-7-1765423322555.outputPath }} {{ arguments-3-1765423179935.as_str }}",
+            "timeout": -1
+          }
+        }
+      },
+      {
+        "id": "2dc604ba-76f4-40b5-a88e-8a1ba24fc5d7",
+        "type": "export",
+        "position": {
+          "x": 2192,
+          "y": 640
+        },
+        "data": {
+          "export": {
+            "exporter": "AtomisticExporter",
+            "type": "glb"
+          }
+        }
+      },
+      {
+        "id": "da0a0159-2092-48c3-90e6-2fc09c992952",
+        "type": "exposure",
+        "position": {
+          "x": 1888,
+          "y": 640
+        },
+        "data": {
+          "exposure": {
+            "name": "Structure Identification",
+            "icon": "HiCubeTransparent",
+            "results": "atoms.msgpack",
+            "iterable": "",
+            "canvas": false,
+            "raster": false
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e-modifier-1-1765422622995-arguments-3-1765423179935",
+        "source": "modifier-1-1765422622995",
+        "sourceHandle": "output",
+        "target": "arguments-3-1765423179935",
+        "targetHandle": "input"
+      },
+      {
+        "id": "e-arguments-3-1765423179935-context-6-1765423306790",
+        "source": "arguments-3-1765423179935",
+        "sourceHandle": "output",
+        "target": "context-6-1765423306790",
+        "targetHandle": "input"
+      },
+      {
+        "id": "e-context-6-1765423306790-forEach-7-1765423322555",
+        "source": "context-6-1765423306790",
+        "sourceHandle": "output",
+        "target": "forEach-7-1765423322555",
+        "targetHandle": "input"
+      },
+      {
+        "id": "e-exposure-5-1765426236422-export-1-1765426785184",
+        "source": "exposure-5-1765426236422",
+        "sourceHandle": "output",
+        "target": "export-1-1765426785184",
+        "targetHandle": "input"
+      },
+      {
+        "id": "e-exposure-2-1765425249136-export-2-1765426841324",
+        "source": "exposure-2-1765425249136",
+        "sourceHandle": "output",
+        "target": "export-2-1765426841324",
+        "targetHandle": "input"
+      },
+      {
+        "id": "e-exposure-1-1765426083575-export-3-1765426863238",
+        "source": "exposure-1-1765426083575",
+        "sourceHandle": "output",
+        "target": "export-3-1765426863238",
+        "targetHandle": "input"
+      },
+      {
+        "id": "e-68d88b7d-f198-4d31-b086-b83dfe3160a9-10c758db-7e37-4f91-bced-8ed59c435984-output-input",
+        "source": "68d88b7d-f198-4d31-b086-b83dfe3160a9",
+        "sourceHandle": "output",
+        "target": "10c758db-7e37-4f91-bced-8ed59c435984",
+        "targetHandle": "input"
+      },
+      {
+        "id": "e-68d88b7d-f198-4d31-b086-b83dfe3160a9-20bbe309-2785-4310-a5aa-1b2360a67612-output-input",
+        "source": "68d88b7d-f198-4d31-b086-b83dfe3160a9",
+        "sourceHandle": "output",
+        "target": "20bbe309-2785-4310-a5aa-1b2360a67612",
+        "targetHandle": "input"
+      },
+      {
+        "id": "e-dbc643d6-240d-48d1-bfec-171f9a3e9841-68d88b7d-f198-4d31-b086-b83dfe3160a9-output-true-input",
+        "source": "dbc643d6-240d-48d1-bfec-171f9a3e9841",
+        "sourceHandle": "output-true",
+        "target": "68d88b7d-f198-4d31-b086-b83dfe3160a9",
+        "targetHandle": "input"
+      },
+      {
+        "id": "e-forEach-7-1765423322555-a04496d9-e23f-4367-962f-999c80bc0cfa-output-input",
+        "source": "forEach-7-1765423322555",
+        "sourceHandle": "output",
+        "target": "a04496d9-e23f-4367-962f-999c80bc0cfa",
+        "targetHandle": "input"
+      },
+      {
+        "id": "e-a04496d9-e23f-4367-962f-999c80bc0cfa-exposure-5-1765426236422-output-input",
+        "source": "a04496d9-e23f-4367-962f-999c80bc0cfa",
+        "sourceHandle": "output",
+        "target": "exposure-5-1765426236422",
+        "targetHandle": "input"
+      },
+      {
+        "id": "e-a04496d9-e23f-4367-962f-999c80bc0cfa-exposure-2-1765425249136-output-input",
+        "source": "a04496d9-e23f-4367-962f-999c80bc0cfa",
+        "sourceHandle": "output",
+        "target": "exposure-2-1765425249136",
+        "targetHandle": "input"
+      },
+      {
+        "id": "e-a04496d9-e23f-4367-962f-999c80bc0cfa-exposure-3-1765426126536-output-input",
+        "source": "a04496d9-e23f-4367-962f-999c80bc0cfa",
+        "sourceHandle": "output",
+        "target": "exposure-3-1765426126536",
+        "targetHandle": "input"
+      },
+      {
+        "id": "e-a04496d9-e23f-4367-962f-999c80bc0cfa-exposure-2-1765426099927-output-input",
+        "source": "a04496d9-e23f-4367-962f-999c80bc0cfa",
+        "sourceHandle": "output",
+        "target": "exposure-2-1765426099927",
+        "targetHandle": "input"
+      },
+      {
+        "id": "e-a04496d9-e23f-4367-962f-999c80bc0cfa-exposure-1-1765426083575-output-input",
+        "source": "a04496d9-e23f-4367-962f-999c80bc0cfa",
+        "sourceHandle": "output",
+        "target": "exposure-1-1765426083575",
+        "targetHandle": "input"
+      },
+      {
+        "id": "e-a04496d9-e23f-4367-962f-999c80bc0cfa-dbc643d6-240d-48d1-bfec-171f9a3e9841-output-input",
+        "source": "a04496d9-e23f-4367-962f-999c80bc0cfa",
+        "sourceHandle": "output",
+        "target": "dbc643d6-240d-48d1-bfec-171f9a3e9841",
+        "targetHandle": "input"
+      },
+      {
+        "id": "e-a04496d9-e23f-4367-962f-999c80bc0cfa-da0a0159-2092-48c3-90e6-2fc09c992952-output-input",
+        "source": "a04496d9-e23f-4367-962f-999c80bc0cfa",
+        "sourceHandle": "output",
+        "target": "da0a0159-2092-48c3-90e6-2fc09c992952",
+        "targetHandle": "input"
+      },
+      {
+        "id": "e-da0a0159-2092-48c3-90e6-2fc09c992952-2dc604ba-76f4-40b5-a88e-8a1ba24fc5d7-output-input",
+        "source": "da0a0159-2092-48c3-90e6-2fc09c992952",
+        "sourceHandle": "output",
+        "target": "2dc604ba-76f4-40b5-a88e-8a1ba24fc5d7",
+        "targetHandle": "input"
+      }
+    ],
+    "viewport": {
+      "x": 0,
+      "y": 0,
+      "zoom": 1
+    }
+  },
+  "status": "published",
+  "exportedAt": "2026-03-15T22:12:28.820Z"
+}

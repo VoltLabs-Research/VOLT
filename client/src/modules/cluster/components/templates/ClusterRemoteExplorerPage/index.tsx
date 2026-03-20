@@ -1,14 +1,14 @@
 import ClusterRemoteAccessModal, { CLUSTER_REMOTE_ACCESS_MODAL_ID } from '@/modules/cluster/components/organisms/ClusterRemoteAccessModal';
-import ClusterRemoteExplorerContent from '@/modules/cluster/components/organisms/ClusterRemoteExplorerContent';
 import useClusterRemoteAccessPage from '@/modules/cluster/hooks/use-cluster-remote-access-page';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
 import { TeamClusterRemoteAccessTarget } from '@/modules/cluster/api/entities/team-cluster-remote-access';
 import { openModal } from '@/shared/presentation/components/Modal';
 import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
+import Paragraph from '@/shared/presentation/components/Paragraph';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
-import { useEffect, useMemo } from 'react';
+import { lazy, Suspense, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 interface SegmentTargetMapping {
@@ -25,6 +25,7 @@ const SEGMENT_TARGET_MAP: SegmentTargetMapping[] = [
 
 /** Fallback used to satisfy hook call order when the URL segment is invalid. */
 const DEFAULT_TARGET = TeamClusterRemoteAccessTarget.MongoDocuments;
+const ClusterRemoteExplorerContent = lazy(() => import('@/modules/cluster/components/organisms/ClusterRemoteExplorerContent'));
 
 /**
  * Resolves the remote explorer mapping from the last segment of the current URL.
@@ -74,7 +75,14 @@ const ClusterRemoteExplorerPage = () => {
     }
 
     if (!vm.cluster) {
-        return <Loader scale={0.5} isFixed={false} />;
+        return (
+            <Container className='d-flex column gap-075 p-2 flex-1 justify-center'>
+                <div className='font-size-3 font-weight-6'>Preparing cluster explorer</div>
+                <Paragraph className='color-secondary'>
+                    Restoring cluster access context and remote explorer session.
+                </Paragraph>
+            </Container>
+        );
     }
 
     if (!vm.isAuthenticated || !vm.session) {
@@ -95,14 +103,16 @@ const ClusterRemoteExplorerPage = () => {
 
     return (
         <Container className='d-flex column flex-1 overflow-hidden vh-max p-1'>
-            <ClusterRemoteExplorerContent
-                teamCluster={vm.cluster}
-                target={target}
-                session={vm.session}
-                listEntries={clusterManagement.listRemoteExplorerEntries}
-                getNode={clusterManagement.getRemoteExplorerNode}
-                downloadObject={clusterManagement.downloadRemoteExplorerObject}
-            />
+            <Suspense fallback={<Loader scale={0.5} isFixed={false} />}>
+                <ClusterRemoteExplorerContent
+                    teamCluster={vm.cluster}
+                    target={target}
+                    session={vm.session}
+                    listEntries={clusterManagement.listRemoteExplorerEntries}
+                    getNode={clusterManagement.getRemoteExplorerNode}
+                    downloadObject={clusterManagement.downloadRemoteExplorerObject}
+                />
+            </Suspense>
         </Container>
     );
 };

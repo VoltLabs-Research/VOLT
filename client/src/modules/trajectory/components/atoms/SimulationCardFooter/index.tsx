@@ -11,8 +11,7 @@ import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
-import useConfirm from '@/shared/presentation/hooks/use-confirm';
+import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { formatDistanceToNow } from 'date-fns';
 import { FolderInput, Play, ScanSearch } from 'lucide-react';
 import { sileo } from 'sileo';
@@ -146,7 +145,6 @@ export default function SimulationCardFooter({
     const teamId = useSelectedTeamId();
     const deleteTrajectoryMutation = trajectoryQuery.useDeleteMutation();
     const triggerRasterizationMutation = useTriggerRasterizationMutation();
-    const { confirm } = useConfirm();
     const pendingRasterKeys = useTeamJobsStore((state) => state.pendingRasterKeys);
     const inFlightRasterTrajectoryIds = useTeamJobsStore((state) => state.inFlightRasterTrajectoryIds);
     const [isDeleting, setIsDeleting] = useState(false);

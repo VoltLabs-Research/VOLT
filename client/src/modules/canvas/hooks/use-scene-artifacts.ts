@@ -2,7 +2,7 @@ import {
     sceneArtifactsQuery,
     SCENE_ARTIFACTS_QUERY_KEYS
 } from '@/modules/trajectory/hooks/scene-artifacts/queries';
-import { ErrorSurface, isAccessDeniedError, mapErrorToUserMessage, normalizeError, reportError } from '@/shared/errors/core';
+import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { useEffect, useMemo } from 'react';
 import queryClient from '@/shared/infrastructure/query/query-client';
 
@@ -54,7 +54,8 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
     const error = useMemo(() => {
         const queryError = colorCodingQuery.error || particleFilterQuery.error;
         if (!queryError) return null;
-        return mapErrorToUserMessage(normalizeError(queryError), {
+        return reportError(queryError, {
+            surface: ErrorSurface.Silent,
             fallbackTitle: 'Failed to load scene artifacts'
         }).title;
     }, [colorCodingQuery.error, particleFilterQuery.error]);

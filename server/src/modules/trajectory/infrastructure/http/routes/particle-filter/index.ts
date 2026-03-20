@@ -1,11 +1,13 @@
 import { Resource } from '@core/constants/resources';
 import { particleFilterValidation } from '@modules/trajectory/infrastructure/http/validation/particle-filter';
 import controllers from '@modules/trajectory/infrastructure/http/controllers/particle-filter';
+import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 
 export default createHttpModule({
     basePath: '/api/particle-filters/:teamId',
     resource: Resource.TRAJECTORY,
+    teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
         router.get('/:trajectoryId/properties', particleFilterValidation.getProperties, controllers.getProperties.handle);
         router.get('/:trajectoryId/previews', particleFilterValidation.preview, controllers.preview.handle);

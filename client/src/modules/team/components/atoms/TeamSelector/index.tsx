@@ -5,8 +5,7 @@ import { resetTeamScopedApplicationState, switchSelectedTeam, useTeamStore } fro
 import { runAction } from '@/shared/presentation/actions/run-action';
 import IconButton from '@/shared/presentation/components/IconButton';
 import Select from '@/shared/presentation/components/Select';
-import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
-import useConfirm from '@/shared/presentation/hooks/use-confirm';
+import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import useTip from '@/shared/tips/use-tip';
 import { IoExitOutline } from 'react-icons/io5';
@@ -38,7 +37,6 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
     const { teams } = useTeamData();
     const selectedTeamId = useSelectedTeamId();
     const leaveTeamMutation = useLeaveTeamMutation();
-    const { confirm } = useConfirm();
     const [tipTrigger, setTipTrigger] = useState(0);
 
     useTip('team-selector-context', {
