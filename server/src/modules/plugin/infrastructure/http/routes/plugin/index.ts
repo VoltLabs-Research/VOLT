@@ -2,6 +2,7 @@ import { pluginValidation } from '@modules/plugin/infrastructure/http/validation
 import controllers from '@modules/plugin/infrastructure/http/controllers/plugin';
 
 import { Resource } from '@core/constants/resources';
+import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 import multer from 'multer';
 
@@ -12,6 +13,7 @@ const upload = multer({
 export default createHttpModule({
     basePath: '/api/plugins/:teamId',
     resource: Resource.PLUGIN,
+    teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
         router.post('/workflow-validation', pluginValidation.validateWorkflow, controllers.validateWorkflow.handle);
         router.get('/:pluginId/export', controllers.exportPlugin.handle);

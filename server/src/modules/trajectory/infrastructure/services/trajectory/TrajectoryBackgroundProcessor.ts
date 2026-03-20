@@ -4,6 +4,7 @@ import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { normalizeTrajectoryWorkerFailure } from '@modules/trajectory/utilities/trajectory/trajectory-worker-failure';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
@@ -525,7 +526,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         await this.initializeGlbSession(trajectory._id, frameDescriptors.length);
 
         try {
-            await this.teamClusterDaemonClient.command(teamClusterId, 'trajectory.enqueue-preprocessing', {
+            await this.teamClusterDaemonClient.command(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.trajectory.enqueuePreprocessing, {
                 trajectoryId: trajectory._id,
                 teamId,
                 trajectoryName: trajectory.props.name,

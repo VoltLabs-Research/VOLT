@@ -1,8 +1,7 @@
 import { processFileSystemEntry } from '@/shared/utils/file';
 import Container from '@/shared/presentation/components/Container';
-import useDragState from '@/shared/presentation/hooks/use-drag-state';
 import './FileUploaderContainer.css';
-import { useRef, useEffect, useCallback, useMemo } from 'react';
+import { useRef, useEffect, useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { sileo } from 'sileo';
 import type { FileWithPath } from '@/shared/utils/file';
@@ -17,7 +16,23 @@ const FileUploaderContainer: React.FC<FileUploaderContainerProps> = ({
     onFilesDropped
 }) => {
     const dropRef = useRef<HTMLDivElement>(null);
-    const { isDraggingOver, handleDragEnter, handleDragLeave, resetDragState } = useDragState();
+    const [isDraggingOver, setIsDraggingOver] = useState(false);
+    const dragCounterRef = useRef(0);
+
+    const handleDragEnter = useCallback(() => {
+        dragCounterRef.current += 1;
+        setIsDraggingOver(true);
+    }, []);
+
+    const handleDragLeave = useCallback(() => {
+        dragCounterRef.current = Math.max(0, dragCounterRef.current - 1);
+        setIsDraggingOver(dragCounterRef.current > 0);
+    }, []);
+
+    const resetDragState = useCallback(() => {
+        dragCounterRef.current = 0;
+        setIsDraggingOver(false);
+    }, []);
 
     const handleWindowDragEnter = useCallback((event: DragEvent) => {
         event.preventDefault();

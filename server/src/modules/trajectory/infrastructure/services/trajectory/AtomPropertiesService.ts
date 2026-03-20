@@ -5,8 +5,8 @@ import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { IAtomPropertiesService, ExposureAtomConfig, AnalysisAllAtomsResult } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import Analysis from '@modules/analysis/domain/entities/Analysis';
 import Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -16,7 +16,7 @@ import { injectable, inject } from 'tsyringe';
 @injectable()
 export default class AtomPropertiesService implements IAtomPropertiesService {
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterDaemonClient)
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
         private readonly daemonClient: TeamClusterDaemonClient,
 
         @inject(ANALYSIS_TOKENS.AnalysisRepository)

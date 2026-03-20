@@ -1,5 +1,3 @@
-import { routesConfig } from './config';
-import ProtectedRoute, { RouteMode } from './ProtectedRoute';
 import { canAccessByPermissions } from '@/modules/team/utilities/team/permission-evaluator';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
@@ -8,11 +6,14 @@ import Loader from '@/shared/presentation/components/Loader';
 import PageTransition from '@/shared/presentation/components/PageTransition';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import DashboardLayout from '@/modules/dashboard/components/organisms/DashboardLayout';
+import { guestRoutes, protectedRoutes, publicRoutes } from '@/app/routes/definitions';
+import ProtectedRoute, { RouteMode } from '@/app/routes/ProtectedRoute';
+import { RoutePermissionMode } from '@/app/routes/types';
 import { Route } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import type { ComponentType, ElementType, LazyExoticComponent, ReactNode } from 'react';
-import { RoutePermissionMode } from './types';
-import type { RouteConfig, RouteLoader } from './types';
+import type { RouteConfig, RouteLoader } from '@/app/routes/types';
 
 interface RoutePermissionGuardProps {
     route: RouteConfig;
@@ -20,6 +21,9 @@ interface RoutePermissionGuardProps {
 };
 
 const lazyRouteCache = new Map<RouteLoader, LazyExoticComponent<ComponentType>>();
+const DASHBOARD_ROUTE_PREFIX = '/dashboard';
+const dashboardProtectedRoutes = protectedRoutes.filter((route) => route.path.startsWith(DASHBOARD_ROUTE_PREFIX));
+const nonDashboardProtectedRoutes = protectedRoutes.filter((route) => !route.path.startsWith(DASHBOARD_ROUTE_PREFIX));
 
 const wrapWithPageTransition = (Component: ElementType) => (
     <PageTransition>
@@ -146,31 +150,17 @@ const renderRouteWithChildren = (route: RouteConfig, withTransition = true) => {
     );
 };
 
-const renderProtectedRoute = (route: RouteConfig) => renderRouteWithChildren(route);
-
 export const renderPublicRoutes = () => {
-    return routesConfig.public.map((route: RouteConfig) => renderRouteWithChildren(route));
+    return publicRoutes.map((route) => renderRouteWithChildren(route));
 };
 
 export const renderProtectedRoutes = () => {
-    const DashboardLayout = routesConfig.dashboardLayout;
-
-    // Separate dashboard routes from non-dashboard routes
-    const dashboardRoutes = routesConfig.protected.filter((route) =>
-        route.path.startsWith('/dashboard')
-    );
-    const nonDashboardRoutes = routesConfig.protected.filter((route) =>
-        !route.path.startsWith('/dashboard')
-    );
-
     return (
         <Route element={<ProtectedRoute mode={RouteMode.Protected} />}>
-            {nonDashboardRoutes.map(renderProtectedRoute)}
-            {DashboardLayout && (
-                <Route path='/dashboard' element={<DashboardLayout />}>
-                    {dashboardRoutes.map((route) => renderRouteWithChildren(route, false))}
-                </Route>
-            )}
+            {nonDashboardProtectedRoutes.map((route) => renderRouteWithChildren(route))}
+            <Route path={DASHBOARD_ROUTE_PREFIX} element={<DashboardLayout />}>
+                {dashboardProtectedRoutes.map((route) => renderRouteWithChildren(route, false))}
+            </Route>
         </Route>
     );
 };
@@ -178,7 +168,7 @@ export const renderProtectedRoutes = () => {
 export const renderGuestRoutes = () => {
     return (
         <Route element={<ProtectedRoute mode={RouteMode.Guest} />}>
-            {routesConfig.guest.map((route: RouteConfig) => renderRouteWithChildren(route))}
+            {guestRoutes.map((route) => renderRouteWithChildren(route))}
         </Route>
     );
 };

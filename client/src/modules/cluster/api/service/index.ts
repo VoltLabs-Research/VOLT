@@ -1,6 +1,11 @@
-import { getClusterMetricsSource } from './client';
-import type { ClusterMetrics } from '../entities/cluster-metrics';
-import type { ClusterMetricsHistoryResponse, IClusterMetricsSource } from './contracts';
+import { CLUSTER_SOCKET_EVENTS } from './endpoints/socket-events';
+import socketService from '@/modules/socket/core/services/socket-service';
+import type { ClusterHistoryMetric, ClusterMetrics } from '../entities/cluster-metrics';
+
+export interface ClusterMetricsHistoryResponse {
+    clusterId: string;
+    history: ClusterHistoryMetric[];
+};
 
 interface ObserveClusterMetricsHandlers {
     onConnectionChange?: (connected: boolean) => void;
@@ -8,43 +13,33 @@ interface ObserveClusterMetricsHandlers {
     onMetricsHistory?: (payload: ClusterMetricsHistoryResponse) => void;
 };
 
-export class ClusterObserver {
-    private readonly source: IClusterMetricsSource;
+export const observeClusterMetrics = (handlers: ObserveClusterMetricsHandlers = {}): (() => void) => {
+    const cleanups: Array<() => void> = [];
 
-    constructor() {
-        this.source = getClusterMetricsSource();
+    if (handlers.onConnectionChange) {
+        cleanups.push(socketService.onConnectionChange(handlers.onConnectionChange));
     }
 
-    execute(handlers: ObserveClusterMetricsHandlers = {}): () => void {
-        const cleanups: Array<() => void> = [];
-
-        if (handlers.onConnectionChange) {
-            cleanups.push(this.source.onConnectionChange(handlers.onConnectionChange));
-        }
-
-        if (handlers.onMetricsAll) {
-            cleanups.push(this.source.onMetricsAll(handlers.onMetricsAll));
-        }
-
-        if (handlers.onMetricsHistory) {
-            cleanups.push(this.source.onMetricsHistory(handlers.onMetricsHistory));
-        }
-
-        if (handlers.onConnectionChange) {
-            handlers.onConnectionChange(this.source.isConnected());
-        }
-
-        return () => {
-            cleanups.forEach((cleanup) => cleanup());
-        };
+    if (handlers.onMetricsAll) {
+        cleanups.push(socketService.on(CLUSTER_SOCKET_EVENTS.metricsAll, handlers.onMetricsAll));
     }
-};
 
-export const observeClusterMetrics = (): ClusterObserver => {
-    return new ClusterObserver();
+    if (handlers.onMetricsHistory) {
+        cleanups.push(socketService.on(CLUSTER_SOCKET_EVENTS.metricsHistory, handlers.onMetricsHistory));
+    }
+
+    if (handlers.onConnectionChange) {
+        handlers.onConnectionChange(socketService.isConnected());
+    }
+
+    return () => {
+        cleanups.forEach((cleanup) => cleanup());
+    };
 };
 
 export const requestClusterHistory = async (minutes: number | undefined, clusterId: string): Promise<void> => {
-    const source = getClusterMetricsSource();
-    await source.requestHistory(minutes, clusterId);
+    await socketService.emit(CLUSTER_SOCKET_EVENTS.metricsHistory, {
+        minutes: minutes ?? 5,
+        clusterId
+    });
 };

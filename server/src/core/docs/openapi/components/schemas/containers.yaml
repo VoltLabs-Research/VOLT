@@ -186,25 +186,10 @@ Container:
       type: string
       format: date-time
 ContainerFolder:
-  type: object
-  description: A folder used to organize containers
-  properties:
-    id:
-      type: string
-    teamId:
-      type: string
-    title:
-      type: string
-    parentId:
-      type:
-      - string
-      - 'null'
-    createdAt:
-      type: string
-      format: date-time
-    updatedAt:
-      type: string
-      format: date-time
+  allOf:
+  - $ref: common.yaml#/Folder
+  - type: object
+    description: A folder used to organize containers
 ContainerFile:
   type: object
   description: A file or directory entry inside a container

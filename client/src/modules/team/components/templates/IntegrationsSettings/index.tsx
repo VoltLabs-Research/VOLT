@@ -16,8 +16,7 @@ import Select from '@/shared/presentation/components/Select';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSection from '@/shared/presentation/components/SettingsSection';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
-import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
-import useConfirm from '@/shared/presentation/hooks/use-confirm';
+import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { Skeleton } from '@mui/material';
@@ -107,7 +106,6 @@ export default function IntegrationsSettings() {
     const createTeamAIIntegration = useCreateTeamAIIntegration();
     const updateTeamAIIntegration = useUpdateTeamAIIntegration();
     const deleteTeamAIIntegration = useDeleteTeamAIIntegration();
-    const { confirm } = useConfirm();
 
     const [isSaving, setIsSaving] = useState(false);
     const [busyProvider, setBusyProvider] = useState<AIProvider | null>(null);

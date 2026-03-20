@@ -278,11 +278,17 @@ export const createInfiniteQuery = <TParams, TEntity>(
 
 /** Creates a mutation hook factory with shared typing. */
 export const createMutation = <TData, TVariables>(
-    mutationFn: (variables: TVariables) => Promise<TData>
+    mutationFn: (variables: TVariables) => Promise<TData>,
+    onSuccess?: (data: TData, variables: TVariables, onMutateResult: unknown, context: MutationFunctionContext) => unknown
 ): MutationHook<TData, TVariables> => {
     return (options?: MutationOptions<TData, TVariables>) => useMutation<TData, Error, TVariables>({
         ...options,
-        mutationFn
+        mutationFn,
+        onSuccess: onSuccess
+            ? withSuccess((data, variables, onMutateResult, context) => {
+                void onSuccess(data, variables, onMutateResult, context);
+            }, options)
+            : options?.onSuccess
     });
 };
 

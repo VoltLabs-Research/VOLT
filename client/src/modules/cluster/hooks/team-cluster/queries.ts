@@ -27,6 +27,20 @@ interface TeamClusterQueryKeyMap {
     availableVersions: FetchAvailableClusterVersionsInputDTO;
 };
 
+const TEAM_CLUSTER_STALE_TIME = 5 * 60 * 1000;
+
+const getConsistentClusterPagination = (page: number, limit: number, total: number) => {
+    const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
+
+    return {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasMore: page < totalPages
+    };
+};
+
 export const TEAM_CLUSTER_QUERY_KEYS = buildKeys<TeamClusterQueryKeyMap>('team-clusters');
 
 export const teamClustersQuery = createQuery(TEAM_CLUSTER_QUERY_KEYS.byTeam, (teamId: string) => {
@@ -42,6 +56,7 @@ export const teamClustersQuery = createQuery(TEAM_CLUSTER_QUERY_KEYS.byTeam, (te
 export const useTeamClustersQuery = (teamId: string, options?: QueryOptions<ListTeamClustersOutputDTO>) => {
     return teamClustersQuery(teamId, {
         enabled: Boolean(teamId),
+        staleTime: TEAM_CLUSTER_STALE_TIME,
         ...options
     });
 };
@@ -52,30 +67,20 @@ export const upsertTeamClusterQueryData = (teamId: string, teamCluster: TeamClus
             return {
                 status: 'success',
                 data: [teamCluster],
-                pagination: {
-                    page: 1,
-                    limit: 100,
-                    total: 1,
-                    totalPages: 1,
-                    hasMore: false
-                }
+                pagination: getConsistentClusterPagination(1, 100, 1)
             };
         }
 
         const exists = current.data.some((cluster) => cluster._id === teamCluster._id);
+
+        const total = exists ? current.pagination.total : current.pagination.total + 1;
 
         return {
             ...current,
             data: exists
                 ? current.data.map((cluster) => cluster._id === teamCluster._id ? teamCluster : cluster)
                 : [teamCluster, ...current.data],
-            pagination: exists
-                ? current.pagination
-                : {
-                    ...current.pagination,
-                    total: current.pagination.total + 1,
-                    totalPages: Math.max(1, Math.ceil((current.pagination.total + 1) / current.pagination.limit))
-                }
+            pagination: getConsistentClusterPagination(current.pagination.page, current.pagination.limit, total)
         };
     });
 };
@@ -88,17 +93,12 @@ export const removeTeamClusterQueryData = (teamId: string, teamClusterId: string
 
         const nextData = current.data.filter((cluster) => cluster._id !== teamClusterId);
         const wasRemoved = nextData.length !== current.data.length;
+        const total = wasRemoved ? Math.max(0, current.pagination.total - 1) : current.pagination.total;
 
         return {
             ...current,
             data: nextData,
-            pagination: wasRemoved
-                ? {
-                    ...current.pagination,
-                    total: Math.max(0, current.pagination.total - 1),
-                    totalPages: Math.max(1, Math.ceil(Math.max(0, current.pagination.total - 1) / current.pagination.limit))
-                }
-                : current.pagination
+            pagination: getConsistentClusterPagination(current.pagination.page, current.pagination.limit, total)
         };
     });
 };

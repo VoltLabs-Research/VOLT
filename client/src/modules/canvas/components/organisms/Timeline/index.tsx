@@ -159,6 +159,7 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
     const currentFrame = currentTimestep ?? startFrame;
 
     const rulerRef = useRef<HTMLDivElement>(null);
+    const tickElementsRef = useRef<HTMLDivElement[]>([]);
     const [playheadLeft, setPlayheadLeft] = useState<number>(0);
     const [isDragging, setIsDragging] = useState(false);
     const isDraggingRef = useRef(false);
@@ -166,18 +167,70 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
     const [zoomPercent, setZoomPercent] = useState(100);
     const lastZoomRef = useRef(100);
 
-    useEffect(() => {
-        const id = setInterval(() => {
-            if (sceneRef.current?.getCurrentZoom) {
-                const newZoom = sceneRef.current.getCurrentZoom();
-                if (Math.abs(newZoom - lastZoomRef.current) > 1) {
-                    lastZoomRef.current = newZoom;
-                    setZoomPercent(newZoom);
-                }
-            }
-        }, 500);
-        return () => clearInterval(id);
+    const syncZoomPercent = useCallback(() => {
+        if (!sceneRef.current?.getCurrentZoom) {
+            return;
+        }
+
+        const nextZoom = sceneRef.current.getCurrentZoom();
+        if (Math.abs(nextZoom - lastZoomRef.current) <= 1) {
+            return;
+        }
+
+        lastZoomRef.current = nextZoom;
+        setZoomPercent(nextZoom);
     }, [sceneRef]);
+
+    useEffect(() => {
+        let animationFrameId: number | null = null;
+        let samplingDeadline = 0;
+
+        const runZoomSampling = () => {
+            syncZoomPercent();
+
+            if (performance.now() < samplingDeadline) {
+                animationFrameId = window.requestAnimationFrame(runZoomSampling);
+                return;
+            }
+
+            animationFrameId = null;
+        };
+
+        const scheduleZoomSampling = (durationMs = 600) => {
+            samplingDeadline = performance.now() + durationMs;
+
+            if (animationFrameId === null) {
+                animationFrameId = window.requestAnimationFrame(runZoomSampling);
+            }
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                scheduleZoomSampling();
+            }
+        };
+
+        const handleZoomInteraction = () => {
+            scheduleZoomSampling();
+        };
+
+        scheduleZoomSampling(800);
+        window.addEventListener('wheel', handleZoomInteraction, { passive: true });
+        window.addEventListener('pointerup', handleZoomInteraction);
+        window.addEventListener('keydown', handleZoomInteraction);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            if (animationFrameId !== null) {
+                window.cancelAnimationFrame(animationFrameId);
+            }
+
+            window.removeEventListener('wheel', handleZoomInteraction);
+            window.removeEventListener('pointerup', handleZoomInteraction);
+            window.removeEventListener('keydown', handleZoomInteraction);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [syncZoomPercent]);
 
     const handleZoomPreset = useCallback((preset: number) => {
         if (sceneRef.current?.zoomTo) {
@@ -199,10 +252,28 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
         });
     }, []);
 
+    const collectTickElements = useCallback((): HTMLDivElement[] => {
+        const ruler = rulerRef.current;
+        if (!ruler) {
+            tickElementsRef.current = [];
+            return [];
+        }
+
+        const tickElements = Array.from(ruler.querySelectorAll<HTMLDivElement>('.canvas-ruler-tick'));
+        tickElementsRef.current = tickElements;
+        return tickElements;
+    }, []);
+
+    useEffect(() => {
+        collectTickElements();
+    }, [collectTickElements, ticks]);
+
     const updatePlayheadPosition = useCallback(() => {
         const ruler = rulerRef.current;
         if (!ruler || rangedTimesteps.length === 0) return;
-        const tickElements = ruler.querySelectorAll<HTMLDivElement>('.canvas-ruler-tick');
+        const tickElements = tickElementsRef.current.length > 0
+            ? tickElementsRef.current
+            : collectTickElements();
         const tickEl = tickElements[safeCurrentIndex];
         if (!tickEl) return;
         const tickCenter = tickEl.offsetLeft + tickEl.offsetWidth / 2;
@@ -217,7 +288,7 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
         if (tickCenter < visibleLeft + margin || tickCenter > visibleRight - margin) {
             scrollToTick(tickEl, !isDraggingRef.current);
         }
-    }, [safeCurrentIndex, rangedTimesteps.length, scrollToTick]);
+    }, [collectTickElements, safeCurrentIndex, rangedTimesteps.length, scrollToTick]);
 
     useEffect(() => {
         updatePlayheadPosition();
@@ -236,7 +307,9 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
     const pickNearestTimestep = useCallback((clientX: number) => {
         const ruler = rulerRef.current;
         if (!ruler || rangedTimesteps.length === 0) return;
-        const tickElements = ruler.querySelectorAll<HTMLDivElement>('.canvas-ruler-tick');
+        const tickElements = tickElementsRef.current.length > 0
+            ? tickElementsRef.current
+            : collectTickElements();
         if (tickElements.length === 0) return;
 
         let nearestIndex = 0;
@@ -255,7 +328,7 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
         if (nearestIndex < rangedTimesteps.length) {
             setCurrentTimestep(rangedTimesteps[nearestIndex]);
         }
-    }, [rangedTimesteps, setCurrentTimestep]);
+    }, [collectTickElements, rangedTimesteps, setCurrentTimestep]);
 
     const handleRulerClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
         pickNearestTimestep(event.clientX);

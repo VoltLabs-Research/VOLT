@@ -2,6 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { GetTrajectoryGLBInputDTO, GetTrajectoryGLBOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryGLBDTO';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Result } from '@shared/domain/port/Result';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
@@ -37,7 +38,7 @@ export default class GetTrajectoryGLBUseCase implements IUseCase<GetTrajectoryGL
             }
 
             if (trajectory.props.teamCluster) {
-                const stream = await this.teamClusterDaemonClient.commandStream(trajectory.props.teamCluster, 'object.get', {
+                const stream = await this.teamClusterDaemonClient.commandStream(trajectory.props.teamCluster, TEAM_CLUSTER_DAEMON_COMMAND.object.get, {
                     bucket: 'volt-models',
                     objectKey: objectName
                 });

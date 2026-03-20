@@ -9,6 +9,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { TeamClusterDaemonStreamError } from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
@@ -123,7 +124,7 @@ export class RasterStorageService implements IRasterStorage {
         if (teamClusterId) {
             const result = await this.teamClusterDaemonClient.command<ObjectListResponse>(
                 teamClusterId,
-                'object.list',
+                TEAM_CLUSTER_DAEMON_COMMAND.object.list,
                 {
                     bucket,
                     prefix
@@ -172,7 +173,7 @@ export class RasterStorageService implements IRasterStorage {
         filename: string
     ): Promise<RasterFrameResult> {
         try {
-            const response = await this.teamClusterDaemonClient.commandResponseStream(teamClusterId, 'object.get', {
+            const response = await this.teamClusterDaemonClient.commandResponseStream(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.object.get, {
                 bucket: SYS_BUCKETS.RASTERIZER,
                 objectKey: objectName
             });

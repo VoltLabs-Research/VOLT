@@ -25,8 +25,9 @@ const normalizeMiddleware = (middleware?: RequestHandler | RequestHandler[]): Re
 
 export const createHttpModule = (config: CreateHttpModuleConfig): HttpModule => {
     const router = Router({ mergeParams: true, ...config.routerOptions });
+    const isProtected = config.protected ?? Boolean(config.teamScope);
 
-    if (config.protected && config.teamScope !== HttpModuleTeamScope.BasePath) {
+    if (isProtected && config.teamScope !== HttpModuleTeamScope.BasePath) {
         router.use(protect);
     }
 
@@ -38,6 +39,7 @@ export const createHttpModule = (config: CreateHttpModuleConfig): HttpModule => 
 
     return {
         basePath: config.basePath,
+        protected: isProtected,
         router,
         resource: config.resource,
         teamScope: config.teamScope

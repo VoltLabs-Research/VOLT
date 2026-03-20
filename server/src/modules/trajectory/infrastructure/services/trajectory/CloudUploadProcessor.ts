@@ -2,18 +2,20 @@ import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { isRetryableTeamClusterTransportError } from '@modules/team-cluster/infrastructure/services/TeamClusterTransportError';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { WorkerFailureError, createWorkerFailureEnvelope } from '@shared/infrastructure/workers/WorkerFailureEnvelope';
 import logger from '@shared/infrastructure/logger';
 import { injectable, inject } from 'tsyringe';
+import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import zlib from 'node:zlib';
-import { promisify } from 'node:util';
 import { randomUUID } from 'node:crypto';
 
 import type { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
-
-const gzipAsync = promisify(zlib.gzip);
+import type { FileHandle } from 'node:fs/promises';
 
 /**
  * Compressed payloads at or below this threshold are sent as a single
@@ -44,6 +46,26 @@ interface RetryOptions {
     maxAttempts: number;
     baseDelayMs: number;
 };
+
+enum UploadCompressionMode {
+    Direct = 'direct',
+    Chunked = 'chunked'
+};
+
+interface DirectCompressedPayload {
+    mode: UploadCompressionMode.Direct;
+    compressedDump: Buffer;
+    compressedSize: number;
+};
+
+interface ChunkedCompressedPayload {
+    mode: UploadCompressionMode.Chunked;
+    chunkDirectoryPath: string;
+    compressedSize: number;
+    totalChunks: number;
+};
+
+type PreparedCompressedPayload = DirectCompressedPayload | ChunkedCompressedPayload;
 
 const RETRY_OPTIONS: RetryOptions = {
     maxAttempts: 3,
@@ -84,7 +106,7 @@ export default class CloudUploadProcessor {
 
         await this.executeWithTransportRetry(
             task,
-            'object.upload',
+            TEAM_CLUSTER_DAEMON_COMMAND.object.upload,
             () => this.uploadDumpToTeamCluster(teamClusterId, trajectoryId, timestep, frameFilePath)
         );
 
@@ -97,33 +119,161 @@ export default class CloudUploadProcessor {
         timestep: number,
         localPath: string
     ): Promise<void> {
-        const dumpBuffer = await fs.readFile(localPath);
-        const compressedDump = await gzipAsync(dumpBuffer, {
-            level: zlib.constants.Z_BEST_SPEED
-        });
         const objectKey = this.dumpStorage.getObjectName(trajectoryId, String(timestep));
+        const preparedPayload = await this.prepareCompressedPayload(localPath, objectKey);
 
-        if (compressedDump.length <= DIRECT_UPLOAD_THRESHOLD) {
-            // Small payload — use the legacy single-message path.
-            await this.teamClusterDaemonClient.command(teamClusterId, 'object.upload', {
-                bucket: SYS_BUCKETS.DUMPS,
-                objectKey,
-                content: compressedDump.toString('base64'),
-                encoding: 'base64',
-                metadata: {
-                    'Content-Type': 'application/gzip',
-                    'Content-Encoding': 'gzip'
-                }
-            });
-            return;
+        try {
+            if (preparedPayload.mode === UploadCompressionMode.Direct) {
+                await this.teamClusterDaemonClient.command(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.object.upload, {
+                    bucket: SYS_BUCKETS.DUMPS,
+                    objectKey,
+                    content: preparedPayload.compressedDump.toString('base64'),
+                    encoding: 'base64',
+                    metadata: {
+                        'Content-Type': 'application/gzip',
+                        'Content-Encoding': 'gzip'
+                    }
+                });
+                return;
+            }
+
+            await this.uploadChunked(
+                teamClusterId,
+                preparedPayload.chunkDirectoryPath,
+                preparedPayload.compressedSize,
+                preparedPayload.totalChunks,
+                objectKey
+            );
+        } finally {
+            if (preparedPayload.mode === UploadCompressionMode.Chunked) {
+                await fs.rm(preparedPayload.chunkDirectoryPath, { force: true, recursive: true });
+            }
         }
-
-        // Large payload — chunked upload protocol.
-        await this.uploadChunked(teamClusterId, compressedDump, objectKey);
     }
 
     /**
-     * Splits a large compressed buffer into 512 KB chunks and sends them to
+     * Gzips the dump as a stream and only keeps compressed bytes in memory
+     * while the payload stays within the direct-upload threshold.
+     */
+    private async prepareCompressedPayload(
+        localPath: string,
+        objectKey: string
+    ): Promise<PreparedCompressedPayload> {
+        const gzipStream = createReadStream(localPath).pipe(zlib.createGzip({
+            level: zlib.constants.Z_BEST_SPEED
+        }));
+        const inMemoryChunks: Buffer[] = [];
+        let inMemorySize = 0;
+        let compressedSize = 0;
+        let chunkDirectoryPath: string | undefined;
+        let chunkFile: FileHandle | undefined;
+        let currentChunkSize = 0;
+        let totalChunks = 0;
+
+        const closeChunkFile = async (): Promise<void> => {
+            if (!chunkFile) {
+                return;
+            }
+
+            await chunkFile.close();
+            chunkFile = undefined;
+            currentChunkSize = 0;
+        };
+
+        const startChunkedWrite = async (): Promise<void> => {
+            if (chunkDirectoryPath) {
+                return;
+            }
+
+            chunkDirectoryPath = await fs.mkdtemp(join(tmpdir(), 'trajectory-dump-'));
+
+            logger.info(
+                `@cloud-upload-processor: switching to streamed chunked upload objectKey=${objectKey} compressedBytesBuffered=${inMemorySize}`
+            );
+
+            for (const inMemoryChunk of inMemoryChunks) {
+                await writeCompressedChunk(inMemoryChunk);
+            }
+
+            inMemoryChunks.length = 0;
+            inMemorySize = 0;
+        };
+
+        const writeCompressedChunk = async (chunk: Buffer): Promise<void> => {
+            let offset = 0;
+
+            while (offset < chunk.length) {
+                if (!chunkDirectoryPath) {
+                    throw new Error('Chunk directory must exist before writing chunked upload data.');
+                }
+
+                if (!chunkFile) {
+                    const chunkPath = join(chunkDirectoryPath, `${String(totalChunks).padStart(8, '0')}.part`);
+                    chunkFile = await fs.open(chunkPath, 'w');
+                }
+
+                const writableBytes = Math.min(CHUNK_SIZE - currentChunkSize, chunk.length - offset);
+                const chunkSlice = chunk.subarray(offset, offset + writableBytes);
+
+                await chunkFile.write(chunkSlice);
+
+                currentChunkSize += writableBytes;
+                offset += writableBytes;
+
+                if (currentChunkSize === CHUNK_SIZE) {
+                    totalChunks += 1;
+                    await closeChunkFile();
+                }
+            }
+        };
+
+        try {
+            for await (const outputChunk of gzipStream) {
+                const chunk = Buffer.isBuffer(outputChunk) ? outputChunk : Buffer.from(outputChunk);
+                compressedSize += chunk.length;
+
+                if (!chunkDirectoryPath && inMemorySize + chunk.length <= DIRECT_UPLOAD_THRESHOLD) {
+                    inMemoryChunks.push(chunk);
+                    inMemorySize += chunk.length;
+                    continue;
+                }
+
+                await startChunkedWrite();
+                await writeCompressedChunk(chunk);
+            }
+
+            if (!chunkDirectoryPath) {
+                return {
+                    mode: UploadCompressionMode.Direct,
+                    compressedDump: Buffer.concat(inMemoryChunks, compressedSize),
+                    compressedSize
+                };
+            }
+
+            if (chunkFile) {
+                totalChunks += 1;
+                await closeChunkFile();
+            }
+
+            return {
+                mode: UploadCompressionMode.Chunked,
+                chunkDirectoryPath,
+                compressedSize,
+                totalChunks
+            };
+        } catch (error) {
+            await closeChunkFile();
+
+            if (chunkDirectoryPath) {
+                await fs.rm(chunkDirectoryPath, { force: true, recursive: true });
+            }
+
+            throw error;
+        }
+    }
+
+    /**
+     * Streams a large compressed file in 512 KB chunks and sends them to
      * the daemon via a three-phase protocol:
      *
      *   1. `object.upload.init`   — declares the transfer (bucket, objectKey, metadata)
@@ -135,48 +285,91 @@ export default class CloudUploadProcessor {
      */
     private async uploadChunked(
         teamClusterId: string,
-        compressedDump: Buffer,
+        chunkDirectoryPath: string,
+        compressedSize: number,
+        totalChunks: number,
         objectKey: string
     ): Promise<void> {
         const transferId = randomUUID();
-        const totalChunks = Math.ceil(compressedDump.length / CHUNK_SIZE);
+        let uploadInitialized = false;
 
         logger.info(
             `@cloud-upload-processor: starting chunked upload transferId=${transferId} ` +
-            `compressedSize=${compressedDump.length} chunks=${totalChunks} objectKey=${objectKey}`
+            `compressedSize=${compressedSize} chunks=${totalChunks} objectKey=${objectKey}`
         );
 
-        // Phase 1 — init
-        await this.teamClusterDaemonClient.command(teamClusterId, 'object.upload.init', {
-            transferId,
-            bucket: SYS_BUCKETS.DUMPS,
-            objectKey,
-            totalChunks,
-            metadata: {
-                'Content-Type': 'application/gzip',
-                'Content-Encoding': 'gzip'
-            }
-        });
-
-        // Phase 2 — send chunks sequentially
-        for (let index = 0; index < totalChunks; index += 1) {
-            const start = index * CHUNK_SIZE;
-            const end = Math.min(start + CHUNK_SIZE, compressedDump.length);
-            const chunk = compressedDump.subarray(start, end);
-
-            await this.teamClusterDaemonClient.command(teamClusterId, 'object.upload.chunk', {
+        try {
+            // Phase 1 — init
+            await this.teamClusterDaemonClient.command(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.object.uploadInit, {
                 transferId,
-                index,
-                data: chunk.toString('base64')
+                bucket: SYS_BUCKETS.DUMPS,
+                objectKey,
+                totalChunks,
+                metadata: {
+                    'Content-Type': 'application/gzip',
+                    'Content-Encoding': 'gzip'
+                }
             });
+            uploadInitialized = true;
+
+            // Phase 2 — send chunks sequentially
+            for (let index = 0; index < totalChunks; index += 1) {
+                const chunkPath = join(chunkDirectoryPath, `${String(index).padStart(8, '0')}.part`);
+                const chunk = await fs.readFile(chunkPath);
+
+                if (chunk.length === 0) {
+                    throw new Error(`Compressed dump chunk is empty index=${index} path=${chunkPath}`);
+                }
+
+                if (chunk.length > CHUNK_SIZE) {
+                    throw new Error(`Compressed dump chunk exceeds size limit index=${index} size=${chunk.length}`);
+                }
+
+                if (index < totalChunks - 1 && chunk.length !== CHUNK_SIZE) {
+                    throw new Error(`Compressed dump chunk has unexpected size index=${index} expected=${CHUNK_SIZE} actual=${chunk.length}`);
+                }
+
+                if (index === totalChunks - 1) {
+                    const finalChunkSize = compressedSize - (index * CHUNK_SIZE);
+
+                    if (chunk.length !== finalChunkSize) {
+                        throw new Error(`Compressed dump final chunk has unexpected size index=${index} expected=${finalChunkSize} actual=${chunk.length}`);
+                    }
+                }
+
+                await this.teamClusterDaemonClient.command(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.object.uploadChunk, {
+                    transferId,
+                    index,
+                    data: chunk.toString('base64')
+                });
+            }
+
+            logger.info(
+                `@cloud-upload-processor: uploaded chunked payload transferId=${transferId} chunks=${totalChunks} objectKey=${objectKey}`
+            );
+
+            // Phase 3 — commit
+            await this.teamClusterDaemonClient.command(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.object.uploadCommit, {
+                transferId
+            });
+
+            logger.info(`@cloud-upload-processor: chunked upload committed transferId=${transferId}`);
+        } catch (error) {
+            if (uploadInitialized) {
+                await this.teamClusterDaemonClient.command(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.object.uploadAbort, {
+                    transferId
+                }).catch((abortError) => {
+                    logger.warn({
+                        abortError,
+                        objectKey,
+                        teamClusterId,
+                        transferId
+                    }, '@cloud-upload-processor: failed to abort chunked upload transfer');
+                });
+            }
+
+            throw error;
         }
-
-        // Phase 3 — commit
-        await this.teamClusterDaemonClient.command(teamClusterId, 'object.upload.commit', {
-            transferId
-        });
-
-        logger.info(`@cloud-upload-processor: chunked upload committed transferId=${transferId}`);
     }
 
     /** Retries transient daemon transport failures before surfacing a terminal trajectory failure. */

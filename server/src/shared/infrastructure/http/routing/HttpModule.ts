@@ -6,11 +6,10 @@ export enum HttpModuleTeamScope {
     Param = 'param'
 };
 
-export const hasTeamIdInBasePath = (basePath: string): boolean => basePath.includes(':teamId');
-
 export interface HttpModule {
     basePath: string;
     router: Router;
+    protected?: boolean;
     resource?: Resource;
     teamScope?: HttpModuleTeamScope;
 };

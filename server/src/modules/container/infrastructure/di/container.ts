@@ -47,62 +47,63 @@ import { CreateContainerPortProxySessionUseCase } from '@modules/container/appli
 import { ContainerPortProxyAccessTokenService } from '@modules/container/infrastructure/utilities/container-port-proxy';
 import { ContainerSocketModule } from '@modules/container/socket';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import type { ClassProvider } from 'tsyringe';
-import { container, Lifecycle } from 'tsyringe';
+import { createClassBindings, registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
+import { Lifecycle } from 'tsyringe';
 
-const CONTAINER_AI_TOOL_CLASSES: ClassProvider<unknown>[] = [
-    { useClass: CreateContainerAITool },
-    { useClass: DeleteContainerAITool },
-    { useClass: GetContainerByIdAITool },
-    { useClass: GetContainerProcessesAITool },
-    { useClass: GetContainerStatsAITool },
-    { useClass: ListContainerFilesAITool },
-    { useClass: ListContainersAITool },
-    { useClass: ReadContainerFileAITool },
-    { useClass: UpdateContainerAITool }
+const CONTAINER_AI_TOOLS = [
+    CreateContainerAITool,
+    DeleteContainerAITool,
+    GetContainerByIdAITool,
+    GetContainerProcessesAITool,
+    GetContainerStatsAITool,
+    ListContainerFilesAITool,
+    ListContainersAITool,
+    ReadContainerFileAITool,
+    UpdateContainerAITool
 ];
 
 export const registerContainerDependencies = (): void => {
-    container.register(CONTAINER_TOKENS.ContainerRepository, { useClass: ContainerRepository });
-    container.register(CONTAINER_TOKENS.ContainerFolderRepository, { useClass: ContainerFolderRepository });
-    container.register(CONTAINER_TOKENS.DockerNetworkRepository, { useClass: DockerNetworkRepository });
-    container.register(CONTAINER_TOKENS.DockerVolumeRepository, { useClass: DockerVolumeRepository });
-    container.register(CONTAINER_TOKENS.ContainerService, { useClass: DockerContainerService });
-    container.register(CONTAINER_TOKENS.ContainerRuntimeService, { useClass: DaemonContainerRuntimeService });
-    container.register(CONTAINER_TOKENS.TerminalService, { useClass: TerminalService });
-    container.register(CONTAINER_TOKENS.ContainerAccessiblePortResolver, { useClass: ContainerAccessiblePortResolver });
-    container.registerSingleton(ContainerDeploymentProgressService, ContainerDeploymentProgressService);
-    container.register(ContainerOwnershipService, { useClass: ContainerOwnershipService });
-    container.registerSingleton(ContainerVncGatewayService, ContainerVncGatewayService);
-    container.registerSingleton(ContainerPortProxyRelayService, ContainerPortProxyRelayService);
-    container.registerSingleton(ContainerPortProxyAccessTokenService, ContainerPortProxyAccessTokenService);
-    container.register(TeamClusterSelectionService, { useClass: TeamClusterSelectionService });
-
-    container.register(CreateContainerUseCase, { useClass: CreateContainerUseCase });
-    container.register(CreateContainerFolderUseCase, { useClass: CreateContainerFolderUseCase });
-    container.register(CreateContainerVncSessionUseCase, { useClass: CreateContainerVncSessionUseCase });
-    container.register(UpdateContainerUseCase, { useClass: UpdateContainerUseCase });
-    container.register(UpdateContainerFolderUseCase, { useClass: UpdateContainerFolderUseCase });
-    container.register(DeleteContainerUseCase, { useClass: DeleteContainerUseCase });
-    container.register(DeleteContainerFolderUseCase, { useClass: DeleteContainerFolderUseCase });
-    container.register(ListContainersUseCase, { useClass: ListContainersUseCase });
-    container.register(ListContainerFoldersUseCase, { useClass: ListContainerFoldersUseCase });
-    container.register(GetContainerStatsUseCase, { useClass: GetContainerStatsUseCase });
-    container.register(GetContainerVncConnectPageUseCase, { useClass: GetContainerVncConnectPageUseCase });
-    container.register(GetContainerFilesUseCase, { useClass: GetContainerFilesUseCase });
-    container.register(ReadContainerFileUseCase, { useClass: ReadContainerFileUseCase });
-    container.register(GetContainerProcessesUseCase, { useClass: GetContainerProcessesUseCase });
-    container.register(GetContainerByIdUseCase, { useClass: GetContainerByIdUseCase });
-    container.register(CreateContainerPortProxySessionUseCase, { useClass: CreateContainerPortProxySessionUseCase });
-    container.register(GetContainerFolderUseCase, { useClass: GetContainerFolderUseCase });
-    container.register(MoveContainerUseCase, { useClass: MoveContainerUseCase });
-
-    container.registerSingleton(CONTAINER_TOKENS.ContainerSocketModule, ContainerSocketModule);
-    container.register(SOCKET_TOKENS.SocketModule, { useToken: CONTAINER_TOKENS.ContainerSocketModule });
-
-    for (const toolClassProvider of CONTAINER_AI_TOOL_CLASSES) {
-        container.register(AI_TOKENS.AITool, toolClassProvider, {
-            lifecycle: Lifecycle.Singleton
-        });
-    }
+    registerModuleDependencies({
+        singletons: [
+            ContainerDeploymentProgressService,
+            ContainerVncGatewayService,
+            ContainerPortProxyRelayService,
+            ContainerPortProxyAccessTokenService,
+            [CONTAINER_TOKENS.ContainerSocketModule, ContainerSocketModule]
+        ],
+        bindings: [
+            [CONTAINER_TOKENS.ContainerRepository, ContainerRepository],
+            [CONTAINER_TOKENS.ContainerFolderRepository, ContainerFolderRepository],
+            [CONTAINER_TOKENS.DockerNetworkRepository, DockerNetworkRepository],
+            [CONTAINER_TOKENS.DockerVolumeRepository, DockerVolumeRepository],
+            [CONTAINER_TOKENS.ContainerService, DockerContainerService],
+            [CONTAINER_TOKENS.ContainerRuntimeService, DaemonContainerRuntimeService],
+            [CONTAINER_TOKENS.TerminalService, TerminalService],
+            [CONTAINER_TOKENS.ContainerAccessiblePortResolver, ContainerAccessiblePortResolver],
+            ContainerOwnershipService,
+            TeamClusterSelectionService,
+            CreateContainerUseCase,
+            CreateContainerFolderUseCase,
+            CreateContainerVncSessionUseCase,
+            UpdateContainerUseCase,
+            UpdateContainerFolderUseCase,
+            DeleteContainerUseCase,
+            DeleteContainerFolderUseCase,
+            ListContainersUseCase,
+            ListContainerFoldersUseCase,
+            GetContainerStatsUseCase,
+            GetContainerVncConnectPageUseCase,
+            GetContainerFilesUseCase,
+            ReadContainerFileUseCase,
+            GetContainerProcessesUseCase,
+            GetContainerByIdUseCase,
+            CreateContainerPortProxySessionUseCase,
+            GetContainerFolderUseCase,
+            MoveContainerUseCase,
+            ...createClassBindings(AI_TOKENS.AITool, CONTAINER_AI_TOOLS, Lifecycle.Singleton)
+        ],
+        aliases: [
+            [SOCKET_TOKENS.SocketModule, CONTAINER_TOKENS.ContainerSocketModule]
+        ]
+    });
 };

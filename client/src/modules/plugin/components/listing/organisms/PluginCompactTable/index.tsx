@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Skeleton } from '@mui/material';
 import { List } from 'react-window';
-import { normalizeError } from '@/shared/errors/core';
+import { ErrorSurface, reportError } from '@/shared/errors/core';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import type { MenuOption } from '@/shared/presentation/types/menu';
@@ -88,15 +88,14 @@ interface PluginCompactTableProps {
 }
 
 const getDisplayErrorMessage = (error: unknown): string => {
-    if (error instanceof Error) {
-        return normalizeError(error).friendlyMessage || 'Failed to load data.';
-    }
-
     if (typeof error === 'string' && error.length > 0) {
         return error;
     }
 
-    return 'Failed to load data.';
+    return reportError(error, {
+        surface: ErrorSurface.Silent,
+        fallbackTitle: 'Failed to load data.'
+    }).title;
 };
 
 const CompactTableSkeleton = ({ rowHeight = 28 }: { rowHeight?: number }) => {

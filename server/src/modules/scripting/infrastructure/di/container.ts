@@ -12,11 +12,7 @@ import { JupyterNotebookService } from '@modules/scripting/infrastructure/servic
 import { ScriptingJupyterProxyService } from '@modules/scripting/infrastructure/services/ScriptingJupyterProxyService';
 import { RedisScriptingSessionLock } from '@modules/scripting/infrastructure/services/RedisScriptingSessionLock';
 import { SCRIPTING_TOKENS } from './ScriptingTokens';
-import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
-import type { ClassProvider } from 'tsyringe';
-import { container } from 'tsyringe';
-
-const SCRIPTING_AI_TOOL_CLASSES: ClassProvider<unknown>[] = scriptingAiTools.map((useClass) => ({ useClass }));
+import { createClassBindings, registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
 
 export const registerScriptingDependencies = (): void => {
     registerModuleDependencies({
@@ -32,11 +28,9 @@ export const registerScriptingDependencies = (): void => {
             ListScriptingNotebooksUseCase,
             DeleteScriptingNotebookUseCase,
             UpdateScriptingNotebookUseCase
+        ],
+        bindings: [
+            ...createClassBindings(AI_TOKENS.AITool, scriptingAiTools)
         ]
     });
-
-    // AI Tools
-    for (const toolClassProvider of SCRIPTING_AI_TOOL_CLASSES) {
-        container.register(AI_TOKENS.AITool, toolClassProvider);
-    }
 };

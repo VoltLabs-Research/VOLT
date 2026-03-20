@@ -9,6 +9,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { TeamClusterDaemonStreamError } from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
 import { Result } from '@shared/domain/port/Result';
@@ -83,7 +84,7 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
 
         if (teamClusterId) {
             try {
-                const response = await this.teamClusterDaemonClient.commandResponseStream(teamClusterId, 'object.get', {
+                const response = await this.teamClusterDaemonClient.commandResponseStream(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.object.get, {
                     bucket,
                     objectKey: objectName
                 });

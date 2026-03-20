@@ -1,4 +1,4 @@
-import type { ExportType } from '@shared/domain/port/IBaseRepository';
+import type { ExportType, PaginatedResult } from '@shared/domain/port/IBaseRepository';
 
 export interface GetPluginListingDocumentsInputDTO {
     pluginId: string;
@@ -59,12 +59,7 @@ export interface PluginListingExportMeta {
     format: ExportType;
 };
 
-export interface GetPluginListingDocumentsOutputDTO {
-    data: ListingRowData[];
-    total: number;
-    page: number;
-    totalPages: number;
-    limit: number;
+export interface GetPluginListingDocumentsOutputDTO extends PaginatedResult<ListingRowData> {
     _meta: PluginListingDocumentsMeta;
 };
 

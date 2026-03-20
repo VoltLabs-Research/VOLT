@@ -16,10 +16,11 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import Stepper from '@/shared/presentation/components/Stepper';
 import Title from '@/shared/presentation/components/Title';
 import useStepper from '@/shared/presentation/hooks/use-stepper';
-import useZodForm from '@/shared/presentation/hooks/use-zod-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { buildBackendUrl } from '@/app/core/http/utilities/backend-origin';
 import { sileo } from 'sileo';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import type { FormEvent } from 'react';
 import type { StepTitles } from '@/shared/presentation/components/Stepper';
@@ -55,8 +56,8 @@ const SignInTemplate = () => {
     const markAuthenticated = useAuthStore((state) => state.markAuthenticated);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const { control, getValues, trigger, formState } = useZodForm<SignInForm>({
-        schema: signInSchema,
+    const { control, getValues, trigger, formState } = useForm<SignInForm>({
+        resolver: zodResolver(signInSchema),
         defaultValues: {
             email: '',
             fullName: '',

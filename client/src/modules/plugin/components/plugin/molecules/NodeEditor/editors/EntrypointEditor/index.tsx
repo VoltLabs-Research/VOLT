@@ -3,9 +3,9 @@ import CollapsibleSection from '@/shared/presentation/components/CollapsibleSect
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import { createNodeEditorForm } from '@/modules/plugin/components/plugin/molecules/NodeEditor/hooks/use-node-editor-form';
 import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node-reference-autocomplete';
 import { EntrypointType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
-import { createNodeEditorForm } from '@/shared/forms';
 import { applyMonacoTheme, getMonacoThemeName } from '@/shared/presentation/utilities/ensure-monaco';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
 import Editor from '@monaco-editor/react';

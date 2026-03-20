@@ -3,4 +3,5 @@ import Trajectory, { TrajectoryProps } from '@modules/trajectory/domain/entities
 
 export interface ITrajectoryRepository extends IBaseRepository<Trajectory, TrajectoryProps> {
     createWithId(id: string, data: Partial<TrajectoryProps>): Promise<Trajectory>;
+    searchIdsByTeamAndName(teamId: string, search: string): Promise<string[]>;
 };

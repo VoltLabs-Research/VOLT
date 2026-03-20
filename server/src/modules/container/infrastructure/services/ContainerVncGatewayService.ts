@@ -3,13 +3,18 @@ import { TeamClusterServiceExposureAccessMode } from '@modules/team-cluster/util
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
+import { InMemoryAbsoluteExpiryStore } from '@shared/infrastructure/services/InMemoryAbsoluteExpiryStore';
+import {
+    bridgeWebSocketAndDuplex,
+    writeUpgradeError
+} from '@shared/infrastructure/utilities/proxy-relay';
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
 import { inject, injectable } from 'tsyringe';
 import { WebSocketServer } from 'ws';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
-import type { RawData, WebSocket } from 'ws';
+import type { WebSocket } from 'ws';
 
 interface CreateContainerVncSessionInput {
     teamId: string;
@@ -78,6 +83,10 @@ const DEFAULT_WIDTH = 1280;
 const DEFAULT_HEIGHT = 720;
 const DEFAULT_DPI = 96;
 
+const getContainerVncSessionExpiresAt = (session: StoredContainerVncSession): number => {
+    return session.expiresAt;
+};
+
 const readNumberEnv = (name: string, fallback: number): number => {
     const rawValue = process.env[name]?.trim();
     if (!rawValue) {
@@ -145,27 +154,6 @@ const isContainerVncTokenPayload = (value: unknown): value is ContainerVncTokenP
         && typeof value.expiresAt === 'number';
 };
 
-const normalizeWebSocketPayload = (data: RawData): Buffer | string => {
-    if (typeof data === 'string') {
-        return data;
-    }
-
-    if (Buffer.isBuffer(data)) {
-        return data;
-    }
-
-    if (Array.isArray(data)) {
-        return Buffer.concat(data.map((chunk) => Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
-    }
-
-    return Buffer.from(data);
-};
-
-const writeUpgradeError = (socket: Duplex, statusCode: number, message: string): void => {
-    socket.write(`HTTP/1.1 ${statusCode} ${message}\r\nConnection: close\r\n\r\n`);
-    socket.destroy();
-};
-
 const escapeHtml = (value: string): string => {
     return value
         .replace(/&/g, '&amp;')
@@ -182,8 +170,10 @@ export class ContainerVncGatewayService {
         'CONTAINER_VNC_SESSION_TTL_MS',
         DEFAULT_SESSION_TTL_MS
     );
-    private readonly sessions = new Map<string, StoredContainerVncSession>();
-    private readonly sweepTimer: ReturnType<typeof setInterval>;
+    private readonly sessions = new InMemoryAbsoluteExpiryStore<string, StoredContainerVncSession>({
+        getExpiresAt: getContainerVncSessionExpiresAt,
+        sweepIntervalMs: SESSION_SWEEP_INTERVAL_MS
+    });
     private readonly webSocketServer = new WebSocketServer({
         noServer: true
     });
@@ -191,10 +181,7 @@ export class ContainerVncGatewayService {
     constructor(
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
-    ) {
-        this.sweepTimer = setInterval(() => this.cleanupExpiredSessions(), SESSION_SWEEP_INTERVAL_MS);
-        this.sweepTimer.unref();
-    }
+    ) {}
 
     public createSession(input: CreateContainerVncSessionInput): ContainerVncSessionDescriptor {
         const parentOrigin = this.requireAllowedParentOrigin(input.parentOrigin);
@@ -450,29 +437,10 @@ initializeRemoteDesktop().catch((error) => {
     }
 
     private bindWebSocketProxy(webSocket: WebSocket, tunnel: Duplex): void {
-        tunnel.on('data', (chunk: Buffer) => {
-            webSocket.send(chunk, {
-                binary: true
-            });
-        });
-        tunnel.on('close', () => {
-            webSocket.close(1000, 'Remote VNC tunnel closed');
-        });
-        tunnel.on('end', () => {
-            webSocket.close(1000, 'Remote VNC tunnel ended');
-        });
-        tunnel.on('error', () => {
-            webSocket.close(1011, 'Remote VNC tunnel failed');
-        });
-
-        webSocket.on('message', (data) => {
-            tunnel.write(normalizeWebSocketPayload(data));
-        });
-        webSocket.on('close', () => {
-            tunnel.destroy();
-        });
-        webSocket.on('error', () => {
-            tunnel.destroy();
+        bridgeWebSocketAndDuplex(webSocket, tunnel, {
+            duplexCloseMessage: 'Remote VNC tunnel closed',
+            duplexEndMessage: 'Remote VNC tunnel ended',
+            duplexErrorMessage: 'Remote VNC tunnel failed'
         });
     }
 
@@ -493,7 +461,7 @@ initializeRemoteDesktop().catch((error) => {
         }
 
         const session = this.sessions.get(payload.sessionId);
-        if (!session || session.expiresAt < Date.now()) {
+        if (!session || this.sessions.isExpired(session)) {
             if (session) {
                 this.sessions.delete(session.sessionId);
             }
@@ -548,13 +516,7 @@ initializeRemoteDesktop().catch((error) => {
     }
 
     private cleanupExpiredSessions(): void {
-        const now = Date.now();
-
-        for (const [sessionId, session] of this.sessions.entries()) {
-            if (session.expiresAt <= now) {
-                this.sessions.delete(sessionId);
-            }
-        }
+        this.sessions.sweepExpired();
     }
 
     private encrypt(payload: ContainerVncTokenPayload): string {

@@ -1,4 +1,5 @@
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
+import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { openModal } from '@/shared/presentation/components/Modal';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import { dateColumn, statusColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
@@ -9,7 +10,6 @@ import useRevokeSecretKey from '@/modules/team/hooks/secret-key/use-revoke-secre
 import useSecretKeysListing from '@/modules/team/hooks/secret-key/use-secret-keys-listing';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import usePermission from '@/shared/presentation/hooks/use-permission';
 import useTip from '@/shared/tips/use-tip';
 import Button from '@/shared/presentation/components/Button';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
@@ -81,7 +81,8 @@ export default function SecretKeysListing() {
     useTip('secret-keys-quick-create');
 
     const navigate = useNavigate();
-    const canCreate = usePermission(['team-secret-key:create']);
+    const { canAccess } = useTeamPermissions();
+    const canCreate = canAccess(['team-secret-key:create']);
     const selectedTeam = useSelectedTeam();
     const { queryKey, fetchData } = useSecretKeysListing(selectedTeam?._id);
     const revokeSecretKey = useRevokeSecretKey();

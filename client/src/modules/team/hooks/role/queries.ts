@@ -1,5 +1,6 @@
 import roleService from '../../api/services/role';
-import { createInvalidatingMutation, createQueryResource } from '@/shared/api/query-resources';
+import { createMutation, createQuery } from '@/shared/infrastructure/query';
+import { createTeamScopedPaginatedResource } from '../shared/team-scoped-paginated-resource';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { TeamRole } from '../../api/entities/role/team-role';
 import type { CreateTeamRoleInputDTO } from '../../api/dtos/role/create-team-role';
@@ -12,44 +13,50 @@ interface TeamRolesQueryParams {
     limit: number;
 };
 
-const teamRolesResource = createQueryResource<TeamRolesQueryParams, string, PaginatedResponse<TeamRole>>({
-    baseKey: 'team-roles',
-    rootKey: 'roles',
-    itemKey: 'rolesListing',
-    getKeyParam: ({ teamId }) => teamId,
-    query: roleService.getAll
-});
-
-export const TEAM_ROLE_QUERY_KEYS = {
-    roles: teamRolesResource.keys.root,
-    rolesListing: teamRolesResource.keys.item
+interface TeamRolesAggregateQueryParams {
+    teamId: string;
+    limit: number;
 };
 
-const invalidateTeamRolesQuery = teamRolesResource.invalidate;
-
-export const useTeamRolesQuery = teamRolesResource.query;
-
-export const buildTeamRolesQueryOptions = teamRolesResource.query.buildOptions;
-
-export const fetchTeamRoles = teamRolesResource.query.fetch;
-
-export const useCreateTeamRoleMutation = createInvalidatingMutation<TeamRole, CreateTeamRoleInputDTO>({
-    mutationFn: roleService.create,
-    onSuccess: (_data, variables) => {
-        void invalidateTeamRolesQuery(variables.teamId);
-    }
+export const teamRolesResource = createTeamScopedPaginatedResource({
+    baseKey: 'team-roles',
+    listKeyName: 'roles',
+    list: roleService.getAll
 });
 
-export const useUpdateTeamRoleMutation = createInvalidatingMutation<TeamRole, UpdateTeamRoleInputDTO>({
-    mutationFn: roleService.update,
-    onSuccess: (_data, variables) => {
-        void invalidateTeamRolesQuery(variables.teamId);
-    }
-});
+export const TEAM_ROLE_QUERY_KEYS = teamRolesResource.queryKeys;
 
-export const useDeleteTeamRoleMutation = createInvalidatingMutation<void, DeleteTeamRoleInputDTO>({
-    mutationFn: roleService.delete,
-    onSuccess: (_data, variables) => {
-        void invalidateTeamRolesQuery(variables.teamId);
-    }
-});
+export const getTeamRolesListingQueryKey = teamRolesResource.getListingQueryKey;
+
+const getTeamRolesQueryKey = teamRolesResource.getPageQueryKey;
+
+const getAllTeamRolesQueryKey = teamRolesResource.getAggregateQueryKey;
+
+const invalidateTeamRolesQuery = teamRolesResource.invalidateListingQuery;
+
+const getAllTeamRoles = teamRolesResource.fetchAllPages;
+
+export const useTeamRolesQuery = createQuery<TeamRolesQueryParams, PaginatedResponse<TeamRole>>(
+    getTeamRolesQueryKey,
+    roleService.getAll
+);
+
+export const useAllTeamRolesQuery = createQuery<TeamRolesAggregateQueryParams, TeamRole[]>(
+    getAllTeamRolesQueryKey,
+    getAllTeamRoles
+);
+
+export const useCreateTeamRoleMutation = createMutation<TeamRole, CreateTeamRoleInputDTO>(
+    roleService.create,
+    (_data, variables) => invalidateTeamRolesQuery(variables.teamId)
+);
+
+export const useUpdateTeamRoleMutation = createMutation<TeamRole, UpdateTeamRoleInputDTO>(
+    roleService.update,
+    (_data, variables) => invalidateTeamRolesQuery(variables.teamId)
+);
+
+export const useDeleteTeamRoleMutation = createMutation<void, DeleteTeamRoleInputDTO>(
+    roleService.delete,
+    (_data, variables) => invalidateTeamRolesQuery(variables.teamId)
+);

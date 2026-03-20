@@ -45,4 +45,19 @@ export default class TrajectoryRepository
 
         return !!result;
     }
+
+    async searchIdsByTeamAndName(teamId: string, search: string): Promise<string[]> {
+        const normalizedSearch = search.trim();
+        if (!normalizedSearch) {
+            return [];
+        }
+
+        const regex = new RegExp(normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+        const docs = await this.model.find({
+            team: teamId,
+            name: regex
+        }).select('_id').lean().exec();
+
+        return docs.map((doc) => doc._id.toString());
+    }
 };

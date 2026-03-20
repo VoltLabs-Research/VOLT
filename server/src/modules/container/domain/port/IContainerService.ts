@@ -14,6 +14,7 @@ export interface CreateRuntimeContainerOptions {
     image: string;
     name: string;
     operationId?: string;
+    user?: string;
     env?: ContainerEnvironmentVariable[];
     ports?: ContainerPortMapping[];
     labels?: Record<string, string>;

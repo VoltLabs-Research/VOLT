@@ -21,16 +21,73 @@ import http from 'http';
 import { container } from 'tsyringe';
 import type { ISocketModule } from './modules/socket/domain/port/ISocketModule';
 import type { Duplex } from 'node:stream';
+import type { Socket as NetSocket } from 'node:net';
 
 const SERVER_PORT = readNumberEnv('SERVER_PORT', 8000);
 const SERVER_HOST = process.env.SERVER_HOST || '0.0.0.0';
 const SERVER_TIMEOUT = readNumberEnv('SERVER_TIMEOUT', 1800000);
+const SERVER_SHUTDOWN_GRACE_PERIOD = readNumberEnv('SERVER_SHUTDOWN_GRACE_PERIOD', 1000);
+const SERVER_SHUTDOWN_FORCE_EXIT_TIMEOUT = readNumberEnv('SERVER_SHUTDOWN_FORCE_EXIT_TIMEOUT', 5000);
 
 registerAllDependencies();
 
 let activeServer: http.Server | null = null;
 let activeSocketGateway: SocketGateway | null = null;
 let shuttingDown = false;
+const activeConnections = new Set<NetSocket>();
+
+const trackConnection = (socket: NetSocket | Duplex) => {
+    const trackedSocket = socket as NetSocket;
+    activeConnections.add(trackedSocket);
+    trackedSocket.once('close', () => {
+        activeConnections.delete(trackedSocket);
+    });
+};
+
+const destroyTrackedConnections = () => {
+    for (const connection of activeConnections) {
+        if (!connection.destroyed) {
+            connection.destroy();
+        }
+    }
+
+    activeConnections.clear();
+};
+
+const closeHttpServer = async (): Promise<void> => {
+    if (!activeServer) {
+        return;
+    }
+
+    const server = activeServer;
+    activeServer = null;
+
+    await new Promise<void>((resolve, reject) => {
+        const forceCloseTimer = setTimeout(() => {
+            logger.warn({
+                openConnections: activeConnections.size,
+                gracePeriodMs: SERVER_SHUTDOWN_GRACE_PERIOD
+            }, '@server: force closing open HTTP connections during shutdown');
+
+            server.closeAllConnections?.();
+            destroyTrackedConnections();
+        }, SERVER_SHUTDOWN_GRACE_PERIOD);
+        forceCloseTimer.unref();
+
+        server.close((error) => {
+            clearTimeout(forceCloseTimer);
+
+            if (error) {
+                reject(error);
+                return;
+            }
+
+            resolve();
+        });
+
+        server.closeIdleConnections?.();
+    });
+};
 
 const shutdown = async () => {
     if (shuttingDown) {
@@ -40,22 +97,24 @@ const shutdown = async () => {
     shuttingDown = true;
 
     try {
+        const forceExitTimer = setTimeout(() => {
+            logger.error({
+                openConnections: activeConnections.size,
+                timeoutMs: SERVER_SHUTDOWN_FORCE_EXIT_TIMEOUT
+            }, '@server: forced shutdown timeout reached');
+            destroyTrackedConnections();
+            process.exit(1);
+        }, SERVER_SHUTDOWN_FORCE_EXIT_TIMEOUT);
+        forceExitTimer.unref();
+
         if (activeSocketGateway) {
             await activeSocketGateway.close();
+            activeSocketGateway = null;
         }
 
-        if (activeServer) {
-            await new Promise<void>((resolve, reject) => {
-                activeServer?.close((error) => {
-                    if (error) {
-                        reject(error);
-                        return;
-                    }
+        await closeHttpServer();
 
-                    resolve();
-                });
-            });
-        }
+        clearTimeout(forceExitTimer);
 
         process.exit(0);
     } catch (error: unknown) {
@@ -95,11 +154,18 @@ const startServer = async () => {
         logger.error(`@server: http server error: ${error}`);
     });
 
+    server.on('connection', (socket) => {
+        trackConnection(socket);
+    });
+
     server.on('upgrade', (request, socket, head) => {
+        trackConnection(socket);
+
         const proxyService = container.resolve(ScriptingJupyterProxyService);
         if (!proxyService.isJupyterUpgradeRequest(request)) {
             const vncGatewayService = container.resolve(ContainerVncGatewayService);
             if (!vncGatewayService.isVncUpgradeRequest(request)) {
+                (socket as Duplex).destroy();
                 return;
             }
 

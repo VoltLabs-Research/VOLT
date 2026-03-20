@@ -5,11 +5,7 @@ get:
   summary: Get whiteboard folder
   description: Returns a single whiteboard folder by its unique identifier.
   parameters:
-  - name: teamId
-    in: path
-    required: true
-    schema:
-      type: string
+  - $ref: ../../components/parameters/common.yaml#/TeamId
   - name: folderId
     in: path
     required: true
@@ -40,13 +36,9 @@ patch:
   tags:
   - Whiteboards
   summary: Update whiteboard folder
-  description: Updates the specified whiteboard folder.
+  description: Updates the title of the specified whiteboard folder.
   parameters:
-  - name: teamId
-    in: path
-    required: true
-    schema:
-      type: string
+  - $ref: ../../components/parameters/common.yaml#/TeamId
   - name: folderId
     in: path
     required: true
@@ -58,8 +50,10 @@ patch:
       application/json:
         schema:
           type: object
+          required:
+          - title
           properties:
-            name:
+            title:
               type: string
   responses:
     '200':
@@ -86,13 +80,9 @@ delete:
   tags:
   - Whiteboards
   summary: Delete whiteboard folder
-  description: Permanently deletes the specified whiteboard folder and moves its contents to root.
+  description: Permanently deletes the specified whiteboard folder and recursively deletes all nested folders and whiteboards it contains.
   parameters:
-  - name: teamId
-    in: path
-    required: true
-    schema:
-      type: string
+  - $ref: ../../components/parameters/common.yaml#/TeamId
   - name: folderId
     in: path
     required: true

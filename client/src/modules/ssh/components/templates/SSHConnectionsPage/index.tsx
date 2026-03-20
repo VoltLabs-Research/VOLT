@@ -4,12 +4,12 @@ import {
     useDeleteSSHConnectionMutation,
     useTestSSHConnectionMutation
 } from '@/modules/ssh/hooks/queries';
+import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
+import { openModal } from '@/shared/presentation/components/Modal';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import useModalForm from '@/shared/presentation/hooks/use-modal-form';
-import usePermission from '@/shared/presentation/hooks/use-permission';
 import SSHConnectionModal, { SSH_CONNECTION_MODAL_ID } from '../../molecules/SSHConnectionModal';
 import { LuFolderOpen } from 'react-icons/lu';
 import { RiEditLine, RiWifiLine } from 'react-icons/ri';
@@ -28,10 +28,10 @@ const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
 
 const SSHConnectionsPage = () => {
     const navigate = useNavigate();
+    const { canAccess } = useTeamPermissions();
     const testConnectionMutation = useTestSSHConnectionMutation();
     const deleteConnectionMutation = useDeleteSSHConnectionMutation();
-    const canCreate = usePermission(['ssh-connection:create']);
-    const sshModal = useModalForm({ modalId: SSH_CONNECTION_MODAL_ID });
+    const canCreate = canAccess(['ssh-connection:create']);
 
     const [editingConnection, setEditingConnection] = useState<SSHConnection | null>(null);
     const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
@@ -74,7 +74,7 @@ const SSHConnectionsPage = () => {
     const handleEditConnection = (connection: SSHConnection) => {
         setEditingConnection(connection);
         setModalMode('edit');
-        window.setTimeout(sshModal.open, 0);
+        window.setTimeout(() => openModal(SSH_CONNECTION_MODAL_ID), 0);
     };
 
     const handleDeleteConnection = async (connection: SSHConnection) => {
@@ -91,7 +91,7 @@ const SSHConnectionsPage = () => {
     const handleCreateNew = () => {
         setEditingConnection(null);
         setModalMode('create');
-        window.setTimeout(sshModal.open, 0);
+        window.setTimeout(() => openModal(SSH_CONNECTION_MODAL_ID), 0);
     };
 
     const getDeleteConfirmation = ({ selectedItems }: { selectedItems: SSHConnection[] }) => {

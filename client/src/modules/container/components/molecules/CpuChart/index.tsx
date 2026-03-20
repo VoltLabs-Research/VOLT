@@ -10,9 +10,9 @@ import {
 } from 'recharts';
 import { Cpu } from 'lucide-react';
 import { CHART_COLORS } from '@/modules/cluster/utilities/chart-colors';
+import useTimeSeriesBuffer from '@/modules/container/hooks/use-time-series-buffer';
 import ChartContainer from '@/shared/presentation/components/ChartContainer';
 import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
-import useTimeSeriesBuffer from '@/shared/presentation/hooks/use-time-series-buffer';
 import type { CpuData } from '../../../services/container-stats-view';
 
 const MAX_HISTORY_POINTS = 60;

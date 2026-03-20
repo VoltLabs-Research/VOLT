@@ -23,7 +23,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import * as THREE from 'three';
 import { useThree, useFrame } from '@react-three/fiber';
-import useThrottledCallback from '@/shared/presentation/hooks/use-throttled-callback';
 import useModelInteraction from '@/modules/fractal/hooks/use-model-interaction';
 import { createFractalEngine } from '@/modules/fractal/services/fractal-engine-factory';
 import type { ModelLoadingState, UseGlbSceneParams } from '@/modules/fractal/types';
@@ -196,17 +195,46 @@ export default function useGlbScene(
         onInvalidate: invalidate
     });
 
+    const lastUpdateSceneCallRef = useRef(0);
+    const updateSceneTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     const updateScene = useCallback(() => {
         if (!engineRef.current) return;
         if (!params.url) return;
         engineRef.current.loadIfNeeded();
     }, [params.url]);
 
-    const throttledUpdateScene = useThrottledCallback(updateScene, params.updateThrottle);
+    const throttledUpdateScene = useCallback(() => {
+        const now = Date.now();
+        const elapsed = now - lastUpdateSceneCallRef.current;
+
+        if (elapsed >= params.updateThrottle) {
+            lastUpdateSceneCallRef.current = now;
+            updateScene();
+            return;
+        }
+
+        if (updateSceneTimeoutRef.current) {
+            clearTimeout(updateSceneTimeoutRef.current);
+        }
+
+        updateSceneTimeoutRef.current = setTimeout(() => {
+            lastUpdateSceneCallRef.current = Date.now();
+            updateScene();
+        }, params.updateThrottle - elapsed);
+    }, [params.updateThrottle, updateScene]);
 
     useEffect(() => {
         throttledUpdateScene();
     }, [throttledUpdateScene]);
+
+    useEffect(() => {
+        return () => {
+            if (updateSceneTimeoutRef.current) {
+                clearTimeout(updateSceneTimeoutRef.current);
+            }
+        };
+    }, []);
 
     return {
         modelBounds: modelBounds ?? activeModelBounds,

@@ -3,7 +3,6 @@ import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
 import FloatingRootContext from '@/shared/presentation/contexts/FloatingRootContext';
-import { getActiveDialog, setActiveDialog } from '@/shared/presentation/utilities/active-dialog-store';
 import './Modal.css';
 import React from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -32,9 +31,16 @@ interface ModalProps {
 };
 
 const COARSE_POINTER_MEDIA_QUERY = '(pointer: coarse)';
+let activeDialog: HTMLDialogElement | null = null;
 
 const isDialogElement = (element: HTMLElement | null): element is HTMLDialogElement => {
     return element instanceof HTMLDialogElement;
+};
+
+const getActiveDialog = (): HTMLDialogElement | null => activeDialog;
+
+const setActiveDialog = (dialog: HTMLDialogElement | null): void => {
+    activeDialog = dialog;
 };
 
 const isCoarsePointerDevice = () => {

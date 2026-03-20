@@ -29,11 +29,7 @@ import PluginDebugSocketModule from '@modules/plugin/infrastructure/socket/Plugi
 
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
-import type { ClassProvider } from 'tsyringe';
-import { container } from 'tsyringe';
-
-const PLUGIN_AI_TOOL_CLASSES: ClassProvider<unknown>[] = Object.values(pluginAiTools).map((useClass) => ({ useClass }));
+import { createClassBindings, registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
 
 export const registerPluginDependencies = (): void => {
     registerModuleDependencies({
@@ -67,10 +63,9 @@ export const registerPluginDependencies = (): void => {
         ],
         aliases: [
             [SOCKET_TOKENS.SocketModule, PLUGIN_TOKENS.PluginDebugSocketModule]
+        ],
+        bindings: [
+            ...createClassBindings(AI_TOKENS.AITool, pluginAiTools)
         ]
     });
-
-    for (const toolClassProvider of PLUGIN_AI_TOOL_CLASSES) {
-        container.register(AI_TOKENS.AITool, toolClassProvider);
-    }
 };

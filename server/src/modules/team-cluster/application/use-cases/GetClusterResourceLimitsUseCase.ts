@@ -2,6 +2,7 @@ import {
     GetClusterResourceLimitsInputDTO,
     GetClusterResourceLimitsOutputDTO
 } from '@modules/team-cluster/application/dtos/GetClusterResourceLimitsDTO';
+import { requireOwnedTeamCluster } from '@modules/team-cluster/application/utilities/team-cluster-ownership';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
@@ -27,12 +28,9 @@ export default class GetClusterResourceLimitsUseCase
     async execute(
         input: GetClusterResourceLimitsInputDTO
     ): Promise<Result<GetClusterResourceLimitsOutputDTO, ApplicationError>> {
-        const teamCluster = await this.teamClusterRepository.findById(input.teamClusterId);
-        if (!teamCluster || teamCluster.props.team !== input.teamId) {
-            return Result.fail(ApplicationError.notFound(
-                'TeamCluster::NotFound',
-                'Team cluster not found'
-            ));
+        const teamCluster = await requireOwnedTeamCluster(this.teamClusterRepository, input);
+        if (teamCluster instanceof ApplicationError) {
+            return Result.fail(teamCluster);
         }
 
         const metrics = await this.systemMetricsRepository.getLatestByClusterId(input.teamClusterId);

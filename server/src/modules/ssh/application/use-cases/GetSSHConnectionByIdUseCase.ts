@@ -1,31 +1,26 @@
 import { Result } from '@shared/domain/port/Result';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
-import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
 import { GetSSHConnectionByIdInputDTO, GetSSHConnectionByIdOutputDTO } from '@modules/ssh/application/dtos/GetSSHConnectionByIdDTO';
-import { ErrorCodes } from '@core/constants/error-codes';
+import { SSHConnectionOwnershipService } from '@modules/ssh/application/services/SSHConnectionOwnershipService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { toSafeSSHConnectionDTO } from '@modules/ssh/application/utils/ssh-error-utils';
 
 @injectable()
 export class GetSSHConnectionByIdUseCase implements IUseCase<GetSSHConnectionByIdInputDTO, GetSSHConnectionByIdOutputDTO, ApplicationError> {
     constructor(
-        @inject(SSH_TOKENS.SSHConnectionRepository)
-        private sshConnRepository: ISSHConnectionRepository
+        @inject(SSHConnectionOwnershipService)
+        private readonly sshConnectionOwnershipService: SSHConnectionOwnershipService
     ){}
 
     async execute(input: GetSSHConnectionByIdInputDTO): Promise<Result<GetSSHConnectionByIdOutputDTO, ApplicationError>> {
         const { sshConnectionId, teamId } = input;
-        const existingConnection = await this.sshConnRepository.findById(sshConnectionId);
+        const existingConnectionResult = await this.sshConnectionOwnershipService.getOwnedByTeam(sshConnectionId, teamId);
 
-        if (!existingConnection || existingConnection.props.team !== teamId) {
-            return Result.fail(ApplicationError.notFound(
-                ErrorCodes.SSH_CONNECTION_NOT_FOUND,
-                'SSH connection not found'
-            ));
+        if (!existingConnectionResult.success) {
+            return Result.fail(existingConnectionResult.error);
         }
 
-        return Result.ok(toSafeSSHConnectionDTO(existingConnection));
+        return Result.ok(toSafeSSHConnectionDTO(existingConnectionResult.value));
     }
 };

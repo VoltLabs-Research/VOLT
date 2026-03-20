@@ -1,4 +1,4 @@
-import type { ExportType } from '@shared/domain/port/IBaseRepository';
+import type { ExportType, PaginatedResult } from '@shared/domain/port/IBaseRepository';
 
 export interface GetListingRowsByAnalysisIdInputDTO {
     analysisId: string;
@@ -19,13 +19,7 @@ export interface ListingRowByAnalysisData {
     row: Record<string, unknown>;
 };
 
-export interface GetListingRowsByAnalysisIdOutputDTO {
-    data: ListingRowByAnalysisData[];
-    total: number;
-    page: number;
-    totalPages: number;
-    limit: number;
-};
+export interface GetListingRowsByAnalysisIdOutputDTO extends PaginatedResult<ListingRowByAnalysisData> {};
 
 export interface ExportListingRowsByAnalysisIdInputDTO {
     analysisId: string;
@@ -48,7 +42,7 @@ export interface AnalysisSubListingExportData {
     timestep: number;
     rows: Record<string, unknown>[];
     columns: string[];
- };
+};
 
 export interface ExportListingRowsByAnalysisIdOutputDTO {
     analysisId: string;

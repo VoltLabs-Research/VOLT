@@ -1,8 +1,12 @@
-import { defineServiceModule } from '@/shared/api/service-module';
-import clients from './clients';
 import endpoints from './endpoints';
+import { defineServiceModule } from '@/shared/api/service-module';
 
 export default defineServiceModule({
-    clients,
+    clients: {
+        default: {
+            basePath: '/analyses',
+            useRBAC: true
+        }
+    },
     endpoints
 });

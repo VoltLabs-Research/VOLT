@@ -1,11 +1,11 @@
 import { renderPublicRoutes, renderGuestRoutes, renderProtectedRoutes } from './routes/RouteRenderer';
 import { resolveRouteTitle } from './routes/title-resolver';
+import { reportHotspotDuration } from './core/http/utilities/client-instrumentation';
 import { useGlobalShortcuts } from '@/shared/presentation/hooks/use-global-shortcuts';
 import { useFallbackPageTitle } from '@/shared/presentation/hooks/use-page-title';
-import { usePageScale } from '@/shared/presentation/hooks/use-page-scale';
 import { usePageTracker } from '@/modules/start/hooks/use-page-tracker';
 import { useRouteCleanup } from '@/shared/presentation/hooks/use-route-cleanup';
-import { ErrorSurface, isApiError, normalizeError, reportError } from '@/shared/errors/core';
+import { ErrorSurface, getErrorMessage, isApiError, reportError } from '@/shared/errors/core';
 import { runErrorRecoveryCleanup } from '@/shared/utils/app-cleanup-registry';
 import { ensureApplicationStoreCleanupsRegistered } from '@/shared/utils/application-store-cleanups';
 import { buildErrorPath } from '@/shared/utils';
@@ -18,21 +18,95 @@ import GlobalErrorListener from '@/shared/presentation/components/GlobalErrorLis
 import QueryProvider from '@/shared/presentation/components/QueryProvider';
 import NotFoundState from '@/shared/presentation/components/NotFoundState';
 import { useThemeInitialization } from '@/shared/presentation/hooks/use-theme';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { BrowserRouter, HashRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import 'sileo/styles.css';
 import type { ErrorInfo } from 'react';
 
 ensureApplicationStoreCleanupsRegistered();
 
+const TARGET_DESKTOP_VIEWPORT_WIDTH = 1800;
+const TARGET_DESKTOP_VIEWPORT_HEIGHT = 960;
+const DESKTOP_BREAKPOINT = 1024;
+const DEFAULT_ROOT_FONT_SIZE = 16;
+const MINIMUM_PAGE_SCALE = 0.75;
+
+const shouldMountWorkspaceGlobals = (pathname: string): boolean => {
+    return pathname !== '/error' && !pathname.startsWith('/auth/');
+};
+
+const getPageScale = () => {
+    if (window.innerWidth < DESKTOP_BREAKPOINT) {
+        return 1;
+    }
+
+    const scale = Math.min(
+        window.innerWidth / TARGET_DESKTOP_VIEWPORT_WIDTH,
+        window.innerHeight / TARGET_DESKTOP_VIEWPORT_HEIGHT,
+        1
+    );
+
+    return Number.isFinite(scale) ? Math.max(scale, MINIMUM_PAGE_SCALE) : 1;
+};
+
+const syncPageScale = () => {
+    const pageScale = getPageScale();
+    document.documentElement.style.setProperty('--volt-root-font-size', `${(DEFAULT_ROOT_FONT_SIZE * pageScale).toFixed(2)}px`);
+};
+
+const resetPageScale = () => {
+    document.documentElement.style.removeProperty('--volt-root-font-size');
+};
+
+const WorkspaceGlobals = () => {
+    useGlobalShortcuts();
+    usePageTracker();
+
+    return null;
+};
+
+const AppChrome = () => {
+    const location = useLocation();
+    const shouldMountGlobals = shouldMountWorkspaceGlobals(location.pathname);
+
+    useEffect(() => {
+        const startedAt = performance.now();
+        const frameId = window.requestAnimationFrame(() => {
+            reportHotspotDuration('route.bootstrap', startedAt, {
+                path: location.pathname
+            });
+        });
+
+        return () => {
+            window.cancelAnimationFrame(frameId);
+        };
+    }, [location.pathname]);
+
+    const appContent = (
+        <>
+            {shouldMountGlobals && <WorkspaceGlobals />}
+            <AppRoutes />
+            <AppToaster />
+        </>
+    );
+
+    if (!shouldMountGlobals) {
+        return appContent;
+    }
+
+    return (
+        <GlobalContextMenu>
+            {appContent}
+        </GlobalContextMenu>
+    );
+};
+
 const AppRoutes = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const routeTitle = resolveRouteTitle(location.pathname) ?? '';
 
-    useGlobalShortcuts();
     useFallbackPageTitle(routeTitle);
-    usePageTracker();
     useRouteCleanup({
         shouldCleanup: (previousPathname, nextPathname) => {
             if (previousPathname.startsWith('/dashboard') && nextPathname.startsWith('/dashboard')) {
@@ -49,7 +123,7 @@ const AppRoutes = () => {
         if (isApiError(error)) {
             reportError(error, { surface: ErrorSurface.Toast });
             runErrorRecoveryCleanup(location.pathname, '/error');
-            navigate(buildErrorPath(normalizeError(error).friendlyMessage, 'render', stack ?? undefined), { replace: true });
+            navigate(buildErrorPath(getErrorMessage(error.code, error.message), 'render', stack ?? undefined), { replace: true });
             return;
         }
 
@@ -74,17 +148,40 @@ const AppRoutes = () => {
 
 export default function App() {
     const Router = isDesktopEnvironment() ? HashRouter : BrowserRouter;
-    usePageScale();
     useThemeInitialization();
+
+    useEffect(() => {
+        let frameReference = 0;
+
+        const handleResize = () => {
+            if (frameReference) {
+                cancelAnimationFrame(frameReference);
+            }
+
+            frameReference = window.requestAnimationFrame(() => {
+                syncPageScale();
+                frameReference = 0;
+            });
+        };
+
+        handleResize();
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            if (frameReference) {
+                cancelAnimationFrame(frameReference);
+            }
+
+            window.removeEventListener('resize', handleResize);
+            resetPageScale();
+        };
+    }, []);
 
     return (
         <QueryProvider>
             <Router unstable_useTransitions={false}>
                 <DesktopShell>
-                    <GlobalContextMenu>
-                        <AppRoutes />
-                        <AppToaster />
-                    </GlobalContextMenu>
+                    <AppChrome />
                 </DesktopShell>
             </Router>
         </QueryProvider>

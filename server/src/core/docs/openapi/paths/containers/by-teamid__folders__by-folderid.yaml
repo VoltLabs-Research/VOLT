@@ -80,7 +80,7 @@ delete:
   tags:
   - Containers
   summary: Delete a folder
-  description: Delete an existing container folder.
+  description: Recursively delete an existing container folder and all nested folders and containers it contains.
   operationId: deleteContainerFolder
   security:
   - BearerAuth: []

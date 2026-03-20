@@ -1,6 +1,5 @@
-import { defineServiceModule } from '@/shared/api/service-module';
-import client from './client';
 import endpoints from './endpoints';
+import { defineServiceModule } from '@/shared/api/service-module';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { CompileLatexDocumentParams } from '../dtos/compile-latex-document';
 import type { CreateLatexDocumentParams } from '../dtos/create-latex-document';
@@ -57,9 +56,14 @@ interface LatexService {
     setFileEntrypoint: (params: SetLatexFileEntrypointParams) => Promise<LatexFile>;
 };
 
-const service = defineServiceModule({
-    clients: client,
-    endpoints: endpoints as never
-}) as LatexService;
+const service: LatexService = defineServiceModule({
+    clients: {
+        default: {
+            basePath: '/latex',
+            useRBAC: true
+        }
+    },
+    endpoints
+});
 
 export default service;

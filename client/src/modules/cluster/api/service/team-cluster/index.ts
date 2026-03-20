@@ -1,6 +1,11 @@
 import { defineServiceModule } from '@/shared/api/service-module';
-import client from './client';
 import endpoints from './endpoints';
+
+const client = {
+    default: {
+        basePath: '/teams'
+    }
+};
 
 export const teamClusterService = defineServiceModule({
     clients: client,

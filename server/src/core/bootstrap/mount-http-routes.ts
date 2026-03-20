@@ -1,9 +1,9 @@
 import { Action } from '@core/constants/permissions';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { checkTeamMembership } from '@modules/team/infrastructure/http/middlewares/check-team-membership';
-import { HttpModuleTeamScope, hasTeamIdInBasePath } from '@shared/infrastructure/http/routing/HttpModule';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import AIConversationHttpModule from '@modules/ai/infrastructure/http/routes/ai-conversation-routes';
 import LatexHttpModule from '@modules/latex/infrastructure/http/routes/latex-routes';
 import WhiteboardHttpModule from '@modules/whiteboards/infrastructure/http/routes/whiteboard-routes';
@@ -43,6 +43,7 @@ import CanvasHttpModule from '@modules/trajectory/infrastructure/http/routes/can
 import ParticleFilterHttpModule from '@modules/trajectory/infrastructure/http/routes/particle-filter';
 import TrajectoryHttpModule from '@modules/trajectory/infrastructure/http/routes/trajectory';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
+import logger from '@shared/infrastructure/logger';
 import { Router } from 'express';
 import type {
     NextFunction,
@@ -125,9 +126,7 @@ const enforceTeamAccess = (
     next: NextFunction,
     resource?: string
 ): void => {
-    const authenticatedRequest: AuthenticatedRequest = req;
-
-    checkTeamMembership(authenticatedRequest, res, () => {
+    checkTeamMembership(req, res, () => {
         if (!resource) {
             next();
             return;
@@ -135,7 +134,7 @@ const enforceTeamAccess = (
 
         const action = METHOD_ACTION_MAP[req.method] || Action.READ;
         const permission = `${resource}:${action}`;
-        const permissions = authenticatedRequest.teamPermissions || [];
+        const permissions = req.teamPermissions || [];
 
         if (permissions.includes('*') || permissions.includes(permission)) {
             next();
@@ -151,42 +150,57 @@ const enforceTeamAccess = (
     });
 };
 
-const createTeamAccessMiddleware = (resource?: string): RequestHandler => {
-    return (req, res, next) => {
-        enforceTeamAccess(req, res, next, resource);
-    };
-};
-
-const createTeamParamHandler = (resource?: string): RequestParamHandler => {
-    return (req, res, next) => {
-        enforceTeamAccess(req, res, next, resource);
-    };
-};
-
-const resolveTeamScope = (module: HttpModule): HttpModuleTeamScope | null => {
-    if (module.teamScope) {
-        return module.teamScope;
-    }
-
-    return hasTeamIdInBasePath(module.basePath) ? HttpModuleTeamScope.BasePath : null;
-};
-
 const mountModule = (rootRouter: Router, module: HttpModule): void => {
-    const teamScope = resolveTeamScope(module);
+    const startedAt = Date.now();
+    const teamScope = module.teamScope ?? null;
 
     if (teamScope === HttpModuleTeamScope.BasePath) {
-        rootRouter.use(module.basePath, protect, createTeamAccessMiddleware(module.resource), module.router);
+        const middleware: RequestHandler[] = [];
+
+        if (module.protected) {
+            middleware.push(protect);
+        }
+
+        middleware.push((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+            enforceTeamAccess(req, res, next, module.resource);
+        });
+
+        rootRouter.use(module.basePath, ...middleware, module.router);
+        logger.debug({
+            basePath: module.basePath,
+            resource: module.resource,
+            teamScope,
+            durationMs: Date.now() - startedAt
+        }, '@http-bootstrap: module-mounted');
         return;
     }
 
     if (teamScope === HttpModuleTeamScope.Param) {
-        module.router.param('teamId', createTeamParamHandler(module.resource));
+        const teamParamHandler: RequestParamHandler = (
+            req: AuthenticatedRequest,
+            res: Response,
+            next: NextFunction,
+            _value: string,
+            _name: string
+        ) => {
+            enforceTeamAccess(req, res, next, module.resource);
+        };
+
+        module.router.param('teamId', teamParamHandler);
     }
 
     rootRouter.use(module.basePath, module.router);
+
+    logger.debug({
+        basePath: module.basePath,
+        resource: module.resource,
+        teamScope,
+        durationMs: Date.now() - startedAt
+    }, '@http-bootstrap: module-mounted');
 };
 
 const mountHttpRoutes = (): Router => {
+    const startedAt = Date.now();
     const router = Router();
 
     assertUniqueModuleBasePaths(HTTP_MODULES);
@@ -194,6 +208,11 @@ const mountHttpRoutes = (): Router => {
     for (const module of HTTP_MODULES) {
         mountModule(router, module);
     }
+
+    logger.info({
+        moduleCount: HTTP_MODULES.length,
+        durationMs: Date.now() - startedAt
+    }, '@http-bootstrap: mounted-routes');
 
     return router;
 };

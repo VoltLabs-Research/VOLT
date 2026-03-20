@@ -4,6 +4,7 @@ import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajector
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { IStorageService } from '@shared/domain/port/IStorageService';
 import { ITempFileService } from '@shared/domain/port/ITempFileService';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import logger from '@shared/infrastructure/logger';
@@ -140,7 +141,7 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
         if (trajectory?.props.teamCluster) {
             const result = await this.teamClusterDaemonClient.command<{ keys: string[] }>(
                 trajectory.props.teamCluster,
-                'object.list',
+                TEAM_CLUSTER_DAEMON_COMMAND.object.list,
                 { bucket: SYS_BUCKETS.DUMPS, prefix: objectName }
             );
             return result.keys.includes(objectName);
@@ -175,7 +176,7 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
 
         const result = await this.teamClusterDaemonClient.command<{ keys: string[] }>(
             teamClusterId,
-            'object.list',
+            TEAM_CLUSTER_DAEMON_COMMAND.object.list,
             { bucket: SYS_BUCKETS.DUMPS, prefix }
         );
 

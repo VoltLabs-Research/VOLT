@@ -2,8 +2,8 @@ import '@/modules/container/components/organisms/ContainerTerminal/ContainerTerm
 import Container from '@/shared/presentation/components/Container';
 import Terminal from '@/shared/presentation/components/Terminal';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
-import { sileo } from 'sileo';
-import { useEffect, useRef } from 'react';
+import { useMemo, useRef } from 'react';
+import { useSocketTerminalSession } from '@/modules/socket/core/hooks/use-socket-terminal-session';
 import type { TerminalHandle } from '@/shared/presentation/components/Terminal';
 import type { TeamClusterRemoteAccessSession } from '@/modules/cluster/api/entities/team-cluster-remote-access';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
@@ -31,81 +31,32 @@ const isClusterRemoteTerminalSocketError = (value: unknown): value is ClusterRem
 const ClusterRemoteTerminalContent = ({ teamCluster, session }: ClusterRemoteTerminalContentProps) => {
     const socketService = useSocket();
     const terminalRef = useRef<TerminalHandle>(null);
-    const isAttachedRef = useRef(false);
-
-    useEffect(() => {
-        socketService.connect().catch(() => undefined);
-
-        return () => {
-            if (!isAttachedRef.current) {
-                return;
-            }
-
-            socketService.emitWithoutAck('team-cluster:terminal:detach');
-            isAttachedRef.current = false;
-        };
-    }, [session.sessionId, socketService]);
-
-    useEffect(() => {
-        const attach = () => {
-            if (isAttachedRef.current || !socketService.isConnected()) {
-                return;
-            }
-
-            socketService.emitWithoutAck('team-cluster:terminal:attach', {
-                sessionId: session.sessionId
-            });
-            isAttachedRef.current = true;
-        };
-
-        const handleData = (...args: unknown[]) => {
-            const [data] = args;
-            if (typeof data !== 'string') {
-                return;
-            }
-
-            terminalRef.current?.write(data);
-        };
-
-        const handleError = (...args: unknown[]) => {
-            const [error] = args;
-            let description = 'Terminal error';
-
+    const attachPayload = useMemo(() => ({ sessionId: session.sessionId }), [session.sessionId]);
+    const resolveErrorMessage = useMemo(() => {
+        return (error: unknown): string => {
             if (typeof error === 'string') {
-                description = error;
-            } else if (isClusterRemoteTerminalSocketError(error)) {
-                description = error.details || error.message;
+                return error;
             }
 
-            terminalRef.current?.write(`\r\n\x1b[31mError: ${description}\x1b[0m\r\n`);
-            sileo.error({
-                title: 'Terminal error',
-                description
-            });
-        };
-
-        const unsubscribeData = socketService.on('team-cluster:terminal:data', handleData);
-        const unsubscribeError = socketService.on('team-cluster:terminal:error', handleError);
-        const unsubscribeConnection = socketService.onConnectionChange((connected) => {
-            if (connected) {
-                attach();
+            if (isClusterRemoteTerminalSocketError(error)) {
+                return error.details || error.message;
             }
-        });
 
-        if (socketService.isConnected()) {
-            attach();
-        }
-
-        return () => {
-            unsubscribeData();
-            unsubscribeError();
-            unsubscribeConnection();
+            return 'Terminal error';
         };
-    }, [session.sessionId, socketService]);
-
-    const handleTerminalData = (data: string) => {
-        socketService.emitWithoutAck('team-cluster:terminal:input', data);
-    };
+    }, []);
+    const { handleTerminalData } = useSocketTerminalSession({
+        socketService,
+        sessionKey: session.sessionId,
+        terminalRef,
+        attachEvent: 'team-cluster:terminal:attach',
+        attachPayload,
+        detachEvent: 'team-cluster:terminal:detach',
+        dataEvent: 'team-cluster:terminal:data',
+        errorEvent: 'team-cluster:terminal:error',
+        inputEvent: 'team-cluster:terminal:input',
+        resolveErrorMessage
+    });
 
     return (
         <Container className='container-terminal-window embedded d-flex column overflow-hidden flex-1'>

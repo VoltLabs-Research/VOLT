@@ -1,7 +1,6 @@
 import { buildFileTree } from '@/modules/latex/utilities/file-tree';
 import { getAssetDisplayName } from '@/modules/latex/utilities/workspace';
-import useConfirm from '@/shared/presentation/hooks/use-confirm';
-import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
+import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
 import type { LatexAsset } from '@/modules/latex/api/entities/latex-asset';
@@ -87,7 +86,6 @@ const useFileTree = ({
     const [newFolderTargetFolder, setNewFolderTargetFolder] = useState<string | null>(null);
     const [renamingTarget, setRenamingTarget] = useState<RenameTarget | null>(null);
     const hasAutoExpandedRef = useRef(false);
-    const { confirm } = useConfirm();
 
     const treeNodes = useMemo(() => buildFileTree(files, assets), [files, assets]);
 

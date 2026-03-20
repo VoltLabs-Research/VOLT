@@ -16,7 +16,7 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import Title from '@/shared/presentation/components/Title';
-import usePermission from '@/shared/presentation/hooks/use-permission';
+import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { supportsRemoteDesktop } from '@/modules/container/utilities/supports-remote-desktop';
 import type { Container as ContainerEntity } from '@/modules/container/api/entities/container';
 import type { LucideIcon } from 'lucide-react';
@@ -74,7 +74,8 @@ const ContainerSidebar = ({
     const navigate = useNavigate();
     const { pathname } = useLocation();
     const isRunning = container.status === 'running';
-    const canUpdate = usePermission(['container:update']);
+    const { canAccess } = useTeamPermissions();
+    const canUpdate = canAccess(['container:update']);
     const hasRemoteDesktop = supportsRemoteDesktop(container.capabilities);
     const { openPort, openingPort } = useOpenContainerPort();
     const primaryAccessiblePort = getPrimaryAccessiblePort(container.accessiblePorts);

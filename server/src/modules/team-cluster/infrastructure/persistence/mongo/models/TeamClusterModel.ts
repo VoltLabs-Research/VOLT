@@ -1,15 +1,13 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import TeamCluster, {
-    TeamClusterProps,
-    TeamClusterStatus
-} from '@modules/team-cluster/domain/entities/TeamCluster';
+import { TeamClusterProps, TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
-import mongoose, { Document, Model, Schema } from 'mongoose';
+import { Document, Model, Schema } from 'mongoose';
+import mongoose from 'mongoose';
 
 type TeamClusterRelations = 'team' | 'createdBy';
 
-export interface TeamClusterDocument extends Persistable<TeamClusterProps, TeamClusterRelations>, Document {}
+export interface TeamClusterDocument extends Persistable<TeamClusterProps, TeamClusterRelations>, Document {};
 
 const TEAM_CLUSTER_VALIDATION_ERROR = ErrorCodes.VALIDATION_INVALID_INPUT;
 
@@ -116,6 +114,9 @@ const TeamClusterSchema = new Schema({
 });
 
 TeamClusterSchema.index({ team: 1, name: 1 }, { unique: true });
+TeamClusterSchema.index({ team: 1, status: 1, createdAt: -1 });
+TeamClusterSchema.index({ status: 1, lastHeartbeatAt: 1 });
+TeamClusterSchema.index({ status: 1, updatedAt: 1 });
 
 const TeamClusterModel: Model<TeamClusterDocument> = mongoose.model<TeamClusterDocument>('TeamCluster', TeamClusterSchema);
 

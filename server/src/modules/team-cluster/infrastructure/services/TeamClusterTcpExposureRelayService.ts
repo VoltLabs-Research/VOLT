@@ -6,6 +6,7 @@ import {
 } from '@modules/team-cluster/utilities/teamClusterSocket';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import { LocalRelayPortAllocator } from '@shared/infrastructure/services/LocalRelayPortAllocator';
 import logger from '@shared/infrastructure/logger';
 import {
     readRelayHostValue,
@@ -36,7 +37,11 @@ export default class TeamClusterTcpExposureRelayService {
     private readonly portEnd = readRelayPortRangeValue('TEAM_CLUSTER_TCP_RELAY_PORT_END', DEFAULT_PUBLIC_PORT_END);
     private readonly bindingsByExposureId = new Map<string, PublicExposureBinding>();
     private readonly pendingBindingsByExposureId = new Map<string, Promise<number | null>>();
-    private readonly usedPorts = new Set<number>();
+    private readonly portAllocator = new LocalRelayPortAllocator({
+        portStart: this.portStart,
+        portEnd: this.portEnd,
+        exhaustedMessage: 'No available public TCP relay ports'
+    });
     private started = false;
 
     constructor(
@@ -67,11 +72,11 @@ export default class TeamClusterTcpExposureRelayService {
         this.started = false;
         this.exposureRegistryService.offChanged(this.handleRegistryChanged);
         await Promise.all(Array.from(this.bindingsByExposureId.values()).map((binding) => {
-            return this.closeServer(binding.server);
+            return this.portAllocator.close(binding.server);
         }));
         this.bindingsByExposureId.clear();
         this.pendingBindingsByExposureId.clear();
-        this.usedPorts.clear();
+        this.portAllocator.reset();
     }
 
     getPublicPort(exposureId: string): number | null {
@@ -133,7 +138,7 @@ export default class TeamClusterTcpExposureRelayService {
             return existingBinding.publicPort;
         }
 
-        const publicPort = this.reservePort();
+        const publicPort = this.portAllocator.reservePort();
         const server = net.createServer((socket) => {
             this.handleIncomingConnection(exposure.teamClusterId, exposure.id, socket).catch((error: unknown) => {
                 logger.error({ err: error, exposureId: exposure.id }, '[TcpExposureRelay] Failed to open tunnel for incoming socket');
@@ -141,23 +146,12 @@ export default class TeamClusterTcpExposureRelayService {
             });
         });
 
-        try {
-            await new Promise<void>((resolve, reject) => {
-                server.once('error', reject);
-                server.listen(publicPort, this.bindHost, () => {
-                    server.removeListener('error', reject);
-                    resolve();
-                });
-            });
-        } catch (error) {
-            this.usedPorts.delete(publicPort);
-            throw error;
-        }
+        await this.portAllocator.listen(server, publicPort, this.bindHost);
 
         const currentExposure = this.getRelayableExposure(exposureId);
         if (!currentExposure) {
-            await this.closeServer(server);
-            this.usedPorts.delete(publicPort);
+            await this.portAllocator.close(server);
+            this.portAllocator.releasePort(publicPort);
             return null;
         }
 
@@ -179,12 +173,12 @@ export default class TeamClusterTcpExposureRelayService {
     }
 
     private async releaseBinding(binding: PublicExposureBinding): Promise<void> {
-        await this.closeServer(binding.server);
+        await this.portAllocator.close(binding.server);
         logger.info(
             { exposureId: binding.exposureId, publicPort: binding.publicPort },
             '[TcpExposureRelay] Released local relay port'
         );
-        this.usedPorts.delete(binding.publicPort);
+        this.portAllocator.releasePort(binding.publicPort);
         this.bindingsByExposureId.delete(binding.exposureId);
     }
 
@@ -195,12 +189,6 @@ export default class TeamClusterTcpExposureRelayService {
         }
 
         return exposure;
-    }
-
-    private closeServer(server: net.Server): Promise<void> {
-        return new Promise<void>((resolve) => {
-            server.close(() => resolve());
-        });
     }
 
     private isRelayableExposure(exposure: TeamClusterServiceExposure): boolean {
@@ -232,14 +220,4 @@ export default class TeamClusterTcpExposureRelayService {
         tunnel.on('error', closeSocket);
     }
 
-    private reservePort(): number {
-        for (let port = this.portStart; port <= this.portEnd; port += 1) {
-            if (!this.usedPorts.has(port)) {
-                this.usedPorts.add(port);
-                return port;
-            }
-        }
-
-        throw new Error('No available public TCP relay ports');
-    }
 };

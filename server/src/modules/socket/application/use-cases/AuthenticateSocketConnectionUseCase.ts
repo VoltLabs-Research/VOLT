@@ -2,6 +2,8 @@ import { inject, injectable } from 'tsyringe';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import type { ITokenService } from '@modules/auth/domain/port/ITokenService';
 import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
+import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';
+import type { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
 import type { ISocketAuthenticationResult, ISocketConnectionUser } from '@modules/socket/domain/port/ISocketModule';
 
 @injectable()
@@ -10,7 +12,9 @@ export default class AuthenticateSocketConnectionUseCase {
         @inject(AUTH_TOKENS.UserRepository)
         private readonly userRepository: IUserRepository,
         @inject(AUTH_TOKENS.TokenService)
-        private readonly tokenService: ITokenService
+        private readonly tokenService: ITokenService,
+        @inject(SESSION_TOKENS.SessionRepository)
+        private readonly sessionRepository: ISessionRepository
     ) {}
 
     async execute(token?: string): Promise<ISocketAuthenticationResult> {
@@ -42,6 +46,14 @@ export default class AuthenticateSocketConnectionUseCase {
             return {
                 state: 'rejected',
                 reason: 'password_changed'
+            };
+        }
+
+        const session = await this.sessionRepository.findByToken(token);
+        if (!session || !session.props.isActive) {
+            return {
+                state: 'rejected',
+                reason: 'invalid_token'
             };
         }
 

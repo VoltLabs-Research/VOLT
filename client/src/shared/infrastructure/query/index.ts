@@ -8,9 +8,7 @@ export {
     withSuccess
 } from './create-paginated-query';
 
-export { createManagedMutation } from './managed-mutation';
-
-export { createCachePolicy } from './cache-policies';
+export { createFolderResourceQueries } from './create-folder-resource-queries';
 
 export type {
     QueryOptions,

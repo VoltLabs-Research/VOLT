@@ -1,4 +1,5 @@
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
+import { reportHotspotDuration } from '@/app/core/http/utilities/client-instrumentation';
 import {
     getClusterOnboardingRedirectPath,
     getOnboardingRedirectPath,
@@ -13,12 +14,9 @@ import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluste
 import { resetTeamSessionState, useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
+import ProtectedRouteRealtimeEffects from '@/app/routes/ProtectedRouteRealtimeEffects';
 import ConfirmActionModal from '@/shared/presentation/components/ConfirmActionModal';
-import useTeamSocketSubscription from '@/modules/team/hooks/team/use-team-socket-subscription';
-import useSocketConnectionToast from '@/modules/socket/core/hooks/use-socket-connection-toast';
-import useTeamActivityHeartbeat from '@/modules/team/hooks/team/use-team-activity-heartbeat';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
-import useTeamPresenceSocket from '@/modules/team/hooks/team/use-team-presence-socket';
 import Loader from '@/shared/presentation/components/Loader';
 import { useEffect, useRef } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
@@ -26,6 +24,11 @@ import type { ReactNode } from 'react';
 
 interface ProtectedRouteProps{
     mode: RouteMode;
+};
+
+interface RouteReadyMeasurement {
+    key: string;
+    startedAt: number;
 };
 
 export enum RouteMode {
@@ -49,21 +52,9 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
     const selectedTeamId = useSelectedTeamId();
 
     const shouldLoadTeamData = mode === RouteMode.Protected && hasToken;
-    const { teams, fetchTeams, isTeamsLoading } = useTeamData({ enabled: shouldLoadTeamData });
+    const { teams, isTeamsLoading } = useTeamData({ enabled: shouldLoadTeamData });
     const previousSelectedTeamIdRef = useRef<string | null>(selectedTeamId);
     const refreshedOnboardingTeamIdRef = useRef<string | null>(null);
-
-    useTeamSocketSubscription();
-    useSocketConnectionToast();
-    useTeamPresenceSocket();
-    useTeamActivityHeartbeat();
-
-    const teamClustersQuery = useTeamClustersQuery(selectedTeamId ?? '', {
-        enabled: Boolean(selectedTeamId)
-    });
-    const isClusterCheckLoading = teamClustersQuery.isLoading;
-    const shouldRedirectToOnboarding = teamClustersQuery.isSuccess
-        && !hasUsableTeamCluster(teamClustersQuery.data.data);
 
     const isAuthenticated = !!user;
     const hasTeam = !!selectedTeamId;
@@ -72,14 +63,64 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
     const isTeamInvitationRoute = location.pathname.startsWith('/team-invitation/');
     const canAccessWithoutSelectedTeam = isStartRoute || isTeamInvitationRoute || isOnboardingRoute;
 
+    const shouldCheckTeamClusterAccess = mode === RouteMode.Protected
+        && hasToken
+        && isAuthenticated
+        && !canAccessWithoutSelectedTeam
+        && Boolean(selectedTeamId);
+    const shouldMountRealtimeEffects = mode === RouteMode.Protected && hasToken && isAuthenticated;
+
+    const teamClustersQuery = useTeamClustersQuery(selectedTeamId ?? '', {
+        enabled: shouldCheckTeamClusterAccess
+    });
+    const isClusterCheckLoading = teamClustersQuery.isLoading;
+    const shouldRedirectToOnboarding = teamClustersQuery.isSuccess
+        && !hasUsableTeamCluster(teamClustersQuery.data.data);
+    const routeReadyRef = useRef<RouteReadyMeasurement | null>(null);
+    const routeReadyKey = `${mode}:${currentDestination}`;
+    const isRouteSettled = mode === RouteMode.Protected
+        ? isInitialized
+            && !isLoading
+            && (
+                !isAuthenticated
+                || canAccessWithoutSelectedTeam
+                || (
+                    !isTeamsLoading
+                    && hasTeam
+                    && !isClusterCheckLoading
+                    && !shouldRedirectToOnboarding
+                )
+            )
+        : isInitialized && !isLoading;
+
     const renderProtectedContent = (content: ReactNode) => {
         return (
             <>
+                {shouldMountRealtimeEffects && <ProtectedRouteRealtimeEffects />}
                 <ConfirmActionModal />
                 {content}
             </>
         );
     };
+
+    useEffect(() => {
+        routeReadyRef.current = {
+            key: routeReadyKey,
+            startedAt: performance.now()
+        };
+    }, [routeReadyKey]);
+
+    useEffect(() => {
+        if (!isRouteSettled || routeReadyRef.current?.key !== routeReadyKey) {
+            return;
+        }
+
+        reportHotspotDuration('protected-route.bootstrap', routeReadyRef.current.startedAt, {
+            mode,
+            path: location.pathname
+        });
+        routeReadyRef.current = null;
+    }, [isRouteSettled, location.pathname, mode, routeReadyKey]);
 
     useEffect(() => {
         if(!isInitialized && !isLoading){
@@ -94,12 +135,6 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
 
         resetTeamSessionState();
     }, [isAuthenticated, isInitialized]);
-
-    useEffect(() => {
-        if(hasToken && !hasTeam && !isTeamsLoading){
-            fetchTeams();
-        }
-    }, [hasToken, hasTeam, isTeamsLoading, fetchTeams]);
 
     useEffect(() => {
         const previousSelectedTeamId = previousSelectedTeamIdRef.current;

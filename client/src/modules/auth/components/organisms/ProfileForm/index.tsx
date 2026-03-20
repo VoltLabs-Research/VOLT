@@ -2,9 +2,10 @@ import { profileSchema } from './validation-schema';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Loader from '@/shared/presentation/components/Loader';
-import useZodForm from '@/shared/presentation/hooks/use-zod-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import type { ProfileForm as ProfileFormType } from './validation-schema';
 
 enum ProfileSaveState {
@@ -26,8 +27,8 @@ const ProfileForm = ({
     initialValues,
     onUpdate
 }: ProfileFormProps) => {
-    const { control, watch, getValues, formState, reset } = useZodForm<ProfileFormType>({
-        schema: profileSchema,
+    const { control, watch, getValues, formState, reset } = useForm<ProfileFormType>({
+        resolver: zodResolver(profileSchema),
         defaultValues: initialValues,
         mode: 'onBlur'
     });

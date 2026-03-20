@@ -247,7 +247,7 @@ class SocketIOAdapter implements ISocketService {
             path: this.options.path,
             timeout: this.options.timeout,
             auth: this.options.auth,
-            transports: ['websocket', 'polling'],
+            transports: ['polling', 'websocket'],
             reconnection: true,
             reconnectionAttempts: Infinity,
             reconnectionDelay: 1000,

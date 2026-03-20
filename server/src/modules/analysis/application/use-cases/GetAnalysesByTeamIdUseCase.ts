@@ -1,5 +1,6 @@
 import { TRAJECTORY_POPULATE, CLUSTER_POPULATE, USER_POPULATE } from '@shared/application/PopulatePresets';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysesByTeamIdDTO';
 import { extractPluginId } from '@modules/analysis/infrastructure/services/AnalysisPluginDisplayNameService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -8,6 +9,7 @@ import { inject, injectable } from 'tsyringe';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 
 interface TeamAnalysesFilter extends Partial<AnalysisProps> {
     team: string;
@@ -17,21 +19,20 @@ interface AnalysisSort extends Record<string, 1 | -1> {
     createdAt: -1;
 };
 
-interface SearchableAnalysisItem {
-    _id: string;
-    trajectoryName?: string;
-    pluginDisplayName: string;
-};
-
 @injectable()
 export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO, ApplicationError> {
     constructor(
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private analysisRepo: IAnalysisRepository
+        private analysisRepo: IAnalysisRepository,
+
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
+        private trajectoryRepo: ITrajectoryRepository
     ) {}
 
     async execute(input: GetAnalysesByTeamIdInputDTO): Promise<Result<GetAnalysesByTeamIdOutputDTO, ApplicationError>> {
-        const { teamId, search } = input;
+        const { teamId } = input;
+        const normalizedSearch = input.search?.trim();
+        const hasSearch = Boolean(normalizedSearch);
         const filter: TeamAnalysesFilter = {
             team: teamId
         };
@@ -40,20 +41,30 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
             createdAt: -1
         };
 
-        const results = await this.analysisRepo.findAll({
-            filter,
-            populate: [
-                TRAJECTORY_POPULATE,
-                {
-                    path: 'plugin'
-                },
-                CLUSTER_POPULATE,
-                USER_POPULATE
-            ],
-            sort,
-            limit: search ? undefined : input.limit,
-            page: search ? undefined : input.page
-        });
+        const populate = [
+            TRAJECTORY_POPULATE,
+            {
+                path: 'plugin'
+            },
+            CLUSTER_POPULATE,
+            USER_POPULATE
+        ];
+        const results = hasSearch
+            ? await this.analysisRepo.findByTeamAndSearch({
+                teamId,
+                search: normalizedSearch!,
+                trajectoryIds: await this.trajectoryRepo.searchIdsByTeamAndName(teamId, normalizedSearch!),
+                populate,
+                limit: input.limit,
+                page: input.page
+            })
+            : await this.analysisRepo.findAll({
+                filter,
+                populate,
+                sort,
+                limit: input.limit,
+                page: input.page
+            });
 
         const mappedData = results.data.map((analysis) => {
             const props = { ...analysis.props };
@@ -75,33 +86,9 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
             };
         });
 
-        if (!search) {
-            return Result.ok({
-                ...results,
-                data: mappedData
-            });
-        }
-
-        const normalizedSearch = search.trim().toLowerCase();
-        const filteredData = mappedData.filter((analysis: SearchableAnalysisItem) => {
-            return (analysis.pluginDisplayName?.toLowerCase().includes(normalizedSearch) ?? false)
-                || (analysis.trajectoryName?.toLowerCase().includes(normalizedSearch) ?? false)
-                || analysis._id.toLowerCase().includes(normalizedSearch);
-        });
-
-        const page = input.page ?? 1;
-        const limit = input.limit ?? 20;
-        const start = (page - 1) * limit;
-        const data = filteredData.slice(start, start + limit);
-        const total = filteredData.length;
-        const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
-
         return Result.ok({
-            total,
-            page,
-            limit,
-            totalPages,
-            data
+            ...results,
+            data: mappedData
         });
     }
 };

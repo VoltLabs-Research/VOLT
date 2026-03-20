@@ -35,25 +35,23 @@ import TeamJobsService from '@modules/team/socket/team/TeamJobsService';
 import TeamAIIntegrationSecretCipher from '@modules/team/infrastructure/security/ai-integration/TeamAIIntegrationSecretCipher';
 import TeamJobsSocketModule from '@modules/team/socket/team/TeamJobsSocketModule';
 import TeamPresenceSocketModule from '@modules/team/socket/team-member/TeamPresenceSocketModule';
-import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
-import type { ClassProvider } from 'tsyringe';
-import { container } from 'tsyringe';
+import { createClassBindings, registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
 
-const TEAM_AI_TOOL_CLASSES: ClassProvider<unknown>[] = [
-    { useClass: ListTeamMembersAITool },
-    { useClass: ListTeamRolesAITool },
-    { useClass: ListPendingInvitationsAITool },
-    { useClass: ListSecretKeysAITool },
-    { useClass: CreateTeamRoleAITool },
-    { useClass: UpdateTeamRoleAITool },
-    { useClass: DeleteTeamRoleAITool },
-    { useClass: SendTeamInvitationAITool },
-    { useClass: DeleteTeamInvitationAITool },
-    { useClass: RemoveTeamMemberAITool },
-    { useClass: UpdateTeamMemberAITool },
-    { useClass: CreateSecretKeyAITool },
-    { useClass: RevokeSecretKeyAITool },
-    { useClass: DeleteSecretKeyAITool }
+const TEAM_AI_TOOL_CLASSES = [
+    ListTeamMembersAITool,
+    ListTeamRolesAITool,
+    ListPendingInvitationsAITool,
+    ListSecretKeysAITool,
+    CreateTeamRoleAITool,
+    UpdateTeamRoleAITool,
+    DeleteTeamRoleAITool,
+    SendTeamInvitationAITool,
+    DeleteTeamInvitationAITool,
+    RemoveTeamMemberAITool,
+    UpdateTeamMemberAITool,
+    CreateSecretKeyAITool,
+    RevokeSecretKeyAITool,
+    DeleteSecretKeyAITool
 ];
 
 export const registerTeamDependencies = () => {
@@ -81,10 +79,9 @@ export const registerTeamDependencies = () => {
         aliases: [
             [SOCKET_TOKENS.SocketModule, TEAM_TOKENS.TeamJobsSocketModule],
             [SOCKET_TOKENS.SocketModule, TEAM_TOKENS.TeamPresenceSocketModule]
+        ],
+        bindings: [
+            ...createClassBindings(AI_TOKENS.AITool, TEAM_AI_TOOL_CLASSES)
         ]
     });
-
-    for (const toolClassProvider of TEAM_AI_TOOL_CLASSES) {
-        container.register(AI_TOKENS.AITool, toolClassProvider);
-    }
 };

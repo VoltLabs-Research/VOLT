@@ -1,11 +1,24 @@
 get:
-  operationId: listFolders
+  operationId: listTrajectoryFolders
   tags:
   - Trajectories
   summary: List folders
-  description: Returns all trajectory folders for the specified team.
+  description: Returns a paginated list of trajectory folders for the specified team.
   parameters:
   - $ref: ../../components/parameters/common.yaml#/TeamId
+  - name: page
+    in: query
+    description: Page number for pagination.
+    schema:
+      type: integer
+      minimum: 1
+  - name: limit
+    in: query
+    description: Number of items per page (max 500).
+    schema:
+      type: integer
+      minimum: 1
+      maximum: 500
   - name: parentId
     in: query
     description: Filter by parent folder ID. Omit to list root-level folders.
@@ -18,7 +31,7 @@ get:
         application/json:
           schema:
             allOf:
-            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - $ref: ../../components/schemas/common.yaml#/PaginatedResponse
             - type: object
               properties:
                 data:
@@ -32,7 +45,7 @@ get:
     '403':
       $ref: ../../components/responses/common.yaml#/Forbidden
 post:
-  operationId: createFolder
+  operationId: createTrajectoryFolder
   tags:
   - Trajectories
   summary: Create a folder
@@ -46,11 +59,11 @@ post:
         schema:
           type: object
           required:
-          - name
+          - title
           properties:
-            name:
+            title:
               type: string
-              description: Name of the folder
+              description: Title of the folder
             parentId:
               type:
               - string

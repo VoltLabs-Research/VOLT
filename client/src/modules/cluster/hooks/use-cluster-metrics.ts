@@ -30,7 +30,7 @@ const useClusterMetrics = (options: UseClusterMetricsOptions = {}) => {
     const targetClusterId = options.clusterId ?? selectedClusterId;
 
     useEffect(() => {
-        return observeClusterMetrics().execute({
+        return observeClusterMetrics({
             onConnectionChange: (connected) => {
                 setConnected(connected);
 

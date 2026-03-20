@@ -58,6 +58,10 @@ const TEAM_CLUSTER_ALLOWED_TRANSITIONS: Record<TeamClusterStatus, ReadonlySet<Te
         TeamClusterStatus.Deleting
     ]),
     [TeamClusterStatus.Disconnected]: new Set([
+        TeamClusterStatus.HealthcheckReceived,
+        TeamClusterStatus.PreparingEnvironment,
+        TeamClusterStatus.DependenciesInstallationFailed,
+        TeamClusterStatus.OperatingSystemNotSupported,
         TeamClusterStatus.Connected,
         TeamClusterStatus.Disconnected,
         TeamClusterStatus.Updating,

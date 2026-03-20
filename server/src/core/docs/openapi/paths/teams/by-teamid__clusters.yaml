@@ -54,7 +54,15 @@ post:
             - type: object
               properties:
                 data:
-                  $ref: ../../components/schemas/common.yaml#/TeamCluster
+                  type: object
+                  required:
+                  - teamCluster
+                  - enrollmentToken
+                  properties:
+                    teamCluster:
+                      $ref: ../../components/schemas/common.yaml#/TeamCluster
+                    enrollmentToken:
+                      type: string
     '400':
       $ref: ../../components/responses/common.yaml#/BadRequest
     '401':

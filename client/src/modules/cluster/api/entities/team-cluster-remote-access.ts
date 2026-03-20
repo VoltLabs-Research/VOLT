@@ -1,49 +1,5 @@
 /**
- * Represents a password-confirmed remote access session for a specific cluster resource.
- */
-export interface TeamClusterRemoteAccessSession {
-    sessionId: string;
-    teamClusterId: string;
-    target: TeamClusterRemoteAccessTarget;
-    createdAt: string;
-    expiresAt: string;
-};
-
-/**
- * Represents a navigable item rendered inside the shared remote explorer UI.
- */
-export interface TeamClusterRemoteExplorerEntry {
-    id: string;
-    name: string;
-    path: string;
-    type: TeamClusterRemoteExplorerEntryType;
-    size: number | null;
-    updatedAt: string | null;
-    description: string | null;
-};
-
-/**
- * Represents a MongoDB document rendered by the dedicated collection viewer.
- */
-export interface TeamClusterMongoDocument {
-    id: string;
-    value: Record<string, unknown>;
-};
-
-/**
- * Represents the content payload shown when the explorer opens a concrete resource node.
- */
-export interface TeamClusterRemoteExplorerNode {
-    path: string;
-    title: string;
-    type: TeamClusterRemoteExplorerNodeType;
-    contentType: TeamClusterRemoteExplorerContentType;
-    textContent: string | null;
-    mongoDocuments: TeamClusterMongoDocument[];
-};
-
-/**
- * Enumerates the protected remote resources available from the clusters page.
+ * Enumerates the protected remote resources available from the cluster explorer.
  */
 export enum TeamClusterRemoteAccessTarget {
     HostTerminal = 'host-terminal',
@@ -80,4 +36,48 @@ export enum TeamClusterRemoteExplorerContentType {
     Empty = 'empty',
     Text = 'text',
     MongoDocuments = 'mongo-documents'
+};
+
+/**
+ * Represents a navigable item rendered inside the shared remote explorer UI.
+ */
+export interface TeamClusterRemoteExplorerEntry {
+    id: string;
+    name: string;
+    path: string;
+    type: TeamClusterRemoteExplorerEntryType;
+    size: number | null;
+    updatedAt: string | null;
+    description: string | null;
+};
+
+/**
+ * Represents a MongoDB document rendered by the dedicated collection viewer.
+ */
+export interface TeamClusterMongoDocument {
+    id: string;
+    value: Record<string, unknown>;
+};
+
+/**
+ * Represents the content payload shown when the explorer opens a concrete resource node.
+ */
+export interface TeamClusterRemoteExplorerNode {
+    path: string;
+    title: string;
+    type: TeamClusterRemoteExplorerNodeType;
+    contentType: TeamClusterRemoteExplorerContentType;
+    textContent: string | null;
+    mongoDocuments: TeamClusterMongoDocument[];
+};
+
+/**
+ * Represents a password-confirmed remote access session for a specific cluster resource.
+ */
+export interface TeamClusterRemoteAccessSession {
+    sessionId: string;
+    teamClusterId: string;
+    target: TeamClusterRemoteAccessTarget;
+    createdAt: string;
+    expiresAt: string;
 };

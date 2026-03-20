@@ -4,17 +4,18 @@ import TeamCluster, { TeamClusterStatus } from '@modules/team-cluster/domain/ent
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryCreatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryCreatedEvent';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
 import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
-import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
 import { ImportTrajectoryFromSSHInputDTO } from '@modules/ssh/application/dtos/ImportTrajectoryFromSSHInputDTO';
 import { ImportTrajectoryFromSSHOutputDTO } from '@modules/ssh/application/dtos/ImportTrajectoryFromSSHOutputDTO';
+import { SSHConnectionOwnershipService } from '@modules/ssh/application/services/SSHConnectionOwnershipService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@core/constants/error-codes';
 import logger from '@shared/infrastructure/logger';
 import { v4 } from 'uuid';
+import { ErrorCodes } from '@core/constants/error-codes';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
@@ -23,8 +24,8 @@ import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/traj
 @injectable()
 export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTrajectoryFromSSHInputDTO, ImportTrajectoryFromSSHOutputDTO, ApplicationError>{
     constructor(
-        @inject(SSH_TOKENS.SSHConnectionRepository)
-        private sshConnRepository: ISSHConnectionRepository,
+        @inject(SSHConnectionOwnershipService)
+        private readonly sshConnectionOwnershipService: SSHConnectionOwnershipService,
 
         @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
         private readonly teamClusterRepository: ITeamClusterRepository,
@@ -42,14 +43,13 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
     async execute(input: ImportTrajectoryFromSSHInputDTO): Promise<Result<ImportTrajectoryFromSSHOutputDTO, ApplicationError>>{
         const { sshConnectionId, remotePath, teamId, userId } = input;
 
-        const sshConnection = await this.sshConnRepository.findByIdWithCredentials(sshConnectionId);
+        const sshConnectionResult = await this.sshConnectionOwnershipService.getOwnedByTeamWithCredentials(sshConnectionId, teamId);
 
-        if (!sshConnection || sshConnection.props.team !== teamId) {
-            return Result.fail(ApplicationError.notFound(
-                ErrorCodes.SSH_CONNECTION_NOT_FOUND,
-                'SSH connection not found'
-            ));
+        if (!sshConnectionResult.success) {
+            return Result.fail(sshConnectionResult.error);
         }
+
+        const sshConnection = sshConnectionResult.value;
 
         const teamClusters = await this.teamClusterRepository.findAll({
             filter: {
@@ -97,7 +97,7 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
                 createdAt: new Date()
             });
 
-            await this.teamClusterDaemonClient.command(connectedTeamCluster.id, 'queue.dispatch', {
+            await this.teamClusterDaemonClient.command(connectedTeamCluster.id, TEAM_CLUSTER_DAEMON_COMMAND.queue.dispatch, {
                 queueName: 'ssh_import',
                 payload: {
                     teamId,

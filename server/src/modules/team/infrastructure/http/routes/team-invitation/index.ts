@@ -1,11 +1,13 @@
 import { Resource } from '@core/constants/resources';
 import controllers from '@modules/team/infrastructure/http/controllers/team-invitation';
 import { teamInvitationValidation } from '@modules/team/infrastructure/http/validation/team-invitation';
+import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 
 export default createHttpModule({
     basePath: '/api/teams/:teamId/invitations',
     resource: Resource.TEAM_INVITATION,
+    teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
         router.post('/', teamInvitationValidation.send, controllers.send.handle);
         router.get('/', controllers.listPendingByTeamId.handle);

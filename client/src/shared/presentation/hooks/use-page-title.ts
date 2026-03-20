@@ -1,71 +1,81 @@
 import { useEffect, useRef } from 'react';
 
-interface PageTitleRegistration {
-    priority: number;
+interface TitleEntry {
+    id: number;
     title: string;
 };
 
 const APP_NAME = 'VOLT';
-const FALLBACK_PAGE_TITLE_PRIORITY = 0;
-const PAGE_TITLE_PRIORITY = 1;
 
-let nextRegistrationId = 0;
-const pageTitleRegistrations = new Map<number, PageTitleRegistration>();
+let nextTitleId = 0;
+const fallbackTitles: TitleEntry[] = [];
+const pageTitles: TitleEntry[] = [];
 
 const formatPageTitle = (title: string): string => {
     return title ? `${title} - ${APP_NAME}` : APP_NAME;
 };
 
 const syncDocumentTitle = (): void => {
-    const sortedRegistrations = Array.from(pageTitleRegistrations.entries()).sort((left, right) => {
-        const [, leftRegistration] = left;
-        const [, rightRegistration] = right;
+    const activeTitle = pageTitles.length > 0
+        ? pageTitles[pageTitles.length - 1]?.title
+        : fallbackTitles[fallbackTitles.length - 1]?.title;
 
-        if (leftRegistration.priority !== rightRegistration.priority) {
-            return leftRegistration.priority - rightRegistration.priority;
-        }
-
-        return left[0] - right[0];
-    });
-
-    const activeRegistration = sortedRegistrations.length > 0
-        ? sortedRegistrations[sortedRegistrations.length - 1]?.[1]
-        : undefined;
-    document.title = formatPageTitle(activeRegistration?.title ?? '');
+    document.title = formatPageTitle(activeTitle ?? '');
 };
 
-const useRegisteredPageTitle = (title: string, priority: number): void => {
-    const registrationIdRef = useRef<number | null>(null);
+const removeTitle = (titles: TitleEntry[], id: number): void => {
+    const index = titles.findIndex((entry) => entry.id === id);
+    if (index >= 0) {
+        titles.splice(index, 1);
+    }
+};
+
+const updateTitle = (titles: TitleEntry[], id: number, title: string): void => {
+    const existingEntry = titles.find((entry) => entry.id === id);
+
+    if (existingEntry) {
+        existingEntry.title = title;
+    } else {
+        titles.push({ id, title });
+    }
+
+    syncDocumentTitle();
+};
+
+const useTrackedTitle = (title: string, titles: TitleEntry[]): void => {
+    const titleIdRef = useRef<number | null>(null);
 
     useEffect(() => {
-        if (registrationIdRef.current === null) {
-            registrationIdRef.current = nextRegistrationId;
-            nextRegistrationId += 1;
+        if (titleIdRef.current === null) {
+            titleIdRef.current = nextTitleId;
+            nextTitleId += 1;
         }
 
-        pageTitleRegistrations.set(registrationIdRef.current, {
-            priority,
-            title
-        });
-        syncDocumentTitle();
-
         return () => {
-            if (registrationIdRef.current === null) {
+            if (titleIdRef.current === null) {
                 return;
             }
 
-            pageTitleRegistrations.delete(registrationIdRef.current);
+            removeTitle(titles, titleIdRef.current);
             syncDocumentTitle();
         };
-    }, [priority, title]);
+    }, [titles]);
+
+    useEffect(() => {
+        if (titleIdRef.current === null) {
+            return;
+        }
+
+        updateTitle(titles, titleIdRef.current, title);
+    }, [title, titles]);
 };
 
 /** Sets a page title that overrides the route-level fallback while mounted. */
 export function usePageTitle(title: string): void {
-    useRegisteredPageTitle(title, PAGE_TITLE_PRIORITY);
+    useTrackedTitle(title, pageTitles);
 };
 
 /** Sets a route-level fallback title unless a page override is active. */
 export function useFallbackPageTitle(title: string): void {
-    useRegisteredPageTitle(title, FALLBACK_PAGE_TITLE_PRIORITY);
+    useTrackedTitle(title, fallbackTitles);
 };
