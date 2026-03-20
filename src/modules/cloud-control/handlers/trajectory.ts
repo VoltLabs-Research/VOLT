@@ -9,11 +9,13 @@ import type {
     NativePropertyStatsRequest,
     NativeTrajectoryRequest,
     NativeUniqueValuesRequest,
+    TrajectoryAutoPreviewClaimStore,
     TrajectoryParserService,
     TrajectoryPluginParserService
 } from '@/modules/trajectory-native/services';
 import type { MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
 import type { EnqueuePreprocessingRequest, EnqueuePreprocessingFrameDescriptor, RasterizeTrajectoryRequest } from '@/shared/contracts';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@/shared/contracts';
 import type { ReverseChannelCommandHandler } from '../services';
 import {
     readNumber,
@@ -35,6 +37,7 @@ interface TrajectoryHandlersDependencies {
     minioService: MinioService;
     queueService: QueueService;
     redisConnectionService: RedisConnectionService;
+    trajectoryAutoPreviewClaimStore: TrajectoryAutoPreviewClaimStore;
     trajectoryParserService: TrajectoryParserService;
     trajectoryPluginParserService: TrajectoryPluginParserService;
     glbExporterService: GlbExporterService;
@@ -207,7 +210,8 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
     const trajectoryRasterQueueService = createTrajectoryRasterQueueService(
         deps.minioService,
         deps.queueService,
-        deps.redisConnectionService
+        deps.redisConnectionService,
+        deps.trajectoryAutoPreviewClaimStore
     );
     const trajectoryGlbQueueService = createTrajectoryGlbQueueService(
         deps.minioService,
@@ -217,7 +221,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
 
     return [
         {
-            command: 'trajectory.rasterize',
+            command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.rasterize,
             execute: async (payload) => ({
                 data: await trajectoryRasterQueueService.queueRasterizationJobs(
                     readRasterizeTrajectoryRequest(payload)
@@ -225,7 +229,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
             })
         },
         {
-            command: 'trajectory.enqueue-preprocessing',
+            command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.enqueuePreprocessing,
             execute: async (payload) => ({
                 data: await trajectoryGlbQueueService.enqueueGlbConversionJobs(
                     readEnqueuePreprocessingRequest(payload)
@@ -233,38 +237,38 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
             })
         },
         {
-            command: 'trajectory.native.preprocess',
+            command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.preprocess,
             execute: async (payload) => {
                 await deps.glbExporterService.preprocessTrajectory(readNativeTrajectoryRequest(payload));
                 return { data: { glbExported: true } };
             }
         },
         {
-            command: 'trajectory.native.metadata',
+            command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.metadata,
             execute: async (payload) => ({
                 data: await deps.trajectoryParserService.getTrajectoryMetadata(readNativeTrajectoryRequest(payload))
             })
         },
         {
-            command: 'trajectory.native.property-stats',
+            command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.propertyStats,
             execute: async (payload) => ({
                 data: await deps.trajectoryParserService.getPropertyStats(readNativePropertyStatsRequest(payload))
             })
         },
         {
-            command: 'trajectory.native.unique-values',
+            command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.uniqueValues,
             execute: async (payload) => ({
                 data: await deps.trajectoryParserService.getUniqueValues(readNativeUniqueValuesRequest(payload))
             })
         },
         {
-            command: 'trajectory.native.atom-ids',
+            command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.atomIds,
             execute: async (payload) => ({
                 data: await deps.trajectoryParserService.getAtomIds(readNativeTrajectoryRequest(payload))
             })
         },
         {
-            command: 'trajectory.native.atoms',
+            command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.atoms,
             execute: async (payload) => {
                 const request = readNativeAtomsPageRequest(payload);
                 const nativeResult = await deps.trajectoryParserService.getAtomsPage(request);
@@ -294,19 +298,19 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
             }
         },
         {
-            command: 'trajectory.native.filter-preview',
+            command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.filterPreview,
             execute: async (payload) => ({
                 data: await deps.filterEvaluatorService.previewFilter(readNativeFilterPreviewRequest(payload))
             })
         },
         {
-            command: 'trajectory.native.color-model',
+            command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.colorModel,
             execute: async (payload) => ({
                 data: await deps.filterEvaluatorService.exportColoredModel(readNativeColorModelRequest(payload))
             })
         },
         {
-            command: 'trajectory.native.particle-filter-model',
+            command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.particleFilterModel,
             execute: async (payload) => ({
                 data: await deps.filterEvaluatorService.exportParticleFilterModel(readNativeParticleFilterModelRequest(payload))
             })

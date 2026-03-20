@@ -1,8 +1,9 @@
-import { TRAJECTORY_RASTER_QUEUE_NAME } from '@/modules/platform/services';
+import { TRAJECTORY_RASTER_QUEUE_NAME, enqueueProjectedJob } from '@/modules/platform/services';
 import type { MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
 import { ObjectBucketName } from '@/shared/contracts';
 import type { RasterQueueJobPayload, RasterizeTrajectoryRequest, RasterizeTrajectoryResponse } from '@/shared/contracts';
 import { isRecord } from '@/shared/utilities/type-guards';
+import type { TrajectoryAutoPreviewClaimStore } from './TrajectoryAutoPreviewClaimStore';
 
 interface ParsedRasterModel {
     modelObjectKey: string;
@@ -40,10 +41,6 @@ const buildRasterJobId = (
     return `trajectory-raster_${trajectoryId}_${timestep}`;
 };
 
-const buildAutoPreviewRasterKey = (trajectoryId: string): string => {
-    return `trajectory:${trajectoryId}:auto-preview-raster`;
-};
-
 const createQueueRasterizationJobsResult = (): QueueRasterizationJobsResult => {
     return {
         queuedJobs: 0,
@@ -75,23 +72,6 @@ const readAutoPreviewRasterizationConfig = (
     return {
         timestep: input.config.timestep
     };
-};
-
-const claimAutoPreviewRasterization = async (
-    redisConnectionService: RedisConnectionService,
-    trajectoryId: string
-): Promise<boolean> => {
-    return redisConnectionService.setKeyIfAbsent(
-        buildAutoPreviewRasterKey(trajectoryId),
-        new Date().toISOString(),
-    );
-};
-
-const releaseAutoPreviewRasterizationClaim = async (
-    redisConnectionService: RedisConnectionService,
-    trajectoryId: string
-): Promise<void> => {
-    await redisConnectionService.deleteKey(buildAutoPreviewRasterKey(trajectoryId));
 };
 
 const STAT_CONCURRENCY = 10;
@@ -213,31 +193,15 @@ const buildRasterJobPayload = (
     };
 };
 
-const enqueueRasterJob = async (
-    queueService: QueueService,
-    redisConnectionService: RedisConnectionService,
-    job: RasterQueueJobPayload
-): Promise<boolean> => {
-    const wasEnqueued = await queueService.enqueue(TRAJECTORY_RASTER_QUEUE_NAME, job, {
-        preserveExistingJob: true
-    });
-
-    if (!wasEnqueued) {
-        return false;
-    }
-
-    await redisConnectionService.projectJobStatus(job);
-    return true;
-};
-
 const queueAutoPreviewRasterizationJob = async (
     input: RasterizeTrajectoryRequest,
     queueService: QueueService,
     redisConnectionService: RedisConnectionService,
+    trajectoryAutoPreviewClaimStore: TrajectoryAutoPreviewClaimStore,
     config: AutoPreviewRasterizationConfig
 ): Promise<RasterizeTrajectoryResponse> => {
     const result = createQueueRasterizationJobsResult();
-    const wasClaimed = await claimAutoPreviewRasterization(redisConnectionService, input.trajectoryId);
+    const wasClaimed = await trajectoryAutoPreviewClaimStore.claimRasterization(input.trajectoryId);
 
     if (!wasClaimed) {
         result.skippedJobs += 1;
@@ -253,13 +217,20 @@ const queueAutoPreviewRasterizationJob = async (
     let wasEnqueued = false;
 
     try {
-        wasEnqueued = await enqueueRasterJob(queueService, redisConnectionService, job);
+        wasEnqueued = await enqueueProjectedJob({
+            queueService,
+            queueName: TRAJECTORY_RASTER_QUEUE_NAME,
+            job,
+            projectJobStatus: (projectedJob) => redisConnectionService.projectJobStatus(projectedJob),
+            preserveExistingJob: true
+        });
     } catch (error) {
-        await releaseAutoPreviewRasterizationClaim(redisConnectionService, input.trajectoryId);
+        await trajectoryAutoPreviewClaimStore.releaseRasterization(input.trajectoryId);
         throw error;
     }
 
     if (!wasEnqueued) {
+        await trajectoryAutoPreviewClaimStore.releaseRasterization(input.trajectoryId);
         result.skippedJobs += 1;
         result.duplicateJobs += 1;
         return result;
@@ -272,7 +243,8 @@ const queueAutoPreviewRasterizationJob = async (
 export const createTrajectoryRasterQueueService = (
     minioService: MinioService,
     queueService: QueueService,
-    redisConnectionService: RedisConnectionService
+    redisConnectionService: RedisConnectionService,
+    trajectoryAutoPreviewClaimStore: TrajectoryAutoPreviewClaimStore
 ): TrajectoryRasterQueueService => ({
     async queueRasterizationJobs(input) {
         const autoPreviewRasterizationConfig = readAutoPreviewRasterizationConfig(input);
@@ -282,6 +254,7 @@ export const createTrajectoryRasterQueueService = (
                 input,
                 queueService,
                 redisConnectionService,
+                trajectoryAutoPreviewClaimStore,
                 autoPreviewRasterizationConfig
             );
         }
@@ -315,7 +288,13 @@ export const createTrajectoryRasterQueueService = (
                 continue;
             }
 
-            const wasEnqueued = await enqueueRasterJob(queueService, redisConnectionService, job);
+            const wasEnqueued = await enqueueProjectedJob({
+                queueService,
+                queueName: TRAJECTORY_RASTER_QUEUE_NAME,
+                job,
+                projectJobStatus: (projectedJob) => redisConnectionService.projectJobStatus(projectedJob),
+                preserveExistingJob: true
+            });
 
             if (!wasEnqueued) {
                 result.skippedJobs += 1;

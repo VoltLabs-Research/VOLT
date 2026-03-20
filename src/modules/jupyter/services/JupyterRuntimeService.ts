@@ -42,12 +42,17 @@ interface JupyterStartupOperation {
     publicBasePath: string;
 };
 
+interface JupyterStartupSlotWaiter {
+    grant: () => boolean;
+};
+
 export interface JupyterRuntimeTunnelTarget {
     host: string;
     port: number;
 };
 
 const JUPYTER_HEALTH_CHECK_INTERVAL_MS = 1000;
+const JUPYTER_BACKGROUND_STARTUP_LIMIT = 2;
 const RUNTIME_LABEL_KEY = 'volt.runtime.kind';
 const RUNTIME_LABEL_VALUE = 'jupyter';
 const NOTEBOOK_ID_LABEL_KEY = 'volt.notebook.id';
@@ -90,6 +95,8 @@ export class JupyterRuntimeService {
     private readonly runtimeStates = new Map<string, NotebookRuntimeState>();
     private readonly runtimeStateActivity = new Map<string, number>();
     private readonly runtimeStateSweepTimer: ReturnType<typeof setInterval>;
+    private readonly startupSlotWaiters: JupyterStartupSlotWaiter[] = [];
+    private activeStartupOperations = 0;
 
     constructor(
         private readonly config: DaemonConfig,
@@ -107,6 +114,7 @@ export class JupyterRuntimeService {
     }
 
     async ensureSession(input: EnsureNotebookSessionInput): Promise<CreateNotebookSessionResponse> {
+        const startedAt = Date.now();
         const publicBasePath = this.normalizePublicBasePath(input.publicBasePath);
         const { state: runtimeState, containerStage } = await this.ensureContainer({
             ...input,
@@ -120,7 +128,11 @@ export class JupyterRuntimeService {
         await this.dockerRuntimeService.writeContainerFile(
             runtimeState.containerId,
             notebookFilePath,
-            JSON.stringify(input.notebook.content, null, 2)
+            JSON.stringify(input.notebook.content, null, 2),
+            {
+                operationName: 'jupyter-write-notebook',
+                timeoutMs: this.config.jupyter.execTimeoutMs
+            }
         );
 
         const ready = await this.ensureJupyterServer({
@@ -129,6 +141,18 @@ export class JupyterRuntimeService {
             publicBasePath
         });
         const resolvedStage: NotebookContainerStage = ready ? 'ready' : containerStage;
+        logger.info(
+            {
+                containerId: runtimeState.containerId,
+                containerStage: resolvedStage,
+                durationMs: Date.now() - startedAt,
+                notebookId: input.notebook._id,
+                publicBasePath,
+                ready,
+                requestedBy: input.requestedBy
+            },
+            'Ensured Jupyter notebook session'
+        );
         return {
             jupyter: {
                 internalPath,
@@ -198,7 +222,7 @@ export class JupyterRuntimeService {
                             ? currentRuntimeState.readinessOrigin
                             : undefined
                     },
-                    containerStage: wasRunning ? 'starting' : 'starting'
+                    containerStage: 'starting'
                 };
             }
         }
@@ -399,6 +423,18 @@ export class JupyterRuntimeService {
 
         startupOperation.promise = startupPromise;
         this.startupOperations.set(input.notebookId, startupOperation);
+        logger.info(
+            {
+                activeStartupOperations: this.activeStartupOperations,
+                containerId: input.containerId,
+                notebookId: input.notebookId,
+                pendingStartupOperations: this.startupSlotWaiters.length,
+                publicBasePath: input.publicBasePath,
+                startupConcurrencyLimit: JUPYTER_BACKGROUND_STARTUP_LIMIT,
+                timeoutMs: this.config.jupyter.startTimeoutMs
+            },
+            'Queued background Jupyter readiness check'
+        );
     }
 
     private async runStartupOperation(
@@ -415,7 +451,29 @@ export class JupyterRuntimeService {
             return;
         }
 
-        await this.runJupyterStartup(input, startupOperation.controller.signal);
+        const slotAcquiredAt = Date.now();
+        const acquiredSlot = await this.acquireStartupSlot(startupOperation.controller.signal);
+        if (!acquiredSlot || startupOperation.controller.signal.aborted) {
+            return;
+        }
+
+        try {
+            logger.info(
+                {
+                    activeStartupOperations: this.activeStartupOperations,
+                    containerId: input.containerId,
+                    notebookId: input.notebookId,
+                    pendingStartupOperations: this.startupSlotWaiters.length,
+                    publicBasePath: input.publicBasePath,
+                    startupConcurrencyLimit: JUPYTER_BACKGROUND_STARTUP_LIMIT,
+                    waitForSlotMs: Date.now() - slotAcquiredAt
+                },
+                'Started background Jupyter readiness check'
+            );
+            await this.runJupyterStartup(input, startupOperation.controller.signal);
+        } finally {
+            this.releaseStartupSlot();
+        }
     }
 
     private async runJupyterStartup(input: EnsureJupyterServerInput, signal: AbortSignal): Promise<void> {
@@ -540,6 +598,10 @@ export class JupyterRuntimeService {
     private normalizePublicBasePath(value: string): string {
         const trimmedValue = value.trim();
         const normalizedValue = trimmedValue.startsWith('/') ? trimmedValue : `/${trimmedValue}`;
+        if (normalizedValue === '/') {
+            return '/';
+        }
+
         return normalizedValue.endsWith('/') ? normalizedValue.slice(0, -1) : normalizedValue;
     }
 
@@ -773,6 +835,7 @@ export class JupyterRuntimeService {
                 'Content-Security-Policy': `frame-ancestors ${this.config.jupyter.frameAncestors}`
             }
         });
+        const baseUrl = publicBasePath === '/' ? '/' : `${publicBasePath}/`;
 
         return [
             '/bin/sh',
@@ -786,7 +849,7 @@ export class JupyterRuntimeService {
                 '--ServerApp.port_retries=0',
                 '--ServerApp.open_browser=False',
                 `--ServerApp.token="${this.config.jupyter.token}"`,
-                `--ServerApp.base_url="${publicBasePath}/"`,
+                `--ServerApp.base_url="${baseUrl}"`,
                 "--ServerApp.allow_origin='*'",
                 '--ServerApp.disable_check_xsrf=True',
                 '--ServerApp.allow_remote_access=True',
@@ -818,6 +881,65 @@ export class JupyterRuntimeService {
         startupOperation.controller.abort();
         this.startupOperations.delete(notebookId);
         await startupOperation.promise;
+    }
+
+    private async acquireStartupSlot(signal: AbortSignal): Promise<boolean> {
+        if (signal.aborted) {
+            return false;
+        }
+
+        if (this.activeStartupOperations < JUPYTER_BACKGROUND_STARTUP_LIMIT) {
+            this.activeStartupOperations += 1;
+            return true;
+        }
+
+        return new Promise<boolean>((resolve) => {
+            const onAbort = (): void => {
+                this.removeStartupSlotWaiter(waiter);
+                resolve(false);
+            };
+
+            const waiter: JupyterStartupSlotWaiter = {
+                grant: () => {
+                    signal.removeEventListener('abort', onAbort);
+                    if (signal.aborted) {
+                        resolve(false);
+                        return false;
+                    }
+
+                    this.activeStartupOperations += 1;
+                    resolve(true);
+                    return true;
+                }
+            };
+
+            signal.addEventListener('abort', onAbort, { once: true });
+            this.startupSlotWaiters.push(waiter);
+        });
+    }
+
+    private releaseStartupSlot(): void {
+        if (this.activeStartupOperations > 0) {
+            this.activeStartupOperations -= 1;
+        }
+
+        while (this.startupSlotWaiters.length > 0 && this.activeStartupOperations < JUPYTER_BACKGROUND_STARTUP_LIMIT) {
+            const waiter = this.startupSlotWaiters.shift();
+            if (!waiter) {
+                return;
+            }
+
+            if (waiter.grant()) {
+                return;
+            }
+        }
+    }
+
+    private removeStartupSlotWaiter(waiterToRemove: JupyterStartupSlotWaiter): void {
+        const waiterIndex = this.startupSlotWaiters.indexOf(waiterToRemove);
+        if (waiterIndex >= 0) {
+            this.startupSlotWaiters.splice(waiterIndex, 1);
+        }
     }
 
     private isSameStartupOperation(

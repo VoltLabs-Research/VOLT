@@ -2,6 +2,7 @@ import { createObjectSyncService } from '@/modules/platform/services';
 import type { PluginListingFilter, PluginListingRepository, PluginSubListingFilter } from '@/modules/artifacts';
 import type { MinioService } from '@/modules/platform/services';
 import type { PluginSyncRequest, RuntimeEventBroker } from '@/shared/contracts';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@/shared/contracts';
 import type { ReverseChannelCommandHandler } from '../services';
 import { readNumber, readOptionalPayloadRecord, readOptionalString, readString } from './payloadValidation';
 
@@ -81,7 +82,7 @@ export const createPluginHandlers = (deps: PluginHandlersDependencies): ReverseC
 
     return [
         {
-            command: 'plugin.sync',
+            command: TEAM_CLUSTER_DAEMON_COMMAND.plugin.sync,
             execute: async (payload) => ({
                 data: await objectSyncService.syncPluginBinary(readPluginSyncRequest(payload))
             })

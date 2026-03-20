@@ -1,90 +1,67 @@
-import { ObjectBucketName, OrchestrationAction, PluginSyncRequest, TextEncoding, type ObjectUploadRequest, type RuntimeEventBroker } from '@/shared/contracts';
+import { createObjectUploadLifecycleService } from '@/modules/platform/services/ObjectUploadLifecycleService';
+import { ObjectBucketName, OrchestrationAction, TextEncoding } from '@/shared/contracts';
 import { ProgressStageType } from '@voltstack/daemon-cluster-client';
-import { logger } from '@/core/logger';
 import type { MinioService } from './MinioService';
-
-const emitProgress = (
-    eventBroker: RuntimeEventBroker,
-    action: OrchestrationAction,
-    stage: ProgressStageType,
-    payload?: Record<string, unknown>
-): void => {
-    eventBroker.emitProgress({
-        action,
-        stage,
-        payload,
-        timestamp: new Date().toISOString()
-    });
-};
+import type { ObjectUploadRequest, PluginSyncRequest, RuntimeEventBroker } from '@/shared/contracts';
 
 export interface ObjectSyncService {
     uploadObject(input: ObjectUploadRequest): Promise<void>;
     syncPluginBinary(input: PluginSyncRequest): Promise<{ synced: boolean; objectKey: string; }>;
-}
+};
 
 export const createObjectSyncService = (
     minioService: MinioService,
     eventBroker: RuntimeEventBroker
-): ObjectSyncService => ({
-    async uploadObject(input) {
-        const encoding = input.encoding || TextEncoding.Utf8;
-        const body = Buffer.from(input.content, encoding);
-        await minioService.putObject({
-            bucket: input.bucket,
-            objectKey: input.objectKey,
-            body,
-            metadata: input.metadata
-        });
+): ObjectSyncService => {
+    const objectUploadLifecycleService = createObjectUploadLifecycleService(minioService, eventBroker);
 
-        // Post-write verification for the legacy single-message upload path
-        try {
-            const stat = await minioService.statObject(input.bucket, input.objectKey);
-            logger.info(
-                {
-                    objectKey: input.objectKey,
-                    bucket: input.bucket,
-                    uploadedSize: body.length,
-                    minioReportedSize: stat.size,
-                    sizeMatch: stat.size === body.length
+    return {
+        async uploadObject(input) {
+            const encoding = input.encoding || TextEncoding.Utf8;
+            const body = Buffer.from(input.content, encoding);
+            await minioService.putObject({
+                bucket: input.bucket,
+                objectKey: input.objectKey,
+                body,
+                metadata: input.metadata
+            });
+
+            await objectUploadLifecycleService.verifyLegacyUpload({
+                bucket: input.bucket,
+                objectKey: input.objectKey,
+                uploadedSize: body.length
+            });
+
+            objectUploadLifecycleService.emitUploadCompleted({
+                bucket: input.bucket,
+                objectKey: input.objectKey
+            });
+        },
+
+        async syncPluginBinary(input) {
+            try {
+                await minioService.statObject(ObjectBucketName.Plugins, input.objectKey);
+            } catch {
+                return {
+                    synced: false,
+                    objectKey: input.objectKey
+                };
+            }
+
+            eventBroker.emitProgress({
+                action: OrchestrationAction.PluginSync,
+                stage: ProgressStageType.Completed,
+                payload: {
+                    pluginId: input.pluginId,
+                    objectKey: input.objectKey
                 },
-                'DIAG: Legacy upload post-write verification — object confirmed in MinIO'
-            );
-        } catch (verifyError) {
-            logger.error(
-                {
-                    objectKey: input.objectKey,
-                    bucket: input.bucket,
-                    uploadedSize: body.length,
-                    err: verifyError
-                },
-                'DIAG: Legacy upload post-write verification FAILED — object NOT found in MinIO after putObject succeeded'
-            );
-        }
+                timestamp: new Date().toISOString()
+            });
 
-        emitProgress(eventBroker, OrchestrationAction.ObjectUpload, ProgressStageType.Completed, {
-            bucket: input.bucket,
-            objectKey: input.objectKey
-        });
-    },
-
-    async syncPluginBinary(input) {
-        try {
-            await minioService.statObject(ObjectBucketName.Plugins, input.objectKey);
-        } catch {
             return {
-                synced: false,
+                synced: true,
                 objectKey: input.objectKey
             };
         }
-
-        emitProgress(eventBroker, OrchestrationAction.PluginSync, ProgressStageType.Completed, {
-            pluginId: input.pluginId,
-            objectKey: input.objectKey
-        });
-
-        return {
-            synced: true,
-            objectKey: input.objectKey
-        };
-    }
-});
+    };
+};

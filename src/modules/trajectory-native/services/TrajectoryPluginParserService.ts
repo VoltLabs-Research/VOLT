@@ -1,36 +1,11 @@
 import type { Readable } from 'node:stream';
 import type { MinioService } from '@/modules/platform/services';
-import { decodeMultiStream } from '@/shared/utilities/msgpack';
-import mergeChunkedValue from '@/shared/utilities/merge-chunked-value';
+import { decodeMultiStream, mergeSelectiveChunk } from '@/shared/utilities/selective-msgpack';
 import { isRecord } from '@/shared/utilities/type-guards';
 import { ObjectBucketName } from '@/shared/contracts';
 
 type PerAtomRow = Record<string, unknown>;
 type PerAtomColumnarData = Record<string, unknown[]>;
-
-const mergeSelectiveChunk = (
-    target: Record<string, unknown> | null,
-    incoming: unknown,
-    keyFilter: (key: string) => boolean
-): Record<string, unknown> | null => {
-    if (!isRecord(incoming)) {
-        return target;
-    }
-
-    const filtered: Record<string, unknown> = {};
-    for (const [key, incomingValue] of Object.entries(incoming)) {
-        if (keyFilter(key)) {
-            filtered[key] = incomingValue;
-        }
-    }
-
-    if (Object.keys(filtered).length === 0) {
-        return target;
-    }
-
-    const merged = mergeChunkedValue(target, filtered);
-    return isRecord(merged) ? merged : target;
-};
 
 export interface PluginPropertyNamesRequest {
     trajectoryId: string;

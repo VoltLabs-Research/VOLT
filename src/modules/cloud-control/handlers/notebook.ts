@@ -1,4 +1,5 @@
 import type { JupyterRuntimeService } from '@/modules/jupyter';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@/shared/contracts/reverseChannel';
 import type { NotebookSessionSnapshot } from '@/shared/contracts';
 import type { ReverseChannelCommandHandler } from '../services';
 import {
@@ -78,7 +79,7 @@ const getReadinessGatedRuntimeTarget = async (
 
 export const createNotebookHandlers = (deps: NotebookHandlersDependencies): ReverseChannelCommandHandler[] => [
     {
-        command: 'notebook.delete',
+        command: TEAM_CLUSTER_DAEMON_COMMAND.notebook.delete,
         execute: async (payload) => {
             const request = readNotebookIdentifierPayload(payload);
             return {
@@ -89,7 +90,7 @@ export const createNotebookHandlers = (deps: NotebookHandlersDependencies): Reve
         }
     },
     {
-        command: 'notebook.runtime.get',
+        command: TEAM_CLUSTER_DAEMON_COMMAND.notebook.runtime.get,
         execute: async (payload) => {
             const request = readNotebookIdentifierPayload(payload);
             const runtime = await getReadinessGatedRuntimeTarget(
@@ -105,7 +106,7 @@ export const createNotebookHandlers = (deps: NotebookHandlersDependencies): Reve
         }
     },
     {
-        command: 'notebook.session.create',
+        command: TEAM_CLUSTER_DAEMON_COMMAND.notebook.session.create,
         execute: async (payload) => {
             const request = readNotebookSessionRequestPayload(payload);
 

@@ -1,4 +1,5 @@
 import type { ContainerAction, CreateContainerRequest, ContainerEnvironmentVariable, ContainerPortMapping } from '@/shared/contracts';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@/shared/contracts';
 import type { DockerRuntimeService } from '@/modules/platform/services';
 import type { ReverseChannelCommandHandler } from '../services';
 import {
@@ -105,6 +106,7 @@ const readCreateContainerRequest = (payload: unknown): CreateContainerRequest =>
     const cmd = readOptionalStringArray(record.cmd, 'cmd');
     const operationId = readOptionalString(record.operationId).trim();
     const networkMode = readOptionalString(record.networkMode).trim();
+    const user = readOptionalString(record.user).trim();
 
     if (env) {
         request.env = env;
@@ -128,6 +130,10 @@ const readCreateContainerRequest = (payload: unknown): CreateContainerRequest =>
 
     if (operationId) {
         request.operationId = operationId;
+    }
+
+    if (user) {
+        request.user = user;
     }
 
     if (networkMode) {
@@ -180,7 +186,7 @@ const readContainerFileWritePayload = (payload: unknown): ContainerFileWritePayl
 
 export const createContainerHandlers = (deps: ContainerHandlersDependencies): ReverseChannelCommandHandler[] => [
     {
-        command: 'container.list',
+        command: TEAM_CLUSTER_DAEMON_COMMAND.container.list,
         execute: async (payload) => {
             const record = readOptionalPayloadRecord(payload);
             const all = readOptionalBoolean(record.all, true);
@@ -188,21 +194,21 @@ export const createContainerHandlers = (deps: ContainerHandlersDependencies): Re
         }
     },
     {
-        command: 'container.create',
+        command: TEAM_CLUSTER_DAEMON_COMMAND.container.create,
         execute: async (payload) => ({
             data: await deps.dockerRuntimeService.createContainer(readCreateContainerRequest(payload)),
             status: 201
         })
     },
     {
-        command: 'container.get',
+        command: TEAM_CLUSTER_DAEMON_COMMAND.container.get,
         execute: async (payload) => {
             const request = readContainerIdentifierPayload(payload);
             return { data: await deps.dockerRuntimeService.getContainer(request.containerId) };
         }
     },
     {
-        command: 'container.update',
+        command: TEAM_CLUSTER_DAEMON_COMMAND.container.update,
         execute: async (payload) => {
             const request = readContainerActionPayload(payload);
             return {
@@ -211,7 +217,7 @@ export const createContainerHandlers = (deps: ContainerHandlersDependencies): Re
         }
     },
     {
-        command: 'container.delete',
+        command: TEAM_CLUSTER_DAEMON_COMMAND.container.delete,
         execute: async (payload) => {
             const request = readContainerIdentifierPayload(payload);
             await deps.dockerRuntimeService.deleteContainer(request.containerId);
@@ -219,21 +225,21 @@ export const createContainerHandlers = (deps: ContainerHandlersDependencies): Re
         }
     },
     {
-        command: 'container.stats.get',
+        command: TEAM_CLUSTER_DAEMON_COMMAND.container.stats.get,
         execute: async (payload) => {
             const request = readContainerIdentifierPayload(payload);
             return { data: await deps.dockerRuntimeService.getContainerStats(request.containerId) };
         }
     },
     {
-        command: 'container.processes.list',
+        command: TEAM_CLUSTER_DAEMON_COMMAND.container.processes.list,
         execute: async (payload) => {
             const request = readContainerIdentifierPayload(payload);
             return { data: await deps.dockerRuntimeService.getContainerProcesses(request.containerId) };
         }
     },
     {
-        command: 'container.files.list',
+        command: TEAM_CLUSTER_DAEMON_COMMAND.container.files.list,
         execute: async (payload) => {
             const request = readContainerFilePayload(payload);
             return {
@@ -242,7 +248,7 @@ export const createContainerHandlers = (deps: ContainerHandlersDependencies): Re
         }
     },
     {
-        command: 'container.file.read',
+        command: TEAM_CLUSTER_DAEMON_COMMAND.container.file.read,
         execute: async (payload) => {
             const request = readContainerFilePayload(payload, '');
             return {
@@ -253,7 +259,7 @@ export const createContainerHandlers = (deps: ContainerHandlersDependencies): Re
         }
     },
     {
-        command: 'container.file.write',
+        command: TEAM_CLUSTER_DAEMON_COMMAND.container.file.write,
         execute: async (payload) => {
             const request = readContainerFileWritePayload(payload);
             await deps.dockerRuntimeService.writeContainerFile(request.containerId, request.path, request.content);

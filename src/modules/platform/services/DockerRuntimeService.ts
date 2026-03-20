@@ -6,10 +6,12 @@ import net from 'node:net';
 import path from 'node:path';
 import { Writable } from 'node:stream';
 import type { ContainerEnvironmentVariable, ContainerPortMapping, CreateContainerRequest } from '@/shared/contracts';
+import { createTraceLogContext, withTimeout } from '@/shared/observability/daemonInstrumentation';
 import type { ContainerInfo } from 'dockerode';
 import type { Duplex, Readable } from 'node:stream';
 import { ProgressStageType } from '@voltstack/daemon-cluster-client';
 import type { RuntimeEventBroker } from '@/shared/services';
+import type { DaemonTraceContext } from '@/shared/observability/daemonInstrumentation';
 
 interface DockerContainerFilter {
     label?: string[];
@@ -18,6 +20,12 @@ interface DockerContainerFilter {
 interface DockerApiError {
     statusCode?: number;
     message?: string;
+};
+
+interface DockerExecOptions {
+    operationName?: string;
+    timeoutMs?: number;
+    traceContext?: DaemonTraceContext;
 };
 
 export interface RuntimeContainerFileEntry {
@@ -43,6 +51,7 @@ export interface RuntimeTerminalExec {
 };
 
 const MAX_EXEC_BUFFER_SIZE = 10 * 1024 * 1024;
+const DEFAULT_DOCKER_EXEC_TIMEOUT_MS = 120_000;
 
 const toEnvPairs = (environmentVariables: ContainerEnvironmentVariable[] = []): string[] => {
     return environmentVariables.map((entry) => `${entry.key}=${entry.value}`);
@@ -115,6 +124,7 @@ export class DockerRuntimeService {
         const container = await this.docker.createContainer({
             Image: input.image,
             name: input.name,
+            User: input.user,
             Env: toEnvPairs(input.env),
             Cmd: input.cmd,
             Labels: {
@@ -189,7 +199,11 @@ export class DockerRuntimeService {
         return Array.isArray(result.Processes) ? result.Processes : [];
     }
 
-    async getContainerFiles(containerId: string, directoryPath: string): Promise<RuntimeContainerFileEntry[]> {
+    async getContainerFiles(
+        containerId: string,
+        directoryPath: string,
+        options?: DockerExecOptions
+    ): Promise<RuntimeContainerFileEntry[]> {
         const normalizedDirectoryPath = this.normalizeContainerPath(directoryPath);
 
         try {
@@ -199,7 +213,7 @@ export class DockerRuntimeService {
                 '-mindepth', '1',
                 '-maxdepth', '1',
                 '-printf', '%P\0%y\0%s\0%M\0%u\0%g\0%TY-%Tm-%TdT%TH:%TM:%TS\0'
-            ]);
+            ], undefined, options);
             return this.parseFindListingOutput(output);
         } catch {
             const output = await this.exec(containerId, ['sh', '-c', `target="$1"
@@ -220,20 +234,25 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
   group=$(ls -ld "$entry" | awk '{print $4}')
   date=$(date -r "$entry" +"%Y-%m-%dT%H:%M:%S" 2>/dev/null || printf "")
   printf '%s\\0%s\\0%s\\0%s\\0%s\\0%s\\0%s\\0' "$name" "$type" "$size" "$perms" "$owner" "$group" "$date"
-done`, '--', normalizedDirectoryPath]);
+ done`, '--', normalizedDirectoryPath], undefined, options);
             return this.parseFindListingOutput(output);
         }
     }
 
-    async readContainerFile(containerId: string, filePath: string): Promise<string> {
+    async readContainerFile(containerId: string, filePath: string, options?: DockerExecOptions): Promise<string> {
         const normalizedPath = this.normalizeContainerPath(filePath);
-        return this.exec(containerId, ['sh', '-c', 'cat -- "$1"', '--', normalizedPath]);
+        return this.exec(containerId, ['sh', '-c', 'cat -- "$1"', '--', normalizedPath], undefined, options);
     }
 
-    async writeContainerFile(containerId: string, filePath: string, content: string): Promise<void> {
+    async writeContainerFile(
+        containerId: string,
+        filePath: string,
+        content: string,
+        options?: DockerExecOptions
+    ): Promise<void> {
         const normalizedPath = this.normalizeContainerPath(filePath);
-        await this.exec(containerId, ['mkdir', '-p', '--', path.posix.dirname(normalizedPath)]);
-        await this.exec(containerId, ['tee', '--', normalizedPath], content);
+        await this.exec(containerId, ['mkdir', '-p', '--', path.posix.dirname(normalizedPath)], undefined, options);
+        await this.exec(containerId, ['tee', '--', normalizedPath], content, options);
     }
 
     async attachTerminal(containerId: string): Promise<RuntimeTerminalAttachment> {
@@ -380,8 +399,8 @@ done`, '--', normalizedDirectoryPath]);
         }
     }
 
-    async exec(containerId: string, command: string[], stdin?: string): Promise<string> {
-        return this.execute(containerId, command, stdin);
+    async exec(containerId: string, command: string[], stdin?: string, options?: DockerExecOptions): Promise<string> {
+        return this.execute(containerId, command, stdin, options);
     }
 
     async execDetached(containerId: string, command: string[]): Promise<void> {
@@ -518,8 +537,28 @@ done`, '--', normalizedDirectoryPath]);
         return files;
     }
 
-    private execute(containerId: string, command: string[], stdin?: string): Promise<string> {
-        return new Promise(async (resolve, reject) => {
+    private execute(
+        containerId: string,
+        command: string[],
+        stdin?: string,
+        options?: DockerExecOptions
+    ): Promise<string> {
+        const startedAt = Date.now();
+        const operationName = options?.operationName ?? 'docker-exec';
+        const timeoutMs = options?.timeoutMs ?? DEFAULT_DOCKER_EXEC_TIMEOUT_MS;
+
+        logger.info(
+            {
+                command,
+                containerId,
+                stdinBytes: typeof stdin === 'string' ? Buffer.byteLength(stdin) : 0,
+                timeoutMs,
+                ...createTraceLogContext(options?.traceContext)
+            },
+            'Starting Docker exec operation'
+        );
+
+        return withTimeout(async () => new Promise(async (resolve, reject) => {
             try {
                 const container = this.docker.getContainer(containerId);
                 const dockerExec = await container.exec({
@@ -589,6 +628,40 @@ done`, '--', normalizedDirectoryPath]);
                 const dockerError = this.getDockerError(error);
                 reject(new Error(dockerError.message || 'Docker exec failed'));
             }
+        }), {
+            operation: operationName,
+            timeoutMs,
+            payload: {
+                command,
+                containerId
+            },
+            traceContext: options?.traceContext
+        }).then((output) => {
+            logger.info(
+                {
+                    command,
+                    containerId,
+                    durationMs: Date.now() - startedAt,
+                    outputBytes: Buffer.byteLength(output),
+                    timeoutMs,
+                    ...createTraceLogContext(options?.traceContext)
+                },
+                'Docker exec operation completed'
+            );
+            return output;
+        }).catch((error: unknown) => {
+            logger.warn(
+                {
+                    command,
+                    containerId,
+                    durationMs: Date.now() - startedAt,
+                    err: error,
+                    timeoutMs,
+                    ...createTraceLogContext(options?.traceContext)
+                },
+                'Docker exec operation failed'
+            );
+            throw error;
         });
     }
 

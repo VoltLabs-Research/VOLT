@@ -1,28 +1,74 @@
-import { EntrypointType } from '@/shared/contracts';
-import type { AnalysisStartRequest, AnalysisQueueJobPayload, AnalysisStartResponse, QueuedJobNotification } from '@/shared/contracts';
-import { OrchestrationAction } from '@/shared/contracts';
-import { ProgressStageType } from '@voltstack/daemon-cluster-client';
-import { RuntimeEventBroker } from '@/shared/services';
-import { QueueService } from '@/modules/platform/services';
-import { RedisConnectionService } from '@/modules/platform/services';
-import { ANALYSIS_QUEUE_NAME } from '@/modules/platform/services';
+import { logger } from '@/core/logger';
+import { ANALYSIS_QUEUE_NAME, QueueService } from '@/modules/platform/services';
+import { createTraceLogContext, serializeDaemonTraceContext } from '@/shared/observability/daemonInstrumentation';
+import { compressAnalysisExecutionData } from '@/shared/utilities/analysis-execution-data';
+import { isRecord } from '@/shared/utils';
 import { WorkflowEngine } from '@/modules/workflow-runtime/services';
+import { EntrypointType, OrchestrationAction } from '@/shared/contracts';
+import { RuntimeEventBroker } from '@/shared/services';
+import { ProgressStageType } from '@voltstack/daemon-cluster-client';
+import type { AnalysisExecutionDataStore, RedisConnectionService } from '@/modules/platform/services';
+import type {
+    AnalysisExecutionDataReference,
+    AnalysisJobExecutionData,
+    AnalysisQueueJobPayload,
+    AnalysisStartRequest,
+    AnalysisStartResponse,
+    QueuedJobNotification,
+    TrajectoryDumpDescriptor
+} from '@/shared/contracts';
+import type { DaemonTraceContext } from '@/shared/observability/daemonInstrumentation';
+
+interface AnalysisStartRequestWithTrace extends AnalysisStartRequest {
+    traceContext?: DaemonTraceContext;
+};
+
+const measurePayloadBytes = (payload: Record<string, unknown>): number => {
+    return Buffer.byteLength(JSON.stringify(payload));
+};
+
+const isTrajectoryDumpDescriptor = (value: unknown): value is TrajectoryDumpDescriptor => {
+    if (!isRecord(value)) {
+        return false;
+    }
+
+    return typeof value.path === 'string'
+        && typeof value.timestep === 'number'
+        && Number.isFinite(value.timestep)
+        && typeof value.natoms === 'number'
+        && Number.isFinite(value.natoms)
+        && typeof value.simulationCell === 'string'
+        && (typeof value.originalPath === 'undefined' || typeof value.originalPath === 'string');
+};
+
+const resolvePlannedDumpPath = (item: Record<string, unknown>): string | undefined => {
+    if (typeof item.path !== 'string' || item.path.length === 0) {
+        return undefined;
+    }
+
+    return item.path;
+};
 
 export class AnalysisDispatchService {
     constructor(
         private readonly workflowEngine: WorkflowEngine,
         private readonly queueService: QueueService,
+        private readonly analysisExecutionDataStore: AnalysisExecutionDataStore,
         private readonly redisConnectionService: RedisConnectionService,
         private readonly eventBroker: RuntimeEventBroker
     ) {}
 
-    async startAnalysis(input: AnalysisStartRequest): Promise<AnalysisStartResponse> {
+    async startAnalysis(input: AnalysisStartRequestWithTrace): Promise<AnalysisStartResponse> {
+        const startedAt = Date.now();
+        const serializedTraceContext = serializeDaemonTraceContext(input.traceContext);
+
         this.eventBroker.emitProgress({
             action: OrchestrationAction.AnalysisStart,
             stage: ProgressStageType.Accepted,
             timestamp: new Date().toISOString(),
             payload: {
-                analysisId: input.analysisId
+                analysisId: input.analysisId,
+                traceContext: serializedTraceContext
             }
         });
 
@@ -47,37 +93,101 @@ export class AnalysisDispatchService {
             throw new Error('No items after daemon workflow planning');
         }
 
+        logger.info(
+            {
+                analysisId: input.analysisId,
+                batchMode: plan.batchMode === true,
+                plannedItems: plan.items.length,
+                ...createTraceLogContext(input.traceContext)
+            },
+            'Planned daemon analysis dispatch'
+        );
+
         const isBatchMode = plan.batchMode === true;
         const jobs = isBatchMode
             ? this.buildBatchJob(input, plan.items)
             : this.buildJobs(input, plan.items);
 
-        const allDumpUrls = isBatchMode
-            ? plan.items.map((item) => typeof item.path === 'string' ? item.path : '').filter((url) => url.length > 0)
+        const batchTrajectoryDumps = isBatchMode
+            ? (plan.batchTrajectoryDumps ?? plan.items.filter(isTrajectoryDumpDescriptor))
             : undefined;
+        const allDumpUrls = batchTrajectoryDumps?.map((dump) => dump.path);
+
+        const executionData: AnalysisJobExecutionData = {
+            ...this.resolveEntrypoint(input.workflow),
+            pluginId: input.pluginId,
+            trajectoryId: input.trajectoryId,
+            analysisId: input.analysisId,
+            teamId: input.teamId,
+            trajectoryFrames: input.trajectoryFrames,
+            teamClusterId: input.teamClusterId,
+            exposures: this.collectExposures(input.workflow),
+            forEachNodeId: plan.forEachNodeId,
+            nodeOutputSnapshots: plan.nodeOutputSnapshots,
+            workflow: input.workflow,
+            nestedPlugins: input.nestedPlugins,
+            pluginReferenceExecutions: input.pluginReferenceExecutions,
+            ...(serializedTraceContext ? { traceContext: serializedTraceContext } : {}),
+            ...(isBatchMode ? {
+                batchMode: true,
+                batchTrajectoryDumps,
+                allDumpUrls,
+                contextNodeId: plan.contextNodeId
+            } : {})
+        };
+
+        const queuePayloadBytesBefore = measurePayloadBytes({
+            ...jobs[0],
+            executionData
+        });
+        let executionDataReference: AnalysisExecutionDataReference | undefined;
+        let executionDataCompressed: string | undefined;
+
+        try {
+            executionDataReference = await this.analysisExecutionDataStore.store(executionData);
+            executionDataCompressed = compressAnalysisExecutionData(executionData);
+        } catch (error: unknown) {
+            logger.warn(
+                {
+                    analysisId: input.analysisId,
+                    err: error,
+                    ...createTraceLogContext(input.traceContext)
+                },
+                'Failed to store shared analysis execution data reference; falling back to inline payloads'
+            );
+        }
+
+        const queuePayloadBytesAfter = executionDataReference
+            ? measurePayloadBytes({
+                ...jobs[0],
+                executionDataCompressed,
+                executionDataReference
+            })
+            : queuePayloadBytesBefore;
+
+        logger.info(
+            {
+                analysisId: input.analysisId,
+                payloadBytesAfter: queuePayloadBytesAfter,
+                payloadBytesBefore: queuePayloadBytesBefore,
+                payloadBytesSavedPerJob: queuePayloadBytesBefore - queuePayloadBytesAfter,
+                referenceStored: typeof executionDataReference !== 'undefined',
+                ...createTraceLogContext(input.traceContext)
+            },
+            'Prepared daemon analysis queue payload optimization'
+        );
 
         for (const job of jobs) {
-            await this.queueService.enqueue(ANALYSIS_QUEUE_NAME, {
-                ...job,
-                executionData: {
-                    ...this.resolveEntrypoint(input.workflow),
-                    pluginId: input.pluginId,
-                    trajectoryId: input.trajectoryId,
-                    analysisId: input.analysisId,
-                    teamClusterId: input.teamClusterId,
-                    exposures: this.collectExposures(input.workflow),
-                    forEachNodeId: plan.forEachNodeId,
-                    nodeOutputSnapshots: plan.nodeOutputSnapshots,
-                    workflow: input.workflow,
-                    nestedPlugins: input.nestedPlugins,
-                    pluginReferenceExecutions: input.pluginReferenceExecutions,
-                    ...(isBatchMode ? {
-                        batchMode: true,
-                        allDumpUrls,
-                        contextNodeId: plan.contextNodeId
-                    } : {})
+            await this.queueService.enqueue(ANALYSIS_QUEUE_NAME, executionDataReference
+                ? {
+                    ...job,
+                    executionDataCompressed,
+                    executionDataReference
                 }
-            });
+                : {
+                    ...job,
+                    executionData
+                });
 
             await this.redisConnectionService.projectJobStatus({
                 ...job,
@@ -94,9 +204,20 @@ export class AnalysisDispatchService {
             timestamp: new Date().toISOString(),
             payload: {
                 analysisId: input.analysisId,
-                totalJobs: jobs.length
+                totalJobs: jobs.length,
+                traceContext: serializedTraceContext
             }
         });
+
+        logger.info(
+            {
+                analysisId: input.analysisId,
+                durationMs: Date.now() - startedAt,
+                queuedJobs: jobs.length,
+                ...createTraceLogContext(input.traceContext)
+            },
+            'Queued daemon analysis jobs'
+        );
 
         const queuedJobNotifications: QueuedJobNotification[] = jobs.map((job) => ({
             jobId: job.jobId,
@@ -116,12 +237,17 @@ export class AnalysisDispatchService {
         };
     }
 
-    private buildJobs(input: AnalysisStartRequest, items: Record<string, unknown>[]): AnalysisQueueJobPayload[] {
+    private buildJobs(input: AnalysisStartRequestWithTrace, items: Record<string, unknown>[]): AnalysisQueueJobPayload[] {
+        const serializedTraceContext = serializeDaemonTraceContext(input.traceContext);
+
         return items.map((item, index) => {
             const timestep = this.resolveTimestep(item);
             if (typeof timestep === 'undefined') {
                 throw new Error(`Missing timestep for analysis job ${input.analysisId}-${index}`);
             }
+
+            const inputFile = resolvePlannedDumpPath(item)
+                ?? `trajectory-${input.trajectoryId}/timestep-${String(timestep)}.dump.gz`;
 
             return {
                 jobId: `${input.analysisId}-${index}`,
@@ -135,13 +261,14 @@ export class AnalysisDispatchService {
                     analysisId: input.analysisId,
                     name: input.pluginDisplayName,
                     config: input.config,
-                    inputFile: `trajectory-${input.trajectoryId}/timestep-${String(timestep)}.dump.gz`,
+                    inputFile,
                     timestep,
                     plugin: input.pluginId,
                     totalItems: items.length,
                     itemIndex: index,
                     forEachItem: item,
-                    forEachIndex: index
+                    forEachIndex: index,
+                    traceContext: serializedTraceContext
                 },
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
@@ -149,7 +276,9 @@ export class AnalysisDispatchService {
         });
     }
 
-    private buildBatchJob(input: AnalysisStartRequest, items: Record<string, unknown>[]): AnalysisQueueJobPayload[] {
+    private buildBatchJob(input: AnalysisStartRequestWithTrace, items: Record<string, unknown>[]): AnalysisQueueJobPayload[] {
+        const serializedTraceContext = serializeDaemonTraceContext(input.traceContext);
+
         return [{
             jobId: `${input.analysisId}-batch-0`,
             name: input.pluginDisplayName,
@@ -164,7 +293,8 @@ export class AnalysisDispatchService {
                 config: input.config,
                 plugin: input.pluginId,
                 totalItems: items.length,
-                batchMode: true
+                batchMode: true,
+                traceContext: serializedTraceContext
             },
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()

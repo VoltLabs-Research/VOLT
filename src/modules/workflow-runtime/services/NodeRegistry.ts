@@ -1,16 +1,15 @@
-import { logger } from '@/core/logger';
-import { stringifyUnknown } from '@/shared/utils';
+import { resolveWorkflowOutputReference, resolveWorkflowTemplate } from './WorkflowOutputResolution';
 import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeType } from '../contracts';
 
 export interface NodeOutputSchema {
     properties: Record<string, unknown>;
-}
+};
 
 export interface WorkflowNodeHandler<TOutput = Record<string, unknown>> {
     readonly type: WorkflowNodeType;
     readonly outputSchema: NodeOutputSchema;
     execute(node: WorkflowNode, context: WorkflowExecutionContext): Promise<TOutput>;
-}
+};
 
 export class WorkflowNodeRegistry {
     private readonly handlers = new Map<WorkflowNodeType, WorkflowNodeHandler>();
@@ -35,32 +34,10 @@ export class WorkflowNodeRegistry {
     }
 
     resolveReference(ref: string, context: WorkflowExecutionContext): unknown {
-        const parts = ref.split('.');
-        const nodeId = parts[0];
-        const propertyPath = parts.slice(1);
-        const nodeOutput = context.outputs.get(nodeId);
-        if (!nodeOutput) {
-            logger.warn(`Daemon workflow reference not found for node ${nodeId}`);
-            return undefined;
-        }
-
-        if (propertyPath.length === 0) {
-            return nodeOutput;
-        }
-
-        return propertyPath.reduce<unknown>((current, key) => {
-            if (typeof current !== 'object' || current === null) {
-                return undefined;
-            }
-
-            return (current as Record<string, unknown>)[key];
-        }, nodeOutput);
+        return resolveWorkflowOutputReference(ref, context.outputs);
     }
 
     resolveTemplate(template: string, context: WorkflowExecutionContext): string {
-        return template.replace(/\{\{\s*([^}]+)\s*\}\}/g, (_, ref) => {
-            const value = this.resolveReference(String(ref).trim(), context);
-            return value !== undefined ? stringifyUnknown(value) : '';
-        });
+        return resolveWorkflowTemplate(template, context.outputs);
     }
-}
+};

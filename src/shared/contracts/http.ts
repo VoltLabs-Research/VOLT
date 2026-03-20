@@ -48,6 +48,7 @@ export interface CreateContainerRequest {
     image: string;
     name: string;
     operationId?: string;
+    user?: string;
     env?: ContainerEnvironmentVariable[];
     ports?: ContainerPortMapping[];
     memoryInMegabytes: number;
@@ -111,6 +112,9 @@ export interface AnalysisQueueJobPayload extends Record<string, unknown> {
     progress?: number;
     message?: string;
     workerId?: number;
+    executionData?: AnalysisJobExecutionData;
+    executionDataCompressed?: string;
+    executionDataReference?: AnalysisExecutionDataReference;
     createdAt: string;
     updatedAt: string;
 };
@@ -195,6 +199,23 @@ export interface PluginReferenceExecutionRequest {
     config: Record<string, unknown>;
 };
 
+export interface TrajectoryFrame {
+    timestep: number;
+    natoms: number;
+    simulationCell: string;
+};
+
+export interface TrajectoryDumpDescriptor extends TrajectoryFrame {
+    path: string;
+    originalPath?: string;
+};
+
+export interface AnalysisExecutionDataReference {
+    key: string;
+    storedAt: string;
+    ttlSeconds: number;
+};
+
 export interface AnalysisJobExecutionData {
     binaryObjectPath: string;
     entrypointType?: EntrypointType;
@@ -204,6 +225,8 @@ export interface AnalysisJobExecutionData {
     pluginId: string;
     trajectoryId: string;
     analysisId: string;
+    teamId?: string;
+    trajectoryFrames: TrajectoryFrame[];
     teamClusterId?: string;
     exposures: AnalysisExposureDefinition[];
     forEachNodeId?: string;
@@ -211,12 +234,14 @@ export interface AnalysisJobExecutionData {
     workflow: WorkflowDefinition;
     nestedPlugins: NestedPluginDefinition[];
     pluginReferenceExecutions?: PluginReferenceExecutionRequest[];
+    batchTrajectoryDumps?: TrajectoryDumpDescriptor[];
     allDumpUrls?: string[];
     batchMode?: boolean;
     contextNodeId?: string;
+    traceContext?: Record<string, string>;
 };
 
-export interface AnalysisStartRequest {
+export interface AnalysisStartTransportRequest {
     analysis: DaemonAnalysisDocument;
     analysisId: string;
     pluginId: string;
@@ -225,14 +250,24 @@ export interface AnalysisStartRequest {
     teamClusterId: string;
     trajectoryId: string;
     trajectoryName?: string;
-    trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
-    workflow: WorkflowDefinition;
-    nestedPlugins: NestedPluginDefinition[];
+    trajectoryFrames?: TrajectoryFrame[];
+    trajectoryFramesCompressed?: string;
+    workflow?: WorkflowDefinition;
+    workflowCompressed?: string;
+    nestedPlugins?: NestedPluginDefinition[];
+    nestedPluginsCompressed?: string;
     pluginReferenceExecutions?: PluginReferenceExecutionRequest[];
+    pluginReferenceExecutionsCompressed?: string;
     config: Record<string, unknown>;
     selectedFrameOnly?: boolean;
     selectedTimesteps?: number[];
     timestep?: number;
+};
+
+export interface AnalysisStartRequest extends AnalysisStartTransportRequest {
+    trajectoryFrames: TrajectoryFrame[];
+    workflow: WorkflowDefinition;
+    nestedPlugins: NestedPluginDefinition[];
 };
 
 export interface RetryJobsRequest {

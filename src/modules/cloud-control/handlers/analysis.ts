@@ -2,21 +2,23 @@ import type {
     AnalysisStartRequest,
     DaemonAnalysisDocument,
     NestedPluginDefinition,
-    PluginReferenceExecutionRequest,
-    WorkflowDefinition,
-    WorkflowEdgeDefinition,
-    WorkflowNodeDefinition
+    PluginReferenceExecutionRequest
 } from '@/shared/contracts';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@/shared/contracts';
 import type { AnalysisDispatchService } from '@/modules/job-runtime/services';
+import { extractDaemonTraceContext } from '@/shared/observability/daemonInstrumentation';
 import type { ReverseChannelCommandHandler } from '../services';
+import type { DaemonTraceContext } from '@/shared/observability/daemonInstrumentation';
+import zlib from 'node:zlib';
 import {
-    readNumber,
     readOptionalBoolean,
     readOptionalNumber,
     readOptionalNumberArray,
     readPayloadRecord,
     readRecord,
-    readString
+    readString,
+    readTrajectoryFrames,
+    readWorkflowDefinition
 } from './payloadValidation';
 import { readDocumentId, toRecord } from '@/shared/utils';
 
@@ -24,10 +26,38 @@ interface AnalysisHandlersDependencies {
     analysisDispatchService: AnalysisDispatchService;
 };
 
-interface AnalysisTrajectoryFrame {
-    timestep: number;
-    natoms: number;
-    simulationCell: string;
+interface AnalysisStartRequestWithTrace extends AnalysisStartRequest {
+    traceContext?: DaemonTraceContext;
+};
+
+const readCompressedJson = (value: unknown, fieldName: string): unknown => {
+    const encodedValue = readString(value, fieldName);
+    const compressedBuffer = Buffer.from(encodedValue, 'base64');
+    return JSON.parse(zlib.gunzipSync(compressedBuffer).toString('utf8'));
+};
+
+const readCompressedOrRawValue = (record: Record<string, unknown>, rawField: string, compressedField: string): unknown => {
+    if (typeof record[compressedField] === 'string') {
+        return readCompressedJson(record[compressedField], compressedField);
+    }
+
+    return record[rawField];
+};
+
+const readOptionalArray = <T>(
+    value: unknown,
+    fieldName: string,
+    readEntry: (entry: unknown) => T
+): T[] => {
+    if (typeof value === 'undefined') {
+        return [];
+    }
+
+    if (!Array.isArray(value)) {
+        throw new Error(`${fieldName} must be an array`);
+    }
+
+    return value.map(readEntry);
 };
 
 const readAnalysisDocument = (value: unknown): DaemonAnalysisDocument => {
@@ -100,74 +130,6 @@ const readAnalysisDocument = (value: unknown): DaemonAnalysisDocument => {
     return analysis;
 };
 
-const readWorkflowNodeDefinition = (value: unknown): WorkflowNodeDefinition => {
-    const record = readRecord(value, 'workflow.nodes');
-    const position = readRecord(record.position, 'workflow.nodes.position');
-
-    return {
-        id: readString(record.id, 'workflow.nodes.id'),
-        type: readString(record.type, 'workflow.nodes.type'),
-        position: {
-            x: readNumber(position.x, 'workflow.nodes.position.x'),
-            y: readNumber(position.y, 'workflow.nodes.position.y')
-        },
-        data: readRecord(record.data, 'workflow.nodes.data')
-    };
-};
-
-const readWorkflowEdgeDefinition = (value: unknown): WorkflowEdgeDefinition => {
-    const record = readRecord(value, 'workflow.edges');
-    const edge: WorkflowEdgeDefinition = {
-        source: readString(record.source, 'workflow.edges.source'),
-        target: readString(record.target, 'workflow.edges.target')
-    };
-
-    if (typeof record.sourceHandle !== 'undefined') {
-        edge.sourceHandle = readString(record.sourceHandle, 'workflow.edges.sourceHandle');
-    }
-
-    if (typeof record.targetHandle !== 'undefined') {
-        edge.targetHandle = readString(record.targetHandle, 'workflow.edges.targetHandle');
-    }
-
-    return edge;
-};
-
-const readWorkflowDefinition = (value: unknown): WorkflowDefinition => {
-    const record = readRecord(value, 'workflow');
-    const nodesValue = record.nodes;
-    const edgesValue = record.edges;
-
-    if (!Array.isArray(nodesValue)) {
-        throw new Error('workflow.nodes must be an array');
-    }
-
-    if (!Array.isArray(edgesValue)) {
-        throw new Error('workflow.edges must be an array');
-    }
-
-    return {
-        nodes: nodesValue.map(readWorkflowNodeDefinition),
-        edges: edgesValue.map(readWorkflowEdgeDefinition)
-    };
-};
-
-const readAnalysisTrajectoryFrames = (value: unknown): AnalysisTrajectoryFrame[] => {
-    if (!Array.isArray(value)) {
-        throw new Error('trajectoryFrames must be an array');
-    }
-
-    return value.map((entry) => {
-        const record = readRecord(entry, 'trajectoryFrames');
-
-        return {
-            timestep: readNumber(record.timestep, 'trajectoryFrames.timestep'),
-            natoms: readNumber(record.natoms, 'trajectoryFrames.natoms'),
-            simulationCell: readString(record.simulationCell, 'trajectoryFrames.simulationCell')
-        };
-    });
-};
-
 const readNestedPluginDefinition = (value: unknown): NestedPluginDefinition => {
     const record = readRecord(value, 'nestedPlugins');
 
@@ -187,10 +149,18 @@ const readPluginReferenceExecutionRequest = (value: unknown): PluginReferenceExe
     };
 };
 
-const readAnalysisStartRequest = (payload: unknown): AnalysisStartRequest => {
+const readAnalysisStartRequest = (payload: unknown): AnalysisStartRequestWithTrace => {
     const record = readPayloadRecord(payload);
     const pluginDisplayName = readString(record.pluginDisplayName, 'pluginDisplayName');
-    const request: AnalysisStartRequest = {
+    const rawTrajectoryFrames = readCompressedOrRawValue(record, 'trajectoryFrames', 'trajectoryFramesCompressed');
+    const rawWorkflow = readCompressedOrRawValue(record, 'workflow', 'workflowCompressed');
+    const rawNestedPlugins = readCompressedOrRawValue(record, 'nestedPlugins', 'nestedPluginsCompressed');
+    const rawPluginReferenceExecutions = readCompressedOrRawValue(
+        record,
+        'pluginReferenceExecutions',
+        'pluginReferenceExecutionsCompressed'
+    );
+    const request: AnalysisStartRequestWithTrace = {
         analysis: readAnalysisDocument(record.analysis),
         analysisId: readString(record.analysisId, 'analysisId'),
         pluginId: readString(record.pluginId, 'pluginId'),
@@ -198,14 +168,14 @@ const readAnalysisStartRequest = (payload: unknown): AnalysisStartRequest => {
         teamId: readString(record.teamId, 'teamId'),
         teamClusterId: readString(record.teamClusterId, 'teamClusterId'),
         trajectoryId: readString(record.trajectoryId, 'trajectoryId'),
-        trajectoryFrames: readAnalysisTrajectoryFrames(record.trajectoryFrames),
-        workflow: readWorkflowDefinition(record.workflow),
-        nestedPlugins: Array.isArray(record.nestedPlugins)
-            ? record.nestedPlugins.map(readNestedPluginDefinition)
-            : [],
-        pluginReferenceExecutions: Array.isArray(record.pluginReferenceExecutions)
-            ? record.pluginReferenceExecutions.map(readPluginReferenceExecutionRequest)
-            : [],
+        trajectoryFrames: readTrajectoryFrames(rawTrajectoryFrames),
+        workflow: readWorkflowDefinition(rawWorkflow),
+        nestedPlugins: readOptionalArray(rawNestedPlugins, 'nestedPlugins', readNestedPluginDefinition),
+        pluginReferenceExecutions: readOptionalArray(
+            rawPluginReferenceExecutions,
+            'pluginReferenceExecutions',
+            readPluginReferenceExecutionRequest
+        ),
         config: readRecord(record.config, 'config')
     };
     const selectedFrameOnly = typeof record.selectedFrameOnly === 'undefined'
@@ -213,6 +183,9 @@ const readAnalysisStartRequest = (payload: unknown): AnalysisStartRequest => {
         : readOptionalBoolean(record.selectedFrameOnly, false);
     const selectedTimesteps = readOptionalNumberArray(record.selectedTimesteps, 'selectedTimesteps');
     const timestep = readOptionalNumber(record.timestep);
+    const trajectoryName = typeof record.trajectoryName === 'string'
+        ? record.trajectoryName
+        : undefined;
 
     if (typeof selectedFrameOnly !== 'undefined') {
         request.selectedFrameOnly = selectedFrameOnly;
@@ -226,12 +199,21 @@ const readAnalysisStartRequest = (payload: unknown): AnalysisStartRequest => {
         request.timestep = timestep;
     }
 
+    if (typeof trajectoryName !== 'undefined') {
+        request.trajectoryName = trajectoryName;
+    }
+
+    const traceContext = extractDaemonTraceContext(record);
+    if (traceContext) {
+        request.traceContext = traceContext;
+    }
+
     return request;
 };
 
 export const createAnalysisHandlers = (deps: AnalysisHandlersDependencies): ReverseChannelCommandHandler[] => [
     {
-        command: 'analysis.start',
+        command: TEAM_CLUSTER_DAEMON_COMMAND.analysis.start,
         execute: async (payload) => {
             const request = readAnalysisStartRequest(payload);
             return { data: await deps.analysisDispatchService.startAnalysis(request) };

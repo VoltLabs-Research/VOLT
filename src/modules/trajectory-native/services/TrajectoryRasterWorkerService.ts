@@ -1,13 +1,14 @@
 import { logger } from '@/core/logger';
-import { isMemoryPressured } from '@/core/memory';
 import { TRAJECTORY_RASTER_QUEUE_NAME } from '@/modules/platform/services';
+import { createMemoryAwareWorkerShell, delayJobWhenMemoryPressured, type MemoryAwareWorkerShell } from '@/modules/platform/services';
 import { ObjectBucketName } from '@/shared/contracts';
 import type { DaemonJobReporterService, RasterJobStatus } from '@/modules/cloud-control/services/DaemonJobReporterService';
 import type { QueueService, RedisConnectionService } from '@/modules/platform/services';
 import type { RasterQueueJobPayload } from '@/shared/contracts';
 import { isRecord } from '@/shared/utilities/type-guards';
-import { DelayedError, type Job, type Worker } from 'bullmq';
+import { DelayedError, type Job } from 'bullmq';
 import type { RasterizerService } from './RasterizerService';
+import type { TrajectoryAutoPreviewClaimStore } from './TrajectoryAutoPreviewClaimStore';
 
 const isAutoPreviewRasterJob = (job: RasterQueueJobPayload): boolean => {
     if (!isRecord(job.metadata)) {
@@ -18,62 +19,35 @@ const isAutoPreviewRasterJob = (job: RasterQueueJobPayload): boolean => {
 };
 
 export class TrajectoryRasterWorkerService {
-    private worker: Worker<RasterQueueJobPayload> | null = null;
+    private readonly workerShell: MemoryAwareWorkerShell<RasterQueueJobPayload>;
 
     constructor(
         private readonly queueService: QueueService,
         private readonly redisConnectionService: RedisConnectionService,
+        private readonly trajectoryAutoPreviewClaimStore: TrajectoryAutoPreviewClaimStore,
         private readonly rasterizerService: RasterizerService,
         private readonly daemonJobReporterService: DaemonJobReporterService
-    ) {}
+    ) {
+        this.workerShell = createMemoryAwareWorkerShell<RasterQueueJobPayload>({
+            queueService: this.queueService,
+            queueName: TRAJECTORY_RASTER_QUEUE_NAME,
+            startedMessage: 'TrajectoryRasterWorkerService started',
+            stoppedMessage: 'TrajectoryRasterWorkerService stopped',
+            failedMessage: 'BullMQ trajectory raster job failed'
+        });
+    }
 
     start(concurrency?: number): void {
-        if (this.worker) {
-            return;
-        }
-
-        this.worker = this.queueService.createWorker<RasterQueueJobPayload>(
-            TRAJECTORY_RASTER_QUEUE_NAME,
+        this.workerShell.start(
             async (jobPayload, job) => this.processJob(jobPayload, job),
-            { concurrency: concurrency ?? 2 }
-        );
-
-        this.worker.on('failed', async (job, error) => {
-            if (job?.data && isAutoPreviewRasterJob(job.data)) {
-                try {
-                    await this.redisConnectionService.releaseTrajectoryAutoPreviewRasterClaim(job.data.trajectoryId);
-                } catch (releaseError) {
-                    logger.error(
-                        {
-                            err: releaseError,
-                            jobId: job.data.jobId,
-                            trajectoryId: job.data.trajectoryId
-                        },
-                        'Failed to release trajectory auto-preview claim after raster job failure'
-                    );
-                }
+            {
+                concurrency
             }
-
-            logger.error(
-                {
-                    jobId: job?.data?.jobId,
-                    err: error
-                },
-                'BullMQ trajectory raster job failed'
-            );
-        });
-
-        logger.info('TrajectoryRasterWorkerService started');
+        );
     }
 
     async stop(): Promise<void> {
-        if (!this.worker) {
-            return;
-        }
-
-        await this.worker.close();
-        this.worker = null;
-        logger.info('TrajectoryRasterWorkerService stopped');
+        await this.workerShell.stop();
     }
 
     private buildJobStatusProjection(
@@ -137,18 +111,13 @@ export class TrajectoryRasterWorkerService {
     }
 
     private async processJob(job: RasterQueueJobPayload, bullJob: Job<RasterQueueJobPayload>): Promise<void> {
-        // Memory-aware scheduling: requeue with delay if heap is under pressure
-        if (isMemoryPressured()) {
-            const delayMs = 30_000;
-            logger.warn(
-                { jobId: job.jobId, delayMs },
-                'Heap memory pressure detected — delaying raster job'
-            );
-            await bullJob.moveToDelayed(Date.now() + delayMs, bullJob.token);
-            throw new DelayedError();
-        }
+        await delayJobWhenMemoryPressured(bullJob, {
+            jobId: job.jobId,
+            message: 'Heap memory pressure detected — delaying raster job'
+        });
 
         const runningTimestamp = new Date().toISOString();
+        let shouldReleaseAutoPreviewClaim = false;
 
         try {
             await this.redisConnectionService.projectJobStatus(
@@ -169,6 +138,7 @@ export class TrajectoryRasterWorkerService {
                 this.buildJobStatusProjection(job, 'completed', completedTimestamp)
             );
             await this.reportJobStatusBestEffort(job, 'completed');
+            shouldReleaseAutoPreviewClaim = true;
         } catch (error: unknown) {
             if (error instanceof DelayedError) {
                 return;
@@ -181,8 +151,26 @@ export class TrajectoryRasterWorkerService {
                 this.buildJobStatusProjection(job, 'failed', failedTimestamp, message)
             );
             await this.reportJobStatusBestEffort(job, 'failed', message);
+            shouldReleaseAutoPreviewClaim = true;
 
             throw error instanceof Error ? error : new Error(message);
+        } finally {
+            if (!shouldReleaseAutoPreviewClaim || !isAutoPreviewRasterJob(job)) {
+                return;
+            }
+
+            try {
+                await this.trajectoryAutoPreviewClaimStore.releaseRasterization(job.trajectoryId);
+            } catch (releaseError) {
+                logger.error(
+                    {
+                        err: releaseError,
+                        jobId: job.jobId,
+                        trajectoryId: job.trajectoryId
+                    },
+                    'Failed to release trajectory auto-preview claim after terminal raster job exit'
+                );
+            }
         }
     }
 }

@@ -1,7 +1,14 @@
 import type { PluginListingRepository } from '@/modules/artifacts';
 import type { DaemonConfig } from '@/core/config';
 import type { RuntimeEventBroker } from '@/shared/services';
-import type { DockerRuntimeService, HostShellService, MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
+import type {
+    DockerRuntimeService,
+    HostShellService,
+    MinioService,
+    QueueService,
+    RedisConnectionService,
+    RedisExplorerReadService
+} from '@/modules/platform/services';
 import type { AnalysisDispatchService } from '@/modules/job-runtime/services';
 import type { DebugSessionManager } from '@/modules/workflow-runtime/services';
 import {
@@ -19,6 +26,7 @@ import type {
     FilterEvaluatorService, 
     GlbExporterService, 
     TrajectoryParserService,
+    TrajectoryAutoPreviewClaimStore,
     TrajectoryPluginParserService
 } from '@/modules/trajectory-native/services';
 import {
@@ -51,6 +59,8 @@ export const createCloudControlModule = (deps: {
     minioService: MinioService;
     queueService: QueueService;
     redisConnectionService: RedisConnectionService;
+    redisExplorerReadService: RedisExplorerReadService;
+    trajectoryAutoPreviewClaimStore: TrajectoryAutoPreviewClaimStore;
     trajectoryParserService: TrajectoryParserService;
     trajectoryPluginParserService: TrajectoryPluginParserService;
     glbExporterService: GlbExporterService;
@@ -64,17 +74,11 @@ export const createCloudControlModule = (deps: {
         deps.dockerRuntimeService,
         deps.hostShellService
     );
-
-    // Lazy reference resolved after voltCloudConnection is constructed below.
-    let voltCloudConnectionRef: VoltCloudConnection | null = null;
-
-    const requireVoltCloudConnection = (): VoltCloudConnection => {
-        if (!voltCloudConnectionRef) {
-            throw new Error('VoltCloudConnection is not initialized');
-        }
-
-        return voltCloudConnectionRef;
-    };
+    const voltCloudConnection = new VoltCloudConnection(
+        deps.config,
+        deps.metricsService,
+        deps.eventBroker
+    );
 
     const handlers = [
         ...createAnalysisHandlers({ analysisDispatchService: deps.analysisDispatchService }),
@@ -84,6 +88,7 @@ export const createCloudControlModule = (deps: {
             minioService: deps.minioService,
             queueService: deps.queueService,
             redisConnectionService: deps.redisConnectionService,
+            trajectoryAutoPreviewClaimStore: deps.trajectoryAutoPreviewClaimStore,
             trajectoryParserService: deps.trajectoryParserService,
             trajectoryPluginParserService: deps.trajectoryPluginParserService,
             glbExporterService: deps.glbExporterService,
@@ -98,7 +103,7 @@ export const createCloudControlModule = (deps: {
         ...createContainerHandlers({ dockerRuntimeService: deps.dockerRuntimeService }),
         ...createRemoteAccessHandlers({
             minioService: deps.minioService,
-            redisConnectionService: deps.redisConnectionService
+            redisExplorerReadService: deps.redisExplorerReadService
         }),
         ...createNotebookHandlers({ jupyterRuntimeService: deps.jupyterRuntimeService }),
         ...createRuntimeHandlers({
@@ -106,22 +111,16 @@ export const createCloudControlModule = (deps: {
             dockerRuntimeService: deps.dockerRuntimeService,
             hostShellService: deps.hostShellService,
             emitLifecycle: (type, details) => {
-                requireVoltCloudConnection().emitLifecycleEvent(type, details);
+                voltCloudConnection.emitLifecycleEvent(type, details);
             },
-            reportUpdateFailed: (details) => requireVoltCloudConnection().reportUpdateFailed(details)
+            reportUpdateFailed: (details) => voltCloudConnection.reportUpdateFailed(details),
+            reportDeleteFailed: (details) => voltCloudConnection.reportDeleteFailed(details)
         })
     ];
 
     for (const handler of handlers) {
         reverseChannelSocketBridge.registerHandler(handler);
     }
-
-    const voltCloudConnection = new VoltCloudConnection(
-        deps.config,
-        deps.metricsService,
-        deps.eventBroker
-    );
-    voltCloudConnectionRef = voltCloudConnection;
 
     // Bind the bridge to the client after both objects are created.
     reverseChannelSocketBridge.bindToClient(voltCloudConnection);

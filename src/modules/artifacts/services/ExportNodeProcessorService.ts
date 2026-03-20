@@ -7,9 +7,7 @@ import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 import type { BubbleDataPoint, ChartConfiguration, ChartDataset, ChartTypeRegistry, Point } from 'chart.js';
 import type { DaemonArtifactReporterService } from '@/modules/cloud-control/services';
 import { isRecord, toRecord } from '@/shared/utils';
-import { createReadStream } from 'node:fs';
-import fsPromises from 'node:fs/promises';
-import path from 'node:path';
+import { uploadBufferToObjectStore } from '@/shared/storage/uploadBufferToObjectStore';
 
 type ExporterName = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter' | 'ChartExporter';
 
@@ -847,44 +845,9 @@ const resolveChartType = (chartType: ChartExportOptions['chartType']): Supported
 type SupportedChartType = 'line' | 'bar' | 'scatter';
 
 type SupportedChartDatasetValue = number | [number, number] | Point | BubbleDataPoint | null;
-
-const STREAM_UPLOAD_THRESHOLD = 10 * 1024 * 1024;
 const YIELD_INTERVAL = 50_000;
 
 const yieldToEventLoop = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
-
-const uploadBuffer = async (
-    minio: MinioService,
-    bucket: string,
-    objectKey: string,
-    buffer: Buffer,
-    contentType: string
-): Promise<void> => {
-    if (buffer.length < STREAM_UPLOAD_THRESHOLD) {
-        await minio.putObject({
-            bucket,
-            objectKey,
-            body: buffer,
-            metadata: { 'Content-Type': contentType }
-        });
-        return;
-    }
-
-    const tmpPath = path.join(DAEMON_PATHS.analysisOutput, `volt-export-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    const size = buffer.length;
-    try {
-        await fsPromises.writeFile(tmpPath, buffer);
-        await minio.putObjectStream({
-            bucket,
-            objectKey,
-            stream: createReadStream(tmpPath),
-            size,
-            metadata: { 'Content-Type': contentType }
-        });
-    } finally {
-        await fsPromises.unlink(tmpPath).catch(() => {});
-    }
-};
 
 const buildChartDataset = (
     chartData: ChartPoint[],
@@ -918,7 +881,15 @@ export const createExportNodeProcessorService = (
         const { positions, colors, min, max } = await buildPointCloudDataDirect(exportData);
         const buffer = nativeModuleLoader.getExporterModule().generatePointCloudGLB(positions, colors, min, max);
 
-        await uploadBuffer(minioService, ObjectBucketName.Models, objectPath, buffer, 'model/gltf-binary');
+        await uploadBufferToObjectStore({
+            objectStore: minioService,
+            bucket: ObjectBucketName.Models,
+            objectKey: objectPath,
+            buffer,
+            contentType: 'model/gltf-binary',
+            tempDirectory: DAEMON_PATHS.analysisOutput,
+            tempFilePrefix: 'volt-export'
+        });
     };
 
     const exportMesh = async (exportData: Record<string, unknown>, objectPath: string, options: MeshExportOptions): Promise<void> => {
@@ -935,7 +906,15 @@ export const createExportNodeProcessorService = (
             material
         );
 
-        await uploadBuffer(minioService, ObjectBucketName.Models, objectPath, buffer, 'model/gltf-binary');
+        await uploadBufferToObjectStore({
+            objectStore: minioService,
+            bucket: ObjectBucketName.Models,
+            objectKey: objectPath,
+            buffer,
+            contentType: 'model/gltf-binary',
+            tempDirectory: DAEMON_PATHS.analysisOutput,
+            tempFilePrefix: 'volt-export'
+        });
     };
 
     const processMesh = (mesh: MeshInput, smoothIterations?: number): {
@@ -1046,7 +1025,15 @@ export const createExportNodeProcessorService = (
             }
         );
 
-        await uploadBuffer(minioService, ObjectBucketName.Models, objectPath, buffer, 'model/gltf-binary');
+        await uploadBufferToObjectStore({
+            objectStore: minioService,
+            bucket: ObjectBucketName.Models,
+            objectKey: objectPath,
+            buffer,
+            contentType: 'model/gltf-binary',
+            tempDirectory: DAEMON_PATHS.analysisOutput,
+            tempFilePrefix: 'volt-export'
+        });
     };
 
     const exportChart = async (decodedPayload: Record<string, unknown>, objectPath: string, options: ChartExportOptions): Promise<void> => {
@@ -1113,7 +1100,15 @@ export const createExportNodeProcessorService = (
         };
         const buffer = await chartCanvas.renderToBuffer(chartConfiguration);
 
-        await uploadBuffer(minioService, ObjectBucketName.Plugins, objectPath, buffer, 'image/png');
+        await uploadBufferToObjectStore({
+            objectStore: minioService,
+            bucket: ObjectBucketName.Plugins,
+            objectKey: objectPath,
+            buffer,
+            contentType: 'image/png',
+            tempDirectory: DAEMON_PATHS.analysisOutput,
+            tempFilePrefix: 'volt-export'
+        });
     };
 
     /**

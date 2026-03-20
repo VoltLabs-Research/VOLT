@@ -1,6 +1,17 @@
 import type { DaemonConfig } from '@/core/config';
 import { RuntimeEventBroker } from '@/shared/services';
-import { connectMongo, disconnectMongo, DockerRuntimeService, HostShellService, MinioService, QueueService, RedisConnectionService } from './services';
+import {
+    AnalysisExecutionDataStore,
+    connectMongo,
+    disconnectMongo,
+    DockerRuntimeService,
+    HostShellService,
+    MinioService,
+    QueueService,
+    RedisConnectionService,
+    RedisExplorerReadService
+} from './services';
+import { TrajectoryAutoPreviewClaimStore } from '@/modules/trajectory-native/services/TrajectoryAutoPreviewClaimStore';
 
 export interface PlatformModule {
     eventBroker: RuntimeEventBroker;
@@ -8,6 +19,9 @@ export interface PlatformModule {
     hostShellService: HostShellService;
     minioService: MinioService;
     redisConnectionService: RedisConnectionService;
+    analysisExecutionDataStore: AnalysisExecutionDataStore;
+    redisExplorerReadService: RedisExplorerReadService;
+    trajectoryAutoPreviewClaimStore: TrajectoryAutoPreviewClaimStore;
     queueService: QueueService;
     connect(): Promise<void>;
     disconnect(): Promise<void>;
@@ -19,6 +33,9 @@ export const createPlatformModule = (config: DaemonConfig): PlatformModule => {
     const hostShellService = new HostShellService();
     const minioService = new MinioService(config);
     const redisConnectionService = new RedisConnectionService(config);
+    const analysisExecutionDataStore = new AnalysisExecutionDataStore(config);
+    const redisExplorerReadService = new RedisExplorerReadService(config);
+    const trajectoryAutoPreviewClaimStore = new TrajectoryAutoPreviewClaimStore(redisConnectionService);
     const queueService = new QueueService(redisConnectionService);
 
     return {
@@ -27,18 +44,25 @@ export const createPlatformModule = (config: DaemonConfig): PlatformModule => {
         hostShellService,
         minioService,
         redisConnectionService,
+        analysisExecutionDataStore,
+        redisExplorerReadService,
+        trajectoryAutoPreviewClaimStore,
         queueService,
         async connect() {
             await Promise.all([
+                analysisExecutionDataStore.connect(),
                 redisConnectionService.connect(),
+                redisExplorerReadService.connect(),
                 connectMongo(config.mongodbUri),
                 minioService.ensureBuckets()
             ]);
         },
         async disconnect() {
             await Promise.all([
+                analysisExecutionDataStore.disconnect(),
                 disconnectMongo(),
-                redisConnectionService.disconnect()
+                redisConnectionService.disconnect(),
+                redisExplorerReadService.disconnect()
             ]);
         }
     };

@@ -1,6 +1,7 @@
 import { createRemoteAccessHandlers, joinExplorerPathSegments } from './remote-access';
-import { MinioService, RedisConnectionService } from '@/modules/platform/services';
+import { MinioService, RedisExplorerReadService } from '@/modules/platform/services';
 import { ObjectBucketName } from '@/shared/contracts';
+import { TEAM_CLUSTER_REMOTE_EXPLORER_COMMAND } from '@/shared/contracts/reverseChannel';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { DaemonConfig } from '@/core/config';
@@ -33,7 +34,7 @@ interface RemoteExplorerEntrySnapshot {
 
 interface HandlerDependencies {
     minioService?: MinioService;
-    redisConnectionService?: RedisConnectionService;
+    redisExplorerReadService?: RedisExplorerReadService;
 };
 
 const TEST_CONFIG: DaemonConfig = {
@@ -113,7 +114,7 @@ class TestMinioService extends MinioService {
     }
 };
 
-class TestRedisConnectionService extends RedisConnectionService {
+class TestRedisExplorerReadService extends RedisExplorerReadService {
     public readonly listExplorerKeysCalls: RedisListExplorerKeysCall[] = [];
     public readonly getExplorerValueCalls: RedisGetExplorerValueCall[] = [];
 
@@ -124,14 +125,14 @@ class TestRedisConnectionService extends RedisConnectionService {
         super(TEST_CONFIG);
     }
 
-    override async listExplorerDatabases(): Promise<RedisDatabaseSummary[]> {
+    override async listDatabases(): Promise<RedisDatabaseSummary[]> {
         return Array.from(this.keysByDatabaseId.entries()).map(([databaseId, keys]) => ({
             databaseId,
             keyCount: keys.length
         }));
     }
 
-    override async listExplorerKeys(databaseId: number, limit = 200): Promise<string[]> {
+    override async listKeys(databaseId: number, limit = 200): Promise<string[]> {
         this.listExplorerKeysCalls.push({
             databaseId,
             limit
@@ -140,7 +141,7 @@ class TestRedisConnectionService extends RedisConnectionService {
         return this.keysByDatabaseId.get(databaseId) ?? [];
     }
 
-    override async getExplorerValue(databaseId: number, key: string): Promise<{ type: string; value: unknown; }> {
+    override async getValue(databaseId: number, key: string): Promise<{ type: string; value: unknown; }> {
         this.getExplorerValueCalls.push({
             databaseId,
             key
@@ -196,22 +197,22 @@ const findExplorerEntry = (
 const createListHandler = (deps: HandlerDependencies) => {
     const handlers = createRemoteAccessHandlers({
         minioService: deps.minioService ?? new TestMinioService(),
-        redisConnectionService: deps.redisConnectionService ?? new TestRedisConnectionService()
+        redisExplorerReadService: deps.redisExplorerReadService ?? new TestRedisExplorerReadService()
     });
-    const handler = handlers.find((candidate) => candidate.command === 'remote.explorer.list');
+    const handler = handlers.find((candidate) => candidate.command === TEAM_CLUSTER_REMOTE_EXPLORER_COMMAND.list);
 
-    assert.ok(handler, 'Expected remote.explorer.list handler');
+    assert.ok(handler, `Expected ${TEAM_CLUSTER_REMOTE_EXPLORER_COMMAND.list} handler`);
     return handler;
 };
 
 const createNodeHandler = (deps: HandlerDependencies) => {
     const handlers = createRemoteAccessHandlers({
         minioService: deps.minioService ?? new TestMinioService(),
-        redisConnectionService: deps.redisConnectionService ?? new TestRedisConnectionService()
+        redisExplorerReadService: deps.redisExplorerReadService ?? new TestRedisExplorerReadService()
     });
-    const handler = handlers.find((candidate) => candidate.command === 'remote.explorer.node');
+    const handler = handlers.find((candidate) => candidate.command === TEAM_CLUSTER_REMOTE_EXPLORER_COMMAND.node);
 
-    assert.ok(handler, 'Expected remote.explorer.node handler');
+    assert.ok(handler, `Expected ${TEAM_CLUSTER_REMOTE_EXPLORER_COMMAND.node} handler`);
     return handler;
 };
 
@@ -320,7 +321,7 @@ test('remote.explorer.list keeps nested MinIO paths correct under volt-plugins/p
 });
 
 test('remote.explorer.node normalizes Redis key paths before fetching the value', async () => {
-    const redisConnectionService = new TestRedisConnectionService(
+    const redisExplorerReadService = new TestRedisExplorerReadService(
         new Map(),
         new Map([
             [
@@ -330,7 +331,7 @@ test('remote.explorer.node normalizes Redis key paths before fetching the value'
         ])
     );
     const handler = createNodeHandler({
-        redisConnectionService
+        redisExplorerReadService
     });
 
     const result = await handler.execute({
@@ -338,7 +339,7 @@ test('remote.explorer.node normalizes Redis key paths before fetching the value'
         path: '/db/4/key/folder%2Fkey/'
     });
 
-    assert.deepEqual(redisConnectionService.getExplorerValueCalls, [
+    assert.deepEqual(redisExplorerReadService.getExplorerValueCalls, [
         {
             databaseId: 4,
             key: 'folder/key'

@@ -1,86 +1,17 @@
 import type { DebugSessionManager } from '@/modules/workflow-runtime/services';
 import type { ReverseChannelCommandHandler } from '../services';
 import {
-    readNumber,
     readOptionalNumber,
     readOptionalRecord,
     readPayloadRecord,
-    readRecord,
-    readString
+    readString,
+    readTrajectoryFrames,
+    readWorkflowDefinition
 } from './payloadValidation';
-import type { WorkflowDefinition, WorkflowEdgeDefinition, WorkflowNodeDefinition } from '@/shared/contracts';
 
 interface DebugHandlersDependencies {
     debugSessionManager: DebugSessionManager;
 }
-
-const readWorkflowNodeDefinition = (value: unknown): WorkflowNodeDefinition => {
-    const record = readRecord(value, 'workflow.nodes');
-    const position = readRecord(record.position, 'workflow.nodes.position');
-
-    return {
-        id: readString(record.id, 'workflow.nodes.id'),
-        type: readString(record.type, 'workflow.nodes.type'),
-        position: {
-            x: readNumber(position.x, 'workflow.nodes.position.x'),
-            y: readNumber(position.y, 'workflow.nodes.position.y')
-        },
-        data: readRecord(record.data, 'workflow.nodes.data')
-    };
-};
-
-const readWorkflowEdgeDefinition = (value: unknown): WorkflowEdgeDefinition => {
-    const record = readRecord(value, 'workflow.edges');
-    const edge: WorkflowEdgeDefinition = {
-        source: readString(record.source, 'workflow.edges.source'),
-        target: readString(record.target, 'workflow.edges.target')
-    };
-
-    if (typeof record.sourceHandle !== 'undefined') {
-        edge.sourceHandle = readString(record.sourceHandle, 'workflow.edges.sourceHandle');
-    }
-
-    if (typeof record.targetHandle !== 'undefined') {
-        edge.targetHandle = readString(record.targetHandle, 'workflow.edges.targetHandle');
-    }
-
-    return edge;
-};
-
-const readWorkflowDefinition = (value: unknown): WorkflowDefinition => {
-    const record = readRecord(value, 'workflow');
-    const nodesValue = record.nodes;
-    const edgesValue = record.edges;
-
-    if (!Array.isArray(nodesValue)) {
-        throw new Error('workflow.nodes must be an array');
-    }
-
-    if (!Array.isArray(edgesValue)) {
-        throw new Error('workflow.edges must be an array');
-    }
-
-    return {
-        nodes: nodesValue.map(readWorkflowNodeDefinition),
-        edges: edgesValue.map(readWorkflowEdgeDefinition)
-    };
-};
-
-const readTrajectoryFrames = (value: unknown): Array<{ timestep: number; natoms: number; simulationCell: string }> => {
-    if (!Array.isArray(value)) {
-        throw new Error('trajectoryFrames must be an array');
-    }
-
-    return value.map((entry) => {
-        const record = readRecord(entry, 'trajectoryFrames');
-
-        return {
-            timestep: readNumber(record.timestep, 'trajectoryFrames.timestep'),
-            natoms: readNumber(record.natoms, 'trajectoryFrames.natoms'),
-            simulationCell: readString(record.simulationCell, 'trajectoryFrames.simulationCell')
-        };
-    });
-};
 
 export const createDebugHandlers = (deps: DebugHandlersDependencies): ReverseChannelCommandHandler[] => [
     {

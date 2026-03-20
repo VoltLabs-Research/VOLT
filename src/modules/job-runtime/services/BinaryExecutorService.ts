@@ -4,6 +4,8 @@ import { spawn } from 'node:child_process';
 
 const MAX_OUTPUT_BYTES = 10 * 1024 * 1024;
 const PROCESS_HEARTBEAT_INTERVAL_MS = 30_000;
+const PROCESS_EXECUTION_TIMEOUT_MS = 15 * 60 * 1000;
+const PROCESS_KILL_GRACE_PERIOD_MS = 5_000;
 
 export interface ProcessResult {
     code: number;
@@ -49,6 +51,7 @@ export const createBinaryExecutorService = (): BinaryExecutorService => ({
             const stderrChunks: Buffer[] = [];
             let stdoutBytes = 0;
             let stderrBytes = 0;
+            let timedOut = false;
             const heartbeat = setInterval(() => {
                 logger.info(
                     {
@@ -61,6 +64,33 @@ export const createBinaryExecutorService = (): BinaryExecutorService => ({
                     'Plugin process still running'
                 );
             }, PROCESS_HEARTBEAT_INTERVAL_MS);
+            if (heartbeat.unref) {
+                heartbeat.unref();
+            }
+            let forceKillTimeout: NodeJS.Timeout | undefined;
+            const executionTimeout = setTimeout(() => {
+                timedOut = true;
+                logger.warn(
+                    {
+                        jobId,
+                        pid: child.pid,
+                        elapsedMs: Date.now() - startedAt,
+                        timeoutMs: PROCESS_EXECUTION_TIMEOUT_MS
+                    },
+                    'Plugin process exceeded execution timeout'
+                );
+                child.kill('SIGTERM');
+
+                forceKillTimeout = setTimeout(() => {
+                    child.kill('SIGKILL');
+                }, PROCESS_KILL_GRACE_PERIOD_MS);
+                if (forceKillTimeout.unref) {
+                    forceKillTimeout.unref();
+                }
+            }, PROCESS_EXECUTION_TIMEOUT_MS);
+            if (executionTimeout.unref) {
+                executionTimeout.unref();
+            }
 
             child.stdout.on('data', (chunk: Buffer) => {
                 if (stdoutBytes < MAX_OUTPUT_BYTES) {
@@ -77,6 +107,10 @@ export const createBinaryExecutorService = (): BinaryExecutorService => ({
 
             child.on('error', (error) => {
                 clearInterval(heartbeat);
+                clearTimeout(executionTimeout);
+                if (forceKillTimeout) {
+                    clearTimeout(forceKillTimeout);
+                }
                 unregisterProcess(jobId);
                 logger.error(
                     {
@@ -92,6 +126,10 @@ export const createBinaryExecutorService = (): BinaryExecutorService => ({
 
             child.on('close', (code) => {
                 clearInterval(heartbeat);
+                clearTimeout(executionTimeout);
+                if (forceKillTimeout) {
+                    clearTimeout(forceKillTimeout);
+                }
                 unregisterProcess(jobId);
                 logger.info(
                     {
@@ -107,7 +145,7 @@ export const createBinaryExecutorService = (): BinaryExecutorService => ({
                 resolve({
                     code: code ?? 1,
                     stdout: Buffer.concat(stdoutChunks).toString('utf-8'),
-                    stderr: Buffer.concat(stderrChunks).toString('utf-8')
+                    stderr: `${Buffer.concat(stderrChunks).toString('utf-8')}${timedOut ? `\nProcess timed out after ${PROCESS_EXECUTION_TIMEOUT_MS}ms` : ''}`
                 });
             });
         });

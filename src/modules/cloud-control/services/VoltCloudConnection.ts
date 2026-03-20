@@ -7,6 +7,7 @@ import {
     DaemonClientError
 } from '@voltstack/daemon-cluster-client';
 import type { DaemonConfig } from '@/core/config';
+import type { TeamClusterDaemonRuntimeProgressPayload } from '@/shared/contracts';
 import type {
     RuntimeLifecycleEvent,
     RuntimeLifecycleEventType,
@@ -27,6 +28,7 @@ interface DeleteCompletionRequest {
 };
 
 type NonCommandMessage = Exclude<TeamClusterDaemonMessage, { type: 'command' }>;
+type OutboundMessage = NonCommandMessage | TeamClusterDaemonRuntimeProgressPayload;
 
 /**
  * Adapter that wraps `ClusterDaemonClient` to provide the lifecycle and
@@ -107,13 +109,15 @@ export class VoltCloudConnection {
                 return;
             }
 
-            this.emitMessage({
+            const payload: TeamClusterDaemonRuntimeProgressPayload = {
                 type: 'runtime-progress',
                 action: event.action,
                 stage: event.stage,
                 timestamp: event.timestamp,
                 payload: event.payload
-            } as unknown as NonCommandMessage);
+            };
+
+            this.emitMessage(payload);
         });
     }
 
@@ -142,7 +146,7 @@ export class VoltCloudConnection {
      * Emits a fire-and-forget message on the control socket.
      * Use this instead of the old `getControlSocket().emit(...)` pattern.
      */
-    emitMessage(message: NonCommandMessage): void {
+    emitMessage(message: OutboundMessage): void {
         try {
             this.client.emit(message);
         } catch (err: unknown) {
@@ -191,6 +195,8 @@ export class VoltCloudConnection {
     }
 
     private async sendLifecycleStatus(status: TeamClusterStatus, details: string): Promise<void> {
+        const startedAt = Date.now();
+
         try {
             const requestBody: RuntimeLifecycleUpdateRequest = {
                 teamClusterId: this.client.getTeamClusterId(),
@@ -200,9 +206,9 @@ export class VoltCloudConnection {
             };
 
             await this.sendServerCommand('runtime.lifecycle', requestBody);
-            this.emitLifecycleEvent('services-ready', details);
+            logger.info({ status, durationMs: Date.now() - startedAt }, 'Reported daemon lifecycle status to VoltCloud');
         } catch (error: unknown) {
-            logger.warn({ err: error, status }, 'Failed to send lifecycle status to VoltCloud');
+            logger.warn({ err: error, status, durationMs: Date.now() - startedAt }, 'Failed to send lifecycle status to VoltCloud');
         }
     }
 

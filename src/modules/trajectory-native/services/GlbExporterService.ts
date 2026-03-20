@@ -3,6 +3,7 @@ import { logger } from '@/core/logger';
 import {
     NativeModuleOperation
 } from './NativeModuleLoader';
+import { TrajectoryAutoPreviewClaimStore } from './TrajectoryAutoPreviewClaimStore';
 import { createTrajectoryRasterQueueService } from './TrajectoryRasterQueueService';
 import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
@@ -82,10 +83,12 @@ export const createGlbExporterService = (
     queueService: QueueService,
     redisConnectionService: RedisConnectionService
 ): GlbExporterService => {
+    const trajectoryAutoPreviewClaimStore = new TrajectoryAutoPreviewClaimStore(redisConnectionService);
     const trajectoryRasterQueueService = createTrajectoryRasterQueueService(
         minioService,
         queueService,
-        redisConnectionService
+        redisConnectionService,
+        trajectoryAutoPreviewClaimStore
     );
 
     return {

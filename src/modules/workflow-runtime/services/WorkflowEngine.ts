@@ -1,13 +1,23 @@
 import { logger } from '@/core/logger';
+import { isRecord } from '@/shared/utils';
+import { runOrderedWorkflowNodes } from './OrderedNodeRunner';
+import { createWorkflowExecutionContext, snapshotWorkflowOutputs } from './WorkflowExecutionContextFactory';
 import { WorkflowNodeRegistry } from './NodeRegistry';
 import { WorkflowGraph, WorkflowNodeType, type WorkflowExecutionContext } from '../contracts';
-import type { DaemonAnalysisDocument, NestedPluginDefinition, WorkflowDefinition } from '@/shared/contracts';
+import type {
+    DaemonAnalysisDocument,
+    NestedPluginDefinition,
+    TrajectoryDumpDescriptor,
+    TrajectoryFrame,
+    WorkflowDefinition
+} from '@/shared/contracts';
 
 export interface WorkflowPlanResult {
     items: Record<string, unknown>[];
     forEachNodeId: string;
     nodeOutputSnapshots: Record<string, Record<string, unknown>>;
     batchMode?: boolean;
+    batchTrajectoryDumps?: TrajectoryDumpDescriptor[];
     contextNodeId?: string;
 };
 
@@ -15,7 +25,7 @@ export interface WorkflowExecutionRequest {
     workflow: WorkflowDefinition;
     nestedPlugins?: NestedPluginDefinition[];
     trajectoryId: string;
-    trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
+    trajectoryFrames: TrajectoryFrame[];
     analysis: DaemonAnalysisDocument;
     analysisId: string;
     pluginId: string;
@@ -38,6 +48,20 @@ const buildRuntimeArguments = (request: WorkflowExecutionRequest): Record<string
     };
 };
 
+const isTrajectoryDumpDescriptor = (value: unknown): value is TrajectoryDumpDescriptor => {
+    if (!isRecord(value)) {
+        return false;
+    }
+
+    return typeof value.path === 'string'
+        && typeof value.timestep === 'number'
+        && Number.isFinite(value.timestep)
+        && typeof value.natoms === 'number'
+        && Number.isFinite(value.natoms)
+        && typeof value.simulationCell === 'string'
+        && (typeof value.originalPath === 'undefined' || typeof value.originalPath === 'string');
+};
+
 export class WorkflowEngine {
     constructor(
         private readonly registry: WorkflowNodeRegistry
@@ -51,56 +75,50 @@ export class WorkflowEngine {
         logger.info(`@daemon-workflow-engine: planning execution for plugin "${request.pluginId}" (batchMode=${!hasForEachNode})`);
         let contextNodeId: string | undefined;
 
-        for (const node of executionOrder) {
-            if (!hasForEachNode && node.type === WorkflowNodeType.ForEach) {
+        const results = await runOrderedWorkflowNodes({
+            nodes: executionOrder,
+            context,
+            registry: this.registry,
+            stopAfterNode: (result) => result.status === 'executed' && result.node.type === WorkflowNodeType.ForEach
+        });
+
+        for (const result of results) {
+            if (result.status !== 'executed') {
                 continue;
             }
 
-            await this.registry.execute(node, context);
-
-            if (node.type === WorkflowNodeType.Context) {
-                contextNodeId = node.id;
+            if (result.node.type === WorkflowNodeType.Context) {
+                contextNodeId = result.node.id;
             }
 
-            if (node.type === WorkflowNodeType.ForEach) {
-                const output = context.outputs.get(node.id);
-                if (output?.items && Array.isArray(output.items)) {
-                    const nodeOutputSnapshots: Record<string, Record<string, unknown>> = {};
-                    context.outputs.forEach((value, key) => {
-                        nodeOutputSnapshots[key] = value;
-                    });
+            if (result.node.type === WorkflowNodeType.ForEach && result.output?.items && Array.isArray(result.output.items)) {
+                const items = result.output.items.filter(isRecord);
 
-                    return {
-                        items: output.items as Record<string, unknown>[],
-                        forEachNodeId: node.id,
-                        nodeOutputSnapshots
-                    };
-                }
+                return {
+                    items,
+                    forEachNodeId: result.node.id,
+                    nodeOutputSnapshots: snapshotWorkflowOutputs(context.outputs)
+                };
             }
         }
 
-        // Batch mode: no ForEach node — pass all dump URLs as a single batch
+        // Batch mode: no ForEach node — pass authoritative dump descriptors as a single batch
         if (!hasForEachNode && contextNodeId) {
             const contextOutput = context.outputs.get(contextNodeId);
-            const dumps = Array.isArray(contextOutput?.trajectory_dumps) ? contextOutput.trajectory_dumps : [];
-            const allDumpUrls = dumps
-                .map((dump: Record<string, unknown>) => typeof dump.path === 'string' ? dump.path : '')
-                .filter((url: string) => url.length > 0);
+            const dumps = Array.isArray(contextOutput?.trajectory_dumps)
+                ? contextOutput.trajectory_dumps.filter(isTrajectoryDumpDescriptor)
+                : [];
 
-            if (allDumpUrls.length === 0) {
+            if (dumps.length === 0) {
                 return null;
             }
 
-            const nodeOutputSnapshots: Record<string, Record<string, unknown>> = {};
-            context.outputs.forEach((value, key) => {
-                nodeOutputSnapshots[key] = value;
-            });
-
             return {
-                items: allDumpUrls.map((url: string) => ({ path: url })),
+                items: dumps,
                 forEachNodeId: '',
-                nodeOutputSnapshots,
+                nodeOutputSnapshots: snapshotWorkflowOutputs(context.outputs),
                 batchMode: true,
+                batchTrajectoryDumps: dumps,
                 contextNodeId
             };
         }
@@ -109,22 +127,20 @@ export class WorkflowEngine {
     }
 
     private createExecutionContext(request: WorkflowExecutionRequest): WorkflowExecutionContext {
-        return {
-            outputs: new Map(),
+        return createWorkflowExecutionContext({
             userConfig: request.userConfig,
             runtimeArguments: buildRuntimeArguments(request),
             trajectoryId: request.trajectoryId,
             trajectoryFrames: request.trajectoryFrames,
             analysis: request.analysis,
             analysisId: request.analysisId,
-            generatedFiles: [],
             pluginId: request.pluginId,
             teamId: request.teamId,
             selectedFrameOnly: request.options?.selectedFrameOnly,
             selectedTimesteps: request.options?.selectedTimesteps,
             selectedTimestep: request.options?.timestep,
             workflow: new WorkflowGraph(request.workflow),
-            nestedWorkflows: new Map((request.nestedPlugins ?? []).map((nestedPlugin) => [nestedPlugin.pluginId, nestedPlugin.workflow]))
-        };
+            nestedPlugins: request.nestedPlugins
+        });
     }
-}
+};

@@ -1,5 +1,24 @@
-import { ContainerAction, ObjectBucketName, TextEncoding } from '@/shared/contracts';
+import { ContainerAction, ObjectBucketName, RemoteExplorerTarget, TextEncoding } from '@/shared/contracts';
+import type { WorkflowDefinition, WorkflowEdgeDefinition, WorkflowNodeDefinition } from '@/shared/contracts';
+import type { RemoteExplorerRequest } from '@/shared/contracts';
 import { isRecord } from '@/shared/utils';
+
+interface StringEnumLike {
+    [key: string]: string;
+};
+
+type EnumValue<TEnum extends StringEnumLike> = TEnum[keyof TEnum];
+
+interface TrajectoryFramePayload {
+    timestep: number;
+    natoms: number;
+    simulationCell: string;
+};
+
+interface RemoteExplorerPayloadRequest {
+    target: RemoteExplorerRequest['target'];
+    path: RemoteExplorerRequest['path'];
+};
 
 export const readString = (value: unknown, fieldName: string): string => {
     if (typeof value !== 'string' || value.trim().length === 0) {
@@ -145,6 +164,90 @@ export const readOptionalUnknownRecord = (value: unknown, fieldName: string): Re
     return readRecord(value, fieldName);
 };
 
+export const readWorkflowNodeDefinition = (value: unknown): WorkflowNodeDefinition => {
+    const record = readRecord(value, 'workflow.nodes');
+    const position = readRecord(record.position, 'workflow.nodes.position');
+
+    return {
+        id: readString(record.id, 'workflow.nodes.id'),
+        type: readString(record.type, 'workflow.nodes.type'),
+        position: {
+            x: readNumber(position.x, 'workflow.nodes.position.x'),
+            y: readNumber(position.y, 'workflow.nodes.position.y')
+        },
+        data: readRecord(record.data, 'workflow.nodes.data')
+    };
+};
+
+export const readWorkflowEdgeDefinition = (value: unknown): WorkflowEdgeDefinition => {
+    const record = readRecord(value, 'workflow.edges');
+    const edge: WorkflowEdgeDefinition = {
+        source: readString(record.source, 'workflow.edges.source'),
+        target: readString(record.target, 'workflow.edges.target')
+    };
+
+    if (typeof record.sourceHandle !== 'undefined') {
+        edge.sourceHandle = readString(record.sourceHandle, 'workflow.edges.sourceHandle');
+    }
+
+    if (typeof record.targetHandle !== 'undefined') {
+        edge.targetHandle = readString(record.targetHandle, 'workflow.edges.targetHandle');
+    }
+
+    return edge;
+};
+
+export const readWorkflowDefinition = (value: unknown): WorkflowDefinition => {
+    const record = readRecord(value, 'workflow');
+    const nodesValue = record.nodes;
+    const edgesValue = record.edges;
+
+    if (!Array.isArray(nodesValue)) {
+        throw new Error('workflow.nodes must be an array');
+    }
+
+    if (!Array.isArray(edgesValue)) {
+        throw new Error('workflow.edges must be an array');
+    }
+
+    return {
+        nodes: nodesValue.map(readWorkflowNodeDefinition),
+        edges: edgesValue.map(readWorkflowEdgeDefinition)
+    };
+};
+
+export const readTrajectoryFrames = (value: unknown): TrajectoryFramePayload[] => {
+    if (!Array.isArray(value)) {
+        throw new Error('trajectoryFrames must be an array');
+    }
+
+    return value.map((entry) => {
+        const record = readRecord(entry, 'trajectoryFrames');
+
+        return {
+            timestep: readNumber(record.timestep, 'trajectoryFrames.timestep'),
+            natoms: readNumber(record.natoms, 'trajectoryFrames.natoms'),
+            simulationCell: readString(record.simulationCell, 'trajectoryFrames.simulationCell')
+        };
+    });
+};
+
+export const readRemoteExplorerRequest = (payload: unknown): RemoteExplorerPayloadRequest => {
+    const record = readPayloadRecord(payload);
+    const target = readString(record.target, 'target');
+
+    if (!isEnumValue(RemoteExplorerTarget, target)) {
+        throw new Error('target is invalid');
+    }
+
+    return {
+        target,
+        path: typeof record.path === 'string'
+            ? record.path
+            : ''
+    };
+};
+
 export const readPluginPropertyNamesRequest = (payload: unknown) => {
     const record = readOptionalPayloadRecord(payload);
     const timestep = readOptionalNumber(record.timestep);
@@ -197,14 +300,21 @@ export const readPluginModifierUniqueValuesRequest = (payload: unknown) => {
     };
 };
 
+const isEnumValue = <TEnum extends StringEnumLike>(
+    enumObject: TEnum,
+    value: string
+): value is EnumValue<TEnum> => {
+    return Object.values(enumObject).some((enumValue) => enumValue === value);
+};
+
 export const readObjectBucketName = (value: unknown, fieldName: string): ObjectBucketName => {
     const bucketName = readString(value, fieldName);
 
-    if (!Object.values(ObjectBucketName).includes(bucketName as ObjectBucketName)) {
+    if (!isEnumValue(ObjectBucketName, bucketName)) {
         throw new Error(`${fieldName} is invalid`);
     }
 
-    return bucketName as ObjectBucketName;
+    return bucketName;
 };
 
 export const readTextEncoding = (value: unknown): TextEncoding | undefined => {
@@ -213,11 +323,11 @@ export const readTextEncoding = (value: unknown): TextEncoding | undefined => {
     }
 
     const encoding = readString(value, 'encoding');
-    if (!Object.values(TextEncoding).includes(encoding as TextEncoding)) {
+    if (!isEnumValue(TextEncoding, encoding)) {
         throw new Error('encoding is invalid');
     }
 
-    return encoding as TextEncoding;
+    return encoding;
 };
 
 export const readPluginAnalysisAllAtomsRequest = (payload: unknown) => {
@@ -231,9 +341,9 @@ export const readPluginAnalysisAllAtomsRequest = (payload: unknown) => {
 
 export const readContainerAction = (value: unknown): ContainerAction => {
     const action = readString(value, 'action');
-    if (!Object.values(ContainerAction).includes(action as ContainerAction)) {
+    if (!isEnumValue(ContainerAction, action)) {
         throw new Error('action is invalid');
     }
 
-    return action as ContainerAction;
+    return action;
 };

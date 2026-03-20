@@ -130,6 +130,10 @@ const normalizeCloudUrl = (value: string): string => {
     return value.replace(/\/+$/g, '');
 };
 
+const isValidPort = (value: number): boolean => {
+    return Number.isInteger(value) && value >= 1 && value <= 65535;
+};
+
 const readJupyterHostPortRange = (): JupyterHostPortRange | undefined => {
     const start = readOptionalNumber('JUPYTER_HOST_PORT_RANGE_START');
     const end = readOptionalNumber('JUPYTER_HOST_PORT_RANGE_END');
@@ -142,8 +146,8 @@ const readJupyterHostPortRange = (): JupyterHostPortRange | undefined => {
         throw new Error('JUPYTER_HOST_PORT_RANGE_START and JUPYTER_HOST_PORT_RANGE_END must be set together');
     }
 
-    if (start <= 0 || end <= 0) {
-        throw new Error('JUPYTER host port range values must be positive numbers');
+    if (!isValidPort(start) || !isValidPort(end)) {
+        throw new Error('JUPYTER host port range values must be integers between 1 and 65535');
     }
 
     if (start > end) {

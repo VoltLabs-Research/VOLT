@@ -13,7 +13,20 @@ import { createWorkflowRuntimeModule } from '@/modules/workflow-runtime';
 import { createCloudControlModule } from '@/modules/cloud-control';
 import { createAnalysisWorker, createJobRuntimeModule } from '@/modules/job-runtime';
 
-export const bootstrap = async (): Promise<void> => {
+type BootstrapContext = {
+    bootStartedAt: number;
+    config: ReturnType<typeof loadConfig>;
+    platform: ReturnType<typeof createPlatformModule>;
+    workflowRuntime: ReturnType<typeof createWorkflowRuntimeModule>;
+    cloudControl: ReturnType<typeof createCloudControlModule>;
+    sshImport: ReturnType<typeof createSSHImportModule>;
+    analysisWorker: ReturnType<typeof createAnalysisWorker>;
+    trajectoryRasterWorkerService: TrajectoryRasterWorkerService;
+    trajectoryGlbWorkerService: TrajectoryGlbWorkerService;
+};
+
+const createBootstrapContext = (): BootstrapContext => {
+    const bootStartedAt = Date.now();
     const config = loadConfig();
     const platform = createPlatformModule(config);
     const metrics = createMetricsModule();
@@ -32,9 +45,14 @@ export const bootstrap = async (): Promise<void> => {
         minioService: platform.minioService,
         glbExporterService: trajectoryNative.glbExporterService
     });
-    const bootstrapCloudControl = (
-        analysisDispatchService: ReturnType<typeof createJobRuntimeModule>['analysisDispatchService']
-    ) => createCloudControlModule({
+    const jobRuntime = createJobRuntimeModule({
+        workflowEngine: workflowRuntime.workflowEngine,
+        queueService: platform.queueService,
+        analysisExecutionDataStore: platform.analysisExecutionDataStore,
+        redisConnectionService: platform.redisConnectionService,
+        eventBroker: platform.eventBroker
+    });
+    const cloudControl = createCloudControlModule({
         config,
         metricsService: metrics.metricsService,
         eventBroker: platform.eventBroker,
@@ -43,22 +61,17 @@ export const bootstrap = async (): Promise<void> => {
         minioService: platform.minioService,
         queueService: platform.queueService,
         redisConnectionService: platform.redisConnectionService,
+        redisExplorerReadService: platform.redisExplorerReadService,
+        trajectoryAutoPreviewClaimStore: platform.trajectoryAutoPreviewClaimStore,
         trajectoryParserService: trajectoryNative.trajectoryParserService,
         trajectoryPluginParserService: trajectoryNative.trajectoryPluginParserService,
         glbExporterService: trajectoryNative.glbExporterService,
         filterEvaluatorService: trajectoryNative.filterEvaluatorService,
         jupyterRuntimeService: jupyter.jupyterRuntimeService,
         pluginListingRepository,
-        analysisDispatchService,
+        analysisDispatchService: jobRuntime.analysisDispatchService,
         debugSessionManager: workflowRuntime.debugSessionManager
     });
-    const jobRuntime = createJobRuntimeModule({
-        workflowEngine: workflowRuntime.workflowEngine,
-        queueService: platform.queueService,
-        redisConnectionService: platform.redisConnectionService,
-        eventBroker: platform.eventBroker
-    });
-    const cloudControl = bootstrapCloudControl(jobRuntime.analysisDispatchService);
     const artifacts = createArtifactsModule(
         platform.minioService,
         trajectoryNative.nativeModuleLoader,
@@ -67,6 +80,7 @@ export const bootstrap = async (): Promise<void> => {
     );
     const analysisWorker = createAnalysisWorker({
         queueService: platform.queueService,
+        analysisExecutionDataStore: platform.analysisExecutionDataStore,
         redisConnectionService: platform.redisConnectionService,
         minioService: platform.minioService,
         resultProcessorService: artifacts.resultProcessorService,
@@ -75,6 +89,7 @@ export const bootstrap = async (): Promise<void> => {
     const trajectoryRasterWorkerService = new TrajectoryRasterWorkerService(
         platform.queueService,
         platform.redisConnectionService,
+        platform.trajectoryAutoPreviewClaimStore,
         trajectoryNative.rasterizerService,
         cloudControl.daemonJobReporterService
     );
@@ -85,13 +100,35 @@ export const bootstrap = async (): Promise<void> => {
         cloudControl.daemonJobReporterService
     );
 
+    return {
+        bootStartedAt,
+        config,
+        platform,
+        workflowRuntime,
+        cloudControl,
+        sshImport,
+        analysisWorker,
+        trajectoryRasterWorkerService,
+        trajectoryGlbWorkerService
+    };
+};
+
+const startBootstrapContext = async (context: BootstrapContext): Promise<void> => {
+    const {
+        bootStartedAt,
+        config,
+        platform,
+        cloudControl,
+        sshImport,
+        analysisWorker,
+        trajectoryRasterWorkerService,
+        trajectoryGlbWorkerService
+    } = context;
+
+    logger.info({ teamClusterId: config.teamClusterId }, 'Bootstrapping cluster daemon services');
+
     await platform.connect();
     startMemoryMonitor();
-
-    cloudControl.voltCloudConnection.emitLifecycleEvent(
-        'services-ready',
-        'Cluster-local Redis, MongoDB, MinIO, and Docker coordination ready'
-    );
 
     await cloudControl.voltCloudConnection.start();
     cloudControl.daemonExposureRegistryService.start();
@@ -99,30 +136,47 @@ export const bootstrap = async (): Promise<void> => {
     trajectoryRasterWorkerService.start(config.queueConcurrency.rasterizer);
     trajectoryGlbWorkerService.start(config.queueConcurrency.glbPreprocessing);
     sshImport.sshImportWorkerService.start();
+    cloudControl.voltCloudConnection.emitLifecycleEvent(
+        'services-ready',
+        'Cluster-local Redis, MongoDB, MinIO, and Docker coordination ready'
+    );
     logger.info(`cluster-daemon started for team cluster ${config.teamClusterId}`);
+    logger.info(
+        {
+            durationMs: Date.now() - bootStartedAt,
+            teamClusterId: config.teamClusterId
+        },
+        'Cluster daemon services ready'
+    );
+};
 
-    jupyter.jupyterRuntimeService.initialize().catch((error: unknown) => {
-        logger.warn({ err: error }, 'Jupyter runtime image pre-warm failed (will retry on first session request)');
-    });
+const stopBootstrapContext = async (context: BootstrapContext): Promise<void> => {
+    stopMemoryMonitor();
+    context.workflowRuntime.debugSessionManager.shutdown();
+    await context.analysisWorker.stop();
+    await context.trajectoryRasterWorkerService.stop();
+    await context.trajectoryGlbWorkerService.stop();
+    await context.sshImport.sshImportWorkerService.stop();
+    context.cloudControl.daemonExposureRegistryService.stop();
+    context.cloudControl.voltCloudConnection.stop();
+    await context.platform.queueService.close();
+    await context.platform.disconnect();
+};
 
-    const shutdown = async () => {
-        stopMemoryMonitor();
-        workflowRuntime.debugSessionManager.shutdown();
-        await analysisWorker.stop();
-        await trajectoryRasterWorkerService.stop();
-        await trajectoryGlbWorkerService.stop();
-        await sshImport.sshImportWorkerService.stop();
-        cloudControl.daemonExposureRegistryService.stop();
-        await cloudControl.voltCloudConnection.stop();
-        await platform.queueService.close();
-        await platform.disconnect();
-        process.exit(0);
+const registerShutdownHandlers = (shutdown: () => Promise<void>): void => {
+    const handleShutdown = (): void => {
+        shutdown()
+            .then(() => process.exit(0))
+            .catch(() => process.exit(1));
     };
 
-    process.on('SIGINT', () => {
-        shutdown().catch(() => process.exit(1));
-    });
-    process.on('SIGTERM', () => {
-        shutdown().catch(() => process.exit(1));
-    });
+    process.on('SIGINT', handleShutdown);
+    process.on('SIGTERM', handleShutdown);
+};
+
+export const bootstrap = async (): Promise<void> => {
+    const context = createBootstrapContext();
+
+    await startBootstrapContext(context);
+    registerShutdownHandlers(() => stopBootstrapContext(context));
 };

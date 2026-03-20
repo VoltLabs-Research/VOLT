@@ -1,5 +1,7 @@
 import { logger } from '@/core/logger';
+import { createWorkflowExecutionContext, snapshotWorkflowOutputs } from './WorkflowExecutionContextFactory';
 import { WorkflowNodeRegistry } from './NodeRegistry';
+import { runOrderedWorkflowNodes } from './OrderedNodeRunner';
 import { WorkflowGraph, WorkflowNodeType, type WorkflowExecutionContext, type WorkflowNode } from '../contracts';
 import type { DaemonAnalysisDocument, WorkflowDefinition } from '@/shared/contracts';
 
@@ -34,7 +36,7 @@ export interface DebugSessionRequest {
     teamId: string;
     userConfig: Record<string, unknown>;
     timestep?: number;
-}
+};
 
 export interface DebugNodeResult {
     nodeId: string;
@@ -46,14 +48,14 @@ export interface DebugNodeResult {
     reason?: string;
     durationMs: number;
     contextSnapshot: Record<string, Record<string, unknown>>;
-}
+};
 
 export interface DebugSessionInfo {
     sessionId: string;
     executionOrder: Array<{ nodeId: string; type: string }>;
     forEachNodeId: string | null;
     totalIterations: number;
-}
+};
 
 interface DebugSession {
     sessionId: string;
@@ -66,20 +68,12 @@ interface DebugSession {
     currentIndex: number;
     lastActivity: number;
     forEachNodeId: string | null;
-}
+};
 
 let sessionCounter = 0;
 
 const generateSessionId = (): string => {
     return `dbg_${Date.now()}_${++sessionCounter}`;
-};
-
-const buildContextSnapshot = (context: WorkflowExecutionContext): Record<string, Record<string, unknown>> => {
-    const snapshot: Record<string, Record<string, unknown>> = {};
-    context.outputs.forEach((value, key) => {
-        snapshot[key] = value;
-    });
-    return snapshot;
 };
 
 export class DebugSessionManager {
@@ -105,21 +99,19 @@ export class DebugSessionManager {
             pluginDisplayName: 'Debug Session'
         };
 
-        const context: WorkflowExecutionContext = {
-            outputs: new Map(),
+        const context = createWorkflowExecutionContext({
             userConfig: request.userConfig,
             runtimeArguments: {},
             trajectoryId: request.trajectoryId,
             trajectoryFrames: request.trajectoryFrames,
             analysis: stubAnalysis,
             analysisId: `debug_${sessionId}`,
-            generatedFiles: [],
             pluginId: request.pluginId,
             teamId: request.teamId,
             selectedTimesteps: typeof request.timestep === 'number' ? [request.timestep] : undefined,
             workflow,
             nestedWorkflows: new Map()
-        };
+        });
 
         // Detect forEach node
         let forEachNodeId: string | null = null;
@@ -167,31 +159,33 @@ export class DebugSessionManager {
         const startTime = Date.now();
 
         try {
-            // Skip if the registry doesn't have a handler for this node type
-            if (!this.registry.has(node.type)) {
-                session.currentIndex++;
+            const [result] = await runOrderedWorkflowNodes({
+                nodes: [node],
+                context: session.context,
+                registry: this.registry
+            });
+            const durationMs = Date.now() - startTime;
+
+            session.currentIndex++;
+
+            if (!result || result.status === 'skipped') {
                 return {
                     nodeId: node.id,
                     nodeType: node.type,
                     status: 'skipped',
-                    reason: `No handler registered for node type "${node.type}"`,
-                    durationMs: Date.now() - startTime,
-                    contextSnapshot: buildContextSnapshot(session.context)
+                    reason: result?.reason ?? `No handler registered for node type "${node.type}"`,
+                    durationMs,
+                    contextSnapshot: snapshotWorkflowOutputs(session.context.outputs)
                 };
             }
-
-            const output = await this.registry.execute(node, session.context);
-            const durationMs = Date.now() - startTime;
-
-            session.currentIndex++;
 
             return {
                 nodeId: node.id,
                 nodeType: node.type,
                 status: 'completed',
-                output,
+                output: result.output,
                 durationMs,
-                contextSnapshot: buildContextSnapshot(session.context)
+                contextSnapshot: snapshotWorkflowOutputs(session.context.outputs)
             };
         } catch (error: unknown) {
             const durationMs = Date.now() - startTime;
@@ -206,7 +200,7 @@ export class DebugSessionManager {
                 error: message,
                 stack,
                 durationMs,
-                contextSnapshot: buildContextSnapshot(session.context)
+                contextSnapshot: snapshotWorkflowOutputs(session.context.outputs)
             };
         }
     }
@@ -289,4 +283,4 @@ export class DebugSessionManager {
         }, SESSION_SWEEP_INTERVAL_MS);
         this.sweepTimer.unref();
     }
-}
+};

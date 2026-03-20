@@ -1,12 +1,6 @@
-import { createObjectSyncService } from '@/modules/platform/services';
-import { DAEMON_PATHS } from '@/core/paths';
-import { Readable } from 'node:stream';
-import { createReadStream } from 'node:fs';
-import fsPromises from 'node:fs/promises';
-import path from 'node:path';
-import type { MinioService } from '@/modules/platform/services';
-import type { ObjectUploadRequest, PluginSyncRequest, RuntimeEventBroker } from '@/shared/contracts';
-import type { ReverseChannelCommandHandler } from '../services';
+import { createChunkedObjectUploadService } from '@/modules/cloud-control/services';
+import { createObjectSyncService, createObjectUploadLifecycleService } from '@/modules/platform/services';
+import { ObjectBucketName, TEAM_CLUSTER_DAEMON_COMMAND } from '@/shared/contracts';
 import {
     readObjectBucketName,
     readNumber,
@@ -17,9 +11,10 @@ import {
     readString,
     readTextEncoding
 } from './payloadValidation';
-import { ObjectBucketName, OrchestrationAction } from '@/shared/contracts';
-import { ProgressStageType } from '@voltstack/daemon-cluster-client';
-import { logger } from '@/core/logger';
+import { Readable } from 'node:stream';
+import type { MinioService } from '@/modules/platform/services';
+import type { ObjectUploadRequest, PluginSyncRequest, RuntimeEventBroker } from '@/shared/contracts';
+import type { ReverseChannelCommandHandler } from '../services';
 
 interface MinioLikeError {
     code?: string;
@@ -40,36 +35,62 @@ interface ObjectGetRequest {
     objectKey: string;
 };
 
-/**
- * In-flight chunked transfer state.
- * Chunks are spooled to a temp file instead of accumulating in memory.
- */
-interface ChunkedTransfer {
-    bucket: ObjectBucketName;
-    objectKey: string;
-    totalChunks: number;
-    metadata?: Record<string, string>;
-    tempPath: string;
-    receivedCount: number;
-    totalSize: number;
-    createdAt: number;
+const toUint8ArrayChunk = (chunk: string | Buffer | Uint8Array): Uint8Array => {
+    if (typeof chunk === 'string') {
+        return Buffer.from(chunk);
+    }
+
+    if (chunk instanceof Uint8Array) {
+        return chunk;
+    }
+
+    return new Uint8Array(chunk);
 };
 
-/**
- * Stale transfers are cleaned up after 5 minutes.
- */
-const TRANSFER_TTL_MS = 5 * 60 * 1000;
+const toWebReadableStream = (stream: Readable): ReadableStream<Uint8Array> => {
+    const iterator = stream[Symbol.asyncIterator]();
 
-/**
- * How often to sweep for stale transfers.
- */
-const TRANSFER_SWEEP_INTERVAL_MS = 60 * 1000;
+    return new ReadableStream<Uint8Array>({
+        async pull(controller): Promise<void> {
+            const result = await iterator.next();
+
+            if (result.done) {
+                controller.close();
+                return;
+            }
+
+            controller.enqueue(toUint8ArrayChunk(result.value));
+        },
+        async cancel(reason): Promise<void> {
+            if (typeof iterator.return === 'function') {
+                await iterator.return();
+            }
+
+            const error = reason instanceof Error
+                ? reason
+                : new Error('Readable stream cancelled');
+            stream.destroy(error);
+        }
+    });
+};
 
 const isMinioNotFoundError = (error: unknown): error is MinioLikeError => {
     return typeof error === 'object'
         && error !== null
         && 'code' in error
         && (error.code === 'NotFound' || error.code === 'NoSuchKey');
+};
+
+const SAFE_TRANSFER_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
+
+const readTransferId = (record: Record<string, unknown>, field: string): string => {
+    const transferId = readString(record.transferId, field);
+
+    if (!SAFE_TRANSFER_ID_PATTERN.test(transferId)) {
+        throw new Error('transferId contains unsupported characters');
+    }
+
+    return transferId;
 };
 
 const readObjectUploadRequest = (payload: unknown): ObjectUploadRequest => {
@@ -122,30 +143,16 @@ const readObjectGetRequest = (payload: unknown): ObjectGetRequest => {
 
 export const createObjectHandlers = (deps: ObjectHandlersDependencies): ReverseChannelCommandHandler[] => {
     const objectSyncService = createObjectSyncService(deps.minioService, deps.eventBroker);
-
-    // ── Chunked transfer state ──────────────────────────────────────────
-    const chunkedTransfers = new Map<string, ChunkedTransfer>();
-
-    // Periodic sweep for abandoned transfers (also cleans up temp files)
-    const sweepInterval = setInterval(() => {
-        const now = Date.now();
-        for (const [transferId, transfer] of chunkedTransfers) {
-            if (now - transfer.createdAt > TRANSFER_TTL_MS) {
-                chunkedTransfers.delete(transferId);
-                fsPromises.unlink(transfer.tempPath).catch(() => {});
-                logger.warn(
-                    { transferId, objectKey: transfer.objectKey },
-                    'Chunked transfer expired — cleaned up stale state and temp file'
-                );
-            }
-        }
-    }, TRANSFER_SWEEP_INTERVAL_MS);
-    sweepInterval.unref();
+    const objectUploadLifecycleService = createObjectUploadLifecycleService(deps.minioService, deps.eventBroker);
+    const chunkedObjectUploadService = createChunkedObjectUploadService({
+        minioService: deps.minioService,
+        objectUploadLifecycleService
+    });
 
     return [
         // ── Legacy single-message upload ────────────────────────────────
         {
-            command: 'object.upload',
+            command: TEAM_CLUSTER_DAEMON_COMMAND.object.upload,
             execute: async (payload) => {
                 await objectSyncService.uploadObject(readObjectUploadRequest(payload));
                 return { data: { uploaded: true } };
@@ -154,42 +161,16 @@ export const createObjectHandlers = (deps: ObjectHandlersDependencies): ReverseC
 
         // ── Chunked upload: init ────────────────────────────────────────
         {
-            command: 'object.upload.init',
+            command: TEAM_CLUSTER_DAEMON_COMMAND.object.uploadInit,
             execute: async (payload) => {
                 const record = readPayloadRecord(payload);
-                const transferId = readString(record.transferId, 'transferId');
-                const bucket = readObjectBucketName(record.bucket, 'bucket');
-                const objectKey = readString(record.objectKey, 'objectKey');
-                const totalChunks = readNumber(record.totalChunks, 'totalChunks');
-                const metadata = readOptionalStringRecord(record.metadata, 'metadata');
-
-                if (totalChunks <= 0 || totalChunks > 100_000) {
-                    throw new Error('totalChunks must be between 1 and 100000');
-                }
-
-                if (chunkedTransfers.has(transferId)) {
-                    throw new Error(`Transfer ${transferId} already exists`);
-                }
-
-                const tempPath = path.join(DAEMON_PATHS.analysisOutput, `chunked-upload-${transferId}`);
-                // Create an empty file to append chunks into
-                await fsPromises.writeFile(tempPath, Buffer.alloc(0));
-
-                chunkedTransfers.set(transferId, {
-                    bucket,
-                    objectKey,
-                    totalChunks,
-                    metadata,
-                    tempPath,
-                    receivedCount: 0,
-                    totalSize: 0,
-                    createdAt: Date.now()
+                await chunkedObjectUploadService.initializeTransfer({
+                    transferId: readTransferId(record, 'transferId'),
+                    bucket: readObjectBucketName(record.bucket, 'bucket'),
+                    objectKey: readString(record.objectKey, 'objectKey'),
+                    totalChunks: readNumber(record.totalChunks, 'totalChunks'),
+                    metadata: readOptionalStringRecord(record.metadata, 'metadata')
                 });
-
-                logger.info(
-                    { transferId, objectKey, totalChunks, tempPath },
-                    'Chunked upload initialized (disk-spooled)'
-                );
 
                 return { data: { initialized: true } };
             }
@@ -197,141 +178,54 @@ export const createObjectHandlers = (deps: ObjectHandlersDependencies): ReverseC
 
         // ── Chunked upload: chunk ───────────────────────────────────────
         {
-            command: 'object.upload.chunk',
+            command: TEAM_CLUSTER_DAEMON_COMMAND.object.uploadChunk,
             execute: async (payload) => {
                 const record = readPayloadRecord(payload);
-                const transferId = readString(record.transferId, 'transferId');
-                const index = readNumber(record.index, 'index');
-                const data = readString(record.data, 'data');
+                const result = await chunkedObjectUploadService.appendChunk({
+                    transferId: readTransferId(record, 'transferId'),
+                    index: readNumber(record.index, 'index'),
+                    data: readString(record.data, 'data')
+                });
 
-                const transfer = chunkedTransfers.get(transferId);
-                if (!transfer) {
-                    throw new Error(`Unknown transfer: ${transferId}`);
-                }
-
-                if (index < 0 || index >= transfer.totalChunks) {
-                    throw new Error(`Chunk index ${index} out of range [0, ${transfer.totalChunks})`);
-                }
-
-                const chunkBuffer = Buffer.from(data, 'base64');
-                await fsPromises.appendFile(transfer.tempPath, chunkBuffer);
-                transfer.receivedCount += 1;
-                transfer.totalSize += chunkBuffer.length;
-
-                return { data: { received: true, index } };
+                return { data: { received: true, index: result.index } };
             }
         },
 
         // ── Chunked upload: commit ──────────────────────────────────────
         {
-            command: 'object.upload.commit',
+            command: TEAM_CLUSTER_DAEMON_COMMAND.object.uploadCommit,
             execute: async (payload) => {
                 const record = readPayloadRecord(payload);
-                const transferId = readString(record.transferId, 'transferId');
-
-                const transfer = chunkedTransfers.get(transferId);
-                if (!transfer) {
-                    throw new Error(`Unknown transfer: ${transferId}`);
-                }
-
-                if (transfer.receivedCount !== transfer.totalChunks) {
-                    throw new Error(
-                        `Transfer ${transferId} incomplete: received ${transfer.receivedCount}/${transfer.totalChunks} chunks`
-                    );
-                }
-
-                try {
-                    // Verify temp file size matches expected total before streaming
-                    const tempStats = await fsPromises.stat(transfer.tempPath);
-                    if (tempStats.size !== transfer.totalSize) {
-                        logger.error(
-                            {
-                                transferId,
-                                objectKey: transfer.objectKey,
-                                expectedSize: transfer.totalSize,
-                                actualFileSize: tempStats.size,
-                                receivedChunks: transfer.receivedCount,
-                                totalChunks: transfer.totalChunks
-                            },
-                            'DIAG: Temp file size mismatch before MinIO upload — data may be corrupted'
-                        );
-                    }
-
-                    // Stream the spooled temp file directly to MinIO — no in-memory concat
-                    await deps.minioService.putObjectStream({
-                        bucket: transfer.bucket,
-                        objectKey: transfer.objectKey,
-                        stream: createReadStream(transfer.tempPath),
-                        size: transfer.totalSize,
-                        metadata: transfer.metadata
-                    });
-
-                    // Post-write verification: confirm the object actually landed in MinIO
-                    try {
-                        const stat = await deps.minioService.statObject(transfer.bucket, transfer.objectKey);
-                        logger.info(
-                            {
-                                transferId,
-                                objectKey: transfer.objectKey,
-                                bucket: transfer.bucket,
-                                uploadedSize: transfer.totalSize,
-                                minioReportedSize: stat.size,
-                                sizeMatch: stat.size === transfer.totalSize
-                            },
-                            'DIAG: Post-write verification — object confirmed in MinIO'
-                        );
-
-                        if (stat.size !== transfer.totalSize) {
-                            logger.error(
-                                {
-                                    transferId,
-                                    objectKey: transfer.objectKey,
-                                    bucket: transfer.bucket,
-                                    uploadedSize: transfer.totalSize,
-                                    minioReportedSize: stat.size
-                                },
-                                'DIAG: Post-write size mismatch — MinIO object size differs from uploaded size'
-                            );
-                        }
-                    } catch (verifyError) {
-                        logger.error(
-                            {
-                                transferId,
-                                objectKey: transfer.objectKey,
-                                bucket: transfer.bucket,
-                                uploadedSize: transfer.totalSize,
-                                err: verifyError
-                            },
-                            'DIAG: Post-write verification FAILED — object NOT found in MinIO after putObjectStream succeeded'
-                        );
-                    }
-                } finally {
-                    chunkedTransfers.delete(transferId);
-                    await fsPromises.unlink(transfer.tempPath).catch(() => {});
-                }
-
-                deps.eventBroker.emitProgress({
-                    action: OrchestrationAction.ObjectUpload,
-                    stage: ProgressStageType.Completed,
-                    payload: {
-                        bucket: transfer.bucket,
-                        objectKey: transfer.objectKey
-                    },
-                    timestamp: new Date().toISOString()
+                await chunkedObjectUploadService.commitTransfer({
+                    transferId: readTransferId(record, 'transferId')
                 });
-
-                logger.info(
-                    { transferId, objectKey: transfer.objectKey, totalSize: transfer.totalSize },
-                    'Chunked upload committed to MinIO (streamed from disk)'
-                );
 
                 return { data: { uploaded: true } };
             }
         },
 
+        // ── Chunked upload: abort ───────────────────────────────────────
+        {
+            command: TEAM_CLUSTER_DAEMON_COMMAND.object.uploadAbort,
+            execute: async (payload) => {
+                const record = readPayloadRecord(payload);
+                const result = await chunkedObjectUploadService.abortTransfer({
+                    transferId: readTransferId(record, 'transferId')
+                });
+
+                return {
+                    data: {
+                        aborted: result.aborted,
+                        objectKey: result.objectKey,
+                        transferId: result.transferId
+                    }
+                };
+            }
+        },
+
         // ── Object listing ──────────────────────────────────────────────
         {
-            command: 'object.list',
+            command: TEAM_CLUSTER_DAEMON_COMMAND.object.list,
             execute: async (payload) => {
                 const request = readObjectListRequest(payload);
                 const keys = await deps.minioService.listObjects(request.bucket, request.prefix);
@@ -341,7 +235,7 @@ export const createObjectHandlers = (deps: ObjectHandlersDependencies): ReverseC
 
         // ── Object get ──────────────────────────────────────────────────
         {
-            command: 'object.get',
+            command: TEAM_CLUSTER_DAEMON_COMMAND.object.get,
             execute: async (payload) => {
                 const request = readObjectGetRequest(payload);
                 let stat;
@@ -363,7 +257,7 @@ export const createObjectHandlers = (deps: ObjectHandlersDependencies): ReverseC
                     throw error;
                 }
 
-                const stream = Readable.toWeb(nodeStream) as ReadableStream<Uint8Array>;
+                const stream = toWebReadableStream(nodeStream);
                 const headers: Record<string, string> = {
                     'content-length': String(stat.size)
                 };

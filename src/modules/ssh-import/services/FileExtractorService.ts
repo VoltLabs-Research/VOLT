@@ -1,6 +1,8 @@
-import { createReadStream } from 'node:fs';
+import { createWriteStream } from 'node:fs';
+import { logger } from '@/core/logger';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { pipeline } from 'node:stream/promises';
 import unzipper from 'unzipper';
 
 interface UploadedFile {
@@ -18,44 +20,40 @@ export interface ExtractedFile {
     mimetype?: string;
 };
 
+const isJunkEntry = (entryPath: string): boolean => {
+    const basename = path.basename(entryPath);
+    return (
+        basename.startsWith('.') ||
+        basename === '__MACOSX' ||
+        entryPath.includes('__MACOSX/') ||
+        basename === '.DS_Store' ||
+        basename === 'Thumbs.db'
+    );
+};
+
 export class FileExtractorService {
     async extractFiles(files: UploadedFile[], workingDir: string): Promise<ExtractedFile[]> {
         const finalFiles: ExtractedFile[] = [];
 
         for (const file of files) {
-            const isZip = file.mimetype === 'application/zip' || file.originalname?.endsWith('../.zip');
+            const isZip = file.mimetype === 'application/zip' || file.originalname?.endsWith('.zip');
 
             if (isZip) {
                 let zipPath = file.path;
+                let tempZipCreated = false;
                 if (!zipPath && file.buffer) {
                     zipPath = path.join(workingDir, `upload_${Date.now()}_${Math.random().toString(36).slice(2)}.zip`);
                     await fs.writeFile(zipPath, file.buffer);
+                    tempZipCreated = true;
                 }
 
                 if (!zipPath) {
                     continue;
                 }
 
-                await createReadStream(zipPath)
-                    .pipe(unzipper.Extract({ path: workingDir }))
-                    .promise();
+                finalFiles.push(...await this.extractZipViaOpenFile(zipPath, workingDir));
 
-                const extracted = await this.getFilesRecursive(workingDir);
-                for (const fullPath of extracted) {
-                    const filename = path.basename(fullPath);
-                    if (filename.endsWith('../.zip') || filename.startsWith('..') || filename === '__MACOSX') {
-                        continue;
-                    }
-
-                    const stats = await fs.stat(fullPath);
-                    finalFiles.push({
-                        path: fullPath,
-                        originalname: filename,
-                        size: stats.size
-                    });
-                }
-
-                if (!file.path) {
+                if (tempZipCreated) {
                     await fs.unlink(zipPath).catch(() => {});
                 }
 
@@ -81,6 +79,49 @@ export class FileExtractorService {
         }
 
         return finalFiles;
+    }
+
+    private async extractZipViaOpenFile(zipPath: string, outputDir: string): Promise<ExtractedFile[]> {
+        const directory = await unzipper.Open.file(zipPath);
+        const resolvedBase = path.resolve(outputDir);
+        const extractedFiles: ExtractedFile[] = [];
+
+        logger.info(
+            { entryCount: directory.files.length, zipPath },
+            'Opened ZIP via central directory for SSH import'
+        );
+
+        for (const entry of directory.files) {
+            if (entry.type === 'Directory' || isJunkEntry(entry.path)) {
+                continue;
+            }
+
+            const outputPath = path.join(outputDir, entry.path);
+            const resolvedOutput = path.resolve(outputPath);
+            if (!resolvedOutput.startsWith(resolvedBase + path.sep) && resolvedOutput !== resolvedBase) {
+                logger.warn(
+                    { entry: entry.path },
+                    'Skipping ZIP entry with path traversal during SSH import'
+                );
+                continue;
+            }
+
+            await fs.mkdir(path.dirname(resolvedOutput), { recursive: true });
+            await pipeline(entry.stream(), createWriteStream(resolvedOutput));
+
+            const stats = await fs.stat(resolvedOutput);
+            if (stats.size === 0) {
+                continue;
+            }
+
+            extractedFiles.push({
+                path: resolvedOutput,
+                originalname: path.basename(entry.path),
+                size: stats.size
+            });
+        }
+
+        return extractedFiles;
     }
 
     async getFilesRecursive(dir: string): Promise<string[]> {

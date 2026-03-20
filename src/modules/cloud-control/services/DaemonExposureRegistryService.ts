@@ -1,5 +1,6 @@
 import { type TeamClusterDaemonExposureSnapshotPayload, TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureStatus, type TeamClusterServiceExposure } from '@/shared/contracts';
 import type { DaemonConfig } from '@/core/config';
+import { logger } from '@/core/logger';
 import { isIP } from 'node:net';
 import type { ContainerInfo } from 'dockerode';
 import type { DockerRuntimeService } from '@/modules/platform/services';
@@ -85,6 +86,11 @@ const readPublishedTcpPorts = (inspection: ContainerInspection): number[] => {
 export class DaemonExposureRegistryService {
     private syncTimer: NodeJS.Timeout | null = null;
     private exposures = new Map<string, TeamClusterServiceExposure>();
+    private lastObservedSnapshotSignature: string | null = null;
+    private lastSentSnapshotSignature: string | null = null;
+    private lastCloudConnectionState = false;
+    private inFlightSync: Promise<void> | null = null;
+    private inFlightSyncStartedAt: number | null = null;
 
     constructor(
         private readonly config: DaemonConfig,
@@ -101,6 +107,10 @@ export class DaemonExposureRegistryService {
         this.syncTimer = setInterval(() => {
             this.sync().catch(() => {});
         }, EXPOSURE_SYNC_INTERVAL_MS);
+
+        if (this.syncTimer.unref) {
+            this.syncTimer.unref();
+        }
     }
 
     stop(): void {
@@ -121,12 +131,64 @@ export class DaemonExposureRegistryService {
     }
 
     async sync(): Promise<void> {
+        if (this.inFlightSync) {
+            logger.debug(
+                {
+                    durationMs: this.inFlightSyncStartedAt ? Date.now() - this.inFlightSyncStartedAt : null
+                },
+                'Skipping overlapping daemon exposure sync'
+            );
+
+            return this.inFlightSync;
+        }
+
+        const startedAt = Date.now();
+        this.inFlightSyncStartedAt = startedAt;
+        this.inFlightSync = this.runSync(startedAt).finally(() => {
+            this.inFlightSync = null;
+            this.inFlightSyncStartedAt = null;
+        });
+
+        return this.inFlightSync;
+    }
+
+    private async runSync(startedAt: number): Promise<void> {
         const containers = await this.dockerRuntimeService.listContainers(true, {
             label: ['volt.managed=true']
         });
         const nextExposures = await this.buildExposures(containers);
+        const snapshotSignature = this.createSnapshotSignature(nextExposures);
+        const changed = snapshotSignature !== this.lastObservedSnapshotSignature;
+        const cloudConnectionRestored = this.voltCloudConnection.isConnectedToCloud() && !this.lastCloudConnectionState;
+        const durationMs = Date.now() - startedAt;
+
         this.exposures = new Map(nextExposures.map((exposure) => [exposure.id, exposure]));
-        this.emitSnapshot(nextExposures);
+        this.lastObservedSnapshotSignature = snapshotSignature;
+        this.emitSnapshot(nextExposures, snapshotSignature);
+
+        if (changed || cloudConnectionRestored) {
+            logger.info(
+                {
+                    changed,
+                    cloudConnectionRestored,
+                    containerCount: containers.length,
+                    durationMs,
+                    exposureCount: nextExposures.length
+                },
+                'Daemon exposure sync completed'
+            );
+
+            return;
+        }
+
+        logger.debug(
+            {
+                containerCount: containers.length,
+                durationMs,
+                exposureCount: nextExposures.length
+            },
+            'Daemon exposure sync completed without changes'
+        );
     }
 
     private async buildExposures(containers: ContainerInfo[]): Promise<TeamClusterServiceExposure[]> {
@@ -182,8 +244,16 @@ export class DaemonExposureRegistryService {
         return exposureGroups.flat();
     }
 
-    private emitSnapshot(exposures: TeamClusterServiceExposure[]): void {
-        if (!this.voltCloudConnection.isConnectedToCloud()) {
+    private emitSnapshot(exposures: TeamClusterServiceExposure[], snapshotSignature: string): void {
+        const connectedToCloud = this.voltCloudConnection.isConnectedToCloud();
+        const cloudConnectionRestored = connectedToCloud && !this.lastCloudConnectionState;
+        this.lastCloudConnectionState = connectedToCloud;
+
+        if (!connectedToCloud) {
+            return;
+        }
+
+        if (!cloudConnectionRestored && this.lastSentSnapshotSignature === snapshotSignature) {
             return;
         }
 
@@ -193,5 +263,18 @@ export class DaemonExposureRegistryService {
         };
 
         this.voltCloudConnection.emitMessage(payload);
+        this.lastSentSnapshotSignature = snapshotSignature;
+    }
+
+    private createSnapshotSignature(exposures: TeamClusterServiceExposure[]): string {
+        const normalizedExposures = [...exposures]
+            .sort((left, right) => left.id.localeCompare(right.id))
+            .map((exposure) => ({
+                ...exposure,
+                accessModes: [...exposure.accessModes].sort(),
+                labels: Object.fromEntries(Object.entries(exposure.labels).sort((left, right) => left[0].localeCompare(right[0])))
+            }));
+
+        return JSON.stringify(normalizedExposures);
     }
 };

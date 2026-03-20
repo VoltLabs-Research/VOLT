@@ -1,5 +1,6 @@
 import { AnalysisDispatchService, AnalysisWorker, createBinaryExecutorService, createPluginBinaryCacheService, createJobControlService } from './services';
 import type { ResultProcessorService } from '@/modules/artifacts/services';
+import type { AnalysisExecutionDataStore } from '@/modules/platform/services';
 import type { WorkflowEngine } from '@/modules/workflow-runtime/services';
 import type { RuntimeEventBroker } from '@/shared/services';
 import type { MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
@@ -12,12 +13,14 @@ export interface JobRuntimeModule {
 export const createJobRuntimeModule = (deps: {
     workflowEngine: WorkflowEngine;
     queueService: QueueService;
+    analysisExecutionDataStore: AnalysisExecutionDataStore;
     redisConnectionService: RedisConnectionService;
     eventBroker: RuntimeEventBroker;
 }): JobRuntimeModule => {
     const analysisDispatchService = new AnalysisDispatchService(
         deps.workflowEngine,
         deps.queueService,
+        deps.analysisExecutionDataStore,
         deps.redisConnectionService,
         deps.eventBroker
     );
@@ -29,6 +32,7 @@ export const createJobRuntimeModule = (deps: {
 
 export const createAnalysisWorker = (deps: {
     queueService: QueueService;
+    analysisExecutionDataStore: AnalysisExecutionDataStore;
     redisConnectionService: RedisConnectionService;
     minioService: MinioService;
     resultProcessorService: ResultProcessorService;
@@ -39,6 +43,7 @@ export const createAnalysisWorker = (deps: {
 
     return new AnalysisWorker(
         deps.queueService,
+        deps.analysisExecutionDataStore,
         deps.redisConnectionService,
         deps.minioService,
         pluginBinaryCacheService,

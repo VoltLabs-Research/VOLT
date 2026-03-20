@@ -2,11 +2,10 @@ import { AnalysisExposureDefinition, type AnalysisJobExecutionData } from '@/sha
 import { logger } from '@/core/logger';
 import { forceGC } from '@/core/memory';
 import type { MinioService } from '@/modules/platform/services';
+import { isRecord } from '@/shared/utils';
 import type { PluginListingRepository } from '../repositories/PluginListingRepository';
 import type { ExportNodeProcessorService } from './ExportNodeProcessorService';
-import { Decoder } from '@msgpack/msgpack';
-import { isRecord } from '@/shared/utils';
-import mergeChunkedValue from '@/shared/utilities/merge-chunked-value';
+import { decodeMultiStream, mergeSelectiveChunk } from '@/shared/utilities/selective-msgpack';
 import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import type { Readable } from 'node:stream';
@@ -64,43 +63,6 @@ const buildSubListingDocument = (
     }
     return { ...shared, row: cleaned };
 };
-
-const mergeSelectiveChunk = (
-    target: Record<string, unknown> | null,
-    incoming: unknown,
-    keyFilter: (key: string) => boolean
-): Record<string, unknown> | null => {
-    if (!isRecord(incoming)) {
-        return target;
-    }
-
-    const filtered: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(incoming)) {
-        if (keyFilter(key)) {
-            filtered[key] = value;
-        }
-    }
-
-    if (Object.keys(filtered).length === 0) {
-        return target;
-    }
-
-    const merged = mergeChunkedValue(target, filtered);
-    return isRecord(merged) ? merged : target;
-};
-
-async function* decodeMultiStream(src: AsyncIterable<Uint8Array | Buffer>): AsyncIterable<unknown> {
-    const decoder = new Decoder<unknown>();
-    const byteSrc = (async function* () {
-        for await (const chunk of src) {
-            yield chunk;
-        }
-    })();
-
-    for await (const value of decoder.decodeStream(byteSrc)) {
-        yield value;
-    }
-}
 
 /**
  * Single-pass decode — reads the msgpack file ONCE, extracting both listing

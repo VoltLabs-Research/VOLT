@@ -1,4 +1,5 @@
 import { TRAJECTORY_GLB_QUEUE_NAME } from '@/modules/platform/services';
+import { enqueueProjectedJob } from '@/modules/platform/services';
 import { ObjectBucketName } from '@/shared/contracts';
 import { logger } from '@/core/logger';
 import type { MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
@@ -160,7 +161,11 @@ export const createTrajectoryGlbQueueService = (
             }
 
             const job = buildGlbJobPayload(input, frame);
-            const wasEnqueued = await queueService.enqueue(TRAJECTORY_GLB_QUEUE_NAME, job, {
+            const wasEnqueued = await enqueueProjectedJob({
+                queueService,
+                queueName: TRAJECTORY_GLB_QUEUE_NAME,
+                job,
+                projectJobStatus: (projectedJob) => redisConnectionService.projectJobStatus(projectedJob),
                 preserveExistingJob: true
             });
 
@@ -169,7 +174,6 @@ export const createTrajectoryGlbQueueService = (
                 continue;
             }
 
-            await redisConnectionService.projectJobStatus(job);
             result.queuedJobs += 1;
         }
 

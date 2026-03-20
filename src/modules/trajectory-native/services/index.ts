@@ -5,6 +5,7 @@ export * from './RasterizerService';
 export * from './TrajectoryParserService';
 export * from './TrajectoryGlbQueueService';
 export * from './TrajectoryGlbWorkerService';
+export * from './TrajectoryAutoPreviewClaimStore';
 export * from './TrajectoryRasterQueueService';
 export * from './TrajectoryRasterWorkerService';
 export * from './TrajectoryPluginParserService';

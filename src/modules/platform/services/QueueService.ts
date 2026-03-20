@@ -1,3 +1,10 @@
+import { logger } from '@/core/logger';
+import {
+    ANALYSIS_QUEUE_NAME,
+    SSH_IMPORT_QUEUE_NAME,
+    TRAJECTORY_GLB_QUEUE_NAME,
+    TRAJECTORY_RASTER_QUEUE_NAME
+} from './queue-names';
 import { RedisConnectionService } from './RedisConnectionService';
 import { Job, Queue, Worker } from 'bullmq';
 
@@ -8,6 +15,13 @@ export interface QueueWorkerOptions {
 interface EnqueueOptions {
     preserveExistingJob?: boolean;
 };
+
+const KNOWN_QUEUE_NAMES = new Set<string>([
+    ANALYSIS_QUEUE_NAME,
+    SSH_IMPORT_QUEUE_NAME,
+    TRAJECTORY_RASTER_QUEUE_NAME,
+    TRAJECTORY_GLB_QUEUE_NAME
+]);
 
 const isActiveQueueState = (state: string): boolean => {
     return state === 'active'
@@ -34,15 +48,32 @@ export class QueueService {
     }
 
     async enqueue(queueName: string, payload: Record<string, unknown>, options: EnqueueOptions = {}): Promise<boolean> {
+        this.assertKnownQueue(queueName);
+
         const queue = this.getQueue(queueName);
         const jobId = typeof payload.jobId === 'string' ? payload.jobId : undefined;
+        const startedAt = Date.now();
+        const payloadBytes = this.measurePayloadBytes(payload);
+        let preservedExistingJob = false;
 
         if (jobId && options.preserveExistingJob) {
             const existingJob = await queue.getJob(jobId);
             if (existingJob) {
+                preservedExistingJob = true;
                 const existingState = await existingJob.getState();
 
                 if (isActiveQueueState(existingState)) {
+                    logger.info(
+                        {
+                            durationMs: Date.now() - startedAt,
+                            jobId,
+                            payloadBytes,
+                            preserveExistingJob: true,
+                            queueName,
+                            skippedReason: 'existing-job-active'
+                        },
+                        'Skipped queue enqueue'
+                    );
                     return false;
                 }
 
@@ -57,6 +88,18 @@ export class QueueService {
             removeOnFail: 1000
         });
 
+        logger.info(
+            {
+                durationMs: Date.now() - startedAt,
+                jobId,
+                payloadBytes,
+                preserveExistingJob: options.preserveExistingJob ?? false,
+                queueName,
+                replacedExistingJob: preservedExistingJob
+            },
+            'Enqueued queue job'
+        );
+
         return true;
     }
 
@@ -65,6 +108,8 @@ export class QueueService {
         processor: (payload: T, job: Job<T>) => Promise<void>,
         options: QueueWorkerOptions = {}
     ): Worker<T> {
+        this.assertKnownQueue(queueName);
+
         return new Worker<T>(
             queueName,
             async (job) => processor(job.data, job),
@@ -114,6 +159,8 @@ export class QueueService {
     }
 
     private getQueue(queueName: string): Queue<Record<string, unknown>> {
+        this.assertKnownQueue(queueName);
+
         const existingQueue = this.queues.get(queueName);
         if (existingQueue) {
             return existingQueue;
@@ -124,5 +171,19 @@ export class QueueService {
         });
         this.queues.set(queueName, queue);
         return queue;
+    }
+
+    private assertKnownQueue(queueName: string): void {
+        if (!KNOWN_QUEUE_NAMES.has(queueName)) {
+            throw new Error(`Unsupported queue: ${queueName}`);
+        }
+    }
+
+    private measurePayloadBytes(payload: Record<string, unknown>): number {
+        try {
+            return Buffer.byteLength(JSON.stringify(payload));
+        } catch {
+            return -1;
+        }
     }
 };
