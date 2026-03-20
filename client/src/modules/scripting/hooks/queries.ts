@@ -1,11 +1,10 @@
 import service from '../api/service';
 import {
     buildKeys,
-    createCachePolicy,
-    createManagedMutation,
     createMutation,
     createQuery
 } from '@/shared/infrastructure/query';
+import queryClient from '@/shared/infrastructure/query/query-client';
 import type { CreateScriptingNotebookParams } from '../api/dtos/create-scripting-notebook';
 import type { CreateScriptingNotebookSessionParams, CreateScriptingSessionParams } from '../api/dtos/create-scripting-session';
 import type { DeleteScriptingNotebookParams } from '../api/dtos/delete-scripting-notebook';
@@ -24,21 +23,19 @@ export const scriptingNotebooksQueryKey = KEYS.notebooks;
 
 export const scriptingNotebooksQuery = createQuery(KEYS.notebooks, service.listNotebooks);
 
-const scriptingNotebooksCache = createCachePolicy<void>(() => KEYS.notebooks());
+export const invalidateScriptingNotebooksQuery = () => queryClient.invalidateQueries({ queryKey: KEYS.notebooks() });
 
-export const invalidateScriptingNotebooksQuery = () => scriptingNotebooksCache.invalidate(undefined);
-
-export const useCreateScriptingNotebookMutation = createManagedMutation<ScriptingNotebook, CreateScriptingNotebookParams>(
+export const useCreateScriptingNotebookMutation = createMutation<ScriptingNotebook, CreateScriptingNotebookParams>(
     service.createNotebook,
     () => invalidateScriptingNotebooksQuery()
 );
 
-export const useDeleteScriptingNotebookMutation = createManagedMutation<void, DeleteScriptingNotebookParams>(
+export const useDeleteScriptingNotebookMutation = createMutation<void, DeleteScriptingNotebookParams>(
     service.deleteNotebook,
     () => invalidateScriptingNotebooksQuery()
 );
 
-export const useUpdateScriptingNotebookMutation = createManagedMutation<ScriptingNotebook, UpdateScriptingNotebookParams>(
+export const useUpdateScriptingNotebookMutation = createMutation<ScriptingNotebook, UpdateScriptingNotebookParams>(
     service.updateNotebook,
     () => invalidateScriptingNotebooksQuery()
 );

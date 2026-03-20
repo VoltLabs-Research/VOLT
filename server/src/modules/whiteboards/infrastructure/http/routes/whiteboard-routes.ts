@@ -1,6 +1,7 @@
 import { Resource } from '@core/constants/resources';
 import { upload } from '@shared/infrastructure/http/middleware/upload';
 import whiteboardControllers from '@modules/whiteboards/infrastructure/http/controllers';
+import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 import express from 'express';
 
@@ -9,6 +10,7 @@ const stateBodyParser = express.json({ limit: '10mb' });
 export default createHttpModule({
     basePath: '/api/whiteboards/:teamId',
     resource: Resource.WHITEBOARD,
+    teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
         router.post('/', whiteboardControllers.createWhiteboard.handle);
         router.get('/', whiteboardControllers.listWhiteboards.handle);

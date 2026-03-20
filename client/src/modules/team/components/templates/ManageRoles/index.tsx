@@ -1,18 +1,16 @@
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
+import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useCreateTeamRoleMutation, useDeleteTeamRoleMutation, useUpdateTeamRoleMutation } from '@/modules/team/hooks/role/queries';
 import { rbacConfigQuery } from '@/modules/system/hooks/queries';
 import { RoleEditorModal, openRoleEditorModal } from '../../organisms/RoleEditorModal';
-import { ErrorSurface, executeTask } from '@/shared/errors/core';
 import { runAction } from '@/shared/presentation/actions/run-action';
-import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
-import useConfirm from '@/shared/presentation/hooks/use-confirm';
+import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import Container from '@/shared/presentation/components/Container';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import usePermission from '@/shared/presentation/hooks/use-permission';
 import useTip from '@/shared/tips/use-tip';
 import useTeamRolesListing from '@/modules/team/hooks/role/use-team-roles-listing';
 import { IoShieldCheckmarkOutline } from 'react-icons/io5';
@@ -90,13 +88,13 @@ export default function ManageRolesTemplate() {
     useTip('team-roles-permissions');
 
     const [editingRole, setEditingRole] = useState<TeamRole | null>(null);
-    const { confirm } = useConfirm();
+    const { canAccess } = useTeamPermissions();
 
     const selectedTeam = useSelectedTeam()!;
-    const canCreate = usePermission(['team-role:create']);
-    const canUpdate = usePermission(['team-role:update']);
-    const canDelete = usePermission(['team-role:delete']);
-    const canRead = usePermission(['team-role:read']);
+    const canCreate = canAccess(['team-role:create']);
+    const canUpdate = canAccess(['team-role:update']);
+    const canDelete = canAccess(['team-role:delete']);
+    const canRead = canAccess(['team-role:read']);
 
     const createRoleMutation = useCreateTeamRoleMutation();
     const updateRoleMutation = useUpdateTeamRoleMutation();
@@ -119,8 +117,8 @@ export default function ManageRolesTemplate() {
     }, []);
 
     const handleSaveRole = useCallback(async (data: RoleEditorPayload) => {
-        await executeTask({
-            action: () => runAction({
+        try {
+            await runAction({
                 action: () => editingRole
                     ? updateRoleMutation.mutateAsync({ teamId: selectedTeam._id, roleId: editingRole._id, ...data })
                     : createRoleMutation.mutateAsync({ teamId: selectedTeam._id, ...data }),
@@ -128,10 +126,9 @@ export default function ManageRolesTemplate() {
                 afterSuccess: () => {
                     setEditingRole(null);
                 }
-            }),
-            surface: ErrorSurface.Silent,
-            rethrow: false
-        });
+            });
+        } catch {
+        }
     }, [selectedTeam._id, editingRole, createRoleMutation, updateRoleMutation]);
 
     const handleDeleteRoles = useCallback(async (rolesToDelete: TeamRole[]) => {
@@ -153,14 +150,13 @@ export default function ManageRolesTemplate() {
         if (!isConfirmed) return;
 
         for (const role of eligibleRoles) {
-            await executeTask({
-                action: () => runAction({
+            try {
+                await runAction({
                     action: () => deleteRoleMutation.mutateAsync({ teamId: selectedTeam._id, roleId: role._id }),
                     toast: getDeleteRoleToastOptions(role.name)
-                }),
-                surface: ErrorSurface.Silent,
-                rethrow: false
-            });
+                });
+            } catch {
+            }
         }
     }, [selectedTeam._id, deleteRoleMutation]);
 

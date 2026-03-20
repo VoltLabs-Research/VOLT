@@ -1,9 +1,9 @@
 import { IoAttachOutline, IoHappyOutline, IoPaperPlaneOutline, IoDocumentOutline, IoCloseOutline } from 'react-icons/io5';
 import { useId, useState } from 'react';
+import useFilePreview from '@/modules/chat/hooks/use-file-preview';
 import { formatSize } from '@/shared/utils/format';
 import Button from '@/shared/presentation/components/Button';
 import EmojiPicker from '@/shared/presentation/components/EmojiPicker';
-import useFilePreview from '@/shared/presentation/hooks/use-file-preview';
 import useTip from '@/shared/tips/use-tip';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';

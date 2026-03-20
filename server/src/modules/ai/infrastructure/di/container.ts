@@ -15,14 +15,13 @@ import AIMessageRepository from '@modules/ai/infrastructure/persistence/mongo/re
 import { DeleteConversationAITool } from '@modules/ai/application/ai-tools/DeleteConversationAITool';
 import { ListConversationsAITool } from '@modules/ai/application/ai-tools/ListConversationsAITool';
 import { UpdateConversationAITool } from '@modules/ai/application/ai-tools/UpdateConversationAITool';
-import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
-import type { ClassProvider } from 'tsyringe';
-import { container, Lifecycle } from 'tsyringe';
+import { createClassBindings, registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
+import { Lifecycle } from 'tsyringe';
 
-const AI_TOOL_CLASSES: ClassProvider<unknown>[] = [
-    { useClass: ListConversationsAITool },
-    { useClass: DeleteConversationAITool },
-    { useClass: UpdateConversationAITool }
+const AI_TOOL_CLASSES = [
+    ListConversationsAITool,
+    DeleteConversationAITool,
+    UpdateConversationAITool
 ];
 
 export const registerAIDependencies = () => {
@@ -41,12 +40,9 @@ export const registerAIDependencies = () => {
             [AI_TOKENS.SendAIConversationMessageUseCase, SendAIConversationMessageUseCase],
             [AI_TOKENS.UpdateAIConversationUseCase, UpdateAIConversationUseCase],
             [AI_TOKENS.DeleteAIConversationUseCase, DeleteAIConversationUseCase]
+        ],
+        bindings: [
+            ...createClassBindings(AI_TOKENS.AITool, AI_TOOL_CLASSES, Lifecycle.Singleton)
         ]
     });
-
-    for (const toolClassProvider of AI_TOOL_CLASSES) {
-        container.register(AI_TOKENS.AITool, { useClass: toolClassProvider.useClass }, {
-            lifecycle: Lifecycle.Singleton
-        });
-    }
 };

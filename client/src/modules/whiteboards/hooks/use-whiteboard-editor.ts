@@ -21,6 +21,13 @@ interface WhiteboardState {
     revision?: number;
 };
 
+interface HydratedWhiteboardFile {
+    id: string;
+    mimeType: string;
+    dataURL: string;
+    created: number;
+};
+
 interface UseWhiteboardEditorProps {
     whiteboardId: string;
 };
@@ -45,16 +52,32 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
 
     const titleRef = useRef<string | null>(null);
     const titleSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const activeWhiteboardIdRef = useRef(whiteboardId);
     const currentElementsRef = useRef<ExcalidrawElements>([]);
     const currentAppStateRef = useRef<AppState>({});
     const currentFilesRef = useRef<ExcalidrawFiles>({});
-    const loadingFileIdsRef = useRef(new Set<string>());
+    const loadingFilesRef = useRef(new Map<string, Promise<HydratedWhiteboardFile>>());
 
     const updateSceneState = useCallback((nextState: WhiteboardState) => {
         currentElementsRef.current = nextState.elements;
         currentAppStateRef.current = nextState.appState;
         currentFilesRef.current = nextState.files ?? {};
         setInitialState(nextState);
+    }, []);
+
+    const resetEditorState = useCallback(() => {
+        if (titleSaveTimerRef.current) {
+            clearTimeout(titleSaveTimerRef.current);
+            titleSaveTimerRef.current = null;
+        }
+
+        titleRef.current = null;
+        currentElementsRef.current = [];
+        currentAppStateRef.current = {};
+        currentFilesRef.current = {};
+        loadingFilesRef.current.clear();
+        setWhiteboard(null);
+        setInitialState(null);
     }, []);
 
     const hydrateFiles = useCallback(async (elements: ExcalidrawElements) => {
@@ -67,31 +90,47 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
 
         await Promise.allSettled(
             requestedFileIds.map(async (assetId) => {
-                if (loadedFiles[assetId] || loadingFileIdsRef.current.has(assetId)) {
+                if (loadedFiles[assetId]) {
                     return;
                 }
 
-                loadingFileIdsRef.current.add(assetId);
+                let filePromise = loadingFilesRef.current.get(assetId);
+                if (!filePromise) {
+                    filePromise = (async () => {
+                        const blob = await service.getWhiteboardAsset({ whiteboardId, assetId });
+                        const dataURL = await blobToDataURL(blob);
+
+                        return {
+                            id: assetId,
+                            mimeType: blob.type || 'image/png',
+                            dataURL,
+                            created: Date.now()
+                        } satisfies HydratedWhiteboardFile;
+                    })();
+
+                    loadingFilesRef.current.set(assetId, filePromise);
+                }
 
                 try {
-                    const blob = await service.getWhiteboardAsset({ whiteboardId, assetId });
-                    const dataURL = await blobToDataURL(blob);
-
-                    loadedFiles[assetId] = {
-                        id: assetId,
-                        mimeType: blob.type || 'image/png',
-                        dataURL,
-                        created: Date.now()
-                    };
+                    loadedFiles[assetId] = await filePromise;
                 } finally {
-                    loadingFileIdsRef.current.delete(assetId);
+                    loadingFilesRef.current.delete(assetId);
                 }
             })
         );
 
+        if (activeWhiteboardIdRef.current !== whiteboardId) {
+            return currentFilesRef.current;
+        }
+
         currentFilesRef.current = loadedFiles;
         return loadedFiles;
     }, [whiteboardId]);
+
+    useEffect(() => {
+        activeWhiteboardIdRef.current = whiteboardId;
+        resetEditorState();
+    }, [resetEditorState, whiteboardId]);
 
     useEffect(() => {
         let cancelled = false;
@@ -135,6 +174,7 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
                 });
             } catch {
                 if (!cancelled) {
+                    resetEditorState();
                     sileo.error({ title: 'Failed to load whiteboard' });
                 }
             } finally {
@@ -149,7 +189,7 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
         return () => {
             cancelled = true;
         };
-    }, [hydrateFiles, updateSceneState, whiteboardId]);
+    }, [hydrateFiles, resetEditorState, updateSceneState, whiteboardId]);
 
     const handleChange = useCallback((elements: ExcalidrawElements, appState: AppState, files?: ExcalidrawFiles) => {
         currentElementsRef.current = elements;

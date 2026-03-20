@@ -1,3 +1,4 @@
+import endpoints from './endpoints';
 import { defineServiceModule } from '@/shared/api/service-module';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { CreateScriptingNotebookParams } from '../dtos/create-scripting-notebook';
@@ -8,8 +9,6 @@ import type { UpdateScriptingNotebookParams } from '../dtos/update-scripting-not
 import type { ScriptingNotebook } from '../entities/scripting-notebook';
 import type { ScriptingSession } from '../entities/scripting-session';
 import type { DeleteNotebookSessionParams, ReadNotebookSessionStatusParams } from './endpoints/sessions';
-import client from './client';
-import endpoints from './endpoints';
 
 type ScriptingService = {
     listNotebooks: (params: ListScriptingNotebooksParams) => Promise<PaginatedResponse<ScriptingNotebook>>;
@@ -23,7 +22,12 @@ type ScriptingService = {
 };
 
 const service: ScriptingService = defineServiceModule({
-    clients: client,
+    clients: {
+        default: {
+            basePath: '/scripting',
+            useRBAC: true
+        }
+    },
     endpoints
 });
 

@@ -4,12 +4,12 @@ import useDeletePlugin from '@/modules/plugin/hooks/plugin/use-delete-plugin';
 import useExportPlugin from '@/modules/plugin/hooks/plugin/use-export-plugin';
 import useImportPlugin from '@/modules/plugin/hooks/plugin/use-import-plugin';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
+import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { PluginStatus } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import Button from '@/shared/presentation/components/Button';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import usePermission from '@/shared/presentation/hooks/use-permission';
 import useTip from '@/shared/tips/use-tip';
 import { dateColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
@@ -57,8 +57,9 @@ const PluginsListing = () => {
     const importInputRef = useRef<HTMLInputElement>(null);
     const [isImporting, setIsImporting] = useState(false);
     const selectedTeam = useSelectedTeam()!;
-    const canCreate = usePermission(['plugin:create']);
-    const canUpdate = usePermission(['plugin:update']);
+    const { canAccess } = useTeamPermissions();
+    const canCreate = canAccess(['plugin:create']);
+    const canUpdate = canAccess(['plugin:update']);
 
     const clonePluginMutation = useClonePluginMutation();
     const updatePluginMutation = useUpdatePluginMutation();

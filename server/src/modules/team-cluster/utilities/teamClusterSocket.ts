@@ -3,6 +3,12 @@ import {
     TeamClusterServiceExposureStatus,
     type TeamClusterServiceExposure
 } from '@modules/team-cluster/domain/contracts/TeamClusterServiceExposure';
+import {
+    TEAM_CLUSTER_DAEMON_COMMAND,
+    TEAM_CLUSTER_DAEMON_EVENT,
+    TEAM_CLUSTER_EVENT,
+    TEAM_CLUSTER_REMOTE_EXPLORER_COMMAND
+} from '@shared/infrastructure/contracts/team-cluster';
 
 export enum TeamClusterDaemonResponseType {
     Json = 'json',
@@ -14,6 +20,11 @@ export enum TeamClusterDaemonSessionKind {
     Terminal = 'terminal',
     Tunnel = 'tunnel',
     WebSocket = 'websocket'
+};
+
+export enum TeamClusterDaemonTerminalTarget {
+    Container = 'container',
+    Host = 'host'
 };
 
 export enum TeamClusterTunnelSessionStatus {
@@ -33,6 +44,14 @@ export interface TeamClusterDaemonRegisterPayload {
 
 export interface TeamClusterDaemonRegisteredPayload {
     teamClusterId: string;
+};
+
+export interface TeamClusterDaemonSessionAttachPayload {
+    sessionId: string;
+    kind: TeamClusterDaemonSessionKind;
+    terminalTarget?: TeamClusterDaemonTerminalTarget;
+    containerId?: string;
+    targetUrl?: string;
 };
 
 export interface TeamClusterDaemonCommandMessage {
@@ -226,11 +245,18 @@ export type {
     TeamClusterServiceExposure
 };
 
-export const TEAM_CLUSTER_LIFECYCLE_EVENT = 'team-cluster.updated';
+export {
+    TEAM_CLUSTER_DAEMON_COMMAND,
+    TEAM_CLUSTER_DAEMON_EVENT,
+    TEAM_CLUSTER_EVENT,
+    TEAM_CLUSTER_REMOTE_EXPLORER_COMMAND
+};
+
+export const TEAM_CLUSTER_LIFECYCLE_EVENT = TEAM_CLUSTER_EVENT.lifecycleUpdated;
 export const TEAM_CLUSTER_SUBSCRIPTION_EVENT = 'subscribe_to_team_cluster';
-export const TEAM_CLUSTER_DAEMON_REGISTER_EVENT = 'team-cluster-daemon:register';
-export const TEAM_CLUSTER_DAEMON_REGISTERED_EVENT = 'team-cluster-daemon:registered';
-export const TEAM_CLUSTER_DAEMON_MESSAGE_EVENT = 'team-cluster-daemon:message';
+export const TEAM_CLUSTER_DAEMON_REGISTER_EVENT = TEAM_CLUSTER_DAEMON_EVENT.register;
+export const TEAM_CLUSTER_DAEMON_REGISTERED_EVENT = TEAM_CLUSTER_DAEMON_EVENT.registered;
+export const TEAM_CLUSTER_DAEMON_MESSAGE_EVENT = TEAM_CLUSTER_DAEMON_EVENT.message;
 
 export const getTeamClusterRoom = (teamClusterId: string): string => {
     return `team-cluster:${teamClusterId}`;

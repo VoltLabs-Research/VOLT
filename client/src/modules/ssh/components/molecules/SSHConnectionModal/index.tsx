@@ -4,10 +4,10 @@ import { createSSHConnectionSchema, defaultValues } from '@/modules/ssh/utilitie
 import SSHConnectionTestButton from '@/modules/ssh/components/atoms/SSHConnectionTestButton';
 import SSHConnectionForm from '@/modules/ssh/components/molecules/SSHConnectionForm';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Modal from '@/shared/presentation/components/Modal';
-import useModalForm from '@/shared/presentation/hooks/use-modal-form';
-import useZodForm from '@/shared/presentation/hooks/use-zod-form';
+import Modal, { resetModal } from '@/shared/presentation/components/Modal';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 import type { CreateSSHConnectionParams } from '@/modules/ssh/api/dtos/create-ssh-connection';
 import type { SSHConnection } from '@/modules/ssh/api/entities/ssh-connection';
 import type { UpdateSSHConnectionParams } from '@/modules/ssh/api/dtos/update-ssh-connection';
@@ -25,14 +25,9 @@ interface SSHConnectionModalProps {
 const SSHConnectionModal = ({ connection, mode, onSuccess }: SSHConnectionModalProps) => {
     const createConnection = useCreateSSHConnectionMutation();
     const updateConnection = useUpdateSSHConnectionMutation();
-    const form = useZodForm<SSHConnectionFormData>({
-        schema: createSSHConnectionSchema(mode),
+    const form = useForm<SSHConnectionFormData>({
+        resolver: zodResolver(createSSHConnectionSchema(mode)),
         defaultValues
-    });
-
-    const modalForm = useModalForm({
-        modalId: SSH_CONNECTION_MODAL_ID,
-        reset: () => form.reset(defaultValues)
     });
 
     useEffect(() => {
@@ -85,7 +80,7 @@ const SSHConnectionModal = ({ connection, mode, onSuccess }: SSHConnectionModalP
             error: { title: 'Failed to save connection' }
         });
 
-        modalForm.close();
+        resetModal(SSH_CONNECTION_MODAL_ID, () => form.reset(defaultValues));
         onSuccess?.();
     };
 

@@ -1,7 +1,7 @@
 import { useTeamsQuery } from '@/modules/team/hooks/team/queries';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 interface UseTeamDataOptions {
     enabled?: boolean;
@@ -23,12 +23,6 @@ export default function useTeamData(options?: UseTeamDataOptions) {
     const teams = teamsQuery.data ?? [];
     const isTeamsLoading = teamsQuery.isLoading;
 
-    const teamsQueryRef = useRef(teamsQuery);
-    teamsQueryRef.current = teamsQuery;
-
-    const checkAccessDeniedErrorRef = useRef(checkAccessDeniedError);
-    checkAccessDeniedErrorRef.current = checkAccessDeniedError;
-
     useEffect(() => {
         if (!enabled) {
             return;
@@ -44,7 +38,7 @@ export default function useTeamData(options?: UseTeamDataOptions) {
     }, [teamsQuery.error, checkAccessDeniedError]);
 
     useEffect(() => {
-        if (!hasHydratedSelection || !teamsQuery.data) return;
+        if (!enabled || !hasHydratedSelection || !teamsQuery.data) return;
 
         if (teamsQuery.data.length === 0) {
             setSelectedTeamId(null);
@@ -71,30 +65,13 @@ export default function useTeamData(options?: UseTeamDataOptions) {
         if (teamToSelect && teamToSelect._id !== selectedTeamId) {
             setSelectedTeamId(teamToSelect._id);
         }
-    }, [confirmSelectedTeamId, hasHydratedSelection, pendingSelectedTeamId, teamsQuery.data, selectedTeamId, setSelectedTeamId]);
-
-    const fetchTeams = useCallback(async () => {
-        if (!enabled) {
-            return;
-        }
-
-        const result = await teamsQueryRef.current.refetch();
-        if (result.error) {
-            checkAccessDeniedErrorRef.current(result.error);
-        }
-    }, [enabled]);
-
-    const hydrateTeamAccess = useCallback(async (_teamId: string) => {
-        return;
-    }, []);
+    }, [confirmSelectedTeamId, enabled, hasHydratedSelection, pendingSelectedTeamId, teamsQuery.data, selectedTeamId, setSelectedTeamId]);
 
     return {
         teams,
         isTeamsLoading,
         selectedTeamId,
         hasHydratedSelection,
-        fetchTeams,
-        hydrateTeamAccess,
         accessDenied,
         accessDeniedMessage
     };

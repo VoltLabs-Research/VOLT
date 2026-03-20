@@ -20,6 +20,7 @@ interface DockerHostConfig {
 export interface DockerContainerConfig {
     Image: string;
     name: string;
+    User?: string;
     Env: string[];
     Labels?: Record<string, string>;
     ExposedPorts: Record<string, Record<string, never>>;
@@ -86,6 +87,7 @@ export const buildDockerContainerConfig = (
     const dockerConfig: DockerContainerConfig = {
         Image: options.image,
         name: options.name,
+        User: options.user,
         Env: formattedEnv,
         Labels: options.labels,
         ExposedPorts: exposedPorts,

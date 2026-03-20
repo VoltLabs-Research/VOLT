@@ -1,10 +1,12 @@
 import service from '../api/service';
 import {
     buildKeys,
-    createCachePolicy,
-    createManagedMutation,
+    createFolderResourceQueries,
+    createMutation,
     createQuery
 } from '@/shared/infrastructure/query';
+import queryClient from '@/shared/infrastructure/query/query-client';
+import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { CompileLatexDocumentParams } from '../api/dtos/compile-latex-document';
 import type { CreateLatexDocumentParams } from '../api/dtos/create-latex-document';
 import type { CreateLatexFileParams } from '../api/dtos/create-latex-file';
@@ -48,41 +50,64 @@ export const latexDocumentsQueryKey = KEYS.documents;
 export const latexDocumentQueryKey = KEYS.document;
 export const latexAssetsQueryKey = KEYS.assets;
 export const latexFilesQueryKey = KEYS.files;
-export const latexFoldersQueryKey = KEYS.folders;
-export const latexFolderQueryKey = KEYS.folder;
 
 export const latexDocumentsQuery = createQuery(KEYS.documents, service.listDocuments);
 export const latexDocumentQuery = createQuery(KEYS.document, service.getDocument);
 export const latexAssetsQuery = createQuery(KEYS.assets, service.listAssets);
 export const latexFilesQuery = createQuery(KEYS.files, service.listFiles);
-export const latexFoldersQuery = createQuery(KEYS.folders, service.listFolders);
-export const latexFolderQuery = createQuery(KEYS.folder, service.getFolder);
 
-const latexDocumentsCache = createCachePolicy<void>(() => KEYS.documents());
-const latexDocumentCache = createCachePolicy<GetLatexDocumentParams>((params) => KEYS.document(params));
-const latexAssetsCache = createCachePolicy<ListLatexAssetsParams>((params) => KEYS.assets(params));
-const latexFilesCache = createCachePolicy<ListLatexFilesParams>((params) => KEYS.files(params));
-const latexFoldersCache = createCachePolicy<void>(() => KEYS.folders());
-const latexFolderCache = createCachePolicy<GetLatexFolderParams>((params) => KEYS.folder(params));
+export const invalidateLatexDocumentsQuery = () => queryClient.invalidateQueries({ queryKey: KEYS.documents() });
+export const invalidateLatexDocumentQuery = (params: GetLatexDocumentParams) => latexDocumentQuery.invalidate(params);
+export const invalidateLatexAssetsQuery = (params: ListLatexAssetsParams) => latexAssetsQuery.invalidate(params);
+export const invalidateLatexFilesQuery = (params: ListLatexFilesParams) => latexFilesQuery.invalidate(params);
 
-export const invalidateLatexDocumentsQuery = () => latexDocumentsCache.invalidate(undefined);
-export const invalidateLatexDocumentQuery = (params: GetLatexDocumentParams) => latexDocumentCache.invalidate(params);
-export const invalidateLatexAssetsQuery = (params: ListLatexAssetsParams) => latexAssetsCache.invalidate(params);
-export const invalidateLatexFilesQuery = (params: ListLatexFilesParams) => latexFilesCache.invalidate(params);
-export const invalidateLatexFoldersQuery = () => latexFoldersCache.invalidate(undefined);
-export const invalidateLatexFolderQuery = (params: GetLatexFolderParams) => latexFolderCache.invalidate(params);
+const latexFolderQueries = createFolderResourceQueries<
+    LatexFolder,
+    PaginatedResponse<LatexFolder>,
+    ListLatexFoldersParams,
+    GetLatexFolderParams,
+    CreateLatexFolderParams,
+    UpdateLatexFolderParams,
+    DeleteLatexFolderParams
+>({
+    baseKey: 'latex-folder',
+    service: {
+        listFolders: service.listFolders,
+        getFolder: service.getFolder,
+        createFolder: service.createFolder,
+        updateFolder: service.updateFolder,
+        deleteFolder: service.deleteFolder
+    },
+    buildFolderParams: (folderId) => ({ folderId }),
+    afterUpdate: () => {
+        invalidateLatexDocumentsQuery();
+    },
+    afterDelete: () => {
+        invalidateLatexDocumentsQuery();
+    }
+});
 
-export const useDeleteLatexDocumentMutation = createManagedMutation<void, DeleteLatexDocumentParams>(
+export const latexFoldersQueryKey = latexFolderQueries.foldersQueryKey;
+export const latexFolderQueryKey = latexFolderQueries.folderQueryKey;
+export const latexFoldersQuery = latexFolderQueries.foldersQuery;
+export const latexFolderQuery = latexFolderQueries.folderQuery;
+export const invalidateLatexFoldersQuery = latexFolderQueries.invalidateFoldersQuery;
+export const invalidateLatexFolderQuery = latexFolderQueries.invalidateFolderQuery;
+export const useCreateLatexFolderMutation = latexFolderQueries.useCreateFolderMutation;
+export const useUpdateLatexFolderMutation = latexFolderQueries.useUpdateFolderMutation;
+export const useDeleteLatexFolderMutation = latexFolderQueries.useDeleteFolderMutation;
+
+export const useDeleteLatexDocumentMutation = createMutation<void, DeleteLatexDocumentParams>(
     service.deleteDocument,
     () => invalidateLatexDocumentsQuery()
 );
 
-export const useCreateLatexDocumentMutation = createManagedMutation<LatexDocument, CreateLatexDocumentParams>(
+export const useCreateLatexDocumentMutation = createMutation<LatexDocument, CreateLatexDocumentParams>(
     service.createDocument,
     () => invalidateLatexDocumentsQuery()
 );
 
-export const useUpdateLatexDocumentMutation = createManagedMutation<LatexDocument, UpdateLatexDocumentParams>(
+export const useUpdateLatexDocumentMutation = createMutation<LatexDocument, UpdateLatexDocumentParams>(
     service.updateDocument,
     (_data, variables) => {
         invalidateLatexDocumentsQuery();
@@ -90,82 +115,59 @@ export const useUpdateLatexDocumentMutation = createManagedMutation<LatexDocumen
     }
 );
 
-export const useMoveLatexDocumentMutation = createManagedMutation<LatexDocument, MoveLatexDocumentParams>(
+export const useMoveLatexDocumentMutation = createMutation<LatexDocument, MoveLatexDocumentParams>(
     service.moveDocument,
     () => invalidateLatexDocumentsQuery()
 );
 
-export const useCreateLatexFolderMutation = createManagedMutation<LatexFolder, CreateLatexFolderParams>(
-    service.createFolder,
-    () => invalidateLatexFoldersQuery()
-);
-
-export const useUpdateLatexFolderMutation = createManagedMutation<LatexFolder, UpdateLatexFolderParams>(
-    service.updateFolder,
-    (_data, variables) => {
-        invalidateLatexFoldersQuery();
-        invalidateLatexDocumentsQuery();
-        invalidateLatexFolderQuery({ folderId: variables.folderId });
-    }
-);
-
-export const useDeleteLatexFolderMutation = createManagedMutation<void, DeleteLatexFolderParams>(
-    service.deleteFolder,
-    (_data, variables) => {
-        invalidateLatexFoldersQuery();
-        invalidateLatexDocumentsQuery();
-        invalidateLatexFolderQuery({ folderId: variables.folderId });
-    }
-);
-
-export const useUploadLatexAssetMutation = createManagedMutation<UploadLatexAssetsResult, UploadLatexAssetParams>(
+export const useUploadLatexAssetMutation = createMutation<UploadLatexAssetsResult, UploadLatexAssetParams>(
     service.uploadAsset,
     (_data, variables) => invalidateLatexAssetsQuery({ documentId: variables.documentId })
 );
 
-export const useDeleteLatexAssetMutation = createManagedMutation<void, DeleteLatexAssetParams>(
+export const useDeleteLatexAssetMutation = createMutation<void, DeleteLatexAssetParams>(
     service.deleteAsset,
     (_data, variables) => invalidateLatexAssetsQuery({ documentId: variables.documentId })
 );
 
-export const useUpdateLatexAssetMutation = createManagedMutation<LatexAsset, UpdateLatexAssetParams>(
+export const useUpdateLatexAssetMutation = createMutation<LatexAsset, UpdateLatexAssetParams>(
     service.updateAsset,
     (_data, variables) => invalidateLatexAssetsQuery({ documentId: variables.documentId })
 );
 
-export const useExportLatexDocumentTexMutation = createManagedMutation<Blob, ExportLatexDocumentParams>(
+export const useExportLatexDocumentTexMutation = createMutation<Blob, ExportLatexDocumentParams>(
     service.exportDocumentTex
 );
 
-export const useExportLatexDocumentZipMutation = createManagedMutation<Blob, ExportLatexDocumentParams>(
+export const useExportLatexDocumentZipMutation = createMutation<Blob, ExportLatexDocumentParams>(
     service.exportDocumentZip
 );
 
-export const useImportLatexDocumentMutation = createManagedMutation<ImportLatexDocumentResult, ImportLatexDocumentParams>(
+export const useImportLatexDocumentMutation = createMutation<ImportLatexDocumentResult, ImportLatexDocumentParams>(
     service.importDocument,
     () => invalidateLatexDocumentsQuery()
 );
 
-export const useCompileLatexDocumentMutation = createManagedMutation<Blob, CompileLatexDocumentParams>(
+export const useCompileLatexDocumentMutation = createMutation<Blob, CompileLatexDocumentParams>(
     service.compileDocument
 );
 
-export const useCreateLatexFileMutation = createManagedMutation<LatexFile, CreateLatexFileParams>(
+export const useCreateLatexFileMutation = createMutation<LatexFile, CreateLatexFileParams>(
     service.createFile,
     (_data, variables) => invalidateLatexFilesQuery({ documentId: variables.documentId })
 );
 
-export const useUpdateLatexFileMutation = createManagedMutation<LatexFile, UpdateLatexFileParams>(
+export const useUpdateLatexFileMutation = createMutation<LatexFile, UpdateLatexFileParams>(
     service.updateFile,
     (_data, variables) => invalidateLatexFilesQuery({ documentId: variables.documentId })
 );
 
-export const useDeleteLatexFileMutation = createManagedMutation<void, DeleteLatexFileParams>(
+export const useDeleteLatexFileMutation = createMutation<void, DeleteLatexFileParams>(
     service.deleteFile,
     (_data, variables) => invalidateLatexFilesQuery({ documentId: variables.documentId })
 );
 
-export const useSetLatexFileEntrypointMutation = createManagedMutation<LatexFile, SetLatexFileEntrypointParams>(
+export const useSetLatexFileEntrypointMutation = createMutation<LatexFile, SetLatexFileEntrypointParams>(
     service.setFileEntrypoint,
     (_data, variables) => invalidateLatexFilesQuery({ documentId: variables.documentId })
 );

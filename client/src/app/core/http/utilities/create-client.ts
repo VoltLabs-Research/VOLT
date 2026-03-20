@@ -1,7 +1,8 @@
 import { tokenStorage } from '@/shared/auth/token-storage';
+import { createInstrumentedHttpClient, DEFAULT_HTTP_TIMEOUT_MS } from './client-instrumentation';
 import { buildBackendUrl } from './backend-origin';
-import { AxiosHttpClient, createVoltClient, dynamicToken } from '@voltstack/voltclient';
-import type { VoltClient, VoltClientOptions } from '@voltstack/voltclient';
+import { VoltClient, dynamicToken } from '@voltstack/voltclient';
+import type { VoltClientOptions } from '@voltstack/voltclient';
 
 export type CreateApiClientOptions = VoltClientOptions;
 
@@ -13,21 +14,17 @@ const credential = dynamicToken(getStoredToken);
 const apiBaseUrl = buildBackendUrl('/api');
 
 /**
- * Shared Axios HTTP adapter for the frontend.
+ * Shared HTTP adapter for the frontend.
  * Kept app-side because some browser-only flows need raw HTTP access
  * without going through a scoped `VoltClient`.
  */
-export const http = new AxiosHttpClient({
+export const http = createInstrumentedHttpClient({
     baseUrl: apiBaseUrl,
     credential,
-    timeout: 0
+    timeout: DEFAULT_HTTP_TIMEOUT_MS
 });
 
-const rootApiClient = createVoltClient(apiBaseUrl, {
-    adapter: 'axios',
-    credential,
-    timeout: 0
-});
+const rootApiClient = new VoltClient(http, '');
 
 /**
  * Module-level RBAC teamId resolver used as a fallback for all RBAC-enabled clients.

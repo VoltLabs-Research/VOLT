@@ -5,6 +5,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { GetTrajectoryPreviewInputDTO, GetTrajectoryPreviewOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryPreviewDTO';
 import { getTrajectoryRasterPreviewsPrefix } from '@modules/raster/utilities/raster-storage-paths';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Result } from '@shared/domain/port/Result';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
@@ -73,7 +74,7 @@ export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajecto
         trajectoryId: string
     ): Promise<GetTrajectoryPreviewOutputDTO | null> {
         const prefix = getTrajectoryRasterPreviewsPrefix(trajectoryId);
-        const result = await this.teamClusterDaemonClient.command<ObjectListResponse>(teamClusterId, 'object.list', {
+        const result = await this.teamClusterDaemonClient.command<ObjectListResponse>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.object.list, {
             bucket: SYS_BUCKETS.RASTERIZER,
             prefix
         });
@@ -86,7 +87,7 @@ export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajecto
             return null;
         }
 
-        const stream = await this.teamClusterDaemonClient.commandStream(teamClusterId, 'object.get', {
+        const stream = await this.teamClusterDaemonClient.commandStream(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.object.get, {
             bucket: SYS_BUCKETS.RASTERIZER,
             objectKey: previewKey
         });

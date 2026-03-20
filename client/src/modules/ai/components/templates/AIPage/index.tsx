@@ -5,10 +5,10 @@ import AIConversationThread from '@/modules/ai/components/organisms/AIConversati
 import ResizeHandle from '@/modules/canvas/components/atoms/ResizeHandle';
 import useResizable from '@/modules/canvas/hooks/use-resizable';
 import useAIPage from '@/modules/ai/hooks/use-ai-page';
+import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import usePermission from '@/shared/presentation/hooks/use-permission';
 import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -27,6 +27,7 @@ const AIPage = () => {
 
     const navigate = useNavigate();
     const { conversationId } = useParams<AIPageRouteParams>();
+    const { canAccess } = useTeamPermissions();
     const [messageDraft, setMessageDraft] = useState('');
     const [openArtifact, setOpenArtifact] = useState<AIMessageArtifact | null>(null);
     const didCollapseSidebar = useRef(false);
@@ -66,9 +67,9 @@ const AIPage = () => {
         handleSendMessage,
         loadConversationMessages
     } = useAIPage(conversationId);
-    const canCreate = usePermission(['ai-conversation:create']);
-    const canUpdate = usePermission(['ai-conversation:update']);
-    const canDelete = usePermission(['ai-conversation:delete']);
+    const canCreate = canAccess(['ai-conversation:create']);
+    const canUpdate = canAccess(['ai-conversation:update']);
+    const canDelete = canAccess(['ai-conversation:delete']);
 
     const modelOptions: SelectOption[] = useMemo(() => {
         return availableModelsForProvider.map((model) => ({

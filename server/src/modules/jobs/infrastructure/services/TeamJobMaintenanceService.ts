@@ -1,4 +1,5 @@
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import type IORedis from 'ioredis';
@@ -65,7 +66,7 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         const { daemonJobs, localJobs } = this.partitionVisibleJobs(teamJobs);
         const localCleanupTargets = await this.collectLocalCleanupTargets(teamId, localJobs);
         const daemonResult = await this.callPerCluster(this.groupJobsByCluster(daemonJobs), (teamClusterId, jobIds) => {
-            return this.teamClusterDaemonClient.command<ClusterActionResponse>(teamClusterId, 'jobs.clear-history', {
+            return this.teamClusterDaemonClient.command<ClusterActionResponse>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.jobs.clearHistory, {
                 teamId,
                 jobIds
             });
@@ -94,7 +95,7 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         const { daemonJobs, localJobs } = this.partitionVisibleJobs(runningJobs);
         const localCleanupTargets = await this.collectLocalCleanupTargets(teamId, localJobs, 'running');
         const daemonResult = await this.callPerCluster(this.groupJobsByCluster(daemonJobs), (teamClusterId, jobIds) => {
-            return this.teamClusterDaemonClient.command<ClusterActionResponse>(teamClusterId, 'jobs.remove-running', {
+            return this.teamClusterDaemonClient.command<ClusterActionResponse>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.jobs.removeRunning, {
                 jobIds
             });
         }, {
@@ -132,7 +133,7 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         const { daemonJobs } = this.partitionVisibleJobs(failedJobs);
         const retryableDaemonJobs = daemonJobs.filter((job) => this.isRetryableDaemonJob(job));
         const daemonResult = await this.callPerCluster(this.groupJobsByCluster(retryableDaemonJobs), (teamClusterId, jobIds) => {
-            return this.teamClusterDaemonClient.command<ClusterActionResponse>(teamClusterId, 'jobs.retry', {
+            return this.teamClusterDaemonClient.command<ClusterActionResponse>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.jobs.retry, {
                 jobIds
             });
         });

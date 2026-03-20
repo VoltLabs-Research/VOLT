@@ -1539,7 +1539,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
+                  - $ref: '#/components/schemas/PaginatedResponse'
                   - type: object
                     properties:
                       data:
@@ -1669,7 +1669,7 @@ paths:
       tags:
         - Containers
       summary: Delete a folder
-      description: Delete an existing container folder.
+      description: Recursively delete an existing container folder and all nested folders and containers it contains.
       operationId: deleteContainerFolder
       security:
         - BearerAuth: []
@@ -2352,13 +2352,26 @@ paths:
           $ref: '#/components/responses/Forbidden'
   /api/trajectories/{teamId}/folders:
     get:
-      operationId: listFolders
+      operationId: listTrajectoryFolders
       tags:
         - Trajectories
       summary: List folders
-      description: Returns all trajectory folders for the specified team.
+      description: Returns a paginated list of trajectory folders for the specified team.
       parameters:
         - $ref: '#/components/parameters/TeamId'
+        - name: page
+          in: query
+          description: Page number for pagination.
+          schema:
+            type: integer
+            minimum: 1
+        - name: limit
+          in: query
+          description: Number of items per page (max 500).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
         - name: parentId
           in: query
           description: Filter by parent folder ID. Omit to list root-level folders.
@@ -2371,7 +2384,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
+                  - $ref: '#/components/schemas/PaginatedResponse'
                   - type: object
                     properties:
                       data:
@@ -2385,7 +2398,7 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
     post:
-      operationId: createFolder
+      operationId: createTrajectoryFolder
       tags:
         - Trajectories
       summary: Create a folder
@@ -2399,11 +2412,11 @@ paths:
             schema:
               type: object
               required:
-                - name
+                - title
               properties:
-                name:
+                title:
                   type: string
-                  description: Name of the folder
+                  description: Title of the folder
                 parentId:
                   type:
                     - string
@@ -2429,7 +2442,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
   /api/trajectories/{teamId}/folders/{folderId}:
     get:
-      operationId: getFolder
+      operationId: getTrajectoryFolder
       tags:
         - Trajectories
       summary: Get a folder
@@ -2463,11 +2476,11 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
     patch:
-      operationId: updateFolder
+      operationId: updateTrajectoryFolder
       tags:
         - Trajectories
       summary: Update a folder
-      description: Updates the name or parent of an existing folder.
+      description: Updates the title of an existing folder.
       parameters:
         - $ref: '#/components/parameters/TeamId'
         - name: folderId
@@ -2482,15 +2495,12 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - title
               properties:
-                name:
+                title:
                   type: string
-                  description: Updated folder name
-                parentId:
-                  type:
-                    - string
-                    - 'null'
-                  description: Updated parent folder ID, or null to move to root
+                  description: Updated folder title
       responses:
         '200':
           description: Folder updated successfully
@@ -2512,11 +2522,11 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
-      operationId: deleteFolder
+      operationId: deleteTrajectoryFolder
       tags:
         - Trajectories
       summary: Delete a folder
-      description: Deletes a folder. Trajectories within the folder may be moved to the parent folder or deleted depending on server configuration.
+      description: Recursively deletes a folder and all nested folders and trajectories it contains.
       parameters:
         - $ref: '#/components/parameters/TeamId'
         - name: folderId
@@ -4504,8 +4514,8 @@ paths:
             schema:
               $ref: '#/components/schemas/TriggerRasterizationRequest'
       responses:
-        '201':
-          description: Rasterization job triggered
+        '202':
+          description: Rasterization request accepted
           content:
             application/json:
               schema:
@@ -4514,7 +4524,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/RasterJob'
+                        $ref: '#/components/schemas/TriggerRasterizationSummary'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -4523,6 +4533,18 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: Equivalent rasterization jobs are already queued or running for this trajectory
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Failed to trigger rasterization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/rasters/{teamId}/{trajectoryId}/metadata:
     get:
       tags:
@@ -4544,13 +4566,19 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/RasterMetadata'
+                        $ref: '#/components/schemas/GetRasterMetadataResult'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          description: Failed to retrieve raster metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/rasters/{teamId}/{trajectoryId}/frames/{timestep}:
     get:
       tags:
@@ -6326,11 +6354,26 @@ paths:
       tags:
         - LaTeX
       summary: List LaTeX folders
-      description: Returns all LaTeX folders for the specified team.
+      description: Returns a paginated list of LaTeX folders for the specified team.
       parameters:
-        - name: teamId
-          in: path
-          required: true
+        - $ref: '#/components/parameters/TeamId'
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+        - name: parentId
+          in: query
+          required: false
+          description: Filter folders by parent folder ID.
           schema:
             type: string
       responses:
@@ -6340,7 +6383,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
+                  - $ref: '#/components/schemas/PaginatedResponse'
                   - type: object
                     properties:
                       data:
@@ -6362,11 +6405,7 @@ paths:
       summary: Create LaTeX folder
       description: Creates a new folder for organizing LaTeX documents.
       parameters:
-        - name: teamId
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/TeamId'
       requestBody:
         required: true
         content:
@@ -6374,9 +6413,9 @@ paths:
             schema:
               type: object
               required:
-                - name
+                - title
               properties:
-                name:
+                title:
                   type: string
                 parentId:
                   type:
@@ -6408,11 +6447,7 @@ paths:
       summary: Get LaTeX folder
       description: Returns a single LaTeX folder by its unique identifier.
       parameters:
-        - name: teamId
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/TeamId'
         - name: folderId
           in: path
           required: true
@@ -6443,13 +6478,9 @@ paths:
       tags:
         - LaTeX
       summary: Update LaTeX folder
-      description: Updates the specified LaTeX folder.
+      description: Updates the title of the specified LaTeX folder.
       parameters:
-        - name: teamId
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/TeamId'
         - name: folderId
           in: path
           required: true
@@ -6461,8 +6492,10 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - title
               properties:
-                name:
+                title:
                   type: string
       responses:
         '200':
@@ -6489,13 +6522,9 @@ paths:
       tags:
         - LaTeX
       summary: Delete LaTeX folder
-      description: Permanently deletes the specified LaTeX folder and moves its contents to root.
+      description: Permanently deletes the specified LaTeX folder and recursively deletes all nested folders and documents it contains.
       parameters:
-        - name: teamId
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/TeamId'
         - name: folderId
           in: path
           required: true
@@ -6602,11 +6631,26 @@ paths:
       tags:
         - Whiteboards
       summary: List whiteboard folders
-      description: Returns all whiteboard folders for the specified team.
+      description: Returns a paginated list of whiteboard folders for the specified team.
       parameters:
-        - name: teamId
-          in: path
-          required: true
+        - $ref: '#/components/parameters/TeamId'
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+        - name: parentId
+          in: query
+          required: false
+          description: Filter folders by parent folder ID.
           schema:
             type: string
       responses:
@@ -6616,7 +6660,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
+                  - $ref: '#/components/schemas/PaginatedResponse'
                   - type: object
                     properties:
                       data:
@@ -6638,11 +6682,7 @@ paths:
       summary: Create whiteboard folder
       description: Creates a new folder for organizing whiteboards.
       parameters:
-        - name: teamId
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/TeamId'
       requestBody:
         required: true
         content:
@@ -6650,9 +6690,9 @@ paths:
             schema:
               type: object
               required:
-                - name
+                - title
               properties:
-                name:
+                title:
                   type: string
                 parentId:
                   type:
@@ -6684,11 +6724,7 @@ paths:
       summary: Get whiteboard folder
       description: Returns a single whiteboard folder by its unique identifier.
       parameters:
-        - name: teamId
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/TeamId'
         - name: folderId
           in: path
           required: true
@@ -6719,13 +6755,9 @@ paths:
       tags:
         - Whiteboards
       summary: Update whiteboard folder
-      description: Updates the specified whiteboard folder.
+      description: Updates the title of the specified whiteboard folder.
       parameters:
-        - name: teamId
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/TeamId'
         - name: folderId
           in: path
           required: true
@@ -6737,8 +6769,10 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - title
               properties:
-                name:
+                title:
                   type: string
       responses:
         '200':
@@ -6765,13 +6799,9 @@ paths:
       tags:
         - Whiteboards
       summary: Delete whiteboard folder
-      description: Permanently deletes the specified whiteboard folder and moves its contents to root.
+      description: Permanently deletes the specified whiteboard folder and recursively deletes all nested folders and whiteboards it contains.
       parameters:
-        - name: teamId
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/TeamId'
         - name: folderId
           in: path
           required: true
@@ -8287,7 +8317,15 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/TeamCluster'
+                        type: object
+                        required:
+                          - teamCluster
+                          - enrollmentToken
+                        properties:
+                          teamCluster:
+                            $ref: '#/components/schemas/TeamCluster'
+                          enrollmentToken:
+                            type: string
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -9999,25 +10037,10 @@ components:
           type: string
           format: date-time
     ContainerFolder:
-      type: object
-      description: A folder used to organize containers
-      properties:
-        id:
-          type: string
-        teamId:
-          type: string
-        title:
-          type: string
-        parentId:
-          type:
-            - string
-            - 'null'
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
+      allOf:
+        - $ref: '#/components/schemas/Folder'
+        - type: object
+          description: A folder used to organize containers
     ContainerFile:
       type: object
       description: A file or directory entry inside a container
@@ -10361,8 +10384,6 @@ components:
       required:
         - min
         - max
-        - mean
-        - median
       properties:
         min:
           type: number
@@ -10370,12 +10391,6 @@ components:
         max:
           type: number
           description: Maximum value across all atoms
-        mean:
-          type: number
-          description: Mean value across all atoms
-        median:
-          type: number
-          description: Median value across all atoms
     ParticleFilterProperty:
       type: object
       required:
@@ -10449,21 +10464,17 @@ components:
       type: object
       required:
         - _id
-        - name
-        - teamId
+        - title
         - createdAt
         - updatedAt
       properties:
         _id:
           type: string
           description: Unique identifier of the folder
-        name:
+        title:
           type: string
-          description: Display name of the folder
-        teamId:
-          type: string
-          description: ID of the team that owns this folder
-        parentId:
+          description: Display title of the folder
+        parent:
           type:
             - string
             - 'null'
@@ -10700,8 +10711,26 @@ components:
       type: object
       properties:
         config:
-          description: Optional rasterization configuration
+          type: object
+          description: Optional rasterization configuration as a JSON object.
+          additionalProperties: true
       additionalProperties: false
+    TriggerRasterizationSummary:
+      type: object
+      description: Summary of the rasterization trigger result
+      properties:
+        trajectoryId:
+          $ref: '#/components/schemas/ObjectId'
+        triggered:
+          type: boolean
+        queuedJobs:
+          type: integer
+        duplicateJobs:
+          type: integer
+        skippedJobs:
+          type: integer
+        alreadyRasterizedJobs:
+          type: integer
     RasterJob:
       type: object
       description: A rasterization job
@@ -10721,15 +10750,34 @@ components:
       properties:
         trajectoryId:
           $ref: '#/components/schemas/ObjectId'
-        frameCount:
+        totalFrames:
           type: integer
-        resolution:
-          type: object
-          properties:
-            width:
-              type: integer
-            height:
-              type: integer
+        rasterizedFrames:
+          type: integer
+        status:
+          $ref: '#/components/schemas/RasterMetadataStatus'
+        trajectory:
+          anyOf:
+            - $ref: '#/components/schemas/RasterTrajectoryMetadata'
+            - type: 'null'
+        analyses:
+          type: array
+          items:
+            $ref: '#/components/schemas/RasterAnalysisMetadata'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    GetRasterMetadataResult:
+      type: object
+      description: Wrapped raster metadata payload
+      properties:
+        metadata:
+          anyOf:
+            - $ref: '#/components/schemas/RasterMetadata'
+            - type: 'null'
     Notebook:
       type: object
       description: A scripting notebook
@@ -12530,3 +12578,43 @@ components:
             - string
             - 'null'
         data: {}
+    RasterMetadataStatus:
+      type: string
+      enum:
+        - pending
+        - processing
+        - completed
+        - failed
+    RasterTrajectoryMetadata:
+      type: object
+      properties:
+        availableTimesteps:
+          type: array
+          items:
+            type: integer
+    RasterFrameMetadata:
+      type: object
+      properties:
+        timestep:
+          type: integer
+        availableModels:
+          type: array
+          items:
+            type: string
+    RasterAnalysisMetadata:
+      type: object
+      properties:
+        analysisId:
+          $ref: '#/components/schemas/ObjectId'
+        totalFrames:
+          type: integer
+        rasterizedFrames:
+          type: integer
+        availableTimesteps:
+          type: array
+          items:
+            type: integer
+        frames:
+          type: array
+          items:
+            $ref: '#/components/schemas/RasterFrameMetadata'

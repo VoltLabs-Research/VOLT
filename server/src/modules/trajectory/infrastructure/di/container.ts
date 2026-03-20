@@ -27,7 +27,7 @@ import TrajectoryBackgroundProcessor from '@modules/trajectory/infrastructure/se
 import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryDumpStorageService';
 import TrajectoryReader from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryReader';
 import TrajectoryUploadStagingService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryUploadStagingService';
-import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
+import { createClassBindings, registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
 import CreateTrajectoryFolderUseCase from '@modules/trajectory/application/use-cases/trajectory/CreateTrajectoryFolderUseCase';
 import DeleteTrajectoryFolderUseCase from '@modules/trajectory/application/use-cases/trajectory/DeleteTrajectoryFolderUseCase';
 import GetTrajectoryFolderUseCase from '@modules/trajectory/application/use-cases/trajectory/GetTrajectoryFolderUseCase';
@@ -37,11 +37,6 @@ import UpdateTrajectoryFolderUseCase from '@modules/trajectory/application/use-c
 import TrajectoryFolderRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFolderRepository';
 import TrajectoryPresenceSocketModule from '@modules/trajectory/infrastructure/socket/TrajectoryPresenceSocketModule';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-
-import type { ClassProvider } from 'tsyringe';
-import { container } from 'tsyringe';
-
-const TRAJECTORY_AI_TOOL_CLASSES: ClassProvider<unknown>[] = Object.values(trajectoryAiTools).map((useClass) => ({ useClass }));
 
 export const registerTrajectoryDependencies = (): void => {
     registerModuleDependencies({
@@ -80,16 +75,12 @@ export const registerTrajectoryDependencies = (): void => {
             GetTeamMetricsUseCase,
             UpdateTrajectoryFolderUseCase,
             JobStatusChangedEventHandler
+        ],
+        bindings: [
+            ...createClassBindings(AI_TOKENS.AITool, trajectoryAiTools)
+        ],
+        aliases: [
+            [SOCKET_TOKENS.SocketModule, TRAJECTORY_TOKENS.TrajectoryPresenceSocketModule]
         ]
-    });
-
-    // Register all AI Tools for discovery
-    for (const toolClassProvider of TRAJECTORY_AI_TOOL_CLASSES) {
-        container.register(AI_TOKENS.AITool, toolClassProvider);
-    }
-
-    // Register socket module for gateway discovery
-    container.register(SOCKET_TOKENS.SocketModule, {
-        useToken: TRAJECTORY_TOKENS.TrajectoryPresenceSocketModule
     });
 };

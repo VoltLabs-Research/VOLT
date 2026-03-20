@@ -8,6 +8,7 @@ import TeamClusterExposureRegistryService from '@modules/team-cluster/infrastruc
 import TeamClusterInstallManifestService from '@modules/team-cluster/infrastructure/services/TeamClusterInstallManifestService';
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
 import TeamClusterRemoteAccessSessionService from '@modules/team-cluster/infrastructure/services/TeamClusterRemoteAccessSessionService';
+import RemoteExplorerDaemonGateway from '@modules/team-cluster/infrastructure/services/RemoteExplorerDaemonGateway';
 import TeamClusterRemoteTerminalService from '@modules/team-cluster/infrastructure/services/TeamClusterRemoteTerminalService';
 import TeamClusterReverseChannelService from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
 import TeamClusterTcpExposureRelayService from '@modules/team-cluster/infrastructure/services/TeamClusterTcpExposureRelayService';
@@ -38,6 +39,7 @@ export const registerTeamClusterDependencies = () => {
             [TEAM_CLUSTER_TOKENS.TeamClusterExposureRegistryService, TeamClusterExposureRegistryService],
             [TEAM_CLUSTER_TOKENS.TeamClusterReverseChannelService, TeamClusterReverseChannelService],
             [TEAM_CLUSTER_TOKENS.TeamClusterRemoteAccessSessionService, TeamClusterRemoteAccessSessionService],
+            [TEAM_CLUSTER_TOKENS.RemoteExplorerDaemonGateway, RemoteExplorerDaemonGateway],
             [TEAM_CLUSTER_TOKENS.TeamClusterRemoteTerminalService, TeamClusterRemoteTerminalService],
             [TEAM_CLUSTER_TOKENS.TeamClusterTcpExposureRelayService, TeamClusterTcpExposureRelayService],
             [TEAM_CLUSTER_TOKENS.TeamClusterSocketModule, TeamClusterSocketModule],

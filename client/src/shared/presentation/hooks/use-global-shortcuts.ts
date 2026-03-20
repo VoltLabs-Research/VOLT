@@ -1,11 +1,11 @@
-import useAppHotkeys from './use-app-hotkeys';
+import { useHotkeys } from 'react-hotkeys-hook';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export const useGlobalShortcuts = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    useAppHotkeys(
+    useHotkeys(
         'escape',
         () => {
             if (location.pathname === '/start') {

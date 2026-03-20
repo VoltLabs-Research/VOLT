@@ -1,10 +1,10 @@
 import { useCallback, useState, useMemo, useEffect } from 'react';
+import { createNodeEditorForm } from '@/modules/plugin/components/plugin/molecules/NodeEditor/hooks/use-node-editor-form';
+import { Exporter } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { EXPORTER_OPTIONS, EXPORT_TYPE_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import CodeEditor from '@/shared/presentation/components/CodeEditor';
-import { createNodeEditorForm } from '@/shared/forms';
-import { EXPORTER_OPTIONS, EXPORT_TYPE_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
-import { Exporter } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import type { IExportData } from '@/modules/plugin/api/entities/plugin/workflow';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import type { EditorProps } from '../types';

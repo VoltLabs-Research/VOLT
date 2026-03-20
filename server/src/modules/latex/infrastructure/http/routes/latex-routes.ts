@@ -1,11 +1,13 @@
 import { Resource } from '@core/constants/resources';
 import latexControllers from '@modules/latex/infrastructure/http/controllers';
 import { upload } from '@shared/infrastructure/http/middleware/upload';
+import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 
 export default createHttpModule({
     basePath: '/api/latex/:teamId',
     resource: Resource.LATEX,
+    teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
         router.get('/documents', latexControllers.listDocuments.handle);
         router.post('/documents', latexControllers.createDocument.handle);

@@ -1,7 +1,7 @@
-import mongoose from 'mongoose';
-import { Schema } from 'mongoose';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import { teamRefField, trajectoryRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
+import { Schema } from 'mongoose';
+import mongoose from 'mongoose';
 import type { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
 import type { Document, Model } from 'mongoose';
 
@@ -85,7 +85,10 @@ const AnalysisSchema = new Schema<AnalysisDocument>({
     timestamps: true
 });
 
-AnalysisSchema.index({ plugin: 'text' });
+AnalysisSchema.index({ pluginDisplayName: 'text' });
+AnalysisSchema.index({ team: 1, createdAt: -1 });
+AnalysisSchema.index({ trajectory: 1, createdAt: -1 });
+AnalysisSchema.index({ plugin: 1, team: 1, trajectory: 1, teamCluster: 1 });
 
 const AnalysisModel: Model<AnalysisDocument> = mongoose.model<AnalysisDocument>('Analysis', AnalysisSchema);
 

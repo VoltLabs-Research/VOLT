@@ -2,12 +2,13 @@ import useTeamInvitationData from '@/modules/team/hooks/invitation/use-team-invi
 import { useCancelInvitationMutation, useSendInvitationMutation } from '@/modules/team/hooks/invitation/queries';
 import type { TeamInvitation } from '@/modules/team/api/entities/invitation/team-invitation';
 import type { InviteButtonState } from '../../components/atoms/InviteButton';
-import { ErrorSurface, isAccessDeniedError, normalizeError, reportError } from '@/shared/errors/core';
+import { ErrorSurface, getErrorMessage, isAccessDeniedError, isApiError, reportError } from '@/shared/errors/core';
 import { runAction } from '@/shared/presentation/actions/run-action';
-import useZodForm from '@/shared/presentation/hooks/use-zod-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import type { ChangeEvent } from 'react';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useForm } from 'react-hook-form';
 import { sileo } from 'sileo';
 import { teamInviteSchema } from './invite-panel-schema';
 import type { TeamInviteForm } from './invite-panel-schema';
@@ -47,8 +48,8 @@ export default function useInvitePanel(): UseInvitePanelReturn {
     const sendInvitation = useSendInvitationMutation();
     const cancelInvitation = useCancelInvitationMutation();
 
-    const form = useZodForm<TeamInviteForm>({
-        schema: teamInviteSchema,
+    const form = useForm<TeamInviteForm>({
+        resolver: zodResolver(teamInviteSchema),
         defaultValues: {
             email: ''
         }
@@ -123,7 +124,13 @@ export default function useInvitePanel(): UseInvitePanelReturn {
                 });
             }
 
-            form.setError('email', { message: normalizeError(error).friendlyMessage });
+            form.setError('email', {
+                message: isApiError(error)
+                    ? getErrorMessage(error.code, 'Failed to send invitation')
+                    : error instanceof Error && error.message.trim().length > 0
+                        ? error.message
+                        : 'Failed to send invitation'
+            });
             setButtonState('error');
             scheduleButtonReset(2000);
         }

@@ -12,7 +12,7 @@ import { IoChatbubblesOutline } from 'react-icons/io5';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import { openModal } from '@/shared/presentation/components/Modal';
-import useConfirm from '@/shared/presentation/hooks/use-confirm';
+import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import type { Chat } from '@/modules/chat/api/entities/chat';
 import type { ChatMessage } from '@/modules/chat/api/entities/message';
 import type { TypingUser } from '@/modules/chat/api/entities/shared/chat-events';
@@ -65,7 +65,6 @@ const ChatArea = ({
     onInfoClick
 }: ChatAreaProps) => {
     const [editingMessage, setEditingMessage] = useState<EditingMessage | null>(null);
-    const { confirm } = useConfirm();
 
     const handleEditClick = useCallback((message: ChatMessage) => {
         setEditingMessage({ _id: message._id, content: message.content });

@@ -1,6 +1,6 @@
 import { createConversationStreamTransport } from '../services/stream-transport';
 import service from '../api/service';
-import { buildKeys, createManagedMutation, createQuery, queryClient } from '@/shared/infrastructure/query';
+import { buildKeys, createMutation, createQuery, queryClient } from '@/shared/infrastructure/query';
 import type { AIConversation } from '@/modules/ai/api/entities/ai-conversation';
 import type { CreateAIConversationParams, CreateAIConversationResult } from '@/modules/ai/api/dtos/create-ai-conversation';
 import type {
@@ -106,7 +106,7 @@ export const invalidateConversationsQueries = () => {
 export const useCreateConversationMutation = (
     { conversationsQueryParams }: ConversationMutationOptions = {},
     options?: MutationOptions<CreateAIConversationResult, CreateAIConversationParams>
-) => createManagedMutation<CreateAIConversationResult, CreateAIConversationParams>(
+) => createMutation<CreateAIConversationResult, CreateAIConversationParams>(
     service.createConversation,
     ({ conversation }) => {
         patchConversations(conversationsQueryParams, (current) => ({
@@ -122,7 +122,7 @@ export const useCreateConversationMutation = (
 export const useDeleteConversationMutation = (
     { conversationsQueryParams }: ConversationMutationOptions = {},
     options?: MutationOptions<void, DeleteConversationVariables>
-) => createManagedMutation<void, DeleteConversationVariables>(
+) => createMutation<void, DeleteConversationVariables>(
     service.deleteConversation,
     (_data, variables) => {
         patchConversations(conversationsQueryParams, (current) => ({
@@ -135,7 +135,7 @@ export const useDeleteConversationMutation = (
 export const useRenameConversationMutation = (
     { conversationsQueryParams }: ConversationMutationOptions = {},
     options?: MutationOptions<AIConversation, UpdateConversationVariables>
-) => createManagedMutation<AIConversation, UpdateConversationVariables>(
+) => createMutation<AIConversation, UpdateConversationVariables>(
     service.updateConversation,
     (updatedConversation, variables) => {
         const updatedConversations = (current: PaginatedResponse<AIConversation>) => {

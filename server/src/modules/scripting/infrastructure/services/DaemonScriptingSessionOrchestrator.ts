@@ -4,6 +4,7 @@ import { buildJupyterProxyBasePath, buildJupyterProxyUrl } from '@modules/script
 import { JupyterNotebookService } from '@modules/scripting/infrastructure/services/JupyterNotebookService';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import logger from '@shared/infrastructure/logger';
@@ -90,7 +91,7 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
 
         const response = await this.teamClusterDaemonClient.command<DaemonNotebookSessionResponse>(
             teamClusterId,
-            'notebook.session.create',
+            TEAM_CLUSTER_DAEMON_COMMAND.notebook.session.create,
             request,
             { timeoutMs: 600_000 }
         );
@@ -129,7 +130,7 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
             try {
                 await this.teamClusterDaemonClient.command(
                     notebookTeamClusterId,
-                    'notebook.delete',
+                    TEAM_CLUSTER_DAEMON_COMMAND.notebook.delete,
                     {
                         notebookId: notebook.props.runtimeNotebookId
                     }

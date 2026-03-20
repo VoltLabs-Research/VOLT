@@ -1,6 +1,6 @@
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import { createNodeEditorForm } from '@/shared/forms';
+import { createNodeEditorForm } from '@/modules/plugin/components/plugin/molecules/NodeEditor/hooks/use-node-editor-form';
 import { CONTEXT_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
 import type { EditorProps } from '../types';
 import { contextEditorSchema, CONTEXT_EDITOR_DEFAULT_VALUES, type ContextEditorFormValues } from './schema';

@@ -5,7 +5,7 @@ import {
     resolvePostAuthDestination
 } from '@/modules/auth/services/post-auth-destination-storage';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
-import { ErrorSurface, isAccessDeniedError, normalizeError, reportError } from '@/shared/errors/core';
+import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
@@ -87,7 +87,10 @@ export default function TeamInvitationTemplate() {
                 }
             });
         } catch (actionError: unknown) {
-            setError(normalizeError(actionError).friendlyMessage);
+            setError(reportError(actionError, {
+                surface: ErrorSurface.Silent,
+                fallbackTitle: 'Failed to accept invitation'
+            }).title);
         }
     };
 
@@ -104,7 +107,10 @@ export default function TeamInvitationTemplate() {
                 }
             });
         } catch (actionError: unknown) {
-            setError(normalizeError(actionError).friendlyMessage);
+            setError(reportError(actionError, {
+                surface: ErrorSurface.Silent,
+                fallbackTitle: 'Failed to reject invitation'
+            }).title);
         }
     };
 

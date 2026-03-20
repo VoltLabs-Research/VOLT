@@ -1,5 +1,5 @@
 import { updateSocketAuthToken } from '@/modules/socket/core/services/socket-auth-session';
-import { buildKeys, createManagedMutation, createMutation, createQuery, withSuccess } from '@/shared/infrastructure/query';
+import { buildKeys, createMutation, createQuery, withSuccess } from '@/shared/infrastructure/query';
 import { registerPreservedQueryKey } from '@/shared/utils/app-cleanup-registry';
 import service from '../api/service';
 import queryClient from '@/shared/infrastructure/query/query-client';
@@ -32,24 +32,24 @@ export const clearCurrentUserQueryData = async () => {
     currentUser.clear(undefined);
 };
 
-export const useSignInMutation = createManagedMutation<SignInOutputDTO, SignInInputDTO>(
+export const useSignInMutation = createMutation<SignInOutputDTO, SignInInputDTO>(
     service.signIn,
     (data) => currentUser.set(undefined, data.user)
 );
 
-export const useSignUpMutation = createManagedMutation<SignUpOutputDTO, SignUpInputDTO>(
+export const useSignUpMutation = createMutation<SignUpOutputDTO, SignUpInputDTO>(
     service.signUp,
     (data) => currentUser.set(undefined, data.user)
 );
 
 export const useCheckEmailMutation = createMutation<CheckEmailOutputDTO, CheckEmailInputDTO>(service.checkEmail);
 
-export const useUpdateMeMutation = createManagedMutation<User, UpdateProfileInputDTO | UpdateAvatarInputDTO>(
+export const useUpdateMeMutation = createMutation<User, UpdateProfileInputDTO | UpdateAvatarInputDTO>(
     service.updateMe,
     (data) => currentUser.set(undefined, data)
 );
 
-export const useDeleteMeMutation = createManagedMutation<void, void>(
+export const useDeleteMeMutation = createMutation<void, void>(
     () => service.deleteMe({}),
     () => currentUser.clear(undefined)
 );

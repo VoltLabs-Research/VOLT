@@ -6,8 +6,7 @@ import { useUpdateTeamMutation } from '@/modules/team/hooks/team/queries';
 import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
 import { resolveTeamUserOnline } from '@/modules/team/utilities/member/presence';
 import { runAction } from '@/shared/presentation/actions/run-action';
-import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
-import useConfirm from '@/shared/presentation/hooks/use-confirm';
+import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import ActivityHeatmap from '@/modules/daily-activity/components/molecules/ActivityHeatmap';
 import ListingUserCell from '@/shared/presentation/components/ListingUserCell';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
@@ -77,7 +76,6 @@ export default function MyTeamTemplate() {
 
     const currentUser = useCurrentUser();
     const selectedTeam = useSelectedTeam()!;
-    const { confirm } = useConfirm();
     const { canAccess } = useTeamPermissions();
     const canInvite = canAccess(['team-invitation:create']);
 

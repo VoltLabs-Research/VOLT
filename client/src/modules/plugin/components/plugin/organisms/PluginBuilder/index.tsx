@@ -10,7 +10,7 @@ import Container from '@/shared/presentation/components/Container';
 import EditableTag from '@/shared/presentation/components/EditableTag';
 import Sidebar from '@/shared/presentation/components/Sidebar';
 import Tooltip from '@/shared/presentation/components/Tooltip';
-import useConfirm from '@/shared/presentation/hooks/use-confirm';
+import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
 import useTip from '@/shared/tips/use-tip';
 import { ArrowLeft } from 'lucide-react';
@@ -32,7 +32,6 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [shortcutsTipTrigger, setShortcutsTipTrigger] = useState(0);
     const saveStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const { confirm } = useConfirm();
 
     const { nodes, edges, updateNodeData, selectedNode, selectNode, deleteNode, addNode, undo, redo, getWorkflow } = usePluginBuilderStore(
         useShallow((state) => ({

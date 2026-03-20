@@ -4,8 +4,7 @@ import type { FolderBreadcrumbEntity } from '@/shared/presentation/hooks/use-fol
 import useFolderBreadcrumbs from '@/shared/presentation/hooks/use-folder-breadcrumbs';
 import useFolderSearchParam from '@/shared/presentation/hooks/use-folder-search-param';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
-import { runAction } from '@/shared/presentation/actions/run-action';
-import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
+import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import type { PromiseToastOptions } from '@/shared/presentation/toast-options';
 import { useCallback, useMemo, useState } from 'react';
@@ -180,29 +179,29 @@ const useFolderedListing = <
     const handleDeleteFolder = useCallback(async (folder: TFolder) => {
         const confirmConfig = getDeleteFolderConfirm(folder);
 
-        await runAction({
-            action: () => deleteFolder({ folderId: folder._id }),
-            confirm: {
-                title: confirmConfig.title,
-                description: confirmConfig.description,
-                confirmText: confirmConfig.confirmText ?? 'Delete Folder',
-                cancelText: confirmConfig.cancelText ?? 'Cancel',
-                tone: ConfirmActionTone.Danger
-            },
-            toast: deleteFolderToast,
-            afterSuccess: async () => {
-                setFolderRefreshKey((previousValue) => previousValue + 1);
-
-                if (currentFolderId === folder._id) {
-                    if (folder.parent) {
-                        openFolder(folder.parent);
-                        return;
-                    }
-
-                    goToRoot();
-                }
-            }
+        const isConfirmed = await confirm({
+            title: confirmConfig.title,
+            description: confirmConfig.description,
+            confirmText: confirmConfig.confirmText ?? 'Delete Folder',
+            cancelText: confirmConfig.cancelText ?? 'Cancel',
+            tone: ConfirmActionTone.Danger
         });
+
+        if (!isConfirmed) {
+            return;
+        }
+
+        await showPromise(deleteFolder({ folderId: folder._id }), deleteFolderToast);
+        setFolderRefreshKey((previousValue) => previousValue + 1);
+
+        if (currentFolderId === folder._id) {
+            if (folder.parent) {
+                openFolder(folder.parent);
+                return;
+            }
+
+            goToRoot();
+        }
     }, [currentFolderId, deleteFolder, deleteFolderToast, getDeleteFolderConfirm, goToRoot, openFolder]);
 
     const listMoveFolders = useCallback(async (folderId: string | null) => {

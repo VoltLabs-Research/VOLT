@@ -1,5 +1,5 @@
 get:
-  operationId: getFolder
+  operationId: getTrajectoryFolder
   tags:
   - Trajectories
   summary: Get a folder
@@ -33,11 +33,11 @@ get:
     '404':
       $ref: ../../components/responses/common.yaml#/NotFound
 patch:
-  operationId: updateFolder
+  operationId: updateTrajectoryFolder
   tags:
   - Trajectories
   summary: Update a folder
-  description: Updates the name or parent of an existing folder.
+  description: Updates the title of an existing folder.
   parameters:
   - $ref: ../../components/parameters/common.yaml#/TeamId
   - name: folderId
@@ -52,15 +52,12 @@ patch:
       application/json:
         schema:
           type: object
+          required:
+          - title
           properties:
-            name:
+            title:
               type: string
-              description: Updated folder name
-            parentId:
-              type:
-              - string
-              - 'null'
-              description: Updated parent folder ID, or null to move to root
+              description: Updated folder title
   responses:
     '200':
       description: Folder updated successfully
@@ -82,11 +79,11 @@ patch:
     '404':
       $ref: ../../components/responses/common.yaml#/NotFound
 delete:
-  operationId: deleteFolder
+  operationId: deleteTrajectoryFolder
   tags:
   - Trajectories
   summary: Delete a folder
-  description: Deletes a folder. Trajectories within the folder may be moved to the parent folder or deleted depending on server configuration.
+  description: Recursively deletes a folder and all nested folders and trajectories it contains.
   parameters:
   - $ref: ../../components/parameters/common.yaml#/TeamId
   - name: folderId

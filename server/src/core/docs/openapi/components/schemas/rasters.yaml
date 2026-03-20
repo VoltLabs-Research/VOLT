@@ -2,8 +2,26 @@ TriggerRasterizationRequest:
   type: object
   properties:
     config:
-      description: Optional rasterization configuration
+      type: object
+      description: Optional rasterization configuration as a JSON object.
+      additionalProperties: true
   additionalProperties: false
+TriggerRasterizationSummary:
+  type: object
+  description: Summary of the rasterization trigger result
+  properties:
+    trajectoryId:
+      $ref: common.yaml#/ObjectId
+    triggered:
+      type: boolean
+    queuedJobs:
+      type: integer
+    duplicateJobs:
+      type: integer
+    skippedJobs:
+      type: integer
+    alreadyRasterizedJobs:
+      type: integer
 RasterJob:
   type: object
   description: A rasterization job
@@ -17,18 +35,77 @@ RasterJob:
     createdAt:
       type: string
       format: date-time
+RasterMetadataStatus:
+  type: string
+  enum:
+  - pending
+  - processing
+  - completed
+  - failed
+RasterFrameMetadata:
+  type: object
+  properties:
+    timestep:
+      type: integer
+    availableModels:
+      type: array
+      items:
+        type: string
+RasterTrajectoryMetadata:
+  type: object
+  properties:
+    availableTimesteps:
+      type: array
+      items:
+        type: integer
+RasterAnalysisMetadata:
+  type: object
+  properties:
+    analysisId:
+      $ref: common.yaml#/ObjectId
+    totalFrames:
+      type: integer
+    rasterizedFrames:
+      type: integer
+    availableTimesteps:
+      type: array
+      items:
+        type: integer
+    frames:
+      type: array
+      items:
+        $ref: '#/RasterFrameMetadata'
 RasterMetadata:
   type: object
   description: Metadata for a rasterized trajectory
   properties:
     trajectoryId:
       $ref: common.yaml#/ObjectId
-    frameCount:
+    totalFrames:
       type: integer
-    resolution:
-      type: object
-      properties:
-        width:
-          type: integer
-        height:
-          type: integer
+    rasterizedFrames:
+      type: integer
+    status:
+      $ref: '#/RasterMetadataStatus'
+    trajectory:
+      anyOf:
+      - $ref: '#/RasterTrajectoryMetadata'
+      - type: 'null'
+    analyses:
+      type: array
+      items:
+        $ref: '#/RasterAnalysisMetadata'
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+GetRasterMetadataResult:
+  type: object
+  description: Wrapped raster metadata payload
+  properties:
+    metadata:
+      anyOf:
+      - $ref: '#/RasterMetadata'
+      - type: 'null'

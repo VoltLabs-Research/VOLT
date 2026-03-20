@@ -4,7 +4,7 @@ import { ParticleFilterSceneCombinator } from '@/modules/fractal/api/entities/sc
 import useFrameProperties from '@/modules/trajectory/hooks/particle-filter/use-frame-properties';
 import { buildPropertyOptions, resolvePropertySelection } from '@/modules/trajectory/hooks/particle-filter/use-property-selector.utilities';
 import { useApplyFilterMutation, uniqueValuesQuery, usePreviewFilterMutation } from '@/modules/trajectory/hooks/particle-filter/queries';
-import { ErrorSurface, isAccessDeniedError, normalizeError, reportError } from '@/shared/errors/core';
+import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { sileo } from 'sileo';
@@ -474,7 +474,10 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
             }));
             setPreviewResult(null);
         } catch (applyError: unknown) {
-            setError(normalizeError(applyError).friendlyMessage);
+            setError(reportError(applyError, {
+                surface: ErrorSurface.Silent,
+                fallbackTitle: 'Failed to apply filter'
+            }).title);
         }
     }, [previewResult, trajectoryId, currentTimestep, applyFilterMutation, analysisId, action, setActiveScene]);
 

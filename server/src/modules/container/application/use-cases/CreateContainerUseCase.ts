@@ -19,6 +19,7 @@ import { inject, injectable } from 'tsyringe';
 
 const VNC_PRIVATE_PORT = 5901;
 const VNC_PASSWORD_ENV_KEY = 'VNC_PW';
+const ROOT_CONTAINER_USER = 'root';
 const MB_PER_GB = 1024;
 
 @injectable()
@@ -42,6 +43,7 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
             binds: string[];
             groupAdd: string[];
             cmd?: string[];
+            user?: string;
         }
     ) {
         const sanitizedName = input.name.replace(/\s+/g, '-');
@@ -59,7 +61,8 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
             cpus: options.cpus,
             binds: options.binds,
             groupAdd: options.groupAdd,
-            cmd: options.cmd
+            cmd: options.cmd,
+            user: options.user
         };
     }
 
@@ -214,6 +217,7 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
         const memoryInMegabytes = memory || 512;
         const cpuCount = cpus || 1;
         const capabilities = this.resolveCapabilities(input);
+        const containerUser = capabilities?.vnc ? ROOT_CONTAINER_USER : undefined;
 
         await this.validateClusterResourceLimits(teamClusterId, memoryInMegabytes, cpuCount);
 
@@ -237,7 +241,8 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
             cpus: cpuCount,
             binds,
             groupAdd,
-            cmd: containerCmd
+            cmd: containerCmd,
+            user: containerUser
         });
 
         const containerInfo = await this.containerRuntimeService.createContainer(teamClusterId, dockerConfig);

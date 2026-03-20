@@ -1,6 +1,5 @@
 import { trajectoryQuery } from './queries';
-import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
-import useConfirm from '@/shared/presentation/hooks/use-confirm';
+import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
 import { useCallback } from 'react';
@@ -12,7 +11,6 @@ interface ToastState {
 export default function useDeleteSelectedTrajectories() {
     const { selectedIds, clearSelection } = useSelectionParams();
     const deleteTrajectoryMutation = trajectoryQuery.useDeleteMutation();
-    const { confirm } = useConfirm();
 
     const deleteSelectedTrajectories = useCallback(async () => {
         const isConfirmed = await confirm({

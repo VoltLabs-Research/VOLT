@@ -4,6 +4,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
 import NotebookDeletedEvent from '@modules/scripting/domain/events/NotebookDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 import type { IEventBus } from '@shared/application/events/IEventBus';
@@ -38,7 +39,7 @@ export class DeleteScriptingNotebookUseCase implements IUseCase<DeleteScriptingN
                 try {
                     await this.teamClusterDaemonClient.command<{ deleted: boolean; }>(
                         notebook.props.teamCluster,
-                        'notebook.delete',
+                        TEAM_CLUSTER_DAEMON_COMMAND.notebook.delete,
                         {
                             notebookId: notebook.props.runtimeNotebookId
                         }

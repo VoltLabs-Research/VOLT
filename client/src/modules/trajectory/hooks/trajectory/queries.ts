@@ -3,8 +3,7 @@ import { TRAJECTORY_MODULE_QUERY_KEYS } from '../shared';
 import {
     buildKeys,
     createInfiniteQuery,
-    createCachePolicy,
-    createManagedMutation,
+    createFolderResourceQueries,
     createMutation,
     createPaginatedQuery,
     createQuery
@@ -112,39 +111,42 @@ export const trajectoryPreviewQuery = createQuery(KEYS.preview, trajectoryServic
 export const trajectoryAtomsQuery = createQuery(KEYS.atoms, trajectoryService.getAtoms);
 export const trajectorySamplesQuery = createQuery(KEYS.samples, () => trajectoryService.listSamples({}));
 export const trajectoryMetricsQuery = createQuery(KEYS.metrics, () => trajectoryService.getMetrics({}));
-export const trajectoryFoldersQuery = createQuery(KEYS.folders, trajectoryService.listFolders);
-export const trajectoryFolderQuery = createQuery(KEYS.folder, trajectoryService.getFolder);
 
-const trajectoryFoldersCache = createCachePolicy<void>(() => KEYS.folders());
-const trajectoryFolderCache = createCachePolicy<GetTrajectoryFolderParams>((params) => KEYS.folder(params));
-
-export const invalidateTrajectoryFoldersQuery = () => trajectoryFoldersCache.invalidate(undefined);
-export const invalidateTrajectoryFolderQuery = (params: GetTrajectoryFolderParams) => trajectoryFolderCache.invalidate(params);
-
-export const useCreateTrajectoryFolderMutation = createManagedMutation<TrajectoryFolder, CreateTrajectoryFolderParams>(
-    trajectoryService.createFolder,
-    () => invalidateTrajectoryFoldersQuery()
-);
-
-export const useUpdateTrajectoryFolderMutation = createManagedMutation<TrajectoryFolder, UpdateTrajectoryFolderParams>(
-    trajectoryService.updateFolder,
-    (_data, variables) => {
-        invalidateTrajectoryFoldersQuery();
+const trajectoryFolderQueries = createFolderResourceQueries<
+    TrajectoryFolder,
+    PaginatedResponse<TrajectoryFolder>,
+    ListTrajectoryFoldersParams,
+    GetTrajectoryFolderParams,
+    CreateTrajectoryFolderParams,
+    UpdateTrajectoryFolderParams,
+    DeleteTrajectoryFolderParams
+>({
+    baseKey: `${BASE_KEY}-folder`,
+    service: {
+        listFolders: trajectoryService.listFolders,
+        getFolder: trajectoryService.getFolder,
+        createFolder: trajectoryService.createFolder,
+        updateFolder: trajectoryService.updateFolder,
+        deleteFolder: trajectoryService.deleteFolder
+    },
+    buildFolderParams: (folderId) => ({ folderId }),
+    afterUpdate: () => {
         queryClient.invalidateQueries({ queryKey: trajectoryQuery.QUERY_KEYS.lists() });
-        invalidateTrajectoryFolderQuery({ folderId: variables.folderId });
-    }
-);
-
-export const useDeleteTrajectoryFolderMutation = createManagedMutation<void, DeleteTrajectoryFolderParams>(
-    trajectoryService.deleteFolder,
-    (_data, variables) => {
-        invalidateTrajectoryFoldersQuery();
+    },
+    afterDelete: () => {
         queryClient.invalidateQueries({ queryKey: trajectoryQuery.QUERY_KEYS.lists() });
-        invalidateTrajectoryFolderQuery({ folderId: variables.folderId });
     }
-);
+});
 
-export const useMoveTrajectoryMutation = createManagedMutation<void, MoveTrajectoryParams>(
+export const trajectoryFoldersQuery = trajectoryFolderQueries.foldersQuery;
+export const trajectoryFolderQuery = trajectoryFolderQueries.folderQuery;
+export const invalidateTrajectoryFoldersQuery = trajectoryFolderQueries.invalidateFoldersQuery;
+export const invalidateTrajectoryFolderQuery = trajectoryFolderQueries.invalidateFolderQuery;
+export const useCreateTrajectoryFolderMutation = trajectoryFolderQueries.useCreateFolderMutation;
+export const useUpdateTrajectoryFolderMutation = trajectoryFolderQueries.useUpdateFolderMutation;
+export const useDeleteTrajectoryFolderMutation = trajectoryFolderQueries.useDeleteFolderMutation;
+
+export const useMoveTrajectoryMutation = createMutation<void, MoveTrajectoryParams>(
     trajectoryService.move,
     () => queryClient.invalidateQueries({ queryKey: trajectoryQuery.QUERY_KEYS.lists() })
 );

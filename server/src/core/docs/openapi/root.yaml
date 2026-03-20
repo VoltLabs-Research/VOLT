@@ -688,10 +688,14 @@ components:
       $ref: components/schemas/plugins.yaml#/PaginatedListingRows
     TriggerRasterizationRequest:
       $ref: components/schemas/rasters.yaml#/TriggerRasterizationRequest
+    TriggerRasterizationSummary:
+      $ref: components/schemas/rasters.yaml#/TriggerRasterizationSummary
     RasterJob:
       $ref: components/schemas/rasters.yaml#/RasterJob
     RasterMetadata:
       $ref: components/schemas/rasters.yaml#/RasterMetadata
+    GetRasterMetadataResult:
+      $ref: components/schemas/rasters.yaml#/GetRasterMetadataResult
     Notebook:
       $ref: components/schemas/scripting.yaml#/Notebook
     PaginatedNotebooks:

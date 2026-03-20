@@ -42,6 +42,10 @@ interface StreamControllerOptions<TUseCase extends IUseCase<unknown, StreamableO
     prepareOutput?: (resultValue: UseCaseOutput<TUseCase>) => Promise<void>;
 };
 
+type PreparedDownloadStreamControllerOptions<
+    TUseCase extends IUseCase<unknown, StreamableOutput, unknown>
+> = Omit<StreamControllerOptions<TUseCase>, 'getHeaders' | 'prepareOutput'>;
+
 const getControllerOptions = <TUseCase extends UseCaseInstance>(
     statusCodeOrOptions: HttpStatus | ControllerOptions<TUseCase> | undefined,
     fallbackStatusCode: HttpStatus
@@ -76,6 +80,8 @@ const buildControllerParams = (
         ...bodyPayload,
         data: bodyPayload,
         authenticatedUserId: req.userId,
+        traceId: req.requestContext?.traceId,
+        requestContext: req.requestContext,
         file: req.file,
         files: req.files,
         ...requestContext
@@ -262,3 +268,27 @@ export const createStreamController = <
 
     return GeneratedStreamController;
 };
+
+export const createPreparedDownloadStreamController = <
+    TUseCase extends IUseCase<unknown, StreamableOutput, unknown>
+>(
+    useCaseToken: InjectionToken<TUseCase>,
+    options: PreparedDownloadStreamControllerOptions<TUseCase> = {}
+) =>
+    createStreamController(useCaseToken, {
+        ...options,
+        getHeaders: (resultValue) => {
+            const preparedResult = resultValue as UseCaseOutput<TUseCase> & {
+                headers: Record<string, string>;
+            };
+
+            return preparedResult.headers;
+        },
+        prepareOutput: async (resultValue) => {
+            const preparedResult = resultValue as UseCaseOutput<TUseCase> & {
+                prepare?: () => Promise<void>;
+            };
+
+            await preparedResult.prepare?.();
+        }
+    });

@@ -1,11 +1,12 @@
 import service from '../api/service';
 import {
     buildKeys,
-    createCachePolicy,
-    createManagedMutation,
+    createFolderResourceQueries,
     createMutation,
     createQuery
 } from '@/shared/infrastructure/query';
+import queryClient from '@/shared/infrastructure/query/query-client';
+import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { CreateWhiteboardFolderParams } from '../api/dtos/create-whiteboard-folder-params';
 import type { CreateWhiteboardParams } from '../api/dtos/create-whiteboard-params';
 import type { DeleteWhiteboardFolderParams } from '../api/dtos/delete-whiteboard-folder-params';
@@ -30,58 +31,61 @@ const KEYS = buildKeys<WhiteboardQueryKeys>('whiteboards');
 
 export const whiteboardsQueryKey = KEYS.list;
 export const whiteboardQueryKey = KEYS.single;
-export const whiteboardFoldersQueryKey = KEYS.folders;
-export const whiteboardFolderQueryKey = KEYS.folder;
 
 export const whiteboardsQuery = createQuery(KEYS.list, service.listWhiteboards);
 export const whiteboardQuery = createQuery(KEYS.single, service.getWhiteboard);
-export const whiteboardFoldersQuery = createQuery(KEYS.folders, service.listWhiteboardFolders);
-export const whiteboardFolderQuery = createQuery(KEYS.folder, service.getWhiteboardFolder);
 
-const whiteboardsCache = createCachePolicy<void>(() => KEYS.list());
-const whiteboardFoldersCache = createCachePolicy<void>(() => KEYS.folders());
-const whiteboardFolderCache = createCachePolicy<GetWhiteboardFolderParams>((params) => KEYS.folder(params));
+export const invalidateWhiteboardsQuery = () => queryClient.invalidateQueries({ queryKey: KEYS.list() });
 
-export const invalidateWhiteboardsQuery = () => whiteboardsCache.invalidate(undefined);
-export const invalidateWhiteboardFoldersQuery = () => whiteboardFoldersCache.invalidate(undefined);
-export const invalidateWhiteboardFolderQuery = (params: GetWhiteboardFolderParams) => whiteboardFolderCache.invalidate(params);
+const whiteboardFolderQueries = createFolderResourceQueries<
+    WhiteboardFolder,
+    PaginatedResponse<WhiteboardFolder>,
+    ListWhiteboardFoldersParams,
+    GetWhiteboardFolderParams,
+    CreateWhiteboardFolderParams,
+    UpdateWhiteboardFolderParams,
+    DeleteWhiteboardFolderParams
+>({
+    baseKey: 'whiteboards-folder',
+    service: {
+        listFolders: service.listWhiteboardFolders,
+        getFolder: service.getWhiteboardFolder,
+        createFolder: service.createWhiteboardFolder,
+        updateFolder: service.updateWhiteboardFolder,
+        deleteFolder: service.deleteWhiteboardFolder
+    },
+    buildFolderParams: (folderId) => ({ folderId }),
+    afterUpdate: () => {
+        invalidateWhiteboardsQuery();
+    },
+    afterDelete: () => {
+        invalidateWhiteboardsQuery();
+    }
+});
+
+export const whiteboardFoldersQuery = whiteboardFolderQueries.foldersQuery;
+export const whiteboardFolderQuery = whiteboardFolderQueries.folderQuery;
+export const whiteboardFoldersQueryKey = whiteboardFolderQueries.foldersQueryKey;
+export const whiteboardFolderQueryKey = whiteboardFolderQueries.folderQueryKey;
+export const invalidateWhiteboardFoldersQuery = whiteboardFolderQueries.invalidateFoldersQuery;
+export const invalidateWhiteboardFolderQuery = whiteboardFolderQueries.invalidateFolderQuery;
+export const useCreateWhiteboardFolderMutation = whiteboardFolderQueries.useCreateFolderMutation;
+export const useUpdateWhiteboardFolderMutation = whiteboardFolderQueries.useUpdateFolderMutation;
+export const useDeleteWhiteboardFolderMutation = whiteboardFolderQueries.useDeleteFolderMutation;
 
 export const useCreateWhiteboardMutation = createMutation<Whiteboard, CreateWhiteboardParams>(service.createWhiteboard);
 
-export const useUpdateWhiteboardMutation = createManagedMutation<Whiteboard, UpdateWhiteboardParams>(
+export const useUpdateWhiteboardMutation = createMutation<Whiteboard, UpdateWhiteboardParams>(
     service.updateWhiteboard,
     () => invalidateWhiteboardsQuery()
 );
 
-export const useDeleteWhiteboardMutation = createManagedMutation<void, DeleteWhiteboardParams>(
+export const useDeleteWhiteboardMutation = createMutation<void, DeleteWhiteboardParams>(
     service.deleteWhiteboard,
     () => invalidateWhiteboardsQuery()
 );
 
-export const useCreateWhiteboardFolderMutation = createManagedMutation<WhiteboardFolder, CreateWhiteboardFolderParams>(
-    service.createWhiteboardFolder,
-    () => invalidateWhiteboardFoldersQuery()
-);
-
-export const useUpdateWhiteboardFolderMutation = createManagedMutation<WhiteboardFolder, UpdateWhiteboardFolderParams>(
-    service.updateWhiteboardFolder,
-    (_data, variables) => {
-        invalidateWhiteboardFoldersQuery();
-        invalidateWhiteboardsQuery();
-        invalidateWhiteboardFolderQuery({ folderId: variables.folderId });
-    }
-);
-
-export const useDeleteWhiteboardFolderMutation = createManagedMutation<void, DeleteWhiteboardFolderParams>(
-    service.deleteWhiteboardFolder,
-    (_data, variables) => {
-        invalidateWhiteboardFoldersQuery();
-        invalidateWhiteboardsQuery();
-        invalidateWhiteboardFolderQuery({ folderId: variables.folderId });
-    }
-);
-
-export const useMoveWhiteboardMutation = createManagedMutation<Whiteboard, MoveWhiteboardParams>(
+export const useMoveWhiteboardMutation = createMutation<Whiteboard, MoveWhiteboardParams>(
     service.moveWhiteboard,
     () => invalidateWhiteboardsQuery()
 );

@@ -1,3 +1,5 @@
+import { getDashboardNavigationItems } from '@/app/routes/metadata';
+import { DashboardNavigationSection } from '@/app/routes/types';
 import { useMemo } from 'react';
 import { IoSettingsOutline } from 'react-icons/io5';
 import { useLocation, useNavigate } from 'react-router';
@@ -12,39 +14,22 @@ interface SidebarFooterNavigationProps {
     collapsed?: boolean;
 };
 
+const SETTINGS_NAVIGATION_ITEMS = getDashboardNavigationItems(DashboardNavigationSection.Settings);
+
 const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collapsed = false }: SidebarFooterNavigationProps) => {
     const { pathname } = useLocation();
     const navigate = useNavigate();
+    const defaultSettingsPath = SETTINGS_NAVIGATION_ITEMS[0]?.path ?? '/dashboard/settings/general';
 
     const handleOpenDocs = () => window.open('https://docs.voltcloud.dev', '_blank', 'noopener,noreferrer');
 
-    const settingsSubItems = useMemo(() => [
-        {
-            label: 'General',
-            isSelected: pathname === '/dashboard/settings/general',
-            onClick: () => navigate('/dashboard/settings/general')
-        },
-        {
-            label: 'Authentication',
-            isSelected: pathname === '/dashboard/settings/authentication',
-            onClick: () => navigate('/dashboard/settings/authentication')
-        },
-        {
-            label: 'Theme',
-            isSelected: pathname === '/dashboard/settings/theme',
-            onClick: () => navigate('/dashboard/settings/theme')
-        },
-        {
-            label: 'Sessions',
-            isSelected: pathname === '/dashboard/settings/sessions',
-            onClick: () => navigate('/dashboard/settings/sessions')
-        },
-        {
-            label: 'Integrations',
-            isSelected: pathname === '/dashboard/settings/integrations',
-            onClick: () => navigate('/dashboard/settings/integrations')
-        }
-    ], [pathname, navigate]);
+    const settingsSubItems = useMemo(() => {
+        return SETTINGS_NAVIGATION_ITEMS.map((item) => ({
+            label: item.label,
+            isSelected: pathname === item.path,
+            onClick: () => navigate(item.path)
+        }));
+    }, [pathname, navigate]);
 
     if (collapsed) {
         return (
@@ -53,7 +38,7 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collap
                     label='Settings'
                     icon={IoSettingsOutline}
                     isSelected={pathname.startsWith('/dashboard/settings')}
-                    onClick={() => navigate('/dashboard/settings/general')}
+                    onClick={() => navigate(defaultSettingsPath)}
                 />
 
                 <SidebarNavItem

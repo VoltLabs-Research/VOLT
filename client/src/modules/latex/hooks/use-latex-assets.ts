@@ -5,7 +5,7 @@ import {
     useUpdateLatexAssetMutation
 } from '@/modules/latex/hooks/queries';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import useConfirm from '@/shared/presentation/hooks/use-confirm';
+import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import { buildFolderPlaceholderPath, getAssetDisplayName, isFolderPlaceholderAsset, LATEX_FOLDER_PLACEHOLDER_NAME } from '@/modules/latex/utilities/workspace';
 import { useCallback, useRef } from 'react';
 import type { ChangeEvent } from 'react';
@@ -59,7 +59,6 @@ const CREATE_FOLDER_TOAST = {
 const useLatexAssets = ({ documentId, onInsertRef }: UseLatexAssetsInput) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const folderInputRef = useRef<HTMLInputElement>(null);
-    const { confirm } = useConfirm();
 
     const assetsQueryResult = latexAssetsQuery({ documentId }, { enabled: !!documentId });
     const assets = assetsQueryResult.data ?? [];

@@ -4,6 +4,7 @@ import {
     RequestTeamClusterUpdateInputDTO,
     RequestTeamClusterUpdateOutputDTO
 } from '@modules/team-cluster/application/dtos/RequestTeamClusterUpdateDTO';
+import { requireOwnedTeamCluster } from '@modules/team-cluster/application/utilities/team-cluster-ownership';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
 import { assertConfirmedPassword } from '@modules/team-cluster/utilities/assertConfirmedPassword';
@@ -59,12 +60,9 @@ export default class RequestTeamClusterUpdateUseCase
     async execute(
         input: RequestTeamClusterUpdateInputDTO
     ): Promise<Result<RequestTeamClusterUpdateOutputDTO, ApplicationError>> {
-        const teamCluster = await this.teamClusterRepository.findById(input.teamClusterId);
-        if (!teamCluster || teamCluster.props.team !== input.teamId) {
-            return Result.fail(ApplicationError.notFound(
-                'TeamCluster::NotFound',
-                'Team cluster not found'
-            ));
+        const teamCluster = await requireOwnedTeamCluster(this.teamClusterRepository, input);
+        if (teamCluster instanceof ApplicationError) {
+            return Result.fail(teamCluster);
         }
 
         const passwordError = await assertConfirmedPassword({

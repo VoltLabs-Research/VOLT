@@ -2,11 +2,13 @@ import { listingRowValidation } from '@modules/plugin/infrastructure/http/valida
 import controllers from '@modules/plugin/infrastructure/http/controllers/listing-row';
 
 import { Resource } from '@core/constants/resources';
+import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 
 export default createHttpModule({
     basePath: '/api/plugins/:teamId',
     resource: Resource.PLUGIN,
+    teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
         router.get('/listings/analyses/:analysisId', listingRowValidation.getListingRowsByAnalysisId, controllers.getListingRowsByAnalysisId.handle);
         router.get('/listings/analyses/:analysisId/export', listingRowValidation.exportListingRowsByAnalysisId, controllers.exportListingRowsByAnalysisId.handle);

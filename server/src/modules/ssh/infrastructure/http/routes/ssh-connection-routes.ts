@@ -1,11 +1,13 @@
 import { Resource } from '@core/constants/resources';
 import controllers from '@modules/ssh/infrastructure/http/controllers';
 import { sshConnectionValidation } from '@modules/ssh/infrastructure/http/validation/ssh-schemas';
+import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 
 export default createHttpModule({
     basePath: '/api/ssh/connections/:teamId',
     resource: Resource.SSH_CONNECTION,
+    teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
         router.get('/', sshConnectionValidation.listByTeamId, controllers.listByTeamId.handle);
         router.post('/', sshConnectionValidation.create, controllers.create.handle);

@@ -3,6 +3,7 @@ import {
     CreateTeamClusterRemoteAccessSessionInputDTO,
     CreateTeamClusterRemoteAccessSessionOutputDTO
 } from '@modules/team-cluster/application/dtos/CreateTeamClusterRemoteAccessSessionDTO';
+import { requireOwnedTeamCluster } from '@modules/team-cluster/application/utilities/team-cluster-ownership';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterRemoteAccessSessionService from '@modules/team-cluster/infrastructure/services/TeamClusterRemoteAccessSessionService';
@@ -38,12 +39,9 @@ export default class CreateTeamClusterRemoteAccessSessionUseCase implements IUse
     async execute(
         input: CreateTeamClusterRemoteAccessSessionInputDTO
     ): Promise<Result<CreateTeamClusterRemoteAccessSessionOutputDTO, ApplicationError>> {
-        const teamCluster = await this.teamClusterRepository.findById(input.teamClusterId);
-        if (!teamCluster || teamCluster.props.team !== input.teamId) {
-            return Result.fail(ApplicationError.notFound(
-                'TeamCluster::NotFound',
-                'Team cluster not found'
-            ));
+        const teamCluster = await requireOwnedTeamCluster(this.teamClusterRepository, input);
+        if (teamCluster instanceof ApplicationError) {
+            return Result.fail(teamCluster);
         }
 
         const passwordError = await assertConfirmedPassword({

@@ -10,8 +10,8 @@ const frameParamsSchema = teamTrajectoryParamsSchema.extend({
 }).strict();
 
 const triggerBodySchema = z.object({
-    config: z.unknown().optional()
-}).strict();
+    config: z.record(z.string(), z.unknown()).optional()
+}).strict().optional();
 
 export const rasterValidation = {
     trigger: {

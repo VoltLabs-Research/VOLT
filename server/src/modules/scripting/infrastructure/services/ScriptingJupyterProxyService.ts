@@ -19,6 +19,11 @@ import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastru
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
+import logger from '@shared/infrastructure/logger';
+import {
+    bridgeWebSockets,
+    writeUpgradeError
+} from '@shared/infrastructure/utilities/proxy-relay';
 import { buildWebSocketProtocolList } from '@shared/infrastructure/utilities/websocket-protocols';
 import { inject, injectable } from 'tsyringe';
 import { WebSocketServer, WebSocket } from 'ws';
@@ -28,9 +33,12 @@ import type { IScriptingNotebookRepository } from '@modules/scripting/domain/por
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { TeamClusterDaemonNotebookRuntime } from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { Request, Response } from 'express';
-import type { IncomingHttpHeaders, IncomingMessage, RequestOptions } from 'node:http';
+import type { ClientRequest, IncomingHttpHeaders, IncomingMessage, RequestOptions } from 'node:http';
 import type { Duplex } from 'node:stream';
-import type { RawData } from 'ws';
+
+interface ProxyableRequest extends Request {
+    rawBody?: Buffer;
+};
 
 interface AuthorizedProxyContext {
     teamId: string;
@@ -48,6 +56,29 @@ interface ProxyTarget {
     rawQuery: string;
 };
 
+interface AuthorizedProxyCacheEntry {
+    expiresAt: number;
+    contextPromise?: Promise<AuthorizedProxyContext>;
+    contextValue?: AuthorizedProxyContext;
+};
+
+interface NotebookRuntimeCacheEntry {
+    expiresAt: number;
+    runtimePromise?: Promise<TeamClusterDaemonNotebookRuntime>;
+    runtimeValue?: TeamClusterDaemonNotebookRuntime;
+};
+
+interface HttpProxySessionEntry {
+    agent: http.Agent;
+    ephemeral: boolean;
+    expiresAt: number;
+    inUse: boolean;
+    key: string;
+    runtimeNotebookId: string;
+    teamClusterId: string;
+    tunnel: Duplex;
+};
+
 const JUPYTER_NATIVE_TOKEN_QUERY_PARAM = 'token';
 const UPGRADE_ACTION = Action.READ;
 const PROXY_URL_ORIGIN = 'http://volt.local';
@@ -58,6 +89,10 @@ const DAEMON_PROXY_UNAVAILABLE_ERROR_MESSAGES = [
     'team cluster daemon reverse channel is not connected',
     'team cluster daemon connection is not ready yet'
 ];
+const AUTHORIZED_PROXY_CONTEXT_CACHE_TTL_MS = 1_500;
+const NOTEBOOK_RUNTIME_CACHE_TTL_MS = 750;
+const HTTP_PROXY_SESSION_TTL_MS = 15_000;
+const MAX_HTTP_PROXY_SESSIONS_PER_RUNTIME = 2;
 
 const METHOD_ACTION_MAP: Record<string, Action> = {
     'GET': Action.READ,
@@ -70,22 +105,6 @@ const METHOD_ACTION_MAP: Record<string, Action> = {
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
-};
-
-const normalizeWebSocketPayload = (data: RawData): Buffer | string => {
-    if (typeof data === 'string') {
-        return data;
-    }
-
-    if (Buffer.isBuffer(data)) {
-        return data;
-    }
-
-    if (Array.isArray(data)) {
-        return Buffer.concat(data.map((chunk) => Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
-    }
-
-    return Buffer.from(data);
 };
 
 const readCookies = (rawCookieHeader?: string): Record<string, string> => {
@@ -101,15 +120,16 @@ const readCookies = (rawCookieHeader?: string): Record<string, string> => {
             continue;
         }
 
-        cookies[key] = decodeURIComponent(rawValueParts.join('=').trim());
+        const rawValue = rawValueParts.join('=').trim();
+
+        try {
+            cookies[key] = decodeURIComponent(rawValue);
+        } catch {
+            cookies[key] = rawValue;
+        }
     }
 
     return cookies;
-};
-
-const writeUpgradeError = (socket: Duplex, statusCode: number, message: string): void => {
-    socket.write(`HTTP/1.1 ${statusCode} ${message}\r\nConnection: close\r\n\r\n`);
-    socket.destroy();
 };
 
 const buildFrameAncestorsDirective = (): string => {
@@ -145,9 +165,23 @@ const readJupyterNativeToken = (): string => {
     return token || 'volt-scripting';
 };
 
+const pruneExpiredCacheEntries = <T extends { expiresAt: number }>(cache: Map<string, T>): void => {
+    const now = Date.now();
+
+    for (const [cacheKey, cacheEntry] of cache.entries()) {
+        if (cacheEntry.expiresAt <= now) {
+            cache.delete(cacheKey);
+        }
+    }
+};
+
 @injectable()
 export class ScriptingJupyterProxyService {
     private readonly jupyterNativeToken = readJupyterNativeToken();
+    private readonly authorizedProxyContextCache = new Map<string, AuthorizedProxyCacheEntry>();
+    private readonly notebookRuntimeCache = new Map<string, NotebookRuntimeCacheEntry>();
+    private readonly httpProxySessions = new Map<string, HttpProxySessionEntry[]>();
+    private readonly httpProxySessionSweepTimer = this.startHttpProxySessionSweep();
 
     constructor(
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
@@ -164,29 +198,47 @@ export class ScriptingJupyterProxyService {
     ) {}
 
     public proxyHttpRequest = async (req: Request, res: Response): Promise<void> => {
+        let httpProxySession: HttpProxySessionEntry | null = null;
+
         try {
             const context = await this.authorizeHttpRequest(req);
             const runtime = await this.requireNotebookRuntime(context);
             this.persistAccessTokenCookie(req, res, context);
             const target = this.extractProxyTarget(req.originalUrl);
-            const tunnel = await this.openNotebookTunnel(context.teamClusterId, runtime, TeamClusterServiceExposureAccessMode.Http);
-            const upstreamAgent = this.createSingleUseTunnelHttpAgent(tunnel);
-            const destroyUpstreamAgent = (): void => {
-                upstreamAgent.destroy();
+            httpProxySession = await this.acquireHttpProxySession(context, runtime);
+            let releasedSession = false;
+            const finalizeHttpProxySession = (destroySession = false): void => {
+                if (releasedSession || !httpProxySession) {
+                    return;
+                }
+
+                releasedSession = true;
+                this.releaseHttpProxySession(httpProxySession, destroySession);
             };
-            const upstreamRequest = http.request(this.buildUpstreamHttpRequestOptions(req, runtime, target, upstreamAgent), (upstreamResponse) => {
-                upstreamResponse.once('close', destroyUpstreamAgent);
+            const upstreamRequest = http.request(this.buildUpstreamHttpRequestOptions(req, runtime, target, httpProxySession.agent), (upstreamResponse) => {
+                upstreamResponse.once('end', () => {
+                    finalizeHttpProxySession(false);
+                });
+                upstreamResponse.once('close', () => {
+                    finalizeHttpProxySession(!res.writableEnded);
+                });
                 this.prepareProxyResponse(req.originalUrl, res, upstreamResponse.headers, upstreamResponse.statusCode || 502, context);
                 upstreamResponse.on('error', (error: Error) => {
+                    finalizeHttpProxySession(true);
                     res.destroy(error);
                 });
                 upstreamResponse.pipe(res);
             });
 
-            res.once('close', destroyUpstreamAgent);
+            req.once('aborted', () => {
+                finalizeHttpProxySession(true);
+            });
+            res.once('close', () => {
+                finalizeHttpProxySession(!res.writableEnded);
+            });
 
             upstreamRequest.on('error', (error: Error) => {
-                destroyUpstreamAgent();
+                finalizeHttpProxySession(true);
                 const mappedError = this.mapNotebookProxyError(error);
                 if (!res.headersSent) {
                     this.applyProxyResponseSecurityHeaders(res);
@@ -199,6 +251,9 @@ export class ScriptingJupyterProxyService {
 
             this.writeProxyRequestBody(req, upstreamRequest);
         } catch (error: unknown) {
+            if (httpProxySession) {
+                this.releaseHttpProxySession(httpProxySession, true);
+            }
             const mappedError = this.mapNotebookProxyError(error);
             this.applyProxyResponseSecurityHeaders(res);
             BaseResponse.fromError(res, mappedError);
@@ -230,6 +285,76 @@ export class ScriptingJupyterProxyService {
                 ? new WebSocket(upstreamWebSocketUrl, requestedProtocols, upstreamWebSocketOptions)
                 : new WebSocket(upstreamWebSocketUrl, upstreamWebSocketOptions);
 
+            let upgradeSettled = false;
+
+            const cleanupPendingUpgrade = (): void => {
+                upstreamWebSocket.off('open', onUpstreamReady);
+                upstreamWebSocket.off('close', onUpstreamCloseBeforeReady);
+                upstreamWebSocket.off('error', onUpstreamErrorBeforeReady);
+                upstreamWebSocket.off('unexpected-response', onUpstreamUnexpectedResponse);
+                socket.off('close', onClientSocketCloseBeforeReady);
+            };
+
+            const finalizePendingUpgrade = (): boolean => {
+                if (upgradeSettled) {
+                    return false;
+                }
+
+                upgradeSettled = true;
+                cleanupPendingUpgrade();
+                return true;
+            };
+
+            const destroyUpstreamTunnel = (): void => {
+                if (!tunnel.destroyed) {
+                    tunnel.destroy();
+                }
+            };
+
+            const failPendingUpgrade = (statusCode: number, message: string): void => {
+                if (!finalizePendingUpgrade()) {
+                    return;
+                }
+
+                if (upstreamWebSocket.readyState === WebSocket.CONNECTING || upstreamWebSocket.readyState === WebSocket.OPEN) {
+                    upstreamWebSocket.terminate();
+                }
+
+                destroyUpstreamTunnel();
+                writeUpgradeError(socket, statusCode, message);
+            };
+
+            const onUpstreamErrorBeforeReady = (error: Error): void => {
+                failPendingUpgrade(502, error.message || 'Upstream WebSocket connection failed');
+            };
+
+            const onUpstreamCloseBeforeReady = (): void => {
+                failPendingUpgrade(502, 'Upstream WebSocket connection failed');
+            };
+
+            const onUpstreamUnexpectedResponse = (
+                _upstreamRequest: ClientRequest,
+                upstreamResponse: IncomingMessage
+            ): void => {
+                upstreamResponse.resume();
+                failPendingUpgrade(
+                    upstreamResponse.statusCode || 502,
+                    upstreamResponse.statusMessage || 'Upstream WebSocket connection failed'
+                );
+            };
+
+            const onClientSocketCloseBeforeReady = (): void => {
+                if (!finalizePendingUpgrade()) {
+                    return;
+                }
+
+                if (upstreamWebSocket.readyState === WebSocket.CONNECTING || upstreamWebSocket.readyState === WebSocket.OPEN) {
+                    upstreamWebSocket.terminate();
+                }
+
+                destroyUpstreamTunnel();
+            };
+
             // Wait for the upstream WebSocket to open before completing the client
             // handshake. This ensures two things:
             // 1. The negotiated subprotocol from upstream (e.g. v1.kernel.websocket.jupyter.org)
@@ -239,6 +364,10 @@ export class ScriptingJupyterProxyService {
             //    bindWebSocketProxy is called, preventing a race condition where client
             //    messages arrive before the upstream handshake completes.
             const onUpstreamReady = (): void => {
+                if (!finalizePendingUpgrade()) {
+                    return;
+                }
+
                 const negotiatedProtocol = upstreamWebSocket.protocol;
                 const webSocketServer = new WebSocketServer({
                     noServer: true,
@@ -255,9 +384,10 @@ export class ScriptingJupyterProxyService {
                 onUpstreamReady();
             } else {
                 upstreamWebSocket.once('open', onUpstreamReady);
-                upstreamWebSocket.once('error', (error: Error) => {
-                    writeUpgradeError(socket, 502, error.message || 'Upstream WebSocket connection failed');
-                });
+                upstreamWebSocket.once('close', onUpstreamCloseBeforeReady);
+                upstreamWebSocket.once('error', onUpstreamErrorBeforeReady);
+                upstreamWebSocket.once('unexpected-response', onUpstreamUnexpectedResponse);
+                socket.once('close', onClientSocketCloseBeforeReady);
             }
         } catch (error: unknown) {
             const mappedError = this.mapNotebookProxyError(error);
@@ -332,9 +462,58 @@ export class ScriptingJupyterProxyService {
             throw ApplicationError.forbidden(ErrorCodes.TEAM_ACCESS_DENIED, ErrorCodes.TEAM_ACCESS_DENIED);
         }
 
+        const cacheKey = this.buildAuthorizedProxyContextCacheKey(
+            verifiedToken.userId,
+            match.teamId,
+            match.runtimeNotebookId,
+            action
+        );
+        const cachedContext = this.readAuthorizedProxyContextCache(cacheKey);
+        if (cachedContext) {
+            return cachedContext;
+        }
+
+        logger.info({
+            action: 'scripting.jupyter-proxy.auth-context.cache-miss',
+            teamId: match.teamId,
+            runtimeNotebookId: match.runtimeNotebookId,
+            userId: verifiedToken.userId,
+            permissionAction: action
+        }, 'Resolving Jupyter proxy authorization context');
+
+        pruneExpiredCacheEntries(this.authorizedProxyContextCache);
+
+        const contextPromise = this.resolveAuthorizedProxyContext(match.teamId, match.runtimeNotebookId, verifiedToken.userId, action)
+            .then((context) => {
+                this.authorizedProxyContextCache.set(cacheKey, {
+                    expiresAt: Date.now() + AUTHORIZED_PROXY_CONTEXT_CACHE_TTL_MS,
+                    contextValue: context
+                });
+
+                return context;
+            })
+            .catch((error: unknown) => {
+                this.authorizedProxyContextCache.delete(cacheKey);
+                throw error;
+            });
+
+        this.authorizedProxyContextCache.set(cacheKey, {
+            expiresAt: Date.now() + AUTHORIZED_PROXY_CONTEXT_CACHE_TTL_MS,
+            contextPromise
+        });
+
+        return contextPromise;
+    }
+
+    private async resolveAuthorizedProxyContext(
+        teamId: string,
+        runtimeNotebookId: string,
+        userId: string,
+        action: Action
+    ): Promise<AuthorizedProxyContext> {
         const member = await this.teamMemberRepository.findOne({
-            user: verifiedToken.userId,
-            team: match.teamId
+            user: userId,
+            team: teamId
         }, {
             populate: {
                 path: 'role',
@@ -353,8 +532,8 @@ export class ScriptingJupyterProxyService {
         }
 
         const notebook = await this.scriptingNotebookRepository.findOne({
-            team: match.teamId,
-            runtimeNotebookId: match.runtimeNotebookId
+            team: teamId,
+            runtimeNotebookId
         });
 
         if (!notebook || !notebook.props.teamCluster || !notebook.props.runtimeNotebookId) {
@@ -362,10 +541,52 @@ export class ScriptingJupyterProxyService {
         }
 
         return {
-            teamId: match.teamId,
-            runtimeNotebookId: match.runtimeNotebookId,
+            teamId,
+            runtimeNotebookId,
             teamClusterId: notebook.props.teamCluster
         };
+    }
+
+    private buildAuthorizedProxyContextCacheKey(
+        userId: string,
+        teamId: string,
+        runtimeNotebookId: string,
+        action: Action
+    ): string {
+        return `${userId}:${teamId}:${runtimeNotebookId}:${action}`;
+    }
+
+    private readAuthorizedProxyContextCache(cacheKey: string): Promise<AuthorizedProxyContext> | AuthorizedProxyContext | undefined {
+        const cachedEntry = this.authorizedProxyContextCache.get(cacheKey);
+        const now = Date.now();
+        if (!cachedEntry) {
+            return undefined;
+        }
+
+        if (cachedEntry.expiresAt <= now) {
+            this.authorizedProxyContextCache.delete(cacheKey);
+            return undefined;
+        }
+
+        if (cachedEntry.contextValue) {
+            logger.debug({
+                action: 'scripting.jupyter-proxy.auth-context.cache-hit',
+                cacheKey,
+                source: 'value'
+            }, 'Serving cached Jupyter proxy authorization context');
+            return cachedEntry.contextValue;
+        }
+
+        if (cachedEntry.contextPromise) {
+            logger.debug({
+                action: 'scripting.jupyter-proxy.auth-context.cache-hit',
+                cacheKey,
+                source: 'in-flight'
+            }, 'Joining in-flight Jupyter proxy authorization context resolution');
+            return cachedEntry.contextPromise;
+        }
+
+        return undefined;
     }
 
     private persistAccessTokenCookie(req: Request, res: Response, context: AuthorizedProxyContext): void {
@@ -382,30 +603,8 @@ export class ScriptingJupyterProxyService {
     }
 
     private bindWebSocketProxy(webSocket: WebSocket, upstreamWebSocket: WebSocket): void {
-        upstreamWebSocket.on('message', (data, isBinary) => {
-            const payload = normalizeWebSocketPayload(data);
-            webSocket.send(payload, {
-                binary: isBinary
-            });
-        });
-        upstreamWebSocket.on('close', (code, reason) => {
-            webSocket.close(code || 1000, reason.toString() || undefined);
-        });
-        upstreamWebSocket.on('error', () => {
-            webSocket.close(1011, 'Remote Jupyter websocket failed');
-        });
-
-        webSocket.on('message', (data, isBinary) => {
-            const message = normalizeWebSocketPayload(data);
-            upstreamWebSocket.send(message, {
-                binary: isBinary
-            });
-        });
-        webSocket.on('close', () => {
-            upstreamWebSocket.close();
-        });
-        webSocket.on('error', () => {
-            upstreamWebSocket.close();
+        bridgeWebSockets(webSocket, upstreamWebSocket, {
+            upstreamErrorMessage: 'Remote Jupyter websocket failed'
         });
     }
 
@@ -426,7 +625,7 @@ export class ScriptingJupyterProxyService {
             }
 
             const normalizedHeaderName = headerName.toLowerCase();
-            if (normalizedHeaderName === 'transfer-encoding' || normalizedHeaderName === 'content-encoding') {
+            if (normalizedHeaderName === 'transfer-encoding') {
                 continue;
             }
 
@@ -500,17 +699,85 @@ export class ScriptingJupyterProxyService {
     private async requireNotebookRuntime(
         context: AuthorizedProxyContext
     ): Promise<TeamClusterDaemonNotebookRuntime> {
-        const { runtime } = await this.teamClusterDaemonClient.getNotebookRuntime(context.teamClusterId, context.runtimeNotebookId);
-
-        if (!runtime) {
-            throw new ApplicationError(
-                'Scripting::JupyterUnavailable',
-                'Jupyter runtime is not ready yet',
-                503
-            );
+        const cacheKey = this.buildNotebookRuntimeCacheKey(context.teamClusterId, context.runtimeNotebookId);
+        const cachedRuntime = this.readNotebookRuntimeCache(cacheKey);
+        if (cachedRuntime) {
+            return cachedRuntime;
         }
 
-        return runtime;
+        logger.info({
+            action: 'scripting.jupyter-proxy.runtime.cache-miss',
+            teamClusterId: context.teamClusterId,
+            runtimeNotebookId: context.runtimeNotebookId
+        }, 'Resolving Jupyter notebook runtime');
+
+        pruneExpiredCacheEntries(this.notebookRuntimeCache);
+
+        const runtimePromise = this.teamClusterDaemonClient.getNotebookRuntime(context.teamClusterId, context.runtimeNotebookId)
+            .then(({ runtime }) => {
+                if (!runtime) {
+                    throw new ApplicationError(
+                        'Scripting::JupyterUnavailable',
+                        'Jupyter runtime is not ready yet',
+                        503
+                    );
+                }
+
+                this.notebookRuntimeCache.set(cacheKey, {
+                    expiresAt: Date.now() + NOTEBOOK_RUNTIME_CACHE_TTL_MS,
+                    runtimeValue: runtime
+                });
+
+                return runtime;
+            })
+            .catch((error: unknown) => {
+                this.notebookRuntimeCache.delete(cacheKey);
+                throw error;
+            });
+
+        this.notebookRuntimeCache.set(cacheKey, {
+            expiresAt: Date.now() + NOTEBOOK_RUNTIME_CACHE_TTL_MS,
+            runtimePromise
+        });
+
+        return runtimePromise;
+    }
+
+    private buildNotebookRuntimeCacheKey(teamClusterId: string, runtimeNotebookId: string): string {
+        return `${teamClusterId}:${runtimeNotebookId}`;
+    }
+
+    private readNotebookRuntimeCache(cacheKey: string): Promise<TeamClusterDaemonNotebookRuntime> | TeamClusterDaemonNotebookRuntime | undefined {
+        const cachedEntry = this.notebookRuntimeCache.get(cacheKey);
+        const now = Date.now();
+        if (!cachedEntry) {
+            return undefined;
+        }
+
+        if (cachedEntry.expiresAt <= now) {
+            this.notebookRuntimeCache.delete(cacheKey);
+            return undefined;
+        }
+
+        if (cachedEntry.runtimeValue) {
+            logger.debug({
+                action: 'scripting.jupyter-proxy.runtime.cache-hit',
+                cacheKey,
+                source: 'value'
+            }, 'Serving cached Jupyter notebook runtime');
+            return cachedEntry.runtimeValue;
+        }
+
+        if (cachedEntry.runtimePromise) {
+            logger.debug({
+                action: 'scripting.jupyter-proxy.runtime.cache-hit',
+                cacheKey,
+                source: 'in-flight'
+            }, 'Joining in-flight Jupyter notebook runtime lookup');
+            return cachedEntry.runtimePromise;
+        }
+
+        return undefined;
     }
 
     private openNotebookTunnel(
@@ -525,17 +792,158 @@ export class ScriptingJupyterProxyService {
         });
     }
 
-    private createSingleUseTunnelHttpAgent(tunnel: Duplex): http.Agent {
+    private buildHttpProxySessionKey(
+        teamClusterId: string,
+        runtimeNotebookId: string,
+        runtime: TeamClusterDaemonNotebookRuntime
+    ): string {
+        return `${teamClusterId}:${runtimeNotebookId}:${runtime.tunnelTargetHost}:${runtime.tunnelTargetPort}`;
+    }
+
+    private async acquireHttpProxySession(
+        context: AuthorizedProxyContext,
+        runtime: TeamClusterDaemonNotebookRuntime
+    ): Promise<HttpProxySessionEntry> {
+        const sessionKey = this.buildHttpProxySessionKey(context.teamClusterId, context.runtimeNotebookId, runtime);
+        this.pruneExpiredHttpProxySessions(sessionKey);
+
+        const existingSessions = this.httpProxySessions.get(sessionKey) ?? [];
+        const reusableSession = existingSessions.find((session) => !session.inUse && !session.tunnel.destroyed);
+        if (reusableSession) {
+            reusableSession.inUse = true;
+            reusableSession.expiresAt = Date.now() + HTTP_PROXY_SESSION_TTL_MS;
+            logger.debug({
+                action: 'scripting.jupyter-proxy.http-session.cache-hit',
+                runtimeNotebookId: context.runtimeNotebookId,
+                teamClusterId: context.teamClusterId
+            }, 'Reusing Jupyter proxy HTTP session');
+            return reusableSession;
+        }
+
+        const tunnel = await this.openNotebookTunnel(context.teamClusterId, runtime, TeamClusterServiceExposureAccessMode.Http);
+        const storeSession = existingSessions.length < MAX_HTTP_PROXY_SESSIONS_PER_RUNTIME;
+        const session = this.createHttpProxySession(sessionKey, context, tunnel, !storeSession);
+
+        if (!storeSession) {
+            logger.info({
+                action: 'scripting.jupyter-proxy.http-session.ephemeral',
+                runtimeNotebookId: context.runtimeNotebookId,
+                teamClusterId: context.teamClusterId,
+                activeSessions: existingSessions.length
+            }, 'Created ephemeral Jupyter proxy HTTP session because the pooled cap is in use');
+            return session;
+        }
+
+        const nextSessions = [...existingSessions, session];
+
+        this.httpProxySessions.set(sessionKey, nextSessions);
+        logger.info({
+            action: 'scripting.jupyter-proxy.http-session.created',
+            runtimeNotebookId: context.runtimeNotebookId,
+            teamClusterId: context.teamClusterId,
+            activeSessions: nextSessions.length
+        }, 'Created Jupyter proxy HTTP session');
+
+        return session;
+    }
+
+    private createHttpProxySession(
+        sessionKey: string,
+        context: AuthorizedProxyContext,
+        tunnel: Duplex,
+        ephemeral = false
+    ): HttpProxySessionEntry {
         const agent = new http.Agent({
-            keepAlive: false,
+            keepAlive: true,
+            keepAliveMsecs: HTTP_PROXY_SESSION_TTL_MS,
+            maxFreeSockets: 1,
             maxSockets: 1
         });
+        let connectionConsumed = false;
 
         agent.createConnection = (): Duplex => {
+            connectionConsumed = true;
             return tunnel;
         };
 
-        return agent;
+        const session: HttpProxySessionEntry = {
+            key: sessionKey,
+            runtimeNotebookId: context.runtimeNotebookId,
+            teamClusterId: context.teamClusterId,
+            tunnel,
+            agent,
+            ephemeral,
+            inUse: true,
+            expiresAt: Date.now() + HTTP_PROXY_SESSION_TTL_MS
+        };
+
+        const destroySession = (): void => {
+            this.destroyHttpProxySession(session);
+        };
+
+        tunnel.once('close', destroySession);
+        tunnel.once('error', destroySession);
+
+        if (!connectionConsumed) {
+            session.expiresAt = Date.now() + HTTP_PROXY_SESSION_TTL_MS;
+        }
+
+        return session;
+    }
+
+    private releaseHttpProxySession(session: HttpProxySessionEntry, destroySession = false): void {
+        if (destroySession || session.tunnel.destroyed || session.ephemeral) {
+            this.destroyHttpProxySession(session);
+            return;
+        }
+
+        session.inUse = false;
+        session.expiresAt = Date.now() + HTTP_PROXY_SESSION_TTL_MS;
+    }
+
+    private pruneExpiredHttpProxySessions(sessionKey?: string): void {
+        const now = Date.now();
+        const sessionEntries = sessionKey
+            ? [[sessionKey, this.httpProxySessions.get(sessionKey) ?? []] as const]
+            : Array.from(this.httpProxySessions.entries());
+
+        for (const [currentSessionKey, sessions] of sessionEntries) {
+            for (const session of sessions) {
+                if (!session.inUse && (session.expiresAt <= now || session.tunnel.destroyed)) {
+                    this.destroyHttpProxySession(session);
+                }
+            }
+
+            if ((this.httpProxySessions.get(currentSessionKey) ?? []).length === 0) {
+                this.httpProxySessions.delete(currentSessionKey);
+            }
+        }
+    }
+
+    private startHttpProxySessionSweep(): NodeJS.Timeout {
+        const sweepTimer = setInterval(() => {
+            this.pruneExpiredHttpProxySessions();
+        }, HTTP_PROXY_SESSION_TTL_MS);
+        sweepTimer.unref();
+        return sweepTimer;
+    }
+
+    private destroyHttpProxySession(session: HttpProxySessionEntry): void {
+        const sessions = this.httpProxySessions.get(session.key);
+        if (sessions) {
+            const nextSessions = sessions.filter((entry) => entry !== session);
+            if (nextSessions.length === 0) {
+                this.httpProxySessions.delete(session.key);
+            } else {
+                this.httpProxySessions.set(session.key, nextSessions);
+            }
+        }
+
+        session.inUse = false;
+        session.agent.destroy();
+        if (!session.tunnel.destroyed) {
+            session.tunnel.destroy();
+        }
     }
 
     private buildUpstreamHttpRequestOptions(
@@ -559,10 +967,35 @@ export class ScriptingJupyterProxyService {
         };
     }
 
-    private writeProxyRequestBody(req: Request, upstreamRequest: http.ClientRequest): void {
+    private writeProxyRequestBody(req: ProxyableRequest, upstreamRequest: http.ClientRequest): void {
+        if (Buffer.isBuffer(req.rawBody) && req.rawBody.length > 0) {
+            upstreamRequest.end(req.rawBody);
+            return;
+        }
+
         const body = this.readRequestBody(req.body);
         if (body) {
             upstreamRequest.end(JSON.stringify(body));
+            return;
+        }
+
+        if (Buffer.isBuffer(req.body)) {
+            upstreamRequest.end(req.body);
+            return;
+        }
+
+        if (typeof req.body === 'string') {
+            upstreamRequest.end(req.body);
+            return;
+        }
+
+        if (typeof req.body === 'number' || typeof req.body === 'boolean') {
+            upstreamRequest.end(String(req.body));
+            return;
+        }
+
+        if (typeof req.body !== 'undefined' && (req.readableEnded || req.complete)) {
+            upstreamRequest.end();
             return;
         }
 

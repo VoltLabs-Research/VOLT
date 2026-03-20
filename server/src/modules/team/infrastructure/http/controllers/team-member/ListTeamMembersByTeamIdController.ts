@@ -1,5 +1,5 @@
-import { createController } from '@shared/infrastructure/http/controllers/createController';
 import ListTeamMembersByTeamIdUseCase from '@modules/team/application/use-cases/team-member/ListTeamMembersByTeamIdUseCase';
+import { createPaginatedController } from '@shared/infrastructure/http/controllers/createController';
 
-const ListTeamMembersByTeamIdController = createController(ListTeamMembersByTeamIdUseCase);
+const ListTeamMembersByTeamIdController = createPaginatedController(ListTeamMembersByTeamIdUseCase);
 export default ListTeamMembersByTeamIdController;

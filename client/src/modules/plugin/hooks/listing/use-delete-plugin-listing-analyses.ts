@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { analysisQuery } from '@/modules/analysis/hooks/queries';
-import useConfirm from '@/shared/presentation/hooks/use-confirm';
+import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
 import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
@@ -8,7 +8,6 @@ import { isAccessDeniedError } from '@/shared/errors/core';
 
 const useDeletePluginListingAnalyses = () => {
     const deleteAnalysisMutation = analysisQuery.useDeleteMutation();
-    const { confirm } = useConfirm();
 
     return useCallback(async (rows: ListingRow[]) => {
         const analysisIds = rows

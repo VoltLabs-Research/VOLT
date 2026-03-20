@@ -4,6 +4,7 @@ import {
     RevealTeamClusterCredentialsOutputDTO
 } from '@modules/team-cluster/application/dtos/RevealTeamClusterCredentialsDTO';
 import { TeamClusterCredentialServicesDTO } from '@modules/team-cluster/application/dtos/TeamClusterDTO';
+import { requireOwnedTeamClusterWithSensitiveData } from '@modules/team-cluster/application/utilities/team-cluster-ownership';
 import type { ITeamClusterCredentialsCipher } from '@modules/team-cluster/domain/port/ITeamClusterCredentialsCipher';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
@@ -46,12 +47,9 @@ export default class RevealTeamClusterCredentialsUseCase implements IUseCase<Rev
     ){}
 
     async execute(input: RevealTeamClusterCredentialsInputDTO): Promise<Result<RevealTeamClusterCredentialsOutputDTO, ApplicationError>> {
-        const teamCluster = await this.teamClusterRepository.findByIdWithSensitiveData(input.teamClusterId);
-        if (!teamCluster || teamCluster.props.team !== input.teamId) {
-            return Result.fail(ApplicationError.notFound(
-                'TeamCluster::NotFound',
-                'Team cluster not found'
-            ));
+        const teamCluster = await requireOwnedTeamClusterWithSensitiveData(this.teamClusterRepository, input);
+        if (teamCluster instanceof ApplicationError) {
+            return Result.fail(teamCluster);
         }
 
         const passwordError = await assertConfirmedPassword({

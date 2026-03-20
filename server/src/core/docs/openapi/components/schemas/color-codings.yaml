@@ -47,8 +47,6 @@ ColorCodingStats:
   required:
   - min
   - max
-  - mean
-  - median
   properties:
     min:
       type: number
@@ -56,9 +54,3 @@ ColorCodingStats:
     max:
       type: number
       description: Maximum value across all atoms
-    mean:
-      type: number
-      description: Mean value across all atoms
-    median:
-      type: number
-      description: Median value across all atoms

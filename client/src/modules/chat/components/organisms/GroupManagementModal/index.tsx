@@ -10,8 +10,7 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Modal from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
-import useConfirm from '@/shared/presentation/hooks/use-confirm';
+import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import type { User } from '@/modules/auth/api/entities/user';
 import type { Chat } from '@/modules/chat/api/entities/chat';
 import './GroupManagementModal.css';
@@ -70,8 +69,7 @@ const GroupManagementModal = ({
     const [groupDescription, setGroupDescription] = useState('');
     const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
     const tabButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
-    const { isLoading, execute } = useAsyncAction();
-    const { confirm } = useConfirm();
+    const [isLoading, setIsLoading] = useState(false);
 
     const isOwner = chat?.createdBy?._id === currentUserId;
     const isAdmin = chat?.admins?.some((a) => a._id === currentUserId) ?? false;
@@ -92,25 +90,37 @@ const GroupManagementModal = ({
 
     if (!chat || !chat.isGroup) return null;
 
-    const handleSaveInfo = () => execute(async () => {
+    const runAsync = async (action: () => Promise<void>) => {
+        setIsLoading(true);
+
+        try {
+            await action();
+        } catch {
+            // The caller already handles user-facing failures.
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleSaveInfo = () => runAsync(async () => {
         if (groupName.trim()) {
             await onUpdateInfo(chat._id, groupName.trim(), groupDescription.trim());
         }
     });
 
-    const handleAddMembers = () => execute(async () => {
+    const handleAddMembers = () => runAsync(async () => {
         if (selectedMembers.length > 0) {
             await onAddMembers(chat._id, selectedMembers);
             setSelectedMembers([]);
         }
     });
 
-    const handleToggleAdmin = (userId: string) => execute(async () => {
+    const handleToggleAdmin = (userId: string) => runAsync(async () => {
         const isCurrentAdmin = chat.admins?.some((a) => a._id === userId);
         await onUpdateAdmins(chat._id, [userId], isCurrentAdmin ? 'remove' : 'add');
     });
 
-    const handleLeave = () => execute(async () => {
+    const handleLeave = () => runAsync(async () => {
         const isConfirmed = await confirm({
             title: 'Leave this group?',
             confirmText: 'Leave'

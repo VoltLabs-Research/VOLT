@@ -1,5 +1,5 @@
-import useAppHotkeys from './use-app-hotkeys';
 import { useMemo } from 'react';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 interface ShortcutOptions {
     ctrl?: boolean;
@@ -39,12 +39,14 @@ const useKeyboardShortcut = (
         return parts.join('+');
     }, [alt, ctrl, key, meta, shift]);
 
-    useAppHotkeys(
+    useHotkeys(
         hotkey,
         () => callback(),
         {
             enabled,
-            enableOnFormTags,
+            enableOnFormTags: enableOnFormTags
+                ? ['INPUT', 'TEXTAREA', 'SELECT']
+                : false,
             preventDefault
         },
         [callback]

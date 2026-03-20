@@ -1,4 +1,5 @@
 import { inject, injectable } from 'tsyringe';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
@@ -77,22 +78,30 @@ export default class TrajectoryNativeDaemonService {
     ) {}
 
     async preprocessTrajectory(input: TrajectoryNativeRequest): Promise<void> {
-        await this.teamClusterDaemonClient.command(input.teamClusterId, 'trajectory.native.preprocess', this.toBaseBody(input));
+        await this.teamClusterDaemonClient.command(
+            input.teamClusterId,
+            TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.preprocess,
+            this.toBaseBody(input)
+        );
     }
 
     async getTrajectoryMetadata(input: TrajectoryNativeRequest): Promise<FrameMetadata> {
-        return this.teamClusterDaemonClient.command(input.teamClusterId, 'trajectory.native.metadata', this.toBaseBody(input));
+        return this.teamClusterDaemonClient.command(
+            input.teamClusterId,
+            TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.metadata,
+            this.toBaseBody(input)
+        );
     }
 
     async getPropertyStats(input: TrajectoryNativePropertyRequest): Promise<{ min: number; max: number; }> {
-        return this.teamClusterDaemonClient.command(input.teamClusterId, 'trajectory.native.property-stats', {
+        return this.teamClusterDaemonClient.command(input.teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.propertyStats, {
             ...this.toBaseBody(input),
             property: input.property
         });
     }
 
     async getUniqueValues(input: TrajectoryNativeUniqueValuesRequest): Promise<number[]> {
-        return this.teamClusterDaemonClient.command(input.teamClusterId, 'trajectory.native.unique-values', {
+        return this.teamClusterDaemonClient.command(input.teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.uniqueValues, {
             ...this.toBaseBody(input),
             property: input.property,
             maxValues: input.maxValues
@@ -100,13 +109,13 @@ export default class TrajectoryNativeDaemonService {
     }
 
     async getAtomIds(input: TrajectoryNativeRequest): Promise<number[]> {
-        return this.teamClusterDaemonClient.command(input.teamClusterId, 'trajectory.native.atom-ids', {
+        return this.teamClusterDaemonClient.command(input.teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.atomIds, {
             ...this.toBaseBody(input)
         });
     }
 
     async getAtomsPage(input: TrajectoryNativeAtomsPageRequest): Promise<TrajectoryNativeAtomsPageResponse> {
-        return this.teamClusterDaemonClient.command(input.teamClusterId, 'trajectory.native.atoms', {
+        return this.teamClusterDaemonClient.command(input.teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.atoms, {
             ...this.toBaseBody(input),
             page: input.page,
             limit: input.limit,
@@ -117,7 +126,7 @@ export default class TrajectoryNativeDaemonService {
     async previewFilter(input: TrajectoryNativeFilterPreviewRequest): Promise<{ mask: Uint8Array; matchCount: number; totalAtoms: number; }> {
         const response = await this.teamClusterDaemonClient.command<TrajectoryNativeFilterPreviewResponse>(
             input.teamClusterId,
-            'trajectory.native.filter-preview',
+            TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.filterPreview,
             {
                 ...this.toBaseBody(input),
                 property: input.property,
@@ -137,7 +146,7 @@ export default class TrajectoryNativeDaemonService {
     }
 
     async exportColoredModel(input: TrajectoryNativeColorModelRequest): Promise<void> {
-        await this.teamClusterDaemonClient.command(input.teamClusterId, 'trajectory.native.color-model', {
+        await this.teamClusterDaemonClient.command(input.teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.colorModel, {
             ...this.toBaseBody(input),
             property: input.property,
             objectKey: input.objectKey,
@@ -151,7 +160,7 @@ export default class TrajectoryNativeDaemonService {
     }
 
     async exportParticleFilterModel(input: TrajectoryNativeParticleFilterRequest): Promise<{ atomsResult: number; }> {
-        return this.teamClusterDaemonClient.command(input.teamClusterId, 'trajectory.native.particle-filter-model', {
+        return this.teamClusterDaemonClient.command(input.teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.particleFilterModel, {
             ...this.toBaseBody(input),
             objectKey: input.objectKey,
             action: input.action,
@@ -160,14 +169,14 @@ export default class TrajectoryNativeDaemonService {
     }
 
     async getObjectBuffer(teamClusterId: string, bucket: string, objectKey: string): Promise<Buffer> {
-        return this.teamClusterDaemonClient.commandBuffer(teamClusterId, 'object.get', {
+        return this.teamClusterDaemonClient.commandBuffer(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.object.get, {
             bucket,
             objectKey
         });
     }
 
     async getObjectStream(teamClusterId: string, bucket: string, objectKey: string): Promise<Readable> {
-        return this.teamClusterDaemonClient.commandStream(teamClusterId, 'object.get', {
+        return this.teamClusterDaemonClient.commandStream(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.object.get, {
             bucket,
             objectKey
         });

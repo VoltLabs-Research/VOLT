@@ -8,7 +8,7 @@ import { LISTING_QUERY_KEYS, usePluginListingInfiniteQuery } from '@/modules/plu
 import usePluginListing, { SUB_LISTING_MODAL_ID } from '@/modules/plugin/hooks/listing/use-plugin-listing';
 import usePluginSubListing from '@/modules/plugin/hooks/listing/use-plugin-sub-listing';
 import useDeletePluginListingAnalyses from '@/modules/plugin/hooks/listing/use-delete-plugin-listing-analyses';
-import { isAccessDeniedError, normalizeError } from '@/shared/errors/core';
+import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
 import { openModal } from '@/shared/presentation/components/Modal';
@@ -193,7 +193,10 @@ const CompactPluginExposureTable = ({
     }
 
     const compactErrorMessage = compactError && !isAccessDeniedError(compactError)
-        ? normalizeError(compactError).friendlyMessage || 'Failed to load listing.'
+        ? reportError(compactError, {
+            surface: ErrorSurface.Silent,
+            fallbackTitle: 'Failed to load listing.'
+        }).title
         : null;
 
     return (

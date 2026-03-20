@@ -2,6 +2,8 @@ import 'reflect-metadata';
 
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import User from '@modules/auth/domain/entities/User';
+import { SessionActivityType } from '@modules/session/domain/entities/Session';
+import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';
 import {
     authenticateOptional,
     AuthenticationType,
@@ -14,6 +16,7 @@ import { container } from 'tsyringe';
 
 import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import type { ITokenService, TokenPayload } from '@modules/auth/domain/port/ITokenService';
+import type { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import type { RequestHandler } from 'express';
 
@@ -108,10 +111,57 @@ const createUserRepository = (): IUserRepository => {
     };
 };
 
-const registerAuthenticationDependencies = (payload: TokenPayload | null): void => {
+const createSessionRepository = (isActive: boolean): ISessionRepository => {
+    return {
+        findByToken: async () => isActive
+            ? {
+                _id: 'session-id',
+                props: {
+                    user: USER_ID,
+                    token: 'valid-user-token',
+                    userAgent: 'test-agent',
+                    ip: '127.0.0.1',
+                    isActive: true,
+                    lastActivity: new Date(),
+                    action: SessionActivityType.Login,
+                    success: true,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                }
+            }
+            : null,
+        findActiveByUserId: async () => [],
+        findLoginActivity: async () => [],
+        deactivateByToken: async () => {},
+        deactivateAllExcept: async () => 0,
+        deactivateAll: async () => 0,
+        createFailedLogin: async () => {
+            throw new Error('Not implemented');
+        },
+        updateActivity: async () => {},
+        findById: async () => null,
+        findOne: async () => null,
+        findAll: async () => ({ data: [], total: 0, page: 1, totalPages: 0, limit: 10 }),
+        export: async () => [],
+        create: async () => {
+            throw new Error('Not implemented');
+        },
+        updateById: async () => null,
+        updateMany: async () => 0,
+        insertMany: async () => {},
+        deleteById: async () => false,
+        deleteMany: async () => 0,
+        count: async () => 0,
+        countGroupedBy: async () => new Map(),
+        exists: async () => false
+    };
+};
+
+const registerAuthenticationDependencies = (payload: TokenPayload | null, isActiveSession = true): void => {
     container.clearInstances();
     container.registerInstance(AUTH_TOKENS.TokenService, createTokenService(payload));
     container.registerInstance(AUTH_TOKENS.UserRepository, createUserRepository());
+    container.registerInstance(SESSION_TOKENS.SessionRepository, createSessionRepository(isActiveSession));
 };
 
 const createApp = (middleware: RequestHandler, beforeMiddleware?: RequestHandler) => {
@@ -230,6 +280,30 @@ test('protect: authenticates valid user tokens and preserves prior behavior', as
     assert.equal(response.status, 200);
     assert.equal(body.data.authType, AuthenticationType.User);
     assert.equal(body.data.userId, USER_ID);
+});
+
+test('protect: rejects valid JWTs when the matching session is no longer active', async () => {
+    registerAuthenticationDependencies({
+        _id: USER_ID,
+        userId: USER_ID,
+        id: USER_ID,
+        iat: 1,
+        exp: 2
+    }, false);
+
+    const response = await requestJson(
+        createApp(protect),
+        'Bearer valid-user-token'
+    );
+    const body = response.body;
+
+    if (!isErrorResponseBody(body)) {
+        throw new Error('Expected error response body');
+    }
+
+    assert.equal(response.status, 401);
+    assert.equal(body.code, 'Authentication::Unauthorized');
+    assert.equal(body.statusCode, 401);
 });
 
 test('authenticateOptional: keeps guest access when no token is provided', async () => {

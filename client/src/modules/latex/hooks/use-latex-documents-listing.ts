@@ -13,13 +13,13 @@ import {
     useUpdateLatexDocumentMutation,
     useUpdateLatexFolderMutation
 } from '@/modules/latex/hooks/queries';
+import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
 import { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import useFolderedListing, { type FolderedListingContext } from '@/shared/presentation/hooks/use-foldered-listing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import usePermission from '@/shared/presentation/hooks/use-permission';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import type { MenuOption } from '@/shared/presentation/types/menu';
@@ -105,7 +105,8 @@ const getDeleteFolderConfirmDescription = (folderTitle: string): string => {
 const useLatexDocumentsListing = () => {
     const navigate = useNavigate();
     const teamId = useSelectedTeamId();
-    const canMoveDocuments = usePermission(['latex:update']);
+    const { canAccess } = useTeamPermissions();
+    const canMoveDocuments = canAccess(['latex:update']);
     const { mutateAsync: deleteDocument } = useDeleteLatexDocumentMutation();
     const { mutateAsync: createDocument } = useCreateLatexDocumentMutation();
     const { mutateAsync: updateDocument } = useUpdateLatexDocumentMutation();

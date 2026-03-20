@@ -11,20 +11,30 @@ import { TeamClusterServiceExposureAccessMode } from '@modules/team-cluster/util
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
+import { LocalRelayPortAllocator } from '@shared/infrastructure/services/LocalRelayPortAllocator';
+import {
+    bridgeWebSockets,
+    writeUpgradeError
+} from '@shared/infrastructure/utilities/proxy-relay';
 import { buildWebSocketProtocolList } from '@shared/infrastructure/utilities/websocket-protocols';
 import {
     readRelayHostValue,
     readRelayPortRangeValue,
     resolveRelayAdvertisedHost
 } from '@shared/infrastructure/utilities/relay-network';
+import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { inject, injectable } from 'tsyringe';
 import { randomBytes } from 'node:crypto';
 import http from 'node:http';
-import type { IncomingHttpHeaders, IncomingMessage, RequestOptions, ServerResponse } from 'node:http';
-import type { Duplex } from 'node:stream';
 import { WebSocket, WebSocketServer } from 'ws';
-import type { RawData } from 'ws';
-import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import type {
+    ClientRequest,
+    IncomingHttpHeaders,
+    IncomingMessage,
+    RequestOptions,
+    ServerResponse
+} from 'node:http';
+import type { Duplex } from 'node:stream';
 
 interface CreateContainerPortProxyRelaySessionInput {
     teamId: string;
@@ -61,22 +71,6 @@ const DEFAULT_RELAY_PORT_END = 24999;
 const PROXY_URL_ORIGIN = 'http://volt.local';
 const UPSTREAM_URL_ORIGIN = 'http://upstream.local';
 
-const normalizeWebSocketPayload = (data: RawData): Buffer | string => {
-    if (typeof data === 'string') {
-        return data;
-    }
-
-    if (Buffer.isBuffer(data)) {
-        return data;
-    }
-
-    if (Array.isArray(data)) {
-        return Buffer.concat(data.map((chunk) => Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
-    }
-
-    return Buffer.from(data);
-};
-
 const readCookies = (rawCookieHeader?: string): Record<string, string> => {
     if (!rawCookieHeader) {
         return {};
@@ -98,11 +92,6 @@ const readCookies = (rawCookieHeader?: string): Record<string, string> => {
     }
 
     return cookies;
-};
-
-const writeUpgradeError = (socket: Duplex, statusCode: number, message: string): void => {
-    socket.write(`HTTP/1.1 ${statusCode} ${message}\r\nConnection: close\r\n\r\n`);
-    socket.destroy();
 };
 
 const readNumberEnv = (name: string, fallback: number): number => {
@@ -128,8 +117,11 @@ export class ContainerPortProxyRelayService {
     private readonly portStart = readRelayPortRangeValue('TEAM_CLUSTER_APP_PROXY_PORT_START', DEFAULT_RELAY_PORT_START);
     private readonly portEnd = readRelayPortRangeValue('TEAM_CLUSTER_APP_PROXY_PORT_END', DEFAULT_RELAY_PORT_END);
     private readonly sessionsById = new Map<string, ContainerPortProxyRelaySession>();
-    private readonly sessionIdsByRelayPort = new Map<number, string>();
-    private readonly usedPorts = new Set<number>();
+    private readonly portAllocator = new LocalRelayPortAllocator({
+        portStart: this.portStart,
+        portEnd: this.portEnd,
+        exhaustedMessage: 'No available container app relay ports'
+    });
     private readonly webSocketServer = new WebSocketServer({
         noServer: true
     });
@@ -143,7 +135,7 @@ export class ContainerPortProxyRelayService {
     ) {}
 
     async createSession(input: CreateContainerPortProxyRelaySessionInput): Promise<{ url: string; expiresAt: string; }> {
-        const relayPort = this.reservePort();
+        const relayPort = this.portAllocator.reservePort();
         const sessionId = randomBytes(16).toString('hex');
         const expiresAt = Date.now() + this.sessionTtlMs;
         const server = http.createServer((req, res) => {
@@ -153,28 +145,19 @@ export class ContainerPortProxyRelayService {
         });
 
         server.on('upgrade', (request, socket, head) => {
-            this.handleUpgrade(sessionId, request, socket as Duplex, head).catch((error: unknown) => {
+            this.handleUpgrade(sessionId, request, socket, head).catch((error: unknown) => {
                 const statusCode = error instanceof ApplicationError ? error.statusCode : 500;
                 const message = error instanceof Error ? error.message : 'WebSocket upgrade failed';
-                writeUpgradeError(socket as Duplex, statusCode, message);
+                writeUpgradeError(socket, statusCode, message);
             });
         });
 
-        try {
-            await new Promise<void>((resolve, reject) => {
-                server.once('error', reject);
-                server.listen(relayPort, this.bindHost, () => {
-                    server.removeListener('error', reject);
-                    resolve();
-                });
-            });
-        } catch (error) {
-            this.usedPorts.delete(relayPort);
-            throw error;
-        }
+        await this.portAllocator.listen(server, relayPort, this.bindHost);
 
         const cleanupTimer = setTimeout(() => {
-            void this.closeSession(sessionId);
+            this.closeSession(sessionId).catch((error: unknown) => {
+                logger.error({ err: error, sessionId }, 'Failed to close expired container port proxy session');
+            });
         }, this.sessionTtlMs);
         cleanupTimer.unref();
 
@@ -193,7 +176,6 @@ export class ContainerPortProxyRelayService {
         };
 
         this.sessionsById.set(sessionId, session);
-        this.sessionIdsByRelayPort.set(relayPort, sessionId);
 
         const url = buildContainerPortProxyRelayUrl({
             sessionId,
@@ -279,9 +261,66 @@ export class ContainerPortProxyRelayService {
             ? new WebSocket(upstreamWebSocketUrl, requestedProtocols, upstreamWebSocketOptions)
             : new WebSocket(upstreamWebSocketUrl, upstreamWebSocketOptions);
 
-        this.webSocketServer.handleUpgrade(request, socket, head, (webSocket) => {
-            this.bindWebSocketProxy(webSocket, upstreamWebSocket);
-        });
+        const cleanupPendingUpgrade = (): void => {
+            upstreamWebSocket.off('open', onUpstreamReady);
+            upstreamWebSocket.off('close', onUpstreamCloseBeforeReady);
+            upstreamWebSocket.off('error', onUpstreamErrorBeforeReady);
+            upstreamWebSocket.off('unexpected-response', onUpstreamUnexpectedResponse);
+            socket.off('close', onClientSocketCloseBeforeReady);
+        };
+
+        const onUpstreamReady = (): void => {
+            cleanupPendingUpgrade();
+            const negotiatedProtocol = upstreamWebSocket.protocol;
+            const webSocketServer = negotiatedProtocol
+                ? new WebSocketServer({
+                    noServer: true,
+                    handleProtocols: () => negotiatedProtocol
+                })
+                : this.webSocketServer;
+
+            webSocketServer.handleUpgrade(request, socket, head, (webSocket) => {
+                this.bindWebSocketProxy(webSocket, upstreamWebSocket);
+            });
+        };
+
+        const onUpstreamCloseBeforeReady = (): void => {
+            cleanupPendingUpgrade();
+            writeUpgradeError(socket, 502, 'Upstream WebSocket connection failed');
+        };
+
+        const onUpstreamErrorBeforeReady = (error: Error): void => {
+            cleanupPendingUpgrade();
+            writeUpgradeError(socket, 502, error.message || 'Upstream WebSocket connection failed');
+        };
+
+        const onUpstreamUnexpectedResponse = (_upstreamRequest: ClientRequest, upstreamResponse: IncomingMessage): void => {
+            cleanupPendingUpgrade();
+            upstreamResponse.resume();
+            writeUpgradeError(
+                socket,
+                upstreamResponse.statusCode || 502,
+                upstreamResponse.statusMessage || 'Upstream WebSocket connection failed'
+            );
+        };
+
+        const onClientSocketCloseBeforeReady = (): void => {
+            cleanupPendingUpgrade();
+            if (upstreamWebSocket.readyState === WebSocket.CONNECTING || upstreamWebSocket.readyState === WebSocket.OPEN) {
+                upstreamWebSocket.close();
+            }
+        };
+
+        if (upstreamWebSocket.readyState === WebSocket.OPEN) {
+            onUpstreamReady();
+            return;
+        }
+
+        upstreamWebSocket.once('open', onUpstreamReady);
+        upstreamWebSocket.once('close', onUpstreamCloseBeforeReady);
+        upstreamWebSocket.once('error', onUpstreamErrorBeforeReady);
+        upstreamWebSocket.once('unexpected-response', onUpstreamUnexpectedResponse);
+        socket.once('close', onClientSocketCloseBeforeReady);
     }
 
     private requireAuthorizedSession(
@@ -295,7 +334,9 @@ export class ContainerPortProxyRelayService {
         }
 
         if (Date.now() >= session.expiresAt) {
-            void this.closeSession(session.sessionId);
+            this.closeSession(session.sessionId).catch((error: unknown) => {
+                logger.error({ err: error, sessionId: session.sessionId }, 'Failed to close expired container port proxy session');
+            });
             throw ApplicationError.unauthorized(ErrorCodes.AUTHENTICATION_UNAUTHORIZED, 'Container proxy session expired');
         }
 
@@ -343,26 +384,8 @@ export class ContainerPortProxyRelayService {
     }
 
     private bindWebSocketProxy(webSocket: WebSocket, upstreamWebSocket: WebSocket): void {
-        upstreamWebSocket.on('message', (data, isBinary) => {
-            const payload = normalizeWebSocketPayload(data);
-            webSocket.send(payload, { binary: isBinary });
-        });
-        upstreamWebSocket.on('close', (code, reason) => {
-            webSocket.close(code || 1000, reason.toString() || undefined);
-        });
-        upstreamWebSocket.on('error', () => {
-            webSocket.close(1011, 'Remote container websocket failed');
-        });
-
-        webSocket.on('message', (data, isBinary) => {
-            const message = normalizeWebSocketPayload(data);
-            upstreamWebSocket.send(message, { binary: isBinary });
-        });
-        webSocket.on('close', () => {
-            upstreamWebSocket.close();
-        });
-        webSocket.on('error', () => {
-            upstreamWebSocket.close();
+        bridgeWebSockets(webSocket, upstreamWebSocket, {
+            upstreamErrorMessage: 'Remote container websocket failed'
         });
     }
 
@@ -526,12 +549,9 @@ export class ContainerPortProxyRelayService {
 
         clearTimeout(session.cleanupTimer);
         this.sessionsById.delete(sessionId);
-        this.sessionIdsByRelayPort.delete(session.relayPort);
-        this.usedPorts.delete(session.relayPort);
 
-        await new Promise<void>((resolve) => {
-            session.server.close(() => resolve());
-        });
+        await this.portAllocator.close(session.server);
+        this.portAllocator.releasePort(session.relayPort);
 
         logger.info({
             action: 'container.port-proxy.session.closed',
@@ -541,17 +561,6 @@ export class ContainerPortProxyRelayService {
             containerId: session.containerId,
             privatePort: session.privatePort
         }, 'Closed container port proxy relay session');
-    }
-
-    private reservePort(): number {
-        for (let port = this.portStart; port <= this.portEnd; port += 1) {
-            if (!this.usedPorts.has(port)) {
-                this.usedPorts.add(port);
-                return port;
-            }
-        }
-
-        throw new Error('No available container app relay ports');
     }
 
     private readHeaderValue(value: string | string[] | undefined): string | undefined {
