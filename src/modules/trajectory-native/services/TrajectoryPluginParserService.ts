@@ -63,13 +63,19 @@ interface ExposureData {
 
 function getMinMaxFromTypedArray(arr: Float32Array | Float64Array | Int32Array | Uint32Array): { min: number; max: number } | undefined {
     if (arr.length === 0) return undefined;
-    let min = arr[0];
-    let max = arr[0];
-    for (let i = 1; i < arr.length; i++) {
+    let min = Infinity;
+    let max = -Infinity;
+    for (let i = 0; i < arr.length; i++) {
         const v = arr[i];
+        if (!Number.isFinite(v)) continue;
         if (v < min) min = v;
         if (v > max) max = v;
     }
+
+    if (min === Infinity || max === -Infinity) {
+        return undefined;
+    }
+
     return { min, max };
 }
 
@@ -361,6 +367,7 @@ export class TrajectoryPluginParserService {
         if (maxId <= 0) return undefined;
 
         const out = new Float32Array(maxId + 1);
+        out.fill(Number.NaN);
 
         const first = items[0];
         const isVector = Array.isArray(first?.[property]);
@@ -370,7 +377,10 @@ export class TrajectoryPluginParserService {
                 const item = items[i];
                 const id = this.normalizeAtomId(item?.id);
                 if (id === null) continue;
-                out[id] = Number(item?.[property]) || 0;
+                const value = Number(item?.[property]);
+                if (Number.isFinite(value)) {
+                    out[id] = value;
+                }
             }
             return out;
         }
@@ -385,10 +395,16 @@ export class TrajectoryPluginParserService {
 
             let sum = 0;
             for (let k = 0; k < vec.length; k++) {
-                const v = Number(vec[k]) || 0;
+                const v = Number(vec[k]);
+                if (!Number.isFinite(v)) {
+                    sum = Number.NaN;
+                    break;
+                }
                 sum += v * v;
             }
-            out[id] = Math.sqrt(sum);
+            if (Number.isFinite(sum)) {
+                out[id] = Math.sqrt(sum);
+            }
         }
 
         return out;
