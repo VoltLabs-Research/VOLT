@@ -669,8 +669,8 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
 
         hasBootstrappedSelectionRef.current = true;
 
-        const firstFile = latexFiles.find((file) => isTexFile(file.name))
-            ?? latexFiles.find((file) => file.isEntrypoint)
+        const firstFile = latexFiles.find((file) => file.isEntrypoint)
+            ?? latexFiles.find((file) => isTexFile(file.name))
             ?? latexFiles[0];
         if (firstFile) {
             handleFileSelected(firstFile);
@@ -749,11 +749,8 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         const file = latexFiles.find((currentFile) => currentFile._id === fileId);
         if (file) {
             handleFileSelected(file);
-            if (isTexFile(file.name) && !file.isEntrypoint) {
-                handleSetEntrypoint(file._id).catch(() => undefined);
-            }
         }
-    }, [handleFileSelected, handleSetEntrypoint, isTexFile, latexFiles]);
+    }, [handleFileSelected, latexFiles]);
 
     const handleSelectAssetById = useCallback((assetId: string): void => {
         const asset = assets.find((currentAsset) => currentAsset._id === assetId);
