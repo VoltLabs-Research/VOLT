@@ -543,7 +543,7 @@ export class AnalysisWorker {
             });
 
             // Report running status to the Volt server for real-time client visibility
-            await this.daemonJobReporterService.reportAnalysisJobStatus({
+            void this.daemonJobReporterService.reportAnalysisJobStatus({
                 jobId: job.jobId,
                 name: job.name,
                 analysisId: executionData.analysisId,

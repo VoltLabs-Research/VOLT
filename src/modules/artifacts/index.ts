@@ -14,7 +14,7 @@ export const createArtifactsModule = (
     minioService: MinioService,
     nativeModuleLoader: NativeModuleLoader,
     daemonArtifactReporterService: DaemonArtifactReporterService,
-    pluginListingRepository: PluginListingRepository = createPluginListingRepository()
+    pluginListingRepository: PluginListingRepository = createPluginListingRepository(minioService)
 ): ArtifactsModule => {
     const exportNodeProcessorService = createExportNodeProcessorService(
         minioService,

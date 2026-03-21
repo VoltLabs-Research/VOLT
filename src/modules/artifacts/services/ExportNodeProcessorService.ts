@@ -1156,18 +1156,18 @@ export const createExportNodeProcessorService = (
         return [];
     };
 
-    const reportArtifact = async (
+    const reportArtifact = (
         input: ExportExecutionInput,
         exporter: ExporterName,
         exportConfig: NonNullable<ExportExecutionInput['exposure']['export']>,
         objectPath: string,
         arrayIndex: number | undefined
-    ): Promise<void> => {
+    ): void => {
         const displayName = arrayIndex != null
             ? `${input.exposure.name} [${arrayIndex}]`
             : input.exposure.name;
 
-        await daemonArtifactReporterService.reportArtifact({
+        void daemonArtifactReporterService.reportArtifact({
             trajectory: input.executionData.trajectoryId,
             teamCluster: input.teamClusterId,
             analysis: input.executionData.analysisId,
@@ -1190,6 +1190,18 @@ export const createExportNodeProcessorService = (
                 exportType: exportConfig.type,
                 ...(arrayIndex != null ? { arrayIndex } : {})
             }
+        }).catch((error) => {
+            logger.warn(
+                {
+                    analysisId: input.executionData.analysisId,
+                    exposureId: input.exposure.nodeId,
+                    exporter,
+                    objectPath,
+                    timestep: input.timestep,
+                    err: error
+                },
+                'Failed to report scene artifact metadata to VoltCloud'
+            );
         });
     };
 
@@ -1233,7 +1245,7 @@ export const createExportNodeProcessorService = (
                         return;
                 }
 
-                await reportArtifact(input, exporter, exportConfig, objectPath, arrayIndex);
+                reportArtifact(input, exporter, exportConfig, objectPath, arrayIndex);
             }
         }
     };

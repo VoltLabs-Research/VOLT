@@ -1,7 +1,10 @@
 import { PluginListingRowModel } from '../models/PluginListingRowModel';
 import { PluginSubListingRowModel } from '../models/PluginSubListingRowModel';
 import { calculatePaginationOffset, calculateTotalPages, normalizePagination } from '@/shared/contracts';
-import { readString, toRecord } from '@/shared/utils';
+import { ObjectBucketName } from '@/shared/contracts';
+import { decodeMultiStream, mergeSelectiveChunk } from '@/shared/utilities/selective-msgpack';
+import { isRecord, readString, toRecord } from '@/shared/utils';
+import type { MinioService } from '@/modules/platform/services';
 import type { PluginListingRowDocument } from '../models/PluginListingRowModel';
 import type { PluginSubListingRowDocument } from '../models/PluginSubListingRowModel';
 import type { PaginatedResult } from '@/shared/contracts';
@@ -58,6 +61,10 @@ interface PluginSubListingQuery {
     subListingName?: string;
 };
 
+interface PluginSubListingSource {
+    objectKey: string;
+};
+
 interface PagedDocumentsRequest<TDocument> {
     page: number;
     limit: number;
@@ -98,6 +105,7 @@ const SYSTEM_KEYS = new Set([
     'exposureName',
     'trajectoryName',
     'timestep',
+    'payloadObjectKey',
     'subListingNames',
     '__v',
     'row'
@@ -207,7 +215,32 @@ const readSubListingNames = (documents: PluginListingRowDocument[]): string[] =>
     return [];
 };
 
+const buildPluginPayloadObjectKey = (
+    trajectoryId: string,
+    analysisId: string,
+    exposureId: string,
+    timestep: number
+): string => {
+    return `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack`;
+};
+
+const normalizeSubListingRows = (value: unknown): Record<string, unknown>[] => {
+    if (Array.isArray(value)) {
+        return value.filter(isRecord);
+    }
+
+    if (isRecord(value)) {
+        return [value];
+    }
+
+    return [];
+};
+
 export class MongoPluginListingRepository implements PluginListingRepository {
+    constructor(
+        private readonly minioService: MinioService
+    ) {}
+
     async listPluginListings(filter: PluginListingFilter): Promise<ListingPaginatedResult> {
         const query = buildPluginListingQuery(filter);
         const pageResult = await readPagedDocuments({
@@ -239,6 +272,11 @@ export class MongoPluginListingRepository implements PluginListingRepository {
     }
 
     async listPluginSubListings(filter: PluginSubListingFilter): Promise<PaginatedResult<PluginSubListingRowDocument>> {
+        const payloadResult = await this.listPluginSubListingsFromPayload(filter);
+        if (payloadResult) {
+            return payloadResult;
+        }
+
         const query = buildPluginSubListingQuery(filter);
         const pageResult = await readPagedDocuments({
             page: filter.page,
@@ -292,8 +330,107 @@ export class MongoPluginListingRepository implements PluginListingRepository {
     async deleteSubListingRows(filter: Record<string, unknown>): Promise<void> {
         await PluginSubListingRowModel.deleteMany(filter);
     }
+
+    private async listPluginSubListingsFromPayload(
+        filter: PluginSubListingFilter
+    ): Promise<PaginatedResult<PluginSubListingRowDocument> | null> {
+        const source = await this.resolvePluginSubListingSource(filter);
+        if (!source) {
+            return null;
+        }
+
+        try {
+            const rows = await this.readSubListingRowsFromObject(source.objectKey, filter.subListingName || '');
+            const pagination = normalizePagination(filter.page, filter.limit);
+            const offset = calculatePaginationOffset(pagination.page, pagination.limit);
+            const pageRows = rows.slice(offset, offset + pagination.limit);
+
+            return {
+                data: pageRows.map((row, index) => ({
+                    _id: `${filter.analysisId || 'analysis'}:${filter.exposureId || 'exposure'}:${String(filter.timestep ?? 'timestep')}:${filter.subListingName || 'sub-listing'}:${offset + index}`,
+                    analysis: filter.analysisId,
+                    exposureId: filter.exposureId,
+                    timestep: filter.timestep,
+                    subListingName: filter.subListingName,
+                    row
+                })),
+                page: pagination.page,
+                limit: pagination.limit,
+                total: rows.length,
+                totalPages: calculateTotalPages(rows.length, pagination.limit)
+            };
+        } catch {
+            return null;
+        }
+    }
+
+    private async resolvePluginSubListingSource(
+        filter: PluginSubListingFilter
+    ): Promise<PluginSubListingSource | null> {
+        if (
+            !filter.analysisId
+            || !filter.exposureId
+            || typeof filter.timestep !== 'number'
+            || !filter.subListingName
+        ) {
+            return null;
+        }
+
+        const listingDocument = await PluginListingRowModel.findOne(
+            {
+                analysis: filter.analysisId,
+                exposureId: filter.exposureId,
+                timestep: filter.timestep
+            },
+            {
+                payloadObjectKey: 1,
+                trajectory: 1
+            }
+        ).lean<Record<string, unknown> | null>();
+
+        const payloadObjectKey = typeof listingDocument?.payloadObjectKey === 'string'
+            ? listingDocument.payloadObjectKey
+            : undefined;
+        if (payloadObjectKey) {
+            return { objectKey: payloadObjectKey };
+        }
+
+        const trajectoryId = typeof listingDocument?.trajectory === 'string'
+            ? listingDocument.trajectory
+            : undefined;
+        if (!trajectoryId) {
+            return null;
+        }
+
+        return {
+            objectKey: buildPluginPayloadObjectKey(
+                trajectoryId,
+                filter.analysisId,
+                filter.exposureId,
+                filter.timestep
+            )
+        };
+    }
+
+    private async readSubListingRowsFromObject(
+        objectKey: string,
+        subListingName: string
+    ): Promise<Record<string, unknown>[]> {
+        const stream = await this.minioService.getObjectStream(ObjectBucketName.Plugins, objectKey);
+        let decoded: Record<string, unknown> | null = null;
+
+        for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
+            decoded = mergeSelectiveChunk(decoded, message, (key) => key === 'sub_listings');
+        }
+
+        if (!decoded || !isRecord(decoded.sub_listings)) {
+            return [];
+        }
+
+        return normalizeSubListingRows(decoded.sub_listings[subListingName]);
+    }
 };
 
-export const createPluginListingRepository = (): PluginListingRepository => {
-    return new MongoPluginListingRepository();
+export const createPluginListingRepository = (minioService: MinioService): PluginListingRepository => {
+    return new MongoPluginListingRepository(minioService);
 };

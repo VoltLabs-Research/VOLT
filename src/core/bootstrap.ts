@@ -40,7 +40,7 @@ const createBootstrapContext = (): BootstrapContext => {
     );
     const workflowRuntime = createWorkflowRuntimeModule();
     const jupyter = createJupyterModule(config, platform.dockerRuntimeService);
-    const pluginListingRepository = createPluginListingRepository();
+    const pluginListingRepository = createPluginListingRepository(platform.minioService);
     const queueConcurrencyCoordinator = new QueueConcurrencyCoordinator();
     const sshImport = createSSHImportModule({
         config,
