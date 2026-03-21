@@ -55,6 +55,7 @@ export const TEAM_CLUSTER_DAEMON_COMMAND = Object.freeze({
     object: Object.freeze({
         list: 'object.list',
         get: 'object.get',
+        delete: 'object.delete',
         upload: 'object.upload',
         uploadInit: 'object.upload.init',
         uploadChunk: 'object.upload.chunk',
