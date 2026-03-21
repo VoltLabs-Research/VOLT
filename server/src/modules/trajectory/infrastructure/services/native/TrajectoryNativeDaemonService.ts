@@ -14,6 +14,11 @@ interface TrajectoryNativeRequest {
     objectKey?: string;
 };
 
+interface TrajectoryNativeModifierSource {
+    analysisId?: string;
+    exposureId?: string;
+};
+
 interface TrajectoryNativePropertyRequest extends TrajectoryNativeRequest {
     property: string;
 };
@@ -28,14 +33,14 @@ interface TrajectoryNativeAtomsPageRequest extends TrajectoryNativeRequest {
     analysisId?: string;
 };
 
-interface TrajectoryNativeFilterPreviewRequest extends TrajectoryNativeRequest {
+interface TrajectoryNativeFilterPreviewRequest extends TrajectoryNativeRequest, TrajectoryNativeModifierSource {
     property: string;
     operator: string;
     value: number;
     externalValues?: Float32Array;
 };
 
-interface TrajectoryNativeColorModelRequest extends TrajectoryNativePropertyRequest {
+interface TrajectoryNativeColorModelRequest extends TrajectoryNativePropertyRequest, TrajectoryNativeModifierSource {
     objectKey: string;
     startValue: number;
     endValue: number;
@@ -132,6 +137,8 @@ export default class TrajectoryNativeDaemonService {
                 property: input.property,
                 operator: input.operator,
                 value: input.value,
+                ...(input.analysisId ? { analysisId: input.analysisId } : {}),
+                ...(input.exposureId ? { exposureId: input.exposureId } : {}),
                 externalValuesBase64: input.externalValues
                     ? Buffer.from(input.externalValues.buffer, input.externalValues.byteOffset, input.externalValues.byteLength).toString('base64')
                     : undefined
@@ -153,6 +160,8 @@ export default class TrajectoryNativeDaemonService {
             startValue: input.startValue,
             endValue: input.endValue,
             gradient: input.gradient,
+            ...(input.analysisId ? { analysisId: input.analysisId } : {}),
+            ...(input.exposureId ? { exposureId: input.exposureId } : {}),
             externalValuesBase64: input.externalValues
                 ? Buffer.from(input.externalValues.buffer, input.externalValues.byteOffset, input.externalValues.byteLength).toString('base64')
                 : undefined
