@@ -137,6 +137,17 @@ const requestUpdateSchema = z.object({
     password: requiredTextSchema
 }).strict();
 
+const queueConcurrencyValueSchema = z.number().int().min(1);
+
+const updateQueueConcurrencySchema = z.object({
+    queueConcurrency: z.object({
+        analysis: queueConcurrencyValueSchema,
+        rasterizer: queueConcurrencyValueSchema,
+        glbPreprocessing: queueConcurrencyValueSchema,
+        sshImport: queueConcurrencyValueSchema
+    }).strict()
+}).strict();
+
 export const teamClusterValidation = createResourceValidation({
     regenerateEnrollmentToken: {
         params: teamClusterParamsSchema
@@ -165,6 +176,10 @@ export const teamClusterValidation = createResourceValidation({
     requestUpdate: {
         params: teamClusterParamsSchema,
         body: requestUpdateSchema
+    },
+    updateQueueConcurrency: {
+        params: teamClusterParamsSchema,
+        body: updateQueueConcurrencySchema
     },
     createRemoteAccessSession: {
         params: teamClusterParamsSchema,

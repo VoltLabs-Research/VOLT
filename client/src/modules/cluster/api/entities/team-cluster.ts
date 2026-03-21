@@ -39,6 +39,13 @@ export interface TeamClusterCredentialServices {
     daemon: TeamClusterDaemonCredentialService;
 };
 
+export interface TeamClusterQueueConcurrency {
+    analysis: number;
+    rasterizer: number;
+    glbPreprocessing: number;
+    sshImport: number;
+};
+
 export interface TeamCluster {
     _id: string;
     name: string;
@@ -49,6 +56,7 @@ export interface TeamCluster {
     lastHeartbeatAt: Date | string | null;
     lastDisconnectAt: Date | string | null;
     services: TeamClusterServices;
+    queueConcurrency: TeamClusterQueueConcurrency;
     createdAt: Date | string;
     updatedAt: Date | string;
 };

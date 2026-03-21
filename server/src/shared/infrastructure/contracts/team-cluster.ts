@@ -1,4 +1,7 @@
-import type { TeamClusterServicesProps } from '@modules/team-cluster/domain/entities/TeamCluster';
+import type {
+    TeamClusterQueueConcurrencyProps,
+    TeamClusterServicesProps
+} from '@modules/team-cluster/domain/entities/TeamCluster';
 
 export const TEAM_CLUSTER_EVENT = Object.freeze({
     lifecycleUpdated: 'team-cluster.updated'
@@ -61,6 +64,15 @@ export const TEAM_CLUSTER_DAEMON_COMMAND = Object.freeze({
     plugin: Object.freeze({
         sync: 'plugin.sync'
     }),
+    runtime: Object.freeze({
+        config: Object.freeze({
+            get: 'runtime.config.get'
+        }),
+        queueConcurrency: Object.freeze({
+            apply: 'runtime.queue-concurrency.apply'
+        }),
+        restart: 'runtime.restart'
+    }),
     queue: Object.freeze({
         dispatch: 'queue.dispatch'
     }),
@@ -122,4 +134,9 @@ export interface ResolvedTeamClusterServices {
     redis: ResolvedTeamClusterRedisConnection;
     minio: ResolvedTeamClusterMinioConnection;
     services: TeamClusterServicesProps;
+};
+
+export interface TeamClusterDaemonQueueConcurrencyApplyPayload {
+    [key: string]: unknown;
+    queueConcurrency: TeamClusterQueueConcurrencyProps;
 };

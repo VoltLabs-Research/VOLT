@@ -16,6 +16,7 @@ import { SocketTeamClusterTerminalClient } from '@modules/team-cluster/socket/So
 import { formatSocketValidationError } from '@modules/socket/utilities/socket-validation-error';
 import {
     getTeamClusterRoom,
+    TEAM_CLUSTER_DAEMON_COMMAND,
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
     TEAM_CLUSTER_DAEMON_REGISTERED_EVENT,
     TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
@@ -210,7 +211,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             connection.id,
             TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
             async (_conn, payload) => {
-                if (this.teamClusterReverseChannelService.isRegisteredDaemonSocket(connection.id) && payload.type === 'command') {
+        if (this.teamClusterReverseChannelService.isRegisteredDaemonSocket(connection.id) && payload.type === 'command') {
                     await this.handleDaemonServerCommand(connection.id, payload);
                     return;
                 }
@@ -233,6 +234,47 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
     }
 
     private async handleDaemonServerCommand(socketId: string, payload: TeamClusterDaemonCommandMessage): Promise<void> {
+        if (payload.command === TEAM_CLUSTER_DAEMON_COMMAND.runtime.config.get) {
+            const teamClusterId = this.teamClusterReverseChannelService.getRegisteredTeamClusterId(socketId);
+
+            if (!teamClusterId) {
+                this.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
+                    type: 'response',
+                    requestId: payload.requestId,
+                    ok: false,
+                    status: 401,
+                    message: 'Daemon socket is not registered'
+                });
+                return;
+            }
+
+            const teamCluster = await this.teamClusterRepository.findById(teamClusterId);
+            if (!teamCluster) {
+                this.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
+                    type: 'response',
+                    requestId: payload.requestId,
+                    ok: false,
+                    status: 404,
+                    message: 'Team cluster not found'
+                });
+                return;
+            }
+
+            this.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
+                type: 'response',
+                requestId: payload.requestId,
+                ok: true,
+                status: 200,
+                data: {
+                    status: 'success',
+                    data: {
+                        queueConcurrency: teamCluster.props.queueConcurrency
+                    }
+                }
+            });
+            return;
+        }
+
         if (payload.command === 'runtime.heartbeat') {
             const result = await this.recordTeamClusterHeartbeatUseCase.execute(payload.payload as never);
             this.emitUseCaseResult(socketId, payload.requestId, result);
