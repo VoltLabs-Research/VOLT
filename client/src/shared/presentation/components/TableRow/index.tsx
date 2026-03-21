@@ -8,6 +8,7 @@ import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { motion } from 'framer-motion';
 import type { ColumnConfig, Identifiable } from '@/shared/presentation/components/DocumentListingTable';
 import type { MenuOption } from '@/shared/presentation/types/menu';
+import { formatUnknownValue } from '@/shared/utils/format';
 import type { CSSProperties, KeyboardEvent, MouseEvent } from 'react';
 
 interface TableRowProps<T extends Identifiable> {
@@ -94,7 +95,8 @@ const TableRow = <T extends Identifiable>({
     const dragAttributes = draggableId ? attributes : undefined;
 
     const renderCellContent = (col: ColumnConfig<T>, cellValue: unknown) => {
-        const defaultContent = col.render ? col.render(cellValue, item) : String(cellValue ?? '-');
+        const formattedCellValue = formatUnknownValue(cellValue);
+        const defaultContent = col.render ? col.render(cellValue, item) : formattedCellValue;
 
         if (!col.editable) return defaultContent;
 
@@ -105,7 +107,7 @@ const TableRow = <T extends Identifiable>({
             const handleSave = (newValue: string) => editable.onSave(item, newValue);
             return (
                 <EditableTag as='span' onSave={handleSave}>
-                    {String(cellValue ?? '-')}
+                    {formattedCellValue}
                 </EditableTag>
             );
         }
@@ -160,7 +162,7 @@ const TableRow = <T extends Identifiable>({
             {columns.map((col, colIdx) => {
                 const columnKey = getColumnKey(col);
                 const cellValue = itemRecord?.[columnKey];
-                const title = String(cellValue ?? '');
+                const title = formatUnknownValue(cellValue);
                 const columnTitle = getColumnTitle(col);
 
                 return (

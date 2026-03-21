@@ -51,6 +51,7 @@ export default class DeleteTrajectoryByIdUseCase implements IUseCase<DeleteTraje
         await this.eventBus.publish(new TrajectoryDeletedEvent({
             trajectoryId: input.trajectoryId,
             teamId: input.teamId ?? trajectory.props.team ?? '',
+            teamCluster: trajectory.props.teamCluster ?? '',
             userId: input.userId ?? '',
             trajectoryName: trajectory.props.name ?? ''
         }));

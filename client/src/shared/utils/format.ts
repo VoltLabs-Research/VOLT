@@ -29,6 +29,25 @@ export const formatSize = (bytes: number): string => {
 };
 
 /**
+ * Format an unknown runtime value into a safe display string.
+ */
+export const formatUnknownValue = (value: unknown): string => {
+    if(value === null || value === undefined) return '-';
+    if(typeof value === 'string') return value;
+    if(typeof value === 'number' || typeof value === 'bigint' || typeof value === 'boolean') {
+        return String(value);
+    }
+    if(value instanceof Date) return value.toISOString();
+
+    try{
+        const serialized = JSON.stringify(value);
+        return typeof serialized === 'string' ? serialized : String(value);
+    }catch{
+        return String(value);
+    }
+};
+
+/**
  * Get nested value from object by dot-notation path
  */
 export const getValueByPath = (obj: unknown, path: string): unknown => {

@@ -1,6 +1,7 @@
 import './Table.css';
 import { Skeleton } from '@mui/material';
 import { useCallback } from 'react';
+import { formatUnknownValue } from '@/shared/utils/format';
 
 export enum TableSortDirection {
     Ascending = 'ascending',
@@ -65,7 +66,7 @@ const Table = <T,>({
 
     const renderCell = (row: T, col: Column<T>) => {
         if (col.render) return col.render(row);
-        return (row as Record<string, unknown>)[col.key] as React.ReactNode;
+        return formatUnknownValue((row as Record<string, unknown>)[col.key]);
     };
 
     const renderHeaderCell = (col: Column<T>) => {

@@ -5,6 +5,7 @@ import { ErrorSurface, reportError } from '@/shared/errors/core';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import type { MenuOption } from '@/shared/presentation/types/menu';
+import { formatUnknownValue } from '@/shared/utils/format';
 import '@/modules/plugin/components/listing/organisms/PluginExposureTable/PluginExposureTable.css';
 
 export interface ColumnConfig {
@@ -38,18 +39,25 @@ const TableRow = ({ index, style, data: rows, columns, getMenuOptions, rowId }: 
 
     const content = (
         <div style={style} className='plugin-compact-table-row'>
-            {columns.map((col) => (
-                <div
-                    key={getColumnKey(col)}
-                    className='plugin-compact-table-cell overflow-hidden font-size-1 color-secondary'
-                    style={{
-                        minWidth: `${getColumnMinWidth(col)}px`,
-                        flex: `1 1 ${getColumnMinWidth(col)}px`
-                    }}
-                >
-                    {col.render ? col.render(row[getColumnKey(col)], row) : row[getColumnKey(col)] as React.ReactNode}
-                </div>
-            ))}
+            {columns.map((col) => {
+                const columnKey = getColumnKey(col);
+                const rawValue = row[columnKey];
+                const fallbackValue = formatUnknownValue(rawValue);
+
+                return (
+                    <div
+                        key={columnKey}
+                        className='plugin-compact-table-cell overflow-hidden font-size-1 color-secondary'
+                        style={{
+                            minWidth: `${getColumnMinWidth(col)}px`,
+                            flex: `1 1 ${getColumnMinWidth(col)}px`
+                        }}
+                        title={col.render ? undefined : fallbackValue}
+                    >
+                        {col.render ? col.render(rawValue, row) : fallbackValue}
+                    </div>
+                );
+            })}
         </div>
     );
 
