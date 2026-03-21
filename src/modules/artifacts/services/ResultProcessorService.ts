@@ -221,7 +221,7 @@ async function precomputeListingRows(
     teamId: string
 ): Promise<void> {
     if (!decoded) {
-        logger.warn({ objectKey }, 'Failed to decode msgpack payload');
+        logger.debug({ objectKey }, 'Exposure output has no listing payload');
         return;
     }
 

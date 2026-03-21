@@ -95,10 +95,14 @@ const readTransferId = (record: Record<string, unknown>, field: string): string 
 
 const readObjectUploadRequest = (payload: unknown): ObjectUploadRequest => {
     const record = readPayloadRecord(payload);
+    if (typeof record.content !== 'string') {
+        throw new Error('content is required');
+    }
+
     const request: ObjectUploadRequest = {
         bucket: readObjectBucketName(record.bucket, 'bucket'),
         objectKey: readString(record.objectKey, 'objectKey'),
-        content: readString(record.content, 'content')
+        content: record.content
     };
     const encoding = readTextEncoding(record.encoding);
     const metadata = readOptionalStringRecord(record.metadata, 'metadata');
