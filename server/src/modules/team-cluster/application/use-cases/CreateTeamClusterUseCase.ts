@@ -4,7 +4,10 @@ import {
     CreateTeamClusterOutputDTO
 } from '@modules/team-cluster/application/dtos/CreateTeamClusterDTO';
 import { toTeamClusterDTO } from '@modules/team-cluster/application/dtos/TeamClusterDTO';
-import TeamCluster, { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
+import TeamCluster, {
+    DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
+    TeamClusterStatus
+} from '@modules/team-cluster/domain/entities/TeamCluster';
 import type { ITeamClusterCredentialsCipher } from '@modules/team-cluster/domain/port/ITeamClusterCredentialsCipher';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
@@ -108,6 +111,7 @@ export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClus
                     password: encryptedDaemonPassword
                 }
             },
+            queueConcurrency: DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
             createdAt: new Date(),
             updatedAt: new Date()
         });

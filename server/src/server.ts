@@ -4,6 +4,7 @@ import './shared/infrastructure/logging/installOutputDuplicateGuard';
 
 import { registerAllDependencies } from './core/bootstrap/register-deps';
 import { startTempStorageLifecycle } from './core/bootstrap/start-temp-storage-lifecycle';
+import { backfillTeamClusterQueueConcurrency } from './core/bootstrap/backfill-team-cluster-queue-concurrency';
 import { initializeMinio } from './core/config/minio';
 import { initializeRedis } from './core/config/redis';
 import { registerAllSubscribers } from './core/events/registerAllSubscribers';
@@ -211,6 +212,8 @@ const startServer = async () => {
                 logger.error(`@server: critical dependencies failed (${failures.join(', ')}), shutting down`);
                 process.exit(1);
             }
+
+            await backfillTeamClusterQueueConcurrency();
 
             await registerAllSubscribers();
 

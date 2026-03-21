@@ -32,6 +32,13 @@ export interface TeamClusterCredentialServicesDTO {
     daemon: TeamClusterDaemonCredentialServiceDTO;
 };
 
+export interface TeamClusterQueueConcurrencyDTO {
+    analysis: number;
+    rasterizer: number;
+    glbPreprocessing: number;
+    sshImport: number;
+};
+
 export interface TeamClusterDTO {
     _id: string;
     name: string;
@@ -42,6 +49,7 @@ export interface TeamClusterDTO {
     lastHeartbeatAt: Date | null;
     lastDisconnectAt: Date | null;
     services: TeamClusterServicesDTO;
+    queueConcurrency: TeamClusterQueueConcurrencyDTO;
     createdAt: Date;
     updatedAt: Date;
 };
@@ -69,6 +77,9 @@ export const toTeamClusterDTO = (teamCluster: TeamCluster): TeamClusterDTO => {
             redis: toServiceDTO(services.redis),
             mongodb: toServiceDTO(services.mongodb),
             daemon: toServiceDTO(services.daemon)
+        },
+        queueConcurrency: {
+            ...teamCluster.props.queueConcurrency
         },
         createdAt: teamCluster.props.createdAt,
         updatedAt: teamCluster.props.updatedAt

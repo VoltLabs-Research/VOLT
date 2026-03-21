@@ -5,7 +5,8 @@ import {
     useDeleteTeamClusterMutation,
     useRequestClusterUpdateMutation,
     useRevealTeamClusterCredentialsMutation,
-    useTeamClustersQuery
+    useTeamClustersQuery,
+    useUpdateTeamClusterQueueConcurrencyMutation
 } from '@/modules/cluster/hooks/team-cluster/queries';
 import { teamClusterService } from '@/modules/cluster/api/service/team-cluster';
 import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluster-waiting';
@@ -16,6 +17,10 @@ import { useMemo, useEffect } from 'react';
 import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
 import type { RequestClusterUpdateOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/request-cluster-update';
 import type { TeamCluster, TeamClusterCredentialServices } from '@/modules/cluster/api/entities/team-cluster';
+import type {
+    TeamClusterQueueConcurrencyInputDTO,
+    UpdateTeamClusterQueueConcurrencyOutputDTO
+} from '@/modules/cluster/api/dtos/team-cluster/update-team-cluster-queue-concurrency';
 import type {
     TeamClusterRemoteAccessSession,
     TeamClusterRemoteAccessTarget,
@@ -90,6 +95,12 @@ const UPDATE_CLUSTER_TOAST_OPTIONS: ClusterCreateToastOptions = {
     error: { title: 'Failed to request cluster update' }
 };
 
+const UPDATE_QUEUE_CONCURRENCY_TOAST_OPTIONS: ClusterCreateToastOptions = {
+    loading: { title: 'Saving queue concurrency...' },
+    success: { title: 'Queue concurrency saved' },
+    error: { title: 'Failed to save queue concurrency' }
+};
+
 export interface ClusterManagementResult {
     clusters: TeamCluster[];
     selectedTeamId: string | null;
@@ -107,6 +118,10 @@ export interface ClusterManagementResult {
         isEdge: boolean,
         password: string
     ) => Promise<RequestClusterUpdateOutputDTO>;
+    updateQueueConcurrency: (
+        teamClusterId: string,
+        queueConcurrency: TeamClusterQueueConcurrencyInputDTO
+    ) => Promise<UpdateTeamClusterQueueConcurrencyOutputDTO>;
     createRemoteAccessSession: (
         teamClusterId: string,
         password: string,
@@ -148,6 +163,7 @@ const useClusterManagement = (): ClusterManagementResult => {
     const revealCredentialsMutation = useRevealTeamClusterCredentialsMutation();
     const deleteMutation = useDeleteTeamClusterMutation();
     const updateMutation = useRequestClusterUpdateMutation();
+    const updateQueueConcurrencyMutation = useUpdateTeamClusterQueueConcurrencyMutation();
 
     const clusters = teamClustersQuery.data?.data ?? [];
     const resolvedSelectedClusterId = useMemo(() => {
@@ -231,6 +247,21 @@ const useClusterManagement = (): ClusterManagementResult => {
             isEdge,
             password
         }), UPDATE_CLUSTER_TOAST_OPTIONS);
+    };
+
+    const updateQueueConcurrency = async (
+        teamClusterId: string,
+        queueConcurrency: TeamClusterQueueConcurrencyInputDTO
+    ) => {
+        if (!selectedTeamId) {
+            throw new Error('Missing selected team');
+        }
+
+        return showPromise(updateQueueConcurrencyMutation.mutateAsync({
+            teamId: selectedTeamId,
+            teamClusterId,
+            queueConcurrency
+        }), UPDATE_QUEUE_CONCURRENCY_TOAST_OPTIONS);
     };
 
     const createRemoteAccessSession = async (
@@ -328,6 +359,7 @@ const useClusterManagement = (): ClusterManagementResult => {
         revealCredentials,
         deleteCluster,
         requestUpdate,
+        updateQueueConcurrency,
         createRemoteAccessSession,
         listRemoteExplorerEntries,
         getRemoteExplorerNode,

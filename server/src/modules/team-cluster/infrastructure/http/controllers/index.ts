@@ -16,6 +16,7 @@ import RegenerateTeamClusterEnrollmentTokenController from '@modules/team-cluste
 import RequestTeamClusterUpdateController from '@modules/team-cluster/infrastructure/http/controllers/RequestTeamClusterUpdateController';
 import RevealTeamClusterCredentialsController from '@modules/team-cluster/infrastructure/http/controllers/RevealTeamClusterCredentialsController';
 import UpdateTeamClusterLifecycleController from '@modules/team-cluster/infrastructure/http/controllers/UpdateTeamClusterLifecycleController';
+import UpdateTeamClusterQueueConcurrencyController from '@modules/team-cluster/infrastructure/http/controllers/UpdateTeamClusterQueueConcurrencyController';
 import { createController } from '@shared/infrastructure/http/controllers/createController';
 import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
@@ -40,5 +41,6 @@ export default createControllerRegistry({
     regenerateEnrollmentToken: RegenerateTeamClusterEnrollmentTokenController,
     requestUpdate: RequestTeamClusterUpdateController,
     revealCredentials: RevealTeamClusterCredentialsController,
-    updateLifecycle: UpdateTeamClusterLifecycleController
+    updateLifecycle: UpdateTeamClusterLifecycleController,
+    updateQueueConcurrency: UpdateTeamClusterQueueConcurrencyController
 });

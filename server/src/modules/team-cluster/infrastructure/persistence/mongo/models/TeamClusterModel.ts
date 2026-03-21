@@ -1,5 +1,8 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TeamClusterProps, TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
+import {
+    TeamClusterProps,
+    TeamClusterStatus
+} from '@modules/team-cluster/domain/entities/TeamCluster';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 import { Document, Model, Schema } from 'mongoose';
@@ -43,6 +46,31 @@ const daemonCredentialsSchema = new Schema({
         type: String,
         required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
         select: false
+    }
+}, {
+    _id: false
+});
+
+const queueConcurrencySchema = new Schema({
+    analysis: {
+        type: Number,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
+        min: [1, TEAM_CLUSTER_VALIDATION_ERROR]
+    },
+    rasterizer: {
+        type: Number,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
+        min: [1, TEAM_CLUSTER_VALIDATION_ERROR]
+    },
+    glbPreprocessing: {
+        type: Number,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
+        min: [1, TEAM_CLUSTER_VALIDATION_ERROR]
+    },
+    sshImport: {
+        type: Number,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
+        min: [1, TEAM_CLUSTER_VALIDATION_ERROR]
     }
 }, {
     _id: false
@@ -108,6 +136,10 @@ const TeamClusterSchema = new Schema({
             type: daemonCredentialsSchema,
             required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
         }
+    },
+    queueConcurrency: {
+        type: queueConcurrencySchema,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
     }
 }, {
     timestamps: true

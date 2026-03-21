@@ -1,3 +1,6 @@
+import ClusterQueueConcurrencyModal, {
+    CLUSTER_QUEUE_CONCURRENCY_MODAL_ID
+} from '@/modules/cluster/components/organisms/ClusterQueueConcurrencyModal';
 import ClusterCredentialsModal, { CLUSTER_CREDENTIALS_MODAL_ID } from '@/modules/cluster/components/organisms/ClusterCredentialsModal';
 import ClusterInstallCommandModal, { CLUSTER_INSTALL_COMMAND_MODAL_ID } from '@/modules/cluster/components/organisms/ClusterInstallCommandModal';
 import ClustersEmptyState from '@/modules/cluster/components/organisms/ClustersEmptyState';
@@ -17,7 +20,7 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Container from '@/shared/presentation/components/Container';
 import { openModal } from '@/shared/presentation/components/Modal';
-import { Database, FolderOpen, KeyRound, Monitor, RefreshCw, Terminal, TerminalSquare, Trash2 } from 'lucide-react';
+import { Database, FolderOpen, KeyRound, Monitor, RefreshCw, Settings2, Terminal, TerminalSquare, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
@@ -83,6 +86,11 @@ const ClustersListing = () => {
         }
         openModal(UPDATE_CLUSTER_MODAL_ID);
     }, [state, vm.selectedTeamId]);
+
+    const handleQueueConcurrency = useCallback((cluster: TeamCluster) => {
+        state.setQueueConcurrencyTarget(cluster);
+        openModal(CLUSTER_QUEUE_CONCURRENCY_MODAL_ID);
+    }, [state]);
 
     const handleShowInstallCommand = useCallback((cluster: TeamCluster) => {
         if (!vm.selectedTeamId) return;
@@ -231,6 +239,11 @@ const ClustersListing = () => {
             onClick: () => handleRevealCredentials(row.teamCluster)
         },
         {
+            label: 'Edit queue concurrency',
+            icon: Settings2,
+            onClick: () => handleQueueConcurrency(row.teamCluster)
+        },
+        {
             label: 'Update cluster',
             icon: RefreshCw,
             disabled: row.teamCluster.status !== TeamClusterStatus.Connected && row.teamCluster.status !== TeamClusterStatus.UpdateFailed,
@@ -262,7 +275,7 @@ const ClustersListing = () => {
             destructive: true,
             onClick: () => handleDeleteCluster(row.teamCluster)
         }
-    ], [handleDeleteCluster, handleRevealCredentials, handleShowInstallCommand, handleUpdateCluster, navigate]);
+    ], [handleDeleteCluster, handleQueueConcurrency, handleRevealCredentials, handleShowInstallCommand, handleUpdateCluster, navigate]);
 
     return (
         <>
@@ -281,6 +294,11 @@ const ClustersListing = () => {
                 teamId={state.selectedTeamId}
                 onUpdate={state.requestUpdate}
                 onClose={() => state.setUpdateTarget(null)}
+            />
+            <ClusterQueueConcurrencyModal
+                teamCluster={state.queueConcurrencyTarget}
+                onSave={state.updateQueueConcurrency}
+                onClose={() => state.setQueueConcurrencyTarget(null)}
             />
             <ClusterInstallCommandModal
                 clusterId={installCommandClusterId}

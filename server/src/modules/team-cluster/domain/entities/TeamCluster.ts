@@ -30,6 +30,20 @@ export interface TeamClusterServicesProps {
     daemon: TeamClusterDaemonServiceProps;
 };
 
+export interface TeamClusterQueueConcurrencyProps {
+    analysis: number;
+    rasterizer: number;
+    glbPreprocessing: number;
+    sshImport: number;
+};
+
+export const DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY: TeamClusterQueueConcurrencyProps = {
+    analysis: 5,
+    rasterizer: 3,
+    glbPreprocessing: 5,
+    sshImport: 1
+};
+
 export interface TeamClusterProps {
     name: string;
     team: string;
@@ -41,6 +55,7 @@ export interface TeamClusterProps {
     lastHeartbeatAt: Date | null;
     lastDisconnectAt: Date | null;
     services: TeamClusterServicesProps;
+    queueConcurrency: TeamClusterQueueConcurrencyProps;
     createdAt: Date;
     updatedAt: Date;
 };

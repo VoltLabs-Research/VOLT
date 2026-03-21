@@ -26,6 +26,7 @@ import ProcessTeamClusterHealthcheckUseCase from '@modules/team-cluster/applicat
 import RegenerateTeamClusterEnrollmentTokenUseCase from '@modules/team-cluster/application/use-cases/RegenerateTeamClusterEnrollmentTokenUseCase';
 import RecordTeamClusterHeartbeatUseCase from '@modules/team-cluster/application/use-cases/RecordTeamClusterHeartbeatUseCase';
 import UpdateTeamClusterLifecycleUseCase from '@modules/team-cluster/application/use-cases/UpdateTeamClusterLifecycleUseCase';
+import UpdateTeamClusterQueueConcurrencyUseCase from '@modules/team-cluster/application/use-cases/UpdateTeamClusterQueueConcurrencyUseCase';
 import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
 
 export const registerTeamClusterDependencies = () => {
@@ -56,7 +57,8 @@ export const registerTeamClusterDependencies = () => {
             ProcessTeamClusterHealthcheckUseCase,
             RegenerateTeamClusterEnrollmentTokenUseCase,
             RecordTeamClusterHeartbeatUseCase,
-            UpdateTeamClusterLifecycleUseCase
+            UpdateTeamClusterLifecycleUseCase,
+            UpdateTeamClusterQueueConcurrencyUseCase
         ],
         aliases: [
             [SOCKET_TOKENS.SocketModule, TEAM_CLUSTER_TOKENS.TeamClusterSocketModule],

@@ -20,6 +20,10 @@ import type {
     RevealTeamClusterCredentialsInputDTO,
     RevealTeamClusterCredentialsOutputDTO
 } from '@/modules/cluster/api/dtos/team-cluster/reveal-team-cluster-credentials';
+import type {
+    UpdateTeamClusterQueueConcurrencyInputDTO,
+    UpdateTeamClusterQueueConcurrencyOutputDTO
+} from '@/modules/cluster/api/dtos/team-cluster/update-team-cluster-queue-concurrency';
 import type { TeamCluster, TeamClusterLifecycleEvent } from '@/modules/cluster/api/entities/team-cluster';
 
 interface TeamClusterQueryKeyMap {
@@ -189,4 +193,17 @@ export const useRegenerateTeamClusterEnrollmentTokenMutation = (
     return createMutation<RegenerateTeamClusterEnrollmentTokenOutputDTO, RegenerateTeamClusterEnrollmentTokenInputDTO>(
         teamClusterService.regenerateEnrollmentToken
     )(options);
+};
+
+export const useUpdateTeamClusterQueueConcurrencyMutation = (
+    options?: MutationOptions<UpdateTeamClusterQueueConcurrencyOutputDTO, UpdateTeamClusterQueueConcurrencyInputDTO>
+) => {
+    return createMutation<UpdateTeamClusterQueueConcurrencyOutputDTO, UpdateTeamClusterQueueConcurrencyInputDTO>(
+        teamClusterService.updateQueueConcurrency
+    )({
+        ...options,
+        onSuccess: withSuccess((data, variables) => {
+            upsertTeamClusterQueryData(variables.teamId, data.teamCluster);
+        }, options)
+    });
 };

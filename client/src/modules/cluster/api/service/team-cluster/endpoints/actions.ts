@@ -1,4 +1,4 @@
-import { get, post, download } from '@/app/core/http/utilities/create-service';
+import { download, get, patch, post } from '@/app/core/http/utilities/create-service';
 import type {
     CreateTeamClusterRemoteAccessSessionInputDTO,
     CreateTeamClusterRemoteAccessSessionOutputDTO
@@ -29,6 +29,10 @@ import type {
     RevealTeamClusterCredentialsInputDTO,
     RevealTeamClusterCredentialsOutputDTO
 } from '@/modules/cluster/api/dtos/team-cluster/reveal-team-cluster-credentials';
+import type {
+    UpdateTeamClusterQueueConcurrencyInputDTO,
+    UpdateTeamClusterQueueConcurrencyOutputDTO
+} from '@/modules/cluster/api/dtos/team-cluster/update-team-cluster-queue-concurrency';
 
 export default {
     deleteById: post<DeleteTeamClusterInputDTO, DeleteTeamClusterOutputDTO>('/:teamId/clusters/:teamClusterId/delete-requests'),
@@ -53,5 +57,8 @@ export default {
     ),
     regenerateEnrollmentToken: post<RegenerateTeamClusterEnrollmentTokenInputDTO, RegenerateTeamClusterEnrollmentTokenOutputDTO>(
         '/:teamId/clusters/:teamClusterId/enrollment-token/regenerate'
+    ),
+    updateQueueConcurrency: patch<UpdateTeamClusterQueueConcurrencyInputDTO, UpdateTeamClusterQueueConcurrencyOutputDTO>(
+        '/:teamId/clusters/:teamClusterId/queue-concurrency'
     )
 };
