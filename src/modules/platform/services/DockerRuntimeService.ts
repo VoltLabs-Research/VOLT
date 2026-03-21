@@ -558,7 +558,7 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
             'Starting Docker exec operation'
         );
 
-        return withTimeout(async () => new Promise(async (resolve, reject) => {
+        return withTimeout(() => new Promise<string>(async (resolve, reject) => {
             try {
                 const container = this.docker.getContainer(containerId);
                 const dockerExec = await container.exec({

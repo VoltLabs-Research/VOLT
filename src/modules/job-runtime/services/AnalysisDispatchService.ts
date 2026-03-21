@@ -23,6 +23,8 @@ interface AnalysisStartRequestWithTrace extends AnalysisStartRequest {
     traceContext?: DaemonTraceContext;
 };
 
+type PlannedExecutionItem = Record<string, unknown> | TrajectoryDumpDescriptor;
+
 const measurePayloadBytes = (payload: Record<string, unknown>): number => {
     return Buffer.byteLength(JSON.stringify(payload));
 };
@@ -41,12 +43,13 @@ const isTrajectoryDumpDescriptor = (value: unknown): value is TrajectoryDumpDesc
         && (typeof value.originalPath === 'undefined' || typeof value.originalPath === 'string');
 };
 
-const resolvePlannedDumpPath = (item: Record<string, unknown>): string | undefined => {
-    if (typeof item.path !== 'string' || item.path.length === 0) {
+const resolvePlannedDumpPath = (item: PlannedExecutionItem): string | undefined => {
+    const pathValue = Reflect.get(item, 'path');
+    if (typeof pathValue !== 'string' || pathValue.length === 0) {
         return undefined;
     }
 
-    return item.path;
+    return pathValue;
 };
 
 export class AnalysisDispatchService {
@@ -237,7 +240,7 @@ export class AnalysisDispatchService {
         };
     }
 
-    private buildJobs(input: AnalysisStartRequestWithTrace, items: Record<string, unknown>[]): AnalysisQueueJobPayload[] {
+    private buildJobs(input: AnalysisStartRequestWithTrace, items: PlannedExecutionItem[]): AnalysisQueueJobPayload[] {
         const serializedTraceContext = serializeDaemonTraceContext(input.traceContext);
 
         return items.map((item, index) => {
@@ -276,7 +279,7 @@ export class AnalysisDispatchService {
         });
     }
 
-    private buildBatchJob(input: AnalysisStartRequestWithTrace, items: Record<string, unknown>[]): AnalysisQueueJobPayload[] {
+    private buildBatchJob(input: AnalysisStartRequestWithTrace, items: PlannedExecutionItem[]): AnalysisQueueJobPayload[] {
         const serializedTraceContext = serializeDaemonTraceContext(input.traceContext);
 
         return [{
@@ -301,8 +304,8 @@ export class AnalysisDispatchService {
         }];
     }
 
-    private resolveTimestep(item: Record<string, unknown>): number | undefined {
-        const timestepValue = item.timestep ?? item.frame;
+    private resolveTimestep(item: PlannedExecutionItem): number | undefined {
+        const timestepValue = Reflect.get(item, 'timestep') ?? Reflect.get(item, 'frame');
         if (typeof timestepValue === 'number' && Number.isFinite(timestepValue)) {
             return timestepValue;
         }

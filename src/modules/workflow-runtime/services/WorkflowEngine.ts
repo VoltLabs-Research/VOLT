@@ -13,7 +13,7 @@ import type {
 } from '@/shared/contracts';
 
 export interface WorkflowPlanResult {
-    items: Record<string, unknown>[];
+    items: Array<Record<string, unknown> | TrajectoryDumpDescriptor>;
     forEachNodeId: string;
     nodeOutputSnapshots: Record<string, Record<string, unknown>>;
     batchMode?: boolean;

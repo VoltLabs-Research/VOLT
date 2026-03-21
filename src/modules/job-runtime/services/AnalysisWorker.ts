@@ -1042,7 +1042,7 @@ export class AnalysisWorker {
 
     private async executeNestedPluginWorkflow(
         executionData: AnalysisJobExecutionData,
-        pluginNodeData: Record<string, unknown> | undefined,
+        pluginNodeData: WorkflowPluginNodeData | undefined,
         parentOutputs: Map<string, Record<string, unknown>>,
         dumpTarget: DumpExecutionTarget,
         parentOutputDir: string
