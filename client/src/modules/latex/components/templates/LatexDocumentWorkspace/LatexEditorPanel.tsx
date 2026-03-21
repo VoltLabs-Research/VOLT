@@ -1,4 +1,6 @@
 import Container from '@/shared/presentation/components/Container';
+import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
+import IconButton from '@/shared/presentation/components/IconButton';
 import Loader from '@/shared/presentation/components/Loader';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Button from '@/shared/presentation/components/Button';
@@ -7,16 +9,20 @@ import { applyMonacoTheme, getMonacoThemeName } from '@/shared/presentation/util
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
 import Editor from '@monaco-editor/react';
 import type { BeforeMount, OnMount } from '@monaco-editor/react';
-import { Download, File, FileCode, FileImage, FileText, X } from 'lucide-react';
+import { Download, File, FileCode, FileImage, FileText, PanelBottom, X } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { editor } from 'monaco-editor';
-import type { ReactNode } from 'react';
+import type { DragEvent, ReactNode } from 'react';
 import type { LatexAsset } from '@/modules/latex/api/entities/latex-asset';
-import type { LatexFileEntry, LatexWorkspaceSelection, LatexWorkspaceTab } from '@/modules/latex/hooks/use-latex-workspace';
+import type { LatexEditorGroupId, LatexFileEntry, LatexWorkspaceSelection, LatexWorkspaceTab } from '@/modules/latex/hooks/use-latex-workspace';
 import { getAssetDisplayName, isWorkspaceImageFile, isWorkspacePdfFile, isWorkspaceTextLikeFile } from '@/modules/latex/utilities/workspace';
 import LatexPdfViewer from './LatexPdfViewer';
+import type { MenuOption } from '@/shared/presentation/types/menu';
 
 interface LatexEditorPanelProps {
+    groupId: LatexEditorGroupId;
+    isGroupActive: boolean;
+    isSplitView: boolean;
     activeSelection: LatexWorkspaceSelection;
     openTabs: LatexWorkspaceTab[];
     files: LatexFileEntry[];
@@ -24,11 +30,16 @@ interface LatexEditorPanelProps {
     dirtyFileIds: string[];
     hasPendingRemoteUpdate: boolean;
     content: string;
+    onFocusGroup: () => void;
     onChange: (value: string | undefined) => void;
     onApplyRemoteUpdate: () => void;
     onDismissRemoteUpdate: () => void;
     onTabSelect: (tab: LatexWorkspaceTab) => void;
     onTabClose: (tab: LatexWorkspaceTab) => void;
+    onTabReorder: (activeTab: LatexWorkspaceTab, overTab: LatexWorkspaceTab | null, position: 'before' | 'after' | 'end') => void;
+    onSplitDown: (tab?: LatexWorkspaceTab) => void;
+    onDuplicateTabToOtherGroup?: (tab: LatexWorkspaceTab) => void;
+    onCloseGroup?: () => void;
 };
 
 enum AssetKind {
@@ -45,6 +56,11 @@ interface EditorTabItem {
     selection: LatexWorkspaceTab;
     isActive: boolean;
     isDirty: boolean;
+}
+
+interface TabDropIndicator {
+    targetKey: string | null;
+    position: 'before' | 'after' | 'end';
 }
 
 const getFileLanguage = (filename: string): string => {
@@ -104,6 +120,9 @@ const getAssetKind = (asset: LatexAsset | null): AssetKind | null => {
 const getSelectionKey = (selection: LatexWorkspaceTab): string => `${selection.type}:${selection.id}`;
 
 const LatexEditorPanel = ({
+    groupId,
+    isGroupActive,
+    isSplitView,
     activeSelection,
     openTabs,
     files,
@@ -111,16 +130,23 @@ const LatexEditorPanel = ({
     dirtyFileIds,
     hasPendingRemoteUpdate,
     content,
+    onFocusGroup,
     onChange,
     onApplyRemoteUpdate,
     onDismissRemoteUpdate,
     onTabSelect,
-    onTabClose
+    onTabClose,
+    onTabReorder,
+    onSplitDown,
+    onDuplicateTabToOtherGroup,
+    onCloseGroup
 }: LatexEditorPanelProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
     const [isMonacoReady, setIsMonacoReady] = useState(false);
     const [monacoTheme, setMonacoTheme] = useState(() => getMonacoThemeName(getActiveAppTheme()));
+    const [draggedTabKey, setDraggedTabKey] = useState<string | null>(null);
+    const [dropIndicator, setDropIndicator] = useState<TabDropIndicator | null>(null);
 
     const activeFile = useMemo(
         () => activeSelection?.type === 'file'
@@ -180,6 +206,115 @@ const LatexEditorPanel = ({
         });
         return items;
     }, []), [activeSelection, assets, dirtyFileIdSet, files, openTabs]);
+
+    const activeTabItem = useMemo(
+        () => tabItems.find((tab) => tab.isActive) ?? null,
+        [tabItems]
+    );
+
+    const clearTabDragState = useCallback((): void => {
+        setDraggedTabKey(null);
+        setDropIndicator(null);
+    }, []);
+
+    const handleTabDragStart = useCallback((event: DragEvent<HTMLDivElement>, tab: EditorTabItem): void => {
+        if ((event.target as HTMLElement | null)?.closest('.latex-editor-tab__close')) {
+            event.preventDefault();
+            return;
+        }
+
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', tab.key);
+        setDraggedTabKey(tab.key);
+        setDropIndicator(null);
+    }, []);
+
+    const handleTabDragOver = useCallback((event: DragEvent<HTMLDivElement>, tab: EditorTabItem): void => {
+        if (!draggedTabKey || draggedTabKey === tab.key) {
+            return;
+        }
+
+        event.preventDefault();
+        const rect = event.currentTarget.getBoundingClientRect();
+        const position = event.clientX <= rect.left + rect.width / 2
+            ? 'before'
+            : 'after';
+
+        setDropIndicator({
+            targetKey: tab.key,
+            position
+        });
+    }, [draggedTabKey]);
+
+    const handleTabStripDragOver = useCallback((event: DragEvent<HTMLDivElement>): void => {
+        if (!draggedTabKey) {
+            return;
+        }
+
+        event.preventDefault();
+        const target = event.target as HTMLElement | null;
+        if (target?.closest('.latex-editor-tab')) {
+            return;
+        }
+
+        setDropIndicator({ targetKey: null, position: 'end' });
+    }, [draggedTabKey]);
+
+    const commitTabReorder = useCallback((targetKey: string | null, position: 'before' | 'after' | 'end'): void => {
+        if (!draggedTabKey) {
+            return;
+        }
+
+        const draggedTab = tabItems.find((tab) => tab.key === draggedTabKey);
+        const targetTab = targetKey
+            ? tabItems.find((tab) => tab.key === targetKey) ?? null
+            : null;
+
+        if (draggedTab) {
+            onTabReorder(draggedTab.selection, targetTab?.selection ?? null, position);
+        }
+
+        clearTabDragState();
+    }, [clearTabDragState, draggedTabKey, onTabReorder, tabItems]);
+
+    const handleTabDrop = useCallback((event: DragEvent<HTMLDivElement>, tab: EditorTabItem): void => {
+        event.preventDefault();
+        const nextPosition = dropIndicator?.targetKey === tab.key
+            ? dropIndicator.position
+            : 'after';
+        commitTabReorder(tab.key, nextPosition === 'end' ? 'after' : nextPosition);
+    }, [commitTabReorder, dropIndicator]);
+
+    const handleTabStripDrop = useCallback((event: DragEvent<HTMLDivElement>): void => {
+        event.preventDefault();
+        commitTabReorder(null, 'end');
+    }, [commitTabReorder]);
+
+    const getTabMenuOptions = useCallback((tab: EditorTabItem): MenuOption[] => {
+        const nextOptions: MenuOption[] = [];
+
+        if (!isSplitView) {
+            nextOptions.push({
+                label: 'Split Down',
+                icon: PanelBottom,
+                onClick: () => onSplitDown(tab.selection)
+            });
+        } else if (onDuplicateTabToOtherGroup) {
+            nextOptions.push({
+                label: groupId === 'primary' ? 'Open Below' : 'Open Above',
+                icon: PanelBottom,
+                onClick: () => onDuplicateTabToOtherGroup(tab.selection)
+            });
+        }
+
+        nextOptions.push({
+            label: 'Close',
+            icon: X,
+            onClick: () => onTabClose(tab.selection)
+        });
+
+        return nextOptions;
+    }, [groupId, isSplitView, onDuplicateTabToOtherGroup, onSplitDown, onTabClose]);
 
     const handleMount: OnMount = useCallback((editorInstance) => {
         editorRef.current = editorInstance;
@@ -315,49 +450,124 @@ const LatexEditorPanel = ({
         return renderEmpty();
     };
 
+    const headerActions = (
+        <Container className='d-flex items-center gap-025'>
+            {!isSplitView && activeTabItem && (
+                <IconButton
+                    variant='ghost'
+                    size='sm'
+                    className='latex-editor-tabs__action'
+                    title='Split editor down'
+                    aria-label='Split editor down'
+                    onClick={() => onSplitDown(activeTabItem.selection)}
+                >
+                    <PanelBottom size={14} />
+                </IconButton>
+            )}
+            {isSplitView && onCloseGroup && groupId === 'secondary' && (
+                <IconButton
+                    variant='ghost'
+                    size='sm'
+                    className='latex-editor-tabs__action'
+                    title='Close lower editor group'
+                    aria-label='Close lower editor group'
+                    onClick={onCloseGroup}
+                >
+                    <X size={14} />
+                </IconButton>
+            )}
+        </Container>
+    );
+
+    const shouldShowTabsHeader = tabItems.length > 0
+        || (!isSplitView && Boolean(activeTabItem))
+        || Boolean(isSplitView && onCloseGroup && groupId === 'secondary');
+
     const renderTab = (tab: EditorTabItem) => {
-        const tabId = `latex-editor-tab-${tab.key}`;
-        const panelId = `latex-editor-panel-${tab.key}`;
+        const tabId = `latex-editor-tab-${groupId}-${tab.key}`;
+        const panelId = `latex-editor-panel-${groupId}-${tab.key}`;
+        const tabMenuOptions = getTabMenuOptions(tab);
+        const isDropBefore = dropIndicator?.targetKey === tab.key && dropIndicator.position === 'before';
+        const isDropAfter = dropIndicator?.targetKey === tab.key && dropIndicator.position === 'after';
 
         return (
-            <Container key={tab.key} className={`latex-editor-tab d-flex items-center ${tab.isActive ? 'is-active' : ''}`}>
-                <button
-                    type='button'
-                    id={tabId}
-                    role='tab'
-                    aria-selected={tab.isActive}
-                    aria-controls={panelId}
-                    className='latex-editor-tab__button d-flex items-center gap-05 flex-1 min-w-0'
-                    onClick={() => onTabSelect(tab.selection)}
-                >
-                    <span className='latex-editor-tab__icon d-flex items-center content-center'>
-                        {tab.icon}
-                    </span>
-                    <span className='latex-editor-tab__label'>
-                        {tab.title}
-                    </span>
-                    {tab.isDirty && <span className='latex-editor-tab__dirty-dot' />}
-                </button>
+            <ContextMenuPopover
+                key={tab.key}
+                id={`latex-editor-tab-context-${groupId}-${tab.key}`}
+                options={tabMenuOptions}
+                size='sm'
+                trigger={(
+                    <Container
+                        className={[
+                            'latex-editor-tab d-flex items-center',
+                            tab.isActive ? 'is-active' : '',
+                            draggedTabKey === tab.key ? 'is-dragging' : '',
+                            isDropBefore ? 'is-drop-before' : '',
+                            isDropAfter ? 'is-drop-after' : ''
+                        ].filter(Boolean).join(' ')}
+                        draggable
+                        onDragStart={(event) => handleTabDragStart(event, tab)}
+                        onDragOver={(event) => handleTabDragOver(event, tab)}
+                        onDrop={(event) => handleTabDrop(event, tab)}
+                        onDragEnd={clearTabDragState}
+                    >
+                        <button
+                            type='button'
+                            id={tabId}
+                            role='tab'
+                            aria-selected={tab.isActive}
+                            aria-controls={panelId}
+                            className='latex-editor-tab__button d-flex items-center gap-05 flex-1 min-w-0'
+                            onClick={() => onTabSelect(tab.selection)}
+                        >
+                            <span className='latex-editor-tab__icon d-flex items-center content-center'>
+                                {tab.icon}
+                            </span>
+                            <span className='latex-editor-tab__label'>
+                                {tab.title}
+                            </span>
+                            {tab.isDirty && <span className='latex-editor-tab__dirty-dot' />}
+                        </button>
 
-                <button
-                    type='button'
-                    className='latex-editor-tab__close d-flex items-center content-center'
-                    aria-label={`Close ${tab.title}`}
-                    onClick={() => onTabClose(tab.selection)}
-                >
-                    <X size={13} />
-                </button>
-            </Container>
+                        <button
+                            type='button'
+                            draggable={false}
+                            className='latex-editor-tab__close d-flex items-center content-center'
+                            aria-label={`Close ${tab.title}`}
+                            onClick={() => onTabClose(tab.selection)}
+                        >
+                            <X size={13} />
+                        </button>
+                    </Container>
+                )}
+            />
         );
     };
 
     return (
-        <Container className='latex-workspace__editor d-flex column'>
-            {tabItems.length > 0 && (
-                <Container className='latex-editor-tabs__header d-flex items-center p-05'>
-                    <Container className='latex-editor-tabs d-flex items-center gap-05 overflow-auto' role='tablist' aria-label='Open LaTeX files'>
+        <Container
+            className={[
+                'latex-workspace__editor-group d-flex column flex-1 min-h-0',
+                isGroupActive ? 'is-active' : ''
+            ].filter(Boolean).join(' ')}
+            onMouseDownCapture={() => onFocusGroup()}
+        >
+            {shouldShowTabsHeader && (
+                <Container className='latex-editor-tabs__header d-flex items-center content-between gap-05 p-05'>
+                    <Container
+                        className={[
+                            'latex-editor-tabs d-flex items-center gap-05 overflow-auto flex-1',
+                            dropIndicator?.targetKey === null && dropIndicator?.position === 'end' ? 'is-drop-at-end' : ''
+                        ].filter(Boolean).join(' ')}
+                        role='tablist'
+                        aria-label={groupId === 'primary' ? 'Open LaTeX files in the top editor group' : 'Open LaTeX files in the bottom editor group'}
+                        onDragOver={handleTabStripDragOver}
+                        onDrop={handleTabStripDrop}
+                        onDragEnd={clearTabDragState}
+                    >
                         {tabItems.map(renderTab)}
                     </Container>
+                    {headerActions}
                 </Container>
             )}
             {activeFile && hasPendingRemoteUpdate && (
@@ -375,9 +585,9 @@ const LatexEditorPanel = ({
             )}
             <Container
                 ref={containerRef}
-                id={activeSelection ? `latex-editor-panel-${getSelectionKey(activeSelection)}` : undefined}
+                id={activeSelection ? `latex-editor-panel-${groupId}-${getSelectionKey(activeSelection)}` : undefined}
                 role='tabpanel'
-                aria-labelledby={activeSelection ? `latex-editor-tab-${getSelectionKey(activeSelection)}` : undefined}
+                aria-labelledby={activeSelection ? `latex-editor-tab-${groupId}-${getSelectionKey(activeSelection)}` : undefined}
                 className='latex-workspace__editor-inner flex-1 min-h-0'
             >
                 {renderContent()}

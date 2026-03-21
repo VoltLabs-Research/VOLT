@@ -129,6 +129,29 @@
     overflow: hidden;
 }
 
+.latex-workspace__editor-stack {
+    flex: 1;
+    min-height: 0;
+}
+
+.latex-workspace__editor-group-shell {
+    min-height: 0;
+}
+
+.latex-workspace__editor-group {
+    border: 1px solid transparent;
+    border-radius: 10px;
+    min-height: 0;
+    background: color-mix(in srgb, var(--color-surface-1) 88%, transparent);
+    transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+/*
+.latex-workspace__editor-group.is-active {
+    border-color: color-mix(in srgb, var(--focus-ring) 26%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--focus-ring) 14%, transparent);
+}*/
+
 .latex-workspace__editor-inner {
     display: flex;
     align-items: center;
@@ -148,9 +171,27 @@
 
 .latex-editor-tabs {
     scrollbar-width: thin;
+    position: relative;
+}
+
+.latex-editor-tabs.is-drop-at-end::after {
+    content: '';
+    width: 2px;
+    align-self: stretch;
+    border-radius: 999px;
+    background: var(--focus-ring);
+    opacity: 0.9;
+}
+
+.latex-editor-tabs__action.volt-icon-button {
+    width: 1.75rem;
+    height: 1.75rem;
+    min-width: 1.75rem;
+    min-height: 1.75rem;
 }
 
 .latex-editor-tab {
+    position: relative;
     flex: 0 0 auto;
     min-width: 0;
     max-width: 18rem;
@@ -169,6 +210,30 @@
     background: var(--color-surface-2);
     border-color: var(--color-border-soft);
     color: var(--color-text-primary);
+}
+
+.latex-editor-tab.is-dragging {
+    opacity: 0.45;
+}
+
+.latex-editor-tab.is-drop-before::before,
+.latex-editor-tab.is-drop-after::after {
+    content: '';
+    position: absolute;
+    top: 0.2rem;
+    bottom: 0.2rem;
+    width: 2px;
+    border-radius: 999px;
+    background: var(--focus-ring);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--focus-ring) 24%, transparent);
+}
+
+.latex-editor-tab.is-drop-before::before {
+    left: -0.2rem;
+}
+
+.latex-editor-tab.is-drop-after::after {
+    right: -0.2rem;
 }
 
 .latex-editor-tab__button {
@@ -223,6 +288,10 @@
 
 .latex-editor-tab__close:hover {
     background: var(--hover-bg);
+}
+
+.latex-workspace__editor-split-handle {
+    flex-shrink: 0;
 }
 
 /** Right panel — PDF preview */

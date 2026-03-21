@@ -29,10 +29,11 @@ interface PanelWidths {
     files: number;
     preview: number;
     ai: number;
+    editorTop: number;
 };
 
 interface DragState {
-    panel: 'files' | 'preview' | 'ai';
+    panel: 'files' | 'preview' | 'ai' | 'editor';
     startX: number;
     startY: number;
     startDimension: number;
@@ -55,7 +56,8 @@ const PREVIEW_MIN = 260;
 const PREVIEW_MAX = 600;
 const AI_MIN = 100;
 const AI_MAX = 600;
-const DEFAULT_WIDTHS: PanelWidths = { files: 220, preview: PREVIEW_MAX, ai: 300 };
+const EDITOR_GROUP_MIN = 180;
+const DEFAULT_WIDTHS: PanelWidths = { files: 220, preview: PREVIEW_MAX, ai: 300, editorTop: 260 };
 const LOADING_FILE_PANEL_BLOCKS: LoadingPlaceholderBlock[] = [
     { key: 'file-1', width: '72%' },
     { key: 'file-2', width: '88%' },
@@ -90,7 +92,8 @@ const loadPanelWidths = (): PanelWidths => {
         return {
             files: Math.min(FILES_MAX, Math.max(FILES_MIN, parsed.files ?? DEFAULT_WIDTHS.files)),
             preview: Math.min(PREVIEW_MAX, Math.max(PREVIEW_MIN, parsed.preview ?? DEFAULT_WIDTHS.preview)),
-            ai: Math.min(AI_MAX, Math.max(AI_MIN, parsed.ai ?? DEFAULT_WIDTHS.ai))
+            ai: Math.min(AI_MAX, Math.max(AI_MIN, parsed.ai ?? DEFAULT_WIDTHS.ai)),
+            editorTop: Math.max(EDITOR_GROUP_MIN, parsed.editorTop ?? DEFAULT_WIDTHS.editorTop)
         };
     } catch {
         return DEFAULT_WIDTHS;
@@ -109,6 +112,7 @@ const LatexDocumentWorkspace = () => {
     const { documentId = '' } = useParams<{ documentId: string }>();
     const [panelWidths, setPanelWidths] = useState<PanelWidths>(loadPanelWidths);
     const dragStateRef = useRef<DragState | null>(null);
+    const editorStackRef = useRef<HTMLDivElement | null>(null);
     const [hasEnteredWorkspace, setHasEnteredWorkspace] = useState(false);
     const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
     const [isImportingProject, setIsImportingProject] = useState(false);
@@ -118,9 +122,9 @@ const LatexDocumentWorkspace = () => {
     const {
         latexDocument,
         isLoading,
-        selection,
-        openTabs,
-        editorContent,
+        activeEditorGroupId,
+        isEditorSplit,
+        editorGroups,
         isDirty,
         dirtyFileIds,
         isSaving,
@@ -130,7 +134,6 @@ const LatexDocumentWorkspace = () => {
         isCompiling,
         compiledPdfUrl,
         compileError,
-        activePendingRemoteUpdate,
         accessDenied,
         accessDeniedMessage,
         files,
@@ -139,19 +142,26 @@ const LatexDocumentWorkspace = () => {
         collaborators,
         fileInputRef,
         folderInputRef,
-        handleEditorChange,
+        handleEditorChangeForGroup,
         handleRenameDocument,
         handleInsertAssetRef,
         handleExportTex,
         handleExportZip,
         handleExportPdf,
         handleCompile,
+        getEditorContentForSelection,
+        getPendingRemoteUpdateForSelection,
         applyPendingRemoteUpdate,
         dismissPendingRemoteUpdate,
+        handleFocusEditorGroup,
         handleSelectFileById,
         handleSelectAssetById,
         handleSelectTab,
         handleCloseTab,
+        handleSplitEditorDown,
+        handleDuplicateTabToOtherGroup,
+        handleCloseSecondaryEditorGroup,
+        handleReorderTabs,
         handleCreateFile,
         handleCreateFolder,
         handleDeleteFile,
@@ -207,6 +217,17 @@ const LatexDocumentWorkspace = () => {
         };
     }, [panelWidths.ai]);
 
+    const handleEditorSplitPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>): void => {
+        e.preventDefault();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        dragStateRef.current = {
+            panel: 'editor',
+            startX: e.clientX,
+            startY: e.clientY,
+            startDimension: panelWidths.editorTop
+        };
+    }, [panelWidths.editorTop]);
+
     /**
      * Shared pointermove for both handles.
      * Pointer capture guarantees events arrive here even when the mouse
@@ -228,6 +249,12 @@ const LatexDocumentWorkspace = () => {
             const delta = e.clientY - state.startY;
             const h = Math.min(AI_MAX, Math.max(AI_MIN, state.startDimension - delta));
             setPanelWidths((prev) => ({ ...prev, ai: h }));
+        } else if (state.panel === 'editor') {
+            const hostHeight = editorStackRef.current?.getBoundingClientRect().height ?? 0;
+            const maxHeight = Math.max(EDITOR_GROUP_MIN, hostHeight - EDITOR_GROUP_MIN - 8);
+            const delta = e.clientY - state.startY;
+            const h = Math.min(maxHeight, Math.max(EDITOR_GROUP_MIN, state.startDimension + delta));
+            setPanelWidths((prev) => ({ ...prev, editorTop: h }));
         }
     }, []);
 
@@ -246,6 +273,38 @@ const LatexDocumentWorkspace = () => {
     const handleDragPointerCancel = useCallback((): void => {
         dragStateRef.current = null;
     }, []);
+
+    useEffect(() => {
+        if (!isEditorSplit) {
+            return;
+        }
+
+        const host = editorStackRef.current;
+        if (!host) {
+            return;
+        }
+
+        const clampEditorSplit = (): void => {
+            const hostHeight = host.getBoundingClientRect().height;
+            const maxHeight = Math.max(EDITOR_GROUP_MIN, hostHeight - EDITOR_GROUP_MIN - 8);
+
+            setPanelWidths((prev) => {
+                const nextEditorTop = Math.min(maxHeight, Math.max(EDITOR_GROUP_MIN, prev.editorTop));
+                return nextEditorTop === prev.editorTop
+                    ? prev
+                    : { ...prev, editorTop: nextEditorTop };
+            });
+        };
+
+        clampEditorSplit();
+
+        const observer = new ResizeObserver(() => {
+            clampEditorSplit();
+        });
+
+        observer.observe(host);
+        return () => observer.disconnect();
+    }, [isEditorSplit]);
 
     const hasWorkspaceContent = files.length > 0 || rawAssets.length > 0;
 
@@ -319,6 +378,8 @@ const LatexDocumentWorkspace = () => {
         compileStatusMessage = 'Waiting for the first successful compile.';
     }
 
+    const secondaryEditorGroup = editorGroups.find((group) => group.id === 'secondary') ?? null;
+
     const handleKeyboardResize = useCallback(({ panel, key }: KeyboardResizeConfig): void => {
         const isDecrease = key === 'ArrowLeft' || key === 'ArrowUp';
         const isIncrease = key === 'ArrowRight' || key === 'ArrowDown';
@@ -345,6 +406,13 @@ const LatexDocumentWorkspace = () => {
             if (panel === 'ai') {
                 const delta = isDecrease ? step : -step;
                 next.ai = Math.min(AI_MAX, Math.max(AI_MIN, prev.ai + delta));
+            }
+
+            if (panel === 'editor') {
+                const hostHeight = editorStackRef.current?.getBoundingClientRect().height ?? 0;
+                const maxHeight = Math.max(EDITOR_GROUP_MIN, hostHeight - EDITOR_GROUP_MIN - 8);
+                const delta = isDecrease ? -step : step;
+                next.editorTop = Math.min(maxHeight, Math.max(EDITOR_GROUP_MIN, prev.editorTop + delta));
             }
 
             localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
@@ -714,32 +782,106 @@ const LatexDocumentWorkspace = () => {
                         </div>
 
                         <Container className='latex-workspace__main-content d-flex column flex-1 min-w-0'>
-                            <LatexEditorPanel
-                                activeSelection={selection}
-                                openTabs={openTabs}
-                                files={files}
-                                assets={rawAssets}
-                                dirtyFileIds={dirtyFileIds}
-                                hasPendingRemoteUpdate={Boolean(selection?.type === 'file' && activePendingRemoteUpdate)}
-                                content={editorContent}
-                                onChange={handleEditorChange}
-                                onApplyRemoteUpdate={() => {
-                                    if (selection?.type !== 'file') {
-                                        return;
-                                    }
+                            <Container ref={editorStackRef} className='latex-workspace__editor-stack d-flex column flex-1 min-h-0'>
+                                <Container
+                                    className='latex-workspace__editor-group-shell d-flex column min-h-0'
+                                    style={isEditorSplit ? { height: panelWidths.editorTop, flex: '0 0 auto' } : { flex: '1 1 0%' }}
+                                >
+                                    <LatexEditorPanel
+                                        groupId='primary'
+                                        isGroupActive={activeEditorGroupId === 'primary'}
+                                        isSplitView={isEditorSplit}
+                                        activeSelection={editorGroups[0]?.selection ?? null}
+                                        openTabs={editorGroups[0]?.openTabs ?? []}
+                                        files={files}
+                                        assets={rawAssets}
+                                        dirtyFileIds={dirtyFileIds}
+                                        hasPendingRemoteUpdate={Boolean(getPendingRemoteUpdateForSelection(editorGroups[0]?.selection ?? null))}
+                                        content={getEditorContentForSelection(editorGroups[0]?.selection ?? null)}
+                                        onFocusGroup={() => handleFocusEditorGroup('primary')}
+                                        onChange={(value) => handleEditorChangeForGroup('primary', value)}
+                                        onApplyRemoteUpdate={() => {
+                                            const groupSelection = editorGroups[0]?.selection;
+                                            if (groupSelection?.type !== 'file') {
+                                                return;
+                                            }
 
-                                    applyPendingRemoteUpdate(selection.id);
-                                }}
-                                onDismissRemoteUpdate={() => {
-                                    if (selection?.type !== 'file') {
-                                        return;
-                                    }
+                                            applyPendingRemoteUpdate(groupSelection.id);
+                                        }}
+                                        onDismissRemoteUpdate={() => {
+                                            const groupSelection = editorGroups[0]?.selection;
+                                            if (groupSelection?.type !== 'file') {
+                                                return;
+                                            }
 
-                                    dismissPendingRemoteUpdate(selection.id);
-                                }}
-                                onTabSelect={handleSelectTab}
-                                onTabClose={handleCloseTab}
-                            />
+                                            dismissPendingRemoteUpdate(groupSelection.id);
+                                        }}
+                                        onTabSelect={(tab) => handleSelectTab('primary', tab)}
+                                        onTabClose={(tab) => handleCloseTab('primary', tab)}
+                                        onTabReorder={(activeTab, overTab, position) => handleReorderTabs('primary', activeTab, overTab, position)}
+                                        onSplitDown={handleSplitEditorDown}
+                                        onDuplicateTabToOtherGroup={(tab) => handleDuplicateTabToOtherGroup('primary', tab)}
+                                    />
+                                </Container>
+
+                                {isEditorSplit && secondaryEditorGroup && (
+                                    <>
+                                        <div
+                                            className='latex-drag-handle-horizontal latex-workspace__editor-split-handle'
+                                            role='separator'
+                                            aria-label='Resize editor groups'
+                                            aria-orientation='horizontal'
+                                            aria-valuemin={EDITOR_GROUP_MIN}
+                                            aria-valuenow={panelWidths.editorTop}
+                                            tabIndex={0}
+                                            onPointerDown={handleEditorSplitPointerDown}
+                                            onPointerMove={handleDragPointerMove}
+                                            onPointerUp={handleDragPointerUp}
+                                            onPointerCancel={handleDragPointerCancel}
+                                            onKeyDown={(event) => handleSeparatorKeyDown(event, 'editor')}
+                                        >
+                                            <span className='latex-drag-handle__grip volt-resize-handle__grip volt-resize-handle__grip--vertical' aria-hidden='true' />
+                                        </div>
+
+                                        <Container className='latex-workspace__editor-group-shell d-flex column flex-1 min-h-0'>
+                                            <LatexEditorPanel
+                                                groupId='secondary'
+                                                isGroupActive={activeEditorGroupId === 'secondary'}
+                                                isSplitView={isEditorSplit}
+                                                activeSelection={secondaryEditorGroup.selection}
+                                                openTabs={secondaryEditorGroup.openTabs}
+                                                files={files}
+                                                assets={rawAssets}
+                                                dirtyFileIds={dirtyFileIds}
+                                                hasPendingRemoteUpdate={Boolean(getPendingRemoteUpdateForSelection(secondaryEditorGroup.selection))}
+                                                content={getEditorContentForSelection(secondaryEditorGroup.selection)}
+                                                onFocusGroup={() => handleFocusEditorGroup('secondary')}
+                                                onChange={(value) => handleEditorChangeForGroup('secondary', value)}
+                                                onApplyRemoteUpdate={() => {
+                                                    if (secondaryEditorGroup.selection?.type !== 'file') {
+                                                        return;
+                                                    }
+
+                                                    applyPendingRemoteUpdate(secondaryEditorGroup.selection.id);
+                                                }}
+                                                onDismissRemoteUpdate={() => {
+                                                    if (secondaryEditorGroup.selection?.type !== 'file') {
+                                                        return;
+                                                    }
+
+                                                    dismissPendingRemoteUpdate(secondaryEditorGroup.selection.id);
+                                                }}
+                                                onTabSelect={(tab) => handleSelectTab('secondary', tab)}
+                                                onTabClose={(tab) => handleCloseTab('secondary', tab)}
+                                                onTabReorder={(activeTab, overTab, position) => handleReorderTabs('secondary', activeTab, overTab, position)}
+                                                onSplitDown={handleSplitEditorDown}
+                                                onDuplicateTabToOtherGroup={(tab) => handleDuplicateTabToOtherGroup('secondary', tab)}
+                                                onCloseGroup={handleCloseSecondaryEditorGroup}
+                                            />
+                                        </Container>
+                                    </>
+                                )}
+                            </Container>
 
                             {isAIPanelOpen && (
                                 <>
