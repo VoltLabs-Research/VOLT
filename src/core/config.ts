@@ -38,6 +38,11 @@ export interface QueueConcurrencyConfig {
     analysis: number;
     glbPreprocessing: number;
     rasterizer: number;
+    sshImport: number;
+};
+
+export interface DaemonRuntimeConfig {
+    queueConcurrency: QueueConcurrencyConfig;
 };
 
 export interface DaemonConfig {
@@ -59,7 +64,6 @@ export interface DaemonConfig {
     redis: RedisConfig;
     jupyter: JupyterConfig;
     allowedBuckets: ObjectBucketName[];
-    queueConcurrency: QueueConcurrencyConfig;
 };
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 10_000;
@@ -207,12 +211,6 @@ export const loadConfig = (): DaemonConfig => {
             ObjectBucketName.Models,
             ObjectBucketName.Plugins,
             ObjectBucketName.Rasterizer
-        ],
-        // TODO:
-        queueConcurrency: {
-            analysis: readNumber('ANALYSIS_CONCURRENCY', 5),
-            glbPreprocessing: readNumber('GLB_CONCURRENCY', 5),
-            rasterizer: readNumber('RASTER_CONCURRENCY', 3)
-        }
+        ]
     };
 };

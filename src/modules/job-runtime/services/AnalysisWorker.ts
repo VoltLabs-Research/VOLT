@@ -11,6 +11,7 @@ import { decodeCliArgumentsToken, isRecord } from '@/shared/utils';
 import { createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import zlib from 'node:zlib';
 import { pipeline } from 'node:stream/promises';
 import { DelayedError } from 'bullmq';
 import type { DaemonJobReporterService } from '@/modules/cloud-control/services';
@@ -488,6 +489,15 @@ export class AnalysisWorker {
         }
 
         logger.info('AnalysisWorker stopped');
+    }
+
+    setConcurrency(concurrency: number): void {
+        if (!this.worker) {
+            throw new Error('AnalysisWorker has not started');
+        }
+
+        this.worker.concurrency = concurrency;
+        logger.info({ concurrency }, 'AnalysisWorker concurrency updated');
     }
 
     private async processJob(job: QueueJobPayload, bullJob: BullMQJob<QueueJobPayload>): Promise<void> {

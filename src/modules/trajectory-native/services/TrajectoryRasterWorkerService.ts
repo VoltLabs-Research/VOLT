@@ -50,6 +50,11 @@ export class TrajectoryRasterWorkerService {
         await this.workerShell.stop();
     }
 
+    setConcurrency(concurrency: number): void {
+        this.workerShell.setConcurrency(concurrency);
+        logger.info({ concurrency }, 'TrajectoryRasterWorkerService concurrency updated');
+    }
+
     private buildJobStatusProjection(
         job: RasterQueueJobPayload,
         status: 'running' | 'completed' | 'failed',

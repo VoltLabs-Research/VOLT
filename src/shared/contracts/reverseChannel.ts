@@ -85,6 +85,15 @@ export const TEAM_CLUSTER_DAEMON_COMMAND = Object.freeze({
     plugin: Object.freeze({
         sync: 'plugin.sync'
     }),
+    runtime: Object.freeze({
+        config: Object.freeze({
+            get: 'runtime.config.get'
+        }),
+        queueConcurrency: Object.freeze({
+            apply: 'runtime.queue-concurrency.apply'
+        }),
+        restart: 'runtime.restart'
+    }),
     queue: Object.freeze({
         dispatch: 'queue.dispatch'
     }),
@@ -139,6 +148,18 @@ export interface TeamClusterDaemonCommandMessage {
     command: string;
     responseType?: TeamClusterDaemonResponseType;
     payload?: Record<string, unknown>;
+};
+
+export interface TeamClusterDaemonQueueConcurrency {
+    analysis: number;
+    rasterizer: number;
+    glbPreprocessing: number;
+    sshImport: number;
+};
+
+export interface TeamClusterDaemonQueueConcurrencyApplyPayload {
+    [key: string]: unknown;
+    queueConcurrency: TeamClusterDaemonQueueConcurrency;
 };
 
 export interface TeamClusterDaemonSocketResponsePayload<T = unknown> {

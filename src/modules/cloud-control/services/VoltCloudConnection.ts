@@ -1,12 +1,13 @@
 import { logger } from '@/core/logger';
 import { OrchestrationAction } from '@/shared/contracts';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@/shared/contracts';
 import { MetricsService } from '@/modules/metrics/services';
 import { RuntimeEventBroker } from '@/shared/services';
 import {
     ClusterDaemonClient,
     DaemonClientError
 } from '@voltstack/daemon-cluster-client';
-import type { DaemonConfig } from '@/core/config';
+import type { DaemonConfig, DaemonRuntimeConfig } from '@/core/config';
 import type { TeamClusterDaemonRuntimeProgressPayload } from '@/shared/contracts';
 import type {
     RuntimeLifecycleEvent,
@@ -188,6 +189,18 @@ export class VoltCloudConnection {
 
     async sendServerCommand<T>(command: string, payload: object): Promise<T | undefined> {
         return this.client.sendCommand<T>(command, payload);
+    }
+
+    async getRuntimeConfig(): Promise<DaemonRuntimeConfig> {
+        const runtimeConfig = await this.sendServerCommand<DaemonRuntimeConfig>(
+            TEAM_CLUSTER_DAEMON_COMMAND.runtime.config.get,
+            {}
+        );
+        if (!runtimeConfig) {
+            throw new Error('VoltCloud returned an empty runtime config payload');
+        }
+
+        return runtimeConfig;
     }
 
     emitLifecycleEvent(type: RuntimeLifecycleEventType, details?: string): void {

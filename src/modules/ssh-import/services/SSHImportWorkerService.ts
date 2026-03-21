@@ -56,25 +56,30 @@ export class SSHImportWorkerService {
     ) {
     }
 
-    start(): void {
+    start(concurrency?: number): void {
         if (this.worker) {
             return;
         }
 
-        this.worker = this.queueService.createWorker<SSHImportJobPayload>(SSH_IMPORT_QUEUE_NAME, async (job, bullJob) => {
-            // Memory-aware scheduling: requeue with delay if heap is under pressure
-            if (isMemoryPressured()) {
-                const delayMs = 30_000;
-                logger.warn(
-                    { trajectoryId: job.trajectoryId, delayMs },
-                    'Heap memory pressure detected — delaying SSH import job'
-                );
-                await bullJob.moveToDelayed(Date.now() + delayMs, bullJob.token);
-                throw new DelayedError();
-            }
+        this.worker = this.queueService.createWorker<SSHImportJobPayload>(
+            SSH_IMPORT_QUEUE_NAME,
+            async (job, bullJob) => {
+                if (isMemoryPressured()) {
+                    const delayMs = 30_000;
+                    logger.warn(
+                        { trajectoryId: job.trajectoryId, delayMs },
+                        'Heap memory pressure detected — delaying SSH import job'
+                    );
+                    await bullJob.moveToDelayed(Date.now() + delayMs, bullJob.token);
+                    throw new DelayedError();
+                }
 
-            await this.processJob(job);
-        });
+                await this.processJob(job);
+            },
+            {
+                concurrency: concurrency ?? 1
+            }
+        );
         logger.info('SSHImportWorkerService started');
     }
 
@@ -86,6 +91,15 @@ export class SSHImportWorkerService {
         await this.worker.close();
         this.worker = null;
         logger.info('SSHImportWorkerService stopped');
+    }
+
+    setConcurrency(concurrency: number): void {
+        if (!this.worker) {
+            throw new Error('SSHImportWorkerService has not started');
+        }
+
+        this.worker.concurrency = concurrency;
+        logger.info({ concurrency }, 'SSHImportWorkerService concurrency updated');
     }
 
     private async processJob(job: SSHImportJobPayload): Promise<void> {

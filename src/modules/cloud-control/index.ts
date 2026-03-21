@@ -5,6 +5,7 @@ import type {
     DockerRuntimeService,
     HostShellService,
     MinioService,
+    QueueConcurrencyCoordinator,
     QueueService,
     RedisConnectionService,
     RedisExplorerReadService
@@ -60,6 +61,7 @@ export const createCloudControlModule = (deps: {
     queueService: QueueService;
     redisConnectionService: RedisConnectionService;
     redisExplorerReadService: RedisExplorerReadService;
+    queueConcurrencyCoordinator: QueueConcurrencyCoordinator;
     trajectoryAutoPreviewClaimStore: TrajectoryAutoPreviewClaimStore;
     trajectoryParserService: TrajectoryParserService;
     trajectoryPluginParserService: TrajectoryPluginParserService;
@@ -113,6 +115,7 @@ export const createCloudControlModule = (deps: {
             emitLifecycle: (type, details) => {
                 voltCloudConnection.emitLifecycleEvent(type, details);
             },
+            applyQueueConcurrency: (queueConcurrency) => deps.queueConcurrencyCoordinator.apply(queueConcurrency),
             reportUpdateFailed: (details) => voltCloudConnection.reportUpdateFailed(details),
             reportDeleteFailed: (details) => voltCloudConnection.reportDeleteFailed(details)
         })

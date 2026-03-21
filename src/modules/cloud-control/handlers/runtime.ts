@@ -1,4 +1,9 @@
-import { readPayloadRecord, readString } from './payloadValidation';
+import { readNumber, readPayloadRecord, readString } from './payloadValidation';
+import {
+    TEAM_CLUSTER_DAEMON_COMMAND,
+    type TeamClusterDaemonQueueConcurrency,
+    type TeamClusterDaemonQueueConcurrencyApplyPayload
+} from '@/shared/contracts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { DaemonConfig } from '@/core/config';
@@ -17,6 +22,7 @@ interface RuntimeHandlersDependencies {
      */
     reportUpdateFailed: (details: string) => Promise<void>;
     reportDeleteFailed: (details: string) => Promise<void>;
+    applyQueueConcurrency: (queueConcurrency: TeamClusterDaemonQueueConcurrency) => void;
 };
 
 interface UpdatePayload {
@@ -56,6 +62,46 @@ const readUpdatePayload = (payload: unknown): UpdatePayload => {
     return {
         targetImage: readString(record.targetImage, 'targetImage'),
         targetVersion: readString(record.targetVersion, 'targetVersion')
+    };
+};
+
+const readQueueConcurrencyValue = (value: unknown, fieldName: string): number => {
+    const parsedValue = readNumber(value, fieldName);
+    if (!Number.isInteger(parsedValue) || parsedValue < 1) {
+        throw new Error(`${fieldName} must be an integer greater than or equal to 1`);
+    }
+
+    return parsedValue;
+};
+
+const readQueueConcurrencyApplyPayload = (payload: unknown): TeamClusterDaemonQueueConcurrencyApplyPayload => {
+    const record = readPayloadRecord(payload);
+    const recordKeys = Object.keys(record).filter((key) => key !== 'metadata');
+    if (recordKeys.length !== 1 || recordKeys[0] !== 'queueConcurrency') {
+        throw new Error('payload must contain queueConcurrency only');
+    }
+
+    const queueConcurrencyRecord = readPayloadRecord(record.queueConcurrency);
+    const queueConcurrencyKeys = Object.keys(queueConcurrencyRecord).sort();
+    const expectedKeys = ['analysis', 'glbPreprocessing', 'rasterizer', 'sshImport'];
+
+    if (queueConcurrencyKeys.length !== expectedKeys.length) {
+        throw new Error('queueConcurrency must include analysis, rasterizer, glbPreprocessing, and sshImport');
+    }
+
+    for (const [index, key] of expectedKeys.entries()) {
+        if (queueConcurrencyKeys[index] !== key) {
+            throw new Error('queueConcurrency must include analysis, rasterizer, glbPreprocessing, and sshImport');
+        }
+    }
+
+    return {
+        queueConcurrency: {
+            analysis: readQueueConcurrencyValue(queueConcurrencyRecord.analysis, 'queueConcurrency.analysis'),
+            rasterizer: readQueueConcurrencyValue(queueConcurrencyRecord.rasterizer, 'queueConcurrency.rasterizer'),
+            glbPreprocessing: readQueueConcurrencyValue(queueConcurrencyRecord.glbPreprocessing, 'queueConcurrency.glbPreprocessing'),
+            sshImport: readQueueConcurrencyValue(queueConcurrencyRecord.sshImport, 'queueConcurrency.sshImport')
+        }
     };
 };
 
@@ -125,6 +171,10 @@ const executeRuntimeUninstall = async (deps: RuntimeHandlersDependencies): Promi
     }
 };
 
+const executeRuntimeRestart = async (): Promise<void> => {
+    process.exit(0);
+};
+
 const executeRuntimeUpdate = async (deps: RuntimeHandlersDependencies, payload: UpdatePayload): Promise<void> => {
     try {
         await deps.dockerRuntimeService.forcePullImage(payload.targetImage);
@@ -162,6 +212,45 @@ export const createRuntimeHandlers = (deps: RuntimeHandlersDependencies): Revers
             deps.emitLifecycle('uninstall-requested', 'Remote uninstall requested');
 
             deferRuntimeCommand(() => executeRuntimeUninstall(deps));
+
+            return acceptRuntimeCommand();
+        }
+    },
+    {
+        command: TEAM_CLUSTER_DAEMON_COMMAND.runtime.queueConcurrency.apply,
+        execute: async (payload) => {
+            let request: TeamClusterDaemonQueueConcurrencyApplyPayload;
+
+            try {
+                request = readQueueConcurrencyApplyPayload(payload);
+            } catch {
+                return rejectRuntimeCommand(
+                    'Invalid queue concurrency payload: queueConcurrency.analysis, queueConcurrency.rasterizer, queueConcurrency.glbPreprocessing, and queueConcurrency.sshImport are required integers greater than or equal to 1.'
+                );
+            }
+
+            try {
+                deps.applyQueueConcurrency(request.queueConcurrency);
+            } catch (error: unknown) {
+                return rejectRuntimeCommand(
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to apply queue concurrency'
+                );
+            }
+
+            return {
+                data: {
+                    accepted: true,
+                    queueConcurrency: request.queueConcurrency
+                }
+            };
+        }
+    },
+    {
+        command: TEAM_CLUSTER_DAEMON_COMMAND.runtime.restart,
+        execute: async () => {
+            deferRuntimeCommand(executeRuntimeRestart);
 
             return acceptRuntimeCommand();
         }

@@ -38,6 +38,11 @@ export class TrajectoryGlbWorkerService {
         await this.workerShell.stop();
     }
 
+    setConcurrency(concurrency: number): void {
+        this.workerShell.setConcurrency(concurrency);
+        logger.info({ concurrency }, 'TrajectoryGlbWorkerService concurrency updated');
+    }
+
     private buildJobStatusProjection(
         job: GlbConversionQueueJobPayload,
         status: 'running' | 'completed' | 'failed',

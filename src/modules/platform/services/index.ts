@@ -5,6 +5,7 @@ export * from './MinioService';
 export * from './MongoConnectionService';
 export * from './ObjectUploadLifecycleService';
 export * from './ObjectSyncService';
+export * from './QueueConcurrencyCoordinator';
 export * from './enqueue-projected-job';
 export * from './memory-aware-worker';
 export * from './QueueService';

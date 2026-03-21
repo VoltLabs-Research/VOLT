@@ -5,6 +5,7 @@ import { createJupyterModule } from '@/modules/jupyter';
 import { createMetricsModule } from '@/modules/metrics';
 import { createSSHImportModule } from '@/modules/ssh-import';
 import { createPlatformModule } from '@/modules/platform';
+import { QueueConcurrencyCoordinator } from '@/modules/platform/services';
 import { createTrajectoryNativeModule } from '@/modules/trajectory-native';
 import { TrajectoryRasterWorkerService } from '@/modules/trajectory-native/services';
 import { TrajectoryGlbWorkerService } from '@/modules/trajectory-native/services';
@@ -12,10 +13,12 @@ import { createArtifactsModule, createPluginListingRepository } from '@/modules/
 import { createWorkflowRuntimeModule } from '@/modules/workflow-runtime';
 import { createCloudControlModule } from '@/modules/cloud-control';
 import { createAnalysisWorker, createJobRuntimeModule } from '@/modules/job-runtime';
+import type { DaemonRuntimeConfig } from './config';
 
 type BootstrapContext = {
     bootStartedAt: number;
     config: ReturnType<typeof loadConfig>;
+    runtimeConfig: DaemonRuntimeConfig | null;
     platform: ReturnType<typeof createPlatformModule>;
     workflowRuntime: ReturnType<typeof createWorkflowRuntimeModule>;
     cloudControl: ReturnType<typeof createCloudControlModule>;
@@ -38,6 +41,7 @@ const createBootstrapContext = (): BootstrapContext => {
     const workflowRuntime = createWorkflowRuntimeModule();
     const jupyter = createJupyterModule(config, platform.dockerRuntimeService);
     const pluginListingRepository = createPluginListingRepository();
+    const queueConcurrencyCoordinator = new QueueConcurrencyCoordinator();
     const sshImport = createSSHImportModule({
         config,
         queueService: platform.queueService,
@@ -59,6 +63,7 @@ const createBootstrapContext = (): BootstrapContext => {
         dockerRuntimeService: platform.dockerRuntimeService,
         hostShellService: platform.hostShellService,
         minioService: platform.minioService,
+        queueConcurrencyCoordinator,
         queueService: platform.queueService,
         redisConnectionService: platform.redisConnectionService,
         redisExplorerReadService: platform.redisExplorerReadService,
@@ -100,9 +105,17 @@ const createBootstrapContext = (): BootstrapContext => {
         cloudControl.daemonJobReporterService
     );
 
+    queueConcurrencyCoordinator.bind({
+        analysisWorker,
+        trajectoryRasterWorkerService,
+        trajectoryGlbWorkerService,
+        sshImportWorkerService: sshImport.sshImportWorkerService
+    });
+
     return {
         bootStartedAt,
         config,
+        runtimeConfig: null,
         platform,
         workflowRuntime,
         cloudControl,
@@ -111,6 +124,18 @@ const createBootstrapContext = (): BootstrapContext => {
         trajectoryRasterWorkerService,
         trajectoryGlbWorkerService
     };
+};
+
+const loadRuntimeConfig = async (context: BootstrapContext): Promise<DaemonRuntimeConfig> => {
+    const runtimeConfig = await context.cloudControl.voltCloudConnection.getRuntimeConfig();
+    context.runtimeConfig = runtimeConfig;
+
+    logger.info({
+        teamClusterId: context.config.teamClusterId,
+        queueConcurrency: runtimeConfig.queueConcurrency
+    }, 'Loaded daemon runtime config from Volt');
+
+    return runtimeConfig;
 };
 
 const startBootstrapContext = async (context: BootstrapContext): Promise<void> => {
@@ -131,11 +156,12 @@ const startBootstrapContext = async (context: BootstrapContext): Promise<void> =
     startMemoryMonitor();
 
     await cloudControl.voltCloudConnection.start();
+    const runtimeConfig = await loadRuntimeConfig(context);
     cloudControl.daemonExposureRegistryService.start();
-    analysisWorker.start(config.queueConcurrency.analysis);
-    trajectoryRasterWorkerService.start(config.queueConcurrency.rasterizer);
-    trajectoryGlbWorkerService.start(config.queueConcurrency.glbPreprocessing);
-    sshImport.sshImportWorkerService.start();
+    analysisWorker.start(runtimeConfig.queueConcurrency.analysis);
+    trajectoryRasterWorkerService.start(runtimeConfig.queueConcurrency.rasterizer);
+    trajectoryGlbWorkerService.start(runtimeConfig.queueConcurrency.glbPreprocessing);
+    sshImport.sshImportWorkerService.start(runtimeConfig.queueConcurrency.sshImport);
     cloudControl.voltCloudConnection.emitLifecycleEvent(
         'services-ready',
         'Cluster-local Redis, MongoDB, MinIO, and Docker coordination ready'

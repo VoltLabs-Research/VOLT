@@ -14,6 +14,7 @@ export interface MemoryAwareWorkerShell<T extends Record<string, unknown>> {
         processJob: (jobPayload: T, job: Job<T>) => Promise<void>,
         options?: MemoryAwareWorkerStartOptions<T>
     ) => Worker<T>;
+    setConcurrency: (concurrency: number) => void;
     stop: () => Promise<void>;
 };
 
@@ -67,6 +68,14 @@ export const createMemoryAwareWorkerShell = <T extends Record<string, unknown>>(
 
             logger.info(config.startedMessage);
             return worker;
+        },
+
+        setConcurrency(concurrency) {
+            if (!worker) {
+                throw new Error(`Worker for queue ${config.queueName} has not started`);
+            }
+
+            worker.concurrency = concurrency;
         },
 
         async stop() {
