@@ -533,6 +533,10 @@ export default class TeamClusterLifecycleService {
         this.emitLifecycleDeletion(teamCluster);
     }
 
+    publishTeamClusterUpdate(teamCluster: TeamCluster): void {
+        this.emitLifecycleUpdate(teamCluster);
+    }
+
     private async requireTeamClusterById(teamClusterId: string): Promise<TeamCluster> {
         const teamCluster = await this.teamClusterRepository.findById(teamClusterId);
         if (!teamCluster) {
