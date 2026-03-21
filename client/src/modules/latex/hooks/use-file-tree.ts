@@ -47,6 +47,7 @@ interface UseFileTreeOutput {
     startRenameFolder: (folderPath: string) => void;
     startRenameFile: (file: LatexFileEntry) => void;
     startRenameAsset: (asset: LatexAsset) => void;
+    renameFolder: (folderPath: string, nextName: string) => Promise<void>;
     cancelRename: () => void;
     handleConfirmRename: (name: string) => Promise<void>;
     handleDeleteFolder: (folderPath: string) => Promise<void>;
@@ -390,6 +391,7 @@ const useFileTree = ({
         startRenameFolder,
         startRenameFile,
         startRenameAsset,
+        renameFolder,
         cancelRename,
         handleConfirmRename,
         handleDeleteFolder,
