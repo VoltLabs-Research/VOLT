@@ -29,6 +29,8 @@ const WorkspaceTreeRow = forwardRef<HTMLDivElement, WorkspaceTreeRowProps>(({
     ...props
 }, ref) => {
     const indent = depth * 12;
+    const resolvedAriaLabel = ariaLabel
+        ?? (typeof label === 'string' || typeof label === 'number' ? String(label) : undefined);
 
     return (
         <Container
@@ -40,7 +42,7 @@ const WorkspaceTreeRow = forwardRef<HTMLDivElement, WorkspaceTreeRowProps>(({
             )}
             role='treeitem'
             tabIndex={0}
-            aria-label={ariaLabel ?? label}
+            aria-label={resolvedAriaLabel}
             aria-level={treeItemLevel}
             aria-expanded={expanded}
             aria-selected={selected}
