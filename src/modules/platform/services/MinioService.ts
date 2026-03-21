@@ -92,6 +92,34 @@ export class MinioService {
         });
     }
 
+    async deleteByPrefix(bucket: string, prefix: string): Promise<number> {
+        const BATCH_SIZE = 1000;
+        const stream = this.client.listObjectsV2(bucket, prefix, true);
+        let batch: string[] = [];
+        let deletedCount = 0;
+
+        for await (const item of stream) {
+            if (!item.name) {
+                continue;
+            }
+
+            batch.push(item.name);
+
+            if (batch.length >= BATCH_SIZE) {
+                deletedCount += batch.length;
+                await this.client.removeObjects(bucket, batch);
+                batch = [];
+            }
+        }
+
+        if (batch.length > 0) {
+            deletedCount += batch.length;
+            await this.client.removeObjects(bucket, batch);
+        }
+
+        return deletedCount;
+    }
+
     async removeObject(bucket: string, objectKey: string): Promise<void> {
         await this.client.removeObject(bucket, objectKey);
     }

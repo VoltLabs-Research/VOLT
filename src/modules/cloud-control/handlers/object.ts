@@ -1,6 +1,6 @@
 import { createChunkedObjectUploadService } from '@/modules/cloud-control/services';
 import { createObjectSyncService, createObjectUploadLifecycleService } from '@/modules/platform/services';
-import { ObjectBucketName, TEAM_CLUSTER_DAEMON_COMMAND } from '@/shared/contracts';
+import { TEAM_CLUSTER_DAEMON_COMMAND } from '@/shared/contracts';
 import {
     readObjectBucketName,
     readNumber,
@@ -13,7 +13,7 @@ import {
 } from './payloadValidation';
 import { Readable } from 'node:stream';
 import type { MinioService } from '@/modules/platform/services';
-import type { ObjectUploadRequest, PluginSyncRequest, RuntimeEventBroker } from '@/shared/contracts';
+import type { ObjectDeleteRequest, ObjectUploadRequest, PluginSyncRequest, RuntimeEventBroker } from '@/shared/contracts';
 import type { ReverseChannelCommandHandler } from '../services';
 
 interface MinioLikeError {
@@ -33,6 +33,10 @@ interface ObjectListRequest {
 interface ObjectGetRequest {
     bucket: ObjectUploadRequest['bucket'];
     objectKey: string;
+};
+
+interface ObjectDeletePayloadRequest extends Omit<ObjectDeleteRequest, 'bucket'> {
+    bucket: ObjectDeleteRequest['bucket'];
 };
 
 const toUint8ArrayChunk = (chunk: string | Buffer | Uint8Array): Uint8Array => {
@@ -142,6 +146,26 @@ const readObjectGetRequest = (payload: unknown): ObjectGetRequest => {
     return {
         bucket: readObjectBucketName(record.bucket, 'bucket'),
         objectKey: readString(record.objectKey, 'objectKey')
+    };
+};
+
+const readObjectDeleteRequest = (payload: unknown): ObjectDeletePayloadRequest => {
+    const record = readOptionalPayloadRecord(payload);
+    const objectKey = typeof record.objectKey === 'undefined'
+        ? undefined
+        : readString(record.objectKey, 'objectKey');
+    const prefix = typeof record.prefix === 'undefined'
+        ? undefined
+        : readString(record.prefix, 'prefix');
+
+    if ((!objectKey && !prefix) || (objectKey && prefix)) {
+        throw new Error('Provide exactly one of objectKey or prefix');
+    }
+
+    return {
+        bucket: readObjectBucketName(record.bucket, 'bucket'),
+        objectKey,
+        prefix
     };
 };
 
@@ -273,6 +297,33 @@ export const createObjectHandlers = (deps: ObjectHandlersDependencies): ReverseC
                     status: 200,
                     headers,
                     stream
+                };
+            }
+        },
+
+        // ── Object delete ───────────────────────────────────────────────
+        {
+            command: TEAM_CLUSTER_DAEMON_COMMAND.object.delete,
+            execute: async (payload) => {
+                const request = readObjectDeleteRequest(payload);
+
+                if (request.objectKey) {
+                    await deps.minioService.removeObject(request.bucket, request.objectKey);
+                    return {
+                        data: {
+                            deleted: true,
+                            deletedCount: 1
+                        }
+                    };
+                }
+
+                const deletedCount = await deps.minioService.deleteByPrefix(request.bucket, request.prefix || '');
+
+                return {
+                    data: {
+                        deleted: true,
+                        deletedCount
+                    }
                 };
             }
         }

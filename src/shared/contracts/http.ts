@@ -91,6 +91,12 @@ export interface ObjectUploadRequest {
     metadata?: Record<string, string>;
 };
 
+export interface ObjectDeleteRequest {
+    bucket: ObjectBucketName;
+    objectKey?: string;
+    prefix?: string;
+};
+
 export interface PluginSyncRequest {
     pluginId: string;
     objectKey: string;
