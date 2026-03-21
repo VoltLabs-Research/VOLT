@@ -84,20 +84,20 @@ interface RootDropLaneProps {
     id: string;
     isVisible: boolean;
     fillAvailableSpace?: boolean;
-    onExternalFilesDragOver: (targetFolderPath: string, event: DragEvent<HTMLElement>) => void;
-    onExternalFilesDragLeave: (targetFolderPath: string, event: DragEvent<HTMLElement>) => void;
-    onExternalFilesDrop: (targetFolderPath: string, event: DragEvent<HTMLElement>) => Promise<void>;
-    label: string;
+    isExternallyActive?: boolean;
+    onExternalDragOver: (event: DragEvent<HTMLElement>) => void;
+    onExternalDragLeave: (event: DragEvent<HTMLElement>) => void;
+    onExternalDrop: (event: DragEvent<HTMLElement>) => Promise<void>;
 }
 
 const RootDropLane = ({
     id,
     isVisible,
     fillAvailableSpace = false,
-    onExternalFilesDragOver,
-    onExternalFilesDragLeave,
-    onExternalFilesDrop,
-    label
+    isExternallyActive = false,
+    onExternalDragOver,
+    onExternalDragLeave,
+    onExternalDrop
 }: RootDropLaneProps) => {
     const { setNodeRef, isOver } = useDroppable({
         id,
@@ -114,17 +114,16 @@ const RootDropLane = ({
             className={cn(
                 'latex-workspace__root-drop-lane d-flex items-center',
                 fillAvailableSpace && 'is-fill-area',
-                isOver && 'is-root-drop-target'
+                (isOver || isExternallyActive) && 'is-root-drop-target'
             )}
             aria-hidden='true'
-            onDragOver={(event) => onExternalFilesDragOver(ROOT_DROP_DATA.folderPath, event)}
-            onDragLeave={(event) => onExternalFilesDragLeave(ROOT_DROP_DATA.folderPath, event)}
+            onDragOver={onExternalDragOver}
+            onDragLeave={onExternalDragLeave}
             onDrop={(event) => {
-                void onExternalFilesDrop(ROOT_DROP_DATA.folderPath, event);
+                void onExternalDrop(event);
             }}
         >
             <span className='latex-workspace__root-drop-lane-line' />
-            <span className='latex-workspace__root-drop-lane-label'>{label}</span>
         </Container>
     );
 };
@@ -172,8 +171,8 @@ const LatexFilePanel = ({
         startRenameFolder,
         startRenameFile,
         startRenameAsset,
+        renameFolder,
         cancelRename,
-        handleConfirmRename,
         handleDeleteFolder,
         moveFileToFolder,
         moveAssetToFolder,
@@ -200,6 +199,7 @@ const LatexFilePanel = ({
     );
     const [activeDragData, setActiveDragData] = useState<LatexWorkspaceDragData | null>(null);
     const [externalDropTargetPath, setExternalDropTargetPath] = useState<string | null>(null);
+    const [activeExternalRootLaneId, setActiveExternalRootLaneId] = useState<string | null>(null);
     const [interactionAnnouncement, setInteractionAnnouncement] = useState('');
     const announcementTimerRef = useRef<number | null>(null);
 
@@ -225,6 +225,7 @@ const LatexFilePanel = ({
     const resetDragState = useCallback(() => {
         setActiveDragData(null);
         setExternalDropTargetPath(null);
+        setActiveExternalRootLaneId(null);
     }, []);
 
     const extractDroppedEntries = useCallback(async (
@@ -304,6 +305,7 @@ const LatexFilePanel = ({
         event.preventDefault();
         event.stopPropagation();
         setExternalDropTargetPath(null);
+        setActiveExternalRootLaneId(null);
 
         try {
             const entries = await extractDroppedEntries(event, targetFolderPath);
@@ -329,6 +331,25 @@ const LatexFilePanel = ({
             });
         }
     }, [announceInteraction, extractDroppedEntries, onUploadEntries]);
+
+    const handleExternalRootLaneDragOver = useCallback((laneId: string, event: DragEvent<HTMLElement>): void => {
+        setActiveExternalRootLaneId(laneId);
+        handleExternalFilesDragOver(ROOT_DROP_DATA.folderPath, event);
+    }, [handleExternalFilesDragOver]);
+
+    const handleExternalRootLaneDragLeave = useCallback((laneId: string, event: DragEvent<HTMLElement>): void => {
+        const nextTarget = event.relatedTarget;
+        if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) {
+            setActiveExternalRootLaneId((currentLaneId) => currentLaneId === laneId ? null : currentLaneId);
+        }
+
+        handleExternalFilesDragLeave(ROOT_DROP_DATA.folderPath, event);
+    }, [handleExternalFilesDragLeave]);
+
+    const handleExternalRootLaneDrop = useCallback(async (laneId: string, event: DragEvent<HTMLElement>): Promise<void> => {
+        setActiveExternalRootLaneId((currentLaneId) => currentLaneId === laneId ? null : currentLaneId);
+        await handleExternalFilesDrop(ROOT_DROP_DATA.folderPath, event);
+    }, [handleExternalFilesDrop]);
 
     const handleDragStart = useCallback((event: DragStartEvent): void => {
         const dragData = event.active.data.current as LatexWorkspaceDragData | undefined;
@@ -458,10 +479,12 @@ const LatexFilePanel = ({
             onFolderDelete={handleDeleteFolder}
             onAssetDelete={onDeleteAsset}
             onAssetInsertRef={(asset) => onInsertRef(buildLatexRef(asset))}
-            onRenameFile={startRenameFile}
-            onRenameFolder={startRenameFolder}
-            onRenameAsset={startRenameAsset}
-            onConfirmRename={handleConfirmRename}
+            onStartRenameFile={startRenameFile}
+            onStartRenameFolder={startRenameFolder}
+            onStartRenameAsset={startRenameAsset}
+            onSaveFileName={onRenameFile}
+            onSaveFolderName={renameFolder}
+            onSaveAssetName={onRenameAsset}
             onCancelRename={cancelRename}
             onFileSetEntrypoint={onSetEntrypoint}
             onExternalFilesDragOver={handleExternalFilesDragOver}
@@ -477,7 +500,6 @@ const LatexFilePanel = ({
         externalDropTargetPath,
         handleConfirmNewFile,
         handleConfirmNewFolder,
-        handleConfirmRename,
         handleDeleteFolder,
         handleExternalFilesDragLeave,
         handleExternalFilesDragOver,
@@ -489,10 +511,13 @@ const LatexFilePanel = ({
         onDeleteFile,
         onFileSelect,
         onInsertRef,
+        onRenameAsset,
+        onRenameFile,
         onSetEntrypoint,
         openNewFileIn,
         openNewFolderIn,
         renamingTarget,
+        renameFolder,
         selectedAssetId,
         startRenameAsset,
         startRenameFile,
@@ -553,7 +578,6 @@ const LatexFilePanel = ({
         && newFolderTargetFolder === null;
     const rootDropPath = normalizeWorkspaceFolderPath(ROOT_DROP_DATA.folderPath);
     const canDropActiveItemInRoot = canDropLatexWorkspaceItemInFolder(activeDragData, ROOT_DROP_DATA.folderPath);
-    const isRootExternalDropTarget = externalDropTargetPath === rootDropPath;
     const shouldShowRootDropLanes = Boolean(
         canDropActiveItemInRoot
         || externalDropTargetPath === rootDropPath
@@ -609,8 +633,7 @@ const LatexFilePanel = ({
                             <Container
                                 className={cn(
                                     'latex-workspace__tree-surface d-flex column flex-1 min-h-0',
-                                    isWorkspaceEmpty && 'is-empty',
-                                    isRootExternalDropTarget && 'is-root-drop-target'
+                                    isWorkspaceEmpty && 'is-empty'
                                 )}
                                 onDragOver={(event) => handleExternalFilesDragOver(ROOT_DROP_DATA.folderPath, event)}
                                 onDragLeave={(event) => handleExternalFilesDragLeave(ROOT_DROP_DATA.folderPath, event)}
@@ -621,10 +644,10 @@ const LatexFilePanel = ({
                                 <RootDropLane
                                     id={`${LATEX_WORKSPACE_ROOT_DROP_ID}:top`}
                                     isVisible={shouldShowRootDropLanes}
-                                    label='Move to root'
-                                    onExternalFilesDragOver={handleExternalFilesDragOver}
-                                    onExternalFilesDragLeave={handleExternalFilesDragLeave}
-                                    onExternalFilesDrop={handleExternalFilesDrop}
+                                    isExternallyActive={activeExternalRootLaneId === `${LATEX_WORKSPACE_ROOT_DROP_ID}:top`}
+                                    onExternalDragOver={(event) => handleExternalRootLaneDragOver(`${LATEX_WORKSPACE_ROOT_DROP_ID}:top`, event)}
+                                    onExternalDragLeave={(event) => handleExternalRootLaneDragLeave(`${LATEX_WORKSPACE_ROOT_DROP_ID}:top`, event)}
+                                    onExternalDrop={(event) => handleExternalRootLaneDrop(`${LATEX_WORKSPACE_ROOT_DROP_ID}:top`, event)}
                                 />
 
                                 <div role='tree' aria-label='Project files and assets' className='latex-workspace__tree-root'>
@@ -653,10 +676,10 @@ const LatexFilePanel = ({
                                     id={`${LATEX_WORKSPACE_ROOT_DROP_ID}:bottom`}
                                     isVisible={shouldShowBottomRootDropLane}
                                     fillAvailableSpace
-                                    label='Move to root'
-                                    onExternalFilesDragOver={handleExternalFilesDragOver}
-                                    onExternalFilesDragLeave={handleExternalFilesDragLeave}
-                                    onExternalFilesDrop={handleExternalFilesDrop}
+                                    isExternallyActive={activeExternalRootLaneId === `${LATEX_WORKSPACE_ROOT_DROP_ID}:bottom`}
+                                    onExternalDragOver={(event) => handleExternalRootLaneDragOver(`${LATEX_WORKSPACE_ROOT_DROP_ID}:bottom`, event)}
+                                    onExternalDragLeave={(event) => handleExternalRootLaneDragLeave(`${LATEX_WORKSPACE_ROOT_DROP_ID}:bottom`, event)}
+                                    onExternalDrop={(event) => handleExternalRootLaneDrop(`${LATEX_WORKSPACE_ROOT_DROP_ID}:bottom`, event)}
                                 />
 
                                 {isWorkspaceEmpty && (

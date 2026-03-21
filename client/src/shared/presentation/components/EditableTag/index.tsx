@@ -9,6 +9,8 @@ interface EditableTagProps {
     className?: string;
     title?: string;
     allowSingleClickPropagation?: boolean;
+    editing?: boolean;
+    onEditingChange?: (isEditing: boolean) => void;
 };
 
 const getTextValue = (children: React.ReactNode): string => {
@@ -19,8 +21,8 @@ const getTextValue = (children: React.ReactNode): string => {
     return '';
 };
 
-const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: Tag, onSave, children, className, title, allowSingleClickPropagation = false }, ref) => {
-    const [isEditing, setIsEditing] = useState(false);
+const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: Tag, onSave, children, className, title, allowSingleClickPropagation = false, editing, onEditingChange }, ref) => {
+    const [internalEditing, setInternalEditing] = useState(false);
     const elementRef = useRef<HTMLElement>(null);
     const textValue = useMemo(() => getTextValue(children), [children]);
     const accessibleLabel = textValue
@@ -28,6 +30,15 @@ const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: 
         : 'Press Enter or F2 to edit.';
     const combinedTitle = title ?? (textValue || undefined);
     const combinedRef = composeRefs<HTMLElement>(elementRef, ref);
+    const isEditing = editing ?? internalEditing;
+
+    const setEditingState = (nextValue: boolean): void => {
+        if (editing === undefined) {
+            setInternalEditing(nextValue);
+        }
+
+        onEditingChange?.(nextValue);
+    };
 
     const selectAllText = (): void => {
         if (!elementRef.current) {
@@ -51,7 +62,7 @@ const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: 
     }, [isEditing]);
 
     const enableEditing = (): void => {
-        setIsEditing(true);
+        setEditingState(true);
     };
 
     const handleClick = (event: React.MouseEvent<HTMLElement>): void => {
@@ -63,10 +74,6 @@ const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: 
     };
 
     const handleDoubleClick = (event: React.MouseEvent<HTMLElement>): void => {
-        if (allowSingleClickPropagation) {
-            return;
-        }
-
         event.stopPropagation();
         enableEditing();
     };
@@ -76,7 +83,7 @@ const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: 
             return;
         }
 
-        setIsEditing(false);
+        setEditingState(false);
 
         const newText = elementRef.current?.innerText.trim();
 
@@ -112,7 +119,7 @@ const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: 
                 elementRef.current.innerText = textValue;
             }
 
-            setIsEditing(false);
+            setEditingState(false);
         }
     };
 

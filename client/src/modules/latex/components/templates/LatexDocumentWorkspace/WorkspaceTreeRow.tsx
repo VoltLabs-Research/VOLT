@@ -6,7 +6,7 @@ import type { HTMLAttributes, ReactNode } from 'react';
 interface WorkspaceTreeRowProps extends HTMLAttributes<HTMLDivElement> {
     depth: number;
     icon: ReactNode;
-    label: string;
+    label: ReactNode;
     selected?: boolean;
     expanded?: boolean;
     trailing?: ReactNode;
@@ -50,7 +50,9 @@ const WorkspaceTreeRow = forwardRef<HTMLDivElement, WorkspaceTreeRowProps>(({
             <Container className='d-flex items-center gap-05 flex-1 min-w-0'>
                 {depth > 0 && <span className='latex-workspace__tree-indent-line' aria-hidden='true' />}
                 <span className='color-muted d-flex items-center f-shrink-0'>{icon}</span>
-                <span className='latex-workspace__file-name text-truncate'>{label}</span>
+                {typeof label === 'string' || typeof label === 'number'
+                    ? <span className='latex-workspace__file-name text-truncate'>{label}</span>
+                    : label}
             </Container>
             {trailing && <Container className='d-flex items-center gap-025 f-shrink-0'>{trailing}</Container>}
         </Container>

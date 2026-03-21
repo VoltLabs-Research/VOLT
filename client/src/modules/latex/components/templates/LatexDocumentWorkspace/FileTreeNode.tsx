@@ -1,5 +1,6 @@
 import Container from '@/shared/presentation/components/Container';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
+import EditableTag from '@/shared/presentation/components/EditableTag';
 import IconButton from '@/shared/presentation/components/IconButton';
 import WorkspaceEntryInput from './WorkspaceEntryInput';
 import WorkspaceTreeRow from './WorkspaceTreeRow';
@@ -67,10 +68,12 @@ interface FileTreeNodeProps {
     onFolderDelete: (folderPath: string) => Promise<void>;
     onAssetDelete: (asset: LatexAsset) => Promise<void>;
     onAssetInsertRef: (asset: LatexAsset) => void;
-    onRenameFile: (file: LatexFileEntry) => void;
-    onRenameFolder: (folderPath: string) => void;
-    onRenameAsset: (asset: LatexAsset) => void;
-    onConfirmRename: (name: string) => Promise<void>;
+    onStartRenameFile: (file: LatexFileEntry) => void;
+    onStartRenameFolder: (folderPath: string) => void;
+    onStartRenameAsset: (asset: LatexAsset) => void;
+    onSaveFileName: (fileId: string, name: string) => Promise<void>;
+    onSaveFolderName: (folderPath: string, name: string) => Promise<void>;
+    onSaveAssetName: (asset: LatexAsset, name: string) => Promise<void>;
     onCancelRename: () => void;
     onFileSetEntrypoint: (fileId: string) => Promise<void>;
     onExternalFilesDragOver: (targetFolderPath: string, event: DragEvent<HTMLElement>) => void;
@@ -130,10 +133,12 @@ const FolderTreeNode = ({
     onFolderDelete,
     onAssetDelete,
     onAssetInsertRef,
-    onRenameFile,
-    onRenameFolder,
-    onRenameAsset,
-    onConfirmRename,
+    onStartRenameFile,
+    onStartRenameFolder,
+    onStartRenameAsset,
+    onSaveFileName,
+    onSaveFolderName,
+    onSaveAssetName,
     onCancelRename,
     onFileSetEntrypoint,
     onExternalFilesDragOver,
@@ -204,10 +209,12 @@ const FolderTreeNode = ({
             onFolderDelete={onFolderDelete}
             onAssetDelete={onAssetDelete}
             onAssetInsertRef={onAssetInsertRef}
-            onRenameFile={onRenameFile}
-            onRenameFolder={onRenameFolder}
-            onRenameAsset={onRenameAsset}
-            onConfirmRename={onConfirmRename}
+            onStartRenameFile={onStartRenameFile}
+            onStartRenameFolder={onStartRenameFolder}
+            onStartRenameAsset={onStartRenameAsset}
+            onSaveFileName={onSaveFileName}
+            onSaveFolderName={onSaveFolderName}
+            onSaveAssetName={onSaveAssetName}
             onCancelRename={onCancelRename}
             onFileSetEntrypoint={onFileSetEntrypoint}
             onExternalFilesDragOver={onExternalFilesDragOver}
@@ -229,7 +236,6 @@ const FolderTreeNode = ({
         onCancelRename,
         onConfirmNewFile,
         onConfirmNewFolder,
-        onConfirmRename,
         onExternalFilesDragLeave,
         onExternalFilesDragOver,
         onExternalFilesDrop,
@@ -239,9 +245,12 @@ const FolderTreeNode = ({
         onFolderDelete,
         onOpenNewFileIn,
         onOpenNewFolderIn,
-        onRenameAsset,
-        onRenameFile,
-        onRenameFolder,
+        onSaveAssetName,
+        onSaveFileName,
+        onSaveFolderName,
+        onStartRenameAsset,
+        onStartRenameFile,
+        onStartRenameFolder,
         onToggleFolder,
         renamingTarget,
         selectedAssetId
@@ -280,7 +289,7 @@ const FolderTreeNode = ({
         {
             label: 'Rename',
             icon: Pencil,
-            onClick: () => onRenameFolder(node.folderPath)
+            onClick: () => onStartRenameFolder(node.folderPath)
         },
         {
             label: 'Delete',
@@ -290,18 +299,25 @@ const FolderTreeNode = ({
         }
     ];
 
-    if (isRenaming) {
-        return (
-            <WorkspaceEntryInput
-                icon={<Folder size={13} />}
-                label={`Rename folder ${renamingTarget?.initialName ?? node.name}`}
-                placeholder='Folder name'
-                defaultValue={renamingTarget?.initialName}
-                onConfirm={onConfirmRename}
-                onCancel={onCancelRename}
-            />
-        );
-    }
+    const folderLabel = (
+        <EditableTag
+            as='span'
+            className='latex-workspace__file-name text-truncate'
+            title='Double-click to rename'
+            allowSingleClickPropagation
+            editing={isRenaming ? true : undefined}
+            onEditingChange={(nextEditing) => {
+                if (!nextEditing && isRenaming) {
+                    onCancelRename();
+                }
+            }}
+            onSave={(nextName) => {
+                void onSaveFolderName(node.folderPath, nextName);
+            }}
+        >
+            {node.name}
+        </EditableTag>
+    );
 
     return (
         <>
@@ -317,7 +333,7 @@ const FolderTreeNode = ({
                                 {isExpanded ? <FolderOpen size={13} /> : <Folder size={13} />}
                             </span>
                         )}
-                        label={node.name}
+                        label={folderLabel}
                         treeItemLevel={depth + 1}
                         expanded={isExpanded}
                         ariaLabel={`Folder ${node.name}`}
@@ -408,8 +424,8 @@ const FileLeafNode = ({
     activeDragData,
     onFileSelect,
     onFileDelete,
-    onRenameFile,
-    onConfirmRename,
+    onStartRenameFile,
+    onSaveFileName,
     onCancelRename,
     onFileSetEntrypoint
 }: FileTreeNodeProps) => {
@@ -444,7 +460,7 @@ const FileLeafNode = ({
         {
             label: 'Rename',
             icon: Pencil,
-            onClick: () => onRenameFile(file)
+            onClick: () => onStartRenameFile(file)
         },
         {
             label: 'Delete',
@@ -454,18 +470,25 @@ const FileLeafNode = ({
         }
     ];
 
-    if (isRenaming) {
-        return (
-            <WorkspaceEntryInput
-                icon={<FileCode size={13} />}
-                label={`Rename file ${renamingTarget?.initialName ?? file.name}`}
-                placeholder='File name'
-                defaultValue={renamingTarget?.initialName}
-                onConfirm={onConfirmRename}
-                onCancel={onCancelRename}
-            />
-        );
-    }
+    const fileLabel = (
+        <EditableTag
+            as='span'
+            className='latex-workspace__file-name text-truncate'
+            title='Double-click to rename'
+            allowSingleClickPropagation
+            editing={isRenaming ? true : undefined}
+            onEditingChange={(nextEditing) => {
+                if (!nextEditing && isRenaming) {
+                    onCancelRename();
+                }
+            }}
+            onSave={(nextName) => {
+                void onSaveFileName(file._id, nextName);
+            }}
+        >
+            {file.name}
+        </EditableTag>
+    );
 
     return (
         <ContextMenuPopover
@@ -475,7 +498,7 @@ const FileLeafNode = ({
                     ref={setNodeRef}
                     depth={depth}
                     icon={<FileCode size={13} />}
-                    label={file.name}
+                    label={fileLabel}
                     selected={file.isSelected}
                     treeItemLevel={depth + 1}
                     ariaLabel={`File ${file.name}`}
@@ -506,8 +529,8 @@ const AssetLeafNode = ({
     onAssetSelect,
     onAssetDelete,
     onAssetInsertRef,
-    onRenameAsset,
-    onConfirmRename,
+    onStartRenameAsset,
+    onSaveAssetName,
     onCancelRename
 }: FileTreeNodeProps) => {
     const asset = node.data as LatexAsset;
@@ -541,7 +564,7 @@ const AssetLeafNode = ({
         {
             label: 'Rename',
             icon: Pencil,
-            onClick: () => onRenameAsset(asset)
+            onClick: () => onStartRenameAsset(asset)
         },
         {
             label: 'Delete',
@@ -551,18 +574,25 @@ const AssetLeafNode = ({
         }
     ];
 
-    if (isRenaming) {
-        return (
-            <WorkspaceEntryInput
-                icon={getAssetIcon(asset)}
-                label={`Rename asset ${renamingTarget?.initialName ?? node.name}`}
-                placeholder='File name'
-                defaultValue={renamingTarget?.initialName}
-                onConfirm={onConfirmRename}
-                onCancel={onCancelRename}
-            />
-        );
-    }
+    const assetLabel = (
+        <EditableTag
+            as='span'
+            className='latex-workspace__file-name text-truncate'
+            title='Double-click to rename'
+            allowSingleClickPropagation
+            editing={isRenaming ? true : undefined}
+            onEditingChange={(nextEditing) => {
+                if (!nextEditing && isRenaming) {
+                    onCancelRename();
+                }
+            }}
+            onSave={(nextName) => {
+                void onSaveAssetName(asset, nextName);
+            }}
+        >
+            {node.name}
+        </EditableTag>
+    );
 
     return (
         <ContextMenuPopover
@@ -572,7 +602,7 @@ const AssetLeafNode = ({
                     ref={setNodeRef}
                     depth={depth}
                     icon={getAssetIcon(asset)}
-                    label={node.name}
+                    label={assetLabel}
                     selected={isSelected}
                     treeItemLevel={depth + 1}
                     ariaLabel={`Asset ${node.name}`}
