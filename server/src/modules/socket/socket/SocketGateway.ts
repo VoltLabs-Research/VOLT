@@ -33,6 +33,7 @@ const SOCKET_CORS_ORIGINS = [
     process.env.CLIENT_DEV_HOST,
     process.env.CLIENT_HOST
 ].filter((origin): origin is string => Boolean(origin));
+const SOCKET_GATEWAY_CLOSE_TIMEOUT_MS = 1_500;
 
 export interface AuthenticatedSocket extends Socket{
     user?: ISocketConnectionUser | null;
@@ -183,13 +184,32 @@ export default class SocketGateway{
         }
 
         try{
-            await new Promise<void>((res) => {
-                if(this.io){
-                    this.io.close(() => res());
-                }else{
-                    res();
-                }
-            })
+            if (this.io) {
+                this.io.disconnectSockets(true);
+                let closeTimeout: NodeJS.Timeout | null = null;
+
+                await Promise.race([
+                    new Promise<void>((resolve) => {
+                        this.io?.close(() => {
+                            if (closeTimeout) {
+                                clearTimeout(closeTimeout);
+                            }
+
+                            resolve();
+                        });
+                    }),
+                    new Promise<void>((resolve) => {
+                        closeTimeout = setTimeout(() => {
+                            logger.warn({
+                                timeoutMs: SOCKET_GATEWAY_CLOSE_TIMEOUT_MS
+                            }, '@socket-gateway - socket shutdown timed out, continuing');
+                            resolve();
+                        }, SOCKET_GATEWAY_CLOSE_TIMEOUT_MS);
+
+                        closeTimeout.unref();
+                    })
+                ]);
+            }
         }catch{
         }
 

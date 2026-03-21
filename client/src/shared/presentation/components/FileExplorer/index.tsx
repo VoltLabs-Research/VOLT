@@ -59,6 +59,8 @@ const FileExplorer = ({
         return '';
     }, [accessDenied, accessDeniedMessage, emptyMessage, error, isEmpty, isLoading]);
 
+    const hasHeader = Boolean(headerLeft || breadcrumb || headerRight);
+
     const renderContent = () => {
         if (accessDenied) {
             return (
@@ -108,19 +110,21 @@ const FileExplorer = ({
             <span className='file-explorer-live-region' aria-live='polite' aria-atomic='true'>
                 {stateMessage}
             </span>
-            <Container className='file-explorer-header d-flex content-between items-center gap-1 p-075'>
-                <Container className='file-explorer-header-left d-flex items-center gap-05'>
-                    {headerLeft}
-                </Container>
+            {hasHeader && (
+                <Container className='file-explorer-header d-flex content-between items-center gap-1 p-075'>
+                    <Container className='file-explorer-header-left d-flex items-center gap-05'>
+                        {headerLeft}
+                    </Container>
 
-                <Container className='file-explorer-breadcrumb d-flex items-center flex-1'>
-                    {breadcrumb}
-                </Container>
+                    <Container className='file-explorer-breadcrumb d-flex items-center flex-1'>
+                        {breadcrumb}
+                    </Container>
 
-                <Container className='file-explorer-header-right d-flex items-center gap-05'>
-                    {headerRight}
+                    <Container className='file-explorer-header-right d-flex items-center gap-05'>
+                        {headerRight}
+                    </Container>
                 </Container>
-            </Container>
+            )}
 
             {columns && (
                 <Container className='file-explorer-columns'>
