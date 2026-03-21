@@ -36,13 +36,6 @@ const buildClusterRequiredError = (): ApplicationError => {
     );
 };
 
-const buildPluginPropertyUnmappableError = (property: string): ApplicationError => {
-    return ApplicationError.badRequest(
-        ErrorCodes.PARTICLE_FILTER_PLUGIN_PROPERTY_UNMAPPABLE,
-        `Plugin per-atom property "${property}" cannot be mapped to trajectory atom ids`
-    );
-};
-
 const buildPluginPropertyUnavailableError = (
     exposureId: string,
     property: string,
@@ -100,7 +93,7 @@ export default class ColorCodingService implements IColorCodingService {
         const headers = metadata.headers || [];
 
         const modifierProps = resolvedAnalysisId
-            ? await this.atomProps.getModifierPerAtomProps(String(resolvedAnalysisId))
+            ? await this.atomProps.getModifierPerAtomProps(String(resolvedAnalysisId), String(timestep))
             : {};
 
         return {
@@ -129,14 +122,19 @@ export default class ColorCodingService implements IColorCodingService {
                 );
             }
 
-            const externalValues = await this.resolveRemoteExternalValues(
+            await this.resolveRemoteModifierSource(
+                String(resolvedAnalysisId),
+                String(exposureId),
+                String(timestep),
+                property
+            );
+            const stats = await this.atomProps.getModifierStats(
                 String(trajectoryId),
                 String(resolvedAnalysisId),
                 String(exposureId),
                 String(timestep),
                 property
             );
-            const stats = this.getExternalValueStats(externalValues);
             if (stats) {
                 min = stats.min;
                 max = stats.max;
@@ -221,17 +219,14 @@ export default class ColorCodingService implements IColorCodingService {
             );
         }
 
-        let externalValues: Float32Array | undefined;
-
-        if (exposureId && resolvedAnalysisId) {
-            externalValues = await this.resolveRemoteExternalValues(
-                String(trajectoryId),
+        const modifierSource = exposureId && resolvedAnalysisId
+            ? await this.resolveRemoteModifierSource(
                 String(resolvedAnalysisId),
                 String(exposureId),
                 String(timestep),
                 String(property)
-            );
-        }
+            )
+            : undefined;
 
         await this.trajectoryNativeDaemonService.exportColoredModel({
             teamClusterId,
@@ -242,7 +237,7 @@ export default class ColorCodingService implements IColorCodingService {
             endValue: Number(endValue),
             gradient: String(gradient),
             objectKey: objectName,
-            externalValues
+            ...(modifierSource ?? {})
         });
 
         await recordSceneArtifact(this.sceneArtifactRepository, {
@@ -269,39 +264,12 @@ export default class ColorCodingService implements IColorCodingService {
         return objectName;
     }
 
-    private getExternalValueStats(
-        externalValues?: Float32Array
-    ): { min: number; max: number; } | undefined {
-        if (!externalValues || externalValues.length === 0) {
-            return undefined;
-        }
-
-        let min = Infinity;
-        let max = -Infinity;
-
-        for (const value of externalValues) {
-            if (Number.isNaN(value)) {
-                continue;
-            }
-
-            min = Math.min(min, value);
-            max = Math.max(max, value);
-        }
-
-        if (min === Infinity || max === -Infinity) {
-            return undefined;
-        }
-
-        return { min, max };
-    }
-
-    private async resolveRemoteExternalValues(
-        trajectoryId: string,
+    private async resolveRemoteModifierSource(
         analysisId: string,
         exposureId: string,
         timestep: string,
         property: string
-    ): Promise<Float32Array | undefined> {
+    ): Promise<{ analysisId: string; exposureId: string; }> {
         const exposureConfigs = await this.atomProps.getAnalysisExposureAtomConfigs(analysisId, timestep);
         const exposureConfig = exposureConfigs.find((config) => config.exposureId === exposureId);
 
@@ -309,54 +277,10 @@ export default class ColorCodingService implements IColorCodingService {
             throw buildPluginPropertyUnavailableError(exposureId, property, timestep);
         }
 
-        const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
-        const teamClusterId = trajectory?.props.teamCluster;
-
-        if (!teamClusterId) {
-            return undefined;
-        }
-
-        const dumpAtomIds = await this.trajectoryNativeDaemonService.getAtomIds({
-            teamClusterId,
-            trajectoryId: String(trajectoryId),
-            timestep: Number(timestep),
-            objectKey: this.dumpStorage.getObjectName(String(trajectoryId), String(timestep))
-        });
-
-        if (dumpAtomIds.length === 0) {
-            return new Float32Array();
-        }
-
-        const pluginIndex = await this.atomProps.buildPluginIndexForAtomIds(
-            String(trajectoryId),
-            String(analysisId),
-            String(exposureId),
-            String(timestep),
-            new Set(dumpAtomIds)
-        );
-
-        if (!pluginIndex) {
-            throw buildPluginPropertyUnmappableError(property);
-        }
-
-        const maxAtomId = dumpAtomIds.reduce((maxId, atomId) => Math.max(maxId, atomId), 0);
-        const externalValues = new Float32Array(maxAtomId + 1);
-        externalValues.fill(Number.NaN);
-
-        for (const atomId of dumpAtomIds) {
-            const row = pluginIndex.get(atomId);
-            if (!row) {
-                continue;
-            }
-
-            const rawValue = row[property];
-            const numericValue = Number(rawValue);
-            if (Number.isFinite(numericValue)) {
-                externalValues[atomId] = numericValue;
-            }
-        }
-
-        return externalValues;
+        return {
+            analysisId,
+            exposureId
+        };
     }
 
     async getModelStream(

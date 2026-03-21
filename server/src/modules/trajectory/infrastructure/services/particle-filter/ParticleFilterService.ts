@@ -37,13 +37,6 @@ const buildClusterRequiredError = (): ApplicationError => {
     );
 };
 
-const buildPluginPropertyUnmappableError = (property: string): ApplicationError => {
-    return ApplicationError.badRequest(
-        ErrorCodes.PARTICLE_FILTER_PLUGIN_PROPERTY_UNMAPPABLE,
-        `Plugin per-atom property "${property}" cannot be mapped to trajectory atom ids`
-    );
-};
-
 const buildPluginPropertyUnavailableError = (
     exposureId: string,
     property: string,
@@ -316,8 +309,7 @@ export default class ParticleFilterService implements IParticleFilterService {
         timestep: string,
         condition: ParticleFilterCondition
     ): Promise<{ mask: Uint8Array; matchCount: number; totalAtoms: number; }> {
-        const externalValues = await this.resolveRemoteExternalValues(
-            trajectoryId,
+        const modifierSource = await this.resolveRemoteModifierSource(
             analysisId,
             condition.exposureId,
             timestep,
@@ -332,7 +324,7 @@ export default class ParticleFilterService implements IParticleFilterService {
             property: condition.property,
             operator: condition.operator,
             value: condition.value,
-            externalValues
+            ...(modifierSource ?? {})
         });
     }
 
@@ -421,73 +413,26 @@ export default class ParticleFilterService implements IParticleFilterService {
         return `PF · ${conditionsLabel} · ${action} · t=${timestep}`;
     }
 
-    private async resolveRemoteExternalValues(
-        trajectoryId: string,
+    private async resolveRemoteModifierSource(
         analysisId: string | null,
         exposureId: string | undefined,
         timestep: string,
         property: string
-    ): Promise<Float32Array | undefined> {
+    ): Promise<{ analysisId: string; exposureId: string; } | undefined> {
         if (!analysisId || !exposureId) {
             return undefined;
         }
 
-        const exposureConfigs = typeof this.atomProps.getAnalysisExposureAtomConfigs === 'function'
-            ? await this.atomProps.getAnalysisExposureAtomConfigs(analysisId, timestep)
-            : [await this.atomProps.getExposureAtomConfig(analysisId, exposureId)];
+        const exposureConfigs = await this.atomProps.getAnalysisExposureAtomConfigs(analysisId, timestep);
         const exposureConfig = exposureConfigs.find((config) => config.exposureId === exposureId);
 
         if (!exposureConfig || !exposureConfig.perAtomProperties.includes(property)) {
             throw buildPluginPropertyUnavailableError(exposureId, property, timestep);
         }
 
-        const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
-        const teamClusterId = trajectory?.props.teamCluster;
-
-        if (!teamClusterId) {
-            return undefined;
-        }
-
-        const dumpAtomIds = await this.trajectoryNativeDaemonService.getAtomIds({
-            teamClusterId,
-            trajectoryId: String(trajectoryId),
-            timestep: Number(timestep),
-            objectKey: this.dumpStorage.getObjectName(String(trajectoryId), String(timestep))
-        });
-
-        if (dumpAtomIds.length === 0) {
-            return new Float32Array();
-        }
-
-        const pluginIndex = await this.atomProps.buildPluginIndexForAtomIds(
-            String(trajectoryId),
-            String(analysisId),
-            String(exposureId),
-            String(timestep),
-            new Set(dumpAtomIds)
-        );
-
-        const maxAtomId = dumpAtomIds.reduce((maxId, atomId) => Math.max(maxId, atomId), 0);
-        const externalValues = new Float32Array(maxAtomId + 1);
-        externalValues.fill(Number.NaN);
-
-        if (!pluginIndex) {
-            throw buildPluginPropertyUnmappableError(property);
-        }
-
-        for (const atomId of dumpAtomIds) {
-            const row = pluginIndex.get(atomId);
-            if (!row) {
-                continue;
-            }
-
-            const rawValue = row[property];
-            const numericValue = Number(rawValue);
-            if (Number.isFinite(numericValue)) {
-                externalValues[atomId] = numericValue;
-            }
-        }
-
-        return externalValues;
+        return {
+            analysisId,
+            exposureId
+        };
     }
 };
