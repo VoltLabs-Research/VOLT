@@ -2,6 +2,17 @@ import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
 import type { LatexAsset } from '@/modules/latex/api/entities/latex-asset';
 import { getAssetDisplayName, isFolderPlaceholderAsset } from '@/modules/latex/utilities/workspace';
 
+const FILE_TREE_NODE_ORDER: Record<FileTreeNode['type'], number> = {
+    folder: 0,
+    file: 1,
+    asset: 1
+};
+
+const fileTreeNameCollator = new Intl.Collator(undefined, {
+    numeric: true,
+    sensitivity: 'base'
+});
+
 /** A node in the virtual file tree derived from path prefixes. */
 export interface FileTreeNode {
     /** Unique identifier for DnD and React keys. */
@@ -17,6 +28,26 @@ export interface FileTreeNode {
     folderPath: string;
     data?: LatexFileEntry | LatexAsset;
     children: FileTreeNode[];
+};
+
+const sortTreeNodes = (nodes: FileTreeNode[]): FileTreeNode[] => {
+    nodes.sort((left, right) => {
+        const typeOrder = FILE_TREE_NODE_ORDER[left.type] - FILE_TREE_NODE_ORDER[right.type];
+
+        if (typeOrder !== 0) {
+            return typeOrder;
+        }
+
+        return fileTreeNameCollator.compare(left.name, right.name);
+    });
+
+    for (const node of nodes) {
+        if (node.children.length > 0) {
+            sortTreeNodes(node.children);
+        }
+    }
+
+    return nodes;
 };
 
 /**
@@ -148,5 +179,5 @@ export const buildFileTree = (
         }
     }
 
-    return rootChildren;
+    return sortTreeNodes(rootChildren);
 };

@@ -1,5 +1,6 @@
 import Container from '@/shared/presentation/components/Container';
 import { cn } from '@/shared/utils';
+import { forwardRef } from 'react';
 import type { HTMLAttributes, ReactNode } from 'react';
 
 interface WorkspaceTreeRowProps extends HTMLAttributes<HTMLDivElement> {
@@ -14,7 +15,7 @@ interface WorkspaceTreeRowProps extends HTMLAttributes<HTMLDivElement> {
     className?: string;
 }
 
-const WorkspaceTreeRow = ({
+const WorkspaceTreeRow = forwardRef<HTMLDivElement, WorkspaceTreeRowProps>(({
     depth,
     icon,
     label,
@@ -26,11 +27,12 @@ const WorkspaceTreeRow = ({
     className = '',
     style,
     ...props
-}: WorkspaceTreeRowProps) => {
+}, ref) => {
     const indent = depth * 12;
 
     return (
         <Container
+            ref={ref}
             className={cn(
                 'latex-workspace__file-row latex-workspace__tree-row d-flex items-center content-between gap-05',
                 selected && 'is-selected',
@@ -46,12 +48,15 @@ const WorkspaceTreeRow = ({
             {...props}
         >
             <Container className='d-flex items-center gap-05 flex-1 min-w-0'>
+                {depth > 0 && <span className='latex-workspace__tree-indent-line' aria-hidden='true' />}
                 <span className='color-muted d-flex items-center f-shrink-0'>{icon}</span>
                 <span className='latex-workspace__file-name text-truncate'>{label}</span>
             </Container>
             {trailing && <Container className='d-flex items-center gap-025 f-shrink-0'>{trailing}</Container>}
         </Container>
     );
-};
+});
+
+WorkspaceTreeRow.displayName = 'WorkspaceTreeRow';
 
 export default WorkspaceTreeRow;

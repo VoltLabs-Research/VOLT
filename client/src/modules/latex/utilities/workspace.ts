@@ -10,8 +10,38 @@ const TEXT_FILE_EXTENSIONS = new Set([
 
 const IMAGE_FILE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp']);
 
+export const normalizeWorkspaceRelativePath = (value: string): string => {
+    return value
+        .replace(/\\/g, '/')
+        .replace(/^\/+/, '')
+        .replace(/\/+/g, '/');
+};
+
+export const normalizeWorkspaceFolderPath = (value: string): string => {
+    const normalized = normalizeWorkspaceRelativePath(value).replace(/\/+$/, '');
+
+    if (!normalized) {
+        return '';
+    }
+
+    return `${normalized}/`;
+};
+
+export const joinWorkspacePath = (folderPath: string, relativePath: string): string => {
+    const normalizedRelativePath = normalizeWorkspaceRelativePath(relativePath);
+    const normalizedFolderPath = normalizeWorkspaceFolderPath(folderPath);
+
+    if (!normalizedRelativePath) {
+        return normalizedFolderPath;
+    }
+
+    return normalizedFolderPath
+        ? `${normalizedFolderPath}${normalizedRelativePath}`
+        : normalizedRelativePath;
+};
+
 export const splitWorkspacePath = (value: string): { path: string; name: string } => {
-    const normalized = value.replace(/\\/g, '/').replace(/^\/+/, '');
+    const normalized = normalizeWorkspaceRelativePath(value);
     const parts = normalized.split('/').filter(Boolean);
     const name = parts.pop() ?? '';
     const path = parts.length > 0 ? `${parts.join('/')}/` : '';
@@ -57,6 +87,5 @@ export const isFolderPlaceholderAsset = (asset: LatexAsset): boolean => {
 };
 
 export const buildFolderPlaceholderPath = (folderPath: string): string => {
-    const normalized = folderPath.endsWith('/') ? folderPath : `${folderPath}/`;
-    return `${normalized}${LATEX_FOLDER_PLACEHOLDER_NAME}`;
+    return `${normalizeWorkspaceFolderPath(folderPath)}${LATEX_FOLDER_PLACEHOLDER_NAME}`;
 };

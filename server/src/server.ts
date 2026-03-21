@@ -96,6 +96,7 @@ const shutdown = async () => {
     }
 
     shuttingDown = true;
+    logger.info('@server: shutdown started');
 
     try {
         const forceExitTimer = setTimeout(() => {
@@ -108,15 +109,25 @@ const shutdown = async () => {
         }, SERVER_SHUTDOWN_FORCE_EXIT_TIMEOUT);
         forceExitTimer.unref();
 
-        if (activeSocketGateway) {
-            await activeSocketGateway.close();
-            activeSocketGateway = null;
+        const socketGateway = activeSocketGateway;
+        activeSocketGateway = null;
+
+        const shutdownTasks: Promise<unknown>[] = [closeHttpServer()];
+
+        if (socketGateway) {
+            shutdownTasks.push(socketGateway.close());
         }
 
-        await closeHttpServer();
+        const shutdownResults = await Promise.allSettled(shutdownTasks);
+
+        const firstRejectedTask = shutdownResults.find((result) => result.status === 'rejected');
+        if (firstRejectedTask?.status === 'rejected') {
+            throw firstRejectedTask.reason;
+        }
 
         clearTimeout(forceExitTimer);
 
+        logger.info('@server: shutdown complete');
         process.exit(0);
     } catch (error: unknown) {
         const message = error instanceof Error ? error.stack || error.message : String(error);

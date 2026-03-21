@@ -162,6 +162,8 @@ const LatexDocumentWorkspace = () => {
         updateAsset,
         handleRenameFile,
         handleRenameAsset,
+        handleSetEntrypoint,
+        handleUploadWorkspaceEntries,
         handleWorkspaceFilesSelected,
         handleWorkspaceFoldersSelected
     } = useLatexWorkspace({ documentId });
@@ -685,6 +687,8 @@ const LatexDocumentWorkspace = () => {
                             onUpdateAssetDirect={updateAsset}
                             onRenameFile={handleRenameFile}
                             onRenameAsset={handleRenameAsset}
+                            onSetEntrypoint={handleSetEntrypoint}
+                            onUploadEntries={handleUploadWorkspaceEntries}
                             onUploadFiles={handleWorkspaceFilesSelected}
                             onUploadFolders={handleWorkspaceFoldersSelected}
                             width={panelWidths.files}

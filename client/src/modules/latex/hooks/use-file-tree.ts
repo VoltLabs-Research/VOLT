@@ -1,5 +1,10 @@
 import { buildFileTree } from '@/modules/latex/utilities/file-tree';
-import { getAssetDisplayName } from '@/modules/latex/utilities/workspace';
+import {
+    getAssetDisplayName,
+    joinWorkspacePath,
+    normalizeWorkspaceFolderPath,
+    splitWorkspacePath
+} from '@/modules/latex/utilities/workspace';
 import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
@@ -45,24 +50,19 @@ interface UseFileTreeOutput {
     cancelRename: () => void;
     handleConfirmRename: (name: string) => Promise<void>;
     handleDeleteFolder: (folderPath: string) => Promise<void>;
+    moveFileToFolder: (fileId: string, targetFolderPath: string) => Promise<boolean>;
+    moveAssetToFolder: (assetId: string, targetFolderPath: string) => Promise<boolean>;
+    moveFolderToFolder: (folderPath: string, targetFolderPath: string) => Promise<boolean>;
 }
 
-const normalizeFolderPath = (value: string): string => {
-    if (!value) {
-        return '';
-    }
-
-    return value.endsWith('/') ? value : `${value}/`;
-};
-
 const getFolderDisplayName = (folderPath: string): string => {
-    const normalized = folderPath.replace(/\/$/, '');
+    const normalized = normalizeWorkspaceFolderPath(folderPath).replace(/\/$/, '');
     const parts = normalized.split('/').filter(Boolean);
     return parts[parts.length - 1] ?? '';
 };
 
 const getFolderParentPath = (folderPath: string): string => {
-    const normalized = folderPath.replace(/\/$/, '');
+    const normalized = normalizeWorkspaceFolderPath(folderPath).replace(/\/$/, '');
     const parts = normalized.split('/').filter(Boolean);
     parts.pop();
     return parts.length > 0 ? `${parts.join('/')}/` : '';
@@ -88,6 +88,26 @@ const useFileTree = ({
     const hasAutoExpandedRef = useRef(false);
 
     const treeNodes = useMemo(() => buildFileTree(files, assets), [files, assets]);
+
+    const ensureExpandedFolders = useCallback((folderPaths: string[]): void => {
+        setExpandedFolders((prev) => {
+            let hasChanges = false;
+            const next = new Set(prev);
+
+            for (const folderPath of folderPaths) {
+                const normalized = normalizeWorkspaceFolderPath(folderPath);
+
+                if (!normalized || next.has(normalized)) {
+                    continue;
+                }
+
+                next.add(normalized);
+                hasChanges = true;
+            }
+
+            return hasChanges ? next : prev;
+        });
+    }, []);
 
     useEffect(() => {
         if (hasAutoExpandedRef.current) return;
@@ -117,11 +137,11 @@ const useFileTree = ({
     }, []);
 
     const openNewFileIn = useCallback((folderPath: string): void => {
-        setExpandedFolders((prev) => new Set([...prev, folderPath]));
+        ensureExpandedFolders([folderPath]);
         setNewFolderTargetFolder(null);
         setRenamingTarget(null);
         setNewFileTargetFolder(folderPath);
-    }, []);
+    }, [ensureExpandedFolders]);
 
     const closeNewFile = useCallback((): void => {
         setNewFileTargetFolder(null);
@@ -137,11 +157,11 @@ const useFileTree = ({
     }, [newFileTargetFolder, onCreateFile]);
 
     const openNewFolderIn = useCallback((folderPath: string): void => {
-        setExpandedFolders((prev) => new Set([...prev, folderPath]));
+        ensureExpandedFolders([folderPath]);
         setNewFileTargetFolder(null);
         setRenamingTarget(null);
         setNewFolderTargetFolder(folderPath);
-    }, []);
+    }, [ensureExpandedFolders]);
 
     const closeNewFolder = useCallback((): void => {
         setNewFolderTargetFolder(null);
@@ -154,8 +174,8 @@ const useFileTree = ({
         const parentPath = newFolderTargetFolder ?? '';
         setNewFolderTargetFolder(null);
         await onCreateFolder(`${parentPath}${folderName}`);
-        setExpandedFolders((prev) => new Set([...prev, normalizeFolderPath(parentPath), `${parentPath}${folderName}/`]));
-    }, [newFolderTargetFolder, onCreateFolder]);
+        ensureExpandedFolders([parentPath, `${parentPath}${folderName}`]);
+    }, [ensureExpandedFolders, newFolderTargetFolder, onCreateFolder]);
 
     const startRenameFolder = useCallback((folderPath: string): void => {
         setNewFileTargetFolder(null);
@@ -191,34 +211,123 @@ const useFileTree = ({
         setRenamingTarget(null);
     }, []);
 
-    const renameFolder = useCallback(async (folderPath: string, nextName: string) => {
-        const parentPath = getFolderParentPath(folderPath);
-        const nextPrefix = `${parentPath}${nextName.trim()}/`;
+    const relocateFolder = useCallback(async (folderPath: string, nextFolderPath: string): Promise<boolean> => {
+        const sourceFolderPath = normalizeWorkspaceFolderPath(folderPath);
+        const normalizedTargetFolderPath = normalizeWorkspaceFolderPath(nextFolderPath);
+
+        if (!sourceFolderPath || !normalizedTargetFolderPath || sourceFolderPath === normalizedTargetFolderPath) {
+            return false;
+        }
+
+        if (normalizedTargetFolderPath.startsWith(sourceFolderPath)) {
+            return false;
+        }
+
         const operations: Promise<unknown>[] = [];
 
         for (const file of files) {
-            if (file.path.startsWith(folderPath)) {
+            if (file.path.startsWith(sourceFolderPath)) {
                 operations.push(onUpdateFileDirect({
                     documentId,
                     fileId: file._id,
-                    path: `${nextPrefix}${file.path.slice(folderPath.length)}`
+                    path: `${normalizedTargetFolderPath}${file.path.slice(sourceFolderPath.length)}`
                 }));
             }
         }
 
         for (const asset of assets) {
             const currentPath = asset.path ?? asset.originalName;
-            if (currentPath.startsWith(folderPath)) {
+            if (currentPath.startsWith(sourceFolderPath)) {
                 operations.push(onUpdateAssetDirect({
                     documentId,
                     assetId: asset._id,
-                    path: `${nextPrefix}${currentPath.slice(folderPath.length)}`
+                    path: `${normalizedTargetFolderPath}${currentPath.slice(sourceFolderPath.length)}`
                 }));
             }
         }
 
+        if (operations.length === 0) {
+            return false;
+        }
+
         await Promise.all(operations);
-    }, [assets, documentId, files, onUpdateAssetDirect, onUpdateFileDirect]);
+
+        ensureExpandedFolders([
+            getFolderParentPath(normalizedTargetFolderPath),
+            normalizedTargetFolderPath
+        ]);
+
+        setExpandedFolders((prev) => {
+            const next = new Set(prev);
+            next.delete(sourceFolderPath);
+            next.add(normalizedTargetFolderPath);
+            return next;
+        });
+
+        return true;
+    }, [assets, documentId, ensureExpandedFolders, files, onUpdateAssetDirect, onUpdateFileDirect]);
+
+    const renameFolder = useCallback(async (folderPath: string, nextName: string) => {
+        const parentPath = getFolderParentPath(folderPath);
+        const nextPrefix = normalizeWorkspaceFolderPath(joinWorkspacePath(parentPath, nextName.trim()));
+
+        await relocateFolder(folderPath, nextPrefix);
+    }, [relocateFolder]);
+
+    const moveFileToFolder = useCallback(async (fileId: string, targetFolderPath: string): Promise<boolean> => {
+        const file = files.find((currentFile) => currentFile._id === fileId);
+        if (!file) {
+            return false;
+        }
+
+        const normalizedTargetFolderPath = normalizeWorkspaceFolderPath(targetFolderPath);
+        if (file.path === normalizedTargetFolderPath) {
+            return false;
+        }
+
+        await onUpdateFileDirect({
+            documentId,
+            fileId,
+            path: normalizedTargetFolderPath
+        });
+
+        ensureExpandedFolders([normalizedTargetFolderPath]);
+        return true;
+    }, [documentId, ensureExpandedFolders, files, onUpdateFileDirect]);
+
+    const moveAssetToFolder = useCallback(async (assetId: string, targetFolderPath: string): Promise<boolean> => {
+        const asset = assets.find((currentAsset) => currentAsset._id === assetId);
+        if (!asset) {
+            return false;
+        }
+
+        const currentPath = asset.path ?? asset.originalName;
+        const { name } = splitWorkspacePath(currentPath);
+        const nextPath = joinWorkspacePath(targetFolderPath, name);
+
+        if (!name || currentPath === nextPath) {
+            return false;
+        }
+
+        await onUpdateAssetDirect({
+            documentId,
+            assetId,
+            path: nextPath
+        });
+
+        ensureExpandedFolders([targetFolderPath]);
+        return true;
+    }, [assets, documentId, ensureExpandedFolders, onUpdateAssetDirect]);
+
+    const moveFolderToFolder = useCallback(async (folderPath: string, targetFolderPath: string): Promise<boolean> => {
+        const folderName = getFolderDisplayName(folderPath);
+        if (!folderName) {
+            return false;
+        }
+
+        const nextFolderPath = normalizeWorkspaceFolderPath(joinWorkspacePath(targetFolderPath, folderName));
+        return relocateFolder(folderPath, nextFolderPath);
+    }, [relocateFolder]);
 
     const handleConfirmRename = useCallback(async (name: string): Promise<void> => {
         const nextName = name.trim();
@@ -283,7 +392,10 @@ const useFileTree = ({
         startRenameAsset,
         cancelRename,
         handleConfirmRename,
-        handleDeleteFolder
+        handleDeleteFolder,
+        moveFileToFolder,
+        moveAssetToFolder,
+        moveFolderToFolder
     };
 };
 
