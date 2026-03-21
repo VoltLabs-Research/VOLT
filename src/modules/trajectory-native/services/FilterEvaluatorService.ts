@@ -9,6 +9,7 @@ import {
     type NativeParticleFilterModelRequest
 } from './NativeModuleLoader';
 import type { TrajectoryParserService } from './TrajectoryParserService';
+import type { TrajectoryPluginParserService } from './TrajectoryPluginParserService';
 import { uploadBufferToObjectStore } from '@/shared/storage/uploadBufferToObjectStore';
 
 enum GradientType {
@@ -132,6 +133,31 @@ export class EmptyFilterResultError extends Error {
     }
 };
 
+const resolveModifierValues = async (
+    input: Pick<NativeFilterPreviewRequest, 'analysisId' | 'exposureId' | 'trajectoryId' | 'timestep' | 'property'>,
+    trajectoryPluginParserService: TrajectoryPluginParserService
+): Promise<Float32Array | undefined> => {
+    if (!input.analysisId || !input.exposureId) {
+        return undefined;
+    }
+
+    const values = await trajectoryPluginParserService.getModifierValues({
+        trajectoryId: input.trajectoryId,
+        analysisId: input.analysisId,
+        exposureId: input.exposureId,
+        timestep: input.timestep,
+        property: input.property
+    });
+
+    if (!values) {
+        throw new Error(
+            `Modifier property "${input.property}" is unavailable for exposure "${input.exposureId}" at timestep ${input.timestep}`
+        );
+    }
+
+    return values;
+};
+
 export interface FilterEvaluatorService {
     previewFilter(input: NativeFilterPreviewRequest): Promise<NativeFilterPreviewResponse>;
     exportColoredModel(input: NativeColorModelRequest): Promise<{ objectKey: string; }>;
@@ -141,18 +167,21 @@ export interface FilterEvaluatorService {
 export const createFilterEvaluatorService = (
     minioService: MinioService,
     nativeModuleLoader: NativeModuleLoader,
-    trajectoryParserService: TrajectoryParserService
+    trajectoryParserService: TrajectoryParserService,
+    trajectoryPluginParserService: TrajectoryPluginParserService
 ): FilterEvaluatorService => ({
     async previewFilter(input) {
         return trajectoryParserService.withDumpFile(input, async (dumpPath) => {
             let values: Float32Array;
+            const externalValues = input.externalValuesBase64
+                ? trajectoryParserService.decodeFloat32Array(input.externalValuesBase64)
+                : await resolveModifierValues(input, trajectoryPluginParserService);
 
-            if (input.externalValuesBase64) {
+            if (externalValues) {
                 const parsed = trajectoryParserService.parseTrajectory(dumpPath, {
                     includeIds: true,
                     properties: []
                 });
-                const externalValues = trajectoryParserService.decodeFloat32Array(input.externalValuesBase64);
                 values = trajectoryParserService.remapExternalValues(parsed, externalValues);
             } else {
                 const parsed = trajectoryParserService.parseTrajectory(dumpPath, {
@@ -176,10 +205,11 @@ export const createFilterEvaluatorService = (
     async exportColoredModel(input) {
         await trajectoryParserService.withDumpFile({ trajectoryId: input.trajectoryId, timestep: input.timestep }, async (dumpPath) => {
             let buffer: Buffer;
+            const externalValues = input.externalValuesBase64
+                ? trajectoryParserService.decodeFloat32Array(input.externalValuesBase64)
+                : await resolveModifierValues(input, trajectoryPluginParserService);
+
             {
-                const externalValues = input.externalValuesBase64
-                    ? trajectoryParserService.decodeFloat32Array(input.externalValuesBase64)
-                    : undefined;
                 const parsed = trajectoryParserService.parseTrajectory(dumpPath, externalValues
                     ? {
                         includeIds: true,

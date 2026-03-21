@@ -95,7 +95,12 @@ export interface NativeAtomsPageRequest extends NativeTrajectoryRequest {
     limit: number;
 };
 
-export interface NativeColorModelRequest extends NativePropertyStatsRequest {
+interface NativeModifierSourceRequest {
+    analysisId?: string;
+    exposureId?: string;
+};
+
+export interface NativeColorModelRequest extends NativePropertyStatsRequest, NativeModifierSourceRequest {
     objectKey: string;
     startValue: number;
     endValue: number;
@@ -103,7 +108,7 @@ export interface NativeColorModelRequest extends NativePropertyStatsRequest {
     externalValuesBase64?: string;
 };
 
-export interface NativeFilterPreviewRequest extends NativeTrajectoryRequest {
+export interface NativeFilterPreviewRequest extends NativeTrajectoryRequest, NativeModifierSourceRequest {
     property: string;
     operator: string;
     value: number;

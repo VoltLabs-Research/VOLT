@@ -120,7 +120,17 @@ const readNativeColorModelRequest = (payload: unknown): NativeColorModelRequest 
         endValue: readNumber(record.endValue, 'endValue'),
         gradient: readString(record.gradient, 'gradient')
     };
+    const analysisId = readOptionalString(record.analysisId);
+    const exposureId = readOptionalString(record.exposureId);
     const externalValuesBase64 = readOptionalString(record.externalValuesBase64);
+
+    if (analysisId) {
+        colorRequest.analysisId = analysisId;
+    }
+
+    if (exposureId) {
+        colorRequest.exposureId = exposureId;
+    }
 
     if (externalValuesBase64) {
         colorRequest.externalValuesBase64 = externalValuesBase64;
@@ -138,7 +148,17 @@ const readNativeFilterPreviewRequest = (payload: unknown): NativeFilterPreviewRe
         operator: readString(record.operator, 'operator'),
         value: readNumber(record.value, 'value')
     };
+    const analysisId = readOptionalString(record.analysisId);
+    const exposureId = readOptionalString(record.exposureId);
     const externalValuesBase64 = readOptionalString(record.externalValuesBase64);
+
+    if (analysisId) {
+        previewRequest.analysisId = analysisId;
+    }
+
+    if (exposureId) {
+        previewRequest.exposureId = exposureId;
+    }
 
     if (externalValuesBase64) {
         previewRequest.externalValuesBase64 = externalValuesBase64;
