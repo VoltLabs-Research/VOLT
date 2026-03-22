@@ -1,87 +1,125 @@
-import ModifierAction from '../../atoms/ModifierAction';
-
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
+import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
+import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import EmptyState from '@/shared/presentation/components/EmptyState';
+import { Check, ChevronLeft, Play, X } from 'lucide-react';
 
-import type { ExecState } from '../../../hooks/use-plugin-execution';
+import { ExecState } from '../../../hooks/use-plugin-execution';
 import type { ModifierOption } from '../../../utilities/modifier-registry';
 import type React from 'react';
 
 const SKELETON_ROWS = 5;
 
-interface ModifierItemProps {
+const getPluginActionCopy = (execState: ExecState) => {
+    if (execState === ExecState.Success) {
+        return {
+            label: 'Executed',
+            intent: 'success' as const,
+            icon: <Check size={14} />
+        };
+    }
+
+    if (execState === ExecState.Error) {
+        return {
+            label: 'Retry execution',
+            intent: 'danger' as const,
+            icon: <X size={14} />
+        };
+    }
+
+    return {
+        label: 'Execute plugin',
+        intent: 'brand' as const,
+        icon: <Play size={14} />
+    };
+};
+
+interface ModifierPopoverItemProps {
     option: ModifierOption;
-    isOpen: boolean;
-    active: boolean;
     execState: ExecState;
     showAction: boolean;
     hasContent: boolean;
-    onToggleOpen: (id: string) => void;
     onAction: () => void;
-    renderModifierConfig: (option: ModifierOption, active: boolean) => React.ReactNode;
+    renderModifierConfig: (option: ModifierOption) => React.ReactNode;
 };
 
-const ModifierItem = ({
+const ModifierPopoverItem = ({
     option,
-    isOpen,
-    active,
     execState,
     showAction,
     hasContent,
-    onToggleOpen,
     onAction,
     renderModifierConfig
-}: ModifierItemProps) => (
-    <CollapsibleSection
-        key={option.modifierId}
-        title={option.title}
-        icon={<option.Icon size={14} />}
-        expanded={isOpen}
-        onExpandedChange={() => onToggleOpen(option.modifierId)}
-        className="canvas-section"
-        headerClassName="canvas-right-dropdown-header d-flex items-center gap-05"
-        titleClassName="font-size-1 color-secondary"
-        iconClassName="color-muted"
-        bodyClassName=""
-        contentClassName="canvas-render-subsection-body"
-        noSpacing
-        arrowSize={13}
-        useDefaultTitleStyles={false}
-        collapsible={hasContent}
-        headerAction={showAction ? (
-            <ModifierAction
-                execState={execState}
-                isLegacy={!option.isPlugin}
-                active={active}
-                forceVisible={!hasContent}
-                onAction={onAction}
-            />
-        ) : undefined}
-    >
-        {renderModifierConfig(option, active)}
-    </CollapsibleSection>
-);
+}: ModifierPopoverItemProps) => {
+    const pluginAction = getPluginActionCopy(execState);
+    const trigger = (
+        <button
+            type='button'
+            className='canvas-plugin-popover-trigger collapsible-section-trigger d-flex items-center gap-05 u-select-none'
+            aria-label={`${option.title} settings`}
+        >
+            <Container className='collapsible-section-trigger-content d-flex items-center gap-05'>
+                <span className='d-flex items-center color-muted'><option.Icon size={14} /></span>
+                <span className='font-size-1 color-secondary'>{option.title}</span>
+            </Container>
+            {hasContent && (
+                <span className='canvas-plugin-popover-indicator d-flex items-center color-muted' aria-hidden='true'>
+                    <ChevronLeft size={13} />
+                </span>
+            )}
+        </button>
+    );
+
+    return (
+        <Container className='canvas-section canvas-plugin-popover-item d-flex items-center gap-025'>
+            {hasContent ? (
+                <ContextMenuPopover
+                    id={`plugin-config-${option.modifierId}`}
+                    trigger={trigger}
+                    content={() => (
+                        <Container className='canvas-plugin-popover-content d-flex column gap-075'>
+                            {renderModifierConfig(option)}
+                            {option.isPlugin && showAction && (
+                                <Container className='canvas-plugin-popover-footer d-flex column'>
+                                    <Button
+                                        variant='solid'
+                                        intent={pluginAction.intent}
+                                        size='sm'
+                                        shape='rounded'
+                                        block
+                                        isLoading={execState === ExecState.Loading}
+                                        leftIcon={execState === ExecState.Loading ? undefined : pluginAction.icon}
+                                        onClick={onAction}
+                                    >
+                                        {execState === ExecState.Loading ? 'Executing...' : pluginAction.label}
+                                    </Button>
+                                </Container>
+                            )}
+                        </Container>
+                    )}
+                    triggerAction='click'
+                    placement='left-start'
+                    ariaLabel={`${option.title} settings`}
+                    className='context-menu-popover--plugin-config'
+                />
+            ) : trigger}
+        </Container>
+    );
+};
 
 interface ModifiersSectionProps {
     pluginLoading: boolean;
     modifiers: ModifierOption[];
-    openModifierIds: Set<string>;
-    onToggleOpen: (id: string) => void;
-    isModifierActive: (option: ModifierOption) => boolean;
     getExecState: (option: ModifierOption) => ExecState;
     showAction: (option: ModifierOption) => boolean;
     hasContent: (option: ModifierOption) => boolean;
     onAction: (option: ModifierOption) => void;
-    renderModifierConfig: (option: ModifierOption, active: boolean) => React.ReactNode;
+    renderModifierConfig: (option: ModifierOption) => React.ReactNode;
 };
 
 const ModifiersSection = ({
     pluginLoading,
     modifiers,
-    openModifierIds,
-    onToggleOpen,
-    isModifierActive,
     getExecState,
     showAction,
     hasContent,
@@ -110,17 +148,13 @@ const ModifiersSection = ({
     return (
         <>
             {modifiers.map((option) => {
-                const active = isModifierActive(option);
                 return (
-                    <ModifierItem
+                    <ModifierPopoverItem
                         key={option.modifierId}
                         option={option}
-                        isOpen={openModifierIds.has(option.modifierId)}
-                        active={active}
                         execState={getExecState(option)}
                         showAction={showAction(option)}
                         hasContent={hasContent(option)}
-                        onToggleOpen={onToggleOpen}
                         onAction={() => onAction(option)}
                         renderModifierConfig={renderModifierConfig}
                     />

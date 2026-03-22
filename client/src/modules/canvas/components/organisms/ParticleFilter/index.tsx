@@ -140,7 +140,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
                     <span className='font-size-05 color-text-secondary'>Condition {index + 1}</span>
                     {isRemovable && (
                         <Button
-                            variant='ghost'
+                            variant='solid'
                             intent='danger'
                             shape='rounded'
                             size='sm'
@@ -218,7 +218,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
                     <Button
                         isLoading={isApplying}
                         variant='solid'
-                        intent={action === FilterAction.Delete ? 'danger' : 'canvas'}
+                        intent={action === FilterAction.Delete ? 'danger' : 'brand'}
                         block
                         onClick={handleApplyAction}
                         disabled={isApplying}
@@ -229,7 +229,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
                         {action === FilterAction.Delete ? 'Delete Selection' : 'Apply Color'}
                     </Button>
                     <Button
-                        variant='ghost'
+                        variant='solid'
                         intent='canvas'
                         shape='rounded'
                         size='sm'
@@ -264,7 +264,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
                     </Container>
 
                     <Button
-                        variant='ghost'
+                        variant='solid'
                         intent='canvas'
                         shape='rounded'
                         size='sm'
@@ -279,8 +279,8 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
 
                     <Button
                         isLoading={isLoadingPreview}
-                        variant='soft'
-                        intent='canvas'
+                        variant='solid'
+                        intent='brand'
                         shape='rounded'
                         size='sm'
                         block

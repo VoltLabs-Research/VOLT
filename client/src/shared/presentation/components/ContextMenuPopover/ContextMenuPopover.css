@@ -2,6 +2,18 @@
     overflow: visible;
 }
 
+.context-menu-popover-panel {
+    padding: 0.5rem;
+}
+
+.context-menu-popover-panel--sm {
+    min-width: 180px;
+}
+
+.context-menu-popover-panel--md {
+    min-width: min(22rem, calc(100vw - 2rem));
+}
+
 .context-menu-popover-error {
     padding: 0.25rem 0.5rem 0.5rem;
 }
