@@ -3,6 +3,7 @@ import { useEditorStore } from '@/modules/canvas/stores/editor';
 import SimulationCellView from '../../molecules/SimulationCellView';
 import TimelineHeader from '../../molecules/TimelineHeader';
 import TimelineRuler from '../../molecules/TimelineRuler';
+import useTimelineJobActivity from '../../../hooks/use-timeline-job-activity';
 import useCanvasTimelineTabs from '@/modules/canvas/hooks/use-canvas-timeline-tabs';
 import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
 import useTip from '@/shared/tips/use-tip';
@@ -43,6 +44,7 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
     const { timelineExposureId, setTimelineExposureId } = useCanvasUrlState();
     const selectedTeamId = useSelectedTeamId();
     const { pluginId, isPluginReady, listingExposures } = useCanvasTimelineTabs({ trajectory, analysisId });
+    const { toneByTimestep } = useTimelineJobActivity(trajectory?._id);
 
     const exposureTabs = useMemo<TimelineTabOption[]>(() => {
         return listingExposures.map((exposure) => ({
@@ -151,8 +153,12 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
             const tickCount = 50;
             return Array.from({ length: tickCount }, (_, i) => ({ frame: i, major: i % 10 === 0 }));
         }
-        return rangedTimesteps.map((frame) => ({ frame, major: true }));
-    }, [rangedTimesteps]);
+        return rangedTimesteps.map((frame) => ({
+            frame,
+            major: true,
+            tone: toneByTimestep.get(frame)
+        }));
+    }, [rangedTimesteps, toneByTimestep]);
 
     const startFrame = rangeStart ?? availableTimesteps[0];
     const endFrame = rangeEnd ?? availableTimesteps[availableTimesteps.length - 1];

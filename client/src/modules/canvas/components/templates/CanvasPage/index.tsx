@@ -20,7 +20,6 @@ import ObjectsPanel from '../../organisms/ObjectsPanel';
 import PluginResultsViewer from '../../organisms/PluginResultsViewer';
 import RightPanel from '../../organisms/RightPanel';
 import StatusBar from '../../organisms/StatusBar';
-import TexturesPanel from '../../organisms/TexturesPanel';
 import Timeline from '../../organisms/Timeline';
 import TopToolbar from '../../organisms/TopToolbar';
 import Viewport from '../../organisms/Viewport';
@@ -176,13 +175,6 @@ const CanvasPage = () => {
         downloadAnalysisListings({ analysisId: resolvedAnalysisId, format: 'csv' });
     }, [analysisId, downloadAnalysisListings]);
 
-    const leftSplit = useResizable({
-        direction: ResizeDirection.Vertical,
-        initialSize: 34,
-        minSize: 16,
-        maxSize: 80
-    });
-
     const scriptingHeaderAction = isScriptingWorkspace && scriptingJupyterUrl
         ? (
             <Tooltip content="Open Jupyter in new tab">
@@ -255,8 +247,8 @@ const CanvasPage = () => {
             <CanvasPresence users={canvasUsers} />
 
             <Container className="canvas-editor-main d-flex flex-1 overflow-hidden p-relative min-h-0">
-                    <Container id="canvas-left-panel" className="canvas-left-panel d-flex column f-shrink-0" style={{ width: leftPanel.size }}>
-                        <Container id="canvas-left-panel-top" className="canvas-left-panel-top d-flex column min-h-0 overflow-hidden" style={{ flex: `1 1 ${100 - leftSplit.size}%` }}>
+                <Container id="canvas-left-panel" className="canvas-left-panel d-flex column f-shrink-0 min-h-0" style={{ width: leftPanel.size }}>
+                    <Container id="canvas-left-panel-top" className="canvas-left-panel-top d-flex column min-h-0 overflow-hidden flex-1">
                         <ObjectsPanel
                             trajectory={trajectory}
                             onDownloadAnalysis={handleDownloadAnalysisListing}
@@ -266,16 +258,6 @@ const CanvasPage = () => {
                             onSetActiveRasterContainer={setActiveRasterContainerId}
                             onUpdateRasterContainerSelection={handleUpdateRasterContainerSelection}
                         />
-                    </Container>
-                    <ResizeHandle
-                        direction={ResizeDirection.Vertical}
-                        isDragging={leftSplit.isDragging}
-                        label="Resize objects and events panels"
-                        controls="canvas-left-panel-bottom"
-                        {...leftSplit.handleProps}
-                    />
-                    <Container id="canvas-left-panel-bottom" className="canvas-left-panel-bottom d-flex column min-h-0 overflow-hidden" style={{ flex: `0 0 ${leftSplit.size}%` }}>
-                        <TexturesPanel trajectory={trajectory} />
                     </Container>
                 </Container>
 

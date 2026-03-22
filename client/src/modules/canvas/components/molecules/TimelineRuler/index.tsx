@@ -1,10 +1,11 @@
 import Container from '@/shared/presentation/components/Container';
 
+import type { TimelineTickTone } from '../../../hooks/use-timeline-job-activity';
 import type { RefObject } from 'react';
 
 interface TimelineRulerProps {
     rulerRef: RefObject<HTMLDivElement | null>;
-    ticks: { frame: number; major: boolean }[];
+    ticks: { frame: number; major: boolean; tone?: TimelineTickTone }[];
     playheadLeft: number;
     startFrame: number;
     endFrame: number;
@@ -53,12 +54,17 @@ const TimelineRuler = ({
             aria-valuenow={currentFrame}
             aria-valuetext={`Frame ${currentFrame}`}
         >
-            {ticks.map((tick, i) => (
-                <Container key={i} className="canvas-ruler-tick d-flex column items-center">
+            {ticks.map((tick) => (
+                <Container
+                    key={tick.frame}
+                    className={`canvas-ruler-tick d-flex column items-center${tick.tone ? ` is-${tick.tone}` : ''}`}
+                >
                     {tick.major && (
-                        <span className="canvas-ruler-tick-label font-size-1">{tick.frame}</span>
+                        <span className={`canvas-ruler-tick-label font-size-1${tick.tone ? ` canvas-ruler-tick-label--${tick.tone}` : ''}`}>
+                            {tick.frame}
+                        </span>
                     )}
-                    <Container className={`canvas-ruler-tick-mark ${tick.major ? 'major' : 'minor'}`} />
+                    <Container className={`canvas-ruler-tick-mark ${tick.major ? 'major' : 'minor'}${tick.tone ? ` canvas-ruler-tick-mark--${tick.tone}` : ''}`} />
                 </Container>
             ))}
         </Container>
