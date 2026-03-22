@@ -116,6 +116,14 @@ interface PendingWebSocketEntry extends BasePendingEntry {
     reject: (error: Error) => void;
 };
 
+interface WebSocketAttachSuccessPayload {
+    status?: unknown;
+    data?: {
+        attached?: unknown;
+        selectedProtocol?: unknown;
+    };
+};
+
 interface PendingTunnelEntry extends BasePendingEntry {
     type: 'tunnel';
     stream: TeamClusterReverseTunnelStream;
@@ -150,6 +158,22 @@ export interface TeamClusterReverseChannelStreamAttachment {
 };
 
 type PendingEntry = PendingResponseEntry | PendingStreamEntry | PendingTerminalEntry | PendingWebSocketEntry | PendingTunnelEntry;
+
+const readSelectedWebSocketProtocol = (payload: unknown): string | undefined => {
+    if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
+        return undefined;
+    }
+
+    const candidate = payload as WebSocketAttachSuccessPayload;
+    if (candidate.status !== 'success') {
+        return undefined;
+    }
+
+    const selectedProtocol = candidate.data?.selectedProtocol;
+    return typeof selectedProtocol === 'string' && selectedProtocol.trim().length > 0
+        ? selectedProtocol.trim()
+        : undefined;
+};
 
 @injectable()
 export default class TeamClusterReverseChannelService {
@@ -350,7 +374,11 @@ export default class TeamClusterReverseChannelService {
         });
     }
 
-    async attachWebSocket(teamClusterId: string, targetUrl: string): Promise<TeamClusterReverseWebSocketStream> {
+    async attachWebSocket(
+        teamClusterId: string,
+        targetUrl: string,
+        protocols?: string[]
+    ): Promise<TeamClusterReverseWebSocketStream> {
         const socketId = await this.requireDaemonSocketId(teamClusterId);
         const sessionId = randomUUID();
         const stream = new TeamClusterReverseWebSocketStream((message) => {
@@ -376,7 +404,8 @@ export default class TeamClusterReverseChannelService {
                 this.emitSessionAttachCommand(socketId, sessionId, {
                     sessionId,
                     kind: TeamClusterDaemonSessionKind.WebSocket,
-                    targetUrl
+                    targetUrl,
+                    ...(protocols && protocols.length > 0 ? { protocols } : {})
                 });
             }
         });
@@ -683,6 +712,7 @@ export default class TeamClusterReverseChannelService {
         }
 
         this.touchSession(payload.requestId);
+        entry.stream.protocol = readSelectedWebSocketProtocol(payload.data);
         entry.resolve(entry.stream);
     }
 

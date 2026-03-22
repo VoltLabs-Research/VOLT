@@ -52,6 +52,7 @@ export interface TeamClusterDaemonSessionAttachPayload {
     terminalTarget?: TeamClusterDaemonTerminalTarget;
     containerId?: string;
     targetUrl?: string;
+    protocols?: string[];
 };
 
 export interface TeamClusterDaemonCommandMessage {

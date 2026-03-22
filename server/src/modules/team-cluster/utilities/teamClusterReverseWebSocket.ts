@@ -17,6 +17,7 @@ type TeamClusterReverseWebSocketErrorListener = (error: Error) => void;
 export class TeamClusterReverseWebSocketStream {
     private readonly emitter = new EventEmitter();
     public destroyed = false;
+    public protocol?: string;
 
     constructor(
         private readonly onSend: (payload: TeamClusterReverseWebSocketMessage) => void,
