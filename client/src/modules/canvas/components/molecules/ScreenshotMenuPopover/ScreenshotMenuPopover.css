@@ -1,0 +1,18 @@
+.context-menu-popover--screenshot-config {
+    min-width: min(22rem, calc(100vw - 2rem));
+    max-width: min(24rem, calc(100vw - 2rem));
+}
+
+.canvas-screenshot-popover {
+    min-width: min(21rem, calc(100vw - 3rem));
+}
+
+.canvas-screenshot-popover-custom-size > * {
+    flex: 1;
+    min-width: 0;
+}
+
+.canvas-screenshot-popover-summary {
+    padding-top: 0.25rem;
+    border-top: 1px solid var(--color-border-soft);
+}
