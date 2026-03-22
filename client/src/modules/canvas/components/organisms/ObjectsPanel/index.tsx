@@ -331,12 +331,12 @@ const ObjectsPanel = ({
                 onClick: () => {
                     syncArtifactTimestep(artifact);
                     addScene(scene);
-                }
+                }   
             });
         }
 
         const transparencySubmenu = (
-            <div className="context-menu-transparency">
+            <div className="context-menu-transparency glass-bg">
                 <span className="context-menu-transparency__label">Transparency</span>
                 <CanvasSlider
                     ariaLabel={`Adjust ${artifactLabel} transparency`}

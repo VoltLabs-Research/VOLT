@@ -1,4 +1,10 @@
-import FloatingRootContext, { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
+import FloatingRootContext, {
+    FloatingOwnerIdsContext,
+    appendFloatingOwnerIds,
+    hasFloatingOwnerId,
+    useFloatingOwnerIds,
+    useFloatingRoot
+} from '@/shared/presentation/contexts/FloatingRootContext';
 import Container from '@/shared/presentation/components/Container';
 import composeRefs from '@/shared/presentation/utilities/compose-refs';
 import './Popover.css';
@@ -61,7 +67,9 @@ const Popover: React.FC<PopoverProps> = ({
     const [contextMenuPosition, setContextMenuPosition] = useState<ContextMenuPosition | null>(null);
     const [floatingElement, setFloatingElement] = useState<HTMLElement | null>(null);
     const floatingRoot = useFloatingRoot();
+    const floatingOwnerIds = useFloatingOwnerIds();
     const onOpenChangeRef = React.useRef(onOpenChange);
+    const nextFloatingOwnerIds = useMemo(() => appendFloatingOwnerIds(floatingOwnerIds, id), [floatingOwnerIds, id]);
 
     useLayoutEffect(() => {
         onOpenChangeRef.current = onOpenChange;
@@ -124,7 +132,11 @@ const Popover: React.FC<PopoverProps> = ({
     const click = useClick(context, {
         enabled: triggerAction === 'click'
     });
-    const dismiss = useDismiss(context);
+    const dismiss = useDismiss(context, {
+        outsidePress: (event) => {
+            return !hasFloatingOwnerId(event.target instanceof Element ? event.target : null, id);
+        }
+    });
     const role = useRole(context, { role: popoverRole });
 
     const { getReferenceProps, getFloatingProps } = useInteractions([
@@ -201,9 +213,11 @@ const Popover: React.FC<PopoverProps> = ({
                             tabIndex={-1}
                             {...getFloatingProps()}
                         >
-                            <FloatingRootContext.Provider value={floatingElement ?? floatingRoot}>
-                                {renderChildren()}
-                            </FloatingRootContext.Provider>
+                            <FloatingOwnerIdsContext.Provider value={nextFloatingOwnerIds}>
+                                <FloatingRootContext.Provider value={floatingElement ?? floatingRoot}>
+                                    {renderChildren()}
+                                </FloatingRootContext.Provider>
+                            </FloatingOwnerIdsContext.Provider>
                         </Container>
                     </FloatingFocusManager>
                 </FloatingPortal>

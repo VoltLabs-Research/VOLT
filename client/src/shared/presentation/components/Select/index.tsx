@@ -1,4 +1,8 @@
-import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
+import {
+    getFloatingOwnerIdsAttribute,
+    useFloatingOwnerIds,
+    useTopLayerRoot
+} from '@/shared/presentation/contexts/FloatingRootContext';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import SearchInput from '@/shared/presentation/components/SearchInput';
@@ -86,7 +90,9 @@ const Select = ({
     'aria-errormessage': ariaErrorMessage
 }: SelectProps) => {
     const uid = useId();
-    const floatingRoot = useFloatingRoot();
+    const floatingRoot = useTopLayerRoot();
+    const floatingOwnerIds = useFloatingOwnerIds();
+    const floatingOwnerIdsAttribute = getFloatingOwnerIdsAttribute(floatingOwnerIds);
     const [isOpen, setIsOpen] = useState(false);
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -422,6 +428,7 @@ const Select = ({
                         <div
                             ref={refs.setFloating}
                             className='select-dropdown y-auto glass-bg'
+                            data-floating-owner-ids={floatingOwnerIdsAttribute}
                             style={floatingStyles}
                             onScroll={handleScroll}
                             {...getFloatingProps()}

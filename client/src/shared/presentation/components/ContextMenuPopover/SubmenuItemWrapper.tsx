@@ -1,9 +1,15 @@
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
-import FloatingRootContext, { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
+import FloatingRootContext, {
+    FloatingOwnerIdsContext,
+    appendFloatingOwnerIds,
+    hasFloatingOwnerId,
+    useFloatingOwnerIds,
+    useFloatingRoot
+} from '@/shared/presentation/contexts/FloatingRootContext';
 import composeRefs from '@/shared/presentation/utilities/compose-refs';
 import { FloatingPortal, autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/react';
 import { ChevronRight } from 'lucide-react';
-import { useCallback, useId, useRef, useState } from 'react';
+import { useCallback, useId, useMemo, useRef, useState } from 'react';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 
 interface SubmenuItemWrapperProps {
@@ -37,6 +43,8 @@ const SubmenuItemWrapper: React.FC<SubmenuItemWrapperProps> = ({ option, size = 
     const submenuPanelRef = useRef<HTMLDivElement | null>(null);
     const submenuId = useId();
     const floatingRoot = useFloatingRoot();
+    const floatingOwnerIds = useFloatingOwnerIds();
+    const submenuFloatingOwnerIds = useMemo(() => appendFloatingOwnerIds(floatingOwnerIds, submenuId), [floatingOwnerIds, submenuId]);
     const {
         refs,
         floatingStyles,
@@ -141,7 +149,7 @@ const SubmenuItemWrapper: React.FC<SubmenuItemWrapperProps> = ({ option, size = 
 
         if (nextFocusedElement instanceof Element) {
             const nestedFloatingElement = nextFocusedElement.closest<HTMLElement>(NESTED_FLOATING_SELECTOR);
-            if (nestedFloatingElement && portalRoot?.contains(nestedFloatingElement)) {
+            if (nestedFloatingElement && hasFloatingOwnerId(nestedFloatingElement, submenuId)) {
                 return;
             }
         }
@@ -192,9 +200,11 @@ const SubmenuItemWrapper: React.FC<SubmenuItemWrapperProps> = ({ option, size = 
                         onKeyDown={handleSubmenuKeyDown}
                         onBlur={handleBlur}
                     >
-                        <FloatingRootContext.Provider value={portalRoot}>
-                            {option.submenuContent}
-                        </FloatingRootContext.Provider>
+                        <FloatingOwnerIdsContext.Provider value={submenuFloatingOwnerIds}>
+                            <FloatingRootContext.Provider value={portalRoot}>
+                                {option.submenuContent}
+                            </FloatingRootContext.Provider>
+                        </FloatingOwnerIdsContext.Provider>
                     </div>
                 </FloatingPortal>
             )}

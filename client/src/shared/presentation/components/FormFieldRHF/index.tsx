@@ -1,4 +1,8 @@
-import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
+import {
+    getFloatingOwnerIdsAttribute,
+    useFloatingOwnerIds,
+    useTopLayerRoot
+} from '@/shared/presentation/contexts/FloatingRootContext';
 import { cn } from '@/shared/utils';
 import Container from '@/shared/presentation/components/Container';
 import LiquidToggle from '@/shared/presentation/components/LiquidToggle';
@@ -551,7 +555,9 @@ const InlineCanvasRenderer = ({
     const inputElementRef = useRef<HTMLInputElement | null>(null);
     const textareaElementRef = useRef<HTMLTextAreaElement | null>(null);
     const pendingCaretRef = useRef<number | null>(null);
-    const floatingRoot = useFloatingRoot();
+    const floatingRoot = useTopLayerRoot();
+    const floatingOwnerIds = useFloatingOwnerIds();
+    const floatingOwnerIdsAttribute = getFloatingOwnerIdsAttribute(floatingOwnerIds);
     const reactId = useId();
     const ids = buildFieldAccessibilityIds(field.name, reactId);
 
@@ -914,6 +920,7 @@ const InlineCanvasRenderer = ({
                     <Container
                         ref={autocompleteRefs.setFloating}
                         className='form-field-autocomplete-menu d-flex column'
+                        data-floating-owner-ids={floatingOwnerIdsAttribute}
                         style={autocompleteFloatingStyles}
                         {...getAutocompleteFloatingProps()}
                     >
