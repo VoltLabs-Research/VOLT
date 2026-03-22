@@ -238,13 +238,6 @@ const DashboardPage = () => {
                     <DashboardCard className='dashboard-stat-card' isRelative={true} overflowHidden={true} style={{ opacity: 0, pointerEvents: 'none' }} />
                 )}
 
-                <DashboardTeamTimeline />
-                <DashboardInAppActivity />
-                <DashboardQuickActions />
-                <DashboardClusterHealth />
-                <DashboardTeamPresence />
-                <DashboardNotificationsFeed />
-
                 <Container className='dashboard-bottom-row'>
                     <DashboardPreviewCard />
 
@@ -310,6 +303,13 @@ const DashboardPage = () => {
                     </Container>
                     <SimulationGrid />
                 </Container>
+
+                <DashboardTeamTimeline />
+                <DashboardInAppActivity />
+                <DashboardQuickActions />
+                <DashboardClusterHealth />
+                <DashboardTeamPresence />
+                <DashboardNotificationsFeed />
             </Container>
         </TrajectoryUploaderContainer>
     );
