@@ -10,6 +10,7 @@ import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
 import useDownloadPluginListing from '../../../hooks/use-download-plugin-listing';
 import useKeyboardShortcuts from '../../../hooks/use-keyboard-shortcuts';
 import useResizable from '../../../hooks/use-resizable';
+import useTeamJobs from '@/modules/jobs/hooks/use-team-jobs';
 import CanvasPresence from '../../atoms/CanvasPresence';
 import PreloadingOverlay from '../../atoms/PreloadingOverlay';
 import ResizeHandle from '../../atoms/ResizeHandle';
@@ -60,6 +61,7 @@ const CanvasPage = () => {
     useCanvasCleanup();
     const { trajectory, currentTimestep, isLoading: trajectoryLoading } = useCanvasCoordinator({ trajectoryId });
     const { canvasUsers } = useCanvasPresence({ trajectoryId, enabled: !!trajectoryId });
+    useTeamJobs();
 
     useTip('canvas-shortcuts', {
         enabled: Boolean(trajectoryId) && !trajectoryLoading
