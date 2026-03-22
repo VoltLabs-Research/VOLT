@@ -237,7 +237,7 @@ const useFileTree = ({
         }
 
         for (const asset of assets) {
-            const currentPath = asset.path ?? asset.originalName;
+            const currentPath = asset.path;
             if (currentPath.startsWith(sourceFolderPath)) {
                 operations.push(onUpdateAssetDirect({
                     documentId,
@@ -302,7 +302,7 @@ const useFileTree = ({
             return false;
         }
 
-        const currentPath = asset.path ?? asset.originalName;
+        const currentPath = asset.path;
         const { name } = splitWorkspacePath(currentPath);
         const nextPath = joinWorkspacePath(targetFolderPath, name);
 
@@ -369,7 +369,7 @@ const useFileTree = ({
             .filter((file) => file.path.startsWith(folderPath))
             .map((file) => onDeleteFileDirect({ documentId, fileId: file._id }));
         const assetOperations = assets
-            .filter((asset) => (asset.path ?? asset.originalName).startsWith(folderPath))
+            .filter((asset) => asset.path.startsWith(folderPath))
             .map((asset) => onDeleteAssetDirect({ documentId, assetId: asset._id }));
 
         await Promise.all([...fileOperations, ...assetOperations]);

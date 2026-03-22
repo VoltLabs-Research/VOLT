@@ -1,4 +1,3 @@
-import { UpdateLatexDocumentUseCase } from '@modules/latex/application/use-cases/UpdateLatexDocumentUseCase';
 import { UpdateLatexFileUseCase } from '@modules/latex/application/use-cases/UpdateLatexFileUseCase';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
@@ -24,9 +23,8 @@ import {
 /** Debounce in ms before persisting a received content update to the database. */
 const PERSIST_DEBOUNCE_MS = 2_000;
 
-/** Key used to uniquely identify a pending save timer: `{documentId}:{fileId}` or `{documentId}`. */
-const buildSaveKey = (documentId: string, fileId?: string): string =>
-    fileId ? `${documentId}:${fileId}` : documentId;
+/** Key used to uniquely identify a pending save timer for a document file. */
+const buildSaveKey = (documentId: string, fileId: string): string => `${documentId}:${fileId}`;
 
 @injectable()
 export default class LatexSocketModule extends BaseSocketModule {
@@ -39,7 +37,6 @@ export default class LatexSocketModule extends BaseSocketModule {
         @inject(SOCKET_TOKENS.SocketEventEmitter) emitter: ISocketEmitter,
         @inject(SOCKET_TOKENS.SocketRoomManager) roomManager: ISocketRoomManager,
         @inject(SOCKET_TOKENS.SocketEventRegistry) eventRegistry: ISocketEventRegistry,
-        private readonly updateDocumentUseCase: UpdateLatexDocumentUseCase,
         private readonly updateFileUseCase: UpdateLatexFileUseCase
     ) {
         super(emitter, roomManager, eventRegistry);
@@ -181,7 +178,7 @@ export default class LatexSocketModule extends BaseSocketModule {
      * Keyed by `{documentId}:{fileId}` when a file is specified, so concurrent edits
      * to different files in the same document do not cancel each other's timers.
      */
-    private schedulePersist(documentId: string, teamId: string, fileId: string | undefined, content: string): void {
+    private schedulePersist(documentId: string, teamId: string, fileId: string, content: string): void {
         const saveKey = buildSaveKey(documentId, fileId);
         const existing = this.saveTimers.get(saveKey);
 
@@ -200,26 +197,18 @@ export default class LatexSocketModule extends BaseSocketModule {
     private async persistContent(
         documentId: string,
         teamId: string,
-        fileId: string | undefined,
+        fileId: string,
         content: string
     ): Promise<void> {
         try {
-            if (fileId) {
-                const result = await this.updateFileUseCase.execute({
-                    documentId,
-                    teamId,
-                    fileId,
-                    content
-                });
-                if (!result.success) {
-                    logger.warn(`@latex-socket - auto-save failed for file ${fileId}: ${result.error?.message}`);
-                }
-            } else {
-                // Legacy path: no fileId → persist to document.content for backward compat.
-                const result = await this.updateDocumentUseCase.execute({ documentId, teamId, content });
-                if (!result.success) {
-                    logger.warn(`@latex-socket - auto-save failed for document ${documentId}: ${result.error?.message}`);
-                }
+            const result = await this.updateFileUseCase.execute({
+                documentId,
+                teamId,
+                fileId,
+                content
+            });
+            if (!result.success) {
+                logger.warn(`@latex-socket - auto-save failed for file ${fileId}: ${result.error?.message}`);
             }
         } catch (error) {
             logger.error(`@latex-socket - auto-save error for document ${documentId}: ${error}`);

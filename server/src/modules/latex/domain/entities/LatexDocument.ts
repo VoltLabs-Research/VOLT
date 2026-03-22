@@ -9,7 +9,6 @@ export interface PopulatedLatexUser {
 export interface LatexDocumentProps {
     team: string;
     title: string;
-    content: string;
     createdBy: string | PopulatedLatexUser;
     lastEditedBy?: string | PopulatedLatexUser | null;
     folder: string | null;

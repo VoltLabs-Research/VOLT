@@ -26,11 +26,6 @@ const LatexDocumentSchema: Schema<LatexDocumentDocument> = new Schema({
         required: true,
         trim: true
     },
-    content: {
-        type: String,
-        required: false,
-        default: ''
-    },
     folder: {
         type: Schema.Types.ObjectId,
         ref: 'CatalogFolder',

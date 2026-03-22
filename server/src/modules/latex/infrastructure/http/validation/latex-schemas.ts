@@ -22,16 +22,14 @@ const fileParamsSchema = documentParamsSchema.extend({
 
 const createDocumentBodySchema = z.object({
     title: z.string().trim().min(1).max(255),
-    content: z.string().optional(),
     folderId: objectIdSchema.nullable().optional()
 }).strict();
 
 const updateDocumentBodySchema = z.object({
-    title: z.string().trim().min(1).max(255).optional(),
-    content: z.string().optional()
+    title: z.string().trim().min(1).max(255).optional()
 }).strict().refine(
-    (data) => data.title !== undefined || data.content !== undefined,
-    { message: 'At least one of title or content must be provided' }
+    (data) => data.title !== undefined,
+    { message: 'Document title is required' }
 );
 
 const createFileBodySchema = z.object({

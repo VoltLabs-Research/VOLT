@@ -136,7 +136,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
     const [compileError, setCompileError] = useState<string | null>(null);
 
     const fileEditorStatesRef = useRef<Record<string, FileEditorState>>({});
-    const sendContentUpdateRef = useRef<((content: string, fileId?: string) => void) | null>(null);
+    const sendContentUpdateRef = useRef<((content: string, fileId: string) => void) | null>(null);
     const compiledPdfUrlRef = useRef<string | null>(null);
     const autosaveTimersRef = useRef<Record<string, number>>({});
     const lastTexWorkspaceFingerprintRef = useRef<string | null>(null);
@@ -506,11 +506,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
 
     const selectedAssetId = selection?.type === 'asset' ? selection.id : null;
 
-    const handleRemoteContentUpdate = useCallback((content: string, _timestamp: number, fileId?: string): void => {
-        if (!fileId) {
-            return;
-        }
-
+    const handleRemoteContentUpdate = useCallback((content: string, _timestamp: number, fileId: string): void => {
         if (!latexFileIdsRef.current.has(fileId)) {
             invalidateLatexFilesQuery({ documentId });
             return;

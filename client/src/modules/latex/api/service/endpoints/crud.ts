@@ -13,12 +13,12 @@ const endpoints = {
         '/documents'
     ),
     createDocument: post<CreateLatexDocumentParams, LatexDocument>('/documents', {
-        body: ({ title, content, folderId }) => ({ title, content, folderId })
+        body: ({ title, folderId }) => ({ title, folderId })
     }),
     getDocument: get<GetLatexDocumentParams, LatexDocument>('/documents/:documentId'),
     deleteDocument: del<DeleteLatexDocumentParams>('/documents/:documentId'),
     updateDocument: patch<UpdateLatexDocumentParams, LatexDocument>('/documents/:documentId', {
-        body: ({ title, content }) => ({ title, content })
+        body: ({ title }) => ({ title })
     }),
     moveDocument: patch<MoveLatexDocumentParams, LatexDocument>('/documents/:documentId/folder', {
         body: ({ folderId }) => ({ folderId })

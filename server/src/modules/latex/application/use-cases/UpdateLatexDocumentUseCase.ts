@@ -37,10 +37,6 @@ export class UpdateLatexDocumentUseCase implements IUseCase<UpdateLatexDocumentI
                 patch.title = input.title.trim();
             }
 
-            if (input.content !== undefined) {
-                patch.content = input.content;
-            }
-
             const updated = await this.latexDocumentRepository.updateById(
                 input.documentId,
                 patch
@@ -56,7 +52,6 @@ export class UpdateLatexDocumentUseCase implements IUseCase<UpdateLatexDocumentI
             return Result.ok({
                 _id: updated._id,
                 title: updated.props.title,
-                content: updated.props.content,
                 folder: updated.props.folder,
                 createdBy: updated.props.createdBy,
                 lastEditedBy: updated.props.lastEditedBy,

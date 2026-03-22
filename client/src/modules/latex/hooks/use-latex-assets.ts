@@ -26,10 +26,7 @@ const DELETE_TOAST = {
 export const buildLatexRef = (asset: LatexAsset): string => {
     const isImage = asset.mimetype.startsWith('image/');
     const isPdf = asset.mimetype === 'application/pdf';
-    // Use the stored path when available so the reference matches the directory
-    // structure reconstructed during compilation. Fall back to originalName for
-    // legacy assets that pre-date path support.
-    const refPath = asset.path ?? asset.originalName;
+    const refPath = asset.path;
     const nameNoExt = refPath.replace(/\.[^.]+$/, '');
 
     if (isImage) {
@@ -156,7 +153,7 @@ const useLatexAssets = ({ documentId, onInsertRef }: UseLatexAssetsInput) => {
     }, [onInsertRef]);
 
     const handleRenameAsset = useCallback(async (asset: LatexAsset, name: string): Promise<void> => {
-        const currentPath = asset.path ?? asset.originalName;
+        const currentPath = asset.path;
         const { path } = (() => {
             const normalized = currentPath.replace(/\\/g, '/');
             const index = normalized.lastIndexOf('/');

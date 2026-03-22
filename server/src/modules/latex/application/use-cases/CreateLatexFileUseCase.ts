@@ -13,9 +13,6 @@ import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFile
  *
  * If `isEntrypoint` is true, the existing entrypoint is cleared atomically
  * before the new file is set as entrypoint.
- *
- * If this is the first file and `isEntrypoint` is not provided, defaults to `false`
- * (the caller or the migration logic handles entrypoint assignment).
  */
 @injectable()
 export class CreateLatexFileUseCase implements IUseCase<CreateLatexFileInputDTO, CreateLatexFileOutputDTO, ApplicationError> {

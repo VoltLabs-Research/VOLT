@@ -86,7 +86,7 @@ const stopPropagation = (event: { stopPropagation: () => void }): void => {
 };
 
 const getAssetIcon = (asset: LatexAsset) => {
-    const pathname = asset.path ?? asset.originalName;
+    const pathname = asset.path;
 
     if (isWorkspacePdfFile(pathname, asset.mimetype)) {
         return <FileText size={13} />;
@@ -535,7 +535,7 @@ const AssetLeafNode = ({
 }: FileTreeNodeProps) => {
     const asset = node.data as LatexAsset;
     const isRenaming = renamingTarget?.id === `asset:${asset._id}`;
-    const assetPath = asset.path ?? asset.originalName;
+    const assetPath = asset.path;
     const isSelected = selectedAssetId === asset._id;
     const dragData = useMemo<LatexWorkspaceDragData>(() => ({
         kind: 'asset',

@@ -3,7 +3,7 @@ export interface LatexAssetDTO {
     documentId: string;
     originalName: string;
     /** Relative path within the document's virtual file tree. */
-    path?: string;
+    path: string;
     url: string;
     mimetype: string;
     size: number;
