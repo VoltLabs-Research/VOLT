@@ -4,6 +4,7 @@ import {
     WEBSOCKET_BUFFERED_AMOUNT_BYTES_CAP,
     WEBSOCKET_PENDING_MESSAGE_BYTES_CAP
 } from './reverseChannelSessionConstants';
+import { WebSocket } from 'ws';
 import type {
     TeamClusterDaemonSessionAttachPayload,
     TeamClusterDaemonSessionDataPayload,
@@ -15,6 +16,15 @@ import type { CommandResult } from '@voltstack/daemon-cluster-client';
 interface WebSocketMessageResult {
     data: Buffer;
     isBinary: boolean;
+};
+
+interface ReverseChannelMessageEvent {
+    data: unknown;
+};
+
+interface ReverseChannelCloseEvent {
+    code: number;
+    reason: string;
 };
 
 interface WebSocketSessionAttachResult {
@@ -31,9 +41,9 @@ interface ReverseChannelWebSocketState {
     pendingMessages: Array<Buffer | string>;
     pendingMessageBytes: number;
     onOpen: () => void;
-    onMessage: (event: MessageEvent) => void;
+    onMessage: (event: ReverseChannelMessageEvent) => void;
     onError: () => void;
-    onClose: (event: CloseEvent) => void;
+    onClose: (event: ReverseChannelCloseEvent) => void;
 };
 
 interface SessionTransition {
@@ -180,7 +190,7 @@ export class WebSocketSessionManager {
                     resolveAttachSuccess();
                 };
 
-                const onMessage = (event: MessageEvent) => {
+                const onMessage = (event: ReverseChannelMessageEvent) => {
                     this.handleWebSocketMessage(payload.sessionId, event).catch((error: unknown) => {
                         this.options.coordinator.emitSessionEnd({
                             type: 'session-end',
@@ -215,7 +225,7 @@ export class WebSocketSessionManager {
                     }
                 };
 
-                const onClose = (event: CloseEvent) => {
+                const onClose = (event: ReverseChannelCloseEvent) => {
                     const webSocketState = this.webSocketStates.get(payload.sessionId);
                     const isOpen = webSocketState?.isOpen === true;
                     if (webSocketState) {
@@ -374,7 +384,7 @@ export class WebSocketSessionManager {
         };
     }
 
-    private async handleWebSocketMessage(sessionId: string, event: MessageEvent): Promise<void> {
+    private async handleWebSocketMessage(sessionId: string, event: ReverseChannelMessageEvent): Promise<void> {
         this.options.coordinator.touchSession(sessionId);
         const message = await this.readWebSocketMessage(event.data);
         this.options.coordinator.emitSessionData({
