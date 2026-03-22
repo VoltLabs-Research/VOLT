@@ -414,8 +414,12 @@ export default class TeamClusterDaemonClient {
         return this.teamClusterReverseChannelService.attachHostTerminal(teamClusterId);
     }
 
-    async attachWebSocket(teamClusterId: string, targetUrl: string): Promise<TeamClusterReverseWebSocketStream> {
-        return this.teamClusterReverseChannelService.attachWebSocket(teamClusterId, targetUrl);
+    async attachWebSocket(
+        teamClusterId: string,
+        targetUrl: string,
+        protocols?: string[]
+    ): Promise<TeamClusterReverseWebSocketStream> {
+        return this.teamClusterReverseChannelService.attachWebSocket(teamClusterId, targetUrl, protocols);
     }
 
     async openTunnel(
