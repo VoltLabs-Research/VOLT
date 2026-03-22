@@ -1,0 +1,15 @@
+.canvas-render-menu-submenu {
+    min-width: 320px;
+    padding: 0.25rem 0.5rem;
+}
+
+.canvas-render-menu-submenu-section + .canvas-render-menu-submenu-section {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--color-border-soft);
+}
+
+.canvas-render-menu-submenu-title {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}

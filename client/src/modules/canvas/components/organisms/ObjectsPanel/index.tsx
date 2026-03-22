@@ -531,11 +531,6 @@ const ObjectsPanel = ({
 
     return (
         <Container className="canvas-objects-panel d-flex column min-h-0 overflow-auto">
-            <PanelHeader
-                icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
-                title="Objects"
-            />
-
             <CollapsibleSection
                 title="Scene Collection"
                 icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}

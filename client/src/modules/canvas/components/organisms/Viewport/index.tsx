@@ -1,5 +1,6 @@
 import { setSceneInteracting } from '../../../hooks/use-scene-interaction';
 import CameraMenuPopover from '../../molecules/CameraMenuPopover';
+import RenderMenuPopover from '../../molecules/RenderMenuPopover';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
 import FractalScene from '@/modules/fractal/components/organisms/FractalScene';
@@ -125,14 +126,11 @@ const Viewport = ({
         <Container className="canvas-viewport d-flex column flex-1 overflow-hidden p-relative min-h-0">
             <Container className="canvas-viewport-header d-flex items-center f-shrink-0">
                 {trajectory && (
-                    <>
-                        <Container className="canvas-viewport-divider d-block f-shrink-0" />
-                        <EditableTrajectoryName
-                            trajectoryId={trajectory._id}
-                            name={trajectory.name}
-                            className="canvas-viewport-trajectory-name"
-                        />
-                    </>
+                    <EditableTrajectoryName
+                        trajectoryId={trajectory._id}
+                        name={trajectory.name}
+                        className="canvas-viewport-trajectory-name"
+                    />
                 )}
 
                 <Container className="flex-1" />
@@ -141,6 +139,8 @@ const Viewport = ({
 
                 {showSceneActions && (
                     <>
+                        <RenderMenuPopover />
+
                         <CameraMenuPopover />
 
                         <Tooltip content="Screenshot (Ctrl+S)">
