@@ -171,15 +171,21 @@ const ObjectsPanel = ({
         showSimulationCell,
         setShowSimulationCell,
         sceneOpacities,
-        setSceneOpacity
+        setSceneOpacity,
+        setCurrentTimestep
     } = useEditorStore(useShallow((s) => ({
         showSimulationCell: s.showSimulationCell,
         setShowSimulationCell: s.setShowSimulationCell,
         sceneOpacities: s.sceneOpacities,
-        setSceneOpacity: s.setSceneOpacity
+        setSceneOpacity: s.setSceneOpacity,
+        setCurrentTimestep: s.setCurrentTimestep
     })));
 
     const handleToggleSimulationCell = () => setShowSimulationCell(!showSimulationCell);
+
+    const syncArtifactTimestep = useCallback((artifact: SceneArtifact) => {
+        setCurrentTimestep(artifact.timestep);
+    }, [setCurrentTimestep]);
 
     useEffect(() => {
         if (particleFilterTimesteps.length === 0) {
@@ -322,7 +328,10 @@ const ObjectsPanel = ({
             options.push({
                 label: 'Add to scene',
                 icon: Plus,
-                onClick: () => addScene(scene)
+                onClick: () => {
+                    syncArtifactTimestep(artifact);
+                    addScene(scene);
+                }
             });
         }
 
@@ -348,7 +357,7 @@ const ObjectsPanel = ({
         });
 
         return options;
-    }, [isSceneInActiveScenes, sceneOpacities, addScene, removeScene, setSceneOpacity]);
+    }, [isSceneInActiveScenes, sceneOpacities, addScene, removeScene, setSceneOpacity, syncArtifactTimestep]);
 
     const renderArtifactPlaceholder = useCallback((label: string) => {
         return (
@@ -403,6 +412,7 @@ const ObjectsPanel = ({
                         return;
                     }
 
+                    syncArtifactTimestep(artifact);
                     onSelectScene(scene);
                 }}
                 role="treeitem"
@@ -425,7 +435,7 @@ const ObjectsPanel = ({
                 size='sm'
             />
         );
-    }, [activeScene, getArtifactMenuOptions, onSelectScene]);
+    }, [activeScene, getArtifactMenuOptions, onSelectScene, syncArtifactTimestep]);
 
     const renderParticleFilterTreeSection = useCallback(() => {
         if (sceneArtifactsLoading && particleFilterArtifacts.length === 0) {
@@ -461,7 +471,7 @@ const ObjectsPanel = ({
                             >
                                 <ChevronIcon className={`canvas-tree-group-chevron ${isExpanded ? '' : 'collapsed'}`} style={{ width: 13, height: 13 }} />
                                 <Filter style={{ width: TREE_MODIFIER_ICON_SIZE, height: TREE_MODIFIER_ICON_SIZE, color: TREE_MODIFIER_ICON_COLOR }} />
-                                <span className="canvas-tree-item__text">T{timestep}</span>
+                                <span className="canvas-tree-item__text">{timestep}</span>
                                 <span className="canvas-tree-group-count">{timestepArtifacts.length}</span>
                             </button>
 
@@ -512,7 +522,7 @@ const ObjectsPanel = ({
                             >
                                 <ChevronIcon className={`canvas-tree-group-chevron ${isExpanded ? '' : 'collapsed'}`} style={{ width: 13, height: 13 }} />
                                 <Palette style={{ width: TREE_MODIFIER_ICON_SIZE, height: TREE_MODIFIER_ICON_SIZE, color: TREE_MODIFIER_ICON_COLOR }} />
-                                <span className="canvas-tree-item__text">T{timestep}</span>
+                                <span className="canvas-tree-item__text">{timestep}</span>
                                 <span className="canvas-tree-group-count">{timestepArtifacts.length}</span>
                             </button>
 
