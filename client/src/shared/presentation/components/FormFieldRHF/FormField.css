@@ -178,8 +178,8 @@
 }
 
 .canvas-form-label {
-    width: 80px;
-    min-width: 80px;
+    /** TODO: hmmmmm this should'nt be a harcoded value **/
+    min-width: 130px;
     flex-shrink: 0;
     font-size: 0.7rem;
     color: var(--color-text-muted);

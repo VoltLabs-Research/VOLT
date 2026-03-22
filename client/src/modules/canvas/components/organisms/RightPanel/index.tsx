@@ -1,5 +1,4 @@
 import { buildCanvasModifierOptions, LEGACY_MODIFIERS } from '../../../utilities/modifier-registry';
-import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
 import useTip from '@/shared/tips/use-tip';
 import usePluginExecution from '../../../hooks/use-plugin-execution';
 import { ExecState } from '../../../hooks/use-plugin-execution';
@@ -11,7 +10,7 @@ import { useExecutePluginMutation, usePluginTeamClustersQuery } from '@/modules/
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { Wrench } from 'lucide-react';
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import Container from '@/shared/presentation/components/Container';
@@ -19,7 +18,6 @@ import Container from '@/shared/presentation/components/Container';
 import { extractTrajectoryTimesteps, normalizeSelectedTimesteps } from '../../../utilities/selected-timestep-analysis';
 
 import type { ModifierOption } from '../../../utilities/modifier-registry';
-import type { LegacyActionRef } from '../ColorCoding';
 import type { ComponentType, ReactNode } from 'react';
 import type { SelectOption } from '@/shared/presentation/components/Select';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
@@ -44,7 +42,6 @@ interface RightPanelProps {
 const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: RightPanelProps) => {
     useTip('canvas-render-settings');
 
-    const { activeModifiers, toggleModifier, pluginParam } = useCanvasUrlState();
     const selectedTeamId = useSelectedTeamId();
     const executePluginMutation = useExecutePluginMutation();
     const { modifiers, getPluginArguments, isLoading: pluginLoading } = usePluginSelectors();
@@ -56,10 +53,7 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
         enabled: !!selectedTeamId
     });
     useEnsurePluginCatalogLoaded();
-    const [openModifierIds, setOpenModifierIds] = useState<Set<string>>(new Set());
     const [modifiersOpen, setModifiersOpen] = useState(true);
-    const [legacyExecStates, setLegacyExecStates] = useState<Map<string, ExecState>>(new Map());
-    const legacyActionRef = useRef<Map<string, () => void>>(new Map());
     const [pluginConfigs, setPluginConfigs] = useState<Record<string, Record<string, unknown>>>({});
     const [pluginExecutionClusters, setPluginExecutionClusters] = useState<Record<string, PluginExecutionClusterConfig>>({});
     const [pluginSelectedTimesteps, setPluginSelectedTimesteps] = useState<Record<string, number[] | undefined>>({});
@@ -143,20 +137,6 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
             return nextState;
         });
     }, [availableTimesteps]);
-
-    const updateLegacyExecState = useCallback((id: string, state: ExecState) => {
-        setLegacyExecStates((prev) => {
-            if (prev.get(id) === state) return prev;
-            const next = new Map(prev);
-            next.set(id, state);
-            return next;
-        });
-    }, []);
-
-    const legacyRef = useMemo<LegacyActionRef>(() => ({
-        actions: legacyActionRef,
-        notifyExecState: updateLegacyExecState
-    }), [updateLegacyExecState]);
     const { execStates, handleExecutePlugin } = usePluginExecution({
         trajectoryId,
         currentTimestep,
@@ -175,33 +155,9 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
 
     const allModifiers = useMemo<ModifierOption[]>(() => buildCanvasModifierOptions(modifiers), [modifiers]);
 
-    const toggleOpen = useCallback((id: string) => {
-        setOpenModifierIds((prev) => {
-            const next = new Set(prev);
-            if (next.has(id)) next.delete(id);
-            else next.add(id);
-            return next;
-        });
-    }, []);
-
-    const isModifierActive = useCallback((option: ModifierOption): boolean => {
-        if (option.isPlugin) {
-            const key = `${option.pluginId}:${option.pluginModifierId}`;
-            return pluginParam === key;
-        }
-        return activeModifiers.includes(option.modifierId);
-    }, [activeModifiers, pluginParam]);
-
-    const handleToggleLegacyModifier = useCallback((option: ModifierOption) => {
-        if (option.isPlugin) return;
-        toggleModifier(option.modifierId);
-    }, [toggleModifier]);
-
     const getExecState = useCallback((option: ModifierOption): ExecState => {
-        return legacyExecStates.get(option.modifierId)
-            ?? execStates.get(option.modifierId)
-            ?? ExecState.Idle;
-    }, [execStates, legacyExecStates]);
+        return execStates.get(option.modifierId) ?? ExecState.Idle;
+    }, [execStates]);
 
     const shouldShowAction = useCallback((option: ModifierOption): boolean => {
         if (option.isPlugin && !hasTeamClusterOptions) {
@@ -219,19 +175,13 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
     }, []);
 
     const handleAction = useCallback((option: ModifierOption) => {
-        if (option.isPlugin) {
-            handleExecutePlugin(option);
-        } else {
-            const action = legacyActionRef.current.get(option.modifierId);
-            if (action) {
-                action();
-            } else {
-                handleToggleLegacyModifier(option);
-            }
+        if (!option.isPlugin) {
+            return;
         }
-    }, [handleExecutePlugin, handleToggleLegacyModifier]);
+        handleExecutePlugin(option);
+    }, [handleExecutePlugin]);
 
-    const renderModifierConfig = useCallback((option: ModifierOption, _active: boolean) => {
+    const renderModifierConfig = useCallback((option: ModifierOption) => {
         let content: ReactNode = null;
         if(option.isPlugin && option.pluginModifierId){
             const args = getPluginArguments(option.pluginModifierId).filter((a) => a.value === undefined);
@@ -262,7 +212,6 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
                         trajectoryId={trajectoryId}
                         analysisId={analysisId}
                         currentTimestep={currentTimestep}
-                        legacyRef={legacyRef}
                     />
                 );
             }
@@ -282,7 +231,6 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
         trajectoryId,
         analysisId,
         currentTimestep,
-        legacyRef,
         pluginConfigs,
         handlePluginClusterChange,
         handlePluginConfigChange,
@@ -312,9 +260,6 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
                     <ModifiersSection
                         pluginLoading={pluginLoading}
                         modifiers={allModifiers}
-                        openModifierIds={openModifierIds}
-                        onToggleOpen={toggleOpen}
-                        isModifierActive={isModifierActive}
                         getExecState={getExecState}
                         showAction={shouldShowAction}
                         hasContent={modifierHasContent}
