@@ -1,13 +1,11 @@
 import { ColorGradient } from '../../../hooks/use-color-coding';
 import useColorCoding from '../../../hooks/use-color-coding';
 import GradientPreview from '../../atoms/GradientPreview';
-import { ExecState } from '../../../hooks/use-plugin-execution';
 
-import { memo, useEffect } from 'react';
+import { memo } from 'react';
+import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-
-import type { MutableRefObject } from 'react';
 
 interface SelectOption {
     value: string;
@@ -36,16 +34,10 @@ interface BooleanFieldConfig {
     onChange: (value: boolean) => void;
 };
 
-export interface LegacyActionRef {
-    actions: MutableRefObject<Map<string, () => void>>;
-    notifyExecState: (id: string, state: ExecState) => void;
-};
-
 interface ColorCodingProps {
     trajectoryId?: string;
     analysisId?: string;
     currentTimestep?: number;
-    legacyRef?: LegacyActionRef;
 };
 
 interface ColorCodingFormProps {
@@ -187,7 +179,7 @@ const ColorCodingForm = ({
     );
 };
 
-const ColorCoding = ({ trajectoryId, analysisId, currentTimestep, legacyRef }: ColorCodingProps) => {
+const ColorCoding = ({ trajectoryId, analysisId, currentTimestep }: ColorCodingProps) => {
     const {
         propertyValue,
         propertyOptions,
@@ -214,44 +206,40 @@ const ColorCoding = ({ trajectoryId, analysisId, currentTimestep, legacyRef }: C
         currentTimestep
     });
 
-    useEffect(() => {
-        if (!legacyRef) return;
-
-        let action = () => {};
-        if (canApply) {
-            action = applyColorCoding;
-        }
-
-        legacyRef.actions.current.set('color-coding', action);
-        return () => {
-            legacyRef.actions.current.delete('color-coding');
-        };
-    }, [legacyRef, applyColorCoding, canApply]);
-
-    useEffect(() => {
-        if (!legacyRef) return;
-        legacyRef.notifyExecState('color-coding', isApplying ? ExecState.Loading : ExecState.Idle);
-    }, [legacyRef, isApplying]);
-
     return (
-        <ColorCodingForm
-            propertyValue={propertyValue}
-            propertyOptions={propertyOptions}
-            onPropertyChange={handlePropertyChange}
-            gradient={gradient}
-            setGradient={setGradient}
-            gradientOptions={gradientOptions}
-            startValue={startValue}
-            startValueInput={startValueInput}
-            setStartValue={setStartValue}
-            endValue={endValue}
-            endValueInput={endValueInput}
-            setEndValue={setEndValue}
-            automaticRange={automaticRange}
-            setAutomaticRange={setAutomaticRange}
-            symmetricRange={symmetricRange}
-            setSymmetricRange={setSymmetricRange}
-        />
+        <Container className="d-flex column gap-05">
+            <ColorCodingForm
+                propertyValue={propertyValue}
+                propertyOptions={propertyOptions}
+                onPropertyChange={handlePropertyChange}
+                gradient={gradient}
+                setGradient={setGradient}
+                gradientOptions={gradientOptions}
+                startValue={startValue}
+                startValueInput={startValueInput}
+                setStartValue={setStartValue}
+                endValue={endValue}
+                endValueInput={endValueInput}
+                setEndValue={setEndValue}
+                automaticRange={automaticRange}
+                setAutomaticRange={setAutomaticRange}
+                symmetricRange={symmetricRange}
+                setSymmetricRange={setSymmetricRange}
+            />
+            <Button
+                isLoading={isApplying}
+                variant='solid'
+                intent='brand'
+                shape='rounded'
+                size='sm'
+                block
+                onClick={applyColorCoding}
+                disabled={!canApply}
+                className='font-size-05'
+            >
+                Apply Color Coding
+            </Button>
+        </Container>
     );
 };
 

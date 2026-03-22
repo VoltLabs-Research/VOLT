@@ -1,4 +1,4 @@
-import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
+import FloatingRootContext, { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 import Container from '@/shared/presentation/components/Container';
 import composeRefs from '@/shared/presentation/utilities/compose-refs';
 import './Popover.css';
@@ -59,6 +59,7 @@ const Popover: React.FC<PopoverProps> = ({
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [contextMenuPosition, setContextMenuPosition] = useState<ContextMenuPosition | null>(null);
+    const [floatingElement, setFloatingElement] = useState<HTMLElement | null>(null);
     const floatingRoot = useFloatingRoot();
     const onOpenChangeRef = React.useRef(onOpenChange);
 
@@ -136,6 +137,11 @@ const Popover: React.FC<PopoverProps> = ({
         handleOpenChange(false);
     }, [handleOpenChange]);
 
+    const handleFloatingRef = useCallback((node: HTMLElement | null) => {
+        refs.setFloating(node);
+        setFloatingElement(node);
+    }, [refs]);
+
     const handleContextMenu = useCallback((event: React.MouseEvent) => {
         if (triggerAction !== 'contextmenu') return;
         if (event.defaultPrevented) return;
@@ -184,7 +190,7 @@ const Popover: React.FC<PopoverProps> = ({
                 <FloatingPortal root={floatingRoot}>
                     <FloatingFocusManager context={context} modal={false}>
                         <Container
-                            ref={refs.setFloating}
+                            ref={handleFloatingRef}
                             id={id}
                             className={`popover ${noPadding ? 'popover--no-padding' : ''} radius-lg d-flex column glass-bg ${className} color-primary`}
                             style={floatingStyles}
@@ -195,7 +201,9 @@ const Popover: React.FC<PopoverProps> = ({
                             tabIndex={-1}
                             {...getFloatingProps()}
                         >
-                            {renderChildren()}
+                            <FloatingRootContext.Provider value={floatingElement ?? floatingRoot}>
+                                {renderChildren()}
+                            </FloatingRootContext.Provider>
                         </Container>
                     </FloatingFocusManager>
                 </FloatingPortal>

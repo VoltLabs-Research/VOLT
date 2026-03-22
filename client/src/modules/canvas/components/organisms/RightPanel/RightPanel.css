@@ -74,6 +74,46 @@
     padding: 8px 12px;
 }
 
+.canvas-plugin-popover-item {
+    min-height: 32px;
+    padding: 0 12px;
+}
+
+.canvas-plugin-popover-trigger {
+    flex: 1;
+    min-height: 32px;
+    padding: 0;
+    margin-right: 0.25rem;
+    justify-content: space-between;
+}
+
+.canvas-plugin-popover-trigger:hover .canvas-plugin-popover-indicator,
+.canvas-plugin-popover-trigger:focus-visible .canvas-plugin-popover-indicator {
+    color: var(--color-text-primary);
+}
+
+.canvas-plugin-popover-indicator {
+    flex-shrink: 0;
+}
+
+.context-menu-popover--plugin-config {
+    min-width: min(22rem, calc(100vw - 2rem));
+    max-width: min(24rem, calc(100vw - 2rem));
+}
+
+.canvas-plugin-popover-content {
+    min-width: min(21rem, calc(100vw - 3rem));
+}
+
+.canvas-plugin-popover-footer {
+    padding-top: 0.25rem;
+    border-top: 1px solid var(--color-border-soft);
+}
+
+.context-menu-popover--plugin-config .canvas-render-subsection-body {
+    padding: 0;
+}
+
 @media (max-width: 768px) {
     .canvas-right-dropdown-header {
         min-height: 34px;
@@ -85,6 +125,14 @@
     }
 
     .canvas-right-dropdown-header .collapsible-section-title-row {
+        min-height: 34px;
+    }
+
+    .canvas-plugin-popover-item {
+        min-height: 34px;
+    }
+
+    .canvas-plugin-popover-trigger {
         min-height: 34px;
     }
 }
