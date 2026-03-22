@@ -110,7 +110,7 @@ const handleBeforeMount: BeforeMount = (monaco) => {
 const getAssetKind = (asset: LatexAsset | null): AssetKind | null => {
     if (!asset) return null;
 
-    const pathname = asset.path ?? asset.originalName;
+    const pathname = asset.path;
     if (isWorkspacePdfFile(pathname, asset.mimetype)) return AssetKind.Pdf;
     if (isWorkspaceImageFile(pathname, asset.mimetype)) return AssetKind.Image;
     if (isWorkspaceTextLikeFile(pathname, asset.mimetype)) return AssetKind.Text;

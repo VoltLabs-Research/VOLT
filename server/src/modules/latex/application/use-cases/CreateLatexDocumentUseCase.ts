@@ -10,7 +10,9 @@ import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import type { ILatexFolderRepository } from '@modules/latex/domain/port/ILatexFolderRepository';
+import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
 
+const DEFAULT_ENTRYPOINT_NAME = 'main.tex';
 const DEFAULT_DOCUMENT_CONTENT = '';
 
 @injectable()
@@ -21,6 +23,9 @@ export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentI
 
         @inject(LATEX_TOKENS.LatexFolderRepository)
         private readonly latexFolderRepository: ILatexFolderRepository,
+
+        @inject(LATEX_TOKENS.LatexFileRepository)
+        private readonly latexFileRepository: ILatexFileRepository,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
@@ -36,8 +41,6 @@ export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentI
                     'Document title is required'
                 ));
             }
-
-            const initialContent = input.content ?? DEFAULT_DOCUMENT_CONTENT;
 
             if (input.folderId) {
                 const folder = await this.latexFolderRepository.findByTeamAndFolderId(
@@ -56,10 +59,21 @@ export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentI
             const document = await this.latexDocumentRepository.create({
                 team: input.teamId,
                 title,
-                content: initialContent,
                 createdBy: input.userId,
                 lastEditedBy: input.userId,
                 folder: input.folderId ?? null,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            });
+
+            await this.latexFileRepository.create({
+                document: document._id,
+                team: input.teamId,
+                name: DEFAULT_ENTRYPOINT_NAME,
+                path: '',
+                content: DEFAULT_DOCUMENT_CONTENT,
+                isEntrypoint: true,
+                createdBy: input.userId,
                 createdAt: new Date(),
                 updatedAt: new Date()
             });
@@ -74,7 +88,6 @@ export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentI
             return Result.ok({
                 _id: document._id,
                 title: document.props.title,
-                content: document.props.content,
                 folder: document.props.folder,
                 createdBy: document.props.createdBy,
                 lastEditedBy: document.props.lastEditedBy,

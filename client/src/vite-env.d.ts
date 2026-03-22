@@ -4,6 +4,7 @@ import type { VoltDesktopApi } from '@/shared/utils/desktop-contract';
 
 interface ImportMetaEnv {
     readonly VITE_API_URL: string;
+    readonly VITE_PROXY_API_URL?: string;
 };
 
 interface ImportMeta {

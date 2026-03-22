@@ -63,8 +63,6 @@ export type PrepareWorkDirResult =
 
 export const TEX_EXTENSION = '.tex';
 
-const MAIN_TEX_FALLBACK = 'main.tex';
-
 const buildCompilerConfigs = (entrypoint: string, options?: BuildCompilerOptions): CompilerConfig[] => {
     const haltFlag = options?.haltOnError ? ['-halt-on-error'] : [];
     return [
@@ -158,26 +156,23 @@ export const prepareWorkDir = async (
     await deps.tempFileService.ensureDir(workDir);
 
     const latexFiles = await deps.latexFileRepository.findAllByDocument(documentId);
-    let entrypointFilename = MAIN_TEX_FALLBACK;
-
     if (latexFiles.length === 0) {
-        const content = document.props.content ?? '';
-        await fs.writeFile(path.join(workDir, MAIN_TEX_FALLBACK), content, 'utf-8');
-    } else {
-        const entrypointFile = latexFiles.find((f) => f.props.isEntrypoint)
-            ?? latexFiles.find((f) => f.props.name.toLowerCase().endsWith(TEX_EXTENSION));
+        return { status: 'no-entrypoint' };
+    }
 
-        if (!entrypointFile) {
-            return { status: 'no-entrypoint' };
-        }
+    const entrypointFile = latexFiles.find((f) => f.props.isEntrypoint)
+        ?? latexFiles.find((f) => f.props.name.toLowerCase().endsWith(TEX_EXTENSION));
 
-        entrypointFilename = entrypointFile.fullPath;
+    if (!entrypointFile) {
+        return { status: 'no-entrypoint' };
+    }
 
-        for (const file of latexFiles) {
-            const destPath = path.join(workDir, file.fullPath);
-            await fs.mkdir(path.dirname(destPath), { recursive: true });
-            await fs.writeFile(destPath, file.props.content, 'utf-8');
-        }
+    const entrypointFilename = entrypointFile.fullPath;
+
+    for (const file of latexFiles) {
+        const destPath = path.join(workDir, file.fullPath);
+        await fs.mkdir(path.dirname(destPath), { recursive: true });
+        await fs.writeFile(destPath, file.props.content, 'utf-8');
     }
 
     const compiler = await resolveCompiler(entrypointFilename, { haltOnError });
@@ -192,9 +187,7 @@ export const prepareWorkDir = async (
                 SYS_BUCKETS.LATEX_ASSETS,
                 asset.props.storageKey
             );
-            const relPath = asset.props.path
-                ? sanitizeAssetPath(asset.props.path, asset.props.originalName)
-                : path.basename(asset.props.originalName);
+            const relPath = sanitizeAssetPath(asset.props.path, asset.props.originalName);
             const destPath = path.join(workDir, relPath);
             await fs.mkdir(path.dirname(destPath), { recursive: true });
             await pipeline(stream, createWriteStream(destPath));

@@ -1,5 +1,6 @@
 import Container from '@/shared/presentation/components/Container';
 import IconButton from '@/shared/presentation/components/IconButton';
+import { getAssetDisplayName } from '@/modules/latex/utilities/workspace';
 import { File, Image, Link, Trash2 } from 'lucide-react';
 import { useCallback } from 'react';
 import type { FileTreeNode as FileTreeNodeType } from '@/modules/latex/utilities/file-tree';
@@ -47,9 +48,9 @@ const AssetNode = ({ node, depth, onAssetDelete, onAssetInsertRef }: AssetNodePr
                 </span>
                 <span
                     className='latex-workspace__file-name text-truncate'
-                    title={asset.path ?? asset.originalName}
+                    title={asset.path}
                 >
-                    {asset.originalName}
+                    {getAssetDisplayName(asset)}
                 </span>
             </Container>
             <Container className='d-flex items-center gap-025 f-shrink-0'>

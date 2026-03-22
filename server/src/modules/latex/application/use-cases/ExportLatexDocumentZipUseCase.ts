@@ -21,9 +21,7 @@ import type { IStorageService } from '@shared/domain/port/IStorageService';
  * Exports a LaTeX document as a `.zip` archive.
  *
  * Includes all LatexFile records (respecting their `path` prefix) plus
- * all associated assets fetched from object storage. Falls back to
- * `document.content` as `main.tex` when no LatexFile records exist
- * (legacy compat).
+ * all associated assets fetched from object storage.
  */
 @injectable()
 export class ExportLatexDocumentZipUseCase implements IUseCase<ExportLatexDocumentInputDTO, ExportLatexDocumentOutputDTO, ApplicationError> {
@@ -62,17 +60,20 @@ export class ExportLatexDocumentZipUseCase implements IUseCase<ExportLatexDocume
 
             const safeName = sanitizeDownloadName(document.props.title, 'document');
 
+            if (latexFiles.length === 0) {
+                return Result.fail(new ApplicationError(
+                    ErrorCodes.LATEX_COMPILATION_FAILED,
+                    'This document has no LaTeX files. Create main.tex before exporting.',
+                    422
+                ));
+            }
+
             const output = createZipDownloadResponse({
                 filename: safeName,
                 cacheControl: 'no-cache',
                 appendEntries: async (archive) => {
-                    if (latexFiles.length === 0) {
-                        // Legacy fallback: document.content becomes main.tex in the archive.
-                        archive.append(document.props.content ?? '', { name: 'main.tex' });
-                    } else {
-                        for (const file of latexFiles) {
-                            archive.append(file.props.content, { name: file.fullPath });
-                        }
+                    for (const file of latexFiles) {
+                        archive.append(file.props.content, { name: file.fullPath });
                     }
 
                     for (const asset of assets) {
@@ -81,9 +82,7 @@ export class ExportLatexDocumentZipUseCase implements IUseCase<ExportLatexDocume
                                 SYS_BUCKETS.LATEX_ASSETS,
                                 asset.props.storageKey
                             );
-                            const entryName = asset.props.path
-                                ? sanitizeAssetPath(asset.props.path, asset.props.originalName)
-                                : `assets/${asset.props.originalName}`;
+                            const entryName = sanitizeAssetPath(asset.props.path, asset.props.originalName);
 
                             archive.append(stream, { name: entryName });
                         } catch {

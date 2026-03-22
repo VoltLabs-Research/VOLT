@@ -113,7 +113,6 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
         const document = await this.latexDocumentRepository.create({
             team: input.teamId,
             title,
-            content,
             folder: input.folderId ?? null,
             createdBy: input.userId,
             createdAt: new Date(),
@@ -135,7 +134,6 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
         return Result.ok({
             _id: document._id,
             title: document.props.title,
-            content: document.props.content,
             folder: document.props.folder,
             createdAt: document.props.createdAt,
             updatedAt: document.props.updatedAt
@@ -172,7 +170,6 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
         const document = await this.latexDocumentRepository.create({
             team: input.teamId,
             title,
-            content,
             folder: input.folderId ?? null,
             createdBy: input.userId,
             createdAt: new Date(),
@@ -239,7 +236,6 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
         return Result.ok({
             _id: document._id,
             title: document.props.title,
-            content: document.props.content,
             folder: document.props.folder,
             createdAt: document.props.createdAt,
             updatedAt: document.props.updatedAt
@@ -280,7 +276,6 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
         const document = await this.latexDocumentRepository.create({
             team: input.teamId,
             title,
-            content: mainTexContent,
             folder: input.folderId ?? null,
             createdBy: input.userId,
             createdAt: new Date(),
@@ -316,7 +311,6 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
         return Result.ok({
             _id: document._id,
             title: document.props.title,
-            content: document.props.content,
             folder: document.props.folder,
             createdAt: document.props.createdAt,
             updatedAt: document.props.updatedAt

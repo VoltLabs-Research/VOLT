@@ -79,7 +79,7 @@ export const isWorkspacePdfFile = (name: string, mimetype?: string): boolean => 
 };
 
 export const getAssetDisplayName = (asset: LatexAsset): string => {
-    return splitWorkspacePath(asset.path ?? asset.originalName).name || asset.originalName;
+    return splitWorkspacePath(asset.path).name || asset.originalName;
 };
 
 export const isFolderPlaceholderAsset = (asset: LatexAsset): boolean => {

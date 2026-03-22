@@ -47,7 +47,7 @@ const LatexFileSchema: Schema<LatexFileDocument> = new Schema({
     timestamps: true
 });
 
-/** Prevents duplicate filenames at the same path within a document (also guards lazy-migration race conditions). */
+/** Prevents duplicate filenames at the same path within a document. */
 LatexFileSchema.index({ document: 1, name: 1, path: 1 }, { unique: true });
 LatexFileSchema.index({ document: 1, isEntrypoint: 1 });
 LatexFileSchema.index({ document: 1, createdAt: 1 });
