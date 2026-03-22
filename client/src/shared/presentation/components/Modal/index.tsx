@@ -2,7 +2,7 @@ import CloseButton from '@/shared/presentation/components/CloseButton';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
-import FloatingRootContext from '@/shared/presentation/contexts/FloatingRootContext';
+import FloatingRootContext, { TopLayerRootContext } from '@/shared/presentation/contexts/FloatingRootContext';
 import './Modal.css';
 import React from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -204,35 +204,37 @@ const Modal = ({
                 aria-describedby={descriptionId}
                 tabIndex={-1}
             >
-                <FloatingRootContext.Provider value={dialogElement ?? undefined}>
-                    <Container className='d-flex column w-max'>
-                        {(title || description) && (
-                            <Container className='d-flex items-start content-between volt-modal-header'>
-                                <Container className='d-flex column gap-025'>
-                                    {title && <Title id={titleId} className='font-size-4 font-weight-6'>{title}</Title>}
-                                    {description && <Paragraph id={descriptionId} className='font-size-2 color-secondary'>{description}</Paragraph>}
+                <TopLayerRootContext.Provider value={dialogElement ?? undefined}>
+                    <FloatingRootContext.Provider value={dialogElement ?? undefined}>
+                        <Container className='d-flex column w-max'>
+                            {(title || description) && (
+                                <Container className='d-flex items-start content-between volt-modal-header'>
+                                    <Container className='d-flex column gap-025'>
+                                        {title && <Title id={titleId} className='font-size-4 font-weight-6'>{title}</Title>}
+                                        {description && <Paragraph id={descriptionId} className='font-size-2 color-secondary'>{description}</Paragraph>}
+                                    </Container>
+                                    {dismissible && (
+                                        <CloseButton
+                                            commandfor={id}
+                                            command='close'
+                                            aria-label='Close modal'
+                                        />
+                                    )}
                                 </Container>
-                                {dismissible && (
-                                    <CloseButton
-                                        commandfor={id}
-                                        command='close'
-                                        aria-label='Close modal'
-                                    />
-                                )}
-                            </Container>
-                        )}
+                            )}
 
-                        <Container className='volt-modal-body'>
-                            {children}
+                            <Container className='volt-modal-body'>
+                                {children}
+                            </Container>
+
+                            {footer && (
+                                <Container className='d-flex items-center content-end gap-05 volt-modal-footer'>
+                                    {footer}
+                                </Container>
+                            )}
                         </Container>
-
-                        {footer && (
-                            <Container className='d-flex items-center content-end gap-05 volt-modal-footer'>
-                                {footer}
-                            </Container>
-                        )}
-                    </Container>
-                </FloatingRootContext.Provider>
+                    </FloatingRootContext.Provider>
+                </TopLayerRootContext.Provider>
             </dialog>
         </>
     );
