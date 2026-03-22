@@ -17,6 +17,8 @@ interface ContextMenuPopoverProps {
     size?: 'sm' | 'md';
     triggerAction?: 'click' | 'contextmenu';
     shouldOpenOnContextMenu?: ContextMenuOpenPredicate;
+    ariaLabel?: string;
+    menuLabel?: string;
 };
 
 const ContextMenuPopover = ({
@@ -25,7 +27,9 @@ const ContextMenuPopover = ({
     options = [],
     size = 'md',
     triggerAction = 'contextmenu',
-    shouldOpenOnContextMenu
+    shouldOpenOnContextMenu,
+    ariaLabel = 'Context menu',
+    menuLabel = 'Context menu actions'
 }: ContextMenuPopoverProps) => {
     const [menuError, setMenuError] = useState<string | null>(null);
 
@@ -67,7 +71,7 @@ const ContextMenuPopover = ({
             className={`context-menu-popover context-menu-popover--${size}`}
             role='menu'
             triggerAriaHaspopup='menu'
-            ariaLabel='Context menu'
+            ariaLabel={ariaLabel}
             shouldOpenOnContextMenu={shouldOpenOnContextMenu}
             onOpenChange={(isOpen) => {
                 if (!isOpen) {
@@ -76,7 +80,7 @@ const ContextMenuPopover = ({
             }}
         >
             {(close) => (
-                <PopoverMenu label='Context menu actions' onClose={close}>
+                <PopoverMenu label={menuLabel} onClose={close}>
                     {menuError && (
                         <Paragraph className='context-menu-popover-error font-size-1 color-danger' role='status' aria-live='polite' aria-atomic='true'>
                             {menuError}

@@ -7,18 +7,20 @@ import useOrbitGroup from './groups/orbit';
 import usePerformanceGroup from './groups/performance';
 import usePointCloudGroup from './groups/point-clouds';
 import useRendererGroup from './groups/renderer';
+import CanvasRenderSubsectionContent from './CanvasRenderSubsectionContent';
 
 import { memo, useMemo, useState } from 'react';
-import CanvasSlider from '../../atoms/CanvasSlider';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
-import Container from '@/shared/presentation/components/Container';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 
 import type { RenderGroup } from './types';
 
 import './CanvasRenderSections.css';
 
-const CanvasRenderSections = () => {
+interface CanvasRenderSectionsProps {
+    excludeGroupIds?: string[];
+};
+
+const CanvasRenderSections = ({ excludeGroupIds = [] }: CanvasRenderSectionsProps) => {
     const [openGroupId, setOpenGroupId] = useState<string | null>(null);
     const [openSubsectionByGroup, setOpenSubsectionByGroup] = useState<Record<string, number[]>>({});
 
@@ -37,7 +39,13 @@ const CanvasRenderSections = () => {
         [lightsGroup, effectsGroup, performanceGroup, rendererGroup, pointCloudGroup, environmentGroup, cameraGroup, orbitGroup, gridGroup]
     );
 
-    const visibleGroups = useMemo(() => groups.filter((g) => g.visible !== false), [groups]);
+    const visibleGroups = useMemo(() => {
+        const hiddenGroupIds = new Set(excludeGroupIds);
+
+        return groups.filter((group) => {
+            return group.visible !== false && !hiddenGroupIds.has(group.id);
+        });
+    }, [excludeGroupIds, groups]);
 
     return (
         <>
@@ -68,7 +76,6 @@ const CanvasRenderSections = () => {
                         {visibleSubsections.map((sub, idx) => {
                             const isSubOpen = hasSubsections ? openIndices.includes(idx) : true;
                             const isSubDisabled = sub.disabled === true;
-                            const subDisabledReason = sub.disabledReason;
 
                             return (
                                 <CollapsibleSection
@@ -99,70 +106,7 @@ const CanvasRenderSections = () => {
                                     useDefaultHeaderStyles={false}
                                     useDefaultTitleStyles={false}
                                 >
-                                    {isSubDisabled && subDisabledReason && (
-                                        <Container className="canvas-render-disabled-reason font-size-05">
-                                            {subDisabledReason}
-                                        </Container>
-                                    )}
-                                    <Container className={isSubDisabled ? 'canvas-render-disabled-content' : undefined}>
-                                        {sub.sections.map((section) => {
-                                            const isSectionDisabled = isSubDisabled || section.disabled === true;
-                                            const sectionDisabledReason = !isSubDisabled ? section.disabledReason : undefined;
-
-                                            return (
-                                                <Container key={section.key} className={`canvas-form-section d-flex column gap-05${isSectionDisabled ? ' canvas-render-disabled' : ''}`}>
-                                                    {sectionDisabledReason && (
-                                                        <Container className="canvas-render-disabled-reason font-size-05">
-                                                            {sectionDisabledReason}
-                                                        </Container>
-                                                    )}
-                                                    {section.onToggle && (
-                                                        <Container className="canvas-form-section-header d-flex items-center content-between" role="group" aria-label={`${section.key} toggle`}>
-                                                            <span className="canvas-form-section-title font-weight-5 font-size-1">Enabled</span>
-                                                            <FormFieldRHF
-                                                                fieldValue={section.enabled}
-                                                                fieldKey={`${section.key}-enabled`}
-                                                                fieldType="checkbox"
-                                                                onFieldChange={(_, next) => section.onToggle?.(Boolean(next))}
-                                                                variant="inline"
-                                                            />
-                                                        </Container>
-                                                    )}
-                                                    <Container className={`d-flex column gap-05${isSectionDisabled ? ' canvas-render-disabled-content' : ''}`}>
-                                                        {section.rows.map((r) => {
-                                                            const value = 'get' in r ? r.get() : r.value;
-                                                            const onChange = 'set' in r ? r.set : r.onChange;
-                                                            return (
-                                                                <Container
-                                                                    key={`${section.key}-${r.label}`}
-                                                                    className={`canvas-form-row d-flex items-center content-between gap-05 ${r.className ?? ''}`}
-                                                                    role="group"
-                                                                    aria-label={r.label}
-                                                                >
-                                                                    <span className="canvas-form-label font-size-1">{r.label}</span>
-                                                                    <Container className="canvas-form-control d-flex items-center gap-02">
-                                                                        <CanvasSlider
-                                                                            ariaLabel={r.label}
-                                                                            min={r.min}
-                                                                            max={r.max}
-                                                                            step={r.step}
-                                                                            value={value}
-                                                                            onChange={onChange}
-                                                                            ariaValueText={String(r.format?.(value) ?? value)}
-                                                                        />
-                                                                        <span className="canvas-form-value font-size-1">
-                                                                            {r.format?.(value) ?? value}
-                                                                        </span>
-                                                                    </Container>
-                                                                </Container>
-                                                            );
-                                                        })}
-                                                        {section.extras}
-                                                    </Container>
-                                                </Container>
-                                            );
-                                        })}
-                                    </Container>
+                                    <CanvasRenderSubsectionContent subsection={sub} />
                                 </CollapsibleSection>
                             );
                         })}

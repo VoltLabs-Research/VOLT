@@ -21,6 +21,7 @@ interface PopoverMenuItemProps {
     ariaControls?: string;
     tabIndex?: number;
     onKeyDown?: React.KeyboardEventHandler<HTMLButtonElement>;
+    onBlur?: React.FocusEventHandler<HTMLButtonElement>;
     onMouseEnter?: React.MouseEventHandler<HTMLButtonElement>;
     onMouseLeave?: React.MouseEventHandler<HTMLButtonElement>;
 };
@@ -41,6 +42,7 @@ const PopoverMenuItem = forwardRef<HTMLButtonElement, PopoverMenuItemProps>(({
     ariaControls,
     tabIndex = -1,
     onKeyDown,
+    onBlur,
     onMouseEnter,
     onMouseLeave
 }, ref) => {
@@ -65,6 +67,7 @@ const PopoverMenuItem = forwardRef<HTMLButtonElement, PopoverMenuItemProps>(({
             aria-disabled={disabled || isLoading}
             tabIndex={tabIndex}
             onKeyDown={onKeyDown}
+            onBlur={onBlur}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
             data-popover-menu-item='true'
