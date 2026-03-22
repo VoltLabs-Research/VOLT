@@ -17,6 +17,11 @@ interface WebSocketMessageResult {
     isBinary: boolean;
 };
 
+interface WebSocketSessionAttachResult {
+    attached: true;
+    selectedProtocol?: string;
+};
+
 interface ReverseChannelWebSocketState {
     sessionId: string;
     transitionId: number;
@@ -63,7 +68,7 @@ export class WebSocketSessionManager {
         return Array.from(this.webSocketStates.keys());
     }
 
-    attachSession(payload: TeamClusterDaemonSessionAttachPayload): CommandResult {
+    async attachSession(payload: TeamClusterDaemonSessionAttachPayload): Promise<CommandResult> {
         if (!payload.targetUrl) {
             const message = 'targetUrl is required';
             this.options.coordinator.emitSessionEnd({
@@ -86,136 +91,176 @@ export class WebSocketSessionManager {
         }
 
         try {
-            const webSocket = new WebSocket(payload.targetUrl);
+            const webSocket = payload.protocols && payload.protocols.length > 0
+                ? new WebSocket(payload.targetUrl, payload.protocols)
+                : new WebSocket(payload.targetUrl);
             const pendingMessages: Array<Buffer | string> = [];
-            let openTimeout: ReturnType<typeof setTimeout> | null = setTimeout(() => {
-                this.options.coordinator.emitSessionEnd({
-                    type: 'session-end',
-                    sessionId: payload.sessionId,
-                    error: 'Reverse channel websocket attach timed out'
-                });
-                this.cleanupSession(payload.sessionId);
-            }, SESSION_ATTACH_TIMEOUT_MS);
 
-            if (openTimeout.unref) {
-                openTimeout.unref();
-            }
+            return await new Promise<CommandResult>((resolve) => {
+                let openTimeout: ReturnType<typeof setTimeout> | null = null;
+                let attachSettled = false;
 
-            this.options.coordinator.cleanupInteractiveSession(payload.sessionId);
-
-            const flushPendingMessages = (): void => {
-                const webSocketState = this.webSocketStates.get(payload.sessionId);
-                if (!webSocketState) {
-                    return;
-                }
-
-                while (webSocketState.pendingMessages.length > 0 && webSocket.readyState === WebSocket.OPEN) {
-                    const nextMessage = webSocketState.pendingMessages.shift();
-
-                    if (typeof nextMessage === 'undefined') {
+                const resolveAttachFailure = (status: number, message: string): void => {
+                    if (attachSettled) {
                         return;
                     }
 
-                    const messageBytes = this.getWebSocketMessageSize(nextMessage);
-                    const canSendMessage = this.ensureWebSocketWithinBufferCap(
-                        payload.sessionId,
-                        webSocket,
-                        messageBytes
-                    );
+                    attachSettled = true;
+                    resolve(this.createSessionAttachFailureResult(status, message));
+                };
 
-                    if (!canSendMessage) {
+                const resolveAttachSuccess = (): void => {
+                    if (attachSettled) {
                         return;
                     }
 
-                    webSocketState.pendingMessageBytes -= messageBytes;
-                    webSocket.send(nextMessage);
-                }
-            };
-            const onOpen = () => {
-                const webSocketState = this.webSocketStates.get(payload.sessionId);
-                if (webSocketState) {
-                    webSocketState.isOpen = true;
-                    webSocketState.openTimeout = null;
-                }
+                    attachSettled = true;
+                    resolve(this.createSessionAttachSuccessResult(webSocket.protocol || undefined));
+                };
 
-                if (openTimeout) {
-                    clearTimeout(openTimeout);
-                    openTimeout = null;
-                }
-                this.options.coordinator.endSessionTransition(sessionTransition);
-                this.options.coordinator.touchSession(payload.sessionId);
-                flushPendingMessages();
-            };
-            const onMessage = (event: MessageEvent) => {
-                this.handleWebSocketMessage(payload.sessionId, event).catch((error: unknown) => {
+                openTimeout = setTimeout(() => {
                     this.options.coordinator.emitSessionEnd({
                         type: 'session-end',
                         sessionId: payload.sessionId,
-                        error: error instanceof Error ? error.message : 'Failed to proxy websocket message'
+                        error: 'Reverse channel websocket attach timed out'
                     });
                     this.cleanupSession(payload.sessionId);
-                });
-            };
-            const onError = () => {
-                const webSocketState = this.webSocketStates.get(payload.sessionId);
-                if (webSocketState) {
-                    webSocketState.openTimeout = null;
+                    resolveAttachFailure(504, 'Reverse channel websocket attach timed out');
+                }, SESSION_ATTACH_TIMEOUT_MS);
+
+                if (openTimeout.unref) {
+                    openTimeout.unref();
                 }
 
-                if (openTimeout) {
-                    clearTimeout(openTimeout);
-                    openTimeout = null;
-                }
-                this.options.coordinator.endSessionTransition(sessionTransition);
-                this.options.coordinator.emitSessionEnd({
-                    type: 'session-end',
+                this.options.coordinator.cleanupInteractiveSession(payload.sessionId);
+
+                const flushPendingMessages = (): void => {
+                    const webSocketState = this.webSocketStates.get(payload.sessionId);
+                    if (!webSocketState) {
+                        return;
+                    }
+
+                    while (webSocketState.pendingMessages.length > 0 && webSocket.readyState === WebSocket.OPEN) {
+                        const nextMessage = webSocketState.pendingMessages.shift();
+
+                        if (typeof nextMessage === 'undefined') {
+                            return;
+                        }
+
+                        const messageBytes = this.getWebSocketMessageSize(nextMessage);
+                        const canSendMessage = this.ensureWebSocketWithinBufferCap(
+                            payload.sessionId,
+                            webSocket,
+                            messageBytes
+                        );
+
+                        if (!canSendMessage) {
+                            return;
+                        }
+
+                        webSocketState.pendingMessageBytes -= messageBytes;
+                        webSocket.send(nextMessage);
+                    }
+                };
+
+                const onOpen = () => {
+                    const webSocketState = this.webSocketStates.get(payload.sessionId);
+                    if (webSocketState) {
+                        webSocketState.isOpen = true;
+                        webSocketState.openTimeout = null;
+                    }
+
+                    if (openTimeout) {
+                        clearTimeout(openTimeout);
+                        openTimeout = null;
+                    }
+                    this.options.coordinator.endSessionTransition(sessionTransition);
+                    this.options.coordinator.touchSession(payload.sessionId);
+                    flushPendingMessages();
+                    resolveAttachSuccess();
+                };
+
+                const onMessage = (event: MessageEvent) => {
+                    this.handleWebSocketMessage(payload.sessionId, event).catch((error: unknown) => {
+                        this.options.coordinator.emitSessionEnd({
+                            type: 'session-end',
+                            sessionId: payload.sessionId,
+                            error: error instanceof Error ? error.message : 'Failed to proxy websocket message'
+                        });
+                        this.cleanupSession(payload.sessionId);
+                    });
+                };
+
+                const onError = () => {
+                    const webSocketState = this.webSocketStates.get(payload.sessionId);
+                    const isOpen = webSocketState?.isOpen === true;
+                    if (webSocketState) {
+                        webSocketState.openTimeout = null;
+                    }
+
+                    if (openTimeout) {
+                        clearTimeout(openTimeout);
+                        openTimeout = null;
+                    }
+                    this.options.coordinator.endSessionTransition(sessionTransition);
+                    this.options.coordinator.emitSessionEnd({
+                        type: 'session-end',
+                        sessionId: payload.sessionId,
+                        error: 'Reverse channel websocket failed'
+                    });
+                    this.cleanupSession(payload.sessionId);
+
+                    if (!isOpen) {
+                        resolveAttachFailure(502, 'Reverse channel websocket failed');
+                    }
+                };
+
+                const onClose = (event: CloseEvent) => {
+                    const webSocketState = this.webSocketStates.get(payload.sessionId);
+                    const isOpen = webSocketState?.isOpen === true;
+                    if (webSocketState) {
+                        webSocketState.openTimeout = null;
+                    }
+
+                    if (openTimeout) {
+                        clearTimeout(openTimeout);
+                        openTimeout = null;
+                    }
+                    this.options.coordinator.endSessionTransition(sessionTransition);
+                    this.options.coordinator.emitSessionEnd({
+                        type: 'session-end',
+                        sessionId: payload.sessionId,
+                        code: event.code,
+                        message: event.reason || undefined
+                    });
+                    this.cleanupSession(payload.sessionId);
+
+                    if (!isOpen) {
+                        resolveAttachFailure(502, event.reason || 'Reverse channel websocket closed before opening');
+                    }
+                };
+
+                webSocket.binaryType = 'arraybuffer';
+                webSocket.addEventListener('open', onOpen);
+                webSocket.addEventListener('message', onMessage);
+                webSocket.addEventListener('error', onError);
+                webSocket.addEventListener('close', onClose);
+
+                this.webSocketStates.set(payload.sessionId, {
                     sessionId: payload.sessionId,
-                    error: 'Reverse channel websocket failed'
+                    transitionId: sessionTransition.transitionId,
+                    socket: webSocket,
+                    isOpen: false,
+                    openTimeout,
+                    pendingMessages,
+                    pendingMessageBytes: 0,
+                    onOpen,
+                    onMessage,
+                    onError,
+                    onClose
                 });
-                this.cleanupSession(payload.sessionId);
-            };
-            const onClose = (event: CloseEvent) => {
-                const webSocketState = this.webSocketStates.get(payload.sessionId);
-                if (webSocketState) {
-                    webSocketState.openTimeout = null;
-                }
-
-                if (openTimeout) {
-                    clearTimeout(openTimeout);
-                    openTimeout = null;
-                }
-                this.options.coordinator.endSessionTransition(sessionTransition);
-                this.options.coordinator.emitSessionEnd({
-                    type: 'session-end',
-                    sessionId: payload.sessionId,
-                    code: event.code,
-                    message: event.reason || undefined
-                });
-                this.cleanupSession(payload.sessionId);
-            };
-
-            webSocket.binaryType = 'arraybuffer';
-            webSocket.addEventListener('open', onOpen);
-            webSocket.addEventListener('message', onMessage);
-            webSocket.addEventListener('error', onError);
-            webSocket.addEventListener('close', onClose);
-
-            this.webSocketStates.set(payload.sessionId, {
-                sessionId: payload.sessionId,
-                transitionId: sessionTransition.transitionId,
-                socket: webSocket,
-                isOpen: false,
-                openTimeout,
-                pendingMessages,
-                pendingMessageBytes: 0,
-                onOpen,
-                onMessage,
-                onError,
-                onClose
+                this.options.coordinator.touchSession(payload.sessionId);
             });
-            this.options.coordinator.touchSession(payload.sessionId);
-
-            return this.createSessionAttachSuccessResult();
         } catch (error: unknown) {
             this.options.coordinator.endSessionTransition(sessionTransition);
             const message = error instanceof Error ? error.message : 'Failed to attach websocket';
@@ -310,8 +355,13 @@ export class WebSocketSessionManager {
         this.options.coordinator.clearSessionActivityIfUntracked(sessionId);
     }
 
-    private createSessionAttachSuccessResult(): CommandResult {
-        return { status: 200, data: { status: 'success', data: { attached: true } } };
+    private createSessionAttachSuccessResult(selectedProtocol?: string): CommandResult {
+        const data: WebSocketSessionAttachResult = {
+            attached: true,
+            ...(selectedProtocol ? { selectedProtocol } : {})
+        };
+
+        return { status: 200, data: { status: 'success', data } };
     }
 
     private createSessionAttachFailureResult(status: number, message: string): CommandResult {

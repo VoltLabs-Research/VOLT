@@ -356,7 +356,7 @@ export class ReverseChannelSocketBridge {
         return this.terminalSessionManager.attachSession(payload);
     }
 
-    private attachWebSocket(payload: TeamClusterDaemonSessionAttachPayload): CommandResult {
+    private async attachWebSocket(payload: TeamClusterDaemonSessionAttachPayload): Promise<CommandResult> {
         return this.webSocketSessionManager.attachSession(payload);
     }
 

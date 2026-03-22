@@ -9,6 +9,7 @@ interface UnsupportedSessionAttachPayload {
 interface WebSocketSessionAttachPayload extends TeamClusterDaemonSessionAttachPayload {
     kind: typeof REVERSE_CHANNEL.SessionKind.WebSocket;
     targetUrl: string;
+    protocols?: string[];
 };
 
 interface TerminalSessionAttachPayload extends TeamClusterDaemonSessionAttachPayload {
@@ -51,6 +52,27 @@ const isValidWebSocketTargetUrl = (targetUrl: string): boolean => {
     }
 };
 
+const readRequestedProtocols = (value: unknown): string[] | undefined | null => {
+    if (typeof value === 'undefined') {
+        return undefined;
+    }
+
+    if (!Array.isArray(value)) {
+        return null;
+    }
+
+    const protocols = value
+        .filter((entry): entry is string => typeof entry === 'string')
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0);
+
+    if (protocols.length !== value.length) {
+        return null;
+    }
+
+    return protocols.length > 0 ? protocols : undefined;
+};
+
 export const readSessionAttachPayload = (
     payload: Record<string, unknown> | undefined
 ): ParsedSessionAttachPayload | null => {
@@ -73,10 +95,16 @@ export const readSessionAttachPayload = (
             return null;
         }
 
+        const protocols = readRequestedProtocols(payload.protocols);
+        if (protocols === null) {
+            return null;
+        }
+
         return {
             sessionId,
             kind: payload.kind,
-            targetUrl
+            targetUrl,
+            ...(protocols ? { protocols } : {})
         };
     }
 
