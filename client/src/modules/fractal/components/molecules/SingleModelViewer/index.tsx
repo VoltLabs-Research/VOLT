@@ -206,7 +206,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         >
             {/* Imperative model container — the loaded 3D model is attached via
                 scene.add() in useGlbScene, never through React reconciliation. */}
-            <group ref={modelContainerRef} />
+            <group ref={modelContainerRef} userData={{ isScreenshotCaptureTarget: true }} />
         </SimulationCellBox>
     );
 };
