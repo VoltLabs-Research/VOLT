@@ -3,11 +3,8 @@
 }
 
 .canvas-right-dropdown-header {
-    min-height: 32px;
+    height: 39px;
     padding: 0 12px;
-}
-
-.canvas-right-dropdown-body {
 }
 
 .canvas-right-dropdown-body .canvas-tree-container {
