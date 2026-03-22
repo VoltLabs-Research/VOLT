@@ -5,13 +5,12 @@ import usePluginExecution from '../../../hooks/use-plugin-execution';
 import { ExecState } from '../../../hooks/use-plugin-execution';
 import ModifierConfig from '../../molecules/ModifierConfig';
 import ModifiersSection from '../../molecules/ModifiersSection';
-import CanvasRenderSections from '../CanvasRenderSections';
 
 import PluginExecutionConfigFields from '@/modules/plugin/components/plugin/molecules/PluginExecutionConfigFields';
 import { useExecutePluginMutation, usePluginTeamClustersQuery } from '@/modules/plugin/hooks/plugin/queries';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { Wrench, Monitor } from 'lucide-react';
+import { Wrench } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
@@ -59,7 +58,6 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
     useEnsurePluginCatalogLoaded();
     const [openModifierIds, setOpenModifierIds] = useState<Set<string>>(new Set());
     const [modifiersOpen, setModifiersOpen] = useState(true);
-    const [renderOpen, setRenderOpen] = useState(false);
     const [legacyExecStates, setLegacyExecStates] = useState<Map<string, ExecState>>(new Map());
     const legacyActionRef = useRef<Map<string, () => void>>(new Map());
     const [pluginConfigs, setPluginConfigs] = useState<Record<string, Record<string, unknown>>>({});
@@ -296,7 +294,7 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
         <Container className="d-flex h-max overflow-hidden">
             <Container className="w-max h-max overflow-auto">
                 <CollapsibleSection
-                    title="Modifiers"
+                    title="Plugins"
                     icon={<Wrench size={13} />}
                     expanded={modifiersOpen}
                     onExpandedChange={setModifiersOpen}
@@ -323,25 +321,6 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
                         onAction={handleAction}
                         renderModifierConfig={renderModifierConfig}
                     />
-                </CollapsibleSection>
-
-                <CollapsibleSection
-                    title="Render"
-                    icon={<Monitor size={13} />}
-                    expanded={renderOpen}
-                    onExpandedChange={setRenderOpen}
-                    className="canvas-right-dropdown"
-                    headerClassName="canvas-right-dropdown-header d-flex items-center gap-05"
-                    titleClassName="canvas-right-dropdown-title font-size-05 color-muted"
-                    iconClassName="canvas-right-dropdown-icon"
-                    bodyClassName="canvas-right-dropdown-body"
-                    contentClassName="d-flex column"
-                    noSpacing
-                    arrowSize={13}
-                    useDefaultHeaderStyles={false}
-                    useDefaultTitleStyles={false}
-                >
-                    <CanvasRenderSections excludeGroupIds={['camera']} />
                 </CollapsibleSection>
             </Container>
         </Container>

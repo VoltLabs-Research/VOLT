@@ -85,10 +85,6 @@
     overflow: visible;
 }
 
-.collapsible-section-title {
-    line-height: 1.2;
-}
-
 .collapsible-section-title-row {
     justify-content: space-between;
     min-height: 2.75rem;

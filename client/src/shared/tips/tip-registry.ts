@@ -278,7 +278,7 @@ export const CONTEXTUAL_TIPS = {
         surface: 'feature',
         dismissMode: 'auto',
         title: 'Fine-tune the 3D rendering',
-        description: 'Expand Render sections to adjust lights, effects, camera, point clouds, and environment settings.',
+        description: 'Use the Render and Camera menus in the viewport header to adjust lights, effects, point clouds, environment, and camera settings.',
         delay: 350,
         duration: 6500,
         position: 'top-center'

@@ -1,18 +1,8 @@
-import useCameraGroup from './groups/camera';
-import useEffectsGroup from './groups/effects';
-import useEnvironmentGroup from './groups/environment';
-import useGridGroup from './groups/grid';
-import useLightsGroup from './groups/lights';
-import useOrbitGroup from './groups/orbit';
-import usePerformanceGroup from './groups/performance';
-import usePointCloudGroup from './groups/point-clouds';
-import useRendererGroup from './groups/renderer';
 import CanvasRenderSubsectionContent from './CanvasRenderSubsectionContent';
+import useCanvasRenderGroups from './useCanvasRenderGroups';
 
 import { memo, useMemo, useState } from 'react';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
-
-import type { RenderGroup } from './types';
 
 import './CanvasRenderSections.css';
 
@@ -23,21 +13,7 @@ interface CanvasRenderSectionsProps {
 const CanvasRenderSections = ({ excludeGroupIds = [] }: CanvasRenderSectionsProps) => {
     const [openGroupId, setOpenGroupId] = useState<string | null>(null);
     const [openSubsectionByGroup, setOpenSubsectionByGroup] = useState<Record<string, number[]>>({});
-
-    const lightsGroup = useLightsGroup();
-    const effectsGroup = useEffectsGroup();
-    const performanceGroup = usePerformanceGroup();
-    const environmentGroup = useEnvironmentGroup();
-    const cameraGroup = useCameraGroup();
-    const orbitGroup = useOrbitGroup();
-    const rendererGroup = useRendererGroup();
-    const pointCloudGroup = usePointCloudGroup();
-    const gridGroup = useGridGroup();
-
-    const groups = useMemo<RenderGroup[]>(
-        () => [lightsGroup, effectsGroup, performanceGroup, rendererGroup, pointCloudGroup, environmentGroup, cameraGroup, orbitGroup, gridGroup],
-        [lightsGroup, effectsGroup, performanceGroup, rendererGroup, pointCloudGroup, environmentGroup, cameraGroup, orbitGroup, gridGroup]
-    );
+    const groups = useCanvasRenderGroups();
 
     const visibleGroups = useMemo(() => {
         const hiddenGroupIds = new Set(excludeGroupIds);
