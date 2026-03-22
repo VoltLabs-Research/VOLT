@@ -19,9 +19,6 @@
 }
 
 .context-menu-submenu-panel {
-    position: absolute;
-    left: 100%;
-    top: 0;
     min-width: 180px;
     max-height: min(22rem, calc(100dvh - 2rem));
     overflow-y: auto;
@@ -31,22 +28,7 @@
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-elevated);
-    z-index: 1;
-}
-
-.context-menu-submenu-wrapper::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 100%;
-    width: 0.5rem;
-    height: 100%;
-    pointer-events: auto;
-    display: none;
-}
-
-.context-menu-submenu-wrapper:hover::after {
-    display: block;
+    z-index: 2;
 }
 
 .context-menu-transparency {

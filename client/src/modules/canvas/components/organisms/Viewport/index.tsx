@@ -1,4 +1,5 @@
 import { setSceneInteracting } from '../../../hooks/use-scene-interaction';
+import CameraMenuPopover from '../../molecules/CameraMenuPopover';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
 import FractalScene from '@/modules/fractal/components/organisms/FractalScene';
@@ -14,15 +15,13 @@ import {
 } from '@/shared/domain/rendering/performance';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
-import IconButton from '@/shared/presentation/components/IconButton';
 import Loader from '@/shared/presentation/components/Loader';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import useShortcutDiscovery from '@/shared/tips/use-shortcut-discovery';
-import { Box, Camera, Gauge } from 'lucide-react';
+import { Camera, Gauge } from 'lucide-react';
 import { useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
@@ -69,7 +68,6 @@ const Viewport = ({
     showSceneActions = true,
     headerActionsBeforePerformance
 }: ViewportProps) => {
-    const navigate = useNavigate();
     const teamId = useSelectedTeamId() ?? undefined;
     const captureRequested = useScreenshotStore((s) => s.captureRequested);
     const { recordSlowAction: recordScreenshotShortcutTip } = useShortcutDiscovery('canvas-screenshot-shortcut');
@@ -126,17 +124,6 @@ const Viewport = ({
     return (
         <Container className="canvas-viewport d-flex column flex-1 overflow-hidden p-relative min-h-0">
             <Container className="canvas-viewport-header d-flex items-center f-shrink-0">
-                <Tooltip content="Back to Dashboard">
-                    <IconButton
-                        variant="ghost"
-                        size="sm"
-                        aria-label="Back to Dashboard"
-                        onClick={() => navigate('/dashboard')}
-                    >
-                        <Box size={14} />
-                    </IconButton>
-                </Tooltip>
-
                 {trajectory && (
                     <>
                         <Container className="canvas-viewport-divider d-block f-shrink-0" />
@@ -154,6 +141,8 @@ const Viewport = ({
 
                 {showSceneActions && (
                     <>
+                        <CameraMenuPopover />
+
                         <Tooltip content="Screenshot (Ctrl+S)">
                             <Button
                                 variant="ghost"

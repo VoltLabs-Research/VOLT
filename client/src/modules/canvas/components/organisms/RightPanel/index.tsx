@@ -341,7 +341,7 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
                     useDefaultHeaderStyles={false}
                     useDefaultTitleStyles={false}
                 >
-                    <CanvasRenderSections />
+                    <CanvasRenderSections excludeGroupIds={['camera']} />
                 </CollapsibleSection>
             </Container>
         </Container>
