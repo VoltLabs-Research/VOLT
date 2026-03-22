@@ -22,6 +22,7 @@ import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
 import {
     bridgeWebSockets,
+    normalizeWebSocketPayload,
     writeUpgradeError
 } from '@shared/infrastructure/utilities/proxy-relay';
 import { buildWebSocketProtocolList } from '@shared/infrastructure/utilities/websocket-protocols';
@@ -30,6 +31,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import http from 'node:http';
 import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
+import type { TeamClusterReverseWebSocketStream } from '@modules/team-cluster/utilities/teamClusterReverseWebSocket';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { TeamClusterDaemonNotebookRuntime } from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { Request, Response } from 'express';
@@ -270,132 +272,257 @@ export class ScriptingJupyterProxyService {
             return;
         }
 
+        const requestUrl = request.url || '';
+
         try {
             const context = await this.authorizeUpgradeRequest(request);
             const runtime = await this.requireNotebookRuntime(context);
-            const target = this.extractProxyTarget(request.url || '');
-            const tunnel = await this.openNotebookTunnel(context.teamClusterId, runtime, TeamClusterServiceExposureAccessMode.WebSocket);
-            const upstreamWebSocketUrl = `ws://${runtime.tunnelTargetHost}:${runtime.tunnelTargetPort}${target.proxiedPath}${target.rawQuery}`;
             const requestedProtocols = buildWebSocketProtocolList(request.headers['sec-websocket-protocol']);
-            const upstreamWebSocketOptions = {
-                createConnection: () => tunnel,
-                headers: this.readUpgradeRequestHeaders(request, runtime)
-            };
-            const upstreamWebSocket = requestedProtocols
-                ? new WebSocket(upstreamWebSocketUrl, requestedProtocols, upstreamWebSocketOptions)
-                : new WebSocket(upstreamWebSocketUrl, upstreamWebSocketOptions);
+            const target = this.extractProxyTarget(requestUrl);
+            const upstreamWebSocketUrl = this.buildUpstreamWebSocketUrl(runtime, target);
+            const logContext = this.buildUpgradeLogContext(requestUrl, context, runtime, upstreamWebSocketUrl, requestedProtocols);
 
-            let upgradeSettled = false;
+            logger.info(logContext, 'Opening proxied Jupyter websocket');
 
-            const cleanupPendingUpgrade = (): void => {
-                upstreamWebSocket.off('open', onUpstreamReady);
-                upstreamWebSocket.off('close', onUpstreamCloseBeforeReady);
-                upstreamWebSocket.off('error', onUpstreamErrorBeforeReady);
-                upstreamWebSocket.off('unexpected-response', onUpstreamUnexpectedResponse);
-                socket.off('close', onClientSocketCloseBeforeReady);
-            };
-
-            const finalizePendingUpgrade = (): boolean => {
-                if (upgradeSettled) {
-                    return false;
-                }
-
-                upgradeSettled = true;
-                cleanupPendingUpgrade();
-                return true;
-            };
-
-            const destroyUpstreamTunnel = (): void => {
-                if (!tunnel.destroyed) {
-                    tunnel.destroy();
-                }
-            };
-
-            const failPendingUpgrade = (statusCode: number, message: string): void => {
-                if (!finalizePendingUpgrade()) {
-                    return;
-                }
-
-                if (upstreamWebSocket.readyState === WebSocket.CONNECTING || upstreamWebSocket.readyState === WebSocket.OPEN) {
-                    upstreamWebSocket.terminate();
-                }
-
-                destroyUpstreamTunnel();
-                writeUpgradeError(socket, statusCode, message);
-            };
-
-            const onUpstreamErrorBeforeReady = (error: Error): void => {
-                failPendingUpgrade(502, error.message || 'Upstream WebSocket connection failed');
-            };
-
-            const onUpstreamCloseBeforeReady = (): void => {
-                failPendingUpgrade(502, 'Upstream WebSocket connection failed');
-            };
-
-            const onUpstreamUnexpectedResponse = (
-                _upstreamRequest: ClientRequest,
-                upstreamResponse: IncomingMessage
-            ): void => {
-                upstreamResponse.resume();
-                failPendingUpgrade(
-                    upstreamResponse.statusCode || 502,
-                    upstreamResponse.statusMessage || 'Upstream WebSocket connection failed'
+            if (!requestedProtocols || requestedProtocols.length === 0) {
+                await this.handleReverseChannelWebSocketUpgrade(
+                    request,
+                    socket,
+                    head,
+                    context,
+                    upstreamWebSocketUrl,
+                    logContext
                 );
-            };
-
-            const onClientSocketCloseBeforeReady = (): void => {
-                if (!finalizePendingUpgrade()) {
-                    return;
-                }
-
-                if (upstreamWebSocket.readyState === WebSocket.CONNECTING || upstreamWebSocket.readyState === WebSocket.OPEN) {
-                    upstreamWebSocket.terminate();
-                }
-
-                destroyUpstreamTunnel();
-            };
-
-            // Wait for the upstream WebSocket to open before completing the client
-            // handshake. This ensures two things:
-            // 1. The negotiated subprotocol from upstream (e.g. v1.kernel.websocket.jupyter.org)
-            //    is echoed back to the client, so JupyterLab knows to use the v1 binary
-            //    deserializer instead of the default JSON one.
-            // 2. The upstream connection is ready to receive messages immediately after
-            //    bindWebSocketProxy is called, preventing a race condition where client
-            //    messages arrive before the upstream handshake completes.
-            const onUpstreamReady = (): void => {
-                if (!finalizePendingUpgrade()) {
-                    return;
-                }
-
-                const negotiatedProtocol = upstreamWebSocket.protocol;
-                const webSocketServer = new WebSocketServer({
-                    noServer: true,
-                    handleProtocols: negotiatedProtocol
-                        ? () => negotiatedProtocol
-                        : undefined
-                });
-                webSocketServer.handleUpgrade(request, socket, head, (webSocket) => {
-                    this.bindWebSocketProxy(webSocket, upstreamWebSocket);
-                });
-            };
-
-            if (upstreamWebSocket.readyState === WebSocket.OPEN) {
-                onUpstreamReady();
-            } else {
-                upstreamWebSocket.once('open', onUpstreamReady);
-                upstreamWebSocket.once('close', onUpstreamCloseBeforeReady);
-                upstreamWebSocket.once('error', onUpstreamErrorBeforeReady);
-                upstreamWebSocket.once('unexpected-response', onUpstreamUnexpectedResponse);
-                socket.once('close', onClientSocketCloseBeforeReady);
+                return;
             }
+
+            await this.handleTunnelWebSocketUpgrade(
+                request,
+                socket,
+                head,
+                context,
+                runtime,
+                upstreamWebSocketUrl,
+                requestedProtocols,
+                logContext
+            );
         } catch (error: unknown) {
             const mappedError = this.mapNotebookProxyError(error);
             const statusCode = mappedError instanceof ApplicationError ? mappedError.statusCode : 500;
             const message = mappedError instanceof Error ? mappedError.message : 'WebSocket upgrade failed';
+
+            logger.warn({
+                requestUrl,
+                statusCode,
+                error: mappedError instanceof Error ? mappedError.message : String(mappedError)
+            }, 'Rejected Jupyter websocket upgrade');
+
             writeUpgradeError(socket, statusCode, message);
         }
     };
+
+    private async handleReverseChannelWebSocketUpgrade(
+        request: IncomingMessage,
+        socket: Duplex,
+        head: Buffer,
+        context: AuthorizedProxyContext,
+        upstreamWebSocketUrl: string,
+        logContext: Record<string, unknown>
+    ): Promise<void> {
+        const upstreamWebSocket = await this.teamClusterDaemonClient.attachWebSocket(context.teamClusterId, upstreamWebSocketUrl);
+        let upgradeSettled = false;
+
+        const cleanupPendingUpgrade = (): void => {
+            upstreamWebSocket.removeAllListeners('error');
+            upstreamWebSocket.removeAllListeners('end');
+            socket.off('close', onClientSocketCloseBeforeReady);
+        };
+
+        const finalizePendingUpgrade = (): boolean => {
+            if (upgradeSettled) {
+                return false;
+            }
+
+            upgradeSettled = true;
+            cleanupPendingUpgrade();
+            return true;
+        };
+
+        const failPendingUpgrade = (statusCode: number, message: string, error?: Error): void => {
+            if (!finalizePendingUpgrade()) {
+                return;
+            }
+
+            logger.warn({
+                ...logContext,
+                statusCode,
+                upstreamError: error?.message,
+                upstreamMode: 'reverse-websocket'
+            }, 'Jupyter websocket upgrade failed before client handshake');
+
+            upstreamWebSocket.destroy();
+            writeUpgradeError(socket, statusCode, message);
+        };
+
+        const onClientSocketCloseBeforeReady = (): void => {
+            if (!finalizePendingUpgrade()) {
+                return;
+            }
+
+            upstreamWebSocket.destroy();
+        };
+
+        upstreamWebSocket.on('error', (error) => {
+            failPendingUpgrade(502, error.message || 'Upstream WebSocket connection failed', error);
+        });
+        upstreamWebSocket.on('end', (payload) => {
+            failPendingUpgrade(502, payload.message || 'Upstream WebSocket connection failed');
+        });
+        socket.once('close', onClientSocketCloseBeforeReady);
+
+        this.completeClientWebSocketUpgrade(request, socket, head, (webSocket) => {
+            if (!finalizePendingUpgrade()) {
+                webSocket.close(1011, 'Jupyter websocket upgrade already settled');
+                return;
+            }
+
+            this.bindReverseChannelWebSocketProxy(webSocket, upstreamWebSocket, logContext);
+        });
+    }
+
+    private async handleTunnelWebSocketUpgrade(
+        request: IncomingMessage,
+        socket: Duplex,
+        head: Buffer,
+        context: AuthorizedProxyContext,
+        runtime: TeamClusterDaemonNotebookRuntime,
+        upstreamWebSocketUrl: string,
+        requestedProtocols: string[],
+        logContext: Record<string, unknown>
+    ): Promise<void> {
+        const tunnel = await this.openNotebookTunnel(context.teamClusterId, runtime, TeamClusterServiceExposureAccessMode.WebSocket);
+        const upstreamWebSocketOptions = {
+            createConnection: () => tunnel,
+            headers: this.readUpgradeRequestHeaders(request, runtime)
+        };
+        const upstreamWebSocket = new WebSocket(upstreamWebSocketUrl, requestedProtocols, upstreamWebSocketOptions);
+        let upgradeSettled = false;
+
+        const cleanupPendingUpgrade = (): void => {
+            upstreamWebSocket.off('open', onUpstreamReady);
+            upstreamWebSocket.off('close', onUpstreamCloseBeforeReady);
+            upstreamWebSocket.off('error', onUpstreamErrorBeforeReady);
+            upstreamWebSocket.off('unexpected-response', onUpstreamUnexpectedResponse);
+            socket.off('close', onClientSocketCloseBeforeReady);
+        };
+
+        const finalizePendingUpgrade = (): boolean => {
+            if (upgradeSettled) {
+                return false;
+            }
+
+            upgradeSettled = true;
+            cleanupPendingUpgrade();
+            return true;
+        };
+
+        const destroyUpstreamTunnel = (): void => {
+            if (!tunnel.destroyed) {
+                tunnel.destroy();
+            }
+        };
+
+        const failPendingUpgrade = (statusCode: number, message: string): void => {
+            if (!finalizePendingUpgrade()) {
+                return;
+            }
+
+            logger.warn({
+                ...logContext,
+                statusCode,
+                message,
+                upstreamMode: 'tcp-tunnel',
+                upstreamReadyState: upstreamWebSocket.readyState
+            }, 'Jupyter websocket upgrade failed before client handshake');
+
+            if (upstreamWebSocket.readyState === WebSocket.CONNECTING || upstreamWebSocket.readyState === WebSocket.OPEN) {
+                upstreamWebSocket.terminate();
+            }
+
+            destroyUpstreamTunnel();
+            writeUpgradeError(socket, statusCode, message);
+        };
+
+        const onUpstreamErrorBeforeReady = (error: Error): void => {
+            logger.warn({
+                ...logContext,
+                upstreamMode: 'tcp-tunnel',
+                upstreamError: error.message
+            }, 'Upstream Jupyter websocket emitted an error before the client handshake completed');
+            failPendingUpgrade(502, error.message || 'Upstream WebSocket connection failed');
+        };
+
+        const onUpstreamCloseBeforeReady = (): void => {
+            failPendingUpgrade(502, 'Upstream WebSocket connection failed');
+        };
+
+        const onUpstreamUnexpectedResponse = (
+            _upstreamRequest: ClientRequest,
+            upstreamResponse: IncomingMessage
+        ): void => {
+            logger.warn({
+                ...logContext,
+                upstreamMode: 'tcp-tunnel',
+                upstreamStatusCode: upstreamResponse.statusCode,
+                upstreamStatusMessage: upstreamResponse.statusMessage
+            }, 'Upstream Jupyter websocket returned an unexpected HTTP response');
+            upstreamResponse.resume();
+            failPendingUpgrade(
+                upstreamResponse.statusCode || 502,
+                upstreamResponse.statusMessage || 'Upstream WebSocket connection failed'
+            );
+        };
+
+        const onClientSocketCloseBeforeReady = (): void => {
+            if (!finalizePendingUpgrade()) {
+                return;
+            }
+
+            if (upstreamWebSocket.readyState === WebSocket.CONNECTING || upstreamWebSocket.readyState === WebSocket.OPEN) {
+                upstreamWebSocket.terminate();
+            }
+
+            destroyUpstreamTunnel();
+        };
+
+        // Wait for the upstream WebSocket to open before completing the client
+        // handshake. This ensures two things:
+        // 1. The negotiated subprotocol from upstream (e.g. v1.kernel.websocket.jupyter.org)
+        //    is echoed back to the client, so JupyterLab knows to use the v1 binary
+        //    deserializer instead of the default JSON one.
+        // 2. The upstream connection is ready to receive messages immediately after
+        //    bindWebSocketProxy is called, preventing a race condition where client
+        //    messages arrive before the upstream handshake completes.
+        const onUpstreamReady = (): void => {
+            if (!finalizePendingUpgrade()) {
+                return;
+            }
+
+            this.completeClientWebSocketUpgrade(request, socket, head, (webSocket) => {
+                this.bindWebSocketProxy(webSocket, upstreamWebSocket);
+            }, upstreamWebSocket.protocol || undefined);
+        };
+
+        if (upstreamWebSocket.readyState === WebSocket.OPEN) {
+            onUpstreamReady();
+        } else {
+            upstreamWebSocket.once('open', onUpstreamReady);
+            upstreamWebSocket.once('close', onUpstreamCloseBeforeReady);
+            upstreamWebSocket.once('error', onUpstreamErrorBeforeReady);
+            upstreamWebSocket.once('unexpected-response', onUpstreamUnexpectedResponse);
+            socket.once('close', onClientSocketCloseBeforeReady);
+        }
+    }
 
     private mapNotebookProxyError(error: unknown): unknown {
         if (!this.isDaemonProxyUnavailableError(error)) {
@@ -606,6 +733,95 @@ export class ScriptingJupyterProxyService {
         bridgeWebSockets(webSocket, upstreamWebSocket, {
             upstreamErrorMessage: 'Remote Jupyter websocket failed'
         });
+    }
+
+    private bindReverseChannelWebSocketProxy(
+        webSocket: WebSocket,
+        upstreamWebSocket: TeamClusterReverseWebSocketStream,
+        logContext: Record<string, unknown>
+    ): void {
+        upstreamWebSocket.on('data', ({ data, isBinary }) => {
+            if (webSocket.readyState !== WebSocket.OPEN) {
+                return;
+            }
+
+            webSocket.send(data, {
+                binary: isBinary
+            });
+        });
+        upstreamWebSocket.on('end', ({ code, message }) => {
+            if (webSocket.readyState === WebSocket.CLOSING || webSocket.readyState === WebSocket.CLOSED) {
+                return;
+            }
+
+            webSocket.close(code || 1000, message || undefined);
+        });
+        upstreamWebSocket.on('error', (error) => {
+            logger.warn({
+                ...logContext,
+                upstreamMode: 'reverse-websocket',
+                upstreamError: error.message
+            }, 'Reverse-channel Jupyter websocket failed');
+
+            if (webSocket.readyState === WebSocket.CLOSING || webSocket.readyState === WebSocket.CLOSED) {
+                return;
+            }
+
+            webSocket.close(1011, 'Remote Jupyter websocket failed');
+        });
+
+        webSocket.on('message', (data, isBinary) => {
+            const payload = normalizeWebSocketPayload(data);
+            upstreamWebSocket.send(payload, isBinary);
+        });
+        webSocket.on('close', () => {
+            upstreamWebSocket.destroy();
+        });
+        webSocket.on('error', () => {
+            upstreamWebSocket.destroy();
+        });
+    }
+
+    private completeClientWebSocketUpgrade(
+        request: IncomingMessage,
+        socket: Duplex,
+        head: Buffer,
+        onReady: (webSocket: WebSocket) => void,
+        negotiatedProtocol?: string
+    ): void {
+        const webSocketServer = new WebSocketServer({
+            noServer: true,
+            handleProtocols: negotiatedProtocol
+                ? () => negotiatedProtocol
+                : undefined
+        });
+        webSocketServer.handleUpgrade(request, socket, head, onReady);
+    }
+
+    private buildUpstreamWebSocketUrl(
+        runtime: TeamClusterDaemonNotebookRuntime,
+        target: ProxyTarget
+    ): string {
+        return `ws://${runtime.tunnelTargetHost}:${runtime.tunnelTargetPort}${target.proxiedPath}${target.rawQuery}`;
+    }
+
+    private buildUpgradeLogContext(
+        requestUrl: string,
+        context: AuthorizedProxyContext,
+        runtime: TeamClusterDaemonNotebookRuntime,
+        upstreamWebSocketUrl: string,
+        requestedProtocols?: string[]
+    ): Record<string, unknown> {
+        return {
+            requestUrl,
+            teamId: context.teamId,
+            runtimeNotebookId: context.runtimeNotebookId,
+            teamClusterId: context.teamClusterId,
+            upstreamWebSocketUrl,
+            upstreamHost: runtime.tunnelTargetHost,
+            upstreamPort: runtime.tunnelTargetPort,
+            requestedProtocols
+        };
     }
 
     private prepareProxyResponse(

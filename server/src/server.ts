@@ -15,6 +15,7 @@ import { httpErrorMiddleware } from './shared/infrastructure/http/middleware/err
 import logger from './shared/infrastructure/logger';
 import mongoConnector from './shared/infrastructure/utilities/mongo-connector';
 import { readNumberEnv } from './shared/infrastructure/utilities/env';
+import { writeUpgradeError } from './shared/infrastructure/utilities/proxy-relay';
 import app from './core/config/express';
 import apiDocsRouter from './core/config/api-docs';
 import SocketGateway from './modules/socket/socket/SocketGateway';
@@ -190,7 +191,7 @@ const startServer = async () => {
 
         proxyService.handleUpgrade(request, socket as Duplex, head).catch((error: unknown) => {
             logger.error(`@server: jupyter upgrade failed: ${error instanceof Error ? error.message : String(error)}`);
-            (socket as Duplex).destroy();
+            writeUpgradeError(socket as Duplex, 500, 'WebSocket upgrade failed');
         });
     });
 
