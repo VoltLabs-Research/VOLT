@@ -116,7 +116,6 @@ const runCompiler = (compiler: CompilerConfig, workDir: string): Promise<Compile
     });
 };
 
-const MAIN_TEX_FALLBACK = 'main.tex';
 const TEX_EXTENSION = '.tex';
 
 /**
@@ -124,11 +123,10 @@ const TEX_EXTENSION = '.tex';
  *
  * Steps:
  * 1. Load the document and all associated LatexFiles.
- * 2. Auto-migrate: if no LatexFile records exist, treat `document.content` as `main.tex`.
- * 3. Write all LatexFiles to workDir respecting their `path` prefix.
- * 4. Write all assets to workDir respecting their `path` field.
- * 5. Detect an available compiler and run it against the entrypoint file.
- * 6. Buffer the output PDF, clean up the temp directory, and stream it back.
+ * 2. Write all LatexFiles to workDir respecting their `path` prefix.
+ * 3. Write all assets to workDir respecting their `path` field.
+ * 4. Detect an available compiler and run it against the entrypoint file.
+ * 5. Buffer the output PDF, clean up the temp directory, and stream it back.
  *
  * @throws {LATEX_COMPILER_NOT_FOUND} If no LaTeX compiler is available on the system.
  * @throws {LATEX_COMPILATION_FAILED} If the compiler exits with a non-zero code.
@@ -170,34 +168,36 @@ export class CompileLatexDocumentUseCase implements IUseCase<CompileLatexDocumen
 
             await this.tempFileService.ensureDir(workDir);
 
-            // Determine entrypoint filename; fall back to legacy document.content if no files exist.
             const latexFiles = await this.latexFileRepository.findAllByDocument(input.documentId);
-            let entrypointFilename = MAIN_TEX_FALLBACK;
-
             if (latexFiles.length === 0) {
-                const content = document.props.content ?? '';
-                await fs.writeFile(path.join(workDir, MAIN_TEX_FALLBACK), content, 'utf-8');
-            } else {
-                const entrypointFile = latexFiles.find((f) => f.props.isEntrypoint)
-                    ?? latexFiles.find((f) => f.props.name.toLowerCase().endsWith(TEX_EXTENSION));
+                await this.tempFileService.delete(workDir, { recursive: true });
 
-                if (!entrypointFile) {
-                    await this.tempFileService.delete(workDir, { recursive: true });
+                return Result.fail(new ApplicationError(
+                    ErrorCodes.LATEX_COMPILATION_FAILED,
+                    'This document has no LaTeX files. Create main.tex before compiling.',
+                    422
+                ));
+            }
 
-                    return Result.fail(new ApplicationError(
-                        ErrorCodes.LATEX_COMPILATION_FAILED,
-                        'No .tex file was found in this document. Add or select a .tex file to compile.',
-                        422
-                    ));
-                }
+            const entrypointFile = latexFiles.find((f) => f.props.isEntrypoint)
+                ?? latexFiles.find((f) => f.props.name.toLowerCase().endsWith(TEX_EXTENSION));
 
-                entrypointFilename = entrypointFile.fullPath;
+            if (!entrypointFile) {
+                await this.tempFileService.delete(workDir, { recursive: true });
 
-                for (const file of latexFiles) {
-                    const destPath = path.join(workDir, file.fullPath);
-                    await fs.mkdir(path.dirname(destPath), { recursive: true });
-                    await fs.writeFile(destPath, file.props.content, 'utf-8');
-                }
+                return Result.fail(new ApplicationError(
+                    ErrorCodes.LATEX_COMPILATION_FAILED,
+                    'No .tex file was found in this document. Add or select a .tex file to compile.',
+                    422
+                ));
+            }
+
+            const entrypointFilename = entrypointFile.fullPath;
+
+            for (const file of latexFiles) {
+                const destPath = path.join(workDir, file.fullPath);
+                await fs.mkdir(path.dirname(destPath), { recursive: true });
+                await fs.writeFile(destPath, file.props.content, 'utf-8');
             }
 
             const compiler = await resolveCompiler(entrypointFilename);
@@ -220,9 +220,7 @@ export class CompileLatexDocumentUseCase implements IUseCase<CompileLatexDocumen
                         SYS_BUCKETS.LATEX_ASSETS,
                         asset.props.storageKey
                     );
-                    const relPath = asset.props.path
-                        ? sanitizeAssetPath(asset.props.path, asset.props.originalName)
-                        : path.basename(asset.props.originalName);
+                    const relPath = sanitizeAssetPath(asset.props.path, asset.props.originalName);
 
                     const destPath = path.join(workDir, relPath);
                     await fs.mkdir(path.dirname(destPath), { recursive: true });

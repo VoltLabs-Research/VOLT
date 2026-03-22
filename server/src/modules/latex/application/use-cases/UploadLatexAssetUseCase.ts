@@ -74,9 +74,7 @@ export class UploadLatexAssetUseCase implements IUseCase<UploadLatexAssetInputDT
                     const storageKey = `latex-assets/${input.teamId}/${input.documentId}/${v4()}${ext}`;
                     const mimetype = file.mimetype || 'application/octet-stream';
 
-                    const assetPath = input.path
-                        ? sanitizeAssetPath(input.path, file.originalname)
-                        : undefined;
+                    const assetPath = sanitizeAssetPath(input.path ?? file.originalname, file.originalname);
 
                     await this.storageService.upload(
                         SYS_BUCKETS.LATEX_ASSETS,

@@ -56,7 +56,7 @@ const sortTreeNodes = (nodes: FileTreeNode[]): FileTreeNode[] => {
  * the folder prefix is everything before the last slash.
  */
 const assetFolderPath = (asset: LatexAsset): string => {
-    const p = asset.path ?? asset.originalName;
+    const p = asset.path;
     const lastSlash = p.lastIndexOf('/');
     return lastSlash >= 0 ? p.substring(0, lastSlash + 1) : '';
 };

@@ -1,5 +1,6 @@
 import Container from '@/shared/presentation/components/Container';
 import IconButton from '@/shared/presentation/components/IconButton';
+import { getAssetDisplayName } from '@/modules/latex/utilities/workspace';
 import { formatSize } from '@/shared/utils/format';
 import { File, FileText, Image, Link, Trash2 } from 'lucide-react';
 import { useCallback } from 'react';
@@ -19,7 +20,7 @@ const getAssetIcon = (mimetype: string) => {
 
 const AssetRow = ({ asset, onDelete, onInsertRef }: AssetRowProps) => {
     const mimeShort = asset.mimetype.split('/')[1] ?? asset.mimetype;
-    const dirPart = asset.path?.includes('/')
+    const dirPart = asset.path.includes('/')
         ? asset.path.substring(0, asset.path.lastIndexOf('/') + 1)
         : undefined;
 
@@ -32,11 +33,11 @@ const AssetRow = ({ asset, onDelete, onInsertRef }: AssetRowProps) => {
                 <span className='color-muted d-flex items-center f-shrink-0'>
                     {getAssetIcon(asset.mimetype)}
                 </span>
-                <span className='latex-workspace__file-name text-truncate' title={asset.path ?? asset.originalName}>
+                <span className='latex-workspace__file-name text-truncate' title={asset.path}>
                     {dirPart && (
                         <span className='color-muted'>{dirPart}</span>
                     )}
-                    {asset.originalName}
+                    {getAssetDisplayName(asset)}
                 </span>
             </Container>
             <Container className='d-flex items-center gap-025 f-shrink-0'>

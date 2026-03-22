@@ -13,11 +13,7 @@ import type { IUseCase } from '@shared/application/IUseCase';
 import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
 
-/**
- * Exports the entrypoint LatexFile as a downloadable `.tex` file.
- *
- * Falls back to `document.content` if no LatexFile records exist (legacy compat).
- */
+/** Exports the entrypoint LatexFile as a downloadable `.tex` file. */
 @injectable()
 export class ExportLatexDocumentTexUseCase implements IUseCase<ExportLatexDocumentInputDTO, ExportLatexDocumentOutputDTO, ApplicationError> {
     constructor(
@@ -42,21 +38,24 @@ export class ExportLatexDocumentTexUseCase implements IUseCase<ExportLatexDocume
                 ));
             }
 
-            let content = document.props.content ?? '';
             const files = await this.latexFileRepository.findAllByDocument(input.documentId);
             const entrypoint = files.find((file) => file.props.isEntrypoint)
                 ?? files.find((file) => file.props.name.toLowerCase().endsWith('.tex'))
                 ?? null;
 
-            if (entrypoint) {
-                content = entrypoint.props.content;
+            if (!entrypoint) {
+                return Result.fail(new ApplicationError(
+                    ErrorCodes.LATEX_COMPILATION_FAILED,
+                    'No .tex file was found in this document. Add or select a .tex file to export.',
+                    422
+                ));
             }
 
             const safeName = sanitizeDownloadName(document.props.title, 'document');
             const filename = `${safeName}.tex`;
 
             const output = createDownloadStreamResponse({
-                stream: Readable.from([content]),
+                stream: Readable.from([entrypoint.props.content]),
                 contentType: 'application/x-tex; charset=utf-8',
                 filename,
                 cacheControl: 'no-cache'

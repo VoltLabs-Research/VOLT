@@ -5,7 +5,6 @@ export interface UpdateLatexDocumentInputDTO {
     userId?: string;
     documentId: string;
     title?: string;
-    content?: string;
 };
 
 export type UpdateLatexDocumentOutputDTO = LatexDocumentDTO;

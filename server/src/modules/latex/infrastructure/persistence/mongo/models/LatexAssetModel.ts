@@ -30,7 +30,7 @@ const LatexAssetSchema: Schema<LatexAssetDocument> = new Schema({
     path: {
         type: String,
         trim: true,
-        default: undefined
+        required: true
     },
     storageKey: {
         type: String,
