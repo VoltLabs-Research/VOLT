@@ -5,6 +5,7 @@ import { Canvas } from '@react-three/fiber';
 import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useMemo, useRef, useState } from 'react';
 
 import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
+import type { ScreenshotRequest } from '@/modules/canvas/utilities/screenshot';
 import type { OrbitControlsHandle } from '@/modules/fractal/types';
 import type { FractalSceneConfig } from '@/modules/fractal/types/scene-config';
 import type { ReactNode } from 'react';
@@ -24,7 +25,7 @@ interface FractalSceneProps {
     onInteractionChange?: (isInteracting: boolean) => void;
     showGrid?: boolean;
     modelWorldBounds?: ModelWorldBounds | null;
-    screenshotCaptureRequested?: boolean;
+    screenshotRequest?: ScreenshotRequest | null;
     onScreenshotCaptureHandled?: () => void;
 };
 
@@ -36,7 +37,7 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
     onInteractionChange,
     showGrid,
     modelWorldBounds,
-    screenshotCaptureRequested,
+    screenshotRequest,
     onScreenshotCaptureHandled
 }, ref) => {
     const orbitControlsRef = useRef<OrbitControlsHandle | null>(null);
@@ -57,14 +58,12 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
             performance: config.performance,
             interactionDegradeEnabled: config.interactionDegradeEnabled
         }, {
-            interacting: false,
-            boostScreenshot: screenshotCaptureRequested
+            interacting: false
         });
     }, [
         config.dpr,
         config.interactionDegradeEnabled,
-        config.performance,
-        screenshotCaptureRequested
+        config.performance
     ]);
 
     useEffect(() => {
@@ -170,7 +169,7 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
                     showGizmo={showGizmo}
                     showGrid={showGrid}
                     modelWorldBounds={modelWorldBounds}
-                    screenshotCaptureRequested={screenshotCaptureRequested}
+                    screenshotRequest={screenshotRequest}
                     onScreenshotCaptureHandled={onScreenshotCaptureHandled}
                     onScreenshotStatusChange={setScreenshotAnnouncement}
                     onControlsRef={onControlsRef}

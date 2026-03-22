@@ -14,6 +14,7 @@ import { AdaptiveDpr, Bvh, GizmoHelper, GizmoViewport, OrbitControls, Preload } 
 import { useEffect, useMemo, useState } from 'react';
 
 import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
+import type { ScreenshotRequest } from '@/modules/canvas/utilities/screenshot';
 import type { FractalSceneConfig } from '@/modules/fractal/types/scene-config';
 import type { OrbitControlsHandle } from '@/modules/fractal/types';
 import type { MutableRefObject, ReactNode } from 'react';
@@ -30,7 +31,7 @@ interface FractalScenePipelineProps {
     showGizmo: boolean;
     showGrid?: boolean;
     modelWorldBounds?: ModelWorldBounds | null;
-    screenshotCaptureRequested?: boolean;
+    screenshotRequest?: ScreenshotRequest | null;
     onScreenshotCaptureHandled?: () => void;
     onScreenshotStatusChange?: (message: string) => void;
     onControlsRef?: (ref: OrbitControlsHandle | null) => void;
@@ -45,7 +46,7 @@ const FractalScenePipeline = ({
     showGizmo,
     showGrid,
     modelWorldBounds,
-    screenshotCaptureRequested = false,
+    screenshotRequest,
     onScreenshotCaptureHandled,
     onScreenshotStatusChange,
     onControlsRef,
@@ -119,9 +120,11 @@ const FractalScenePipeline = ({
                 {children}
             </Bvh>
             <ScreenshotCapture
-                captureRequested={screenshotCaptureRequested}
+                captureRequest={screenshotRequest}
                 onCaptureHandled={onScreenshotCaptureHandled ?? (() => undefined)}
                 onStatusChange={onScreenshotStatusChange}
+                orbitRef={orbitRef}
+                modelWorldBounds={modelWorldBounds}
             />
         </>
     );

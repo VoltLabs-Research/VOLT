@@ -1,6 +1,7 @@
 import { setSceneInteracting } from '../../../hooks/use-scene-interaction';
 import CameraMenuPopover from '../../molecules/CameraMenuPopover';
 import RenderMenuPopover from '../../molecules/RenderMenuPopover';
+import ScreenshotMenuPopover from '../../molecules/ScreenshotMenuPopover';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
 import FractalScene from '@/modules/fractal/components/organisms/FractalScene';
@@ -19,9 +20,7 @@ import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
-import Tooltip from '@/shared/presentation/components/Tooltip';
-import useShortcutDiscovery from '@/shared/tips/use-shortcut-discovery';
-import { Camera, Gauge } from 'lucide-react';
+import { Gauge } from 'lucide-react';
 import { useMemo, useCallback } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -70,8 +69,7 @@ const Viewport = ({
     headerActionsBeforePerformance
 }: ViewportProps) => {
     const teamId = useSelectedTeamId() ?? undefined;
-    const captureRequested = useScreenshotStore((s) => s.captureRequested);
-    const { recordSlowAction: recordScreenshotShortcutTip } = useShortcutDiscovery('canvas-screenshot-shortcut');
+    const screenshotRequest = useScreenshotStore((s) => s.pendingRequest);
     useEnsurePluginCatalogLoaded();
     const { plugins } = usePluginSelectors();
     const {
@@ -143,22 +141,7 @@ const Viewport = ({
 
                         <CameraMenuPopover />
 
-                        <Tooltip content="Screenshot (Ctrl+S)">
-                            <Button
-                                variant="ghost"
-                                intent="canvas"
-                                shape="rounded"
-                                size="sm"
-                                className="font-size-05 canvas-btn-compact"
-                                leftIcon={<span className="d-flex items-center content-center f-shrink-0"><Camera size={12} /></span>}
-                                onClick={() => {
-                                    recordScreenshotShortcutTip();
-                                    useScreenshotStore.getState().requestCapture();
-                                }}
-                            >
-                                Screenshot
-                            </Button>
-                        </Tooltip>
+                        <ScreenshotMenuPopover />
 
                         <Popover
                             id="viewport-performance"
@@ -228,8 +211,8 @@ const Viewport = ({
                             showGizmo={showGizmo}
                             onInteractionChange={setSceneInteracting}
                             modelWorldBounds={modelWorldBounds}
-                            screenshotCaptureRequested={captureRequested}
-                            onScreenshotCaptureHandled={() => useScreenshotStore.getState().clearCaptureRequest()}
+                            screenshotRequest={screenshotRequest}
+                            onScreenshotCaptureHandled={() => useScreenshotStore.getState().clearPendingRequest()}
                         >
                             {trajectory?._id && currentTimestep !== undefined && currentFrame && currentFrameBoxBounds && (
                                 <TimestepViewer
