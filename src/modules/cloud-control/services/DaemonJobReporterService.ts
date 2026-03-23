@@ -55,15 +55,19 @@ export interface DaemonJobReporterService {
 
 export const createDaemonJobReporterService = (voltCloudConnection: VoltCloudConnection): DaemonJobReporterService => ({
     async reportJobCompletion(input) {
-        await voltCloudConnection.sendServerCommand('analysis.job-complete', {
+        voltCloudConnection.emitBufferedMessage({
+            type: 'analysis-job-completion',
             teamClusterId: voltCloudConnection.getTeamClusterId(),
             daemonPassword: voltCloudConnection.getDaemonPassword(),
             ...input
+        }, {
+            dedupeKey: `analysis.job-completion:${input.jobId}:${input.success ? 'completed' : 'failed'}:${input.timestep ?? 'none'}`
         });
     },
 
     async reportAnalysisJobStatus(input) {
-        await voltCloudConnection.sendBackgroundServerCommand('analysis.job-status', {
+        voltCloudConnection.emitBufferedMessage({
+            type: 'analysis-job-status',
             teamClusterId: voltCloudConnection.getTeamClusterId(),
             daemonPassword: voltCloudConnection.getDaemonPassword(),
             ...input
@@ -73,7 +77,8 @@ export const createDaemonJobReporterService = (voltCloudConnection: VoltCloudCon
     },
 
     async reportRasterJobStatus(input) {
-        await voltCloudConnection.sendBackgroundServerCommand('trajectory.raster-job-status', {
+        voltCloudConnection.emitBufferedMessage({
+            type: 'trajectory-raster-job-status',
             teamClusterId: voltCloudConnection.getTeamClusterId(),
             daemonPassword: voltCloudConnection.getDaemonPassword(),
             ...input
@@ -83,7 +88,8 @@ export const createDaemonJobReporterService = (voltCloudConnection: VoltCloudCon
     },
 
     async reportGlbJobStatus(input) {
-        await voltCloudConnection.sendBackgroundServerCommand('trajectory.glb-job-status', {
+        voltCloudConnection.emitBufferedMessage({
+            type: 'trajectory-glb-job-status',
             teamClusterId: voltCloudConnection.getTeamClusterId(),
             daemonPassword: voltCloudConnection.getDaemonPassword(),
             ...input

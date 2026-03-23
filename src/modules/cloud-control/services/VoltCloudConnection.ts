@@ -8,7 +8,10 @@ import {
     DaemonClientError
 } from '@voltstack/daemon-cluster-client';
 import type { DaemonConfig, DaemonRuntimeConfig } from '@/core/config';
-import type { TeamClusterDaemonRuntimeProgressPayload } from '@/shared/contracts';
+import type {
+    TeamClusterDaemonRuntimeProgressPayload,
+    TeamClusterDaemonServerEventMessage
+} from '@/shared/contracts';
 import type {
     RuntimeLifecycleEvent,
     RuntimeLifecycleEventType,
@@ -29,9 +32,16 @@ interface DeleteCompletionRequest {
 };
 
 type NonCommandMessage = Exclude<TeamClusterDaemonMessage, { type: 'command' }>;
-type OutboundMessage = NonCommandMessage | TeamClusterDaemonRuntimeProgressPayload;
+type OutboundMessage =
+    | NonCommandMessage
+    | TeamClusterDaemonRuntimeProgressPayload
+    | TeamClusterDaemonServerEventMessage;
 
 interface BackgroundServerCommandOptions {
+    dedupeKey?: string;
+}
+
+interface BufferedEventOptions {
     dedupeKey?: string;
 }
 
@@ -42,6 +52,11 @@ interface QueuedServerCommand {
     enqueuedAt: number;
     resolve: (value: unknown) => void;
     reject: (error: unknown) => void;
+}
+
+interface QueuedEventMessage {
+    message: TeamClusterDaemonServerEventMessage;
+    dedupeKey?: string;
 }
 
 /**
@@ -60,6 +75,9 @@ export class VoltCloudConnection {
     private readonly backgroundCommandQueue: QueuedServerCommand[] = [];
     private readonly backgroundCommandDedupeKeys = new Set<string>();
     private backgroundCommandsInFlight = 0;
+    private readonly bufferedEventMaxQueueSize = 8192;
+    private readonly bufferedEventQueue: QueuedEventMessage[] = [];
+    private readonly bufferedEventDedupeKeys = new Set<string>();
 
     readonly client: ClusterDaemonClient;
 
@@ -106,6 +124,7 @@ export class VoltCloudConnection {
             .onConnected(() => {
                 this.connectedToCloud = true;
                 this.emitLifecycleEvent('cloud-socket-connected', 'Outbound cloud socket connected');
+                this.flushBufferedEventQueue();
                 logger.info('Connected to VoltCloud');
             })
             .onDisconnected((reason) => {
@@ -171,6 +190,47 @@ export class VoltCloudConnection {
         } catch (err: unknown) {
             logger.warn({ err }, 'Failed to emit message to VoltCloud');
         }
+    }
+
+    emitBufferedMessage(message: TeamClusterDaemonServerEventMessage, options: BufferedEventOptions = {}): void {
+        const dedupeKey = typeof options.dedupeKey === 'string' && options.dedupeKey.trim().length > 0
+            ? options.dedupeKey.trim()
+            : undefined;
+
+        if (dedupeKey && this.bufferedEventDedupeKeys.has(dedupeKey)) {
+            logger.debug({ type: message.type, dedupeKey }, 'Skipped duplicate buffered daemon event');
+            return;
+        }
+
+        if (this.connectedToCloud && this.client.isReady()) {
+            try {
+                this.client.emit(message);
+                return;
+            } catch (err: unknown) {
+                logger.warn({ err, type: message.type }, 'Failed to emit daemon event immediately; buffering');
+            }
+        }
+
+        if (this.bufferedEventQueue.length >= this.bufferedEventMaxQueueSize) {
+            logger.warn(
+                {
+                    type: message.type,
+                    dedupeKey,
+                    queueLength: this.bufferedEventQueue.length
+                },
+                'Buffered daemon event queue is full; dropping event'
+            );
+            return;
+        }
+
+        if (dedupeKey) {
+            this.bufferedEventDedupeKeys.add(dedupeKey);
+        }
+
+        this.bufferedEventQueue.push({
+            message,
+            dedupeKey
+        });
     }
 
     async reportDeleteFailed(details: string): Promise<void> {
@@ -335,6 +395,28 @@ export class VoltCloudConnection {
 
                     this.flushBackgroundCommandQueue();
                 });
+        }
+    }
+
+    private flushBufferedEventQueue(): void {
+        if (!this.connectedToCloud || !this.client.isReady()) {
+            return;
+        }
+
+        while (this.bufferedEventQueue.length > 0) {
+            const queued = this.bufferedEventQueue[0] as QueuedEventMessage;
+
+            try {
+                this.client.emit(queued.message);
+                this.bufferedEventQueue.shift();
+
+                if (queued.dedupeKey) {
+                    this.bufferedEventDedupeKeys.delete(queued.dedupeKey);
+                }
+            } catch (err: unknown) {
+                logger.warn({ err, type: queued.message.type }, 'Failed to flush buffered daemon event');
+                break;
+            }
         }
     }
 };
