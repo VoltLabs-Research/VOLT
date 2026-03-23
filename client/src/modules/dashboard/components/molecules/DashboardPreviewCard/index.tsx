@@ -177,7 +177,8 @@ const DashboardPreviewCard = () => {
                         pointSizeMultiplier={pointSizeMultiplier}
                         sceneOpacities={sceneOpacities}
                         onLoadingStateChanged={setModelLoadingState}
-                        autoFit={false}
+                        autoFit
+                        autoFitKeyOverride={readyTrajectory._id}
                     />
                 )}
             </FractalScene>

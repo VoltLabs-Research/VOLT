@@ -11,6 +11,7 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 import http from 'node:http';
+import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { Readable } from 'node:stream';
@@ -517,48 +518,65 @@ export default class TeamClusterObjectGatewayClient {
                 }
 
                 let responseBytes = 0;
-                response.on('data', (chunk) => {
-                    const buffer = Buffer.isBuffer(chunk)
-                        ? chunk
-                        : Buffer.from(chunk);
-                    responseBytes += buffer.length;
-                    tracker.markFirstByte();
-                });
-
                 const releaseSession = this.createSessionFinalizer(session);
-                response.once('end', () => {
+                let streamFinalized = false;
+                const finalizeStream = (destroySession: boolean, error?: unknown): void => {
+                    if (streamFinalized) {
+                        return;
+                    }
+
+                    streamFinalized = true;
                     tracker.complete({
-                        statusCode: response.statusCode,
-                        bytesIn: options.bytesIn,
-                        bytesOut: responseBytes
-                    });
-                    releaseSession(false);
-                });
-                response.once('close', () => {
-                    tracker.complete({
-                        statusCode: response.complete
-                            ? response.statusCode
-                            : undefined,
-                        bytesIn: options.bytesIn,
-                        bytesOut: responseBytes,
-                        error: response.complete
-                            ? undefined
-                            : new Error('Object gateway response stream closed before completion')
-                    });
-                    releaseSession(!response.complete);
-                });
-                response.once('error', (error) => {
-                    tracker.complete({
+                        statusCode: error
+                            ? (response.complete ? response.statusCode : undefined)
+                            : response.statusCode,
                         bytesIn: options.bytesIn,
                         bytesOut: responseBytes,
                         error
                     });
-                    releaseSession(true);
+                    releaseSession(destroySession);
+                };
+
+                const trackedStream = new Transform({
+                    transform(chunk, _encoding, callback) {
+                        const buffer = Buffer.isBuffer(chunk)
+                            ? chunk
+                            : Buffer.from(chunk);
+                        responseBytes += buffer.length;
+                        tracker.markFirstByte();
+                        callback(null, buffer);
+                    }
                 });
+
+                response.once('error', (error) => {
+                    trackedStream.destroy(error);
+                });
+                response.once('aborted', () => {
+                    trackedStream.destroy(new Error('Object gateway response stream aborted before completion'));
+                });
+                response.once('close', () => {
+                    if (!response.complete && !trackedStream.destroyed) {
+                        trackedStream.destroy(new Error('Object gateway response stream closed before completion'));
+                    }
+                });
+
+                trackedStream.once('end', () => {
+                    finalizeStream(false);
+                });
+                trackedStream.once('error', (error) => {
+                    finalizeStream(true, error);
+                });
+                trackedStream.once('close', () => {
+                    if (!trackedStream.readableEnded) {
+                        finalizeStream(true, new Error('Object gateway tracked stream closed before completion'));
+                    }
+                });
+
+                response.pipe(trackedStream);
 
                 resolve({
                     headers: this.normalizeHeaders(response.headers),
-                    stream: response
+                    stream: trackedStream
                 });
             });
 

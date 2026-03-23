@@ -1,11 +1,33 @@
 import * as THREE from 'three';
 import { http } from '@/app/core/http/utilities/create-client';
 import { disposeObject3DResources } from '@/modules/fractal/utilities/resource-disposal';
+import { debugFractal, warnFractal } from '@/modules/fractal/utilities/debug-log';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type IFractalAssetLoader from '@/modules/fractal/api/entities/asset-loader';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+
+const summarizeRenderableContent = (root: THREE.Object3D) => {
+    let points = 0;
+    let meshes = 0;
+    let vertices = 0;
+
+    root.traverse((child) => {
+        if (child instanceof THREE.Points) {
+            points += 1;
+            vertices += child.geometry.getAttribute('position')?.count ?? 0;
+            return;
+        }
+
+        if (child instanceof THREE.Mesh) {
+            meshes += 1;
+            vertices += child.geometry.getAttribute('position')?.count ?? 0;
+        }
+    });
+
+    return { points, meshes, vertices };
+};
 
 export class FractalAssetLoader implements IFractalAssetLoader {
     private static readonly BYTES_PER_MEGABYTE = 1024 * 1024;
@@ -138,6 +160,10 @@ export class FractalAssetLoader implements IFractalAssetLoader {
         const cachedEntry = FractalAssetLoader.touchCacheEntry(url);
         if (cachedEntry) {
             onProgress?.(1);
+            debugFractal('asset-loader.cache-hit', {
+                url,
+                bytes: cachedEntry.size
+            });
             return cachedEntry.buffer;
         }
 
@@ -161,6 +187,10 @@ export class FractalAssetLoader implements IFractalAssetLoader {
         }
 
         FractalAssetLoader.cacheBuffer(url, arrayBuffer);
+        debugFractal('asset-loader.fetch-complete', {
+            url,
+            bytes: arrayBuffer.byteLength
+        });
         return arrayBuffer;
     }
 
@@ -207,6 +237,7 @@ export class FractalAssetLoader implements IFractalAssetLoader {
                         return;
                     }
 
+                    debugFractal('asset-loader.parse-success', summarizeRenderableContent(gltf.scene));
                     resolve(gltf.scene);
                 },
                 (error: unknown) => {
@@ -222,6 +253,9 @@ export class FractalAssetLoader implements IFractalAssetLoader {
                     } else {
                         parsedError = new Error(String(error));
                     }
+                    warnFractal('asset-loader.parse-failed', {
+                        message: parsedError.message
+                    });
                     reject(parsedError);
                 }
             );

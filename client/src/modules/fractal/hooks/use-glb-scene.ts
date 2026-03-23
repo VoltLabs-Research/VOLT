@@ -25,6 +25,7 @@ import * as THREE from 'three';
 import { useThree, useFrame } from '@react-three/fiber';
 import useModelInteraction from '@/modules/fractal/hooks/use-model-interaction';
 import { createFractalEngine } from '@/modules/fractal/services/fractal-engine-factory';
+import { debugFractal, warnFractal } from '@/modules/fractal/utilities/debug-log';
 import type { ModelLoadingState, UseGlbSceneParams } from '@/modules/fractal/types';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
 import type { FractalParams } from '@/modules/fractal/services/fractal-engine';
@@ -75,6 +76,7 @@ export default function useGlbScene(
     } = params;
 
     const engineRef = useRef<ReturnType<typeof createFractalEngine> | null>(null);
+    const lastLoggedUrlRef = useRef<string | null>(null);
 
     const onModelBoundsChangedRef = useRef(onModelBoundsChanged);
     onModelBoundsChangedRef.current = onModelBoundsChanged;
@@ -127,6 +129,13 @@ export default function useGlbScene(
                         parent.add(modelObj);
                     }
 
+                    debugFractal('use-glb-scene.model-available', {
+                        url: params.url,
+                        attachedToContainer: Boolean(modelObj && parent),
+                        parentChildren: parent?.children.length ?? 0,
+                        modelChildren: modelObj?.children.length ?? 0
+                    });
+
                     // Bump a lightweight generation counter so effects that
                     // depend on "has the model changed?" still fire, without
                     // putting the heavy Object3D into React state.
@@ -135,10 +144,6 @@ export default function useGlbScene(
                 }
             }
         );
-
-        if (engineParams.url) {
-            engineRef.current.loadIfNeeded();
-        }
 
         return () => {
             engineRef.current?.dispose();
@@ -149,12 +154,42 @@ export default function useGlbScene(
                 modelRef.current = null;
             }
         };
-    }, [scene, camera, gl, invalidate]);
+    }, [gl, invalidate, scene]);
 
     useEffect(() => {
         if (!engineRef.current) return;
         engineRef.current.setCamera(camera);
     }, [camera]);
+
+    useEffect(() => {
+        const modelObj = modelRef.current;
+        const parent = modelContainerRef?.current;
+
+        if (!modelObj || !parent || modelObj.parent === parent) {
+            return;
+        }
+
+        parent.add(modelObj);
+        debugFractal('use-glb-scene.model-attached', {
+            url: params.url,
+            sceneKey: params.sceneKey,
+            parentChildren: parent.children.length,
+            modelChildren: modelObj.children.length
+        });
+        invalidate();
+    }, [invalidate, modelContainerRef, modelGeneration, params.sceneKey, params.url]);
+
+    useEffect(() => {
+        if (!params.url || lastLoggedUrlRef.current === params.url) {
+            return;
+        }
+
+        lastLoggedUrlRef.current = params.url;
+        debugFractal('use-glb-scene.url', {
+            url: params.url,
+            sceneKey: params.sceneKey
+        });
+    }, [params.sceneKey, params.url]);
 
     useEffect(() => {
         const engineParams = extractEngineParams(params);
@@ -227,6 +262,18 @@ export default function useGlbScene(
     useEffect(() => {
         throttledUpdateScene();
     }, [throttledUpdateScene]);
+
+    useEffect(() => {
+        if (!loadingState.error) {
+            return;
+        }
+
+        warnFractal('use-glb-scene.load-error', {
+            url: params.url,
+            sceneKey: params.sceneKey,
+            error: loadingState.error
+        });
+    }, [loadingState.error, params.sceneKey, params.url]);
 
     useEffect(() => {
         return () => {

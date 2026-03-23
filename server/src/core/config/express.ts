@@ -5,7 +5,7 @@ import compression from 'compression';
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 
 const app = express();
 const captureRawBody = (req: Request, _res: unknown, buffer: Buffer): void => {
@@ -93,6 +93,44 @@ const corsMiddleware = cors((req, callback) => {
     });
 });
 
+const isBinaryLikeResponse = (res: Response): boolean => {
+    const contentDisposition = String(res.getHeader('Content-Disposition') || '').toLowerCase();
+    if (contentDisposition.includes('attachment')) {
+        return true;
+    }
+
+    const rawContentType = String(res.getHeader('Content-Type') || '');
+    const contentType = rawContentType.split(';', 1)[0]?.trim().toLowerCase() || '';
+
+    if (!contentType) {
+        return false;
+    }
+
+    if (contentType.startsWith('image/')
+        || contentType.startsWith('audio/')
+        || contentType.startsWith('video/')
+        || contentType.startsWith('model/')) {
+        return true;
+    }
+
+    return new Set([
+        'application/octet-stream',
+        'application/gzip',
+        'application/zip',
+        'application/x-zip-compressed',
+        'application/pdf',
+        'application/vnd.ms-excel'
+    ]).has(contentType);
+};
+
+const shouldCompressResponse = (req: Request, res: Response): boolean => {
+    if (isBinaryLikeResponse(res)) {
+        return false;
+    }
+
+    return compression.filter(req, res);
+};
+
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -103,7 +141,9 @@ app.use(helmet({
 app.use(requestContextMiddleware);
 app.use(corsMiddleware);
 
-app.use(compression());
+app.use(compression({
+    filter: shouldCompressResponse
+}));
 app.use(express.json({ limit: '1mb', verify: captureRawBody }));
 app.use(express.urlencoded({ extended: true, limit: '1mb', verify: captureRawBody }));
 app.use(express.static('static'));

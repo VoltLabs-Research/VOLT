@@ -1,7 +1,6 @@
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterReverseChannelService from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
 import { TeamClusterDaemonResponseType, TeamClusterServiceExposureAccessMode } from '@modules/team-cluster/utilities/teamClusterSocket';
-import { TeamClusterReverseTunnelStream } from '@modules/team-cluster/utilities/TeamClusterReverseTunnelStream';
 import { TeamClusterReverseWebSocketStream } from '@modules/team-cluster/utilities/teamClusterReverseWebSocket';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
@@ -11,6 +10,7 @@ import { inject, injectable } from 'tsyringe';
 import type { Readable } from 'node:stream';
 import type { TeamClusterTunnelOpenRequest } from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
 import type { TeamClusterReverseChannelStreamAttachment } from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
+import type { TeamClusterTunnelStream } from '@modules/team-cluster/utilities/TeamClusterReverseTunnelStream';
 import type { ContainerTerminalAttachment } from '@modules/container/domain/port/IContainerService';
 
 interface TeamClusterDaemonResponseEnvelope<T> {
@@ -426,18 +426,18 @@ export default class TeamClusterDaemonClient {
         teamClusterId: string,
         exposureId: string,
         accessMode: TeamClusterServiceExposureAccessMode
-    ): Promise<TeamClusterReverseTunnelStream>;
+    ): Promise<TeamClusterTunnelStream>;
 
     async openTunnel(
         teamClusterId: string,
         request: TeamClusterTunnelOpenRequest
-    ): Promise<TeamClusterReverseTunnelStream>;
+    ): Promise<TeamClusterTunnelStream>;
 
     async openTunnel(
         teamClusterId: string,
         target: string | TeamClusterTunnelOpenRequest,
         accessMode?: TeamClusterServiceExposureAccessMode
-    ): Promise<TeamClusterReverseTunnelStream> {
+    ): Promise<TeamClusterTunnelStream> {
         if (typeof target === 'string') {
             if (accessMode === undefined) {
                 throw ApplicationError.internalServerError('Tunnel access mode is required for exposure tunnel requests');
