@@ -45,6 +45,29 @@ export default class SceneArtifactRepository
         return this.mapper.toDomain(doc);
     }
 
+    async upsertManyByObjectName(entries: Array<{ objectName: string; data: Partial<SceneArtifactProps> }>): Promise<void> {
+        if (!entries.length) {
+            return;
+        }
+
+        const operations = entries.map((entry) => ({
+            updateOne: {
+                filter: { objectName: entry.objectName },
+                update: {
+                    $set: {
+                        ...(entry.data as unknown as Partial<SceneArtifactDocument>),
+                        objectName: entry.objectName
+                    }
+                } as mongoose.UpdateQuery<SceneArtifactDocument>,
+                upsert: true
+            }
+        })) as mongoose.AnyBulkWriteOperation<SceneArtifactDocument>[];
+
+        await this.model.bulkWrite(operations, {
+            ordered: false
+        });
+    }
+
     async findAllByTeamId(
         teamId: string,
         options: PaginationOptions,

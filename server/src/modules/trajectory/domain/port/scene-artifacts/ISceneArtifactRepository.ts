@@ -9,6 +9,7 @@ export interface TeamSceneArtifactFilters {
 
 export interface ISceneArtifactRepository extends IBaseRepository<SceneArtifact, SceneArtifactProps> {
     upsertByObjectName(objectName: string, data: Partial<SceneArtifactProps>): Promise<SceneArtifact>;
+    upsertManyByObjectName(entries: Array<{ objectName: string; data: Partial<SceneArtifactProps> }>): Promise<void>;
     findAllByTeamId(
         teamId: string,
         options: PaginationOptions,
