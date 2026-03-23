@@ -126,7 +126,7 @@
     message = data.get('message') or data.get('code') or raw
     print(f'HTTP {status_code}: {message}', file=sys.stderr)
     sys.exit(1)
-    PY
+PY
             exit 1
         fi
 
@@ -152,7 +152,7 @@
         print(current)
     else:
         print(json.dumps(current))
-    PY
+PY
     }
 
     detect_platform() {
@@ -554,7 +554,7 @@
 
     for sock in sockets:
         sock.close()
-    PY
+PY
     )"
         export PORTS_JSON
     }
@@ -570,7 +570,7 @@
         'enrollmentToken': sys.argv[1],
         'installedVersion': sys.argv[2]
     }))
-    PY
+PY
     )"
 
         response_file="$(http_post_json "${VOLT_CLOUD_URL}/api/team-clusters/${TEAM_CLUSTER_ID}/healthcheck" "$payload")"
@@ -589,7 +589,7 @@
         'installRoot': sys.argv[2],
         'ports': json.loads(sys.argv[3])
     }))
-    PY
+PY
     )"
 
         response_file="$(http_post_json "${VOLT_CLOUD_URL}/api/team-clusters/${TEAM_CLUSTER_ID}/install-manifest" "$payload")"
@@ -651,7 +651,7 @@
     (install_dir / '.compose-project-name').write_text(manifest['composeProjectName'] + '\n')
     (install_dir / '.install-manifest-version').write_text(manifest['manifestVersion'] + '\n')
     materialize_build_context(install_dir, manifest)
-    PY
+PY
 
         if [ "$PLATFORM" = 'linux' ]; then
             $SUDO cp -r "$staging_dir/." "$INSTALL_DIR/"
@@ -700,7 +700,7 @@
 
     payload = json.load(open(sys.argv[1], 'r', encoding='utf-8'))
     print(payload['data']['manifest']['composeProjectName'])
-    PY
+PY
     )"
 
         log 'Starting Team Cluster stack'
@@ -716,7 +716,7 @@
 
     payload = json.load(open(sys.argv[1], 'r', encoding='utf-8'))
     print(payload['data']['manifest']['composeProjectName'])
-    PY
+PY
     )"
         container_name="${compose_project_name}-daemon-1"
         timeout_seconds='90'
@@ -752,7 +752,7 @@
     print(f"[install] MinIO port: {ports['minio']}")
     print(f"[install] Redis port: {ports['redis']}")
     print(f"[install] MongoDB port: {ports['mongodb']}")
-    PY
+PY
     }
 
     main() {
