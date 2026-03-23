@@ -240,6 +240,47 @@ test('TeamClusterObjectGatewayClient performs read, write, list and delete opera
     }
 });
 
+test('TeamClusterObjectGatewayClient.getStream preserves the full object body from the first byte', async () => {
+    process.env.TEAM_CLUSTER_OBJECT_GATEWAY_ENABLED = 'true';
+    process.env.TEAM_CLUSTER_OBJECT_GATEWAY_READS_ENABLED = 'true';
+    process.env.TEAM_CLUSTER_OBJECT_GATEWAY_WRITES_ENABLED = 'true';
+
+    const { server, port } = await buildObjectGatewayServer();
+    const client = new TeamClusterObjectGatewayClient(
+        new FakeTeamClusterDaemonClient(port) as any,
+        new FakeExposureRegistryService(port) as any
+    );
+
+    try {
+        const payload = Buffer.concat([
+            Buffer.from('glTF'),
+            Buffer.from(Array.from({ length: 128 * 1024 }, (_, index) => index % 251))
+        ]);
+
+        await client.putBuffer(TEST_CLUSTER_ID, {
+            bucket: TEST_BUCKET,
+            objectKey: TEST_OBJECT_KEY,
+            buffer: payload,
+            contentLength: payload.length,
+            contentType: 'model/gltf-binary'
+        });
+
+        const response = await client.getStream(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY);
+        const streamedChunks: Buffer[] = [];
+
+        for await (const chunk of response.stream) {
+            streamedChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        }
+
+        assert.deepEqual(Buffer.concat(streamedChunks), payload);
+    } finally {
+        destroyClientSessions(client);
+        await new Promise<void>((resolve, reject) => {
+            server.close((error) => error ? reject(error) : resolve());
+        });
+    }
+});
+
 test('TeamClusterObjectGatewayClient honors feature flags without falling back to legacy RPC', async () => {
     process.env.TEAM_CLUSTER_OBJECT_GATEWAY_ENABLED = 'true';
     process.env.TEAM_CLUSTER_OBJECT_GATEWAY_READS_ENABLED = 'false';

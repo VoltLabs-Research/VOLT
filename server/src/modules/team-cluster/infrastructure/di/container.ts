@@ -10,6 +10,8 @@ import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/se
 import TeamClusterRemoteAccessSessionService from '@modules/team-cluster/infrastructure/services/TeamClusterRemoteAccessSessionService';
 import RemoteExplorerDaemonGateway from '@modules/team-cluster/infrastructure/services/RemoteExplorerDaemonGateway';
 import TeamClusterRemoteTerminalService from '@modules/team-cluster/infrastructure/services/TeamClusterRemoteTerminalService';
+import TeamClusterBinaryRelayService from '@modules/team-cluster/infrastructure/services/TeamClusterBinaryRelayService';
+import TeamClusterBinaryRelayUpgradeService from '@modules/team-cluster/infrastructure/services/TeamClusterBinaryRelayUpgradeService';
 import TeamClusterReverseChannelService from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
 import TeamClusterTcpExposureRelayService from '@modules/team-cluster/infrastructure/services/TeamClusterTcpExposureRelayService';
 import DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
@@ -39,6 +41,8 @@ export const registerTeamClusterDependencies = () => {
             [TEAM_CLUSTER_TOKENS.TeamClusterHeartbeatMonitor, TeamClusterHeartbeatMonitor],
             [TEAM_CLUSTER_TOKENS.TeamClusterExposureRegistryService, TeamClusterExposureRegistryService],
             [TEAM_CLUSTER_TOKENS.TeamClusterReverseChannelService, TeamClusterReverseChannelService],
+            [TEAM_CLUSTER_TOKENS.TeamClusterBinaryRelayService, TeamClusterBinaryRelayService],
+            [TEAM_CLUSTER_TOKENS.TeamClusterBinaryRelayUpgradeService, TeamClusterBinaryRelayUpgradeService],
             [TEAM_CLUSTER_TOKENS.TeamClusterRemoteAccessSessionService, TeamClusterRemoteAccessSessionService],
             [TEAM_CLUSTER_TOKENS.RemoteExplorerDaemonGateway, RemoteExplorerDaemonGateway],
             [TEAM_CLUSTER_TOKENS.TeamClusterRemoteTerminalService, TeamClusterRemoteTerminalService],

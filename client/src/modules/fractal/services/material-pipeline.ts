@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import vertexShader from '@/modules/fractal/assets/shaders/point-cloud.vert?raw';
 import fragmentShader from '@/modules/fractal/assets/shaders/point-cloud.frag?raw';
+import { debugFractal } from '@/modules/fractal/utilities/debug-log';
 import { disposeMaterialResources } from '@/modules/fractal/utilities/resource-disposal';
 
 interface PointCloudUniforms extends Record<string, THREE.IUniform<number | THREE.Vector3>> {
@@ -89,6 +90,12 @@ export class MaterialPipeline {
 
         const spacing = Math.pow(volume / numPoints, 1.0 / 3.0);
         const dynamicPointScale = spacing * 1.5;
+        debugFractal('material-pipeline.configure-point-cloud', {
+            numPoints,
+            volume,
+            spacing,
+            dynamicPointScale
+        });
 
         mat.uniforms.pointScale.value = dynamicPointScale;
         mat.userData.basePointScale = dynamicPointScale;

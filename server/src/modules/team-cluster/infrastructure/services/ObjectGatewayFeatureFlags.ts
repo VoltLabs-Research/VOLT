@@ -6,6 +6,8 @@ type ObjectGatewayAccessKind = 'read' | 'write';
 const OBJECT_GATEWAY_ENABLED_ENV = 'TEAM_CLUSTER_OBJECT_GATEWAY_ENABLED';
 const OBJECT_GATEWAY_READS_ENABLED_ENV = 'TEAM_CLUSTER_OBJECT_GATEWAY_READS_ENABLED';
 const OBJECT_GATEWAY_WRITES_ENABLED_ENV = 'TEAM_CLUSTER_OBJECT_GATEWAY_WRITES_ENABLED';
+const TEAM_CLUSTER_BINARY_RELAY_ENABLED_ENV = 'TEAM_CLUSTER_BINARY_RELAY_ENABLED';
+const TEAM_CLUSTER_OBJECT_GATEWAY_BINARY_RELAY_ENABLED_ENV = 'TEAM_CLUSTER_OBJECT_GATEWAY_BINARY_RELAY_ENABLED';
 
 export const isObjectGatewayEnabled = (): boolean => {
     return readBooleanEnv(OBJECT_GATEWAY_ENABLED_ENV, true);
@@ -19,6 +21,15 @@ export const isObjectGatewayReadsEnabled = (): boolean => {
 export const isObjectGatewayWritesEnabled = (): boolean => {
     return isObjectGatewayEnabled()
         && readBooleanEnv(OBJECT_GATEWAY_WRITES_ENABLED_ENV, true);
+};
+
+export const isTeamClusterBinaryRelayEnabled = (): boolean => {
+    return readBooleanEnv(TEAM_CLUSTER_BINARY_RELAY_ENABLED_ENV, false);
+};
+
+export const isObjectGatewayBinaryRelayEnabled = (): boolean => {
+    return isTeamClusterBinaryRelayEnabled()
+        && readBooleanEnv(TEAM_CLUSTER_OBJECT_GATEWAY_BINARY_RELAY_ENABLED_ENV, false);
 };
 
 export const ensureObjectGatewayAccessEnabled = (kind: ObjectGatewayAccessKind): void => {

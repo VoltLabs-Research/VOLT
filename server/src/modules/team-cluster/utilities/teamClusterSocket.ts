@@ -151,11 +151,19 @@ export interface TeamClusterDaemonExposureRemovePayload {
 /**
  * Opens a generic tunnel session against a persistent exposure or direct target.
  */
+export interface TeamClusterDaemonBinaryRelayDescriptor {
+    relaySessionId: string;
+    relayUrl: string;
+    relayToken: string;
+    relayProtocolVersion: 1;
+};
+
 export interface TeamClusterDaemonExposureTunnelOpenPayload {
     type: 'tunnel-open';
     sessionId: string;
     exposureId: string;
     accessMode: TeamClusterServiceExposure['accessModes'][number];
+    relay?: TeamClusterDaemonBinaryRelayDescriptor;
 };
 
 export interface TeamClusterDaemonDirectTunnelOpenPayload {
@@ -164,6 +172,7 @@ export interface TeamClusterDaemonDirectTunnelOpenPayload {
     targetHost: string;
     targetPort: number;
     accessMode: TeamClusterServiceExposure['accessModes'][number];
+    relay?: TeamClusterDaemonBinaryRelayDescriptor;
 };
 
 export type TeamClusterDaemonTunnelOpenPayload =
