@@ -1,5 +1,6 @@
-import { get, download } from '@/app/core/http/utilities/create-service';
+import { custom, get } from '@/app/core/http/utilities/create-service';
 import { base64ToBlob } from '@/shared/utils/file';
+import type { VoltClient } from '@voltstack/voltclient';
 import type {
     AtomData,
     DownloadTrajectoryInputDTO,
@@ -24,6 +25,10 @@ interface AtomsApiResponse {
     };
 };
 
+type RequestArgsWithTimeout = NonNullable<Parameters<VoltClient['request']>[2]> & {
+    timeoutMs: number;
+};
+
 export default {
     getPreview: get<GetPreviewInputDTO, GetPreviewOutputDTO, string>('/:trajectoryId/preview', {
         query: ({ frame, quality }) => ({
@@ -32,11 +37,17 @@ export default {
         }),
         map: (result) => ({ blob: base64ToBlob(result) })
     }),
-    download: download<DownloadTrajectoryInputDTO>('GET', '/:trajectoryId/download', {
-        query: ({ filename, archive }) => ({
-            ...(filename ? { name: filename } : {}),
-            ...(archive !== undefined ? { archive } : {})
-        })
+    download: custom<DownloadTrajectoryInputDTO, Blob>(async ({ getClient }, params) => {
+        const requestArgs: RequestArgsWithTimeout = {
+            query: {
+                ...(params.filename ? { name: params.filename } : {}),
+                ...(params.archive !== undefined ? { archive: params.archive } : {})
+            },
+            responseType: 'blob',
+            timeoutMs: 0
+        };
+
+        return getClient().request('GET', `/${params.trajectoryId}/download`, requestArgs);
     }),
     getAtoms: get<GetAtomsInputDTO, GetAtomsOutputDTO, AtomsApiResponse>(
         '/:trajectoryId/atoms',

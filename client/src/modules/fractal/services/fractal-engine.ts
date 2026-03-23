@@ -488,6 +488,13 @@ export class FractalEngine {
         this.lastOpacitySceneKey = sceneKey;
         this.lastOpacityValue = opacity;
         this.lastPointOpacityValue = pointOpacity;
+        debugFractal('engine.opacity-applied', {
+            sceneKey,
+            opacity,
+            pointOpacity,
+            useSceneOpacity: pointCloudSettings?.useSceneOpacity ?? true,
+            overridesEnabled: pointCloudSettings?.overridesEnabled ?? false
+        });
 
         this.traversalCache.pointClouds.forEach((pointCloud) => {
             if (!pointCloud.material) {
