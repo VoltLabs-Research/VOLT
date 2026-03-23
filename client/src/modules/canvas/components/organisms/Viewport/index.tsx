@@ -233,6 +233,7 @@ const Viewport = ({
                                     scale={TIMESTEP_VIEWER_DEFAULTS.scale}
                                     rotation={TIMESTEP_VIEWER_DEFAULTS.rotation}
                                     position={TIMESTEP_VIEWER_DEFAULTS.position}
+                                    autoFit={false}
                                     onContentTypeDetected={handleContentTypeDetected}
                                 />
                             )}

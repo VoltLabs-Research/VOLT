@@ -7,11 +7,50 @@ export enum ParticleFilterCombinator {
     Or = 'OR'
 };
 
-export interface ParticleFilterCondition extends FilterExpression {
+export enum ParticleFilterMode {
+    Conditions = 'conditions',
+    Preset = 'preset'
+};
+
+export enum ParticleFilterConditionKind {
+    Property = 'property',
+    Preset = 'preset'
+};
+
+export enum ParticleFilterPreset {
+    SurfaceAtoms = 'surface-atoms'
+};
+
+export enum SurfaceAtomsCutoffMode {
+    Auto = 'auto',
+    Manual = 'manual'
+};
+
+export interface ParticleFilterPropertyCondition extends FilterExpression {
+    kind: ParticleFilterConditionKind.Property;
     exposureId?: string;
 };
 
-export interface ParticleFilterGroup {
+export interface SurfaceAtomsPresetConfig {
+    layers: number;
+    cutoffMode: SurfaceAtomsCutoffMode;
+    cutoffRadius?: number;
+    coordinationDeficit: number;
+    anisotropyThreshold: number;
+    byType: boolean;
+};
+
+export interface ParticleFilterPresetCondition {
+    kind: ParticleFilterConditionKind.Preset;
+    preset: ParticleFilterPreset.SurfaceAtoms;
+    presetConfig: SurfaceAtomsPresetConfig;
+};
+
+export type ParticleFilterCondition =
+    | ParticleFilterPropertyCondition
+    | ParticleFilterPresetCondition;
+
+export interface ParticleFilterRequest {
     combinator: ParticleFilterCombinator;
     conditions: ParticleFilterCondition[];
 };
@@ -35,7 +74,7 @@ export interface IParticleFilterService {
     preview(
         trajectoryId: string,
         timestep: string | number,
-        filterGroup: ParticleFilterGroup,
+        request: ParticleFilterRequest,
         analysisId?: string
     ): Promise<{ matchCount: number; totalAtoms: number }>;
 
@@ -43,14 +82,14 @@ export interface IParticleFilterService {
         trajectoryId: string,
         timestep: string | number,
         action: 'delete' | 'highlight',
-        filterGroup: ParticleFilterGroup,
+        request: ParticleFilterRequest,
         analysisId?: string
     ): Promise<{ fileId: string; atomsResult: number; action: string }>;
 
     getModelStream(
         trajectoryId: string,
         timestep: string | number,
-        filterGroup: ParticleFilterGroup,
+        request: ParticleFilterRequest,
         action?: string,
         analysisId?: string
     ): Promise<Readable>;

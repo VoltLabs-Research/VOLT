@@ -1,4 +1,10 @@
-import type { ParticleFilterCombinator, ParticleFilterConditionDTO } from './preview-filter';
+import type {
+    ParticleFilterCombinator,
+    ParticleFilterConditionDTO,
+    ParticleFilterMode,
+    ParticleFilterPreset,
+    SurfaceAtomsPresetConfigDTO
+} from './preview-filter';
 
 export type FilterAction = 'delete' | 'highlight';
 
@@ -6,6 +12,7 @@ export interface ApplyFilterInputDTO {
     trajectoryId: string;
     analysisId?: string;
     timestep: number;
+    mode?: ParticleFilterMode;
     property?: string;
     operator?: '==' | '!=' | '>' | '>=' | '<' | '<=';
     value?: number;
@@ -13,6 +20,8 @@ export interface ApplyFilterInputDTO {
     action: FilterAction;
     combinator?: ParticleFilterCombinator;
     conditions?: ParticleFilterConditionDTO[];
+    preset?: ParticleFilterPreset;
+    presetConfig?: SurfaceAtomsPresetConfigDTO;
 };
 
 export interface ApplyFilterOutputDTO {

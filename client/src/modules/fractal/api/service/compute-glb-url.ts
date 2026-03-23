@@ -56,7 +56,19 @@ const buildParticleFilterUrl = (
     scene: ParticleFilterScene,
     timestep: number
 ): string | null => {
-    const { property, operator, value, analysisId, exposureId, action, combinator, conditions } = scene;
+    const {
+        property,
+        operator,
+        value,
+        analysisId,
+        exposureId,
+        action,
+        combinator,
+        conditions,
+        mode,
+        preset,
+        presetConfig
+    } = scene;
     if (!action) return null;
 
     const effectiveAnalysisId = analysisId || DEFAULT_ANALYSIS_ID;
@@ -68,6 +80,14 @@ const buildParticleFilterUrl = (
     if (Array.isArray(conditions) && conditions.length > 0) {
         params.set('combinator', combinator || 'AND');
         params.set('conditions', JSON.stringify(conditions));
+    } else if (mode === 'preset') {
+        if (!preset || !presetConfig) {
+            return null;
+        }
+
+        params.set('mode', mode);
+        params.set('preset', preset);
+        params.set('presetConfig', JSON.stringify(presetConfig));
     } else {
         if (!property || !operator || value === undefined) {
             return null;

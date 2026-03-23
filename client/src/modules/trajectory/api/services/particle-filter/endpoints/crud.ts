@@ -19,6 +19,15 @@ const buildPreviewQuery = (input: PreviewFilterInputDTO) => {
         };
     }
 
+    if (input.mode === 'preset') {
+        return {
+            timestep: input.timestep,
+            mode: input.mode,
+            preset: input.preset,
+            presetConfig: JSON.stringify(input.presetConfig)
+        };
+    }
+
     return {
         timestep: input.timestep,
         property: input.property,
@@ -35,6 +44,16 @@ const buildApplyFilterBody = (input: ApplyFilterInputDTO) => {
             action: input.action,
             combinator: input.combinator,
             conditions: input.conditions
+        };
+    }
+
+    if (input.mode === 'preset') {
+        return {
+            timestep: String(input.timestep),
+            mode: input.mode,
+            action: input.action,
+            preset: input.preset,
+            presetConfig: input.presetConfig
         };
     }
 

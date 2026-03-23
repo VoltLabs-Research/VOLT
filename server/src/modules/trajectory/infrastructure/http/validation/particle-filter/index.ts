@@ -7,12 +7,44 @@ const analysisIdSchema = z.union([objectIdSchema, z.literal('default')]);
 const exposureIdSchema = z.string().trim().min(1);
 const particleFilterOperatorSchema = z.enum(['==', '!=', '>', '>=', '<', '<=']);
 const particleFilterCombinatorSchema = z.enum(['AND', 'OR']);
-const particleFilterConditionSchema = z.object({
+const particleFilterModeSchema = z.literal('preset');
+const particleFilterPresetSchema = z.literal('surface-atoms');
+const surfaceAtomsCutoffModeSchema = z.enum(['auto', 'manual']);
+const particleFilterPropertyConditionSchema = z.object({
+    kind: z.literal('property'),
     property: z.string().trim().min(1),
     operator: particleFilterOperatorSchema,
     value: z.coerce.number().finite(),
     exposureId: exposureIdSchema.optional()
 }).strict();
+const surfaceAtomsPresetConfigSchema = z.object({
+    layers: z.coerce.number().int().min(1).default(10),
+    cutoffMode: surfaceAtomsCutoffModeSchema.default('auto'),
+    cutoffRadius: z.coerce.number().positive().optional(),
+    coordinationDeficit: z.coerce.number().int().min(1).default(2),
+    anisotropyThreshold: z.coerce.number().min(0).max(1).default(0.35),
+    byType: z.coerce.boolean().default(true)
+}).strict().superRefine((value, context) => {
+    if (value.cutoffMode === 'manual' && value.cutoffRadius === undefined) {
+        context.addIssue({
+            code: 'custom',
+            message: 'cutoffRadius is required when cutoffMode is manual',
+            path: ['cutoffRadius']
+        });
+    }
+});
+
+const particleFilterPresetConditionSchema = z.object({
+    kind: z.literal('preset'),
+    preset: particleFilterPresetSchema,
+    presetConfig: surfaceAtomsPresetConfigSchema
+}).strict();
+
+const particleFilterConditionSchema = z.union([
+    particleFilterPropertyConditionSchema,
+    particleFilterPresetConditionSchema,
+    particleFilterPropertyConditionSchema.omit({ kind: true })
+]);
 
 const parseConditionsQuerySchema = z.string().transform((value, context) => {
     try {
@@ -21,6 +53,19 @@ const parseConditionsQuerySchema = z.string().transform((value, context) => {
         context.addIssue({
             code: 'custom',
             message: 'conditions must be a JSON-encoded array of particle-filter conditions'
+        });
+
+        return z.NEVER;
+    }
+});
+
+const parsePresetConfigQuerySchema = z.string().transform((value, context) => {
+    try {
+        return surfaceAtomsPresetConfigSchema.parse(JSON.parse(value));
+    } catch {
+        context.addIssue({
+            code: 'custom',
+            message: 'presetConfig must be a JSON-encoded particle-filter preset config'
         });
 
         return z.NEVER;
@@ -52,9 +97,17 @@ const particleFilterCompositeExpressionQuerySchema = z.object({
     conditions: parseConditionsQuerySchema
 }).strict();
 
+const particleFilterPresetExpressionQuerySchema = z.object({
+    timestep: z.string().trim().min(1),
+    mode: particleFilterModeSchema,
+    preset: particleFilterPresetSchema,
+    presetConfig: parsePresetConfigQuerySchema
+}).strict();
+
 const particleFilterPreviewQuerySchema = z.union([
     particleFilterLegacyExpressionQuerySchema,
-    particleFilterCompositeExpressionQuerySchema
+    particleFilterCompositeExpressionQuerySchema,
+    particleFilterPresetExpressionQuerySchema
 ]);
 
 const particleFilterUniqueValuesQuerySchema = z.object({
@@ -72,9 +125,14 @@ const particleFilterCompositeModelQuerySchema = particleFilterCompositeExpressio
     action: z.enum(['delete', 'highlight']).optional()
 }).strict();
 
+const particleFilterPresetModelQuerySchema = particleFilterPresetExpressionQuerySchema.extend({
+    action: z.enum(['delete', 'highlight']).optional()
+}).strict();
+
 const particleFilterModelQuerySchema = z.union([
     particleFilterLegacyModelQuerySchema,
-    particleFilterCompositeModelQuerySchema
+    particleFilterCompositeModelQuerySchema,
+    particleFilterPresetModelQuerySchema
 ]);
 
 const applyLegacyFilterBodySchema = z.object({
@@ -93,9 +151,18 @@ const applyCompositeFilterBodySchema = z.object({
     conditions: particleFilterConditionSchema.array().min(1)
 }).strict();
 
+const applyPresetFilterBodySchema = z.object({
+    timestep: z.string().min(1),
+    mode: particleFilterModeSchema,
+    action: z.enum(['delete', 'highlight']),
+    preset: particleFilterPresetSchema,
+    presetConfig: surfaceAtomsPresetConfigSchema
+}).strict();
+
 const applyFilterBodySchema = z.union([
     applyLegacyFilterBodySchema,
-    applyCompositeFilterBodySchema
+    applyCompositeFilterBodySchema,
+    applyPresetFilterBodySchema
 ]);
 
 export const particleFilterValidation = createResourceValidation({

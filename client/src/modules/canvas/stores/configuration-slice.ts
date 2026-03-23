@@ -1,27 +1,12 @@
 import { mergeNestedSectionState, resetSectionState, setSectionFieldState } from './editor/store-section';
 
 import type { EditorStore } from './editor/types';
-import { SliceAxis } from '@/modules/fractal/types/configuration';
 import type { SlicePlaneConfig, ConfigurationStore, ConfigurationState } from '@/modules/fractal/types/configuration';
+import { DEFAULT_SLICE_PLANE_CONFIG } from '@/modules/fractal/utilities/slice-plane';
 import type { StateCreator } from 'zustand';
 
 export interface ConfigurationSlice {
     configuration: ConfigurationStore;
-};
-
-const DEFAULT_SLICE_PLANE_CONFIG: SlicePlaneConfig = {
-    activeAxes: [],
-    positions: {
-        [SliceAxis.X]: 0,
-        [SliceAxis.Y]: 0,
-        [SliceAxis.Z]: 0
-    },
-    angles: {
-        [SliceAxis.X]: 0,
-        [SliceAxis.Y]: 0,
-        [SliceAxis.Z]: 0
-    },
-    showHelper: true,
 };
 
 const initialState: ConfigurationState = {
@@ -40,26 +25,34 @@ export const createConfigurationSlice: StateCreator<EditorStore, [], [], Configu
             set((state) => setSectionFieldState(state, 'configuration', 'slicePlaneConfig', next));
         },
 
-        toggleSliceAxis: (axis: SliceAxis) => {
-            const current = get().configuration.slicePlaneConfig.activeAxes;
-            const isActive = current.includes(axis);
-            const next = isActive
-                ? current.filter((item) => item !== axis)
-                : [...current, axis];
-            set((state) => mergeNestedSectionState(state, 'configuration', 'slicePlaneConfig', { activeAxes: next }));
-        },
-
-        setSlicePosition: (axis: SliceAxis, position: number) => {
-            const current = get().configuration.slicePlaneConfig.positions;
+        setSlicePlaneEnabled: (enabled: boolean) => {
             set((state) => mergeNestedSectionState(state, 'configuration', 'slicePlaneConfig', {
-                positions: { ...current, [axis]: position }
+                enabled
             }));
         },
 
-        setSliceAngle: (axis: SliceAxis, angle: number) => {
-            const current = get().configuration.slicePlaneConfig.angles;
+        setSlicePlaneDistance: (distance: number) => {
             set((state) => mergeNestedSectionState(state, 'configuration', 'slicePlaneConfig', {
-                angles: { ...current, [axis]: angle }
+                distance
+            }));
+        },
+
+        setSlicePlaneNormalComponent: (axis, value: number) => {
+            const current = get().configuration.slicePlaneConfig.normal;
+            set((state) => mergeNestedSectionState(state, 'configuration', 'slicePlaneConfig', {
+                normal: { ...current, [axis]: value }
+            }));
+        },
+
+        setSlicePlaneReverseOrientation: (reverseOrientation: boolean) => {
+            set((state) => mergeNestedSectionState(state, 'configuration', 'slicePlaneConfig', {
+                reverseOrientation
+            }));
+        },
+
+        setSlicePlaneVisualizePlane: (visualizePlane: boolean) => {
+            set((state) => mergeNestedSectionState(state, 'configuration', 'slicePlaneConfig', {
+                visualizePlane
             }));
         },
 

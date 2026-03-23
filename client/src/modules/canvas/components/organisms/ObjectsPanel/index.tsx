@@ -4,7 +4,6 @@ import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import useAnalysisStatus from '../../../hooks/use-analysis-status';
 import useCanvasSidebarState from '../../../hooks/use-canvas-sidebar-state';
 import useSceneArtifacts from '../../../hooks/use-scene-artifacts';
-import PanelHeader from '../../atoms/PanelHeader';
 import SceneCollection from '../../molecules/SceneCollection';
 
 import { ChevronDown, ChevronRight, Eye, Filter, Layers, Minus, Palette, Plus } from 'lucide-react';
@@ -62,6 +61,10 @@ const formatArtifactValue = (value: unknown): string => {
 };
 
 const formatParticleFilterConditionLabel = (condition: SceneArtifactParticleFilterCondition | SceneArtifact['params']): string => {
+    if ('preset' in condition && condition.preset === 'surface-atoms') {
+        return 'surface-atoms';
+    }
+
     if (typeof condition.property !== 'string' || typeof condition.operator !== 'string' || condition.value === undefined) {
         return '';
     }
