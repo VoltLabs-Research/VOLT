@@ -65,7 +65,7 @@ const buildService = async (responses: Array<{
         async removeObjects(): Promise<void> {}
     };
 
-    const service = Object.create(MinioService.prototype) as MinioService;
+    const service = Object.create(MinioService.prototype) as InstanceType<typeof MinioService>;
     Reflect.set(service as object, 'client', fakeClient);
 
     return {
