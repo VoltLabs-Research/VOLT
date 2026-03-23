@@ -351,7 +351,7 @@ const estimateSegmentGeometry = (
 const processDislocations = async (
     data: Record<string, unknown>,
     opts: Required<DislocationExportOptions>
-): Promise<ProcessedDislocationGeometry> => {
+): Promise<ProcessedDislocationGeometry | null> => {
     const segments = Array.isArray(data.segments) ? data.segments : [];
     const typeColors = { ...DISLOCATION_TYPE_COLORS, ...opts.typeColors };
 
@@ -361,7 +361,7 @@ const processDislocations = async (
     // which caused 2x peak memory during the copy.
     const estimate = estimateSegmentGeometry(segments, opts.tubularSegments, opts.minSegmentPoints);
     if (estimate.vertexCount === 0) {
-        throw new Error('No dislocation segment data available for export');
+        return null;
     }
 
     const positions = new Float32Array(estimate.vertexCount * 3);
@@ -448,7 +448,7 @@ const processDislocations = async (
     }
 
     if (vertexOffset === 0) {
-        throw new Error('No dislocation segment data available for export');
+        return null;
     }
 
     // Trim typed arrays to actual size if estimate was larger than what we used
@@ -633,7 +633,7 @@ const buildPointCloudDataDirect = async (exportData: Record<string, unknown>): P
     colors: Float32Array;
     min: [number, number, number];
     max: [number, number, number];
-}> => {
+} | null> => {
     // First pass: count valid atoms to pre-allocate typed arrays
     const entries: Array<[string, unknown[]]> = [];
     let totalAtoms = 0;
@@ -643,7 +643,7 @@ const buildPointCloudDataDirect = async (exportData: Record<string, unknown>): P
         totalAtoms += atoms.length;
     }
     if (totalAtoms === 0) {
-        throw new Error('No atom data available for export');
+        return null;
     }
 
     const positions = new Float32Array(totalAtoms * 3);
@@ -686,7 +686,7 @@ const buildPointCloudDataDirect = async (exportData: Record<string, unknown>): P
     }
 
     if (offset === 0) {
-        throw new Error('No valid atom data available for export');
+        return null;
     }
 
     // Trim if some atoms were invalid and skipped
@@ -877,8 +877,33 @@ export const createExportNodeProcessorService = (
     nativeModuleLoader: NativeModuleLoader,
     daemonArtifactReporterService: DaemonArtifactReporterService
 ): ExportNodeProcessorService => {
-    const exportAtomistic = async (exportData: Record<string, unknown>, objectPath: string): Promise<void> => {
-        const { positions, colors, min, max } = await buildPointCloudDataDirect(exportData);
+    const logSkippedEmptyExport = (
+        input: ExportExecutionInput,
+        exporter: ExporterName,
+        reason: string,
+        arrayIndex?: number
+    ): void => {
+        logger.info(
+            {
+                analysisId: input.executionData.analysisId,
+                exposureName: input.exposure.name,
+                exposureNodeId: input.exposure.nodeId,
+                exporter,
+                timestep: input.timestep,
+                ...(arrayIndex != null ? { arrayIndex } : {}),
+                reason
+            },
+            'No exportable results found for exposure export; skipping artifact generation'
+        );
+    };
+
+    const exportAtomistic = async (exportData: Record<string, unknown>, objectPath: string): Promise<boolean> => {
+        const pointCloud = await buildPointCloudDataDirect(exportData);
+        if (!pointCloud) {
+            return false;
+        }
+
+        const { positions, colors, min, max } = pointCloud;
         const buffer = nativeModuleLoader.getExporterModule().generatePointCloudGLB(positions, colors, min, max);
 
         await uploadBufferToObjectStore({
@@ -890,12 +915,17 @@ export const createExportNodeProcessorService = (
             tempDirectory: DAEMON_PATHS.analysisOutput,
             tempFilePrefix: 'volt-export'
         });
+
+        return true;
     };
 
-    const exportMesh = async (exportData: Record<string, unknown>, objectPath: string, options: MeshExportOptions): Promise<void> => {
+    const exportMesh = async (exportData: Record<string, unknown>, objectPath: string, options: MeshExportOptions): Promise<boolean> => {
         const mesh = normalizeMesh(exportData);
         const material = resolveMaterial(options.material, options.enableDoubleSided);
         const processed = processMesh(mesh, options.smoothIterations);
+        if (!processed) {
+            return false;
+        }
         const buffer = nativeModuleLoader.getExporterModule().generateMeshGLB(
             processed.positions,
             processed.normals,
@@ -915,6 +945,8 @@ export const createExportNodeProcessorService = (
             tempDirectory: DAEMON_PATHS.analysisOutput,
             tempFilePrefix: 'volt-export'
         });
+
+        return true;
     };
 
     const processMesh = (mesh: MeshInput, smoothIterations?: number): {
@@ -929,9 +961,9 @@ export const createExportNodeProcessorService = (
             maxY: number;
             maxZ: number;
         };
-    } => {
+    } | null => {
         if (mesh.vertices.length === 0 || mesh.facets.length === 0) {
-            throw new Error('Mesh export requires vertices and facets');
+            return null;
         }
 
         const vertexMap = new Map<number, [number, number, number]>();
@@ -983,7 +1015,7 @@ export const createExportNodeProcessorService = (
         return { positions, normals, indices, bounds };
     };
 
-    const exportDislocation = async (exportData: Record<string, unknown>, objectPath: string, options: DislocationExportOptions): Promise<void> => {
+    const exportDislocation = async (exportData: Record<string, unknown>, objectPath: string, options: DislocationExportOptions): Promise<boolean> => {
         const opts: Required<DislocationExportOptions> = {
             lineWidth: options.lineWidth ?? 0.08,
             tubularSegments: options.tubularSegments ?? 12,
@@ -999,6 +1031,9 @@ export const createExportNodeProcessorService = (
         };
 
         const geom = await processDislocations(exportData, opts);
+        if (!geom) {
+            return false;
+        }
         const useU16 = geom.vertexCount > 0 && geom.vertexCount <= 65535;
         const idx = useU16 ? new Uint16Array(geom.indices) : geom.indices;
 
@@ -1034,9 +1069,11 @@ export const createExportNodeProcessorService = (
             tempDirectory: DAEMON_PATHS.analysisOutput,
             tempFilePrefix: 'volt-export'
         });
+
+        return true;
     };
 
-    const exportChart = async (decodedPayload: Record<string, unknown>, objectPath: string, options: ChartExportOptions): Promise<void> => {
+    const exportChart = async (decodedPayload: Record<string, unknown>, objectPath: string, options: ChartExportOptions): Promise<boolean> => {
         const width = options.width || 1200;
         const height = options.height || 800;
         const chartCanvas = new ChartJSNodeCanvas({
@@ -1046,7 +1083,7 @@ export const createExportNodeProcessorService = (
         });
         const chartData = extractChartData(decodedPayload, options);
         if (chartData.length === 0) {
-            throw new Error('No chart data found for export node');
+            return false;
         }
 
         const chartType = resolveChartType(options.chartType);
@@ -1109,6 +1146,8 @@ export const createExportNodeProcessorService = (
             tempDirectory: DAEMON_PATHS.analysisOutput,
             tempFilePrefix: 'volt-export'
         });
+
+        return true;
     };
 
     /**
@@ -1218,31 +1257,42 @@ export const createExportNodeProcessorService = (
             // ChartExporter operates on the full decoded payload, not the export key — handle separately
             if (exporter === 'ChartExporter') {
                 const objectPath = buildObjectPath(input, exporter, exportConfig.type);
-                await exportChart(input.decodedPayload, objectPath, options as unknown as ChartExportOptions);
+                const exported = await exportChart(input.decodedPayload, objectPath, options as unknown as ChartExportOptions);
+                if (!exported) {
+                    logSkippedEmptyExport(input, exporter, 'chart payload had no rows');
+                    return;
+                }
                 return;
             }
 
             const entries = resolveExporterEntries(input.decodedPayload, exporter);
             if (entries.length === 0) {
-                throw new Error(`${exporter} data missing from exposure payload`);
+                logSkippedEmptyExport(input, exporter, 'exposure payload did not include exportable data');
+                return;
             }
 
             for (const { exportData, arrayIndex } of entries) {
                 const objectPath = buildObjectPath(input, exporter, exportConfig.type, arrayIndex);
+                let exported = false;
 
                 switch (exporter) {
                     case 'AtomisticExporter':
-                        await exportAtomistic(exportData, objectPath);
+                        exported = await exportAtomistic(exportData, objectPath);
                         break;
                     case 'MeshExporter':
-                        await exportMesh(exportData, objectPath, options as MeshExportOptions);
+                        exported = await exportMesh(exportData, objectPath, options as MeshExportOptions);
                         break;
                     case 'DislocationExporter':
-                        await exportDislocation(exportData, objectPath, options as DislocationExportOptions);
+                        exported = await exportDislocation(exportData, objectPath, options as DislocationExportOptions);
                         break;
                     default:
                         logger.warn({ exporter }, 'Unsupported export node exporter on daemon');
                         return;
+                }
+
+                if (!exported) {
+                    logSkippedEmptyExport(input, exporter, 'export data was present but contained no results', arrayIndex);
+                    continue;
                 }
 
                 reportArtifact(input, exporter, exportConfig, objectPath, arrayIndex);
