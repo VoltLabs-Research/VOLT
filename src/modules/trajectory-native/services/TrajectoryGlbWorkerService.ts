@@ -114,7 +114,7 @@ export class TrajectoryGlbWorkerService {
             await this.redisConnectionService.projectJobStatus(
                 this.buildJobStatusProjection(job, 'running', runningTimestamp)
             );
-            await this.reportJobStatusBestEffort(job, 'running');
+            void this.reportJobStatusBestEffort(job, 'running');
 
             await bullJob.updateProgress(10);
             await this.glbExporterService.preprocessTrajectory({
@@ -130,7 +130,7 @@ export class TrajectoryGlbWorkerService {
             await this.redisConnectionService.projectJobStatus(
                 this.buildJobStatusProjection(job, 'completed', completedTimestamp)
             );
-            await this.reportJobStatusBestEffort(job, 'completed');
+            void this.reportJobStatusBestEffort(job, 'completed');
         } catch (error: unknown) {
             if (error instanceof DelayedError) {
                 return;
@@ -142,7 +142,7 @@ export class TrajectoryGlbWorkerService {
             await this.redisConnectionService.projectJobStatus(
                 this.buildJobStatusProjection(job, 'failed', failedTimestamp, message)
             );
-            await this.reportJobStatusBestEffort(job, 'failed', message);
+            void this.reportJobStatusBestEffort(job, 'failed', message);
 
             throw error instanceof Error ? error : new Error(message);
         }

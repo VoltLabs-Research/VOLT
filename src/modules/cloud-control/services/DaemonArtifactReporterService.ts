@@ -24,10 +24,12 @@ export interface DaemonArtifactReporterService {
 
 export const createDaemonArtifactReporterService = (voltCloudConnection: VoltCloudConnection): DaemonArtifactReporterService => ({
     async reportArtifact(input) {
-        await voltCloudConnection.sendServerCommand('trajectory.scene-artifact.upsert', {
+        await voltCloudConnection.sendBackgroundServerCommand('trajectory.scene-artifact.upsert', {
             teamClusterId: voltCloudConnection.getTeamClusterId(),
             daemonPassword: voltCloudConnection.getDaemonPassword(),
             ...input
+        }, {
+            dedupeKey: `trajectory.scene-artifact.upsert:${input.objectName}`
         });
     }
 });

@@ -128,7 +128,7 @@ export class TrajectoryRasterWorkerService {
             await this.redisConnectionService.projectJobStatus(
                 this.buildJobStatusProjection(job, 'running', runningTimestamp)
             );
-            await this.reportJobStatusBestEffort(job, 'running');
+            void this.reportJobStatusBestEffort(job, 'running');
 
             await bullJob.updateProgress(10);
             await this.rasterizerService.rasterizePreview({
@@ -142,7 +142,7 @@ export class TrajectoryRasterWorkerService {
             await this.redisConnectionService.projectJobStatus(
                 this.buildJobStatusProjection(job, 'completed', completedTimestamp)
             );
-            await this.reportJobStatusBestEffort(job, 'completed');
+            void this.reportJobStatusBestEffort(job, 'completed');
             shouldReleaseAutoPreviewClaim = true;
         } catch (error: unknown) {
             if (error instanceof DelayedError) {
@@ -155,7 +155,7 @@ export class TrajectoryRasterWorkerService {
             await this.redisConnectionService.projectJobStatus(
                 this.buildJobStatusProjection(job, 'failed', failedTimestamp, message)
             );
-            await this.reportJobStatusBestEffort(job, 'failed', message);
+            void this.reportJobStatusBestEffort(job, 'failed', message);
             shouldReleaseAutoPreviewClaim = true;
 
             throw error instanceof Error ? error : new Error(message);

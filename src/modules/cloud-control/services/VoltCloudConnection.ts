@@ -31,6 +31,19 @@ interface DeleteCompletionRequest {
 type NonCommandMessage = Exclude<TeamClusterDaemonMessage, { type: 'command' }>;
 type OutboundMessage = NonCommandMessage | TeamClusterDaemonRuntimeProgressPayload;
 
+interface BackgroundServerCommandOptions {
+    dedupeKey?: string;
+}
+
+interface QueuedServerCommand {
+    command: string;
+    payload: object;
+    dedupeKey?: string;
+    enqueuedAt: number;
+    resolve: (value: unknown) => void;
+    reject: (error: unknown) => void;
+}
+
 /**
  * Adapter that wraps `ClusterDaemonClient` to provide the lifecycle and
  * reporting API consumed by the rest of the daemon modules.
@@ -42,6 +55,11 @@ type OutboundMessage = NonCommandMessage | TeamClusterDaemonRuntimeProgressPaylo
  */
 export class VoltCloudConnection {
     private connectedToCloud = false;
+    private readonly backgroundCommandConcurrency = 2;
+    private readonly backgroundCommandMaxQueueSize = 2048;
+    private readonly backgroundCommandQueue: QueuedServerCommand[] = [];
+    private readonly backgroundCommandDedupeKeys = new Set<string>();
+    private backgroundCommandsInFlight = 0;
 
     readonly client: ClusterDaemonClient;
 
@@ -191,6 +209,50 @@ export class VoltCloudConnection {
         return this.client.sendCommand<T>(command, payload);
     }
 
+    async sendBackgroundServerCommand<T>(
+        command: string,
+        payload: object,
+        options: BackgroundServerCommandOptions = {}
+    ): Promise<T | undefined> {
+        const dedupeKey = typeof options.dedupeKey === 'string' && options.dedupeKey.trim().length > 0
+            ? options.dedupeKey.trim()
+            : undefined;
+
+        if (dedupeKey && this.backgroundCommandDedupeKeys.has(dedupeKey)) {
+            logger.debug({ command, dedupeKey }, 'Skipped duplicate background server command');
+            return undefined;
+        }
+
+        if (this.backgroundCommandQueue.length >= this.backgroundCommandMaxQueueSize) {
+            logger.warn(
+                {
+                    command,
+                    dedupeKey,
+                    queueLength: this.backgroundCommandQueue.length
+                },
+                'Background server command queue is full; dropping command'
+            );
+            return undefined;
+        }
+
+        return new Promise<T | undefined>((resolve, reject) => {
+            if (dedupeKey) {
+                this.backgroundCommandDedupeKeys.add(dedupeKey);
+            }
+
+            this.backgroundCommandQueue.push({
+                command,
+                payload,
+                dedupeKey,
+                enqueuedAt: Date.now(),
+                resolve: (value) => resolve(value as T | undefined),
+                reject
+            });
+
+            this.flushBackgroundCommandQueue();
+        });
+    }
+
     async getRuntimeConfig(): Promise<DaemonRuntimeConfig> {
         const runtimeConfig = await this.sendServerCommand<DaemonRuntimeConfig>(
             TEAM_CLUSTER_DAEMON_COMMAND.runtime.config.get,
@@ -233,5 +295,46 @@ export class VoltCloudConnection {
             connectedToCloud: this.connectedToCloud,
             details
         };
+    }
+
+    private flushBackgroundCommandQueue(): void {
+        while (
+            this.backgroundCommandsInFlight < this.backgroundCommandConcurrency
+            && this.backgroundCommandQueue.length > 0
+        ) {
+            const queued = this.backgroundCommandQueue.shift() as QueuedServerCommand;
+            this.backgroundCommandsInFlight += 1;
+
+            void this.sendServerCommand(queued.command, queued.payload)
+                .then((result) => {
+                    queued.resolve(result);
+                })
+                .catch((error) => {
+                    queued.reject(error);
+                })
+                .finally(() => {
+                    this.backgroundCommandsInFlight = Math.max(0, this.backgroundCommandsInFlight - 1);
+
+                    if (queued.dedupeKey) {
+                        this.backgroundCommandDedupeKeys.delete(queued.dedupeKey);
+                    }
+
+                    const queueWaitMs = Date.now() - queued.enqueuedAt;
+                    if (queueWaitMs >= 5_000) {
+                        logger.warn(
+                            {
+                                command: queued.command,
+                                dedupeKey: queued.dedupeKey,
+                                queueWaitMs,
+                                inFlight: this.backgroundCommandsInFlight,
+                                pending: this.backgroundCommandQueue.length
+                            },
+                            'Background server command experienced queue delay'
+                        );
+                    }
+
+                    this.flushBackgroundCommandQueue();
+                });
+        }
     }
 };

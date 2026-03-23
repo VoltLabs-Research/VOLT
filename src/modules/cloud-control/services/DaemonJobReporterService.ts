@@ -63,26 +63,32 @@ export const createDaemonJobReporterService = (voltCloudConnection: VoltCloudCon
     },
 
     async reportAnalysisJobStatus(input) {
-        await voltCloudConnection.sendServerCommand('analysis.job-status', {
+        await voltCloudConnection.sendBackgroundServerCommand('analysis.job-status', {
             teamClusterId: voltCloudConnection.getTeamClusterId(),
             daemonPassword: voltCloudConnection.getDaemonPassword(),
             ...input
+        }, {
+            dedupeKey: `analysis.job-status:${input.jobId}:${input.status}:${input.timestep ?? 'none'}`
         });
     },
 
     async reportRasterJobStatus(input) {
-        await voltCloudConnection.sendServerCommand('trajectory.raster-job-status', {
+        await voltCloudConnection.sendBackgroundServerCommand('trajectory.raster-job-status', {
             teamClusterId: voltCloudConnection.getTeamClusterId(),
             daemonPassword: voltCloudConnection.getDaemonPassword(),
             ...input
+        }, {
+            dedupeKey: `trajectory.raster-job-status:${input.jobId}:${input.status}:${input.timestep ?? 'none'}`
         });
     },
 
     async reportGlbJobStatus(input) {
-        await voltCloudConnection.sendServerCommand('trajectory.glb-job-status', {
+        await voltCloudConnection.sendBackgroundServerCommand('trajectory.glb-job-status', {
             teamClusterId: voltCloudConnection.getTeamClusterId(),
             daemonPassword: voltCloudConnection.getDaemonPassword(),
             ...input
+        }, {
+            dedupeKey: `trajectory.glb-job-status:${input.jobId}:${input.status}:${input.timestep ?? 'none'}`
         });
     }
 });
