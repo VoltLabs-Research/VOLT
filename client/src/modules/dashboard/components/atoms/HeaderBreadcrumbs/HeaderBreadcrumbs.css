@@ -4,9 +4,12 @@
 }
 
 .breadcrumb-link {
+    display: inline-flex;
     padding: 0;
     border: none;
     background: transparent;
+    text-decoration: none;
+    white-space: nowrap;
     cursor: pointer;
 }
 

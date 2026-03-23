@@ -1,8 +1,7 @@
 import './HeaderBreadcrumbs.css';
 import { useMemo } from 'react';
 import { IoChevronForward } from 'react-icons/io5';
-import { useLocation } from 'react-router-dom';
-import Button from '@/shared/presentation/components/Button';
+import { Link, useLocation } from 'react-router-dom';
 import Container from '@/shared/presentation/components/Container';
 
 interface BreadcrumbItem {
@@ -48,15 +47,9 @@ const HeaderBreadcrumbs = () => {
             const { path } = breadcrumb;
 
             return (
-                <Button
-                    to={path}
-                    variant='ghost'
-                    intent='neutral'
-                    size='sm'
-                    className='breadcrumb-item breadcrumb-link color-secondary'
-                >
+                <Link to={path} className='breadcrumb-item breadcrumb-link color-secondary font-weight-5'>
                     {breadcrumb.label}
-                </Button>
+                </Link>
             );
         }
 
@@ -72,15 +65,9 @@ const HeaderBreadcrumbs = () => {
 
     return (
         <nav className='breadcrumb-nav d-flex items-center gap-05 font-size-2' aria-label='Dashboard breadcrumbs'>
-            <Button
-                to='/dashboard'
-                variant='ghost'
-                intent='neutral'
-                size='sm'
-                className='breadcrumb-item breadcrumb-link color-secondary'
-            >
+            <Link to='/dashboard' className='breadcrumb-item breadcrumb-link color-secondary font-weight-5'>
                 Dashboard
-            </Button>
+            </Link>
 
             {breadcrumbs.map((breadcrumb, index) => (
                 <Container key={`${breadcrumb.label}-${index}`} className='d-flex items-center gap-05'>

@@ -30,7 +30,7 @@ type DashboardWorkspaceChromeListener = () => void;
 declare global {
     interface Window {
         __voltDashboardWorkspaceChrome?: DashboardWorkspaceChromeRegistry;
-    };
+    }
 }
 
 const serverDashboardWorkspaceChromeRegistry: DashboardWorkspaceChromeRegistry = {

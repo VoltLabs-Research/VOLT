@@ -32,9 +32,18 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
                 <Container className='d-flex flex-center color-secondary'>
                     <Folder size={16} />
                 </Container>
-                <Container className='d-flex column gap-025 overflow-hidden'>
+                <Container className='d-flex column gap-025 overflow-hidden min-w-0'>
                     <span className='font-weight-6 color-secondary'>{String(value)}</span>
-                    <span className='font-size-1 color-muted'>{isTrajectoryFolderRow(row) ? 'Folder' : row._id.substring(0, 12)}</span>
+                    <span
+                        className='font-size-1 color-muted d-block'
+                        title={isTrajectoryFolderRow(row) ? 'Folder' : row._id}
+                        style={isTrajectoryFolderRow(row) ? undefined : {
+                            whiteSpace: 'normal',
+                            overflowWrap: 'anywhere'
+                        }}
+                    >
+                        {isTrajectoryFolderRow(row) ? 'Folder' : row._id}
+                    </span>
                 </Container>
             </Container>
         ),
