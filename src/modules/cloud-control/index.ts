@@ -49,7 +49,6 @@ export interface CloudControlModule {
     voltCloudConnection: VoltCloudConnection;
     daemonExposureRegistryService: DaemonExposureRegistryService;
     objectGatewayServer: ObjectGatewayServer;
-    objectGatewayTelemetryService: ObjectGatewayTelemetryService;
     daemonArtifactReporterService: DaemonArtifactReporterService;
     daemonJobReporterService: DaemonJobReporterService;
 }
@@ -149,7 +148,6 @@ export const createCloudControlModule = (deps: {
         voltCloudConnection,
         daemonExposureRegistryService,
         objectGatewayServer,
-        objectGatewayTelemetryService,
         daemonArtifactReporterService: createDaemonArtifactReporterService(voltCloudConnection),
         daemonJobReporterService: createDaemonJobReporterService(voltCloudConnection)
     };
