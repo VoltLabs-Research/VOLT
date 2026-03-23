@@ -32,6 +32,7 @@ import type { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEv
 import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import type { ISocketRoomManager } from '@modules/socket/domain/port/ISocketRoomManager';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import type { ProcessDaemonSceneArtifactUpsertInputDTO } from '@modules/team-cluster/application/use-cases/ProcessDaemonSceneArtifactUpsertUseCase';
 import type ApplicationError from '@shared/application/errors/ApplicationErrors';
 import type { Result } from '@shared/domain/port/Result';
 import logger from '@shared/infrastructure/logger';
@@ -211,9 +212,16 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             connection.id,
             TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
             async (_conn, payload) => {
-        if (this.teamClusterReverseChannelService.isRegisteredDaemonSocket(connection.id) && payload.type === 'command') {
+                if (this.teamClusterReverseChannelService.isRegisteredDaemonSocket(connection.id) && payload.type === 'command') {
                     await this.handleDaemonServerCommand(connection.id, payload);
                     return;
+                }
+
+                if (this.teamClusterReverseChannelService.isRegisteredDaemonSocket(connection.id)) {
+                    const handled = await this.handleDaemonServerEvent(payload);
+                    if (handled) {
+                        return;
+                    }
                 }
 
                 this.teamClusterReverseChannelService.handleMessage(connection.id, payload);
@@ -323,6 +331,65 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             status: 404,
             message: `Unknown daemon server command: ${payload.command}`
         });
+    }
+
+    private async handleDaemonServerEvent(payload: TeamClusterDaemonMessage): Promise<boolean> {
+        if (
+            payload.type === 'analysis-job-completion'
+            || payload.type === 'analysis-job-status'
+            || payload.type === 'trajectory-raster-job-status'
+            || payload.type === 'trajectory-glb-job-status'
+        ) {
+            const result = await this.processDaemonJobCompletionUseCase.execute(payload as never);
+            if (!result.success) {
+                logger.warn(
+                    {
+                        type: payload.type,
+                        statusCode: result.error.statusCode,
+                        message: result.error.message
+                    },
+                    'Failed to process daemon job event'
+                );
+            }
+
+            return true;
+        }
+
+        if (payload.type === 'trajectory-scene-artifact-upsert-batch') {
+            const inputs: ProcessDaemonSceneArtifactUpsertInputDTO[] = payload.items.map((item) => ({
+                teamClusterId: payload.teamClusterId,
+                daemonPassword: payload.daemonPassword,
+                trajectory: item.trajectory,
+                teamCluster: item.teamCluster,
+                analysis: item.analysis,
+                plugin: item.plugin,
+                sourceType: item.sourceType as ProcessDaemonSceneArtifactUpsertInputDTO['sourceType'],
+                timestep: item.timestep,
+                objectName: item.objectName,
+                storageBucket: item.storageBucket,
+                params: item.params as ProcessDaemonSceneArtifactUpsertInputDTO['params'],
+                displayName: item.displayName,
+                status: item.status as ProcessDaemonSceneArtifactUpsertInputDTO['status'],
+                metadata: item.metadata
+            }));
+            const result = await this.processDaemonSceneArtifactUpsertUseCase.executeBatch(inputs);
+
+            if (!result.success) {
+                logger.warn(
+                    {
+                        type: payload.type,
+                        batchSize: payload.items.length,
+                        statusCode: result.error.statusCode,
+                        message: result.error.message
+                    },
+                    'Failed to process daemon scene artifact batch'
+                );
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     private emitUseCaseResult<T>(socketId: string, requestId: string, result: Result<T, ApplicationError>): void {
