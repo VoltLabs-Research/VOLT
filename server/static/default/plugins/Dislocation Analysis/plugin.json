@@ -395,6 +395,38 @@
             "raster": false
           }
         }
+      },
+      {
+        "id": "f73d8cf6-4ddd-4f7f-bf89-1b75b6e2bf42",
+        "type": "export",
+        "position": {
+          "x": 2192,
+          "y": 752
+        },
+        "data": {
+          "export": {
+            "exporter": "AtomisticExporter",
+            "type": "glb"
+          }
+        }
+      },
+      {
+        "id": "8c45fa76-92eb-4c07-b7a4-cfe197851f0f",
+        "type": "exposure",
+        "position": {
+          "x": 1888,
+          "y": 752
+        },
+        "data": {
+          "exposure": {
+            "name": "Atoms Around Dislocations",
+            "icon": "HiCubeTransparent",
+            "results": "dislocation_surrounding_atoms.msgpack",
+            "iterable": "",
+            "canvas": false,
+            "raster": false
+          }
+        }
       }
     ],
     "edges": [
@@ -515,6 +547,20 @@
         "source": "a04496d9-e23f-4367-962f-999c80bc0cfa",
         "sourceHandle": "output",
         "target": "da0a0159-2092-48c3-90e6-2fc09c992952",
+        "targetHandle": "input"
+      },
+      {
+        "id": "e-a04496d9-e23f-4367-962f-999c80bc0cfa-8c45fa76-92eb-4c07-b7a4-cfe197851f0f-output-input",
+        "source": "a04496d9-e23f-4367-962f-999c80bc0cfa",
+        "sourceHandle": "output",
+        "target": "8c45fa76-92eb-4c07-b7a4-cfe197851f0f",
+        "targetHandle": "input"
+      },
+      {
+        "id": "e-8c45fa76-92eb-4c07-b7a4-cfe197851f0f-f73d8cf6-4ddd-4f7f-bf89-1b75b6e2bf42-output-input",
+        "source": "8c45fa76-92eb-4c07-b7a4-cfe197851f0f",
+        "sourceHandle": "output",
+        "target": "f73d8cf6-4ddd-4f7f-bf89-1b75b6e2bf42",
         "targetHandle": "input"
       },
       {
