@@ -172,19 +172,9 @@ const CanvasPage = () => {
             ?? normalizeCanvasAnalysisStatus(trajectory?.analysis?.find((analysis) => analysis._id === analysisId)?.status);
     }, [analysisId, statusMap, trajectory?.analysis]);
 
-    const completedAnalyses = useMemo(() => {
-        return (trajectory?.analysis ?? []).filter((analysis) => {
-            const status = statusMap.get(analysis._id)?.status
-                ?? normalizeCanvasAnalysisStatus(analysis.status);
-
-            return status === CanvasAnalysisStatusEnum.Completed;
-        });
-    }, [statusMap, trajectory?.analysis]);
-
     const canDownloadAnalysisListing = Boolean(analysisId && selectedAnalysisStatus === CanvasAnalysisStatusEnum.Completed);
     const canDownloadTrajectoryAnalyses = Boolean(
         trajectory?._id
-        && completedAnalyses.length > 0
         && !isDownloadingTrajectoryAnalyses
     );
     const canExportTrajectory = Boolean(trajectory?._id && hasFrames && !isExportingTrajectory);
