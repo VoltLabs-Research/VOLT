@@ -555,18 +555,35 @@ const generateColor = (index: number): [number, number, number] => {
 /** Regex for cluster names emitted by MultiSOM / clustering nodes, e.g. "Cluster 7". */
 const CLUSTER_NAME_RE = /^Cluster\s+(\d+)$/i;
 
+const normalizeDiscreteTypeName = (typeName: string): string => {
+    return typeName
+        .trim()
+        .toLowerCase()
+        .replace(/[\s-]+/g, '_');
+};
+
 const colorForType = (typeName: string, typeIndex: number): [number, number, number] => {
-    // 1. Predefined colours for well-known structural types (unchanged).
+    // Preserve the historical Structure Identification palette so standalone
+    // structure-classification exports match the legacy Volt colouring.
     const predefined: Record<string, [number, number, number]> = {
-        bcc: [0.2, 0.6, 1],
-        fcc: [1, 0.5, 0.2],
-        hcp: [0.4, 0.9, 0.4],
+        bcc: [102 / 255, 102 / 255, 1],
+        fcc: [102 / 255, 1, 102 / 255],
+        hcp: [1, 102 / 255, 102 / 255],
         dislocation: [1, 0.2, 0.2],
-        ico: [0.85, 0.20, 0.53],
-        unknown: [0.5, 0.5, 0.5]
+        ico: [1, 165 / 255, 0],
+        sc: [160 / 255, 20 / 255, 254 / 255],
+        cubic_diamond: [19 / 255, 160 / 255, 254 / 255],
+        cubic_diamond_first_neigh: [0, 254 / 255, 245 / 255],
+        cubic_diamond_second_neigh: [126 / 255, 254 / 255, 181 / 255],
+        hex_diamond: [254 / 255, 137 / 255, 0],
+        hex_diamond_first_neigh: [254 / 255, 220 / 255, 0],
+        hex_diamond_second_neigh: [204 / 255, 229 / 255, 81 / 255],
+        graphene: [50 / 255, 205 / 255, 50 / 255],
+        unknown: [128 / 255, 128 / 255, 128 / 255],
+        other: [242 / 255, 242 / 255, 242 / 255]
     };
 
-    const normalized = typeName.toLowerCase();
+    const normalized = normalizeDiscreteTypeName(typeName);
     if (predefined[normalized]) {
         return predefined[normalized];
     }
