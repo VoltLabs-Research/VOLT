@@ -250,6 +250,14 @@ export interface TeamClusterDaemonTunnelOpenBasePayload {
     type: 'tunnel-open';
     sessionId: string;
     accessMode: TeamClusterServiceExposureAccessMode;
+    relay?: TeamClusterDaemonBinaryRelayDescriptor;
+};
+
+export interface TeamClusterDaemonBinaryRelayDescriptor {
+    relaySessionId: string;
+    relayUrl: string;
+    relayToken: string;
+    relayProtocolVersion: 1;
 };
 
 export interface TeamClusterDaemonExposureTunnelOpenPayload extends TeamClusterDaemonTunnelOpenBasePayload {

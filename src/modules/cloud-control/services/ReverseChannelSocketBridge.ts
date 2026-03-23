@@ -12,6 +12,7 @@ import {
 import { BASE64_SESSION_CHUNK_PATTERN, SESSION_ATTACH_TIMEOUT_MS } from './reverseChannelSessionConstants';
 import { readTunnelOpenPayload } from './reverseChannelTunnelOpen';
 import { OBJECT_GATEWAY_EXPOSURE } from './ObjectGatewayServer';
+import { BinaryRelaySocketBridge } from './BinaryRelaySocketBridge';
 import net from 'node:net';
 import type {
     TeamClusterDaemonMessage,
@@ -88,6 +89,7 @@ export class ReverseChannelSocketBridge {
     private readonly cancelledSessionTransitions = new Set<number>();
     private readonly terminalSessionManager: TerminalSessionManager;
     private readonly webSocketSessionManager: WebSocketSessionManager;
+    private readonly binaryRelaySocketBridge: BinaryRelaySocketBridge;
     private nextSessionTransitionId = 0;
 
     /** Tracks last activity timestamp per session for idle TTL. */
@@ -129,6 +131,14 @@ export class ReverseChannelSocketBridge {
                 touchSession: this.touchSession.bind(this)
             }
         });
+        this.binaryRelaySocketBridge = new BinaryRelaySocketBridge({
+            emitTunnelClose: this.emitMessage.bind(this),
+            emitTunnelState: this.emitTunnelState.bind(this),
+            touchSession: this.touchSession.bind(this),
+            clearSessionActivityIfUntracked: this.clearSessionActivityIfUntracked.bind(this),
+            endSessionTransition: this.endSessionTransition.bind(this),
+            wasSessionTransitionCancelled: this.wasSessionTransitionCancelled.bind(this)
+        }, this.objectGatewayTelemetryService);
     }
 
     /**
@@ -232,6 +242,7 @@ export class ReverseChannelSocketBridge {
             !this.terminalSessionManager.hasSession(sessionId)
             && !this.webSocketSessionManager.hasSession(sessionId)
             && !this.tunnelStates.has(sessionId)
+            && !this.binaryRelaySocketBridge.hasSession(sessionId)
         ) {
             this.sessionActivity.delete(sessionId);
         }
@@ -241,6 +252,9 @@ export class ReverseChannelSocketBridge {
         this.terminalSessionManager.cleanupSession(sessionId);
         this.webSocketSessionManager.cleanupSession(sessionId);
         this.cleanupTunnelSession(sessionId);
+        this.binaryRelaySocketBridge.cleanupSession(sessionId, {
+            emitTunnelClose: false
+        });
     }
 
     /**
@@ -277,6 +291,10 @@ export class ReverseChannelSocketBridge {
         }
 
         for (const sessionId of Array.from(this.tunnelStates.keys())) {
+            this.cleanupInteractiveSession(sessionId);
+        }
+
+        for (const sessionId of this.binaryRelaySocketBridge.getSessionIds()) {
             this.cleanupInteractiveSession(sessionId);
         }
 
@@ -433,6 +451,24 @@ export class ReverseChannelSocketBridge {
 
             targetHost = exposure.targetHost;
             targetPort = exposure.targetPort;
+        }
+
+        if (payload.relay) {
+            this.binaryRelaySocketBridge.openTunnel({
+                sessionId: payload.sessionId,
+                transition: sessionTransition,
+                relay: payload.relay,
+                targetHost,
+                targetPort,
+                isObjectGatewayTunnel
+            });
+            this.touchSession(payload.sessionId);
+            this.emitTunnelState({
+                type: 'tunnel-state',
+                sessionId: payload.sessionId,
+                status: REVERSE_CHANNEL.TunnelSessionStatus.Opening
+            });
+            return;
         }
 
         const tunnelSocket = net.createConnection({
