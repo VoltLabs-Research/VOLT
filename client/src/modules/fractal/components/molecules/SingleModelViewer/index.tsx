@@ -35,20 +35,18 @@ interface AutoFitBoxTransforms {
 
 const DEFAULT_CAMERA_DIRECTION = new THREE.Vector3(1, 1, 0.75).normalize();
 
-const buildWorldBoundsFromBox = (
-    boxBounds: BoxBounds,
+const buildWorldBoundsFromModel = (
+    bounds: BoundsInfo,
     transforms: AutoFitBoxTransforms
 ): THREE.Box3 => {
-    const min = new THREE.Vector3(
-        boxBounds.xlo * transforms.scale + transforms.position.x,
-        boxBounds.ylo * transforms.scale + transforms.position.y,
-        boxBounds.zlo * transforms.scale + transforms.position.z + (transforms.groundOffset || 0)
+    const groundOffset = transforms.groundOffset || 0;
+    const worldOffset = new THREE.Vector3(
+        transforms.position.x,
+        transforms.position.y,
+        transforms.position.z + groundOffset
     );
-    const max = new THREE.Vector3(
-        boxBounds.xhi * transforms.scale + transforms.position.x,
-        boxBounds.yhi * transforms.scale + transforms.position.y,
-        boxBounds.zhi * transforms.scale + transforms.position.z + (transforms.groundOffset || 0)
-    );
+    const min = bounds.box.min.clone().multiplyScalar(transforms.scale).add(worldOffset);
+    const max = bounds.box.max.clone().multiplyScalar(transforms.scale).add(worldOffset);
 
     return new THREE.Box3(min, max);
 };
@@ -327,7 +325,19 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
             return;
         }
 
-        const worldBox = buildWorldBoundsFromBox(boxBounds, cellBoxTransforms);
+        if (!modelBounds) {
+            if (!autoFitWaitLoggedRef.current) {
+                debugFractal('single-model.autofit-waiting-model-bounds', {
+                    trajectoryId,
+                    timestep: currentTimestep,
+                    sceneKey
+                });
+                autoFitWaitLoggedRef.current = true;
+            }
+            return;
+        }
+
+        const worldBox = buildWorldBoundsFromModel(modelBounds, cellBoxTransforms);
         if (worldBox.isEmpty()) {
             autoFitAppliedRef.current = true;
             warnFractal('single-model.autofit-empty-world-box', {
@@ -348,6 +358,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
             trajectoryId,
             timestep: currentTimestep,
             sceneKey,
+            source: 'model-bounds',
             worldCenter: worldCenter.toArray(),
             worldSize: worldSize.toArray(),
             previousCameraPosition,

@@ -23,6 +23,7 @@ export default createHttpModule({
         router.delete('/folders/:folderId', trajectoryValidation.deleteFolder, controllers.deleteFolder.handle);
         router.get('/metrics', trajectoryValidation.getMetrics, controllers.getMetrics.handle);
         router.get('/:trajectoryId/preview', trajectoryValidation.getPreview, controllers.getPreview.handle);
+        router.get('/:trajectoryId/analyses/download', trajectoryValidation.downloadTrajectoryAnalyses, controllers.downloadTrajectoryAnalyses.handle);
         router.get('/:trajectoryId/download', trajectoryValidation.downloadTrajectory, controllers.downloadTrajectory.handle);
         router.get('/:trajectoryId/atoms', trajectoryValidation.getAtoms, controllers.getAtoms.handle);
         router.get('/:trajectoryId/scene-artifacts', trajectoryValidation.getSceneArtifacts, controllers.getSceneArtifacts.handle);

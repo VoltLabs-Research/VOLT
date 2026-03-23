@@ -3,6 +3,7 @@ import { base64ToBlob } from '@/shared/utils/file';
 import type { VoltClient } from '@voltstack/voltclient';
 import type {
     AtomData,
+    DownloadTrajectoryAnalysesInputDTO,
     DownloadTrajectoryInputDTO,
     GetAtomsInputDTO,
     GetAtomsOutputDTO,
@@ -37,6 +38,7 @@ export default {
         }),
         map: (result) => ({ blob: base64ToBlob(result) })
     }),
+    // TODO: ugly fix, voltsdk need this change 
     download: custom<DownloadTrajectoryInputDTO, Blob>(async ({ getClient }, params) => {
         const requestArgs: RequestArgsWithTimeout = {
             query: {
@@ -48,6 +50,17 @@ export default {
         };
 
         return getClient().request('GET', `/${params.trajectoryId}/download`, requestArgs);
+    }),
+    downloadAnalyses: custom<DownloadTrajectoryAnalysesInputDTO, Blob>(async ({ getClient }, params) => {
+        const requestArgs: RequestArgsWithTimeout = {
+            query: {
+                ...(params.filename ? { name: params.filename } : {})
+            },
+            responseType: 'blob',
+            timeoutMs: 0
+        };
+
+        return getClient().request('GET', `/${params.trajectoryId}/analyses/download`, requestArgs);
     }),
     getAtoms: get<GetAtomsInputDTO, GetAtomsOutputDTO, AtomsApiResponse>(
         '/:trajectoryId/atoms',

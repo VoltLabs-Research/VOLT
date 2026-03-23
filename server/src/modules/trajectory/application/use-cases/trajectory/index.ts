@@ -3,6 +3,7 @@ export { default as CreateTrajectoryFolderUseCase } from './CreateTrajectoryFold
 export { default as DeleteTrajectoryByIdUseCase } from './DeleteTrajectoryByIdUseCase';
 export { default as DeleteTrajectoryFolderUseCase } from './DeleteTrajectoryFolderUseCase';
 export { default as DownloadSampleSimulationsUseCase } from './DownloadSampleSimulationsUseCase';
+export { default as DownloadTrajectoryAnalysesUseCase } from './DownloadTrajectoryAnalysesUseCase';
 export { default as DownloadTrajectoryUseCase } from './DownloadTrajectoryUseCase';
 export { GetAtomsUseCase } from './GetAtomsUseCase';
 export { default as GetTeamMetricsUseCase } from './GetTeamMetricsUseCase';
