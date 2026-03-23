@@ -50,15 +50,23 @@ const useLatexFiles = ({ documentId, onFileSelected }: UseLatexFilesInput) => {
     const { mutateAsync: setEntrypoint } = useSetLatexFileEntrypointMutation();
     const { mutateAsync: updateFile, isPending: isSaving } = useUpdateLatexFileMutation();
 
-    const handleCreateFile = useCallback(async (
+    const createFileWithoutSelection = useCallback(async (
         name: string,
         path?: string,
         content?: string
     ): Promise<LatexFile | null> => {
         if (!name.trim()) return null;
 
+        return await createFile({ documentId, name: name.trim(), path, content });
+    }, [createFile, documentId]);
+
+    const handleCreateFile = useCallback(async (
+        name: string,
+        path?: string,
+        content?: string
+    ): Promise<LatexFile | null> => {
         const created = await showPromise(
-            createFile({ documentId, name: name.trim(), path, content }),
+            createFileWithoutSelection(name, path, content),
             CREATE_FILE_TOAST
         );
 
@@ -67,7 +75,7 @@ const useLatexFiles = ({ documentId, onFileSelected }: UseLatexFilesInput) => {
         }
 
         return created ?? null;
-    }, [createFile, documentId, onFileSelected]);
+    }, [createFileWithoutSelection, onFileSelected]);
 
     const handleDeleteFile = useCallback(async (fileId: string): Promise<void> => {
         await showPromise(
@@ -97,6 +105,7 @@ const useLatexFiles = ({ documentId, onFileSelected }: UseLatexFilesInput) => {
         isDeleting,
         isSaving,
         handleCreateFile,
+        createFileWithoutSelection,
         handleDeleteFile,
         handleSetEntrypoint,
         handleRenameFile,

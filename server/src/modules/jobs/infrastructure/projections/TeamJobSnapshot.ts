@@ -4,6 +4,12 @@ import { JobStatus } from '@modules/jobs/domain/entities/Job';
 export type TeamJobStatus = JobStatus | 'retrying' | 'partial';
 
 export interface TeamJobMetadata {
+    jobId?: string;
+    status?: string;
+    queueType?: string;
+    source?: string;
+    backingSource?: string;
+    cleanupScope?: string;
     trajectoryId?: string;
     trajectoryName?: string;
     timestep?: number;
@@ -29,5 +35,8 @@ export interface TeamJobSnapshot {
     trajectoryId?: string;
     trajectoryName?: string;
     timestep?: number;
+    source?: string;
+    backingSource?: string;
+    cleanupScope?: string;
     [key: string]: unknown;
 }

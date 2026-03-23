@@ -149,7 +149,14 @@ export class FractalEngine {
     }
 
     configure(params: FractalParams) {
+        const didUrlChange = params.url !== this.params.url;
         this.params = params;
+
+        if (didUrlChange) {
+            this.consecutiveLoadFailures = 0;
+            this.state.loadError = null;
+        }
+
         this.setLocalClippingEnabled((params.sliceClippingPlanes?.length ?? 0) > 0);
         if (this.state.model) {
             this.applyClippingToModel(this.state.model, params.sliceClippingPlanes);

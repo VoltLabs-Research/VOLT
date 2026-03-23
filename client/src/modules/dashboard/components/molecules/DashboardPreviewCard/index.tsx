@@ -4,25 +4,34 @@ import useFractalSceneConfig from '@/modules/canvas/hooks/use-fractal-scene-conf
 import useDashboardPreview from '@/modules/dashboard/hooks/use-dashboard-preview';
 import SingleModelViewer from '@/modules/fractal/components/molecules/SingleModelViewer';
 import FractalScene from '@/modules/fractal/components/organisms/FractalScene';
+import type { ModelLoadingState } from '@/modules/fractal/api/entities/model';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import Loader from '@/shared/presentation/components/Loader';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { DEFAULT_SCENE } from '@/modules/fractal/utilities/scene-utils';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import { formatNumber } from '@/shared/utils/format';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { GoArrowRight } from 'react-icons/go';
 import { PiAtomThin } from 'react-icons/pi';
 import { useShallow } from 'zustand/react/shallow';
 import type { CSSProperties } from 'react';
 
+const INITIAL_MODEL_LOADING_STATE: ModelLoadingState = {
+    isLoading: false,
+    progress: 0,
+    error: null
+};
+
 const DashboardPreviewCard = () => {
     const teamId = useSelectedTeamId();
     const prefersReducedMotion = usePrefersReducedMotion();
+    const [modelLoadingState, setModelLoadingState] = useState<ModelLoadingState>(INITIAL_MODEL_LOADING_STATE);
     const {
         atomCount,
         completedTrajectory,
@@ -62,6 +71,13 @@ const DashboardPreviewCard = () => {
         pointerEvents: 'none'
     };
 
+    useEffect(() => {
+        setModelLoadingState(INITIAL_MODEL_LOADING_STATE);
+    }, [readyTrajectory?._id, readyTimestep]);
+
+    const hasModelLoadError = Boolean(modelLoadingState.error);
+    const isSceneLoading = modelLoadingState.isLoading;
+
     if (isLoadingTrajectories) {
         return (
             <DashboardCard className='dashboard-preview-card d-flex flex-center' isRelative={true} overflowHidden={true}>
@@ -94,9 +110,24 @@ const DashboardPreviewCard = () => {
         );
     }
 
+    if (hasModelLoadError && readyTrajectory) {
+        return (
+            <DashboardCard className='dashboard-preview-card' isRelative={true} overflowHidden={true}>
+                <RecoveryState
+                    title='3D preview unavailable'
+                    description='We could not load the latest GLB preview for this trajectory. Open it in Canvas to inspect it with full controls.'
+                    tone={RecoveryStateTone.Error}
+                    className='dashboard-card-state'
+                    retryLabel='Open in Canvas'
+                    onRetry={openCanvas}
+                />
+            </DashboardCard>
+        );
+    }
+
     return (
         <DashboardCard className='dashboard-preview-card' isRelative={true} overflowHidden={true}>
-            {isLoadingPreview && (
+            {(isLoadingPreview || isSceneLoading) && (
                 <Container className='d-flex flex-center w-max h-max p-absolute inset-0 z-10'>
                     <Loader scale={0.4} />
                 </Container>
@@ -145,7 +176,8 @@ const DashboardPreviewCard = () => {
                         boxBounds={previewBoxBounds}
                         pointSizeMultiplier={pointSizeMultiplier}
                         sceneOpacities={sceneOpacities}
-                        autoFit={true}
+                        onLoadingStateChanged={setModelLoadingState}
+                        autoFit={false}
                     />
                 )}
             </FractalScene>

@@ -116,6 +116,15 @@ const RENAME_TOAST = {
     error: { title: 'Failed to rename document' }
 };
 
+const IMPORT_WORKSPACE_TOAST = {
+    loading: { title: 'Importing LaTeX project...' },
+    success: { title: 'LaTeX project imported' },
+    error: {
+        title: 'Failed to import LaTeX project',
+        description: 'One or more workspace entries could not be imported.'
+    }
+};
+
 const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
     const teamId = useSelectedTeamId();
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
@@ -134,6 +143,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
     const [compiledPdfUrl, setCompiledPdfUrl] = useState<string | null>(null);
     const [compiledPdfBlob, setCompiledPdfBlob] = useState<Blob | null>(null);
     const [compileError, setCompileError] = useState<string | null>(null);
+    const [isWorkspaceImportInProgress, setIsWorkspaceImportInProgress] = useState(false);
 
     const fileEditorStatesRef = useRef<Record<string, FileEditorState>>({});
     const sendContentUpdateRef = useRef<((content: string, fileId: string) => void) | null>(null);
@@ -236,6 +246,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         isLoading: isLoadingFiles,
         isSaving,
         handleCreateFile,
+        createFileWithoutSelection,
         handleDeleteFile,
         handleSetEntrypoint,
         handleRenameFile,
@@ -489,7 +500,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         isUploading,
         fileInputRef,
         folderInputRef,
-        handleUploadEntries,
+        uploadEntriesWithoutToast,
         handleDeleteAsset,
         handleRenameAsset,
         handleCreateFolder,
@@ -675,6 +686,11 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         const currentIds = new Set(latexFiles.map((file) => file._id));
         const prevIds = prevFileIdsRef.current;
 
+        if (isWorkspaceImportInProgress) {
+            prevFileIdsRef.current = currentIds;
+            return;
+        }
+
         if (prevIds.size > 0) {
             for (const file of latexFiles) {
                 if (!prevIds.has(file._id)) {
@@ -685,7 +701,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         }
 
         prevFileIdsRef.current = currentIds;
-    }, [latexFiles, handleFileSelected]);
+    }, [handleFileSelected, isWorkspaceImportInProgress, latexFiles]);
 
     useEffect(() => {
         setEditorGroupsState((currentGroups) => {
@@ -750,7 +766,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
     }, [activeEditorGroupId, isEditorSplit]);
 
     useEffect(() => {
-        if (isLoading || isLoadingFiles) {
+        if (isLoading || isLoadingFiles || isWorkspaceImportInProgress) {
             return;
         }
 
@@ -761,7 +777,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         lastTexWorkspaceFingerprintRef.current = texWorkspaceFingerprint;
 
         compileSilently();
-    }, [compileSilently, isLoading, isLoadingFiles, latexDocument, texWorkspaceFingerprint]);
+    }, [compileSilently, isLoading, isLoadingFiles, isWorkspaceImportInProgress, latexDocument, texWorkspaceFingerprint]);
 
     const handleEditorChange = useCallback((value: string | undefined): void => {
         applyFileContentUpdate(selection, value ?? '');
@@ -949,27 +965,42 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         return pendingRemoteUpdates[targetSelection.id] ?? null;
     }, [pendingRemoteUpdates]);
 
+    const runWorkspaceImport = useCallback(async <T,>(operation: () => Promise<T>): Promise<T> => {
+        setIsWorkspaceImportInProgress(true);
+
+        try {
+            return await operation();
+        } finally {
+            setIsWorkspaceImportInProgress(false);
+        }
+    }, []);
+
     const handleUploadWorkspaceEntries = useCallback(async (entries: WorkspaceUploadEntry[]) => {
-        const textEntries = entries.filter((entry) => isWorkspaceTextLikeFile(entry.path, entry.file.type));
-        const binaryEntries = entries.filter((entry) => !isWorkspaceTextLikeFile(entry.path, entry.file.type));
+        await showPromise(
+            runWorkspaceImport(async () => {
+                const textEntries = entries.filter((entry) => isWorkspaceTextLikeFile(entry.path, entry.file.type));
+                const binaryEntries = entries.filter((entry) => !isWorkspaceTextLikeFile(entry.path, entry.file.type));
 
-        for (const entry of textEntries) {
-            const { path, name } = (() => {
-                const normalized = entry.path.replace(/\\/g, '/').replace(/^\/+/, '');
-                const index = normalized.lastIndexOf('/');
-                return {
-                    path: index >= 0 ? normalized.slice(0, index + 1) : '',
-                    name: index >= 0 ? normalized.slice(index + 1) : normalized
-                };
-            })();
+                for (const entry of textEntries) {
+                    const { path, name } = (() => {
+                        const normalized = entry.path.replace(/\\/g, '/').replace(/^\/+/, '');
+                        const index = normalized.lastIndexOf('/');
+                        return {
+                            path: index >= 0 ? normalized.slice(0, index + 1) : '',
+                            name: index >= 0 ? normalized.slice(index + 1) : normalized
+                        };
+                    })();
 
-            await handleCreateFile(name, path || undefined, await entry.file.text());
-        }
+                    await createFileWithoutSelection(name, path || undefined, await entry.file.text());
+                }
 
-        if (binaryEntries.length > 0) {
-            await handleUploadEntries(binaryEntries);
-        }
-    }, [handleCreateFile, handleUploadEntries]);
+                if (binaryEntries.length > 0) {
+                    await uploadEntriesWithoutToast(binaryEntries);
+                }
+            }),
+            IMPORT_WORKSPACE_TOAST
+        );
+    }, [createFileWithoutSelection, runWorkspaceImport, uploadEntriesWithoutToast]);
 
     const handleWorkspaceFilesSelected = useCallback(async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
         const fileList = event.target.files;
