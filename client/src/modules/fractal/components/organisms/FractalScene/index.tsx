@@ -1,5 +1,6 @@
 import FractalScenePipeline from '@/modules/fractal/components/organisms/FractalScenePipeline';
 import { resolveCanvasRuntimeProps } from '@/shared/domain/rendering/performance';
+import { debugFractal, warnFractal } from '@/modules/fractal/utilities/debug-log';
 import './FractalScene.css';
 import { Canvas } from '@react-three/fiber';
 import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useMemo, useRef, useState } from 'react';
@@ -42,6 +43,7 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
 }, ref) => {
     const orbitControlsRef = useRef<OrbitControlsHandle | null>(null);
     const initialDistanceRef = useRef<number | null>(null);
+    const canvasEventCleanupRef = useRef<(() => void) | null>(null);
     // isInteracting is stored in a ref to avoid re-rendering the entire Canvas
     // subtree on every orbit start/end. R3F's performance.regress() + AdaptiveDpr
     // handle DPR degradation natively without React state.
@@ -72,6 +74,13 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
         orbitControlsRef.current.target.set(target[0], target[1], target[2]);
         orbitControlsRef.current.update();
     }, [config.orbitControls.target]);
+
+    useEffect(() => {
+        return () => {
+            canvasEventCleanupRef.current?.();
+            canvasEventCleanupRef.current = null;
+        };
+    }, []);
 
     const markInteracting = useCallback((active: boolean) => {
         isInteractingRef.current = active;
@@ -159,6 +168,30 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
                 performance={canvasRuntimeProps.performance}
                 className='fractal-scene__canvas'
                 onCreated={(state) => {
+                    canvasEventCleanupRef.current?.();
+
+                    const canvas = state.gl.domElement;
+                    const handleContextLost = (event: Event) => {
+                        event.preventDefault();
+                        warnFractal('fractal-scene.context-lost', {
+                            canvasWidth: canvas.width,
+                            canvasHeight: canvas.height
+                        });
+                    };
+                    const handleContextRestored = () => {
+                        debugFractal('fractal-scene.context-restored', {
+                            canvasWidth: canvas.width,
+                            canvasHeight: canvas.height
+                        });
+                        state.invalidate();
+                    };
+
+                    canvas.addEventListener('webglcontextlost', handleContextLost);
+                    canvas.addEventListener('webglcontextrestored', handleContextRestored);
+                    canvasEventCleanupRef.current = () => {
+                        canvas.removeEventListener('webglcontextlost', handleContextLost);
+                        canvas.removeEventListener('webglcontextrestored', handleContextRestored);
+                    };
                     state.invalidate();
                 }}
             >
