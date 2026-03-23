@@ -34,7 +34,7 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
             logger.warn(error, `[AnalysisDeletedEventHandler] Failed to remove projected job history for analysis ${analysisId}`);
         }
 
-        await this.sceneArtifactRepository.deleteMany({ ...query, sourceType: 'plugin-exposure' });
+        await this.sceneArtifactRepository.deleteMany(query);
     }
 
     private async removeProjectedJobHistory(analysisId: string, teamId: string): Promise<void> {

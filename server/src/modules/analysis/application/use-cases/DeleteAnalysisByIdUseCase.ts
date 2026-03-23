@@ -54,6 +54,7 @@ export default class DeleteAnalysisByIdUseCase {
             trajectoryId: analysis.props.trajectory ?? '',
             pluginId: analysis.props.plugin ?? '',
             teamId: analysis.props.team ?? '',
+            teamClusterId: analysis.props.teamCluster,
             userId: input.userId ?? '',
             pluginDisplayName: analysis.props.pluginDisplayName
         }));
