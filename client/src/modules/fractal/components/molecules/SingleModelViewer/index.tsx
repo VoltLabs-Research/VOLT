@@ -189,17 +189,18 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
 
     const modelWorldBounds = useMemo<ModelWorldBounds>(() => {
         const scaleFactor = cellBoxTransforms.scale;
+        const worldPosition = cellBoxTransforms.position;
         const groundZOffset = cellBoxTransforms.groundOffset || 0;
         return {
             min: {
-                x: boxBounds.xlo * scaleFactor,
-                y: boxBounds.ylo * scaleFactor,
-                z: boxBounds.zlo * scaleFactor + groundZOffset
+                x: boxBounds.xlo * scaleFactor + worldPosition.x,
+                y: boxBounds.ylo * scaleFactor + worldPosition.y,
+                z: boxBounds.zlo * scaleFactor + worldPosition.z + groundZOffset
             },
             max: {
-                x: boxBounds.xhi * scaleFactor,
-                y: boxBounds.yhi * scaleFactor,
-                z: boxBounds.zhi * scaleFactor + groundZOffset
+                x: boxBounds.xhi * scaleFactor + worldPosition.x,
+                y: boxBounds.yhi * scaleFactor + worldPosition.y,
+                z: boxBounds.zhi * scaleFactor + worldPosition.z + groundZOffset
             }
         };
     }, [boxBounds, cellBoxTransforms]);

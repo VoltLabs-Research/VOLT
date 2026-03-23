@@ -503,8 +503,15 @@ export class FractalEngine {
                 : [meshOrPoints.material];
 
             materials.forEach((material: THREE.Material) => {
+                const previousPlanes = material.clippingPlanes;
+                const previousCount = previousPlanes?.length ?? 0;
+                const nextCount = planes.length;
+
                 material.clippingPlanes = planes;
-                material.needsUpdate = true;
+
+                if (previousPlanes !== planes || previousCount !== nextCount) {
+                    material.needsUpdate = true;
+                }
             });
         });
         this.surface.invalidate();
