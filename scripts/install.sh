@@ -109,23 +109,23 @@
 
         if [ "$status_code" -lt 200 ] || [ "$status_code" -ge 300 ]; then
             python3 - "$body_file" "$status_code" <<'PY'
-    import json
-    import pathlib
-    import sys
+import json
+import pathlib
+import sys
 
-    body_path = pathlib.Path(sys.argv[1])
-    status_code = sys.argv[2]
-    raw = body_path.read_text(encoding='utf-8')
+body_path = pathlib.Path(sys.argv[1])
+status_code = sys.argv[2]
+raw = body_path.read_text(encoding='utf-8')
 
-    try:
-        data = json.loads(raw)
-    except json.JSONDecodeError:
-        print(f'HTTP {status_code}: {raw}', file=sys.stderr)
-        sys.exit(1)
-
-    message = data.get('message') or data.get('code') or raw
-    print(f'HTTP {status_code}: {message}', file=sys.stderr)
+try:
+    data = json.loads(raw)
+except json.JSONDecodeError:
+    print(f'HTTP {status_code}: {raw}', file=sys.stderr)
     sys.exit(1)
+
+message = data.get('message') or data.get('code') or raw
+print(f'HTTP {status_code}: {message}', file=sys.stderr)
+sys.exit(1)
 PY
             exit 1
         fi
@@ -138,20 +138,20 @@ PY
         local expression="$2"
 
         python3 - "$file_path" "$expression" <<'PY'
-    import json
-    import sys
+import json
+import sys
 
-    payload = json.load(open(sys.argv[1], 'r', encoding='utf-8'))
-    expression = sys.argv[2].split('.')
-    current = payload
+payload = json.load(open(sys.argv[1], 'r', encoding='utf-8'))
+expression = sys.argv[2].split('.')
+current = payload
 
-    for part in expression:
-        current = current[part]
+for part in expression:
+    current = current[part]
 
-    if isinstance(current, str):
-        print(current)
-    else:
-        print(json.dumps(current))
+if isinstance(current, str):
+    print(current)
+else:
+    print(json.dumps(current))
 PY
     }
 
@@ -536,24 +536,24 @@ PY
 
     choose_ports() {
         PORTS_JSON="$(python3 <<'PY'
-    import json
-    import socket
+import json
+import socket
 
-    services = ['minio', 'redis', 'mongodb', 'daemon']
-    ports = {}
-    sockets = []
+services = ['minio', 'redis', 'mongodb', 'daemon']
+ports = {}
+sockets = []
 
-    for service in services:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.bind(('0.0.0.0', 0))
-        ports[service] = sock.getsockname()[1]
-        sockets.append(sock)
+for service in services:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.bind(('0.0.0.0', 0))
+    ports[service] = sock.getsockname()[1]
+    sockets.append(sock)
 
-    print(json.dumps(ports))
+print(json.dumps(ports))
 
-    for sock in sockets:
-        sock.close()
+for sock in sockets:
+    sock.close()
 PY
     )"
         export PORTS_JSON
@@ -563,13 +563,13 @@ PY
         local payload response_file
 
         payload="$(python3 - "$ENROLLMENT_TOKEN" "$INSTALL_VERSION" <<'PY'
-    import json
-    import sys
+import json
+import sys
 
-    print(json.dumps({
-        'enrollmentToken': sys.argv[1],
-        'installedVersion': sys.argv[2]
-    }))
+print(json.dumps({
+    'enrollmentToken': sys.argv[1],
+    'installedVersion': sys.argv[2]
+}))
 PY
     )"
 
@@ -581,14 +581,14 @@ PY
         local payload response_file
 
         payload="$(python3 - "$DAEMON_PASSWORD" "$INSTALL_ROOT" "$PORTS_JSON" <<'PY'
-    import json
-    import sys
+import json
+import sys
 
-    print(json.dumps({
-        'daemonPassword': sys.argv[1],
-        'installRoot': sys.argv[2],
-        'ports': json.loads(sys.argv[3])
-    }))
+print(json.dumps({
+    'daemonPassword': sys.argv[1],
+    'installRoot': sys.argv[2],
+    'ports': json.loads(sys.argv[3])
+}))
 PY
     )"
 
@@ -612,45 +612,45 @@ PY
         staging_dir="$(mktemp -d "$TEMP_DIR/staging.XXXXXX")"
 
         python3 - "$MANIFEST_FILE" "$staging_dir" <<'PY'
-    import base64
-    import gzip
-    import io
-    import json
-    import os
-    import pathlib
-    import tarfile
-    import sys
+import base64
+import gzip
+import io
+import json
+import os
+import pathlib
+import tarfile
+import sys
 
 
-    def write_manifest_files(install_dir: pathlib.Path, files: list[dict[str, str]]) -> None:
-        for file_entry in files:
-            target_path = install_dir / file_entry['path']
-            target_path.parent.mkdir(parents=True, exist_ok=True)
-            target_path.write_text(file_entry['contents'] + '\n', encoding='utf-8')
-            os.chmod(target_path, int(file_entry['mode'], 8))
+def write_manifest_files(install_dir: pathlib.Path, files: list[dict[str, str]]) -> None:
+    for file_entry in files:
+        target_path = install_dir / file_entry['path']
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        target_path.write_text(file_entry['contents'] + '\n', encoding='utf-8')
+        os.chmod(target_path, int(file_entry['mode'], 8))
 
 
-    def materialize_build_context(install_dir: pathlib.Path, manifest: dict) -> None:
-        archive_b64 = manifest.get('buildContextArchiveBase64')
-        if not archive_b64:
-            return
+def materialize_build_context(install_dir: pathlib.Path, manifest: dict) -> None:
+    archive_b64 = manifest.get('buildContextArchiveBase64')
+    if not archive_b64:
+        return
 
-        cluster_daemon_dir = install_dir / 'cluster-daemon'
-        cluster_daemon_dir.mkdir(parents=True, exist_ok=True)
-        archive_bytes = gzip.decompress(base64.b64decode(archive_b64))
+    cluster_daemon_dir = install_dir / 'cluster-daemon'
+    cluster_daemon_dir.mkdir(parents=True, exist_ok=True)
+    archive_bytes = gzip.decompress(base64.b64decode(archive_b64))
 
-        with tarfile.open(fileobj=io.BytesIO(archive_bytes), mode='r:') as tar:
-            tar.extractall(cluster_daemon_dir, filter='data')
+    with tarfile.open(fileobj=io.BytesIO(archive_bytes), mode='r:') as tar:
+        tar.extractall(cluster_daemon_dir, filter='data')
 
-    payload = json.load(open(sys.argv[1], 'r', encoding='utf-8'))
-    manifest = payload['data']['manifest']
-    install_dir = pathlib.Path(sys.argv[2])
+payload = json.load(open(sys.argv[1], 'r', encoding='utf-8'))
+manifest = payload['data']['manifest']
+install_dir = pathlib.Path(sys.argv[2])
 
-    write_manifest_files(install_dir, manifest['files'])
+write_manifest_files(install_dir, manifest['files'])
 
-    (install_dir / '.compose-project-name').write_text(manifest['composeProjectName'] + '\n')
-    (install_dir / '.install-manifest-version').write_text(manifest['manifestVersion'] + '\n')
-    materialize_build_context(install_dir, manifest)
+(install_dir / '.compose-project-name').write_text(manifest['composeProjectName'] + '\n')
+(install_dir / '.install-manifest-version').write_text(manifest['manifestVersion'] + '\n')
+materialize_build_context(install_dir, manifest)
 PY
 
         if [ "$PLATFORM" = 'linux' ]; then
@@ -695,11 +695,11 @@ PY
     start_stack() {
         local compose_project_name
         compose_project_name="$(python3 - "$MANIFEST_FILE" <<'PY'
-    import json
-    import sys
+import json
+import sys
 
-    payload = json.load(open(sys.argv[1], 'r', encoding='utf-8'))
-    print(payload['data']['manifest']['composeProjectName'])
+payload = json.load(open(sys.argv[1], 'r', encoding='utf-8'))
+print(payload['data']['manifest']['composeProjectName'])
 PY
     )"
 
@@ -711,11 +711,11 @@ PY
         local compose_project_name container_name timeout_seconds started_at
 
         compose_project_name="$(python3 - "$MANIFEST_FILE" <<'PY'
-    import json
-    import sys
+import json
+import sys
 
-    payload = json.load(open(sys.argv[1], 'r', encoding='utf-8'))
-    print(payload['data']['manifest']['composeProjectName'])
+payload = json.load(open(sys.argv[1], 'r', encoding='utf-8'))
+print(payload['data']['manifest']['composeProjectName'])
 PY
     )"
         container_name="${compose_project_name}-daemon-1"
@@ -742,16 +742,16 @@ PY
 
     print_summary() {
         python3 - "$PORTS_JSON" "$INSTALL_ROOT" <<'PY'
-    import json
-    import sys
+import json
+import sys
 
-    ports = json.loads(sys.argv[1])
-    install_root = sys.argv[2]
-    print('[install] Provisioning assets installed')
-    print(f'[install] Install root: {install_root}')
-    print(f"[install] MinIO port: {ports['minio']}")
-    print(f"[install] Redis port: {ports['redis']}")
-    print(f"[install] MongoDB port: {ports['mongodb']}")
+ports = json.loads(sys.argv[1])
+install_root = sys.argv[2]
+print('[install] Provisioning assets installed')
+print(f'[install] Install root: {install_root}')
+print(f"[install] MinIO port: {ports['minio']}")
+print(f"[install] Redis port: {ports['redis']}")
+print(f"[install] MongoDB port: {ports['mongodb']}")
 PY
     }
 
