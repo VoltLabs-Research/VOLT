@@ -1,65 +1,67 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
-name: Build and deploy Node.js app to Azure Web App - volt
+name: Deploy Volt Server to Azure App Service
 
 on:
   push:
     branches:
       - main
+    paths:
+      - 'Volt/server/**'
+      - '.github/workflows/deploy-volt-server.yml'
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  NODE_VERSION: '24.x'
+  SERVER_WORKDIR: 'Volt/server'
+  SERVER_RELEASE_DIR: '.azure/volt-server-release'
+
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read #This is required for actions/checkout
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Node.js version
-        uses: actions/setup-node@v3
-        with:
-          node-version: '24.x'
-
-      - name: npm install, build, and test
-        run: |
-          npm install
-          npm run build --if-present
-          npm run test --if-present
-
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
-        with:
-          name: node-app
-          path: .
-
   deploy:
     runs-on: ubuntu-latest
-    needs: build
-    permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
 
     steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          name: node-app
-      
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: Volt/server/package-lock.json
+
+      - name: Install and build Volt/server
+        working-directory: ${{ env.SERVER_WORKDIR }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Prepare deployment package
+        run: |
+          rm -rf "${{ env.SERVER_RELEASE_DIR }}"
+          mkdir -p "${{ env.SERVER_RELEASE_DIR }}/storage/temp"
+          cp "${{ env.SERVER_WORKDIR }}/package.json" "${{ env.SERVER_RELEASE_DIR }}/package.json"
+          cp "${{ env.SERVER_WORKDIR }}/package-lock.json" "${{ env.SERVER_RELEASE_DIR }}/package-lock.json"
+          cp -R "${{ env.SERVER_WORKDIR }}/dist" "${{ env.SERVER_RELEASE_DIR }}/dist"
+          cp -R "${{ env.SERVER_WORKDIR }}/static" "${{ env.SERVER_RELEASE_DIR }}/static"
+
+      - name: Install production dependencies
+        working-directory: ${{ env.SERVER_RELEASE_DIR }}
+        run: npm ci --omit=dev
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_5D15BCBA397C49D59EEB7431F441E5E4 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7B6C99AA858845E1833D263350577B0A }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_E1FAD517DE6C4B08B566D606A2397073 }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: 'Deploy to Azure Web App'
-        id: deploy-to-webapp
+      - name: Deploy Volt/server
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'volt'
-          slot-name: 'Production'
-          package: .
-          
+          app-name: ${{ vars.AZURE_WEBAPP_NAME_VOLT_SERVER }}
+          package: ${{ env.SERVER_RELEASE_DIR }}
+          startup-command: node dist/src/server.js
