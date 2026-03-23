@@ -1,4 +1,4 @@
-import { buildScriptingNotebookPath, parseScriptingNotebookContent } from '@modules/scripting/application/utilities/build-scripting-notebook';
+import { buildScriptingNotebookPath, DEFAULT_SCRIPTING_NOTEBOOK_TITLE } from '@modules/scripting/application/utilities/build-scripting-notebook';
 import {
     CreateScriptingJupyterSessionInputDTO,
     CreateScriptingJupyterSessionOutputDTO
@@ -9,7 +9,6 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
-import { randomUUID } from 'node:crypto';
 import type { IScriptingSessionLock } from '@modules/scripting/domain/port/IScriptingSessionLock';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
 import type {
@@ -195,14 +194,9 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             return touched || existing;
         }
 
-        const [templateRaw, ovitoTemplateRaw] = await Promise.all([
-            this.scriptingSessionOrchestrator.resolveDefaultNotebookTemplateContent({
-                trajectoryId: input.trajectoryId
-            }),
-            this.scriptingSessionOrchestrator.resolveOvitoNotebookTemplateContent({
-                trajectoryId: input.trajectoryId
-            })
-        ]);
+        const notebookContent = await this.scriptingSessionOrchestrator.resolveNotebookTemplateContent({
+            trajectoryId: input.trajectoryId
+        });
         const teamClusterId = await this.teamClusterSelectionService.resolveTeamClusterId(
             input.teamId,
             input.teamClusterId
@@ -211,33 +205,17 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         const createData: ScriptingNotebookProps = {
             team: input.teamId,
             teamCluster: teamClusterId,
-            title: 'Scripting Notebook',
+            title: DEFAULT_SCRIPTING_NOTEBOOK_TITLE,
             notebookPath: buildScriptingNotebookPath(input.trajectoryId),
             trajectory: input.trajectoryId,
             createdBy: userId,
-            content: parseScriptingNotebookContent(templateRaw),
+            content: notebookContent,
             lastOpenedAt: now,
             createdAt: now,
             updatedAt: now
         };
 
-        const ovitoCreateData: ScriptingNotebookProps = {
-            team: input.teamId,
-            teamCluster: teamClusterId,
-            title: 'OVITO Usage Example',
-            notebookPath: buildScriptingNotebookPath(randomUUID()),
-            trajectory: input.trajectoryId,
-            createdBy: userId,
-            content: parseScriptingNotebookContent(ovitoTemplateRaw),
-            lastOpenedAt: now,
-            createdAt: now,
-            updatedAt: now
-        };
-
-        const [notebook] = await Promise.all([
-            this.scriptingNotebookRepository.create(createData),
-            this.scriptingNotebookRepository.create(ovitoCreateData)
-        ]);
+        const notebook = await this.scriptingNotebookRepository.create(createData);
 
         return notebook;
     }

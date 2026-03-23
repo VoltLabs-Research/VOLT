@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { useTrajectoriesQuery } from '@/modules/trajectory/hooks/trajectory/queries';
+import { getFirstTrajectoryFrameWithBoxBounds } from '@/modules/fractal/utilities/frame-box-bounds';
+import { useMemo } from 'react';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 
 interface UseFirstCompletedTrajectoryReturn {
@@ -14,7 +15,7 @@ const useFirstCompletedTrajectory = (): UseFirstCompletedTrajectoryReturn => {
     const trajectoriesQuery = useTrajectoriesQuery(
         {
             page: 1,
-            limit: 10
+            limit: 25
         },
         { enabled: !!selectedTeam?._id }
     );
@@ -24,9 +25,14 @@ const useFirstCompletedTrajectory = (): UseFirstCompletedTrajectoryReturn => {
             return null;
         }
 
-        return trajectoriesQuery.data.data.find(
-            (trajectory: Trajectory) => trajectory.status === 'completed'
-        ) || null;
+        const previewCandidates = trajectoriesQuery.data.data.filter((trajectory: Trajectory) => {
+            return trajectory.status === 'completed'
+                && Boolean(getFirstTrajectoryFrameWithBoxBounds(trajectory));
+        });
+
+        return previewCandidates.find((trajectory) => trajectory.hasPreview === true)
+            ?? previewCandidates[0]
+            ?? null;
     }, [trajectoriesQuery.data]);
 
     return {

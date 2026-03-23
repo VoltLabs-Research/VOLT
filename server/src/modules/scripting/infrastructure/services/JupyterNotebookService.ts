@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { mergeScriptingNotebookContents } from '@modules/scripting/application/utilities/build-scripting-notebook';
 import { resolveServerBaseUrl } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import { injectable } from 'tsyringe';
 import type {
@@ -20,19 +21,23 @@ const OVITO_NOTEBOOK_TEMPLATE_PATH = path.join(
 
 @injectable()
 export class JupyterNotebookService {
-    async resolveDefaultNotebookTemplateContent(context: DefaultNotebookTemplateContext): Promise<string> {
-        const raw = await fs.readFile(DEFAULT_NOTEBOOK_TEMPLATE_PATH, 'utf8');
-        return this.applyPlaceholders(raw, context);
-    }
+    async resolveNotebookTemplateContent(context: DefaultNotebookTemplateContext): Promise<Record<string, unknown>> {
+        const [defaultTemplateRaw, ovitoTemplateRaw] = await Promise.all([
+            this.readTemplate(DEFAULT_NOTEBOOK_TEMPLATE_PATH, context),
+            this.readTemplate(OVITO_NOTEBOOK_TEMPLATE_PATH, context)
+        ]);
 
-    async resolveOvitoNotebookTemplateContent(context: DefaultNotebookTemplateContext): Promise<string> {
-        const raw = await fs.readFile(OVITO_NOTEBOOK_TEMPLATE_PATH, 'utf8');
-        return this.applyPlaceholders(raw, context);
+        return mergeScriptingNotebookContents(defaultTemplateRaw, ovitoTemplateRaw);
     }
 
     private applyPlaceholders(raw: string, context: DefaultNotebookTemplateContext): string {
         return raw
             .replace(/<BASE_URL>/g, resolveServerBaseUrl())
             .replace(/<TRAJECTORY_ID>/g, context.trajectoryId || '');
+    }
+
+    private async readTemplate(templatePath: string, context: DefaultNotebookTemplateContext): Promise<string> {
+        const raw = await fs.readFile(templatePath, 'utf8');
+        return this.applyPlaceholders(raw, context);
     }
 };

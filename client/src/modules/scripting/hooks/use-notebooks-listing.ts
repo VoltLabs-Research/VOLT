@@ -167,8 +167,7 @@ const useNotebooksListing = () => {
 
         await showPromise(
             createNotebook({
-                teamId,
-                title: 'General Notebook'
+                teamId
             }),
             CREATE_NOTEBOOK_TOAST
         );

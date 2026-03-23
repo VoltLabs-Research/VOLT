@@ -33,7 +33,10 @@ export default {
         map: (result) => ({ blob: base64ToBlob(result) })
     }),
     download: download<DownloadTrajectoryInputDTO>('GET', '/:trajectoryId/download', {
-        query: ({ filename }) => filename ? { name: filename } : {}
+        query: ({ filename, archive }) => ({
+            ...(filename ? { name: filename } : {}),
+            ...(archive !== undefined ? { archive } : {})
+        })
     }),
     getAtoms: get<GetAtomsInputDTO, GetAtomsOutputDTO, AtomsApiResponse>(
         '/:trajectoryId/atoms',

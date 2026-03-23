@@ -154,9 +154,9 @@
 
 .latex-workspace__editor-inner {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     width: 100%;
-    justify-content: center;
+    justify-content: flex-start;
     overflow: hidden;
 }
 
@@ -538,12 +538,19 @@
 .latex-pdf-shell {
     flex: 1;
     min-height: 0;
+    min-width: 0;
+    width: 100%;
+    height: 100%;
+    align-self: stretch;
 }
 
 .latex-pdf-toolbar {
     padding: 0.5rem 0.625rem;
     border-bottom: 1px solid var(--color-border-soft);
     flex-shrink: 0;
+    flex-wrap: wrap;
+    align-items: center;
+    background: var(--color-surface-1);
 }
 
 .latex-pdf-toolbar__meta {
@@ -553,18 +560,41 @@
     text-align: center;
 }
 
+.latex-pdf-toolbar__group {
+    min-width: 0;
+}
+
+.latex-pdf-toolbar__hint {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+
 .latex-pdf-stage {
     padding: 0.75rem;
-    overflow: auto;
+    overflow-y: auto;
+    overflow-x: auto;
+    overscroll-behavior: contain;
 }
 
 .latex-pdf-document {
     margin: 0 auto;
+    width: 100%;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.875rem;
+}
+
+.latex-pdf-page-shell {
+    width: 100%;
+    display: flex;
+    justify-content: center;
 }
 
 .latex-pdf-page {
     width: fit-content;
-    margin: 0 auto;
 }
 
 .latex-pdf-page canvas {

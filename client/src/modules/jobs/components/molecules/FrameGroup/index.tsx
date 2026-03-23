@@ -18,7 +18,7 @@ const FrameGroup = ({ frame }: FrameGroupProps) => {
     const prefersReducedMotion = usePrefersReducedMotion();
     const contentId = useId();
     const statusClassName = frameGroupStatusClassNames[frame.overallStatus];
-    const label = `Frame ${frame.timestep}`;
+    const label = frame.timestep >= 0 ? `Frame ${frame.timestep}` : 'General';
     const statusLabel = getFrameGroupStatusLabel(frame.overallStatus);
     const jobs = frame.jobs.map((job: Job, index: number) => (
         <JobQueue key={job.jobId || `job-${index}`} job={job} isChild />

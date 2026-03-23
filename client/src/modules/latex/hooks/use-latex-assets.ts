@@ -100,6 +100,14 @@ const useLatexAssets = ({ documentId, onInsertRef }: UseLatexAssetsInput) => {
         );
     }, [uploadSingleAsset]);
 
+    const uploadEntriesWithoutToast = useCallback(async (entries: FileWithPath[]) => {
+        if (entries.length === 0) {
+            return;
+        }
+
+        await Promise.all(entries.map((entry) => uploadSingleAsset(entry)));
+    }, [uploadSingleAsset]);
+
     const handleFileSelected = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
         const fileList = event.target.files;
         if (!fileList || fileList.length === 0) return;
@@ -192,6 +200,7 @@ const useLatexAssets = ({ documentId, onInsertRef }: UseLatexAssetsInput) => {
         handleFileSelected,
         handleFolderSelected,
         handleUploadEntries,
+        uploadEntriesWithoutToast,
         handleDeleteAsset,
         handleInsertRef,
         handleRenameAsset,

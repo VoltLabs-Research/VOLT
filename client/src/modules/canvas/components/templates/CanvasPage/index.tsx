@@ -11,6 +11,7 @@ import useDownloadPluginListing from '../../../hooks/use-download-plugin-listing
 import useKeyboardShortcuts from '../../../hooks/use-keyboard-shortcuts';
 import useResizable from '../../../hooks/use-resizable';
 import useTeamJobs from '@/modules/jobs/hooks/use-team-jobs';
+import useDownloadTrajectory from '@/modules/trajectory/hooks/trajectory/use-download-trajectory';
 import CanvasPresence from '../../atoms/CanvasPresence';
 import PreloadingOverlay from '../../atoms/PreloadingOverlay';
 import ResizeHandle from '../../atoms/ResizeHandle';
@@ -96,6 +97,7 @@ const CanvasPage = () => {
     const isRasterWorkspace = activeWorkspace === CanvasWorkspace.Raster;
     const isScriptingWorkspace = activeWorkspace === CanvasWorkspace.Scripting;
     const { downloadListing, downloadAnalysisListings, isDownloading } = useDownloadPluginListing();
+    const { downloadTrajectory, isDownloading: isExportingTrajectory } = useDownloadTrajectory();
     const { statusMap } = useAnalysisStatus({ trajectoryId: trajectory?._id, enabled: !!trajectory?._id });
     const [scriptingJupyterUrl, setScriptingJupyterUrl] = useState<string | null>(null);
     const [rasterContainerSelections, setRasterContainerSelections] = useState<RasterContainerSelection[]>(() => createInitialRasterContainerSelections());
@@ -166,6 +168,7 @@ const CanvasPage = () => {
     }, [analysisId, statusMap, trajectory?.analysis]);
 
     const canDownloadAnalysisListing = Boolean(analysisId && selectedAnalysisStatus === CanvasAnalysisStatusEnum.Completed);
+    const canExportTrajectory = Boolean(trajectory?._id && hasFrames && !isExportingTrajectory);
 
     const handleDownloadAnalysisListing = useCallback((targetAnalysisId?: string) => {
         const resolvedAnalysisId = targetAnalysisId ?? analysisId;
@@ -176,6 +179,18 @@ const CanvasPage = () => {
 
         downloadAnalysisListings({ analysisId: resolvedAnalysisId, format: 'csv' });
     }, [analysisId, downloadAnalysisListings]);
+
+    const handleExportTrajectory = useCallback(() => {
+        if (!trajectory?._id) {
+            return;
+        }
+
+        void downloadTrajectory({
+            trajectoryId: trajectory._id,
+            filename: trajectory.name || trajectory._id,
+            archive: true
+        });
+    }, [downloadTrajectory, trajectory?._id, trajectory?.name]);
 
     const scriptingHeaderAction = isScriptingWorkspace && scriptingJupyterUrl
         ? (
@@ -244,7 +259,10 @@ const CanvasPage = () => {
 
     return (
         <Container className="canvas-editor-root d-flex column vh-max wh-max overflow-hidden p-relative">
-            <TopToolbar />
+            <TopToolbar
+                canExport={canExportTrajectory}
+                onExport={handleExportTrajectory}
+            />
             <PreloadingOverlay />
             <CanvasPresence users={canvasUsers} />
 

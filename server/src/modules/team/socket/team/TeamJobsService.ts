@@ -14,6 +14,7 @@ import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamCl
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const SAFE_FALLBACK_GROUP_TIMESTAMP = '1970-01-01T00:00:00.000Z';
 const TEAM_JOBS_INITIAL_CACHE_TTL_MS = 2_000;
+const UNGROUPED_TIMESTEP = -1;
 
 type TeamJobStatus = JobStatus | 'retrying' | 'partial';
 type TeamJobSource = 'daemon' | 'projected' | 'merged';
@@ -308,10 +309,7 @@ export default class TeamJobsService {
             const groupedJobs: GroupedTeamJobSummary[] = [];
 
             for (const job of trajectoryJobs) {
-                const timestep = this.resolveJobTimestep(job);
-                if (typeof timestep === 'undefined') {
-                    continue;
-                }
+                const timestep = this.resolveJobTimestep(job) ?? UNGROUPED_TIMESTEP;
 
                 if (!frameMap.has(timestep)) {
                     frameMap.set(timestep, []);
