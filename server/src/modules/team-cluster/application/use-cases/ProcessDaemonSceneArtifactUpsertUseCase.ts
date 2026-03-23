@@ -124,51 +124,6 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
                 );
             }
 
-            const existingArtifact = await this.sceneArtifactRepository.findOne({ objectName: input.objectName });
-            if (existingArtifact) {
-                if (existingArtifact.props.trajectory !== trajectory.id) {
-                    throw ApplicationError.conflict(
-                        'TEAM_CLUSTER_DAEMON_SCENE_ARTIFACT_TRAJECTORY_MISMATCH',
-                        'Scene artifact object name is already associated with another trajectory'
-                    );
-                }
-
-                if (existingArtifact.props.analysis && existingArtifact.props.analysis !== sanitizedAnalysisId) {
-                    throw ApplicationError.conflict(
-                        'TEAM_CLUSTER_DAEMON_SCENE_ARTIFACT_ANALYSIS_MISMATCH',
-                        'Scene artifact object name is already associated with another analysis'
-                    );
-                }
-
-                if (existingArtifact.props.teamCluster && existingArtifact.props.teamCluster !== sanitizedTeamClusterId) {
-                    throw ApplicationError.conflict(
-                        'TEAM_CLUSTER_DAEMON_SCENE_ARTIFACT_CLUSTER_CONFLICT',
-                        'Scene artifact object name is already associated with another team cluster'
-                    );
-                }
-
-                if (existingArtifact.props.plugin && sanitizedPluginId && existingArtifact.props.plugin !== sanitizedPluginId) {
-                    throw ApplicationError.conflict(
-                        'TEAM_CLUSTER_DAEMON_SCENE_ARTIFACT_PLUGIN_MISMATCH',
-                        'Scene artifact object name is already associated with another plugin'
-                    );
-                }
-
-                if (existingArtifact.props.sourceType !== input.sourceType) {
-                    throw ApplicationError.conflict(
-                        'TEAM_CLUSTER_DAEMON_SCENE_ARTIFACT_SOURCE_TYPE_MISMATCH',
-                        'Scene artifact object name is already associated with another source type'
-                    );
-                }
-
-                if (existingArtifact.props.timestep !== input.timestep) {
-                    throw ApplicationError.conflict(
-                        'TEAM_CLUSTER_DAEMON_SCENE_ARTIFACT_TIMESTEP_MISMATCH',
-                        'Scene artifact object name is already associated with another timestep'
-                    );
-                }
-            }
-
             await recordSceneArtifact(this.sceneArtifactRepository, {
                 objectName: input.objectName,
                 trajectory: trajectory.id,

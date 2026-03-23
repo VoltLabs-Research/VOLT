@@ -5,6 +5,7 @@ export interface AnalysisDeletedEventPayload {
     trajectoryId: string;
     pluginId: string;
     teamId: string;
+    teamClusterId?: string;
     userId: string;
     pluginDisplayName: string;
 };
