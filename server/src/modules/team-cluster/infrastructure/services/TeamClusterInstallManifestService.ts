@@ -61,6 +61,7 @@ export default class TeamClusterInstallManifestService {
         }
 
         const files = buildTeamClusterInstallManifestFiles({
+            teamId: teamCluster.props.team,
             teamClusterId: teamCluster.id,
             installRoot: normalizedInstallRoot,
             ports,

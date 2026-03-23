@@ -16,6 +16,7 @@ export const TEAM_CLUSTER_IMAGES = {
 };
 
 interface BuildInstallManifestFilesInput {
+    teamId: string;
     teamClusterId: string;
     installRoot: string;
     ports: TeamClusterInstallManifestPortsDTO;
@@ -146,12 +147,14 @@ const buildRedisAclFile = (credentials: DecryptedTeamClusterServiceCredentials):
 };
 
 const buildDaemonEnvFile = (
+    teamId: string,
     teamClusterId: string,
     installRoot: string,
     credentials: DecryptedTeamClusterServiceCredentials,
     cloudUrl: string
 ): string => {
     return [
+        `TEAM_ID=${teamId}`,
         `TEAM_CLUSTER_ID=${teamClusterId}`,
         `COMPOSE_PROJECT_NAME=${sanitizeComposeProjectName(teamClusterId)}`,
         `TEAM_CLUSTER_INSTALL_ROOT=${installRoot}`,
@@ -172,6 +175,7 @@ const buildDaemonEnvFile = (
 };
 
 export const buildTeamClusterInstallManifestFiles = ({
+    teamId,
     teamClusterId,
     installRoot,
     ports,
@@ -213,7 +217,7 @@ export const buildTeamClusterInstallManifestFiles = ({
         },
         {
             path: 'daemon.env',
-            contents: buildDaemonEnvFile(teamClusterId, installRoot, credentials, cloudUrl),
+            contents: buildDaemonEnvFile(teamId, teamClusterId, installRoot, credentials, cloudUrl),
             mode: '0600'
         },
         ...daemonFiles

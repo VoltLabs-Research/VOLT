@@ -1,12 +1,11 @@
 import { SYS_BUCKETS } from '@core/config/minio';
+import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { IStorageService } from '@shared/domain/port/IStorageService';
 import { ITempFileService } from '@shared/domain/port/ITempFileService';
-import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import logger from '@shared/infrastructure/logger';
 
 import { createReadStream, createWriteStream } from 'node:fs';
@@ -33,8 +32,8 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly trajectoryRepo: ITrajectoryRepository,
 
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ){
         this.cacheDir = this.tempFileService.getDirPath('trajectory-cache');
     }
@@ -139,12 +138,11 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
         const trajectory = await this.trajectoryRepo.findById(trajectoryId);
 
         if (trajectory?.props.teamCluster) {
-            const result = await this.teamClusterDaemonClient.command<{ keys: string[] }>(
+            return this.objectGatewayClient.exists(
                 trajectory.props.teamCluster,
-                TEAM_CLUSTER_DAEMON_COMMAND.object.list,
-                { bucket: SYS_BUCKETS.DUMPS, prefix: objectName }
+                SYS_BUCKETS.DUMPS,
+                objectName
             );
-            return result.keys.includes(objectName);
         }
 
         return this.storageService.exists(SYS_BUCKETS.DUMPS, objectName);
@@ -174,14 +172,11 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
         const prefix = this.getPrefix(trajectoryId);
         logger.info(`@trajectory-dump-storage-service: Listing dumps from daemon for trajectory ${trajectoryId} (cluster: ${teamClusterId})`);
 
-        const result = await this.teamClusterDaemonClient.command<{ keys: string[] }>(
-            teamClusterId,
-            TEAM_CLUSTER_DAEMON_COMMAND.object.list,
-            { bucket: SYS_BUCKETS.DUMPS, prefix }
-        );
-
         const timesteps: string[] = [];
-        for(const name of result.keys){
+        for await (const name of this.objectGatewayClient.listAll(teamClusterId, {
+            bucket: SYS_BUCKETS.DUMPS,
+            prefix
+        })) {
             const match = name.match(/timestep-(\d+)\.dump\.gz$/);
             if(!match) continue;
             timesteps.push(match[1]);

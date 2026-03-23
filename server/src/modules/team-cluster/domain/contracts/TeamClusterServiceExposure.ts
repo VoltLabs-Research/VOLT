@@ -16,19 +16,28 @@ export enum TeamClusterServiceExposureStatus {
 };
 
 /**
- * Represents a single persistent service exposure published by a container port.
+ * Describes where a team cluster service exposure originates.
+ */
+export enum TeamClusterServiceExposureSourceKind {
+    Container = 'container',
+    Daemon = 'daemon'
+};
+
+/**
+ * Represents a single persistent service exposure published by a team cluster daemon.
  */
 export interface TeamClusterServiceExposure {
     id: string;
     teamClusterId: string;
     teamId: string;
-    containerId: string;
-    containerName: string;
+    sourceKind: TeamClusterServiceExposureSourceKind;
     exposureName: string;
     accessModes: TeamClusterServiceExposureAccessMode[];
     targetHost: string;
     targetPort: number;
-    containerPort: number;
     status: TeamClusterServiceExposureStatus;
     labels: Record<string, string>;
+    containerId?: string;
+    containerName?: string;
+    containerPort?: number;
 };

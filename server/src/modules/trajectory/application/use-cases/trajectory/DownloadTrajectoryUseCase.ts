@@ -1,15 +1,14 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SYS_BUCKETS } from '@core/config/minio';
+import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { Result } from '@shared/domain/port/Result';
-import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import {
     createDownloadStreamResponse,
     createZipDownloadResponse,
     sanitizeDownloadName
 } from '@shared/infrastructure/http/responses/download-response';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 import { injectable, inject } from 'tsyringe';
@@ -32,8 +31,8 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
 
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 
     async execute(input: DownloadTrajectoryInputDTO): Promise<Result<DownloadTrajectoryOutputDTO, ApplicationError>> {
@@ -64,17 +63,14 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
 
         if (trajectory.props.teamCluster) {
             const objectName = this.dumpStorage.getObjectName(trajectoryId, firstTimestep);
-            const stream = await this.teamClusterDaemonClient.commandStream(
+            const response = await this.objectGatewayClient.getStream(
                 trajectory.props.teamCluster,
-                TEAM_CLUSTER_DAEMON_COMMAND.object.get,
-                {
-                    bucket: SYS_BUCKETS.DUMPS,
-                    objectKey: objectName
-                }
+                SYS_BUCKETS.DUMPS,
+                objectName
             );
 
             return Result.ok(createDownloadStreamResponse({
-                stream,
+                stream: response.stream,
                 contentType: 'application/gzip',
                 filename: `${filenameBase}.dump.gz`,
                 cacheControl: 'no-cache'
@@ -105,14 +101,11 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
                 for (const timestep of timesteps) {
                     const objectName = this.dumpStorage.getObjectName(input.trajectoryId, timestep);
                     const stream = teamClusterId
-                        ? await this.teamClusterDaemonClient.commandStream(
+                        ? (await this.objectGatewayClient.getStream(
                             teamClusterId,
-                            TEAM_CLUSTER_DAEMON_COMMAND.object.get,
-                            {
-                                bucket: SYS_BUCKETS.DUMPS,
-                                objectKey: objectName
-                            }
-                        )
+                            SYS_BUCKETS.DUMPS,
+                            objectName
+                        )).stream
                         : await this.storageService.getStream(SYS_BUCKETS.DUMPS, objectName);
 
                     archive.append(stream, {
