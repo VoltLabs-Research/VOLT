@@ -6,8 +6,26 @@ import type {
     ScriptingNotebookPopulatedUser
 } from '@modules/scripting/application/dtos/ScriptingNotebookDTO';
 
+// TODO: DELETE THIS FILE 
+
 const isRecord = (value: unknown): value is Record<string, unknown> => {
     return typeof value === 'object' && value !== null;
+};
+
+const toRecordId = (value: unknown): string | null => {
+    if (!isRecord(value) || value._id === undefined || value._id === null) {
+        return null;
+    }
+
+    if (typeof value._id === 'string') {
+        return value._id;
+    }
+
+    if (typeof value._id === 'object' && typeof value._id.toString === 'function') {
+        return value._id.toString();
+    }
+
+    return null;
 };
 
 const toTrajectoryOutput = (value: unknown): string | ScriptingNotebookPopulatedTrajectory | null => {
@@ -19,9 +37,10 @@ const toTrajectoryOutput = (value: unknown): string | ScriptingNotebookPopulated
         return value;
     }
 
-    if (isRecord(value) && typeof value._id === 'string') {
+    const recordId = toRecordId(value);
+    if (recordId) {
         return {
-            _id: value._id,
+            _id: recordId,
             name: typeof value.name === 'string' ? value.name : undefined
         };
     }
@@ -38,9 +57,10 @@ const toTeamClusterOutput = (value: unknown): string | ScriptingNotebookPopulate
         return value;
     }
 
-    if (isRecord(value) && typeof value._id === 'string') {
+    const recordId = toRecordId(value);
+    if (recordId) {
         return {
-            _id: value._id,
+            _id: recordId,
             name: typeof value.name === 'string' ? value.name : undefined
         };
     }
@@ -57,9 +77,10 @@ const toUserOutput = (value: unknown): string | ScriptingNotebookPopulatedUser |
         return value;
     }
 
-    if (isRecord(value) && typeof value._id === 'string') {
+    const recordId = toRecordId(value);
+    if (recordId) {
         return {
-            _id: value._id,
+            _id: recordId,
             firstName: typeof value.firstName === 'string' ? value.firstName : undefined,
             lastName: typeof value.lastName === 'string' ? value.lastName : undefined,
             email: typeof value.email === 'string' ? value.email : undefined,
