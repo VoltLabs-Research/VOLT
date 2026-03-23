@@ -29,7 +29,9 @@ import type { Socket as NetSocket } from 'node:net';
 
 const SERVER_PORT = readNumberEnv('SERVER_PORT', 8000);
 const SERVER_HOST = process.env.SERVER_HOST || '0.0.0.0';
-const SERVER_TIMEOUT = readNumberEnv('SERVER_TIMEOUT', 1800000);
+const SERVER_TIMEOUT = readNumberEnv('SERVER_TIMEOUT', 0);
+const SERVER_KEEP_ALIVE_TIMEOUT = readNumberEnv('SERVER_KEEP_ALIVE_TIMEOUT', 1800000);
+const SERVER_HEADERS_TIMEOUT = readNumberEnv('SERVER_HEADERS_TIMEOUT', SERVER_KEEP_ALIVE_TIMEOUT);
 const SERVER_SHUTDOWN_GRACE_PERIOD = readNumberEnv('SERVER_SHUTDOWN_GRACE_PERIOD', 1000);
 const SERVER_SHUTDOWN_FORCE_EXIT_TIMEOUT = readNumberEnv('SERVER_SHUTDOWN_FORCE_EXIT_TIMEOUT', 5000);
 
@@ -162,8 +164,8 @@ const startServer = async () => {
 
     server.setTimeout(SERVER_TIMEOUT);
     server.requestTimeout = SERVER_TIMEOUT;
-    server.keepAliveTimeout = SERVER_TIMEOUT;
-    server.headersTimeout = SERVER_TIMEOUT;
+    server.keepAliveTimeout = SERVER_KEEP_ALIVE_TIMEOUT;
+    server.headersTimeout = SERVER_HEADERS_TIMEOUT;
 
     server.on('error', (error) => {
         logger.error(`@server: http server error: ${error}`);

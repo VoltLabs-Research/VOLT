@@ -11,21 +11,6 @@ const storage = multer.memoryStorage();
 export const DEFAULT_TRAJECTORY_UPLOAD_DIR = path.resolve(process.cwd(), 'storage/temp/trajectory-uploads');
 const trajectoryUploadDir = process.env.TRAJECTORY_UPLOAD_DIR || DEFAULT_TRAJECTORY_UPLOAD_DIR;
 const CHAT_MAX_FILE_SIZE = 25 * 1024 * 1024;
-const DEFAULT_TRAJECTORY_MAX_FILES = 10_000;
-
-const parsePositiveInteger = (value: string | undefined, fallbackValue: number): number => {
-    const parsedValue = Number.parseInt(value || '', 10);
-    if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
-        return fallbackValue;
-    }
-
-    return parsedValue;
-};
-
-export const TRAJECTORY_MAX_FILES = parsePositiveInteger(
-    process.env.TRAJECTORY_UPLOAD_MAX_FILES,
-    DEFAULT_TRAJECTORY_MAX_FILES
-);
 
 // Ensure the upload directory exists once at startup (sync is acceptable here)
 fs.mkdirSync(trajectoryUploadDir, { recursive: true });
@@ -103,12 +88,7 @@ export const upload = multer({
 });
 
 export const uploadTrajectory = multer({
-    storage: trajectoryUploadStorage,
-    limits: {
-        fields: Infinity,
-        files: TRAJECTORY_MAX_FILES,
-        fieldSize: 1024 * 1024
-    }
+    storage: trajectoryUploadStorage
 });
 
 export const uploadTrajectoryFiles = (fieldName: string) => (
@@ -117,21 +97,12 @@ export const uploadTrajectoryFiles = (fieldName: string) => (
     next: NextFunction
 ) => {
     req.setTimeout(0);
+    response.setTimeout(0);
+    req.socket?.setTimeout(0);
 
     uploadTrajectory.array(fieldName)(req, response, (error: unknown) => {
         if (!error) {
             return next();
-        }
-
-        if (error instanceof multer.MulterError) {
-            if (error.code === 'LIMIT_FILE_COUNT') {
-                return BaseResponse.error(
-                    response,
-                    `Trajectory upload supports up to ${TRAJECTORY_MAX_FILES} files per request.`,
-                    HttpStatus.BadRequest,
-                    ErrorCodes.TRAJECTORY_UPLOAD_FILE_LIMIT_EXCEEDED
-                );
-            }
         }
 
         return createUploadErrorResponse(response, error);
