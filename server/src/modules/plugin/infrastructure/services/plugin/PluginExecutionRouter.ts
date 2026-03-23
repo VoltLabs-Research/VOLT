@@ -4,11 +4,9 @@ import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/te
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
-import { randomUUID } from 'node:crypto';
 import zlib from 'node:zlib';
 import type Analysis from '@modules/analysis/domain/entities/Analysis';
 import type Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
-import type { Readable } from 'node:stream';
 import type {
     IPluginExecutionRouter,
     PluginReferenceExecutionRequest,
@@ -17,6 +15,27 @@ import type {
 import type DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+
+interface TeamClusterObjectStoreClient {
+    putBuffer(teamClusterId: string, request: {
+        bucket: string;
+        objectKey: string;
+        buffer: Buffer;
+        contentLength: number;
+        contentType?: string;
+        contentEncoding?: string;
+        metadata?: Record<string, string>;
+    }): Promise<void>;
+    putStream(teamClusterId: string, request: {
+        bucket: string;
+        objectKey: string;
+        stream: NodeJS.ReadableStream;
+        contentLength: number;
+        contentType?: string;
+        contentEncoding?: string;
+        metadata?: Record<string, string>;
+    }): Promise<void>;
+}
 
 interface DaemonPluginSyncResponse {
     synced: boolean;
@@ -109,7 +128,7 @@ interface TrajectoryFramePayload {
     simulationCell: string;
 };
 
-interface PluginDispatchPayload {
+interface PluginDispatchPayload extends Record<string, unknown> {
     analysis: DaemonAnalysisPayload;
     analysisId: string;
     pluginId: string;
@@ -141,7 +160,6 @@ interface DispatchCleanupSummary {
 };
 
 const DIRECT_PLUGIN_UPLOAD_THRESHOLD = 768 * 1024;
-const PLUGIN_UPLOAD_CHUNK_SIZE = 512 * 1024;
 const COMPRESSIBLE_ANALYSIS_SECTION_THRESHOLD_BYTES = 1024;
 
 interface EncodedDispatchSection<T> {
@@ -229,6 +247,9 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
 
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
+
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
+        private readonly objectGatewayClient: TeamClusterObjectStoreClient,
 
         @inject(TEAM_CLUSTER_TOKENS.DaemonAnalysisCompletionService)
         private readonly daemonAnalysisCompletionService: DaemonAnalysisCompletionService
@@ -361,14 +382,20 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
         }
 
         if (objectSize > DIRECT_PLUGIN_UPLOAD_THRESHOLD) {
-            await this.uploadPluginBinaryChunked(teamClusterId, objectKey, objectSize);
-        } else {
-            const buffer = await this.storageService.getBuffer(SYS_BUCKETS.PLUGINS, objectKey);
-            await this.teamClusterDaemonClient.command(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.object.upload, {
+            const objectStream = await this.storageService.getStream(SYS_BUCKETS.PLUGINS, objectKey);
+            await this.objectGatewayClient.putStream(teamClusterId, {
                 bucket: SYS_BUCKETS.PLUGINS,
                 objectKey,
-                content: buffer.toString('base64'),
-                encoding: 'base64'
+                stream: objectStream,
+                contentLength: objectSize
+            });
+        } else {
+            const buffer = await this.storageService.getBuffer(SYS_BUCKETS.PLUGINS, objectKey);
+            await this.objectGatewayClient.putBuffer(teamClusterId, {
+                bucket: SYS_BUCKETS.PLUGINS,
+                objectKey,
+                buffer,
+                contentLength: buffer.length
             });
         }
 
@@ -379,112 +406,6 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
 
         if (!finalSyncResponse.synced) {
             throw new Error(`Daemon failed to confirm synced plugin binary: ${objectKey}`);
-        }
-    }
-
-    private async uploadPluginBinaryChunked(teamClusterId: string, objectKey: string, totalSize: number): Promise<void> {
-        const transferId = randomUUID();
-        const totalChunks = Math.max(1, Math.ceil(totalSize / PLUGIN_UPLOAD_CHUNK_SIZE));
-        let initialized = false;
-
-        logger.info({
-            action: 'plugin.binary.upload.chunked',
-            objectKey,
-            teamClusterId,
-            totalChunks,
-            totalSize,
-            transferId
-        }, '@plugin-execution-router: starting chunked plugin upload');
-
-        try {
-            await this.teamClusterDaemonClient.command(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.object.uploadInit, {
-                transferId,
-                bucket: SYS_BUCKETS.PLUGINS,
-                objectKey,
-                totalChunks
-            }, {
-                timeoutClass: 'long-running-control-plane'
-            });
-            initialized = true;
-
-            const objectStream = await this.storageService.getStream(SYS_BUCKETS.PLUGINS, objectKey);
-            await this.uploadPluginBinaryChunks(teamClusterId, transferId, objectStream, totalChunks);
-
-            await this.teamClusterDaemonClient.command(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.object.uploadCommit, {
-                transferId
-            }, {
-                timeoutClass: 'long-running-control-plane'
-            });
-
-            logger.info({
-                action: 'plugin.binary.upload.chunked.completed',
-                objectKey,
-                teamClusterId,
-                totalChunks,
-                totalSize,
-                transferId
-            }, '@plugin-execution-router: completed chunked plugin upload');
-        } catch (error) {
-            if (initialized) {
-                await this.teamClusterDaemonClient.command(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.object.uploadAbort, {
-                    transferId
-                }, {
-                    timeoutClass: 'interactive'
-                }).catch((abortError) => {
-                    logger.warn({
-                        abortError,
-                        objectKey,
-                        teamClusterId,
-                        transferId
-                    }, '@plugin-execution-router: failed to abort chunked plugin upload');
-                });
-            }
-
-            throw error;
-        }
-    }
-
-    private async uploadPluginBinaryChunks(
-        teamClusterId: string,
-        transferId: string,
-        objectStream: Readable,
-        totalChunks: number
-    ): Promise<void> {
-        let pendingBuffer = Buffer.alloc(0);
-        let chunkIndex = 0;
-
-        const sendChunk = async (chunk: Buffer): Promise<void> => {
-            await this.teamClusterDaemonClient.command(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.object.uploadChunk, {
-                transferId,
-                index: chunkIndex,
-                data: chunk.toString('base64')
-            }, {
-                timeoutClass: 'long-running-control-plane'
-            });
-            chunkIndex += 1;
-        };
-
-        for await (const streamChunk of objectStream) {
-            const bufferChunk = Buffer.isBuffer(streamChunk)
-                ? streamChunk
-                : Buffer.from(streamChunk);
-
-            pendingBuffer = pendingBuffer.length === 0
-                ? bufferChunk
-                : Buffer.concat([pendingBuffer, bufferChunk]);
-
-            while (pendingBuffer.length >= PLUGIN_UPLOAD_CHUNK_SIZE) {
-                await sendChunk(pendingBuffer.subarray(0, PLUGIN_UPLOAD_CHUNK_SIZE));
-                pendingBuffer = pendingBuffer.subarray(PLUGIN_UPLOAD_CHUNK_SIZE);
-            }
-        }
-
-        if (pendingBuffer.length > 0 || chunkIndex === 0) {
-            await sendChunk(pendingBuffer);
-        }
-
-        if (chunkIndex !== totalChunks) {
-            throw new Error(`Chunked plugin upload chunk count mismatch expected=${totalChunks} actual=${chunkIndex}`);
         }
     }
 };

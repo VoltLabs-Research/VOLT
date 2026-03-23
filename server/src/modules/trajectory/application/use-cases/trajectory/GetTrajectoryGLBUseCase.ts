@@ -1,11 +1,10 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { GetTrajectoryGLBInputDTO, GetTrajectoryGLBOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryGLBDTO';
+import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { SYS_BUCKETS } from '@core/config/minio';
-import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Result } from '@shared/domain/port/Result';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 import { injectable, inject } from 'tsyringe';
@@ -23,8 +22,8 @@ export default class GetTrajectoryGLBUseCase implements IUseCase<GetTrajectoryGL
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
 
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ){}
 
     async execute(input: GetTrajectoryGLBInputDTO): Promise<Result<GetTrajectoryGLBOutputDTO, ApplicationError>> {
@@ -38,12 +37,17 @@ export default class GetTrajectoryGLBUseCase implements IUseCase<GetTrajectoryGL
             }
 
             if (trajectory.props.teamCluster) {
-                const stream = await this.teamClusterDaemonClient.commandStream(trajectory.props.teamCluster, TEAM_CLUSTER_DAEMON_COMMAND.object.get, {
-                    bucket: 'volt-models',
-                    objectKey: objectName
-                });
+                const response = await this.objectGatewayClient.getStream(
+                    trajectory.props.teamCluster,
+                    SYS_BUCKETS.MODELS,
+                    objectName
+                );
 
-                return Result.ok({ stream, objectName });
+                return Result.ok({
+                    stream: response.stream,
+                    size: response.contentLength,
+                    objectName
+                });
             }
 
             const [stat, stream] = await Promise.all([

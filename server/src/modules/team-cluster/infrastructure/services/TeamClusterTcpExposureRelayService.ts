@@ -1,6 +1,7 @@
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import {
     TeamClusterServiceExposureAccessMode,
+    TeamClusterServiceExposureSourceKind,
     TeamClusterServiceExposureStatus,
     type TeamClusterServiceExposure
 } from '@modules/team-cluster/utilities/teamClusterSocket';
@@ -192,7 +193,8 @@ export default class TeamClusterTcpExposureRelayService {
     }
 
     private isRelayableExposure(exposure: TeamClusterServiceExposure): boolean {
-        return exposure.status === TeamClusterServiceExposureStatus.Active
+        return exposure.sourceKind === TeamClusterServiceExposureSourceKind.Container
+            && exposure.status === TeamClusterServiceExposureStatus.Active
             && exposure.accessModes.includes(TeamClusterServiceExposureAccessMode.Tcp)
             && exposure.containerPort === VNC_PRIVATE_PORT;
     }

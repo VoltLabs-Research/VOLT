@@ -4,7 +4,11 @@ import { ContainerOwnershipService } from '@modules/container/infrastructure/ser
 import { ContainerVncGatewayService } from '@modules/container/infrastructure/services/ContainerVncGatewayService';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterExposureRegistryService from '@modules/team-cluster/infrastructure/services/TeamClusterExposureRegistryService';
-import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureStatus } from '@modules/team-cluster/utilities/teamClusterSocket';
+import {
+    TeamClusterServiceExposureAccessMode,
+    TeamClusterServiceExposureSourceKind,
+    TeamClusterServiceExposureStatus
+} from '@modules/team-cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -40,7 +44,8 @@ export class CreateContainerVncSessionUseCase implements IUseCase<CreateContaine
         }
 
         const exposure = this.exposureRegistryService.findTeamClusterExposure(container.teamCluster, (currentExposure) => {
-            return currentExposure.containerId === container.containerId
+            return currentExposure.sourceKind === TeamClusterServiceExposureSourceKind.Container
+                && currentExposure.containerId === container.containerId
                 && currentExposure.containerPort === VNC_PRIVATE_PORT
                 && currentExposure.status === TeamClusterServiceExposureStatus.Active
                 && currentExposure.accessModes.includes(TeamClusterServiceExposureAccessMode.Tcp);

@@ -1,17 +1,11 @@
 import { getTrajectoryStorageCleanupTargets, type TrajectoryStorageCleanupTarget } from '@modules/trajectory/utilities/trajectory/storage-cleanup-prefixes';
+import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import TrajectoryDeletedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryDeletedEvent';
-import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
-import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-
-interface ObjectDeleteResponse {
-    deleted: boolean;
-    deletedCount?: number;
-};
 
 @injectable()
 export default class TrajectoryDeletedStorageCleanupEventHandler implements IEventHandler<TrajectoryDeletedEvent> {
@@ -19,8 +13,8 @@ export default class TrajectoryDeletedStorageCleanupEventHandler implements IEve
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
 
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 
     async handle(event: TrajectoryDeletedEvent): Promise<void> {
@@ -45,13 +39,10 @@ export default class TrajectoryDeletedStorageCleanupEventHandler implements IEve
 
     private async cleanupRemoteStorage(teamClusterId: string, targets: TrajectoryStorageCleanupTarget[]): Promise<void> {
         const results = await Promise.allSettled(
-            targets.map((target) => this.teamClusterDaemonClient.command<ObjectDeleteResponse>(
+            targets.map((target) => this.objectGatewayClient.deleteByPrefix(
                 teamClusterId,
-                TEAM_CLUSTER_DAEMON_COMMAND.object.delete,
-                {
-                    bucket: target.bucket,
-                    prefix: target.prefix
-                }
+                target.bucket,
+                target.prefix
             ))
         );
 

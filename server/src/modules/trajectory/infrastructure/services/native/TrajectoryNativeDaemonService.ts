@@ -2,6 +2,7 @@ import { inject, injectable } from 'tsyringe';
 import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 
 import { Readable } from 'node:stream';
 
@@ -96,7 +97,10 @@ interface TrajectoryNativeFilterPreviewResponse {
 export default class TrajectoryNativeDaemonService {
     constructor(
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
+        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
+
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 
     async preprocessTrajectory(input: TrajectoryNativeRequest): Promise<void> {
@@ -204,17 +208,12 @@ export default class TrajectoryNativeDaemonService {
     }
 
     async getObjectBuffer(teamClusterId: string, bucket: string, objectKey: string): Promise<Buffer> {
-        return this.teamClusterDaemonClient.commandBuffer(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.object.get, {
-            bucket,
-            objectKey
-        });
+        return this.objectGatewayClient.getBuffer(teamClusterId, bucket, objectKey);
     }
 
     async getObjectStream(teamClusterId: string, bucket: string, objectKey: string): Promise<Readable> {
-        return this.teamClusterDaemonClient.commandStream(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.object.get, {
-            bucket,
-            objectKey
-        });
+        const response = await this.objectGatewayClient.getStream(teamClusterId, bucket, objectKey);
+        return response.stream;
     }
 
     private toBaseBody(input: TrajectoryNativeRequest): Record<string, unknown> {
