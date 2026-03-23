@@ -5,6 +5,7 @@ import useDashboardPreview from '@/modules/dashboard/hooks/use-dashboard-preview
 import SingleModelViewer from '@/modules/fractal/components/molecules/SingleModelViewer';
 import FractalScene from '@/modules/fractal/components/organisms/FractalScene';
 import type { ModelLoadingState } from '@/modules/fractal/api/entities/model';
+import { DEFAULT_SLICE_PLANE_CONFIG } from '@/modules/fractal/utilities/slice-plane';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
@@ -13,6 +14,11 @@ import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/componen
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { DEFAULT_SCENE } from '@/modules/fractal/utilities/scene-utils';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { getDefaultEffectsSettings } from '@/shared/domain/rendering/effects';
+import { getDefaultEnvironmentSettings } from '@/shared/domain/rendering/environment';
+import { DprMode } from '@/shared/domain/rendering/performance';
+import { getDefaultLightsState } from '@/shared/domain/rendering/lights';
+import { PrecisionType } from '@/shared/domain/rendering/renderer';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import { formatNumber } from '@/shared/utils/format';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -27,6 +33,8 @@ const INITIAL_MODEL_LOADING_STATE: ModelLoadingState = {
     progress: 0,
     error: null
 };
+
+const PREVIEW_SCENE_OPACITIES: Record<string, number> = {};
 
 const DashboardPreviewCard = () => {
     const teamId = useSelectedTeamId();
@@ -45,24 +53,61 @@ const DashboardPreviewCard = () => {
     } = useDashboardPreview();
 
     const {
-        slicePlaneConfig,
-        pointSizeMultiplier,
-        sceneOpacities
+        pointSizeMultiplier
     } = useEditorStore(useShallow((s) => ({
-        slicePlaneConfig: s.configuration.slicePlaneConfig,
-        pointSizeMultiplier: s.pointSizeMultiplier,
-        sceneOpacities: s.sceneOpacities
+        pointSizeMultiplier: s.pointSizeMultiplier
     })));
 
     const sceneConfig = useFractalSceneConfig();
 
     const previewConfig = useMemo(() => ({
         ...sceneConfig,
+        activeScene: DEFAULT_SCENE,
+        rendererCreate: {
+            ...sceneConfig.rendererCreate,
+            antialias: false,
+            logarithmicDepthBuffer: false,
+            preserveDrawingBuffer: false,
+            precision: PrecisionType.Medium
+        },
+        rendererRuntime: {
+            ...sceneConfig.rendererRuntime,
+            shadowEnabled: false,
+            shadowAutoUpdate: false,
+            localClippingEnabled: false
+        },
+        effects: getDefaultEffectsSettings(),
+        environment: getDefaultEnvironmentSettings(),
+        lights: getDefaultLightsState(),
+        grid: {
+            ...sceneConfig.grid,
+            enabled: false
+        },
         orbitControls: {
             ...sceneConfig.orbitControls,
+            target: [0, 0, 0] as [number, number, number],
             enablePan: false,
             enableZoom: false
-        }
+        },
+        slicePlaneConfig: DEFAULT_SLICE_PLANE_CONFIG,
+        dpr: {
+            ...sceneConfig.dpr,
+            mode: DprMode.Fixed,
+            fixed: 1,
+            min: 0.75,
+            max: 1,
+            pixelated: true,
+            snap: true,
+            interactionMin: 0.75
+        },
+        performance: {
+            current: 0.7,
+            min: 0.25,
+            max: 1,
+            debounce: 120
+        },
+        adaptiveEventsEnabled: true,
+        interactionDegradeEnabled: true
     }), [sceneConfig]);
     const overlayStyle: CSSProperties = {
         position: 'absolute',
@@ -172,10 +217,10 @@ const DashboardPreviewCard = () => {
                         trajectoryId={readyTrajectory._id}
                         currentTimestep={readyTimestep}
                         sceneConfig={DEFAULT_SCENE}
-                        slicePlaneConfig={slicePlaneConfig}
+                        slicePlaneConfig={DEFAULT_SLICE_PLANE_CONFIG}
                         boxBounds={previewBoxBounds}
                         pointSizeMultiplier={pointSizeMultiplier}
-                        sceneOpacities={sceneOpacities}
+                        sceneOpacities={PREVIEW_SCENE_OPACITIES}
                         onLoadingStateChanged={setModelLoadingState}
                         autoFit
                         autoFitKeyOverride={readyTrajectory._id}

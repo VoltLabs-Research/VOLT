@@ -95,7 +95,10 @@ class InstrumentedHttpClient implements HttpClient {
 
     async request<T>(request: HttpRequest): Promise<T> {
         const requestStart = performance.now();
-        const timeout = buildTimeoutSignal(request.signal, this.timeoutMs);
+        const requestTimeoutMs = typeof Reflect.get(request, 'timeoutMs') === 'number'
+            ? Number(Reflect.get(request, 'timeoutMs'))
+            : this.timeoutMs;
+        const timeout = buildTimeoutSignal(request.signal, requestTimeoutMs);
 
         try {
             const response = await this.transport.request<T>({
