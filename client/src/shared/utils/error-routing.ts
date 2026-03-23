@@ -32,7 +32,9 @@ export const SOURCE_LABELS: Record<string, string> = {
 const IGNORED_PATTERNS = [
     'ResizeObserver loop',
     'Script error',
-    'ERR_CANCELED'
+    'ERR_CANCELED',
+    'CanceledError',
+    'canceled'
 ];
 
 export const shouldIgnoreError = (message: string): boolean =>
