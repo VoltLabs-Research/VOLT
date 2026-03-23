@@ -3,15 +3,11 @@ import {
     DownloadTrajectoryAnalysesOutputDTO
 } from '@modules/trajectory/application/dtos/trajectory/DownloadTrajectoryAnalysesDTO';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import {
-    ExportListingRowsByAnalysisIdInputDTO
-} from '@modules/plugin/application/dtos/listing-row/GetListingRowsByAnalysisIdDTO';
-import { ExportListingRowsByAnalysisIdUseCase } from '@modules/plugin/application/use-cases/listing-row/ExportListingRowsByAnalysisIdUseCase';
+import { GetPluginExposureExportUseCase } from '@modules/plugin/application/use-cases/exposure/GetPluginExposureExportUseCase';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { createZipDownloadResponse, sanitizeDownloadName } from '@shared/infrastructure/http/responses/download-response';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { Result } from '@shared/domain/port/Result';
-import { ExportType } from '@shared/domain/port/IBaseRepository';
 import { inject, injectable } from 'tsyringe';
 
 import type { IUseCase } from '@shared/application/IUseCase';
@@ -54,8 +50,8 @@ export default class DownloadTrajectoryAnalysesUseCase implements IUseCase<
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
         private readonly analysisRepository: IAnalysisRepository,
 
-        @inject(ExportListingRowsByAnalysisIdUseCase)
-        private readonly exportListingRowsByAnalysisIdUseCase: ExportListingRowsByAnalysisIdUseCase
+        @inject(GetPluginExposureExportUseCase)
+        private readonly getPluginExposureExportUseCase: GetPluginExposureExportUseCase
     ) {}
 
     async execute(
@@ -96,11 +92,23 @@ export default class DownloadTrajectoryAnalysesUseCase implements IUseCase<
         return Result.ok(createZipDownloadResponse({
             filename: `${filenameBase}-analyses`,
             appendEntries: async (archive) => {
+                let appendedCount = 0;
+
                 for (const analysis of completedAnalyses) {
-                    const exportArtifact = await this.exportAnalysisArtifact({
-                        analysis,
-                        teamId: input.teamId
-                    });
+                    let exportArtifact: DownloadStreamOutputDTO;
+
+                    try {
+                        exportArtifact = await this.exportAnalysisArtifact({
+                            analysis,
+                            teamId: input.teamId
+                        });
+                    } catch (error: unknown) {
+                        if (error instanceof ApplicationError && error.statusCode === 404) {
+                            continue;
+                        }
+
+                        throw error;
+                    }
 
                     await exportArtifact.prepare?.();
 
@@ -111,6 +119,14 @@ export default class DownloadTrajectoryAnalysesUseCase implements IUseCase<
                     archive.append(exportArtifact.stream, {
                         name: filename
                     });
+                    appendedCount += 1;
+                }
+
+                if (appendedCount === 0) {
+                    throw ApplicationError.conflict(
+                        'Trajectory::Analyses::NoTimestepArtifacts',
+                        'No completed analysis artifacts are available to download for this trajectory'
+                    );
                 }
             }
         }));
@@ -120,11 +136,10 @@ export default class DownloadTrajectoryAnalysesUseCase implements IUseCase<
         analysis: Analysis;
         teamId: string;
     }): Promise<DownloadStreamOutputDTO> {
-        const exportResult = await this.exportListingRowsByAnalysisIdUseCase.execute({
+        const exportResult = await this.getPluginExposureExportUseCase.execute({
             analysisId: input.analysis._id,
-            teamId: input.teamId,
-            format: ExportType.Csv
-        } satisfies ExportListingRowsByAnalysisIdInputDTO);
+            teamId: input.teamId
+        });
 
         if (!exportResult.success) {
             throw exportResult.error;

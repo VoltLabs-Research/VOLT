@@ -5,23 +5,38 @@ import {
 } from '@shared/infrastructure/http/responses/download-response';
 import {
     groupAnalysisFilesByTimestep,
-    listAnalysisFiles
+    listAnalysisFiles,
+    type AnalysisFileRef,
+    type AnalysisFileType
 } from '@modules/plugin/utilities/exposure/analysis-file-collection';
+import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 
 import { ErrorCodes } from '@core/constants/error-codes';
+import { SYS_BUCKETS } from '@core/config/minio';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { finished } from 'node:stream/promises';
 
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type { Archiver } from 'archiver';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import type { PassThrough } from 'node:stream';
 
 import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
 import type {
     IPluginExposureExportService,
     PluginExposureExportParams
 } from '@modules/plugin/domain/port/exposure/IPluginExposureExportService';
-import type { AnalysisFileRef } from '@modules/plugin/utilities/exposure/analysis-file-collection';
+
+interface PrefixCollectionConfig {
+    bucket: string;
+    prefix: string;
+    type: AnalysisFileType;
+    timestepRegex: RegExp;
+    extensionFilter?: string;
+}
 
 const sortAnalysisFilesByObjectName = (left: AnalysisFileRef, right: AnalysisFileRef): number => {
     return left.objectName.localeCompare(right.objectName);
@@ -31,14 +46,23 @@ const sortAnalysisFilesByObjectName = (left: AnalysisFileRef, right: AnalysisFil
 export class PluginExposureExportService implements IPluginExposureExportService {
     constructor(
         @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService
+        private readonly storageService: IStorageService,
+
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
+        private readonly trajectoryRepository: ITrajectoryRepository,
+
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 
     private async collectFilesByTimestep(
         trajectoryId: string,
         analysisId: string
     ): Promise<Map<number, AnalysisFileRef[]>> {
-        const files = await listAnalysisFiles(this.storageService, trajectoryId, analysisId);
+        const teamClusterId = await this.resolveTeamClusterId(trajectoryId);
+        const files = teamClusterId
+            ? await this.listClusterAnalysisFiles(teamClusterId, trajectoryId, analysisId)
+            : await listAnalysisFiles(this.storageService, trajectoryId, analysisId);
         const groupedFiles = groupAnalysisFilesByTimestep(files);
 
         for (const [timestep, group] of groupedFiles.entries()) {
@@ -48,42 +72,120 @@ export class PluginExposureExportService implements IPluginExposureExportService
         return groupedFiles;
     }
 
-    private async ensureFilesExist(groupedFiles: Map<number, AnalysisFileRef[]>): Promise<void> {
-        for (const files of groupedFiles.values()) {
-            for (const fileReference of files) {
-                await this.storageService.getStat(fileReference.bucket, fileReference.objectName);
-            }
-        }
-    }
-
     private appendTimestepArchive(
         archive: Archiver,
+        teamClusterId: string | undefined,
         analysisId: string,
         pluginName: string,
         timestep: number,
         files: AnalysisFileRef[]
-    ): void {
+    ): PassThrough {
         const timestepZipName = `timestep-${timestep}-analysis-${analysisId}-plugin-${pluginName}.zip`;
         const timestepZipStream = createZipArchiveStream(async (timestepArchive) => {
             for (const fileReference of files) {
-                const fileStream = await this.storageService.getStream(
-                    fileReference.bucket,
-                    fileReference.objectName
-                );
+                const fileStream = teamClusterId
+                    ? (await this.objectGatewayClient.getStream(
+                        teamClusterId,
+                        fileReference.bucket,
+                        fileReference.objectName
+                    )).stream
+                    : await this.storageService.getStream(
+                        fileReference.bucket,
+                        fileReference.objectName
+                    );
 
                 timestepArchive.append(fileStream, {
                     name: fileReference.objectName
                 });
+
+                await finished(fileStream);
             }
         });
 
         archive.append(timestepZipStream, {
             name: timestepZipName
         });
+
+        return timestepZipStream;
+    }
+
+    private async resolveTeamClusterId(trajectoryId: string): Promise<string | undefined> {
+        const trajectory = await this.trajectoryRepository.findById(trajectoryId);
+        return trajectory?.props.teamCluster;
+    }
+
+    private getPrefixCollectionConfigs(trajectoryId: string, analysisId: string): PrefixCollectionConfig[] {
+        return [
+            {
+                bucket: SYS_BUCKETS.PLUGINS,
+                prefix: `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/`,
+                type: 'data',
+                timestepRegex: /\/timestep-(\d+)\.msgpack$/
+            },
+            {
+                bucket: SYS_BUCKETS.PLUGINS,
+                prefix: `trajectory-${trajectoryId}/analysis-${analysisId}/charts/`,
+                type: 'chart',
+                timestepRegex: /\/charts\/(\d+)\//,
+                extensionFilter: '.png'
+            },
+            {
+                bucket: SYS_BUCKETS.MODELS,
+                prefix: `trajectory-${trajectoryId}/analysis-${analysisId}/glb/`,
+                type: 'model',
+                timestepRegex: /\/glb\/(\d+)\//,
+                extensionFilter: '.glb'
+            }
+        ];
+    }
+
+    private async collectClusterFilesByPrefix(
+        teamClusterId: string,
+        config: PrefixCollectionConfig
+    ): Promise<AnalysisFileRef[]> {
+        const files: AnalysisFileRef[] = [];
+
+        for await (const objectName of this.objectGatewayClient.listAll(teamClusterId, {
+            bucket: config.bucket,
+            prefix: config.prefix
+        })) {
+            if (config.extensionFilter && !objectName.endsWith(config.extensionFilter)) {
+                continue;
+            }
+
+            const match = objectName.match(config.timestepRegex);
+            if (!match) {
+                continue;
+            }
+
+            files.push({
+                bucket: config.bucket,
+                objectName,
+                type: config.type,
+                timestep: Number(match[1])
+            });
+        }
+
+        return files;
+    }
+
+    private async listClusterAnalysisFiles(
+        teamClusterId: string,
+        trajectoryId: string,
+        analysisId: string
+    ): Promise<AnalysisFileRef[]> {
+        const groups = await Promise.all(
+            this.getPrefixCollectionConfigs(trajectoryId, analysisId).map((config) => {
+                return this.collectClusterFilesByPrefix(teamClusterId, config);
+            })
+        );
+
+        return groups.flat().sort(sortAnalysisFilesByObjectName);
     }
 
     async exportAnalysisExposureBundle(params: PluginExposureExportParams): Promise<DownloadStreamOutputDTO> {
         const pluginName = sanitizeDownloadName(params.pluginName, 'plugin');
+        const teamClusterId = await this.resolveTeamClusterId(params.trajectoryId);
         const groupedFiles = await this.collectFilesByTimestep(params.trajectoryId, params.analysisId);
         const timesteps = Array.from(groupedFiles.keys()).sort((left, right) => left - right);
 
@@ -97,9 +199,6 @@ export class PluginExposureExportService implements IPluginExposureExportService
         return createZipDownloadResponse({
             filename: `analysis-${params.analysisId}-plugin-${pluginName}`,
             cacheControl: 'public, max-age=31536000, immutable',
-            prepare: async () => {
-                await this.ensureFilesExist(groupedFiles);
-            },
             appendEntries: async (bundleArchive) => {
                 for (const timestep of timesteps) {
                     const timestepFiles = groupedFiles.get(timestep) || [];
@@ -108,13 +207,16 @@ export class PluginExposureExportService implements IPluginExposureExportService
                         continue;
                     }
 
-                    this.appendTimestepArchive(
+                    const timestepArchiveStream = this.appendTimestepArchive(
                         bundleArchive,
+                        teamClusterId,
                         params.analysisId,
                         pluginName,
                         timestep,
                         timestepFiles
                     );
+
+                    await finished(timestepArchiveStream);
                 }
             }
         });
