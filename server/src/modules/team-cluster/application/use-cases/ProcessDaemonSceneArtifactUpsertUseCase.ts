@@ -1,7 +1,6 @@
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -34,6 +33,23 @@ interface ProcessDaemonSceneArtifactUpsertOutputDTO {
     acknowledged: boolean;
 };
 
+interface PreparedSceneArtifactUpsertEntry {
+    objectName: string;
+    data: {
+        trajectory: string;
+        teamCluster: string;
+        analysis?: string;
+        plugin?: string;
+        sourceType: SceneArtifactSourceType;
+        timestep: number;
+        params: SceneArtifactParams;
+        displayName: string;
+        status: SceneArtifactStatus;
+        storageBucket: string;
+        metadata?: Record<string, unknown>;
+    };
+}
+
 @injectable()
 export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase<
     ProcessDaemonSceneArtifactUpsertInputDTO,
@@ -58,12 +74,92 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
         input: ProcessDaemonSceneArtifactUpsertInputDTO
     ): Promise<Result<ProcessDaemonSceneArtifactUpsertOutputDTO, ApplicationError>> {
         try {
-            await this.teamClusterLifecycleService.authenticateDaemonConnection(
-                input.teamClusterId,
-                input.daemonPassword
-            );
+            const entries = await this.prepareUpsertEntries([input]);
+            await this.sceneArtifactRepository.upsertManyByObjectName(entries);
 
-            const trajectory = await this.trajectoryRepository.findById(input.trajectory);
+            return Result.ok({ acknowledged: true });
+        } catch (error: unknown) {
+            if (error instanceof ApplicationError) {
+                return Result.fail(error);
+            }
+
+            return Result.fail(
+                ApplicationError.internalServerError('Failed to process daemon scene artifact upsert')
+            );
+        }
+    }
+
+    async executeBatch(
+        inputs: ProcessDaemonSceneArtifactUpsertInputDTO[]
+    ): Promise<Result<ProcessDaemonSceneArtifactUpsertOutputDTO, ApplicationError>> {
+        try {
+            const entries = await this.prepareUpsertEntries(inputs);
+            await this.sceneArtifactRepository.upsertManyByObjectName(entries);
+
+            return Result.ok({ acknowledged: true });
+        } catch (error: unknown) {
+            if (error instanceof ApplicationError) {
+                return Result.fail(error);
+            }
+
+            return Result.fail(
+                ApplicationError.internalServerError('Failed to process daemon scene artifact upsert batch')
+            );
+        }
+    }
+
+    private async prepareUpsertEntries(
+        inputs: ProcessDaemonSceneArtifactUpsertInputDTO[]
+    ): Promise<PreparedSceneArtifactUpsertEntry[]> {
+        if (!inputs.length) {
+            return [];
+        }
+
+        const [firstInput] = inputs;
+        if (!firstInput) {
+            return [];
+        }
+
+        for (const input of inputs) {
+            if (input.teamClusterId !== firstInput.teamClusterId || input.daemonPassword !== firstInput.daemonPassword) {
+                throw ApplicationError.badRequest(
+                    'TEAM_CLUSTER_DAEMON_SCENE_ARTIFACT_BATCH_AUTH_MISMATCH',
+                    'All scene artifact upserts in a batch must share the same daemon credentials'
+                );
+            }
+        }
+
+        await this.teamClusterLifecycleService.authenticateDaemonConnection(
+            firstInput.teamClusterId,
+            firstInput.daemonPassword
+        );
+
+        const trajectoryIds = Array.from(new Set(inputs.map((input) => input.trajectory)));
+        const trajectories = await Promise.all(
+            trajectoryIds.map(async (trajectoryId) => {
+                const trajectory = await this.trajectoryRepository.findById(trajectoryId);
+                return [trajectoryId, trajectory] as const;
+            })
+        );
+        const trajectoryById = new Map(trajectories);
+
+        const analysisIds = Array.from(
+            new Set(
+                inputs
+                    .map((input) => input.analysis)
+                    .filter((analysisId): analysisId is string => typeof analysisId === 'string' && analysisId.length > 0)
+            )
+        );
+        const analyses = await Promise.all(
+            analysisIds.map(async (analysisId) => {
+                const analysis = await this.analysisRepository.findById(analysisId);
+                return [analysisId, analysis] as const;
+            })
+        );
+        const analysisById = new Map(analyses);
+
+        return inputs.map((input) => {
+            const trajectory = trajectoryById.get(input.trajectory);
             if (!trajectory) {
                 throw ApplicationError.notFound('TEAM_CLUSTER_DAEMON_TRAJECTORY_NOT_FOUND', 'Trajectory not found');
             }
@@ -80,7 +176,7 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
             const sanitizedTeamClusterId = trajectory.props.teamCluster ?? input.teamClusterId;
 
             if (input.analysis) {
-                const analysis = await this.analysisRepository.findById(input.analysis);
+                const analysis = analysisById.get(input.analysis);
                 if (!analysis) {
                     throw ApplicationError.notFound('TEAM_CLUSTER_DAEMON_ANALYSIS_NOT_FOUND', 'Analysis not found');
                 }
@@ -124,30 +220,22 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
                 );
             }
 
-            await recordSceneArtifact(this.sceneArtifactRepository, {
+            return {
                 objectName: input.objectName,
-                trajectory: trajectory.id,
-                teamCluster: sanitizedTeamClusterId,
-                analysis: sanitizedAnalysisId,
-                plugin: sanitizedPluginId,
-                sourceType: input.sourceType,
-                timestep: input.timestep,
-                params: input.params,
-                displayName: input.displayName,
-                status: input.status,
-                storageBucket: input.storageBucket,
-                metadata: input.metadata
-            });
-
-            return Result.ok({ acknowledged: true });
-        } catch (error: unknown) {
-            if (error instanceof ApplicationError) {
-                return Result.fail(error);
-            }
-
-            return Result.fail(
-                ApplicationError.internalServerError('Failed to process daemon scene artifact upsert')
-            );
-        }
+                data: {
+                    trajectory: trajectory.id,
+                    teamCluster: sanitizedTeamClusterId,
+                    analysis: sanitizedAnalysisId,
+                    plugin: sanitizedPluginId,
+                    sourceType: input.sourceType,
+                    timestep: input.timestep,
+                    params: input.params,
+                    displayName: input.displayName,
+                    status: input.status,
+                    storageBucket: input.storageBucket,
+                    metadata: input.metadata
+                }
+            };
+        });
     }
 };

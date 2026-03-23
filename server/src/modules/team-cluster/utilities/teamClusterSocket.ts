@@ -217,6 +217,84 @@ export interface TeamClusterDaemonRuntimeProgressPayload {
     payload?: Record<string, unknown>;
 };
 
+export interface TeamClusterDaemonAnalysisJobCompletionEventPayload {
+    type: 'analysis-job-completion';
+    teamClusterId: string;
+    daemonPassword: string;
+    jobId: string;
+    name: string;
+    analysisId: string;
+    teamId: string;
+    trajectoryId?: string;
+    trajectoryName?: string;
+    timestep?: number;
+    success: boolean;
+    error?: string;
+};
+
+export interface TeamClusterDaemonAnalysisJobStatusEventPayload {
+    type: 'analysis-job-status';
+    teamClusterId: string;
+    daemonPassword: string;
+    jobId: string;
+    name: string;
+    analysisId: string;
+    teamId: string;
+    trajectoryId?: string;
+    trajectoryName?: string;
+    timestep?: number;
+    status: 'running' | 'completed' | 'failed';
+    error?: string;
+};
+
+export interface TeamClusterDaemonRasterJobStatusEventPayload {
+    type: 'trajectory-raster-job-status';
+    teamClusterId: string;
+    daemonPassword: string;
+    jobId: string;
+    teamId: string;
+    trajectoryId: string;
+    trajectoryName?: string;
+    timestep?: number;
+    status: 'running' | 'completed' | 'failed';
+    error?: string;
+};
+
+export interface TeamClusterDaemonGlbJobStatusEventPayload {
+    type: 'trajectory-glb-job-status';
+    teamClusterId: string;
+    daemonPassword: string;
+    jobId: string;
+    teamId: string;
+    trajectoryId: string;
+    trajectoryName?: string;
+    timestep?: number;
+    status: 'running' | 'completed' | 'failed';
+    error?: string;
+};
+
+export interface TeamClusterDaemonSceneArtifactUpsertBatchItem {
+    trajectory: string;
+    teamCluster?: string;
+    analysis?: string;
+    plugin?: string;
+    sourceType: 'color-coding' | 'particle-filter' | 'plugin-exposure';
+    timestep: number;
+    objectName: string;
+    storageBucket: string;
+    params: Record<string, unknown>;
+    displayName: string;
+    status: 'ready' | 'failed';
+    metadata?: Record<string, unknown>;
+};
+
+export interface TeamClusterDaemonSceneArtifactUpsertBatchEventPayload {
+    type: 'trajectory-scene-artifact-upsert-batch';
+    teamClusterId: string;
+    daemonPassword: string;
+    items: TeamClusterDaemonSceneArtifactUpsertBatchItem[];
+};
+
 export type TeamClusterDaemonMessage =
     | TeamClusterDaemonCommandMessage
     | TeamClusterDaemonSocketResponsePayload
@@ -235,7 +313,12 @@ export type TeamClusterDaemonMessage =
     | TeamClusterDaemonTunnelDataPayload
     | TeamClusterDaemonTunnelClosePayload
     | TeamClusterDaemonTunnelHeartbeatPayload
-    | TeamClusterDaemonRuntimeProgressPayload;
+    | TeamClusterDaemonRuntimeProgressPayload
+    | TeamClusterDaemonAnalysisJobCompletionEventPayload
+    | TeamClusterDaemonAnalysisJobStatusEventPayload
+    | TeamClusterDaemonRasterJobStatusEventPayload
+    | TeamClusterDaemonGlbJobStatusEventPayload
+    | TeamClusterDaemonSceneArtifactUpsertBatchEventPayload;
 
 export {
     TeamClusterServiceExposureAccessMode,
