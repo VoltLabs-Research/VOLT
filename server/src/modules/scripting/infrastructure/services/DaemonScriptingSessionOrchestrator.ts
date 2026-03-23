@@ -144,12 +144,8 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         }
     }
 
-    async resolveDefaultNotebookTemplateContent(context: DefaultNotebookTemplateContext): Promise<string> {
-        return this.notebookService.resolveDefaultNotebookTemplateContent(context);
-    }
-
-    async resolveOvitoNotebookTemplateContent(context: DefaultNotebookTemplateContext): Promise<string> {
-        return this.notebookService.resolveOvitoNotebookTemplateContent(context);
+    async resolveNotebookTemplateContent(context: DefaultNotebookTemplateContext): Promise<Record<string, unknown>> {
+        return this.notebookService.resolveNotebookTemplateContent(context);
     }
 
     private resolveDaemonJupyterPath(jupyter: DaemonNotebookJupyterResponse): string {

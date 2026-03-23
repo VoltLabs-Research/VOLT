@@ -5,9 +5,11 @@ export interface DownloadTrajectoryInputDTO {
     teamId: string;
     userId: string;
     name?: string;
+    archive?: boolean;
 };
 
 export interface DownloadTrajectoryOutputDTO {
     stream: Readable;
-    filename: string;
+    headers: Record<string, string>;
+    prepare?: () => Promise<void>;
 };

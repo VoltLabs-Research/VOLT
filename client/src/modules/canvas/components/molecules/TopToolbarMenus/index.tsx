@@ -8,6 +8,8 @@ interface BuildMenusParams {
     onToggleStatusBar: () => void;
     onScreenshot: () => void;
     onImport: () => void;
+    onExport?: () => void;
+    canExport?: boolean;
 };
 
 export enum MenuItemType {
@@ -38,7 +40,9 @@ export const buildMenus = ({
     onToggleFullscreen,
     onToggleStatusBar,
     onScreenshot,
-    onImport
+    onImport,
+    onExport,
+    canExport = false
 }: BuildMenusParams): MenuConfig[] => {
     let statusBarIcon = <PanelBottom size={ICON_SIZE} />;
     if (showStatusBar) {
@@ -61,7 +65,8 @@ export const buildMenus = ({
                 label: 'Export',
                 icon: <Download size={ICON_SIZE} />,
                 shortcut: 'Ctrl+E',
-                disabled: true
+                action: onExport,
+                disabled: !canExport || !onExport
             },
             { type: MenuItemType.Separator },
             {

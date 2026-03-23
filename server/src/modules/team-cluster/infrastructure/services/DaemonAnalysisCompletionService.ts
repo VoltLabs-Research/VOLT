@@ -19,8 +19,6 @@ const ANALYSIS_QUEUE_TYPE = 'analysis_processing';
 const RASTER_QUEUE_TYPE = 'trajectory_rasterization';
 const GLB_QUEUE_TYPE = 'trajectory_glb_conversion';
 const SESSION_TTL_SECONDS = 86400;
-const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
-const STATUS_TTL_SECONDS = 86400;
 const PROJECTED_JOB_SOURCE = 'projected';
 const PROJECTED_JOB_BACKING_SOURCE = 'daemon';
 const ANALYSIS_PROJECTED_JOB_CLEANUP_SCOPE = 'analysis';
@@ -158,8 +156,8 @@ export default class DaemonAnalysisCompletionService {
 
     /**
      * Called by the PluginExecutionRouter after dispatching jobs to the daemon.
-     * Projects each queued job to Redis and emits socket events so the frontend
-     * sees jobs immediately with "Queued" status.
+     * Publishes queued job events so the jobs module can project them and the
+     * team module can notify connected clients.
      */
     async handleJobsQueued(jobs: QueuedJobNotification[], teamId: string): Promise<void> {
         for (const job of jobs) {
@@ -168,17 +166,6 @@ export default class DaemonAnalysisCompletionService {
                 trajectoryName: job.trajectoryName,
                 timestep: job.timestep
             };
-
-            await this.projectJobStatus({
-                jobId: job.jobId,
-                teamId,
-                status: JobStatus.Queued,
-                queueType: ANALYSIS_QUEUE_TYPE,
-                cleanupScope: ANALYSIS_PROJECTED_JOB_CLEANUP_SCOPE,
-                name: job.name,
-                analysisId: job.analysisId,
-                trajectoryContext
-            });
 
             await this.publishJobStatusChanged({
                 jobId: job.jobId,
@@ -193,13 +180,13 @@ export default class DaemonAnalysisCompletionService {
         }
 
         logger.info(
-            `[DaemonAnalysisCompletion] Projected and emitted ${jobs.length} queued jobs for team ${teamId}`
+            `[DaemonAnalysisCompletion] Published ${jobs.length} queued jobs for team ${teamId}`
         );
     }
 
     /**
      * Called when the daemon reports a single job completed or failed.
-     * Projects status to Redis, publishes socket events, and handles session drain.
+     * Publishes status changes and handles session drain.
      */
     async handleJobCompletion(input: DaemonJobCompletionInput): Promise<void> {
         const { jobId, analysisId, success, error } = input;
@@ -218,20 +205,7 @@ export default class DaemonAnalysisCompletionService {
             return;
         }
 
-        // 1. Project job status to Redis for dashboard/socket consumers
-        await this.projectJobStatus({
-            jobId,
-            teamId,
-            status,
-            queueType: ANALYSIS_QUEUE_TYPE,
-            cleanupScope: ANALYSIS_PROJECTED_JOB_CLEANUP_SCOPE,
-            name,
-            analysisId,
-            trajectoryContext,
-            error
-        });
-
-        // 2. Publish socket event to frontend
+        // 1. Publish job status changed event
         await this.publishJobStatusChanged({
             jobId,
             teamId,
@@ -244,7 +218,7 @@ export default class DaemonAnalysisCompletionService {
             error
         });
 
-        // 3. Increment completedFrames on analysis
+        // 2. Increment completedFrames on analysis
         if (success) {
             const completedFramesUpdate: Record<string, unknown> = {
                 $inc: { completedFrames: 1 }
@@ -258,25 +232,25 @@ export default class DaemonAnalysisCompletionService {
             });
         }
 
-        // 4. Record failure if applicable
+        // 3. Record failure if applicable
         if (!success) {
             await this.recordFailure(analysisId);
         }
 
-        // 5. Atomically decrement remaining counter
+        // 4. Atomically decrement remaining counter
         const drainResult = await this.decrementAndCheckDrain(analysisId);
         if (!drainResult.drained) {
             return;
         }
 
-        // 6. All jobs settled - finalize analysis
+        // 5. All jobs settled - finalize analysis
         await this.finalizeAnalysis(analysisId, teamId, drainResult.failedJobs);
     }
 
     /**
      * Called when the daemon reports a real-time analysis job status change (e.g. running).
-     * Projects status to Redis and publishes socket events so the frontend sees
-     * the transition immediately. Does NOT affect session drain counters.
+     * Publishes the status change so projections and socket notifications stay
+     * centralized in event subscribers. Does NOT affect session drain counters.
      */
     async handleAnalysisJobStatus(input: DaemonAnalysisJobStatusInput): Promise<void> {
         const { jobId, analysisId, status, error } = input;
@@ -287,18 +261,6 @@ export default class DaemonAnalysisCompletionService {
         if (await this.hasTerminalReceipt(this.analysisTerminalReceiptKey(analysisId, jobId))) {
             return;
         }
-
-        await this.projectJobStatus({
-            jobId,
-            teamId,
-            status,
-            queueType: ANALYSIS_QUEUE_TYPE,
-            cleanupScope: ANALYSIS_PROJECTED_JOB_CLEANUP_SCOPE,
-            name: input.name,
-            analysisId,
-            trajectoryContext,
-            error
-        });
 
         await this.publishJobStatusChanged({
             jobId,
@@ -318,16 +280,6 @@ export default class DaemonAnalysisCompletionService {
         const jobId = this.requireRasterJobId(input.jobId);
         const trajectoryContext = resolved.trajectoryContext;
 
-        await this.projectJobStatus({
-            jobId,
-            teamId: resolved.teamId,
-            status: input.status,
-            queueType: RASTER_QUEUE_TYPE,
-            cleanupScope: RASTER_PROJECTED_JOB_CLEANUP_SCOPE,
-            trajectoryContext,
-            error: input.error
-        });
-
         await this.publishJobStatusChanged({
             jobId,
             teamId: resolved.teamId,
@@ -341,7 +293,7 @@ export default class DaemonAnalysisCompletionService {
 
     /**
      * Called when the daemon reports a GLB conversion job status change.
-     * Projects status to Redis, publishes socket events, and handles GLB session drain.
+     * Publishes the status change and handles GLB session drain.
      */
     async handleGlbJobStatus(input: DaemonGlbJobStatusInput): Promise<void> {
         const { jobId, status, error } = input;
@@ -366,18 +318,7 @@ export default class DaemonAnalysisCompletionService {
             return;
         }
 
-        // 1. Project job status to Redis for dashboard/socket consumers
-        await this.projectJobStatus({
-            jobId,
-            teamId,
-            status,
-            queueType: GLB_QUEUE_TYPE,
-            cleanupScope: GLB_PROJECTED_JOB_CLEANUP_SCOPE,
-            trajectoryContext,
-            error
-        });
-
-        // 2. Publish socket event to frontend
+        // 1. Publish job status changed event
         await this.publishJobStatusChanged({
             jobId,
             teamId,
@@ -388,106 +329,24 @@ export default class DaemonAnalysisCompletionService {
             error
         });
 
-        // 3. Only process drain logic for terminal statuses
+        // 2. Only process drain logic for terminal statuses
         if (!isTerminal) {
             return;
         }
 
-        // 4. Record failure if applicable
+        // 3. Record failure if applicable
         if (status === JobStatus.Failed) {
             await this.recordGlbFailure(trajectoryId);
         }
 
-        // 5. Atomically decrement remaining counter
+        // 4. Atomically decrement remaining counter
         const drainResult = await this.decrementAndCheckGlbDrain(trajectoryId);
         if (!drainResult.drained) {
             return;
         }
 
-        // 6. All GLB jobs settled - finalize trajectory
+        // 5. All GLB jobs settled - finalize trajectory
         await this.finalizeGlbSession(trajectoryId, teamId, drainResult.failedJobs);
-    }
-
-    private async projectJobStatus(input: ProjectedJobStatusInput): Promise<void> {
-        const {
-            jobId,
-            teamId,
-            status,
-            queueType,
-            cleanupScope,
-            name,
-            analysisId,
-            trajectoryContext,
-            error
-        } = input;
-        const timestamp = new Date().toISOString();
-        const metadata: Record<string, unknown> = {
-            jobId,
-            status,
-            queueType,
-            source: PROJECTED_JOB_SOURCE,
-            backingSource: PROJECTED_JOB_BACKING_SOURCE,
-            cleanupScope
-        };
-        const statusData: Record<string, unknown> = {
-            jobId,
-            status,
-            teamId,
-            queueType,
-            source: PROJECTED_JOB_SOURCE,
-            metadata,
-            timestamp,
-            updatedAt: timestamp
-        };
-
-        if (analysisId) {
-            metadata.analysisId = analysisId;
-            statusData.analysisId = analysisId;
-        }
-
-        if (name) {
-            metadata.name = name;
-            statusData.name = name;
-        }
-
-        if (trajectoryContext.trajectoryId) {
-            metadata.trajectoryId = trajectoryContext.trajectoryId;
-            statusData.trajectoryId = trajectoryContext.trajectoryId;
-        }
-
-        if (trajectoryContext.trajectoryName) {
-            metadata.trajectoryName = trajectoryContext.trajectoryName;
-            statusData.trajectoryName = trajectoryContext.trajectoryName;
-        }
-
-        if (typeof trajectoryContext.timestep === 'number') {
-            metadata.timestep = trajectoryContext.timestep;
-            statusData.timestep = trajectoryContext.timestep;
-        }
-
-        if (error) {
-            metadata.error = error;
-            statusData.error = error;
-        }
-
-        const pipeline = this.redis.pipeline();
-        pipeline.set(
-            this.jobStatusKey(jobId),
-            JSON.stringify(statusData),
-            'EX',
-            STATUS_TTL_SECONDS
-        );
-        pipeline.sadd(this.teamJobsKey(teamId), jobId);
-        pipeline.sadd(this.projectedTeamJobsKey(teamId), jobId);
-        pipeline.expire(this.teamJobsKey(teamId), STATUS_TTL_SECONDS);
-        pipeline.expire(this.projectedTeamJobsKey(teamId), STATUS_TTL_SECONDS);
-
-        if (analysisId) {
-            pipeline.sadd(this.projectedAnalysisJobsKey(analysisId), jobId);
-            pipeline.expire(this.projectedAnalysisJobsKey(analysisId), STATUS_TTL_SECONDS);
-        }
-
-        await pipeline.exec();
     }
 
     private async publishJobStatusChanged(input: ProjectedJobStatusInput): Promise<void> {
@@ -873,19 +732,4 @@ export default class DaemonAnalysisCompletionService {
         return `daemon-analysis:${analysisId}:failed`;
     }
 
-    private jobStatusKey(jobId: string): string {
-        return `${JOB_STATUS_KEY_PREFIX}${jobId}`;
-    }
-
-    private teamJobsKey(teamId: string): string {
-        return `team:${teamId}:jobs`;
-    }
-
-    private projectedTeamJobsKey(teamId: string): string {
-        return `team:${teamId}:projected-jobs`;
-    }
-
-    private projectedAnalysisJobsKey(analysisId: string): string {
-        return `analysis:${analysisId}:projected-jobs`;
-    }
 };

@@ -84,6 +84,8 @@ Hello, world!
 \\end{document}
 `;
 
+const LEGACY_PLACEHOLDER_ENTRYPOINT_NAME = 'main.tex';
+
 const loadPanelWidths = (): PanelWidths => {
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
@@ -116,7 +118,7 @@ const LatexDocumentWorkspace = () => {
     const [hasEnteredWorkspace, setHasEnteredWorkspace] = useState(false);
     const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
     const [isImportingProject, setIsImportingProject] = useState(false);
-    const [isAIPanelOpen, setIsAIPanelOpen] = useState(true);
+    const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
     const initialWorkspaceVisibilityResolvedRef = useRef(false);
 
     const {
@@ -178,8 +180,24 @@ const LatexDocumentWorkspace = () => {
         handleWorkspaceFoldersSelected
     } = useLatexWorkspace({ documentId });
 
+    const legacyPlaceholderFile = files.length === 1
+        && rawAssets.length === 0
+        && files[0]?.isEntrypoint
+        && files[0]?.name === LEGACY_PLACEHOLDER_ENTRYPOINT_NAME
+        && files[0]?.path === ''
+        && files[0]?.content.trim() === ''
+        ? files[0]
+        : null;
+
     usePageTitle(latexDocument?.title ?? 'LaTeX Workspace');
     useDashboardWorkspaceChrome({ collapseSidebar: true, hideHeader: true });
+
+    useEffect(() => {
+        setHasEnteredWorkspace(false);
+        setIsCreatingTemplate(false);
+        setIsImportingProject(false);
+        initialWorkspaceVisibilityResolvedRef.current = false;
+    }, [documentId]);
 
     /** Pointer Capture drag — files panel handle. */
     const handleFilesPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>): void => {
@@ -306,7 +324,7 @@ const LatexDocumentWorkspace = () => {
         return () => observer.disconnect();
     }, [isEditorSplit]);
 
-    const hasWorkspaceContent = files.length > 0 || rawAssets.length > 0;
+    const hasWorkspaceContent = rawAssets.length > 0 || (files.length > 0 && !legacyPlaceholderFile);
 
     useEffect(() => {
         if (initialWorkspaceVisibilityResolvedRef.current || isLoading) {
@@ -321,14 +339,23 @@ const LatexDocumentWorkspace = () => {
         setIsCreatingTemplate(true);
 
         try {
-            await handleCreateFile('main.tex', undefined, LATEX_TEMPLATE_CONTENT);
+            if (legacyPlaceholderFile) {
+                await updateFile({
+                    documentId,
+                    fileId: legacyPlaceholderFile._id,
+                    content: LATEX_TEMPLATE_CONTENT
+                });
+                handleSelectFileById(legacyPlaceholderFile._id);
+            } else {
+                await handleCreateFile('main.tex', undefined, LATEX_TEMPLATE_CONTENT);
+            }
             setHasEnteredWorkspace(true);
         } catch {
             setHasEnteredWorkspace(false);
         } finally {
             setIsCreatingTemplate(false);
         }
-    }, [handleCreateFile]);
+    }, [documentId, handleCreateFile, handleSelectFileById, legacyPlaceholderFile, updateFile]);
 
     const handleUploadProject = useCallback((): void => {
         folderInputRef.current?.click();
@@ -344,6 +371,12 @@ const LatexDocumentWorkspace = () => {
         setIsImportingProject(true);
 
         try {
+            if (legacyPlaceholderFile) {
+                await deleteFile({
+                    documentId,
+                    fileId: legacyPlaceholderFile._id
+                });
+            }
             await handleWorkspaceFoldersSelected(event);
             setHasEnteredWorkspace(true);
         } catch {
@@ -351,7 +384,7 @@ const LatexDocumentWorkspace = () => {
         } finally {
             setIsImportingProject(false);
         }
-    }, [handleWorkspaceFoldersSelected]);
+    }, [deleteFile, documentId, handleWorkspaceFoldersSelected, legacyPlaceholderFile]);
 
     const shouldShowWorkspaceOnboarding = !hasWorkspaceContent && !hasEnteredWorkspace;
 
@@ -491,33 +524,35 @@ const LatexDocumentWorkspace = () => {
                             </Container>
                         </Container>
 
-                        <Container
-                            id='latex-ai-panel'
-                            className='latex-ai-panel d-flex column gap-075'
-                            style={{
-                                height: panelWidths.ai,
-                                padding: '1rem',
-                                borderTop: '1px solid var(--color-border-primary, rgba(127, 127, 127, 0.2))'
-                            }}
-                        >
-                            <Paragraph className='color-muted'>AI assistant</Paragraph>
-                            <div
+                        {isAIPanelOpen && (
+                            <Container
+                                id='latex-ai-panel'
+                                className='latex-ai-panel d-flex column gap-075'
                                 style={{
-                                    width: '42%',
-                                    height: '0.875rem',
-                                    borderRadius: '999px',
-                                    background: 'var(--color-surface-tertiary, rgba(127, 127, 127, 0.18))'
+                                    height: panelWidths.ai,
+                                    padding: '1rem',
+                                    borderTop: '1px solid var(--color-border-primary, rgba(127, 127, 127, 0.2))'
                                 }}
-                            />
-                            <div
-                                style={{
-                                    width: '75%',
-                                    height: '0.875rem',
-                                    borderRadius: '999px',
-                                    background: 'var(--color-surface-tertiary, rgba(127, 127, 127, 0.18))'
-                                }}
-                            />
-                        </Container>
+                            >
+                                <Paragraph className='color-muted'>AI assistant</Paragraph>
+                                <div
+                                    style={{
+                                        width: '42%',
+                                        height: '0.875rem',
+                                        borderRadius: '999px',
+                                        background: 'var(--color-surface-tertiary, rgba(127, 127, 127, 0.18))'
+                                    }}
+                                />
+                                <div
+                                    style={{
+                                        width: '75%',
+                                        height: '0.875rem',
+                                        borderRadius: '999px',
+                                        background: 'var(--color-surface-tertiary, rgba(127, 127, 127, 0.18))'
+                                    }}
+                                />
+                            </Container>
+                        )}
                     </Container>
 
                     <Container

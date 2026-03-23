@@ -2,9 +2,9 @@ import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Button from '@/shared/presentation/components/Button';
 import Loader from '@/shared/presentation/components/Loader';
-import { AlertCircle, ChevronLeft, ChevronRight, Download, FileText, ZoomIn, ZoomOut } from 'lucide-react';
+import { AlertCircle, Download, FileText, ZoomIn, ZoomOut } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
@@ -39,12 +39,15 @@ const LatexPdfViewer = ({
     const [numPages, setNumPages] = useState<number | null>(null);
     const [pdfError, setPdfError] = useState<string | null>(null);
     const [scale, setScale] = useState(1);
+    const stageRef = useRef<HTMLDivElement | null>(null);
+    const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
 
     useEffect(() => {
         setPageNumber(1);
         setNumPages(null);
         setPdfError(null);
         setScale(1);
+        pageRefs.current = [];
     }, [pdfUrl]);
 
     const handlePdfLoaded = useCallback(({ numPages: loadedPages }: { numPages: number }) => {
@@ -57,44 +60,70 @@ const LatexPdfViewer = ({
         setPdfError(nextError.message || 'Failed to render PDF preview');
     }, []);
 
-    const canGoPrevious = pageNumber > 1;
-    const canGoNext = numPages !== null && pageNumber < numPages;
+    const setPageRef = useCallback((index: number) => {
+        return (node: HTMLDivElement | null) => {
+            pageRefs.current[index] = node;
+        };
+    }, []);
+
+    useEffect(() => {
+        const root = stageRef.current;
+
+        if (!root || !numPages) {
+            return;
+        }
+
+        const observer = new IntersectionObserver((entries) => {
+            let bestPage: number | null = null;
+            let bestRatio = 0;
+
+            for (const entry of entries) {
+                if (!entry.isIntersecting) {
+                    continue;
+                }
+
+                if (entry.intersectionRatio < bestRatio) {
+                    continue;
+                }
+
+                const nextPage = Number((entry.target as HTMLElement).dataset.pageNumber);
+                if (Number.isNaN(nextPage)) {
+                    continue;
+                }
+
+                bestRatio = entry.intersectionRatio;
+                bestPage = nextPage;
+            }
+
+            if (bestPage === null) {
+                return;
+            }
+
+            setPageNumber((currentPage) => currentPage === bestPage ? currentPage : bestPage);
+        }, {
+            root,
+            threshold: [0.2, 0.4, 0.6, 0.8]
+        });
+
+        pageRefs.current.slice(0, numPages).forEach((node) => {
+            if (node) {
+                observer.observe(node);
+            }
+        });
+
+        return () => observer.disconnect();
+    }, [numPages, pdfUrl, scale]);
 
     const toolbar = (
         <Container className='latex-pdf-toolbar d-flex items-center content-between gap-05'>
-            <Container className='d-flex items-center gap-05'>
-                <Button
-                    variant='ghost'
-                    intent='neutral'
-                    size='sm'
-                    shape='circle'
-                    iconOnly
-                    aria-label='Go to the previous PDF page'
-                    disabled={!canGoPrevious}
-                    onClick={() => setPageNumber((currentPage) => Math.max(1, currentPage - 1))}
-                    title='Previous page'
-                >
-                    <ChevronLeft size={14} />
-                </Button>
+            <Container className='latex-pdf-toolbar__group d-flex items-center gap-05'>
                 <span className='latex-pdf-toolbar__meta'>
                     Page {pageNumber}{numPages ? ` / ${numPages}` : ''}
                 </span>
-                <Button
-                    variant='ghost'
-                    intent='neutral'
-                    size='sm'
-                    shape='circle'
-                    iconOnly
-                    aria-label='Go to the next PDF page'
-                    disabled={!canGoNext}
-                    onClick={() => setPageNumber((currentPage) => Math.min(numPages ?? currentPage, currentPage + 1))}
-                    title='Next page'
-                >
-                    <ChevronRight size={14} />
-                </Button>
+                <span className='latex-pdf-toolbar__hint'>Scroll to browse pages</span>
             </Container>
 
-            <Container className='d-flex items-center gap-05'>
+            <Container className='latex-pdf-toolbar__group d-flex items-center gap-05'>
                 <Button
                     variant='ghost'
                     intent='neutral'
@@ -199,7 +228,7 @@ const LatexPdfViewer = ({
     return (
         <Container className='latex-pdf-shell d-flex column flex-1 min-h-0 position-relative'>
             {toolbar}
-            <Container className='latex-pdf-stage d-flex column flex-1 min-h-0'>
+            <Container ref={stageRef} className='latex-pdf-stage d-flex column flex-1 min-h-0'>
                 <Document
                     key={pdfUrl}
                     file={pdfUrl}
@@ -209,14 +238,27 @@ const LatexPdfViewer = ({
                     error=''
                     className='latex-pdf-document'
                 >
-                    <Page
-                        pageNumber={pageNumber}
-                        scale={scale}
-                        renderAnnotationLayer={false}
-                        renderTextLayer={false}
-                        className='latex-pdf-page'
-                        loading=''
-                    />
+                    {Array.from({ length: numPages ?? 0 }, (_, index) => {
+                        const nextPageNumber = index + 1;
+
+                        return (
+                            <Container
+                                key={`${pdfUrl}-page-${nextPageNumber}`}
+                                ref={setPageRef(index)}
+                                className='latex-pdf-page-shell'
+                                data-page-number={nextPageNumber}
+                            >
+                                <Page
+                                    pageNumber={nextPageNumber}
+                                    scale={scale}
+                                    renderAnnotationLayer={false}
+                                    renderTextLayer={false}
+                                    className='latex-pdf-page'
+                                    loading=''
+                                />
+                            </Container>
+                        );
+                    })}
                 </Document>
             </Container>
         </Container>

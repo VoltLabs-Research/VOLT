@@ -19,7 +19,15 @@ import useShortcutDiscovery from '@/shared/tips/use-shortcut-discovery';
 
 import './TopToolbar.css';
 
-const TopToolbar = () => {
+interface TopToolbarProps {
+    canExport?: boolean;
+    onExport?: () => void;
+}
+
+const TopToolbar = ({
+    canExport = false,
+    onExport
+}: TopToolbarProps) => {
     const [openMenu, setOpenMenu] = useState<string | null>(null);
     const [isSigningOut, setIsSigningOut] = useState(false);
     const navigate = useNavigate();
@@ -65,7 +73,9 @@ const TopToolbar = () => {
         onToggleFullscreen: handleToggleFullscreen,
         onToggleStatusBar: () => setShowStatusBar(!showStatusBar),
         onScreenshot: handleScreenshot,
-        onImport: openFilePicker
+        onImport: openFilePicker,
+        onExport,
+        canExport
     });
 
     return (

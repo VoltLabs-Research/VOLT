@@ -59,6 +59,28 @@ const moveTrajectorySchema = z.object({
     folderId: objectIdSchema.nullable()
 }).strict();
 
+const archiveQuerySchema = z.preprocess((value) => {
+    if (value === undefined) {
+        return undefined;
+    }
+
+    if (typeof value === 'boolean') {
+        return value;
+    }
+
+    if (typeof value === 'string') {
+        if (value === 'true') return true;
+        if (value === 'false') return false;
+    }
+
+    return value;
+}, z.boolean().optional());
+
+const downloadTrajectoryQuerySchema = z.object({
+    name: z.string().trim().min(1).max(255).optional(),
+    archive: archiveQuerySchema
+}).strict();
+
 export const trajectoryValidation = createResourceValidation({
     listByTeamId: {
         params: teamParamsSchema,
@@ -93,7 +115,8 @@ export const trajectoryValidation = createResourceValidation({
         params: trajectoryParamsSchema
     },
     downloadTrajectory: {
-        params: trajectoryParamsSchema
+        params: trajectoryParamsSchema,
+        query: downloadTrajectoryQuerySchema
     },
     getAtoms: {
         params: trajectoryParamsSchema,

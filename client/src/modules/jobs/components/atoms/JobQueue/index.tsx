@@ -61,6 +61,7 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
     const containerClass = `job-container ${job.status}${isChild ? ' is-child' : ''}`;
     const isFailed = job.status === JobStatus.Failed;
     const isAnalysisJob = job.queueType === 'analysis_processing';
+    const hasFrameTimestep = typeof job.timestep === 'number' && job.timestep >= 0;
     const retryJobAnalysis = useRetryJobAnalysis();
     const statusLabel = getJobStatusLabel(job.status);
 
@@ -94,8 +95,8 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
                 </Container>
                 <Container className='d-flex items-center gap-05 flex-wrap'>
                     <Paragraph className='job-message color-secondary font-size-1 d-flex items-center gap-05'>
-                        {job.timestep !== undefined && <span>Frame {job.timestep}</span>}
-                        {job.timestep !== undefined && job.timestamp && <span>&middot;</span>}
+                        {hasFrameTimestep && <span>Frame {job.timestep}</span>}
+                        {hasFrameTimestep && job.timestamp && <span>&middot;</span>}
                         {job.timestamp && <span>{formatDistanceToNow(new Date(job.timestamp), { addSuffix: true })}</span>}
                     </Paragraph>
                     {job.processingTimeMs && job.status === JobStatus.Completed && (

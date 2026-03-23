@@ -2,8 +2,8 @@ get:
   operationId: downloadTrajectory
   tags:
   - Trajectories
-  summary: Download original trajectory file
-  description: Downloads the original uploaded trajectory file in its native format.
+  summary: Download trajectory dumps
+  description: Downloads a trajectory dump. Use the `archive` query parameter to export all stored dump frames as a single zip archive.
   parameters:
   - $ref: ../../components/parameters/common.yaml#/TeamId
   - name: trajectoryId
@@ -12,11 +12,27 @@ get:
     description: Unique identifier of the trajectory
     schema:
       type: string
+  - name: name
+    in: query
+    required: false
+    description: Optional base filename to use for the download.
+    schema:
+      type: string
+  - name: archive
+    in: query
+    required: false
+    description: When `true`, exports every dump frame for the trajectory as a `.zip` archive.
+    schema:
+      type: boolean
   responses:
     '200':
-      description: Trajectory file binary content
+      description: Trajectory dump binary content or zip archive
       content:
         application/octet-stream:
+          schema:
+            type: string
+            format: binary
+        application/zip:
           schema:
             type: string
             format: binary

@@ -8,6 +8,7 @@ import { pluginSubscriberManifest } from '@modules/plugin/infrastructure/events/
 import { scriptingSubscriberManifest } from '@modules/scripting/infrastructure/events/subscribers';
 import { whiteboardSubscriberManifest } from '@modules/whiteboards/infrastructure/events/subscribers';
 import { latexSubscriberManifest } from '@modules/latex/infrastructure/events/subscribers';
+import { jobsSubscriberManifest } from '@modules/jobs/infrastructure/events/subscribers';
 import { sessionSubscriberManifest } from '@modules/session/infrastructure/events/subscribers';
 import { simulationCellSubscriberManifest } from '@modules/simulation-cell/infrastructure/events/subscribers';
 import { sshSubscriberManifest } from '@modules/ssh/infrastructure/events/subscribers';
@@ -17,6 +18,7 @@ import { registerSubscribers, type SubscriberManifest } from '@shared/infrastruc
 import logger from '@shared/infrastructure/logger';
 
 const SUBSCRIBER_MANIFESTS: SubscriberManifest[] = [
+    jobsSubscriberManifest,
     teamSubscriberManifest,
     notificationSubscriberManifest,
     chatSubscriberManifest,
