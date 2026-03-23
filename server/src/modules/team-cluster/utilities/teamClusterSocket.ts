@@ -1,5 +1,6 @@
 import {
     TeamClusterServiceExposureAccessMode,
+    TeamClusterServiceExposureSourceKind,
     TeamClusterServiceExposureStatus,
     type TeamClusterServiceExposure
 } from '@modules/team-cluster/domain/contracts/TeamClusterServiceExposure';
@@ -322,6 +323,7 @@ export type TeamClusterDaemonMessage =
 
 export {
     TeamClusterServiceExposureAccessMode,
+    TeamClusterServiceExposureSourceKind,
     TeamClusterServiceExposureStatus
 };
 

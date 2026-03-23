@@ -6,20 +6,14 @@ import {
 } from '@modules/raster/utilities/raster-storage-paths';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TeamClusterDaemonStreamError } from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
+import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { RasterFrameResult } from '@modules/raster/domain/port/IRasterFrameReader';
 import type { IRasterStorage } from '@modules/raster/domain/port/IRasterStorage';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
-
-interface ObjectListResponse {
-    keys: string[];
-};
 
 @injectable()
 export class RasterStorageService implements IRasterStorage {
@@ -27,8 +21,8 @@ export class RasterStorageService implements IRasterStorage {
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
 
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 
     async hasTrajectoryPreview(trajectoryId: string, teamClusterId?: string): Promise<boolean> {
@@ -122,19 +116,7 @@ export class RasterStorageService implements IRasterStorage {
         teamClusterId?: string
     ): AsyncIterable<string> {
         if (teamClusterId) {
-            const result = await this.teamClusterDaemonClient.command<ObjectListResponse>(
-                teamClusterId,
-                TEAM_CLUSTER_DAEMON_COMMAND.object.list,
-                {
-                    bucket,
-                    prefix
-                }
-            );
-
-            for (const key of result.keys) {
-                yield key;
-            }
-
+            yield* this.objectGatewayClient.listAll(teamClusterId, { bucket, prefix });
             return;
         }
 
@@ -173,26 +155,21 @@ export class RasterStorageService implements IRasterStorage {
         filename: string
     ): Promise<RasterFrameResult> {
         try {
-            const response = await this.teamClusterDaemonClient.commandResponseStream(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.object.get, {
-                bucket: SYS_BUCKETS.RASTERIZER,
-                objectKey: objectName
-            });
-            const contentLengthHeader = response.headers['content-length'];
-            const contentLength = typeof contentLengthHeader === 'string'
-                ? Number(contentLengthHeader)
-                : undefined;
+            const response = await this.objectGatewayClient.getStream(
+                teamClusterId,
+                SYS_BUCKETS.RASTERIZER,
+                objectName
+            );
 
             return {
                 stream: response.stream,
-                contentLength: typeof contentLength === 'number' && Number.isFinite(contentLength)
-                    ? contentLength
-                    : undefined,
-                contentType: response.headers['content-type'] || 'image/png',
+                contentLength: response.contentLength,
+                contentType: response.contentType || 'image/png',
                 cacheControl: 'public, max-age=86400',
                 filename
             };
         } catch (error) {
-            if (error instanceof TeamClusterDaemonStreamError && error.status === 404) {
+            if (error instanceof ApplicationError && error.statusCode === 404) {
                 throw ApplicationError.notFound(
                     ErrorCodes.RASTER_NOT_FOUND,
                     'Raster frame not found'

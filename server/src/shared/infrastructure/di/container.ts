@@ -4,6 +4,7 @@ import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCreden
 import EventBroadcastSocketModule from '@shared/infrastructure/socket/EventBroadcastSocketModule';
 import TempStorageLifecycleService from '@shared/infrastructure/services/TempStorageLifecycleService';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import TeamClusterRedisFactory from '@shared/infrastructure/services/TeamClusterRedisFactory';
 import TeamClusterServiceResolver from '@shared/infrastructure/services/TeamClusterServiceResolver';
 import TeamClusterStorageResolver from '@shared/infrastructure/services/TeamClusterStorageResolver';
@@ -16,6 +17,7 @@ export const registerSharedDependencies = (): void => {
             [SHARED_TOKENS.DaemonCredentialGuard, DaemonCredentialGuard],
             [SHARED_TOKENS.TempStorageLifecycleService, TempStorageLifecycleService],
             [SHARED_TOKENS.TeamClusterDaemonClient, TeamClusterDaemonClient],
+            [SHARED_TOKENS.TeamClusterObjectGatewayClient, TeamClusterObjectGatewayClient],
             [SHARED_TOKENS.TeamClusterServiceResolver, TeamClusterServiceResolver],
             [SHARED_TOKENS.TeamClusterStorageResolver, TeamClusterStorageResolver],
             [SHARED_TOKENS.TeamClusterRedisFactory, TeamClusterRedisFactory]

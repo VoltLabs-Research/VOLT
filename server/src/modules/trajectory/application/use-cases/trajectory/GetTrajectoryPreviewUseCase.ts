@@ -2,13 +2,12 @@ import { createHash } from 'node:crypto';
 
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
+import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { GetTrajectoryPreviewInputDTO, GetTrajectoryPreviewOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryPreviewDTO';
 import { getTrajectoryRasterPreviewsPrefix } from '@modules/raster/utilities/raster-storage-paths';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Result } from '@shared/domain/port/Result';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 import { injectable, inject } from 'tsyringe';
@@ -16,10 +15,6 @@ import { injectable, inject } from 'tsyringe';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-
-interface ObjectListResponse {
-    keys: string[];
-};
 
 @injectable()
 export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajectoryPreviewInputDTO, GetTrajectoryPreviewOutputDTO, ApplicationError> {
@@ -30,8 +25,8 @@ export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajecto
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
 
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ){}
 
     async execute(input: GetTrajectoryPreviewInputDTO): Promise<Result<GetTrajectoryPreviewOutputDTO, ApplicationError>> {
@@ -74,24 +69,28 @@ export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajecto
         trajectoryId: string
     ): Promise<GetTrajectoryPreviewOutputDTO | null> {
         const prefix = getTrajectoryRasterPreviewsPrefix(trajectoryId);
-        const result = await this.teamClusterDaemonClient.command<ObjectListResponse>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.object.list, {
+        const keys: string[] = [];
+        for await (const key of this.objectGatewayClient.listAll(teamClusterId, {
             bucket: SYS_BUCKETS.RASTERIZER,
             prefix
-        });
+        })) {
+            if (key.endsWith('.png')) {
+                keys.push(key);
+            }
+        }
 
-        const previewKey = result.keys
-            .filter((key) => key.endsWith('.png'))
+        const previewKey = keys
             .sort((leftKey, rightKey) => leftKey.localeCompare(rightKey))[0];
 
         if (!previewKey) {
             return null;
         }
 
-        const stream = await this.teamClusterDaemonClient.commandStream(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.object.get, {
-            bucket: SYS_BUCKETS.RASTERIZER,
-            objectKey: previewKey
-        });
-        const buffer = await this.readStream(stream);
+        const buffer = await this.objectGatewayClient.getBuffer(
+            teamClusterId,
+            SYS_BUCKETS.RASTERIZER,
+            previewKey
+        );
 
         return this.createPreviewOutput(buffer);
     }
@@ -103,15 +102,5 @@ export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajecto
             base64: `data:image/png;base64,${buffer.toString('base64')}`,
             etag
         };
-    }
-
-    private async readStream(stream: NodeJS.ReadableStream): Promise<Buffer> {
-        const chunks: Buffer[] = [];
-
-        for await (const chunk of stream) {
-            chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-        }
-
-        return Buffer.concat(chunks);
     }
 };
