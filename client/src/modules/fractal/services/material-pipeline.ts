@@ -22,6 +22,15 @@ interface OptimizedMaterialUserData {
     isOptimized?: boolean;
 };
 
+interface PointCloudColorInfo {
+    hasColorAttribute: boolean;
+    injectedFallbackColor: boolean;
+    replacedDarkColorAttribute: boolean;
+    minColor: [number, number, number] | null;
+    maxColor: [number, number, number] | null;
+    averageColor: [number, number, number] | null;
+};
+
 const applyOptimizedMaterialSettings = (
     material: THREE.Material,
     clippingPlanes: THREE.Plane[]
@@ -49,11 +58,104 @@ const createPointCloudUniforms = (): PointCloudUniforms => ({
     opacity: { value: 1.0 }
 });
 
+const ensurePointCloudColorAttribute = (geometry: THREE.BufferGeometry) => {
+    const colorAttribute = geometry.getAttribute('color');
+    const positions = geometry.getAttribute('position');
+    const pointCount = positions?.count ?? 0;
+    const buildFallbackColors = () => {
+        const fallbackColors = new Float32Array(pointCount * 3);
+
+        for (let index = 0; index < pointCount; index += 1) {
+            const colorOffset = index * 3;
+            fallbackColors[colorOffset] = 0.31;
+            fallbackColors[colorOffset + 1] = 0.64;
+            fallbackColors[colorOffset + 2] = 1.0;
+        }
+
+        geometry.setAttribute('color', new THREE.BufferAttribute(fallbackColors, 3));
+    };
+
+    if (!colorAttribute || colorAttribute.count === 0) {
+        buildFallbackColors();
+        return {
+            hasColorAttribute: false,
+            injectedFallbackColor: true,
+            replacedDarkColorAttribute: false,
+            minColor: null,
+            maxColor: null,
+            averageColor: null
+        } satisfies PointCloudColorInfo;
+    }
+
+    let minR = Number.POSITIVE_INFINITY;
+    let minG = Number.POSITIVE_INFINITY;
+    let minB = Number.POSITIVE_INFINITY;
+    let maxR = Number.NEGATIVE_INFINITY;
+    let maxG = Number.NEGATIVE_INFINITY;
+    let maxB = Number.NEGATIVE_INFINITY;
+    let sumR = 0;
+    let sumG = 0;
+    let sumB = 0;
+    let hasFiniteColor = false;
+
+    for (let index = 0; index < colorAttribute.count; index += 1) {
+        const r = colorAttribute.getX(index);
+        const g = colorAttribute.getY(index);
+        const b = colorAttribute.getZ(index);
+
+        if (!Number.isFinite(r) || !Number.isFinite(g) || !Number.isFinite(b)) {
+            continue;
+        }
+
+        hasFiniteColor = true;
+        minR = Math.min(minR, r);
+        minG = Math.min(minG, g);
+        minB = Math.min(minB, b);
+        maxR = Math.max(maxR, r);
+        maxG = Math.max(maxG, g);
+        maxB = Math.max(maxB, b);
+        sumR += r;
+        sumG += g;
+        sumB += b;
+    }
+
+    const denominator = hasFiniteColor ? colorAttribute.count : 1;
+    const averageColor: [number, number, number] | null = hasFiniteColor
+        ? [sumR / denominator, sumG / denominator, sumB / denominator]
+        : null;
+    const minColor: [number, number, number] | null = hasFiniteColor
+        ? [minR, minG, minB]
+        : null;
+    const maxColor: [number, number, number] | null = hasFiniteColor
+        ? [maxR, maxG, maxB]
+        : null;
+
+    const maxChannel = hasFiniteColor ? Math.max(maxR, maxG, maxB) : 0;
+    const avgLuma = averageColor
+        ? (averageColor[0] * 0.2126) + (averageColor[1] * 0.7152) + (averageColor[2] * 0.0722)
+        : 0;
+    const shouldReplaceDarkColors = !hasFiniteColor || (maxChannel <= 0.02 && avgLuma <= 0.02);
+
+    if (shouldReplaceDarkColors) {
+        buildFallbackColors();
+    }
+
+    return {
+        hasColorAttribute: true,
+        injectedFallbackColor: shouldReplaceDarkColors,
+        replacedDarkColorAttribute: shouldReplaceDarkColors,
+        minColor,
+        maxColor,
+        averageColor
+    } satisfies PointCloudColorInfo;
+};
+
 export class MaterialPipeline {
     private cache = new Map<string, THREE.Material>();
     private pointCloudMaterials = new Set<THREE.ShaderMaterial>();
 
     configurePointCloud(points: THREE.Points) {
+        const colorInfo = ensurePointCloudColorAttribute(points.geometry);
         const mat = new THREE.ShaderMaterial({
             vertexShader,
             fragmentShader,
@@ -77,6 +179,10 @@ export class MaterialPipeline {
             points.geometry.computeBoundingBox();
         }
 
+        if (!points.geometry.boundingSphere) {
+            points.geometry.computeBoundingSphere();
+        }
+
         let volume = 0;
         if (points.geometry.boundingBox) {
             const size = new THREE.Vector3();
@@ -94,7 +200,15 @@ export class MaterialPipeline {
             numPoints,
             volume,
             spacing,
-            dynamicPointScale
+            dynamicPointScale,
+            hasColorAttribute: colorInfo.hasColorAttribute,
+            injectedFallbackColor: colorInfo.injectedFallbackColor,
+            replacedDarkColorAttribute: colorInfo.replacedDarkColorAttribute,
+            minColor: colorInfo.minColor,
+            maxColor: colorInfo.maxColor,
+            averageColor: colorInfo.averageColor,
+            attributeKeys: Object.keys(points.geometry.attributes),
+            boundingSphereRadius: points.geometry.boundingSphere?.radius ?? null
         });
 
         mat.uniforms.pointScale.value = dynamicPointScale;
@@ -102,6 +216,7 @@ export class MaterialPipeline {
         this.pointCloudMaterials.add(mat);
 
         points.material = mat;
+        points.frustumCulled = false;
         // Disable raycasting on point clouds — THREE.Points.raycast() is brute-force O(n)
         // and causes massive frame drops when R3F synthetic events trigger recursive raycasting
         // against millions of vertices. The invisible BoxGeometry proxy mesh in SimulationCellBox

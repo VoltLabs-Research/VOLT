@@ -21,12 +21,16 @@ import './TopToolbar.css';
 
 interface TopToolbarProps {
     canExport?: boolean;
+    canDownloadAnalyses?: boolean;
     onExport?: () => void;
+    onDownloadAnalyses?: () => void;
 }
 
 const TopToolbar = ({
     canExport = false,
-    onExport
+    canDownloadAnalyses = false,
+    onExport,
+    onDownloadAnalyses
 }: TopToolbarProps) => {
     const [openMenu, setOpenMenu] = useState<string | null>(null);
     const [isSigningOut, setIsSigningOut] = useState(false);
@@ -75,7 +79,9 @@ const TopToolbar = ({
         onScreenshot: handleScreenshot,
         onImport: openFilePicker,
         onExport,
-        canExport
+        onDownloadAnalyses,
+        canExport,
+        canDownloadAnalyses
     });
 
     return (

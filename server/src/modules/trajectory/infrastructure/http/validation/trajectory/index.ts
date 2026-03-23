@@ -81,6 +81,10 @@ const downloadTrajectoryQuerySchema = z.object({
     archive: archiveQuerySchema
 }).strict();
 
+const downloadTrajectoryAnalysesQuerySchema = z.object({
+    name: z.string().trim().min(1).max(255).optional()
+}).strict();
+
 export const trajectoryValidation = createResourceValidation({
     listByTeamId: {
         params: teamParamsSchema,
@@ -117,6 +121,10 @@ export const trajectoryValidation = createResourceValidation({
     downloadTrajectory: {
         params: trajectoryParamsSchema,
         query: downloadTrajectoryQuerySchema
+    },
+    downloadTrajectoryAnalyses: {
+        params: trajectoryParamsSchema,
+        query: downloadTrajectoryAnalysesQuerySchema
     },
     getAtoms: {
         params: trajectoryParamsSchema,
