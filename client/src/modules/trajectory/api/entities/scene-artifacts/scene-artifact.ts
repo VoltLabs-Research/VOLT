@@ -3,14 +3,33 @@ import type { BaseEntity } from '@/shared/domain/entities/BaseEntity';
 
 export type SceneArtifactSourceType = 'color-coding' | 'particle-filter' | 'plugin-exposure';
 
-export interface SceneArtifactParticleFilterCondition {
+export interface SceneArtifactParticleFilterPropertyCondition {
+    kind?: 'property';
     property: string;
     operator: string;
     value: number;
     exposureId?: string;
 };
 
+export interface SceneArtifactParticleFilterPresetCondition {
+    kind: 'preset';
+    preset: 'surface-atoms';
+    presetConfig: {
+        layers: number;
+        cutoffMode: 'auto' | 'manual';
+        cutoffRadius?: number;
+        coordinationDeficit: number;
+        anisotropyThreshold: number;
+        byType: boolean;
+    };
+};
+
+export type SceneArtifactParticleFilterCondition =
+    | SceneArtifactParticleFilterPropertyCondition
+    | SceneArtifactParticleFilterPresetCondition;
+
 export interface SceneArtifactParams {
+    mode?: 'conditions' | 'preset';
     property?: string;
     startValue?: number;
     endValue?: number;
@@ -21,6 +40,15 @@ export interface SceneArtifactParams {
     exposureId?: string;
     combinator?: 'AND' | 'OR';
     conditions?: SceneArtifactParticleFilterCondition[];
+    preset?: 'surface-atoms';
+    presetConfig?: {
+        layers: number;
+        cutoffMode: 'auto' | 'manual';
+        cutoffRadius?: number;
+        coordinationDeficit: number;
+        anisotropyThreshold: number;
+        byType: boolean;
+    };
 };
 
 export interface SceneArtifactTrajectory {

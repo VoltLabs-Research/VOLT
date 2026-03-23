@@ -1,6 +1,7 @@
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { ApplyParticleFilterActionInputDTO, ApplyParticleFilterActionOutputDTO } from '@modules/trajectory/application/dtos/particle-filter';
-import { IParticleFilterService, ParticleFilterCombinator } from '@modules/trajectory/domain/port/particle-filter/IParticleFilterService';
+import { buildParticleFilterRequest } from '@modules/trajectory/application/utilities/build-particle-filter-request';
+import { IParticleFilterService } from '@modules/trajectory/domain/port/particle-filter/IParticleFilterService';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -19,17 +20,7 @@ export class ApplyParticleFilterActionUseCase implements IUseCase<ApplyParticleF
             input.trajectoryId,
             input.timestep,
             input.action,
-            {
-                combinator: input.combinator || ParticleFilterCombinator.And,
-                conditions: input.conditions && input.conditions.length > 0
-                    ? input.conditions
-                    : [{
-                        property: input.property || '',
-                        operator: input.operator || '==',
-                        value: input.value ?? 0,
-                        ...(input.exposureId ? { exposureId: input.exposureId } : {})
-                    }]
-            },
+            buildParticleFilterRequest(input),
             input.analysisId
         );
 

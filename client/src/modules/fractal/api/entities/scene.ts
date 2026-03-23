@@ -1,14 +1,17 @@
-export enum SliceAxis {
-    X = 'x',
-    Y = 'y',
-    Z = 'z'
+export interface SlicePlaneNormal {
+    x: number;
+    y: number;
+    z: number;
 };
 
+export type SlicePlaneNormalAxis = keyof SlicePlaneNormal;
+
 export interface SlicePlaneConfig {
-    activeAxes: SliceAxis[];
-    positions: Record<SliceAxis, number>;
-    angles: Record<SliceAxis, number>;
-    showHelper: boolean;
+    enabled: boolean;
+    distance: number;
+    normal: SlicePlaneNormal;
+    reverseOrientation: boolean;
+    visualizePlane: boolean;
 };
 
 export enum ParticleFilterSceneCombinator {
@@ -16,12 +19,51 @@ export enum ParticleFilterSceneCombinator {
     Or = 'OR'
 };
 
-export interface ParticleFilterSceneCondition {
+export enum ParticleFilterSceneConditionKind {
+    Property = 'property',
+    Preset = 'preset'
+};
+
+export interface ParticleFilterPropertySceneCondition {
+    kind: ParticleFilterSceneConditionKind.Property;
     property: string;
     operator: string;
     value: number;
     exposureId?: string;
 };
+
+export enum ParticleFilterSceneMode {
+    Conditions = 'conditions',
+    Preset = 'preset'
+};
+
+export enum ParticleFilterScenePreset {
+    SurfaceAtoms = 'surface-atoms'
+};
+
+export enum SurfaceAtomsSceneCutoffMode {
+    Auto = 'auto',
+    Manual = 'manual'
+};
+
+export interface SurfaceAtomsScenePresetConfig {
+    layers: number;
+    cutoffMode: SurfaceAtomsSceneCutoffMode;
+    cutoffRadius?: number;
+    coordinationDeficit: number;
+    anisotropyThreshold: number;
+    byType: boolean;
+};
+
+export interface ParticleFilterPresetSceneCondition {
+    kind: ParticleFilterSceneConditionKind.Preset;
+    preset: ParticleFilterScenePreset.SurfaceAtoms;
+    presetConfig: SurfaceAtomsScenePresetConfig;
+};
+
+export type ParticleFilterSceneCondition =
+    | ParticleFilterPropertySceneCondition
+    | ParticleFilterPresetSceneCondition;
 
 export type DefaultScene = {
     sceneType: string;
@@ -50,12 +92,15 @@ export type ParticleFilterScene = {
     sceneType: 'particle-filter';
     source: 'particle-filter';
     analysisId?: string;
+    mode?: ParticleFilterSceneMode;
     combinator?: ParticleFilterSceneCombinator;
     conditions?: ParticleFilterSceneCondition[];
     exposureId?: string;
     property?: string;
     operator?: string;
     value?: number;
+    preset?: ParticleFilterScenePreset;
+    presetConfig?: SurfaceAtomsScenePresetConfig;
     action?: string;
 };
 

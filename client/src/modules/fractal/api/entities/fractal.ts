@@ -1,11 +1,12 @@
-export { SliceAxis } from '@/modules/fractal/api/entities/scene';
 export type {
     DefaultScene,
     PluginScene,
     ColorCodingScene,
     ParticleFilterScene,
     SceneObjectType,
-    SlicePlaneConfig
+    SlicePlaneConfig,
+    SlicePlaneNormal,
+    SlicePlaneNormalAxis
 } from '@/modules/fractal/api/entities/scene';
 export type {
     ModelWorldBounds,
