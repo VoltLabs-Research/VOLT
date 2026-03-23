@@ -9,7 +9,9 @@ interface BuildMenusParams {
     onScreenshot: () => void;
     onImport: () => void;
     onExport?: () => void;
+    onDownloadAnalyses?: () => void;
     canExport?: boolean;
+    canDownloadAnalyses?: boolean;
 };
 
 export enum MenuItemType {
@@ -42,7 +44,9 @@ export const buildMenus = ({
     onScreenshot,
     onImport,
     onExport,
-    canExport = false
+    onDownloadAnalyses,
+    canExport = false,
+    canDownloadAnalyses = false
 }: BuildMenusParams): MenuConfig[] => {
     let statusBarIcon = <PanelBottom size={ICON_SIZE} />;
     if (showStatusBar) {
@@ -67,6 +71,13 @@ export const buildMenus = ({
                 shortcut: 'Ctrl+E',
                 action: onExport,
                 disabled: !canExport || !onExport
+            },
+            {
+                type: MenuItemType.Item,
+                label: 'Download Analyses',
+                icon: <Download size={ICON_SIZE} />,
+                action: onDownloadAnalyses,
+                disabled: !canDownloadAnalyses || !onDownloadAnalyses
             },
             { type: MenuItemType.Separator },
             {

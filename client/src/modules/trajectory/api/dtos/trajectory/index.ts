@@ -1,6 +1,7 @@
 export * from './create-trajectory';
 export * from './delete-trajectory';
 export * from './download-sample';
+export * from './download-trajectory-analyses';
 export * from './download-trajectory';
 export * from './get-atoms';
 export * from './get-preview';

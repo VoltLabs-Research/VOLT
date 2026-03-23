@@ -15,6 +15,7 @@ import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type {
     CreateTrajectoryInputDTO,
     CreateTrajectoryOutputDTO,
+    DownloadTrajectoryAnalysesInputDTO,
     DownloadTrajectoryInputDTO,
     GetAtomsInputDTO,
     GetAtomsOutputDTO,
@@ -194,6 +195,7 @@ export const fetchTrajectoryAtoms = trajectoryAtomsQuery.fetch;
 export const buildTrajectorySamplesQueryOptions = () => trajectorySamplesQuery.buildOptions(undefined);
 export const fetchTrajectorySamples = () => trajectorySamplesQuery.fetch(undefined);
 export const buildTrajectoryMetricsQueryOptions = () => trajectoryMetricsQuery.buildOptions(undefined);
+export const useDownloadTrajectoryAnalysesMutation = createMutation<Blob, DownloadTrajectoryAnalysesInputDTO>(trajectoryService.downloadAnalyses);
 export const useDownloadTrajectoryMutation = createMutation<Blob, DownloadTrajectoryInputDTO>(trajectoryService.download);
 
 export const useTrajectoriesQuery = trajectoryQuery.useListQuery;

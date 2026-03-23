@@ -14,6 +14,7 @@ interface TimeoutSignalResult {
 };
 
 const DEFAULT_HTTP_TIMEOUT_MS = 30_000;
+const DISABLED_HTTP_TIMEOUT_MS = 0;
 const SLOW_REQUEST_THRESHOLD_MS = 2_000;
 const HOTSPOT_WARN_THRESHOLD_MS = 1_000;
 
@@ -88,7 +89,7 @@ class InstrumentedHttpClient implements HttpClient {
         this.transport = new AxiosHttpClient({
             baseUrl,
             credential,
-            timeout
+            timeout: DISABLED_HTTP_TIMEOUT_MS
         });
         this.timeoutMs = timeout;
     }
@@ -97,7 +98,9 @@ class InstrumentedHttpClient implements HttpClient {
         const requestStart = performance.now();
         const requestTimeoutMs = typeof Reflect.get(request, 'timeoutMs') === 'number'
             ? Number(Reflect.get(request, 'timeoutMs'))
-            : this.timeoutMs;
+            : request.responseType === 'blob'
+                ? DISABLED_HTTP_TIMEOUT_MS
+                : this.timeoutMs;
         const timeout = buildTimeoutSignal(request.signal, requestTimeoutMs);
 
         try {

@@ -11,6 +11,7 @@ import useDownloadPluginListing from '../../../hooks/use-download-plugin-listing
 import useKeyboardShortcuts from '../../../hooks/use-keyboard-shortcuts';
 import useResizable from '../../../hooks/use-resizable';
 import useTeamJobs from '@/modules/jobs/hooks/use-team-jobs';
+import useDownloadTrajectoryAnalyses from '@/modules/trajectory/hooks/trajectory/use-download-trajectory-analyses';
 import useDownloadTrajectory from '@/modules/trajectory/hooks/trajectory/use-download-trajectory';
 import CanvasPresence from '../../atoms/CanvasPresence';
 import PreloadingOverlay from '../../atoms/PreloadingOverlay';
@@ -97,6 +98,10 @@ const CanvasPage = () => {
     const isRasterWorkspace = activeWorkspace === CanvasWorkspace.Raster;
     const isScriptingWorkspace = activeWorkspace === CanvasWorkspace.Scripting;
     const { downloadListing, downloadAnalysisListings, isDownloading } = useDownloadPluginListing();
+    const {
+        downloadTrajectoryAnalyses,
+        isDownloading: isDownloadingTrajectoryAnalyses
+    } = useDownloadTrajectoryAnalyses();
     const { downloadTrajectory, isDownloading: isExportingTrajectory } = useDownloadTrajectory();
     const { statusMap } = useAnalysisStatus({ trajectoryId: trajectory?._id, enabled: !!trajectory?._id });
     const [scriptingJupyterUrl, setScriptingJupyterUrl] = useState<string | null>(null);
@@ -167,7 +172,21 @@ const CanvasPage = () => {
             ?? normalizeCanvasAnalysisStatus(trajectory?.analysis?.find((analysis) => analysis._id === analysisId)?.status);
     }, [analysisId, statusMap, trajectory?.analysis]);
 
+    const completedAnalyses = useMemo(() => {
+        return (trajectory?.analysis ?? []).filter((analysis) => {
+            const status = statusMap.get(analysis._id)?.status
+                ?? normalizeCanvasAnalysisStatus(analysis.status);
+
+            return status === CanvasAnalysisStatusEnum.Completed;
+        });
+    }, [statusMap, trajectory?.analysis]);
+
     const canDownloadAnalysisListing = Boolean(analysisId && selectedAnalysisStatus === CanvasAnalysisStatusEnum.Completed);
+    const canDownloadTrajectoryAnalyses = Boolean(
+        trajectory?._id
+        && completedAnalyses.length > 0
+        && !isDownloadingTrajectoryAnalyses
+    );
     const canExportTrajectory = Boolean(trajectory?._id && hasFrames && !isExportingTrajectory);
 
     const handleDownloadAnalysisListing = useCallback((targetAnalysisId?: string) => {
@@ -191,6 +210,17 @@ const CanvasPage = () => {
             archive: true
         });
     }, [downloadTrajectory, trajectory?._id, trajectory?.name]);
+
+    const handleDownloadTrajectoryAnalyses = useCallback(() => {
+        if (!trajectory?._id) {
+            return;
+        }
+
+        void downloadTrajectoryAnalyses({
+            trajectoryId: trajectory._id,
+            filename: trajectory.name || trajectory._id
+        });
+    }, [downloadTrajectoryAnalyses, trajectory?._id, trajectory?.name]);
 
     const scriptingHeaderAction = isScriptingWorkspace && scriptingJupyterUrl
         ? (
@@ -261,7 +291,9 @@ const CanvasPage = () => {
         <Container className="canvas-editor-root d-flex column vh-max wh-max overflow-hidden p-relative">
             <TopToolbar
                 canExport={canExportTrajectory}
+                canDownloadAnalyses={canDownloadTrajectoryAnalyses}
                 onExport={handleExportTrajectory}
+                onDownloadAnalyses={handleDownloadTrajectoryAnalyses}
             />
             <PreloadingOverlay />
             <CanvasPresence users={canvasUsers} />

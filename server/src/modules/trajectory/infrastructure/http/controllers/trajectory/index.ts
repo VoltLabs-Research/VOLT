@@ -18,6 +18,7 @@ import UpdateTrajectoryByIdUseCase from '@modules/trajectory/application/use-cas
 import UpdateTrajectoryFolderUseCase from '@modules/trajectory/application/use-cases/trajectory/UpdateTrajectoryFolderUseCase';
 import { GetAtomsUseCase } from '@modules/trajectory/application/use-cases/trajectory/GetAtomsUseCase';
 import DownloadSampleSimulationsController from './DownloadSampleSimulationsController';
+import DownloadTrajectoryAnalysesController from './DownloadTrajectoryAnalysesController';
 import DownloadTrajectoryController from './DownloadTrajectoryController';
 import ListSampleSimulationsUseCase from '@modules/trajectory/application/use-cases/trajectory/ListSampleSimulationsUseCase';
 import GetTrajectorySceneArtifactsController from '@modules/trajectory/infrastructure/http/controllers/scene-artifacts/GetTrajectorySceneArtifactsController';
@@ -67,6 +68,7 @@ const resolvedControllers = createControllerRegistry({
     getSceneArtifacts: GetTrajectorySceneArtifactsController,
     listTeamSceneArtifacts: ListTeamSceneArtifactsController,
     downloadSamples: DownloadSampleSimulationsController,
+    downloadTrajectoryAnalyses: DownloadTrajectoryAnalysesController,
     downloadTrajectory: DownloadTrajectoryController
 });
 

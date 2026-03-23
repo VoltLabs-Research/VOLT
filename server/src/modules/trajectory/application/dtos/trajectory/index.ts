@@ -2,6 +2,7 @@ export * from './CreateTrajectoryDTO';
 export * from './CreateTrajectoryFolderDTO';
 export * from './DeleteTrajectoryFolderDTO';
 export * from './DownloadSampleSimulationsDTO';
+export * from './DownloadTrajectoryAnalysesDTO';
 export * from './DownloadTrajectoryDTO';
 export * from './GetAtomsDTO';
 export * from './GetTeamMetricsDTO';
