@@ -2,6 +2,7 @@ import { logger } from '@/core/logger';
 import { Client } from 'minio';
 import type { DaemonConfig } from '@/core/config';
 import type { Readable } from 'node:stream';
+import type { BucketItem } from 'minio';
 
 export interface PutObjectInput {
     bucket: string;
@@ -18,8 +19,21 @@ export interface PutStreamInput {
     metadata?: Record<string, string>;
 };
 
+export interface ListObjectsPageInput {
+    bucket: string;
+    prefix: string;
+    cursor?: string;
+    limit: number;
+};
+
+export interface ListObjectsPageResult {
+    keys: string[];
+    nextCursor?: string;
+};
+
 export class MinioService {
     private readonly client: Client;
+    private static readonly SAFE_LIST_PAGE_SIZE = 200;
 
     constructor(
         private readonly config: DaemonConfig
@@ -65,52 +79,131 @@ export class MinioService {
     }
 
     async listObjects(bucket: string, prefix: string, maxKeys?: number): Promise<string[]> {
-        return new Promise((resolve, reject) => {
-            const keys: string[] = [];
-            const stream = this.client.listObjectsV2(bucket, prefix, true);
+        const requestedMaxKeys = typeof maxKeys === 'number' && Number.isInteger(maxKeys) && maxKeys > 0
+            ? maxKeys
+            : undefined;
+        const keys: string[] = [];
+        let continuationToken = '';
 
-            stream.on('data', (item) => {
-                if (item.name) {
-                    keys.push(item.name);
+        do {
+            const remainingKeys = requestedMaxKeys
+                ? Math.max(0, requestedMaxKeys - keys.length)
+                : MinioService.SAFE_LIST_PAGE_SIZE;
+            if (requestedMaxKeys && remainingKeys === 0) {
+                break;
+            }
+
+            const result = await this.client.listObjectsV2Query(
+                bucket,
+                prefix,
+                continuationToken,
+                '',
+                Math.min(remainingKeys, MinioService.SAFE_LIST_PAGE_SIZE),
+                ''
+            );
+
+            for (const item of result.objects) {
+                const key = this.readListItemKey(item);
+                if (!key) {
+                    continue;
                 }
-                // Early termination when the caller only needs a bounded number of keys
-                if (maxKeys !== undefined && keys.length >= maxKeys) {
-                    stream.destroy();
-                    resolve(keys);
+
+                keys.push(key);
+                if (requestedMaxKeys && keys.length >= requestedMaxKeys) {
+                    return keys;
                 }
-            });
-            stream.on('end', () => resolve(keys));
-            stream.on('error', (error) => {
-                // destroy() above may emit a premature close/error — ignore it
-                // if we already collected enough keys.
-                if (maxKeys !== undefined && keys.length >= maxKeys) {
-                    resolve(keys);
-                    return;
+            }
+
+            continuationToken = result.isTruncated
+                ? result.nextContinuationToken
+                : '';
+        } while (continuationToken);
+
+        return keys;
+    }
+
+    async listObjectsPage(input: ListObjectsPageInput): Promise<ListObjectsPageResult> {
+        const requestedLimit = Number.isInteger(input.limit) && input.limit > 0
+            ? input.limit
+            : 100;
+        const maxKeys = requestedLimit + 1;
+        const collectedKeys: string[] = [];
+        let continuationToken = '';
+        let startAfter = input.cursor ?? '';
+
+        while (collectedKeys.length < maxKeys) {
+            const result = await this.client.listObjectsV2Query(
+                input.bucket,
+                input.prefix,
+                continuationToken,
+                '',
+                Math.min(maxKeys - collectedKeys.length, MinioService.SAFE_LIST_PAGE_SIZE),
+                startAfter
+            );
+
+            for (const item of result.objects) {
+                const key = this.readListItemKey(item);
+                if (!key) {
+                    continue;
                 }
-                reject(error);
-            });
-        });
+
+                collectedKeys.push(key);
+                if (collectedKeys.length >= maxKeys) {
+                    return {
+                        keys: collectedKeys.slice(0, requestedLimit),
+                        nextCursor: collectedKeys[requestedLimit - 1]
+                    };
+                }
+            }
+
+            if (!result.isTruncated) {
+                break;
+            }
+
+            continuationToken = result.nextContinuationToken;
+            startAfter = '';
+        }
+
+        return {
+            keys: collectedKeys
+        };
     }
 
     async deleteByPrefix(bucket: string, prefix: string): Promise<number> {
         const BATCH_SIZE = 1000;
-        const stream = this.client.listObjectsV2(bucket, prefix, true);
         let batch: string[] = [];
         let deletedCount = 0;
+        let continuationToken = '';
 
-        for await (const item of stream) {
-            if (!item.name) {
-                continue;
+        do {
+            const result = await this.client.listObjectsV2Query(
+                bucket,
+                prefix,
+                continuationToken,
+                '',
+                MinioService.SAFE_LIST_PAGE_SIZE,
+                ''
+            );
+
+            for (const item of result.objects) {
+                const key = this.readListItemKey(item);
+                if (!key) {
+                    continue;
+                }
+
+                batch.push(key);
+
+                if (batch.length >= BATCH_SIZE) {
+                    deletedCount += batch.length;
+                    await this.client.removeObjects(bucket, batch);
+                    batch = [];
+                }
             }
 
-            batch.push(item.name);
-
-            if (batch.length >= BATCH_SIZE) {
-                deletedCount += batch.length;
-                await this.client.removeObjects(bucket, batch);
-                batch = [];
-            }
-        }
+            continuationToken = result.isTruncated
+                ? result.nextContinuationToken
+                : '';
+        } while (continuationToken);
 
         if (batch.length > 0) {
             deletedCount += batch.length;
@@ -122,5 +215,11 @@ export class MinioService {
 
     async removeObject(bucket: string, objectKey: string): Promise<void> {
         await this.client.removeObject(bucket, objectKey);
+    }
+
+    private readListItemKey(item: BucketItem): string | null {
+        return 'name' in item && typeof item.name === 'string'
+            ? item.name
+            : null;
     }
 };

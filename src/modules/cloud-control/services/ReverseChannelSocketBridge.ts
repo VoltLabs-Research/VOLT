@@ -11,6 +11,7 @@ import {
 } from './reverseChannelSessionAttach';
 import { BASE64_SESSION_CHUNK_PATTERN, SESSION_ATTACH_TIMEOUT_MS } from './reverseChannelSessionConstants';
 import { readTunnelOpenPayload } from './reverseChannelTunnelOpen';
+import { OBJECT_GATEWAY_EXPOSURE } from './ObjectGatewayServer';
 import net from 'node:net';
 import type {
     TeamClusterDaemonMessage,
@@ -25,6 +26,7 @@ import type {
     TeamClusterDaemonTunnelStatePayload
 } from '@/shared/contracts';
 import type { DaemonExposureRegistryService } from './DaemonExposureRegistryService';
+import type { ObjectGatewayTelemetryService } from './ObjectGatewayTelemetryService';
 import type { VoltCloudConnection } from './VoltCloudConnection';
 import type { ReverseChannelCommandHandler } from './reverseChannelCommandAdapter';
 import type {
@@ -39,6 +41,7 @@ interface ReverseChannelTunnelState {
     transitionId: number;
     socket: net.Socket;
     isOpen: boolean;
+    isObjectGatewayTunnel: boolean;
     onConnect: () => void;
     onData: (chunk: Buffer) => void;
     onError: (error: Error) => void;
@@ -98,7 +101,8 @@ export class ReverseChannelSocketBridge {
 
     constructor(
         private readonly dockerRuntimeService?: DockerRuntimeService,
-        private readonly hostShellService?: HostShellService
+        private readonly hostShellService?: HostShellService,
+        private readonly objectGatewayTelemetryService?: ObjectGatewayTelemetryService
     ) {
         this.terminalSessionManager = new TerminalSessionManager({
             dockerRuntimeService: this.dockerRuntimeService,
@@ -393,6 +397,9 @@ export class ReverseChannelSocketBridge {
 
         let targetHost: string;
         let targetPort: number;
+        const isObjectGatewayTunnel = 'exposureId' in payload
+            && payload.exposureId === OBJECT_GATEWAY_EXPOSURE.id;
+        const tunnelOpenStartedAt = Date.now();
 
         this.cleanupInteractiveSession(payload.sessionId);
 
@@ -442,6 +449,9 @@ export class ReverseChannelSocketBridge {
 
             tunnelSocket.setTimeout(0);
             this.endSessionTransition(sessionTransition);
+            if (isObjectGatewayTunnel) {
+                this.objectGatewayTelemetryService?.recordObjectTunnelOpened(Date.now() - tunnelOpenStartedAt);
+            }
             this.emitTunnelState({
                 type: 'tunnel-state',
                 sessionId: payload.sessionId,
@@ -499,6 +509,7 @@ export class ReverseChannelSocketBridge {
             transitionId: sessionTransition.transitionId,
             socket: tunnelSocket,
             isOpen: false,
+            isObjectGatewayTunnel,
             onConnect,
             onData,
             onError,
@@ -574,6 +585,10 @@ export class ReverseChannelSocketBridge {
 
         if (!tunnelState.socket.destroyed) {
             tunnelState.socket.destroy();
+        }
+
+        if (tunnelState.isObjectGatewayTunnel && tunnelState.isOpen) {
+            this.objectGatewayTelemetryService?.recordObjectTunnelClosed();
         }
 
         this.tunnelStates.delete(sessionId);

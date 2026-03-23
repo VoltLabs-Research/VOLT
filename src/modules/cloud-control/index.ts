@@ -16,6 +16,8 @@ import {
     createDaemonArtifactReporterService,
     createDaemonJobReporterService,
     DaemonExposureRegistryService,
+    ObjectGatewayServer,
+    ObjectGatewayTelemetryService,
     ReverseChannelSocketBridge,
     VoltCloudConnection,
     type DaemonArtifactReporterService,
@@ -35,7 +37,6 @@ import {
     createDebugHandlers,
     createJobHandlers,
     createTrajectoryHandlers,
-    createObjectHandlers,
     createPluginHandlers,
     createContainerHandlers,
     createNotebookHandlers,
@@ -47,6 +48,8 @@ export interface CloudControlModule {
     reverseChannelSocketBridge: ReverseChannelSocketBridge;
     voltCloudConnection: VoltCloudConnection;
     daemonExposureRegistryService: DaemonExposureRegistryService;
+    objectGatewayServer: ObjectGatewayServer;
+    objectGatewayTelemetryService: ObjectGatewayTelemetryService;
     daemonArtifactReporterService: DaemonArtifactReporterService;
     daemonJobReporterService: DaemonJobReporterService;
 }
@@ -72,9 +75,11 @@ export const createCloudControlModule = (deps: {
     analysisDispatchService: AnalysisDispatchService;
     debugSessionManager: DebugSessionManager;
 }): CloudControlModule => {
+    const objectGatewayTelemetryService = new ObjectGatewayTelemetryService();
     const reverseChannelSocketBridge = new ReverseChannelSocketBridge(
         deps.dockerRuntimeService,
-        deps.hostShellService
+        deps.hostShellService,
+        objectGatewayTelemetryService
     );
     const voltCloudConnection = new VoltCloudConnection(
         deps.config,
@@ -96,7 +101,6 @@ export const createCloudControlModule = (deps: {
             glbExporterService: deps.glbExporterService,
             filterEvaluatorService: deps.filterEvaluatorService
         }),
-        ...createObjectHandlers({ minioService: deps.minioService, eventBroker: deps.eventBroker }),
         ...createPluginHandlers({
             minioService: deps.minioService,
             eventBroker: deps.eventBroker,
@@ -133,12 +137,19 @@ export const createCloudControlModule = (deps: {
         deps.dockerRuntimeService,
         voltCloudConnection
     );
+    const objectGatewayServer = new ObjectGatewayServer(
+        deps.config,
+        deps.minioService,
+        objectGatewayTelemetryService
+    );
     reverseChannelSocketBridge.setExposureRegistryService(daemonExposureRegistryService);
 
     return {
         reverseChannelSocketBridge,
         voltCloudConnection,
         daemonExposureRegistryService,
+        objectGatewayServer,
+        objectGatewayTelemetryService,
         daemonArtifactReporterService: createDaemonArtifactReporterService(voltCloudConnection),
         daemonJobReporterService: createDaemonJobReporterService(voltCloudConnection)
     };

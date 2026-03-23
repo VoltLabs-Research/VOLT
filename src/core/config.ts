@@ -48,6 +48,8 @@ export interface DaemonRuntimeConfig {
 export interface DaemonConfig {
     port: number;
     host: string;
+    teamId?: string;
+    objectGatewayEnabled: boolean;
     teamClusterId: string;
     daemonPassword: string;
     enrollmentToken?: string;
@@ -168,6 +170,8 @@ export const loadConfig = (): DaemonConfig => {
     return {
         port: readNumber('PORT', 8080),
         host,
+        teamId: readOptionalString('TEAM_ID') || readOptionalString('VOLT_TEAM_ID'),
+        objectGatewayEnabled: readBoolean('TEAM_CLUSTER_OBJECT_GATEWAY_ENABLED', true),
         teamClusterId: readRequiredString('TEAM_CLUSTER_ID'),
         daemonPassword: readRequiredString('TEAM_CLUSTER_DAEMON_PASSWORD'),
         enrollmentToken: readOptionalString('TEAM_CLUSTER_ENROLLMENT_TOKEN'),

@@ -3,6 +3,8 @@ import { OrchestrationAction } from '@/shared/contracts';
 import { TEAM_CLUSTER_DAEMON_COMMAND } from '@/shared/contracts';
 import { MetricsService } from '@/modules/metrics/services';
 import { RuntimeEventBroker } from '@/shared/services';
+import http from 'node:http';
+import https from 'node:https';
 import {
     ClusterDaemonClient,
     DaemonClientError
@@ -70,6 +72,7 @@ interface QueuedEventMessage {
  */
 export class VoltCloudConnection {
     private connectedToCloud = false;
+    private lastCloudLatencyMs: number | null = null;
     private readonly backgroundCommandConcurrency = 2;
     private readonly backgroundCommandMaxQueueSize = 2048;
     private readonly backgroundCommandQueue: QueuedServerCommand[] = [];
@@ -78,6 +81,13 @@ export class VoltCloudConnection {
     private readonly bufferedEventMaxQueueSize = 8192;
     private readonly bufferedEventQueue: QueuedEventMessage[] = [];
     private readonly bufferedEventDedupeKeys = new Set<string>();
+    private backgroundCommandProcessedCount = 0;
+    private backgroundCommandDroppedCount = 0;
+    private backgroundCommandTotalQueueWaitMs = 0;
+    private backgroundCommandMaxQueueWaitMs = 0;
+    private controlPlaneSummaryTimer: ReturnType<typeof setInterval> | null = null;
+    private cloudLatencyProbeTimer: ReturnType<typeof setInterval> | null = null;
+    private controlPlaneMetricsDirty = false;
 
     readonly client: ClusterDaemonClient;
 
@@ -105,7 +115,7 @@ export class VoltCloudConnection {
                     daemonPassword: this.client.getDaemonPassword(),
                     installedVersion: config.installedVersion,
                     metrics: await this.metricsService.collectSnapshot({
-                        cloudLatencyMs: null,
+                        cloudLatencyMs: this.lastCloudLatencyMs,
                         connectedToCloud: this.connectedToCloud
                     })
                 })
@@ -123,17 +133,20 @@ export class VoltCloudConnection {
         this.client
             .onConnected(() => {
                 this.connectedToCloud = true;
+                this.controlPlaneMetricsDirty = true;
                 this.emitLifecycleEvent('cloud-socket-connected', 'Outbound cloud socket connected');
                 this.flushBufferedEventQueue();
                 logger.info('Connected to VoltCloud');
             })
             .onDisconnected((reason) => {
                 this.connectedToCloud = false;
+                this.controlPlaneMetricsDirty = true;
                 this.emitLifecycleEvent('cloud-socket-disconnected', `Outbound cloud socket disconnected (${reason})`);
             })
             .onError((err: DaemonClientError) => {
                 if (err.message.includes('heartbeat')) {
                     this.connectedToCloud = false;
+                    this.controlPlaneMetricsDirty = true;
                     this.emitLifecycleEvent('heartbeat-failed', err.message);
                     logger.warn(`Heartbeat failed: ${err.message}`);
                     return;
@@ -162,9 +175,13 @@ export class VoltCloudConnection {
     async start(): Promise<void> {
         this.emitLifecycleEvent('starting', 'Cluster daemon starting');
         await this.client.connect();
+        this.startCloudLatencyProbe();
+        this.startControlPlaneSummaryTimer();
     }
 
     stop(): void {
+        this.stopCloudLatencyProbe();
+        this.stopControlPlaneSummaryTimer();
         this.client.disconnect();
     }
 
@@ -284,6 +301,8 @@ export class VoltCloudConnection {
         }
 
         if (this.backgroundCommandQueue.length >= this.backgroundCommandMaxQueueSize) {
+            this.backgroundCommandDroppedCount += 1;
+            this.controlPlaneMetricsDirty = true;
             logger.warn(
                 {
                     command,
@@ -380,6 +399,10 @@ export class VoltCloudConnection {
                     }
 
                     const queueWaitMs = Date.now() - queued.enqueuedAt;
+                    this.backgroundCommandProcessedCount += 1;
+                    this.backgroundCommandTotalQueueWaitMs += queueWaitMs;
+                    this.backgroundCommandMaxQueueWaitMs = Math.max(this.backgroundCommandMaxQueueWaitMs, queueWaitMs);
+                    this.controlPlaneMetricsDirty = true;
                     if (queueWaitMs >= 5_000) {
                         logger.warn(
                             {
@@ -418,5 +441,115 @@ export class VoltCloudConnection {
                 break;
             }
         }
+    }
+
+    private startCloudLatencyProbe(): void {
+        if (this.cloudLatencyProbeTimer) {
+            return;
+        }
+
+        const runProbe = (): void => {
+            void this.probeCloudLatency();
+        };
+
+        runProbe();
+        this.cloudLatencyProbeTimer = setInterval(runProbe, this.config.metricsIntervalMs);
+        if (typeof this.cloudLatencyProbeTimer.unref === 'function') {
+            this.cloudLatencyProbeTimer.unref();
+        }
+    }
+
+    private stopCloudLatencyProbe(): void {
+        if (!this.cloudLatencyProbeTimer) {
+            return;
+        }
+
+        clearInterval(this.cloudLatencyProbeTimer);
+        this.cloudLatencyProbeTimer = null;
+    }
+
+    private async probeCloudLatency(): Promise<void> {
+        const targetUrl = new URL(this.config.voltCloudUrl);
+        const transport = targetUrl.protocol === 'https:'
+            ? https
+            : http;
+        const startedAt = Date.now();
+
+        await new Promise<void>((resolve) => {
+            const request = transport.request({
+                method: 'HEAD',
+                protocol: targetUrl.protocol,
+                hostname: targetUrl.hostname,
+                port: targetUrl.port ? Number(targetUrl.port) : undefined,
+                path: `${targetUrl.pathname || '/'}${targetUrl.search || ''}`,
+                timeout: 5_000
+            }, (response) => {
+                response.resume();
+                response.once('end', () => {
+                    this.lastCloudLatencyMs = Date.now() - startedAt;
+                    this.controlPlaneMetricsDirty = true;
+                    resolve();
+                });
+            });
+
+            request.once('timeout', () => {
+                this.lastCloudLatencyMs = null;
+                request.destroy(new Error('Cloud latency probe timed out'));
+            });
+
+            request.once('error', () => {
+                this.lastCloudLatencyMs = null;
+                this.controlPlaneMetricsDirty = true;
+                resolve();
+            });
+
+            request.end();
+        });
+    }
+
+    private startControlPlaneSummaryTimer(): void {
+        if (this.controlPlaneSummaryTimer) {
+            return;
+        }
+
+        this.controlPlaneSummaryTimer = setInterval(() => {
+            this.flushControlPlaneSummary();
+        }, 60_000);
+
+        if (typeof this.controlPlaneSummaryTimer.unref === 'function') {
+            this.controlPlaneSummaryTimer.unref();
+        }
+    }
+
+    private stopControlPlaneSummaryTimer(): void {
+        if (!this.controlPlaneSummaryTimer) {
+            return;
+        }
+
+        clearInterval(this.controlPlaneSummaryTimer);
+        this.controlPlaneSummaryTimer = null;
+    }
+
+    private flushControlPlaneSummary(): void {
+        if (!this.controlPlaneMetricsDirty) {
+            return;
+        }
+
+        logger.info({
+            action: 'reverse-channel.control-plane.summary',
+            connectedToCloud: this.connectedToCloud,
+            lastCloudLatencyMs: this.lastCloudLatencyMs,
+            backgroundCommandQueueLength: this.backgroundCommandQueue.length,
+            backgroundCommandsInFlight: this.backgroundCommandsInFlight,
+            backgroundCommandProcessedCount: this.backgroundCommandProcessedCount,
+            backgroundCommandDroppedCount: this.backgroundCommandDroppedCount,
+            avgBackgroundCommandQueueWaitMs: this.backgroundCommandProcessedCount > 0
+                ? Math.round((this.backgroundCommandTotalQueueWaitMs / this.backgroundCommandProcessedCount) * 100) / 100
+                : 0,
+            maxBackgroundCommandQueueWaitMs: this.backgroundCommandMaxQueueWaitMs,
+            bufferedEventQueueLength: this.bufferedEventQueue.length
+        }, 'Reverse-channel control-plane summary');
+
+        this.controlPlaneMetricsDirty = false;
     }
 };

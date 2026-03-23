@@ -8,6 +8,7 @@
     "dev": "tsx src/index.ts",
     "build": "rm -rf dist && tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
     "contracts:parity": "node ../tools/check-contract-parity.js",
+    "test:object-gateway": "npx tsx --test src/modules/cloud-control/services/ObjectGatewayServer.test.ts src/modules/platform/services/MinioService.test.ts",
     "perf:baseline": "node -e \"console.log(JSON.stringify({ package: 'cluster-daemon', status: 'placeholder', capture: { payload: ['TODO: record bytes for a representative daemon REST response with x-trace-id', 'TODO: record bytes for a representative socket/job payload with metadata.traceId'], latency: ['TODO: record daemon job dispatch duration ms', 'TODO: record representative socket emit/ack duration ms'] }, compatibility: { httpHeader: 'x-trace-id', socketTraceField: 'traceId', logFields: ['traceId', 'spanName', 'transport', 'durationMs', 'status'] } }, null, 2))\"",
     "perf:smoke": "node -e \"console.log(JSON.stringify({ package: 'cluster-daemon', check: 'perf-smoke-placeholder', traceHeader: 'x-trace-id', socketTraceField: 'traceId', result: 'pass' }, null, 2))\""
   },

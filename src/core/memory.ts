@@ -1,4 +1,5 @@
 import { logger } from './logger';
+import { getEffectiveMemoryLimitBytes } from '@/shared/utilities/runtime-capacity';
 import v8 from 'node:v8';
 
 /**
@@ -14,6 +15,7 @@ const THRESHOLDS = [
 
 /** Above this fraction of the heap limit, new heavy work should be delayed. */
 const PRESSURE_THRESHOLD = 0.75;
+const RSS_PRESSURE_THRESHOLD = 0.8;
 
 /** Interval between periodic heap checks (ms). */
 const MONITOR_INTERVAL_MS = 10_000;
@@ -24,12 +26,31 @@ const GC_COOLDOWN_MS = 30_000;
 let monitorTimer: ReturnType<typeof setInterval> | null = null;
 let lastTriggeredIndex = -1;
 let lastGcTimestamp = 0;
+let rssPressureTriggered = false;
 
-const getHeapStats = (): { heapUsed: number; heapLimit: number; ratio: number } => {
+const getHeapStats = (): {
+    heapUsed: number;
+    heapLimit: number;
+    ratio: number;
+    rss: number;
+    rssLimit: number;
+    rssRatio: number;
+} => {
     const stats = v8.getHeapStatistics();
+    const usage = process.memoryUsage();
+    const rssLimit = getEffectiveMemoryLimitBytes();
     const heapUsed = stats.used_heap_size;
     const heapLimit = stats.heap_size_limit;
-    return { heapUsed, heapLimit, ratio: heapUsed / heapLimit };
+    const rss = usage.rss;
+
+    return {
+        heapUsed,
+        heapLimit,
+        ratio: heapUsed / heapLimit,
+        rss,
+        rssLimit,
+        rssRatio: rss / rssLimit
+    };
 };
 
 /**
@@ -37,8 +58,8 @@ const getHeapStats = (): { heapUsed: number; heapLimit: number; ratio: number } 
  * Workers should call this before starting heavy work and requeue/delay if true.
  */
 export const isMemoryPressured = (): boolean => {
-    const { ratio } = getHeapStats();
-    return ratio >= PRESSURE_THRESHOLD;
+    const { ratio, rssRatio } = getHeapStats();
+    return ratio >= PRESSURE_THRESHOLD || rssRatio >= RSS_PRESSURE_THRESHOLD;
 };
 
 /**
@@ -87,7 +108,7 @@ export const forceGC = (): boolean => {
 };
 
 const checkAndLogThresholds = (): void => {
-    const { heapUsed, heapLimit, ratio } = getHeapStats();
+    const { heapUsed, heapLimit, ratio, rss, rssLimit, rssRatio } = getHeapStats();
 
     // Find the highest threshold that's currently exceeded
     let highestIndex = -1;
@@ -107,7 +128,10 @@ const checkAndLogThresholds = (): void => {
                 threshold: threshold.label,
                 heapUsedMB: Math.round(heapUsed / 1024 / 1024),
                 heapLimitMB: Math.round(heapLimit / 1024 / 1024),
-                heapUsagePct: Math.round(ratio * 100)
+                heapUsagePct: Math.round(ratio * 100),
+                rssMB: Math.round(rss / 1024 / 1024),
+                rssLimitMB: Math.round(rssLimit / 1024 / 1024),
+                rssUsagePct: Math.round(rssRatio * 100)
             },
             `Memory threshold crossed: ${threshold.label}`
         );
@@ -120,7 +144,9 @@ const checkAndLogThresholds = (): void => {
                 logger.info(
                     {
                         heapUsedMB: Math.round(after.heapUsed / 1024 / 1024),
-                        heapUsagePct: Math.round(after.ratio * 100)
+                        heapUsagePct: Math.round(after.ratio * 100),
+                        rssMB: Math.round(after.rss / 1024 / 1024),
+                        rssUsagePct: Math.round(after.rssRatio * 100)
                     },
                     'Manual GC triggered by memory monitor'
                 );
@@ -137,11 +163,38 @@ const checkAndLogThresholds = (): void => {
                     threshold: THRESHOLDS[highestIndex].label,
                     heapUsedMB: Math.round(heapUsed / 1024 / 1024),
                     heapLimitMB: Math.round(heapLimit / 1024 / 1024),
-                    heapUsagePct: Math.round(ratio * 100)
+                    heapUsagePct: Math.round(ratio * 100),
+                    rssMB: Math.round(rss / 1024 / 1024),
+                    rssLimitMB: Math.round(rssLimit / 1024 / 1024),
+                    rssUsagePct: Math.round(rssRatio * 100)
                 },
                 'Memory pressure decreased'
             );
         }
+    }
+
+    if (rssRatio >= RSS_PRESSURE_THRESHOLD && !rssPressureTriggered) {
+        rssPressureTriggered = true;
+        logger.warn(
+            {
+                rssMB: Math.round(rss / 1024 / 1024),
+                rssLimitMB: Math.round(rssLimit / 1024 / 1024),
+                rssUsagePct: Math.round(rssRatio * 100),
+                heapUsedMB: Math.round(heapUsed / 1024 / 1024),
+                heapUsagePct: Math.round(ratio * 100)
+            },
+            'RSS memory pressure threshold crossed'
+        );
+    } else if (rssRatio < RSS_PRESSURE_THRESHOLD && rssPressureTriggered) {
+        rssPressureTriggered = false;
+        logger.info(
+            {
+                rssMB: Math.round(rss / 1024 / 1024),
+                rssLimitMB: Math.round(rssLimit / 1024 / 1024),
+                rssUsagePct: Math.round(rssRatio * 100)
+            },
+            'RSS memory pressure decreased'
+        );
     }
 };
 
@@ -151,10 +204,14 @@ const checkAndLogThresholds = (): void => {
 export const startMemoryMonitor = (): void => {
     if (monitorTimer) return;
 
-    const { heapLimit } = getHeapStats();
+    const { heapLimit, rssLimit } = getHeapStats();
     const gcAvailable = typeof global.gc === 'function';
     logger.info(
-        { heapLimitMB: Math.round(heapLimit / 1024 / 1024), gcAvailable },
+        {
+            heapLimitMB: Math.round(heapLimit / 1024 / 1024),
+            rssLimitMB: Math.round(rssLimit / 1024 / 1024),
+            gcAvailable
+        },
         'Memory monitor started'
     );
 

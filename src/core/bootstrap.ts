@@ -13,6 +13,7 @@ import { createArtifactsModule, createPluginListingRepository } from '@/modules/
 import { createWorkflowRuntimeModule } from '@/modules/workflow-runtime';
 import { createCloudControlModule } from '@/modules/cloud-control';
 import { createAnalysisWorker, createJobRuntimeModule } from '@/modules/job-runtime';
+import { OBJECT_GATEWAY_EXPOSURE } from '@/modules/cloud-control/services';
 import type { DaemonRuntimeConfig } from './config';
 
 type BootstrapContext = {
@@ -156,6 +157,14 @@ const startBootstrapContext = async (context: BootstrapContext): Promise<void> =
     startMemoryMonitor();
 
     await cloudControl.voltCloudConnection.start();
+    if (config.objectGatewayEnabled) {
+        await cloudControl.objectGatewayServer.start();
+        cloudControl.daemonExposureRegistryService.upsertDaemonExposure(
+            cloudControl.objectGatewayServer.getExposure()
+        );
+    } else {
+        logger.warn({ teamClusterId: config.teamClusterId }, 'Object gateway is disabled by configuration');
+    }
     const runtimeConfig = await loadRuntimeConfig(context);
     cloudControl.daemonExposureRegistryService.start();
     analysisWorker.start(runtimeConfig.queueConcurrency.analysis);
@@ -183,7 +192,13 @@ const stopBootstrapContext = async (context: BootstrapContext): Promise<void> =>
     await context.trajectoryRasterWorkerService.stop();
     await context.trajectoryGlbWorkerService.stop();
     await context.sshImport.sshImportWorkerService.stop();
+    if (context.config.objectGatewayEnabled) {
+        context.cloudControl.daemonExposureRegistryService.removeDaemonExposure(OBJECT_GATEWAY_EXPOSURE.id);
+    }
     context.cloudControl.daemonExposureRegistryService.stop();
+    if (context.config.objectGatewayEnabled) {
+        await context.cloudControl.objectGatewayServer.stop();
+    }
     context.cloudControl.voltCloudConnection.stop();
     await context.platform.queueService.close();
     await context.platform.disconnect();

@@ -7,6 +7,10 @@ import { createWorkflowNodeRegistry } from '@/modules/workflow-runtime/factories
 import { resolveWorkflowTemplate } from '@/modules/workflow-runtime/services/WorkflowOutputResolution';
 import { createWorkflowExecutionContext, restoreWorkflowOutputs, snapshotWorkflowOutputs } from '@/modules/workflow-runtime/services/WorkflowExecutionContextFactory';
 import { inflateAnalysisExecutionData } from '@/shared/utilities/analysis-execution-data';
+import {
+    getRecommendedBinaryThreads,
+    getSafeAnalysisWorkerConcurrency
+} from '@/shared/utilities/analysis-resource-policy';
 import { decodeCliArgumentsToken, isRecord } from '@/shared/utils';
 import { createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
@@ -25,6 +29,7 @@ import type { WorkflowNodeRegistry } from '@/modules/workflow-runtime/services';
 import type { BinaryExecutorService } from './BinaryExecutorService';
 import type { PluginBinaryCacheService } from './PluginBinaryCacheService';
 const DUMPS_BUCKET = ObjectBucketName.Dumps;
+let activeBinaryExecutions = 0;
 
 const logMemoryUsage = (context: string, jobId: string): void => {
     const usage = process.memoryUsage();
@@ -117,6 +122,77 @@ const parseArguments = (value: string): string[] => {
         const encodedArguments = decodeCliArgumentsToken(token);
         return encodedArguments ?? [token];
     });
+};
+
+const findThreadsArgumentIndex = (args: string[]): number => {
+    for (let index = 0; index < args.length - 1; index += 1) {
+        if (args[index] !== '--threads') {
+            continue;
+        }
+
+        const parsedThreads = Number.parseInt(args[index + 1] ?? '', 10);
+        if (Number.isFinite(parsedThreads) && parsedThreads >= 1) {
+            return index;
+        }
+    }
+
+    return -1;
+};
+
+interface BinaryExecutionLease {
+    args: string[];
+    requestedThreads?: number;
+    appliedThreads?: number;
+    activeBinaryExecutions: number;
+    release: () => void;
+}
+
+const acquireBinaryExecutionLease = (args: string[]): BinaryExecutionLease => {
+    activeBinaryExecutions += 1;
+    const currentActiveExecutions = activeBinaryExecutions;
+    const release = (): void => {
+        activeBinaryExecutions = Math.max(0, activeBinaryExecutions - 1);
+    };
+
+    const threadsArgumentIndex = findThreadsArgumentIndex(args);
+    if (threadsArgumentIndex === -1) {
+        return {
+            args: [...args],
+            activeBinaryExecutions: currentActiveExecutions,
+            release
+        };
+    }
+
+    const requestedThreads = Number.parseInt(args[threadsArgumentIndex + 1] ?? '', 10);
+    if (!Number.isFinite(requestedThreads) || requestedThreads < 1) {
+        return {
+            args: [...args],
+            activeBinaryExecutions: currentActiveExecutions,
+            release
+        };
+    }
+
+    const appliedThreads = getRecommendedBinaryThreads(requestedThreads, currentActiveExecutions);
+    if (appliedThreads === requestedThreads) {
+        return {
+            args: [...args],
+            requestedThreads,
+            appliedThreads,
+            activeBinaryExecutions: currentActiveExecutions,
+            release
+        };
+    }
+
+    const adjustedArgs = [...args];
+    adjustedArgs[threadsArgumentIndex + 1] = String(appliedThreads);
+
+    return {
+        args: adjustedArgs,
+        requestedThreads,
+        appliedThreads,
+        activeBinaryExecutions: currentActiveExecutions,
+        release
+    };
 };
 
 const createRuntimeWorkflowRegistry = (): WorkflowNodeRegistry => {
@@ -461,11 +537,13 @@ export class AnalysisWorker {
             return;
         }
 
+        const requestedConcurrency = concurrency ?? 1;
+        const effectiveConcurrency = getSafeAnalysisWorkerConcurrency(requestedConcurrency);
         this.running = true;
         this.worker = this.queueService.createWorker<QueueJobPayload>(
             ANALYSIS_QUEUE_NAME,
             async (jobPayload, job) => this.processJob(jobPayload, job),
-            { concurrency: concurrency ?? 1 }
+            { concurrency: effectiveConcurrency }
         );
 
         this.worker.on('failed', (job, error) => {
@@ -478,7 +556,13 @@ export class AnalysisWorker {
             );
         });
 
-        logger.info('AnalysisWorker started');
+        logger.info(
+            {
+                requestedConcurrency,
+                effectiveConcurrency
+            },
+            'AnalysisWorker started'
+        );
     }
 
     async stop(): Promise<void> {
@@ -496,8 +580,15 @@ export class AnalysisWorker {
             throw new Error('AnalysisWorker has not started');
         }
 
-        this.worker.concurrency = concurrency;
-        logger.info({ concurrency }, 'AnalysisWorker concurrency updated');
+        const effectiveConcurrency = getSafeAnalysisWorkerConcurrency(concurrency);
+        this.worker.concurrency = effectiveConcurrency;
+        logger.info(
+            {
+                requestedConcurrency: concurrency,
+                effectiveConcurrency
+            },
+            'AnalysisWorker concurrency updated'
+        );
     }
 
     private async processJob(job: QueueJobPayload, bullJob: BullMQJob<QueueJobPayload>): Promise<void> {
@@ -596,26 +687,49 @@ export class AnalysisWorker {
             const resolvedArgs = resolveWorkflowTemplate(executionData.arguments, outputs);
             const args = parseArguments(resolvedArgs);
 
+            await bullJob.updateProgress(10);
+            const binaryStartedAt = Date.now();
+            const binaryExecutionLease = acquireBinaryExecutionLease(args);
+            if (
+                typeof binaryExecutionLease.requestedThreads === 'number'
+                && typeof binaryExecutionLease.appliedThreads === 'number'
+                && binaryExecutionLease.appliedThreads !== binaryExecutionLease.requestedThreads
+            ) {
+                logger.info(
+                    {
+                        jobId: job.jobId,
+                        requestedThreads: binaryExecutionLease.requestedThreads,
+                        appliedThreads: binaryExecutionLease.appliedThreads,
+                        activeBinaryExecutions: binaryExecutionLease.activeBinaryExecutions
+                    },
+                    'Adjusted plugin binary thread count to fit concurrent cluster load'
+                );
+            }
+
+            const executionArgs = [...executionRuntime.argsPrefix, ...binaryExecutionLease.args];
             logger.info(
                 {
                     jobId: job.jobId,
                     binary: path.basename(executionRuntime.artifactPath),
-                    args,
+                    args: executionArgs,
                     outputDir,
                     entrypointType: executionData.entrypointType ?? 'executable'
                 },
                 'Executing plugin binary'
             );
 
-            await bullJob.updateProgress(10);
-            const binaryStartedAt = Date.now();
-            const result = await this.binaryExecutorService.executeProcess({
-                jobId: job.jobId,
-                commandPath: executionRuntime.commandPath,
-                args: [...executionRuntime.argsPrefix, ...args],
-                cwd: outputDir,
-                env: executionRuntime.env
-            });
+            let result: Awaited<ReturnType<BinaryExecutorService['executeProcess']>>;
+            try {
+                result = await this.binaryExecutorService.executeProcess({
+                    jobId: job.jobId,
+                    commandPath: executionRuntime.commandPath,
+                    args: executionArgs,
+                    cwd: outputDir,
+                    env: executionRuntime.env
+                });
+            } finally {
+                binaryExecutionLease.release();
+            }
             if (result.code !== 0) {
                 throw new Error(`Binary exited with code ${result.code}: ${result.stderr || result.stdout}`);
             }

@@ -5,6 +5,7 @@ import type { MinioService } from '@/modules/platform/services';
 import { isRecord } from '@/shared/utils';
 import type { PluginListingRepository } from '../repositories/PluginListingRepository';
 import type { ExportNodeProcessorService } from './ExportNodeProcessorService';
+import { getRecommendedResultProcessingConcurrency } from '@/shared/utilities/analysis-resource-policy';
 import { decodeMultiStream, mergeSelectiveChunk } from '@/shared/utilities/selective-msgpack';
 import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
@@ -17,6 +18,7 @@ const LISTING_KEYS = new Set(['main_listing']);
 
 /** Keys to keep during export-only decode pass. */
 const EXPORT_KEY_PREFIX = 'export';
+const EXPOSURE_RESULT_PROCESSING_CONCURRENCY = getRecommendedResultProcessingConcurrency();
 
 const logMemoryUsage = (context: string): void => {
     const usage = process.memoryUsage();
@@ -46,6 +48,62 @@ const cleanListingRow = (value: Record<string, unknown>): Record<string, unknown
     }
 
     return cleaned;
+};
+
+interface AsyncConcurrencyLimiter {
+    run<T>(
+        task: () => Promise<T>,
+        context?: Record<string, unknown>
+    ): Promise<T>;
+}
+
+const createAsyncConcurrencyLimiter = (concurrency: number): AsyncConcurrencyLimiter => {
+    let activeCount = 0;
+    const waitQueue: Array<() => void> = [];
+
+    const acquire = async (): Promise<number> => {
+        const queuedAt = Date.now();
+        if (activeCount >= concurrency) {
+            await new Promise<void>((resolve) => {
+                waitQueue.push(resolve);
+            });
+        }
+
+        activeCount += 1;
+        return Date.now() - queuedAt;
+    };
+
+    const release = (): void => {
+        activeCount = Math.max(0, activeCount - 1);
+        const next = waitQueue.shift();
+        if (next) {
+            next();
+        }
+    };
+
+    return {
+        async run(task, context = {}) {
+            const waitMs = await acquire();
+            if (waitMs >= 250) {
+                logger.info(
+                    {
+                        ...context,
+                        waitMs,
+                        activeCount,
+                        pending: waitQueue.length,
+                        concurrency
+                    },
+                    'Exposure result processing waited for capacity'
+                );
+            }
+
+            try {
+                return await task();
+            } finally {
+                release();
+            }
+        }
+    };
 };
 
 /**
@@ -124,100 +182,131 @@ export const createResultProcessorService = (
     minioService: MinioService,
     pluginListingRepository: PluginListingRepository,
     exportNodeProcessorService: ExportNodeProcessorService
-): ResultProcessorService => ({
-    async processExposureResult(
-        executionData: AnalysisJobExecutionData,
-        exposure: AnalysisExposureDefinition,
-        outputDir: string,
-        timestep: number,
-        teamId: string
-    ): Promise<void> {
-        const outputFilePath = `${outputDir}_${exposure.results}`;
-        const startedAt = Date.now();
+): ResultProcessorService => {
+    logger.info(
+        {
+            concurrency: EXPOSURE_RESULT_PROCESSING_CONCURRENCY
+        },
+        'Configured exposure result processing concurrency'
+    );
 
-        try {
-            await fs.access(outputFilePath);
-        } catch {
-            logger.warn(
-                {
-                    exposure: exposure.name,
-                    path: outputFilePath
-                },
-                'Exposure output file not found, skipping'
-            );
-            return;
-        }
+    const exposureProcessingLimiter = createAsyncConcurrencyLimiter(
+        EXPOSURE_RESULT_PROCESSING_CONCURRENCY
+    );
 
-        const storageKey = `plugins/trajectory-${executionData.trajectoryId}/analysis-${executionData.analysisId}/${exposure.nodeId}/timestep-${timestep}.msgpack`;
-        const fileStat = await fs.stat(outputFilePath);
+    return {
+        async processExposureResult(
+            executionData: AnalysisJobExecutionData,
+            exposure: AnalysisExposureDefinition,
+            outputDir: string,
+            timestep: number,
+            teamId: string
+        ): Promise<void> {
+            const outputFilePath = `${outputDir}_${exposure.results}`;
+            const startedAt = Date.now();
 
-        logger.info(
-            {
-                analysisId: executionData.analysisId,
-                exposure: exposure.name,
-                outputFilePath,
-                sizeBytes: fileStat.size,
-                storageKey,
-                timestep
-            },
-            'Uploading exposure output'
-        );
-
-        await minioService.putObjectStream({
-            bucket: PLUGINS_BUCKET,
-            objectKey: storageKey,
-            stream: createReadStream(outputFilePath),
-            size: fileStat.size,
-            metadata: {
-                'Content-Type': 'application/msgpack'
+            try {
+                await fs.access(outputFilePath);
+            } catch {
+                logger.warn(
+                    {
+                        exposure: exposure.name,
+                        path: outputFilePath
+                    },
+                    'Exposure output file not found, skipping'
+                );
+                return;
             }
-        });
 
-        logger.info({ storageKey }, 'Uploaded exposure .msgpack');
+            const storageKey = `plugins/trajectory-${executionData.trajectoryId}/analysis-${executionData.analysisId}/${exposure.nodeId}/timestep-${timestep}.msgpack`;
+            const fileStat = await fs.stat(outputFilePath);
 
-        // ── Single-pass decode: listing + export in one read ──────────
-        logMemoryUsage('before-listing-decode');
-        let { listing: listingPayload, subListingNames, exportData: exportPayload } = await readPayload(outputFilePath);
-        logMemoryUsage('after-listing-decode');
+            logger.info(
+                {
+                    analysisId: executionData.analysisId,
+                    exposure: exposure.name,
+                    outputFilePath,
+                    sizeBytes: fileStat.size,
+                    storageKey,
+                    timestep
+                },
+                'Uploading exposure output'
+            );
 
-        // ── Process listings ──────────────────────────────────────────
-        await precomputeListingRows(pluginListingRepository, executionData, exposure, listingPayload, subListingNames, storageKey, timestep, teamId);
-
-        // Release listing data explicitly — make it eligible for GC before
-        // the (potentially heavy) export processing begins.
-        listingPayload = null;
-        subListingNames = [];
-        forceGC();
-
-        // ── Process exports (if needed) ──────────────────────────────
-        if (exposure.export && exportPayload) {
-            logMemoryUsage('before-export-processing');
-            await exportNodeProcessorService.process({
-                executionData,
-                exposure,
-                decodedPayload: exportPayload,
-                timestep,
-                teamClusterId: executionData.teamClusterId || ''
+            await minioService.putObjectStream({
+                bucket: PLUGINS_BUCKET,
+                objectKey: storageKey,
+                stream: createReadStream(outputFilePath),
+                size: fileStat.size,
+                metadata: {
+                    'Content-Type': 'application/msgpack'
+                }
             });
-            logMemoryUsage('after-export-processing');
+
+            logger.info({ storageKey }, 'Uploaded exposure .msgpack');
+
+            await exposureProcessingLimiter.run(
+                async () => {
+                    // ── Single-pass decode: listing + export in one read ──────────
+                    logMemoryUsage('before-listing-decode');
+                    let { listing: listingPayload, subListingNames, exportData: exportPayload } = await readPayload(outputFilePath);
+                    logMemoryUsage('after-listing-decode');
+
+                    // ── Process listings ──────────────────────────────────────────
+                    await precomputeListingRows(
+                        pluginListingRepository,
+                        executionData,
+                        exposure,
+                        listingPayload,
+                        subListingNames,
+                        storageKey,
+                        timestep,
+                        teamId
+                    );
+
+                    // Release listing data explicitly — make it eligible for GC before
+                    // the (potentially heavy) export processing begins.
+                    listingPayload = null;
+                    subListingNames = [];
+                    forceGC();
+
+                    // ── Process exports (if needed) ──────────────────────────────
+                    if (exposure.export && exportPayload) {
+                        logMemoryUsage('before-export-processing');
+                        await exportNodeProcessorService.process({
+                            executionData,
+                            exposure,
+                            decodedPayload: exportPayload,
+                            timestep,
+                            teamClusterId: executionData.teamClusterId || ''
+                        });
+                        logMemoryUsage('after-export-processing');
+                    }
+
+                    // Release export data
+                    exportPayload = null;
+                    forceGC();
+                },
+                {
+                    analysisId: executionData.analysisId,
+                    exposure: exposure.name,
+                    timestep
+                }
+            );
+
+            logger.info(
+                {
+                    analysisId: executionData.analysisId,
+                    exposure: exposure.name,
+                    durationMs: Date.now() - startedAt,
+                    storageKey,
+                    timestep
+                },
+                'Finished exposure result processing'
+            );
         }
-
-        // Release export data
-        exportPayload = null;
-        forceGC();
-
-        logger.info(
-            {
-                analysisId: executionData.analysisId,
-                exposure: exposure.name,
-                durationMs: Date.now() - startedAt,
-                storageKey,
-                timestep
-            },
-            'Finished exposure result processing'
-        );
-    }
-});
+    };
+};
 
 async function precomputeListingRows(
     pluginListingRepository: PluginListingRepository,

@@ -1,4 +1,10 @@
-import { type TeamClusterDaemonExposureSnapshotPayload, TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureStatus, type TeamClusterServiceExposure } from '@/shared/contracts';
+import {
+    type TeamClusterDaemonExposureSnapshotPayload,
+    TeamClusterServiceExposureAccessMode,
+    TeamClusterServiceExposureSourceKind,
+    TeamClusterServiceExposureStatus,
+    type TeamClusterServiceExposure
+} from '@/shared/contracts';
 import type { DaemonConfig } from '@/core/config';
 import { logger } from '@/core/logger';
 import { isIP } from 'node:net';
@@ -86,6 +92,8 @@ const readPublishedTcpPorts = (inspection: ContainerInspection): number[] => {
 export class DaemonExposureRegistryService {
     private syncTimer: NodeJS.Timeout | null = null;
     private exposures = new Map<string, TeamClusterServiceExposure>();
+    private readonly daemonExposures = new Map<string, TeamClusterServiceExposure>();
+    private lastContainerExposures: TeamClusterServiceExposure[] = [];
     private lastObservedSnapshotSignature: string | null = null;
     private lastSentSnapshotSignature: string | null = null;
     private lastCloudConnectionState = false;
@@ -130,6 +138,19 @@ export class DaemonExposureRegistryService {
         return Array.from(this.exposures.values());
     }
 
+    upsertDaemonExposure(exposure: TeamClusterServiceExposure): void {
+        this.daemonExposures.set(exposure.id, exposure);
+        this.publishExposures(this.lastContainerExposures);
+    }
+
+    removeDaemonExposure(exposureId: string): void {
+        if (!this.daemonExposures.delete(exposureId)) {
+            return;
+        }
+
+        this.publishExposures(this.lastContainerExposures);
+    }
+
     async sync(): Promise<void> {
         if (this.inFlightSync) {
             logger.debug(
@@ -157,14 +178,12 @@ export class DaemonExposureRegistryService {
             label: ['volt.managed=true']
         });
         const nextExposures = await this.buildExposures(containers);
-        const snapshotSignature = this.createSnapshotSignature(nextExposures);
-        const changed = snapshotSignature !== this.lastObservedSnapshotSignature;
+        const previousSnapshotSignature = this.lastObservedSnapshotSignature;
+        const mergedExposures = this.publishExposures(nextExposures);
+        const mergedSnapshotSignature = this.createSnapshotSignature(mergedExposures);
+        const changed = mergedSnapshotSignature !== previousSnapshotSignature;
         const cloudConnectionRestored = this.voltCloudConnection.isConnectedToCloud() && !this.lastCloudConnectionState;
         const durationMs = Date.now() - startedAt;
-
-        this.exposures = new Map(nextExposures.map((exposure) => [exposure.id, exposure]));
-        this.lastObservedSnapshotSignature = snapshotSignature;
-        this.emitSnapshot(nextExposures, snapshotSignature);
 
         if (changed || cloudConnectionRestored) {
             logger.info(
@@ -173,7 +192,7 @@ export class DaemonExposureRegistryService {
                     cloudConnectionRestored,
                     containerCount: containers.length,
                     durationMs,
-                    exposureCount: nextExposures.length
+                    exposureCount: mergedExposures.length
                 },
                 'Daemon exposure sync completed'
             );
@@ -185,10 +204,26 @@ export class DaemonExposureRegistryService {
             {
                 containerCount: containers.length,
                 durationMs,
-                exposureCount: nextExposures.length
+                exposureCount: mergedExposures.length
             },
             'Daemon exposure sync completed without changes'
         );
+    }
+
+    private publishExposures(containerExposures: TeamClusterServiceExposure[]): TeamClusterServiceExposure[] {
+        this.lastContainerExposures = [...containerExposures];
+
+        const mergedExposures = [
+            ...containerExposures,
+            ...this.daemonExposures.values()
+        ];
+        const snapshotSignature = this.createSnapshotSignature(mergedExposures);
+
+        this.exposures = new Map(mergedExposures.map((exposure) => [exposure.id, exposure]));
+        this.lastObservedSnapshotSignature = snapshotSignature;
+        this.emitSnapshot(mergedExposures, snapshotSignature);
+
+        return mergedExposures;
     }
 
     private async buildExposures(containers: ContainerInfo[]): Promise<TeamClusterServiceExposure[]> {
@@ -225,6 +260,7 @@ export class DaemonExposureRegistryService {
                         id: `${container.Id}:${containerPort}`,
                         teamClusterId,
                         teamId,
+                        sourceKind: TeamClusterServiceExposureSourceKind.Container,
                         containerId: container.Id,
                         containerName,
                         exposureName: `${containerName}:${containerPort}`,
