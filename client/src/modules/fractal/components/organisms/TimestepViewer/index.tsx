@@ -39,6 +39,7 @@ interface TimestepViewerProps {
     position?: OptionalPosition;
     scale?: number;
     autoFit?: boolean;
+    autoFitKeyOverride?: string | null;
     orbitControlsRef?: RefObject<OrbitControlsHandle | null>;
     enableSlice?: boolean;
     enableInstancing?: boolean;
@@ -75,6 +76,7 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     },
     scale = 1,
     autoFit = true,
+    autoFitKeyOverride,
     orbitControlsRef,
     enableSlice = true,
     enableInstancing = true,
@@ -157,6 +159,7 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
                 position={scenePosition}
                 scale={scale}
                 autoFit={autoFit}
+                autoFitKeyOverride={autoFitKeyOverride}
                 orbitControlsRef={orbitControlsRef}
                 enableSlice={enableSlice}
                 enableInstancing={enableInstancing}
@@ -172,6 +175,7 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
         activeModelBounds,
         analysisId,
         autoFit,
+        autoFitKeyOverride,
         boxBounds,
         currentTimestep,
         enableInstancing,

@@ -10,7 +10,18 @@ interface TeamClusterReverseTunnelStreamOptions {
     onClose: () => void;
 };
 
-export class TeamClusterReverseTunnelStream extends Duplex {
+export interface TeamClusterTunnelStream extends Duplex {
+    pushChunk(chunk: Buffer): void;
+    closeRemote(): void;
+    fail(error: Error): void;
+    setTimeout(): this;
+    setNoDelay(): this;
+    setKeepAlive(): this;
+    ref(): this;
+    unref(): this;
+}
+
+export class TeamClusterReverseTunnelStream extends Duplex implements TeamClusterTunnelStream {
     constructor(private readonly options: TeamClusterReverseTunnelStreamOptions) {
         super();
     }

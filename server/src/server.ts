@@ -11,6 +11,7 @@ import { registerAllSubscribers } from './core/events/registerAllSubscribers';
 import { SOCKET_TOKENS } from './modules/socket/infrastructure/di/SocketTokens';
 import { ContainerVncGatewayService } from './modules/container/infrastructure/services/ContainerVncGatewayService';
 import { ScriptingJupyterProxyService } from './modules/scripting/infrastructure/services/ScriptingJupyterProxyService';
+import { TEAM_CLUSTER_TOKENS } from './modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { httpErrorMiddleware } from './shared/infrastructure/http/middleware/error';
 import logger from './shared/infrastructure/logger';
 import mongoConnector from './shared/infrastructure/utilities/mongo-connector';
@@ -22,6 +23,7 @@ import SocketGateway from './modules/socket/socket/SocketGateway';
 import http from 'http';
 import { container } from 'tsyringe';
 import type { ISocketModule } from './modules/socket/domain/port/ISocketModule';
+import type TeamClusterBinaryRelayUpgradeService from './modules/team-cluster/infrastructure/services/TeamClusterBinaryRelayUpgradeService';
 import type { Duplex } from 'node:stream';
 import type { Socket as NetSocket } from 'node:net';
 
@@ -173,6 +175,23 @@ const startServer = async () => {
 
     server.on('upgrade', (request, socket, head) => {
         trackConnection(socket);
+
+        const binaryRelayUpgradeService = container.resolve<TeamClusterBinaryRelayUpgradeService>(
+            TEAM_CLUSTER_TOKENS.TeamClusterBinaryRelayUpgradeService
+        );
+        if (binaryRelayUpgradeService.isBinaryRelayUpgradeRequest(request)) {
+            binaryRelayUpgradeService.handleUpgrade(request, socket as Duplex, head).catch((error: unknown) => {
+                logger.error(`@server: binary relay upgrade failed: ${error instanceof Error ? error.message : String(error)}`);
+                writeUpgradeError(
+                    socket as Duplex,
+                    error instanceof Error && 'statusCode' in error && typeof error.statusCode === 'number'
+                        ? error.statusCode
+                        : 500,
+                    error instanceof Error ? error.message : 'WebSocket upgrade failed'
+                );
+            });
+            return;
+        }
 
         const proxyService = container.resolve(ScriptingJupyterProxyService);
         if (!proxyService.isJupyterUpgradeRequest(request)) {

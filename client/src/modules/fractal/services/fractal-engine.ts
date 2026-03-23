@@ -3,6 +3,7 @@ import type { BoxBounds, Pos3D, ModelLoadingState } from '@/modules/fractal/api/
 import { Plane } from 'three';
 import { MaterialPipeline } from '@/modules/fractal/services/material-pipeline';
 import { disposeObject3DResources } from '@/modules/fractal/utilities/resource-disposal';
+import { debugFractal, warnFractal } from '@/modules/fractal/utilities/debug-log';
 import type IFractalAssetLoader from '@/modules/fractal/api/entities/asset-loader';
 import { ModelTransform } from '@/modules/fractal/utilities/model-transform';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
@@ -106,6 +107,42 @@ const getPointCloudStyleUniforms = (settings: PointCloudSceneSettings) => {
     };
 };
 
+const summarizeBounds = (bounds: BoundsInfo | null) => {
+    if (!bounds) {
+        return null;
+    }
+
+    return {
+        center: bounds.center.toArray(),
+        size: bounds.size.toArray(),
+        radius: bounds.boundingSphere.radius,
+        maxDimension: bounds.maxDimension
+    };
+};
+
+const isAbortLikeError = (error: unknown): boolean => {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+        return true;
+    }
+
+    if (!(error instanceof Error)) {
+        return false;
+    }
+
+    const maybeAbortError = error as Error & {
+        code?: string;
+        __CANCEL__?: boolean;
+    };
+    const message = error.message.trim().toLowerCase();
+
+    return error.name === 'AbortError'
+        || error.name === 'CanceledError'
+        || maybeAbortError.code === 'ERR_CANCELED'
+        || maybeAbortError.__CANCEL__ === true
+        || message === 'canceled'
+        || message === 'cancelled';
+};
+
 export class FractalEngine {
     private state: FractalEngineState = {
         model: null,
@@ -196,6 +233,11 @@ export class FractalEngine {
         this.state.isLoading = true;
         this.state.loadProgress = 0;
         this.state.loadError = null;
+        debugFractal('engine.load-start', {
+            url,
+            sceneKey: this.params.sceneKey,
+            clippingPlanes: this.params.sliceClippingPlanes.length
+        });
         this.callbacks.onLoadingState?.({
             isLoading: true,
             progress: 0,
@@ -220,6 +262,10 @@ export class FractalEngine {
             }
 
             if (!this.hasRenderableData(loadedModel)) {
+                warnFractal('engine.load-empty', {
+                    url,
+                    sceneKey: this.params.sceneKey
+                });
                 this.params.onEmptyData?.();
             }
 
@@ -253,6 +299,14 @@ export class FractalEngine {
             this.state.lastLoadedUrl = url;
             this.traversalCache = this.buildTraversalCache(loadedModel);
             this.consecutiveLoadFailures = 0;
+            debugFractal('engine.load-success', {
+                url,
+                sceneKey: this.params.sceneKey,
+                hasPointClouds,
+                pointCloudCount: this.traversalCache.pointClouds.length,
+                meshCount: this.traversalCache.meshes.length,
+                bounds: summarizeBounds(bounds)
+            });
 
             // Reset caches so the first application on the new model always runs.
             this.lastPointCloudSettings = undefined;
@@ -271,7 +325,7 @@ export class FractalEngine {
                 error: null
             });
         } catch (error: unknown) {
-            if (error instanceof Error && error.name === 'AbortError') {
+            if (isAbortLikeError(error)) {
                 this.callbacks.onLoadingState?.({
                     isLoading: false,
                     progress: 0,
@@ -286,6 +340,12 @@ export class FractalEngine {
                 message = error.message;
             }
             this.state.loadError = message;
+            warnFractal('engine.load-failed', {
+                url,
+                sceneKey: this.params.sceneKey,
+                attempts: this.consecutiveLoadFailures,
+                message
+            });
             this.callbacks.onLoadingState?.({
                 isLoading: false,
                 progress: 0,
@@ -384,6 +444,26 @@ export class FractalEngine {
                 : 1;
 
             pointCloud.geometry.setDrawRange(0, Math.max(1, Math.floor(pointCount * drawRatio)));
+        });
+
+        const firstPointCloud = this.traversalCache.pointClouds[0];
+        const firstMaterial = firstPointCloud?.material;
+        const firstDrawRange = firstPointCloud?.geometry.drawRange;
+        const pointScale = firstMaterial instanceof THREE.ShaderMaterial
+            ? firstMaterial.uniforms?.pointScale?.value
+            : undefined;
+        debugFractal('engine.point-cloud-settings', {
+            sceneKey: this.params.sceneKey,
+            pointCloudCount: this.traversalCache.pointClouds.length,
+            pointSizeMultiplier: pointCloudSettings.pointSizeMultiplier,
+            overridesEnabled: pointCloudSettings.overridesEnabled,
+            pointScale,
+            drawRange: firstDrawRange
+                ? {
+                    start: firstDrawRange.start,
+                    count: firstDrawRange.count
+                }
+                : null
         });
 
         this.surface.invalidate();

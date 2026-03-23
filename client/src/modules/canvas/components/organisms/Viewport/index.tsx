@@ -6,6 +6,7 @@ import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
 import FractalScene from '@/modules/fractal/components/organisms/FractalScene';
 import TimestepViewer from '@/modules/fractal/components/organisms/TimestepViewer';
+import { debugFractal } from '@/modules/fractal/utilities/debug-log';
 import { getFrameBoxBounds, getTrajectoryFrameByTimestep, hasFrameBoxBounds } from '@/modules/fractal/utilities/frame-box-bounds';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
@@ -21,7 +22,7 @@ import Loader from '@/shared/presentation/components/Loader';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import { Gauge } from 'lucide-react';
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
@@ -117,8 +118,26 @@ const Viewport = ({
     }, [currentFrame]);
 
     const handleContentTypeDetected = useCallback((info: { hasPointClouds: boolean }) => {
+        debugFractal('viewport.content-type-detected', {
+            trajectoryId: trajectory?._id,
+            timestep: currentTimestep,
+            hasPointClouds: info.hasPointClouds
+        });
         setIsPointCloudScene(info.hasPointClouds);
-    }, [setIsPointCloudScene]);
+    }, [currentTimestep, setIsPointCloudScene, trajectory?._id]);
+
+    useEffect(() => {
+        if (!trajectory?._id || currentTimestep === undefined || !currentFrameBoxBounds) {
+            return;
+        }
+
+        debugFractal('viewport.frame-ready', {
+            trajectoryId: trajectory._id,
+            timestep: currentTimestep,
+            boxBounds: currentFrameBoxBounds,
+            sceneCount: activeScenes.length
+        });
+    }, [activeScenes.length, currentFrameBoxBounds, currentTimestep, trajectory?._id]);
 
     return (
         <Container className="canvas-viewport d-flex column flex-1 overflow-hidden p-relative min-h-0">
@@ -233,7 +252,8 @@ const Viewport = ({
                                     scale={TIMESTEP_VIEWER_DEFAULTS.scale}
                                     rotation={TIMESTEP_VIEWER_DEFAULTS.rotation}
                                     position={TIMESTEP_VIEWER_DEFAULTS.position}
-                                    autoFit={false}
+                                    autoFit
+                                    autoFitKeyOverride={trajectory._id}
                                     onContentTypeDetected={handleContentTypeDetected}
                                 />
                             )}

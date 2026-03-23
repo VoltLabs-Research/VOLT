@@ -3,6 +3,7 @@ import useGlbScene from '@/modules/fractal/hooks/use-glb-scene';
 import SimulationCellBox from '@/modules/fractal/components/molecules/SimulationCellBox';
 import { areModelWorldBoundsEqual } from '@/modules/fractal/utilities/model-world-bounds';
 import { buildCellBoxTransforms, calculateBoxTransforms, getGroundOffset } from '@/modules/fractal/utilities/box-utils';
+import { debugFractal, warnFractal } from '@/modules/fractal/utilities/debug-log';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import { computeGlbUrl } from '@/modules/fractal/api/service/compute-glb-url';
 import './SingleModelViewer.css';
@@ -97,6 +98,7 @@ interface SingleModelViewerProps {
     position?: OptionalVec3;
     scale?: number;
     autoFit?: boolean;
+    autoFitKeyOverride?: string | null;
     orbitControlsRef?: RefObject<OrbitControlsHandle | null>;
     enableSlice?: boolean;
     enableInstancing?: boolean;
@@ -131,6 +133,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     },
     scale = 1,
     autoFit = true,
+    autoFitKeyOverride,
     orbitControlsRef,
     enableSlice = true,
     enableInstancing: _enableInstancing = true,
@@ -144,6 +147,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     const lastEmittedModelWorldBoundsReference = useRef<ModelWorldBounds | null>(null);
     const autoFitKeyRef = useRef<string | null>(null);
     const autoFitAppliedRef = useRef(!autoFit);
+    const autoFitWaitLoggedRef = useRef(false);
     // Imperative container for the 3D model — keeps the heavy Object3D out of
     // React's reconciliation tree entirely (matches old fast architecture).
     const modelContainerRef = useRef<THREE.Group>(null!);
@@ -163,6 +167,10 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         return transforms;
     }, [boxTransforms, groundOffset]);
     const autoFitKey = useMemo(() => {
+        if (autoFitKeyOverride !== undefined) {
+            return autoFit ? autoFitKeyOverride : null;
+        }
+
         return autoFit
             ? [
                 trajectoryId,
@@ -177,6 +185,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
             : null;
     }, [
         autoFit,
+        autoFitKeyOverride,
         boxBounds.xhi,
         boxBounds.xlo,
         boxBounds.yhi,
@@ -235,6 +244,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
 
     const {
         modelBounds,
+        loadError,
         deselect,
         setSelectedObject,
         onHoverChange
@@ -271,7 +281,20 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     useEffect(() => {
         autoFitKeyRef.current = autoFitKey;
         autoFitAppliedRef.current = !autoFit;
+        autoFitWaitLoggedRef.current = false;
     }, [autoFit, autoFitKey]);
+
+    useEffect(() => {
+        debugFractal('single-model.request', {
+            trajectoryId,
+            timestep: currentTimestep,
+            sceneKey,
+            url,
+            autoFit,
+            autoFitKey,
+            boxBounds
+        });
+    }, [autoFit, autoFitKey, boxBounds, currentTimestep, sceneKey, trajectoryId, url]);
 
     useFrame((state) => {
         if (!autoFit || autoFitAppliedRef.current || !autoFitKeyRef.current) {
@@ -282,23 +305,56 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
             ?? ((state as typeof state & { controls?: OrbitControlsHandle | null }).controls ?? null);
 
         if (!controls) {
+            if (!autoFitWaitLoggedRef.current) {
+                debugFractal('single-model.autofit-waiting-controls', {
+                    trajectoryId,
+                    timestep: currentTimestep,
+                    sceneKey
+                });
+                autoFitWaitLoggedRef.current = true;
+            }
             return;
         }
 
         const camera = controls.object;
         if (!(camera instanceof THREE.PerspectiveCamera)) {
             autoFitAppliedRef.current = true;
+            warnFractal('single-model.autofit-non-perspective-camera', {
+                trajectoryId,
+                timestep: currentTimestep,
+                sceneKey
+            });
             return;
         }
 
         const worldBox = buildWorldBoundsFromBox(boxBounds, cellBoxTransforms);
         if (worldBox.isEmpty()) {
             autoFitAppliedRef.current = true;
+            warnFractal('single-model.autofit-empty-world-box', {
+                trajectoryId,
+                timestep: currentTimestep,
+                sceneKey
+            });
             return;
         }
 
+        const worldCenter = worldBox.getCenter(new THREE.Vector3());
+        const worldSize = worldBox.getSize(new THREE.Vector3());
+        const previousCameraPosition = camera.position.toArray();
+        const previousTarget = controls.target.toArray();
         fitPerspectiveCameraToBox(camera, controls, worldBox);
         autoFitAppliedRef.current = true;
+        debugFractal('single-model.autofit-applied', {
+            trajectoryId,
+            timestep: currentTimestep,
+            sceneKey,
+            worldCenter: worldCenter.toArray(),
+            worldSize: worldSize.toArray(),
+            previousCameraPosition,
+            nextCameraPosition: camera.position.toArray(),
+            previousTarget,
+            nextTarget: controls.target.toArray()
+        });
         state.invalidate();
     });
 
@@ -313,6 +369,35 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
             onModelLoaded(modelBounds);
         }
     }, [modelBounds, onModelLoaded]);
+
+    useEffect(() => {
+        if (!modelBounds) {
+            return;
+        }
+
+        debugFractal('single-model.bounds', {
+            trajectoryId,
+            timestep: currentTimestep,
+            sceneKey,
+            center: modelBounds.center.toArray(),
+            size: modelBounds.size.toArray(),
+            radius: modelBounds.boundingSphere.radius
+        });
+    }, [currentTimestep, modelBounds, sceneKey, trajectoryId]);
+
+    useEffect(() => {
+        if (!loadError) {
+            return;
+        }
+
+        warnFractal('single-model.load-error', {
+            trajectoryId,
+            timestep: currentTimestep,
+            sceneKey,
+            error: loadError,
+            url
+        });
+    }, [currentTimestep, loadError, sceneKey, trajectoryId, url]);
 
     return (
         <SimulationCellBox
