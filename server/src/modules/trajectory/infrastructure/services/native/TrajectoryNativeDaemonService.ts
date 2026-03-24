@@ -18,6 +18,7 @@ interface TrajectoryNativeRequest {
     trajectoryId: string;
     timestep: string | number;
     objectKey?: string;
+    ownerClusterId?: string;
 };
 
 interface TrajectoryNativeModifierSource {
@@ -220,7 +221,8 @@ export default class TrajectoryNativeDaemonService {
         return {
             trajectoryId: input.trajectoryId,
             timestep: Number(input.timestep),
-            objectKey: input.objectKey
+            objectKey: input.objectKey,
+            ownerClusterId: input.ownerClusterId
         };
     }
 };

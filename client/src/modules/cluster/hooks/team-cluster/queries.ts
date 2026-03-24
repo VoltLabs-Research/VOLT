@@ -4,10 +4,18 @@ import type { MutationOptions, QueryOptions } from '@/shared/infrastructure/quer
 import type { CreateTeamClusterInputDTO, CreateTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/create-team-cluster';
 import type { DeleteTeamClusterInputDTO, DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
 import type {
+    CreateTeamClusterTransferRequestInputDTO,
+    CreateTeamClusterTransferRequestOutputDTO
+} from '@/modules/cluster/api/dtos/team-cluster/create-team-cluster-transfer-request';
+import type {
     FetchAvailableClusterVersionsInputDTO,
     FetchAvailableClusterVersionsOutputDTO
 } from '@/modules/cluster/api/dtos/team-cluster/fetch-available-cluster-versions';
 import type { ListTeamClustersInputDTO, ListTeamClustersOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/list-team-clusters';
+import type {
+    ListTeamClusterTransferJobsInputDTO,
+    ListTeamClusterTransferJobsOutputDTO
+} from '@/modules/cluster/api/dtos/team-cluster/list-team-cluster-transfer-jobs';
 import type {
     RequestClusterUpdateInputDTO,
     RequestClusterUpdateOutputDTO
@@ -24,11 +32,16 @@ import type {
     UpdateTeamClusterQueueConcurrencyInputDTO,
     UpdateTeamClusterQueueConcurrencyOutputDTO
 } from '@/modules/cluster/api/dtos/team-cluster/update-team-cluster-queue-concurrency';
+import type {
+    UpdateTeamClusterRoleInputDTO,
+    UpdateTeamClusterRoleOutputDTO
+} from '@/modules/cluster/api/dtos/team-cluster/update-team-cluster-role';
 import type { TeamCluster, TeamClusterLifecycleEvent } from '@/modules/cluster/api/entities/team-cluster';
 
 interface TeamClusterQueryKeyMap {
     byTeam: string;
     availableVersions: FetchAvailableClusterVersionsInputDTO;
+    transferJobs: ListTeamClusterTransferJobsInputDTO;
 };
 
 const TEAM_CLUSTER_STALE_TIME = 5 * 60 * 1000;
@@ -46,6 +59,21 @@ const getConsistentClusterPagination = (page: number, limit: number, total: numb
 };
 
 export const TEAM_CLUSTER_QUERY_KEYS = buildKeys<TeamClusterQueryKeyMap>('team-clusters');
+
+const mergeTeamClusterTransferState = (current: TeamCluster | undefined, incoming: TeamCluster): TeamCluster => {
+    if (incoming.activeTransfers !== undefined) {
+        return incoming;
+    }
+
+    if (!current?.activeTransfers) {
+        return incoming;
+    }
+
+    return {
+        ...incoming,
+        activeTransfers: current.activeTransfers
+    };
+};
 
 export const teamClustersQuery = createQuery(TEAM_CLUSTER_QUERY_KEYS.byTeam, (teamId: string) => {
     const params: ListTeamClustersInputDTO = {
@@ -76,14 +104,16 @@ export const upsertTeamClusterQueryData = (teamId: string, teamCluster: TeamClus
         }
 
         const exists = current.data.some((cluster) => cluster._id === teamCluster._id);
+        const existingCluster = current.data.find((cluster) => cluster._id === teamCluster._id);
+        const mergedTeamCluster = mergeTeamClusterTransferState(existingCluster, teamCluster);
 
         const total = exists ? current.pagination.total : current.pagination.total + 1;
 
         return {
             ...current,
             data: exists
-                ? current.data.map((cluster) => cluster._id === teamCluster._id ? teamCluster : cluster)
-                : [teamCluster, ...current.data],
+                ? current.data.map((cluster) => cluster._id === teamCluster._id ? mergedTeamCluster : cluster)
+                : [mergedTeamCluster, ...current.data],
             pagination: getConsistentClusterPagination(current.pagination.page, current.pagination.limit, total)
         };
     });
@@ -162,6 +192,11 @@ const availableVersionsQuery = createQuery(
     teamClusterService.fetchAvailableVersions
 );
 
+const transferJobsQuery = createQuery(
+    TEAM_CLUSTER_QUERY_KEYS.transferJobs,
+    teamClusterService.listTransferJobs
+);
+
 export const useAvailableClusterVersionsQuery = (
     teamId: string,
     teamClusterId: string,
@@ -174,6 +209,23 @@ export const useAvailableClusterVersionsQuery = (
             ...options
         }
     );
+};
+
+export const invalidateTeamClusterTransferJobsQuery = () => {
+    return queryClient.invalidateQueries({
+        queryKey: [...TEAM_CLUSTER_QUERY_KEYS.prefix(), 'transferJobs']
+    });
+};
+
+export const useTeamClusterTransferJobsQuery = (
+    params: ListTeamClusterTransferJobsInputDTO,
+    options?: QueryOptions<ListTeamClusterTransferJobsOutputDTO>
+) => {
+    return transferJobsQuery(params, {
+        enabled: Boolean(params.teamId) && Boolean(params.teamClusterId),
+        staleTime: 0,
+        ...options
+    });
 };
 
 export const useRequestClusterUpdateMutation = (
@@ -204,6 +256,35 @@ export const useUpdateTeamClusterQueueConcurrencyMutation = (
         ...options,
         onSuccess: withSuccess((data, variables) => {
             upsertTeamClusterQueryData(variables.teamId, data.teamCluster);
+        }, options)
+    });
+};
+
+export const useUpdateTeamClusterRoleMutation = (
+    options?: MutationOptions<UpdateTeamClusterRoleOutputDTO, UpdateTeamClusterRoleInputDTO>
+) => {
+    return createMutation<UpdateTeamClusterRoleOutputDTO, UpdateTeamClusterRoleInputDTO>(
+        teamClusterService.updateRole
+    )({
+        ...options,
+        onSuccess: withSuccess((data, variables) => {
+            upsertTeamClusterQueryData(variables.teamId, data.teamCluster);
+        }, options)
+    });
+};
+
+export const useCreateTeamClusterTransferRequestMutation = (
+    options?: MutationOptions<CreateTeamClusterTransferRequestOutputDTO, CreateTeamClusterTransferRequestInputDTO>
+) => {
+    return createMutation<CreateTeamClusterTransferRequestOutputDTO, CreateTeamClusterTransferRequestInputDTO>(
+        teamClusterService.createTransferRequest
+    )({
+        ...options,
+        onSuccess: withSuccess((_, variables) => {
+            void invalidateTeamClusterTransferJobsQuery();
+            void queryClient.invalidateQueries({
+                queryKey: TEAM_CLUSTER_QUERY_KEYS.byTeam(variables.teamId)
+            });
         }, options)
     });
 };

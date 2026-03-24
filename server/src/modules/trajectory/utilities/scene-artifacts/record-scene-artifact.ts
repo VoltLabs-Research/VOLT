@@ -7,6 +7,7 @@ interface RecordSceneArtifactInput {
     objectName: string;
     trajectory: string;
     teamCluster?: string;
+    storageClusterId?: string;
     analysis?: string;
     plugin?: string;
     sourceType: SceneArtifactSourceType;
@@ -26,6 +27,7 @@ export const recordSceneArtifact = async (
         objectName,
         trajectory,
         teamCluster,
+        storageClusterId,
         analysis,
         plugin,
         sourceType,
@@ -39,7 +41,8 @@ export const recordSceneArtifact = async (
 
     await sceneArtifactRepository.upsertByObjectName(objectName, {
         trajectory,
-        teamCluster,
+        teamCluster: storageClusterId ?? teamCluster,
+        storageClusterId: storageClusterId ?? teamCluster,
         analysis,
         plugin,
         sourceType,

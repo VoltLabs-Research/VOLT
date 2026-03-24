@@ -1,4 +1,5 @@
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import StoragePlacementService from '@modules/team-cluster/application/services/StoragePlacementService';
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import Workflow, { WorkflowProps } from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
@@ -17,6 +18,7 @@ import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import archiver from 'archiver';
 import logger from '@shared/infrastructure/logger';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { PassThrough, Readable } from 'node:stream';
 import { inject, injectable } from 'tsyringe';
 import unzipper from 'unzipper';
@@ -40,6 +42,10 @@ const isWorkflowProps = (value: unknown): value is WorkflowProps => {
     return true;
 };
 
+const computeSha256 = (buffer: Buffer): string => {
+    return createHash('sha256').update(buffer).digest('hex');
+};
+
 @injectable()
 export default class PluginStorageService implements IPluginStorageService {
     constructor(
@@ -48,6 +54,9 @@ export default class PluginStorageService implements IPluginStorageService {
 
         @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
         private readonly teamClusterRepository: ITeamClusterRepository,
+
+        @inject(TEAM_CLUSTER_TOKENS.StoragePlacementService)
+        private readonly storagePlacementService: StoragePlacementService,
 
         @inject(SHARED_TOKENS.StorageService)
         private storageService: IStorageService,
@@ -143,7 +152,8 @@ export default class PluginStorageService implements IPluginStorageService {
             file.buffer,
             {
                 'Content-Type': file.mimetype || 'application/octet-stream',
-                'x-amz-meta-original-name': originalName
+                'x-amz-meta-original-name': originalName,
+                'x-amz-meta-sha256': computeSha256(file.buffer)
             }
         );
 
@@ -154,6 +164,7 @@ export default class PluginStorageService implements IPluginStorageService {
         });
 
         await this.persistWorkflow(pluginId, plugin.props.workflow);
+        await this.storagePlacementService.ensurePlacement('plugin-binary', pluginId);
         if (teamClusterId !== plugin.props.teamCluster) {
             await this.pluginRepo.updateById(pluginId, {
                 teamCluster: teamClusterId
@@ -270,7 +281,8 @@ export default class PluginStorageService implements IPluginStorageService {
                 binaryBuffer,
                 {
                     'Content-Type': 'application/octet-stream',
-                    'x-amz-meta-original-name': binaryFileName
+                    'x-amz-meta-original-name': binaryFileName,
+                    'x-amz-meta-sha256': computeSha256(binaryBuffer)
                 }
             );
 
@@ -281,6 +293,7 @@ export default class PluginStorageService implements IPluginStorageService {
             });
             
             await this.persistWorkflow(newPlugin._id, newPlugin.props.workflow);
+            await this.storagePlacementService.ensurePlacement('plugin-binary', newPlugin.id);
 
             logger.info(`@plugin-workflow-service: imported binary ${binaryObjectPath}`);
             binaryImported = true;

@@ -1,9 +1,12 @@
 import TeamCluster, {
+    TeamClusterEffectiveCapabilitiesProps,
     TeamClusterDaemonServiceProps,
+    TeamClusterRuntimeRoleConfigProps,
     TeamClusterServiceProps,
     TeamClusterServicesProps,
     TeamClusterStatus
 } from '@modules/team-cluster/domain/entities/TeamCluster';
+import type { ClusterTransferJobDTO } from '@modules/team-cluster/application/dtos/ClusterTransferJobDTO';
 
 export interface TeamClusterServiceDTO {
     port: number | null;
@@ -39,6 +42,24 @@ export interface TeamClusterQueueConcurrencyDTO {
     sshImport: number;
 };
 
+export interface TeamClusterRuntimeRoleConfigDTO {
+    desiredRole: TeamClusterRuntimeRoleConfigProps['desiredRole'];
+    effectiveRole: TeamClusterRuntimeRoleConfigProps['effectiveRole'];
+    runtimeVersion: number;
+    draining: {
+        compute: boolean;
+        storage: boolean;
+    };
+    lastAppliedAt?: Date | null;
+};
+
+export interface TeamClusterEffectiveCapabilitiesDTO {
+    acceptsComputeJobs: boolean;
+    acceptsStorageWrites: boolean;
+    servesStorageReads: boolean;
+    servesArtifactDownloads: boolean;
+};
+
 export interface TeamClusterDTO {
     _id: string;
     name: string;
@@ -50,6 +71,9 @@ export interface TeamClusterDTO {
     lastDisconnectAt: Date | null;
     services: TeamClusterServicesDTO;
     queueConcurrency: TeamClusterQueueConcurrencyDTO;
+    roleConfig: TeamClusterRuntimeRoleConfigDTO;
+    effectiveCapabilities: TeamClusterEffectiveCapabilitiesDTO;
+    activeTransfers?: ClusterTransferJobDTO[];
     createdAt: Date;
     updatedAt: Date;
 };
@@ -60,8 +84,33 @@ const toServiceDTO = (service: TeamClusterServiceProps | TeamClusterDaemonServic
     };
 };
 
-export const toTeamClusterDTO = (teamCluster: TeamCluster): TeamClusterDTO => {
+export const toTeamClusterDTO = (
+    teamCluster: TeamCluster,
+    options: {
+        activeTransfers?: ClusterTransferJobDTO[];
+    } = {}
+): TeamClusterDTO => {
     const services: TeamClusterServicesProps = teamCluster.props.services;
+    const roleConfig = teamCluster.props.roleConfig;
+    const effectiveCapabilities: TeamClusterEffectiveCapabilitiesProps = teamCluster.props.effectiveCapabilities;
+    const activeTransfers = options.activeTransfers?.map((job) => ({
+        ...job,
+        buckets: job.buckets.map((bucketRef) => ({
+            bucket: bucketRef.bucket,
+            prefix: bucketRef.prefix
+        })),
+        cursor: {
+            bucketIndex: job.cursor.bucketIndex,
+            lastObjectKey: job.cursor.lastObjectKey
+        },
+        stats: {
+            copiedObjects: job.stats.copiedObjects,
+            copiedBytes: job.stats.copiedBytes,
+            verifiedObjects: job.stats.verifiedObjects,
+            verifiedBytes: job.stats.verifiedBytes,
+            deletedObjects: job.stats.deletedObjects
+        }
+    }));
 
     return {
         _id: teamCluster._id,
@@ -81,6 +130,19 @@ export const toTeamClusterDTO = (teamCluster: TeamCluster): TeamClusterDTO => {
         queueConcurrency: {
             ...teamCluster.props.queueConcurrency
         },
+        roleConfig: {
+            desiredRole: roleConfig.desiredRole,
+            effectiveRole: roleConfig.effectiveRole,
+            runtimeVersion: roleConfig.runtimeVersion,
+            draining: {
+                ...roleConfig.draining
+            },
+            lastAppliedAt: roleConfig.lastAppliedAt ?? null
+        },
+        effectiveCapabilities: {
+            ...effectiveCapabilities
+        },
+        ...(activeTransfers ? { activeTransfers } : {}),
         createdAt: teamCluster.props.createdAt,
         updatedAt: teamCluster.props.updatedAt
     };

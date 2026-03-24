@@ -4,6 +4,7 @@ import {
     ListingRowByAnalysisData,
     AnalysisSubListingExportData
 } from '@modules/plugin/application/dtos/listing-row/GetListingRowsByAnalysisIdDTO';
+import { resolveAnalysisComputeClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { enrichDaemonListingRows } from '@modules/plugin/application/use-cases/listing-row/listing-row-enrichment';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
@@ -348,7 +349,9 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
         const format = input.format ?? ExportType.Csv;
 
         const analysis = await this.analysisRepository.findById(input.analysisId);
-        const teamClusterId = analysis?.props.teamCluster;
+        const teamClusterId = analysis
+            ? resolveAnalysisComputeClusterId(analysis.props)
+            : undefined;
 
         if (!teamClusterId) {
             const payload: ExportListingRowsByAnalysisIdOutputDTO = {

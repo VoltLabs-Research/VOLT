@@ -38,7 +38,7 @@ const toTrajectoryOutput = (value: unknown): string | ScriptingNotebookPopulated
     }
 
     const recordId = toRecordId(value);
-    if (recordId) {
+    if (recordId && isRecord(value)) {
         return {
             _id: recordId,
             name: typeof value.name === 'string' ? value.name : undefined
@@ -58,7 +58,7 @@ const toTeamClusterOutput = (value: unknown): string | ScriptingNotebookPopulate
     }
 
     const recordId = toRecordId(value);
-    if (recordId) {
+    if (recordId && isRecord(value)) {
         return {
             _id: recordId,
             name: typeof value.name === 'string' ? value.name : undefined
@@ -78,7 +78,7 @@ const toUserOutput = (value: unknown): string | ScriptingNotebookPopulatedUser |
     }
 
     const recordId = toRecordId(value);
-    if (recordId) {
+    if (recordId && isRecord(value)) {
         return {
             _id: recordId,
             firstName: typeof value.firstName === 'string' ? value.firstName : undefined,

@@ -10,7 +10,9 @@ enum AnalysisRelation {
     Trajectory = 'trajectory',
     CreatedBy = 'createdBy',
     Team = 'team',
-    TeamCluster = 'teamCluster'
+    TeamCluster = 'teamCluster',
+    ComputeCluster = 'computeClusterId',
+    StorageCluster = 'storageClusterId'
 };
 
 type AnalysisRelations = `${AnalysisRelation}`;
@@ -42,6 +44,18 @@ const AnalysisSchema = new Schema<AnalysisDocument>({
         trim: true
     },
     teamCluster: {
+        type: Schema.Types.ObjectId,
+        ref: 'TeamCluster',
+        required: false,
+        index: true
+    },
+    computeClusterId: {
+        type: Schema.Types.ObjectId,
+        ref: 'TeamCluster',
+        required: false,
+        index: true
+    },
+    storageClusterId: {
         type: Schema.Types.ObjectId,
         ref: 'TeamCluster',
         required: false,
@@ -88,7 +102,8 @@ const AnalysisSchema = new Schema<AnalysisDocument>({
 AnalysisSchema.index({ pluginDisplayName: 'text' });
 AnalysisSchema.index({ team: 1, createdAt: -1 });
 AnalysisSchema.index({ trajectory: 1, createdAt: -1 });
-AnalysisSchema.index({ plugin: 1, team: 1, trajectory: 1, teamCluster: 1 });
+AnalysisSchema.index({ plugin: 1, team: 1, trajectory: 1, computeClusterId: 1 });
+AnalysisSchema.index({ trajectory: 1, storageClusterId: 1, createdAt: -1 });
 
 const AnalysisModel: Model<AnalysisDocument> = mongoose.model<AnalysisDocument>('Analysis', AnalysisSchema);
 

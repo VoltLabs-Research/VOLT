@@ -1,5 +1,7 @@
 export const TEAM_CLUSTER_TOKENS = Object.freeze({
     TeamClusterRepository: Symbol.for('TeamClusterRepository'),
+    StoragePlacementRepository: Symbol.for('StoragePlacementRepository'),
+    ClusterTransferJobRepository: Symbol.for('ClusterTransferJobRepository'),
     TeamClusterCredentialsCipher: Symbol.for('TeamClusterCredentialsCipher'),
     TeamClusterInstallManifestService: Symbol.for('TeamClusterInstallManifestService'),
     TeamClusterLifecycleService: Symbol.for('TeamClusterLifecycleService'),
@@ -13,5 +15,8 @@ export const TEAM_CLUSTER_TOKENS = Object.freeze({
     TeamClusterSocketModule: Symbol.for('TeamClusterSocketModule'),
     RemoteExplorerDaemonGateway: Symbol.for('RemoteExplorerDaemonGateway'),
     DaemonAnalysisCompletionService: Symbol.for('DaemonAnalysisCompletionService'),
-    TeamClusterRemoteAccessSessionService: Symbol.for('TeamClusterRemoteAccessSessionService')
+    TeamClusterRemoteAccessSessionService: Symbol.for('TeamClusterRemoteAccessSessionService'),
+    StoragePlacementService: Symbol.for('StoragePlacementService'),
+    ClusterTransferCoordinator: Symbol.for('ClusterTransferCoordinator'),
+    ClusterTransferRunner: Symbol.for('ClusterTransferRunner')
 });

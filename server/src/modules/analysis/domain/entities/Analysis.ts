@@ -4,6 +4,8 @@ export interface AnalysisProps {
     plugin: string;
     pluginDisplayName: string;
     teamCluster?: string;
+    computeClusterId?: string;
+    storageClusterId?: string;
     config: AnalysisConfig;
     trajectory: string;
     createdBy: string;

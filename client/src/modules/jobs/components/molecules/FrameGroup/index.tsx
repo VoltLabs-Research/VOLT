@@ -6,7 +6,7 @@ import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import { AnimatePresence, motion } from 'framer-motion';
 import { IoChevronForward } from 'react-icons/io5';
-import { useId, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import type { FrameJobGroup, Job } from '@/modules/jobs/api/entities/job';
 
 interface FrameGroupProps {
@@ -14,15 +14,28 @@ interface FrameGroupProps {
 };
 
 const FrameGroup = ({ frame }: FrameGroupProps) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+    const containsTransferJobs = useMemo(() => {
+        return frame.jobs.some((job) => job.queueType === 'cluster_transfer');
+    }, [frame.jobs]);
+    const [isExpanded, setIsExpanded] = useState(containsTransferJobs);
     const prefersReducedMotion = usePrefersReducedMotion();
     const contentId = useId();
     const statusClassName = frameGroupStatusClassNames[frame.overallStatus];
-    const label = frame.timestep >= 0 ? `Frame ${frame.timestep}` : 'General';
+    const label = containsTransferJobs
+        ? (frame.jobs.length === 1 ? 'Storage Transfer' : 'Storage Transfers')
+        : frame.timestep >= 0
+            ? `Frame ${frame.timestep}`
+            : 'General';
     const statusLabel = getFrameGroupStatusLabel(frame.overallStatus);
     const jobs = frame.jobs.map((job: Job, index: number) => (
         <JobQueue key={job.jobId || `job-${index}`} job={job} isChild />
     ));
+
+    useEffect(() => {
+        if (containsTransferJobs) {
+            setIsExpanded(true);
+        }
+    }, [containsTransferJobs]);
 
     return (
         <Container className='frame-job-group'>

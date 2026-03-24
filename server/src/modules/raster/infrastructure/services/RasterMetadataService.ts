@@ -1,6 +1,10 @@
 import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import { RasterMetadataStatus } from '@modules/raster/domain/entities/RasterMetadata';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import {
+    resolveAnalysisStorageClusterId,
+    resolveTrajectoryStorageClusterId
+} from '@modules/team-cluster/application/utilities/cluster-location';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -48,10 +52,10 @@ export class RasterMetadataService implements IRasterMetadataReader {
         }
 
         const totalFrames = trajectory.props.frames.length;
-        const teamClusterId = trajectory.props.teamCluster;
-        const trajectoryRaster = await this.getTrajectoryMetadata(trajectoryId, teamClusterId);
+        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        const trajectoryRaster = await this.getTrajectoryMetadata(trajectoryId, storageClusterId);
 
-        const analyses = await this.getAnalysesMetadata(trajectoryId, totalFrames, teamClusterId);
+        const analyses = await this.getAnalysesMetadata(trajectoryId, totalFrames, storageClusterId);
         const rasterizedFrames = trajectoryRaster.rasterizedFrames;
 
         if (!trajectoryRaster.trajectory && analyses.length === 0) {
@@ -134,7 +138,7 @@ export class RasterMetadataService implements IRasterMetadataReader {
                     trajectoryId,
                     analysis.id,
                     totalFrames,
-                    analysis.props.teamCluster || trajectoryTeamClusterId
+                    resolveAnalysisStorageClusterId(analysis.props) || trajectoryTeamClusterId
                 );
             }));
 

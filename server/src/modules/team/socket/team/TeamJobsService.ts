@@ -16,6 +16,22 @@ const SAFE_FALLBACK_GROUP_TIMESTAMP = '1970-01-01T00:00:00.000Z';
 const TEAM_JOBS_INITIAL_CACHE_TTL_MS = 2_000;
 const UNGROUPED_TIMESTEP = -1;
 
+const compareFrameTimesteps = (left: number, right: number): number => {
+    if (left === UNGROUPED_TIMESTEP && right === UNGROUPED_TIMESTEP) {
+        return 0;
+    }
+
+    if (left === UNGROUPED_TIMESTEP) {
+        return -1;
+    }
+
+    if (right === UNGROUPED_TIMESTEP) {
+        return 1;
+    }
+
+    return right - left;
+};
+
 type TeamJobStatus = JobStatus | 'retrying' | 'partial';
 type TeamJobSource = 'daemon' | 'projected' | 'merged';
 
@@ -332,7 +348,7 @@ export default class TeamJobsService {
                 });
             }
 
-            frameGroups.sort((a, b) => b.timestep - a.timestep);
+            frameGroups.sort((a, b) => compareFrameTimesteps(a.timestep, b.timestep));
 
             const allJobs = groupedJobs;
             const overallStatus = this.computeFrameStatus(allJobs);

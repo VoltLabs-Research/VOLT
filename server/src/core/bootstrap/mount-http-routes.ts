@@ -38,6 +38,7 @@ import TeamSelfHttpModule from '@modules/team/infrastructure/http/routes/team/se
 import TeamHttpModule from '@modules/team/infrastructure/http/routes/team';
 import TeamClusterHttpModule from '@modules/team-cluster/infrastructure/http/routes/team-cluster-routes';
 import TeamClusterLifecycleHttpModule from '@modules/team-cluster/infrastructure/http/routes/team-cluster-lifecycle-routes';
+import TeamClusterObjectStoreProxyHttpModule from '@modules/team-cluster/infrastructure/http/routes/team-cluster-object-store-proxy-routes';
 import ColorCodingHttpModule from '@modules/trajectory/infrastructure/http/routes/color-coding';
 import CanvasHttpModule from '@modules/trajectory/infrastructure/http/routes/canvas';
 import ParticleFilterHttpModule from '@modules/trajectory/infrastructure/http/routes/particle-filter';
@@ -77,6 +78,7 @@ const HTTP_MODULES: HttpModule[] = [
     TeamAIIntegrationHttpModule,
     TeamClusterHttpModule,
     TeamClusterLifecycleHttpModule,
+    TeamClusterObjectStoreProxyHttpModule,
     ChatHttpModule,
     ChatMessageHttpModule,
     NotificationHttpModule,

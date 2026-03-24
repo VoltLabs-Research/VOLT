@@ -1,4 +1,7 @@
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
+import StoragePlacementService from '@modules/team-cluster/application/services/StoragePlacementService';
+import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { ExecutePluginInputDTO } from '@modules/plugin/application/dtos/plugin/ExecutePluginDTO';
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import { IPluginExecutionRouter } from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
@@ -11,7 +14,7 @@ import { PluginDependencyResolverService } from '@modules/plugin/infrastructure/
 import { ErrorCodes } from '@core/constants/error-codes';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
@@ -21,8 +24,6 @@ import { Result } from '@shared/domain/port/Result';
 import AnalysisCreatedEvent from '@modules/analysis/domain/events/AnalysisCreatedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
-
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import type { ArgumentDefinition } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
 import type { WorkflowNode } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 
@@ -118,8 +119,8 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
         private analysisRepo: IAnalysisRepository,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
+        @inject(TeamClusterSelectionService)
+        private readonly teamClusterSelectionService: TeamClusterSelectionService,
 
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private trajectoryRepo: ITrajectoryRepository,
@@ -131,7 +132,10 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
         private readonly workflowValidator: IWorkflowValidatorService,
 
         @inject(PLUGIN_TOKENS.PluginDependencyResolverService)
-        private readonly pluginDependencyResolverService: PluginDependencyResolverService
+        private readonly pluginDependencyResolverService: PluginDependencyResolverService,
+
+        @inject(TEAM_CLUSTER_TOKENS.StoragePlacementService)
+        private readonly storagePlacementService: StoragePlacementService
     ){}
 
     async execute(input: ExecutePluginInputDTO): Promise<Result<ExecutePluginOutputDTO, ApplicationError>> {
@@ -185,17 +189,12 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             ));
         }
 
-        const teamCluster = await this.teamClusterRepository.findOne({
-            _id: input.teamClusterId,
-            team: input.teamId
-        } as Record<string, unknown>);
-
-        if (!teamCluster) {
-            return Result.fail(ApplicationError.notFound(
-                'TeamCluster::NotFound',
-                'Team cluster not found'
-            ));
-        }
+        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        const computeClusterId = await this.teamClusterSelectionService.resolveComputeClusterId(
+            input.teamId,
+            input.teamClusterId,
+            storageClusterId
+        );
 
         const pluginDisplayName = PluginDisplayNameResolver.resolve(plugin.props.workflow);
 
@@ -247,13 +246,17 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
         const analysis = await this.analysisRepo.create({
             plugin: plugin._id,
             pluginDisplayName,
-            teamCluster: input.teamClusterId,
+            teamCluster: computeClusterId,
+            computeClusterId,
+            storageClusterId,
             config: analysisConfig,
             team: input.teamId,
             trajectory: input.trajectoryId,
             createdBy: input.userId,
             startedAt: new Date()
         });
+
+        await this.storagePlacementService.ensurePlacement('analysis', analysis.id);
 
         await this.eventBus.publish(new AnalysisCreatedEvent({
             analysisId: analysis.id,
@@ -267,7 +270,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
         }));
 
         await this.pluginExecutionRouter.route({
-            teamClusterId: input.teamClusterId,
+            teamClusterId: computeClusterId,
             analysis,
             analysisId: analysis.id,
             pluginDisplayName,

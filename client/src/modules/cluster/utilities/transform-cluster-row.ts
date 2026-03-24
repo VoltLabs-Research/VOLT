@@ -2,7 +2,8 @@ import { formatNetworkSpeed } from './format-network';
 import { formatUptime } from './format-uptime';
 import { getClusterLiveMetricsStatus } from '@/modules/cluster/utilities/cluster-live-metrics-status';
 import type { ClusterMetrics } from '../api/entities/cluster-metrics';
-import type { TeamCluster, TeamClusterStatus } from '../api/entities/team-cluster';
+import type { ClusterTransferJob } from '../api/entities/team-cluster-transfer';
+import type { TeamCluster, TeamClusterRole, TeamClusterStatus } from '../api/entities/team-cluster';
 import type { ClusterLiveMetricsLabel } from '@/modules/cluster/utilities/cluster-live-metrics-status';
 
 export interface ServerRow {
@@ -10,6 +11,8 @@ export interface ServerRow {
     teamCluster: TeamCluster;
     id: string;
     name: string;
+    desiredRole: TeamClusterRole;
+    effectiveRole: TeamClusterRole;
     status: ClusterLiveMetricsLabel;
     statusVariant: 'success' | 'warning' | 'danger' | 'inactive';
     lifecycleStatus: TeamClusterStatus;
@@ -24,6 +27,7 @@ export interface ServerRow {
     network: string;
     uptime: string;
     analysisCount: number | null;
+    activeTransfers: ClusterTransferJob[];
 };
 
 interface TransformClusterToRowParams {
@@ -59,6 +63,8 @@ export const transformClusterToRow = ({ teamCluster, metrics, isMetricsConnected
         teamCluster,
         id: teamCluster._id,
         name: teamCluster.name,
+        desiredRole: teamCluster.roleConfig.desiredRole,
+        effectiveRole: teamCluster.roleConfig.effectiveRole,
         status: liveMetricsStatus.label,
         statusVariant: liveMetricsStatus.variant,
         lifecycleStatus: teamCluster.status,
@@ -72,7 +78,8 @@ export const transformClusterToRow = ({ teamCluster, metrics, isMetricsConnected
         diskUsagePercent: liveMetrics ? Math.round(liveMetrics.disk.usagePercent) : null,
         network: liveMetrics ? formatNetworkSpeed(liveMetrics.network.incoming + liveMetrics.network.outgoing) : '--',
         uptime: liveMetrics ? formatUptime(liveMetrics.uptime) : '--',
-        analysisCount: liveMetrics?.analysisCount ?? null
+        analysisCount: liveMetrics?.analysisCount ?? null,
+        activeTransfers: teamCluster.activeTransfers ?? []
     };
 };
 

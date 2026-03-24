@@ -1,15 +1,14 @@
+import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
+import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { ExecutePluginUseCase } from '@modules/plugin/application/use-cases/plugin/ExecutePluginUseCase';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { resolveConnectedTeamCluster } from '@modules/trajectory/utilities/team-cluster/resolve-connected-team-cluster';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { CreateAnalysisInputDTO, CreateAnalysisOutputDTO } from '@modules/analysis/application/dtos/CreateAnalysisDTO';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 
 @injectable()
@@ -21,8 +20,8 @@ export class CreateAnalysisUseCase implements IUseCase<CreateAnalysisInputDTO, C
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly trajectoryRepository: ITrajectoryRepository,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
+        @inject(TeamClusterSelectionService)
+        private readonly teamClusterSelectionService: TeamClusterSelectionService,
 
         @inject(ExecutePluginUseCase)
         private readonly executePluginUseCase: ExecutePluginUseCase
@@ -34,17 +33,19 @@ export class CreateAnalysisUseCase implements IUseCase<CreateAnalysisInputDTO, C
             return Result.fail(ApplicationError.notFound('Trajectory::NotFound', 'Trajectory not found'));
         }
 
-        const teamCluster = await resolveConnectedTeamCluster(this.teamClusterRepository, {
-            teamId: input.teamId,
-            requestedTeamClusterId: input.teamClusterId || trajectory.props.teamCluster
-        });
+        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        const computeClusterId = await this.teamClusterSelectionService.resolveComputeClusterId(
+            input.teamId,
+            input.teamClusterId,
+            storageClusterId
+        );
 
         const executionResult = await this.executePluginUseCase.execute({
             pluginId: input.pluginId,
             trajectoryId: input.trajectoryId,
             userId: input.userId,
             teamId: input.teamId,
-            teamClusterId: teamCluster.id,
+            teamClusterId: computeClusterId,
             config: input.config
         });
         if (!executionResult.success) {
@@ -63,6 +64,8 @@ export class CreateAnalysisUseCase implements IUseCase<CreateAnalysisInputDTO, C
                 plugin: analysis.props.plugin,
                 pluginDisplayName: analysis.props.pluginDisplayName,
                 teamCluster: analysis.props.teamCluster,
+                computeClusterId: analysis.props.computeClusterId,
+                storageClusterId: analysis.props.storageClusterId,
                 config: analysis.props.config,
                 status: 'pending',
                 createdAt: new Date()

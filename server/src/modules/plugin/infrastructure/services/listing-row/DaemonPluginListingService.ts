@@ -12,6 +12,7 @@ import { ExportType } from '@shared/domain/port/IBaseRepository';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { resolveAnalysisComputeClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { getExposureNodes } from '@modules/plugin/utilities/exposure/get-exposure-nodes';
 import { WorkflowNode } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
@@ -145,15 +146,12 @@ export class DaemonPluginListingService implements IPluginListingService, IPlugi
         };
     }
 
-    private toTeamClusterId(teamCluster: string | { _id?: string } | null | undefined): string | null {
-        if (!teamCluster) return null;
-        return typeof teamCluster === 'string' ? teamCluster : String(teamCluster._id ?? '');
-    }
-
     private async resolveContext(pluginId: string, options: ListingOptions): Promise<ResolvedContext | null> {
         if (options.analysisId) {
             const analysis = await this.analysisRepository.findById(options.analysisId);
-            const teamClusterId = this.toTeamClusterId(analysis?.props.teamCluster);
+            const teamClusterId = analysis
+                ? resolveAnalysisComputeClusterId(analysis.props) ?? null
+                : null;
             if (teamClusterId) {
                 return { teamClusterId, analysisId: options.analysisId };
             }
@@ -161,13 +159,22 @@ export class DaemonPluginListingService implements IPluginListingService, IPlugi
 
         const filter: Record<string, unknown> = {
             plugin: pluginId,
-            teamCluster: { $exists: true, $ne: null }
+            $or: [
+                {
+                    computeClusterId: { $exists: true, $ne: null }
+                },
+                {
+                    teamCluster: { $exists: true, $ne: null }
+                }
+            ]
         };
         if (options.trajectoryId) filter.trajectory = options.trajectoryId;
         if (options.teamId) filter.team = options.teamId;
 
         const analysis = await this.analysisRepository.findOne(filter);
-        const teamClusterId = this.toTeamClusterId(analysis?.props.teamCluster);
+        const teamClusterId = analysis
+            ? resolveAnalysisComputeClusterId(analysis.props) ?? null
+            : null;
         if (teamClusterId && analysis) {
             return { teamClusterId, analysisId: analysis._id };
         }

@@ -21,7 +21,8 @@ export default class TrajectoryReader implements ITrajectoryReader {
         timestep: string | number,
         page: number,
         limit: number,
-        analysisId?: string
+        analysisId?: string,
+        ownerClusterId?: string
     ): Promise<AtomPageResult> {
         if (!teamClusterId) {
             throw ApplicationError.badRequest(
@@ -35,6 +36,7 @@ export default class TrajectoryReader implements ITrajectoryReader {
             trajectoryId,
             timestep,
             objectKey: this.getDumpObjectKey(trajectoryId, timestep),
+            ownerClusterId,
             page,
             limit,
             analysisId

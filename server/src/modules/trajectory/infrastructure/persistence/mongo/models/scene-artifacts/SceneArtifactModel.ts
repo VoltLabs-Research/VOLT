@@ -4,7 +4,7 @@ import { SceneArtifactSourceType, SceneArtifactStatus } from '@modules/trajector
 import type { SceneArtifactProps } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
-type SceneArtifactRelations = 'trajectory' | 'teamCluster' | 'analysis' | 'plugin';
+type SceneArtifactRelations = 'trajectory' | 'teamCluster' | 'storageClusterId' | 'analysis' | 'plugin';
 
 export interface SceneArtifactDocument extends Persistable<SceneArtifactProps, SceneArtifactRelations>, Document {};
 
@@ -20,6 +20,12 @@ const SceneArtifactSchema: Schema<SceneArtifactDocument> = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'TeamCluster',
         required: true,
+        index: true
+    },
+    storageClusterId: {
+        type: Schema.Types.ObjectId,
+        ref: 'TeamCluster',
+        required: false,
         index: true
     },
     analysis: {
@@ -84,6 +90,7 @@ const SceneArtifactSchema: Schema<SceneArtifactDocument> = new Schema({
 SceneArtifactSchema.index({ trajectory: 1, sourceType: 1, createdAt: -1 }, { name: 'trajectory_source_created_idx' });
 SceneArtifactSchema.index({ trajectory: 1, timestep: 1, sourceType: 1 }, { name: 'trajectory_timestep_source_idx' });
 SceneArtifactSchema.index({ analysis: 1, sourceType: 1, createdAt: -1 }, { name: 'analysis_source_created_idx' });
+SceneArtifactSchema.index({ storageClusterId: 1, sourceType: 1, createdAt: -1 }, { name: 'storage_source_created_idx' });
 
 const SceneArtifactModel: Model<SceneArtifactDocument> = mongoose.model<SceneArtifactDocument>('TrajectorySceneArtifact', SceneArtifactSchema);
 

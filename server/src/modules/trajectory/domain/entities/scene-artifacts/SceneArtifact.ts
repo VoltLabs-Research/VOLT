@@ -23,6 +23,7 @@ export interface SceneArtifactParams {
 export interface SceneArtifactProps {
     trajectory: string;
     teamCluster?: string;
+    storageClusterId?: string;
     analysis?: string;
     plugin?: string;
     sourceType: SceneArtifactSourceType;

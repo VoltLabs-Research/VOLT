@@ -1,8 +1,10 @@
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { IAtomPropertiesService } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
 import {
     IParticleFilterService,
@@ -121,6 +123,9 @@ export default class ParticleFilterService implements IParticleFilterService {
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
         private readonly analysisRepository: IAnalysisRepository,
 
+        @inject(TeamClusterSelectionService)
+        private readonly teamClusterSelectionService: TeamClusterSelectionService,
+
         @inject(TRAJECTORY_TOKENS.TrajectoryNativeDaemonService)
         private readonly trajectoryNativeDaemonService: TrajectoryNativeDaemonService
     ) { }
@@ -132,16 +137,26 @@ export default class ParticleFilterService implements IParticleFilterService {
     ): Promise<{ dump: string[]; perAtom: Record<string, string[]>; exposureNames: Record<string, string> }> {
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
+        const storageClusterId = trajectory
+            ? resolveTrajectoryStorageClusterId(trajectory.props)
+            : undefined;
 
-        if (!trajectory?.props.teamCluster) {
+        if (!trajectory || !storageClusterId) {
             throw buildClusterRequiredError();
         }
 
+        const computeClusterId = await this.teamClusterSelectionService.resolveComputeClusterId(
+            trajectory.props.team,
+            undefined,
+            storageClusterId
+        );
+
         const metadata = await this.trajectoryNativeDaemonService.getTrajectoryMetadata({
-            teamClusterId: trajectory.props.teamCluster,
+            teamClusterId: computeClusterId,
             trajectoryId: String(trajectoryId),
             timestep: Number(timestep),
-            objectKey: this.dumpStorage.getObjectName(String(trajectoryId), String(timestep))
+            objectKey: this.dumpStorage.getObjectName(String(trajectoryId), String(timestep)),
+            ownerClusterId: storageClusterId
         });
         const dumpHeaders = metadata.headers || [];
 
@@ -181,6 +196,9 @@ export default class ParticleFilterService implements IParticleFilterService {
     ): Promise<number[]> {
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
+        const storageClusterId = trajectory
+            ? resolveTrajectoryStorageClusterId(trajectory.props)
+            : undefined;
 
         if (exposureId && resolvedAnalysisId) {
             return this.atomProps.getModifierUniqueValues(
@@ -193,15 +211,22 @@ export default class ParticleFilterService implements IParticleFilterService {
             );
         }
 
-        if (!trajectory?.props.teamCluster) {
+        if (!trajectory || !storageClusterId) {
             throw buildClusterRequiredError();
         }
 
+        const computeClusterId = await this.teamClusterSelectionService.resolveComputeClusterId(
+            trajectory.props.team,
+            undefined,
+            storageClusterId
+        );
+
         return this.trajectoryNativeDaemonService.getUniqueValues({
-            teamClusterId: trajectory.props.teamCluster,
+            teamClusterId: computeClusterId,
             trajectoryId: String(trajectoryId),
             timestep: Number(timestep),
             objectKey: this.dumpStorage.getObjectName(String(trajectoryId), String(timestep)),
+            ownerClusterId: storageClusterId,
             property,
             maxValues
         });
@@ -215,13 +240,22 @@ export default class ParticleFilterService implements IParticleFilterService {
     ): Promise<{ matchCount: number; totalAtoms: number }> {
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
+        const storageClusterId = trajectory
+            ? resolveTrajectoryStorageClusterId(trajectory.props)
+            : undefined;
 
-        if (!trajectory?.props.teamCluster) {
+        if (!trajectory || !storageClusterId) {
             throw buildClusterRequiredError();
         }
 
+        const computeClusterId = await this.teamClusterSelectionService.resolveComputeClusterId(
+            trajectory.props.team,
+            undefined,
+            storageClusterId
+        );
+
         const result = await this.getCombinedFilterResult(
-            trajectory.props.teamCluster,
+            computeClusterId,
             String(trajectoryId),
             resolvedAnalysisId || null,
             String(timestep),
@@ -243,16 +277,23 @@ export default class ParticleFilterService implements IParticleFilterService {
     ): Promise<{ fileId: string; atomsResult: number; action: string }> {
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const objectName = this.buildObjectName(trajectoryId, resolvedAnalysisId, timestep, request, action);
-        const teamClusterId = await resolveSceneArtifactTeamCluster({
+        const storageClusterId = await resolveSceneArtifactTeamCluster({
             trajectoryId: String(trajectoryId),
             analysisId: resolvedAnalysisId,
             analysisRepository: this.analysisRepository,
             trajectoryRepository: this.trajectoryRepository
         });
 
-        if (!teamClusterId) {
+        const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
+        if (!trajectory || !storageClusterId) {
             throw buildClusterRequiredError();
         }
+
+        const computeClusterId = await this.teamClusterSelectionService.resolveComputeClusterId(
+            trajectory.props.team,
+            undefined,
+            storageClusterId
+        );
 
         const dumpExists = await this.dumpStorage.existsDump(
             String(trajectoryId),
@@ -267,7 +308,7 @@ export default class ParticleFilterService implements IParticleFilterService {
         }
 
         const filterResult = await this.getCombinedFilterResult(
-            teamClusterId,
+            computeClusterId,
             String(trajectoryId),
             resolvedAnalysisId || null,
             String(timestep),
@@ -275,12 +316,13 @@ export default class ParticleFilterService implements IParticleFilterService {
         );
 
         const response = await this.trajectoryNativeDaemonService.exportParticleFilterModel({
-            teamClusterId,
+            teamClusterId: computeClusterId,
             trajectoryId: String(trajectoryId),
             timestep: Number(timestep),
             action,
             mask: filterResult.mask,
-            objectKey: objectName
+            objectKey: objectName,
+            ownerClusterId: storageClusterId
         });
         const atomsResult = response.atomsResult;
 
@@ -289,7 +331,7 @@ export default class ParticleFilterService implements IParticleFilterService {
 
         await recordSceneArtifact(this.sceneArtifactRepository, {
             trajectory: String(trajectoryId),
-            teamCluster: teamClusterId,
+            teamCluster: storageClusterId,
             analysis: resolvedAnalysisId,
             sourceType: SceneArtifactSourceType.ParticleFilter,
             timestep: Number(timestep),
@@ -319,6 +361,9 @@ export default class ParticleFilterService implements IParticleFilterService {
         analysisId?: string
     ): Promise<Readable> {
         const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
+        const storageClusterId = trajectory
+            ? resolveTrajectoryStorageClusterId(trajectory.props)
+            : undefined;
         const actionPart = action || 'delete';
         const objectName = this.buildObjectName(
             trajectoryId,
@@ -328,9 +373,9 @@ export default class ParticleFilterService implements IParticleFilterService {
             actionPart
         );
 
-        if (trajectory?.props.teamCluster) {
+        if (storageClusterId) {
             return this.trajectoryNativeDaemonService.getObjectStream(
-                trajectory.props.teamCluster,
+                storageClusterId,
                 SYS_BUCKETS.MODELS,
                 objectName
             );
@@ -362,6 +407,7 @@ export default class ParticleFilterService implements IParticleFilterService {
             trajectoryId,
             timestep: Number(timestep),
             objectKey: this.dumpStorage.getObjectName(trajectoryId, timestep),
+            ownerClusterId: teamClusterId,
             kind: ParticleFilterConditionKind.Property,
             property: condition.property,
             operator: condition.operator,
@@ -390,6 +436,7 @@ export default class ParticleFilterService implements IParticleFilterService {
             trajectoryId,
             timestep: Number(timestep),
             objectKey: this.dumpStorage.getObjectName(trajectoryId, timestep),
+            ownerClusterId: teamClusterId,
             kind: ParticleFilterConditionKind.Preset,
             preset: ParticleFilterPreset.SurfaceAtoms,
             presetConfig: condition.presetConfig,

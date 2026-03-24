@@ -1,6 +1,8 @@
 import ClusterQueueConcurrencyModal, {
     CLUSTER_QUEUE_CONCURRENCY_MODAL_ID
 } from '@/modules/cluster/components/organisms/ClusterQueueConcurrencyModal';
+import ClusterRoleModal, { CLUSTER_ROLE_MODAL_ID } from '@/modules/cluster/components/organisms/ClusterRoleModal';
+import ClusterTransferModal, { CLUSTER_TRANSFER_MODAL_ID } from '@/modules/cluster/components/organisms/ClusterTransferModal';
 import ClusterCredentialsModal, { CLUSTER_CREDENTIALS_MODAL_ID } from '@/modules/cluster/components/organisms/ClusterCredentialsModal';
 import ClusterInstallCommandModal, { CLUSTER_INSTALL_COMMAND_MODAL_ID } from '@/modules/cluster/components/organisms/ClusterInstallCommandModal';
 import ClustersEmptyState from '@/modules/cluster/components/organisms/ClustersEmptyState';
@@ -11,6 +13,19 @@ import useClustersListingPage from '@/modules/cluster/hooks/use-clusters-listing
 import { invalidateAvailableVersionsQuery, useRegenerateTeamClusterEnrollmentTokenMutation, TEAM_CLUSTER_QUERY_KEYS } from '@/modules/cluster/hooks/team-cluster/queries';
 import { formatClusterTimestamp } from '@/modules/cluster/utilities/format-cluster-timestamp';
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
+import {
+    describeTeamClusterDraining,
+    getTeamClusterRoleBadgeVariant,
+    getTeamClusterRoleLabel,
+    getTeamClusterRoleSummary,
+    isTeamClusterRoleTransitionPending
+} from '@/modules/cluster/utilities/team-cluster-role';
+import {
+    getClusterTransferDirectionLabel as getTransferDirectionLabel,
+    getClusterTransferJobStateBadgeVariant as getTransferStateBadgeVariant,
+    getClusterTransferJobStateLabel as getTransferStateLabel,
+    getClusterTransferJobSummaryLabel as getTransferSummaryLabel
+} from '@/modules/cluster/utilities/team-cluster-transfer';
 import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluster-waiting';
 import { TEAM_CLUSTER_SOCKET_EVENTS } from '@/modules/cluster/api/service/endpoints/team-cluster-socket-events';
@@ -20,7 +35,7 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Container from '@/shared/presentation/components/Container';
 import { openModal } from '@/shared/presentation/components/Modal';
-import { Database, FolderOpen, KeyRound, Monitor, RefreshCw, Settings2, Terminal, TerminalSquare, Trash2 } from 'lucide-react';
+import { ArrowRightLeft, Database, FolderOpen, KeyRound, Monitor, RefreshCw, Settings2, Terminal, TerminalSquare, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
@@ -28,6 +43,8 @@ import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type { ColumnConfig, MenuOption, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import type { ServerRow } from '@/modules/cluster/utilities/transform-cluster-row';
 import '@/modules/cluster/components/organisms/ServerTable/ServerTable.css';
+
+const ACTIVE_TRANSFER_PREVIEW_LIMIT = 3;
 
 const renderMetricValue = (value: number | null): ReactNode => {
     if (value === null) {
@@ -92,6 +109,16 @@ const ClustersListing = () => {
         openModal(CLUSTER_QUEUE_CONCURRENCY_MODAL_ID);
     }, [state]);
 
+    const handleRoleChange = useCallback((cluster: TeamCluster) => {
+        state.setRoleTarget(cluster);
+        openModal(CLUSTER_ROLE_MODAL_ID);
+    }, [state]);
+
+    const handleTransferData = useCallback((cluster: TeamCluster) => {
+        state.setTransferTarget(cluster);
+        openModal(CLUSTER_TRANSFER_MODAL_ID);
+    }, [state]);
+
     const handleShowInstallCommand = useCallback((cluster: TeamCluster) => {
         if (!vm.selectedTeamId) return;
 
@@ -120,6 +147,10 @@ const ClustersListing = () => {
         ];
     }, [vm.selectedTeamId]);
 
+    const clusterNameById = useMemo(() => {
+        return new Map(state.clusters.map((cluster) => [cluster._id, cluster.name]));
+    }, [state.clusters]);
+
     const columns = useMemo<ColumnConfig<ServerRow>[]>(() => [
         {
             key: 'name',
@@ -147,6 +178,29 @@ const ClustersListing = () => {
             )
         },
         {
+            key: 'desiredRole',
+            title: 'Role',
+            sortable: true,
+            width: 220,
+            render: (_, row) => {
+                const isTransitionPending = isTeamClusterRoleTransitionPending(row.teamCluster);
+                const drainingSummary = describeTeamClusterDraining(row.teamCluster);
+
+                return (
+                    <Container className='d-flex column gap-025'>
+                        <StatusBadge variant={getTeamClusterRoleBadgeVariant(row.desiredRole)} size='compact'>
+                            {getTeamClusterRoleLabel(row.desiredRole)}
+                        </StatusBadge>
+                        <Paragraph className={`font-size-1 ${isTransitionPending ? 'color-warning' : 'color-muted'}`}>
+                            {isTransitionPending
+                                ? `${drainingSummary ? `${drainingSummary}, ` : ''}effective ${getTeamClusterRoleLabel(row.effectiveRole)}`
+                                : getTeamClusterRoleSummary(row.desiredRole)}
+                        </Paragraph>
+                    </Container>
+                );
+            }
+        },
+        {
             key: 'status',
             title: 'Metrics',
             sortable: true,
@@ -163,6 +217,50 @@ const ClustersListing = () => {
             sortable: true,
             width: 140,
             render: (_, row) => <Paragraph className='font-size-2 color-secondary'>{row.installedVersion ?? '--'}</Paragraph>
+        },
+        {
+            key: 'activeTransfers',
+            title: 'Active Transfers',
+            headerTitleClassName: 'font-weight-4',
+            width: 340,
+            render: (_, row) => {
+                if (row.activeTransfers.length === 0) {
+                    return <Paragraph className='font-size-1 color-muted'>--</Paragraph>;
+                }
+
+                const visibleTransfers = row.activeTransfers.slice(0, ACTIVE_TRANSFER_PREVIEW_LIMIT);
+                const remainingTransfers = row.activeTransfers.length - visibleTransfers.length;
+
+                return (
+                    <Container className='d-flex column gap-05'>
+                        {visibleTransfers.map((job) => {
+                            const peerClusterId = job.sourceClusterId === row.id
+                                ? job.destinationClusterId
+                                : job.sourceClusterId;
+                            const peerClusterName = clusterNameById.get(peerClusterId) ?? peerClusterId;
+
+                            return (
+                                <Container key={job._id} className='d-flex column gap-025'>
+                                    <Container className='d-flex items-center gap-05 flex-wrap'>
+                                        <StatusBadge variant={getTransferStateBadgeVariant(job.state)} size='compact'>
+                                            {getTransferStateLabel(job.state)}
+                                        </StatusBadge>
+                                        <Paragraph className='font-size-1 color-secondary'>
+                                            {getTransferSummaryLabel(job)}
+                                        </Paragraph>
+                                    </Container>
+                                    <Paragraph className='font-size-1 color-muted'>
+                                        {getTransferDirectionLabel(job, row.id)} · {peerClusterName}
+                                    </Paragraph>
+                                </Container>
+                            );
+                        })}
+                        {remainingTransfers > 0 && (
+                            <Paragraph className='font-size-1 color-muted'>+{remainingTransfers} more</Paragraph>
+                        )}
+                    </Container>
+                );
+            }
         },
         {
             key: 'lastHeartbeatAt',
@@ -219,7 +317,7 @@ const ClustersListing = () => {
             width: 140,
             render: (_, row) => <Paragraph className='font-size-2 font-weight-5 color-secondary'>{row.uptime}</Paragraph>
         }
-    ], []);
+    ], [clusterNameById]);
 
     const getMenuOptions = useCallback((row: ServerRow): MenuOption[] => [
         {
@@ -242,6 +340,17 @@ const ClustersListing = () => {
             label: 'Edit queue concurrency',
             icon: Settings2,
             onClick: () => handleQueueConcurrency(row.teamCluster)
+        },
+        {
+            label: 'Change runtime role',
+            icon: Settings2,
+            onClick: () => handleRoleChange(row.teamCluster)
+        },
+        {
+            label: 'Transfer storage + Mongo state',
+            icon: ArrowRightLeft,
+            disabled: row.teamCluster.status !== TeamClusterStatus.Connected || !row.teamCluster.effectiveCapabilities.servesStorageReads,
+            onClick: () => handleTransferData(row.teamCluster)
         },
         {
             label: 'Update cluster',
@@ -275,7 +384,7 @@ const ClustersListing = () => {
             destructive: true,
             onClick: () => handleDeleteCluster(row.teamCluster)
         }
-    ], [handleDeleteCluster, handleQueueConcurrency, handleRevealCredentials, handleShowInstallCommand, handleUpdateCluster, navigate]);
+    ], [handleDeleteCluster, handleQueueConcurrency, handleRevealCredentials, handleRoleChange, handleShowInstallCommand, handleTransferData, handleUpdateCluster, navigate]);
 
     return (
         <>
@@ -299,6 +408,18 @@ const ClustersListing = () => {
                 teamCluster={state.queueConcurrencyTarget}
                 onSave={state.updateQueueConcurrency}
                 onClose={() => state.setQueueConcurrencyTarget(null)}
+            />
+            <ClusterRoleModal
+                teamCluster={state.roleTarget}
+                onSave={state.updateRole}
+                onClose={() => state.setRoleTarget(null)}
+            />
+            <ClusterTransferModal
+                teamCluster={state.transferTarget}
+                clusters={state.clusters}
+                teamId={state.selectedTeamId}
+                onSave={state.createTransferRequest}
+                onClose={() => state.setTransferTarget(null)}
             />
             <ClusterInstallCommandModal
                 clusterId={installCommandClusterId}

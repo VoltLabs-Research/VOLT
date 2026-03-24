@@ -24,6 +24,7 @@ export interface TrajectoryProps {
     team: string;
     folder: string | null;
     teamCluster?: string;
+    storageClusterId?: string;
     createdBy: string;
     status: TrajectoryStatus;
     isPublic: boolean;

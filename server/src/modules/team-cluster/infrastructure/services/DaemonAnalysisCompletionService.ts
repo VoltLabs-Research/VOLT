@@ -1,6 +1,7 @@
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
+import { resolveAnalysisComputeClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
@@ -411,10 +412,11 @@ export default class DaemonAnalysisCompletionService {
             );
         }
 
-        if (analysis.props.teamCluster && analysis.props.teamCluster !== input.teamClusterId) {
+        const analysisComputeClusterId = resolveAnalysisComputeClusterId(analysis.props);
+        if (analysisComputeClusterId && analysisComputeClusterId !== input.teamClusterId) {
             throw ApplicationError.forbidden(
                 'TEAM_CLUSTER_DAEMON_ANALYSIS_CLUSTER_MISMATCH',
-                'Analysis does not belong to the authenticated team cluster'
+                'Analysis compute ownership does not belong to the authenticated team cluster'
             );
         }
 
@@ -427,13 +429,6 @@ export default class DaemonAnalysisCompletionService {
             throw ApplicationError.conflict(
                 'TEAM_CLUSTER_DAEMON_ANALYSIS_TRAJECTORY_TEAM_MISMATCH',
                 'Analysis ownership does not match its trajectory'
-            );
-        }
-
-        if (trajectory.props.teamCluster && trajectory.props.teamCluster !== input.teamClusterId) {
-            throw ApplicationError.forbidden(
-                'TEAM_CLUSTER_DAEMON_TRAJECTORY_CLUSTER_MISMATCH',
-                'Trajectory does not belong to the authenticated team cluster'
             );
         }
 
@@ -478,13 +473,6 @@ export default class DaemonAnalysisCompletionService {
             throw ApplicationError.forbidden(
                 'TEAM_CLUSTER_DAEMON_TRAJECTORY_TEAM_MISMATCH',
                 'Trajectory does not belong to the provided team'
-            );
-        }
-
-        if (trajectory.props.teamCluster && trajectory.props.teamCluster !== input.teamClusterId) {
-            throw ApplicationError.forbidden(
-                'TEAM_CLUSTER_DAEMON_TRAJECTORY_CLUSTER_MISMATCH',
-                'Trajectory does not belong to the authenticated team cluster'
             );
         }
 

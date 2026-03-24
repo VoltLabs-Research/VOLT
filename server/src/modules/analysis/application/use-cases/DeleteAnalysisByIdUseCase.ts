@@ -1,5 +1,6 @@
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { resolveAnalysisStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { Result } from '@shared/domain/port/Result';
 import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -54,7 +55,7 @@ export default class DeleteAnalysisByIdUseCase {
             trajectoryId: analysis.props.trajectory ?? '',
             pluginId: analysis.props.plugin ?? '',
             teamId: analysis.props.team ?? '',
-            teamClusterId: analysis.props.teamCluster,
+            teamClusterId: resolveAnalysisStorageClusterId(analysis.props),
             userId: input.userId ?? '',
             pluginDisplayName: analysis.props.pluginDisplayName
         }));

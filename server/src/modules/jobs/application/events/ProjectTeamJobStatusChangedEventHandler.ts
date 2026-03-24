@@ -6,7 +6,32 @@ import { IEventHandler } from '@shared/application/events/IEventHandler';
 import logger from '@shared/infrastructure/logger';
 import { injectable, inject } from 'tsyringe';
 import type { IEventBus } from '@shared/application/events/IEventBus';
+import type { JobStatusChangedMetadata, JobStatusChangedValue } from '@modules/jobs/domain/events/JobStatusChangedEvent';
 import type { TeamJobSnapshot } from '@modules/jobs/infrastructure/projections/TeamJobSnapshot';
+
+const isJobStatusChangedValue = (value: unknown): value is JobStatusChangedValue => {
+    return value === 'queued'
+        || value === 'running'
+        || value === 'completed'
+        || value === 'failed'
+        || value === 'retrying';
+};
+
+const toProjectedMetadata = (snapshot: TeamJobSnapshot): JobStatusChangedMetadata | undefined => {
+    if (!snapshot.metadata) {
+        return undefined;
+    }
+
+    const { status: rawStatus, ...restMetadata } = snapshot.metadata;
+    const status = isJobStatusChangedValue(snapshot.metadata.status)
+        ? snapshot.metadata.status
+        : undefined;
+
+    return {
+        ...restMetadata,
+        ...(status ? { status } : {})
+    };
+};
 
 @injectable()
 export default class ProjectTeamJobStatusChangedEventHandler implements IEventHandler<JobStatusChangedEvent> {
@@ -35,7 +60,7 @@ export default class ProjectTeamJobStatusChangedEventHandler implements IEventHa
                 teamId: snapshot.teamId,
                 queueType: snapshot.queueType,
                 status: snapshot.status,
-                metadata: snapshot.metadata,
+                metadata: toProjectedMetadata(snapshot),
                 timestamp: snapshot.timestamp,
                 createdAt: snapshot.createdAt,
                 updatedAt: snapshot.updatedAt,

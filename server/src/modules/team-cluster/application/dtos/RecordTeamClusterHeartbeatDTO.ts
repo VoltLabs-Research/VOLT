@@ -1,9 +1,17 @@
+import type {
+    TeamClusterEffectiveCapabilitiesProps,
+    TeamClusterRuntimeRoleConfigProps
+} from '@modules/team-cluster/domain/entities/TeamCluster';
 import type { TeamClusterDTO } from '@modules/team-cluster/application/dtos/TeamClusterDTO';
 
 export interface RecordTeamClusterHeartbeatInputDTO {
     teamClusterId: string;
     daemonPassword: string;
     installedVersion?: string;
+    runtime?: {
+        roleConfig: TeamClusterRuntimeRoleConfigProps;
+        effectiveCapabilities: TeamClusterEffectiveCapabilitiesProps;
+    };
     metrics?: {
         timestamp: string;
         hostname: string;
