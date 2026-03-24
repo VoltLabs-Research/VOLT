@@ -1,3 +1,4 @@
+export * from './ClusterRoleAwareSelectionService';
 export * from './ContainerAccessiblePortResolver';
 export * from './ContainerDeploymentProgressService';
 export * from './ContainerOwnershipService';

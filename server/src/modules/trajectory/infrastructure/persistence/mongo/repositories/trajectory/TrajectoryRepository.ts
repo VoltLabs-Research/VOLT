@@ -1,4 +1,5 @@
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
@@ -39,6 +40,10 @@ export default class TrajectoryRepository
                 trajectoryId: id,
                 teamId: result.team?.toString() || '',
                 teamCluster: result.teamCluster?.toString() || '',
+                storageClusterId: resolveTrajectoryStorageClusterId({
+                    teamCluster: result.teamCluster?.toString(),
+                    storageClusterId: result.storageClusterId?.toString()
+                }),
                 userId: 'system',
                 trajectoryName: result.name || 'Unknown Trajectory'
             }));

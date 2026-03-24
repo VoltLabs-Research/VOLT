@@ -1,13 +1,14 @@
 import { ErrorCodes } from '@core/constants/error-codes';
+import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
+import StoragePlacementService from '@modules/team-cluster/application/services/StoragePlacementService';
+import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { CreateTrajectoryInputDTO, CreateTrajectoryOutputDTO } from '@modules/trajectory/application/dtos/trajectory/CreateTrajectoryDTO';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import { ITrajectoryBackgroundProcessor } from '@modules/trajectory/domain/port/trajectory/ITrajectoryBackgroundProcessor';
 import { ITrajectoryFolderRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFolderRepository';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { resolveConnectedTeamCluster } from '@modules/trajectory/utilities/team-cluster/resolve-connected-team-cluster';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
@@ -18,8 +19,6 @@ import logger from '@shared/infrastructure/logger';
 
 import { injectable, inject } from 'tsyringe';
 import path from 'node:path';
-
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 
 interface InitialTrajectoryStats {
     totalFiles: number;
@@ -35,11 +34,14 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
         @inject(TRAJECTORY_TOKENS.TrajectoryFolderRepository)
         private readonly trajectoryFolderRepository: ITrajectoryFolderRepository,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
+        @inject(TeamClusterSelectionService)
+        private readonly teamClusterSelectionService: TeamClusterSelectionService,
 
         @inject(TRAJECTORY_TOKENS.TrajectoryBackgroundProcessor)
         private readonly backgroundProcessor: ITrajectoryBackgroundProcessor,
+
+        @inject(TEAM_CLUSTER_TOKENS.StoragePlacementService)
+        private readonly storagePlacementService: StoragePlacementService,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
@@ -58,10 +60,10 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
             }
         }
 
-        const teamCluster = await resolveConnectedTeamCluster(this.teamClusterRepository, {
+        const storageClusterId = await this.teamClusterSelectionService.resolveStorageClusterId(
             teamId,
-            requestedTeamClusterId: input.teamClusterId
-        });
+            input.teamClusterId
+        );
 
         const ext = path.extname(name);
         const cleanName = ext ? name.slice(0, -ext.length) : name;
@@ -74,7 +76,8 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
             name: cleanName,
             team: teamId,
             folder: input.folderId ?? null,
-            teamCluster: teamCluster.id,
+            teamCluster: storageClusterId,
+            storageClusterId,
             createdBy: userId,
             status: TrajectoryStatus.WaitingForProcess,
             frames: [],
@@ -86,6 +89,8 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
             updatedAt: new Date(),
             createdAt: new Date()
         });
+
+        await this.storagePlacementService.ensurePlacement('trajectory', trajectory.id);
 
         this.backgroundProcessor.process(trajectory._id, files, teamId).catch(async err => {
             logger.error(err, `[CreateTrajectoryUseCase] Background processing failed for ${trajectory._id}`);

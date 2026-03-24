@@ -3,6 +3,7 @@ import {
     GetSubListingOutputDTO,
     SubListingColumn
 } from '@modules/plugin/application/dtos/listing-row/GetSubListingDTO';
+import { resolveAnalysisComputeClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { resolveListingPagination } from '@modules/plugin/application/use-cases/listing-row/listing-row-pagination';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
@@ -51,12 +52,15 @@ export class GetSubListingUseCase implements IUseCase<GetSubListingInputDTO, Get
         const { page, limit } = resolveListingPagination(input);
 
         const analysis = await this.analysisRepository.findById(input.analysisId);
-        if (!analysis?.props.teamCluster) {
+        const teamClusterId = analysis
+            ? resolveAnalysisComputeClusterId(analysis.props)
+            : undefined;
+        if (!teamClusterId) {
             return Result.ok(EMPTY_RESULT(input.subListingName));
         }
 
         const daemonResult = await this.daemonClient.command<DaemonPaginatedResult>(
-            analysis.props.teamCluster,
+            teamClusterId,
             'plugin.sub-listings.list',
             {
                 teamId: input.teamId,

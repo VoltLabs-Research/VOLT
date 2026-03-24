@@ -5,7 +5,7 @@ import { teamRefField, userRefField } from '@shared/infrastructure/persistence/m
 
 import mongoose, { Schema, Model, Document } from 'mongoose';
 
-type TrajectoryRelations = 'createdBy' | 'team' | 'teamCluster';
+type TrajectoryRelations = 'createdBy' | 'team' | 'teamCluster' | 'storageClusterId';
 type TrajectoryFrameRelations = 'simulationCell';
 
 export interface TrajectoryDocument extends Persistable<TrajectoryProps, TrajectoryRelations>, Document { };
@@ -51,6 +51,12 @@ const TrajectorySchema: Schema<TrajectoryDocument> = new Schema({
         required: true,
         index: true
     },
+    storageClusterId: {
+        type: Schema.Types.ObjectId,
+        ref: 'TeamCluster',
+        required: false,
+        index: true
+    },
     createdBy: {
         ...userRefField(true)
     },
@@ -83,6 +89,7 @@ const TrajectorySchema: Schema<TrajectoryDocument> = new Schema({
 
 TrajectorySchema.index({ name: 'text', status: 'text' });
 TrajectorySchema.index({ team: 1, folder: 1, createdAt: -1 });
+TrajectorySchema.index({ team: 1, storageClusterId: 1, createdAt: -1 });
 
 const TrajectoryModel: Model<TrajectoryDocument> = mongoose.model('Trajectory', TrajectorySchema);
 

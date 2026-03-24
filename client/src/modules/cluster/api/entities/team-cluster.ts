@@ -1,3 +1,5 @@
+import type { ClusterTransferJob } from '@/modules/cluster/api/entities/team-cluster-transfer';
+
 export enum TeamClusterStatus {
     WaitingForConnection = 'waiting-for-connection',
     HealthcheckReceived = 'healthcheck-received',
@@ -11,6 +13,8 @@ export enum TeamClusterStatus {
     Updating = 'updating',
     UpdateFailed = 'update-failed'
 };
+
+export type TeamClusterRole = 'cluster' | 'storage-server' | 'compute-node';
 
 export interface TeamClusterService {
     port: number | null;
@@ -46,6 +50,26 @@ export interface TeamClusterQueueConcurrency {
     sshImport: number;
 };
 
+export interface TeamClusterRoleDraining {
+    compute: boolean;
+    storage: boolean;
+};
+
+export interface TeamClusterRuntimeRoleConfig {
+    desiredRole: TeamClusterRole;
+    effectiveRole: TeamClusterRole;
+    runtimeVersion: number;
+    draining: TeamClusterRoleDraining;
+    lastAppliedAt: Date | string | null;
+};
+
+export interface TeamClusterEffectiveCapabilities {
+    acceptsComputeJobs: boolean;
+    acceptsStorageWrites: boolean;
+    servesStorageReads: boolean;
+    servesArtifactDownloads: boolean;
+};
+
 export interface TeamCluster {
     _id: string;
     name: string;
@@ -57,6 +81,9 @@ export interface TeamCluster {
     lastDisconnectAt: Date | string | null;
     services: TeamClusterServices;
     queueConcurrency: TeamClusterQueueConcurrency;
+    roleConfig: TeamClusterRuntimeRoleConfig;
+    effectiveCapabilities: TeamClusterEffectiveCapabilities;
+    activeTransfers?: ClusterTransferJob[];
     createdAt: Date | string;
     updatedAt: Date | string;
 };

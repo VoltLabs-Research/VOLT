@@ -1,7 +1,16 @@
 import type {
+    TeamClusterEffectiveCapabilitiesProps,
     TeamClusterQueueConcurrencyProps,
+    TeamClusterRuntimeRoleConfigProps,
     TeamClusterServicesProps
 } from '@modules/team-cluster/domain/entities/TeamCluster';
+
+export const TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION = 1;
+export const TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH = '/internal/team-cluster/object-store/v1';
+export const TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER = 'x-team-cluster-id';
+export const TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER = 'x-team-cluster-daemon-password';
+export const TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX = 'x-object-meta-';
+export const VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID = '__volt_server__';
 
 export const TEAM_CLUSTER_EVENT = Object.freeze({
     lifecycleUpdated: 'team-cluster.updated'
@@ -53,11 +62,21 @@ export const TEAM_CLUSTER_DAEMON_COMMAND = Object.freeze({
         })
     }),
     plugin: Object.freeze({
-        sync: 'plugin.sync'
+        sync: 'plugin.sync',
+        transfer: Object.freeze({
+            mongo: Object.freeze({
+                export: 'plugin.transfer.mongo.export',
+                import: 'plugin.transfer.mongo.import',
+                purge: 'plugin.transfer.mongo.purge'
+            })
+        })
     }),
     runtime: Object.freeze({
         config: Object.freeze({
             get: 'runtime.config.get'
+        }),
+        role: Object.freeze({
+            apply: 'runtime.role.apply'
         }),
         queueConcurrency: Object.freeze({
             apply: 'runtime.queue-concurrency.apply'
@@ -131,3 +150,92 @@ export interface TeamClusterDaemonQueueConcurrencyApplyPayload {
     [key: string]: unknown;
     queueConcurrency: TeamClusterQueueConcurrencyProps;
 };
+
+export interface TeamClusterRuntimeSnapshot {
+    contractVersion: number;
+    queueConcurrency: TeamClusterQueueConcurrencyProps;
+    roleConfig: TeamClusterRuntimeRoleConfigProps;
+    effectiveCapabilities: TeamClusterEffectiveCapabilitiesProps;
+}
+
+export interface TeamClusterDaemonRoleApplyPayload {
+    [key: string]: unknown;
+    roleConfig: TeamClusterRuntimeRoleConfigProps;
+}
+
+export interface TeamClusterDaemonRoleApplyResult {
+    accepted: boolean;
+    roleConfig: TeamClusterRuntimeRoleConfigProps;
+    effectiveCapabilities: TeamClusterEffectiveCapabilitiesProps;
+}
+
+export type TeamClusterDaemonPluginMongoDocumentType = 'listing' | 'sub-listing';
+
+export interface TeamClusterDaemonPluginMongoExportPayload {
+    analysisIds: string[];
+    documentType: TeamClusterDaemonPluginMongoDocumentType;
+    skip?: number;
+    limit?: number;
+}
+
+export interface TeamClusterDaemonPluginMongoExportResult {
+    rows: Record<string, unknown>[];
+    total: number;
+    hasMore: boolean;
+    nextSkip: number;
+}
+
+export interface TeamClusterDaemonPluginMongoImportPayload {
+    analysisIds: string[];
+    documentType: TeamClusterDaemonPluginMongoDocumentType;
+    rows: Record<string, unknown>[];
+}
+
+export interface TeamClusterDaemonPluginMongoImportResult {
+    importedRows: number;
+}
+
+export interface TeamClusterDaemonPluginMongoPurgePayload {
+    analysisIds: string[];
+    documentType: TeamClusterDaemonPluginMongoDocumentType;
+}
+
+export interface TeamClusterDaemonPluginMongoPurgeResult {
+    deletedRows: number;
+}
+
+export type StoragePlacementScopeType = 'trajectory' | 'analysis' | 'plugin-binary';
+export type StoragePlacementState = 'active' | 'moving' | 'read-only' | 'deleting';
+
+export interface StoragePlacementBucketRef {
+    bucket: string;
+    prefix: string;
+}
+
+export interface StoragePlacement {
+    scopeType: StoragePlacementScopeType;
+    scopeId: string;
+    primaryClusterId: string;
+    replicaClusterIds: string[];
+    buckets: StoragePlacementBucketRef[];
+    state: StoragePlacementState;
+    lastVerifiedAt?: Date | string;
+    bytesUsed?: number;
+}
+
+export interface ResolvedObjectRef {
+    ownerClusterId: string;
+    bucket: string;
+    objectKey: string;
+    expectedHash?: string;
+    sizeBytes?: number;
+}
+
+export interface ResolvedObjectWrite {
+    ownerClusterId: string;
+    bucket: string;
+    objectKey: string;
+    expectedHash?: string;
+    sizeBytes?: number;
+    contentType?: string;
+}

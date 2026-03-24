@@ -1,0 +1,4 @@
+export const SOFT_STORAGE_LIMIT_PCT = 85;
+export const HARD_STORAGE_LIMIT_PCT = 92;
+export const REBALANCE_TARGET_PCT = 70;
+export const SOFT_STORAGE_ASSIGNMENT_PENALTY = 25;

@@ -39,7 +39,8 @@ const queueTypeNames: Record<string, string> = {
     'trajectory_rasterization': 'Rasterization',
     'trajectory_glb_conversion': 'GLB Conversion',
     'cloud_upload': 'Uploading to Cluster',
-    'ssh_import': 'SSH Import'
+    'ssh_import': 'SSH Import',
+    'cluster_transfer': 'Storage Transfer'
 };
 
 const getJobDisplayName = (job: Job): string => {

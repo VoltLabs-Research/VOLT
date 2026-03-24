@@ -41,7 +41,7 @@ export interface ListingRowData {
     [key: string]: unknown;
 };
 
-export interface PluginListingDocumentsMeta {
+export interface PluginListingDocumentsMeta extends Record<string, unknown> {
     pluginId: string;
     exposureName: string;
     exposureId: string;

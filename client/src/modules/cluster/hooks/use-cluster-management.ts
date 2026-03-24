@@ -1,12 +1,14 @@
 import { useClusterStore } from '@/modules/cluster/stores/use-cluster-store';
 import { useTeamClusterSocket } from '@/modules/cluster/hooks/team-cluster/use-team-cluster-socket';
 import {
+    useCreateTeamClusterTransferRequestMutation,
     useCreateTeamClusterMutation,
     useDeleteTeamClusterMutation,
     useRequestClusterUpdateMutation,
     useRevealTeamClusterCredentialsMutation,
     useTeamClustersQuery,
-    useUpdateTeamClusterQueueConcurrencyMutation
+    useUpdateTeamClusterQueueConcurrencyMutation,
+    useUpdateTeamClusterRoleMutation
 } from '@/modules/cluster/hooks/team-cluster/queries';
 import { teamClusterService } from '@/modules/cluster/api/service/team-cluster';
 import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluster-waiting';
@@ -17,16 +19,21 @@ import { useMemo, useEffect } from 'react';
 import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
 import type { RequestClusterUpdateOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/request-cluster-update';
 import type { TeamCluster, TeamClusterCredentialServices } from '@/modules/cluster/api/entities/team-cluster';
+import type { CreateTeamClusterTransferRequestOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/create-team-cluster-transfer-request';
 import type {
     TeamClusterQueueConcurrencyInputDTO,
     UpdateTeamClusterQueueConcurrencyOutputDTO
 } from '@/modules/cluster/api/dtos/team-cluster/update-team-cluster-queue-concurrency';
+import type {
+    UpdateTeamClusterRoleOutputDTO
+} from '@/modules/cluster/api/dtos/team-cluster/update-team-cluster-role';
 import type {
     TeamClusterRemoteAccessSession,
     TeamClusterRemoteAccessTarget,
     TeamClusterRemoteExplorerEntry,
     TeamClusterRemoteExplorerNode
 } from '@/modules/cluster/api/entities/team-cluster-remote-access';
+import type { TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
 
 interface ClusterCreateToastOptions {
     loading: { title: string };
@@ -101,6 +108,21 @@ const UPDATE_QUEUE_CONCURRENCY_TOAST_OPTIONS: ClusterCreateToastOptions = {
     error: { title: 'Failed to save queue concurrency' }
 };
 
+const UPDATE_CLUSTER_ROLE_TOAST_OPTIONS: ClusterCreateToastOptions = {
+    loading: { title: 'Saving cluster role...' },
+    success: { title: 'Cluster role saved' },
+    error: { title: 'Failed to save cluster role' }
+};
+
+const CREATE_CLUSTER_TRANSFER_TOAST_OPTIONS = {
+    loading: { title: 'Queueing transfer jobs...' },
+    success: (result: CreateTeamClusterTransferRequestOutputDTO) => ({
+        title: result.requestedJobs.length === 1 ? 'Transfer job queued' : 'Transfer jobs queued',
+        description: result.message
+    }),
+    error: { title: 'Failed to queue transfer jobs' }
+};
+
 export interface ClusterManagementResult {
     clusters: TeamCluster[];
     selectedTeamId: string | null;
@@ -122,6 +144,14 @@ export interface ClusterManagementResult {
         teamClusterId: string,
         queueConcurrency: TeamClusterQueueConcurrencyInputDTO
     ) => Promise<UpdateTeamClusterQueueConcurrencyOutputDTO>;
+    updateRole: (
+        teamClusterId: string,
+        role: TeamClusterRole
+    ) => Promise<UpdateTeamClusterRoleOutputDTO>;
+    createTransferRequest: (
+        teamClusterId: string,
+        destinationClusterId: string
+    ) => Promise<CreateTeamClusterTransferRequestOutputDTO>;
     createRemoteAccessSession: (
         teamClusterId: string,
         password: string,
@@ -164,6 +194,8 @@ const useClusterManagement = (): ClusterManagementResult => {
     const deleteMutation = useDeleteTeamClusterMutation();
     const updateMutation = useRequestClusterUpdateMutation();
     const updateQueueConcurrencyMutation = useUpdateTeamClusterQueueConcurrencyMutation();
+    const updateRoleMutation = useUpdateTeamClusterRoleMutation();
+    const createTransferRequestMutation = useCreateTeamClusterTransferRequestMutation();
 
     const clusters = teamClustersQuery.data?.data ?? [];
     const resolvedSelectedClusterId = useMemo(() => {
@@ -264,6 +296,36 @@ const useClusterManagement = (): ClusterManagementResult => {
         }), UPDATE_QUEUE_CONCURRENCY_TOAST_OPTIONS);
     };
 
+    const updateRole = async (
+        teamClusterId: string,
+        role: TeamClusterRole
+    ) => {
+        if (!selectedTeamId) {
+            throw new Error('Missing selected team');
+        }
+
+        return showPromise(updateRoleMutation.mutateAsync({
+            teamId: selectedTeamId,
+            teamClusterId,
+            role
+        }), UPDATE_CLUSTER_ROLE_TOAST_OPTIONS);
+    };
+
+    const createTransferRequest = async (
+        teamClusterId: string,
+        destinationClusterId: string
+    ) => {
+        if (!selectedTeamId) {
+            throw new Error('Missing selected team');
+        }
+
+        return showPromise(createTransferRequestMutation.mutateAsync({
+            teamId: selectedTeamId,
+            teamClusterId,
+            destinationClusterId
+        }), CREATE_CLUSTER_TRANSFER_TOAST_OPTIONS);
+    };
+
     const createRemoteAccessSession = async (
         teamClusterId: string,
         password: string,
@@ -360,6 +422,8 @@ const useClusterManagement = (): ClusterManagementResult => {
         deleteCluster,
         requestUpdate,
         updateQueueConcurrency,
+        updateRole,
+        createTransferRequest,
         createRemoteAccessSession,
         listRemoteExplorerEntries,
         getRemoteExplorerNode,

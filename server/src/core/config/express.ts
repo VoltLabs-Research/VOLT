@@ -24,6 +24,14 @@ const normalizeOrigin = (value: string): string | null => {
     }
 };
 
+const readSingleHeader = (value: string | string[] | undefined): string | undefined => {
+    if (Array.isArray(value)) {
+        return value[0];
+    }
+
+    return value;
+};
+
 const corsBaseOptions = {
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -67,7 +75,11 @@ for (const origin of [process.env.CLIENT_HOST, process.env.CLIENT_DEV_HOST]) {
 
 const corsMiddleware = cors((req, callback) => {
     const allowedOrigins = new Set(baseAllowedOrigins);
-    const requestOrigin = normalizeOrigin(`${req.protocol}://${req.get('host') || ''}`);
+    const requestHost = readSingleHeader(req.headers?.host);
+    const forwardedProtocol = readSingleHeader(req.headers?.['x-forwarded-proto']);
+    const requestOrigin = requestHost
+        ? normalizeOrigin(`${forwardedProtocol || 'http'}://${requestHost}`)
+        : null;
 
     if (requestOrigin) {
         allowedOrigins.add(requestOrigin);

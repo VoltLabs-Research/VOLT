@@ -12,16 +12,13 @@ import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import { normalizeSelectedTimesteps } from '@/modules/canvas/utilities/selected-timestep-analysis';
+import { resolvePluginExecutionClusterId, supportsPluginExecutionCluster } from '@/modules/plugin/utilities/plugin-team-clusters';
 import { useCallback, useMemo } from 'react';
 import type { IPluginNodeData } from '@/modules/plugin/api/entities/plugin/workflow';
+import type { PluginTeamClusterOption } from '@/modules/plugin/api/entities/plugin/team-cluster';
 import type { EditorProps } from '../types';
 import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF';
 import type { SelectOption } from '@/shared/presentation/components/Select';
-
-interface PluginTeamClusterOption {
-    _id: string;
-    name: string;
-};
 
 const PluginNodeEditor = ({ node }: EditorProps) => {
     const selectedTeamId = useSelectedTeamId();
@@ -43,13 +40,16 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
     const availableTimesteps = useMemo(() => {
         return frames.map((frame) => frame.timestep);
     }, [frames]);
+    const executionTeamClusters = useMemo<PluginTeamClusterOption[]>(() => {
+        return (teamClustersResponse?.data ?? []).filter(supportsPluginExecutionCluster);
+    }, [teamClustersResponse?.data]);
 
     const teamClusterOptions = useMemo<SelectOption[]>(() => {
-        return (teamClustersResponse?.data ?? []).map((teamCluster: PluginTeamClusterOption) => ({
+        return executionTeamClusters.map((teamCluster) => ({
             value: teamCluster._id,
             title: teamCluster.name
         }));
-    }, [teamClustersResponse?.data]);
+    }, [executionTeamClusters]);
 
     const pluginOptions = useMemo<SelectOption[]>(() => {
         return publishedPlugins
@@ -78,16 +78,11 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
     }, [getPluginArguments, selectedPluginId]);
 
     const selectedTeamClusterId = useMemo(() => {
-        if (pluginNodeData.selectedTeamClusterId) {
-            return pluginNodeData.selectedTeamClusterId;
-        }
-
-        if (selectedPlugin?.teamCluster) {
-            return selectedPlugin.teamCluster;
-        }
-
-        return teamClusterOptions[0]?.value || '';
-    }, [pluginNodeData.selectedTeamClusterId, selectedPlugin?.teamCluster, teamClusterOptions]);
+        return resolvePluginExecutionClusterId(
+            pluginNodeData.selectedTeamClusterId ?? selectedPlugin?.teamCluster,
+            executionTeamClusters
+        );
+    }, [executionTeamClusters, pluginNodeData.selectedTeamClusterId, selectedPlugin?.teamCluster]);
     const normalizedSelectedTimesteps = useMemo(() => {
         return normalizeSelectedTimesteps(pluginNodeData.selectedTimesteps, availableTimesteps);
     }, [availableTimesteps, pluginNodeData.selectedTimesteps]);

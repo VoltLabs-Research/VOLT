@@ -81,6 +81,8 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
                 plugin: pluginId,
                 trajectory: props.trajectory,
                 teamCluster: props.teamCluster,
+                computeClusterId: props.computeClusterId,
+                storageClusterId: props.storageClusterId,
                 createdBy: props.createdBy,
                 trajectoryName
             };

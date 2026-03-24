@@ -46,6 +46,7 @@ export interface ColumnConfig<TRow = unknown> {
     path?: string;
     label?: string;
     width?: number;
+    headerTitleClassName?: string;
     render?: (value: unknown, row: TRow) => React.ReactNode;
     skeleton?: { variant: 'text' | 'rounded'; width: number; height?: number };
     sortable?: boolean;
@@ -350,10 +351,14 @@ const DocumentListingTable = <T extends Identifiable>({
                                     onClick={() => onCellClick(col)}
                                     aria-label={`Sort by ${getColumnTitle(col)}`}
                                 >
-                                    <Title className='font-size-2-5 font-weight-5 color-secondary'>{getCellTitle(col)}</Title>
+                                    <Title className={`font-size-2-5 color-secondary ${col.headerTitleClassName ?? 'font-weight-5'}`}>
+                                        {getCellTitle(col)}
+                                    </Title>
                                 </button>
                             ) : (
-                                <Title className='font-size-2-5 font-weight-5 color-secondary'>{getCellTitle(col)}</Title>
+                                <Title className={`font-size-2-5 color-secondary ${col.headerTitleClassName ?? 'font-weight-5'}`}>
+                                    {getCellTitle(col)}
+                                </Title>
                             )}
                         </Container>
                     ))}

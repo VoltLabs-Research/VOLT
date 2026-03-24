@@ -16,7 +16,7 @@ interface CompletedFramesAggregationItem {
 
 interface CompletedFramesGroupStage {
     $group: {
-        _id: string;
+        _id: unknown;
         count: {
             $sum: string;
         };
@@ -32,7 +32,9 @@ export default class AnalysisRepository
         const pipeline: CompletedFramesGroupStage[] = [
             {
                 $group: {
-                    _id: '$teamCluster',
+                    _id: {
+                        $ifNull: ['$computeClusterId', '$teamCluster']
+                    },
                     count: {
                         $sum: '$completedFrames'
                     }

@@ -3,7 +3,11 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { toTeamClusterDTO, TeamClusterDTO } from '@modules/team-cluster/application/dtos/TeamClusterDTO';
-import TeamCluster, { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
+import TeamCluster, {
+    TeamClusterEffectiveCapabilitiesProps,
+    TeamClusterRuntimeRoleConfigProps,
+    TeamClusterStatus
+} from '@modules/team-cluster/domain/entities/TeamCluster';
 import FirstTeamClusterConnectedEvent from '@modules/team-cluster/domain/events/FirstTeamClusterConnectedEvent';
 import { getTeamClusterRoom, TEAM_CLUSTER_LIFECYCLE_EVENT } from '@modules/team-cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -139,6 +143,8 @@ interface TeamClusterLifecycleUpdate {
     lastHeartbeatAt?: Date | null;
     lastDisconnectAt?: Date | null;
     clearEnrollmentToken?: boolean;
+    roleConfig?: TeamClusterRuntimeRoleConfigProps;
+    effectiveCapabilities?: TeamClusterEffectiveCapabilitiesProps;
 };
 
 interface PersistLifecycleUpdateOptions {
@@ -223,6 +229,10 @@ export default class TeamClusterLifecycleService {
         teamClusterId: string,
         daemonPassword: string,
         installedVersion?: string,
+        runtime?: {
+            roleConfig: TeamClusterRuntimeRoleConfigProps;
+            effectiveCapabilities: TeamClusterEffectiveCapabilitiesProps;
+        },
         metrics?: DaemonMetricsSnapshot
     ): Promise<TeamClusterDTO> {
         const teamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
@@ -234,7 +244,9 @@ export default class TeamClusterLifecycleService {
         const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
             status: nextStatus,
             installedVersion,
-            lastHeartbeatAt: new Date()
+            lastHeartbeatAt: new Date(),
+            roleConfig: runtime?.roleConfig,
+            effectiveCapabilities: runtime?.effectiveCapabilities
         }, {
             preconditions: {
                 allowedCurrentStatuses: [teamCluster.props.status]
@@ -573,7 +585,9 @@ export default class TeamClusterLifecycleService {
                 : update.lastHeartbeatAt,
             lastDisconnectAt: update.lastDisconnectAt === undefined
                 ? teamCluster.props.lastDisconnectAt
-                : update.lastDisconnectAt
+                : update.lastDisconnectAt,
+            roleConfig: update.roleConfig ?? teamCluster.props.roleConfig,
+            effectiveCapabilities: update.effectiveCapabilities ?? teamCluster.props.effectiveCapabilities
         }, options.preconditions);
 
         if (!updatedTeamCluster) {

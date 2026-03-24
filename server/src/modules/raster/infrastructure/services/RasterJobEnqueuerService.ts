@@ -1,4 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
+import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
+import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
@@ -17,6 +19,7 @@ interface RasterizeTrajectoryCommandPayload extends Record<string, unknown> {
     trajectoryId: string;
     teamId: string;
     trajectoryName?: string;
+    storageClusterId?: string;
     config?: RasterTriggerConfig;
 };
 
@@ -25,6 +28,9 @@ export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
     constructor(
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly trajectoryRepository: ITrajectoryRepository,
+
+        @inject(TeamClusterSelectionService)
+        private readonly teamClusterSelectionService: TeamClusterSelectionService,
 
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
@@ -41,17 +47,25 @@ export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
             throw ApplicationError.notFound('Trajectory::NotFound', 'Trajectory not found');
         }
 
-        if (!trajectory.props.teamCluster) {
+        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        if (!storageClusterId) {
             throw new ApplicationError(
                 ErrorCodes.RASTER_FAILED,
-                'Rasterization requires a team cluster associated with the trajectory',
+                'Rasterization requires a storage cluster associated with the trajectory',
                 409
             );
         }
 
+        const computeClusterId = await this.teamClusterSelectionService.resolveComputeClusterId(
+            teamId,
+            undefined,
+            storageClusterId
+        );
+
         const payload: RasterizeTrajectoryCommandPayload = {
             trajectoryId,
-            teamId
+            teamId,
+            storageClusterId
         };
 
         if (trajectory.props.name) {
@@ -64,7 +78,7 @@ export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
 
         try {
             const response = await this.teamClusterDaemonClient.command<RasterJobEnqueueResult>(
-                trajectory.props.teamCluster,
+                computeClusterId,
                 TEAM_CLUSTER_DAEMON_COMMAND.trajectory.rasterize,
                 payload
             );

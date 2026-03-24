@@ -33,6 +33,7 @@ import { DockerNetworkRepository } from '@modules/container/infrastructure/persi
 import { DockerVolumeRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/DockerVolumeRepository';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import {
+    ClusterRoleAwareSelectionService,
     ContainerAccessiblePortResolver,
     ContainerDeploymentProgressService,
     ContainerOwnershipService,
@@ -81,6 +82,7 @@ export const registerContainerDependencies = (): void => {
             [CONTAINER_TOKENS.TerminalService, TerminalService],
             [CONTAINER_TOKENS.ContainerAccessiblePortResolver, ContainerAccessiblePortResolver],
             ContainerOwnershipService,
+            ClusterRoleAwareSelectionService,
             TeamClusterSelectionService,
             CreateContainerUseCase,
             CreateContainerFolderUseCase,

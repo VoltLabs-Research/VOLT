@@ -1,4 +1,8 @@
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import {
+    resolveAnalysisStorageClusterId,
+    resolveTrajectoryStorageClusterId
+} from '@modules/team-cluster/application/utilities/cluster-location';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
@@ -38,6 +42,7 @@ interface PreparedSceneArtifactUpsertEntry {
     data: {
         trajectory: string;
         teamCluster: string;
+        storageClusterId: string;
         analysis?: string;
         plugin?: string;
         sourceType: SceneArtifactSourceType;
@@ -164,16 +169,17 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
                 throw ApplicationError.notFound('TEAM_CLUSTER_DAEMON_TRAJECTORY_NOT_FOUND', 'Trajectory not found');
             }
 
-            if (trajectory.props.teamCluster && trajectory.props.teamCluster !== input.teamClusterId) {
+            const trajectoryStorageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+            if (trajectoryStorageClusterId && trajectoryStorageClusterId !== input.teamClusterId) {
                 throw ApplicationError.forbidden(
                     'TEAM_CLUSTER_DAEMON_TRAJECTORY_CLUSTER_MISMATCH',
-                    'Trajectory does not belong to the authenticated team cluster'
+                    'Trajectory storage does not belong to the authenticated team cluster'
                 );
             }
 
             let sanitizedAnalysisId = input.analysis;
             let sanitizedPluginId = input.plugin;
-            const sanitizedTeamClusterId = trajectory.props.teamCluster ?? input.teamClusterId;
+            let sanitizedStorageClusterId = trajectoryStorageClusterId ?? input.teamClusterId;
 
             if (input.analysis) {
                 const analysis = analysisById.get(input.analysis);
@@ -195,10 +201,11 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
                     );
                 }
 
-                if (analysis.props.teamCluster && analysis.props.teamCluster !== input.teamClusterId) {
+                const analysisStorageClusterId = resolveAnalysisStorageClusterId(analysis.props, trajectory.props);
+                if (analysisStorageClusterId && analysisStorageClusterId !== input.teamClusterId) {
                     throw ApplicationError.forbidden(
                         'TEAM_CLUSTER_DAEMON_ANALYSIS_CLUSTER_MISMATCH',
-                        'Analysis does not belong to the authenticated team cluster'
+                        'Analysis storage does not belong to the authenticated team cluster'
                     );
                 }
 
@@ -211,9 +218,10 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
 
                 sanitizedAnalysisId = analysis.id;
                 sanitizedPluginId = analysis.props.plugin;
+                sanitizedStorageClusterId = analysisStorageClusterId ?? sanitizedStorageClusterId;
             }
 
-            if (input.teamCluster && input.teamCluster !== sanitizedTeamClusterId) {
+            if (input.teamCluster && input.teamCluster !== sanitizedStorageClusterId) {
                 throw ApplicationError.badRequest(
                     'TEAM_CLUSTER_DAEMON_SCENE_ARTIFACT_CLUSTER_MISMATCH',
                     'Payload team cluster does not match persisted ownership'
@@ -224,7 +232,8 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
                 objectName: input.objectName,
                 data: {
                     trajectory: trajectory.id,
-                    teamCluster: sanitizedTeamClusterId,
+                    teamCluster: sanitizedStorageClusterId,
+                    storageClusterId: sanitizedStorageClusterId,
                     analysis: sanitizedAnalysisId,
                     plugin: sanitizedPluginId,
                     sourceType: input.sourceType,

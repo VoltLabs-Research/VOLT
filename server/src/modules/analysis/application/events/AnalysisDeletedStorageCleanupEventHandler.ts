@@ -1,4 +1,5 @@
 import { getAnalysisStorageCleanupTargets, type AnalysisStorageCleanupTarget } from '@modules/analysis/utilities/storage-cleanup-prefixes';
+import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
@@ -6,6 +7,8 @@ import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
+import type ClusterTransferJobRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/ClusterTransferJobRepository';
+import type StoragePlacementRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/StoragePlacementRepository';
 
 @injectable()
 export default class AnalysisDeletedStorageCleanupEventHandler implements IEventHandler<AnalysisDeletedEvent> {
@@ -14,7 +17,13 @@ export default class AnalysisDeletedStorageCleanupEventHandler implements IEvent
         private readonly storageService: IStorageService,
 
         @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
-        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
+
+        @inject(TEAM_CLUSTER_TOKENS.StoragePlacementRepository)
+        private readonly storagePlacementRepository: StoragePlacementRepository,
+
+        @inject(TEAM_CLUSTER_TOKENS.ClusterTransferJobRepository)
+        private readonly clusterTransferJobRepository: ClusterTransferJobRepository
     ) {}
 
     async handle(event: AnalysisDeletedEvent): Promise<void> {
@@ -25,7 +34,15 @@ export default class AnalysisDeletedStorageCleanupEventHandler implements IEvent
             this.cleanupLocalStorage(targets),
             teamClusterId
                 ? this.cleanupRemoteStorage(teamClusterId, targets)
-                : Promise.resolve()
+                : Promise.resolve(),
+            this.storagePlacementRepository.deleteMany({
+                scopeType: 'analysis',
+                scopeId: analysisId
+            }),
+            this.clusterTransferJobRepository.deleteMany({
+                scopeType: 'analysis',
+                scopeId: analysisId
+            })
         ]);
     }
 

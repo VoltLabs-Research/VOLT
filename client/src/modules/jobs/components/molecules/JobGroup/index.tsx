@@ -7,7 +7,7 @@ import JobGroupHeader from './JobGroupHeader';
 import JobGroupMenu from './JobGroupMenu';
 import '@/modules/jobs/components/molecules/JobGroup/JobGroup.css';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useId, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import type { FrameJobGroup, TrajectoryJobGroup as TrajectoryJobGroupType } from '@/modules/jobs/api/entities/job';
 
 interface JobGroupProps {
@@ -16,7 +16,10 @@ interface JobGroupProps {
 };
 
 const JobGroup = ({ group, defaultExpanded = false }: JobGroupProps) => {
-    const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+    const containsTransferJobs = useMemo(() => {
+        return group.frameGroups.some((frame) => frame.jobs.some((job) => job.queueType === 'cluster_transfer'));
+    }, [group.frameGroups]);
+    const [isExpanded, setIsExpanded] = useState(defaultExpanded || containsTransferJobs);
     const prefersReducedMotion = usePrefersReducedMotion();
     const contentId = useId();
     const statusClassName = frameGroupStatusClassNames[group.overallStatus];
@@ -30,6 +33,12 @@ const JobGroup = ({ group, defaultExpanded = false }: JobGroupProps) => {
     const handleToggle = () => {
         setIsExpanded((value) => !value);
     };
+
+    useEffect(() => {
+        if (containsTransferJobs) {
+            setIsExpanded(true);
+        }
+    }, [containsTransferJobs]);
 
     const content = group.frameGroups.map((frame: FrameJobGroup) => (
         <FrameGroup key={frame.timestep} frame={frame} />

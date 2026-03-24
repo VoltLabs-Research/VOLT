@@ -19,6 +19,14 @@ export default createHttpModule({
             teamClusterValidation.updateQueueConcurrency,
             controllers.updateQueueConcurrency.handle
         );
+        router.patch(
+            '/:teamClusterId/role',
+            teamClusterValidation.updateRole,
+            controllers.updateRole.handle
+        );
+        router.route('/:teamClusterId/transfers')
+            .get(teamClusterValidation.listTransferJobs, controllers.listTransferJobs.handle)
+            .post(teamClusterValidation.createTransferRequest, controllers.createTransferRequest.handle);
         router.get(
             '/:teamClusterId/resource-limits',
             teamClusterValidation.getResourceLimits,

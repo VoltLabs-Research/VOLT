@@ -1,5 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SYS_BUCKETS } from '@core/config/minio';
+import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { Result } from '@shared/domain/port/Result';
@@ -54,17 +55,19 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
             ));
         }
 
+        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+
         if (archive) {
-            return Result.ok(this.createArchiveDownloadResponse(input, trajectory.props.name, trajectory.props.teamCluster, timesteps));
+            return Result.ok(this.createArchiveDownloadResponse(input, trajectory.props.name, storageClusterId, timesteps));
         }
 
         const firstTimestep = timesteps[0];
         const filenameBase = sanitizeDownloadName(input.name || trajectory.props.name || trajectoryId, 'trajectory');
 
-        if (trajectory.props.teamCluster) {
+        if (storageClusterId) {
             const objectName = this.dumpStorage.getObjectName(trajectoryId, firstTimestep);
             const response = await this.objectGatewayClient.getStream(
-                trajectory.props.teamCluster,
+                storageClusterId,
                 SYS_BUCKETS.DUMPS,
                 objectName
             );

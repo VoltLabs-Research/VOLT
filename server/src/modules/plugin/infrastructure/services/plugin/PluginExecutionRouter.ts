@@ -1,6 +1,9 @@
 import { SYS_BUCKETS } from '@core/config/minio';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
+import {
+    TEAM_CLUSTER_DAEMON_COMMAND,
+    VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID
+} from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
@@ -15,27 +18,6 @@ import type {
 import type DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-
-interface TeamClusterObjectStoreClient {
-    putBuffer(teamClusterId: string, request: {
-        bucket: string;
-        objectKey: string;
-        buffer: Buffer;
-        contentLength: number;
-        contentType?: string;
-        contentEncoding?: string;
-        metadata?: Record<string, string>;
-    }): Promise<void>;
-    putStream(teamClusterId: string, request: {
-        bucket: string;
-        objectKey: string;
-        stream: NodeJS.ReadableStream;
-        contentLength: number;
-        contentType?: string;
-        contentEncoding?: string;
-        metadata?: Record<string, string>;
-    }): Promise<void>;
-}
 
 interface DaemonPluginSyncResponse {
     synced: boolean;
@@ -80,6 +62,8 @@ interface DaemonAnalysisPayload {
     plugin: string;
     pluginDisplayName: string;
     teamCluster?: string;
+    computeClusterId?: string;
+    storageClusterId?: string;
     config: Record<string, unknown>;
     trajectory: string;
     createdBy: string;
@@ -100,6 +84,8 @@ const serializeAnalysis = (analysis: Analysis, trajectoryName: string): DaemonAn
         plugin: analysis.props.plugin,
         pluginDisplayName: analysis.props.pluginDisplayName,
         teamCluster: analysis.props.teamCluster,
+        computeClusterId: analysis.props.computeClusterId,
+        storageClusterId: analysis.props.storageClusterId,
         config: analysis.props.config,
         trajectory: analysis.props.trajectory,
         createdBy: analysis.props.createdBy,
@@ -159,7 +145,6 @@ interface DispatchCleanupSummary {
     payloadBytes: number;
 };
 
-const DIRECT_PLUGIN_UPLOAD_THRESHOLD = 768 * 1024;
 const COMPRESSIBLE_ANALYSIS_SECTION_THRESHOLD_BYTES = 1024;
 
 interface EncodedDispatchSection<T> {
@@ -247,9 +232,6 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
 
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
-        private readonly objectGatewayClient: TeamClusterObjectStoreClient,
 
         @inject(TEAM_CLUSTER_TOKENS.DaemonAnalysisCompletionService)
         private readonly daemonAnalysisCompletionService: DaemonAnalysisCompletionService
@@ -363,49 +345,36 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             return;
         }
 
+        const expectedHash = await this.readObjectSha256(objectKey);
+
         const syncResponse = await this.teamClusterDaemonClient.command<DaemonPluginSyncResponse>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.plugin.sync, {
             pluginId: plugin.id,
-            objectKey
+            objectKey,
+            ownerClusterId: VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID,
+            expectedHash
         });
 
         if (syncResponse.synced) {
             return;
         }
 
-        const objectStat = await this.storageService.getStat(SYS_BUCKETS.PLUGINS, objectKey);
-        const objectSize = typeof objectStat.size === 'number' && Number.isFinite(objectStat.size)
-            ? objectStat.size
-            : undefined;
-
-        if (typeof objectSize === 'undefined' || objectSize < 0) {
-            throw new Error(`Plugin object size is unavailable for chunked sync: ${objectKey}`);
-        }
-
-        if (objectSize > DIRECT_PLUGIN_UPLOAD_THRESHOLD) {
-            const objectStream = await this.storageService.getStream(SYS_BUCKETS.PLUGINS, objectKey);
-            await this.objectGatewayClient.putStream(teamClusterId, {
-                bucket: SYS_BUCKETS.PLUGINS,
-                objectKey,
-                stream: objectStream,
-                contentLength: objectSize
-            });
-        } else {
-            const buffer = await this.storageService.getBuffer(SYS_BUCKETS.PLUGINS, objectKey);
-            await this.objectGatewayClient.putBuffer(teamClusterId, {
-                bucket: SYS_BUCKETS.PLUGINS,
-                objectKey,
-                buffer,
-                contentLength: buffer.length
-            });
-        }
-
         const finalSyncResponse = await this.teamClusterDaemonClient.command<DaemonPluginSyncResponse>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.plugin.sync, {
             pluginId: plugin.id,
-            objectKey
+            objectKey,
+            ownerClusterId: VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID,
+            expectedHash
         });
 
         if (!finalSyncResponse.synced) {
             throw new Error(`Daemon failed to confirm synced plugin binary: ${objectKey}`);
         }
+    }
+
+    private async readObjectSha256(objectKey: string): Promise<string | undefined> {
+        const objectStat = await this.storageService.getStat(SYS_BUCKETS.PLUGINS, objectKey);
+        const directHash = objectStat['x-amz-meta-sha256'];
+        return typeof directHash === 'string' && directHash.length > 0
+            ? directHash
+            : undefined;
     }
 };

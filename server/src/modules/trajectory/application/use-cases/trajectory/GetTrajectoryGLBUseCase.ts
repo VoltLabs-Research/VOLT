@@ -1,5 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { GetTrajectoryGLBInputDTO, GetTrajectoryGLBOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryGLBDTO';
+import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { SYS_BUCKETS } from '@core/config/minio';
@@ -36,9 +37,11 @@ export default class GetTrajectoryGLBUseCase implements IUseCase<GetTrajectoryGL
                 return Result.fail(new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'Trajectory not found', 404));
             }
 
-            if (trajectory.props.teamCluster) {
+            const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+
+            if (storageClusterId) {
                 const response = await this.objectGatewayClient.getStream(
-                    trajectory.props.teamCluster,
+                    storageClusterId,
                     SYS_BUCKETS.MODELS,
                     objectName
                 );

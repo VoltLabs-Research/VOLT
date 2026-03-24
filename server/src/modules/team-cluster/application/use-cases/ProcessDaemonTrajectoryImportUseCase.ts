@@ -1,4 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
+import StoragePlacementService from '@modules/team-cluster/application/services/StoragePlacementService';
+import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
+import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
@@ -53,6 +56,9 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
 
         @inject(SIMULATION_CELL_TOKENS.SimulationCellRepository)
         private readonly simulationCellRepository: ISimulationCellRepository,
+
+        @inject(TEAM_CLUSTER_TOKENS.StoragePlacementService)
+        private readonly storagePlacementService: StoragePlacementService,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
@@ -149,6 +155,8 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
                 }
             });
 
+            await this.storagePlacementService.ensurePlacement('trajectory', trajectory.id);
+
             await this.eventBus.publish(new TrajectoryUpdatedEvent({
                 trajectoryId: trajectory.id,
                 teamId: trajectory.props.team,
@@ -184,10 +192,11 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
             );
         }
 
-        if (trajectory.props.teamCluster && trajectory.props.teamCluster !== input.teamClusterId) {
+        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        if (storageClusterId && storageClusterId !== input.teamClusterId) {
             throw ApplicationError.forbidden(
                 'TEAM_CLUSTER_DAEMON_TRAJECTORY_IMPORT_CLUSTER_MISMATCH',
-                'Trajectory does not belong to the authenticated team cluster'
+                'Trajectory storage does not belong to the authenticated team cluster'
             );
         }
     }
