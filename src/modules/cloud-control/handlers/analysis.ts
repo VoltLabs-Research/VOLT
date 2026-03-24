@@ -9,6 +9,7 @@ import type { AnalysisDispatchService } from '@/modules/job-runtime/services';
 import { extractDaemonTraceContext } from '@/shared/observability/daemonInstrumentation';
 import type { ReverseChannelCommandHandler } from '../services';
 import type { DaemonTraceContext } from '@/shared/observability/daemonInstrumentation';
+import type { RuntimeCapabilityGuard } from '../services';
 import zlib from 'node:zlib';
 import {
     readOptionalBoolean,
@@ -24,6 +25,7 @@ import { readDocumentId, toRecord } from '@/shared/utils';
 
 interface AnalysisHandlersDependencies {
     analysisDispatchService: AnalysisDispatchService;
+    runtimeCapabilityGuard: RuntimeCapabilityGuard;
 };
 
 interface AnalysisStartRequestWithTrace extends AnalysisStartRequest {
@@ -215,6 +217,9 @@ export const createAnalysisHandlers = (deps: AnalysisHandlersDependencies): Reve
     {
         command: TEAM_CLUSTER_DAEMON_COMMAND.analysis.start,
         execute: async (payload) => {
+            deps.runtimeCapabilityGuard.ensureAcceptsComputeJobs(
+                TEAM_CLUSTER_DAEMON_COMMAND.analysis.start
+            );
             const request = readAnalysisStartRequest(payload);
             return { data: await deps.analysisDispatchService.startAnalysis(request) };
         }

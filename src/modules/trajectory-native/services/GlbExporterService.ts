@@ -8,10 +8,11 @@ import { createTrajectoryRasterQueueService } from './TrajectoryRasterQueueServi
 import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import type { RasterizeTrajectoryRequest } from '@/shared/contracts';
-import type { MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
+import type { QueueService, RedisConnectionService } from '@/modules/platform/services';
 import type { NativeModuleLoader, NativeTrajectoryRequest } from './NativeModuleLoader';
 import type { TrajectoryRasterQueueService } from './TrajectoryRasterQueueService';
 import type { TrajectoryParserService } from './TrajectoryParserService';
+import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
 const readOptionalStringProperty = (input: object, key: string): string | undefined => {
     const value = Reflect.get(input, key);
@@ -77,7 +78,7 @@ export interface GlbExporterService {
 };
 
 export const createGlbExporterService = (
-    minioService: MinioService,
+    objectStore: ClusterObjectStore,
     nativeModuleLoader: NativeModuleLoader,
     trajectoryParserService: TrajectoryParserService,
     queueService: QueueService,
@@ -85,7 +86,7 @@ export const createGlbExporterService = (
 ): GlbExporterService => {
     const trajectoryAutoPreviewClaimStore = new TrajectoryAutoPreviewClaimStore(redisConnectionService);
     const trajectoryRasterQueueService = createTrajectoryRasterQueueService(
-        minioService,
+        objectStore,
         queueService,
         redisConnectionService,
         trajectoryAutoPreviewClaimStore
@@ -161,7 +162,13 @@ export const createGlbExporterService = (
                         'Native GLB export completed'
                     );
 
-                    await minioService.putObjectStream({
+                    const ownerClusterId = input.ownerClusterId;
+                    if (!ownerClusterId) {
+                        throw new Error(`Missing GLB output owner cluster for trajectory ${input.trajectoryId}`);
+                    }
+
+                    await objectStore.putObjectStream({
+                        ownerClusterId,
                         bucket: ObjectBucketName.Models,
                         objectKey: modelObjectKey,
                         stream: createReadStream(tempGlbPath),

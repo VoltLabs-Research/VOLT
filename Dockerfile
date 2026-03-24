@@ -1,3 +1,5 @@
+FROM tailscale/tailscale:stable AS tailscale-bin
+
 FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /app
@@ -37,6 +39,7 @@ COPY tsconfig.json ./
 COPY src ./src
 COPY scripts ./scripts
 COPY image-contexts ./image-contexts
+COPY --from=tailscale-bin /usr/local/bin/tailscale /usr/local/bin/tailscale
 
 RUN npm run build && npm prune --omit=dev
 

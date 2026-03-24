@@ -121,6 +121,7 @@ export class TrajectoryGlbWorkerService {
                 trajectoryId: job.trajectoryId,
                 timestep: job.timestep,
                 objectKey: job.objectKey,
+                ownerClusterId: job.ownerClusterId,
                 teamId: job.teamId,
                 trajectoryName: job.trajectoryName
             });

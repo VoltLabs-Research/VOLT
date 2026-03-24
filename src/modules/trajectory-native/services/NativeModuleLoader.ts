@@ -78,6 +78,7 @@ export interface NativeTrajectoryRequest {
     trajectoryId: string;
     timestep: number;
     objectKey?: string;
+    ownerClusterId?: string;
     teamId?: string;
     trajectoryName?: string;
 };
@@ -183,7 +184,9 @@ export interface NativeFilterPreviewResponse {
 export interface RasterizePreviewInput {
     inputBucket: string;
     inputObjectKey: string;
+    inputOwnerClusterId?: string;
     outputObjectKey: string;
+    outputOwnerClusterId?: string;
 };
 
 interface LammpsIoModule {

@@ -1,8 +1,8 @@
 import type { Readable } from 'node:stream';
-import type { MinioService } from '@/modules/platform/services';
 import { decodeMultiStream, mergeSelectiveChunk } from '@/shared/utilities/selective-msgpack';
 import { isRecord } from '@/shared/utilities/type-guards';
 import { ObjectBucketName } from '@/shared/contracts';
+import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
 type PerAtomRow = Record<string, unknown>;
 type PerAtomColumnarData = Record<string, unknown[]>;
@@ -12,6 +12,7 @@ export interface PluginPropertyNamesRequest {
     analysisId: string;
     exposureId: string;
     timestep?: number;
+    ownerClusterId?: string;
 }
 
 export interface PluginModifierAnalysisRequest {
@@ -19,6 +20,7 @@ export interface PluginModifierAnalysisRequest {
     analysisId: string;
     exposureId: string;
     timestep: number;
+    ownerClusterId?: string;
 }
 
 export interface PluginAtomIndexRequest {
@@ -27,6 +29,7 @@ export interface PluginAtomIndexRequest {
     exposureId: string;
     timestep: number;
     targetIds: number[];
+    ownerClusterId?: string;
 }
 
 export interface PluginModifierValuesRequest extends PluginModifierAnalysisRequest {
@@ -44,6 +47,7 @@ export interface PluginAnalysisAllAtomsRequest {
     analysisId: string;
     timestep: number;
     atomIds?: Set<number>;
+    ownerClusterId?: string;
 }
 
 export interface PluginAnalysisAllAtomsResponse {
@@ -81,18 +85,21 @@ function getMinMaxFromTypedArray(arr: Float32Array | Float64Array | Int32Array |
 
 export class TrajectoryPluginParserService {
     constructor(
-        private readonly minioService: MinioService
+        private readonly objectStore: ClusterObjectStore
     ) {}
 
     async discoverPerAtomPropertyNames(request: PluginPropertyNamesRequest): Promise<string[]> {
-        const { trajectoryId, analysisId, exposureId, timestep } = request;
+        const { trajectoryId, analysisId, exposureId, timestep, ownerClusterId } = request;
         let objectName: string | null = null;
+        if (!ownerClusterId) {
+            return [];
+        }
 
         if (typeof timestep === 'number') {
             objectName = this.getPluginMsgpackKey(trajectoryId, analysisId, exposureId, String(timestep));
         } else {
             const prefix = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/`;
-            const objects = await this.minioService.listObjects(ObjectBucketName.Plugins, prefix);
+            const objects = await this.listAllObjectKeys(ownerClusterId, ObjectBucketName.Plugins, prefix);
 
             for (const candidateObjectName of objects) {
                 if (candidateObjectName.endsWith('.msgpack')) {
@@ -105,10 +112,10 @@ export class TrajectoryPluginParserService {
         if (!objectName) return [];
 
         try {
-            const stream = await this.minioService.getObjectStream(ObjectBucketName.Plugins, objectName);
+            const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, objectName);
 
             let decoded: Record<string, unknown> | null = null;
-            for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
+            for await (const message of decodeMultiStream(response.stream as AsyncIterable<Uint8Array>)) {
                 decoded = mergeSelectiveChunk(decoded, message, (key) => key === 'per-atom-properties');
             }
 
@@ -121,15 +128,18 @@ export class TrajectoryPluginParserService {
     }
 
     async getModifierAnalysisData(request: PluginModifierAnalysisRequest): Promise<Record<string, unknown>[] | null> {
-        const { trajectoryId, analysisId, exposureId, timestep } = request;
+        const { trajectoryId, analysisId, exposureId, timestep, ownerClusterId } = request;
+        if (!ownerClusterId) {
+            return null;
+        }
         const key = this.getPluginMsgpackKey(trajectoryId, analysisId, exposureId, String(timestep));
         
         try {
-            const stream = await this.minioService.getObjectStream(ObjectBucketName.Plugins, key);
+            const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, key);
 
             // Selective decode: only keep 'per-atom-properties' key
             let decoded: Record<string, unknown> | null = null;
-            for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
+            for await (const message of decodeMultiStream(response.stream as AsyncIterable<Uint8Array>)) {
                 decoded = mergeSelectiveChunk(decoded, message, (k) => k === 'per-atom-properties');
             }
 
@@ -168,18 +178,19 @@ export class TrajectoryPluginParserService {
     }
 
     async buildPluginIndexForAtomIds(request: PluginAtomIndexRequest): Promise<PluginAtomIndex | null> {
-        const { trajectoryId, analysisId, exposureId, timestep, targetIds } = request;
+        const { trajectoryId, analysisId, exposureId, timestep, targetIds, ownerClusterId } = request;
         const targetIdsSet = new Set(targetIds);
         
         if (targetIdsSet.size === 0) return null;
+        if (!ownerClusterId) return null;
 
         const key = this.getPluginMsgpackKey(trajectoryId, analysisId, exposureId, String(timestep));
         
         try {
-            const pluginStream = await this.minioService.getObjectStream(ObjectBucketName.Plugins, key);
+            const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, key);
             const pluginIndex: PluginAtomIndex = {};
             let matchedAtomCount = 0;
-            const stream = pluginStream as unknown as AsyncIterable<Uint8Array>;
+            const stream = response.stream as unknown as AsyncIterable<Uint8Array>;
 
             for await (const message of decodeMultiStream(stream)) {
                 if (!isRecord(message)) continue;
@@ -207,7 +218,7 @@ export class TrajectoryPluginParserService {
                 }
 
                 if (shouldBreak) {
-                    const readableStream = pluginStream as unknown as Readable & { destroy?: () => void };
+                    const readableStream = response.stream as unknown as Readable & { destroy?: () => void };
                     if (typeof readableStream.destroy === 'function') {
                         readableStream.destroy();
                     }
@@ -221,6 +232,24 @@ export class TrajectoryPluginParserService {
         }
     }
 
+    private async listAllObjectKeys(ownerClusterId: string, bucket: ObjectBucketName, prefix: string): Promise<string[]> {
+        const keys: string[] = [];
+        let cursor: string | undefined;
+
+        do {
+            const page = await this.objectStore.list(ownerClusterId, {
+                bucket,
+                prefix,
+                cursor,
+                limit: 200
+            });
+            keys.push(...page.keys);
+            cursor = page.nextCursor;
+        } while (cursor);
+
+        return keys;
+    }
+
     /**
      * Fetches per-atom data for all exposures in a given analysis at a specific timestep,
      * merging results into a single flat response with deduplicated property names.
@@ -229,10 +258,13 @@ export class TrajectoryPluginParserService {
      * @returns Merged property names and atom records across all exposures.
      */
     async getAnalysisAllPerAtomData(request: PluginAnalysisAllAtomsRequest): Promise<PluginAnalysisAllAtomsResponse> {
-        const { trajectoryId, analysisId, timestep } = request;
+        const { trajectoryId, analysisId, timestep, ownerClusterId } = request;
+        if (!ownerClusterId) {
+            return { propertyNames: [], atoms: [] };
+        }
         const analysisPrefix = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/`;
 
-        const allObjects = await this.minioService.listObjects(ObjectBucketName.Plugins, analysisPrefix);
+        const allObjects = await this.listAllObjectKeys(ownerClusterId, ObjectBucketName.Plugins, analysisPrefix);
 
         // Extract unique exposure IDs from object paths
         // Path format: plugins/trajectory-{id}/analysis-{id}/{exposureId}/timestep-{ts}.msgpack
@@ -257,7 +289,8 @@ export class TrajectoryPluginParserService {
                     trajectoryId,
                     analysisId,
                     exposureId,
-                    timestep
+                    timestep,
+                    ownerClusterId
                 });
 
                 if (!data || data.length === 0) continue;

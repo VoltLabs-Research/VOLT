@@ -94,7 +94,8 @@ export class VoltCloudConnection {
     constructor(
         private readonly config: DaemonConfig,
         private readonly metricsService: MetricsService,
-        private readonly eventBroker: RuntimeEventBroker
+        private readonly eventBroker: RuntimeEventBroker,
+        private readonly getRuntimeConfigSnapshot?: () => DaemonRuntimeConfig | null
     ) {
         this.client = new ClusterDaemonClient({
             serverUrl: config.voltCloudUrl,
@@ -114,6 +115,7 @@ export class VoltCloudConnection {
                     teamClusterId: this.client.getTeamClusterId(),
                     daemonPassword: this.client.getDaemonPassword(),
                     installedVersion: config.installedVersion,
+                    runtime: this.getRuntimeConfigSnapshot?.() ?? undefined,
                     metrics: await this.metricsService.collectSnapshot({
                         cloudLatencyMs: this.lastCloudLatencyMs,
                         connectedToCloud: this.connectedToCloud

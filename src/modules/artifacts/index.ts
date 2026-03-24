@@ -1,8 +1,8 @@
 import { createPluginListingRepository, type PluginListingRepository } from './repositories';
 import { createExportNodeProcessorService, type ExportNodeProcessorService, type ResultProcessorService, createResultProcessorService } from './services';
-import type { MinioService } from '@/modules/platform/services';
 import type { NativeModuleLoader } from '@/modules/trajectory-native/services';
 import type { DaemonArtifactReporterService } from '@/modules/cloud-control/services';
+import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
 export interface ArtifactsModule {
     pluginListingRepository: PluginListingRepository;
@@ -11,18 +11,19 @@ export interface ArtifactsModule {
 }
 
 export const createArtifactsModule = (
-    minioService: MinioService,
+    objectStore: ClusterObjectStore,
+    localOwnerClusterId: string,
     nativeModuleLoader: NativeModuleLoader,
     daemonArtifactReporterService: DaemonArtifactReporterService,
-    pluginListingRepository: PluginListingRepository = createPluginListingRepository(minioService)
+    pluginListingRepository: PluginListingRepository = createPluginListingRepository(objectStore, localOwnerClusterId)
 ): ArtifactsModule => {
     const exportNodeProcessorService = createExportNodeProcessorService(
-        minioService,
+        objectStore,
         nativeModuleLoader,
         daemonArtifactReporterService
     );
     const resultProcessorService = createResultProcessorService(
-        minioService,
+        objectStore,
         pluginListingRepository,
         exportNodeProcessorService
     );

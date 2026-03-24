@@ -1,7 +1,7 @@
 import { logger } from '@/core/logger';
 import { DAEMON_PATHS } from '@/core/paths';
 import { forceGC, isMemoryPressured } from '@/core/memory';
-import { ANALYSIS_QUEUE_NAME, MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
+import { ANALYSIS_QUEUE_NAME, QueueService, RedisConnectionService } from '@/modules/platform/services';
 import { WorkflowGraph, WorkflowNodeType } from '@/modules/workflow-runtime/contracts';
 import { createWorkflowNodeRegistry } from '@/modules/workflow-runtime/factories';
 import { resolveWorkflowTemplate } from '@/modules/workflow-runtime/services/WorkflowOutputResolution';
@@ -28,6 +28,7 @@ import type { Readable } from 'node:stream';
 import type { WorkflowNodeRegistry } from '@/modules/workflow-runtime/services';
 import type { BinaryExecutorService } from './BinaryExecutorService';
 import type { PluginBinaryCacheService } from './PluginBinaryCacheService';
+import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 const DUMPS_BUCKET = ObjectBucketName.Dumps;
 let activeBinaryExecutions = 0;
 
@@ -524,7 +525,7 @@ export class AnalysisWorker {
         private readonly queueService: QueueService,
         private readonly analysisExecutionDataStore: AnalysisExecutionDataStore,
         private readonly redisConnectionService: RedisConnectionService,
-        private readonly minioService: MinioService,
+        private readonly objectStore: ClusterObjectStore,
         private readonly pluginBinaryCacheService: PluginBinaryCacheService,
         private readonly binaryExecutorService: BinaryExecutorService,
         private readonly resultProcessorService: ResultProcessorService,
@@ -654,17 +655,18 @@ export class AnalysisWorker {
                 entrypointScript: executionData.entrypointScript
             });
 
+            const dumpOwnerClusterId = executionData.storageClusterId || executionData.teamClusterId;
             if (isBatchMode && Array.isArray(executionData.allDumpUrls) && executionData.allDumpUrls.length > 0) {
                 // Batch mode: download ALL dump files
                 batchDumpLocalPaths = [];
                 for (const dumpUrl of executionData.allDumpUrls) {
-                    const localPath = await this.downloadDump(dumpUrl);
+                    const localPath = await this.downloadDump(dumpUrl, dumpOwnerClusterId);
                     batchDumpLocalPaths.push(localPath);
                 }
                 dumpLocalPath = batchDumpLocalPaths[0];
                 logMemoryUsage('after-batch-dump-download', job.jobId);
             } else {
-                dumpLocalPath = await this.downloadDump(inputFile);
+                dumpLocalPath = await this.downloadDump(inputFile, dumpOwnerClusterId);
                 logMemoryUsage('after-dump-download', job.jobId);
             }
 
@@ -1341,7 +1343,7 @@ export class AnalysisWorker {
         }
     }
 
-    private async downloadDump(objectKey: string): Promise<string> {
+    private async downloadDump(objectKey: string, ownerClusterId?: string): Promise<string> {
         if (!objectKey) {
             throw new Error('No dump file path specified in job metadata');
         }
@@ -1361,8 +1363,17 @@ export class AnalysisWorker {
         const localPath = path.join(DAEMON_PATHS.analysisDumps, `${localFileName}-${Date.now()}`);
         await fs.mkdir(path.dirname(localPath), { recursive: true });
 
-        const stream = await this.minioService.getObjectStream(DUMPS_BUCKET, normalizedObjectKey);
-        await this.writeStreamToFile(stream, localPath, normalizedObjectKey.endsWith('.gz'));
+        const resolvedOwnerClusterId = ownerClusterId || '';
+        if (!resolvedOwnerClusterId) {
+            throw new Error(`No storage owner cluster available for dump ${normalizedObjectKey}`);
+        }
+
+        const response = await this.objectStore.getStream(
+            resolvedOwnerClusterId,
+            DUMPS_BUCKET,
+            normalizedObjectKey
+        );
+        await this.writeStreamToFile(response.stream, localPath, normalizedObjectKey.endsWith('.gz'));
 
         logger.info(`Dump downloaded: ${normalizedObjectKey} -> ${localPath}`);
         return localPath;

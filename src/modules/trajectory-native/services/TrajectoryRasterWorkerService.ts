@@ -134,7 +134,9 @@ export class TrajectoryRasterWorkerService {
             await this.rasterizerService.rasterizePreview({
                 inputBucket: ObjectBucketName.Models,
                 inputObjectKey: job.modelObjectKey,
-                outputObjectKey: job.outputObjectKey
+                inputOwnerClusterId: job.modelOwnerClusterId,
+                outputObjectKey: job.outputObjectKey,
+                outputOwnerClusterId: job.outputOwnerClusterId
             });
             await bullJob.updateProgress(100);
 

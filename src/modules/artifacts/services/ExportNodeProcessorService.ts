@@ -1,13 +1,13 @@
 import { ObjectBucketName, type AnalysisExposureDefinition, type AnalysisJobExecutionData } from '@/shared/contracts';
 import { logger } from '@/core/logger';
 import { DAEMON_PATHS } from '@/core/paths';
-import { MinioService } from '@/modules/platform/services';
 import { NativeModuleLoader } from '@/modules/trajectory-native/services';
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 import type { BubbleDataPoint, ChartConfiguration, ChartDataset, ChartTypeRegistry, Point } from 'chart.js';
 import type { DaemonArtifactReporterService } from '@/modules/cloud-control/services';
 import { isRecord, toRecord } from '@/shared/utils';
 import { uploadBufferToObjectStore } from '@/shared/storage/uploadBufferToObjectStore';
+import { createScopedClusterObjectStore, type ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
 type ExporterName = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter' | 'ChartExporter';
 
@@ -890,10 +890,12 @@ export interface ExportNodeProcessorService {
 };
 
 export const createExportNodeProcessorService = (
-    minioService: MinioService,
+    objectStore: ClusterObjectStore,
     nativeModuleLoader: NativeModuleLoader,
     daemonArtifactReporterService: DaemonArtifactReporterService
 ): ExportNodeProcessorService => {
+    const createUploadTarget = (ownerClusterId: string) => createScopedClusterObjectStore(objectStore, ownerClusterId);
+
     const logSkippedEmptyExport = (
         input: ExportExecutionInput,
         exporter: ExporterName,
@@ -914,7 +916,11 @@ export const createExportNodeProcessorService = (
         );
     };
 
-    const exportAtomistic = async (exportData: Record<string, unknown>, objectPath: string): Promise<boolean> => {
+    const exportAtomistic = async (
+        exportData: Record<string, unknown>,
+        objectPath: string,
+        ownerClusterId: string
+    ): Promise<boolean> => {
         const pointCloud = await buildPointCloudDataDirect(exportData);
         if (!pointCloud) {
             return false;
@@ -924,7 +930,7 @@ export const createExportNodeProcessorService = (
         const buffer = nativeModuleLoader.getExporterModule().generatePointCloudGLB(positions, colors, min, max);
 
         await uploadBufferToObjectStore({
-            objectStore: minioService,
+            objectStore: createUploadTarget(ownerClusterId),
             bucket: ObjectBucketName.Models,
             objectKey: objectPath,
             buffer,
@@ -936,7 +942,12 @@ export const createExportNodeProcessorService = (
         return true;
     };
 
-    const exportMesh = async (exportData: Record<string, unknown>, objectPath: string, options: MeshExportOptions): Promise<boolean> => {
+    const exportMesh = async (
+        exportData: Record<string, unknown>,
+        objectPath: string,
+        ownerClusterId: string,
+        options: MeshExportOptions
+    ): Promise<boolean> => {
         const mesh = normalizeMesh(exportData);
         const material = resolveMaterial(options.material, options.enableDoubleSided);
         const processed = processMesh(mesh, options.smoothIterations);
@@ -954,7 +965,7 @@ export const createExportNodeProcessorService = (
         );
 
         await uploadBufferToObjectStore({
-            objectStore: minioService,
+            objectStore: createUploadTarget(ownerClusterId),
             bucket: ObjectBucketName.Models,
             objectKey: objectPath,
             buffer,
@@ -1032,7 +1043,12 @@ export const createExportNodeProcessorService = (
         return { positions, normals, indices, bounds };
     };
 
-    const exportDislocation = async (exportData: Record<string, unknown>, objectPath: string, options: DislocationExportOptions): Promise<boolean> => {
+    const exportDislocation = async (
+        exportData: Record<string, unknown>,
+        objectPath: string,
+        ownerClusterId: string,
+        options: DislocationExportOptions
+    ): Promise<boolean> => {
         const opts: Required<DislocationExportOptions> = {
             lineWidth: options.lineWidth ?? 0.08,
             tubularSegments: options.tubularSegments ?? 12,
@@ -1078,7 +1094,7 @@ export const createExportNodeProcessorService = (
         );
 
         await uploadBufferToObjectStore({
-            objectStore: minioService,
+            objectStore: createUploadTarget(ownerClusterId),
             bucket: ObjectBucketName.Models,
             objectKey: objectPath,
             buffer,
@@ -1090,7 +1106,12 @@ export const createExportNodeProcessorService = (
         return true;
     };
 
-    const exportChart = async (decodedPayload: Record<string, unknown>, objectPath: string, options: ChartExportOptions): Promise<boolean> => {
+    const exportChart = async (
+        decodedPayload: Record<string, unknown>,
+        objectPath: string,
+        ownerClusterId: string,
+        options: ChartExportOptions
+    ): Promise<boolean> => {
         const width = options.width || 1200;
         const height = options.height || 800;
         const chartCanvas = new ChartJSNodeCanvas({
@@ -1155,7 +1176,7 @@ export const createExportNodeProcessorService = (
         const buffer = await chartCanvas.renderToBuffer(chartConfiguration);
 
         await uploadBufferToObjectStore({
-            objectStore: minioService,
+            objectStore: createUploadTarget(ownerClusterId),
             bucket: ObjectBucketName.Plugins,
             objectKey: objectPath,
             buffer,
@@ -1268,13 +1289,23 @@ export const createExportNodeProcessorService = (
                 return;
             }
 
+            const ownerClusterId = input.executionData.storageClusterId || input.teamClusterId;
+            if (!ownerClusterId) {
+                throw new Error(`Missing storage owner cluster for analysis export ${input.executionData.analysisId}`);
+            }
+
             const exporter = exportConfig.exporter as ExporterName;
             const options = toStringMap(exportConfig.options);
 
             // ChartExporter operates on the full decoded payload, not the export key — handle separately
             if (exporter === 'ChartExporter') {
                 const objectPath = buildObjectPath(input, exporter, exportConfig.type);
-                const exported = await exportChart(input.decodedPayload, objectPath, options as unknown as ChartExportOptions);
+                const exported = await exportChart(
+                    input.decodedPayload,
+                    objectPath,
+                    ownerClusterId,
+                    options as unknown as ChartExportOptions
+                );
                 if (!exported) {
                     logSkippedEmptyExport(input, exporter, 'chart payload had no rows');
                     return;
@@ -1294,13 +1325,13 @@ export const createExportNodeProcessorService = (
 
                 switch (exporter) {
                     case 'AtomisticExporter':
-                        exported = await exportAtomistic(exportData, objectPath);
+                        exported = await exportAtomistic(exportData, objectPath, ownerClusterId);
                         break;
                     case 'MeshExporter':
-                        exported = await exportMesh(exportData, objectPath, options as MeshExportOptions);
+                        exported = await exportMesh(exportData, objectPath, ownerClusterId, options as MeshExportOptions);
                         break;
                     case 'DislocationExporter':
-                        exported = await exportDislocation(exportData, objectPath, options as DislocationExportOptions);
+                        exported = await exportDislocation(exportData, objectPath, ownerClusterId, options as DislocationExportOptions);
                         break;
                     default:
                         logger.warn({ exporter }, 'Unsupported export node exporter on daemon');

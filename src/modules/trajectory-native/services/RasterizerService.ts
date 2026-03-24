@@ -8,8 +8,8 @@ import {
 import { createReadStream, createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import { pipeline } from 'node:stream/promises';
-import type { MinioService } from '@/modules/platform/services';
 import type { NativeModuleLoader, RasterizePreviewInput } from './NativeModuleLoader';
+import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
 export interface RasterizerService {
     rasterizePreview(input: RasterizePreviewInput): Promise<void>;
@@ -17,7 +17,7 @@ export interface RasterizerService {
 };
 
 export const createRasterizerService = (
-    minioService: MinioService,
+    objectStore: ClusterObjectStore,
     nativeModuleLoader: NativeModuleLoader
 ): RasterizerService => ({
     async rasterizePreview(input) {
@@ -29,14 +29,21 @@ export const createRasterizerService = (
         const tempPngPath = `${tempGlbPath}.png`;
 
         try {
-            const stream = await minioService.getObjectStream(input.inputBucket, input.inputObjectKey);
+            const inputOwnerClusterId = input.inputOwnerClusterId;
+            const outputOwnerClusterId = input.outputOwnerClusterId;
+            if (!inputOwnerClusterId || !outputOwnerClusterId) {
+                throw new Error('Rasterization requires inputOwnerClusterId and outputOwnerClusterId');
+            }
+
+            const response = await objectStore.getStream(inputOwnerClusterId, input.inputBucket, input.inputObjectKey);
             const fileWriter = createWriteStream(tempGlbPath);
-            await pipeline(stream, fileWriter);
+            await pipeline(response.stream, fileWriter);
 
             await this.rasterizeLocalGlb(tempGlbPath, tempPngPath);
 
             const pngStat = await fs.stat(tempPngPath);
-            await minioService.putObjectStream({
+            await objectStore.putObjectStream({
+                ownerClusterId: outputOwnerClusterId,
                 bucket: ObjectBucketName.Rasterizer,
                 objectKey: input.outputObjectKey,
                 stream: createReadStream(tempPngPath),

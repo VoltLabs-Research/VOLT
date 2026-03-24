@@ -12,6 +12,7 @@ import type {
 } from '@/modules/platform/services';
 import type { AnalysisDispatchService } from '@/modules/job-runtime/services';
 import type { DebugSessionManager } from '@/modules/workflow-runtime/services';
+import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 import {
     createDaemonArtifactReporterService,
     createDaemonJobReporterService,
@@ -19,6 +20,8 @@ import {
     ObjectGatewayServer,
     ObjectGatewayTelemetryService,
     ReverseChannelSocketBridge,
+    RuntimeCapabilityGuard,
+    RuntimeRoleCoordinator,
     VoltCloudConnection,
     type DaemonArtifactReporterService,
     type DaemonJobReporterService
@@ -60,6 +63,7 @@ export const createCloudControlModule = (deps: {
     dockerRuntimeService: DockerRuntimeService;
     hostShellService: HostShellService;
     minioService: MinioService;
+    objectStore: ClusterObjectStore;
     queueService: QueueService;
     redisConnectionService: RedisConnectionService;
     redisExplorerReadService: RedisExplorerReadService;
@@ -73,6 +77,7 @@ export const createCloudControlModule = (deps: {
     pluginListingRepository: PluginListingRepository;
     analysisDispatchService: AnalysisDispatchService;
     debugSessionManager: DebugSessionManager;
+    runtimeRoleCoordinator: RuntimeRoleCoordinator;
 }): CloudControlModule => {
     const objectGatewayTelemetryService = new ObjectGatewayTelemetryService();
     const reverseChannelSocketBridge = new ReverseChannelSocketBridge(
@@ -80,30 +85,37 @@ export const createCloudControlModule = (deps: {
         deps.hostShellService,
         objectGatewayTelemetryService
     );
+    const runtimeCapabilityGuard = new RuntimeCapabilityGuard(deps.runtimeRoleCoordinator);
     const voltCloudConnection = new VoltCloudConnection(
         deps.config,
         deps.metricsService,
-        deps.eventBroker
+        deps.eventBroker,
+        () => deps.runtimeRoleCoordinator.getSnapshot()
     );
 
     const handlers = [
-        ...createAnalysisHandlers({ analysisDispatchService: deps.analysisDispatchService }),
+        ...createAnalysisHandlers({
+            analysisDispatchService: deps.analysisDispatchService,
+            runtimeCapabilityGuard
+        }),
         ...createDebugHandlers({ debugSessionManager: deps.debugSessionManager }),
         ...createJobHandlers({ queueService: deps.queueService, redisConnectionService: deps.redisConnectionService }),
         ...createTrajectoryHandlers({
-            minioService: deps.minioService,
+            objectStore: deps.objectStore,
             queueService: deps.queueService,
             redisConnectionService: deps.redisConnectionService,
             trajectoryAutoPreviewClaimStore: deps.trajectoryAutoPreviewClaimStore,
             trajectoryParserService: deps.trajectoryParserService,
             trajectoryPluginParserService: deps.trajectoryPluginParserService,
             glbExporterService: deps.glbExporterService,
-            filterEvaluatorService: deps.filterEvaluatorService
+            filterEvaluatorService: deps.filterEvaluatorService,
+            runtimeCapabilityGuard
         }),
         ...createPluginHandlers({
-            minioService: deps.minioService,
+            objectStore: deps.objectStore,
             eventBroker: deps.eventBroker,
-            pluginListingRepository: deps.pluginListingRepository
+            pluginListingRepository: deps.pluginListingRepository,
+            runtimeCapabilityGuard
         }),
         ...createContainerHandlers({ dockerRuntimeService: deps.dockerRuntimeService }),
         ...createRemoteAccessHandlers({
@@ -118,7 +130,8 @@ export const createCloudControlModule = (deps: {
             emitLifecycle: (type, details) => {
                 voltCloudConnection.emitLifecycleEvent(type, details);
             },
-            applyQueueConcurrency: (queueConcurrency) => deps.queueConcurrencyCoordinator.apply(queueConcurrency),
+            applyQueueConcurrency: (queueConcurrency) => deps.runtimeRoleCoordinator.applyQueueConcurrency(queueConcurrency),
+            applyRoleConfig: (roleConfig) => deps.runtimeRoleCoordinator.applyRoleConfig(roleConfig),
             reportUpdateFailed: (details) => voltCloudConnection.reportUpdateFailed(details),
             reportDeleteFailed: (details) => voltCloudConnection.reportDeleteFailed(details)
         })
@@ -139,7 +152,8 @@ export const createCloudControlModule = (deps: {
     const objectGatewayServer = new ObjectGatewayServer(
         deps.config,
         deps.minioService,
-        objectGatewayTelemetryService
+        objectGatewayTelemetryService,
+        runtimeCapabilityGuard
     );
     reverseChannelSocketBridge.setExposureRegistryService(daemonExposureRegistryService);
 

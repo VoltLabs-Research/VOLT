@@ -12,14 +12,18 @@ import { TrajectoryGlbWorkerService } from '@/modules/trajectory-native/services
 import { createArtifactsModule, createPluginListingRepository } from '@/modules/artifacts';
 import { createWorkflowRuntimeModule } from '@/modules/workflow-runtime';
 import { createCloudControlModule } from '@/modules/cloud-control';
+import { RuntimeRoleCoordinator } from '@/modules/cloud-control/services';
 import { createAnalysisWorker, createJobRuntimeModule } from '@/modules/job-runtime';
 import { OBJECT_GATEWAY_EXPOSURE } from '@/modules/cloud-control/services';
+import { createClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
+import { VoltServerObjectStoreProxyClient } from '@/shared/storage/VoltServerObjectStoreProxyClient';
 import type { DaemonRuntimeConfig } from './config';
 
 type BootstrapContext = {
     bootStartedAt: number;
     config: ReturnType<typeof loadConfig>;
     runtimeConfig: DaemonRuntimeConfig | null;
+    runtimeRoleCoordinator: RuntimeRoleCoordinator;
     platform: ReturnType<typeof createPlatformModule>;
     workflowRuntime: ReturnType<typeof createWorkflowRuntimeModule>;
     cloudControl: ReturnType<typeof createCloudControlModule>;
@@ -34,15 +38,23 @@ const createBootstrapContext = (): BootstrapContext => {
     const config = loadConfig();
     const platform = createPlatformModule(config);
     const metrics = createMetricsModule();
+    const queueConcurrencyCoordinator = new QueueConcurrencyCoordinator();
+    const runtimeRoleCoordinator = new RuntimeRoleCoordinator(queueConcurrencyCoordinator);
+    const proxyClient = new VoltServerObjectStoreProxyClient(config);
+    const clusterObjectStore = createClusterObjectStore({
+        config,
+        minioService: platform.minioService,
+        proxyClient,
+        getRuntimeSnapshot: () => runtimeRoleCoordinator.getSnapshot()
+    });
     const trajectoryNative = createTrajectoryNativeModule(
-        platform.minioService,
+        clusterObjectStore,
         platform.queueService,
         platform.redisConnectionService
     );
     const workflowRuntime = createWorkflowRuntimeModule();
     const jupyter = createJupyterModule(config, platform.dockerRuntimeService);
-    const pluginListingRepository = createPluginListingRepository(platform.minioService);
-    const queueConcurrencyCoordinator = new QueueConcurrencyCoordinator();
+    const pluginListingRepository = createPluginListingRepository(clusterObjectStore, config.teamClusterId);
     const sshImport = createSSHImportModule({
         config,
         queueService: platform.queueService,
@@ -64,6 +76,7 @@ const createBootstrapContext = (): BootstrapContext => {
         dockerRuntimeService: platform.dockerRuntimeService,
         hostShellService: platform.hostShellService,
         minioService: platform.minioService,
+        objectStore: clusterObjectStore,
         queueConcurrencyCoordinator,
         queueService: platform.queueService,
         redisConnectionService: platform.redisConnectionService,
@@ -76,10 +89,12 @@ const createBootstrapContext = (): BootstrapContext => {
         jupyterRuntimeService: jupyter.jupyterRuntimeService,
         pluginListingRepository,
         analysisDispatchService: jobRuntime.analysisDispatchService,
-        debugSessionManager: workflowRuntime.debugSessionManager
+        debugSessionManager: workflowRuntime.debugSessionManager,
+        runtimeRoleCoordinator
     });
     const artifacts = createArtifactsModule(
-        platform.minioService,
+        clusterObjectStore,
+        config.teamClusterId,
         trajectoryNative.nativeModuleLoader,
         cloudControl.daemonArtifactReporterService,
         pluginListingRepository
@@ -88,7 +103,7 @@ const createBootstrapContext = (): BootstrapContext => {
         queueService: platform.queueService,
         analysisExecutionDataStore: platform.analysisExecutionDataStore,
         redisConnectionService: platform.redisConnectionService,
-        minioService: platform.minioService,
+        objectStore: clusterObjectStore,
         resultProcessorService: artifacts.resultProcessorService,
         daemonJobReporterService: cloudControl.daemonJobReporterService
     });
@@ -112,11 +127,18 @@ const createBootstrapContext = (): BootstrapContext => {
         trajectoryGlbWorkerService,
         sshImportWorkerService: sshImport.sshImportWorkerService
     });
+    runtimeRoleCoordinator.bind({
+        analysisWorker,
+        trajectoryRasterWorkerService,
+        trajectoryGlbWorkerService,
+        sshImportWorkerService: sshImport.sshImportWorkerService
+    });
 
     return {
         bootStartedAt,
         config,
         runtimeConfig: null,
+        runtimeRoleCoordinator,
         platform,
         workflowRuntime,
         cloudControl,
@@ -143,12 +165,9 @@ const startBootstrapContext = async (context: BootstrapContext): Promise<void> =
     const {
         bootStartedAt,
         config,
+        runtimeRoleCoordinator,
         platform,
-        cloudControl,
-        sshImport,
-        analysisWorker,
-        trajectoryRasterWorkerService,
-        trajectoryGlbWorkerService
+        cloudControl
     } = context;
 
     logger.info({ teamClusterId: config.teamClusterId }, 'Bootstrapping cluster daemon services');
@@ -167,10 +186,7 @@ const startBootstrapContext = async (context: BootstrapContext): Promise<void> =
     }
     const runtimeConfig = await loadRuntimeConfig(context);
     cloudControl.daemonExposureRegistryService.start();
-    analysisWorker.start(runtimeConfig.queueConcurrency.analysis);
-    trajectoryRasterWorkerService.start(runtimeConfig.queueConcurrency.rasterizer);
-    trajectoryGlbWorkerService.start(runtimeConfig.queueConcurrency.glbPreprocessing);
-    sshImport.sshImportWorkerService.start(runtimeConfig.queueConcurrency.sshImport);
+    await runtimeRoleCoordinator.initialize(runtimeConfig);
     cloudControl.voltCloudConnection.emitLifecycleEvent(
         'services-ready',
         'Cluster-local Redis, MongoDB, MinIO, and Docker coordination ready'

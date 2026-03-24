@@ -6,4 +6,6 @@ export * from './BinaryRelaySocketBridge';
 export * from './ObjectGatewayServer';
 export * from './ObjectGatewayTelemetryService';
 export * from './ReverseChannelSocketBridge';
+export * from './RuntimeCapabilityGuard';
+export * from './RuntimeRoleCoordinator';
 export * from './VoltCloudConnection';

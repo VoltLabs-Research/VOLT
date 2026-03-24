@@ -1,8 +1,11 @@
 import { readNumber, readPayloadRecord, readString } from './payloadValidation';
 import {
     TEAM_CLUSTER_DAEMON_COMMAND,
+    type TeamClusterDaemonRoleApplyPayload,
+    type TeamClusterDaemonRoleApplyResult,
     type TeamClusterDaemonQueueConcurrency,
-    type TeamClusterDaemonQueueConcurrencyApplyPayload
+    type TeamClusterDaemonQueueConcurrencyApplyPayload,
+    type TeamClusterRole
 } from '@/shared/contracts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -23,6 +26,7 @@ interface RuntimeHandlersDependencies {
     reportUpdateFailed: (details: string) => Promise<void>;
     reportDeleteFailed: (details: string) => Promise<void>;
     applyQueueConcurrency: (queueConcurrency: TeamClusterDaemonQueueConcurrency) => void;
+    applyRoleConfig: (payload: TeamClusterDaemonRoleApplyPayload['roleConfig']) => Promise<TeamClusterDaemonRoleApplyResult>;
 };
 
 interface UpdatePayload {
@@ -105,6 +109,50 @@ const readQueueConcurrencyApplyPayload = (payload: unknown): TeamClusterDaemonQu
     };
 };
 
+const readRoleApplyPayload = (payload: unknown): TeamClusterDaemonRoleApplyPayload => {
+    const record = readPayloadRecord(payload);
+    const roleConfigRecord = readPayloadRecord(record.roleConfig);
+    const desiredRole = readString(roleConfigRecord.desiredRole, 'roleConfig.desiredRole');
+    const effectiveRole = readString(roleConfigRecord.effectiveRole, 'roleConfig.effectiveRole');
+
+    if (!['cluster', 'storage-server', 'compute-node'].includes(desiredRole)) {
+        throw new Error('roleConfig.desiredRole must be cluster, storage-server, or compute-node');
+    }
+
+    if (!['cluster', 'storage-server', 'compute-node'].includes(effectiveRole)) {
+        throw new Error('roleConfig.effectiveRole must be cluster, storage-server, or compute-node');
+    }
+
+    const drainingRecord = readPayloadRecord(roleConfigRecord.draining);
+    if (typeof drainingRecord.compute !== 'boolean' || typeof drainingRecord.storage !== 'boolean') {
+        throw new Error('roleConfig.draining.compute and roleConfig.draining.storage must be boolean');
+    }
+
+    const runtimeVersion = readNumber(roleConfigRecord.runtimeVersion, 'roleConfig.runtimeVersion');
+    if (!Number.isInteger(runtimeVersion) || runtimeVersion < 1) {
+        throw new Error('roleConfig.runtimeVersion must be an integer greater than or equal to 1');
+    }
+
+    const lastAppliedAt = typeof roleConfigRecord.lastAppliedAt === 'undefined'
+        ? null
+        : roleConfigRecord.lastAppliedAt === null
+            ? null
+            : readString(roleConfigRecord.lastAppliedAt, 'roleConfig.lastAppliedAt');
+
+    return {
+        roleConfig: {
+            desiredRole: desiredRole as TeamClusterRole,
+            effectiveRole: effectiveRole as TeamClusterRole,
+            runtimeVersion,
+            draining: {
+                compute: drainingRecord.compute,
+                storage: drainingRecord.storage
+            },
+            lastAppliedAt
+        }
+    };
+};
+
 /**
  * Replaces or appends a KEY=VALUE line in an .env file content string.
  */
@@ -164,8 +212,7 @@ const executeRuntimeUninstall = async (deps: RuntimeHandlersDependencies): Promi
         const message = error instanceof Error ? error.message : String(error);
         const details = `Runtime uninstall failed: ${message}`;
 
-        // @ts-expect-error preserve legacy delete lifecycle contract for uninstall failures
-        deps.emitLifecycle('delete-failed', details);
+        deps.emitLifecycle('delete-failed' as RuntimeLifecycleEventType, details);
         await deps.reportDeleteFailed(details);
         process.exit(1);
     }
@@ -214,6 +261,33 @@ export const createRuntimeHandlers = (deps: RuntimeHandlersDependencies): Revers
             deferRuntimeCommand(() => executeRuntimeUninstall(deps));
 
             return acceptRuntimeCommand();
+        }
+    },
+    {
+        command: TEAM_CLUSTER_DAEMON_COMMAND.runtime.role.apply,
+        execute: async (payload) => {
+            let request: TeamClusterDaemonRoleApplyPayload;
+
+            try {
+                request = readRoleApplyPayload(payload);
+            } catch {
+                return rejectRuntimeCommand(
+                    'Invalid runtime role payload: roleConfig.desiredRole, roleConfig.effectiveRole, roleConfig.runtimeVersion, and roleConfig.draining are required.'
+                );
+            }
+
+            try {
+                const result = await deps.applyRoleConfig(request.roleConfig);
+                return {
+                    data: result
+                };
+            } catch (error: unknown) {
+                return rejectRuntimeCommand(
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to apply runtime role'
+                );
+            }
         }
     },
     {

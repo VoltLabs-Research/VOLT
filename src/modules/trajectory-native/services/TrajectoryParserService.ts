@@ -9,7 +9,7 @@ import { createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import zlib from 'node:zlib';
 import { pipeline } from 'node:stream/promises';
-import type { MinioService } from '@/modules/platform/services';
+import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 import type {
     NativeAtomPageEntry,
     NativeAtomsPageRequest,
@@ -122,7 +122,7 @@ export interface TrajectoryParserService {
 };
 
 export const createTrajectoryParserService = (
-    minioService: MinioService,
+    objectStore: ClusterObjectStore,
     nativeModuleLoader: NativeModuleLoader
 ): TrajectoryParserService => ({
     async getTrajectoryMetadata(input) {
@@ -231,7 +231,12 @@ export const createTrajectoryParserService = (
 
         const tempDumpPath = createNativeProcessingTempPath('.dump');
         const objectKey = input.objectKey || getDumpObjectKey(input.trajectoryId, input.timestep);
+        const ownerClusterId = input.ownerClusterId;
         const startTime = Date.now();
+
+        if (!ownerClusterId) {
+            throw new Error(`Missing dump owner cluster for trajectory ${input.trajectoryId} timestep ${input.timestep}`);
+        }
 
         logger.info(
             {
@@ -246,23 +251,28 @@ export const createTrajectoryParserService = (
         try {
             // DIAG: Pre-download verification — check if object exists before attempting download
             try {
-                const stat = await minioService.statObject(ObjectBucketName.Dumps, objectKey);
+                const stat = await objectStore.head(ownerClusterId, ObjectBucketName.Dumps, objectKey);
                 logger.info(
                     {
                         objectKey,
                         bucket: ObjectBucketName.Dumps,
-                        minioSize: stat.size,
+                        minioSize: stat.contentLength,
                         timestep: input.timestep,
                         trajectoryId: input.trajectoryId
                     },
                     'DIAG: Pre-download statObject succeeded — dump exists in MinIO'
                 );
             } catch (statError: unknown) {
-                // List objects with the trajectory prefix to understand what IS in the bucket
+                // List objects with the trajectory prefix to understand what IS in the bucket.
                 const prefix = `trajectory-${input.trajectoryId}/`;
                 let existingKeys: string[] = [];
                 try {
-                    existingKeys = await minioService.listObjects(ObjectBucketName.Dumps, prefix, 20);
+                    const page = await objectStore.list(ownerClusterId, {
+                        bucket: ObjectBucketName.Dumps,
+                        prefix,
+                        limit: 20
+                    });
+                    existingKeys = page.keys;
                 } catch {
                     // Ignore listing errors
                 }
@@ -282,8 +292,8 @@ export const createTrajectoryParserService = (
                 );
             }
 
-            const stream = await minioService.getObjectStream(ObjectBucketName.Dumps, objectKey);
-            await pipeline(stream, zlib.createGunzip(), createWriteStream(tempDumpPath));
+            const response = await objectStore.getStream(ownerClusterId, ObjectBucketName.Dumps, objectKey);
+            await pipeline(response.stream, zlib.createGunzip(), createWriteStream(tempDumpPath));
             const dumpStats = await fs.stat(tempDumpPath);
 
             logger.info(

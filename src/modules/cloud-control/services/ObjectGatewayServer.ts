@@ -11,6 +11,8 @@ import type { DaemonConfig } from '@/core/config';
 import type { MinioService } from '@/modules/platform/services';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { ObjectGatewayTelemetryService } from './ObjectGatewayTelemetryService';
+import type { RuntimeCapabilityGuard } from './RuntimeCapabilityGuard';
+import { RuntimeCapabilityError } from './RuntimeCapabilityGuard';
 
 const OBJECT_GATEWAY_API_BASE_PATH = '/internal/object-gateway/v1';
 const OBJECT_GATEWAY_BUCKETS_PATH = `${OBJECT_GATEWAY_API_BASE_PATH}/buckets/`;
@@ -108,7 +110,8 @@ export class ObjectGatewayServer {
     constructor(
         private readonly config: DaemonConfig,
         private readonly minioService: MinioService,
-        private readonly telemetryService: ObjectGatewayTelemetryService
+        private readonly telemetryService: ObjectGatewayTelemetryService,
+        private readonly runtimeCapabilityGuard?: RuntimeCapabilityGuard
     ) {
         this.allowedBuckets = new Set(this.minioService.listBuckets());
     }
@@ -318,6 +321,7 @@ export class ObjectGatewayServer {
         tracker: ReturnType<ObjectGatewayTelemetryService['beginRequest']>
     ): Promise<void> {
         if (request.method === 'GET') {
+            this.runtimeCapabilityGuard?.ensureServesStorageReads('object-gateway.list');
             const limit = Math.min(
                 readInteger(url.searchParams.get('limit'), 'limit', DEFAULT_LIST_LIMIT),
                 MAX_LIST_LIMIT
@@ -341,6 +345,7 @@ export class ObjectGatewayServer {
         }
 
         if (request.method === 'DELETE') {
+            this.runtimeCapabilityGuard?.ensureAcceptsStorageWrites('object-gateway.delete-prefix');
             const prefix = url.searchParams.get('prefix');
             if (prefix === null) {
                 throw new ObjectGatewayHttpError(400, 'prefix query parameter is required');
@@ -369,6 +374,7 @@ export class ObjectGatewayServer {
         tracker: ReturnType<ObjectGatewayTelemetryService['beginRequest']>
     ): Promise<void> {
         if (request.method === 'HEAD') {
+            this.runtimeCapabilityGuard?.ensureServesStorageReads('object-gateway.head');
             const stat = await this.readObjectStat(bucket, objectKey);
             this.writeObjectHeaders(response, stat);
             response.statusCode = 200;
@@ -380,6 +386,7 @@ export class ObjectGatewayServer {
         }
 
         if (request.method === 'GET') {
+            this.runtimeCapabilityGuard?.ensureServesStorageReads('object-gateway.get');
             const stat = await this.readObjectStat(bucket, objectKey);
             const stream = await this.readObjectStream(bucket, objectKey);
 
@@ -407,6 +414,7 @@ export class ObjectGatewayServer {
         }
 
         if (request.method === 'PUT') {
+            this.runtimeCapabilityGuard?.ensureAcceptsStorageWrites('object-gateway.put');
             const contentLengthHeader = readSingleHeaderValue(request.headers['content-length']);
             const contentLength = contentLengthHeader ? Number(contentLengthHeader) : NaN;
 
@@ -432,6 +440,7 @@ export class ObjectGatewayServer {
         }
 
         if (request.method === 'DELETE') {
+            this.runtimeCapabilityGuard?.ensureAcceptsStorageWrites('object-gateway.delete');
             await this.readObjectStat(bucket, objectKey);
             await this.minioService.removeObject(bucket, objectKey);
             response.statusCode = 204;
@@ -570,6 +579,10 @@ export class ObjectGatewayServer {
             return error.statusCode;
         }
 
+        if (error instanceof RuntimeCapabilityError) {
+            return error.statusCode;
+        }
+
         return 500;
     }
 
@@ -584,6 +597,14 @@ export class ObjectGatewayServer {
 
         if (error instanceof ObjectGatewayHttpError) {
             this.writeJson(response, error.statusCode, {
+                message: error.message
+            });
+            return;
+        }
+
+        if (error instanceof RuntimeCapabilityError) {
+            this.writeJson(response, error.statusCode, {
+                code: error.code,
                 message: error.message
             });
             return;

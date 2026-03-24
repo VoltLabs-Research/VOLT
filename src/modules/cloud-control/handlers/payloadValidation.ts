@@ -251,12 +251,16 @@ export const readRemoteExplorerRequest = (payload: unknown): RemoteExplorerPaylo
 export const readPluginPropertyNamesRequest = (payload: unknown) => {
     const record = readOptionalPayloadRecord(payload);
     const timestep = readOptionalNumber(record.timestep);
+    const ownerClusterId = typeof record.ownerClusterId === 'string'
+        ? readString(record.ownerClusterId, 'ownerClusterId')
+        : undefined;
 
     return {
         trajectoryId: readString(record.trajectoryId, 'trajectoryId'),
         analysisId: readString(record.analysisId, 'analysisId'),
         exposureId: readString(record.exposureId, 'exposureId'),
-        ...(typeof timestep === 'number' ? { timestep } : {})
+        ...(typeof timestep === 'number' ? { timestep } : {}),
+        ...(ownerClusterId ? { ownerClusterId } : {})
     };
 };
 
@@ -332,10 +336,14 @@ export const readTextEncoding = (value: unknown): TextEncoding | undefined => {
 
 export const readPluginAnalysisAllAtomsRequest = (payload: unknown) => {
     const record = readOptionalPayloadRecord(payload);
+    const ownerClusterId = typeof record.ownerClusterId === 'string'
+        ? readString(record.ownerClusterId, 'ownerClusterId')
+        : undefined;
     return {
         trajectoryId: readString(record.trajectoryId, 'trajectoryId'),
         analysisId: readString(record.analysisId, 'analysisId'),
-        timestep: readNumber(record.timestep, 'timestep')
+        timestep: readNumber(record.timestep, 'timestep'),
+        ...(ownerClusterId ? { ownerClusterId } : {})
     };
 };
 

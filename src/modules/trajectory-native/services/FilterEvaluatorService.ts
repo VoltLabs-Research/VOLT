@@ -1,6 +1,5 @@
 import { ObjectBucketName } from '@/shared/contracts';
 import { DAEMON_PATHS } from '@/core/paths';
-import { MinioService } from '@/modules/platform/services';
 import {
     NativeModuleLoader,
     type NativeColorModelRequest,
@@ -14,6 +13,7 @@ import {
 import type { TrajectoryParserService } from './TrajectoryParserService';
 import type { TrajectoryPluginParserService } from './TrajectoryPluginParserService';
 import { uploadBufferToObjectStore } from '@/shared/storage/uploadBufferToObjectStore';
+import { createScopedClusterObjectStore, type ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
 enum GradientType {
     Viridis = 0,
@@ -137,7 +137,7 @@ export class EmptyFilterResultError extends Error {
 };
 
 const resolveModifierValues = async (
-    input: Pick<NativeConditionFilterPreviewRequest, 'analysisId' | 'exposureId' | 'trajectoryId' | 'timestep' | 'property'>,
+    input: Pick<NativeConditionFilterPreviewRequest, 'analysisId' | 'exposureId' | 'trajectoryId' | 'timestep' | 'property' | 'ownerClusterId'>,
     trajectoryPluginParserService: TrajectoryPluginParserService
 ): Promise<Float32Array | undefined> => {
     if (!input.analysisId || !input.exposureId) {
@@ -149,7 +149,8 @@ const resolveModifierValues = async (
         analysisId: input.analysisId,
         exposureId: input.exposureId,
         timestep: input.timestep,
-        property: input.property
+        property: input.property,
+        ownerClusterId: input.ownerClusterId
     });
 
     if (!values) {
@@ -740,7 +741,7 @@ export interface FilterEvaluatorService {
 };
 
 export const createFilterEvaluatorService = (
-    minioService: MinioService,
+    objectStore: ClusterObjectStore,
     nativeModuleLoader: NativeModuleLoader,
     trajectoryParserService: TrajectoryParserService,
     trajectoryPluginParserService: TrajectoryPluginParserService
@@ -794,7 +795,16 @@ export const createFilterEvaluatorService = (
     },
 
     async exportColoredModel(input) {
-        await trajectoryParserService.withDumpFile({ trajectoryId: input.trajectoryId, timestep: input.timestep }, async (dumpPath) => {
+        const ownerClusterId = input.ownerClusterId;
+        if (!ownerClusterId) {
+            throw new Error(`Missing storage owner cluster for colored model export ${input.objectKey}`);
+        }
+
+        await trajectoryParserService.withDumpFile({
+            trajectoryId: input.trajectoryId,
+            timestep: input.timestep,
+            ownerClusterId
+        }, async (dumpPath) => {
             let buffer: Buffer;
             const externalValues = input.externalValuesBase64
                 ? trajectoryParserService.decodeFloat32Array(input.externalValuesBase64)
@@ -833,7 +843,7 @@ export const createFilterEvaluatorService = (
             // parsed, values, colors now out of scope — eligible for GC
 
             await uploadBufferToObjectStore({
-                objectStore: minioService,
+                objectStore: createScopedClusterObjectStore(objectStore, ownerClusterId),
                 bucket: ObjectBucketName.Models,
                 objectKey: input.objectKey,
                 buffer,
@@ -850,7 +860,16 @@ export const createFilterEvaluatorService = (
     },
 
     async exportParticleFilterModel(input) {
-        return trajectoryParserService.withDumpFile({ trajectoryId: input.trajectoryId, timestep: input.timestep }, async (dumpPath) => {
+        const ownerClusterId = input.ownerClusterId;
+        if (!ownerClusterId) {
+            throw new Error(`Missing storage owner cluster for particle filter export ${input.objectKey}`);
+        }
+
+        return trajectoryParserService.withDumpFile({
+            trajectoryId: input.trajectoryId,
+            timestep: input.timestep,
+            ownerClusterId
+        }, async (dumpPath) => {
             let buffer: Buffer;
             let atomsResult = 0;
 
@@ -901,7 +920,7 @@ export const createFilterEvaluatorService = (
             // parsed, mask, colors, filtered now out of scope — eligible for GC
 
             await uploadBufferToObjectStore({
-                objectStore: minioService,
+                objectStore: createScopedClusterObjectStore(objectStore, ownerClusterId),
                 bucket: ObjectBucketName.Models,
                 objectKey: input.objectKey,
                 buffer,

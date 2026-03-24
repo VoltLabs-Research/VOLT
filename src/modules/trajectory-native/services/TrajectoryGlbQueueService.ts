@@ -2,13 +2,14 @@ import { TRAJECTORY_GLB_QUEUE_NAME } from '@/modules/platform/services';
 import { enqueueProjectedJob } from '@/modules/platform/services';
 import { ObjectBucketName } from '@/shared/contracts';
 import { logger } from '@/core/logger';
-import type { MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
+import type { QueueService, RedisConnectionService } from '@/modules/platform/services';
 import type {
     EnqueuePreprocessingRequest,
     EnqueuePreprocessingResponse,
     EnqueuePreprocessingFrameDescriptor,
     GlbConversionQueueJobPayload
 } from '@/shared/contracts';
+import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
 interface EnqueueGlbJobsResult {
     queuedJobs: number;
@@ -33,6 +34,7 @@ const buildGlbJobPayload = (
         trajectoryName: input.trajectoryName,
         timestep: frame.timestep,
         objectKey: frame.objectKey,
+        ownerClusterId: frame.ownerClusterId || input.storageClusterId,
         status: 'queued',
         queueType: TRAJECTORY_GLB_QUEUE_NAME,
         metadata: {
@@ -52,7 +54,7 @@ const STAT_CONCURRENCY = 10;
  * Returns a Set of objectKeys that exist.
  */
 const getExistingDumpKeys = async (
-    minioService: MinioService,
+    objectStore: ClusterObjectStore,
     frames: EnqueuePreprocessingFrameDescriptor[]
 ): Promise<Set<string>> => {
     const existingKeys = new Set<string>();
@@ -62,7 +64,11 @@ const getExistingDumpKeys = async (
         const results = await Promise.all(
             batch.map(async (frame): Promise<string | null> => {
                 try {
-                    await minioService.statObject(ObjectBucketName.Dumps, frame.objectKey);
+                    if (!frame.ownerClusterId) {
+                        return null;
+                    }
+
+                    await objectStore.head(frame.ownerClusterId, ObjectBucketName.Dumps, frame.objectKey);
                     return frame.objectKey;
                 } catch (error: unknown) {
                     if (
@@ -97,7 +103,7 @@ export interface TrajectoryGlbQueueService {
 };
 
 export const createTrajectoryGlbQueueService = (
-    minioService: MinioService,
+    objectStore: ClusterObjectStore,
     queueService: QueueService,
     redisConnectionService: RedisConnectionService
 ): TrajectoryGlbQueueService => ({
@@ -109,7 +115,13 @@ export const createTrajectoryGlbQueueService = (
         };
 
         // Pre-flight: verify which dump objects actually exist in S3
-        const existingKeys = await getExistingDumpKeys(minioService, input.frames);
+        const existingKeys = await getExistingDumpKeys(
+            objectStore,
+            input.frames.map((frame) => ({
+                ...frame,
+                ownerClusterId: frame.ownerClusterId || input.storageClusterId
+            }))
+        );
         const missingCount = input.frames.length - existingKeys.size;
 
         if (missingCount > 0) {
@@ -117,7 +129,19 @@ export const createTrajectoryGlbQueueService = (
             const prefix = `trajectory-${input.trajectoryId}/`;
             let allKeysInPrefix: string[] = [];
             try {
-                allKeysInPrefix = await minioService.listObjects(ObjectBucketName.Dumps, prefix);
+                if (input.storageClusterId) {
+                    let cursor: string | undefined;
+                    do {
+                        const page = await objectStore.list(input.storageClusterId, {
+                            bucket: ObjectBucketName.Dumps,
+                            prefix,
+                            cursor,
+                            limit: 200
+                        });
+                        allKeysInPrefix.push(...page.keys);
+                        cursor = page.nextCursor;
+                    } while (cursor);
+                }
             } catch {
                 // Ignore listing errors
             }

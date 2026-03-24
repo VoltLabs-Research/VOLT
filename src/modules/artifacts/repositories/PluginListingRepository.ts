@@ -4,10 +4,10 @@ import { calculatePaginationOffset, calculateTotalPages, normalizePagination } f
 import { ObjectBucketName } from '@/shared/contracts';
 import { decodeMultiStream, mergeSelectiveChunk } from '@/shared/utilities/selective-msgpack';
 import { isRecord, readString, toRecord } from '@/shared/utils';
-import type { MinioService } from '@/modules/platform/services';
 import type { PluginListingRowDocument } from '../models/PluginListingRowModel';
 import type { PluginSubListingRowDocument } from '../models/PluginSubListingRowModel';
 import type { PaginatedResult } from '@/shared/contracts';
+import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
 export interface PluginListingFilter {
     pluginId?: string;
@@ -28,6 +28,8 @@ export interface PluginSubListingFilter {
     limit: number;
 };
 
+export type PluginMongoDocumentType = 'listing' | 'sub-listing';
+
 export interface BulkUpsertOperation {
     filter: Record<string, unknown>;
     update: Record<string, unknown>;
@@ -44,6 +46,26 @@ export interface PluginListingRepository {
     bulkUpsertListingRows(operations: BulkUpsertOperation[]): Promise<void>;
     insertSubListingRows(documents: Array<Record<string, unknown>>): Promise<void>;
     deleteSubListingRows(filter: Record<string, unknown>): Promise<void>;
+    exportMongoRows(input: {
+        analysisIds: string[];
+        documentType: PluginMongoDocumentType;
+        skip?: number;
+        limit?: number;
+    }): Promise<{
+        rows: Record<string, unknown>[];
+        total: number;
+        hasMore: boolean;
+        nextSkip: number;
+    }>;
+    importMongoRows(input: {
+        analysisIds: string[];
+        documentType: PluginMongoDocumentType;
+        rows: Record<string, unknown>[];
+    }): Promise<number>;
+    purgeMongoRows(input: {
+        analysisIds: string[];
+        documentType: PluginMongoDocumentType;
+    }): Promise<number>;
 };
 
 interface PluginListingQuery {
@@ -62,6 +84,7 @@ interface PluginSubListingQuery {
 };
 
 interface PluginSubListingSource {
+    ownerClusterId: string;
     objectKey: string;
 };
 
@@ -236,9 +259,22 @@ const normalizeSubListingRows = (value: unknown): Record<string, unknown>[] => {
     return [];
 };
 
+const normalizeMongoExportRows = (rows: Array<Record<string, unknown>>): Record<string, unknown>[] => {
+    return rows.map((row) => ({ ...row }));
+};
+
+const normalizeMongoImportRows = (rows: Record<string, unknown>[]): Record<string, unknown>[] => {
+    return rows.filter((row) => typeof row._id === 'string' && row._id.length > 0).map((row) => ({ ...row }));
+};
+
+const normalizeAnalysisIds = (analysisIds: string[]): string[] => {
+    return [...new Set(analysisIds.filter((analysisId) => typeof analysisId === 'string' && analysisId.length > 0))];
+};
+
 export class MongoPluginListingRepository implements PluginListingRepository {
     constructor(
-        private readonly minioService: MinioService
+        private readonly objectStore: ClusterObjectStore,
+        private readonly localOwnerClusterId: string
     ) {}
 
     async listPluginListings(filter: PluginListingFilter): Promise<ListingPaginatedResult> {
@@ -331,6 +367,128 @@ export class MongoPluginListingRepository implements PluginListingRepository {
         await PluginSubListingRowModel.deleteMany(filter);
     }
 
+    async exportMongoRows(input: {
+        analysisIds: string[];
+        documentType: PluginMongoDocumentType;
+        skip?: number;
+        limit?: number;
+    }): Promise<{
+        rows: Record<string, unknown>[];
+        total: number;
+        hasMore: boolean;
+        nextSkip: number;
+    }> {
+        const analysisIds = normalizeAnalysisIds(input.analysisIds);
+        const skip = Math.max(0, input.skip ?? 0);
+        const limit = Math.min(500, Math.max(1, input.limit ?? 200));
+
+        if (analysisIds.length === 0) {
+            return {
+                rows: [],
+                total: 0,
+                hasMore: false,
+                nextSkip: skip
+            };
+        }
+
+        const query = {
+            analysis: {
+                $in: analysisIds
+            }
+        };
+
+        if (input.documentType === 'listing') {
+            const [total, rows] = await Promise.all([
+                PluginListingRowModel.countDocuments(query),
+                PluginListingRowModel.find(query)
+                    .sort({
+                        _id: 1
+                    })
+                    .skip(skip)
+                    .limit(limit)
+                    .lean<Record<string, unknown>[]>()
+            ]);
+
+            return {
+                rows: normalizeMongoExportRows(rows),
+                total,
+                hasMore: skip + rows.length < total,
+                nextSkip: skip + rows.length
+            };
+        }
+
+        const [total, rows] = await Promise.all([
+            PluginSubListingRowModel.countDocuments(query),
+            PluginSubListingRowModel.find(query)
+                .sort({
+                    _id: 1
+                })
+                .skip(skip)
+                .limit(limit)
+                .lean<Record<string, unknown>[]>()
+        ]);
+
+        return {
+            rows: normalizeMongoExportRows(rows),
+            total,
+            hasMore: skip + rows.length < total,
+            nextSkip: skip + rows.length
+        };
+    }
+
+    async importMongoRows(input: {
+        analysisIds: string[];
+        documentType: PluginMongoDocumentType;
+        rows: Record<string, unknown>[];
+    }): Promise<number> {
+        const rows = normalizeMongoImportRows(input.rows);
+        if (rows.length === 0) {
+            return 0;
+        }
+
+        const bulkOperations = rows.map((row) => ({
+            replaceOne: {
+                filter: {
+                    _id: row._id
+                },
+                replacement: row,
+                upsert: true
+            }
+        }));
+
+        if (input.documentType === 'listing') {
+            await PluginListingRowModel.bulkWrite(bulkOperations);
+            return rows.length;
+        }
+
+        await PluginSubListingRowModel.bulkWrite(bulkOperations);
+        return rows.length;
+    }
+
+    async purgeMongoRows(input: {
+        analysisIds: string[];
+        documentType: PluginMongoDocumentType;
+    }): Promise<number> {
+        const analysisIds = normalizeAnalysisIds(input.analysisIds);
+        if (analysisIds.length === 0) {
+            return 0;
+        }
+
+        const query = {
+            analysis: {
+                $in: analysisIds
+            }
+        };
+
+        if (input.documentType === 'listing') {
+            const result = await PluginListingRowModel.deleteMany(query);
+            return result.deletedCount ?? 0;
+        }
+
+        const result = await PluginSubListingRowModel.deleteMany(query);
+        return result.deletedCount ?? 0;
+    }
+
     private async listPluginSubListingsFromPayload(
         filter: PluginSubListingFilter
     ): Promise<PaginatedResult<PluginSubListingRowDocument> | null> {
@@ -340,7 +498,11 @@ export class MongoPluginListingRepository implements PluginListingRepository {
         }
 
         try {
-            const rows = await this.readSubListingRowsFromObject(source.objectKey, filter.subListingName || '');
+            const rows = await this.readSubListingRowsFromObject(
+                source.ownerClusterId,
+                source.objectKey,
+                filter.subListingName || ''
+            );
             const pagination = normalizePagination(filter.page, filter.limit);
             const offset = calculatePaginationOffset(pagination.page, pagination.limit);
             const pageRows = rows.slice(offset, offset + pagination.limit);
@@ -384,6 +546,7 @@ export class MongoPluginListingRepository implements PluginListingRepository {
             },
             {
                 payloadObjectKey: 1,
+                payloadOwnerClusterId: 1,
                 trajectory: 1
             }
         ).lean<Record<string, unknown> | null>();
@@ -391,8 +554,14 @@ export class MongoPluginListingRepository implements PluginListingRepository {
         const payloadObjectKey = typeof listingDocument?.payloadObjectKey === 'string'
             ? listingDocument.payloadObjectKey
             : undefined;
+        const payloadOwnerClusterId = typeof listingDocument?.payloadOwnerClusterId === 'string'
+            ? listingDocument.payloadOwnerClusterId
+            : undefined;
         if (payloadObjectKey) {
-            return { objectKey: payloadObjectKey };
+            return {
+                ownerClusterId: payloadOwnerClusterId || this.localOwnerClusterId,
+                objectKey: payloadObjectKey
+            };
         }
 
         const trajectoryId = typeof listingDocument?.trajectory === 'string'
@@ -403,6 +572,7 @@ export class MongoPluginListingRepository implements PluginListingRepository {
         }
 
         return {
+            ownerClusterId: this.localOwnerClusterId,
             objectKey: buildPluginPayloadObjectKey(
                 trajectoryId,
                 filter.analysisId,
@@ -413,13 +583,18 @@ export class MongoPluginListingRepository implements PluginListingRepository {
     }
 
     private async readSubListingRowsFromObject(
+        ownerClusterId: string,
         objectKey: string,
         subListingName: string
     ): Promise<Record<string, unknown>[]> {
-        const stream = await this.minioService.getObjectStream(ObjectBucketName.Plugins, objectKey);
+        if (!ownerClusterId) {
+            return [];
+        }
+
+        const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, objectKey);
         let decoded: Record<string, unknown> | null = null;
 
-        for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
+        for await (const message of decodeMultiStream(response.stream as AsyncIterable<Uint8Array>)) {
             decoded = mergeSelectiveChunk(decoded, message, (key) => key === 'sub_listings');
         }
 
@@ -431,6 +606,9 @@ export class MongoPluginListingRepository implements PluginListingRepository {
     }
 };
 
-export const createPluginListingRepository = (minioService: MinioService): PluginListingRepository => {
-    return new MongoPluginListingRepository(minioService);
+export const createPluginListingRepository = (
+    objectStore: ClusterObjectStore,
+    localOwnerClusterId: string
+): PluginListingRepository => {
+    return new MongoPluginListingRepository(objectStore, localOwnerClusterId);
 };

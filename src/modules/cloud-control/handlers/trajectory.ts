@@ -13,10 +13,12 @@ import type {
     TrajectoryParserService,
     TrajectoryPluginParserService
 } from '@/modules/trajectory-native/services';
-import type { MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
+import type { QueueService, RedisConnectionService } from '@/modules/platform/services';
 import type { EnqueuePreprocessingRequest, EnqueuePreprocessingFrameDescriptor, RasterizeTrajectoryRequest } from '@/shared/contracts';
 import { TEAM_CLUSTER_DAEMON_COMMAND } from '@/shared/contracts';
 import type { ReverseChannelCommandHandler } from '../services';
+import type { RuntimeCapabilityGuard } from '../services';
+import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 import {
     readBoolean,
     readNumber,
@@ -36,7 +38,7 @@ import {
 } from './payloadValidation';
 
 interface TrajectoryHandlersDependencies {
-    minioService: MinioService;
+    objectStore: ClusterObjectStore;
     queueService: QueueService;
     redisConnectionService: RedisConnectionService;
     trajectoryAutoPreviewClaimStore: TrajectoryAutoPreviewClaimStore;
@@ -44,6 +46,7 @@ interface TrajectoryHandlersDependencies {
     trajectoryPluginParserService: TrajectoryPluginParserService;
     glbExporterService: GlbExporterService;
     filterEvaluatorService: FilterEvaluatorService;
+    runtimeCapabilityGuard: RuntimeCapabilityGuard;
 };
 
 interface NativeParticleFilterAction {
@@ -58,9 +61,14 @@ const readNativeTrajectoryRequest = (payload: unknown): NativeTrajectoryRequest 
     };
     const teamId = readOptionalString(record.teamId);
     const trajectoryName = readOptionalString(record.trajectoryName);
+    const ownerClusterId = readOptionalString(record.ownerClusterId);
 
     if (typeof record.objectKey !== 'undefined') {
         request.objectKey = readString(record.objectKey, 'objectKey');
+    }
+
+    if (ownerClusterId) {
+        request.ownerClusterId = ownerClusterId;
     }
 
     if (teamId) {
@@ -284,26 +292,31 @@ const readNativeParticleFilterModelRequest = (payload: unknown): NativeParticleF
 const readRasterizeTrajectoryRequest = (payload: unknown): RasterizeTrajectoryRequest => {
     const record = readOptionalPayloadRecord(payload);
     const config = readOptionalUnknownRecord(record.config, 'config');
+    const storageClusterId = readOptionalString(record.storageClusterId);
 
     return {
         trajectoryId: readString(record.trajectoryId, 'trajectoryId'),
         teamId: readString(record.teamId, 'teamId'),
         trajectoryName: readOptionalString(record.trajectoryName),
+        ...(storageClusterId ? { storageClusterId } : {}),
         ...(config ? { config } : {})
     };
 };
 
 const readEnqueuePreprocessingFrameDescriptor = (value: unknown, index: number): EnqueuePreprocessingFrameDescriptor => {
     const record = readOptionalPayloadRecord(value);
+    const ownerClusterId = readOptionalString(record.ownerClusterId);
 
     return {
         timestep: readNumber(record.timestep, `frames[${index}].timestep`),
-        objectKey: readString(record.objectKey, `frames[${index}].objectKey`)
+        objectKey: readString(record.objectKey, `frames[${index}].objectKey`),
+        ...(ownerClusterId ? { ownerClusterId } : {})
     };
 };
 
 const readEnqueuePreprocessingRequest = (payload: unknown): EnqueuePreprocessingRequest => {
     const record = readOptionalPayloadRecord(payload);
+    const storageClusterId = readOptionalString(record.storageClusterId);
 
     if (!Array.isArray(record.frames) || record.frames.length === 0) {
         throw new Error('frames must be a non-empty array');
@@ -313,6 +326,7 @@ const readEnqueuePreprocessingRequest = (payload: unknown): EnqueuePreprocessing
         trajectoryId: readString(record.trajectoryId, 'trajectoryId'),
         teamId: readString(record.teamId, 'teamId'),
         trajectoryName: readOptionalString(record.trajectoryName),
+        ...(storageClusterId ? { storageClusterId } : {}),
         frames: record.frames.map((frame: unknown, index: number) =>
             readEnqueuePreprocessingFrameDescriptor(frame, index)
         )
@@ -321,13 +335,13 @@ const readEnqueuePreprocessingRequest = (payload: unknown): EnqueuePreprocessing
 
 export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): ReverseChannelCommandHandler[] => {
     const trajectoryRasterQueueService = createTrajectoryRasterQueueService(
-        deps.minioService,
+        deps.objectStore,
         deps.queueService,
         deps.redisConnectionService,
         deps.trajectoryAutoPreviewClaimStore
     );
     const trajectoryGlbQueueService = createTrajectoryGlbQueueService(
-        deps.minioService,
+        deps.objectStore,
         deps.queueService,
         deps.redisConnectionService
     );
@@ -335,54 +349,90 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
     return [
         {
             command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.rasterize,
-            execute: async (payload) => ({
-                data: await trajectoryRasterQueueService.queueRasterizationJobs(
-                    readRasterizeTrajectoryRequest(payload)
-                )
-            })
+            execute: async (payload) => {
+                deps.runtimeCapabilityGuard.ensureAcceptsComputeJobs(
+                    TEAM_CLUSTER_DAEMON_COMMAND.trajectory.rasterize
+                );
+                return {
+                    data: await trajectoryRasterQueueService.queueRasterizationJobs(
+                        readRasterizeTrajectoryRequest(payload)
+                    )
+                };
+            }
         },
         {
             command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.enqueuePreprocessing,
-            execute: async (payload) => ({
-                data: await trajectoryGlbQueueService.enqueueGlbConversionJobs(
-                    readEnqueuePreprocessingRequest(payload)
-                )
-            })
+            execute: async (payload) => {
+                deps.runtimeCapabilityGuard.ensureAcceptsComputeJobs(
+                    TEAM_CLUSTER_DAEMON_COMMAND.trajectory.enqueuePreprocessing
+                );
+                return {
+                    data: await trajectoryGlbQueueService.enqueueGlbConversionJobs(
+                        readEnqueuePreprocessingRequest(payload)
+                    )
+                };
+            }
         },
         {
             command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.preprocess,
             execute: async (payload) => {
+                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled(
+                    TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.preprocess
+                );
                 await deps.glbExporterService.preprocessTrajectory(readNativeTrajectoryRequest(payload));
                 return { data: { glbExported: true } };
             }
         },
         {
             command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.metadata,
-            execute: async (payload) => ({
-                data: await deps.trajectoryParserService.getTrajectoryMetadata(readNativeTrajectoryRequest(payload))
-            })
+            execute: async (payload) => {
+                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled(
+                    TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.metadata
+                );
+                return {
+                    data: await deps.trajectoryParserService.getTrajectoryMetadata(readNativeTrajectoryRequest(payload))
+                };
+            }
         },
         {
             command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.propertyStats,
-            execute: async (payload) => ({
-                data: await deps.trajectoryParserService.getPropertyStats(readNativePropertyStatsRequest(payload))
-            })
+            execute: async (payload) => {
+                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled(
+                    TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.propertyStats
+                );
+                return {
+                    data: await deps.trajectoryParserService.getPropertyStats(readNativePropertyStatsRequest(payload))
+                };
+            }
         },
         {
             command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.uniqueValues,
-            execute: async (payload) => ({
-                data: await deps.trajectoryParserService.getUniqueValues(readNativeUniqueValuesRequest(payload))
-            })
+            execute: async (payload) => {
+                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled(
+                    TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.uniqueValues
+                );
+                return {
+                    data: await deps.trajectoryParserService.getUniqueValues(readNativeUniqueValuesRequest(payload))
+                };
+            }
         },
         {
             command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.atomIds,
-            execute: async (payload) => ({
-                data: await deps.trajectoryParserService.getAtomIds(readNativeTrajectoryRequest(payload))
-            })
+            execute: async (payload) => {
+                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled(
+                    TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.atomIds
+                );
+                return {
+                    data: await deps.trajectoryParserService.getAtomIds(readNativeTrajectoryRequest(payload))
+                };
+            }
         },
         {
             command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.atoms,
             execute: async (payload) => {
+                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled(
+                    TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.atoms
+                );
                 const request = readNativeAtomsPageRequest(payload);
                 const nativeResult = await deps.trajectoryParserService.getAtomsPage(request);
 
@@ -412,65 +462,101 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
         },
         {
             command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.filterPreview,
-            execute: async (payload) => ({
-                data: await deps.filterEvaluatorService.previewFilter(readNativeFilterPreviewRequest(payload))
-            })
+            execute: async (payload) => {
+                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled(
+                    TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.filterPreview
+                );
+                return {
+                    data: await deps.filterEvaluatorService.previewFilter(readNativeFilterPreviewRequest(payload))
+                };
+            }
         },
         {
             command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.colorModel,
-            execute: async (payload) => ({
-                data: await deps.filterEvaluatorService.exportColoredModel(readNativeColorModelRequest(payload))
-            })
+            execute: async (payload) => {
+                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled(
+                    TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.colorModel
+                );
+                return {
+                    data: await deps.filterEvaluatorService.exportColoredModel(readNativeColorModelRequest(payload))
+                };
+            }
         },
         {
             command: TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.particleFilterModel,
-            execute: async (payload) => ({
-                data: await deps.filterEvaluatorService.exportParticleFilterModel(readNativeParticleFilterModelRequest(payload))
-            })
+            execute: async (payload) => {
+                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled(
+                    TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.particleFilterModel
+                );
+                return {
+                    data: await deps.filterEvaluatorService.exportParticleFilterModel(readNativeParticleFilterModelRequest(payload))
+                };
+            }
         },
         {
             command: 'trajectory.plugin.property-names',
-            execute: async (payload) => ({
-                data: await deps.trajectoryPluginParserService.discoverPerAtomPropertyNames(readPluginPropertyNamesRequest(payload))
-            })
+            execute: async (payload) => {
+                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled('trajectory.plugin.property-names');
+                return {
+                    data: await deps.trajectoryPluginParserService.discoverPerAtomPropertyNames(readPluginPropertyNamesRequest(payload))
+                };
+            }
         },
         {
             command: 'trajectory.plugin.modifier-analysis',
-            execute: async (payload) => ({
-                data: await deps.trajectoryPluginParserService.getModifierAnalysisData(readPluginModifierAnalysisRequest(payload))
-            })
+            execute: async (payload) => {
+                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled('trajectory.plugin.modifier-analysis');
+                return {
+                    data: await deps.trajectoryPluginParserService.getModifierAnalysisData(readPluginModifierAnalysisRequest(payload))
+                };
+            }
         },
         {
             command: 'trajectory.plugin.atom-index',
-            execute: async (payload) => ({
-                data: await deps.trajectoryPluginParserService.buildPluginIndexForAtomIds(readPluginAtomIndexRequest(payload))
-            })
+            execute: async (payload) => {
+                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled('trajectory.plugin.atom-index');
+                return {
+                    data: await deps.trajectoryPluginParserService.buildPluginIndexForAtomIds(readPluginAtomIndexRequest(payload))
+                };
+            }
         },
         {
             command: 'trajectory.plugin.modifier-values',
-            execute: async (payload) => ({
-                data: await deps.trajectoryPluginParserService.getModifierValues(readPluginModifierValuesRequest(payload))
-            })
+            execute: async (payload) => {
+                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled('trajectory.plugin.modifier-values');
+                return {
+                    data: await deps.trajectoryPluginParserService.getModifierValues(readPluginModifierValuesRequest(payload))
+                };
+            }
         },
         {
             command: 'trajectory.plugin.modifier-stats',
-            execute: async (payload) => ({
-                data: await deps.trajectoryPluginParserService.getModifierStats(readPluginModifierStatsRequest(payload))
-            })
+            execute: async (payload) => {
+                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled('trajectory.plugin.modifier-stats');
+                return {
+                    data: await deps.trajectoryPluginParserService.getModifierStats(readPluginModifierStatsRequest(payload))
+                };
+            }
         },
         {
             command: 'trajectory.plugin.modifier-unique-values',
-            execute: async (payload) => ({
-                data: await deps.trajectoryPluginParserService.getModifierUniqueValues(readPluginModifierUniqueValuesRequest(payload))
-            })
+            execute: async (payload) => {
+                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled('trajectory.plugin.modifier-unique-values');
+                return {
+                    data: await deps.trajectoryPluginParserService.getModifierUniqueValues(readPluginModifierUniqueValuesRequest(payload))
+                };
+            }
         },
         {
             command: 'trajectory.plugin.analysis-all-atoms',
-            execute: async (payload) => ({
-                data: await deps.trajectoryPluginParserService.getAnalysisAllPerAtomData(
-                    readPluginAnalysisAllAtomsRequest(payload)
-                )
-            })
+            execute: async (payload) => {
+                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled('trajectory.plugin.analysis-all-atoms');
+                return {
+                    data: await deps.trajectoryPluginParserService.getAnalysisAllPerAtomData(
+                        readPluginAnalysisAllAtomsRequest(payload)
+                    )
+                };
+            }
         }
     ];
 };

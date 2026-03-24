@@ -1,4 +1,5 @@
 import { ObjectBucketName } from '@/shared/contracts';
+import type { TeamClusterDaemonRuntimeConfig } from '@/shared/contracts';
 
 interface MinioConfig {
     endpoint: string;
@@ -41,9 +42,7 @@ export interface QueueConcurrencyConfig {
     sshImport: number;
 };
 
-export interface DaemonRuntimeConfig {
-    queueConcurrency: QueueConcurrencyConfig;
-};
+export type DaemonRuntimeConfig = TeamClusterDaemonRuntimeConfig;
 
 export interface DaemonConfig {
     port: number;

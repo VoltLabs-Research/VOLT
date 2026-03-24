@@ -1,7 +1,6 @@
 import { AnalysisExposureDefinition, type AnalysisJobExecutionData } from '@/shared/contracts';
 import { logger } from '@/core/logger';
 import { forceGC } from '@/core/memory';
-import type { MinioService } from '@/modules/platform/services';
 import { isRecord } from '@/shared/utils';
 import type { PluginListingRepository } from '../repositories/PluginListingRepository';
 import type { ExportNodeProcessorService } from './ExportNodeProcessorService';
@@ -10,6 +9,7 @@ import { decodeMultiStream, mergeSelectiveChunk } from '@/shared/utilities/selec
 import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import type { Readable } from 'node:stream';
+import { createScopedClusterObjectStore, type ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
 const PLUGINS_BUCKET = 'volt-plugins';
 
@@ -179,7 +179,7 @@ export interface ResultProcessorService {
 }
 
 export const createResultProcessorService = (
-    minioService: MinioService,
+    objectStore: ClusterObjectStore,
     pluginListingRepository: PluginListingRepository,
     exportNodeProcessorService: ExportNodeProcessorService
 ): ResultProcessorService => {
@@ -220,6 +220,11 @@ export const createResultProcessorService = (
 
             const storageKey = `plugins/trajectory-${executionData.trajectoryId}/analysis-${executionData.analysisId}/${exposure.nodeId}/timestep-${timestep}.msgpack`;
             const fileStat = await fs.stat(outputFilePath);
+            const storageOwnerClusterId = executionData.storageClusterId || executionData.teamClusterId;
+            if (!storageOwnerClusterId) {
+                throw new Error(`Missing storage owner cluster for analysis ${executionData.analysisId}`);
+            }
+            const scopedObjectStore = createScopedClusterObjectStore(objectStore, storageOwnerClusterId);
 
             logger.info(
                 {
@@ -233,7 +238,7 @@ export const createResultProcessorService = (
                 'Uploading exposure output'
             );
 
-            await minioService.putObjectStream({
+            await scopedObjectStore.putObjectStream({
                 bucket: PLUGINS_BUCKET,
                 objectKey: storageKey,
                 stream: createReadStream(outputFilePath),
@@ -260,6 +265,7 @@ export const createResultProcessorService = (
                         listingPayload,
                         subListingNames,
                         storageKey,
+                        storageOwnerClusterId,
                         timestep,
                         teamId
                     );
@@ -278,7 +284,7 @@ export const createResultProcessorService = (
                             exposure,
                             decodedPayload: exportPayload,
                             timestep,
-                            teamClusterId: executionData.teamClusterId || ''
+                            teamClusterId: storageOwnerClusterId
                         });
                         logMemoryUsage('after-export-processing');
                     }
@@ -315,6 +321,7 @@ async function precomputeListingRows(
     decoded: Record<string, unknown> | null,
     subListingNames: string[],
     objectKey: string,
+    payloadOwnerClusterId: string,
     timestep: number,
     teamId: string
 ): Promise<void> {
@@ -352,6 +359,7 @@ async function precomputeListingRows(
             timestep,
             row: cleanedMainListing,
             payloadObjectKey: objectKey,
+            payloadOwnerClusterId,
             subListingNames
         }
     }]);

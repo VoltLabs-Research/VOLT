@@ -1,9 +1,10 @@
 import { TRAJECTORY_RASTER_QUEUE_NAME, enqueueProjectedJob } from '@/modules/platform/services';
-import type { MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
+import type { QueueService, RedisConnectionService } from '@/modules/platform/services';
 import { ObjectBucketName } from '@/shared/contracts';
 import type { RasterQueueJobPayload, RasterizeTrajectoryRequest, RasterizeTrajectoryResponse } from '@/shared/contracts';
 import { isRecord } from '@/shared/utilities/type-guards';
 import type { TrajectoryAutoPreviewClaimStore } from './TrajectoryAutoPreviewClaimStore';
+import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
 interface ParsedRasterModel {
     modelObjectKey: string;
@@ -90,7 +91,8 @@ const isObjectNotFoundError = (error: unknown): boolean => {
 };
 
 const getExistingOutputKeys = async (
-    minioService: MinioService,
+    objectStore: ClusterObjectStore,
+    ownerClusterId: string,
     models: ParsedRasterModel[]
 ): Promise<Set<string>> => {
     const existingOutputKeys = new Set<string>();
@@ -100,7 +102,7 @@ const getExistingOutputKeys = async (
         const results = await Promise.all(
             batch.map(async (rasterModel): Promise<string | null> => {
                 try {
-                    await minioService.statObject(ObjectBucketName.Rasterizer, rasterModel.outputObjectKey);
+                    await objectStore.head(ownerClusterId, ObjectBucketName.Rasterizer, rasterModel.outputObjectKey);
                     return rasterModel.outputObjectKey;
                 } catch (error) {
                     if (isObjectNotFoundError(error)) {
@@ -177,7 +179,9 @@ const buildRasterJobPayload = (
         trajectoryName: input.trajectoryName,
         timestep: rasterModel.timestep,
         modelObjectKey: rasterModel.modelObjectKey,
+        modelOwnerClusterId: input.storageClusterId,
         outputObjectKey: rasterModel.outputObjectKey,
+        outputOwnerClusterId: input.storageClusterId,
         status: 'queued',
         queueType: TRAJECTORY_RASTER_QUEUE_NAME,
         metadata: {
@@ -241,12 +245,16 @@ const queueAutoPreviewRasterizationJob = async (
 };
 
 export const createTrajectoryRasterQueueService = (
-    minioService: MinioService,
+    objectStore: ClusterObjectStore,
     queueService: QueueService,
     redisConnectionService: RedisConnectionService,
     trajectoryAutoPreviewClaimStore: TrajectoryAutoPreviewClaimStore
 ): TrajectoryRasterQueueService => ({
     async queueRasterizationJobs(input) {
+        if (!input.storageClusterId) {
+            throw new Error(`Missing storageClusterId for rasterization of trajectory ${input.trajectoryId}`);
+        }
+
         const autoPreviewRasterizationConfig = readAutoPreviewRasterizationConfig(input);
 
         if (autoPreviewRasterizationConfig) {
@@ -260,7 +268,19 @@ export const createTrajectoryRasterQueueService = (
         }
 
         const prefix = `trajectory-${input.trajectoryId}/`;
-        const keys = await minioService.listObjects(ObjectBucketName.Models, prefix);
+        const keys: string[] = [];
+        let cursor: string | undefined;
+
+        do {
+            const page = await objectStore.list(input.storageClusterId, {
+                bucket: ObjectBucketName.Models,
+                prefix,
+                cursor,
+                limit: 200
+            });
+            keys.push(...page.keys);
+            cursor = page.nextCursor;
+        } while (cursor);
         const glbKeys = keys.filter((key) => key.endsWith('.glb'));
 
         const rasterModels: ParsedRasterModel[] = [];
@@ -277,7 +297,11 @@ export const createTrajectoryRasterQueueService = (
             }
         }
 
-        const existingOutputKeys = await getExistingOutputKeys(minioService, rasterModels);
+        const existingOutputKeys = await getExistingOutputKeys(
+            objectStore,
+            input.storageClusterId,
+            rasterModels
+        );
         const rasterJobs = rasterModels.map((rasterModel) => buildRasterJobPayload(input, rasterModel));
         const result = createQueueRasterizationJobsResult();
 

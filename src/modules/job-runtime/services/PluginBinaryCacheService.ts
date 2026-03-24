@@ -1,31 +1,38 @@
 import { logger } from '@/core/logger';
 import { DAEMON_PATHS } from '@/core/paths';
-import { MinioService } from '@/modules/platform/services';
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { createWriteStream } from 'node:fs';
+import { createReadStream, createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import type { Readable } from 'node:stream';
-import { EntrypointType } from '@/shared/contracts';
+import { EntrypointType, ObjectBucketName, VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@/shared/contracts';
+import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
-const PLUGINS_BUCKET = 'volt-plugins';
+const PLUGINS_BUCKET = ObjectBucketName.Plugins;
 const PYTHON_VENV_DIRECTORY = 'venv';
 const PYTHON_REQUIREMENTS_FILENAME = 'requirements.txt';
 const PYTHON_INSTALL_MARKER_FILENAME = '.requirements-installed';
 const PYTHON_PROJECT_DIRECTORY = 'project';
 const PYTHON_ZIP_EXTRACTED_MARKER = '.zip-extracted';
+const HASH_MARKER_FILENAME_SUFFIX = '.sha256';
 
-const buildCacheKey = (binaryObjectPath: string): string => {
+const buildCacheKey = (binaryObjectPath: string, expectedHash?: string): string => {
     const basename = path.basename(binaryObjectPath);
-    const digest = createHash('sha256').update(binaryObjectPath).digest('hex');
+    const digest = createHash('sha256')
+        .update(binaryObjectPath)
+        .update('\u0000')
+        .update(expectedHash ?? '')
+        .digest('hex');
     return `${digest}-${basename}`;
 };
 
-const buildPythonRuntimeKey = (binaryObjectPath: string, requirementsFile: string): string => {
+const buildPythonRuntimeKey = (binaryObjectPath: string, requirementsFile: string, expectedHash?: string): string => {
     return createHash('sha256')
         .update(binaryObjectPath)
+        .update('\u0000')
+        .update(expectedHash ?? '')
         .update('\u0000')
         .update(requirementsFile)
         .digest('hex');
@@ -97,21 +104,109 @@ const pythonRuntimePromises = new Map<string, Promise<{
     env: NodeJS.ProcessEnv;
 }>>();
 
-export const createPluginBinaryCacheService = (minioService: MinioService): PluginBinaryCacheService => {
+interface ResolvedPluginBinarySource {
+    ownerClusterId: string;
+    expectedHash?: string;
+}
+
+const readHashMarker = async (filePath: string): Promise<string | null> => {
+    return fs.readFile(`${filePath}${HASH_MARKER_FILENAME_SUFFIX}`, 'utf-8')
+        .then((value) => value.trim() || null)
+        .catch(() => null);
+};
+
+const writeHashMarker = async (filePath: string, expectedHash?: string): Promise<void> => {
+    if (!expectedHash) {
+        await fs.rm(`${filePath}${HASH_MARKER_FILENAME_SUFFIX}`, { force: true }).catch(() => {});
+        return;
+    }
+
+    await fs.writeFile(`${filePath}${HASH_MARKER_FILENAME_SUFFIX}`, expectedHash, 'utf-8');
+};
+
+const computeFileHash = async (filePath: string): Promise<string> => {
+    const hash = createHash('sha256');
+    const stream = createReadStream(filePath);
+
+    for await (const chunk of stream) {
+        hash.update(chunk);
+    }
+
+    return hash.digest('hex');
+};
+
+export const createPluginBinaryCacheService = (objectStore: ClusterObjectStore): PluginBinaryCacheService => {
+    const resolvePluginBinarySource = async (binaryObjectPath: string): Promise<ResolvedPluginBinarySource> => {
+        const headResponse = await objectStore.head(
+            VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID,
+            PLUGINS_BUCKET,
+            binaryObjectPath
+        );
+
+        return {
+            ownerClusterId: VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID,
+            expectedHash: headResponse.metadata.sha256
+        };
+    };
+
     const getBinaryPath = async (binaryObjectPath: string): Promise<string> => {
-        const cacheKey = buildCacheKey(binaryObjectPath);
+        const source = await resolvePluginBinarySource(binaryObjectPath);
+        const cacheKey = buildCacheKey(binaryObjectPath, source.expectedHash);
         const localPath = path.join(DAEMON_PATHS.pluginBinCache, cacheKey);
 
         try {
             await fs.access(localPath, fs.constants.X_OK);
-            return localPath;
+            const cachedHash = await readHashMarker(localPath);
+            if (!source.expectedHash || cachedHash === source.expectedHash) {
+                logger.info(
+                    {
+                        action: 'artifact.resolve.local-cache-hit',
+                        binaryObjectPath,
+                        cacheKey,
+                        expectedHash: source.expectedHash
+                    },
+                    'Using cached plugin binary'
+                );
+                return localPath;
+            }
+
+            logger.warn(
+                {
+                    action: 'artifact.resolve.hash-mismatch',
+                    binaryObjectPath,
+                    cacheKey,
+                    cachedHash,
+                    expectedHash: source.expectedHash
+                },
+                'Plugin binary cache hash mismatch, refetching'
+            );
+            await fs.rm(localPath, { force: true }).catch(() => {});
+            await fs.rm(`${localPath}${HASH_MARKER_FILENAME_SUFFIX}`, { force: true }).catch(() => {});
         } catch {
         }
 
         await fs.mkdir(DAEMON_PATHS.pluginBinCache, { recursive: true });
 
-        const stream = await minioService.getObjectStream(PLUGINS_BUCKET, binaryObjectPath);
-        await writeStreamToFile(stream, localPath);
+        const response = await objectStore.getStream(source.ownerClusterId, PLUGINS_BUCKET, binaryObjectPath);
+        await writeStreamToFile(response.stream, localPath);
+        if (source.expectedHash) {
+            const computedHash = await computeFileHash(localPath);
+            if (computedHash !== source.expectedHash) {
+                logger.error(
+                    {
+                        action: 'artifact.resolve.hash-mismatch',
+                        binaryObjectPath,
+                        computedHash,
+                        expectedHash: source.expectedHash
+                    },
+                    'Downloaded plugin binary hash does not match expected hash'
+                );
+                await fs.rm(localPath, { force: true }).catch(() => {});
+                throw new Error(`Downloaded plugin binary hash mismatch for ${binaryObjectPath}`);
+            }
+        }
+
+        await writeHashMarker(localPath, source.expectedHash);
         await fs.chmod(localPath, 0o755);
 
         logger.info(`Binary cached: ${binaryObjectPath} -> ${localPath}`);
@@ -119,7 +214,8 @@ export const createPluginBinaryCacheService = (minioService: MinioService): Plug
     };
 
     const getCachedBinaryPath = async (binaryObjectPath: string): Promise<string> => {
-        const cacheKey = buildCacheKey(binaryObjectPath);
+        const source = await resolvePluginBinarySource(binaryObjectPath);
+        const cacheKey = buildCacheKey(binaryObjectPath, source.expectedHash);
         const existingPromise = binaryCachePromises.get(cacheKey);
         if (existingPromise) {
             return existingPromise;
@@ -135,8 +231,9 @@ export const createPluginBinaryCacheService = (minioService: MinioService): Plug
     };
 
     const getPythonRuntime = async (binaryObjectPath: string, requirementsFile: string, entrypointScript?: string) => {
+        const source = await resolvePluginBinarySource(binaryObjectPath);
         const artifactPath = await getCachedBinaryPath(binaryObjectPath);
-        const runtimeKey = buildPythonRuntimeKey(binaryObjectPath, requirementsFile);
+        const runtimeKey = buildPythonRuntimeKey(binaryObjectPath, requirementsFile, source.expectedHash);
         const existingPromise = pythonRuntimePromises.get(runtimeKey);
         if (existingPromise) {
             return existingPromise;
@@ -159,14 +256,18 @@ export const createPluginBinaryCacheService = (minioService: MinioService): Plug
             if (entrypointScript) {
                 const projectDir = path.join(runtimeDirectory, PYTHON_PROJECT_DIRECTORY);
                 const extractMarkerPath = path.join(runtimeDirectory, PYTHON_ZIP_EXTRACTED_MARKER);
+                const extractMarkerValue = source.expectedHash || artifactPath;
 
                 try {
-                    await fs.access(extractMarkerPath, fs.constants.F_OK);
+                    const currentMarker = await fs.readFile(extractMarkerPath, 'utf-8');
+                    if (currentMarker.trim() !== extractMarkerValue) {
+                        throw new Error('stale python project marker');
+                    }
                 } catch {
                     await fs.rm(projectDir, { recursive: true, force: true });
                     await fs.mkdir(projectDir, { recursive: true });
                     await runCommand('unzip', ['-o', artifactPath, '-d', projectDir], runtimeDirectory);
-                    await fs.writeFile(extractMarkerPath, artifactPath, 'utf-8');
+                    await fs.writeFile(extractMarkerPath, extractMarkerValue, 'utf-8');
                     logger.info(`Python project extracted: ${artifactPath} -> ${projectDir}`);
                 }
 

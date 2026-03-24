@@ -2,6 +2,12 @@ import {
     TeamClusterServiceExposureAccessMode,
     type TeamClusterServiceExposure
 } from './serviceExposure';
+import type {
+    TeamClusterDaemonRoleApplyPayload,
+    TeamClusterDaemonRoleApplyResult,
+    TeamClusterEffectiveCapabilities,
+    TeamClusterRuntimeRoleConfig
+} from './teamClusterRuntime';
 import type { RuntimeProgressEvent } from '@voltstack/daemon-cluster-client';
 
 type ValueOf<T> = T[keyof T];
@@ -74,11 +80,21 @@ export const TEAM_CLUSTER_DAEMON_COMMAND = Object.freeze({
         })
     }),
     plugin: Object.freeze({
-        sync: 'plugin.sync'
+        sync: 'plugin.sync',
+        transfer: Object.freeze({
+            mongo: Object.freeze({
+                export: 'plugin.transfer.mongo.export',
+                import: 'plugin.transfer.mongo.import',
+                purge: 'plugin.transfer.mongo.purge'
+            })
+        })
     }),
     runtime: Object.freeze({
         config: Object.freeze({
             get: 'runtime.config.get'
+        }),
+        role: Object.freeze({
+            apply: 'runtime.role.apply'
         }),
         queueConcurrency: Object.freeze({
             apply: 'runtime.queue-concurrency.apply'
@@ -151,6 +167,55 @@ export interface TeamClusterDaemonQueueConcurrency {
 export interface TeamClusterDaemonQueueConcurrencyApplyPayload {
     [key: string]: unknown;
     queueConcurrency: TeamClusterDaemonQueueConcurrency;
+};
+
+export interface TeamClusterDaemonRuntimeConfig {
+    contractVersion: number;
+    queueConcurrency: TeamClusterDaemonQueueConcurrency;
+    roleConfig: TeamClusterRuntimeRoleConfig;
+    effectiveCapabilities: TeamClusterEffectiveCapabilities;
+}
+
+export type TeamClusterDaemonPluginMongoDocumentType = 'listing' | 'sub-listing';
+
+export interface TeamClusterDaemonPluginMongoExportPayload {
+    analysisIds: string[];
+    documentType: TeamClusterDaemonPluginMongoDocumentType;
+    skip?: number;
+    limit?: number;
+}
+
+export interface TeamClusterDaemonPluginMongoExportResult {
+    rows: Record<string, unknown>[];
+    total: number;
+    hasMore: boolean;
+    nextSkip: number;
+}
+
+export interface TeamClusterDaemonPluginMongoImportPayload {
+    analysisIds: string[];
+    documentType: TeamClusterDaemonPluginMongoDocumentType;
+    rows: Record<string, unknown>[];
+}
+
+export interface TeamClusterDaemonPluginMongoImportResult {
+    importedRows: number;
+}
+
+export interface TeamClusterDaemonPluginMongoPurgePayload {
+    analysisIds: string[];
+    documentType: TeamClusterDaemonPluginMongoDocumentType;
+}
+
+export interface TeamClusterDaemonPluginMongoPurgeResult {
+    deletedRows: number;
+}
+
+export type {
+    TeamClusterDaemonRoleApplyPayload,
+    TeamClusterDaemonRoleApplyResult,
+    TeamClusterEffectiveCapabilities,
+    TeamClusterRuntimeRoleConfig
 };
 
 export interface TeamClusterDaemonSocketResponsePayload<T = unknown> {

@@ -5,6 +5,12 @@ export enum ObjectBucketName {
     Rasterizer = 'volt-rasterizer'
 };
 
+export const TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH = '/internal/team-cluster/object-store/v1';
+export const TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER = 'x-team-cluster-id';
+export const TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER = 'x-team-cluster-daemon-password';
+export const TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX = 'x-object-meta-';
+export const VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID = '__volt_server__';
+
 export enum TextEncoding {
     Utf8 = 'utf8',
     Base64 = 'base64'
@@ -100,7 +106,26 @@ export interface ObjectDeleteRequest {
 export interface PluginSyncRequest {
     pluginId: string;
     objectKey: string;
+    ownerClusterId?: string;
+    expectedHash?: string;
 };
+
+export interface ResolvedObjectRef {
+    ownerClusterId: string;
+    bucket: string;
+    objectKey: string;
+    expectedHash?: string;
+    sizeBytes?: number;
+}
+
+export interface ResolvedObjectWrite {
+    ownerClusterId: string;
+    bucket: string;
+    objectKey: string;
+    expectedHash?: string;
+    sizeBytes?: number;
+    contentType?: string;
+}
 
 export interface AnalysisQueueJobPayload extends Record<string, unknown> {
     jobId: string;
@@ -132,7 +157,9 @@ export interface RasterQueueJobPayload extends Record<string, unknown> {
     trajectoryName?: string;
     timestep: number;
     modelObjectKey: string;
+    modelOwnerClusterId?: string;
     outputObjectKey: string;
+    outputOwnerClusterId?: string;
     status: string;
     queueType: string;
     metadata?: Record<string, unknown>;
@@ -159,6 +186,8 @@ export interface DaemonAnalysisDocument {
     pluginDisplayName: string;
     clusterId?: string;
     teamCluster?: string;
+    computeClusterId?: string;
+    storageClusterId?: string;
     config?: Record<string, unknown>;
     trajectory?: string;
     createdBy?: string;
@@ -234,6 +263,8 @@ export interface AnalysisJobExecutionData {
     teamId?: string;
     trajectoryFrames: TrajectoryFrame[];
     teamClusterId?: string;
+    storageClusterId?: string;
+    pluginBinaryRef?: ResolvedObjectRef;
     exposures: AnalysisExposureDefinition[];
     forEachNodeId?: string;
     nodeOutputSnapshots: Record<string, Record<string, unknown>>;
@@ -297,6 +328,7 @@ export interface RasterizeTrajectoryRequest {
     trajectoryId: string;
     teamId: string;
     trajectoryName?: string;
+    storageClusterId?: string;
     config?: Record<string, unknown>;
 };
 
@@ -314,6 +346,7 @@ export interface GlbConversionQueueJobPayload extends Record<string, unknown> {
     trajectoryName?: string;
     timestep: number;
     objectKey: string;
+    ownerClusterId?: string;
     status: string;
     queueType: string;
     metadata?: Record<string, unknown>;
@@ -325,12 +358,14 @@ export interface GlbConversionQueueJobPayload extends Record<string, unknown> {
 export interface EnqueuePreprocessingFrameDescriptor {
     timestep: number;
     objectKey: string;
+    ownerClusterId?: string;
 };
 
 export interface EnqueuePreprocessingRequest {
     trajectoryId: string;
     teamId: string;
     trajectoryName?: string;
+    storageClusterId?: string;
     frames: EnqueuePreprocessingFrameDescriptor[];
 };
 
