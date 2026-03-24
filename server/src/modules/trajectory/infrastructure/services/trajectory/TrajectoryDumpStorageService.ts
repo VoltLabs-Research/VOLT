@@ -1,4 +1,5 @@
 import { SYS_BUCKETS } from '@core/config/minio';
+import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
@@ -57,6 +58,10 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
         const objectName = this.getObjectName(trajectoryId, timestep);
         const cachePath = this.getCachePath(trajectoryId, timestep);
         const cacheKey = `${trajectoryId}:${timestep}`;
+        const trajectory = await this.trajectoryRepo.findById(trajectoryId);
+        const storageClusterId = trajectory
+            ? resolveTrajectoryStorageClusterId(trajectory.props)
+            : undefined;
 
         // Check valid cache on disk
         if(await this.isCacheValid(cachePath)){
@@ -71,7 +76,7 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
         }
 
         // Start new download
-        const downloadTask = this.downloadDump(objectName, cachePath, cacheKey);
+        const downloadTask = this.downloadDump(objectName, cachePath, cacheKey, storageClusterId);
         this.pendingRequests.set(cacheKey, downloadTask);
         return downloadTask;
     }
@@ -79,23 +84,36 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
     private async downloadDump(
         objectName: string,
         cachePath: string,
-        cacheKey: string
+        cacheKey: string,
+        storageClusterId?: string
     ): Promise<string | null>{
         try{
-            const exists = await this.storageService.exists(
-                SYS_BUCKETS.DUMPS,
-                objectName
-            );
+            const exists = storageClusterId
+                ? await this.objectGatewayClient.exists(
+                    storageClusterId,
+                    SYS_BUCKETS.DUMPS,
+                    objectName
+                )
+                : await this.storageService.exists(
+                    SYS_BUCKETS.DUMPS,
+                    objectName
+                );
 
             if(!exists) return null;
 
             const cacheDir = path.dirname(cachePath);
             await this.tempFileService.ensureDir(cacheDir);
 
-            const remoteStream = await this.storageService.getStream(
-                SYS_BUCKETS.DUMPS,
-                objectName
-            );
+            const remoteStream = storageClusterId
+                ? (await this.objectGatewayClient.getStream(
+                    storageClusterId,
+                    SYS_BUCKETS.DUMPS,
+                    objectName
+                )).stream
+                : await this.storageService.getStream(
+                    SYS_BUCKETS.DUMPS,
+                    objectName
+                );
 
             // Stream Pipeline: Remote -> Decompress -> Disk
             const gunzip = zlib.createGunzip();
@@ -136,10 +154,13 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
     async existsDump(trajectoryId: string, timestep: string): Promise<boolean> {
         const objectName = this.getObjectName(trajectoryId, timestep);
         const trajectory = await this.trajectoryRepo.findById(trajectoryId);
+        const storageClusterId = trajectory
+            ? resolveTrajectoryStorageClusterId(trajectory.props)
+            : undefined;
 
-        if (trajectory?.props.teamCluster) {
+        if (storageClusterId) {
             return this.objectGatewayClient.exists(
-                trajectory.props.teamCluster,
+                storageClusterId,
                 SYS_BUCKETS.DUMPS,
                 objectName
             );
@@ -150,8 +171,12 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
 
     async listDumps(trajectoryId: string): Promise<string[]>{
         const trajectory = await this.trajectoryRepo.findById(trajectoryId);
-        if(trajectory?.props.teamCluster){
-            return this.listDumpsFromDaemon(trajectory.props.teamCluster, trajectoryId);
+        const storageClusterId = trajectory
+            ? resolveTrajectoryStorageClusterId(trajectory.props)
+            : undefined;
+
+        if(storageClusterId){
+            return this.listDumpsFromDaemon(storageClusterId, trajectoryId);
         }
 
         const prefix = this.getPrefix(trajectoryId);

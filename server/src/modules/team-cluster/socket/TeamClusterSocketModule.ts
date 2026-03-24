@@ -20,6 +20,7 @@ import {
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
     TEAM_CLUSTER_DAEMON_REGISTERED_EVENT,
     TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
+    TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION,
     TEAM_CLUSTER_SUBSCRIPTION_EVENT,
     type TeamClusterDaemonCommandMessage,
     type TeamClusterDaemonMessage,
@@ -276,7 +277,10 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
                 data: {
                     status: 'success',
                     data: {
-                        queueConcurrency: teamCluster.props.queueConcurrency
+                        contractVersion: TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION,
+                        queueConcurrency: teamCluster.props.queueConcurrency,
+                        roleConfig: teamCluster.props.roleConfig,
+                        effectiveCapabilities: teamCluster.props.effectiveCapabilities
                     }
                 }
             });

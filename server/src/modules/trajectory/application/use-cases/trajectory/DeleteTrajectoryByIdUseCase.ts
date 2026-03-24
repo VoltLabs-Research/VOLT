@@ -1,4 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
+import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import TrajectoryDeletedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryDeletedEvent';
 import { IEventBus } from '@shared/application/events/IEventBus';
@@ -52,6 +53,7 @@ export default class DeleteTrajectoryByIdUseCase implements IUseCase<DeleteTraje
             trajectoryId: input.trajectoryId,
             teamId: input.teamId ?? trajectory.props.team ?? '',
             teamCluster: trajectory.props.teamCluster ?? '',
+            storageClusterId: resolveTrajectoryStorageClusterId(trajectory.props),
             userId: input.userId ?? '',
             trajectoryName: trajectory.props.name ?? ''
         }));

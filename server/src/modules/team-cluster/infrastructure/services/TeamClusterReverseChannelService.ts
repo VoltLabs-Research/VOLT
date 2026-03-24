@@ -1170,14 +1170,7 @@ export default class TeamClusterReverseChannelService {
             return false;
         }
 
-        if (isObjectGatewayBinaryRelayEnabled()) {
-            return true;
-        }
-
-        throw ApplicationError.conflict(
-            'TeamCluster::ObjectGatewayBinaryRelayRequired',
-            'Object gateway traffic requires the binary relay transport. Enable TEAM_CLUSTER_BINARY_RELAY_ENABLED=true and TEAM_CLUSTER_OBJECT_GATEWAY_BINARY_RELAY_ENABLED=true.'
-        );
+        return isObjectGatewayBinaryRelayEnabled();
     }
 
     private async requireDaemonSocketId(teamClusterId: string): Promise<string> {

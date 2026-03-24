@@ -1,5 +1,9 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import {
+    resolveAnalysisComputeClusterId,
+    resolveTrajectoryStorageClusterId
+} from '@modules/team-cluster/application/utilities/cluster-location';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -45,14 +49,8 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
                 ));
             }
 
-            const teamClusterId = trajectory.props.teamCluster;
-            if (!teamClusterId) {
-                return Result.fail(ApplicationError.notFound(
-                    ErrorCodes.TRAJECTORY_TEAM_CLUSTER_REQUIRED,
-                    'Trajectory team cluster is required to retrieve atoms'
-                ));
-            }
-
+            const ownerClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+            let teamClusterId = ownerClusterId;
             if (analysisId) {
                 const analysis = await this.analysisRepository.findById(analysisId);
 
@@ -69,10 +67,25 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
                         'Analysis does not belong to the requested trajectory'
                     ));
                 }
+
+                teamClusterId = resolveAnalysisComputeClusterId(analysis.props) ?? teamClusterId;
+            }
+
+            if (!teamClusterId) {
+                return Result.fail(ApplicationError.notFound(
+                    ErrorCodes.TRAJECTORY_TEAM_CLUSTER_REQUIRED,
+                    'Trajectory storage or compute cluster is required to retrieve atoms'
+                ));
             }
 
             const atomsPage = await this.trajectoryReader.readPage(
-                teamClusterId, trajectoryId, timestep, pageNum, limitNum, analysisId
+                teamClusterId,
+                trajectoryId,
+                timestep,
+                pageNum,
+                limitNum,
+                analysisId,
+                ownerClusterId
             );
 
             const totalAtoms = atomsPage.totalAtoms;

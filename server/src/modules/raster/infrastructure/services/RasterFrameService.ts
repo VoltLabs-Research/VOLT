@@ -1,5 +1,6 @@
 import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { resolveSceneArtifactTeamCluster } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-team-cluster';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -32,7 +33,7 @@ export class RasterFrameService implements IRasterFrameReader {
         return this.rasterStorage.getRasterFramePNG(
             trajectoryId,
             timestep,
-            trajectory.props.teamCluster
+            resolveTrajectoryStorageClusterId(trajectory.props)
         );
     }
 

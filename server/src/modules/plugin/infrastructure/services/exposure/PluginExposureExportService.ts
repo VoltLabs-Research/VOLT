@@ -9,6 +9,7 @@ import {
     type AnalysisFileRef,
     type AnalysisFileType
 } from '@modules/plugin/utilities/exposure/analysis-file-collection';
+import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 
@@ -111,7 +112,9 @@ export class PluginExposureExportService implements IPluginExposureExportService
 
     private async resolveTeamClusterId(trajectoryId: string): Promise<string | undefined> {
         const trajectory = await this.trajectoryRepository.findById(trajectoryId);
-        return trajectory?.props.teamCluster;
+        return trajectory
+            ? resolveTrajectoryStorageClusterId(trajectory.props)
+            : undefined;
     }
 
     private getPrefixCollectionConfigs(trajectoryId: string, analysisId: string): PrefixCollectionConfig[] {

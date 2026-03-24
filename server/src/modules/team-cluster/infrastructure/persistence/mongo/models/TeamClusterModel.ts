@@ -1,6 +1,8 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import {
+    TeamClusterEffectiveCapabilitiesProps,
     TeamClusterProps,
+    TeamClusterRole,
     TeamClusterStatus
 } from '@modules/team-cluster/domain/entities/TeamCluster';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
@@ -76,6 +78,70 @@ const queueConcurrencySchema = new Schema({
     _id: false
 });
 
+const teamClusterRoleSchema = new Schema({
+    desiredRole: {
+        type: String,
+        enum: ['cluster', 'storage-server', 'compute-node'] satisfies TeamClusterRole[],
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
+        default: 'cluster'
+    },
+    effectiveRole: {
+        type: String,
+        enum: ['cluster', 'storage-server', 'compute-node'] satisfies TeamClusterRole[],
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
+        default: 'cluster'
+    },
+    runtimeVersion: {
+        type: Number,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
+        min: [1, TEAM_CLUSTER_VALIDATION_ERROR],
+        default: 1
+    },
+    draining: {
+        compute: {
+            type: Boolean,
+            required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
+            default: false
+        },
+        storage: {
+            type: Boolean,
+            required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
+            default: false
+        }
+    },
+    lastAppliedAt: {
+        type: Date,
+        default: null
+    }
+}, {
+    _id: false
+});
+
+const effectiveCapabilitiesSchema = new Schema<Record<keyof TeamClusterEffectiveCapabilitiesProps, unknown>>({
+    acceptsComputeJobs: {
+        type: Boolean,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
+        default: true
+    },
+    acceptsStorageWrites: {
+        type: Boolean,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
+        default: true
+    },
+    servesStorageReads: {
+        type: Boolean,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
+        default: true
+    },
+    servesArtifactDownloads: {
+        type: Boolean,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
+        default: true
+    }
+}, {
+    _id: false
+});
+
 const TeamClusterSchema = new Schema({
     name: {
         type: String,
@@ -139,6 +205,14 @@ const TeamClusterSchema = new Schema({
     },
     queueConcurrency: {
         type: queueConcurrencySchema,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
+    },
+    roleConfig: {
+        type: teamClusterRoleSchema,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
+    },
+    effectiveCapabilities: {
+        type: effectiveCapabilitiesSchema,
         required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
     }
 }, {

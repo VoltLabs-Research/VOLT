@@ -14,6 +14,24 @@ export const computeGroupStatus = (jobs: Job[]): FrameJobGroupStatus => {
     return FrameJobGroupStatus.Partial;
 };
 
+const isUngroupedTimestep = (timestep: number): boolean => timestep === UNGROUPED_TIMESTEP;
+
+const compareFrameTimesteps = (left: number, right: number): number => {
+    if (isUngroupedTimestep(left) && isUngroupedTimestep(right)) {
+        return 0;
+    }
+
+    if (isUngroupedTimestep(left)) {
+        return -1;
+    }
+
+    if (isUngroupedTimestep(right)) {
+        return 1;
+    }
+
+    return right - left;
+};
+
 const resolveJobTimestep = (job: Job): number | undefined => {
     if (typeof job.timestep === 'number') {
         return job.timestep;
@@ -126,7 +144,7 @@ export const applyJobUpdate = (
             });
         }
 
-        newFrameGroups.sort((left, right) => right.timestep - left.timestep);
+        newFrameGroups.sort((left, right) => compareFrameTimesteps(left.timestep, right.timestep));
 
         const allJobs = newFrameGroups.flatMap((frame) => frame.jobs);
         const overallStatus = computeGroupStatus(allJobs);

@@ -8,6 +8,7 @@ import ModifiersSection from '../../molecules/ModifiersSection';
 import PluginExecutionConfigFields from '@/modules/plugin/components/plugin/molecules/PluginExecutionConfigFields';
 import { useExecutePluginMutation, usePluginTeamClustersQuery } from '@/modules/plugin/hooks/plugin/queries';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
+import { resolvePluginExecutionClusterId, supportsPluginExecutionCluster } from '@/modules/plugin/utilities/plugin-team-clusters';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { Wrench } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
@@ -21,6 +22,7 @@ import type { ModifierOption } from '../../../utilities/modifier-registry';
 import type { ComponentType, ReactNode } from 'react';
 import type { SelectOption } from '@/shared/presentation/components/Select';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { PluginTeamClusterOption } from '@/modules/plugin/api/entities/plugin/team-cluster';
 
 import './RightPanel.css';
 
@@ -59,13 +61,16 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
     const [pluginSelectedTimesteps, setPluginSelectedTimesteps] = useState<Record<string, number[] | undefined>>({});
 
     const availableTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
+    const executionTeamClusters = useMemo<PluginTeamClusterOption[]>(() => {
+        return (teamClustersResponse?.data ?? []).filter(supportsPluginExecutionCluster);
+    }, [teamClustersResponse?.data]);
 
     const teamClusterOptions = useMemo<SelectOption[]>(() => {
-        return (teamClustersResponse?.data ?? []).map((teamCluster) => ({
+        return executionTeamClusters.map((teamCluster) => ({
             value: teamCluster._id,
             title: teamCluster.name
         }));
-    }, [teamClustersResponse?.data]);
+    }, [executionTeamClusters]);
 
     const hasTeamClusterOptions = teamClusterOptions.length > 0;
 
@@ -99,16 +104,11 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
 
     const getSelectedClusterId = useCallback((pluginId: string, pluginTeamClusterId?: string | null): string => {
         const selectedClusterId = pluginExecutionClusters[pluginId]?.selectedTeamClusterId;
-        if (selectedClusterId) {
-            return selectedClusterId;
-        }
-
-        if (pluginTeamClusterId) {
-            return pluginTeamClusterId;
-        }
-
-        return teamClusterOptions[0]?.value ?? '';
-    }, [pluginExecutionClusters, teamClusterOptions]);
+        return resolvePluginExecutionClusterId(
+            selectedClusterId ?? pluginTeamClusterId,
+            executionTeamClusters
+        );
+    }, [executionTeamClusters, pluginExecutionClusters]);
 
     const getSelectedTimesteps = useCallback((pluginId: string): number[] | undefined => {
         return normalizeSelectedTimesteps(pluginSelectedTimesteps[pluginId], availableTimesteps);

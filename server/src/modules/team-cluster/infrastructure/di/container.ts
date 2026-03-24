@@ -1,6 +1,8 @@
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
+import StoragePlacementRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/StoragePlacementRepository';
+import ClusterTransferJobRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/ClusterTransferJobRepository';
 import TeamClusterSocketModule from '@modules/team-cluster/socket/TeamClusterSocketModule';
 import TeamClusterHeartbeatMonitor from '@modules/team-cluster/infrastructure/services/TeamClusterHeartbeatMonitor';
 import TeamClusterCredentialsCipher from '@modules/team-cluster/infrastructure/services/TeamClusterCredentialsCipher';
@@ -14,7 +16,10 @@ import TeamClusterBinaryRelayService from '@modules/team-cluster/infrastructure/
 import TeamClusterBinaryRelayUpgradeService from '@modules/team-cluster/infrastructure/services/TeamClusterBinaryRelayUpgradeService';
 import TeamClusterReverseChannelService from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
 import TeamClusterTcpExposureRelayService from '@modules/team-cluster/infrastructure/services/TeamClusterTcpExposureRelayService';
+import ClusterTransferRunner from '@modules/team-cluster/infrastructure/services/ClusterTransferRunner';
 import DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
+import StoragePlacementService from '@modules/team-cluster/application/services/StoragePlacementService';
+import ClusterTransferCoordinator from '@modules/team-cluster/application/services/ClusterTransferCoordinator';
 import CompleteTeamClusterDeletionUseCase from '@modules/team-cluster/application/use-cases/CompleteTeamClusterDeletionUseCase';
 import CreateTeamClusterRemoteAccessSessionUseCase from '@modules/team-cluster/application/use-cases/CreateTeamClusterRemoteAccessSessionUseCase';
 import FetchAvailableClusterVersionsUseCase from '@modules/team-cluster/application/use-cases/FetchAvailableClusterVersionsUseCase';
@@ -29,12 +34,15 @@ import RegenerateTeamClusterEnrollmentTokenUseCase from '@modules/team-cluster/a
 import RecordTeamClusterHeartbeatUseCase from '@modules/team-cluster/application/use-cases/RecordTeamClusterHeartbeatUseCase';
 import UpdateTeamClusterLifecycleUseCase from '@modules/team-cluster/application/use-cases/UpdateTeamClusterLifecycleUseCase';
 import UpdateTeamClusterQueueConcurrencyUseCase from '@modules/team-cluster/application/use-cases/UpdateTeamClusterQueueConcurrencyUseCase';
+import UpdateTeamClusterRoleUseCase from '@modules/team-cluster/application/use-cases/UpdateTeamClusterRoleUseCase';
 import { registerModuleDependencies } from '@shared/infrastructure/di/registerModuleDependencies';
 
 export const registerTeamClusterDependencies = () => {
     registerModuleDependencies({
         singletons: [
             [TEAM_CLUSTER_TOKENS.TeamClusterRepository, TeamClusterRepository],
+            [TEAM_CLUSTER_TOKENS.StoragePlacementRepository, StoragePlacementRepository],
+            [TEAM_CLUSTER_TOKENS.ClusterTransferJobRepository, ClusterTransferJobRepository],
             [TEAM_CLUSTER_TOKENS.TeamClusterCredentialsCipher, TeamClusterCredentialsCipher],
             [TEAM_CLUSTER_TOKENS.TeamClusterInstallManifestService, TeamClusterInstallManifestService],
             [TEAM_CLUSTER_TOKENS.TeamClusterLifecycleService, TeamClusterLifecycleService],
@@ -49,6 +57,9 @@ export const registerTeamClusterDependencies = () => {
             [TEAM_CLUSTER_TOKENS.TeamClusterTcpExposureRelayService, TeamClusterTcpExposureRelayService],
             [TEAM_CLUSTER_TOKENS.TeamClusterSocketModule, TeamClusterSocketModule],
             [TEAM_CLUSTER_TOKENS.DaemonAnalysisCompletionService, DaemonAnalysisCompletionService],
+            [TEAM_CLUSTER_TOKENS.StoragePlacementService, StoragePlacementService],
+            [TEAM_CLUSTER_TOKENS.ClusterTransferCoordinator, ClusterTransferCoordinator],
+            [TEAM_CLUSTER_TOKENS.ClusterTransferRunner, ClusterTransferRunner],
             CompleteTeamClusterDeletionUseCase,
             CreateTeamClusterRemoteAccessSessionUseCase,
             FetchAvailableClusterVersionsUseCase,
@@ -62,7 +73,8 @@ export const registerTeamClusterDependencies = () => {
             RegenerateTeamClusterEnrollmentTokenUseCase,
             RecordTeamClusterHeartbeatUseCase,
             UpdateTeamClusterLifecycleUseCase,
-            UpdateTeamClusterQueueConcurrencyUseCase
+            UpdateTeamClusterQueueConcurrencyUseCase,
+            UpdateTeamClusterRoleUseCase
         ],
         aliases: [
             [SOCKET_TOKENS.SocketModule, TEAM_CLUSTER_TOKENS.TeamClusterSocketModule],

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { GetTrajectoryPreviewInputDTO, GetTrajectoryPreviewOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryPreviewDTO';
 import { getTrajectoryRasterPreviewsPrefix } from '@modules/raster/utilities/raster-storage-paths';
@@ -37,8 +38,10 @@ export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajecto
             return Result.fail(new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'Trajectory not found', 404));
         }
 
-        if (trajectory.props.teamCluster) {
-            const preview = await this.getRemotePreview(trajectory.props.teamCluster, trajectoryId);
+        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+
+        if (storageClusterId) {
+            const preview = await this.getRemotePreview(storageClusterId, trajectoryId);
             if (preview) {
                 return Result.ok(preview);
             }

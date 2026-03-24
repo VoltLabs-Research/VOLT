@@ -94,6 +94,30 @@ const daemonMetricsSnapshotSchema = z.object({
     connectedToCloud: z.boolean()
 }).strict();
 
+const teamClusterRoleSchema = z.union([
+    z.literal('cluster'),
+    z.literal('storage-server'),
+    z.literal('compute-node')
+]);
+
+const effectiveCapabilitiesSchema = z.object({
+    acceptsComputeJobs: z.boolean(),
+    acceptsStorageWrites: z.boolean(),
+    servesStorageReads: z.boolean(),
+    servesArtifactDownloads: z.boolean()
+}).strict();
+
+const runtimeRoleConfigSchema = z.object({
+    desiredRole: teamClusterRoleSchema,
+    effectiveRole: teamClusterRoleSchema,
+    runtimeVersion: z.number().int().min(1),
+    draining: z.object({
+        compute: z.boolean(),
+        storage: z.boolean()
+    }).strict(),
+    lastAppliedAt: z.union([requiredTextSchema, z.null()]).optional()
+}).strict();
+
 const portSchema = z.number().int().min(1).max(65535);
 
 const installRootSchema = requiredTextSchema.min(1).max(512);
@@ -112,6 +136,10 @@ const teamClusterLifecycleSchema = z.object({
 const teamClusterHeartbeatSchema = z.object({
     daemonPassword: requiredTextSchema,
     installedVersion: installedVersionSchema,
+    runtime: z.object({
+        roleConfig: runtimeRoleConfigSchema,
+        effectiveCapabilities: effectiveCapabilitiesSchema
+    }).strict().optional(),
     metrics: daemonMetricsSnapshotSchema.optional()
 }).strict();
 
@@ -148,6 +176,33 @@ const updateQueueConcurrencySchema = z.object({
     }).strict()
 }).strict();
 
+const updateRoleSchema = z.object({
+    role: teamClusterRoleSchema
+}).strict();
+
+const clusterTransferJobStateSchema = z.union([
+    z.literal('queued'),
+    z.literal('freezing'),
+    z.literal('copying'),
+    z.literal('verifying'),
+    z.literal('switching'),
+    z.literal('cleaning'),
+    z.literal('completed'),
+    z.literal('failed'),
+    z.literal('cancelled')
+]);
+
+const listTransferJobsQuerySchema = createPaginationQuerySchema({
+    maxLimit: 50,
+    includeSearch: false
+}).extend({
+    state: clusterTransferJobStateSchema.optional()
+}).strict();
+
+const createTransferRequestSchema = z.object({
+    destinationClusterId: requiredTextSchema
+}).strict();
+
 export const teamClusterValidation = createResourceValidation({
     regenerateEnrollmentToken: {
         params: teamClusterParamsSchema
@@ -180,6 +235,18 @@ export const teamClusterValidation = createResourceValidation({
     updateQueueConcurrency: {
         params: teamClusterParamsSchema,
         body: updateQueueConcurrencySchema
+    },
+    updateRole: {
+        params: teamClusterParamsSchema,
+        body: updateRoleSchema
+    },
+    listTransferJobs: {
+        params: teamClusterParamsSchema,
+        query: listTransferJobsQuerySchema
+    },
+    createTransferRequest: {
+        params: teamClusterParamsSchema,
+        body: createTransferRequestSchema
     },
     createRemoteAccessSession: {
         params: teamClusterParamsSchema,

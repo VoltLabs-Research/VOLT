@@ -1,6 +1,8 @@
 import { getTrajectoryBackgroundProcessorConcurrency } from '@core/config/trajectory';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
+import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { normalizeTrajectoryWorkerFailure } from '@modules/trajectory/utilities/trajectory/trajectory-worker-failure';
@@ -77,6 +79,9 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
 
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
         private readonly teamClusterDaemonClient: TeamClusterCommandClient,
+
+        @inject(TeamClusterSelectionService)
+        private readonly teamClusterSelectionService: TeamClusterSelectionService,
 
         @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis
@@ -459,11 +464,11 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         trajectory: Trajectory,
         teamId: string
     ): Promise<void>{
-        const teamClusterId = trajectory.props.teamCluster;
-        if (!teamClusterId) {
+        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        if (!storageClusterId) {
             logger.warn(
                 { trajectoryId: trajectory._id },
-                '@trajectory-background-processor: skipping cloud upload — no teamClusterId'
+                '@trajectory-background-processor: skipping cloud upload — no storageClusterId'
             );
             return;
         }
@@ -472,7 +477,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
 
         const jobs = frames.map((frame) => ({
             trajectoryId: trajectory._id,
-            teamClusterId,
+            teamClusterId: storageClusterId,
             teamId,
             trajectoryName: trajectory.props.name,
             timestep: frame.timestep,
@@ -500,25 +505,33 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         trajectory: Trajectory,
         teamId: string
     ): Promise<void> {
-        const teamClusterId = trajectory.props.teamCluster;
-        if (!teamClusterId) {
+        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        if (!storageClusterId) {
             logger.warn(
                 { trajectoryId: trajectory._id },
-                '@trajectory-background-processor: skipping GLB enqueue — no teamClusterId'
+                '@trajectory-background-processor: skipping GLB enqueue — no storageClusterId'
             );
             return;
         }
 
+        const computeClusterId = await this.teamClusterSelectionService.resolveComputeClusterId(
+            teamId,
+            undefined,
+            storageClusterId
+        );
+
         const frameDescriptors = frames.map((frame) => ({
             timestep: frame.timestep,
-            objectKey: this.dumpStorage.getObjectName(trajectory._id, String(frame.timestep))
+            objectKey: this.dumpStorage.getObjectName(trajectory._id, String(frame.timestep)),
+            ownerClusterId: storageClusterId
         }));
 
         logger.info(
             {
                 frameCount: frameDescriptors.length,
                 trajectoryId: trajectory._id,
-                teamClusterId
+                computeClusterId,
+                storageClusterId
             },
             '@trajectory-background-processor: sending trajectory.enqueue-preprocessing to daemon'
         );
@@ -526,10 +539,11 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         await this.initializeGlbSession(trajectory._id, frameDescriptors.length);
 
         try {
-            await this.teamClusterDaemonClient.command(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.trajectory.enqueuePreprocessing, {
+            await this.teamClusterDaemonClient.command(computeClusterId, TEAM_CLUSTER_DAEMON_COMMAND.trajectory.enqueuePreprocessing, {
                 trajectoryId: trajectory._id,
                 teamId,
                 trajectoryName: trajectory.props.name,
+                storageClusterId,
                 frames: frameDescriptors
             });
         } catch (error) {

@@ -6,6 +6,8 @@ interface CreateAnalysisOutputAnalysisDTO {
     plugin: string;
     pluginDisplayName: string;
     teamCluster?: string;
+    computeClusterId?: string;
+    storageClusterId?: string;
     config: AnalysisConfig;
     status: string;
     createdAt: Date;

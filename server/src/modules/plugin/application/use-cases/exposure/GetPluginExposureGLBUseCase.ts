@@ -7,6 +7,7 @@ import { createDownloadStreamResponse } from '@shared/infrastructure/http/respon
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { resolveSceneArtifactStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
@@ -78,7 +79,7 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
 
         const objectName = artifact.props.objectName;
         const bucket = artifact.props.storageBucket || SYS_BUCKETS.MODELS;
-        const teamClusterId = artifact.props.teamCluster ? String(artifact.props.teamCluster) : undefined;
+        const teamClusterId = resolveSceneArtifactStorageClusterId(artifact.props);
 
         if (teamClusterId) {
             try {

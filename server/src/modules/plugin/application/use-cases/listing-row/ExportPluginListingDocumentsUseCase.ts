@@ -1,6 +1,7 @@
 import {
     ExportPluginListingDocumentsInputDTO
 } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
+import { resolveAnalysisComputeClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { buildListingExportColumns, enrichDaemonListingRows } from '@modules/plugin/application/use-cases/listing-row/listing-row-enrichment';
 import { createSerializedDownloadResponse } from '@shared/infrastructure/http/responses/download-response';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
@@ -98,21 +99,34 @@ export class ExportPluginListingDocumentsUseCase implements IUseCase<
     ): Promise<{ teamClusterId: string; analysisId: string } | null> {
         if (input.analysisId) {
             const analysis = await this.analysisRepository.findById(input.analysisId);
-            if (analysis?.props.teamCluster) {
-                return { teamClusterId: analysis.props.teamCluster, analysisId: input.analysisId };
+            const teamClusterId = analysis
+                ? resolveAnalysisComputeClusterId(analysis.props)
+                : undefined;
+            if (teamClusterId) {
+                return { teamClusterId, analysisId: input.analysisId };
             }
         }
 
         const filter: Record<string, unknown> = {
             plugin: input.pluginId,
-            teamCluster: { $exists: true, $ne: null }
+            $or: [
+                {
+                    computeClusterId: { $exists: true, $ne: null }
+                },
+                {
+                    teamCluster: { $exists: true, $ne: null }
+                }
+            ]
         };
         if (input.trajectoryId) filter.trajectory = input.trajectoryId;
         if (input.teamId) filter.team = input.teamId;
 
         const analysis = await this.analysisRepository.findOne(filter);
-        if (analysis?.props.teamCluster) {
-            return { teamClusterId: analysis.props.teamCluster, analysisId: analysis._id };
+        const teamClusterId = analysis
+            ? resolveAnalysisComputeClusterId(analysis.props)
+            : undefined;
+        if (analysis && teamClusterId) {
+            return { teamClusterId, analysisId: analysis._id };
         }
 
         return null;

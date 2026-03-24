@@ -26,6 +26,7 @@ export default class RecordTeamClusterHeartbeatUseCase implements IUseCase<
                 input.teamClusterId,
                 input.daemonPassword,
                 input.installedVersion,
+                input.runtime,
                 input.metrics
             );
 
