@@ -345,7 +345,7 @@ export class ObjectGatewayServer {
         }
 
         if (request.method === 'DELETE') {
-            this.runtimeCapabilityGuard?.ensureAcceptsStorageWrites('object-gateway.delete-prefix');
+            this.runtimeCapabilityGuard?.ensureServesStorageReads('object-gateway.delete-prefix');
             const prefix = url.searchParams.get('prefix');
             if (prefix === null) {
                 throw new ObjectGatewayHttpError(400, 'prefix query parameter is required');
@@ -440,7 +440,7 @@ export class ObjectGatewayServer {
         }
 
         if (request.method === 'DELETE') {
-            this.runtimeCapabilityGuard?.ensureAcceptsStorageWrites('object-gateway.delete');
+            this.runtimeCapabilityGuard?.ensureServesStorageReads('object-gateway.delete');
             await this.readObjectStat(bucket, objectKey);
             await this.minioService.removeObject(bucket, objectKey);
             response.statusCode = 204;

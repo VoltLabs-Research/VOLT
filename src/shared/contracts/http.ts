@@ -184,8 +184,6 @@ export interface DaemonAnalysisDocument {
     _id: string;
     plugin?: string;
     pluginDisplayName: string;
-    clusterId?: string;
-    teamCluster?: string;
     computeClusterId?: string;
     storageClusterId?: string;
     config?: Record<string, unknown>;
@@ -262,7 +260,7 @@ export interface AnalysisJobExecutionData {
     analysisId: string;
     teamId?: string;
     trajectoryFrames: TrajectoryFrame[];
-    teamClusterId?: string;
+    computeClusterId?: string;
     storageClusterId?: string;
     pluginBinaryRef?: ResolvedObjectRef;
     exposures: AnalysisExposureDefinition[];

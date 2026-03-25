@@ -5,7 +5,7 @@ export type ArtifactStatus = 'ready' | 'failed';
 
 export interface ReportArtifactInput {
     trajectory: string;
-    teamCluster?: string;
+    storageClusterId: string;
     analysis?: string;
     plugin?: string;
     sourceType: ArtifactSourceType;

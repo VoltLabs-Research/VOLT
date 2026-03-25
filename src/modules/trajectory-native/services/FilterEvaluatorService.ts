@@ -143,6 +143,11 @@ const resolveModifierValues = async (
     if (!input.analysisId || !input.exposureId) {
         return undefined;
     }
+    if (!input.ownerClusterId) {
+        throw new Error(
+            `Missing storage owner cluster for modifier lookup on analysis ${input.analysisId}`
+        );
+    }
 
     const values = await trajectoryPluginParserService.getModifierValues({
         trajectoryId: input.trajectoryId,

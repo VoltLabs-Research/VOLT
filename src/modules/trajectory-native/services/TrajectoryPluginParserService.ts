@@ -12,7 +12,7 @@ export interface PluginPropertyNamesRequest {
     analysisId: string;
     exposureId: string;
     timestep?: number;
-    ownerClusterId?: string;
+    ownerClusterId: string;
 }
 
 export interface PluginModifierAnalysisRequest {
@@ -20,7 +20,7 @@ export interface PluginModifierAnalysisRequest {
     analysisId: string;
     exposureId: string;
     timestep: number;
-    ownerClusterId?: string;
+    ownerClusterId: string;
 }
 
 export interface PluginAtomIndexRequest {
@@ -29,7 +29,7 @@ export interface PluginAtomIndexRequest {
     exposureId: string;
     timestep: number;
     targetIds: number[];
-    ownerClusterId?: string;
+    ownerClusterId: string;
 }
 
 export interface PluginModifierValuesRequest extends PluginModifierAnalysisRequest {
@@ -47,7 +47,7 @@ export interface PluginAnalysisAllAtomsRequest {
     analysisId: string;
     timestep: number;
     atomIds?: Set<number>;
-    ownerClusterId?: string;
+    ownerClusterId: string;
 }
 
 export interface PluginAnalysisAllAtomsResponse {
@@ -91,9 +91,6 @@ export class TrajectoryPluginParserService {
     async discoverPerAtomPropertyNames(request: PluginPropertyNamesRequest): Promise<string[]> {
         const { trajectoryId, analysisId, exposureId, timestep, ownerClusterId } = request;
         let objectName: string | null = null;
-        if (!ownerClusterId) {
-            return [];
-        }
 
         if (typeof timestep === 'number') {
             objectName = this.getPluginMsgpackKey(trajectoryId, analysisId, exposureId, String(timestep));
@@ -129,9 +126,6 @@ export class TrajectoryPluginParserService {
 
     async getModifierAnalysisData(request: PluginModifierAnalysisRequest): Promise<Record<string, unknown>[] | null> {
         const { trajectoryId, analysisId, exposureId, timestep, ownerClusterId } = request;
-        if (!ownerClusterId) {
-            return null;
-        }
         const key = this.getPluginMsgpackKey(trajectoryId, analysisId, exposureId, String(timestep));
         
         try {
@@ -180,9 +174,8 @@ export class TrajectoryPluginParserService {
     async buildPluginIndexForAtomIds(request: PluginAtomIndexRequest): Promise<PluginAtomIndex | null> {
         const { trajectoryId, analysisId, exposureId, timestep, targetIds, ownerClusterId } = request;
         const targetIdsSet = new Set(targetIds);
-        
+
         if (targetIdsSet.size === 0) return null;
-        if (!ownerClusterId) return null;
 
         const key = this.getPluginMsgpackKey(trajectoryId, analysisId, exposureId, String(timestep));
         
@@ -259,9 +252,6 @@ export class TrajectoryPluginParserService {
      */
     async getAnalysisAllPerAtomData(request: PluginAnalysisAllAtomsRequest): Promise<PluginAnalysisAllAtomsResponse> {
         const { trajectoryId, analysisId, timestep, ownerClusterId } = request;
-        if (!ownerClusterId) {
-            return { propertyNames: [], atoms: [] };
-        }
         const analysisPrefix = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/`;
 
         const allObjects = await this.listAllObjectKeys(ownerClusterId, ObjectBucketName.Plugins, analysisPrefix);

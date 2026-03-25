@@ -263,8 +263,18 @@ const normalizeMongoExportRows = (rows: Array<Record<string, unknown>>): Record<
     return rows.map((row) => ({ ...row }));
 };
 
-const normalizeMongoImportRows = (rows: Record<string, unknown>[]): Record<string, unknown>[] => {
-    return rows.filter((row) => typeof row._id === 'string' && row._id.length > 0).map((row) => ({ ...row }));
+const normalizeMongoImportRows = (
+    rows: Record<string, unknown>[],
+    localOwnerClusterId: string
+): Record<string, unknown>[] => {
+    return rows
+        .filter((row) => typeof row._id === 'string' && row._id.length > 0)
+        .map((row) => ({
+            ...row,
+            ...(typeof row.payloadOwnerClusterId === 'string' && row.payloadOwnerClusterId.length > 0
+                ? { payloadOwnerClusterId: localOwnerClusterId }
+                : {})
+        }));
 };
 
 const normalizeAnalysisIds = (analysisIds: string[]): string[] => {
@@ -441,7 +451,7 @@ export class MongoPluginListingRepository implements PluginListingRepository {
         documentType: PluginMongoDocumentType;
         rows: Record<string, unknown>[];
     }): Promise<number> {
-        const rows = normalizeMongoImportRows(input.rows);
+        const rows = normalizeMongoImportRows(input.rows, this.localOwnerClusterId);
         if (rows.length === 0) {
             return 0;
         }
@@ -557,29 +567,14 @@ export class MongoPluginListingRepository implements PluginListingRepository {
         const payloadOwnerClusterId = typeof listingDocument?.payloadOwnerClusterId === 'string'
             ? listingDocument.payloadOwnerClusterId
             : undefined;
-        if (payloadObjectKey) {
+        if (payloadObjectKey && payloadOwnerClusterId) {
             return {
-                ownerClusterId: payloadOwnerClusterId || this.localOwnerClusterId,
+                ownerClusterId: payloadOwnerClusterId,
                 objectKey: payloadObjectKey
             };
         }
 
-        const trajectoryId = typeof listingDocument?.trajectory === 'string'
-            ? listingDocument.trajectory
-            : undefined;
-        if (!trajectoryId) {
-            return null;
-        }
-
-        return {
-            ownerClusterId: this.localOwnerClusterId,
-            objectKey: buildPluginPayloadObjectKey(
-                trajectoryId,
-                filter.analysisId,
-                filter.exposureId,
-                filter.timestep
-            )
-        };
+        return null;
     }
 
     private async readSubListingRowsFromObject(

@@ -123,7 +123,7 @@ export class AnalysisDispatchService {
             analysisId: input.analysisId,
             teamId: input.teamId,
             trajectoryFrames: input.trajectoryFrames,
-            teamClusterId: input.teamClusterId,
+            computeClusterId: input.teamClusterId,
             storageClusterId: input.analysis.storageClusterId,
             exposures: this.collectExposures(input.workflow),
             forEachNodeId: plan.forEachNodeId,

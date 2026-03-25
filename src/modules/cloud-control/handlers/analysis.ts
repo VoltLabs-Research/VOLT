@@ -77,12 +77,12 @@ const readAnalysisDocument = (value: unknown): DaemonAnalysisDocument => {
         analysis.plugin = record.plugin;
     }
 
-    if (typeof record.clusterId === 'string') {
-        analysis.clusterId = record.clusterId;
+    if (typeof record.computeClusterId === 'string') {
+        analysis.computeClusterId = record.computeClusterId;
     }
 
-    if (typeof record.teamCluster === 'string') {
-        analysis.teamCluster = record.teamCluster;
+    if (typeof record.storageClusterId === 'string') {
+        analysis.storageClusterId = record.storageClusterId;
     }
 
     if (typeof record.config !== 'undefined') {

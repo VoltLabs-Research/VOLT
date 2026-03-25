@@ -81,7 +81,7 @@ export interface ExportExecutionInput {
     exposure: AnalysisExposureDefinition;
     decodedPayload: Record<string, unknown>;
     timestep: number;
-    teamClusterId?: string;
+    storageClusterId: string;
 };
 
 
@@ -1246,7 +1246,7 @@ export const createExportNodeProcessorService = (
 
         void daemonArtifactReporterService.reportArtifact({
             trajectory: input.executionData.trajectoryId,
-            teamCluster: input.teamClusterId,
+            storageClusterId: input.storageClusterId,
             analysis: input.executionData.analysisId,
             plugin: input.executionData.pluginId,
             sourceType: 'plugin-exposure',
@@ -1289,7 +1289,7 @@ export const createExportNodeProcessorService = (
                 return;
             }
 
-            const ownerClusterId = input.executionData.storageClusterId || input.teamClusterId;
+            const ownerClusterId = input.executionData.storageClusterId;
             if (!ownerClusterId) {
                 throw new Error(`Missing storage owner cluster for analysis export ${input.executionData.analysisId}`);
             }

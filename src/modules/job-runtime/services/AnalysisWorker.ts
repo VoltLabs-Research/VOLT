@@ -655,7 +655,10 @@ export class AnalysisWorker {
                 entrypointScript: executionData.entrypointScript
             });
 
-            const dumpOwnerClusterId = executionData.storageClusterId || executionData.teamClusterId;
+            const dumpOwnerClusterId = executionData.storageClusterId;
+            if (!dumpOwnerClusterId) {
+                throw new Error(`Missing storageClusterId for analysis ${executionData.analysisId}`);
+            }
             if (isBatchMode && Array.isArray(executionData.allDumpUrls) && executionData.allDumpUrls.length > 0) {
                 // Batch mode: download ALL dump files
                 batchDumpLocalPaths = [];

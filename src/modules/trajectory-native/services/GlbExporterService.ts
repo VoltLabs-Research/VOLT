@@ -30,6 +30,7 @@ const queueAutoPreviewRasterization = async (
     input: NativeTrajectoryRequest
 ): Promise<void> => {
     const teamId = readOptionalStringProperty(input, 'teamId');
+    const ownerClusterId = readOptionalStringProperty(input, 'ownerClusterId');
 
     if (!teamId) {
         logger.warn(
@@ -44,10 +45,24 @@ const queueAutoPreviewRasterization = async (
         return;
     }
 
+    if (!ownerClusterId) {
+        logger.warn(
+            {
+                modelObjectKey,
+                timestep: input.timestep,
+                trajectoryId: input.trajectoryId
+            },
+            'Skipping auto-preview rasterization enqueue for generated GLB because ownerClusterId is missing'
+        );
+
+        return;
+    }
+
     const trajectoryName = readOptionalStringProperty(input, 'trajectoryName');
     const queueInput: RasterizeTrajectoryRequest = {
         trajectoryId: input.trajectoryId,
         teamId,
+        storageClusterId: ownerClusterId,
         config: {
             autoPreview: true,
             timestep: input.timestep

@@ -443,12 +443,19 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                 const pageAtomIds = new Set<number>(
                     nativeResult.atoms.map((a: Record<string, unknown>) => Number(a.id))
                 );
+                const ownerClusterId = request.ownerClusterId;
+                if (!ownerClusterId) {
+                    throw new Error(
+                        `ownerClusterId is required to load per-atom analysis data for trajectory ${request.trajectoryId}`
+                    );
+                }
 
                 const analysisResult = await deps.trajectoryPluginParserService.getAnalysisAllPerAtomData({
                     trajectoryId: request.trajectoryId,
                     analysisId: request.analysisId,
                     timestep: request.timestep,
-                    atomIds: pageAtomIds
+                    atomIds: pageAtomIds,
+                    ownerClusterId
                 });
 
                 return {

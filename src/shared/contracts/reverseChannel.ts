@@ -446,7 +446,7 @@ export interface TeamClusterDaemonGlbJobStatusEventPayload {
 
 export interface TeamClusterDaemonSceneArtifactUpsertBatchItem {
     trajectory: string;
-    teamCluster?: string;
+    storageClusterId: string;
     analysis?: string;
     plugin?: string;
     sourceType: 'color-coding' | 'particle-filter' | 'plugin-exposure';

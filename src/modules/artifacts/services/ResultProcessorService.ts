@@ -220,7 +220,7 @@ export const createResultProcessorService = (
 
             const storageKey = `plugins/trajectory-${executionData.trajectoryId}/analysis-${executionData.analysisId}/${exposure.nodeId}/timestep-${timestep}.msgpack`;
             const fileStat = await fs.stat(outputFilePath);
-            const storageOwnerClusterId = executionData.storageClusterId || executionData.teamClusterId;
+            const storageOwnerClusterId = executionData.storageClusterId;
             if (!storageOwnerClusterId) {
                 throw new Error(`Missing storage owner cluster for analysis ${executionData.analysisId}`);
             }
@@ -284,7 +284,7 @@ export const createResultProcessorService = (
                             exposure,
                             decodedPayload: exportPayload,
                             timestep,
-                            teamClusterId: storageOwnerClusterId
+                            storageClusterId: storageOwnerClusterId
                         });
                         logMemoryUsage('after-export-processing');
                     }
