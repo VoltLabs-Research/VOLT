@@ -1,6 +1,4 @@
 import {
-    invalidateLatexDocumentsQuery,
-    invalidateLatexFoldersQuery,
     latexFolderQuery,
     latexFoldersQuery,
     latexDocumentsQuery,
@@ -149,12 +147,6 @@ const useLatexDocumentsListing = () => {
         invalidFolderMessage: 'This LaTeX folder no longer exists. Showing Root instead.',
         createFolder,
         createFolderToast: CREATE_FOLDER_TOAST,
-        afterCreateFolder: async () => {
-            await Promise.all([
-                invalidateLatexFoldersQuery(),
-                invalidateLatexDocumentsQuery()
-            ]);
-        },
         updateFolder,
         renameFolderToast: RENAME_FOLDER_TOAST,
         deleteFolder,
@@ -186,14 +178,10 @@ const useLatexDocumentsListing = () => {
         }
 
         await showPromise(
-            (async () => {
-                await createDocument({
-                    title: 'Untitled Document',
-                    folderId: currentFolderId
-                });
-
-                await invalidateLatexDocumentsQuery();
-            })(),
+            createDocument({
+                title: 'Untitled Document',
+                folderId: currentFolderId
+            }),
             CREATE_DOCUMENT_TOAST
         );
     }, [createDocument, currentFolderId, teamId]);

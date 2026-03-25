@@ -1,6 +1,7 @@
 import service from '../api/service';
 import {
     buildKeys,
+    createInvalidatingMutation,
     createMutation,
     createQuery
 } from '@/shared/infrastructure/query';
@@ -25,19 +26,19 @@ export const scriptingNotebooksQuery = createQuery(KEYS.notebooks, service.listN
 
 export const invalidateScriptingNotebooksQuery = () => queryClient.invalidateQueries({ queryKey: KEYS.notebooks() });
 
-export const useCreateScriptingNotebookMutation = createMutation<ScriptingNotebook, CreateScriptingNotebookParams>(
+export const useCreateScriptingNotebookMutation = createInvalidatingMutation<ScriptingNotebook, CreateScriptingNotebookParams>(
     service.createNotebook,
-    () => invalidateScriptingNotebooksQuery()
+    [KEYS.notebooks()]
 );
 
-export const useDeleteScriptingNotebookMutation = createMutation<void, DeleteScriptingNotebookParams>(
+export const useDeleteScriptingNotebookMutation = createInvalidatingMutation<void, DeleteScriptingNotebookParams>(
     service.deleteNotebook,
-    () => invalidateScriptingNotebooksQuery()
+    [KEYS.notebooks()]
 );
 
-export const useUpdateScriptingNotebookMutation = createMutation<ScriptingNotebook, UpdateScriptingNotebookParams>(
+export const useUpdateScriptingNotebookMutation = createInvalidatingMutation<ScriptingNotebook, UpdateScriptingNotebookParams>(
     service.updateNotebook,
-    () => invalidateScriptingNotebooksQuery()
+    [KEYS.notebooks()]
 );
 
 export const useCreateScriptingSessionMutation = createMutation<ScriptingSession, CreateScriptingSessionParams>(

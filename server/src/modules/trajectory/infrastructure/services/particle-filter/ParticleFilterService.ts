@@ -21,7 +21,7 @@ import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/Traject
 import { buildParticleFilterObjectName } from '@modules/trajectory/utilities/trajectory/minio-path-builder';
 import { normalizeAnalysisId } from '@modules/trajectory/utilities/trajectory/modifier-data';
 import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
-import { resolveSceneArtifactTeamCluster } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-team-cluster';
+import { resolveSceneArtifactStorageCluster } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-storage-cluster';
 import { IStorageService } from '@shared/domain/port/IStorageService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TrajectoryNativeDaemonService from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
@@ -277,7 +277,7 @@ export default class ParticleFilterService implements IParticleFilterService {
     ): Promise<{ fileId: string; atomsResult: number; action: string }> {
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const objectName = this.buildObjectName(trajectoryId, resolvedAnalysisId, timestep, request, action);
-        const storageClusterId = await resolveSceneArtifactTeamCluster({
+        const storageClusterId = await resolveSceneArtifactStorageCluster({
             trajectoryId: String(trajectoryId),
             analysisId: resolvedAnalysisId,
             analysisRepository: this.analysisRepository,
@@ -331,7 +331,7 @@ export default class ParticleFilterService implements IParticleFilterService {
 
         await recordSceneArtifact(this.sceneArtifactRepository, {
             trajectory: String(trajectoryId),
-            teamCluster: storageClusterId,
+            storageClusterId,
             analysis: resolvedAnalysisId,
             sourceType: SceneArtifactSourceType.ParticleFilter,
             timestep: Number(timestep),

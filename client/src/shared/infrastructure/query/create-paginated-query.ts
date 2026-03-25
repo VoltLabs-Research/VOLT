@@ -79,6 +79,15 @@ interface WithSuccessOptions<TData, TVariables, TOnMutateResult = unknown> {
     ) => unknown;
 };
 
+type MutationInvalidationKeys<TData, TVariables, TOnMutateResult = unknown> =
+    QueryKey[]
+    | ((
+        data: TData,
+        variables: TVariables,
+        onMutateResult: TOnMutateResult,
+        context: MutationFunctionContext
+    ) => QueryKey[]);
+
 interface QueryBuildOptions<TData> {
     queryKey: QueryKey;
     queryFn: () => Promise<TData>;
@@ -292,6 +301,26 @@ export const createMutation = <TData, TVariables>(
     });
 };
 
+export const createInvalidatingMutation = <TData, TVariables, TOnMutateResult = unknown>(
+    mutationFn: (variables: TVariables) => Promise<TData>,
+    invalidationKeys: MutationInvalidationKeys<TData, TVariables, TOnMutateResult>,
+    onSuccess?: (
+        data: TData,
+        variables: TVariables,
+        onMutateResult: TOnMutateResult,
+        context: MutationFunctionContext
+    ) => unknown
+): MutationHook<TData, TVariables> => {
+    return createMutation<TData, TVariables>(mutationFn, async (data, variables, onMutateResult, context) => {
+        const keys = typeof invalidationKeys === 'function'
+            ? invalidationKeys(data, variables, onMutateResult as TOnMutateResult, context)
+            : invalidationKeys;
+
+        await Promise.all(keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
+        await onSuccess?.(data, variables, onMutateResult as TOnMutateResult, context);
+    });
+};
+
 const withPaginationParams = <TParams extends object>(params: TParams, pagination: PaginationRequest): TParams & PaginationRequest => {
     return {
         ...params,
@@ -430,6 +459,24 @@ export const createPaginatedQuery = <
         return queryClient.invalidateQueries({ queryKey: QUERY_KEYS.all() });
     };
 
+    const invalidateListings = (): Promise<void[]> => {
+        return Promise.all([
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.lists() }),
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.infiniteLists() })
+        ]);
+    };
+
+    const syncDetailCache = (entity: TEntity): void => {
+        queryClient.setQueryData<TEntity>(config.detailKey(entity._id), entity);
+    };
+
+    const clearDetailCache = (id: string): void => {
+        queryClient.removeQueries({
+            queryKey: config.detailKey(id),
+            predicate: (query) => query.queryKey[1] === id
+        });
+    };
+
     const useListQuery = createQuery(QUERY_KEYS.list, config.service.list);
 
     const useInfiniteListQuery = (
@@ -458,7 +505,12 @@ export const createPaginatedQuery = <
         return useMutation<TCreateResult, Error, TCreateParams>({
             ...options,
             mutationFn: (params) => requireService(config.service.create, 'create')(params),
-            onSuccess: withSuccess((result) => upsert(config.extractEntity ? config.extractEntity(result) : result), options)
+            onSuccess: withSuccess((result) => {
+                const entity = config.extractEntity ? config.extractEntity(result) : result;
+                syncDetailCache(entity);
+                void invalidateListings();
+                config.onUpsert?.(entity);
+            }, options)
         });
     };
 
@@ -466,7 +518,11 @@ export const createPaginatedQuery = <
         return useMutation<TEntity, Error, UpdateVariables<TUpdateParams>>({
             ...options,
             mutationFn: ({ id, params }) => requireService(config.service.update, 'update')(id, params),
-            onSuccess: withSuccess(upsert, options)
+            onSuccess: withSuccess((entity) => {
+                syncDetailCache(entity);
+                void invalidateListings();
+                config.onUpsert?.(entity);
+            }, options)
         });
     };
 
@@ -474,7 +530,11 @@ export const createPaginatedQuery = <
         return useMutation<void, Error, string>({
             ...options,
             mutationFn: (id) => requireService(config.service.delete, 'delete')(id),
-            onSuccess: withSuccess((_data, id) => remove(id), options)
+            onSuccess: withSuccess((_data, id) => {
+                clearDetailCache(id);
+                void invalidateListings();
+                config.onRemove?.(id);
+            }, options)
         });
     };
 

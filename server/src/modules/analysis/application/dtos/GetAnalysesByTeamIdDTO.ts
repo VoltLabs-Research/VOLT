@@ -30,7 +30,6 @@ export interface GetAnalysesByTeamIdItemDTO {
     _id: string;
     plugin: string;
     pluginDisplayName: string;
-    teamCluster?: string | AnalysisListTeamCluster;
     computeClusterId?: string | AnalysisListTeamCluster;
     storageClusterId?: string | AnalysisListTeamCluster;
     config: AnalysisConfig;

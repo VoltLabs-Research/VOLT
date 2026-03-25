@@ -6,6 +6,5 @@ export default createMongoMapper<Trajectory, TrajectoryProps, TrajectoryDocument
     'createdBy',
     'team',
     'folder',
-    'teamCluster',
     'storageClusterId'
 ]);

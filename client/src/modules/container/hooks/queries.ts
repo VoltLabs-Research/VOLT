@@ -1,12 +1,11 @@
 import service from '../api/service';
 import {
     buildKeys,
+    createInvalidatingMutation,
     createFolderResourceQueries,
-    createMutation,
     createPaginatedQuery,
     createQuery
 } from '@/shared/infrastructure/query';
-import queryClient from '@/shared/infrastructure/query/query-client';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { CreateContainerParams } from '../api/dtos/create-container';
 import type { CreateContainerFolderParams } from '../api/dtos/create-container-folder';
@@ -65,12 +64,7 @@ const containerFolderQueries = createFolderResourceQueries<
         deleteFolder: service.deleteFolder
     },
     buildFolderParams: (folderId) => ({ folderId }),
-    afterUpdate: () => {
-        queryClient.invalidateQueries({ queryKey: containerQuery.QUERY_KEYS.lists() });
-    },
-    afterDelete: () => {
-        queryClient.invalidateQueries({ queryKey: containerQuery.QUERY_KEYS.lists() });
-    }
+    listingQueryKeys: [containerQuery.QUERY_KEYS.lists()]
 });
 
 export const containerFoldersQueryKey = containerFolderQueries.foldersQueryKey;
@@ -83,9 +77,9 @@ export const useCreateContainerFolderMutation = containerFolderQueries.useCreate
 export const useUpdateContainerFolderMutation = containerFolderQueries.useUpdateFolderMutation;
 export const useDeleteContainerFolderMutation = containerFolderQueries.useDeleteFolderMutation;
 
-export const useMoveContainerMutation = createMutation<void, MoveContainerParams>(
+export const useMoveContainerMutation = createInvalidatingMutation<void, MoveContainerParams>(
     service.move,
-    () => queryClient.invalidateQueries({ queryKey: containerQuery.QUERY_KEYS.lists() })
+    [containerQuery.QUERY_KEYS.lists()]
 );
 
 export const useContainerFilesQuery = createQuery(KEYS.files, service.getFiles);

@@ -1,4 +1,5 @@
 import { analysisQuery } from '@/modules/analysis/hooks/queries';
+import { SOCKET_TEAM_EVENTS } from '@/modules/socket/team/constants/team-socket-events';
 import { clusterColumn, dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import useRetryFailedFrames from '@/modules/analysis/hooks/use-retry-failed-frames';
@@ -142,7 +143,7 @@ const AnalysesListing = () => {
     return (
         <DocumentListing<Analysis>
             title='Analysis Configs'
-            queryKey={analysisQuery.QUERY_KEYS.all()}
+            queryKey={analysisQuery.QUERY_KEYS.lists()}
             columns={COLUMNS}
             fetchData={fetchAnalysesData}
             defaultLimit={20}
@@ -153,9 +154,9 @@ const AnalysesListing = () => {
             emptyButtonText='Open trajectories'
             onEmptyButtonClick={() => navigate('/dashboard/trajectories/list')}
             socketInvalidation={[
-                { event: 'analysis.created', queryKeys: [analysisQuery.QUERY_KEYS.all()] },
-                { event: 'analysis.updated', queryKeys: [analysisQuery.QUERY_KEYS.all()] },
-                { event: 'analysis.deleted', queryKeys: [analysisQuery.QUERY_KEYS.all()] }
+                { event: 'analysis.created', queryKeys: [analysisQuery.QUERY_KEYS.lists()] },
+                { event: SOCKET_TEAM_EVENTS.JOB_UPDATED, queryKeys: [analysisQuery.QUERY_KEYS.lists()] },
+                { event: 'analysis.deleted', queryKeys: [analysisQuery.QUERY_KEYS.lists()] }
             ]}
         />
     );

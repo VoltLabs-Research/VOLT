@@ -8,6 +8,7 @@
     "openapi:validate": "npm run openapi:lint && npm run openapi:bundle",
     "openapi:watch": "redocly bundle src/core/docs/openapi/root.yaml --output src/core/docs/openapi.yaml --watch",
     "test:object-gateway": "npx tsx --test src/modules/team-cluster/infrastructure/services/TeamClusterDirectObjectStoreClient.test.ts",
+    "verify:teamcluster-removal": "tsx tools/verify-teamcluster-removal.ts",
     "perf:baseline": "node -e \"console.log(JSON.stringify({ package: 'volt-server', status: 'placeholder', capture: { payload: ['TODO: record bytes for a representative HTTP JSON response that echoes x-trace-id', 'TODO: record bytes for a representative socket event payload that includes metadata.traceId'], latency: ['TODO: record request handler duration ms at ingress/egress', 'TODO: record socket event handling duration ms'] }, compatibility: { httpHeader: 'x-trace-id', socketTraceField: 'traceId', logFields: ['traceId', 'spanName', 'transport', 'durationMs', 'status'] } }, null, 2))\"",
     "perf:smoke": "node -e \"console.log(JSON.stringify({ package: 'volt-server', check: 'perf-smoke-placeholder', traceHeader: 'x-trace-id', socketTraceField: 'traceId', result: 'pass' }, null, 2))\"",
     "migrate:cluster-role-architecture:v1": "tsx tools/migrate-cluster-role-architecture-v1.ts",

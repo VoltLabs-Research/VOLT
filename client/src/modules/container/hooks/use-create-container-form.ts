@@ -4,7 +4,6 @@ import { teamClusterService } from '../api/service/team-cluster-service';
 import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import queryClient from '@/shared/infrastructure/query/query-client';
 import { useTeamsQuery } from '@/modules/team/hooks/team/queries';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { showPromise } from '@/shared/presentation/hooks/toast';
@@ -606,7 +605,6 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
                 error: { title: 'Failed to create container' }
             }
         );
-        await queryClient.invalidateQueries({ queryKey: containerQuery.QUERY_KEYS.lists() });
         if (typeof window !== 'undefined') {
             window.localStorage.removeItem(CREATE_CONTAINER_DRAFT_STORAGE_KEY);
         }

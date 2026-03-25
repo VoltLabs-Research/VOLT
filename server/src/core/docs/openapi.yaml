@@ -12537,7 +12537,11 @@ components:
           $ref: '#/components/schemas/ObjectId'
         pluginDisplayName:
           type: string
-        teamCluster:
+        computeClusterId:
+          anyOf:
+            - $ref: '#/components/schemas/ObjectId'
+            - type: 'null'
+        storageClusterId:
           anyOf:
             - $ref: '#/components/schemas/ObjectId'
             - type: 'null'

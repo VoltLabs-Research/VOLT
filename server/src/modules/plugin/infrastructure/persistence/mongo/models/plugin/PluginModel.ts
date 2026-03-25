@@ -4,7 +4,7 @@ import { PluginSchema } from '@modules/plugin/infrastructure/persistence/mongo/s
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import mongoose, { Model, Document } from 'mongoose';
 
-type PluginRelations = 'team' | 'teamCluster';
+type PluginRelations = 'team';
 export interface PluginDocument extends Persistable<PluginProps, PluginRelations>, Document { };
 
 

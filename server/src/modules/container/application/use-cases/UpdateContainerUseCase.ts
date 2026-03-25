@@ -1,10 +1,12 @@
 import { UpdateContainerInputDTO, UpdateContainerOutputDTO } from '@modules/container/application/dtos/UpdateContainerDTO';
+import ContainerUpdatedEvent from '@modules/container/domain/events/ContainerUpdatedEvent';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import { ContainerOwnershipService } from '@modules/container/infrastructure/services/ContainerOwnershipService';
 import { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 import type {
     ContainerEnvironmentVariable,
@@ -12,13 +14,15 @@ import type {
     RuntimeContainerInfo
 } from '@modules/container/domain/port/IContainerService';
 import type { ITeamClusterContainerRuntimeService } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
+import type { IEventBus } from '@shared/application/events/IEventBus';
 
 @injectable()
 export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO, UpdateContainerOutputDTO> {
     constructor(
         @inject(CONTAINER_TOKENS.ContainerRepository) private repository: IContainerRepository,
         @inject(CONTAINER_TOKENS.ContainerRuntimeService) private containerRuntimeService: ITeamClusterContainerRuntimeService,
-        @inject(ContainerOwnershipService) private ownershipService: ContainerOwnershipService
+        @inject(ContainerOwnershipService) private ownershipService: ContainerOwnershipService,
+        @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ) {}
 
     async execute(input: UpdateContainerInputDTO): Promise<Result<UpdateContainerOutputDTO>> {
@@ -40,6 +44,7 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
             }
 
             await this.repository.updateById(containerId, { status: container.status });
+            await this.publishContainerUpdatedEvent(containerId, teamId, container.name);
 
             return Result.ok({ container, status: container.status });
         }
@@ -58,8 +63,17 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
         }
 
         const updated = await this.repository.updateById(containerId, updateData);
+        await this.publishContainerUpdatedEvent(containerId, teamId, updated?.name ?? container.name);
 
         return Result.ok({ container: updated });
+    }
+
+    private async publishContainerUpdatedEvent(containerId: string, teamId: string, containerName: string): Promise<void> {
+        await this.eventBus.publish(new ContainerUpdatedEvent({
+            containerId,
+            teamId,
+            containerName
+        }));
     }
 
     private resolveCanonicalPorts(

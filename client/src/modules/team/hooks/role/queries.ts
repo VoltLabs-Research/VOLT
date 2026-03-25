@@ -1,5 +1,5 @@
 import roleService from '../../api/services/role';
-import { createMutation, createQuery } from '@/shared/infrastructure/query';
+import { createInvalidatingMutation, createQuery } from '@/shared/infrastructure/query';
 import { createTeamScopedPaginatedResource } from '../shared/team-scoped-paginated-resource';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { TeamRole } from '../../api/entities/role/team-role';
@@ -32,8 +32,6 @@ const getTeamRolesQueryKey = teamRolesResource.getPageQueryKey;
 
 const getAllTeamRolesQueryKey = teamRolesResource.getAggregateQueryKey;
 
-const invalidateTeamRolesQuery = teamRolesResource.invalidateListingQuery;
-
 const getAllTeamRoles = teamRolesResource.fetchAllPages;
 
 export const useTeamRolesQuery = createQuery<TeamRolesQueryParams, PaginatedResponse<TeamRole>>(
@@ -46,17 +44,17 @@ export const useAllTeamRolesQuery = createQuery<TeamRolesAggregateQueryParams, T
     getAllTeamRoles
 );
 
-export const useCreateTeamRoleMutation = createMutation<TeamRole, CreateTeamRoleInputDTO>(
+export const useCreateTeamRoleMutation = createInvalidatingMutation<TeamRole, CreateTeamRoleInputDTO>(
     roleService.create,
-    (_data, variables) => invalidateTeamRolesQuery(variables.teamId)
+    (_data, variables) => [getTeamRolesListingQueryKey({ teamId: variables.teamId })]
 );
 
-export const useUpdateTeamRoleMutation = createMutation<TeamRole, UpdateTeamRoleInputDTO>(
+export const useUpdateTeamRoleMutation = createInvalidatingMutation<TeamRole, UpdateTeamRoleInputDTO>(
     roleService.update,
-    (_data, variables) => invalidateTeamRolesQuery(variables.teamId)
+    (_data, variables) => [getTeamRolesListingQueryKey({ teamId: variables.teamId })]
 );
 
-export const useDeleteTeamRoleMutation = createMutation<void, DeleteTeamRoleInputDTO>(
+export const useDeleteTeamRoleMutation = createInvalidatingMutation<void, DeleteTeamRoleInputDTO>(
     roleService.delete,
-    (_data, variables) => invalidateTeamRolesQuery(variables.teamId)
+    (_data, variables) => [getTeamRolesListingQueryKey({ teamId: variables.teamId })]
 );

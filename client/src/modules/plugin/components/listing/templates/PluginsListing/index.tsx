@@ -293,7 +293,7 @@ const PluginsListing = () => {
     return (
         <DocumentListing<Plugin>
             title='Plugins'
-            queryKey={PLUGIN_QUERY_KEYS.catalogList({ page: 1, limit: 20 })}
+            queryKey={PLUGIN_QUERY_KEYS.catalog()}
             columns={columns}
             fetchData={fetchData}
             defaultLimit={20}

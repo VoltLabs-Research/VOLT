@@ -5,16 +5,20 @@ interface TeamClusterIdentifier {
 interface TrajectoryPreviewAvailabilityProps {
     _id: string;
     storageClusterId?: string | TeamClusterIdentifier | null;
-    teamCluster?: string | TeamClusterIdentifier | null;
 };
 
-const getTeamClusterId = (teamCluster: string | TeamClusterIdentifier | null | undefined): string | undefined => {
-    if (typeof teamCluster === 'string' && teamCluster.length > 0) {
-        return teamCluster;
+const getClusterReferenceId = (clusterReference: string | TeamClusterIdentifier | null | undefined): string | undefined => {
+    if (typeof clusterReference === 'string' && clusterReference.length > 0) {
+        return clusterReference;
     }
 
-    if (typeof teamCluster === 'object' && teamCluster !== null && typeof teamCluster._id === 'string' && teamCluster._id.length > 0) {
-        return teamCluster._id;
+    if (
+        typeof clusterReference === 'object'
+        && clusterReference !== null
+        && typeof clusterReference._id === 'string'
+        && clusterReference._id.length > 0
+    ) {
+        return clusterReference._id;
     }
 
     return undefined;
@@ -25,7 +29,7 @@ export const resolveTrajectoryPreviewAvailability = async <TTrajectory extends T
     trajectory: TTrajectory,
     hasTrajectoryPreview: (trajectoryId: string, teamClusterId?: string) => Promise<boolean>
 ): Promise<TTrajectory & { hasPreview: boolean; }> => {
-    const teamClusterId = getTeamClusterId(trajectory.storageClusterId) ?? getTeamClusterId(trajectory.teamCluster);
+    const teamClusterId = getClusterReferenceId(trajectory.storageClusterId);
     const hasPreview = await hasTrajectoryPreview(trajectory._id, teamClusterId);
 
     return {

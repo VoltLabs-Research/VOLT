@@ -39,9 +39,7 @@ export default class TrajectoryRepository
             await this.eventBus.publish(new TrajectoryDeletedEvent({
                 trajectoryId: id,
                 teamId: result.team?.toString() || '',
-                teamCluster: result.teamCluster?.toString() || '',
                 storageClusterId: resolveTrajectoryStorageClusterId({
-                    teamCluster: result.teamCluster?.toString(),
                     storageClusterId: result.storageClusterId?.toString()
                 }),
                 userId: 'system',

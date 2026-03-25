@@ -27,14 +27,13 @@ export default class TrajectoryDeletedStorageCleanupEventHandler implements IEve
     ) {}
 
     async handle(event: TrajectoryDeletedEvent): Promise<void> {
-        const { trajectoryId, storageClusterId, teamCluster } = event.payload;
+        const { trajectoryId, storageClusterId } = event.payload;
         const targets = getTrajectoryStorageCleanupTargets(trajectoryId);
-        const resolvedStorageClusterId = storageClusterId ?? teamCluster;
 
         await Promise.all([
             this.cleanupLocalStorage(targets),
-            resolvedStorageClusterId
-                ? this.cleanupRemoteStorage(resolvedStorageClusterId, targets)
+            storageClusterId
+                ? this.cleanupRemoteStorage(storageClusterId, targets)
                 : Promise.resolve(),
             this.storagePlacementRepository.deleteMany({
                 scopeType: 'trajectory',

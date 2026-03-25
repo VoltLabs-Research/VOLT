@@ -4,7 +4,7 @@ import type { SceneArtifactProps } from '@modules/trajectory/domain/entities/sce
 export interface TeamSceneArtifactOutput {
     _id: string;
     trajectory: SceneArtifactProps['trajectory'];
-    teamCluster?: SceneArtifactProps['teamCluster'];
+    storageClusterId?: SceneArtifactProps['storageClusterId'];
     analysis?: SceneArtifactProps['analysis'];
     plugin?: SceneArtifactProps['plugin'];
     sourceType: SceneArtifactProps['sourceType'];

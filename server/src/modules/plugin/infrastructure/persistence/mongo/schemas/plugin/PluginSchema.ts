@@ -14,11 +14,6 @@ export const PluginSchema = new Schema({
         required: true,
         inverse: { path: 'plugins', behavior: 'addToSet' }
     },
-    teamCluster: {
-        type: Schema.Types.ObjectId,
-        ref: 'TeamCluster',
-        default: null
-    },
     workflow: {
         type: WorkflowSchema,
         required: [true, ValidationCodes.PLUGIN_WORKFLOW_NODE_ID_REQUIRED]

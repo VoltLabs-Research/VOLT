@@ -8,35 +8,21 @@ import {
     resolveTrajectoryStorageClusterId
 } from './cluster-location';
 
-test('cluster-location prefers explicit storage and compute ids with legacy fallbacks', () => {
+test('cluster-location resolves canonical storage and compute ids without legacy fallback', () => {
     assert.equal(resolveTrajectoryStorageClusterId({
-        storageClusterId: 'storage-1',
-        teamCluster: 'legacy-storage'
+        storageClusterId: 'storage-1'
     }), 'storage-1');
-    assert.equal(resolveTrajectoryStorageClusterId({
-        teamCluster: 'legacy-storage'
-    }), 'legacy-storage');
 
     assert.equal(resolveAnalysisComputeClusterId({
-        computeClusterId: 'compute-1',
-        teamCluster: 'legacy-compute'
+        computeClusterId: 'compute-1'
     }), 'compute-1');
-    assert.equal(resolveAnalysisComputeClusterId({
-        teamCluster: 'legacy-compute'
-    }), 'legacy-compute');
 
     assert.equal(resolveAnalysisStorageClusterId(
-        { storageClusterId: undefined },
-        { storageClusterId: 'trajectory-storage', teamCluster: 'legacy-storage' }
-    ), 'trajectory-storage');
-    assert.equal(resolveAnalysisStorageClusterId(
-        { storageClusterId: 'analysis-storage' },
-        { storageClusterId: 'trajectory-storage', teamCluster: 'legacy-storage' }
+        { storageClusterId: 'analysis-storage' }
     ), 'analysis-storage');
 
     assert.equal(resolveSceneArtifactStorageClusterId({
-        storageClusterId: undefined,
-        teamCluster: { _id: 'artifact-storage' } as any
+        storageClusterId: { _id: 'artifact-storage' } as any
     } as any), 'artifact-storage');
 
     assert.equal(resolveClusterReferenceId({ _id: 'cluster-ref' }), 'cluster-ref');

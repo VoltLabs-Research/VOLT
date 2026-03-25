@@ -55,7 +55,7 @@ export class RasterMetadataService implements IRasterMetadataReader {
         const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
         const trajectoryRaster = await this.getTrajectoryMetadata(trajectoryId, storageClusterId);
 
-        const analyses = await this.getAnalysesMetadata(trajectoryId, totalFrames, storageClusterId);
+        const analyses = await this.getAnalysesMetadata(trajectoryId, totalFrames);
         const rasterizedFrames = trajectoryRaster.rasterizedFrames;
 
         if (!trajectoryRaster.trajectory && analyses.length === 0) {
@@ -125,8 +125,7 @@ export class RasterMetadataService implements IRasterMetadataReader {
 
     private async getAnalysesMetadata(
         trajectoryId: string,
-        totalFrames: number,
-        trajectoryTeamClusterId?: string
+        totalFrames: number
     ): Promise<RasterAnalysisMetadata[]> {
         try {
             const analyses = await this.analysisRepository.export({
@@ -138,7 +137,7 @@ export class RasterMetadataService implements IRasterMetadataReader {
                     trajectoryId,
                     analysis.id,
                     totalFrames,
-                    resolveAnalysisStorageClusterId(analysis.props) || trajectoryTeamClusterId
+                    resolveAnalysisStorageClusterId(analysis.props)
                 );
             }));
 

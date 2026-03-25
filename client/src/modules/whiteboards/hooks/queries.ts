@@ -1,8 +1,8 @@
 import service from '../api/service';
 import {
     buildKeys,
+    createInvalidatingMutation,
     createFolderResourceQueries,
-    createMutation,
     createQuery
 } from '@/shared/infrastructure/query';
 import queryClient from '@/shared/infrastructure/query/query-client';
@@ -55,12 +55,7 @@ const whiteboardFolderQueries = createFolderResourceQueries<
         deleteFolder: service.deleteWhiteboardFolder
     },
     buildFolderParams: (folderId) => ({ folderId }),
-    afterUpdate: () => {
-        invalidateWhiteboardsQuery();
-    },
-    afterDelete: () => {
-        invalidateWhiteboardsQuery();
-    }
+    listingQueryKeys: [KEYS.list()]
 });
 
 export const whiteboardFoldersQuery = whiteboardFolderQueries.foldersQuery;
@@ -73,19 +68,28 @@ export const useCreateWhiteboardFolderMutation = whiteboardFolderQueries.useCrea
 export const useUpdateWhiteboardFolderMutation = whiteboardFolderQueries.useUpdateFolderMutation;
 export const useDeleteWhiteboardFolderMutation = whiteboardFolderQueries.useDeleteFolderMutation;
 
-export const useCreateWhiteboardMutation = createMutation<Whiteboard, CreateWhiteboardParams>(service.createWhiteboard);
+export const useCreateWhiteboardMutation = createInvalidatingMutation<Whiteboard, CreateWhiteboardParams>(
+    service.createWhiteboard,
+    [KEYS.list()]
+);
 
-export const useUpdateWhiteboardMutation = createMutation<Whiteboard, UpdateWhiteboardParams>(
+export const useUpdateWhiteboardMutation = createInvalidatingMutation<Whiteboard, UpdateWhiteboardParams>(
     service.updateWhiteboard,
-    () => invalidateWhiteboardsQuery()
+    (_data, variables) => [
+        KEYS.list(),
+        KEYS.single({ whiteboardId: variables.whiteboardId })
+    ]
 );
 
-export const useDeleteWhiteboardMutation = createMutation<void, DeleteWhiteboardParams>(
+export const useDeleteWhiteboardMutation = createInvalidatingMutation<void, DeleteWhiteboardParams>(
     service.deleteWhiteboard,
-    () => invalidateWhiteboardsQuery()
+    [KEYS.list()]
 );
 
-export const useMoveWhiteboardMutation = createMutation<Whiteboard, MoveWhiteboardParams>(
+export const useMoveWhiteboardMutation = createInvalidatingMutation<Whiteboard, MoveWhiteboardParams>(
     service.moveWhiteboard,
-    () => invalidateWhiteboardsQuery()
+    (_data, variables) => [
+        KEYS.list(),
+        KEYS.single({ whiteboardId: variables.whiteboardId })
+    ]
 );

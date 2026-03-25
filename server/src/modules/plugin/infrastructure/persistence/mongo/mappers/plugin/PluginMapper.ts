@@ -8,8 +8,7 @@ import { BaseMapper } from '@shared/infrastructure/persistence/mongo/MongoBaseMa
 class PluginMapper extends BaseMapper<Plugin, PluginProps, PluginDocument> {
     constructor() {
         super(Plugin, [
-            'team',
-            'teamCluster'
+            'team'
         ]);
     }
 
