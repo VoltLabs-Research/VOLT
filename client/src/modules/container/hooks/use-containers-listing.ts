@@ -4,7 +4,6 @@ import {
     containerFolderQuery,
     containerFoldersQuery,
     containerQuery,
-    invalidateContainerFoldersQuery,
     useCreateContainerFolderMutation,
     useDeleteContainerFolderMutation,
     useMoveContainerMutation,
@@ -32,7 +31,6 @@ import { createCrudToastOptions } from '@/shared/presentation/toast-options';
 import { FOLDER_LIST_LIMIT, ROOT_FOLDER_ID } from '@/shared/presentation/constants/foldered-listing';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import queryClient from '@/shared/infrastructure/query/query-client';
 import { sileo } from 'sileo';
 import { Box, FolderInput, FolderOpen, Pencil, Play, RotateCcw, Square, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
@@ -46,6 +44,7 @@ export const MOVE_CONTAINER_MODAL_ID = 'move-container-modal';
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     { event: 'container.created', queryKeys: [containerQuery.QUERY_KEYS.lists()] },
+    { event: 'container.updated', queryKeys: [containerQuery.QUERY_KEYS.lists()] },
     { event: 'container.deleted', queryKeys: [containerQuery.QUERY_KEYS.lists()] }
 ];
 
@@ -150,12 +149,6 @@ const useContainersListing = () => {
         invalidFolderMessage: 'This container folder no longer exists. Showing Root instead.',
         createFolder,
         createFolderToast: CREATE_FOLDER_TOAST,
-        afterCreateFolder: async () => {
-            await Promise.all([
-                invalidateContainerFoldersQuery(),
-                queryClient.invalidateQueries({ queryKey: containerQuery.QUERY_KEYS.lists() })
-            ]);
-        },
         updateFolder,
         renameFolderToast: RENAME_FOLDER_TOAST,
         deleteFolder,

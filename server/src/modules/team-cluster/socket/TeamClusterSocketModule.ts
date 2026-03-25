@@ -364,7 +364,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
                 teamClusterId: payload.teamClusterId,
                 daemonPassword: payload.daemonPassword,
                 trajectory: item.trajectory,
-                teamCluster: item.teamCluster,
+                storageClusterId: item.storageClusterId,
                 analysis: item.analysis,
                 plugin: item.plugin,
                 sourceType: item.sourceType as ProcessDaemonSceneArtifactUpsertInputDTO['sourceType'],

@@ -81,7 +81,7 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
                 name: trajectoryName,
                 team: teamId,
                 folder: null,
-                teamCluster: connectedTeamCluster.id,
+                storageClusterId: connectedTeamCluster.id,
                 createdBy: userId,
                 status: TrajectoryStatus.WaitingForProcess,
                 frames: [],

@@ -32,9 +32,7 @@ export default class AnalysisRepository
         const pipeline: CompletedFramesGroupStage[] = [
             {
                 $group: {
-                    _id: {
-                        $ifNull: ['$computeClusterId', '$teamCluster']
-                    },
+                    _id: '$computeClusterId',
                     count: {
                         $sum: '$completedFrames'
                     }

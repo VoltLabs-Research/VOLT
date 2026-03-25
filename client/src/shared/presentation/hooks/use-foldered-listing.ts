@@ -34,7 +34,6 @@ interface UseFolderedListingOptions<TItem, TFolder extends FolderBreadcrumbEntit
     invalidFolderMessage: string;
     createFolder: (params: { title: string; parentId: string | null }) => Promise<unknown>;
     createFolderToast: PromiseToastOptions<unknown>;
-    afterCreateFolder?: () => Promise<void> | void;
     updateFolder: (params: { folderId: string; title: string }) => Promise<unknown>;
     renameFolderToast: PromiseToastOptions<unknown>;
     deleteFolder: (params: { folderId: string }) => Promise<unknown>;
@@ -80,7 +79,6 @@ const useFolderedListing = <
     invalidFolderMessage,
     createFolder,
     createFolderToast,
-    afterCreateFolder,
     updateFolder,
     renameFolderToast,
     deleteFolder,
@@ -144,12 +142,10 @@ const useFolderedListing = <
             createFolder({
                 title,
                 parentId: currentFolderId
-            }).then(async () => {
-                await afterCreateFolder?.();
             }),
             createFolderToast
         );
-    }, [afterCreateFolder, createFolder, createFolderToast, currentFolderId, teamId]);
+    }, [createFolder, createFolderToast, currentFolderId, teamId]);
 
     const handleRenameFolderOpen = useCallback((folder: TFolder) => {
         setRenamingFolder(folder);

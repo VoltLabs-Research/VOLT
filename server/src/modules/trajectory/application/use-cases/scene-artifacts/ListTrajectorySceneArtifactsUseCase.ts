@@ -14,7 +14,7 @@ import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 interface SceneArtifactOutput {
     _id: string;
     trajectory: string;
-    teamCluster?: string;
+    storageClusterId?: string;
     analysis?: string;
     plugin?: string;
     sourceType: SceneArtifactProps['sourceType'];

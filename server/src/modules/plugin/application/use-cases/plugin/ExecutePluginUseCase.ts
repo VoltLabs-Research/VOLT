@@ -182,11 +182,8 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
 
         const entrypointNode = plugin.props.workflow.props.nodes.find((node) => node.type === 'entrypoint');
         const binaryObjectPath = entrypointNode?.data.entrypoint?.binaryObjectPath;
-        if (binaryObjectPath && !plugin.props.teamCluster) {
-            return Result.fail(ApplicationError.conflict(
-                'Plugin::ClusterUnavailable',
-                'Plugin binary is not assigned to a team cluster yet'
-            ));
+        if (binaryObjectPath) {
+            await this.storagePlacementService.ensurePlacement('plugin-binary', plugin.id);
         }
 
         const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
@@ -246,7 +243,6 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
         const analysis = await this.analysisRepo.create({
             plugin: plugin._id,
             pluginDisplayName,
-            teamCluster: computeClusterId,
             computeClusterId,
             storageClusterId,
             config: analysisConfig,

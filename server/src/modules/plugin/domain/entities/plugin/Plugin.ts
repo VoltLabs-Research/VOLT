@@ -10,7 +10,6 @@ export enum PluginStatus {
 
 export interface PluginProps extends Partial<PluginProjection> {
     team: string;
-    teamCluster?: string | null;
     workflow: Workflow,
     status: PluginStatus;
     createdAt: Date;

@@ -4,7 +4,7 @@ import { SceneArtifactSourceType, SceneArtifactStatus } from '@modules/trajector
 import type { SceneArtifactProps } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
-type SceneArtifactRelations = 'trajectory' | 'teamCluster' | 'storageClusterId' | 'analysis' | 'plugin';
+type SceneArtifactRelations = 'trajectory' | 'storageClusterId' | 'analysis' | 'plugin';
 
 export interface SceneArtifactDocument extends Persistable<SceneArtifactProps, SceneArtifactRelations>, Document {};
 
@@ -16,16 +16,10 @@ const SceneArtifactSchema: Schema<SceneArtifactDocument> = new Schema({
         index: true,
         cascade: 'delete'
     },
-    teamCluster: {
-        type: Schema.Types.ObjectId,
-        ref: 'TeamCluster',
-        required: true,
-        index: true
-    },
     storageClusterId: {
         type: Schema.Types.ObjectId,
         ref: 'TeamCluster',
-        required: false,
+        required: true,
         index: true
     },
     analysis: {

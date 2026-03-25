@@ -47,7 +47,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         const { analysis, plugin } = await this.getAnalysisAndPlugin(analysisId);
         const trajectoryId = analysis.props.trajectory;
         const teamClusterId = resolveAnalysisComputeClusterId(analysis.props);
-        const ownerClusterId = resolveAnalysisStorageClusterId(analysis.props);
+        const ownerClusterId = this.requireAnalysisStorageClusterId(analysis);
 
         if (!teamClusterId) {
             throw new ApplicationError(ErrorCodes.TEAM_CLUSTER_NOT_FOUND, ErrorCodes.TEAM_CLUSTER_NOT_FOUND, 404);
@@ -82,7 +82,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         const { analysis, plugin } = await this.getAnalysisAndPlugin(analysisId);
         const trajectoryId = analysis.props.trajectory;
         const teamClusterId = resolveAnalysisComputeClusterId(analysis.props);
-        const ownerClusterId = resolveAnalysisStorageClusterId(analysis.props);
+        const ownerClusterId = this.requireAnalysisStorageClusterId(analysis);
 
         if (!teamClusterId) {
             throw new ApplicationError(ErrorCodes.TEAM_CLUSTER_NOT_FOUND, ErrorCodes.TEAM_CLUSTER_NOT_FOUND, 404);
@@ -117,9 +117,10 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         timestep: string
     ): Promise<AnalysisAllAtomsResult | null> {
         const analysis = await this.analysisRepository.findById(analysisId);
-        const ownerClusterId = analysis
-            ? resolveAnalysisStorageClusterId(analysis.props)
-            : undefined;
+        if (!analysis) {
+            return null;
+        }
+        const ownerClusterId = this.requireAnalysisStorageClusterId(analysis);
 
         return this.daemonClient.command<AnalysisAllAtomsResult | null>(
             teamClusterId,
@@ -128,7 +129,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
                 trajectoryId,
                 analysisId,
                 timestep: Number(timestep),
-                ...(ownerClusterId ? { ownerClusterId } : {})
+                ownerClusterId
             }
         );
     }
@@ -147,7 +148,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
 
         const { analysis } = await this.getAnalysisAndPlugin(analysisId);
         const teamClusterId = resolveAnalysisComputeClusterId(analysis.props);
-        const ownerClusterId = resolveAnalysisStorageClusterId(analysis.props);
+        const ownerClusterId = this.requireAnalysisStorageClusterId(analysis);
 
         if (!teamClusterId) {
             throw new ApplicationError(ErrorCodes.TEAM_CLUSTER_NOT_FOUND, ErrorCodes.TEAM_CLUSTER_NOT_FOUND, 404);
@@ -162,7 +163,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
                 exposureId,
                 timestep: Number(timestep),
                 targetIds: Array.from(targetIds),
-                ...(ownerClusterId ? { ownerClusterId } : {})
+                ownerClusterId
             }
         );
 
@@ -185,7 +186,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
     ): Promise<Float32Array | undefined> {
         const { analysis } = await this.getAnalysisAndPlugin(analysisId);
         const teamClusterId = resolveAnalysisComputeClusterId(analysis.props);
-        const ownerClusterId = resolveAnalysisStorageClusterId(analysis.props);
+        const ownerClusterId = this.requireAnalysisStorageClusterId(analysis);
 
         if (!teamClusterId) return undefined;
 
@@ -198,7 +199,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
                 exposureId,
                 timestep: Number(timestep),
                 property,
-                ...(ownerClusterId ? { ownerClusterId } : {})
+                ownerClusterId
             }
         );
 
@@ -226,7 +227,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
     ): Promise<{ min: number; max: number } | undefined> {
         const { analysis } = await this.getAnalysisAndPlugin(analysisId);
         const teamClusterId = resolveAnalysisComputeClusterId(analysis.props);
-        const ownerClusterId = resolveAnalysisStorageClusterId(analysis.props);
+        const ownerClusterId = this.requireAnalysisStorageClusterId(analysis);
 
         if (!teamClusterId) return undefined;
 
@@ -239,7 +240,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
                 exposureId,
                 timestep: Number(timestep),
                 property,
-                ...(ownerClusterId ? { ownerClusterId } : {})
+                ownerClusterId
             }
         );
 
@@ -256,7 +257,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
     ): Promise<number[]> {
         const { analysis } = await this.getAnalysisAndPlugin(analysisId);
         const teamClusterId = resolveAnalysisComputeClusterId(analysis.props);
-        const ownerClusterId = resolveAnalysisStorageClusterId(analysis.props);
+        const ownerClusterId = this.requireAnalysisStorageClusterId(analysis);
 
         if (!teamClusterId) return [];
 
@@ -270,7 +271,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
                 timestep: Number(timestep),
                 property,
                 maxValues,
-                ...(ownerClusterId ? { ownerClusterId } : {})
+                ownerClusterId
             }
         );
 
@@ -297,6 +298,18 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
             : '';
     }
 
+    private requireAnalysisStorageClusterId(analysis: Analysis): string {
+        const ownerClusterId = resolveAnalysisStorageClusterId(analysis.props);
+        if (!ownerClusterId) {
+            throw ApplicationError.notFound(
+                ErrorCodes.TEAM_CLUSTER_NOT_FOUND,
+                `Analysis ${analysis._id} is missing its canonical storage cluster`
+            );
+        }
+
+        return ownerClusterId;
+    }
+
     private async getPerAtomProperties(
         teamClusterId: string,
         trajectoryId: string,
@@ -313,7 +326,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
                 analysisId,
                 exposureId,
                 ...(timestep ? { timestep: Number(timestep) } : {}),
-                ...(ownerClusterId ? { ownerClusterId } : {})
+                ownerClusterId
             }
         );
 

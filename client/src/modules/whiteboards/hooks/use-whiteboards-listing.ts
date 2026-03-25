@@ -1,6 +1,4 @@
 import {
-    invalidateWhiteboardFoldersQuery,
-    invalidateWhiteboardsQuery,
     useCreateWhiteboardFolderMutation,
     useCreateWhiteboardMutation,
     useDeleteWhiteboardFolderMutation,
@@ -137,12 +135,6 @@ const useWhiteboardsListing = () => {
         invalidFolderMessage: 'This whiteboard folder no longer exists. Showing Root instead.',
         createFolder: createWhiteboardFolder,
         createFolderToast: CREATE_FOLDER_TOAST,
-        afterCreateFolder: async () => {
-            await Promise.all([
-                invalidateWhiteboardFoldersQuery(),
-                invalidateWhiteboardsQuery()
-            ]);
-        },
         updateFolder: updateWhiteboardFolder,
         renameFolderToast: RENAME_FOLDER_TOAST,
         deleteFolder: deleteWhiteboardFolder,
@@ -159,15 +151,11 @@ const useWhiteboardsListing = () => {
         }
 
         await showPromise(
-            (async () => {
-                await createWhiteboard({
-                    teamId,
-                    title: 'Untitled Whiteboard',
-                    folderId: currentFolderId
-                });
-
-                await invalidateWhiteboardsQuery();
-            })(),
+            createWhiteboard({
+                teamId,
+                title: 'Untitled Whiteboard',
+                folderId: currentFolderId
+            }),
             CREATE_WHITEBOARD_TOAST
         );
     }, [currentFolderId, createWhiteboard, teamId]);

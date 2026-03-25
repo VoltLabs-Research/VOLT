@@ -1,5 +1,5 @@
 import memberService from '../../api/services/member';
-import { createMutation, createQuery } from '@/shared/infrastructure/query';
+import { createInvalidatingMutation, createQuery } from '@/shared/infrastructure/query';
 import { createTeamScopedPaginatedResource } from '../shared/team-scoped-paginated-resource';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { TeamMember, TeamMemberStats } from '../../api/entities/member/team-member';
@@ -31,8 +31,6 @@ const getTeamMembersQueryKey = teamMembersResource.getPageQueryKey;
 
 const getAllTeamMembersQueryKey = teamMembersResource.getAggregateQueryKey;
 
-const invalidateTeamMembersQuery = teamMembersResource.invalidateListingQuery;
-
 const getAllTeamMembers = teamMembersResource.fetchAllPages;
 
 export const useTeamMembersQuery = createQuery<TeamMembersQueryParams, PaginatedResponse<TeamMemberStats>>(
@@ -45,12 +43,12 @@ export const useAllTeamMembersQuery = createQuery<TeamMembersAggregateQueryParam
     getAllTeamMembers
 );
 
-export const useUpdateTeamMemberMutation = createMutation<TeamMember, UpdateTeamMemberInputDTO>(
+export const useUpdateTeamMemberMutation = createInvalidatingMutation<TeamMember, UpdateTeamMemberInputDTO>(
     memberService.update,
-    (_data, variables) => invalidateTeamMembersQuery(variables.teamId)
+    (_data, variables) => [getTeamMembersListingQueryKey({ teamId: variables.teamId })]
 );
 
-export const useRemoveTeamMemberMutation = createMutation<void, RemoveTeamMemberInputDTO>(
+export const useRemoveTeamMemberMutation = createInvalidatingMutation<void, RemoveTeamMemberInputDTO>(
     memberService.remove,
-    (_data, variables) => invalidateTeamMembersQuery(variables.teamId)
+    (_data, variables) => [getTeamMembersListingQueryKey({ teamId: variables.teamId })]
 );

@@ -4,6 +4,7 @@ export {
     createSocketQuery,
     createInfiniteQuery,
     createMutation,
+    createInvalidatingMutation,
     createPaginatedQuery,
     withSuccess
 } from './create-paginated-query';

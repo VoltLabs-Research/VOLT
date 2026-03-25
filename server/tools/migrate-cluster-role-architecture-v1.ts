@@ -246,7 +246,6 @@ const upsertStoragePlacement = async (input: {
                 updatedAt: now
             },
             $setOnInsert: {
-                team: new mongoose.Types.ObjectId(input.teamId),
                 scopeType: input.scopeType,
                 scopeId: input.scopeId,
                 replicaClusterIds: [],
@@ -364,6 +363,70 @@ const migratePluginBinaryPlacements = async (): Promise<number> => {
     return migratedCount;
 };
 
+const removeLegacyTrajectoryTeamClusterField = async (): Promise<number> => {
+    const result = await TrajectoryModel.collection.updateMany(
+        {
+            teamCluster: { $exists: true },
+            storageClusterId: { $exists: true, $ne: null }
+        },
+        {
+            $unset: {
+                teamCluster: ''
+            }
+        }
+    );
+
+    return result.modifiedCount ?? 0;
+};
+
+const removeLegacyAnalysisTeamClusterField = async (): Promise<number> => {
+    const result = await AnalysisModel.collection.updateMany(
+        {
+            teamCluster: { $exists: true },
+            computeClusterId: { $exists: true, $ne: null },
+            storageClusterId: { $exists: true, $ne: null }
+        },
+        {
+            $unset: {
+                teamCluster: ''
+            }
+        }
+    );
+
+    return result.modifiedCount ?? 0;
+};
+
+const removeLegacySceneArtifactTeamClusterField = async (): Promise<number> => {
+    const result = await SceneArtifactModel.collection.updateMany(
+        {
+            teamCluster: { $exists: true },
+            storageClusterId: { $exists: true, $ne: null }
+        },
+        {
+            $unset: {
+                teamCluster: ''
+            }
+        }
+    );
+
+    return result.modifiedCount ?? 0;
+};
+
+const removeLegacyPluginTeamClusterField = async (): Promise<number> => {
+    const result = await PluginModel.collection.updateMany(
+        {
+            teamCluster: { $exists: true }
+        },
+        {
+            $unset: {
+                teamCluster: ''
+            }
+        }
+    );
+
+    return result.modifiedCount ?? 0;
+};
+
 const main = async (): Promise<void> => {
     await mongoConnector();
 
@@ -374,6 +437,10 @@ const main = async (): Promise<void> => {
     const migratedTrajectoryPlacements = await migrateTrajectoryPlacements();
     const migratedAnalysisPlacements = await migrateAnalysisPlacements();
     const migratedPluginBinaryPlacements = await migratePluginBinaryPlacements();
+    const removedLegacyTrajectoryTeamClusterField = await removeLegacyTrajectoryTeamClusterField();
+    const removedLegacyAnalysisTeamClusterField = await removeLegacyAnalysisTeamClusterField();
+    const removedLegacySceneArtifactTeamClusterField = await removeLegacySceneArtifactTeamClusterField();
+    const removedLegacyPluginTeamClusterField = await removeLegacyPluginTeamClusterField();
 
     console.log(JSON.stringify({
         migratedTeamClusterRoles,
@@ -382,7 +449,11 @@ const main = async (): Promise<void> => {
         migratedSceneArtifactStorageClusterIds,
         migratedTrajectoryPlacements,
         migratedAnalysisPlacements,
-        migratedPluginBinaryPlacements
+        migratedPluginBinaryPlacements,
+        removedLegacyTrajectoryTeamClusterField,
+        removedLegacyAnalysisTeamClusterField,
+        removedLegacySceneArtifactTeamClusterField,
+        removedLegacyPluginTeamClusterField
     }, null, 2));
 };
 

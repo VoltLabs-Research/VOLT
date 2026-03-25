@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import StoragePlacementService from './StoragePlacementService';
 import { createStoragePlacementProps } from '@modules/team-cluster/domain/entities/StoragePlacement';
+import Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 
 import type Analysis from '@modules/analysis/domain/entities/Analysis';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
@@ -11,7 +12,6 @@ import type StoragePlacement from '@modules/team-cluster/domain/entities/Storage
 import type StoragePlacementRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/StoragePlacementRepository';
 import type SceneArtifact from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
-import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 
 class StubTrajectoryRepository {
@@ -38,26 +38,20 @@ class StubTrajectoryRepository {
             return this.exported.filter((trajectory) => idSet.has(trajectory.id));
         }
 
-        if (options?.filter && typeof options.filter === 'object' && 'team' in options.filter && '$or' in options.filter) {
+        if (
+            options?.filter
+            && typeof options.filter === 'object'
+            && 'team' in options.filter
+            && 'storageClusterId' in options.filter
+        ) {
             const teamId = typeof options.filter.team === 'string' ? options.filter.team : '';
-            const primaryClusterIds = new Set(
-                Array.isArray(options.filter.$or)
-                    ? options.filter.$or.flatMap((entry) => {
-                        if (!entry || typeof entry !== 'object') {
-                            return [];
-                        }
-
-                        const candidate = entry as Record<string, unknown>;
-                        return [candidate.storageClusterId, candidate.teamCluster].filter(
-                            (value): value is string => typeof value === 'string'
-                        );
-                    })
-                    : []
-            );
+            const primaryClusterId = typeof options.filter.storageClusterId === 'string'
+                ? options.filter.storageClusterId
+                : '';
 
             return this.exported.filter((trajectory) => {
                 return trajectory.props.team === teamId
-                    && primaryClusterIds.has((trajectory.props.storageClusterId as string | undefined) ?? trajectory.props.teamCluster ?? '');
+                    && trajectory.props.storageClusterId === primaryClusterId;
             });
         }
 
@@ -233,8 +227,7 @@ test('StoragePlacementService synchronizes trajectory transfers to the new stora
     assert.deepEqual(trajectoryRepository.updates, [{
         id: 'trajectory-1',
         data: {
-            storageClusterId: 'storage-2',
-            teamCluster: 'storage-2'
+            storageClusterId: 'storage-2'
         }
     }]);
     assert.deepEqual(analysisRepository.bulkUpdates, [{
@@ -246,8 +239,7 @@ test('StoragePlacementService synchronizes trajectory transfers to the new stora
     assert.deepEqual(sceneArtifactRepository.bulkUpdates, [{
         filter: { trajectory: 'trajectory-1' },
         data: {
-            storageClusterId: 'storage-2',
-            teamCluster: 'storage-2'
+            storageClusterId: 'storage-2'
         }
     }]);
     assert.equal(storagePlacementRepository.upserts.length, 1);
@@ -274,8 +266,7 @@ test('StoragePlacementService keeps analysis compute ownership untouched during 
     assert.deepEqual(sceneArtifactRepository.bulkUpdates, [{
         filter: { analysis: 'analysis-1' },
         data: {
-            storageClusterId: 'storage-2',
-            teamCluster: 'storage-2'
+            storageClusterId: 'storage-2'
         }
     }]);
 });
@@ -288,23 +279,13 @@ test('StoragePlacementService resolves cluster transfer placements without dupli
         analysisRepository
     } = buildService();
 
-    trajectoryRepository.exported = [{
-        id: 'trajectory-1',
-        _id: 'trajectory-1',
-        props: {
+    trajectoryRepository.exported = [new Trajectory('trajectory-1', {
             team: 'team-1',
-            teamCluster: 'storage-1',
             storageClusterId: 'storage-1'
-        }
-    } as Trajectory, {
-        id: 'trajectory-2',
-        _id: 'trajectory-2',
-        props: {
+        } as Trajectory['props']), new Trajectory('trajectory-2', {
             team: 'team-1',
-            teamCluster: 'storage-2',
             storageClusterId: 'storage-2'
-        }
-    } as Trajectory];
+        } as Trajectory['props'])];
     analysisRepository.exported = [{
         id: 'analysis-1',
         _id: 'analysis-1',

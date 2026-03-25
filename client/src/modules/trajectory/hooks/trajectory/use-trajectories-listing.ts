@@ -24,14 +24,12 @@ import type { PaginationParams } from '@/shared/presentation/hooks/use-paginatio
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import { createPromiseToastOptions, type PromiseToastOptions } from '@/shared/presentation/toast-options';
-import queryClient from '@/shared/infrastructure/query/query-client';
 import { FolderInput, FolderOpen, Pencil, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RiTableLine } from 'react-icons/ri';
 import useTrajectoryFilePicker from './use-trajectory-file-picker';
 import {
-    invalidateTrajectoryFoldersQuery,
     trajectoryFolderQuery,
     trajectoryFoldersQuery,
     trajectoryQuery,
@@ -154,12 +152,6 @@ const useTrajectoriesListing = () => {
             loading: { title: 'Creating folder...' },
             success: { title: 'Folder created successfully' },
             error: { title: 'Failed to create folder' }
-        },
-        afterCreateFolder: async () => {
-            await Promise.all([
-                invalidateTrajectoryFoldersQuery(),
-                queryClient.invalidateQueries({ queryKey: trajectoryQuery.QUERY_KEYS.lists() })
-            ]);
         },
         updateFolder,
         renameFolderToast: {

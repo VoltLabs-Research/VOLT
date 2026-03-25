@@ -1,10 +1,11 @@
 import service from '../api/service';
 import {
     buildKeys,
+    createInvalidatingMutation,
     createFolderResourceQueries,
-    createMutation,
     createQuery
 } from '@/shared/infrastructure/query';
+import { createMutation } from '@/shared/infrastructure/query';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { CompileLatexDocumentParams } from '../api/dtos/compile-latex-document';
@@ -79,12 +80,7 @@ const latexFolderQueries = createFolderResourceQueries<
         deleteFolder: service.deleteFolder
     },
     buildFolderParams: (folderId) => ({ folderId }),
-    afterUpdate: () => {
-        invalidateLatexDocumentsQuery();
-    },
-    afterDelete: () => {
-        invalidateLatexDocumentsQuery();
-    }
+    listingQueryKeys: [KEYS.documents()]
 });
 
 export const latexFoldersQueryKey = latexFolderQueries.foldersQueryKey;
@@ -97,27 +93,30 @@ export const useCreateLatexFolderMutation = latexFolderQueries.useCreateFolderMu
 export const useUpdateLatexFolderMutation = latexFolderQueries.useUpdateFolderMutation;
 export const useDeleteLatexFolderMutation = latexFolderQueries.useDeleteFolderMutation;
 
-export const useDeleteLatexDocumentMutation = createMutation<void, DeleteLatexDocumentParams>(
+export const useDeleteLatexDocumentMutation = createInvalidatingMutation<void, DeleteLatexDocumentParams>(
     service.deleteDocument,
-    () => invalidateLatexDocumentsQuery()
+    [KEYS.documents()]
 );
 
-export const useCreateLatexDocumentMutation = createMutation<LatexDocument, CreateLatexDocumentParams>(
+export const useCreateLatexDocumentMutation = createInvalidatingMutation<LatexDocument, CreateLatexDocumentParams>(
     service.createDocument,
-    () => invalidateLatexDocumentsQuery()
+    [KEYS.documents()]
 );
 
-export const useUpdateLatexDocumentMutation = createMutation<LatexDocument, UpdateLatexDocumentParams>(
+export const useUpdateLatexDocumentMutation = createInvalidatingMutation<LatexDocument, UpdateLatexDocumentParams>(
     service.updateDocument,
-    (_data, variables) => {
-        invalidateLatexDocumentsQuery();
-        invalidateLatexDocumentQuery({ documentId: variables.documentId });
-    }
+    (_data, variables) => [
+        KEYS.documents(),
+        KEYS.document({ documentId: variables.documentId })
+    ]
 );
 
-export const useMoveLatexDocumentMutation = createMutation<LatexDocument, MoveLatexDocumentParams>(
+export const useMoveLatexDocumentMutation = createInvalidatingMutation<LatexDocument, MoveLatexDocumentParams>(
     service.moveDocument,
-    () => invalidateLatexDocumentsQuery()
+    (_data, variables) => [
+        KEYS.documents(),
+        KEYS.document({ documentId: variables.documentId })
+    ]
 );
 
 export const useUploadLatexAssetMutation = createMutation<UploadLatexAssetsResult, UploadLatexAssetParams>(

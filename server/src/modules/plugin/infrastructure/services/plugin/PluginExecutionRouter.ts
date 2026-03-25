@@ -61,7 +61,6 @@ interface DaemonAnalysisPayload {
     _id: string;
     plugin: string;
     pluginDisplayName: string;
-    teamCluster?: string;
     computeClusterId?: string;
     storageClusterId?: string;
     config: Record<string, unknown>;
@@ -83,7 +82,6 @@ const serializeAnalysis = (analysis: Analysis, trajectoryName: string): DaemonAn
         _id: analysis.id,
         plugin: analysis.props.plugin,
         pluginDisplayName: analysis.props.pluginDisplayName,
-        teamCluster: analysis.props.teamCluster,
         computeClusterId: analysis.props.computeClusterId,
         storageClusterId: analysis.props.storageClusterId,
         config: analysis.props.config,

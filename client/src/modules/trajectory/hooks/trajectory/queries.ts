@@ -4,6 +4,7 @@ import {
     buildKeys,
     createInfiniteQuery,
     createFolderResourceQueries,
+    createInvalidatingMutation,
     createMutation,
     createPaginatedQuery,
     createQuery
@@ -132,12 +133,7 @@ const trajectoryFolderQueries = createFolderResourceQueries<
         deleteFolder: trajectoryService.deleteFolder
     },
     buildFolderParams: (folderId) => ({ folderId }),
-    afterUpdate: () => {
-        queryClient.invalidateQueries({ queryKey: trajectoryQuery.QUERY_KEYS.lists() });
-    },
-    afterDelete: () => {
-        queryClient.invalidateQueries({ queryKey: trajectoryQuery.QUERY_KEYS.lists() });
-    }
+    listingQueryKeys: [trajectoryQuery.QUERY_KEYS.lists()]
 });
 
 export const trajectoryFoldersQuery = trajectoryFolderQueries.foldersQuery;
@@ -148,9 +144,9 @@ export const useCreateTrajectoryFolderMutation = trajectoryFolderQueries.useCrea
 export const useUpdateTrajectoryFolderMutation = trajectoryFolderQueries.useUpdateFolderMutation;
 export const useDeleteTrajectoryFolderMutation = trajectoryFolderQueries.useDeleteFolderMutation;
 
-export const useMoveTrajectoryMutation = createMutation<void, MoveTrajectoryParams>(
+export const useMoveTrajectoryMutation = createInvalidatingMutation<void, MoveTrajectoryParams>(
     trajectoryService.move,
-    () => queryClient.invalidateQueries({ queryKey: trajectoryQuery.QUERY_KEYS.lists() })
+    [trajectoryQuery.QUERY_KEYS.lists()]
 );
 
 const trajectoriesInfiniteQuery = createInfiniteQuery<GetTrajectoriesInputDTO, Trajectory>(

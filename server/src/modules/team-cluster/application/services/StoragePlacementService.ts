@@ -137,8 +137,7 @@ export default class StoragePlacementService {
 
             await Promise.all([
                 this.trajectoryRepository.updateById(scopeId, {
-                    storageClusterId,
-                    teamCluster: storageClusterId
+                    storageClusterId
                 }),
                 this.analysisRepository.updateMany({
                     trajectory: scopeId
@@ -148,8 +147,7 @@ export default class StoragePlacementService {
                 this.sceneArtifactRepository.updateMany({
                     trajectory: scopeId
                 }, {
-                    storageClusterId,
-                    teamCluster: storageClusterId
+                    storageClusterId
                 })
             ]);
             await this.synchronizeAnalysisPlacementsForTrajectory(scopeId, analyses, storageClusterId);
@@ -164,8 +162,7 @@ export default class StoragePlacementService {
                 this.sceneArtifactRepository.updateMany({
                     analysis: scopeId
                 }, {
-                    storageClusterId,
-                    teamCluster: storageClusterId
+                    storageClusterId
                 })
             ]);
             return;
@@ -183,10 +180,7 @@ export default class StoragePlacementService {
         const trajectories = await this.trajectoryRepository.export({
             filter: {
                 team: teamId,
-                $or: [
-                    { storageClusterId: primaryClusterId },
-                    { teamCluster: primaryClusterId }
-                ]
+                storageClusterId: primaryClusterId
             },
             sort: {
                 createdAt: 1
@@ -216,7 +210,7 @@ export default class StoragePlacementService {
 
         for (const analysis of analyses) {
             const trajectory = trajectoryMap.get(analysis.props.trajectory);
-            const resolvedStorageClusterId = resolveAnalysisStorageClusterId(analysis.props, trajectory?.props);
+            const resolvedStorageClusterId = resolveAnalysisStorageClusterId(analysis.props);
 
             if (resolvedStorageClusterId !== primaryClusterId) {
                 continue;
@@ -269,7 +263,7 @@ export default class StoragePlacementService {
             }
 
             const trajectory = await this.trajectoryRepository.findById(analysis.props.trajectory);
-            const storageClusterId = resolveAnalysisStorageClusterId(analysis.props, trajectory?.props);
+            const storageClusterId = resolveAnalysisStorageClusterId(analysis.props);
             if (!storageClusterId) {
                 throw ApplicationError.conflict(
                     'StoragePlacement::AnalysisStorageClusterRequired',

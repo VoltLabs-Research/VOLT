@@ -4,7 +4,7 @@ import type { TeamClusterDTO } from '@modules/team-cluster/application/dtos/Team
 import type { SceneArtifactProps } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 import type { TrajectoryProps } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 
-const readLegacyClusterId = (value: unknown): string | undefined => {
+const readClusterReferenceId = (value: unknown): string | undefined => {
     if (typeof value === 'string' && value.length > 0) {
         return value;
     }
@@ -21,33 +21,31 @@ const readLegacyClusterId = (value: unknown): string | undefined => {
 };
 
 export const resolveClusterReferenceId = (value: unknown): string | undefined => {
-    return readLegacyClusterId(value);
+    return readClusterReferenceId(value);
 };
 
 export const resolveTrajectoryStorageClusterId = (
-    trajectory: Pick<TrajectoryProps, 'storageClusterId' | 'teamCluster'>
+    trajectory: Pick<TrajectoryProps, 'storageClusterId'>
 ): string | undefined => {
-    return trajectory.storageClusterId ?? readLegacyClusterId(trajectory.teamCluster);
+    return readClusterReferenceId(trajectory.storageClusterId);
 };
 
 export const resolveAnalysisComputeClusterId = (
-    analysis: Pick<AnalysisProps, 'computeClusterId' | 'teamCluster'>
+    analysis: Pick<AnalysisProps, 'computeClusterId'>
 ): string | undefined => {
-    return analysis.computeClusterId ?? readLegacyClusterId(analysis.teamCluster);
+    return readClusterReferenceId(analysis.computeClusterId);
 };
 
 export const resolveAnalysisStorageClusterId = (
-    analysis: Pick<AnalysisProps, 'storageClusterId'>,
-    trajectory?: Pick<TrajectoryProps, 'storageClusterId' | 'teamCluster'>
+    analysis: Pick<AnalysisProps, 'storageClusterId'>
 ): string | undefined => {
-    return analysis.storageClusterId
-        ?? (trajectory ? resolveTrajectoryStorageClusterId(trajectory) : undefined);
+    return readClusterReferenceId(analysis.storageClusterId);
 };
 
 export const resolveSceneArtifactStorageClusterId = (
-    sceneArtifact: Pick<SceneArtifactProps, 'storageClusterId' | 'teamCluster'>
+    sceneArtifact: Pick<SceneArtifactProps, 'storageClusterId'>
 ): string | undefined => {
-    return sceneArtifact.storageClusterId ?? readLegacyClusterId(sceneArtifact.teamCluster);
+    return readClusterReferenceId(sceneArtifact.storageClusterId);
 };
 
 export const isTeamClusterConnected = (teamCluster: TeamClusterDTO): boolean => {

@@ -38,6 +38,7 @@ export default class EventBroadcastSocketModule extends BaseSocketModule {
         'ssh-connection.created',
         'ssh-connection.deleted',
         'container.created',
+        'container.updated',
         'container.deleted',
         'notebook.deleted',
         'whiteboard.deleted'
