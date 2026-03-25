@@ -1,7 +1,7 @@
 import service from '../api/service';
 import { patchTrajectoryDetailCaches } from '@/modules/trajectory/shared/cache';
 import { patchPaginatedPage, removeEntityFromList } from '@/shared/infrastructure/query/cache-utils';
-import { buildKeys, createMutation, createPaginatedQuery, createQuery } from '@/shared/infrastructure/query/create-paginated-query';
+import { buildKeys, createInvalidatingMutation, createPaginatedQuery, createQuery } from '@/shared/infrastructure/query/create-paginated-query';
 import type { Analysis } from '../api/entities/analysis';
 import type { GetAnalysesParams } from '../api/dtos/get-analyses';
 import type { GetAnalysesByTrajectoryParams } from '../api/dtos/get-analyses-by-trajectory';
@@ -33,6 +33,7 @@ export const analysisQuery = createPaginatedQuery<Analysis, GetAnalysesParams>({
 });
 
 export const useAnalysesByTrajectoryQuery = createQuery(KEYS.byTrajectory, service.getByTrajectoryId);
-export const useRetryFailedFramesMutation = createMutation<RetryFailedFramesResponse, RetryFailedFramesParams>(
-    service.retryFailedFrames
+export const useRetryFailedFramesMutation = createInvalidatingMutation<RetryFailedFramesResponse, RetryFailedFramesParams>(
+    service.retryFailedFrames,
+    [analysisQuery.QUERY_KEYS.lists(), KEYS.byTrajectory()]
 );

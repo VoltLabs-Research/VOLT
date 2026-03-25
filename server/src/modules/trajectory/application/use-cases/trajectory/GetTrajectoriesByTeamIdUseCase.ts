@@ -42,7 +42,7 @@ export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTraje
                     select: ['firstName', 'lastName', 'email', 'avatar']
                 },
                 {
-                    path: 'teamCluster',
+                    path: 'storageClusterId',
                     select: ['name']
                 },
                 {

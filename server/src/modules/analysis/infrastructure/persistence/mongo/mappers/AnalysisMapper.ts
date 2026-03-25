@@ -7,7 +7,6 @@ export default createMongoMapper<Analysis, AnalysisProps, AnalysisDocument>(Anal
     'createdBy',
     'trajectory',
     'plugin',
-    'teamCluster',
     'computeClusterId',
     'storageClusterId',
     'team'

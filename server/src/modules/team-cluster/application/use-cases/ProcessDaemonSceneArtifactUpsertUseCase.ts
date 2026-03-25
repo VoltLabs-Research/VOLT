@@ -20,7 +20,7 @@ export interface ProcessDaemonSceneArtifactUpsertInputDTO {
     teamClusterId: string;
     daemonPassword: string;
     trajectory: string;
-    teamCluster?: string;
+    storageClusterId: string;
     analysis?: string;
     plugin?: string;
     sourceType: SceneArtifactSourceType;
@@ -41,7 +41,6 @@ interface PreparedSceneArtifactUpsertEntry {
     objectName: string;
     data: {
         trajectory: string;
-        teamCluster: string;
         storageClusterId: string;
         analysis?: string;
         plugin?: string;
@@ -170,7 +169,14 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
             }
 
             const trajectoryStorageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
-            if (trajectoryStorageClusterId && trajectoryStorageClusterId !== input.teamClusterId) {
+            if (!trajectoryStorageClusterId) {
+                throw ApplicationError.conflict(
+                    'TEAM_CLUSTER_DAEMON_TRAJECTORY_STORAGE_CLUSTER_REQUIRED',
+                    'Trajectory storage cluster is required before accepting scene artifacts'
+                );
+            }
+
+            if (trajectoryStorageClusterId !== input.teamClusterId || input.storageClusterId !== trajectoryStorageClusterId) {
                 throw ApplicationError.forbidden(
                     'TEAM_CLUSTER_DAEMON_TRAJECTORY_CLUSTER_MISMATCH',
                     'Trajectory storage does not belong to the authenticated team cluster'
@@ -179,7 +185,7 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
 
             let sanitizedAnalysisId = input.analysis;
             let sanitizedPluginId = input.plugin;
-            let sanitizedStorageClusterId = trajectoryStorageClusterId ?? input.teamClusterId;
+            let sanitizedStorageClusterId = trajectoryStorageClusterId;
 
             if (input.analysis) {
                 const analysis = analysisById.get(input.analysis);
@@ -201,8 +207,15 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
                     );
                 }
 
-                const analysisStorageClusterId = resolveAnalysisStorageClusterId(analysis.props, trajectory.props);
-                if (analysisStorageClusterId && analysisStorageClusterId !== input.teamClusterId) {
+                const analysisStorageClusterId = resolveAnalysisStorageClusterId(analysis.props);
+                if (!analysisStorageClusterId) {
+                    throw ApplicationError.conflict(
+                        'TEAM_CLUSTER_DAEMON_ANALYSIS_STORAGE_CLUSTER_REQUIRED',
+                        'Analysis storage cluster is required before accepting scene artifacts'
+                    );
+                }
+
+                if (analysisStorageClusterId !== input.teamClusterId || input.storageClusterId !== analysisStorageClusterId) {
                     throw ApplicationError.forbidden(
                         'TEAM_CLUSTER_DAEMON_ANALYSIS_CLUSTER_MISMATCH',
                         'Analysis storage does not belong to the authenticated team cluster'
@@ -218,21 +231,13 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
 
                 sanitizedAnalysisId = analysis.id;
                 sanitizedPluginId = analysis.props.plugin;
-                sanitizedStorageClusterId = analysisStorageClusterId ?? sanitizedStorageClusterId;
-            }
-
-            if (input.teamCluster && input.teamCluster !== sanitizedStorageClusterId) {
-                throw ApplicationError.badRequest(
-                    'TEAM_CLUSTER_DAEMON_SCENE_ARTIFACT_CLUSTER_MISMATCH',
-                    'Payload team cluster does not match persisted ownership'
-                );
+                sanitizedStorageClusterId = analysisStorageClusterId;
             }
 
             return {
                 objectName: input.objectName,
                 data: {
                     trajectory: trajectory.id,
-                    teamCluster: sanitizedStorageClusterId,
                     storageClusterId: sanitizedStorageClusterId,
                     analysis: sanitizedAnalysisId,
                     plugin: sanitizedPluginId,

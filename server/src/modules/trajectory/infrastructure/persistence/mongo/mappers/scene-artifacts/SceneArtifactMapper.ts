@@ -4,7 +4,6 @@ import SceneArtifact, { SceneArtifactProps } from '@modules/trajectory/domain/en
 
 export default createMongoMapper<SceneArtifact, SceneArtifactProps, SceneArtifactDocument>(SceneArtifact, [
     'trajectory',
-    'teamCluster',
     'storageClusterId',
     'analysis',
     'plugin'

@@ -1,5 +1,6 @@
-import { createMutation, createQuery } from './create-paginated-query';
+import { createInvalidatingMutation, createQuery } from './create-paginated-query';
 import queryClient from './query-client';
+import type { QueryKey } from '@tanstack/react-query';
 
 interface FolderResourceService<
     TFolder,
@@ -29,9 +30,7 @@ interface CreateFolderResourceQueriesConfig<
     baseKey: string;
     service: FolderResourceService<TFolder, TFoldersResult, TListParams, TGetParams, TCreateParams, TUpdateParams, TDeleteParams>;
     buildFolderParams: (folderId: string) => TGetParams;
-    afterCreate?: () => void;
-    afterUpdate?: (variables: TUpdateParams) => void;
-    afterDelete?: (variables: TDeleteParams) => void;
+    listingQueryKeys?: QueryKey[];
 }
 
 export const createFolderResourceQueries = <
@@ -61,6 +60,7 @@ export const createFolderResourceQueries = <
 
     const invalidateFoldersQuery = () => queryClient.invalidateQueries({ queryKey: foldersRootKey });
     const invalidateFolderQuery = (params: TGetParams) => queryClient.invalidateQueries({ queryKey: folderQueryKey(params) });
+    const listingQueryKeys = config.listingQueryKeys ?? [];
 
     return {
         foldersQueryKey,
@@ -69,28 +69,25 @@ export const createFolderResourceQueries = <
         folderQuery,
         invalidateFoldersQuery,
         invalidateFolderQuery,
-        useCreateFolderMutation: createMutation<TFolder, TCreateParams>(
+        useCreateFolderMutation: createInvalidatingMutation<TFolder, TCreateParams>(
             config.service.createFolder,
-            () => {
-                void invalidateFoldersQuery();
-                config.afterCreate?.();
-            }
+            [foldersRootKey, ...listingQueryKeys]
         ),
-        useUpdateFolderMutation: createMutation<TFolder, TUpdateParams>(
+        useUpdateFolderMutation: createInvalidatingMutation<TFolder, TUpdateParams>(
             config.service.updateFolder,
-            (_data, variables) => {
-                void invalidateFoldersQuery();
-                void invalidateFolderQuery(config.buildFolderParams(variables.folderId));
-                config.afterUpdate?.(variables);
-            }
+            (_data, variables) => [
+                foldersRootKey,
+                folderQueryKey(config.buildFolderParams(variables.folderId)),
+                ...listingQueryKeys
+            ]
         ),
-        useDeleteFolderMutation: createMutation<void, TDeleteParams>(
+        useDeleteFolderMutation: createInvalidatingMutation<void, TDeleteParams>(
             config.service.deleteFolder,
-            (_data, variables) => {
-                void invalidateFoldersQuery();
-                void invalidateFolderQuery(config.buildFolderParams(variables.folderId));
-                config.afterDelete?.(variables);
-            }
+            (_data, variables) => [
+                foldersRootKey,
+                folderQueryKey(config.buildFolderParams(variables.folderId)),
+                ...listingQueryKeys
+            ]
         )
     };
 };

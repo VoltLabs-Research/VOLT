@@ -2,7 +2,7 @@ import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { resolveSceneArtifactTeamCluster } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-team-cluster';
+import { resolveSceneArtifactStorageCluster } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-storage-cluster';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
 import type { IRasterFrameReader, RasterFrameResult } from '@modules/raster/domain/port/IRasterFrameReader';
@@ -55,7 +55,7 @@ export class RasterFrameService implements IRasterFrameReader {
             throw ApplicationError.notFound('Analysis::NotFound', 'Analysis not found');
         }
 
-        const teamClusterId = await resolveSceneArtifactTeamCluster({
+        const teamClusterId = await resolveSceneArtifactStorageCluster({
             trajectoryId,
             analysisId,
             analysisRepository: this.analysisRepository,

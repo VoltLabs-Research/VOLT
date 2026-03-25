@@ -63,7 +63,6 @@ export class CreateAnalysisUseCase implements IUseCase<CreateAnalysisInputDTO, C
                 trajectory: analysis.props.trajectory,
                 plugin: analysis.props.plugin,
                 pluginDisplayName: analysis.props.pluginDisplayName,
-                teamCluster: analysis.props.teamCluster,
                 computeClusterId: analysis.props.computeClusterId,
                 storageClusterId: analysis.props.storageClusterId,
                 config: analysis.props.config,

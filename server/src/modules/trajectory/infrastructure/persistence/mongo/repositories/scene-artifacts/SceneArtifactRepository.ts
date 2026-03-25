@@ -116,14 +116,14 @@ export default class SceneArtifactRepository
         }).populate([
             {
                 path: 'trajectory',
-                select: ['name', 'teamCluster'],
+                select: ['name', 'storageClusterId'],
                 populate: {
-                    path: 'teamCluster',
+                    path: 'storageClusterId',
                     select: ['name']
                 }
             },
             {
-                path: 'teamCluster',
+                path: 'storageClusterId',
                 select: ['name']
             }
         ]).exec();

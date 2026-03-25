@@ -14,6 +14,7 @@ const GLOBAL_SOCKET_CACHE_SYNC_EVENTS: SocketCacheSyncEvent[] = [
     { event: 'team.created', queryKeys: [TEAM_QUERY_KEYS.teams()] },
     { event: 'team.deleted', queryKeys: [TEAM_QUERY_KEYS.teams()] },
     { event: 'container.created', queryKeys: [containerQuery.QUERY_KEYS.lists()] },
+    { event: 'container.updated', queryKeys: [containerQuery.QUERY_KEYS.lists()] },
     { event: 'container.deleted', queryKeys: [containerQuery.QUERY_KEYS.lists()] }
 ];
 

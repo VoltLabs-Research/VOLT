@@ -10,7 +10,6 @@ enum AnalysisRelation {
     Trajectory = 'trajectory',
     CreatedBy = 'createdBy',
     Team = 'team',
-    TeamCluster = 'teamCluster',
     ComputeCluster = 'computeClusterId',
     StorageCluster = 'storageClusterId'
 };
@@ -42,12 +41,6 @@ const AnalysisSchema = new Schema<AnalysisDocument>({
         type: String,
         required: true,
         trim: true
-    },
-    teamCluster: {
-        type: Schema.Types.ObjectId,
-        ref: 'TeamCluster',
-        required: false,
-        index: true
     },
     computeClusterId: {
         type: Schema.Types.ObjectId,

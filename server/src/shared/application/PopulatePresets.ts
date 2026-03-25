@@ -13,6 +13,16 @@ export const CLUSTER_POPULATE = {
     select: ['name']
 };
 
+export const COMPUTE_CLUSTER_POPULATE = {
+    path: 'computeClusterId',
+    select: ['name']
+};
+
+export const STORAGE_CLUSTER_POPULATE = {
+    path: 'storageClusterId',
+    select: ['name']
+};
+
 export const TRAJECTORY_POPULATE = {
     path: 'trajectory',
     select: ['name']

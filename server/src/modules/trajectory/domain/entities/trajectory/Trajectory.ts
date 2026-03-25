@@ -23,7 +23,6 @@ export interface TrajectoryProps {
     name: string;
     team: string;
     folder: string | null;
-    teamCluster?: string;
     storageClusterId?: string;
     createdBy: string;
     status: TrajectoryStatus;

@@ -7,7 +7,11 @@ Analysis:
       $ref: common.yaml#/ObjectId
     pluginDisplayName:
       type: string
-    teamCluster:
+    computeClusterId:
+      anyOf:
+      - $ref: common.yaml#/ObjectId
+      - type: 'null'
+    storageClusterId:
       anyOf:
       - $ref: common.yaml#/ObjectId
       - type: 'null'

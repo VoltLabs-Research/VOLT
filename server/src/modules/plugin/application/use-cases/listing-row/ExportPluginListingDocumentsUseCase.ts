@@ -109,14 +109,7 @@ export class ExportPluginListingDocumentsUseCase implements IUseCase<
 
         const filter: Record<string, unknown> = {
             plugin: input.pluginId,
-            $or: [
-                {
-                    computeClusterId: { $exists: true, $ne: null }
-                },
-                {
-                    teamCluster: { $exists: true, $ne: null }
-                }
-            ]
+            computeClusterId: { $exists: true, $ne: null }
         };
         if (input.trajectoryId) filter.trajectory = input.trajectoryId;
         if (input.teamId) filter.team = input.teamId;

@@ -76,7 +76,6 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
             name: cleanName,
             team: teamId,
             folder: input.folderId ?? null,
-            teamCluster: storageClusterId,
             storageClusterId,
             createdBy: userId,
             status: TrajectoryStatus.WaitingForProcess,

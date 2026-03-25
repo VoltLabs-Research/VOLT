@@ -159,14 +159,7 @@ export class DaemonPluginListingService implements IPluginListingService, IPlugi
 
         const filter: Record<string, unknown> = {
             plugin: pluginId,
-            $or: [
-                {
-                    computeClusterId: { $exists: true, $ne: null }
-                },
-                {
-                    teamCluster: { $exists: true, $ne: null }
-                }
-            ]
+            computeClusterId: { $exists: true, $ne: null }
         };
         if (options.trajectoryId) filter.trajectory = options.trajectoryId;
         if (options.teamId) filter.team = options.teamId;

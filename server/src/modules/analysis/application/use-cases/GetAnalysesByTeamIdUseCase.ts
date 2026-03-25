@@ -1,4 +1,9 @@
-import { TRAJECTORY_POPULATE, CLUSTER_POPULATE, USER_POPULATE } from '@shared/application/PopulatePresets';
+import {
+    COMPUTE_CLUSTER_POPULATE,
+    STORAGE_CLUSTER_POPULATE,
+    TRAJECTORY_POPULATE,
+    USER_POPULATE
+} from '@shared/application/PopulatePresets';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysesByTeamIdDTO';
@@ -46,7 +51,8 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
             {
                 path: 'plugin'
             },
-            CLUSTER_POPULATE,
+            COMPUTE_CLUSTER_POPULATE,
+            STORAGE_CLUSTER_POPULATE,
             USER_POPULATE
         ];
         const results = hasSearch
@@ -80,7 +86,6 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
                 _id: analysis._id,
                 plugin: pluginId,
                 trajectory: props.trajectory,
-                teamCluster: props.teamCluster,
                 computeClusterId: props.computeClusterId,
                 storageClusterId: props.storageClusterId,
                 createdBy: props.createdBy,

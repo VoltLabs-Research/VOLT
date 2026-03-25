@@ -57,7 +57,6 @@ export class ClonePluginUseCase implements IUseCase<ClonePluginInputDTO, ClonePl
         const plugin = await this.pluginRepository.create({
             workflow,
             team: input.teamId,
-            teamCluster: original.props.teamCluster ?? null,
             status: PluginStatus.Draft,
             modifier: projection.modifier,
             exposures: projection.exposures,

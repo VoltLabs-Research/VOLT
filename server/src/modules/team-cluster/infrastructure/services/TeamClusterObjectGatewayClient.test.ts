@@ -16,9 +16,12 @@ const TEST_BUCKET = 'volt-models';
 const TEST_OBJECT_KEY = 'path/to/object.glb';
 
 class FakeTeamClusterDaemonClient {
+    public openTunnelCalls = 0;
+
     constructor(private readonly port: number) {}
 
     async openTunnel(): Promise<net.Socket> {
+        this.openTunnelCalls += 1;
         return net.connect(this.port, '127.0.0.1');
     }
 }
@@ -196,8 +199,9 @@ test('TeamClusterObjectGatewayClient performs read, write, list and delete opera
     process.env.TEAM_CLUSTER_OBJECT_GATEWAY_WRITES_ENABLED = 'true';
 
     const { server, requests, port } = await buildObjectGatewayServer();
+    const daemonClient = new FakeTeamClusterDaemonClient(port);
     const client = new TeamClusterObjectGatewayClient(
-        new FakeTeamClusterDaemonClient(port) as any,
+        daemonClient as any,
         new FakeExposureRegistryService(port) as any
     );
 
@@ -232,6 +236,7 @@ test('TeamClusterObjectGatewayClient performs read, write, list and delete opera
         assert.equal(await client.exists(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY), false);
 
         assert.ok(requests.some((entry) => entry.method === 'HEAD'));
+        assert.equal(daemonClient.openTunnelCalls, requests.length);
     } finally {
         destroyClientSessions(client);
         await new Promise<void>((resolve, reject) => {
