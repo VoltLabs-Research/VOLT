@@ -47,6 +47,13 @@ const buildMissingClusterError = (capability: SelectionCapability): ApplicationE
     );
 };
 
+const buildMissingConnectedClusterError = (): ApplicationError => {
+    return ApplicationError.conflict(
+        'TeamCluster::ConnectedClusterRequired',
+        'A connected team cluster is required for this operation'
+    );
+};
+
 const buildCapabilityMismatchError = (
     capability: SelectionCapability
 ): ApplicationError => {
@@ -138,6 +145,82 @@ export class ClusterRoleAwareSelectionService {
         input: ResolveRoleAwareClusterInput
     ): Promise<string> {
         const cluster = await this.resolveComputeCluster(input);
+        return cluster.id;
+    }
+
+    async resolveConnectedCluster(
+        input: ResolveRoleAwareClusterInput
+    ): Promise<TeamCluster> {
+        if (input.requestedTeamClusterId) {
+            const requestedTeamCluster = await this.teamClusterRepository.findById(input.requestedTeamClusterId);
+            if (!requestedTeamCluster || requestedTeamCluster.props.team !== input.teamId) {
+                throw ApplicationError.notFound(
+                    'TeamCluster::NotFound',
+                    'Team cluster not found for the requested team'
+                );
+            }
+
+            if (requestedTeamCluster.props.status !== TeamClusterStatus.Connected) {
+                throw buildMissingConnectedClusterError();
+            }
+
+            return requestedTeamCluster;
+        }
+
+        const teamClusters = await this.teamClusterRepository.export({
+            filter: {
+                team: input.teamId,
+                status: TeamClusterStatus.Connected
+            },
+            sort: {
+                createdAt: 1
+            }
+        });
+
+        if (!teamClusters.length) {
+            throw buildMissingConnectedClusterError();
+        }
+
+        const scoredCandidates: ScoredCluster[] = await Promise.all(teamClusters.map(async (cluster) => {
+            const metrics = await this.systemMetricsRepository.getLatestByClusterId(cluster.id);
+            return {
+                cluster,
+                score: this.computeClusterScore(
+                    'compute',
+                    cluster,
+                    metrics,
+                    input
+                ),
+                metrics
+            };
+        }));
+
+        scoredCandidates.sort((left, right) => {
+            if (right.score !== left.score) {
+                return right.score - left.score;
+            }
+
+            const leftHasMetrics = left.metrics ? 1 : 0;
+            const rightHasMetrics = right.metrics ? 1 : 0;
+            if (rightHasMetrics !== leftHasMetrics) {
+                return rightHasMetrics - leftHasMetrics;
+            }
+
+            return left.cluster.props.createdAt.getTime() - right.cluster.props.createdAt.getTime();
+        });
+
+        const selectedCluster = scoredCandidates[0]?.cluster;
+        if (!selectedCluster) {
+            throw buildMissingConnectedClusterError();
+        }
+
+        return selectedCluster;
+    }
+
+    async resolveConnectedClusterId(
+        input: ResolveRoleAwareClusterInput
+    ): Promise<string> {
+        const cluster = await this.resolveConnectedCluster(input);
         return cluster.id;
     }
 

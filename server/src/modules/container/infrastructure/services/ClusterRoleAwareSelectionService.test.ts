@@ -176,6 +176,30 @@ test('ClusterRoleAwareSelectionService rejects requested clusters without the re
     );
 });
 
+test('ClusterRoleAwareSelectionService allows any connected cluster when resolving without role requirements', async () => {
+    const storageCluster = createTeamCluster('storage-1', {
+        roleConfig: createDefaultTeamClusterRoleConfig('storage-server'),
+        effectiveCapabilities: createDefaultTeamClusterEffectiveCapabilities('storage-server')
+    });
+    const computeCluster = createTeamCluster('compute-1', {
+        roleConfig: createDefaultTeamClusterRoleConfig('compute-node'),
+        effectiveCapabilities: createDefaultTeamClusterEffectiveCapabilities('compute-node')
+    });
+
+    const service = new ClusterRoleAwareSelectionService(
+        new FakeTeamClusterRepository([storageCluster, computeCluster]) as unknown as ITeamClusterRepository,
+        new FakeSystemMetricsRepository({
+            'storage-1': createMetrics('storage-1', 20, 20),
+            'compute-1': createMetrics('compute-1', 40, 40)
+        }) as unknown as ISystemMetricsRepository
+    );
+
+    assert.equal(await service.resolveConnectedClusterId({
+        teamId: 'team-1',
+        requestedTeamClusterId: 'storage-1'
+    }), 'storage-1');
+});
+
 test('ClusterRoleAwareSelectionService excludes storage clusters above the hard disk limit', async () => {
     const saturatedStorageCluster = createTeamCluster('storage-hard-limit', {
         roleConfig: createDefaultTeamClusterRoleConfig('storage-server'),
