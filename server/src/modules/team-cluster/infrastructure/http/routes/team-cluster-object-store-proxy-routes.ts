@@ -8,7 +8,8 @@ import {
     TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER,
     TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER,
     TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
-    TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH
+    TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH,
+    TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
 } from '@shared/infrastructure/contracts/team-cluster';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -39,6 +40,11 @@ const readHeader = (request: Request, headerName: string): string | undefined =>
     return typeof value === 'string' && value.trim().length > 0
         ? value.trim()
         : undefined;
+};
+
+const readBooleanHeader = (request: Request, headerName: string): boolean => {
+    const value = readHeader(request, headerName);
+    return value === '1' || value === 'true';
 };
 
 const decodePathComponent = (value: string, fieldName: string): string => {
@@ -358,10 +364,12 @@ export default createHttpModule({
                 }
 
                 if (request.method === 'GET') {
+                    const skipMetadata = readBooleanHeader(request, TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER);
                     const streamResponse = await objectGatewayClient().getStream(
                         resolvedRoute.ownerClusterId,
                         resolvedRoute.bucket,
-                        resolvedRoute.objectKey
+                        resolvedRoute.objectKey,
+                        skipMetadata ? { skipMetadata: true } : undefined
                     );
                     applyResponseHeaders(streamResponse, response);
                     response.status(200);
