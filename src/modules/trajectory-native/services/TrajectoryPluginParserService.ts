@@ -109,7 +109,9 @@ export class TrajectoryPluginParserService {
         if (!objectName) return [];
 
         try {
-            const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, objectName);
+            const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, objectName, {
+                skipMetadata: true
+            });
 
             let decoded: Record<string, unknown> | null = null;
             for await (const message of decodeMultiStream(response.stream as AsyncIterable<Uint8Array>)) {
@@ -129,7 +131,9 @@ export class TrajectoryPluginParserService {
         const key = this.getPluginMsgpackKey(trajectoryId, analysisId, exposureId, String(timestep));
         
         try {
-            const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, key);
+            const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, key, {
+                skipMetadata: true
+            });
 
             // Selective decode: only keep 'per-atom-properties' key
             let decoded: Record<string, unknown> | null = null;
@@ -180,7 +184,9 @@ export class TrajectoryPluginParserService {
         const key = this.getPluginMsgpackKey(trajectoryId, analysisId, exposureId, String(timestep));
         
         try {
-            const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, key);
+            const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, key, {
+                skipMetadata: true
+            });
             const pluginIndex: PluginAtomIndex = {};
             let matchedAtomCount = 0;
             const stream = response.stream as unknown as AsyncIterable<Uint8Array>;

@@ -1,5 +1,6 @@
 import {
     TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER,
+    TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER,
     TeamClusterServiceExposureAccessMode,
     TeamClusterServiceExposureSourceKind,
     TeamClusterServiceExposureStatus,
@@ -69,6 +70,11 @@ const readSingleHeaderValue = (value: string | string[] | undefined): string | u
     }
 
     return value;
+};
+
+const readBooleanHeader = (value: string | string[] | undefined): boolean => {
+    const rawValue = readSingleHeaderValue(value);
+    return rawValue === '1' || rawValue === 'true';
 };
 
 const readInteger = (
@@ -401,10 +407,18 @@ export class ObjectGatewayServer {
 
         if (request.method === 'GET') {
             this.runtimeCapabilityGuard?.ensureServesStorageReads('object-gateway.get');
-            const stat = await this.readObjectStat(bucket, objectKey);
-            const stream = await this.readObjectStream(bucket, objectKey);
+            const skipMetadata = readBooleanHeader(request.headers[TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER]);
+            const streamPromise = this.readObjectStream(bucket, objectKey);
+            const statPromise = skipMetadata
+                ? null
+                : this.readObjectStat(bucket, objectKey);
+            const stream = await streamPromise;
 
-            this.writeObjectHeaders(response, stat);
+            if (statPromise) {
+                const stat = await statPromise;
+                this.writeObjectHeaders(response, stat);
+            }
+
             response.statusCode = 200;
             let bytesOut = 0;
 

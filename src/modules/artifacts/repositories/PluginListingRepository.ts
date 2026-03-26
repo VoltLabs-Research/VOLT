@@ -586,7 +586,9 @@ export class MongoPluginListingRepository implements PluginListingRepository {
             return [];
         }
 
-        const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, objectKey);
+        const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, objectKey, {
+            skipMetadata: true
+        });
         let decoded: Record<string, unknown> | null = null;
 
         for await (const message of decodeMultiStream(response.stream as AsyncIterable<Uint8Array>)) {

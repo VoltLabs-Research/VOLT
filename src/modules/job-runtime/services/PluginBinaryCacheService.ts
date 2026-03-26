@@ -187,7 +187,9 @@ export const createPluginBinaryCacheService = (objectStore: ClusterObjectStore):
 
         await fs.mkdir(DAEMON_PATHS.pluginBinCache, { recursive: true });
 
-        const response = await objectStore.getStream(source.ownerClusterId, PLUGINS_BUCKET, binaryObjectPath);
+        const response = await objectStore.getStream(source.ownerClusterId, PLUGINS_BUCKET, binaryObjectPath, {
+            skipMetadata: true
+        });
         await writeStreamToFile(response.stream, localPath);
         if (source.expectedHash) {
             const computedHash = await computeFileHash(localPath);

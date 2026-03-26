@@ -2,7 +2,8 @@ import {
     TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER,
     TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER,
     TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
-    TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH
+    TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH,
+    TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
 } from '@/shared/contracts';
 import type { DaemonConfig } from '@/core/config';
 import type { Readable as NodeReadable } from 'node:stream';
@@ -25,6 +26,10 @@ export interface DirectObjectStoreHeadResponse {
 
 export interface DirectObjectStoreStreamResponse extends DirectObjectStoreHeadResponse {
     stream: NodeReadable;
+}
+
+export interface DirectObjectStoreReadOptions {
+    skipMetadata?: boolean;
 }
 
 interface ObjectStoreListResponse {
@@ -195,9 +200,15 @@ export class TeamClusterDirectObjectStoreClient {
         return parseHeadResponse(response.headers);
     }
 
-    async getStream(ownerClusterId: string, bucket: string, objectKey: string): Promise<DirectObjectStoreStreamResponse> {
+    async getStream(
+        ownerClusterId: string,
+        bucket: string,
+        objectKey: string,
+        options?: DirectObjectStoreReadOptions
+    ): Promise<DirectObjectStoreStreamResponse> {
         const response = await this.fetch(this.buildObjectPath(ownerClusterId, bucket, objectKey), {
-            method: 'GET'
+            method: 'GET',
+            headers: this.buildReadHeaders(options)
         });
 
         return {
@@ -208,7 +219,8 @@ export class TeamClusterDirectObjectStoreClient {
 
     async getBuffer(ownerClusterId: string, bucket: string, objectKey: string): Promise<Buffer> {
         const response = await this.fetch(this.buildObjectPath(ownerClusterId, bucket, objectKey), {
-            method: 'GET'
+            method: 'GET',
+            headers: this.buildReadHeaders({ skipMetadata: true })
         });
 
         return this.readResponseBuffer(response.stream);
@@ -407,5 +419,15 @@ export class TeamClusterDirectObjectStoreClient {
         }
 
         return headers;
+    }
+
+    private buildReadHeaders(options?: DirectObjectStoreReadOptions): Record<string, string> | undefined {
+        if (!options?.skipMetadata) {
+            return undefined;
+        }
+
+        return {
+            [TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER]: '1'
+        };
     }
 }

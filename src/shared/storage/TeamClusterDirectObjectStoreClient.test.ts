@@ -15,6 +15,7 @@ type ProxyRequest = {
     path: string;
     connectionId: string;
     ownerClusterId: string;
+    skipMetadata?: string;
     daemonId?: string;
     daemonPassword?: string;
 };
@@ -55,6 +56,9 @@ const createObjectStoreProxyServer = async () => {
             path: `${url.pathname}${url.search}`,
             connectionId: `${request.socket.remoteAddress}:${request.socket.remotePort}`,
             ownerClusterId,
+            skipMetadata: typeof request.headers['x-volt-object-store-skip-metadata'] === 'string'
+                ? request.headers['x-volt-object-store-skip-metadata']
+                : undefined,
             daemonId: typeof request.headers['x-team-cluster-id'] === 'string'
                 ? request.headers['x-team-cluster-id']
                 : undefined,
@@ -274,6 +278,34 @@ test('TeamClusterDirectObjectStoreClient preserves gzipped object bytes when the
         const buffer = await client.getBuffer(TEST_OWNER_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY);
         assert.deepEqual(buffer, compressed);
         assert.deepEqual(zlib.gunzipSync(buffer), Buffer.from('dump-payload'));
+    } finally {
+        await new Promise<void>((resolve, reject) => {
+            proxyServer.server.close((error) => error ? reject(error) : resolve());
+        });
+    }
+});
+
+test('TeamClusterDirectObjectStoreClient can request stream-only reads without metadata prefetch', async () => {
+    const proxyServer = await createObjectStoreProxyServer();
+    const client = createClient(proxyServer.url);
+
+    try {
+        const payload = Buffer.from('stream-only-payload');
+        proxyServer.seedObject(TEST_BUCKET, TEST_OBJECT_KEY, {
+            body: payload,
+            contentType: 'application/octet-stream'
+        });
+
+        const response = await client.getStream(TEST_OWNER_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY, {
+            skipMetadata: true
+        });
+        const streamedChunks: Buffer[] = [];
+        for await (const chunk of response.stream) {
+            streamedChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        }
+
+        assert.deepEqual(Buffer.concat(streamedChunks), payload);
+        assert.equal(proxyServer.requests[proxyServer.requests.length - 1]?.skipMetadata, '1');
     } finally {
         await new Promise<void>((resolve, reject) => {
             proxyServer.server.close((error) => error ? reject(error) : resolve());

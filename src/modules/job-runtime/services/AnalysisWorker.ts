@@ -1374,7 +1374,10 @@ export class AnalysisWorker {
         const response = await this.objectStore.getStream(
             resolvedOwnerClusterId,
             DUMPS_BUCKET,
-            normalizedObjectKey
+            normalizedObjectKey,
+            {
+                skipMetadata: true
+            }
         );
         await this.writeStreamToFile(response.stream, localPath, normalizedObjectKey.endsWith('.gz'));
 

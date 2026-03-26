@@ -249,7 +249,9 @@ export const createTrajectoryParserService = (
         );
 
         try {
-            const response = await objectStore.getStream(ownerClusterId, ObjectBucketName.Dumps, objectKey);
+            const response = await objectStore.getStream(ownerClusterId, ObjectBucketName.Dumps, objectKey, {
+                skipMetadata: true
+            });
             await pipeline(response.stream, zlib.createGunzip(), createWriteStream(tempDumpPath));
             const dumpStats = await fs.stat(tempDumpPath);
 

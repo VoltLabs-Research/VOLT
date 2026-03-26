@@ -24,10 +24,19 @@ export interface ClusterObjectStreamResponse extends ClusterObjectHeadResponse {
     stream: Readable;
 }
 
+export interface ClusterObjectReadOptions {
+    skipMetadata?: boolean;
+}
+
 export interface ClusterObjectStore {
     head(ownerClusterId: string, bucket: string, objectKey: string): Promise<ClusterObjectHeadResponse>;
     exists(ownerClusterId: string, bucket: string, objectKey: string): Promise<boolean>;
-    getStream(ownerClusterId: string, bucket: string, objectKey: string): Promise<ClusterObjectStreamResponse>;
+    getStream(
+        ownerClusterId: string,
+        bucket: string,
+        objectKey: string,
+        options?: ClusterObjectReadOptions
+    ): Promise<ClusterObjectStreamResponse>;
     getBuffer(ownerClusterId: string, bucket: string, objectKey: string): Promise<Buffer>;
     putObject(input: {
         ownerClusterId: string;
@@ -204,9 +213,17 @@ export const createClusterObjectStore = (deps: {
             }
         },
 
-        async getStream(ownerClusterId, bucket, objectKey) {
+        async getStream(ownerClusterId, bucket, objectKey, options) {
             if (isLocalOwner(ownerClusterId)) {
                 requireLocalReadCapability(deps.getRuntimeSnapshot(), ownerClusterId);
+                if (options?.skipMetadata) {
+                    const stream = await deps.minioService.getObjectStream(bucket, objectKey);
+                    return {
+                        metadata: {},
+                        stream
+                    };
+                }
+
                 const [stat, stream] = await Promise.all([
                     deps.minioService.statObject(bucket, objectKey) as Promise<MinioObjectStat>,
                     deps.minioService.getObjectStream(bucket, objectKey)
@@ -219,7 +236,7 @@ export const createClusterObjectStore = (deps: {
             }
 
             markRemoteFetch(ownerClusterId, bucket, objectKey);
-            return deps.remoteClient.getStream(ownerClusterId, bucket, objectKey);
+            return deps.remoteClient.getStream(ownerClusterId, bucket, objectKey, options);
         },
 
         async getBuffer(ownerClusterId, bucket, objectKey) {

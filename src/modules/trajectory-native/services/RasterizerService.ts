@@ -35,7 +35,9 @@ export const createRasterizerService = (
                 throw new Error('Rasterization requires inputOwnerClusterId and outputOwnerClusterId');
             }
 
-            const response = await objectStore.getStream(inputOwnerClusterId, input.inputBucket, input.inputObjectKey);
+            const response = await objectStore.getStream(inputOwnerClusterId, input.inputBucket, input.inputObjectKey, {
+                skipMetadata: true
+            });
             const fileWriter = createWriteStream(tempGlbPath);
             await pipeline(response.stream, fileWriter);
 

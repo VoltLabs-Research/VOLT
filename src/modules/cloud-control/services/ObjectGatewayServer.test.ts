@@ -5,6 +5,7 @@ import http from 'node:http';
 import Module from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
+import { Readable } from 'node:stream';
 import test from 'node:test';
 
 const TEST_BUCKET = 'volt-models';
@@ -16,6 +17,9 @@ const TEST_DIRECT_ACCESS_HEADER = 'x-team-cluster-direct-access-token';
 class StubMinioService {
     public readonly deletedPrefixes: Array<{ bucket: string; prefix: string; }> = [];
     public readonly deletedObjects: Array<{ bucket: string; objectKey: string; }> = [];
+    public statObjectCalls = 0;
+    public getObjectStreamCalls = 0;
+    public objectBody: Buffer | null = null;
 
     listBuckets(): string[] {
         return [TEST_BUCKET];
@@ -31,6 +35,7 @@ class StubMinioService {
     }
 
     async statObject() {
+        this.statObjectCalls += 1;
         return {
             size: 16,
             etag: 'etag',
@@ -42,6 +47,11 @@ class StubMinioService {
     }
 
     async getObjectStream() {
+        this.getObjectStreamCalls += 1;
+        if (this.objectBody) {
+            return Readable.from([this.objectBody]);
+        }
+
         throw {
             code: 'NoSuchKey'
         };
@@ -94,7 +104,8 @@ const request = async (
     port: number,
     path: string,
     method: string = 'GET',
-    token?: string
+    token?: string,
+    extraHeaders?: Record<string, string>
 ): Promise<{ statusCode: number; body: string; }> => {
     return new Promise((resolve, reject) => {
         const req = http.request({
@@ -102,11 +113,12 @@ const request = async (
             port,
             method,
             path,
-            headers: token
-                ? {
+            headers: {
+                ...(token ? {
                     [TEST_DIRECT_ACCESS_HEADER]: token
-                }
-                : undefined
+                } : {}),
+                ...(extraHeaders || {})
+            }
         }, async (response) => {
             const chunks: Buffer[] = [];
             for await (const chunk of response) {
@@ -199,6 +211,73 @@ test('ObjectGatewayServer maps missing GET objects to 404 instead of 500', async
 
         assert.equal(result.statusCode, 404);
         assert.match(result.body, /Object not found/);
+    } finally {
+        await server.stop();
+    }
+});
+
+test('ObjectGatewayServer skips statObject on fast-path GET requests', async () => {
+    await ensureDaemonTestNodePath();
+    const { ObjectGatewayServer } = await import('./ObjectGatewayServer');
+    const { ObjectGatewayTelemetryService } = await import('./ObjectGatewayTelemetryService');
+    const minioService = new StubMinioService();
+    minioService.objectBody = Buffer.from('stream-only-payload');
+    const server = new ObjectGatewayServer({
+        port: 0,
+        host: '127.0.0.1',
+        teamId: 'team-1',
+        objectGatewayEnabled: true,
+        teamClusterId: TEST_CLUSTER_ID,
+        daemonPassword: TEST_DAEMON_PASSWORD,
+        installedVersion: '1.0.0',
+        voltCloudUrl: 'http://localhost:3000',
+        heartbeatIntervalMs: 10_000,
+        metricsIntervalMs: 3_000,
+        minio: {
+            endpoint: 'http://localhost:9000',
+            accessKey: 'minio',
+            secretKey: 'minio123',
+            useSSL: false
+        },
+        mongodbUri: 'mongodb://localhost:27017/test',
+        redis: {
+            host: 'localhost',
+            port: 6379
+        },
+        jupyter: {
+            image: 'image',
+            memoryInMegabytes: 1024,
+            cpus: 1,
+            execTimeoutMs: 1000,
+            notebookRoot: '/',
+            port: 8888,
+            token: 'token',
+            uiPath: '/lab',
+            frameAncestors: '*',
+            startTimeoutMs: 1_000,
+            publicBasePath: '/lab'
+        },
+        allowedBuckets: [TEST_BUCKET as any]
+    }, minioService as any, new ObjectGatewayTelemetryService());
+
+    await server.start();
+
+    try {
+        const exposure = server.getExposure();
+        const result = await request(
+            exposure.targetPort,
+            `/internal/object-gateway/v1/buckets/${encodeURIComponent(TEST_BUCKET)}/objects/${encodeURIComponent(TEST_OBJECT_KEY)}`,
+            'GET',
+            createDirectAccessToken(TEST_DAEMON_PASSWORD),
+            {
+                'x-volt-object-store-skip-metadata': '1'
+            }
+        );
+
+        assert.equal(result.statusCode, 200);
+        assert.equal(result.body, 'stream-only-payload');
+        assert.equal(minioService.statObjectCalls, 0);
+        assert.equal(minioService.getObjectStreamCalls, 1);
     } finally {
         await server.stop();
     }
