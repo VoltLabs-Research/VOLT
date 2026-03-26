@@ -10,9 +10,19 @@ type StoredObject = {
     contentEncoding?: string;
 };
 
+type ProxyRequest = {
+    method: string;
+    path: string;
+    ownerClusterId: string;
+    daemonId?: string;
+    daemonPassword?: string;
+};
+
 const TEST_BUCKET = 'volt-models';
 const TEST_OBJECT_KEY = 'path/to/object.glb';
-const TEST_DIRECT_ACCESS_TOKEN = 'direct-access-token';
+const TEST_OWNER_CLUSTER_ID = 'owner-cluster';
+const TEST_REQUESTER_CLUSTER_ID = 'requester-cluster';
+const TEST_REQUESTER_DAEMON_PASSWORD = 'requester-secret';
 
 const buildObjectId = (bucket: string, objectKey: string): string => `${bucket}/${objectKey}`;
 
@@ -26,23 +36,32 @@ const readBody = async (request: http.IncomingMessage): Promise<Buffer> => {
     return Buffer.concat(chunks);
 };
 
-const createObjectGatewayServer = async () => {
+const createObjectStoreProxyServer = async () => {
     const objects = new Map<string, StoredObject>();
-    const receivedTokens: string[] = [];
+    const requests: ProxyRequest[] = [];
 
     const server = http.createServer(async (request, response) => {
-        if (typeof request.headers['x-team-cluster-direct-access-token'] === 'string') {
-            receivedTokens.push(request.headers['x-team-cluster-direct-access-token']);
-        }
-
         const method = request.method || 'GET';
         const url = new URL(request.url || '/', 'http://127.0.0.1');
         const pathParts = url.pathname.split('/').filter(Boolean);
-        const bucket = decodeURIComponent(pathParts[4] || '');
-        const encodedObjectKey = pathParts.slice(6).join('/');
+        const ownerClusterId = decodeURIComponent(pathParts[5] || '');
+        const bucket = decodeURIComponent(pathParts[7] || '');
+        const encodedObjectKey = pathParts.slice(9).join('/');
         const objectKey = decodeURIComponent(encodedObjectKey);
 
-        if (method === 'GET' && pathParts.length === 6) {
+        requests.push({
+            method,
+            path: `${url.pathname}${url.search}`,
+            ownerClusterId,
+            daemonId: typeof request.headers['x-team-cluster-id'] === 'string'
+                ? request.headers['x-team-cluster-id']
+                : undefined,
+            daemonPassword: typeof request.headers['x-team-cluster-daemon-password'] === 'string'
+                ? request.headers['x-team-cluster-daemon-password']
+                : undefined
+        });
+
+        if (method === 'GET' && pathParts.length === 9) {
             const prefix = url.searchParams.get('prefix') || '';
             const keys = Array.from(objects.keys())
                 .filter((key) => key.startsWith(`${bucket}/${prefix}`))
@@ -56,7 +75,7 @@ const createObjectGatewayServer = async () => {
             return;
         }
 
-        if (method === 'DELETE' && pathParts.length === 6) {
+        if (method === 'DELETE' && pathParts.length === 9) {
             const prefix = url.searchParams.get('prefix') || '';
             const matchingKeys = Array.from(objects.keys()).filter((key) => key.startsWith(`${bucket}/${prefix}`));
             for (const key of matchingKeys) {
@@ -137,80 +156,29 @@ const createObjectGatewayServer = async () => {
 
     const address = server.address();
     if (!address || typeof address === 'string') {
-        throw new Error('Failed to bind direct object gateway test server');
+        throw new Error('Failed to bind object store proxy test server');
     }
 
     return {
         server,
-        port: address.port,
-        receivedTokens,
+        requests,
+        url: `http://127.0.0.1:${address.port}`,
         seedObject: (bucket: string, objectKey: string, object: StoredObject) => {
             objects.set(buildObjectId(bucket, objectKey), object);
         }
     };
 };
 
-const createVoltGrantServer = async (objectGatewayPort: number) => {
-    let grantRequests = 0;
-
-    const server = http.createServer(async (request, response) => {
-        if (request.method !== 'POST' || request.url !== '/internal/team-cluster/direct-access/v1/grants') {
-            response.statusCode = 404;
-            response.end();
-            return;
-        }
-
-        grantRequests += 1;
-        const body = Buffer.from(JSON.stringify({
-            ownerClusterId: 'owner-cluster',
-            exposureName: 'object-gateway',
-            exposureId: 'daemon:object-gateway',
-            accessMode: 'http',
-            endpoint: {
-                protocol: 'http',
-                host: '127.0.0.1',
-                port: objectGatewayPort
-            },
-            token: TEST_DIRECT_ACCESS_TOKEN,
-            expiresAt: new Date(Date.now() + 60_000).toISOString()
-        }));
-
-        response.statusCode = 200;
-        response.setHeader('content-type', 'application/json');
-        response.setHeader('content-length', String(body.length));
-        response.end(body);
-    });
-
-    await new Promise<void>((resolve, reject) => {
-        server.listen(0, '127.0.0.1', () => resolve());
-        server.once('error', reject);
-    });
-
-    const address = server.address();
-    if (!address || typeof address === 'string') {
-        throw new Error('Failed to bind direct grant test server');
-    }
-
-    return {
-        server,
-        grantRequests,
-        getGrantRequests: () => grantRequests,
-        url: `http://127.0.0.1:${address.port}`
-    };
-};
-
-test('TeamClusterDirectObjectStoreClient reads and writes remote objects through direct peer access', async () => {
-    const objectGateway = await createObjectGatewayServer();
-    const voltGrantServer = await createVoltGrantServer(objectGateway.port);
-    const client = new TeamClusterDirectObjectStoreClient({
+const createClient = (voltCloudUrl: string): TeamClusterDirectObjectStoreClient => {
+    return new TeamClusterDirectObjectStoreClient({
         port: 8080,
         host: '0.0.0.0',
         teamId: 'team-1',
         objectGatewayEnabled: true,
-        teamClusterId: 'requester-cluster',
-        daemonPassword: 'requester-secret',
+        teamClusterId: TEST_REQUESTER_CLUSTER_ID,
+        daemonPassword: TEST_REQUESTER_DAEMON_PASSWORD,
         installedVersion: '1.0.0',
-        voltCloudUrl: voltGrantServer.url,
+        voltCloudUrl,
         heartbeatIntervalMs: 10_000,
         metricsIntervalMs: 3_000,
         minio: {
@@ -239,103 +207,73 @@ test('TeamClusterDirectObjectStoreClient reads and writes remote objects through
         },
         allowedBuckets: [TEST_BUCKET as any]
     });
+};
+
+test('TeamClusterDirectObjectStoreClient reads and writes remote objects through the Volt server proxy', async () => {
+    const proxyServer = await createObjectStoreProxyServer();
+    const client = createClient(proxyServer.url);
 
     try {
         const payload = Buffer.from('glb-payload');
-        await client.putBuffer('owner-cluster', {
+        await client.putBuffer(TEST_OWNER_CLUSTER_ID, {
             bucket: TEST_BUCKET,
             objectKey: TEST_OBJECT_KEY,
             buffer: payload,
             contentType: 'model/gltf-binary'
         });
 
-        const head = await client.head('owner-cluster', TEST_BUCKET, TEST_OBJECT_KEY);
+        const head = await client.head(TEST_OWNER_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY);
         assert.equal(head.contentLength, payload.length);
 
-        const buffer = await client.getBuffer('owner-cluster', TEST_BUCKET, TEST_OBJECT_KEY);
+        const buffer = await client.getBuffer(TEST_OWNER_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY);
         assert.deepEqual(buffer, payload);
 
-        const list = await client.list('owner-cluster', {
+        const list = await client.list(TEST_OWNER_CLUSTER_ID, {
             bucket: TEST_BUCKET,
             prefix: 'path/to'
         });
         assert.deepEqual(list.keys, [TEST_OBJECT_KEY]);
 
-        const deletedCount = await client.deleteByPrefix('owner-cluster', TEST_BUCKET, 'path/');
+        const deletedCount = await client.deleteByPrefix(TEST_OWNER_CLUSTER_ID, TEST_BUCKET, 'path/');
         assert.equal(deletedCount, 1);
-        assert.equal(voltGrantServer.getGrantRequests(), 1);
-        assert.ok(objectGateway.receivedTokens.every((token) => token === TEST_DIRECT_ACCESS_TOKEN));
+
+        assert.ok(proxyServer.requests.length >= 4);
+        assert.ok(proxyServer.requests.every((entry) => entry.ownerClusterId === TEST_OWNER_CLUSTER_ID));
+        assert.ok(proxyServer.requests.every((entry) => entry.daemonId === TEST_REQUESTER_CLUSTER_ID));
+        assert.ok(proxyServer.requests.every((entry) => entry.daemonPassword === TEST_REQUESTER_DAEMON_PASSWORD));
+        assert.ok(proxyServer.requests.every((entry) => {
+            return entry.path.startsWith(
+                `/internal/team-cluster/object-store/v1/owners/${encodeURIComponent(TEST_OWNER_CLUSTER_ID)}/buckets/${encodeURIComponent(TEST_BUCKET)}/objects`
+            );
+        }));
     } finally {
         await new Promise<void>((resolve, reject) => {
-            objectGateway.server.close((error) => error ? reject(error) : resolve());
-        });
-        await new Promise<void>((resolve, reject) => {
-            voltGrantServer.server.close((error) => error ? reject(error) : resolve());
+            proxyServer.server.close((error) => error ? reject(error) : resolve());
         });
     }
 });
 
 test('TeamClusterDirectObjectStoreClient preserves gzipped object bytes when the response advertises content-encoding', async () => {
-    const objectGateway = await createObjectGatewayServer();
-    const voltGrantServer = await createVoltGrantServer(objectGateway.port);
-    const client = new TeamClusterDirectObjectStoreClient({
-        port: 8080,
-        host: '0.0.0.0',
-        teamId: 'team-1',
-        objectGatewayEnabled: true,
-        teamClusterId: 'requester-cluster',
-        daemonPassword: 'requester-secret',
-        installedVersion: '1.0.0',
-        voltCloudUrl: voltGrantServer.url,
-        heartbeatIntervalMs: 10_000,
-        metricsIntervalMs: 3_000,
-        minio: {
-            endpoint: 'http://localhost:9000',
-            accessKey: 'minio',
-            secretKey: 'minio123',
-            useSSL: false
-        },
-        mongodbUri: 'mongodb://localhost:27017/test',
-        redis: {
-            host: 'localhost',
-            port: 6379
-        },
-        jupyter: {
-            image: 'image',
-            memoryInMegabytes: 1024,
-            cpus: 1,
-            execTimeoutMs: 1000,
-            notebookRoot: '/',
-            port: 8888,
-            token: 'token',
-            uiPath: '/lab',
-            frameAncestors: '*',
-            startTimeoutMs: 1_000,
-            publicBasePath: '/lab'
-        },
-        allowedBuckets: [TEST_BUCKET as any]
-    });
+    const proxyServer = await createObjectStoreProxyServer();
+    const client = createClient(proxyServer.url);
 
     try {
         const compressed = zlib.gzipSync(Buffer.from('dump-payload'));
-        objectGateway.seedObject(TEST_BUCKET, TEST_OBJECT_KEY, {
+        proxyServer.seedObject(TEST_BUCKET, TEST_OBJECT_KEY, {
             body: compressed,
             contentType: 'application/gzip',
             contentEncoding: 'gzip'
         });
 
-        const head = await client.head('owner-cluster', TEST_BUCKET, TEST_OBJECT_KEY);
+        const head = await client.head(TEST_OWNER_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY);
         assert.equal(head.contentEncoding, 'gzip');
 
-        const buffer = await client.getBuffer('owner-cluster', TEST_BUCKET, TEST_OBJECT_KEY);
+        const buffer = await client.getBuffer(TEST_OWNER_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY);
         assert.deepEqual(buffer, compressed);
         assert.deepEqual(zlib.gunzipSync(buffer), Buffer.from('dump-payload'));
     } finally {
         await new Promise<void>((resolve, reject) => {
-            objectGateway.server.close((error) => error ? reject(error) : resolve());
-        });
-        await new Promise<void>((resolve, reject) => {
-            voltGrantServer.server.close((error) => error ? reject(error) : resolve());
+            proxyServer.server.close((error) => error ? reject(error) : resolve());
         });
     }
 });

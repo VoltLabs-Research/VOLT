@@ -176,7 +176,7 @@ export const createClusterObjectStore = (deps: {
                 bucket,
                 objectKey
             },
-            'Resolved remote owner object through direct peer access'
+            'Resolved remote owner object through Volt server proxy'
         );
     };
 
@@ -261,7 +261,7 @@ export const createClusterObjectStore = (deps: {
                     bucket: input.bucket,
                     objectKey: input.objectKey
                 },
-                'Writing object to remote owner cluster through direct peer access'
+                'Writing object to remote owner cluster through Volt server proxy'
             );
 
             await deps.remoteClient.putBuffer(input.ownerClusterId, {
@@ -301,7 +301,7 @@ export const createClusterObjectStore = (deps: {
                     objectKey: input.objectKey,
                     size: input.size
                 },
-                'Streaming object to remote owner cluster through direct peer access'
+                'Streaming object to remote owner cluster through Volt server proxy'
             );
 
             await deps.remoteClient.putStream(input.ownerClusterId, {
@@ -344,7 +344,7 @@ export const createClusterObjectStore = (deps: {
                     bucket,
                     prefix
                 },
-                'Deleting remote owner prefix through direct peer access'
+                'Deleting remote owner prefix through Volt server proxy'
             );
             return deps.remoteClient.deleteByPrefix(ownerClusterId, bucket, prefix);
         },
@@ -363,7 +363,7 @@ export const createClusterObjectStore = (deps: {
                     bucket,
                     objectKey
                 },
-                'Deleting remote owner object through direct peer access'
+                'Deleting remote owner object through Volt server proxy'
             );
             await deps.remoteClient.deleteObject(ownerClusterId, bucket, objectKey);
         }

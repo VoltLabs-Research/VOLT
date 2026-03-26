@@ -1,15 +1,13 @@
 import {
-    TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER,
+    TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER,
+    TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER,
     TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
-    TeamClusterServiceExposureAccessMode,
-    type TeamClusterDirectAccessGrantResponse
+    TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH
 } from '@/shared/contracts';
-import { Readable } from 'node:stream';
 import type { DaemonConfig } from '@/core/config';
 import type { Readable as NodeReadable } from 'node:stream';
 import http from 'node:http';
 import https from 'node:https';
-import { TeamClusterDirectAccessGrantClient } from './TeamClusterDirectAccessGrantClient';
 
 interface ObjectStoreErrorPayload {
     code?: unknown;
@@ -50,18 +48,16 @@ interface RawRequestInit {
     body?: Buffer | NodeReadable;
 }
 
-class DirectObjectStoreError extends Error {
+class ObjectStoreProxyError extends Error {
     constructor(
         public readonly statusCode: number,
         public readonly code: string,
         message: string
     ) {
         super(message);
-        this.name = 'DirectObjectStoreError';
+        this.name = 'ObjectStoreProxyError';
     }
 }
-
-const OBJECT_GATEWAY_BASE_PATH = '/internal/object-gateway/v1';
 
 const readHeaderValue = (value: string | null): string | undefined => {
     return value && value.length > 0
@@ -136,13 +132,9 @@ const parseHeadResponse = (headers: Headers): DirectObjectStoreHeadResponse => {
 };
 
 export class TeamClusterDirectObjectStoreClient {
-    private readonly grantClient: TeamClusterDirectAccessGrantClient;
-
     constructor(
         private readonly config: DaemonConfig
-    ) {
-        this.grantClient = new TeamClusterDirectAccessGrantClient(config);
-    }
+    ) {}
 
     async list(
         ownerClusterId: string,
@@ -167,8 +159,7 @@ export class TeamClusterDirectObjectStoreClient {
         }
 
         const response = await this.fetchJson<ObjectStoreListResponse>(
-            ownerClusterId,
-            this.buildCollectionPath(request.bucket, query),
+            this.buildCollectionPath(ownerClusterId, request.bucket, query),
             { method: 'GET' }
         );
 
@@ -183,7 +174,7 @@ export class TeamClusterDirectObjectStoreClient {
     }
 
     async head(ownerClusterId: string, bucket: string, objectKey: string): Promise<DirectObjectStoreHeadResponse> {
-        const response = await this.fetch(ownerClusterId, this.buildObjectPath(bucket, objectKey), {
+        const response = await this.fetch(this.buildObjectPath(ownerClusterId, bucket, objectKey), {
             method: 'HEAD'
         });
 
@@ -191,7 +182,7 @@ export class TeamClusterDirectObjectStoreClient {
     }
 
     async getStream(ownerClusterId: string, bucket: string, objectKey: string): Promise<DirectObjectStoreStreamResponse> {
-        const response = await this.fetch(ownerClusterId, this.buildObjectPath(bucket, objectKey), {
+        const response = await this.fetch(this.buildObjectPath(ownerClusterId, bucket, objectKey), {
             method: 'GET'
         });
 
@@ -202,7 +193,7 @@ export class TeamClusterDirectObjectStoreClient {
     }
 
     async getBuffer(ownerClusterId: string, bucket: string, objectKey: string): Promise<Buffer> {
-        const response = await this.fetch(ownerClusterId, this.buildObjectPath(bucket, objectKey), {
+        const response = await this.fetch(this.buildObjectPath(ownerClusterId, bucket, objectKey), {
             method: 'GET'
         });
 
@@ -217,7 +208,7 @@ export class TeamClusterDirectObjectStoreClient {
         contentEncoding?: string;
         metadata?: Record<string, string>;
     }): Promise<void> {
-        await this.fetch(ownerClusterId, this.buildObjectPath(request.bucket, request.objectKey), {
+        await this.fetch(this.buildObjectPath(ownerClusterId, request.bucket, request.objectKey), {
             method: 'PUT',
             headers: this.buildUploadHeaders(request.buffer.length, request.contentType, request.contentEncoding, request.metadata),
             body: request.buffer
@@ -233,7 +224,7 @@ export class TeamClusterDirectObjectStoreClient {
         contentEncoding?: string;
         metadata?: Record<string, string>;
     }): Promise<void> {
-        await this.fetch(ownerClusterId, this.buildObjectPath(request.bucket, request.objectKey), {
+        await this.fetch(this.buildObjectPath(ownerClusterId, request.bucket, request.objectKey), {
             method: 'PUT',
             headers: this.buildUploadHeaders(
                 request.contentLength,
@@ -246,7 +237,7 @@ export class TeamClusterDirectObjectStoreClient {
     }
 
     async deleteObject(ownerClusterId: string, bucket: string, objectKey: string): Promise<void> {
-        await this.fetch(ownerClusterId, this.buildObjectPath(bucket, objectKey), {
+        await this.fetch(this.buildObjectPath(ownerClusterId, bucket, objectKey), {
             method: 'DELETE'
         });
     }
@@ -256,8 +247,7 @@ export class TeamClusterDirectObjectStoreClient {
         query.set('prefix', prefix);
 
         const response = await this.fetchJson<ObjectStoreDeleteResponse>(
-            ownerClusterId,
-            this.buildCollectionPath(bucket, query),
+            this.buildCollectionPath(ownerClusterId, bucket, query),
             { method: 'DELETE' }
         );
 
@@ -266,21 +256,17 @@ export class TeamClusterDirectObjectStoreClient {
             : undefined;
     }
 
-    private async fetchJson<T>(ownerClusterId: string, path: string, init?: RawRequestInit): Promise<T> {
-        const response = await this.fetch(ownerClusterId, path, init);
+    private async fetchJson<T>(path: string, init?: RawRequestInit): Promise<T> {
+        const response = await this.fetch(path, init);
         return JSON.parse((await this.readResponseBuffer(response.stream)).toString('utf8')) as T;
     }
 
-    private async fetch(ownerClusterId: string, path: string, init?: RawRequestInit): Promise<RawHttpResponse> {
-        const grant = await this.grantClient.getGrant({
-            ownerClusterId,
-            exposureName: 'object-gateway',
-            accessMode: TeamClusterServiceExposureAccessMode.Http
-        });
+    private async fetch(path: string, init?: RawRequestInit): Promise<RawHttpResponse> {
         const headers = new Headers(init?.headers);
-        headers.set(TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER, grant.token);
+        headers.set(TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER, this.config.teamClusterId);
+        headers.set(TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER, this.config.daemonPassword);
 
-        const response = await this.performRawRequest(this.buildDirectUrl(grant, path), {
+        const response = await this.performRawRequest(this.buildProxyUrl(path), {
             method: init?.method || 'GET',
             headers,
             body: init?.body
@@ -297,14 +283,14 @@ export class TeamClusterDirectObjectStoreClient {
             payload = undefined;
         }
 
-        throw new DirectObjectStoreError(
+        throw new ObjectStoreProxyError(
             response.statusCode,
             typeof payload?.code === 'string'
                 ? payload.code
-                : 'TeamCluster::DirectObjectStoreRequestFailed',
+                : 'TeamCluster::ObjectStoreProxyRequestFailed',
             typeof payload?.message === 'string'
                 ? payload.message
-                : `Direct object store request failed with status ${response.statusCode}`
+                : `Object store proxy request failed with status ${response.statusCode}`
         );
     }
 
@@ -364,20 +350,20 @@ export class TeamClusterDirectObjectStoreClient {
         return Buffer.concat(chunks);
     }
 
-    private buildDirectUrl(grant: TeamClusterDirectAccessGrantResponse, path: string): string {
-        return new URL(path, `${grant.endpoint.protocol}://${grant.endpoint.host}:${grant.endpoint.port}`).toString();
+    private buildProxyUrl(path: string): string {
+        return new URL(path, this.config.voltCloudUrl).toString();
     }
 
-    private buildCollectionPath(bucket: string, query?: URLSearchParams): string {
-        const basePath = `${OBJECT_GATEWAY_BASE_PATH}/buckets/${encodePathComponent(bucket)}/objects`;
+    private buildCollectionPath(ownerClusterId: string, bucket: string, query?: URLSearchParams): string {
+        const basePath = `${TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH}/owners/${encodePathComponent(ownerClusterId)}/buckets/${encodePathComponent(bucket)}/objects`;
         const queryString = query?.toString();
         return queryString
             ? `${basePath}?${queryString}`
             : basePath;
     }
 
-    private buildObjectPath(bucket: string, objectKey: string): string {
-        return `${this.buildCollectionPath(bucket)}/${encodeObjectKeyPath(objectKey)}`;
+    private buildObjectPath(ownerClusterId: string, bucket: string, objectKey: string): string {
+        return `${this.buildCollectionPath(ownerClusterId, bucket)}/${encodeObjectKeyPath(objectKey)}`;
     }
 
     private buildUploadHeaders(

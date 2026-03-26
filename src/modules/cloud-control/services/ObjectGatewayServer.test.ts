@@ -199,7 +199,6 @@ test('ObjectGatewayServer maps missing GET objects to 404 instead of 500', async
 
         assert.equal(result.statusCode, 404);
         assert.match(result.body, /Object not found/);
-        assert.equal(exposure.publicAccess?.protocol, 'http');
     } finally {
         await server.stop();
     }
