@@ -78,7 +78,7 @@ const readBody = async (request: http.IncomingMessage): Promise<Buffer> => {
 
 const buildObjectGatewayServer = async () => {
     const objects = new Map<string, StoredObject>();
-    const requests: Array<{ method: string; path: string; token?: string; connectionId: string; }> = [];
+    const requests: Array<{ method: string; path: string; token?: string; connectionId: string; skipMetadata?: string; }> = [];
 
     const server = http.createServer(async (request, response) => {
         const method = request.method || 'GET';
@@ -87,6 +87,9 @@ const buildObjectGatewayServer = async () => {
             method,
             path: `${url.pathname}${url.search}`,
             connectionId: `${request.socket.remoteAddress}:${request.socket.remotePort}`,
+            skipMetadata: typeof request.headers['x-volt-object-store-skip-metadata'] === 'string'
+                ? request.headers['x-volt-object-store-skip-metadata']
+                : undefined,
             token: typeof request.headers['x-team-cluster-direct-access-token'] === 'string'
                 ? request.headers['x-team-cluster-direct-access-token']
                 : undefined
@@ -339,6 +342,39 @@ test('TeamClusterObjectGatewayClient preserves gzipped object bytes when the res
         const buffer = await harness.client.getBuffer(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY);
         assert.deepEqual(buffer, compressed);
         assert.deepEqual(zlib.gunzipSync(buffer), Buffer.from('dump-payload'));
+    } finally {
+        await new Promise<void>((resolve, reject) => {
+            server.close((error) => error ? reject(error) : resolve());
+        });
+    }
+});
+
+test('TeamClusterObjectGatewayClient can request stream-only reads without metadata prefetch', async () => {
+    process.env.TEAM_CLUSTER_OBJECT_GATEWAY_ENABLED = 'true';
+    process.env.TEAM_CLUSTER_OBJECT_GATEWAY_READS_ENABLED = 'true';
+    process.env.TEAM_CLUSTER_OBJECT_GATEWAY_WRITES_ENABLED = 'true';
+
+    const { server, port, requests, seedObject } = await buildObjectGatewayServer();
+    const harness = createClientHarness(port);
+
+    try {
+        const payload = Buffer.from('stream-only-payload');
+        seedObject(TEST_BUCKET, TEST_OBJECT_KEY, {
+            body: payload,
+            contentType: 'application/octet-stream'
+        });
+
+        const response = await harness.client.getStream(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY, {
+            skipMetadata: true
+        });
+        const streamedChunks: Buffer[] = [];
+
+        for await (const chunk of response.stream) {
+            streamedChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        }
+
+        assert.deepEqual(Buffer.concat(streamedChunks), payload);
+        assert.equal(requests[requests.length - 1]?.skipMetadata, '1');
     } finally {
         await new Promise<void>((resolve, reject) => {
             server.close((error) => error ? reject(error) : resolve());

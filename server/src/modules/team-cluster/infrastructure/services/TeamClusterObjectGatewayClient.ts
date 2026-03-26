@@ -8,7 +8,8 @@ import type { Duplex, Readable as NodeReadable } from 'node:stream';
 import http from 'node:http';
 import {
     TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER,
-    TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX
+    TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
+    TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
 } from '@shared/infrastructure/contracts/team-cluster';
 import { ensureObjectGatewayAccessEnabled } from './ObjectGatewayFeatureFlags';
 import TeamClusterDirectAccessTokenService from './TeamClusterDirectAccessTokenService';
@@ -59,6 +60,10 @@ interface TeamClusterObjectGatewayPutStreamRequest extends TeamClusterObjectGate
 
 interface TeamClusterObjectGatewayPutBufferRequest extends TeamClusterObjectGatewayPutRequest {
     buffer: Buffer;
+}
+
+interface TeamClusterObjectGatewayReadOptions {
+    skipMetadata?: boolean;
 }
 
 interface ObjectGatewayJsonListResponse {
@@ -294,11 +299,17 @@ export default class TeamClusterObjectGatewayClient {
         }
     }
 
-    async getStream(teamClusterId: string, bucket: string, objectKey: string): Promise<TeamClusterObjectGatewayStreamResponse> {
+    async getStream(
+        teamClusterId: string,
+        bucket: string,
+        objectKey: string,
+        options?: TeamClusterObjectGatewayReadOptions
+    ): Promise<TeamClusterObjectGatewayStreamResponse> {
         ensureObjectGatewayAccessEnabled('read');
         const response = await this.fetch(teamClusterId, {
             method: 'GET',
-            path: this.buildObjectPath(bucket, objectKey)
+            path: this.buildObjectPath(bucket, objectKey),
+            headers: this.buildReadHeaders(options)
         }, 'get');
 
         return {
@@ -312,7 +323,8 @@ export default class TeamClusterObjectGatewayClient {
         ensureObjectGatewayAccessEnabled('read');
         const response = await this.fetch(teamClusterId, {
             method: 'GET',
-            path: this.buildObjectPath(bucket, objectKey)
+            path: this.buildObjectPath(bucket, objectKey),
+            headers: this.buildReadHeaders({ skipMetadata: true })
         }, 'get');
 
         return this.readResponseBuffer(response.stream);
@@ -678,6 +690,16 @@ export default class TeamClusterObjectGatewayClient {
         }
 
         return headers;
+    }
+
+    private buildReadHeaders(options?: TeamClusterObjectGatewayReadOptions): Record<string, string> | undefined {
+        if (!options?.skipMetadata) {
+            return undefined;
+        }
+
+        return {
+            [TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER]: '1'
+        };
     }
 }
 
