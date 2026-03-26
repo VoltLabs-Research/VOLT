@@ -4,7 +4,7 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
-import type { Readable as NodeReadable } from 'node:stream';
+import type { Duplex, Readable as NodeReadable } from 'node:stream';
 import http from 'node:http';
 import {
     TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER,
@@ -93,6 +93,16 @@ interface CachedAccessToken {
     expiresAt: string;
 }
 
+interface ObjectGatewayHttpSessionEntry {
+    key: string;
+    teamClusterId: string;
+    tunnel: Duplex;
+    agent: http.Agent;
+    ephemeral: boolean;
+    inUse: boolean;
+    expiresAt: number;
+}
+
 const OBJECT_GATEWAY_EXPOSURE_ID = 'daemon:object-gateway';
 const OBJECT_GATEWAY_EXPOSURE_NAME = 'object-gateway';
 const OBJECT_GATEWAY_BASE_PATH = '/internal/object-gateway/v1';
@@ -100,6 +110,8 @@ const OBJECT_METADATA_HEADER_PREFIX = 'x-object-meta-';
 const DEFAULT_LIST_LIMIT = 100;
 const TOKEN_EXPIRY_SAFETY_WINDOW_MS = 5_000;
 const TOKEN_TTL_SECONDS = 5 * 60;
+const HTTP_PROXY_SESSION_TTL_MS = 30_000;
+const MAX_HTTP_PROXY_SESSIONS_PER_CLUSTER = 4;
 
 const readHeaderValue = (value: string | null): string | undefined => {
     return value && value.length > 0
@@ -195,6 +207,7 @@ const mapStatusToApplicationError = (statusCode: number, code: string, message: 
 export default class TeamClusterObjectGatewayClient {
     private readonly cachedTokens = new Map<string, CachedAccessToken>();
     private readonly pendingTokens = new Map<string, Promise<CachedAccessToken>>();
+    private readonly httpSessions = new Map<string, ObjectGatewayHttpSessionEntry[]>();
 
     constructor(
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
@@ -365,28 +378,18 @@ export default class TeamClusterObjectGatewayClient {
         const accessToken = await this.resolveAccessToken(teamClusterId);
         const headers = new Headers(options.headers);
         headers.set(TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER, accessToken.token);
-
-        const tunnel = await this.teamClusterDaemonClient.openTunnel(
-            teamClusterId,
-            OBJECT_GATEWAY_EXPOSURE_ID,
-            TeamClusterServiceExposureAccessMode.Http
-        );
-        const agent = this.createSingleUseTunnelHttpAgent(tunnel);
+        const session = await this.acquireHttpSession(teamClusterId);
 
         try {
-            const response = await this.performTunnelRequest(options, headers, agent);
+            const response = await this.performTunnelRequest(options, headers, session.agent);
 
             if (response.statusCode >= 200 && response.statusCode < 300) {
-                const destroyAgent = (): void => {
-                    agent.destroy();
-                };
-                response.stream.once('close', destroyAgent);
-                response.stream.once('end', destroyAgent);
+                this.bindResponseLifecycle(response.stream, session);
                 return response;
             }
 
             const payloadBuffer = await this.readResponseBuffer(response.stream);
-            agent.destroy();
+            this.releaseHttpSession(session);
 
             let payload: ObjectGatewayJsonError | undefined;
             try {
@@ -405,7 +408,7 @@ export default class TeamClusterObjectGatewayClient {
                     : `Object gateway request failed with status ${response.statusCode}`
             );
         } catch (error) {
-            agent.destroy();
+            this.releaseHttpSession(session, true);
             throw error;
         }
     }
@@ -503,14 +506,140 @@ export default class TeamClusterObjectGatewayClient {
         });
     }
 
-    private createSingleUseTunnelHttpAgent(tunnel: NodeReadable): http.Agent {
+    private async acquireHttpSession(teamClusterId: string): Promise<ObjectGatewayHttpSessionEntry> {
+        const sessionKey = this.buildSessionKey(teamClusterId);
+        const existingSessions = this.pruneHttpSessions(sessionKey);
+        const reusableSession = existingSessions.find((session) => !session.inUse && !session.tunnel.destroyed);
+
+        if (reusableSession) {
+            reusableSession.inUse = true;
+            reusableSession.expiresAt = Date.now() + HTTP_PROXY_SESSION_TTL_MS;
+            return reusableSession;
+        }
+
+        const tunnel = await this.teamClusterDaemonClient.openTunnel(
+            teamClusterId,
+            OBJECT_GATEWAY_EXPOSURE_ID,
+            TeamClusterServiceExposureAccessMode.Http
+        );
+        const storeSession = existingSessions.length < MAX_HTTP_PROXY_SESSIONS_PER_CLUSTER;
+        const session = this.createHttpSession(sessionKey, teamClusterId, tunnel as Duplex, !storeSession);
+
+        if (storeSession) {
+            this.httpSessions.set(sessionKey, [...existingSessions, session]);
+        }
+
+        return session;
+    }
+
+    private createHttpSession(
+        sessionKey: string,
+        teamClusterId: string,
+        tunnel: Duplex,
+        ephemeral = false
+    ): ObjectGatewayHttpSessionEntry {
         const agent = new http.Agent({
-            keepAlive: false,
+            keepAlive: true,
+            keepAliveMsecs: HTTP_PROXY_SESSION_TTL_MS,
+            maxFreeSockets: 1,
             maxSockets: 1
         });
 
-        agent.createConnection = () => tunnel as any;
-        return agent;
+        agent.createConnection = (): Duplex => tunnel;
+        const session: ObjectGatewayHttpSessionEntry = {
+            key: sessionKey,
+            teamClusterId,
+            tunnel,
+            agent,
+            ephemeral,
+            inUse: true,
+            expiresAt: Date.now() + HTTP_PROXY_SESSION_TTL_MS
+        };
+
+        const destroySession = (): void => {
+            this.destroyHttpSession(session);
+        };
+
+        tunnel.once('close', destroySession);
+        tunnel.once('error', destroySession);
+        return session;
+    }
+
+    private bindResponseLifecycle(stream: NodeReadable, session: ObjectGatewayHttpSessionEntry): void {
+        let finalized = false;
+        const finalize = (destroySession = false): void => {
+            if (finalized) {
+                return;
+            }
+
+            finalized = true;
+            this.releaseHttpSession(session, destroySession);
+        };
+
+        stream.once('end', () => {
+            finalize();
+        });
+        stream.once('close', () => {
+            finalize();
+        });
+        stream.once('error', () => {
+            finalize(true);
+        });
+    }
+
+    private releaseHttpSession(session: ObjectGatewayHttpSessionEntry, destroySession = false): void {
+        if (destroySession || session.ephemeral || session.tunnel.destroyed) {
+            this.destroyHttpSession(session);
+            return;
+        }
+
+        session.inUse = false;
+        session.expiresAt = Date.now() + HTTP_PROXY_SESSION_TTL_MS;
+    }
+
+    private pruneHttpSessions(sessionKey: string): ObjectGatewayHttpSessionEntry[] {
+        const sessions = this.httpSessions.get(sessionKey) || [];
+        const activeSessions = sessions.filter((session) => {
+            if (session.tunnel.destroyed || session.expiresAt <= Date.now()) {
+                this.destroyHttpSession(session);
+                return false;
+            }
+
+            return true;
+        });
+
+        if (activeSessions.length === 0) {
+            this.httpSessions.delete(sessionKey);
+            return [];
+        }
+
+        this.httpSessions.set(sessionKey, activeSessions);
+        return activeSessions;
+    }
+
+    private destroyHttpSession(session: ObjectGatewayHttpSessionEntry): void {
+        session.inUse = false;
+        session.agent.destroy();
+        if (!session.tunnel.destroyed) {
+            session.tunnel.destroy();
+        }
+
+        const sessions = this.httpSessions.get(session.key);
+        if (!sessions) {
+            return;
+        }
+
+        const nextSessions = sessions.filter((entry) => entry !== session);
+        if (nextSessions.length === 0) {
+            this.httpSessions.delete(session.key);
+            return;
+        }
+
+        this.httpSessions.set(session.key, nextSessions);
+    }
+
+    private buildSessionKey(teamClusterId: string): string {
+        return `${teamClusterId}:${OBJECT_GATEWAY_EXPOSURE_ID}:${TeamClusterServiceExposureAccessMode.Http}`;
     }
 
     private async readResponseBuffer(stream: NodeReadable): Promise<Buffer> {
@@ -553,9 +682,7 @@ export default class TeamClusterObjectGatewayClient {
 }
 
 export type {
-    TeamClusterObjectGatewayHeadResponse,
     TeamClusterObjectGatewayListRequest,
     TeamClusterObjectGatewayPutBufferRequest,
-    TeamClusterObjectGatewayPutStreamRequest,
-    TeamClusterObjectGatewayStreamResponse
+    TeamClusterObjectGatewayPutStreamRequest
 };
