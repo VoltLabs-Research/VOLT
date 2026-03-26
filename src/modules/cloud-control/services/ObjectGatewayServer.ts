@@ -8,7 +8,6 @@ import {
 import { logger } from '@/core/logger';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { networkInterfaces } from 'node:os';
 import type { DaemonConfig } from '@/core/config';
 import type { MinioService } from '@/modules/platform/services';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -29,58 +28,6 @@ const LOOPBACK_HOST = '127.0.0.1';
 
 const isWildcardHost = (value: string): boolean => {
     return value === '0.0.0.0' || value === '::' || value === '[::]';
-};
-
-const readDirectAccessProtocol = (): 'http' | 'https' => {
-    const configuredProtocol = process.env.TEAM_CLUSTER_DIRECT_ACCESS_PROTOCOL?.trim();
-    return configuredProtocol === 'https'
-        ? 'https'
-        : 'http';
-};
-
-const detectNonInternalIpv4Host = (): string | null => {
-    const interfaces = networkInterfaces();
-
-    for (const addresses of Object.values(interfaces)) {
-        if (!addresses) {
-            continue;
-        }
-
-        for (const address of addresses) {
-            if (address.family !== 'IPv4' || address.internal || isWildcardHost(address.address)) {
-                continue;
-            }
-
-            return address.address;
-        }
-    }
-
-    return null;
-};
-
-const resolveAdvertisedHost = (bindHost: string): string => {
-    const configuredAdvertisedHost = process.env.TEAM_CLUSTER_OBJECT_GATEWAY_ADVERTISED_HOST?.trim();
-    if (configuredAdvertisedHost) {
-        return configuredAdvertisedHost;
-    }
-
-    if (!isWildcardHost(bindHost)) {
-        return bindHost;
-    }
-
-    const configuredServerHostname = process.env.SERVER_HOSTNAME?.trim();
-    if (configuredServerHostname && !isWildcardHost(configuredServerHostname)) {
-        return configuredServerHostname;
-    }
-
-    const autoDetectedHost = detectNonInternalIpv4Host();
-    if (autoDetectedHost) {
-        return autoDetectedHost;
-    }
-
-    throw new Error(
-        'Unable to determine TEAM_CLUSTER_OBJECT_GATEWAY_ADVERTISED_HOST for direct cluster access'
-    );
 };
 
 interface ObjectStatLike {
@@ -267,11 +214,6 @@ export class ObjectGatewayServer {
             targetHost: this.localTargetHost,
             targetPort: this.bindPort,
             status: TeamClusterServiceExposureStatus.Active,
-            publicAccess: {
-                protocol: readDirectAccessProtocol(),
-                host: resolveAdvertisedHost(this.bindHost),
-                port: this.bindPort
-            },
             labels: {
                 'volt.exposure.api-version': 'v1',
                 'volt.exposure.service': OBJECT_GATEWAY_EXPOSURE_NAME,
