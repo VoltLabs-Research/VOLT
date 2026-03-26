@@ -1,6 +1,5 @@
 import { TRAJECTORY_GLB_QUEUE_NAME } from '@/modules/platform/services';
 import { enqueueProjectedJob } from '@/modules/platform/services';
-import { ObjectBucketName } from '@/shared/contracts';
 import { logger } from '@/core/logger';
 import type { QueueService, RedisConnectionService } from '@/modules/platform/services';
 import type {
@@ -47,63 +46,12 @@ const buildGlbJobPayload = (
     };
 };
 
-const STAT_CONCURRENCY = 10;
-
-/**
- * Verifies which dump objects actually exist in S3 before enqueueing jobs.
- * Returns a Set of objectKeys that exist.
- */
-const getExistingDumpKeys = async (
-    objectStore: ClusterObjectStore,
-    frames: EnqueuePreprocessingFrameDescriptor[]
-): Promise<Set<string>> => {
-    const existingKeys = new Set<string>();
-
-    for (let i = 0; i < frames.length; i += STAT_CONCURRENCY) {
-        const batch = frames.slice(i, i + STAT_CONCURRENCY);
-        const results = await Promise.all(
-            batch.map(async (frame): Promise<string | null> => {
-                try {
-                    if (!frame.ownerClusterId) {
-                        return null;
-                    }
-
-                    await objectStore.head(frame.ownerClusterId, ObjectBucketName.Dumps, frame.objectKey);
-                    return frame.objectKey;
-                } catch (error: unknown) {
-                    if (
-                        error !== null &&
-                        typeof error === 'object' &&
-                        ('code' in error && (
-                            (error as Record<string, unknown>).code === 'NotFound' ||
-                            (error as Record<string, unknown>).code === 'NoSuchKey'
-                        ) ||
-                        'statusCode' in error && (error as Record<string, unknown>).statusCode === 404)
-                    ) {
-                        return null;
-                    }
-
-                    throw error;
-                }
-            })
-        );
-
-        for (const key of results) {
-            if (key !== null) {
-                existingKeys.add(key);
-            }
-        }
-    }
-
-    return existingKeys;
-};
-
 export interface TrajectoryGlbQueueService {
     enqueueGlbConversionJobs(input: EnqueuePreprocessingRequest): Promise<EnqueuePreprocessingResponse>;
 };
 
 export const createTrajectoryGlbQueueService = (
-    objectStore: ClusterObjectStore,
+    _objectStore: ClusterObjectStore,
     queueService: QueueService,
     redisConnectionService: RedisConnectionService
 ): TrajectoryGlbQueueService => ({
@@ -114,77 +62,26 @@ export const createTrajectoryGlbQueueService = (
             skippedJobs: 0
         };
 
-        // Pre-flight: verify which dump objects actually exist in S3
-        const existingKeys = await getExistingDumpKeys(
-            objectStore,
-            input.frames.map((frame) => ({
-                ...frame,
-                ownerClusterId: frame.ownerClusterId || input.storageClusterId
-            }))
-        );
-        const missingCount = input.frames.length - existingKeys.size;
-
-        if (missingCount > 0) {
-            // List all objects under this trajectory prefix for diagnostic purposes
-            const prefix = `trajectory-${input.trajectoryId}/`;
-            let allKeysInPrefix: string[] = [];
-            try {
-                if (input.storageClusterId) {
-                    let cursor: string | undefined;
-                    do {
-                        const page = await objectStore.list(input.storageClusterId, {
-                            bucket: ObjectBucketName.Dumps,
-                            prefix,
-                            cursor,
-                            limit: 200
-                        });
-                        allKeysInPrefix.push(...page.keys);
-                        cursor = page.nextCursor;
-                    } while (cursor);
-                }
-            } catch {
-                // Ignore listing errors
-            }
-
-            logger.warn(
-                {
-                    trajectoryId: input.trajectoryId,
-                    totalFrames: input.frames.length,
-                    missingDumps: missingCount,
-                    existingDumps: existingKeys.size,
-                    requestedKeys: input.frames.map(f => f.objectKey),
-                    existingKeysVerified: [...existingKeys],
-                    allKeysInBucketPrefix: allKeysInPrefix,
-                    allKeysInBucketCount: allKeysInPrefix.length
-                },
-                'DIAG: Some dump objects do not exist in S3 — skipping GLB enqueue for missing frames'
-            );
-        } else {
-            logger.info(
-                {
-                    trajectoryId: input.trajectoryId,
-                    totalFrames: input.frames.length,
-                    allExist: true
-                },
-                'DIAG: Pre-flight check passed — all dump objects verified in S3'
-            );
-        }
-
         for (const frame of input.frames) {
-            if (!existingKeys.has(frame.objectKey)) {
+            const ownerClusterId = frame.ownerClusterId || input.storageClusterId;
+
+            if (!ownerClusterId) {
                 logger.debug(
                     {
                         objectKey: frame.objectKey,
                         timestep: frame.timestep,
                         trajectoryId: input.trajectoryId
                     },
-                    'Skipping GLB enqueue — dump object not found in S3'
+                    'Skipping GLB enqueue — dump owner cluster is missing'
                 );
                 result.skippedJobs += 1;
                 continue;
             }
 
-            const job = buildGlbJobPayload(input, frame);
+            const job = buildGlbJobPayload(input, {
+                ...frame,
+                ownerClusterId
+            });
             const wasEnqueued = await enqueueProjectedJob({
                 queueService,
                 queueName: TRAJECTORY_GLB_QUEUE_NAME,

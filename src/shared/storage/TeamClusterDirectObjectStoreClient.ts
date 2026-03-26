@@ -132,6 +132,20 @@ const parseHeadResponse = (headers: Headers): DirectObjectStoreHeadResponse => {
 };
 
 export class TeamClusterDirectObjectStoreClient {
+    private readonly httpAgent = new http.Agent({
+        keepAlive: true,
+        keepAliveMsecs: 30_000,
+        maxSockets: 32,
+        maxFreeSockets: 8
+    });
+
+    private readonly httpsAgent = new https.Agent({
+        keepAlive: true,
+        keepAliveMsecs: 30_000,
+        maxSockets: 32,
+        maxFreeSockets: 8
+    });
+
     constructor(
         private readonly config: DaemonConfig
     ) {}
@@ -304,6 +318,9 @@ export class TeamClusterDirectObjectStoreClient {
     ): Promise<RawHttpResponse> {
         const targetUrl = new URL(urlString);
         const transport = targetUrl.protocol === 'https:' ? https : http;
+        const agent = targetUrl.protocol === 'https:'
+            ? this.httpsAgent
+            : this.httpAgent;
 
         return new Promise<RawHttpResponse>((resolve, reject) => {
             const request = transport.request({
@@ -312,7 +329,8 @@ export class TeamClusterDirectObjectStoreClient {
                 port: targetUrl.port,
                 path: `${targetUrl.pathname}${targetUrl.search}`,
                 method: init.method,
-                headers: headersToObject(init.headers)
+                headers: headersToObject(init.headers),
+                agent
             }, (response) => {
                 resolve({
                     statusCode: response.statusCode || 0,

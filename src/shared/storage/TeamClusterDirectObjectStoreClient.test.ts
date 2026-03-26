@@ -13,6 +13,7 @@ type StoredObject = {
 type ProxyRequest = {
     method: string;
     path: string;
+    connectionId: string;
     ownerClusterId: string;
     daemonId?: string;
     daemonPassword?: string;
@@ -52,6 +53,7 @@ const createObjectStoreProxyServer = async () => {
         requests.push({
             method,
             path: `${url.pathname}${url.search}`,
+            connectionId: `${request.socket.remoteAddress}:${request.socket.remotePort}`,
             ownerClusterId,
             daemonId: typeof request.headers['x-team-cluster-id'] === 'string'
                 ? request.headers['x-team-cluster-id']
@@ -246,6 +248,7 @@ test('TeamClusterDirectObjectStoreClient reads and writes remote objects through
                 `/internal/team-cluster/object-store/v1/owners/${encodeURIComponent(TEST_OWNER_CLUSTER_ID)}/buckets/${encodeURIComponent(TEST_BUCKET)}/objects`
             );
         }));
+        assert.ok(new Set(proxyServer.requests.map((entry) => entry.connectionId)).size < proxyServer.requests.length);
     } finally {
         await new Promise<void>((resolve, reject) => {
             proxyServer.server.close((error) => error ? reject(error) : resolve());

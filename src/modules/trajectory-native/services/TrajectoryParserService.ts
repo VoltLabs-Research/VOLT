@@ -249,49 +249,6 @@ export const createTrajectoryParserService = (
         );
 
         try {
-            // DIAG: Pre-download verification — check if object exists before attempting download
-            try {
-                const stat = await objectStore.head(ownerClusterId, ObjectBucketName.Dumps, objectKey);
-                logger.info(
-                    {
-                        objectKey,
-                        bucket: ObjectBucketName.Dumps,
-                        minioSize: stat.contentLength,
-                        timestep: input.timestep,
-                        trajectoryId: input.trajectoryId
-                    },
-                    'DIAG: Pre-download statObject succeeded — dump exists in MinIO'
-                );
-            } catch (statError: unknown) {
-                // List objects with the trajectory prefix to understand what IS in the bucket.
-                const prefix = `trajectory-${input.trajectoryId}/`;
-                let existingKeys: string[] = [];
-                try {
-                    const page = await objectStore.list(ownerClusterId, {
-                        bucket: ObjectBucketName.Dumps,
-                        prefix,
-                        limit: 20
-                    });
-                    existingKeys = page.keys;
-                } catch {
-                    // Ignore listing errors
-                }
-
-                logger.error(
-                    {
-                        objectKey,
-                        bucket: ObjectBucketName.Dumps,
-                        timestep: input.timestep,
-                        trajectoryId: input.trajectoryId,
-                        prefix,
-                        existingKeysInPrefix: existingKeys,
-                        existingKeyCount: existingKeys.length,
-                        err: statError
-                    },
-                    'DIAG: Pre-download statObject FAILED — dump NOT found in MinIO before download attempt'
-                );
-            }
-
             const response = await objectStore.getStream(ownerClusterId, ObjectBucketName.Dumps, objectKey);
             await pipeline(response.stream, zlib.createGunzip(), createWriteStream(tempDumpPath));
             const dumpStats = await fs.stat(tempDumpPath);
