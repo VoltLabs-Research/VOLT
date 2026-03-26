@@ -207,7 +207,7 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
             }
         }
 
-        const teamClusterId = await this.teamClusterSelectionService.resolveTeamClusterId(input.teamId, input.teamClusterId);
+        const teamClusterId = await this.teamClusterSelectionService.resolveConnectedClusterId(input.teamId, input.teamClusterId);
 
         let containerCmd = cmd && Array.isArray(cmd) && cmd.length > 0 ? cmd : undefined;
         if (!containerCmd && !useImageCmd) {

@@ -15,6 +15,13 @@ export class TeamClusterSelectionService {
         });
     }
 
+    async resolveConnectedClusterId(teamId: string, requestedTeamClusterId?: string): Promise<string> {
+        return this.clusterRoleAwareSelectionService.resolveConnectedClusterId({
+            teamId,
+            requestedTeamClusterId
+        });
+    }
+
     async resolveComputeClusterId(
         teamId: string,
         requestedTeamClusterId?: string,
