@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import net from 'node:net';
 import test from 'node:test';
 import zlib from 'node:zlib';
 import TeamClusterObjectGatewayClient from './TeamClusterObjectGatewayClient';
@@ -16,26 +17,50 @@ const TEST_BUCKET = 'volt-models';
 const TEST_OBJECT_KEY = 'path/to/object.glb';
 const TEST_DIRECT_ACCESS_TOKEN = 'direct-access-token';
 
-class FakeDirectAccessGrantService {
-    public issueInternalGrantCalls = 0;
+class FakeTeamClusterRepository {
+    public findByIdWithSensitiveDataCalls = 0;
+
+    async findByIdWithSensitiveData(teamClusterId: string) {
+        this.findByIdWithSensitiveDataCalls += 1;
+        return {
+            id: teamClusterId,
+            props: {
+                team: 'team-1'
+            }
+        };
+    }
+}
+
+class FakeDaemonCredentialGuard {
+    public getDecryptedDaemonPasswordCalls = 0;
+
+    async getDecryptedDaemonPassword(): Promise<string> {
+        this.getDecryptedDaemonPasswordCalls += 1;
+        return 'cluster-secret';
+    }
+}
+
+class FakeDirectAccessTokenService {
+    public createCalls = 0;
+    public issuedSecrets: string[] = [];
+    public issuedClaims: unknown[] = [];
+
+    create(secret: string, claims: unknown): string {
+        this.createCalls += 1;
+        this.issuedSecrets.push(secret);
+        this.issuedClaims.push(claims);
+        return TEST_DIRECT_ACCESS_TOKEN;
+    }
+}
+
+class FakeTeamClusterDaemonClient {
+    public readonly openTunnelCalls: Array<{ teamClusterId: string; exposureId: string; accessMode: string; }> = [];
 
     constructor(private readonly port: number) {}
 
-    async issueInternalGrant(ownerClusterId: string, exposureName: string, accessMode: string) {
-        this.issueInternalGrantCalls += 1;
-        return {
-            ownerClusterId,
-            exposureName,
-            exposureId: 'daemon:object-gateway',
-            accessMode,
-            endpoint: {
-                protocol: 'http',
-                host: '127.0.0.1',
-                port: this.port
-            },
-            token: TEST_DIRECT_ACCESS_TOKEN,
-            expiresAt: new Date(Date.now() + 60_000).toISOString()
-        };
+    async openTunnel(teamClusterId: string, exposureId: string, accessMode: string): Promise<net.Socket> {
+        this.openTunnelCalls.push({ teamClusterId, exposureId, accessMode });
+        return net.connect(this.port, '127.0.0.1');
     }
 }
 
@@ -179,19 +204,38 @@ const buildObjectGatewayServer = async () => {
     };
 };
 
-test('TeamClusterObjectGatewayClient performs direct read, write, list and delete operations over HTTP', async () => {
+const createClientHarness = (port: number) => {
+    const daemonClient = new FakeTeamClusterDaemonClient(port);
+    const repository = new FakeTeamClusterRepository();
+    const credentialGuard = new FakeDaemonCredentialGuard();
+    const tokenService = new FakeDirectAccessTokenService();
+
+    return {
+        daemonClient,
+        repository,
+        credentialGuard,
+        tokenService,
+        client: new TeamClusterObjectGatewayClient(
+            daemonClient as any,
+            repository as any,
+            credentialGuard as any,
+            tokenService as any
+        )
+    };
+};
+
+test('TeamClusterObjectGatewayClient performs object gateway operations through the reverse-channel tunnel', async () => {
     process.env.TEAM_CLUSTER_OBJECT_GATEWAY_ENABLED = 'true';
     process.env.TEAM_CLUSTER_OBJECT_GATEWAY_READS_ENABLED = 'true';
     process.env.TEAM_CLUSTER_OBJECT_GATEWAY_WRITES_ENABLED = 'true';
 
     const { server, requests, port } = await buildObjectGatewayServer();
-    const grantService = new FakeDirectAccessGrantService(port);
-    const client = new TeamClusterObjectGatewayClient(grantService as any);
+    const harness = createClientHarness(port);
 
     try {
         const payload = Buffer.from('glb-payload');
 
-        await client.putBuffer(TEST_CLUSTER_ID, {
+        await harness.client.putBuffer(TEST_CLUSTER_ID, {
             bucket: TEST_BUCKET,
             objectKey: TEST_OBJECT_KEY,
             buffer: payload,
@@ -199,28 +243,34 @@ test('TeamClusterObjectGatewayClient performs direct read, write, list and delet
             contentType: 'model/gltf-binary'
         });
 
-        assert.equal(await client.exists(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY), true);
+        assert.equal(await harness.client.exists(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY), true);
 
-        const head = await client.head(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY);
+        const head = await harness.client.head(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY);
         assert.equal(head.contentLength, payload.length);
         assert.equal(head.contentType, 'model/gltf-binary');
 
-        const buffer = await client.getBuffer(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY);
+        const buffer = await harness.client.getBuffer(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY);
         assert.deepEqual(buffer, payload);
 
-        const list = await client.list(TEST_CLUSTER_ID, {
+        const list = await harness.client.list(TEST_CLUSTER_ID, {
             bucket: TEST_BUCKET,
             prefix: 'path/to'
         });
         assert.deepEqual(list.keys, [TEST_OBJECT_KEY]);
 
-        const deletedCount = await client.deleteByPrefix(TEST_CLUSTER_ID, TEST_BUCKET, 'path/');
+        const deletedCount = await harness.client.deleteByPrefix(TEST_CLUSTER_ID, TEST_BUCKET, 'path/');
         assert.equal(deletedCount, 1);
-        assert.equal(await client.exists(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY), false);
+        assert.equal(await harness.client.exists(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY), false);
 
         assert.ok(requests.some((entry) => entry.method === 'HEAD'));
         assert.ok(requests.every((entry) => entry.token === TEST_DIRECT_ACCESS_TOKEN));
-        assert.equal(grantService.issueInternalGrantCalls >= 1, true);
+        assert.ok(harness.daemonClient.openTunnelCalls.length >= 6);
+        assert.ok(harness.daemonClient.openTunnelCalls.every((entry) => entry.teamClusterId === TEST_CLUSTER_ID));
+        assert.ok(harness.daemonClient.openTunnelCalls.every((entry) => entry.exposureId === 'daemon:object-gateway'));
+        assert.ok(harness.daemonClient.openTunnelCalls.every((entry) => entry.accessMode === 'http'));
+        assert.equal(harness.repository.findByIdWithSensitiveDataCalls, 1);
+        assert.equal(harness.credentialGuard.getDecryptedDaemonPasswordCalls, 1);
+        assert.equal(harness.tokenService.createCalls, 1);
     } finally {
         await new Promise<void>((resolve, reject) => {
             server.close((error) => error ? reject(error) : resolve());
@@ -234,9 +284,7 @@ test('TeamClusterObjectGatewayClient.getStream preserves the full object body fr
     process.env.TEAM_CLUSTER_OBJECT_GATEWAY_WRITES_ENABLED = 'true';
 
     const { server, port } = await buildObjectGatewayServer();
-    const client = new TeamClusterObjectGatewayClient(
-        new FakeDirectAccessGrantService(port) as any
-    );
+    const harness = createClientHarness(port);
 
     try {
         const payload = Buffer.concat([
@@ -244,7 +292,7 @@ test('TeamClusterObjectGatewayClient.getStream preserves the full object body fr
             Buffer.from(Array.from({ length: 128 * 1024 }, (_, index) => index % 251))
         ]);
 
-        await client.putBuffer(TEST_CLUSTER_ID, {
+        await harness.client.putBuffer(TEST_CLUSTER_ID, {
             bucket: TEST_BUCKET,
             objectKey: TEST_OBJECT_KEY,
             buffer: payload,
@@ -252,7 +300,7 @@ test('TeamClusterObjectGatewayClient.getStream preserves the full object body fr
             contentType: 'model/gltf-binary'
         });
 
-        const response = await client.getStream(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY);
+        const response = await harness.client.getStream(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY);
         const streamedChunks: Buffer[] = [];
 
         for await (const chunk of response.stream) {
@@ -273,8 +321,7 @@ test('TeamClusterObjectGatewayClient preserves gzipped object bytes when the res
     process.env.TEAM_CLUSTER_OBJECT_GATEWAY_WRITES_ENABLED = 'true';
 
     const { server, port, seedObject } = await buildObjectGatewayServer();
-    const grantService = new FakeDirectAccessGrantService(port);
-    const client = new TeamClusterObjectGatewayClient(grantService as any);
+    const harness = createClientHarness(port);
 
     try {
         const compressed = zlib.gzipSync(Buffer.from('dump-payload'));
@@ -284,10 +331,10 @@ test('TeamClusterObjectGatewayClient preserves gzipped object bytes when the res
             contentEncoding: 'gzip'
         });
 
-        const head = await client.head(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY);
+        const head = await harness.client.head(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY);
         assert.equal(head.contentEncoding, 'gzip');
 
-        const buffer = await client.getBuffer(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY);
+        const buffer = await harness.client.getBuffer(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY);
         assert.deepEqual(buffer, compressed);
         assert.deepEqual(zlib.gunzipSync(buffer), Buffer.from('dump-payload'));
     } finally {
@@ -297,24 +344,21 @@ test('TeamClusterObjectGatewayClient preserves gzipped object bytes when the res
     }
 });
 
-test('TeamClusterObjectGatewayClient honors feature flags without falling back to legacy RPC', async () => {
+test('TeamClusterObjectGatewayClient honors feature flags without attempting an object gateway tunnel', async () => {
     process.env.TEAM_CLUSTER_OBJECT_GATEWAY_ENABLED = 'true';
     process.env.TEAM_CLUSTER_OBJECT_GATEWAY_READS_ENABLED = 'false';
     process.env.TEAM_CLUSTER_OBJECT_GATEWAY_WRITES_ENABLED = 'false';
 
-    const { server, port } = await buildObjectGatewayServer();
-    const client = new TeamClusterObjectGatewayClient(
-        new FakeDirectAccessGrantService(port) as any
-    );
+    const harness = createClientHarness(1);
 
     try {
         await assert.rejects(
-            () => client.getBuffer(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY),
+            () => harness.client.getBuffer(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY),
             (error: any) => error?.statusCode === 503
         );
 
         await assert.rejects(
-            () => client.putBuffer(TEST_CLUSTER_ID, {
+            () => harness.client.putBuffer(TEST_CLUSTER_ID, {
                 bucket: TEST_BUCKET,
                 objectKey: TEST_OBJECT_KEY,
                 buffer: Buffer.from('x'),
@@ -322,11 +366,13 @@ test('TeamClusterObjectGatewayClient honors feature flags without falling back t
             }),
             (error: any) => error?.statusCode === 503
         );
+
+        assert.equal(harness.daemonClient.openTunnelCalls.length, 0);
+        assert.equal(harness.repository.findByIdWithSensitiveDataCalls, 0);
+        assert.equal(harness.credentialGuard.getDecryptedDaemonPasswordCalls, 0);
+        assert.equal(harness.tokenService.createCalls, 0);
     } finally {
         process.env.TEAM_CLUSTER_OBJECT_GATEWAY_READS_ENABLED = 'true';
         process.env.TEAM_CLUSTER_OBJECT_GATEWAY_WRITES_ENABLED = 'true';
-        await new Promise<void>((resolve, reject) => {
-            server.close((error) => error ? reject(error) : resolve());
-        });
     }
 });

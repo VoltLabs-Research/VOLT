@@ -11,7 +11,7 @@ import {
 
 const buildObjectGatewayExposure = (
     teamClusterId: string,
-    host: string
+    targetHost: string
 ): TeamClusterServiceExposure => {
     return {
         id: 'daemon:object-gateway',
@@ -20,14 +20,9 @@ const buildObjectGatewayExposure = (
         sourceKind: TeamClusterServiceExposureSourceKind.Daemon,
         exposureName: 'object-gateway',
         accessModes: [TeamClusterServiceExposureAccessMode.Http],
-        targetHost: '127.0.0.1',
+        targetHost,
         targetPort: 9080,
         status: TeamClusterServiceExposureStatus.Active,
-        publicAccess: {
-            protocol: 'http',
-            host,
-            port: 9080
-        },
         labels: {
             'volt.exposure.service': 'object-gateway'
         }
@@ -43,11 +38,11 @@ test('TeamClusterExposureRegistryService isolates exposures by team cluster id e
     registry.replaceTeamClusterExposures(computeExposure.teamClusterId, [computeExposure]);
 
     assert.equal(
-        registry.getTeamClusterExposure(storageExposure.teamClusterId, storageExposure.id)?.publicAccess?.host,
+        registry.getTeamClusterExposure(storageExposure.teamClusterId, storageExposure.id)?.targetHost,
         '10.0.0.10'
     );
     assert.equal(
-        registry.getTeamClusterExposure(computeExposure.teamClusterId, computeExposure.id)?.publicAccess?.host,
+        registry.getTeamClusterExposure(computeExposure.teamClusterId, computeExposure.id)?.targetHost,
         '10.0.0.20'
     );
     assert.deepEqual(
