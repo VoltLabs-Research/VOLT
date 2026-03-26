@@ -5,7 +5,6 @@ import DashboardOverviewSkeleton from '@/modules/dashboard/components/atoms/Dash
 import DashboardClusterHealth from '@/modules/dashboard/components/molecules/DashboardClusterHealth';
 import DashboardInAppActivity from '@/modules/dashboard/components/molecules/DashboardInAppActivity';
 import DashboardNotificationsFeed from '@/modules/dashboard/components/molecules/DashboardNotificationsFeed';
-import DashboardPreviewCard from '@/modules/dashboard/components/molecules/DashboardPreviewCard';
 import { DashboardQuickActions } from '@/modules/dashboard/components/molecules/DashboardQuickActions';
 import DashboardRecentAnalyses from '@/modules/dashboard/components/molecules/DashboardRecentAnalyses';
 import DashboardTeamPresence from '@/modules/dashboard/components/molecules/DashboardTeamPresence';
@@ -238,8 +237,28 @@ const DashboardPage = () => {
                     <DashboardCard className='dashboard-stat-card' isRelative={true} overflowHidden={true} style={{ opacity: 0, pointerEvents: 'none' }} />
                 )}
 
+                <Container className='dashboard-simulations-section'>
+                    <Container className='dashboard-simulations-header d-flex items-center content-between gap-1'>
+                        <Title className='font-size-4 color-primary font-weight-5'>Trajectories</Title>
+                        {canCreateTrajectoryFolders && (
+                            <Button
+                                variant='ghost'
+                                intent='neutral'
+                                size='sm'
+                                shape='rounded'
+                                className='dashboard-simulations-new-folder-btn'
+                                onClick={() => openModal(NEW_TRAJECTORY_FOLDER_MODAL_ID)}
+                            >
+                                <FolderPlus size={14} />
+                                New folder
+                            </Button>
+                        )}
+                    </Container>
+                    <SimulationGrid />
+                </Container>
+
                 <Container className='dashboard-bottom-row'>
-                    <DashboardPreviewCard />
+                    <DashboardClusterHealth />
 
                     <Container
                         ref={sharedPanelsRef}
@@ -256,7 +275,7 @@ const DashboardPage = () => {
                         >
                             <Container className='dashboard-jobs-card-header d-flex items-center content-between gap-1'>
                                 <Title className='font-size-2 color-primary font-weight-6'>
-                                    Jobs History
+                                    Compute Jobs
                                 </Title>
                                 <StatusCounts
                                     queued={jobsStatusCounts.queued}
@@ -284,30 +303,9 @@ const DashboardPage = () => {
                     </Container>
                 </Container>
 
-                <Container className='dashboard-simulations-section'>
-                    <Container className='dashboard-simulations-header d-flex items-center content-between gap-1'>
-                        <Title className='font-size-4 color-primary font-weight-5'>Trajectories</Title>
-                        {canCreateTrajectoryFolders && (
-                            <Button
-                                variant='ghost'
-                                intent='neutral'
-                                size='sm'
-                                shape='rounded'
-                                className='dashboard-simulations-new-folder-btn'
-                                onClick={() => openModal(NEW_TRAJECTORY_FOLDER_MODAL_ID)}
-                            >
-                                <FolderPlus size={14} />
-                                New folder
-                            </Button>
-                        )}
-                    </Container>
-                    <SimulationGrid />
-                </Container>
-
                 <DashboardTeamTimeline />
                 <DashboardInAppActivity />
                 <DashboardQuickActions />
-                <DashboardClusterHealth />
                 <DashboardTeamPresence />
                 <DashboardNotificationsFeed />
             </Container>
