@@ -24,18 +24,25 @@ import {
     createEmptyNotebooksResponse,
     createScriptingNotebooksExport,
     getDeleteConfirmationMessage,
-    getNotebookTeamClusterId,
+    hasNotebookDeploymentConfiguration,
     getTrajectoryIds
 } from '../utilities/notebooks';
 import { getJupyterStartErrorMessage } from '../utilities/workspace';
+import { SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID } from '../components/molecules/ScriptingNotebookDeploymentModal';
 import { FolderOpen, Pencil } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sileo } from 'sileo';
 import type { DocumentListingExportParams, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
-import type { ScriptingNotebook } from '@/modules/scripting/api/entities/scripting-notebook';
+import type {
+    ScriptingNotebook
+} from '@/modules/scripting/api/entities/scripting-notebook';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
+import type {
+    ScriptingNotebookDeploymentModalRequest,
+    ScriptingNotebookDeploymentSelection
+} from '../components/molecules/ScriptingNotebookDeploymentModal';
 
 export interface NotebooksListingContext {
     scope: ScriptingNotebookScope;
@@ -75,6 +82,12 @@ const RENAME_NOTEBOOK_TOAST = {
     loading: { title: 'Renaming notebook...' },
     success: { title: 'Notebook renamed successfully' },
     error: { title: 'Failed to rename notebook' }
+};
+
+const SAVE_NOTEBOOK_DEPLOYMENT_TOAST = {
+    loading: { title: 'Saving notebook deployment...' },
+    success: { title: 'Notebook deployment saved successfully' },
+    error: { title: 'Failed to save notebook deployment' }
 };
 
 const resolveScope = (scope?: ScriptingNotebookScope): ScriptingNotebookScope => {
@@ -131,6 +144,7 @@ const useNotebooksListing = () => {
     const { mutateAsync: deleteNotebook } = useDeleteScriptingNotebookMutation();
     const { mutateAsync: updateNotebook } = useUpdateScriptingNotebookMutation();
     const [renamingNotebook, setRenamingNotebook] = useState<ScriptingNotebook | null>(null);
+    const [deploymentModalRequest, setDeploymentModalRequest] = useState<ScriptingNotebookDeploymentModalRequest | null>(null);
 
     const fetchData = useCallback(async (
         params: PaginationParams & NotebooksListingContext
@@ -160,18 +174,99 @@ const useNotebooksListing = () => {
         }
     }, [teamId]);
 
+    const handleDeploymentModalClose = useCallback(() => {
+        closeModal(SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID);
+        setDeploymentModalRequest(null);
+    }, []);
+
+    const openDeploymentModal = useCallback((request: ScriptingNotebookDeploymentModalRequest) => {
+        setDeploymentModalRequest(request);
+        openModal(SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID);
+    }, []);
+
+    const launchNotebookInNewTab = useCallback(async (notebook: ScriptingNotebook) => {
+        if (!teamId) {
+            return;
+        }
+
+        const notebookTab = window.open('about:blank', '_blank');
+        if (!notebookTab) {
+            sileo.error({
+                title: 'Unable to open notebook',
+                description: NEW_TAB_BLOCKED_ERROR
+            });
+            return;
+        }
+
+        notebookTab.opener = null;
+        renderNotebookStartupTab(notebookTab, {
+            title: 'Opening notebook...',
+            description: JUPYTER_SESSION_PENDING_MESSAGE
+        });
+
+        try {
+            const result = await startAndWaitForReadyScriptingSession({
+                createSession: () => createNotebookSession({
+                    notebookId: notebook._id
+                }),
+                readSession: () => service.readNotebookSessionStatus({ notebookId: notebook._id })
+            }, {
+                isCancelled: () => notebookTab.closed
+            });
+
+            if (notebookTab.closed) {
+                return;
+            }
+
+            if (result.timedOut || !result.session.jupyter.ready) {
+                renderNotebookStartupTab(notebookTab, {
+                    title: 'Notebook is still starting',
+                    description: JUPYTER_SESSION_TIMEOUT_MESSAGE
+                });
+                sileo.error({
+                    title: 'Jupyter is still starting',
+                    description: JUPYTER_SESSION_TIMEOUT_MESSAGE
+                });
+                return;
+            }
+
+            notebookTab.location.replace(normalizeScriptingJupyterUrl(result.session.jupyter.url));
+        } catch (error: unknown) {
+            notebookTab.close();
+
+            if (isAccessDeniedError(error)) {
+                return;
+            }
+
+            sileo.error({
+                title: 'Failed to start Jupyter session',
+                description: getJupyterStartErrorMessage(error)
+            });
+        }
+    }, [createNotebookSession, teamId]);
+
     const handleCreate = useCallback(async () => {
         if (!teamId) {
             return;
         }
 
-        await showPromise(
-            createNotebook({
-                teamId
-            }),
-            CREATE_NOTEBOOK_TOAST
-        );
-    }, [teamId, createNotebook]);
+        openDeploymentModal({
+            teamId,
+            title: 'Create Notebook',
+            description: 'Choose the cluster and container resources for this notebook before saving it.',
+            confirmLabel: 'Create notebook',
+            onSubmit: async ({ teamClusterId, containerResources }) => {
+                await showPromise(
+                    createNotebook({
+                        teamId,
+                        teamClusterId,
+                        containerResources
+                    }),
+                    CREATE_NOTEBOOK_TOAST
+                );
+            }
+        });
+    }, [teamId, createNotebook, openDeploymentModal]);
 
     const handleRenameOpen = useCallback((notebook: ScriptingNotebook) => {
         setRenamingNotebook(notebook);
@@ -211,62 +306,30 @@ const useNotebooksListing = () => {
             return;
         }
 
-        const notebookTab = window.open('about:blank', '_blank');
-        if (!notebookTab) {
-            sileo.error({
-                title: 'Unable to open notebook',
-                description: NEW_TAB_BLOCKED_ERROR
+        if (!hasNotebookDeploymentConfiguration(notebook)) {
+            openDeploymentModal({
+                teamId,
+                notebook,
+                title: 'Configure Notebook Deployment',
+                description: 'Select the cluster and resources this notebook should use before opening Jupyter.',
+                confirmLabel: 'Save and open',
+                onSubmit: async ({ teamClusterId, containerResources }: ScriptingNotebookDeploymentSelection) => {
+                    const updatedNotebook = await showPromise(
+                        updateNotebook({
+                            notebookId: notebook._id,
+                            teamClusterId,
+                            containerResources
+                        }),
+                        SAVE_NOTEBOOK_DEPLOYMENT_TOAST
+                    );
+                    await launchNotebookInNewTab(updatedNotebook);
+                }
             });
             return;
         }
 
-        notebookTab.opener = null;
-        renderNotebookStartupTab(notebookTab, {
-            title: 'Opening notebook...',
-            description: JUPYTER_SESSION_PENDING_MESSAGE
-        });
-
-        try {
-            const result = await startAndWaitForReadyScriptingSession({
-                createSession: () => createNotebookSession({
-                    notebookId: notebook._id,
-                    teamClusterId: getNotebookTeamClusterId(notebook)
-                }),
-                readSession: () => service.readNotebookSessionStatus({ notebookId: notebook._id })
-            }, {
-                isCancelled: () => notebookTab.closed
-            });
-
-            if (notebookTab.closed) {
-                return;
-            }
-
-            if (result.timedOut || !result.session.jupyter.ready) {
-                renderNotebookStartupTab(notebookTab, {
-                    title: 'Notebook is still starting',
-                    description: JUPYTER_SESSION_TIMEOUT_MESSAGE
-                });
-                sileo.error({
-                    title: 'Jupyter is still starting',
-                    description: JUPYTER_SESSION_TIMEOUT_MESSAGE
-                });
-                return;
-            }
-
-            notebookTab.location.replace(normalizeScriptingJupyterUrl(result.session.jupyter.url));
-        } catch (error: unknown) {
-            notebookTab.close();
-
-            if (isAccessDeniedError(error)) {
-                return;
-            }
-
-            sileo.error({
-                title: 'Failed to start Jupyter session',
-                description: getJupyterStartErrorMessage(error)
-            });
-        }
-    }, [createNotebookSession, navigate, teamId]);
+        await launchNotebookInNewTab(notebook);
+    }, [launchNotebookInNewTab, navigate, openDeploymentModal, teamId, updateNotebook]);
 
     const exportNotebooks = useCallback(async (
         params: DocumentListingExportParams<NotebooksListingContext>
@@ -329,8 +392,10 @@ const useNotebooksListing = () => {
         fetchData,
         getMenuOptions,
         handleCreate,
+        handleDeploymentModalClose,
         handleRenameClose,
         handleRenameSubmit,
+        deploymentModalRequest,
         renamingNotebook,
         queryKey: scriptingNotebooksQueryKey(),
         socketInvalidation: SOCKET_INVALIDATION

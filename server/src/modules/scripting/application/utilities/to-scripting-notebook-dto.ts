@@ -97,6 +97,12 @@ export const toScriptingNotebookDTO = (notebook: ScriptingNotebook): ScriptingNo
     return {
         _id: notebook._id,
         teamCluster: toTeamClusterOutput(notebookProps.teamCluster),
+        containerResources: notebook.props.containerResources
+            ? {
+                cpus: notebook.props.containerResources.cpus,
+                memoryMB: notebook.props.containerResources.memoryMB
+            }
+            : null,
         title: notebook.props.title,
         notebookPath: notebook.props.notebookPath,
         trajectory: toTrajectoryOutput(notebookProps.trajectory),

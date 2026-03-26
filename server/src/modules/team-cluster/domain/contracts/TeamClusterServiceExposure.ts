@@ -23,6 +23,12 @@ export enum TeamClusterServiceExposureSourceKind {
     Daemon = 'daemon'
 };
 
+export interface TeamClusterServiceExposurePublicAccess {
+    protocol: 'http' | 'https' | 'ws' | 'wss' | 'tcp';
+    host: string;
+    port: number;
+}
+
 /**
  * Represents a single persistent service exposure published by a team cluster daemon.
  */
@@ -37,6 +43,7 @@ export interface TeamClusterServiceExposure {
     targetPort: number;
     status: TeamClusterServiceExposureStatus;
     labels: Record<string, string>;
+    publicAccess?: TeamClusterServiceExposurePublicAccess;
     containerId?: string;
     containerName?: string;
     containerPort?: number;

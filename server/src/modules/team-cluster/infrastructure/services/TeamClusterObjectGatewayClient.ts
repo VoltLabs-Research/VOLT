@@ -1,24 +1,17 @@
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import TeamClusterExposureRegistryService from '@modules/team-cluster/infrastructure/services/TeamClusterExposureRegistryService';
-import {
-    TeamClusterServiceExposureAccessMode,
-    TeamClusterServiceExposureSourceKind,
-    TeamClusterServiceExposureStatus,
-    type TeamClusterServiceExposure
-} from '@modules/team-cluster/utilities/teamClusterSocket';
+import { TeamClusterServiceExposureAccessMode } from '@modules/team-cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
+import { Readable } from 'node:stream';
+import type { Readable as NodeReadable } from 'node:stream';
 import http from 'node:http';
-import { Transform } from 'node:stream';
-import { pipeline } from 'node:stream/promises';
-import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import type { Readable } from 'node:stream';
-import type { ClientRequest, IncomingHttpHeaders, IncomingMessage, RequestOptions } from 'node:http';
-import { objectGatewayClientTelemetry } from './ObjectGatewayClientTelemetry';
+import https from 'node:https';
+import type { TeamClusterDirectAccessGrantResponse } from '@shared/infrastructure/contracts/team-cluster';
+import {
+    TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER,
+    TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX
+} from '@shared/infrastructure/contracts/team-cluster';
 import { ensureObjectGatewayAccessEnabled } from './ObjectGatewayFeatureFlags';
-import { ObjectGatewayHttpSessionPool, type ObjectGatewayHttpSessionDescriptor } from './ObjectGatewayHttpSessionPool';
+import TeamClusterDirectAccessGrantService from './TeamClusterDirectAccessGrantService';
 
 type ObjectGatewayOperationName =
     | 'list'
@@ -46,7 +39,7 @@ interface TeamClusterObjectGatewayHeadResponse {
 
 interface TeamClusterObjectGatewayStreamResponse extends TeamClusterObjectGatewayHeadResponse {
     headers: Record<string, string>;
-    stream: Readable;
+    stream: NodeReadable;
 }
 
 interface TeamClusterObjectGatewayPutRequest {
@@ -59,7 +52,7 @@ interface TeamClusterObjectGatewayPutRequest {
 }
 
 interface TeamClusterObjectGatewayPutStreamRequest extends TeamClusterObjectGatewayPutRequest {
-    stream: Readable;
+    stream: NodeReadable;
 }
 
 interface TeamClusterObjectGatewayPutBufferRequest extends TeamClusterObjectGatewayPutRequest {
@@ -79,45 +72,125 @@ interface ObjectGatewayRequestOptions {
     method: string;
     path: string;
     headers?: Record<string, string>;
-    body?: Buffer | Readable;
-    timeoutMs?: number;
-    telemetryOperation: ObjectGatewayOperationName;
-    bytesIn?: number;
+    body?: Buffer | NodeReadable;
+}
+
+interface ObjectGatewayJsonError {
+    code?: unknown;
+    message?: unknown;
+}
+
+interface RawHttpResponse {
+    statusCode: number;
+    headers: Headers;
+    stream: NodeReadable;
 }
 
 const OBJECT_GATEWAY_EXPOSURE_NAME = 'object-gateway';
-const OBJECT_GATEWAY_EXPOSURE_SERVICE_LABEL = 'volt.exposure.service';
 const OBJECT_GATEWAY_BASE_PATH = '/internal/object-gateway/v1';
 const OBJECT_METADATA_HEADER_PREFIX = 'x-object-meta-';
 const DEFAULT_LIST_LIMIT = 100;
-const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
-const DEFAULT_UPLOAD_TIMEOUT_MS = 10 * 60 * 1000;
+const GRANT_EXPIRY_SAFETY_WINDOW_MS = 5_000;
 
-const isSuccessfulStatusCode = (statusCode: number | undefined): boolean => {
-    return typeof statusCode === 'number' && statusCode >= 200 && statusCode < 300;
+const readHeaderValue = (value: string | null): string | undefined => {
+    return value && value.length > 0
+        ? value
+        : undefined;
 };
 
-const readHeaderValue = (value: string | string[] | undefined): string | undefined => {
-    if (Array.isArray(value)) {
-        return value.join(', ');
+const encodePathComponent = (value: string): string => {
+    return encodeURIComponent(value);
+};
+
+const encodeObjectKeyPath = (objectKey: string): string => {
+    return objectKey.split('/').map(encodePathComponent).join('/');
+};
+
+const headersFromIncoming = (headers: http.IncomingHttpHeaders): Headers => {
+    const normalized = new Headers();
+
+    for (const [headerName, headerValue] of Object.entries(headers)) {
+        if (Array.isArray(headerValue)) {
+            for (const value of headerValue) {
+                normalized.append(headerName, value);
+            }
+            continue;
+        }
+
+        if (typeof headerValue === 'string') {
+            normalized.set(headerName, headerValue);
+        }
     }
 
-    return value;
+    return normalized;
+};
+
+const headersToObject = (headers: Headers): Record<string, string> => {
+    const normalized: Record<string, string> = {};
+    headers.forEach((value, key) => {
+        normalized[key] = value;
+    });
+    return normalized;
+};
+
+const normalizeHeaders = (headers: Headers): Record<string, string> => {
+    const normalizedHeaders: Record<string, string> = {};
+    headers.forEach((headerValue, headerName) => {
+        normalizedHeaders[headerName.toLowerCase()] = headerValue;
+    });
+    return normalizedHeaders;
+};
+
+const normalizeMetadataHeaders = (headers: Headers): Record<string, string> => {
+    const metadata: Record<string, string> = {};
+
+    headers.forEach((headerValue, headerName) => {
+        if (!headerName.startsWith(TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX)) {
+            return;
+        }
+
+        metadata[headerName.slice(TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX.length)] = headerValue;
+    });
+
+    return metadata;
+};
+
+const parseHeadResponse = (headers: Headers): TeamClusterObjectGatewayHeadResponse => {
+    const contentLength = readHeaderValue(headers.get('content-length'));
+
+    return {
+        contentLength: typeof contentLength === 'string' && contentLength.length > 0
+            ? Number(contentLength)
+            : undefined,
+        contentType: readHeaderValue(headers.get('content-type')),
+        contentEncoding: readHeaderValue(headers.get('content-encoding')),
+        etag: readHeaderValue(headers.get('etag')),
+        lastModified: readHeaderValue(headers.get('last-modified'))
+            ? new Date(headers.get('last-modified')!)
+            : undefined,
+        metadata: normalizeMetadataHeaders(headers)
+    };
+};
+
+const mapStatusToApplicationError = (statusCode: number, code: string, message: string): ApplicationError => {
+    if (statusCode === 400) return ApplicationError.badRequest(code, message);
+    if (statusCode === 401) return ApplicationError.unauthorized(code, message);
+    if (statusCode === 403) return ApplicationError.forbidden(code, message);
+    if (statusCode === 404) return ApplicationError.notFound(code, message);
+    if (statusCode === 409) return ApplicationError.conflict(code, message);
+    if (statusCode === 503) return new ApplicationError(code, message, 503);
+    return new ApplicationError(code, message, statusCode >= 400 ? statusCode : 500);
 };
 
 @injectable()
 export default class TeamClusterObjectGatewayClient {
-    private readonly sessionPool: ObjectGatewayHttpSessionPool;
+    private readonly cachedGrants = new Map<string, TeamClusterDirectAccessGrantResponse>();
+    private readonly pendingGrants = new Map<string, Promise<TeamClusterDirectAccessGrantResponse>>();
 
     constructor(
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterExposureRegistryService)
-        private readonly exposureRegistryService: TeamClusterExposureRegistryService
-    ) {
-        this.sessionPool = new ObjectGatewayHttpSessionPool(this.teamClusterDaemonClient);
-    }
+        @inject(TeamClusterDirectAccessGrantService)
+        private readonly directAccessGrantService: TeamClusterDirectAccessGrantService
+    ) {}
 
     async list(
         teamClusterId: string,
@@ -135,11 +208,10 @@ export default class TeamClusterObjectGatewayClient {
             query.set('cursor', request.cursor);
         }
 
-        const response = await this.requestJson<ObjectGatewayJsonListResponse>(teamClusterId, {
+        const response = await this.fetchJson<ObjectGatewayJsonListResponse>(teamClusterId, {
             method: 'GET',
-            path: `${this.buildCollectionPath(request.bucket)}?${query.toString()}`,
-            telemetryOperation: 'list'
-        });
+            path: `${this.buildCollectionPath(request.bucket)}?${query.toString()}`
+        }, 'list');
 
         return {
             keys: Array.isArray(response.keys)
@@ -170,13 +242,12 @@ export default class TeamClusterObjectGatewayClient {
 
     async head(teamClusterId: string, bucket: string, objectKey: string): Promise<TeamClusterObjectGatewayHeadResponse> {
         ensureObjectGatewayAccessEnabled('read');
-        const response = await this.requestHeaders(teamClusterId, {
+        const response = await this.fetch(teamClusterId, {
             method: 'HEAD',
-            path: this.buildObjectPath(bucket, objectKey),
-            telemetryOperation: 'head'
-        });
+            path: this.buildObjectPath(bucket, objectKey)
+        }, 'head');
 
-        return this.readHeadResponse(response.headers);
+        return parseHeadResponse(response.headers);
     }
 
     async exists(teamClusterId: string, bucket: string, objectKey: string): Promise<boolean> {
@@ -194,62 +265,54 @@ export default class TeamClusterObjectGatewayClient {
 
     async getStream(teamClusterId: string, bucket: string, objectKey: string): Promise<TeamClusterObjectGatewayStreamResponse> {
         ensureObjectGatewayAccessEnabled('read');
-        const response = await this.requestStream(teamClusterId, {
+        const response = await this.fetch(teamClusterId, {
             method: 'GET',
-            path: this.buildObjectPath(bucket, objectKey),
-            telemetryOperation: 'get'
-        });
+            path: this.buildObjectPath(bucket, objectKey)
+        }, 'get');
 
-        const headResponse = this.readHeadResponse(response.headers);
         return {
-            ...headResponse,
-            headers: response.headers,
+            ...parseHeadResponse(response.headers),
+            headers: normalizeHeaders(response.headers),
             stream: response.stream
         };
     }
 
     async getBuffer(teamClusterId: string, bucket: string, objectKey: string): Promise<Buffer> {
         ensureObjectGatewayAccessEnabled('read');
-        return this.requestBuffer(teamClusterId, {
+        const response = await this.fetch(teamClusterId, {
             method: 'GET',
-            path: this.buildObjectPath(bucket, objectKey),
-            telemetryOperation: 'get'
-        });
+            path: this.buildObjectPath(bucket, objectKey)
+        }, 'get');
+
+        return this.readResponseBuffer(response.stream);
     }
 
     async putStream(teamClusterId: string, request: TeamClusterObjectGatewayPutStreamRequest): Promise<void> {
         ensureObjectGatewayAccessEnabled('write');
-        await this.requestEmpty(teamClusterId, {
+        await this.fetch(teamClusterId, {
             method: 'PUT',
             path: this.buildObjectPath(request.bucket, request.objectKey),
             headers: this.buildUploadHeaders(request),
-            body: request.stream,
-            timeoutMs: DEFAULT_UPLOAD_TIMEOUT_MS,
-            telemetryOperation: 'put',
-            bytesIn: request.contentLength
-        });
+            body: request.stream
+        }, 'put');
     }
 
     async putBuffer(teamClusterId: string, request: TeamClusterObjectGatewayPutBufferRequest): Promise<void> {
         ensureObjectGatewayAccessEnabled('write');
-        await this.requestEmpty(teamClusterId, {
+        await this.fetch(teamClusterId, {
             method: 'PUT',
             path: this.buildObjectPath(request.bucket, request.objectKey),
             headers: this.buildUploadHeaders(request),
-            body: request.buffer,
-            timeoutMs: DEFAULT_UPLOAD_TIMEOUT_MS,
-            telemetryOperation: 'put',
-            bytesIn: request.contentLength
-        });
+            body: request.buffer
+        }, 'put');
     }
 
     async deleteObject(teamClusterId: string, bucket: string, objectKey: string): Promise<void> {
         ensureObjectGatewayAccessEnabled('write');
-        await this.requestEmpty(teamClusterId, {
+        await this.fetch(teamClusterId, {
             method: 'DELETE',
-            path: this.buildObjectPath(bucket, objectKey),
-            telemetryOperation: 'delete'
-        });
+            path: this.buildObjectPath(bucket, objectKey)
+        }, 'delete');
     }
 
     async deleteByPrefix(teamClusterId: string, bucket: string, prefix: string): Promise<number | undefined> {
@@ -257,474 +320,158 @@ export default class TeamClusterObjectGatewayClient {
         const query = new URLSearchParams();
         query.set('prefix', prefix);
 
-        const response = await this.requestJson<ObjectGatewayDeleteResponse>(teamClusterId, {
+        const response = await this.fetchJson<ObjectGatewayDeleteResponse>(teamClusterId, {
             method: 'DELETE',
-            path: `${this.buildCollectionPath(bucket)}?${query.toString()}`,
-            telemetryOperation: 'delete-prefix'
-        });
+            path: `${this.buildCollectionPath(bucket)}?${query.toString()}`
+        }, 'delete-prefix');
 
         return typeof response.deletedCount === 'number'
             ? response.deletedCount
             : undefined;
     }
 
-    private async requestJson<T>(
+    private async fetchJson<T>(
         teamClusterId: string,
-        options: ObjectGatewayRequestOptions
+        options: ObjectGatewayRequestOptions,
+        operation: ObjectGatewayOperationName
     ): Promise<T> {
-        const tracker = objectGatewayClientTelemetry.beginRequest(options.telemetryOperation, teamClusterId);
-        let request: ClientRequest;
-        let session: ObjectGatewayHttpSessionDescriptor;
-
-        try {
-            ({ request, session } = await this.createRequest(teamClusterId, options));
-        } catch (error) {
-            tracker.complete({
-                bytesIn: options.bytesIn,
-                error
-            });
-            throw error;
-        }
-
-        return new Promise<T>((resolve, reject) => {
-            const finalize = this.createSessionFinalizer(session);
-
-            request.once('response', (response) => {
-                this.collectResponseBuffer(response, () => {
-                    tracker.markFirstByte();
-                }).then((body) => {
-                    finalize(false);
-
-                    if (!isSuccessfulStatusCode(response.statusCode)) {
-                        tracker.complete({
-                            statusCode: response.statusCode,
-                            bytesIn: options.bytesIn,
-                            bytesOut: body.length
-                        });
-                        reject(this.createHttpStatusError(response.statusCode, body));
-                        return;
-                    }
-
-                    tracker.complete({
-                        statusCode: response.statusCode,
-                        bytesIn: options.bytesIn,
-                        bytesOut: body.length
-                    });
-                    if (body.length === 0) {
-                        resolve({} as T);
-                        return;
-                    }
-
-                    try {
-                        resolve(JSON.parse(body.toString('utf8')) as T);
-                    } catch {
-                        reject(ApplicationError.internalServerError('Object gateway returned invalid JSON'));
-                    }
-                }).catch((error) => {
-                    finalize(true);
-                    tracker.complete({
-                        bytesIn: options.bytesIn,
-                        error
-                    });
-                    reject(error);
-                });
-            });
-
-            request.once('error', (error) => {
-                finalize(true);
-                tracker.complete({
-                    bytesIn: options.bytesIn,
-                    error
-                });
-                reject(error);
-            });
-
-            this.writeRequestBody(request, options.body);
-        });
+        const response = await this.fetch(teamClusterId, options, operation);
+        return JSON.parse((await this.readResponseBuffer(response.stream)).toString('utf8')) as T;
     }
 
-    private async requestBuffer(
+    private async fetch(
         teamClusterId: string,
-        options: ObjectGatewayRequestOptions
-    ): Promise<Buffer> {
-        const tracker = objectGatewayClientTelemetry.beginRequest(options.telemetryOperation, teamClusterId);
-        let request: ClientRequest;
-        let session: ObjectGatewayHttpSessionDescriptor;
+        options: ObjectGatewayRequestOptions,
+        operation: ObjectGatewayOperationName
+    ): Promise<RawHttpResponse> {
+        const grant = await this.resolveGrant(teamClusterId);
+        const headers = new Headers(options.headers);
+        headers.set(TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER, grant.token);
 
+        const response = await this.performRawRequest(this.buildRequestUrl(grant, options.path), {
+            method: options.method,
+            headers,
+            body: options.body
+        });
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+            return response;
+        }
+
+        let payload: ObjectGatewayJsonError | undefined;
         try {
-            ({ request, session } = await this.createRequest(teamClusterId, options));
-        } catch (error) {
-            tracker.complete({
-                bytesIn: options.bytesIn,
-                error
-            });
-            throw error;
+            payload = JSON.parse((await this.readResponseBuffer(response.stream)).toString('utf8')) as ObjectGatewayJsonError;
+        } catch {
+            payload = undefined;
         }
 
-        return new Promise<Buffer>((resolve, reject) => {
-            const finalize = this.createSessionFinalizer(session);
-
-            request.once('response', (response) => {
-                this.collectResponseBuffer(response, () => {
-                    tracker.markFirstByte();
-                }).then((body) => {
-                    finalize(false);
-
-                    if (!isSuccessfulStatusCode(response.statusCode)) {
-                        tracker.complete({
-                            statusCode: response.statusCode,
-                            bytesIn: options.bytesIn,
-                            bytesOut: body.length
-                        });
-                        reject(this.createHttpStatusError(response.statusCode, body));
-                        return;
-                    }
-
-                    tracker.complete({
-                        statusCode: response.statusCode,
-                        bytesIn: options.bytesIn,
-                        bytesOut: body.length
-                    });
-                    resolve(body);
-                }).catch((error) => {
-                    finalize(true);
-                    tracker.complete({
-                        bytesIn: options.bytesIn,
-                        error
-                    });
-                    reject(error);
-                });
-            });
-
-            request.once('error', (error) => {
-                finalize(true);
-                tracker.complete({
-                    bytesIn: options.bytesIn,
-                    error
-                });
-                reject(error);
-            });
-
-            this.writeRequestBody(request, options.body);
-        });
-    }
-
-    private async requestHeaders(
-        teamClusterId: string,
-        options: ObjectGatewayRequestOptions
-    ): Promise<{ headers: Record<string, string>; }> {
-        const tracker = objectGatewayClientTelemetry.beginRequest(options.telemetryOperation, teamClusterId);
-        let request: ClientRequest;
-        let session: ObjectGatewayHttpSessionDescriptor;
-
-        try {
-            ({ request, session } = await this.createRequest(teamClusterId, options));
-        } catch (error) {
-            tracker.complete({
-                bytesIn: options.bytesIn,
-                error
-            });
-            throw error;
-        }
-
-        return new Promise<{ headers: Record<string, string>; }>((resolve, reject) => {
-            const finalize = this.createSessionFinalizer(session);
-
-            request.once('response', (response) => {
-                this.collectResponseBuffer(response).then((body) => {
-                    finalize(false);
-
-                    if (!isSuccessfulStatusCode(response.statusCode)) {
-                        tracker.complete({
-                            statusCode: response.statusCode,
-                            bytesIn: options.bytesIn,
-                            bytesOut: body.length
-                        });
-                        reject(this.createHttpStatusError(response.statusCode, body));
-                        return;
-                    }
-
-                    tracker.complete({
-                        statusCode: response.statusCode,
-                        bytesIn: options.bytesIn,
-                        bytesOut: body.length
-                    });
-                    resolve({
-                        headers: this.normalizeHeaders(response.headers)
-                    });
-                }).catch((error) => {
-                    finalize(true);
-                    tracker.complete({
-                        bytesIn: options.bytesIn,
-                        error
-                    });
-                    reject(error);
-                });
-            });
-
-            request.once('error', (error) => {
-                finalize(true);
-                tracker.complete({
-                    bytesIn: options.bytesIn,
-                    error
-                });
-                reject(error);
-            });
-
-            this.writeRequestBody(request, options.body);
-        });
-    }
-
-    private async requestStream(
-        teamClusterId: string,
-        options: ObjectGatewayRequestOptions
-    ): Promise<{ headers: Record<string, string>; stream: Readable; }> {
-        const tracker = objectGatewayClientTelemetry.beginRequest(options.telemetryOperation, teamClusterId);
-        let request: ClientRequest;
-        let session: ObjectGatewayHttpSessionDescriptor;
-
-        try {
-            ({ request, session } = await this.createRequest(teamClusterId, options));
-        } catch (error) {
-            tracker.complete({
-                bytesIn: options.bytesIn,
-                error
-            });
-            throw error;
-        }
-
-        return new Promise<{ headers: Record<string, string>; stream: Readable; }>((resolve, reject) => {
-            const finalize = this.createSessionFinalizer(session);
-
-            request.once('response', (response) => {
-                if (!isSuccessfulStatusCode(response.statusCode)) {
-                    this.collectResponseBuffer(response).then((body) => {
-                        finalize(false);
-                        tracker.complete({
-                            statusCode: response.statusCode,
-                            bytesIn: options.bytesIn,
-                            bytesOut: body.length
-                        });
-                        reject(this.createHttpStatusError(response.statusCode, body));
-                    }).catch((error) => {
-                        finalize(true);
-                        tracker.complete({
-                            bytesIn: options.bytesIn,
-                            error
-                        });
-                        reject(error);
-                    });
-                    return;
-                }
-
-                let responseBytes = 0;
-                const releaseSession = this.createSessionFinalizer(session);
-                let streamFinalized = false;
-                const finalizeStream = (destroySession: boolean, error?: unknown): void => {
-                    if (streamFinalized) {
-                        return;
-                    }
-
-                    streamFinalized = true;
-                    tracker.complete({
-                        statusCode: error
-                            ? (response.complete ? response.statusCode : undefined)
-                            : response.statusCode,
-                        bytesIn: options.bytesIn,
-                        bytesOut: responseBytes,
-                        error
-                    });
-                    releaseSession(destroySession);
-                };
-
-                const trackedStream = new Transform({
-                    transform(chunk, _encoding, callback) {
-                        const buffer = Buffer.isBuffer(chunk)
-                            ? chunk
-                            : Buffer.from(chunk);
-                        responseBytes += buffer.length;
-                        tracker.markFirstByte();
-                        callback(null, buffer);
-                    }
-                });
-
-                response.once('error', (error) => {
-                    trackedStream.destroy(error);
-                });
-                response.once('aborted', () => {
-                    trackedStream.destroy(new Error('Object gateway response stream aborted before completion'));
-                });
-                response.once('close', () => {
-                    if (!response.complete && !trackedStream.destroyed) {
-                        trackedStream.destroy(new Error('Object gateway response stream closed before completion'));
-                    }
-                });
-
-                trackedStream.once('end', () => {
-                    finalizeStream(false);
-                });
-                trackedStream.once('error', (error) => {
-                    finalizeStream(true, error);
-                });
-                trackedStream.once('close', () => {
-                    if (!trackedStream.readableEnded) {
-                        finalizeStream(true, new Error('Object gateway tracked stream closed before completion'));
-                    }
-                });
-
-                response.pipe(trackedStream);
-
-                resolve({
-                    headers: this.normalizeHeaders(response.headers),
-                    stream: trackedStream
-                });
-            });
-
-            request.once('error', (error) => {
-                finalize(true);
-                tracker.complete({
-                    bytesIn: options.bytesIn,
-                    error
-                });
-                reject(error);
-            });
-
-            this.writeRequestBody(request, options.body);
-        });
-    }
-
-    private async requestEmpty(teamClusterId: string, options: ObjectGatewayRequestOptions): Promise<void> {
-        const tracker = objectGatewayClientTelemetry.beginRequest(options.telemetryOperation, teamClusterId);
-        let request: ClientRequest;
-        let session: ObjectGatewayHttpSessionDescriptor;
-
-        try {
-            ({ request, session } = await this.createRequest(teamClusterId, options));
-        } catch (error) {
-            tracker.complete({
-                bytesIn: options.bytesIn,
-                error
-            });
-            throw error;
-        }
-
-        return new Promise<void>((resolve, reject) => {
-            const finalize = this.createSessionFinalizer(session);
-
-            request.once('response', (response) => {
-                this.collectResponseBuffer(response).then((body) => {
-                    finalize(false);
-
-                    if (!isSuccessfulStatusCode(response.statusCode)) {
-                        tracker.complete({
-                            statusCode: response.statusCode,
-                            bytesIn: options.bytesIn,
-                            bytesOut: body.length
-                        });
-                        reject(this.createHttpStatusError(response.statusCode, body));
-                        return;
-                    }
-
-                    tracker.complete({
-                        statusCode: response.statusCode,
-                        bytesIn: options.bytesIn,
-                        bytesOut: body.length
-                    });
-                    resolve();
-                }).catch((error) => {
-                    finalize(true);
-                    tracker.complete({
-                        bytesIn: options.bytesIn,
-                        error
-                    });
-                    reject(error);
-                });
-            });
-
-            request.once('error', (error) => {
-                finalize(true);
-                tracker.complete({
-                    bytesIn: options.bytesIn,
-                    error
-                });
-                reject(error);
-            });
-
-            this.writeRequestBody(request, options.body);
-        });
-    }
-
-    private async createRequest(
-        teamClusterId: string,
-        options: ObjectGatewayRequestOptions
-    ): Promise<{ request: ClientRequest; session: ObjectGatewayHttpSessionDescriptor; }> {
-        const exposure = this.resolveExposure(teamClusterId);
-        const session = await this.sessionPool.acquire({
-            teamClusterId,
-            exposureId: exposure.id,
-            targetHost: exposure.targetHost,
-            targetPort: exposure.targetPort
-        });
-        const requestOptions = this.buildRequestOptions(exposure, options, session);
-        const request = http.request(requestOptions);
-
-        request.setTimeout(options.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS, () => {
-            request.destroy(new Error('Object gateway request timed out'));
-        });
-
-        return {
-            request,
-            session
-        };
-    }
-
-    private resolveExposure(teamClusterId: string): TeamClusterServiceExposure {
-        const exposure = this.exposureRegistryService.findTeamClusterExposure(teamClusterId, (currentExposure) => {
-            return currentExposure.sourceKind === TeamClusterServiceExposureSourceKind.Daemon
-                && currentExposure.exposureName === OBJECT_GATEWAY_EXPOSURE_NAME
-                && currentExposure.status === TeamClusterServiceExposureStatus.Active
-                && currentExposure.accessModes.includes(TeamClusterServiceExposureAccessMode.Http)
-                && currentExposure.labels[OBJECT_GATEWAY_EXPOSURE_SERVICE_LABEL] === OBJECT_GATEWAY_EXPOSURE_NAME;
-        });
-
-        if (exposure) {
-            return exposure;
-        }
-
-        logger.warn({ teamClusterId }, 'Object gateway exposure is not available for team cluster');
-        throw new ApplicationError(
-            'TeamCluster::ObjectGatewayUnavailable',
-            'Team cluster object gateway is not available',
-            503
+        throw mapStatusToApplicationError(
+            response.statusCode,
+            typeof payload?.code === 'string'
+                ? payload.code
+                : `TeamCluster::ObjectGateway${operation}`,
+            typeof payload?.message === 'string'
+                ? payload.message
+                : `Object gateway request failed with status ${response.statusCode}`
         );
     }
 
-    private buildRequestOptions(
-        exposure: TeamClusterServiceExposure,
-        request: ObjectGatewayRequestOptions,
-        session: ObjectGatewayHttpSessionDescriptor
-    ): RequestOptions {
-        const headers = { ...(request.headers || {}) };
-        headers.host = `${exposure.targetHost}:${exposure.targetPort}`;
+    private async resolveGrant(teamClusterId: string): Promise<TeamClusterDirectAccessGrantResponse> {
+        const cacheKey = `${teamClusterId}:${OBJECT_GATEWAY_EXPOSURE_NAME}:${TeamClusterServiceExposureAccessMode.Http}`;
+        const cachedGrant = this.cachedGrants.get(cacheKey);
+        const expiresAtMs = cachedGrant
+            ? Date.parse(cachedGrant.expiresAt)
+            : Number.NaN;
 
-        return {
-            protocol: 'http:',
-            hostname: exposure.targetHost,
-            host: exposure.targetHost,
-            port: exposure.targetPort,
-            method: request.method,
-            path: request.path,
-            headers,
-            agent: session.agent
-        };
+        if (cachedGrant && Number.isFinite(expiresAtMs) && expiresAtMs - Date.now() > GRANT_EXPIRY_SAFETY_WINDOW_MS) {
+            return cachedGrant;
+        }
+
+        const pendingGrant = this.pendingGrants.get(cacheKey);
+        if (pendingGrant) {
+            return pendingGrant;
+        }
+
+        const nextGrantPromise = this.directAccessGrantService.issueInternalGrant(
+            teamClusterId,
+            OBJECT_GATEWAY_EXPOSURE_NAME,
+            TeamClusterServiceExposureAccessMode.Http
+        ).finally(() => {
+            this.pendingGrants.delete(cacheKey);
+        });
+
+        this.pendingGrants.set(cacheKey, nextGrantPromise);
+        const grant = await nextGrantPromise;
+        this.cachedGrants.set(cacheKey, grant);
+        return grant;
+    }
+
+    private buildRequestUrl(grant: TeamClusterDirectAccessGrantResponse, path: string): string {
+        return new URL(path, `${grant.endpoint.protocol}://${grant.endpoint.host}:${grant.endpoint.port}`).toString();
+    }
+
+    private async performRawRequest(
+        urlString: string,
+        init: {
+            method: string;
+            headers: Headers;
+            body?: Buffer | NodeReadable;
+        }
+    ): Promise<RawHttpResponse> {
+        const targetUrl = new URL(urlString);
+        const transport = targetUrl.protocol === 'https:' ? https : http;
+
+        return new Promise<RawHttpResponse>((resolve, reject) => {
+            const request = transport.request({
+                protocol: targetUrl.protocol,
+                hostname: targetUrl.hostname,
+                port: targetUrl.port,
+                path: `${targetUrl.pathname}${targetUrl.search}`,
+                method: init.method,
+                headers: headersToObject(init.headers)
+            }, (response) => {
+                resolve({
+                    statusCode: response.statusCode || 0,
+                    headers: headersFromIncoming(response.headers),
+                    stream: response
+                });
+            });
+
+            request.once('error', reject);
+
+            if (!init.body) {
+                request.end();
+                return;
+            }
+
+            if (Buffer.isBuffer(init.body)) {
+                request.end(init.body);
+                return;
+            }
+
+            init.body.once('error', (error) => {
+                request.destroy(error);
+            });
+            init.body.pipe(request);
+        });
+    }
+
+    private async readResponseBuffer(stream: NodeReadable): Promise<Buffer> {
+        const chunks: Buffer[] = [];
+
+        for await (const chunk of stream) {
+            chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        }
+
+        return Buffer.concat(chunks);
     }
 
     private buildCollectionPath(bucket: string): string {
-        return `${OBJECT_GATEWAY_BASE_PATH}/buckets/${encodeURIComponent(bucket)}/objects`;
+        return `${OBJECT_GATEWAY_BASE_PATH}/buckets/${encodePathComponent(bucket)}/objects`;
     }
 
     private buildObjectPath(bucket: string, objectKey: string): string {
-        return `${this.buildCollectionPath(bucket)}/${encodeURIComponent(objectKey)}`;
+        return `${this.buildCollectionPath(bucket)}/${encodeObjectKeyPath(objectKey)}`;
     }
 
     private buildUploadHeaders(request: TeamClusterObjectGatewayPutRequest): Record<string, string> {
@@ -740,138 +487,11 @@ export default class TeamClusterObjectGatewayClient {
             headers['content-encoding'] = request.contentEncoding;
         }
 
-        for (const [metadataKey, metadataValue] of Object.entries(request.metadata || {})) {
-            headers[`${OBJECT_METADATA_HEADER_PREFIX}${metadataKey.toLowerCase()}`] = metadataValue;
+        for (const [key, value] of Object.entries(request.metadata ?? {})) {
+            headers[`${OBJECT_METADATA_HEADER_PREFIX}${key.toLowerCase()}`] = value;
         }
 
         return headers;
-    }
-
-    private async collectResponseBuffer(
-        response: IncomingMessage,
-        onChunk?: (chunk: Buffer) => void
-    ): Promise<Buffer> {
-        const chunks: Buffer[] = [];
-
-        for await (const chunk of response) {
-            const buffer = Buffer.isBuffer(chunk)
-                ? chunk
-                : Buffer.from(chunk);
-            onChunk?.(buffer);
-            chunks.push(buffer);
-        }
-
-        return Buffer.concat(chunks);
-    }
-
-    private normalizeHeaders(headers: IncomingHttpHeaders): Record<string, string> {
-        const normalizedHeaders: Record<string, string> = {};
-
-        for (const [headerName, headerValue] of Object.entries(headers)) {
-            const value = readHeaderValue(headerValue);
-            if (!value) {
-                continue;
-            }
-
-            normalizedHeaders[headerName.toLowerCase()] = value;
-        }
-
-        return normalizedHeaders;
-    }
-
-    private readHeadResponse(headers: Record<string, string>): TeamClusterObjectGatewayHeadResponse {
-        const metadata: Record<string, string> = {};
-
-        for (const [headerName, headerValue] of Object.entries(headers)) {
-            if (!headerName.startsWith(OBJECT_METADATA_HEADER_PREFIX)) {
-                continue;
-            }
-
-            metadata[headerName.slice(OBJECT_METADATA_HEADER_PREFIX.length)] = headerValue;
-        }
-
-        const contentLength = headers['content-length']
-            ? Number(headers['content-length'])
-            : undefined;
-        const lastModified = headers['last-modified']
-            ? new Date(headers['last-modified'])
-            : undefined;
-
-        return {
-            contentLength: typeof contentLength === 'number' && Number.isFinite(contentLength)
-                ? contentLength
-                : undefined,
-            contentType: headers['content-type'],
-            contentEncoding: headers['content-encoding'],
-            etag: headers.etag,
-            lastModified: lastModified instanceof Date && !Number.isNaN(lastModified.getTime())
-                ? lastModified
-                : undefined,
-            metadata
-        };
-    }
-
-    private createHttpStatusError(statusCode: number | undefined, body: Buffer): ApplicationError {
-        const status = typeof statusCode === 'number'
-            ? statusCode
-            : 500;
-        const parsedBody = body.length > 0
-            ? this.readErrorMessage(body)
-            : undefined;
-        const message = parsedBody || `Object gateway request failed with status ${status}`;
-
-        if (status === 400) return ApplicationError.badRequest('TeamCluster::ObjectGatewayBadRequest', message);
-        if (status === 403) return ApplicationError.forbidden('TeamCluster::ObjectGatewayForbidden', message);
-        if (status === 404) return ApplicationError.notFound('TeamCluster::ObjectGatewayObjectNotFound', message);
-        if (status === 409) return ApplicationError.conflict('TeamCluster::ObjectGatewayConflict', message);
-        if (status === 503) return new ApplicationError('TeamCluster::ObjectGatewayUnavailable', message, 503);
-
-        return new ApplicationError('TeamCluster::ObjectGatewayRequestFailed', message, status >= 400 ? status : 500);
-    }
-
-    private readErrorMessage(body: Buffer): string | undefined {
-        const text = body.toString('utf8').trim();
-        if (!text) {
-            return undefined;
-        }
-
-        try {
-            const parsedBody = JSON.parse(text) as { message?: unknown; };
-            return typeof parsedBody.message === 'string'
-                ? parsedBody.message
-                : text;
-        } catch {
-            return text;
-        }
-    }
-
-    private createSessionFinalizer(session: ObjectGatewayHttpSessionDescriptor): (destroySession: boolean) => void {
-        let finalized = false;
-
-        return (destroySession: boolean): void => {
-            if (finalized) {
-                return;
-            }
-
-            finalized = true;
-            this.sessionPool.release(session, destroySession);
-        };
-    }
-
-    private writeRequestBody(request: ClientRequest, body?: Buffer | Readable): void {
-        if (!body) {
-            request.end();
-            return;
-        }
-
-        if (Buffer.isBuffer(body)) {
-            request.end(body);
-            return;
-        }
-
-        pipeline(body, request).catch((error: unknown) => {
-            request.destroy(error instanceof Error ? error : new Error('Object gateway request body failed'));
-        });
     }
 }
 

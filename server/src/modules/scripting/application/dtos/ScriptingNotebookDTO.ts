@@ -16,9 +16,15 @@ export interface ScriptingNotebookPopulatedTeamCluster {
     name?: string;
 };
 
+export interface ScriptingNotebookContainerResourcesDTO {
+    cpus: number;
+    memoryMB: number;
+};
+
 export interface ScriptingNotebookDTO {
     _id: string;
     teamCluster?: string | ScriptingNotebookPopulatedTeamCluster | null;
+    containerResources?: ScriptingNotebookContainerResourcesDTO | null;
     title: string;
     notebookPath: string;
     trajectory?: string | ScriptingNotebookPopulatedTrajectory | null;

@@ -4,12 +4,18 @@ import type {
     TeamClusterRuntimeRoleConfigProps,
     TeamClusterServicesProps
 } from '@modules/team-cluster/domain/entities/TeamCluster';
+import type {
+    TeamClusterServiceExposureAccessMode,
+    TeamClusterServiceExposurePublicAccess
+} from '@modules/team-cluster/domain/contracts/TeamClusterServiceExposure';
 
 export const TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION = 1;
 export const TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH = '/internal/team-cluster/object-store/v1';
 export const TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER = 'x-team-cluster-id';
 export const TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER = 'x-team-cluster-daemon-password';
 export const TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX = 'x-object-meta-';
+export const TEAM_CLUSTER_DIRECT_ACCESS_BASE_PATH = '/internal/team-cluster/direct-access/v1';
+export const TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER = 'x-team-cluster-direct-access-token';
 export const VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID = '__volt_server__';
 
 export const TEAM_CLUSTER_EVENT = Object.freeze({
@@ -206,6 +212,22 @@ export interface TeamClusterDaemonPluginMongoPurgeResult {
 
 export type StoragePlacementScopeType = 'trajectory' | 'analysis' | 'plugin-binary';
 export type StoragePlacementState = 'active' | 'moving' | 'read-only' | 'deleting';
+
+export interface TeamClusterDirectAccessGrantRequest {
+    ownerClusterId: string;
+    exposureName: string;
+    accessMode: TeamClusterServiceExposureAccessMode;
+}
+
+export interface TeamClusterDirectAccessGrantResponse {
+    ownerClusterId: string;
+    exposureName: string;
+    exposureId: string;
+    accessMode: TeamClusterServiceExposureAccessMode;
+    endpoint: TeamClusterServiceExposurePublicAccess;
+    token: string;
+    expiresAt: string;
+}
 
 export interface StoragePlacementBucketRef {
     bucket: string;

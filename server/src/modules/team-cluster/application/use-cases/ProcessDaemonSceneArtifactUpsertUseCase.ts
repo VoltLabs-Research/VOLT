@@ -1,5 +1,6 @@
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import {
+    resolveAnalysisComputeClusterId,
     resolveAnalysisStorageClusterId,
     resolveTrajectoryStorageClusterId
 } from '@modules/team-cluster/application/utilities/cluster-location';
@@ -176,16 +177,17 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
                 );
             }
 
-            if (trajectoryStorageClusterId !== input.teamClusterId || input.storageClusterId !== trajectoryStorageClusterId) {
+            if (input.storageClusterId !== trajectoryStorageClusterId) {
                 throw ApplicationError.forbidden(
                     'TEAM_CLUSTER_DAEMON_TRAJECTORY_CLUSTER_MISMATCH',
-                    'Trajectory storage does not belong to the authenticated team cluster'
+                    'Reported storage cluster does not match the trajectory storage cluster'
                 );
             }
 
             let sanitizedAnalysisId = input.analysis;
             let sanitizedPluginId = input.plugin;
             let sanitizedStorageClusterId = trajectoryStorageClusterId;
+            let isReporterAuthorized = input.teamClusterId === trajectoryStorageClusterId;
 
             if (input.analysis) {
                 const analysis = analysisById.get(input.analysis);
@@ -215,10 +217,27 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
                     );
                 }
 
-                if (analysisStorageClusterId !== input.teamClusterId || input.storageClusterId !== analysisStorageClusterId) {
+                if (input.storageClusterId !== analysisStorageClusterId) {
                     throw ApplicationError.forbidden(
                         'TEAM_CLUSTER_DAEMON_ANALYSIS_CLUSTER_MISMATCH',
-                        'Analysis storage does not belong to the authenticated team cluster'
+                        'Reported storage cluster does not match the analysis storage cluster'
+                    );
+                }
+
+                if (input.sourceType === 'plugin-exposure') {
+                    const analysisComputeClusterId = resolveAnalysisComputeClusterId(analysis.props);
+                    isReporterAuthorized = input.teamClusterId === analysisStorageClusterId
+                        || (typeof analysisComputeClusterId === 'string' && analysisComputeClusterId === input.teamClusterId);
+                } else {
+                    isReporterAuthorized = input.teamClusterId === analysisStorageClusterId;
+                }
+
+                if (!isReporterAuthorized) {
+                    throw ApplicationError.forbidden(
+                        'TEAM_CLUSTER_DAEMON_ANALYSIS_CLUSTER_MISMATCH',
+                        input.sourceType === 'plugin-exposure'
+                            ? 'Plugin exposure artifacts must be reported by the analysis compute or storage cluster'
+                            : 'Analysis storage does not belong to the authenticated team cluster'
                     );
                 }
 
@@ -232,6 +251,13 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
                 sanitizedAnalysisId = analysis.id;
                 sanitizedPluginId = analysis.props.plugin;
                 sanitizedStorageClusterId = analysisStorageClusterId;
+            }
+
+            if (!isReporterAuthorized) {
+                throw ApplicationError.forbidden(
+                    'TEAM_CLUSTER_DAEMON_TRAJECTORY_CLUSTER_MISMATCH',
+                    'Trajectory storage does not belong to the authenticated team cluster'
+                );
             }
 
             return {

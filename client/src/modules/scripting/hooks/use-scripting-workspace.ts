@@ -1,22 +1,34 @@
 import service from '../api/service';
-import { useCreateScriptingSessionMutation, scriptingNotebooksQuery } from './queries';
+import {
+    scriptingNotebooksQuery,
+    useCreateScriptingSessionMutation,
+    useUpdateScriptingNotebookMutation
+} from './queries';
 import {
     JUPYTER_SESSION_TIMEOUT_MESSAGE,
     normalizeScriptingJupyterUrl,
     startAndWaitForReadyScriptingSession
 } from '../utilities/jupyter-session';
-import { getNotebookTeamClusterId } from '../utilities/notebooks';
+import { hasNotebookDeploymentConfiguration } from '../utilities/notebooks';
 import {
     getJupyterStartErrorMessage,
     pickActiveNotebook
 } from '../utilities/workspace';
 import { isApiError } from '@/shared/errors/core';
+import { SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID } from '../components/molecules/ScriptingNotebookDeploymentModal';
+import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { closeModal, openModal } from '@/shared/presentation/components/Modal';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sileo } from 'sileo';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { ScriptingNotebook } from '../api/entities/scripting-notebook';
 import type { ScriptingSession, NotebookContainerStage } from '../api/entities/scripting-session';
+import type {
+    ScriptingNotebookDeploymentModalRequest,
+    ScriptingNotebookDeploymentSelection
+} from '../components/molecules/ScriptingNotebookDeploymentModal';
 import type { WaitForReadyScriptingSessionOptions, WaitForReadyScriptingSessionResult } from '../utilities/jupyter-session';
 
 interface UseScriptingWorkspaceInput {
@@ -25,6 +37,11 @@ interface UseScriptingWorkspaceInput {
 };
 
 const WORKSPACE_NOTEBOOKS_FETCH_LIMIT = 500;
+const SAVE_NOTEBOOK_DEPLOYMENT_TOAST = {
+    loading: { title: 'Saving notebook deployment...' },
+    success: { title: 'Notebook deployment saved successfully' },
+    error: { title: 'Failed to save notebook deployment' }
+};
 
 const getSessionNotebookId = (session: ScriptingSession, notebook?: ScriptingNotebook | null): string | undefined => {
     if (typeof session.notebookId === 'string' && session.notebookId.length > 0) {
@@ -35,15 +52,19 @@ const getSessionNotebookId = (session: ScriptingSession, notebook?: ScriptingNot
 };
 
 const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspaceInput) => {
+    const teamId = useSelectedTeamId();
     const [jupyterUrl, setJupyterUrl] = useState<string | null>(null);
     const [jupyterError, setJupyterError] = useState<string | null>(null);
     const [isWaitingForJupyter, setIsWaitingForJupyter] = useState(false);
     const [containerStage, setContainerStage] = useState<NotebookContainerStage | null>(null);
     const [startAttempt, setStartAttempt] = useState(0);
+    const [deploymentModalRequest, setDeploymentModalRequest] = useState<ScriptingNotebookDeploymentModalRequest | null>(null);
+    const [deploymentRequiredMessage, setDeploymentRequiredMessage] = useState<string | null>(null);
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
     const isMountedRef = useRef(true);
     const activeStartRequestRef = useRef(0);
     const lastStartedWorkspaceKeyRef = useRef<string | null>(null);
+    const lastDeploymentPromptKeyRef = useRef<string | null>(null);
 
     const notebooksQuery = scriptingNotebooksQuery(
         {
@@ -66,9 +87,12 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
         () => pickActiveNotebook(notebooks, notebookId),
         [notebooks, notebookId]
     );
+    const requiresNotebookCreation = !activeNotebook;
+    const requiresNotebookConfiguration = Boolean(activeNotebook && !hasNotebookDeploymentConfiguration(activeNotebook));
     const workspaceSessionKey = `${trajectoryId}:${activeNotebook?._id ?? 'shared'}:${startAttempt}`;
 
     const { mutateAsync: createScriptingSession, isPending: isCreatingJupyterSession } = useCreateScriptingSessionMutation();
+    const { mutateAsync: updateNotebook } = useUpdateScriptingNotebookMutation();
 
     useEffect(() => {
         isMountedRef.current = true;
@@ -99,8 +123,31 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
         }
     }, [activeNotebook, checkAccessDeniedError]);
 
-    const startJupyterSession = useCallback(async () => {
+    const handleDeploymentModalClose = useCallback((options?: { completed?: boolean }) => {
+        closeModal(SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID);
+        setDeploymentModalRequest(null);
+        if (!options?.completed) {
+            setDeploymentRequiredMessage(activeNotebook
+                ? 'Configure this notebook deployment before starting Jupyter.'
+                : 'Choose a cluster and resources to create the notebook workspace.'
+            );
+        } else {
+            setDeploymentRequiredMessage(null);
+        }
+    }, [activeNotebook]);
+
+    const openDeploymentModal = useCallback((request: ScriptingNotebookDeploymentModalRequest) => {
+        setDeploymentRequiredMessage(null);
+        setDeploymentModalRequest(request);
+        openModal(SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID);
+    }, []);
+
+    const startJupyterSession = useCallback(async (deploymentSelection?: ScriptingNotebookDeploymentSelection) => {
         if (!trajectoryId) {
+            return;
+        }
+
+        if (!activeNotebook && !deploymentSelection) {
             return;
         }
 
@@ -144,7 +191,8 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
                     const session = await createScriptingSession({
                         trajectoryId,
                         notebookId: activeNotebook?._id,
-                        teamClusterId: getNotebookTeamClusterId(activeNotebook)
+                        teamClusterId: deploymentSelection?.teamClusterId,
+                        containerResources: deploymentSelection?.containerResources
                     });
                     if (!isRequestCancelled()) {
                         setContainerStage(session.jupyter.containerStage ?? 'creating');
@@ -187,7 +235,73 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
     }, [activeNotebook, checkAccessDeniedError, createScriptingSession, deleteExistingSession, trajectoryId]);
 
     useEffect(() => {
-        if (!trajectoryId || notebooksQuery.isLoading) {
+        if (!trajectoryId || notebooksQuery.isLoading || !teamId) {
+            return;
+        }
+
+        const promptKey = requiresNotebookCreation
+            ? `create:${trajectoryId}`
+            : requiresNotebookConfiguration && activeNotebook
+                ? `configure:${activeNotebook._id}`
+                : null;
+
+        if (!promptKey || deploymentModalRequest) {
+            return;
+        }
+
+        if (lastDeploymentPromptKeyRef.current === promptKey) {
+            return;
+        }
+
+        lastDeploymentPromptKeyRef.current = promptKey;
+
+        if (requiresNotebookConfiguration && activeNotebook) {
+            openDeploymentModal({
+                teamId,
+                notebook: activeNotebook,
+                title: 'Configure Notebook Deployment',
+                description: 'Select the cluster and resources this notebook should use before starting Jupyter.',
+                confirmLabel: 'Save and start',
+                onSubmit: async ({ teamClusterId, containerResources }) => {
+                    await showPromise(
+                        updateNotebook({
+                            notebookId: activeNotebook._id,
+                            teamClusterId,
+                            containerResources
+                        }),
+                        SAVE_NOTEBOOK_DEPLOYMENT_TOAST
+                    );
+                    await notebooksQuery.refetch();
+                    setStartAttempt((value) => value + 1);
+                }
+            });
+            return;
+        }
+
+        openDeploymentModal({
+            teamId,
+            title: 'Create Notebook Workspace',
+            description: 'Choose the cluster and resources for the notebook container before starting Jupyter.',
+            confirmLabel: 'Start notebook',
+            onSubmit: async (selection) => {
+                await startJupyterSession(selection);
+            }
+        });
+    }, [
+        activeNotebook,
+        deploymentModalRequest,
+        notebooksQuery,
+        openDeploymentModal,
+        requiresNotebookConfiguration,
+        requiresNotebookCreation,
+        startJupyterSession,
+        teamId,
+        trajectoryId,
+        updateNotebook
+    ]);
+
+    useEffect(() => {
+        if (!trajectoryId || notebooksQuery.isLoading || requiresNotebookCreation || requiresNotebookConfiguration) {
             return;
         }
 
@@ -197,10 +311,23 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
 
         lastStartedWorkspaceKeyRef.current = workspaceSessionKey;
         startJupyterSession();
-    }, [trajectoryId, notebooksQuery.isLoading, startJupyterSession, workspaceSessionKey]);
+    }, [
+        notebooksQuery.isLoading,
+        requiresNotebookConfiguration,
+        requiresNotebookCreation,
+        startJupyterSession,
+        trajectoryId,
+        workspaceSessionKey
+    ]);
 
     const retryStartJupyter = () => {
         if (!trajectoryId || isWaitingForJupyter || isCreatingJupyterSession) {
+            return;
+        }
+
+        if (teamId && (requiresNotebookCreation || (requiresNotebookConfiguration && activeNotebook))) {
+            lastDeploymentPromptKeyRef.current = null;
+            setDeploymentRequiredMessage(null);
             return;
         }
 
@@ -212,10 +339,13 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
         activeNotebook,
         isStartingJupyter: isWaitingForJupyter || isCreatingJupyterSession,
         error: jupyterError,
+        deploymentRequiredMessage,
+        deploymentModalRequest,
         accessDenied,
         accessDeniedMessage,
         jupyterUrl,
         containerStage,
+        handleDeploymentModalClose,
         retryStartJupyter
     };
 };

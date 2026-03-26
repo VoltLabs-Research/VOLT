@@ -1,53 +1,41 @@
 import 'reflect-metadata';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import net from 'node:net';
 import test from 'node:test';
+import zlib from 'node:zlib';
 import TeamClusterObjectGatewayClient from './TeamClusterObjectGatewayClient';
-import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureSourceKind, TeamClusterServiceExposureStatus } from '../../utilities/teamClusterSocket';
 
 type StoredObject = {
     body: Buffer;
     contentType?: string;
+    contentEncoding?: string;
 };
 
 const TEST_CLUSTER_ID = 'cluster-1';
 const TEST_BUCKET = 'volt-models';
 const TEST_OBJECT_KEY = 'path/to/object.glb';
+const TEST_DIRECT_ACCESS_TOKEN = 'direct-access-token';
 
-class FakeTeamClusterDaemonClient {
-    public openTunnelCalls = 0;
+class FakeDirectAccessGrantService {
+    public issueInternalGrantCalls = 0;
 
     constructor(private readonly port: number) {}
 
-    async openTunnel(): Promise<net.Socket> {
-        this.openTunnelCalls += 1;
-        return net.connect(this.port, '127.0.0.1');
-    }
-}
-
-class FakeExposureRegistryService {
-    constructor(private readonly port: number) {}
-
-    findTeamClusterExposure(_teamClusterId: string, predicate: (exposure: any) => boolean) {
-        const exposure = {
-            id: 'daemon:object-gateway',
-            teamClusterId: TEST_CLUSTER_ID,
-            teamId: 'team-1',
-            sourceKind: TeamClusterServiceExposureSourceKind.Daemon,
-            exposureName: 'object-gateway',
-            accessModes: [TeamClusterServiceExposureAccessMode.Http],
-            targetHost: '127.0.0.1',
-            targetPort: this.port,
-            status: TeamClusterServiceExposureStatus.Active,
-            labels: {
-                'volt.exposure.service': 'object-gateway'
-            }
+    async issueInternalGrant(ownerClusterId: string, exposureName: string, accessMode: string) {
+        this.issueInternalGrantCalls += 1;
+        return {
+            ownerClusterId,
+            exposureName,
+            exposureId: 'daemon:object-gateway',
+            accessMode,
+            endpoint: {
+                protocol: 'http',
+                host: '127.0.0.1',
+                port: this.port
+            },
+            token: TEST_DIRECT_ACCESS_TOKEN,
+            expiresAt: new Date(Date.now() + 60_000).toISOString()
         };
-
-        return predicate(exposure)
-            ? exposure
-            : null;
     }
 }
 
@@ -65,14 +53,17 @@ const readBody = async (request: http.IncomingMessage): Promise<Buffer> => {
 
 const buildObjectGatewayServer = async () => {
     const objects = new Map<string, StoredObject>();
-    const requests: Array<{ method: string; path: string; }> = [];
+    const requests: Array<{ method: string; path: string; token?: string; }> = [];
 
     const server = http.createServer(async (request, response) => {
         const method = request.method || 'GET';
         const url = new URL(request.url || '/', 'http://127.0.0.1');
         requests.push({
             method,
-            path: `${url.pathname}${url.search}`
+            path: `${url.pathname}${url.search}`,
+            token: typeof request.headers['x-team-cluster-direct-access-token'] === 'string'
+                ? request.headers['x-team-cluster-direct-access-token']
+                : undefined
         });
 
         const pathParts = url.pathname.split('/').filter(Boolean);
@@ -115,6 +106,9 @@ const buildObjectGatewayServer = async () => {
                 body,
                 contentType: typeof request.headers['content-type'] === 'string'
                     ? request.headers['content-type']
+                    : undefined,
+                contentEncoding: typeof request.headers['content-encoding'] === 'string'
+                    ? request.headers['content-encoding']
                     : undefined
             });
             response.statusCode = 201;
@@ -136,6 +130,9 @@ const buildObjectGatewayServer = async () => {
             response.statusCode = 200;
             response.setHeader('content-length', String(storedObject.body.length));
             response.setHeader('content-type', storedObject.contentType || 'application/octet-stream');
+            if (storedObject.contentEncoding) {
+                response.setHeader('content-encoding', storedObject.contentEncoding);
+            }
             response.end();
             return;
         }
@@ -144,6 +141,9 @@ const buildObjectGatewayServer = async () => {
             response.statusCode = 200;
             response.setHeader('content-length', String(storedObject.body.length));
             response.setHeader('content-type', storedObject.contentType || 'application/octet-stream');
+            if (storedObject.contentEncoding) {
+                response.setHeader('content-encoding', storedObject.contentEncoding);
+            }
             response.end(storedObject.body);
             return;
         }
@@ -172,38 +172,21 @@ const buildObjectGatewayServer = async () => {
     return {
         server,
         requests,
-        port: address.port
+        port: address.port,
+        seedObject: (bucket: string, objectKey: string, object: StoredObject) => {
+            objects.set(buildObjectId(bucket, objectKey), object);
+        }
     };
 };
 
-const destroyClientSessions = (client: TeamClusterObjectGatewayClient): void => {
-    const sessionPool = Reflect.get(client as object, 'sessionPool') as { sessionsByKey?: Map<string, Array<{ agent: http.Agent; tunnel: net.Socket; }>>; };
-    const sessionsByKey = sessionPool.sessionsByKey;
-    if (!sessionsByKey) {
-        return;
-    }
-
-    for (const sessions of sessionsByKey.values()) {
-        for (const session of sessions) {
-            session.agent.destroy();
-            session.tunnel.destroy();
-        }
-    }
-
-    sessionsByKey.clear();
-};
-
-test('TeamClusterObjectGatewayClient performs read, write, list and delete operations over tunneled HTTP', async () => {
+test('TeamClusterObjectGatewayClient performs direct read, write, list and delete operations over HTTP', async () => {
     process.env.TEAM_CLUSTER_OBJECT_GATEWAY_ENABLED = 'true';
     process.env.TEAM_CLUSTER_OBJECT_GATEWAY_READS_ENABLED = 'true';
     process.env.TEAM_CLUSTER_OBJECT_GATEWAY_WRITES_ENABLED = 'true';
 
     const { server, requests, port } = await buildObjectGatewayServer();
-    const daemonClient = new FakeTeamClusterDaemonClient(port);
-    const client = new TeamClusterObjectGatewayClient(
-        daemonClient as any,
-        new FakeExposureRegistryService(port) as any
-    );
+    const grantService = new FakeDirectAccessGrantService(port);
+    const client = new TeamClusterObjectGatewayClient(grantService as any);
 
     try {
         const payload = Buffer.from('glb-payload');
@@ -236,9 +219,9 @@ test('TeamClusterObjectGatewayClient performs read, write, list and delete opera
         assert.equal(await client.exists(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY), false);
 
         assert.ok(requests.some((entry) => entry.method === 'HEAD'));
-        assert.equal(daemonClient.openTunnelCalls, requests.length);
+        assert.ok(requests.every((entry) => entry.token === TEST_DIRECT_ACCESS_TOKEN));
+        assert.equal(grantService.issueInternalGrantCalls >= 1, true);
     } finally {
-        destroyClientSessions(client);
         await new Promise<void>((resolve, reject) => {
             server.close((error) => error ? reject(error) : resolve());
         });
@@ -252,8 +235,7 @@ test('TeamClusterObjectGatewayClient.getStream preserves the full object body fr
 
     const { server, port } = await buildObjectGatewayServer();
     const client = new TeamClusterObjectGatewayClient(
-        new FakeTeamClusterDaemonClient(port) as any,
-        new FakeExposureRegistryService(port) as any
+        new FakeDirectAccessGrantService(port) as any
     );
 
     try {
@@ -279,7 +261,36 @@ test('TeamClusterObjectGatewayClient.getStream preserves the full object body fr
 
         assert.deepEqual(Buffer.concat(streamedChunks), payload);
     } finally {
-        destroyClientSessions(client);
+        await new Promise<void>((resolve, reject) => {
+            server.close((error) => error ? reject(error) : resolve());
+        });
+    }
+});
+
+test('TeamClusterObjectGatewayClient preserves gzipped object bytes when the response advertises content-encoding', async () => {
+    process.env.TEAM_CLUSTER_OBJECT_GATEWAY_ENABLED = 'true';
+    process.env.TEAM_CLUSTER_OBJECT_GATEWAY_READS_ENABLED = 'true';
+    process.env.TEAM_CLUSTER_OBJECT_GATEWAY_WRITES_ENABLED = 'true';
+
+    const { server, port, seedObject } = await buildObjectGatewayServer();
+    const grantService = new FakeDirectAccessGrantService(port);
+    const client = new TeamClusterObjectGatewayClient(grantService as any);
+
+    try {
+        const compressed = zlib.gzipSync(Buffer.from('dump-payload'));
+        seedObject(TEST_BUCKET, TEST_OBJECT_KEY, {
+            body: compressed,
+            contentType: 'application/gzip',
+            contentEncoding: 'gzip'
+        });
+
+        const head = await client.head(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY);
+        assert.equal(head.contentEncoding, 'gzip');
+
+        const buffer = await client.getBuffer(TEST_CLUSTER_ID, TEST_BUCKET, TEST_OBJECT_KEY);
+        assert.deepEqual(buffer, compressed);
+        assert.deepEqual(zlib.gunzipSync(buffer), Buffer.from('dump-payload'));
+    } finally {
         await new Promise<void>((resolve, reject) => {
             server.close((error) => error ? reject(error) : resolve());
         });
@@ -293,8 +304,7 @@ test('TeamClusterObjectGatewayClient honors feature flags without falling back t
 
     const { server, port } = await buildObjectGatewayServer();
     const client = new TeamClusterObjectGatewayClient(
-        new FakeTeamClusterDaemonClient(port) as any,
-        new FakeExposureRegistryService(port) as any
+        new FakeDirectAccessGrantService(port) as any
     );
 
     try {
@@ -315,7 +325,6 @@ test('TeamClusterObjectGatewayClient honors feature flags without falling back t
     } finally {
         process.env.TEAM_CLUSTER_OBJECT_GATEWAY_READS_ENABLED = 'true';
         process.env.TEAM_CLUSTER_OBJECT_GATEWAY_WRITES_ENABLED = 'true';
-        destroyClientSessions(client);
         await new Promise<void>((resolve, reject) => {
             server.close((error) => error ? reject(error) : resolve());
         });

@@ -1,6 +1,6 @@
 import { CONTAINER_TEMPLATES } from '../services/container-templates';
 import { containerQuery } from './queries';
-import { teamClusterService } from '../api/service/team-cluster-service';
+import useTeamClusterResourceSelection from './use-team-cluster-resource-selection';
 import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -18,14 +18,13 @@ import type { PortMapping } from '../api/entities/port-mapping';
 import type { TeamClusterOption } from '../api/entities/team-cluster-option';
 import type { Team } from '@/modules/team/api/entities/team/team';
 import { v4 as uuidv4 } from 'uuid';
+import { MIN_CLUSTER_CPU, MIN_CLUSTER_MEMORY_MB, clampClusterResourceValue } from '../utilities/resource-allocation';
 
 export type { EnvVariable } from '../api/entities/env-variable';
 export type { PortMapping } from '../api/entities/port-mapping';
 
 const DEFAULT_CPU = 1;
 const DEFAULT_MEMORY = 512;
-const MIN_CPU = 0.5;
-const MIN_MEMORY = 128;
 const CREATE_CONTAINER_DRAFT_STORAGE_KEY = 'volt:create-container:draft';
 const DOCKER_IMAGE_REFERENCE_PATTERN = /^(?:(?:[a-z0-9]+(?:(?:[._-][a-z0-9]+)+)?)(?:\/[a-z0-9]+(?:(?:[._-][a-z0-9]+)+)?)*)(?::[\w][\w.-]{0,127})?(?:@[A-Za-z][A-Za-z0-9]*:[0-9a-fA-F]{32,})?$/;
 
@@ -48,14 +47,6 @@ interface CreateContainerDraft {
     selectedTeamClusterId: string | null;
     config: ContainerConfig;
     savedAt: number;
-};
-
-const clampResourceValue = (value: number, min: number, max: number | null | undefined) => {
-    if (typeof max !== 'number' || !Number.isFinite(max)) {
-        return Math.max(value, min);
-    }
-
-    return Math.min(Math.max(value, min), Math.max(min, max));
 };
 
 /** Validates one template custom field against required and pattern rules. */
@@ -276,12 +267,18 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
     const [customImage, setCustomImageState] = useState('');
     const [selectedTeamId, setSelectedTeamId] = useState<string | null>(selectedTeam?._id || null);
     const [selectedTeamClusterId, setSelectedTeamClusterId] = useState<string | null>(null);
-    const [teamClusters, setTeamClusters] = useState<TeamClusterOption[]>([]);
-    const [clusterResourceLimits, setClusterResourceLimits] = useState<ClusterResourceLimits | null>(null);
-    const [isLoadingResourceLimits, setIsLoadingResourceLimits] = useState(false);
     const [activeCreateOperationId, setActiveCreateOperationId] = useState<string | null>(null);
     const [deployProgressMessage, setDeployProgressMessage] = useState<string | null>(null);
     const [draftLastSavedAt, setDraftLastSavedAt] = useState<number | null>(null);
+    const {
+        teamClusters,
+        clusterResourceLimits,
+        isLoadingResourceLimits
+    } = useTeamClusterResourceSelection({
+        teamId: selectedTeamId,
+        selectedTeamClusterId,
+        onSelectedTeamClusterIdChange: setSelectedTeamClusterId
+    });
     const hasResolvedResourceLimits = typeof clusterResourceLimits?.maxCpus === 'number'
         && typeof clusterResourceLimits?.maxMemoryMB === 'number';
 
@@ -389,88 +386,12 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
     }, [config, customImage, selectedTeamClusterId, selectedTeamId, selectedTemplate]);
 
     useEffect(() => {
-        if (!selectedTeamId) {
-            setTeamClusters([]);
-            setSelectedTeamClusterId(null);
-            setClusterResourceLimits(null);
-            setIsLoadingResourceLimits(false);
-            return;
-        }
-
-        let cancelled = false;
-
-        teamClusterService.listByTeamId(selectedTeamId)
-            .then((clusters) => {
-                if (cancelled) {
-                    return;
-                }
-
-                setTeamClusters(clusters);
-                setSelectedTeamClusterId((currentTeamClusterId) => {
-                    if (currentTeamClusterId && clusters.some((cluster) => cluster._id === currentTeamClusterId)) {
-                        return currentTeamClusterId;
-                    }
-
-                    return clusters[0]?._id || null;
-                });
-            })
-            .catch(() => {
-                if (cancelled) {
-                    return;
-                }
-
-                setTeamClusters([]);
-                setSelectedTeamClusterId(null);
-                setClusterResourceLimits(null);
-            });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [selectedTeamId]);
-
-    useEffect(() => {
-        if (!selectedTeamId || !selectedTeamClusterId) {
-            setClusterResourceLimits(null);
-            setIsLoadingResourceLimits(false);
-            return;
-        }
-
-        let cancelled = false;
-        setIsLoadingResourceLimits(true);
-
-        teamClusterService.getResourceLimits(selectedTeamId, selectedTeamClusterId)
-            .then((resourceLimits) => {
-                if (cancelled) {
-                    return;
-                }
-
-                setClusterResourceLimits(resourceLimits);
-                setConfig((previousConfig) => ({
-                    ...previousConfig,
-                    cpus: clampResourceValue(previousConfig.cpus, MIN_CPU, resourceLimits.maxCpus),
-                    memory: clampResourceValue(previousConfig.memory, MIN_MEMORY, resourceLimits.maxMemoryMB)
-                }));
-            })
-            .catch(() => {
-                if (cancelled) {
-                    return;
-                }
-
-                setClusterResourceLimits(null);
-            })
-            .finally(() => {
-                if (cancelled) {
-                    return;
-                }
-
-                setIsLoadingResourceLimits(false);
-            });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [selectedTeamId, selectedTeamClusterId]);
+        setConfig((previousConfig) => ({
+            ...previousConfig,
+            cpus: clampClusterResourceValue(previousConfig.cpus, MIN_CLUSTER_CPU, clusterResourceLimits?.maxCpus),
+            memory: clampClusterResourceValue(previousConfig.memory, MIN_CLUSTER_MEMORY_MB, clusterResourceLimits?.maxMemoryMB)
+        }));
+    }, [clusterResourceLimits?.maxCpus, clusterResourceLimits?.maxMemoryMB]);
 
     const updateConfig = useCallback(<K extends keyof ContainerConfig>(key: K, value: ContainerConfig[K]) => {
         setConfig((previousConfig) => ({

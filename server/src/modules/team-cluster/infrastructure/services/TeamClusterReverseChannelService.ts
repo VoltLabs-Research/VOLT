@@ -1158,7 +1158,7 @@ export default class TeamClusterReverseChannelService {
             return false;
         }
 
-        const exposure = this.exposureRegistryService.getExposure(payload.exposureId);
+        const exposure = this.exposureRegistryService.getTeamClusterExposure(teamClusterId, payload.exposureId);
         const isObjectGatewayTunnel = Boolean(
             exposure
             && exposure.teamClusterId === teamClusterId
