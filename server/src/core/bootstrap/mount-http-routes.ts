@@ -37,8 +37,7 @@ import TeamSecretKeyHttpModule from '@modules/team/infrastructure/http/routes/se
 import TeamSelfHttpModule from '@modules/team/infrastructure/http/routes/team/self';
 import TeamHttpModule from '@modules/team/infrastructure/http/routes/team';
 import TeamClusterHttpModule from '@modules/team-cluster/infrastructure/http/routes/team-cluster-routes';
-import TeamClusterDirectAccessHttpModule from '@modules/team-cluster/infrastructure/http/routes/team-cluster-direct-access-routes';
-import VoltServerObjectGatewayHttpModule from '@modules/team-cluster/infrastructure/http/routes/volt-server-object-gateway-routes';
+import TeamClusterObjectStoreProxyHttpModule from '@modules/team-cluster/infrastructure/http/routes/team-cluster-object-store-proxy-routes';
 import TeamClusterLifecycleHttpModule from '@modules/team-cluster/infrastructure/http/routes/team-cluster-lifecycle-routes';
 import ColorCodingHttpModule from '@modules/trajectory/infrastructure/http/routes/color-coding';
 import CanvasHttpModule from '@modules/trajectory/infrastructure/http/routes/canvas';
@@ -78,8 +77,7 @@ const HTTP_MODULES: HttpModule[] = [
     TeamSecretKeySelfHttpModule,
     TeamAIIntegrationHttpModule,
     TeamClusterHttpModule,
-    TeamClusterDirectAccessHttpModule,
-    VoltServerObjectGatewayHttpModule,
+    TeamClusterObjectStoreProxyHttpModule,
     TeamClusterLifecycleHttpModule,
     ChatHttpModule,
     ChatMessageHttpModule,
