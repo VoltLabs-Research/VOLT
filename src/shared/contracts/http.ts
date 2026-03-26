@@ -1,3 +1,5 @@
+import type { TeamClusterServiceExposureAccessMode } from './serviceExposure';
+
 export enum ObjectBucketName {
     Dumps = 'volt-dumps',
     Models = 'volt-models',
@@ -9,6 +11,8 @@ export const TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH = '/internal/team-cluster
 export const TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER = 'x-team-cluster-id';
 export const TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER = 'x-team-cluster-daemon-password';
 export const TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX = 'x-object-meta-';
+export const TEAM_CLUSTER_DIRECT_ACCESS_BASE_PATH = '/internal/team-cluster/direct-access/v1';
+export const TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER = 'x-team-cluster-direct-access-token';
 export const VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID = '__volt_server__';
 
 export enum TextEncoding {
@@ -26,6 +30,26 @@ export enum EntrypointType {
     Executable = 'executable',
     PythonScript = 'python-script'
 };
+
+export interface TeamClusterDirectAccessGrantRequest {
+    ownerClusterId: string;
+    exposureName: string;
+    accessMode: TeamClusterServiceExposureAccessMode;
+}
+
+export interface TeamClusterDirectAccessGrantResponse {
+    ownerClusterId: string;
+    exposureName: string;
+    exposureId: string;
+    accessMode: TeamClusterServiceExposureAccessMode;
+    endpoint: {
+        protocol: 'http' | 'https' | 'ws' | 'wss' | 'tcp';
+        host: string;
+        port: number;
+    };
+    token: string;
+    expiresAt: string;
+}
 
 export enum OrchestrationAction {
     AnalysisStart = 'analysis-start',
@@ -72,10 +96,16 @@ export interface NotebookSessionSnapshot {
     content?: Record<string, unknown>;
 };
 
+export interface NotebookContainerResources {
+    cpus: number;
+    memoryMB: number;
+};
+
 export interface CreateNotebookSessionRequest {
     requestedBy: string;
     publicBasePath: string;
     notebook: NotebookSessionSnapshot;
+    containerResources: NotebookContainerResources;
 };
 
 export type NotebookContainerStage = 'creating' | 'starting' | 'ready';

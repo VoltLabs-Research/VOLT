@@ -16,7 +16,7 @@ import { RuntimeRoleCoordinator } from '@/modules/cloud-control/services';
 import { createAnalysisWorker, createJobRuntimeModule } from '@/modules/job-runtime';
 import { OBJECT_GATEWAY_EXPOSURE } from '@/modules/cloud-control/services';
 import { createClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
-import { VoltServerObjectStoreProxyClient } from '@/shared/storage/VoltServerObjectStoreProxyClient';
+import { TeamClusterDirectObjectStoreClient } from '@/shared/storage/TeamClusterDirectObjectStoreClient';
 import type { DaemonRuntimeConfig } from './config';
 
 type BootstrapContext = {
@@ -40,11 +40,11 @@ const createBootstrapContext = (): BootstrapContext => {
     const metrics = createMetricsModule();
     const queueConcurrencyCoordinator = new QueueConcurrencyCoordinator();
     const runtimeRoleCoordinator = new RuntimeRoleCoordinator(queueConcurrencyCoordinator);
-    const proxyClient = new VoltServerObjectStoreProxyClient(config);
+    const remoteClient = new TeamClusterDirectObjectStoreClient(config);
     const clusterObjectStore = createClusterObjectStore({
         config,
         minioService: platform.minioService,
-        proxyClient,
+        remoteClient,
         getRuntimeSnapshot: () => runtimeRoleCoordinator.getSnapshot()
     });
     const trajectoryNative = createTrajectoryNativeModule(

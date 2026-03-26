@@ -1,13 +1,19 @@
 import { DockerRuntimeService } from '@/modules/platform/services';
 import { logger } from '@/core/logger';
 import path from 'node:path';
-import type { CreateNotebookSessionResponse, NotebookContainerStage, NotebookSessionSnapshot } from '@/shared/contracts';
+import type {
+    CreateNotebookSessionResponse,
+    NotebookContainerStage,
+    NotebookContainerResources,
+    NotebookSessionSnapshot
+} from '@/shared/contracts';
 import type { DaemonConfig } from '@/core/config';
 
 interface EnsureNotebookSessionInput {
     notebook: NotebookSessionSnapshot;
     requestedBy: string;
     publicBasePath: string;
+    containerResources: NotebookContainerResources;
 };
 
 interface EnsureJupyterServerInput {
@@ -275,8 +281,8 @@ export class JupyterRuntimeService {
                 private: this.config.jupyter.port,
                 public: reservedHostPort ?? undefined
             }],
-            memoryInMegabytes: this.config.jupyter.memoryInMegabytes,
-            cpus: this.config.jupyter.cpus,
+            memoryInMegabytes: input.containerResources.memoryMB,
+            cpus: input.containerResources.cpus,
             labels: {
                 [RUNTIME_LABEL_KEY]: RUNTIME_LABEL_VALUE,
                 [NOTEBOOK_ID_LABEL_KEY]: input.notebook._id,

@@ -2,7 +2,7 @@ import { logger } from '@/core/logger';
 import type { DaemonConfig, DaemonRuntimeConfig } from '@/core/config';
 import type { MinioService } from '@/modules/platform/services';
 import type { Readable } from 'node:stream';
-import type { VoltServerObjectStoreProxyClient } from './VoltServerObjectStoreProxyClient';
+import type { TeamClusterDirectObjectStoreClient } from './TeamClusterDirectObjectStoreClient';
 
 interface MinioObjectStat {
     size?: unknown;
@@ -161,7 +161,7 @@ const createScopedLocalMetadata = (metadata?: Record<string, string>): Record<st
 export const createClusterObjectStore = (deps: {
     config: DaemonConfig;
     minioService: MinioService;
-    proxyClient: VoltServerObjectStoreProxyClient;
+    remoteClient: TeamClusterDirectObjectStoreClient;
     getRuntimeSnapshot: () => DaemonRuntimeConfig;
 }): ClusterObjectStore => {
     const isLocalOwner = (ownerClusterId: string): boolean => {
@@ -176,7 +176,7 @@ export const createClusterObjectStore = (deps: {
                 bucket,
                 objectKey
             },
-            'Resolved remote owner object through Volt proxy'
+            'Resolved remote owner object through direct peer access'
         );
     };
 
@@ -188,7 +188,7 @@ export const createClusterObjectStore = (deps: {
             }
 
             markRemoteFetch(ownerClusterId, bucket, objectKey);
-            return deps.proxyClient.head(ownerClusterId, bucket, objectKey);
+            return deps.remoteClient.head(ownerClusterId, bucket, objectKey);
         },
 
         async exists(ownerClusterId, bucket, objectKey) {
@@ -219,7 +219,7 @@ export const createClusterObjectStore = (deps: {
             }
 
             markRemoteFetch(ownerClusterId, bucket, objectKey);
-            return deps.proxyClient.getStream(ownerClusterId, bucket, objectKey);
+            return deps.remoteClient.getStream(ownerClusterId, bucket, objectKey);
         },
 
         async getBuffer(ownerClusterId, bucket, objectKey) {
@@ -235,7 +235,7 @@ export const createClusterObjectStore = (deps: {
             }
 
             markRemoteFetch(ownerClusterId, bucket, objectKey);
-            return deps.proxyClient.getBuffer(ownerClusterId, bucket, objectKey);
+            return deps.remoteClient.getBuffer(ownerClusterId, bucket, objectKey);
         },
 
         async putObject(input) {
@@ -261,10 +261,10 @@ export const createClusterObjectStore = (deps: {
                     bucket: input.bucket,
                     objectKey: input.objectKey
                 },
-                'Writing object to remote owner cluster through Volt proxy'
+                'Writing object to remote owner cluster through direct peer access'
             );
 
-            await deps.proxyClient.putBuffer(input.ownerClusterId, {
+            await deps.remoteClient.putBuffer(input.ownerClusterId, {
                 bucket: input.bucket,
                 objectKey: input.objectKey,
                 buffer: input.body,
@@ -301,10 +301,10 @@ export const createClusterObjectStore = (deps: {
                     objectKey: input.objectKey,
                     size: input.size
                 },
-                'Streaming object to remote owner cluster through Volt proxy'
+                'Streaming object to remote owner cluster through direct peer access'
             );
 
-            await deps.proxyClient.putStream(input.ownerClusterId, {
+            await deps.remoteClient.putStream(input.ownerClusterId, {
                 bucket: input.bucket,
                 objectKey: input.objectKey,
                 stream: input.stream,
@@ -328,7 +328,7 @@ export const createClusterObjectStore = (deps: {
                 });
             }
 
-            return deps.proxyClient.list(ownerClusterId, request);
+            return deps.remoteClient.list(ownerClusterId, request);
         },
 
         async deleteByPrefix(ownerClusterId, bucket, prefix) {
@@ -344,9 +344,9 @@ export const createClusterObjectStore = (deps: {
                     bucket,
                     prefix
                 },
-                'Deleting remote owner prefix through Volt proxy'
+                'Deleting remote owner prefix through direct peer access'
             );
-            return deps.proxyClient.deleteByPrefix(ownerClusterId, bucket, prefix);
+            return deps.remoteClient.deleteByPrefix(ownerClusterId, bucket, prefix);
         },
 
         async removeObject(ownerClusterId, bucket, objectKey) {
@@ -363,9 +363,9 @@ export const createClusterObjectStore = (deps: {
                     bucket,
                     objectKey
                 },
-                'Deleting remote owner object through Volt proxy'
+                'Deleting remote owner object through direct peer access'
             );
-            await deps.proxyClient.deleteObject(ownerClusterId, bucket, objectKey);
+            await deps.remoteClient.deleteObject(ownerClusterId, bucket, objectKey);
         }
     };
 };

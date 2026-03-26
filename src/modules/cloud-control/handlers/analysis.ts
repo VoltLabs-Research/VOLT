@@ -10,6 +10,7 @@ import { extractDaemonTraceContext } from '@/shared/observability/daemonInstrume
 import type { ReverseChannelCommandHandler } from '../services';
 import type { DaemonTraceContext } from '@/shared/observability/daemonInstrumentation';
 import type { RuntimeCapabilityGuard } from '../services';
+import { DaemonCommandError } from '../services/DaemonCommandError';
 import zlib from 'node:zlib';
 import {
     readOptionalBoolean,
@@ -33,9 +34,16 @@ interface AnalysisStartRequestWithTrace extends AnalysisStartRequest {
 };
 
 const readCompressedJson = (value: unknown, fieldName: string): unknown => {
-    const encodedValue = readString(value, fieldName);
-    const compressedBuffer = Buffer.from(encodedValue, 'base64');
-    return JSON.parse(zlib.gunzipSync(compressedBuffer).toString('utf8'));
+    try {
+        const encodedValue = readString(value, fieldName);
+        const compressedBuffer = Buffer.from(encodedValue, 'base64');
+        return JSON.parse(zlib.gunzipSync(compressedBuffer).toString('utf8'));
+    } catch {
+        throw DaemonCommandError.badRequest(
+            'Analysis::Start::InvalidCompressedPayload',
+            `${fieldName} must be valid gzip-compressed JSON`
+        );
+    }
 };
 
 const readCompressedOrRawValue = (record: Record<string, unknown>, rawField: string, compressedField: string): unknown => {
@@ -220,7 +228,21 @@ export const createAnalysisHandlers = (deps: AnalysisHandlersDependencies): Reve
             deps.runtimeCapabilityGuard.ensureAcceptsComputeJobs(
                 TEAM_CLUSTER_DAEMON_COMMAND.analysis.start
             );
-            const request = readAnalysisStartRequest(payload);
+            let request: AnalysisStartRequestWithTrace;
+
+            try {
+                request = readAnalysisStartRequest(payload);
+            } catch (error: unknown) {
+                if (error instanceof DaemonCommandError) {
+                    throw error;
+                }
+
+                throw DaemonCommandError.badRequest(
+                    'Analysis::Start::InvalidRequest',
+                    error instanceof Error ? error.message : 'Invalid analysis.start payload'
+                );
+            }
+
             return { data: await deps.analysisDispatchService.startAnalysis(request) };
         }
     }

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHmac } from 'node:crypto';
 import fs from 'node:fs/promises';
 import http from 'node:http';
 import Module from 'node:module';
@@ -8,6 +9,9 @@ import test from 'node:test';
 
 const TEST_BUCKET = 'volt-models';
 const TEST_OBJECT_KEY = 'missing.glb';
+const TEST_CLUSTER_ID = 'cluster-1';
+const TEST_DAEMON_PASSWORD = 'secret';
+const TEST_DIRECT_ACCESS_HEADER = 'x-team-cluster-direct-access-token';
 
 class StubMinioService {
     public readonly deletedPrefixes: Array<{ bucket: string; prefix: string; }> = [];
@@ -89,14 +93,20 @@ const ensureDaemonTestNodePath = async (): Promise<void> => {
 const request = async (
     port: number,
     path: string,
-    method: string = 'GET'
+    method: string = 'GET',
+    token?: string
 ): Promise<{ statusCode: number; body: string; }> => {
     return new Promise((resolve, reject) => {
         const req = http.request({
             hostname: '127.0.0.1',
             port,
             method,
-            path
+            path,
+            headers: token
+                ? {
+                    [TEST_DIRECT_ACCESS_HEADER]: token
+                }
+                : undefined
         }, async (response) => {
             const chunks: Buffer[] = [];
             for await (const chunk of response) {
@@ -114,6 +124,26 @@ const request = async (
     });
 };
 
+const createDirectAccessToken = (secret: string): string => {
+    const payload = Buffer.from(JSON.stringify({
+        requesterKind: 'daemon',
+        requesterId: 'cluster-requester',
+        ownerClusterId: TEST_CLUSTER_ID,
+        teamId: 'team-1',
+        exposureId: 'daemon:object-gateway',
+        exposureName: 'object-gateway',
+        accessMode: 'http',
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 60
+    }), 'utf8').toString('base64url');
+
+    const signature = createHmac('sha256', secret)
+        .update(payload)
+        .digest('base64url');
+
+    return `${payload}.${signature}`;
+};
+
 test('ObjectGatewayServer maps missing GET objects to 404 instead of 500', async () => {
     await ensureDaemonTestNodePath();
     const { ObjectGatewayServer } = await import('./ObjectGatewayServer');
@@ -123,8 +153,8 @@ test('ObjectGatewayServer maps missing GET objects to 404 instead of 500', async
         host: '127.0.0.1',
         teamId: 'team-1',
         objectGatewayEnabled: true,
-        teamClusterId: 'cluster-1',
-        daemonPassword: 'secret',
+        teamClusterId: TEST_CLUSTER_ID,
+        daemonPassword: TEST_DAEMON_PASSWORD,
         installedVersion: '1.0.0',
         voltCloudUrl: 'http://localhost:3000',
         heartbeatIntervalMs: 10_000,
@@ -162,11 +192,14 @@ test('ObjectGatewayServer maps missing GET objects to 404 instead of 500', async
         const exposure = server.getExposure();
         const result = await request(
             exposure.targetPort,
-            `/internal/object-gateway/v1/buckets/${encodeURIComponent(TEST_BUCKET)}/objects/${encodeURIComponent(TEST_OBJECT_KEY)}`
+            `/internal/object-gateway/v1/buckets/${encodeURIComponent(TEST_BUCKET)}/objects/${encodeURIComponent(TEST_OBJECT_KEY)}`,
+            'GET',
+            createDirectAccessToken(TEST_DAEMON_PASSWORD)
         );
 
         assert.equal(result.statusCode, 404);
         assert.match(result.body, /Object not found/);
+        assert.equal(exposure.publicAccess?.protocol, 'http');
     } finally {
         await server.stop();
     }
@@ -183,8 +216,8 @@ test('ObjectGatewayServer allows cleanup deletes when the cluster serves residua
         host: '127.0.0.1',
         teamId: 'team-1',
         objectGatewayEnabled: true,
-        teamClusterId: 'cluster-1',
-        daemonPassword: 'secret',
+        teamClusterId: TEST_CLUSTER_ID,
+        daemonPassword: TEST_DAEMON_PASSWORD,
         installedVersion: '1.0.0',
         voltCloudUrl: 'http://localhost:3000',
         heartbeatIntervalMs: 10_000,
@@ -220,15 +253,18 @@ test('ObjectGatewayServer allows cleanup deletes when the cluster serves residua
 
     try {
         const exposure = server.getExposure();
+        const token = createDirectAccessToken(TEST_DAEMON_PASSWORD);
         const deletePrefixResult = await request(
             exposure.targetPort,
             `/internal/object-gateway/v1/buckets/${encodeURIComponent(TEST_BUCKET)}/objects?prefix=trajectory-1/`,
-            'DELETE'
+            'DELETE',
+            token
         );
         const deleteObjectResult = await request(
             exposure.targetPort,
             `/internal/object-gateway/v1/buckets/${encodeURIComponent(TEST_BUCKET)}/objects/${encodeURIComponent(TEST_OBJECT_KEY)}`,
-            'DELETE'
+            'DELETE',
+            token
         );
 
         assert.equal(deletePrefixResult.statusCode, 200);

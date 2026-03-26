@@ -1,4 +1,5 @@
 import { logger } from '@/core/logger';
+import { DaemonCommandError } from '@/modules/cloud-control/services/DaemonCommandError';
 import { ANALYSIS_QUEUE_NAME, QueueService } from '@/modules/platform/services';
 import { createTraceLogContext, serializeDaemonTraceContext } from '@/shared/observability/daemonInstrumentation';
 import { compressAnalysisExecutionData } from '@/shared/utilities/analysis-execution-data';
@@ -93,7 +94,10 @@ export class AnalysisDispatchService {
         });
 
         if (!plan || plan.items.length === 0) {
-            throw new Error('No items after daemon workflow planning');
+            throw DaemonCommandError.unprocessableEntity(
+                'Analysis::Start::EmptyExecutionPlan',
+                'No items after daemon workflow planning'
+            );
         }
 
         logger.info(
@@ -247,7 +251,10 @@ export class AnalysisDispatchService {
         return items.map((item, index) => {
             const timestep = this.resolveTimestep(item);
             if (typeof timestep === 'undefined') {
-                throw new Error(`Missing timestep for analysis job ${input.analysisId}-${index}`);
+                throw DaemonCommandError.unprocessableEntity(
+                    'Analysis::Start::MissingTimestep',
+                    `Missing timestep for analysis job ${input.analysisId}-${index}`
+                );
             }
 
             const inputFile = resolvePlannedDumpPath(item)
@@ -331,7 +338,10 @@ export class AnalysisDispatchService {
         const entrypoint = workflow.nodes.find((node) => node.type === 'entrypoint');
         const entrypointData = entrypoint?.data?.entrypoint as Record<string, unknown> | undefined;
         if (!entrypointData?.binaryObjectPath || !entrypointData.arguments) {
-            throw new Error('Daemon workflow entrypoint is invalid');
+            throw DaemonCommandError.badRequest(
+                'Analysis::Start::InvalidEntrypoint',
+                'Daemon workflow entrypoint is invalid'
+            );
         }
 
         return {

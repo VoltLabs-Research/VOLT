@@ -20,6 +20,7 @@ export interface ReportArtifactInput {
 
 export interface DaemonArtifactReporterService {
     reportArtifact(input: ReportArtifactInput): Promise<void>;
+    flushPendingArtifacts(): void;
 };
 
 const SCENE_ARTIFACT_BATCH_SIZE = 64;
@@ -78,6 +79,15 @@ export const createDaemonArtifactReporterService = (voltCloudConnection: VoltClo
             }
 
             scheduleFlush(SCENE_ARTIFACT_BATCH_FLUSH_INTERVAL_MS);
+        },
+
+        flushPendingArtifacts() {
+            if (flushTimer) {
+                clearTimeout(flushTimer);
+                flushTimer = null;
+            }
+
+            flushBatch();
         }
     };
 };

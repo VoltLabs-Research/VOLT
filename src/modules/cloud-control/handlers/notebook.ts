@@ -3,6 +3,7 @@ import { TEAM_CLUSTER_DAEMON_COMMAND } from '@/shared/contracts/reverseChannel';
 import type { NotebookSessionSnapshot } from '@/shared/contracts';
 import type { ReverseChannelCommandHandler } from '../services';
 import {
+    readNumber,
     readOptionalPayloadRecord,
     readOptionalUnknownRecord,
     readRecord,
@@ -26,6 +27,10 @@ interface CreateNotebookSessionCommandPayload {
     requestedBy: string;
     publicBasePath: string;
     notebook: NotebookSessionSnapshot;
+    containerResources: {
+        cpus: number;
+        memoryMB: number;
+    };
 };
 
 const readNotebookSessionSnapshot = (value: unknown): NotebookSessionSnapshot => {
@@ -54,11 +59,16 @@ const readNotebookIdentifierPayload = (payload: unknown): NotebookIdentifierPayl
 
 const readNotebookSessionRequestPayload = (payload: unknown): CreateNotebookSessionCommandPayload => {
     const record = readOptionalPayloadRecord(payload);
+    const containerResourcesRecord = readRecord(record.containerResources, 'containerResources');
 
     return {
         requestedBy: readString(record.requestedBy, 'requestedBy'),
         publicBasePath: readString(record.publicBasePath, 'publicBasePath'),
-        notebook: readNotebookSessionSnapshot(record.notebook)
+        notebook: readNotebookSessionSnapshot(record.notebook),
+        containerResources: {
+            cpus: readNumber(containerResourcesRecord.cpus, 'containerResources.cpus'),
+            memoryMB: readNumber(containerResourcesRecord.memoryMB, 'containerResources.memoryMB')
+        }
     };
 };
 
@@ -114,7 +124,8 @@ export const createNotebookHandlers = (deps: NotebookHandlersDependencies): Reve
                 data: await deps.jupyterRuntimeService.ensureSession({
                     notebook: request.notebook,
                     requestedBy: request.requestedBy,
-                    publicBasePath: request.publicBasePath
+                    publicBasePath: request.publicBasePath,
+                    containerResources: request.containerResources
                 }),
                 status: 201
             };

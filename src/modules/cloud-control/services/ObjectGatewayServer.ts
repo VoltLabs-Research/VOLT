@@ -1,4 +1,5 @@
 import {
+    TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER,
     TeamClusterServiceExposureAccessMode,
     TeamClusterServiceExposureSourceKind,
     TeamClusterServiceExposureStatus,
@@ -7,12 +8,14 @@ import {
 import { logger } from '@/core/logger';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { networkInterfaces } from 'node:os';
 import type { DaemonConfig } from '@/core/config';
 import type { MinioService } from '@/modules/platform/services';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { ObjectGatewayTelemetryService } from './ObjectGatewayTelemetryService';
 import type { RuntimeCapabilityGuard } from './RuntimeCapabilityGuard';
 import { RuntimeCapabilityError } from './RuntimeCapabilityGuard';
+import { verifyTeamClusterDirectAccessToken } from './TeamClusterDirectAccessTokenVerifier';
 
 const OBJECT_GATEWAY_API_BASE_PATH = '/internal/object-gateway/v1';
 const OBJECT_GATEWAY_BUCKETS_PATH = `${OBJECT_GATEWAY_API_BASE_PATH}/buckets/`;
@@ -22,6 +25,63 @@ const DEFAULT_LIST_LIMIT = 100;
 const MAX_LIST_LIMIT = 1_000;
 const OBJECT_METADATA_HEADER_PREFIX = 'x-object-meta-';
 const MINIO_METADATA_HEADER_PREFIX = 'x-amz-meta-';
+const LOOPBACK_HOST = '127.0.0.1';
+
+const isWildcardHost = (value: string): boolean => {
+    return value === '0.0.0.0' || value === '::' || value === '[::]';
+};
+
+const readDirectAccessProtocol = (): 'http' | 'https' => {
+    const configuredProtocol = process.env.TEAM_CLUSTER_DIRECT_ACCESS_PROTOCOL?.trim();
+    return configuredProtocol === 'https'
+        ? 'https'
+        : 'http';
+};
+
+const detectNonInternalIpv4Host = (): string | null => {
+    const interfaces = networkInterfaces();
+
+    for (const addresses of Object.values(interfaces)) {
+        if (!addresses) {
+            continue;
+        }
+
+        for (const address of addresses) {
+            if (address.family !== 'IPv4' || address.internal || isWildcardHost(address.address)) {
+                continue;
+            }
+
+            return address.address;
+        }
+    }
+
+    return null;
+};
+
+const resolveAdvertisedHost = (bindHost: string): string => {
+    const configuredAdvertisedHost = process.env.TEAM_CLUSTER_OBJECT_GATEWAY_ADVERTISED_HOST?.trim();
+    if (configuredAdvertisedHost) {
+        return configuredAdvertisedHost;
+    }
+
+    if (!isWildcardHost(bindHost)) {
+        return bindHost;
+    }
+
+    const configuredServerHostname = process.env.SERVER_HOSTNAME?.trim();
+    if (configuredServerHostname && !isWildcardHost(configuredServerHostname)) {
+        return configuredServerHostname;
+    }
+
+    const autoDetectedHost = detectNonInternalIpv4Host();
+    if (autoDetectedHost) {
+        return autoDetectedHost;
+    }
+
+    throw new Error(
+        'Unable to determine TEAM_CLUSTER_OBJECT_GATEWAY_ADVERTISED_HOST for direct cluster access'
+    );
+};
 
 interface ObjectStatLike {
     size?: unknown;
@@ -105,6 +165,7 @@ export class ObjectGatewayServer {
     private server: http.Server | null = null;
     private bindHost: string | null = null;
     private bindPort: number | null = null;
+    private localTargetHost: string | null = null;
     private readonly allowedBuckets: Set<string>;
 
     constructor(
@@ -145,7 +206,7 @@ export class ObjectGatewayServer {
 
             server.once('error', handleError);
             server.once('listening', handleListening);
-            server.listen(0, '127.0.0.1');
+            server.listen(this.config.port, this.config.host);
         });
 
         const address = this.server.address();
@@ -156,6 +217,9 @@ export class ObjectGatewayServer {
         const tcpAddress = address as AddressInfo;
         this.bindHost = tcpAddress.address;
         this.bindPort = tcpAddress.port;
+        this.localTargetHost = isWildcardHost(tcpAddress.address)
+            ? LOOPBACK_HOST
+            : tcpAddress.address;
 
         logger.info({
             action: 'object-gateway.started',
@@ -174,6 +238,7 @@ export class ObjectGatewayServer {
         this.server = null;
         this.bindHost = null;
         this.bindPort = null;
+        this.localTargetHost = null;
 
         await new Promise<void>((resolve, reject) => {
             server.close((error) => {
@@ -188,7 +253,7 @@ export class ObjectGatewayServer {
     }
 
     getExposure(): TeamClusterServiceExposure {
-        if (!this.bindHost || !this.bindPort) {
+        if (!this.bindHost || !this.bindPort || !this.localTargetHost) {
             throw new Error('Object gateway server is not listening');
         }
 
@@ -199,9 +264,14 @@ export class ObjectGatewayServer {
             sourceKind: TeamClusterServiceExposureSourceKind.Daemon,
             exposureName: OBJECT_GATEWAY_EXPOSURE_NAME,
             accessModes: [TeamClusterServiceExposureAccessMode.Http],
-            targetHost: this.bindHost,
+            targetHost: this.localTargetHost,
             targetPort: this.bindPort,
             status: TeamClusterServiceExposureStatus.Active,
+            publicAccess: {
+                protocol: readDirectAccessProtocol(),
+                host: resolveAdvertisedHost(this.bindHost),
+                port: this.bindPort
+            },
             labels: {
                 'volt.exposure.api-version': 'v1',
                 'volt.exposure.service': OBJECT_GATEWAY_EXPOSURE_NAME,
@@ -217,6 +287,8 @@ export class ObjectGatewayServer {
         if (!request.url) {
             throw new ObjectGatewayHttpError(400, 'Request URL is required');
         }
+
+        this.authorizeRequest(request);
 
         const url = new URL(request.url, 'http://127.0.0.1');
         const resolvedRoute = this.resolveRoute(url.pathname);
@@ -614,6 +686,24 @@ export class ObjectGatewayServer {
         this.writeJson(response, 500, {
             message: 'Object gateway request failed'
         });
+    }
+
+    private authorizeRequest(request: IncomingMessage): void {
+        const token = readSingleHeaderValue(request.headers[TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER]);
+        if (!token) {
+            throw new ObjectGatewayHttpError(401, 'Direct access token is required');
+        }
+
+        const claims = verifyTeamClusterDirectAccessToken(this.config.daemonPassword, token);
+        if (
+            !claims
+            || claims.ownerClusterId !== this.config.teamClusterId
+            || claims.exposureId !== OBJECT_GATEWAY_EXPOSURE_ID
+            || claims.exposureName !== OBJECT_GATEWAY_EXPOSURE_NAME
+            || claims.accessMode !== TeamClusterServiceExposureAccessMode.Http
+        ) {
+            throw new ObjectGatewayHttpError(401, 'Direct access token is invalid or expired');
+        }
     }
 }
 

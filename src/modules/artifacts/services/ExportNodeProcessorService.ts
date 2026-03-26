@@ -1345,6 +1345,8 @@ export const createExportNodeProcessorService = (
 
                 reportArtifact(input, exporter, exportConfig, objectPath, arrayIndex);
             }
+
+            daemonArtifactReporterService.flushPendingArtifacts();
         }
     };
 };

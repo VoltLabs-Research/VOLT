@@ -1,6 +1,7 @@
 import { EmptyFilterResultError } from '@/modules/trajectory-native/services';
 import { createTraceLogContext, extractDaemonTraceContext } from '@/shared/observability/daemonInstrumentation';
 import { logger } from '@/core/logger';
+import { DaemonCommandError } from './DaemonCommandError';
 import { RuntimeCapabilityError } from './RuntimeCapabilityGuard';
 import type { TeamClusterDaemonSocketHeaders } from '@/shared/contracts';
 import type { CommandResult, ReverseChannelHandler } from '@voltstack/daemon-cluster-client';
@@ -104,6 +105,26 @@ export const adaptReverseChannelHandler = (handler: ReverseChannelCommandHandler
                             ...commandLogContext
                         },
                         'Daemon command rejected by runtime capability guard'
+                    );
+                    return {
+                        status: error.statusCode,
+                        data: {
+                            status: 'error',
+                            code: error.code,
+                            message: error.message
+                        }
+                    };
+                }
+
+                if (error instanceof DaemonCommandError) {
+                    logger.warn(
+                        {
+                            command: handler.command,
+                            code: error.code,
+                            message: error.message,
+                            ...commandLogContext
+                        },
+                        'Daemon command rejected by validation'
                     );
                     return {
                         status: error.statusCode,
