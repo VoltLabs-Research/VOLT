@@ -15,7 +15,10 @@ import type {
     IScriptingSessionOrchestrator,
     ScriptingSessionStartInput
 } from '@modules/scripting/domain/port/IScriptingSessionOrchestrator';
-import type { ScriptingNotebookProps } from '@modules/scripting/domain/entities/ScriptingNotebook';
+import type {
+    ScriptingNotebookContainerResources,
+    ScriptingNotebookProps
+} from '@modules/scripting/domain/entities/ScriptingNotebook';
 import type ScriptingNotebook from '@modules/scripting/domain/entities/ScriptingNotebook';
 import type { IUseCase } from '@shared/application/IUseCase';
 
@@ -38,6 +41,20 @@ const getPrimaryTrajectoryId = (notebook: ScriptingNotebook): string | null => {
 
 const getNotebookTeamClusterId = (teamCluster: string | null | undefined): string | undefined => {
     return teamCluster || undefined;
+};
+
+const getNotebookContainerResources = (
+    notebook: ScriptingNotebook
+): ScriptingNotebookContainerResources | null => {
+    const { containerResources } = notebook.props;
+    if (!containerResources) {
+        return null;
+    }
+
+    return {
+        cpus: containerResources.cpus,
+        memoryMB: containerResources.memoryMB
+    };
 };
 
 const getNotebookSortTimestamp = (notebook: ScriptingNotebook): number => {
@@ -116,9 +133,11 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             }
 
             const notebook = await this.resolveNotebookForSession(input, userId);
+            const containerResources = this.requireNotebookContainerResources(notebook);
             const sessionInput: ScriptingSessionStartInput = {
                 teamId: input.teamId,
                 teamClusterId: await this.resolveNotebookTeamClusterId(notebook, input),
+                containerResources,
                 userId,
                 notebookId: notebook.id,
                 notebook: {
@@ -197,14 +216,17 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         const notebookContent = await this.scriptingSessionOrchestrator.resolveNotebookTemplateContent({
             trajectoryId: input.trajectoryId
         });
+        const containerResources = this.requireCreateInputContainerResources(input);
+        const teamClusterIdInput = this.requireCreateInputTeamClusterId(input);
         const teamClusterId = await this.teamClusterSelectionService.resolveTeamClusterId(
             input.teamId,
-            input.teamClusterId
+            teamClusterIdInput
         );
         const now = new Date();
         const createData: ScriptingNotebookProps = {
             team: input.teamId,
             teamCluster: teamClusterId,
+            containerResources,
             title: DEFAULT_SCRIPTING_NOTEBOOK_TITLE,
             notebookPath: buildScriptingNotebookPath(input.trajectoryId),
             trajectory: input.trajectoryId,
@@ -225,20 +247,60 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         input: CreateScriptingJupyterSessionInputDTO
     ): Promise<string> {
         const notebookTeamClusterId = getNotebookTeamClusterId(notebook.props.teamCluster);
-        const teamClusterId = await this.teamClusterSelectionService.resolveTeamClusterId(
-            input.teamId,
-            input.teamClusterId || notebookTeamClusterId
-        );
-        if (notebookTeamClusterId !== teamClusterId) {
-            await this.scriptingNotebookRepository.updateById(notebook._id, {
-                teamCluster: teamClusterId,
-                runtimeNotebookId: undefined
-            });
-            notebook.props.teamCluster = teamClusterId;
-            notebook.props.runtimeNotebookId = undefined;
+        if (!notebookTeamClusterId) {
+            throw ApplicationError.badRequest(
+                ErrorCodes.VALIDATION_MISSING_REQUIRED_FIELDS,
+                'Notebook deployment cluster is not configured'
+            );
         }
 
-        return teamClusterId;
+        return this.teamClusterSelectionService.resolveTeamClusterId(
+            input.teamId,
+            notebookTeamClusterId
+        );
+    }
+
+    private requireCreateInputContainerResources(
+        input: CreateScriptingJupyterSessionInputDTO
+    ): ScriptingNotebookContainerResources {
+        if (!input.containerResources) {
+            throw ApplicationError.badRequest(
+                ErrorCodes.VALIDATION_MISSING_REQUIRED_FIELDS,
+                'Notebook container resources are required'
+            );
+        }
+
+        return {
+            cpus: input.containerResources.cpus,
+            memoryMB: input.containerResources.memoryMB
+        };
+    }
+
+    private requireCreateInputTeamClusterId(
+        input: CreateScriptingJupyterSessionInputDTO
+    ): string {
+        if (!input.teamClusterId) {
+            throw ApplicationError.badRequest(
+                ErrorCodes.VALIDATION_MISSING_REQUIRED_FIELDS,
+                'Notebook deployment cluster is required'
+            );
+        }
+
+        return input.teamClusterId;
+    }
+
+    private requireNotebookContainerResources(
+        notebook: ScriptingNotebook
+    ): ScriptingNotebookContainerResources {
+        const containerResources = getNotebookContainerResources(notebook);
+        if (!containerResources) {
+            throw ApplicationError.badRequest(
+                ErrorCodes.VALIDATION_MISSING_REQUIRED_FIELDS,
+                'Notebook container resources are not configured'
+            );
+        }
+
+        return containerResources;
     }
 
     private buildLockKey(input: CreateScriptingJupyterSessionInputDTO): string | null {

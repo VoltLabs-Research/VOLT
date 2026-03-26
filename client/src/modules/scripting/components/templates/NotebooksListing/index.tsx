@@ -1,3 +1,4 @@
+import ScriptingNotebookDeploymentModal from '@/modules/scripting/components/molecules/ScriptingNotebookDeploymentModal';
 import RenameScriptingNotebookModal from '@/modules/scripting/components/molecules/RenameScriptingNotebookModal';
 import useNotebooksListing from '@/modules/scripting/hooks/use-notebooks-listing';
 import { ScriptingNotebookScope } from '@/modules/scripting/api/entities/scripting-notebook-scope';
@@ -159,8 +160,10 @@ const NotebooksListing = () => {
         fetchData,
         getMenuOptions,
         handleCreate,
+        handleDeploymentModalClose,
         handleRenameClose,
         handleRenameSubmit,
+        deploymentModalRequest,
         renamingNotebook,
         queryKey,
         socketInvalidation
@@ -215,6 +218,10 @@ const NotebooksListing = () => {
                 notebook={renamingNotebook}
                 onSubmit={handleRenameSubmit}
                 onClose={handleRenameClose}
+            />
+            <ScriptingNotebookDeploymentModal
+                request={deploymentModalRequest}
+                onClose={handleDeploymentModalClose}
             />
         </>
     );

@@ -9,6 +9,8 @@ import TeamClusterCredentialsCipher from '@modules/team-cluster/infrastructure/s
 import TeamClusterExposureRegistryService from '@modules/team-cluster/infrastructure/services/TeamClusterExposureRegistryService';
 import TeamClusterInstallManifestService from '@modules/team-cluster/infrastructure/services/TeamClusterInstallManifestService';
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
+import TeamClusterDirectAccessGrantService from '@modules/team-cluster/infrastructure/services/TeamClusterDirectAccessGrantService';
+import TeamClusterDirectAccessTokenService from '@modules/team-cluster/infrastructure/services/TeamClusterDirectAccessTokenService';
 import TeamClusterRemoteAccessSessionService from '@modules/team-cluster/infrastructure/services/TeamClusterRemoteAccessSessionService';
 import RemoteExplorerDaemonGateway from '@modules/team-cluster/infrastructure/services/RemoteExplorerDaemonGateway';
 import TeamClusterRemoteTerminalService from '@modules/team-cluster/infrastructure/services/TeamClusterRemoteTerminalService';
@@ -16,6 +18,7 @@ import TeamClusterBinaryRelayService from '@modules/team-cluster/infrastructure/
 import TeamClusterBinaryRelayUpgradeService from '@modules/team-cluster/infrastructure/services/TeamClusterBinaryRelayUpgradeService';
 import TeamClusterReverseChannelService from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
 import TeamClusterTcpExposureRelayService from '@modules/team-cluster/infrastructure/services/TeamClusterTcpExposureRelayService';
+import VoltServerObjectGatewayService from '@modules/team-cluster/infrastructure/services/VoltServerObjectGatewayService';
 import ClusterTransferRunner from '@modules/team-cluster/infrastructure/services/ClusterTransferRunner';
 import DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
 import StoragePlacementService from '@modules/team-cluster/application/services/StoragePlacementService';
@@ -48,6 +51,9 @@ export const registerTeamClusterDependencies = () => {
             [TEAM_CLUSTER_TOKENS.TeamClusterLifecycleService, TeamClusterLifecycleService],
             [TEAM_CLUSTER_TOKENS.TeamClusterHeartbeatMonitor, TeamClusterHeartbeatMonitor],
             [TEAM_CLUSTER_TOKENS.TeamClusterExposureRegistryService, TeamClusterExposureRegistryService],
+            TeamClusterDirectAccessTokenService,
+            VoltServerObjectGatewayService,
+            TeamClusterDirectAccessGrantService,
             [TEAM_CLUSTER_TOKENS.TeamClusterReverseChannelService, TeamClusterReverseChannelService],
             [TEAM_CLUSTER_TOKENS.TeamClusterBinaryRelayService, TeamClusterBinaryRelayService],
             [TEAM_CLUSTER_TOKENS.TeamClusterBinaryRelayUpgradeService, TeamClusterBinaryRelayUpgradeService],

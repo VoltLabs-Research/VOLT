@@ -28,7 +28,7 @@ export class CreatePluginUseCase implements IUseCase<CreatePluginInputDTO, Creat
     ){}
 
     async execute(input: CreatePluginInputDTO): Promise<Result<CreatePluginOutputDTO>> {
-        const validation = await this.workflowValidator.validate(input.workflow, undefined, WorkflowValidationMode.Strict);
+        const validation = await this.workflowValidator.validate(input.workflow, undefined, WorkflowValidationMode.Draft);
         if (!validation.isValid) {
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.PLUGIN_NOT_VALID_CANNOT_PUBLISH,

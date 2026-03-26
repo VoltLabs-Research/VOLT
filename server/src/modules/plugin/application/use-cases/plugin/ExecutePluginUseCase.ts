@@ -23,6 +23,7 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import AnalysisCreatedEvent from '@modules/analysis/domain/events/AnalysisCreatedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 import type { ArgumentDefinition } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
 import type { WorkflowNode } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
@@ -162,7 +163,6 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             plugin.id,
             WorkflowValidationMode.Strict
         );
-        /*
         if (!isValid) {
             const detail = validationErrors?.length
                 ? `: ${validationErrors.join('; ')}`
@@ -171,7 +171,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
                 ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
                 `Plugin workflow is invalid${detail}`
             ));
-        }*/
+        }
 
         if (!trajectory) {
             return Result.fail(ApplicationError.badRequest(
@@ -252,36 +252,52 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             startedAt: new Date()
         });
 
-        await this.storagePlacementService.ensurePlacement('analysis', analysis.id);
+        try {
+            await this.storagePlacementService.ensurePlacement('analysis', analysis.id);
 
-        await this.eventBus.publish(new AnalysisCreatedEvent({
-            analysisId: analysis.id,
-            trajectoryId: input.trajectoryId,
-            pluginId: plugin._id,
-            pluginDisplayName,
-            teamId: input.teamId,
-            config: analysisConfig,
-            status: 'pending',
-            createdAt: new Date()
-        }));
+            await this.eventBus.publish(new AnalysisCreatedEvent({
+                analysisId: analysis.id,
+                trajectoryId: input.trajectoryId,
+                pluginId: plugin._id,
+                pluginDisplayName,
+                teamId: input.teamId,
+                config: analysisConfig,
+                status: 'pending',
+                createdAt: new Date()
+            }));
 
-        await this.pluginExecutionRouter.route({
-            teamClusterId: computeClusterId,
-            analysis,
-            analysisId: analysis.id,
-            pluginDisplayName,
-            trajectoryId: input.trajectoryId,
-            trajectoryName: trajectory.props.name,
-            trajectoryFrames: trajectory.props.frames,
-            teamId: input.teamId,
-            plugin,
-            pluginDependencies: allDependencies,
-            pluginReferenceExecutions,
-            config: analysisConfig,
-            selectedFrameOnly: input.selectedFrameOnly,
-            selectedTimesteps,
-            timestep: input.timestep
-        });
+            await this.pluginExecutionRouter.route({
+                teamClusterId: computeClusterId,
+                analysis,
+                analysisId: analysis.id,
+                pluginDisplayName,
+                trajectoryId: input.trajectoryId,
+                trajectoryName: trajectory.props.name,
+                trajectoryFrames: trajectory.props.frames,
+                teamId: input.teamId,
+                plugin,
+                pluginDependencies: allDependencies,
+                pluginReferenceExecutions,
+                config: analysisConfig,
+                selectedFrameOnly: input.selectedFrameOnly,
+                selectedTimesteps,
+                timestep: input.timestep
+            });
+        } catch (error: unknown) {
+            await this.analysisRepo.updateById(analysis.id, {
+                status: 'failed',
+                finishedAt: new Date()
+            }).catch((updateError: unknown) => {
+                logger.warn(
+                    {
+                        analysisId: analysis.id,
+                        err: updateError
+                    },
+                    '@execute-plugin-use-case: failed to mark analysis as failed after dispatch error'
+                );
+            });
+            throw error;
+        }
 
         return Result.ok({ analysisId: analysis.id });
     }

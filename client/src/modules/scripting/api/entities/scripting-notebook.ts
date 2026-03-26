@@ -6,9 +6,15 @@ export interface ScriptingNotebookTrajectory {
     name?: string;
 };
 
+export interface ScriptingNotebookContainerResources {
+    cpus: number;
+    memoryMB: number;
+};
+
 export interface ScriptingNotebook {
     _id: string;
     teamCluster?: TeamCluster | string | null;
+    containerResources?: ScriptingNotebookContainerResources | null;
     title: string;
     notebookPath: string;
     trajectory?: ScriptingNotebookTrajectory | string | null;

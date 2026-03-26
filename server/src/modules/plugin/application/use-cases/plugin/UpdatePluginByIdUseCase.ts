@@ -38,9 +38,12 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
         if(input.status) update.status = input.status;
 
         if(input.workflow){
-            // Validate the provided workflow.
-            const { isValid, errors } = await this.workflowValidator.validate(input.workflow, plugin.id, WorkflowValidationMode.Strict);
-            if(input.status === PluginStatus.Published && !isValid){
+            const effectiveStatus = input.status ?? plugin.props.status;
+            const validationMode = effectiveStatus === PluginStatus.Published
+                ? WorkflowValidationMode.Strict
+                : WorkflowValidationMode.Draft;
+            const { isValid, errors } = await this.workflowValidator.validate(input.workflow, plugin.id, validationMode);
+            if(effectiveStatus === PluginStatus.Published && !isValid){
                 return Result.fail(ApplicationError.badRequest(
                     ErrorCodes.PLUGIN_NOT_VALID_CANNOT_PUBLISH,
                     `Plugin not valid, cannot publish: ${(errors ?? []).join(', ')}`

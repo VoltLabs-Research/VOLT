@@ -12,10 +12,10 @@ export interface DeleteNotebookSessionParams {
 
 const endpoints = {
     createSession: post<CreateScriptingSessionParams, ScriptingSession>('/:trajectoryId/sessions', {
-        body: ({ notebookId, teamClusterId }) => ({ notebookId, teamClusterId })
+        body: ({ notebookId, teamClusterId, containerResources }) => ({ notebookId, teamClusterId, containerResources })
     }),
     createNotebookSession: post<CreateScriptingNotebookSessionParams, ScriptingSession>('/sessions', {
-        body: ({ notebookId, teamClusterId }) => ({ notebookId, teamClusterId })
+        body: ({ notebookId }) => ({ notebookId })
     }),
     readNotebookSessionStatus: get<ReadNotebookSessionStatusParams, ScriptingSession>('/sessions/:notebookId/status'),
     deleteNotebookSession: del<DeleteNotebookSessionParams>('/sessions/:notebookId')

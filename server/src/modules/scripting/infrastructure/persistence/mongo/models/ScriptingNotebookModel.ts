@@ -7,12 +7,29 @@ import type { Persistable } from '@shared/infrastructure/persistence/mongo/Mongo
 export enum ScriptingNotebookRelation {
     Team = 'team',
     TeamCluster = 'teamCluster',
+    ContainerResources = 'containerResources',
     RuntimeNotebookId = 'runtimeNotebookId',
     Trajectory = 'trajectory',
     CreatedBy = 'createdBy'
 };
 
 export interface ScriptingNotebookDocument extends Persistable<ScriptingNotebookProps, `${ScriptingNotebookRelation}`>, Document {};
+
+const ScriptingNotebookContainerResourcesSchema = new Schema({
+    cpus: {
+        type: Number,
+        required: true,
+        min: 0.5
+    },
+    memoryMB: {
+        type: Number,
+        required: true,
+        min: 128
+    }
+}, {
+    _id: false,
+    id: false
+});
 
 const ScriptingNotebookSchema: Schema<ScriptingNotebookDocument> = new Schema({
     team: {
@@ -23,6 +40,11 @@ const ScriptingNotebookSchema: Schema<ScriptingNotebookDocument> = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'TeamCluster',
         required: true
+    },
+    containerResources: {
+        type: ScriptingNotebookContainerResourcesSchema,
+        required: false,
+        default: undefined
     },
     runtimeNotebookId: {
         type: String,

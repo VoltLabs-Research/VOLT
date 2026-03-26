@@ -2,6 +2,7 @@ import { ScriptingNotebookScope } from '@/modules/scripting/api/entities/scripti
 import type { ExportType } from '@/shared/domain/export/types';
 import type {
     ScriptingNotebook,
+    ScriptingNotebookContainerResources,
     ScriptingNotebookTrajectory
 } from '@/modules/scripting/api/entities/scripting-notebook';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
@@ -130,6 +131,16 @@ export const getNotebookTeamClusterId = (notebook?: ScriptingNotebook | null): s
     }
 
     return notebook.teamCluster._id;
+};
+
+export const getNotebookContainerResources = (
+    notebook?: ScriptingNotebook | null
+): ScriptingNotebookContainerResources | null => {
+    return notebook?.containerResources ?? null;
+};
+
+export const hasNotebookDeploymentConfiguration = (notebook?: ScriptingNotebook | null): boolean => {
+    return Boolean(getNotebookTeamClusterId(notebook) && getNotebookContainerResources(notebook));
 };
 
 export const getDeleteConfirmationMessage = (selectedItems: ScriptingNotebook[]): string => {
