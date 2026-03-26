@@ -78,7 +78,7 @@ const readBody = async (request: http.IncomingMessage): Promise<Buffer> => {
 
 const buildObjectGatewayServer = async () => {
     const objects = new Map<string, StoredObject>();
-    const requests: Array<{ method: string; path: string; token?: string; }> = [];
+    const requests: Array<{ method: string; path: string; token?: string; connectionId: string; }> = [];
 
     const server = http.createServer(async (request, response) => {
         const method = request.method || 'GET';
@@ -86,6 +86,7 @@ const buildObjectGatewayServer = async () => {
         requests.push({
             method,
             path: `${url.pathname}${url.search}`,
+            connectionId: `${request.socket.remoteAddress}:${request.socket.remotePort}`,
             token: typeof request.headers['x-team-cluster-direct-access-token'] === 'string'
                 ? request.headers['x-team-cluster-direct-access-token']
                 : undefined
@@ -264,7 +265,8 @@ test('TeamClusterObjectGatewayClient performs object gateway operations through 
 
         assert.ok(requests.some((entry) => entry.method === 'HEAD'));
         assert.ok(requests.every((entry) => entry.token === TEST_DIRECT_ACCESS_TOKEN));
-        assert.ok(harness.daemonClient.openTunnelCalls.length >= 6);
+        assert.ok(harness.daemonClient.openTunnelCalls.length < requests.length);
+        assert.ok(new Set(requests.map((entry) => entry.connectionId)).size < requests.length);
         assert.ok(harness.daemonClient.openTunnelCalls.every((entry) => entry.teamClusterId === TEST_CLUSTER_ID));
         assert.ok(harness.daemonClient.openTunnelCalls.every((entry) => entry.exposureId === 'daemon:object-gateway'));
         assert.ok(harness.daemonClient.openTunnelCalls.every((entry) => entry.accessMode === 'http'));
