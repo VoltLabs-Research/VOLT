@@ -1,17 +1,20 @@
 import { TeamClusterServiceExposureAccessMode } from '@modules/team-cluster/utilities/teamClusterSocket';
+import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 import { Readable } from 'node:stream';
 import type { Readable as NodeReadable } from 'node:stream';
 import http from 'node:http';
-import https from 'node:https';
-import type { TeamClusterDirectAccessGrantResponse } from '@shared/infrastructure/contracts/team-cluster';
 import {
     TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER,
     TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX
 } from '@shared/infrastructure/contracts/team-cluster';
 import { ensureObjectGatewayAccessEnabled } from './ObjectGatewayFeatureFlags';
-import TeamClusterDirectAccessGrantService from './TeamClusterDirectAccessGrantService';
+import TeamClusterDirectAccessTokenService from './TeamClusterDirectAccessTokenService';
+import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 
 type ObjectGatewayOperationName =
     | 'list'
@@ -86,11 +89,18 @@ interface RawHttpResponse {
     stream: NodeReadable;
 }
 
+interface CachedAccessToken {
+    token: string;
+    expiresAt: string;
+}
+
+const OBJECT_GATEWAY_EXPOSURE_ID = 'daemon:object-gateway';
 const OBJECT_GATEWAY_EXPOSURE_NAME = 'object-gateway';
 const OBJECT_GATEWAY_BASE_PATH = '/internal/object-gateway/v1';
 const OBJECT_METADATA_HEADER_PREFIX = 'x-object-meta-';
 const DEFAULT_LIST_LIMIT = 100;
-const GRANT_EXPIRY_SAFETY_WINDOW_MS = 5_000;
+const TOKEN_EXPIRY_SAFETY_WINDOW_MS = 5_000;
+const TOKEN_TTL_SECONDS = 5 * 60;
 
 const readHeaderValue = (value: string | null): string | undefined => {
     return value && value.length > 0
@@ -184,12 +194,21 @@ const mapStatusToApplicationError = (statusCode: number, code: string, message: 
 
 @injectable()
 export default class TeamClusterObjectGatewayClient {
-    private readonly cachedGrants = new Map<string, TeamClusterDirectAccessGrantResponse>();
-    private readonly pendingGrants = new Map<string, Promise<TeamClusterDirectAccessGrantResponse>>();
+    private readonly cachedTokens = new Map<string, CachedAccessToken>();
+    private readonly pendingTokens = new Map<string, Promise<CachedAccessToken>>();
 
     constructor(
-        @inject(TeamClusterDirectAccessGrantService)
-        private readonly directAccessGrantService: TeamClusterDirectAccessGrantService
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
+
+        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
+        private readonly teamClusterRepository: ITeamClusterRepository,
+
+        @inject(DaemonCredentialGuard)
+        private readonly daemonCredentialGuard: DaemonCredentialGuard,
+
+        @inject(TeamClusterDirectAccessTokenService)
+        private readonly directAccessTokenService: TeamClusterDirectAccessTokenService
     ) {}
 
     async list(
@@ -344,91 +363,120 @@ export default class TeamClusterObjectGatewayClient {
         options: ObjectGatewayRequestOptions,
         operation: ObjectGatewayOperationName
     ): Promise<RawHttpResponse> {
-        const grant = await this.resolveGrant(teamClusterId);
+        const accessToken = await this.resolveAccessToken(teamClusterId);
         const headers = new Headers(options.headers);
-        headers.set(TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER, grant.token);
+        headers.set(TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER, accessToken.token);
 
-        const response = await this.performRawRequest(this.buildRequestUrl(grant, options.path), {
-            method: options.method,
-            headers,
-            body: options.body
-        });
-
-        if (response.statusCode >= 200 && response.statusCode < 300) {
-            return response;
-        }
-
-        let payload: ObjectGatewayJsonError | undefined;
-        try {
-            payload = JSON.parse((await this.readResponseBuffer(response.stream)).toString('utf8')) as ObjectGatewayJsonError;
-        } catch {
-            payload = undefined;
-        }
-
-        throw mapStatusToApplicationError(
-            response.statusCode,
-            typeof payload?.code === 'string'
-                ? payload.code
-                : `TeamCluster::ObjectGateway${operation}`,
-            typeof payload?.message === 'string'
-                ? payload.message
-                : `Object gateway request failed with status ${response.statusCode}`
+        const tunnel = await this.teamClusterDaemonClient.openTunnel(
+            teamClusterId,
+            OBJECT_GATEWAY_EXPOSURE_ID,
+            TeamClusterServiceExposureAccessMode.Http
         );
+        const agent = this.createSingleUseTunnelHttpAgent(tunnel);
+
+        try {
+            const response = await this.performTunnelRequest(options, headers, agent);
+
+            if (response.statusCode >= 200 && response.statusCode < 300) {
+                const destroyAgent = (): void => {
+                    agent.destroy();
+                };
+                response.stream.once('close', destroyAgent);
+                response.stream.once('end', destroyAgent);
+                return response;
+            }
+
+            const payloadBuffer = await this.readResponseBuffer(response.stream);
+            agent.destroy();
+
+            let payload: ObjectGatewayJsonError | undefined;
+            try {
+                payload = JSON.parse(payloadBuffer.toString('utf8')) as ObjectGatewayJsonError;
+            } catch {
+                payload = undefined;
+            }
+
+            throw mapStatusToApplicationError(
+                response.statusCode,
+                typeof payload?.code === 'string'
+                    ? payload.code
+                    : `TeamCluster::ObjectGateway${operation}`,
+                typeof payload?.message === 'string'
+                    ? payload.message
+                    : `Object gateway request failed with status ${response.statusCode}`
+            );
+        } catch (error) {
+            agent.destroy();
+            throw error;
+        }
     }
 
-    private async resolveGrant(teamClusterId: string): Promise<TeamClusterDirectAccessGrantResponse> {
-        const cacheKey = `${teamClusterId}:${OBJECT_GATEWAY_EXPOSURE_NAME}:${TeamClusterServiceExposureAccessMode.Http}`;
-        const cachedGrant = this.cachedGrants.get(cacheKey);
-        const expiresAtMs = cachedGrant
-            ? Date.parse(cachedGrant.expiresAt)
+    private async resolveAccessToken(teamClusterId: string): Promise<CachedAccessToken> {
+        const cacheKey = `${teamClusterId}:${OBJECT_GATEWAY_EXPOSURE_ID}:${TeamClusterServiceExposureAccessMode.Http}`;
+        const cachedToken = this.cachedTokens.get(cacheKey);
+        const expiresAtMs = cachedToken
+            ? Date.parse(cachedToken.expiresAt)
             : Number.NaN;
 
-        if (cachedGrant && Number.isFinite(expiresAtMs) && expiresAtMs - Date.now() > GRANT_EXPIRY_SAFETY_WINDOW_MS) {
-            return cachedGrant;
+        if (cachedToken && Number.isFinite(expiresAtMs) && expiresAtMs - Date.now() > TOKEN_EXPIRY_SAFETY_WINDOW_MS) {
+            return cachedToken;
         }
 
-        const pendingGrant = this.pendingGrants.get(cacheKey);
-        if (pendingGrant) {
-            return pendingGrant;
+        const pendingToken = this.pendingTokens.get(cacheKey);
+        if (pendingToken) {
+            return pendingToken;
         }
 
-        const nextGrantPromise = this.directAccessGrantService.issueInternalGrant(
-            teamClusterId,
-            OBJECT_GATEWAY_EXPOSURE_NAME,
-            TeamClusterServiceExposureAccessMode.Http
-        ).finally(() => {
-            this.pendingGrants.delete(cacheKey);
+        const nextTokenPromise = this.issueAccessToken(teamClusterId).finally(() => {
+            this.pendingTokens.delete(cacheKey);
         });
 
-        this.pendingGrants.set(cacheKey, nextGrantPromise);
-        const grant = await nextGrantPromise;
-        this.cachedGrants.set(cacheKey, grant);
-        return grant;
+        this.pendingTokens.set(cacheKey, nextTokenPromise);
+        const token = await nextTokenPromise;
+        this.cachedTokens.set(cacheKey, token);
+        return token;
     }
 
-    private buildRequestUrl(grant: TeamClusterDirectAccessGrantResponse, path: string): string {
-        return new URL(path, `${grant.endpoint.protocol}://${grant.endpoint.host}:${grant.endpoint.port}`).toString();
-    }
-
-    private async performRawRequest(
-        urlString: string,
-        init: {
-            method: string;
-            headers: Headers;
-            body?: Buffer | NodeReadable;
+    private async issueAccessToken(teamClusterId: string): Promise<CachedAccessToken> {
+        const teamCluster = await this.teamClusterRepository.findByIdWithSensitiveData(teamClusterId);
+        if (!teamCluster) {
+            throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
         }
-    ): Promise<RawHttpResponse> {
-        const targetUrl = new URL(urlString);
-        const transport = targetUrl.protocol === 'https:' ? https : http;
 
+        const daemonPassword = await this.daemonCredentialGuard.getDecryptedDaemonPassword(teamCluster);
+        const issuedAt = Math.floor(Date.now() / 1000);
+
+        return {
+            token: this.directAccessTokenService.create(daemonPassword, {
+                requesterKind: 'server',
+                requesterId: 'volt-server',
+                ownerClusterId: teamCluster.id,
+                teamId: teamCluster.props.team,
+                exposureId: OBJECT_GATEWAY_EXPOSURE_ID,
+                exposureName: OBJECT_GATEWAY_EXPOSURE_NAME,
+                accessMode: TeamClusterServiceExposureAccessMode.Http,
+                iat: issuedAt,
+                exp: issuedAt + TOKEN_TTL_SECONDS
+            }),
+            expiresAt: new Date((issuedAt + TOKEN_TTL_SECONDS) * 1000).toISOString()
+        };
+    }
+
+    private async performTunnelRequest(
+        options: ObjectGatewayRequestOptions,
+        headers: Headers,
+        agent: http.Agent
+    ): Promise<RawHttpResponse> {
         return new Promise<RawHttpResponse>((resolve, reject) => {
-            const request = transport.request({
-                protocol: targetUrl.protocol,
-                hostname: targetUrl.hostname,
-                port: targetUrl.port,
-                path: `${targetUrl.pathname}${targetUrl.search}`,
-                method: init.method,
-                headers: headersToObject(init.headers)
+            const request = http.request({
+                protocol: 'http:',
+                hostname: '127.0.0.1',
+                host: '127.0.0.1',
+                port: 80,
+                path: options.path,
+                method: options.method,
+                headers: headersToObject(headers),
+                agent
             }, (response) => {
                 resolve({
                     statusCode: response.statusCode || 0,
@@ -439,21 +487,31 @@ export default class TeamClusterObjectGatewayClient {
 
             request.once('error', reject);
 
-            if (!init.body) {
+            if (!options.body) {
                 request.end();
                 return;
             }
 
-            if (Buffer.isBuffer(init.body)) {
-                request.end(init.body);
+            if (Buffer.isBuffer(options.body)) {
+                request.end(options.body);
                 return;
             }
 
-            init.body.once('error', (error) => {
+            options.body.once('error', (error) => {
                 request.destroy(error);
             });
-            init.body.pipe(request);
+            options.body.pipe(request);
         });
+    }
+
+    private createSingleUseTunnelHttpAgent(tunnel: NodeReadable): http.Agent {
+        const agent = new http.Agent({
+            keepAlive: false,
+            maxSockets: 1
+        });
+
+        agent.createConnection = () => tunnel as any;
+        return agent;
     }
 
     private async readResponseBuffer(stream: NodeReadable): Promise<Buffer> {
