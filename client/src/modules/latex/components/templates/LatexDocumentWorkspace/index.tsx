@@ -7,7 +7,6 @@ import Container from '@/shared/presentation/components/Container';
 import EditableTag from '@/shared/presentation/components/EditableTag';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import Loader from '@/shared/presentation/components/Loader';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
 import '@/shared/presentation/styles/resize-handle.css';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
@@ -17,6 +16,7 @@ import LatexFilePanel from './LatexFilePanel';
 import LatexPreviewPanel from './LatexPreviewPanel';
 import './LatexDocumentWorkspace.css';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { Skeleton } from '@mui/material';
 import { Download, FileArchive, FileText, FolderUp, Play, Sparkles } from 'lucide-react';
 import { IoSparklesOutline } from 'react-icons/io5';
 import { useParams } from 'react-router-dom';
@@ -49,6 +49,12 @@ interface LoadingPlaceholderBlock {
     width: string;
 };
 
+interface LoadingSkeletonProps {
+    width: string | number;
+    height: string | number;
+    borderRadius?: string | number;
+};
+
 const STORAGE_KEY = 'volt:latex-panel-widths';
 const FILES_MIN = 160;
 const FILES_MAX = 400;
@@ -75,6 +81,25 @@ const LOADING_PREVIEW_BLOCKS: LoadingPlaceholderBlock[] = [
     { key: 'preview-2', width: '100%' },
     { key: 'preview-3', width: '82%' }
 ];
+
+const LoadingSkeleton = ({
+    width,
+    height,
+    borderRadius = '999px'
+}: LoadingSkeletonProps) => (
+    <Skeleton
+        variant='rectangular'
+        animation='wave'
+        width={width}
+        height={height}
+        sx={{
+            borderRadius,
+            transform: 'none',
+            bgcolor: 'var(--color-surface-tertiary, rgba(127, 127, 127, 0.18))'
+        }}
+    />
+);
+
 const LATEX_TEMPLATE_CONTENT = `\\documentclass{article}
 
 \\begin{document}
@@ -469,19 +494,13 @@ const LatexDocumentWorkspace = () => {
             <Container className='latex-workspace d-flex column'>
                 <Container className='latex-workspace__toolbar d-flex items-center content-between gap-1'>
                     <Container className='d-flex column gap-025'>
-                        <Paragraph>Opening LaTeX workspace</Paragraph>
-                        <Paragraph className='color-muted'>Loading files, preview, and collaboration state.</Paragraph>
+                        <LoadingSkeleton width='13rem' height='1rem' />
+                        <LoadingSkeleton width='18rem' height='0.875rem' />
                     </Container>
                     <Container className='d-flex items-center gap-075'>
-                        <span className='latex-workspace__status-text color-muted' aria-live='polite'>Preparing panels</span>
-                        <Button variant='ghost' intent='neutral' size='sm' shape='rounded' disabled>
-                            <IoSparklesOutline size={14} />
-                            Write with AI
-                        </Button>
-                        <Button variant='ghost' intent='neutral' size='sm' shape='rounded' disabled>
-                            <Play size={14} />
-                            Compile
-                        </Button>
+                        <LoadingSkeleton width='6.5rem' height='2rem' borderRadius='999px' />
+                        <LoadingSkeleton width='7.5rem' height='2rem' borderRadius='999px' />
+                        <LoadingSkeleton width='5.5rem' height='2rem' borderRadius='999px' />
                     </Container>
                 </Container>
 
@@ -494,7 +513,7 @@ const LatexDocumentWorkspace = () => {
                             borderRight: '1px solid var(--color-border-primary, rgba(127, 127, 127, 0.2))'
                         }}
                     >
-                        <Paragraph className='color-muted'>Project files</Paragraph>
+                        <LoadingSkeleton width='5.5rem' height='0.875rem' />
                         {LOADING_FILE_PANEL_BLOCKS.map((block) => <div
                             key={block.key}
                             style={{
@@ -507,10 +526,10 @@ const LatexDocumentWorkspace = () => {
                     </Container>
 
                     <Container className='latex-workspace__main-content d-flex column flex-1 min-w-0'>
-                        <Container className='d-flex column flex-center gap-1 flex-1 min-h-0' style={{ padding: '1.5rem' }}>
-                            <Loader scale={0.6} isFixed={false} />
-                            <Paragraph>Restoring editor session...</Paragraph>
-                            <Paragraph className='color-muted'>Your document tabs and preview will appear as soon as the workspace is ready.</Paragraph>
+                        <Container className='d-flex column gap-1 flex-1 min-h-0' style={{ padding: '1.5rem' }}>
+                            <LoadingSkeleton width='11rem' height='1rem' />
+                            <LoadingSkeleton width='100%' height='2.5rem' borderRadius='0.85rem' />
+                            <LoadingSkeleton width='100%' height='100%' borderRadius='1rem' />
                             <Container className='d-flex column gap-075 w-max' style={{ maxWidth: '42rem' }}>
                                 {LOADING_EDITOR_BLOCKS.map((block) => <div
                                     key={block.key}
@@ -534,7 +553,7 @@ const LatexDocumentWorkspace = () => {
                                     borderTop: '1px solid var(--color-border-primary, rgba(127, 127, 127, 0.2))'
                                 }}
                             >
-                                <Paragraph className='color-muted'>AI assistant</Paragraph>
+                                <LoadingSkeleton width='5rem' height='0.875rem' />
                                 <div
                                     style={{
                                         width: '42%',
@@ -563,7 +582,7 @@ const LatexDocumentWorkspace = () => {
                             borderLeft: '1px solid var(--color-border-primary, rgba(127, 127, 127, 0.2))'
                         }}
                     >
-                        <Paragraph className='color-muted'>PDF preview</Paragraph>
+                        <LoadingSkeleton width='5.75rem' height='0.875rem' />
                         {LOADING_PREVIEW_BLOCKS.map((block) => <div
                             key={block.key}
                             style={{
