@@ -2,6 +2,7 @@ import Workflow, { WorkflowProps } from '@modules/plugin/domain/entities/plugin/
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import { WorkflowEdge } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowEdge';
 import { WorkflowNode, WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
+import { EntrypointNodeType } from '@modules/plugin/domain/entities/plugin/workflow/nodes/EntrypointNode';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import {
     IWorkflowValidatorService,
@@ -86,6 +87,10 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
         }
 
         if (!errors.length && mode === WorkflowValidationMode.Strict) {
+            this.validateRuntimeReadiness(workflow, errors);
+        }
+
+        if (!errors.length && mode === WorkflowValidationMode.Strict) {
             const rootPluginId = currentPluginId ?? '__draft_plugin__';
             const transientPlugin = new Plugin(rootPluginId, {
                 team: '',
@@ -104,6 +109,47 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
             modifier,
             pluginReferences
         };
+    }
+
+    private validateRuntimeReadiness(workflow: WorkflowProps, errors: string[]): void {
+        const entrypointNode = workflow.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint);
+        if (!entrypointNode) {
+            return;
+        }
+
+        const entrypointData = entrypointNode.data?.entrypoint as Record<string, unknown> | undefined;
+        if (!entrypointData) {
+            errors.push(`Top-level entrypoint ${entrypointNode.id} is missing runtime configuration`);
+            return;
+        }
+
+        const binaryObjectPath = typeof entrypointData.binaryObjectPath === 'string'
+            ? entrypointData.binaryObjectPath.trim()
+            : '';
+        const argumentsTemplate = typeof entrypointData.arguments === 'string'
+            ? entrypointData.arguments.trim()
+            : '';
+        const entrypointType = entrypointData.type === EntrypointNodeType.PythonScript
+            ? EntrypointNodeType.PythonScript
+            : EntrypointNodeType.Executable;
+
+        if (!binaryObjectPath) {
+            errors.push(`Top-level entrypoint ${entrypointNode.id} requires an uploaded binary`);
+        }
+
+        if (!argumentsTemplate) {
+            errors.push(`Top-level entrypoint ${entrypointNode.id} must define execution arguments`);
+        }
+
+        if (entrypointType === EntrypointNodeType.PythonScript) {
+            const entrypointScript = typeof entrypointData.entrypointScript === 'string'
+                ? entrypointData.entrypointScript.trim()
+                : '';
+
+            if (!entrypointScript) {
+                errors.push(`Top-level entrypoint ${entrypointNode.id} must define an entrypoint script`);
+            }
+        }
     }
 
     private hasCycle(nodes: WorkflowNode[], edges: WorkflowEdge[]): boolean {

@@ -1,6 +1,12 @@
+export interface ScriptingNotebookContainerResources {
+    cpus: number;
+    memoryMB: number;
+};
+
 export interface ScriptingNotebookProps {
     team: string;
     teamCluster?: string;
+    containerResources?: ScriptingNotebookContainerResources;
     runtimeNotebookId?: string;
     title: string;
     notebookPath: string;

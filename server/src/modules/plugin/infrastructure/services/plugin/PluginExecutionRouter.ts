@@ -1,10 +1,12 @@
 import { SYS_BUCKETS } from '@core/config/minio';
+import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import {
     TEAM_CLUSTER_DAEMON_COMMAND,
     VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID
 } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 import zlib from 'node:zlib';
@@ -152,6 +154,11 @@ interface EncodedDispatchSection<T> {
     rawValue?: T;
 };
 
+interface StorageObjectErrorLike {
+    code?: string;
+    statusCode?: number;
+}
+
 const buildNestedPluginDefinition = (plugin: Plugin): NestedPluginDefinition => {
     return {
         pluginId: plugin.id,
@@ -220,6 +227,17 @@ const encodeDispatchSection = <T>(value: T): EncodedDispatchSection<T> => {
         storedBytes: Buffer.byteLength(compressedValue),
         compressedValue
     };
+};
+
+const isStorageObjectNotFoundError = (error: unknown): error is StorageObjectErrorLike => {
+    if (typeof error !== 'object' || error === null) {
+        return false;
+    }
+
+    const candidate = error as StorageObjectErrorLike;
+    return candidate.code === 'NotFound'
+        || candidate.code === 'NoSuchKey'
+        || candidate.statusCode === 404;
 };
 
 @injectable()
@@ -340,7 +358,10 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
         const entrypointNode = plugin.props.workflow.props.nodes.find((node) => node.type === 'entrypoint');
         const objectKey = entrypointNode?.data.entrypoint?.binaryObjectPath;
         if (!objectKey) {
-            return;
+            throw ApplicationError.badRequest(
+                ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
+                `Plugin ${plugin.id} is missing an uploaded entrypoint binary`
+            );
         }
 
         const expectedHash = await this.readObjectSha256(objectKey);
@@ -364,12 +385,33 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
         });
 
         if (!finalSyncResponse.synced) {
-            throw new Error(`Daemon failed to confirm synced plugin binary: ${objectKey}`);
+            throw ApplicationError.conflict(
+                ErrorCodes.PLUGIN_EXECUTOR_BINARY_NOT_ACCESSIBLE,
+                `Plugin binary is not reachable from compute cluster: ${objectKey}`
+            );
         }
     }
 
     private async readObjectSha256(objectKey: string): Promise<string | undefined> {
-        const objectStat = await this.storageService.getStat(SYS_BUCKETS.PLUGINS, objectKey);
+        let objectStat;
+
+        try {
+            objectStat = await this.storageService.getStat(SYS_BUCKETS.PLUGINS, objectKey);
+        } catch (error: unknown) {
+            if (isStorageObjectNotFoundError(error)) {
+                throw ApplicationError.conflict(
+                    ErrorCodes.PLUGIN_EXECUTOR_BINARY_NOT_ACCESSIBLE,
+                    `Plugin binary is missing from storage: ${objectKey}`
+                );
+            }
+
+            throw new ApplicationError(
+                ErrorCodes.PLUGIN_EXECUTOR_BINARY_NOT_ACCESSIBLE,
+                `Failed to inspect plugin binary in storage: ${objectKey}`,
+                503
+            );
+        }
+
         const directHash = objectStat['x-amz-meta-sha256'];
         return typeof directHash === 'string' && directHash.length > 0
             ? directHash

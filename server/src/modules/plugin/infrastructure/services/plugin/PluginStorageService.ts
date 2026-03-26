@@ -1,6 +1,7 @@
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import StoragePlacementService from '@modules/team-cluster/application/services/StoragePlacementService';
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
+import { IWorkflowValidatorService, WorkflowValidationMode } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import Workflow, { WorkflowProps } from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import { IPluginBinaryCacheService } from '@modules/plugin/domain/port/plugin/IPluginBinaryCacheService';
@@ -56,6 +57,9 @@ export default class PluginStorageService implements IPluginStorageService {
         @inject(SHARED_TOKENS.StorageService)
         private storageService: IStorageService,
 
+        @inject(PLUGIN_TOKENS.WorkflowValidatorService)
+        private readonly workflowValidator: IWorkflowValidatorService,
+
         @inject(PLUGIN_TOKENS.PluginBinaryCacheService)
         private binaryCacheService: IPluginBinaryCacheService
     ){}
@@ -106,6 +110,13 @@ export default class PluginStorageService implements IPluginStorageService {
         });
 
         await this.persistWorkflow(pluginId, plugin.props.workflow);
+
+        if (plugin.props.status === PluginStatus.Published) {
+            await this.pluginRepo.updateById(pluginId, {
+                status: PluginStatus.Draft
+            });
+            plugin.props.status = PluginStatus.Draft;
+        }
 
         logger.info(`@plugin-storage-service: binary deleted: ${pathToDelete}`);
     }
@@ -235,12 +246,20 @@ export default class PluginStorageService implements IPluginStorageService {
             );
         }
 
+        const requestedStatus = status ?? PluginStatus.Published;
         const workflow = new Workflow('', importData.workflow);
+        workflow.updateEntrypoint({
+            binary: undefined,
+            binaryObjectPath: undefined,
+            binaryFileName: undefined
+        });
         const projection = WorkflowProjectionService.project(workflow, '');
 
         const newPlugin = await this.pluginRepo.create({
             workflow,
-            status: status ?? PluginStatus.Published,
+            status: requestedStatus === PluginStatus.Published
+                ? PluginStatus.Draft
+                : requestedStatus,
             team: teamId,
             modifier: projection.modifier,
             exposures: projection.exposures,
@@ -249,6 +268,7 @@ export default class PluginStorageService implements IPluginStorageService {
         });
 
         let binaryImported = false;
+        let persistedPlugin = newPlugin;
         const binaryFile = directory.files.find((file) => file.path.startsWith('binary/'));
         if (binaryFile) {
             const binaryBuffer = await binaryFile.buffer();
@@ -279,9 +299,33 @@ export default class PluginStorageService implements IPluginStorageService {
             binaryImported = true;
         }
 
+        if (requestedStatus === PluginStatus.Published) {
+            const validation = await this.workflowValidator.validate(
+                newPlugin.props.workflow.props,
+                newPlugin.id,
+                WorkflowValidationMode.Strict
+            );
+
+            if (validation.isValid) {
+                persistedPlugin = await this.pluginRepo.updateById(newPlugin.id, {
+                    status: PluginStatus.Published
+                }) ?? newPlugin;
+                persistedPlugin.props.status = PluginStatus.Published;
+            } else {
+                logger.warn(
+                    {
+                        pluginId: newPlugin.id,
+                        binaryImported,
+                        validationErrors: validation.errors
+                    },
+                    '@plugin-storage-service: imported plugin left in draft because it is not ready to publish'
+                );
+            }
+        }
+
         logger.info(`@plugin-storage-service: plugin imported ${newPlugin._id}`);
         return {
-            plugin: newPlugin,
+            plugin: persistedPlugin,
             binaryImported
         };
     }

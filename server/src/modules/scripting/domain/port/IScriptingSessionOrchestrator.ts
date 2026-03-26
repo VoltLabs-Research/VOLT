@@ -1,3 +1,5 @@
+import type { ScriptingNotebookContainerResources } from '@modules/scripting/domain/entities/ScriptingNotebook';
+
 export interface DefaultNotebookTemplateContext {
     trajectoryId?: string;
 };
@@ -18,6 +20,7 @@ export interface ScriptingSessionJupyterInfo {
 export interface ScriptingSessionStartInput {
     teamId: string;
     teamClusterId: string;
+    containerResources: ScriptingNotebookContainerResources;
     userId: string;
     notebook?: ScriptingSessionNotebookInput;
     notebookId?: string;

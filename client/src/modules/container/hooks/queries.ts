@@ -1,4 +1,5 @@
 import service from '../api/service';
+import { teamClusterService } from '../api/service/team-cluster-service';
 import {
     buildKeys,
     createInvalidatingMutation,
@@ -7,6 +8,7 @@ import {
     createQuery
 } from '@/shared/infrastructure/query';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { ClusterResourceLimits } from '../api/entities/cluster-resource-limits';
 import type { CreateContainerParams } from '../api/dtos/create-container';
 import type { CreateContainerFolderParams } from '../api/dtos/create-container-folder';
 import type { DeleteContainerFolderParams } from '../api/dtos/delete-container-folder';
@@ -30,6 +32,10 @@ interface ContainerQueryKeys extends Record<string, unknown> {
     folder: GetContainerFolderParams;
     folders: ListContainerFoldersParams;
     processes: string;
+    resourceLimits: {
+        teamId: string;
+        teamClusterId: string;
+    };
     stats: string;
 };
 
@@ -87,4 +93,8 @@ export const useContainerFileContentQuery = createQuery(KEYS.fileContent, servic
 
 export const useContainerByIdQuery = createQuery(KEYS.detail, (containerId) => service.getById({ containerId }));
 export const useContainerProcessesQuery = createQuery(KEYS.processes, (containerId) => service.getProcesses({ containerId }));
+export const useClusterResourceLimitsQuery = createQuery<{ teamId: string; teamClusterId: string }, ClusterResourceLimits>(
+    KEYS.resourceLimits,
+    ({ teamId, teamClusterId }) => teamClusterService.getResourceLimits(teamId, teamClusterId)
+);
 export const useContainerStatsQuery = createQuery(KEYS.stats, (containerId) => service.getStats({ containerId }));

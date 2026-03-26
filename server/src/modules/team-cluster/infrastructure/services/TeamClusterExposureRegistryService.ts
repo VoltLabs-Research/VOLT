@@ -7,52 +7,57 @@ interface ExposureRegistryChangeEvent {
     exposures: TeamClusterServiceExposure[];
 };
 
+const buildRegistryKey = (teamClusterId: string, exposureId: string): string => {
+    return `${teamClusterId}:${exposureId}`;
+};
+
 @injectable()
 export default class TeamClusterExposureRegistryService {
-    private readonly exposuresById = new Map<string, TeamClusterServiceExposure>();
-    private readonly exposureIdsByTeamClusterId = new Map<string, Set<string>>();
+    private readonly exposuresByRegistryKey = new Map<string, TeamClusterServiceExposure>();
+    private readonly registryKeysByTeamClusterId = new Map<string, Set<string>>();
     private readonly events = new EventEmitter();
 
     replaceTeamClusterExposures(teamClusterId: string, exposures: TeamClusterServiceExposure[]): void {
         this.clearTeamCluster(teamClusterId, false);
 
-        const exposureIds = new Set<string>();
+        const registryKeys = new Set<string>();
         for (const exposure of exposures) {
-            this.exposuresById.set(exposure.id, exposure);
-            exposureIds.add(exposure.id);
+            const registryKey = buildRegistryKey(teamClusterId, exposure.id);
+            this.exposuresByRegistryKey.set(registryKey, exposure);
+            registryKeys.add(registryKey);
         }
 
-        this.exposureIdsByTeamClusterId.set(teamClusterId, exposureIds);
+        this.registryKeysByTeamClusterId.set(teamClusterId, registryKeys);
         this.emitChanged(teamClusterId);
     }
 
     clearTeamCluster(teamClusterId: string, emitEvent: boolean = true): void {
-        const exposureIds = this.exposureIdsByTeamClusterId.get(teamClusterId);
-        if (exposureIds) {
-            for (const exposureId of exposureIds) {
-                this.exposuresById.delete(exposureId);
+        const registryKeys = this.registryKeysByTeamClusterId.get(teamClusterId);
+        if (registryKeys) {
+            for (const registryKey of registryKeys) {
+                this.exposuresByRegistryKey.delete(registryKey);
             }
         }
 
-        this.exposureIdsByTeamClusterId.delete(teamClusterId);
+        this.registryKeysByTeamClusterId.delete(teamClusterId);
         if (emitEvent) {
             this.emitChanged(teamClusterId);
         }
     }
 
-    getExposure(exposureId: string): TeamClusterServiceExposure | null {
-        return this.exposuresById.get(exposureId) || null;
+    getTeamClusterExposure(teamClusterId: string, exposureId: string): TeamClusterServiceExposure | null {
+        return this.exposuresByRegistryKey.get(buildRegistryKey(teamClusterId, exposureId)) || null;
     }
 
     listTeamClusterExposures(teamClusterId: string): TeamClusterServiceExposure[] {
-        const exposureIds = this.exposureIdsByTeamClusterId.get(teamClusterId);
-        if (!exposureIds) {
+        const registryKeys = this.registryKeysByTeamClusterId.get(teamClusterId);
+        if (!registryKeys) {
             return [];
         }
 
         const exposures: TeamClusterServiceExposure[] = [];
-        for (const exposureId of exposureIds) {
-            const exposure = this.exposuresById.get(exposureId);
+        for (const registryKey of registryKeys) {
+            const exposure = this.exposuresByRegistryKey.get(registryKey);
             if (exposure) {
                 exposures.push(exposure);
             }
@@ -77,7 +82,7 @@ export default class TeamClusterExposureRegistryService {
     }
 
     listActiveTcpExposures(): TeamClusterServiceExposure[] {
-        return Array.from(this.exposuresById.values()).filter((exposure) => {
+        return Array.from(this.exposuresByRegistryKey.values()).filter((exposure) => {
             return exposure.status === TeamClusterServiceExposureStatus.Active
                 && exposure.accessModes.includes(TeamClusterServiceExposureAccessMode.Tcp);
         });

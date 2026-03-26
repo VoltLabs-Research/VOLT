@@ -1,3 +1,4 @@
+import ScriptingNotebookDeploymentModal from '@/modules/scripting/components/molecules/ScriptingNotebookDeploymentModal';
 import useScriptingWorkspace from '@/modules/scripting/hooks/use-scripting-workspace';
 import useTip from '@/shared/tips/use-tip';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
@@ -87,10 +88,13 @@ const ScriptingWorkspace = ({ trajectoryId, notebookId, onJupyterUrlChange }: Sc
         activeNotebook,
         isStartingJupyter,
         error,
+        deploymentRequiredMessage,
+        deploymentModalRequest,
         accessDenied,
         accessDeniedMessage,
         jupyterUrl,
         containerStage,
+        handleDeploymentModalClose,
         retryStartJupyter
     } = useScriptingWorkspace({ trajectoryId, notebookId });
 
@@ -124,23 +128,37 @@ const ScriptingWorkspace = ({ trajectoryId, notebookId, onJupyterUrlChange }: Sc
         );
     }
 
-    if (error) {
-        return renderWorkspaceShell(renderWorkspaceState({
-            title: 'Unable to start the notebook workspace',
-            description: error,
-            liveMode: 'alert',
-            children: !isStartingJupyter ? (
-                <Button
-                    variant='outline'
-                    intent='neutral'
-                    size='sm'
-                    shape='rounded'
-                    onClick={retryStartJupyter}
-                >
-                    Retry starting Jupyter
-                </Button>
-            ) : undefined
-        }));
+    if (error || deploymentRequiredMessage) {
+        const isDeploymentRequired = Boolean(deploymentRequiredMessage);
+
+        return (
+            <>
+                {renderWorkspaceShell(renderWorkspaceState({
+                    title: isDeploymentRequired
+                        ? activeNotebook
+                            ? 'Notebook deployment required'
+                            : 'Create notebook workspace'
+                        : 'Unable to start the notebook workspace',
+                    description: deploymentRequiredMessage || error || '',
+                    liveMode: 'alert',
+                    children: !isStartingJupyter ? (
+                        <Button
+                            variant='outline'
+                            intent='neutral'
+                            size='sm'
+                            shape='rounded'
+                            onClick={retryStartJupyter}
+                        >
+                            {isDeploymentRequired ? 'Configure notebook' : 'Retry starting Jupyter'}
+                        </Button>
+                    ) : undefined
+                }))}
+                <ScriptingNotebookDeploymentModal
+                    request={deploymentModalRequest}
+                    onClose={handleDeploymentModalClose}
+                />
+            </>
+        );
     }
 
     const pendingTitle = isStartingJupyter
@@ -152,11 +170,19 @@ const ScriptingWorkspace = ({ trajectoryId, notebookId, onJupyterUrlChange }: Sc
             ? 'Opening the selected notebook in Jupyter. This can take a moment.'
             : 'No notebook is selected yet. Opening the shared Jupyter workspace for this trajectory.';
 
-    return renderWorkspaceShell(renderWorkspaceState({
-        title: pendingTitle,
-        description: pendingDescription,
-        liveMode: 'status'
-    }), true);
+    return (
+        <>
+            {renderWorkspaceShell(renderWorkspaceState({
+                title: pendingTitle,
+                description: pendingDescription,
+                liveMode: 'status'
+            }), true)}
+            <ScriptingNotebookDeploymentModal
+                request={deploymentModalRequest}
+                onClose={handleDeploymentModalClose}
+            />
+        </>
+    );
 };
 
 export default ScriptingWorkspace;

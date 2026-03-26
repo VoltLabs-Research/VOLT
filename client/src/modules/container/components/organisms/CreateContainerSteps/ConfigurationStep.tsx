@@ -1,13 +1,11 @@
-import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
+import ClusterResourceSelectionPanel from '@/modules/container/components/molecules/ClusterResourceSelectionPanel';
+import Container from '@/shared/presentation/components/Container';
 import EditableKeyValueCard from '@/shared/presentation/components/EditableKeyValueCard';
-import EmptyState from '@/shared/presentation/components/EmptyState';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
-import Slider from '@/shared/presentation/components/Slider';
 import Title from '@/shared/presentation/components/Title';
-import { Cpu, HardDrive, ServerCog } from 'lucide-react';
 import { getCustomFieldValidationError } from '../../../hooks/use-create-container-form';
 import { ContainerTemplateCustomFieldType } from '../../../api/entities/container-template';
 import type { ContainerConfig } from '../../../hooks/use-create-container-form';
@@ -43,8 +41,6 @@ const getPortMappingFormItem = (item: PortMappingSourceItem): PortMappingFormIte
     };
 };
 
-const MIN_CPU = 0.5;
-const MIN_MEMORY = 128;
 const CONTAINER_USERNAME_ENV_KEY = 'CONTAINER_USERNAME';
 
 interface ValueChangeTarget {
@@ -70,14 +66,6 @@ interface ConfigurationStepProps {
 interface ValidationMessage {
     key: string;
     label: string;
-};
-
-interface ResourceSummary {
-    title: string;
-    value: string;
-    minLabel: string;
-    maxLabel: string;
-    icon: typeof Cpu;
 };
 
 interface CustomFieldValidationMessage {
@@ -125,34 +113,6 @@ const getTeamFieldError = (selectedTeamId: string | null, teams: Team[]) => {
     }
 
     return 'Select a team to continue.';
-};
-
-const getClusterFieldError = (selectedTeamId: string | null, selectedTeamClusterId: string | null, teamClusters: TeamClusterOption[]) => {
-    if (!selectedTeamId || selectedTeamClusterId) {
-        return undefined;
-    }
-
-    if (teamClusters.length === 0) {
-        return 'No clusters are available for the selected team.';
-    }
-
-    return 'Select a cluster to continue.';
-};
-
-const getResourceStatusMessage = (resourceLimits: ClusterResourceLimits | null) => {
-    if (!resourceLimits?.status) {
-        return null;
-    }
-
-    if (resourceLimits.status === 'Critical') {
-        return 'This cluster is under heavy load. New containers may have limited headroom.';
-    }
-
-    if (resourceLimits.status === 'Warning') {
-        return 'This cluster is nearing capacity. Consider smaller resource allocations.';
-    }
-
-    return 'Cluster health is good. Resource limits reflect the latest heartbeat metrics.';
 };
 
 const hasValueChangeTarget = (value: unknown): value is ValueChangeTarget => {
@@ -286,35 +246,11 @@ const ConfigurationStep = ({
     }));
     const validationMessages: ValidationMessage[] = [];
     const teamFieldError = getTeamFieldError(selectedTeamId, teams);
-    const clusterFieldError = getClusterFieldError(selectedTeamId, selectedTeamClusterId, teamClusters);
     const teamOptions: SelectOption[] = teams.map((team) => ({
         value: team._id,
         title: team.name
     }));
-    const teamClusterOptions: SelectOption[] = teamClusters.map((teamCluster) => ({
-        value: teamCluster._id,
-        title: teamCluster.name
-    }));
-    const maxCpu = Math.max(MIN_CPU, clusterResourceLimits?.maxCpus ?? MIN_CPU);
-    const maxMemory = Math.max(MIN_MEMORY, clusterResourceLimits?.maxMemoryMB ?? MIN_MEMORY);
-    const cpuResourceSummary: ResourceSummary = {
-        title: 'CPU cores',
-        value: `${config.cpus} vCPU`,
-        minLabel: `${MIN_CPU} vCPU`,
-        maxLabel: `${maxCpu} vCPU max`,
-        icon: Cpu
-    };
-    const memoryResourceSummary: ResourceSummary = {
-        title: 'Memory',
-        value: `${config.memory} MB`,
-        minLabel: `${MIN_MEMORY} MB`,
-        maxLabel: `${maxMemory} MB max`,
-        icon: HardDrive
-    };
     const customFieldValidationMessages = getCustomFieldValidationMessages(config.customFields, config.customFieldValues);
-    const resourceStatusMessage = getResourceStatusMessage(clusterResourceLimits);
-    const CpuResourceIcon = cpuResourceSummary.icon;
-    const MemoryResourceIcon = memoryResourceSummary.icon;
     if (!config.name.trim()) {
         validationMessages.push({
             key: 'name',
@@ -329,10 +265,10 @@ const ConfigurationStep = ({
         });
     }
 
-    if (clusterFieldError) {
+    if (!selectedTeamId || !selectedTeamClusterId) {
         validationMessages.push({
             key: 'cluster',
-            label: clusterFieldError
+            label: 'Select a cluster to continue.'
         });
     }
 
@@ -401,94 +337,32 @@ const ConfigurationStep = ({
                                 name='teamCluster'
                                 value={selectedTeamClusterId || ''}
                                 onChange={(e) => onTeamClusterChange(e.target.value || null)}
-                                options={teamClusterOptions}
+                                options={teamClusters.map((teamCluster) => ({
+                                    value: teamCluster._id,
+                                    title: teamCluster.name
+                                }))}
                                 placeholder='Select a cluster'
-                                error={clusterFieldError}
+                                error={!selectedTeamId || selectedTeamClusterId ? undefined : 'Select a cluster to continue.'}
                                 disabled={!selectedTeamId || teamClusters.length === 0}
                             />
                         </Container>
                     </Container>
                 </Container>
 
-                <Container className='create-container-config-card full-width radius-md d-flex column gap-1 p-1-5'>
-                    <SettingsSectionHeader
-                        title='Resources'
-                        description='Defaults work for most containers. Increase only when the workload needs it.'
-                        className='create-container-config-section-header mb-1 pb-075'
-                    />
-                    {!selectedTeamClusterId ? (
-                        <EmptyState
-                            title='Select a cluster first'
-                            description='Select a cluster first to configure container resources.'
-                            icon={<ServerCog size={24} />}
-                            headingLevel='h3'
-                            announce
-                            className='w-full'
-                        />
-                    ) : isLoadingResourceLimits ? (
-                        <EmptyState
-                            title='Loading cluster limits'
-                            description='Fetching the latest CPU and memory capacity for this cluster.'
-                            icon={<ServerCog size={24} />}
-                            headingLevel='h3'
-                            announce
-                            className='w-full'
-                        />
-                    ) : !clusterResourceLimits?.maxCpus || !clusterResourceLimits?.maxMemoryMB ? (
-                        <EmptyState
-                            title='Cluster metrics unavailable'
-                            description='This cluster has not reported resource metrics yet. Try again after the next heartbeat.'
-                            icon={<ServerCog size={24} />}
-                            headingLevel='h3'
-                            announce
-                            className='w-full'
-                        />
-                    ) : (
-                        <>
-                            {resourceStatusMessage && (
-                                <Paragraph className='font-size-2 color-secondary'>{resourceStatusMessage}</Paragraph>
-                            )}
-                            <Container className='create-container-resource-row radius-sm p-1 mb-075'>
-                                <Container className='d-flex content-between items-center create-container-resource-header mb-075'>
-                                    <span className='d-flex items-center gap-05 font-size-2 font-weight-5 color-secondary'>
-                                        <CpuResourceIcon size={16} /> {cpuResourceSummary.title}
-                                    </span>
-                                    <span className='create-container-resource-value radius-full font-weight-6'>{cpuResourceSummary.value}</span>
-                                </Container>
-                                <Slider
-                                    min={MIN_CPU}
-                                    max={maxCpu}
-                                    step={0.5}
-                                    value={config.cpus}
-                                    onChange={(val) => onConfigChange('cpus', val)}
-                                />
-                                <Container className='d-flex content-between font-size-1 color-muted'>
-                                    <span>{cpuResourceSummary.minLabel}</span>
-                                    <span>{cpuResourceSummary.maxLabel}</span>
-                                </Container>
-                            </Container>
-                            <Container className='create-container-resource-row radius-sm p-1'>
-                                <Container className='d-flex content-between items-center create-container-resource-header mb-075'>
-                                    <span className='d-flex items-center gap-05 font-size-2 font-weight-5 color-secondary'>
-                                        <MemoryResourceIcon size={16} /> {memoryResourceSummary.title}
-                                    </span>
-                                    <span className='create-container-resource-value radius-full font-weight-6'>{memoryResourceSummary.value}</span>
-                                </Container>
-                                <Slider
-                                    min={MIN_MEMORY}
-                                    max={maxMemory}
-                                    step={128}
-                                    value={config.memory}
-                                    onChange={(val) => onConfigChange('memory', val)}
-                                />
-                                <Container className='d-flex content-between font-size-1 color-muted'>
-                                    <span>{memoryResourceSummary.minLabel}</span>
-                                    <span>{memoryResourceSummary.maxLabel}</span>
-                                </Container>
-                            </Container>
-                        </>
-                    )}
-                </Container>
+                <ClusterResourceSelectionPanel
+                    teamClusters={teamClusters}
+                    isTeamSelected={Boolean(selectedTeamId)}
+                    selectedTeamClusterId={selectedTeamClusterId}
+                    clusterResourceLimits={clusterResourceLimits}
+                    isLoadingResourceLimits={isLoadingResourceLimits}
+                    cpus={config.cpus}
+                    memoryMB={config.memory}
+                    onTeamClusterChange={onTeamClusterChange}
+                    onCpusChange={(value) => onConfigChange('cpus', value)}
+                    onMemoryChange={(value) => onConfigChange('memory', value)}
+                    clusterTitle='Deployment cluster'
+                    clusterDescription='Choose where this container will be deployed.'
+                />
 
                 <Container className='create-container-config-card radius-md d-flex column gap-1 p-1-5'>
                     <SettingsSectionHeader

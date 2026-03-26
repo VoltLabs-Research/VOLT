@@ -12,10 +12,10 @@ const endpoints = {
         { omit: ['trajectoryId'] }
     ),
     createNotebook: post<CreateScriptingNotebookParams, ScriptingNotebook>('/notebooks', {
-        body: ({ title }) => ({ title })
+        body: ({ title, teamClusterId, containerResources }) => ({ title, teamClusterId, containerResources })
     }),
     updateNotebook: patch<UpdateScriptingNotebookParams, ScriptingNotebook>('/notebooks/:notebookId', {
-        body: ({ title }) => ({ title })
+        body: ({ title, teamClusterId, containerResources }) => ({ title, teamClusterId, containerResources })
     }),
     deleteNotebook: del<DeleteScriptingNotebookParams>('/notebooks/:notebookId')
 };
