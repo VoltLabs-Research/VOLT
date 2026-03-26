@@ -9,7 +9,6 @@ import TeamClusterCredentialsCipher from '@modules/team-cluster/infrastructure/s
 import TeamClusterExposureRegistryService from '@modules/team-cluster/infrastructure/services/TeamClusterExposureRegistryService';
 import TeamClusterInstallManifestService from '@modules/team-cluster/infrastructure/services/TeamClusterInstallManifestService';
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
-import TeamClusterDirectAccessGrantService from '@modules/team-cluster/infrastructure/services/TeamClusterDirectAccessGrantService';
 import TeamClusterDirectAccessTokenService from '@modules/team-cluster/infrastructure/services/TeamClusterDirectAccessTokenService';
 import TeamClusterRemoteAccessSessionService from '@modules/team-cluster/infrastructure/services/TeamClusterRemoteAccessSessionService';
 import RemoteExplorerDaemonGateway from '@modules/team-cluster/infrastructure/services/RemoteExplorerDaemonGateway';
@@ -53,7 +52,6 @@ export const registerTeamClusterDependencies = () => {
             [TEAM_CLUSTER_TOKENS.TeamClusterExposureRegistryService, TeamClusterExposureRegistryService],
             TeamClusterDirectAccessTokenService,
             VoltServerObjectGatewayService,
-            TeamClusterDirectAccessGrantService,
             [TEAM_CLUSTER_TOKENS.TeamClusterReverseChannelService, TeamClusterReverseChannelService],
             [TEAM_CLUSTER_TOKENS.TeamClusterBinaryRelayService, TeamClusterBinaryRelayService],
             [TEAM_CLUSTER_TOKENS.TeamClusterBinaryRelayUpgradeService, TeamClusterBinaryRelayUpgradeService],

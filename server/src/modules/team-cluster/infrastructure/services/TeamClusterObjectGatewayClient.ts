@@ -4,7 +4,6 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
-import { Readable } from 'node:stream';
 import type { Readable as NodeReadable } from 'node:stream';
 import http from 'node:http';
 import {
@@ -31,7 +30,7 @@ interface TeamClusterObjectGatewayListRequest {
     limit?: number;
 }
 
-interface TeamClusterObjectGatewayHeadResponse {
+export interface TeamClusterObjectGatewayHeadResponse {
     contentLength?: number;
     contentType?: string;
     contentEncoding?: string;
@@ -40,7 +39,7 @@ interface TeamClusterObjectGatewayHeadResponse {
     metadata: Record<string, string>;
 }
 
-interface TeamClusterObjectGatewayStreamResponse extends TeamClusterObjectGatewayHeadResponse {
+export interface TeamClusterObjectGatewayStreamResponse extends TeamClusterObjectGatewayHeadResponse {
     headers: Record<string, string>;
     stream: NodeReadable;
 }
