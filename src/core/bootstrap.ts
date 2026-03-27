@@ -28,6 +28,7 @@ type BootstrapContext = {
     workflowRuntime: ReturnType<typeof createWorkflowRuntimeModule>;
     cloudControl: ReturnType<typeof createCloudControlModule>;
     sshImport: ReturnType<typeof createSSHImportModule>;
+    artifacts: ReturnType<typeof createArtifactsModule>;
     analysisWorker: ReturnType<typeof createAnalysisWorker>;
     trajectoryRasterWorkerService: TrajectoryRasterWorkerService;
     trajectoryGlbWorkerService: TrajectoryGlbWorkerService;
@@ -97,12 +98,15 @@ const createBootstrapContext = (): BootstrapContext => {
         config.teamClusterId,
         trajectoryNative.nativeModuleLoader,
         cloudControl.daemonArtifactReporterService,
+        cloudControl.daemonJobReporterService,
+        platform.queueService,
         pluginListingRepository
     );
     const analysisWorker = createAnalysisWorker({
         queueService: platform.queueService,
         analysisExecutionDataStore: platform.analysisExecutionDataStore,
         objectStore: clusterObjectStore,
+        artifactUploadQueueService: artifacts.artifactUploadQueueService,
         resultProcessorService: artifacts.resultProcessorService,
         daemonJobReporterService: cloudControl.daemonJobReporterService
     });
@@ -126,6 +130,7 @@ const createBootstrapContext = (): BootstrapContext => {
     });
     runtimeRoleCoordinator.bind({
         analysisWorker,
+        artifactUploadWorkerService: artifacts.artifactUploadWorkerService,
         trajectoryRasterWorkerService,
         trajectoryGlbWorkerService,
         sshImportWorkerService: sshImport.sshImportWorkerService
@@ -140,6 +145,7 @@ const createBootstrapContext = (): BootstrapContext => {
         workflowRuntime,
         cloudControl,
         sshImport,
+        artifacts,
         analysisWorker,
         trajectoryRasterWorkerService,
         trajectoryGlbWorkerService
@@ -202,6 +208,7 @@ const stopBootstrapContext = async (context: BootstrapContext): Promise<void> =>
     stopMemoryMonitor();
     context.workflowRuntime.debugSessionManager.shutdown();
     await context.analysisWorker.stop();
+    await context.artifacts.artifactUploadWorkerService.stop();
     await context.trajectoryRasterWorkerService.stop();
     await context.trajectoryGlbWorkerService.stop();
     await context.sshImport.sshImportWorkerService.stop();

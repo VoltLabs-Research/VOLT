@@ -1,11 +1,22 @@
 import { createPluginListingRepository, type PluginListingRepository } from './repositories';
-import { createExportNodeProcessorService, type ExportNodeProcessorService, type ResultProcessorService, createResultProcessorService } from './services';
+import {
+    ArtifactUploadWorkerService,
+    createArtifactUploadQueueService,
+    createExportNodeProcessorService,
+    type ArtifactUploadQueueService,
+    type ExportNodeProcessorService,
+    type ResultProcessorService,
+    createResultProcessorService
+} from './services';
 import type { NativeModuleLoader } from '@/modules/trajectory-native/services';
-import type { DaemonArtifactReporterService } from '@/modules/cloud-control/services';
+import type { DaemonArtifactReporterService, DaemonJobReporterService } from '@/modules/cloud-control/services';
+import type { QueueService } from '@/modules/platform/services';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
 export interface ArtifactsModule {
     pluginListingRepository: PluginListingRepository;
+    artifactUploadQueueService: ArtifactUploadQueueService;
+    artifactUploadWorkerService: ArtifactUploadWorkerService;
     exportNodeProcessorService: ExportNodeProcessorService;
     resultProcessorService: ResultProcessorService;
 }
@@ -15,21 +26,27 @@ export const createArtifactsModule = (
     localOwnerClusterId: string,
     nativeModuleLoader: NativeModuleLoader,
     daemonArtifactReporterService: DaemonArtifactReporterService,
+    daemonJobReporterService: DaemonJobReporterService,
+    queueService: QueueService,
     pluginListingRepository: PluginListingRepository = createPluginListingRepository(objectStore, localOwnerClusterId)
 ): ArtifactsModule => {
-    const exportNodeProcessorService = createExportNodeProcessorService(
+    const artifactUploadQueueService = createArtifactUploadQueueService(queueService);
+    const artifactUploadWorkerService = new ArtifactUploadWorkerService(
+        queueService,
         objectStore,
-        nativeModuleLoader,
-        daemonArtifactReporterService
+        daemonArtifactReporterService,
+        daemonJobReporterService
     );
+    const exportNodeProcessorService = createExportNodeProcessorService(nativeModuleLoader);
     const resultProcessorService = createResultProcessorService(
-        objectStore,
         pluginListingRepository,
         exportNodeProcessorService
     );
 
     return {
         pluginListingRepository,
+        artifactUploadQueueService,
+        artifactUploadWorkerService,
         exportNodeProcessorService,
         resultProcessorService
     };

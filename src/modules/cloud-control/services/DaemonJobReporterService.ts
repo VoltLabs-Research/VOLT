@@ -4,6 +4,7 @@ export type RasterJobStatus = 'running' | 'completed' | 'failed';
 export type GlbJobStatus = 'running' | 'completed' | 'failed';
 export type AnalysisJobStatus = 'running' | 'completed' | 'failed';
 export type SshImportJobStatus = 'running' | 'completed' | 'failed';
+export type ArtifactUploadJobStatus = 'queued' | 'running' | 'completed' | 'failed';
 
 export interface ReportJobCompletionInput {
     jobId: string;
@@ -56,12 +57,24 @@ export interface ReportSshImportJobStatusInput {
     error?: string;
 };
 
+export interface ReportArtifactUploadJobStatusInput {
+    jobId: string;
+    analysisId: string;
+    teamId: string;
+    trajectoryId: string;
+    trajectoryName?: string;
+    timestep?: number;
+    status: ArtifactUploadJobStatus;
+    error?: string;
+};
+
 export interface DaemonJobReporterService {
     reportJobCompletion(input: ReportJobCompletionInput): Promise<void>;
     reportAnalysisJobStatus(input: ReportAnalysisJobStatusInput): Promise<void>;
     reportRasterJobStatus(input: ReportRasterJobStatusInput): Promise<void>;
     reportGlbJobStatus(input: ReportGlbJobStatusInput): Promise<void>;
     reportSshImportJobStatus(input: ReportSshImportJobStatusInput): Promise<void>;
+    reportArtifactUploadJobStatus(input: ReportArtifactUploadJobStatusInput): Promise<void>;
 };
 
 export const createDaemonJobReporterService = (voltCloudConnection: VoltCloudConnection): DaemonJobReporterService => ({
@@ -117,6 +130,17 @@ export const createDaemonJobReporterService = (voltCloudConnection: VoltCloudCon
             ...input
         }, {
             dedupeKey: `ssh-import.job-status:${input.jobId}:${input.status}`
+        });
+    },
+
+    async reportArtifactUploadJobStatus(input) {
+        voltCloudConnection.emitBufferedMessage({
+            type: 'artifact-upload-job-status',
+            teamClusterId: voltCloudConnection.getTeamClusterId(),
+            daemonPassword: voltCloudConnection.getDaemonPassword(),
+            ...input
+        }, {
+            dedupeKey: `artifact-upload.job-status:${input.jobId}:${input.status}`
         });
     }
 });

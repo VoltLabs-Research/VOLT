@@ -10,6 +10,7 @@ import {
     type TeamClusterRuntimeRoleConfig
 } from '@/shared/contracts';
 import type { QueueConcurrencyCoordinator } from '@/modules/platform/services';
+import type { ArtifactUploadWorkerService } from '@/modules/artifacts/services';
 import type { AnalysisWorker } from '@/modules/job-runtime/services';
 import type { SSHImportWorkerService } from '@/modules/ssh-import/services';
 import type {
@@ -19,6 +20,7 @@ import type {
 
 interface RuntimeRoleCoordinatorDependencies {
     analysisWorker: AnalysisWorker;
+    artifactUploadWorkerService: ArtifactUploadWorkerService;
     trajectoryRasterWorkerService: TrajectoryRasterWorkerService;
     trajectoryGlbWorkerService: TrajectoryGlbWorkerService;
     sshImportWorkerService: SSHImportWorkerService;
@@ -226,6 +228,7 @@ export class RuntimeRoleCoordinator {
 
         const dependencies = this.dependencies as RuntimeRoleCoordinatorDependencies;
         dependencies.analysisWorker.start(this.snapshot.queueConcurrency.analysis);
+        dependencies.artifactUploadWorkerService.start();
         dependencies.trajectoryRasterWorkerService.start(this.snapshot.queueConcurrency.rasterizer);
         dependencies.trajectoryGlbWorkerService.start(this.snapshot.queueConcurrency.glbPreprocessing);
         dependencies.sshImportWorkerService.start(this.snapshot.queueConcurrency.sshImport);
@@ -240,6 +243,7 @@ export class RuntimeRoleCoordinator {
 
         const dependencies = this.dependencies as RuntimeRoleCoordinatorDependencies;
         await dependencies.analysisWorker.stop();
+        await dependencies.artifactUploadWorkerService.stop();
         await dependencies.trajectoryRasterWorkerService.stop();
         await dependencies.trajectoryGlbWorkerService.stop();
         await dependencies.sshImportWorkerService.stop();

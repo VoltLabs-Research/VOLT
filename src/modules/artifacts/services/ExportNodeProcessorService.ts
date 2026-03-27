@@ -1,13 +1,12 @@
 import { ObjectBucketName, type AnalysisExposureDefinition, type AnalysisJobExecutionData } from '@/shared/contracts';
 import { logger } from '@/core/logger';
-import { DAEMON_PATHS } from '@/core/paths';
 import { NativeModuleLoader } from '@/modules/trajectory-native/services';
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 import type { BubbleDataPoint, ChartConfiguration, ChartDataset, ChartTypeRegistry, Point } from 'chart.js';
-import type { DaemonArtifactReporterService } from '@/modules/cloud-control/services';
+import type { ReportArtifactInput } from '@/modules/cloud-control/services';
 import { isRecord, toRecord } from '@/shared/utils';
-import { uploadBufferToObjectStore } from '@/shared/storage/uploadBufferToObjectStore';
-import { createScopedClusterObjectStore, type ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
+import type { ArtifactUploadBatch } from './ArtifactUploadQueueService';
+import path from 'node:path';
 
 type ExporterName = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter' | 'ChartExporter';
 
@@ -82,6 +81,7 @@ export interface ExportExecutionInput {
     decodedPayload: Record<string, unknown>;
     timestep: number;
     storageClusterId: string;
+    artifactUploadBatch: ArtifactUploadBatch;
 };
 
 
@@ -890,12 +890,8 @@ export interface ExportNodeProcessorService {
 };
 
 export const createExportNodeProcessorService = (
-    objectStore: ClusterObjectStore,
-    nativeModuleLoader: NativeModuleLoader,
-    daemonArtifactReporterService: DaemonArtifactReporterService
+    nativeModuleLoader: NativeModuleLoader
 ): ExportNodeProcessorService => {
-    const createUploadTarget = (ownerClusterId: string) => createScopedClusterObjectStore(objectStore, ownerClusterId);
-
     const logSkippedEmptyExport = (
         input: ExportExecutionInput,
         exporter: ExporterName,
@@ -917,6 +913,7 @@ export const createExportNodeProcessorService = (
     };
 
     const exportAtomistic = async (
+        input: ExportExecutionInput,
         exportData: Record<string, unknown>,
         objectPath: string,
         ownerClusterId: string
@@ -929,20 +926,27 @@ export const createExportNodeProcessorService = (
         const { positions, colors, min, max } = pointCloud;
         const buffer = nativeModuleLoader.getExporterModule().generatePointCloudGLB(positions, colors, min, max);
 
-        await uploadBufferToObjectStore({
-            objectStore: createUploadTarget(ownerClusterId),
+        await input.artifactUploadBatch.stageBufferUpload({
+            ownerClusterId,
             bucket: ObjectBucketName.Models,
             objectKey: objectPath,
             buffer,
             contentType: 'model/gltf-binary',
-            tempDirectory: DAEMON_PATHS.analysisOutput,
-            tempFilePrefix: 'volt-export'
+            fileName: path.basename(objectPath),
+            reportArtifact: buildArtifactReportInput(
+                input,
+                'AtomisticExporter',
+                input.exposure.export!,
+                objectPath,
+                ObjectBucketName.Models
+            )
         });
 
         return true;
     };
 
     const exportMesh = async (
+        input: ExportExecutionInput,
         exportData: Record<string, unknown>,
         objectPath: string,
         ownerClusterId: string,
@@ -964,14 +968,20 @@ export const createExportNodeProcessorService = (
             material
         );
 
-        await uploadBufferToObjectStore({
-            objectStore: createUploadTarget(ownerClusterId),
+        await input.artifactUploadBatch.stageBufferUpload({
+            ownerClusterId,
             bucket: ObjectBucketName.Models,
             objectKey: objectPath,
             buffer,
             contentType: 'model/gltf-binary',
-            tempDirectory: DAEMON_PATHS.analysisOutput,
-            tempFilePrefix: 'volt-export'
+            fileName: path.basename(objectPath),
+            reportArtifact: buildArtifactReportInput(
+                input,
+                'MeshExporter',
+                input.exposure.export!,
+                objectPath,
+                ObjectBucketName.Models
+            )
         });
 
         return true;
@@ -1044,6 +1054,7 @@ export const createExportNodeProcessorService = (
     };
 
     const exportDislocation = async (
+        input: ExportExecutionInput,
         exportData: Record<string, unknown>,
         objectPath: string,
         ownerClusterId: string,
@@ -1093,21 +1104,27 @@ export const createExportNodeProcessorService = (
             }
         );
 
-        await uploadBufferToObjectStore({
-            objectStore: createUploadTarget(ownerClusterId),
+        await input.artifactUploadBatch.stageBufferUpload({
+            ownerClusterId,
             bucket: ObjectBucketName.Models,
             objectKey: objectPath,
             buffer,
             contentType: 'model/gltf-binary',
-            tempDirectory: DAEMON_PATHS.analysisOutput,
-            tempFilePrefix: 'volt-export'
+            fileName: path.basename(objectPath),
+            reportArtifact: buildArtifactReportInput(
+                input,
+                'DislocationExporter',
+                input.exposure.export!,
+                objectPath,
+                ObjectBucketName.Models
+            )
         });
 
         return true;
     };
 
     const exportChart = async (
-        decodedPayload: Record<string, unknown>,
+        input: ExportExecutionInput,
         objectPath: string,
         ownerClusterId: string,
         options: ChartExportOptions
@@ -1119,7 +1136,7 @@ export const createExportNodeProcessorService = (
             height,
             backgroundColour: options.backgroundColor || '#1a1a2e'
         });
-        const chartData = extractChartData(decodedPayload, options);
+        const chartData = extractChartData(input.decodedPayload, options);
         if (chartData.length === 0) {
             return false;
         }
@@ -1175,14 +1192,20 @@ export const createExportNodeProcessorService = (
         };
         const buffer = await chartCanvas.renderToBuffer(chartConfiguration);
 
-        await uploadBufferToObjectStore({
-            objectStore: createUploadTarget(ownerClusterId),
+        await input.artifactUploadBatch.stageBufferUpload({
+            ownerClusterId,
             bucket: ObjectBucketName.Plugins,
             objectKey: objectPath,
             buffer,
             contentType: 'image/png',
-            tempDirectory: DAEMON_PATHS.analysisOutput,
-            tempFilePrefix: 'volt-export'
+            fileName: path.basename(objectPath),
+            reportArtifact: buildArtifactReportInput(
+                input,
+                'ChartExporter',
+                input.exposure.export!,
+                objectPath,
+                ObjectBucketName.Plugins
+            )
         });
 
         return true;
@@ -1233,18 +1256,19 @@ export const createExportNodeProcessorService = (
         return [];
     };
 
-    const reportArtifact = (
+    const buildArtifactReportInput = (
         input: ExportExecutionInput,
         exporter: ExporterName,
         exportConfig: NonNullable<ExportExecutionInput['exposure']['export']>,
         objectPath: string,
-        arrayIndex: number | undefined
-    ): void => {
+        storageBucket: string,
+        arrayIndex?: number
+    ): ReportArtifactInput => {
         const displayName = arrayIndex != null
             ? `${input.exposure.name} [${arrayIndex}]`
             : input.exposure.name;
 
-        void daemonArtifactReporterService.reportArtifact({
+        return {
             trajectory: input.executionData.trajectoryId,
             storageClusterId: input.storageClusterId,
             analysis: input.executionData.analysisId,
@@ -1252,7 +1276,7 @@ export const createExportNodeProcessorService = (
             sourceType: 'plugin-exposure',
             timestep: input.timestep,
             objectName: objectPath,
-            storageBucket: ObjectBucketName.Models,
+            storageBucket,
             params: {
                 exposureId: input.exposure.nodeId,
                 ...(arrayIndex != null ? { arrayIndex } : {})
@@ -1267,19 +1291,7 @@ export const createExportNodeProcessorService = (
                 exportType: exportConfig.type,
                 ...(arrayIndex != null ? { arrayIndex } : {})
             }
-        }).catch((error) => {
-            logger.warn(
-                {
-                    analysisId: input.executionData.analysisId,
-                    exposureId: input.exposure.nodeId,
-                    exporter,
-                    objectPath,
-                    timestep: input.timestep,
-                    err: error
-                },
-                'Failed to report scene artifact metadata to VoltCloud'
-            );
-        });
+        };
     };
 
     return {
@@ -1301,7 +1313,7 @@ export const createExportNodeProcessorService = (
             if (exporter === 'ChartExporter') {
                 const objectPath = buildObjectPath(input, exporter, exportConfig.type);
                 const exported = await exportChart(
-                    input.decodedPayload,
+                    input,
                     objectPath,
                     ownerClusterId,
                     options as unknown as ChartExportOptions
@@ -1325,13 +1337,13 @@ export const createExportNodeProcessorService = (
 
                 switch (exporter) {
                     case 'AtomisticExporter':
-                        exported = await exportAtomistic(exportData, objectPath, ownerClusterId);
+                        exported = await exportAtomistic(input, exportData, objectPath, ownerClusterId);
                         break;
                     case 'MeshExporter':
-                        exported = await exportMesh(exportData, objectPath, ownerClusterId, options as MeshExportOptions);
+                        exported = await exportMesh(input, exportData, objectPath, ownerClusterId, options as MeshExportOptions);
                         break;
                     case 'DislocationExporter':
-                        exported = await exportDislocation(exportData, objectPath, ownerClusterId, options as DislocationExportOptions);
+                        exported = await exportDislocation(input, exportData, objectPath, ownerClusterId, options as DislocationExportOptions);
                         break;
                     default:
                         logger.warn({ exporter }, 'Unsupported export node exporter on daemon');
@@ -1342,11 +1354,7 @@ export const createExportNodeProcessorService = (
                     logSkippedEmptyExport(input, exporter, 'export data was present but contained no results', arrayIndex);
                     continue;
                 }
-
-                reportArtifact(input, exporter, exportConfig, objectPath, arrayIndex);
             }
-
-            daemonArtifactReporterService.flushPendingArtifacts();
         }
     };
 };

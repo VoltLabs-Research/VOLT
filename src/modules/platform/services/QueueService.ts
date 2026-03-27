@@ -1,6 +1,7 @@
 import { logger } from '@/core/logger';
 import {
     ANALYSIS_QUEUE_NAME,
+    ARTIFACT_UPLOAD_QUEUE_NAME,
     SSH_IMPORT_QUEUE_NAME,
     TRAJECTORY_GLB_QUEUE_NAME,
     TRAJECTORY_RASTER_QUEUE_NAME
@@ -14,10 +15,18 @@ export interface QueueWorkerOptions {
 
 interface EnqueueOptions {
     preserveExistingJob?: boolean;
+    attempts?: number;
+    removeOnComplete?: number | boolean;
+    removeOnFail?: number | boolean;
+    backoff?: {
+        type: 'fixed' | 'exponential';
+        delay: number;
+    };
 };
 
 const KNOWN_QUEUE_NAMES = [
     ANALYSIS_QUEUE_NAME,
+    ARTIFACT_UPLOAD_QUEUE_NAME,
     SSH_IMPORT_QUEUE_NAME,
     TRAJECTORY_RASTER_QUEUE_NAME,
     TRAJECTORY_GLB_QUEUE_NAME
@@ -83,11 +92,16 @@ export class QueueService {
             }
         }
 
+        const attempts = Number.isFinite(options.attempts) && (options.attempts ?? 0) >= 1
+            ? Math.floor(options.attempts!)
+            : 1;
+
         await queue.add(queueName, payload, {
             jobId,
-            attempts: 1,
-            removeOnComplete: 1000,
-            removeOnFail: 1000
+            attempts,
+            backoff: options.backoff,
+            removeOnComplete: options.removeOnComplete ?? 1000,
+            removeOnFail: options.removeOnFail ?? 1000
         });
 
         logger.info(

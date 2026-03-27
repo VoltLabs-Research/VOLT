@@ -4,12 +4,12 @@ import { forceGC } from '@/core/memory';
 import { isRecord } from '@/shared/utils';
 import type { PluginListingRepository } from '../repositories/PluginListingRepository';
 import type { ExportNodeProcessorService } from './ExportNodeProcessorService';
+import type { ArtifactUploadBatch } from './ArtifactUploadQueueService';
 import { getRecommendedResultProcessingConcurrency } from '@/shared/utilities/analysis-resource-policy';
 import { decodeMultiStream, mergeSelectiveChunk } from '@/shared/utilities/selective-msgpack';
 import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import type { Readable } from 'node:stream';
-import { createScopedClusterObjectStore, type ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
 const PLUGINS_BUCKET = 'volt-plugins';
 
@@ -174,12 +174,12 @@ export interface ResultProcessorService {
         exposure: AnalysisExposureDefinition,
         outputDir: string,
         timestep: number,
-        teamId: string
+        teamId: string,
+        artifactUploadBatch: ArtifactUploadBatch
     ): Promise<void>;
 }
 
 export const createResultProcessorService = (
-    objectStore: ClusterObjectStore,
     pluginListingRepository: PluginListingRepository,
     exportNodeProcessorService: ExportNodeProcessorService
 ): ResultProcessorService => {
@@ -200,7 +200,8 @@ export const createResultProcessorService = (
             exposure: AnalysisExposureDefinition,
             outputDir: string,
             timestep: number,
-            teamId: string
+            teamId: string,
+            artifactUploadBatch: ArtifactUploadBatch
         ): Promise<void> {
             const outputFilePath = `${outputDir}_${exposure.results}`;
             const startedAt = Date.now();
@@ -224,7 +225,6 @@ export const createResultProcessorService = (
             if (!storageOwnerClusterId) {
                 throw new Error(`Missing storage owner cluster for analysis ${executionData.analysisId}`);
             }
-            const scopedObjectStore = createScopedClusterObjectStore(objectStore, storageOwnerClusterId);
 
             logger.info(
                 {
@@ -238,17 +238,16 @@ export const createResultProcessorService = (
                 'Uploading exposure output'
             );
 
-            await scopedObjectStore.putObjectStream({
+            await artifactUploadBatch.stageFileUpload({
+                sourcePath: outputFilePath,
+                ownerClusterId: storageOwnerClusterId,
                 bucket: PLUGINS_BUCKET,
                 objectKey: storageKey,
-                stream: createReadStream(outputFilePath),
-                size: fileStat.size,
-                metadata: {
-                    'Content-Type': 'application/msgpack'
-                }
+                contentType: 'application/msgpack',
+                fileName: `${exposure.nodeId}-timestep-${timestep}.msgpack`
             });
 
-            logger.info({ storageKey }, 'Uploaded exposure .msgpack');
+            logger.info({ storageKey }, 'Queued exposure .msgpack upload');
 
             await exposureProcessingLimiter.run(
                 async () => {
@@ -280,12 +279,13 @@ export const createResultProcessorService = (
                     if (exposure.export && exportPayload) {
                         logMemoryUsage('before-export-processing');
                         await exportNodeProcessorService.process({
-                            executionData,
-                            exposure,
-                            decodedPayload: exportPayload,
-                            timestep,
-                            storageClusterId: storageOwnerClusterId
-                        });
+                        executionData,
+                        exposure,
+                        decodedPayload: exportPayload,
+                        timestep,
+                        storageClusterId: storageOwnerClusterId,
+                        artifactUploadBatch
+                    });
                         logMemoryUsage('after-export-processing');
                     }
 

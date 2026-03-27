@@ -19,7 +19,7 @@ import zlib from 'node:zlib';
 import { pipeline } from 'node:stream/promises';
 import { DelayedError } from 'bullmq';
 import type { DaemonJobReporterService } from '@/modules/cloud-control/services';
-import type { ResultProcessorService } from '@/modules/artifacts/services';
+import type { ArtifactUploadBatch, ArtifactUploadQueueService, ResultProcessorService } from '@/modules/artifacts/services';
 import { EntrypointType, ObjectBucketName } from '@/shared/contracts';
 import type { AnalysisJobExecutionData, AnalysisQueueJobPayload, TrajectoryDumpDescriptor } from '@/shared/contracts';
 import type { AnalysisExecutionDataStore } from '@/modules/platform/services';
@@ -527,6 +527,7 @@ export class AnalysisWorker {
         private readonly objectStore: ClusterObjectStore,
         private readonly pluginBinaryCacheService: PluginBinaryCacheService,
         private readonly binaryExecutorService: BinaryExecutorService,
+        private readonly artifactUploadQueueService: ArtifactUploadQueueService,
         private readonly resultProcessorService: ResultProcessorService,
         private readonly daemonJobReporterService: DaemonJobReporterService
     ) {
@@ -614,6 +615,7 @@ export class AnalysisWorker {
         let dumpLocalPath: string | undefined;
         let batchDumpLocalPaths: string[] | undefined;
         let outputDir: string | undefined;
+        let artifactUploadBatch: ArtifactUploadBatch | null = null;
 
         try {
             executionData = await this.resolveExecutionData(job);
@@ -624,6 +626,15 @@ export class AnalysisWorker {
             if (!isBatchMode && typeof timestep === 'undefined') {
                 throw new Error(`Missing timestep for analysis job ${job.jobId}`);
             }
+
+            artifactUploadBatch = this.artifactUploadQueueService.createBatch({
+                analysisId: executionData.analysisId,
+                analysisJobId: job.jobId,
+                teamId: job.teamId,
+                trajectoryId: executionData.trajectoryId,
+                trajectoryName: typeof metadata.trajectoryName === 'string' ? metadata.trajectoryName : undefined,
+                timestep
+            });
 
             // Report running status to the Volt server for real-time client visibility
             void this.daemonJobReporterService.reportAnalysisJobStatus({
@@ -777,7 +788,8 @@ export class AnalysisWorker {
                     exposure,
                     outputDir,
                     timestep!,
-                    job.teamId
+                    job.teamId,
+                    artifactUploadBatch
                 );
                 logger.info(
                     {
@@ -794,6 +806,32 @@ export class AnalysisWorker {
                 // the next exposure starts.
                 forceGC();
             }
+
+            const { jobId: artifactUploadJobId, queuedUploads } = await artifactUploadBatch.enqueue();
+            if (artifactUploadJobId) {
+                await this.daemonJobReporterService.reportArtifactUploadJobStatus({
+                    jobId: artifactUploadJobId,
+                    analysisId: executionData.analysisId,
+                    teamId: job.teamId,
+                    trajectoryId: executionData.trajectoryId,
+                    trajectoryName: typeof metadata.trajectoryName === 'string' ? metadata.trajectoryName : undefined,
+                    timestep,
+                    status: 'queued'
+                }).catch((err) => {
+                    logger.warn({ err, jobId: artifactUploadJobId }, 'Failed to report queued artifact upload status');
+                });
+            }
+
+            logger.info(
+                {
+                    analysisId: executionData.analysisId,
+                    artifactUploadJobId,
+                    jobId: job.jobId,
+                    stagedArtifactCount: queuedUploads,
+                    timestep
+                },
+                'Queued staged analysis artifact uploads'
+            );
 
             logMemoryUsage('after-result-processing', job.jobId);
             await bullJob.updateProgress(95);
@@ -841,6 +879,12 @@ export class AnalysisWorker {
 
                 await cleanupTask.catch((err) => {
                     logger.warn({ jobId: job.jobId, err }, 'Post-job cleanup failed');
+                });
+            }
+
+            if (artifactUploadBatch) {
+                await artifactUploadBatch.cleanup().catch((err) => {
+                    logger.warn({ jobId: job.jobId, err }, 'Artifact upload batch cleanup failed');
                 });
             }
         }

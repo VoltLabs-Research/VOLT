@@ -1,5 +1,5 @@
 import { AnalysisDispatchService, AnalysisWorker, createBinaryExecutorService, createPluginBinaryCacheService, createJobControlService } from './services';
-import type { ResultProcessorService } from '@/modules/artifacts/services';
+import type { ArtifactUploadQueueService, ResultProcessorService } from '@/modules/artifacts/services';
 import type { AnalysisExecutionDataStore } from '@/modules/platform/services';
 import type { WorkflowEngine } from '@/modules/workflow-runtime/services';
 import type { RuntimeEventBroker } from '@/shared/services';
@@ -33,6 +33,7 @@ export const createAnalysisWorker = (deps: {
     queueService: QueueService;
     analysisExecutionDataStore: AnalysisExecutionDataStore;
     objectStore: ClusterObjectStore;
+    artifactUploadQueueService: ArtifactUploadQueueService;
     resultProcessorService: ResultProcessorService;
     daemonJobReporterService: DaemonJobReporterService;
 }): AnalysisWorker => {
@@ -45,6 +46,7 @@ export const createAnalysisWorker = (deps: {
         deps.objectStore,
         pluginBinaryCacheService,
         binaryExecutorService,
+        deps.artifactUploadQueueService,
         deps.resultProcessorService,
         deps.daemonJobReporterService
     );
