@@ -9,7 +9,7 @@ export class TeamClusterSelectionService {
     ) {}
 
     async resolveTeamClusterId(teamId: string, requestedTeamClusterId?: string): Promise<string> {
-        return this.clusterRoleAwareSelectionService.resolveComputeClusterId({
+        return this.clusterRoleAwareSelectionService.resolveConnectedClusterId({
             teamId,
             requestedTeamClusterId
         });
