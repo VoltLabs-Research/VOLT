@@ -1,5 +1,5 @@
 export type ScreenshotResolutionPreset = 'viewport' | 'hd' | 'full-hd' | '4k' | 'custom';
-export type ScreenshotAnglePreset = 'current' | 'front' | 'back' | 'left' | 'right' | 'top' | 'bottom' | 'isometric';
+export type ScreenshotAnglePreset = 'current' | 'front' | 'back' | 'left' | 'right' | 'top' | 'bottom' | 'isometric' | 'ground-isometric';
 
 export interface ScreenshotSettings {
     resolutionPreset: ScreenshotResolutionPreset;
@@ -39,7 +39,8 @@ export const SCREENSHOT_ANGLE_OPTIONS = [
     { value: 'right', title: 'Right' },
     { value: 'top', title: 'Top' },
     { value: 'bottom', title: 'Bottom' },
-    { value: 'isometric', title: 'Isometric' }
+    { value: 'isometric', title: 'Isometric' },
+    { value: 'ground-isometric', title: 'Ground isometric' }
 ] as const;
 
 export const DEFAULT_SCREENSHOT_SETTINGS: ScreenshotSettings = {
