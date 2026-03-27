@@ -397,5 +397,5 @@ export interface EnqueuePreprocessingResponse {
     queuedJobs: number;
     duplicateJobs: number;
     skippedJobs: number;
-    jobs: QueuedJobNotification[];
+    jobs?: QueuedJobNotification[];
 };

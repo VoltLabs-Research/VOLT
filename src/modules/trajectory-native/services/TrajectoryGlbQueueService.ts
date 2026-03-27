@@ -5,8 +5,7 @@ import type {
     EnqueuePreprocessingRequest,
     EnqueuePreprocessingResponse,
     EnqueuePreprocessingFrameDescriptor,
-    GlbConversionQueueJobPayload,
-    QueuedJobNotification
+    GlbConversionQueueJobPayload
 } from '@/shared/contracts';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
@@ -14,7 +13,6 @@ interface EnqueueGlbJobsResult {
     queuedJobs: number;
     duplicateJobs: number;
     skippedJobs: number;
-    jobs: QueuedJobNotification[];
 };
 
 const buildGlbJobId = (trajectoryId: string, timestep: number): string => {
@@ -59,9 +57,9 @@ export const createTrajectoryGlbQueueService = (
         const result: EnqueueGlbJobsResult = {
             queuedJobs: 0,
             duplicateJobs: 0,
-            skippedJobs: 0,
-            jobs: []
+            skippedJobs: 0
         };
+        const jobsToEnqueue: GlbConversionQueueJobPayload[] = [];
 
         for (const frame of input.frames) {
             const ownerClusterId = frame.ownerClusterId || input.storageClusterId;
@@ -83,25 +81,12 @@ export const createTrajectoryGlbQueueService = (
                 ...frame,
                 ownerClusterId
             });
-            const wasEnqueued = await queueService.enqueue(TRAJECTORY_GLB_QUEUE_NAME, job, {
-                preserveExistingJob: true
-            });
+            jobsToEnqueue.push(job);
+        }
 
-            if (!wasEnqueued) {
-                result.duplicateJobs += 1;
-                continue;
-            }
-
-            result.queuedJobs += 1;
-            result.jobs.push({
-                jobId: job.jobId,
-                name: 'Preprocess trajectory frame',
-                teamId: job.teamId,
-                timestep: job.timestep,
-                trajectoryId: job.trajectoryId,
-                trajectoryName: job.trajectoryName,
-                queueType: TRAJECTORY_GLB_QUEUE_NAME
-            });
+        if (jobsToEnqueue.length > 0) {
+            await queueService.enqueueBulk(TRAJECTORY_GLB_QUEUE_NAME, jobsToEnqueue);
+            result.queuedJobs = jobsToEnqueue.length;
         }
 
         return result;

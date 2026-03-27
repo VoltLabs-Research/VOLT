@@ -197,7 +197,10 @@ export class TeamClusterDirectObjectStoreClient {
             method: 'HEAD'
         });
 
-        return parseHeadResponse(response.headers);
+        const head = parseHeadResponse(response.headers);
+        await this.readResponseBuffer(response.stream);
+
+        return head;
     }
 
     async getStream(
@@ -238,7 +241,7 @@ export class TeamClusterDirectObjectStoreClient {
             method: 'PUT',
             headers: this.buildUploadHeaders(request.buffer.length, request.contentType, request.contentEncoding, request.metadata),
             body: request.buffer
-        });
+        }).then((response) => this.readResponseBuffer(response.stream));
     }
 
     async putStream(ownerClusterId: string, request: {
@@ -259,13 +262,13 @@ export class TeamClusterDirectObjectStoreClient {
                 request.metadata
             ),
             body: request.stream
-        });
+        }).then((response) => this.readResponseBuffer(response.stream));
     }
 
     async deleteObject(ownerClusterId: string, bucket: string, objectKey: string): Promise<void> {
         await this.fetch(this.buildObjectPath(ownerClusterId, bucket, objectKey), {
             method: 'DELETE'
-        });
+        }).then((response) => this.readResponseBuffer(response.stream));
     }
 
     async deleteByPrefix(ownerClusterId: string, bucket: string, prefix: string): Promise<number | undefined> {

@@ -38,7 +38,9 @@ const readBody = async (request: http.IncomingMessage): Promise<Buffer> => {
     return Buffer.concat(chunks);
 };
 
-const createObjectStoreProxyServer = async () => {
+const createObjectStoreProxyServer = async (options: {
+    putResponseBody?: Buffer;
+} = {}) => {
     const objects = new Map<string, StoredObject>();
     const requests: ProxyRequest[] = [];
 
@@ -108,6 +110,13 @@ const createObjectStoreProxyServer = async () => {
                     : undefined
             });
             response.statusCode = 201;
+            if (options.putResponseBody) {
+                response.setHeader('content-type', 'text/plain');
+                response.setHeader('content-length', String(options.putResponseBody.length));
+                response.end(options.putResponseBody);
+                return;
+            }
+
             response.end();
             return;
         }
@@ -306,6 +315,32 @@ test('TeamClusterDirectObjectStoreClient can request stream-only reads without m
 
         assert.deepEqual(Buffer.concat(streamedChunks), payload);
         assert.equal(proxyServer.requests[proxyServer.requests.length - 1]?.skipMetadata, '1');
+    } finally {
+        await new Promise<void>((resolve, reject) => {
+            proxyServer.server.close((error) => error ? reject(error) : resolve());
+        });
+    }
+});
+
+test('TeamClusterDirectObjectStoreClient drains successful write responses so sockets stay reusable', async () => {
+    const proxyServer = await createObjectStoreProxyServer({
+        putResponseBody: Buffer.from('ok')
+    });
+    const client = createClient(proxyServer.url);
+
+    try {
+        for (let index = 0; index < 12; index += 1) {
+            await client.putBuffer(TEST_OWNER_CLUSTER_ID, {
+                bucket: TEST_BUCKET,
+                objectKey: `bulk/object-${index}.glb`,
+                buffer: Buffer.from(`payload-${index}`),
+                contentType: 'model/gltf-binary'
+            });
+        }
+
+        const putRequests = proxyServer.requests.filter((entry) => entry.method === 'PUT');
+        assert.equal(putRequests.length, 12);
+        assert.ok(new Set(putRequests.map((entry) => entry.connectionId)).size < putRequests.length);
     } finally {
         await new Promise<void>((resolve, reject) => {
             proxyServer.server.close((error) => error ? reject(error) : resolve());
