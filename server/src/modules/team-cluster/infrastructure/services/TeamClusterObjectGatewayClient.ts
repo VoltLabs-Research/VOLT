@@ -103,7 +103,6 @@ interface ObjectGatewayHttpSessionEntry {
     teamClusterId: string;
     tunnel: Duplex;
     agent: http.Agent;
-    ephemeral: boolean;
     inUse: boolean;
     expiresAt: number;
 }
@@ -116,6 +115,7 @@ const DEFAULT_LIST_LIMIT = 100;
 const TOKEN_EXPIRY_SAFETY_WINDOW_MS = 5_000;
 const TOKEN_TTL_SECONDS = 5 * 60;
 const HTTP_PROXY_SESSION_TTL_MS = 30_000;
+const HTTP_PROXY_REQUEST_TIMEOUT_MS = 120_000;
 const MAX_HTTP_PROXY_SESSIONS_PER_CLUSTER = 4;
 
 const readHeaderValue = (value: string | null): string | undefined => {
@@ -213,6 +213,8 @@ export default class TeamClusterObjectGatewayClient {
     private readonly cachedTokens = new Map<string, CachedAccessToken>();
     private readonly pendingTokens = new Map<string, Promise<CachedAccessToken>>();
     private readonly httpSessions = new Map<string, ObjectGatewayHttpSessionEntry[]>();
+    private readonly pendingSessionWaiters = new Map<string, Array<() => void>>();
+    private readonly pendingSessionCreations = new Map<string, number>();
 
     constructor(
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
@@ -502,6 +504,9 @@ export default class TeamClusterObjectGatewayClient {
                 });
             });
 
+            request.setTimeout(HTTP_PROXY_REQUEST_TIMEOUT_MS, () => {
+                request.destroy(new Error(`Object gateway tunnel request timed out after ${HTTP_PROXY_REQUEST_TIMEOUT_MS}ms`));
+            });
             request.once('error', reject);
 
             if (!options.body) {
@@ -532,26 +537,42 @@ export default class TeamClusterObjectGatewayClient {
             return reusableSession;
         }
 
-        const tunnel = await this.teamClusterDaemonClient.openTunnel(
-            teamClusterId,
-            OBJECT_GATEWAY_EXPOSURE_ID,
-            TeamClusterServiceExposureAccessMode.Http
-        );
-        const storeSession = existingSessions.length < MAX_HTTP_PROXY_SESSIONS_PER_CLUSTER;
-        const session = this.createHttpSession(sessionKey, teamClusterId, tunnel as Duplex, !storeSession);
-
-        if (storeSession) {
-            this.httpSessions.set(sessionKey, [...existingSessions, session]);
+        const inFlightSessionCreations = this.pendingSessionCreations.get(sessionKey) ?? 0;
+        if (existingSessions.length + inFlightSessionCreations >= MAX_HTTP_PROXY_SESSIONS_PER_CLUSTER) {
+            await this.waitForHttpSessionAvailability(sessionKey);
+            return this.acquireHttpSession(teamClusterId);
         }
 
-        return session;
+        this.pendingSessionCreations.set(sessionKey, inFlightSessionCreations + 1);
+
+        try {
+            const tunnel = await this.teamClusterDaemonClient.openTunnel(
+                teamClusterId,
+                OBJECT_GATEWAY_EXPOSURE_ID,
+                TeamClusterServiceExposureAccessMode.Http
+            );
+            const latestSessions = this.pruneHttpSessions(sessionKey);
+            const session = this.createHttpSession(sessionKey, teamClusterId, tunnel as Duplex);
+
+            this.httpSessions.set(sessionKey, [...latestSessions, session]);
+
+            return session;
+        } finally {
+            const remainingCreations = Math.max(0, (this.pendingSessionCreations.get(sessionKey) ?? 1) - 1);
+            if (remainingCreations === 0) {
+                this.pendingSessionCreations.delete(sessionKey);
+            } else {
+                this.pendingSessionCreations.set(sessionKey, remainingCreations);
+            }
+
+            this.notifyHttpSessionWaiter(sessionKey);
+        }
     }
 
     private createHttpSession(
         sessionKey: string,
         teamClusterId: string,
-        tunnel: Duplex,
-        ephemeral = false
+        tunnel: Duplex
     ): ObjectGatewayHttpSessionEntry {
         const agent = new http.Agent({
             keepAlive: true,
@@ -566,7 +587,6 @@ export default class TeamClusterObjectGatewayClient {
             teamClusterId,
             tunnel,
             agent,
-            ephemeral,
             inUse: true,
             expiresAt: Date.now() + HTTP_PROXY_SESSION_TTL_MS
         };
@@ -603,13 +623,14 @@ export default class TeamClusterObjectGatewayClient {
     }
 
     private releaseHttpSession(session: ObjectGatewayHttpSessionEntry, destroySession = false): void {
-        if (destroySession || session.ephemeral || session.tunnel.destroyed) {
+        if (destroySession || session.tunnel.destroyed) {
             this.destroyHttpSession(session);
             return;
         }
 
         session.inUse = false;
         session.expiresAt = Date.now() + HTTP_PROXY_SESSION_TTL_MS;
+        this.notifyHttpSessionWaiter(session.key);
     }
 
     private pruneHttpSessions(sessionKey: string): ObjectGatewayHttpSessionEntry[] {
@@ -647,10 +668,39 @@ export default class TeamClusterObjectGatewayClient {
         const nextSessions = sessions.filter((entry) => entry !== session);
         if (nextSessions.length === 0) {
             this.httpSessions.delete(session.key);
+        } else {
+            this.httpSessions.set(session.key, nextSessions);
+        }
+
+        this.notifyHttpSessionWaiter(session.key);
+    }
+
+    private async waitForHttpSessionAvailability(sessionKey: string): Promise<void> {
+        await new Promise<void>((resolve) => {
+            const waiters = this.pendingSessionWaiters.get(sessionKey) ?? [];
+            waiters.push(resolve);
+            this.pendingSessionWaiters.set(sessionKey, waiters);
+        });
+    }
+
+    private notifyHttpSessionWaiter(sessionKey: string): void {
+        const waiters = this.pendingSessionWaiters.get(sessionKey);
+        if (!waiters || waiters.length === 0) {
             return;
         }
 
-        this.httpSessions.set(session.key, nextSessions);
+        const nextWaiter = waiters.shift();
+        if (!nextWaiter) {
+            return;
+        }
+
+        if (waiters.length === 0) {
+            this.pendingSessionWaiters.delete(sessionKey);
+        } else {
+            this.pendingSessionWaiters.set(sessionKey, waiters);
+        }
+
+        nextWaiter();
     }
 
     private buildSessionKey(teamClusterId: string): string {

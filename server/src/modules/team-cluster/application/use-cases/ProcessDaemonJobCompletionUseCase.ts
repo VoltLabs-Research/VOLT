@@ -10,6 +10,7 @@ import { inject, injectable } from 'tsyringe';
 type RasterJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
 type GlbJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
 type SshImportJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
+type ArtifactUploadJobStatus = JobStatus.Queued | JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
 
 interface DaemonAnalysisJobCompletionPayload {
     teamClusterId: string;
@@ -69,12 +70,25 @@ interface DaemonSshImportJobStatusPayload {
     error?: string;
 };
 
+interface DaemonArtifactUploadJobStatusPayload {
+    teamClusterId: string;
+    jobId: string;
+    analysisId: string;
+    teamId: string;
+    trajectoryId: string;
+    trajectoryName?: string;
+    timestep?: number;
+    status: ArtifactUploadJobStatus;
+    error?: string;
+};
+
 interface DaemonJobCompletionService {
     handleJobCompletion(input: DaemonAnalysisJobCompletionPayload): Promise<void>;
     handleRasterJobStatus(input: DaemonRasterJobStatusPayload): Promise<void>;
     handleGlbJobStatus(input: DaemonGlbJobStatusPayload): Promise<void>;
     handleAnalysisJobStatus(input: DaemonAnalysisJobStatusPayload): Promise<void>;
     handleSshImportJobStatus(input: DaemonSshImportJobStatusPayload): Promise<void>;
+    handleArtifactUploadJobStatus(input: DaemonArtifactUploadJobStatusPayload): Promise<void>;
 };
 
 interface ProcessDaemonAnalysisJobCompletionInputDTO {
@@ -152,12 +166,30 @@ interface ValidProcessDaemonSshImportJobStatusInputDTO extends ProcessDaemonSshI
     status: SshImportJobStatus;
 };
 
+interface ProcessDaemonArtifactUploadJobStatusInputDTO {
+    teamClusterId: string;
+    daemonPassword: string;
+    jobId: string;
+    analysisId: string;
+    teamId: string;
+    trajectoryId: string;
+    trajectoryName?: string;
+    timestep?: number;
+    status: JobStatus;
+    error?: string;
+};
+
+interface ValidProcessDaemonArtifactUploadJobStatusInputDTO extends ProcessDaemonArtifactUploadJobStatusInputDTO {
+    status: ArtifactUploadJobStatus;
+};
+
 export type ProcessDaemonJobCompletionInputDTO =
     | ProcessDaemonAnalysisJobCompletionInputDTO
     | ProcessDaemonAnalysisJobStatusInputDTO
     | ProcessDaemonRasterJobStatusInputDTO
     | ProcessDaemonGlbJobStatusInputDTO
-    | ProcessDaemonSshImportJobStatusInputDTO;
+    | ProcessDaemonSshImportJobStatusInputDTO
+    | ProcessDaemonArtifactUploadJobStatusInputDTO;
 
 interface ProcessDaemonJobCompletionOutputDTO {
     acknowledged: boolean;
@@ -249,6 +281,22 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
                 return Result.ok({ acknowledged: true });
             }
 
+            if (this.isArtifactUploadJobStatusInput(input)) {
+                await this.daemonAnalysisCompletionService.handleArtifactUploadJobStatus({
+                    teamClusterId: input.teamClusterId,
+                    jobId: input.jobId,
+                    analysisId: input.analysisId,
+                    teamId: input.teamId,
+                    trajectoryId: input.trajectoryId,
+                    trajectoryName: input.trajectoryName,
+                    timestep: input.timestep,
+                    status: input.status,
+                    error: input.error
+                });
+
+                return Result.ok({ acknowledged: true });
+            }
+
             if (this.isRasterJobStatusInput(input)) {
                 await this.daemonAnalysisCompletionService.handleRasterJobStatus({
                     teamClusterId: input.teamClusterId,
@@ -284,13 +332,13 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
     private isAnalysisJobStatusInput(
         input: ProcessDaemonJobCompletionInputDTO
     ): input is ProcessDaemonAnalysisJobStatusInputDTO {
-        return 'analysisId' in input && 'status' in input && !('success' in input);
+        return 'analysisId' in input && 'name' in input && 'status' in input && !('success' in input);
     }
 
     private isAnalysisJobCompletionInput(
         input: ProcessDaemonJobCompletionInputDTO
     ): input is ProcessDaemonAnalysisJobCompletionInputDTO {
-        return 'analysisId' in input && !this.hasJobStatusFields(input);
+        return 'analysisId' in input && 'name' in input && 'success' in input && !this.hasJobStatusFields(input);
     }
 
     private isGlbJobStatusInput(
@@ -311,6 +359,15 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
             && this.isValidJobStatus(input.status);
     }
 
+    private isArtifactUploadJobStatusInput(
+        input: ProcessDaemonJobCompletionInputDTO
+    ): input is ValidProcessDaemonArtifactUploadJobStatusInputDTO {
+        return this.hasJobStatusFields(input)
+            && !this.hasAnalysisJobCompletionFields(input)
+            && this.isArtifactUploadJobId(input.jobId)
+            && this.isValidArtifactUploadJobStatus(input.status);
+    }
+
     private isRasterJobStatusInput(
         input: ProcessDaemonJobCompletionInputDTO
     ): input is ValidProcessDaemonRasterJobStatusInputDTO {
@@ -318,11 +375,12 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
             && !this.hasAnalysisJobCompletionFields(input)
             && !this.isGlbJobId(input.jobId)
             && !this.isSshImportJobId(input.jobId)
+            && !this.isArtifactUploadJobId(input.jobId)
             && this.isValidJobStatus(input.status);
     }
 
     private hasAnalysisJobCompletionFields(input: ProcessDaemonJobCompletionInputDTO): boolean {
-        return 'analysisId' in input || 'name' in input || 'success' in input;
+        return 'name' in input || 'success' in input;
     }
 
     private hasJobStatusFields(
@@ -339,8 +397,19 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
         return jobId.startsWith('ssh-import:');
     }
 
+    private isArtifactUploadJobId(jobId: string): boolean {
+        return jobId.startsWith('artifact-upload-');
+    }
+
     private isValidJobStatus(status: JobStatus): status is RasterJobStatus {
         return status === JobStatus.Running
+            || status === JobStatus.Completed
+            || status === JobStatus.Failed;
+    }
+
+    private isValidArtifactUploadJobStatus(status: JobStatus): status is ArtifactUploadJobStatus {
+        return status === JobStatus.Queued
+            || status === JobStatus.Running
             || status === JobStatus.Completed
             || status === JobStatus.Failed;
     }
