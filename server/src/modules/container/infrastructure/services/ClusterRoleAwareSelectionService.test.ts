@@ -200,7 +200,33 @@ test('ClusterRoleAwareSelectionService allows any connected cluster when resolvi
     }), 'storage-1');
 });
 
-test('ClusterRoleAwareSelectionService excludes storage clusters above the hard disk limit', async () => {
+test('ClusterRoleAwareSelectionService falls back to roleConfig when effective capabilities are stale', async () => {
+    const storageCluster = createTeamCluster('storage-1', {
+        roleConfig: createDefaultTeamClusterRoleConfig('storage-server'),
+        effectiveCapabilities: {
+            acceptsComputeJobs: false,
+            acceptsStorageWrites: false,
+            servesStorageReads: false,
+            servesArtifactDownloads: false
+        }
+    });
+    const computeCluster = createTeamCluster('compute-1', {
+        roleConfig: createDefaultTeamClusterRoleConfig('compute-node'),
+        effectiveCapabilities: createDefaultTeamClusterEffectiveCapabilities('compute-node')
+    });
+
+    const service = new ClusterRoleAwareSelectionService(
+        new FakeTeamClusterRepository([storageCluster, computeCluster]) as unknown as ITeamClusterRepository,
+        new FakeSystemMetricsRepository({
+            'storage-1': createMetrics('storage-1', 20, 20),
+            'compute-1': createMetrics('compute-1', 30, 30)
+        }) as unknown as ISystemMetricsRepository
+    );
+
+    assert.equal(await service.resolveStorageClusterId({ teamId: 'team-1' }), 'storage-1');
+});
+
+test('ClusterRoleAwareSelectionService deprioritizes storage clusters above the hard disk limit', async () => {
     const saturatedStorageCluster = createTeamCluster('storage-hard-limit', {
         roleConfig: createDefaultTeamClusterRoleConfig('storage-server'),
         effectiveCapabilities: createDefaultTeamClusterEffectiveCapabilities('storage-server')
@@ -227,12 +253,35 @@ test('ClusterRoleAwareSelectionService excludes storage clusters above the hard 
     );
 
     assert.equal(await service.resolveStorageClusterId({ teamId: 'team-1' }), 'storage-healthy');
-
-    await assert.rejects(
-        () => service.resolveStorageClusterId({
+    assert.equal(
+        await service.resolveStorageClusterId({
             teamId: 'team-1',
             requestedTeamClusterId: 'storage-hard-limit'
         }),
-        (error: unknown) => error instanceof Error && error.message.includes('hard storage limit')
+        'storage-hard-limit'
     );
+});
+
+test('ClusterRoleAwareSelectionService falls back to the only storage cluster even above the hard disk limit', async () => {
+    const saturatedStorageCluster = createTeamCluster('storage-hard-limit', {
+        roleConfig: createDefaultTeamClusterRoleConfig('storage-server'),
+        effectiveCapabilities: createDefaultTeamClusterEffectiveCapabilities('storage-server')
+    });
+
+    const service = new ClusterRoleAwareSelectionService(
+        new FakeTeamClusterRepository([saturatedStorageCluster]) as unknown as ITeamClusterRepository,
+        new FakeSystemMetricsRepository({
+            'storage-hard-limit': {
+                ...createMetrics('storage-hard-limit', 20, 20),
+                disk: {
+                    total: 500,
+                    used: 470,
+                    free: 30,
+                    usagePercent: 94
+                }
+            }
+        }) as unknown as ISystemMetricsRepository
+    );
+
+    assert.equal(await service.resolveStorageClusterId({ teamId: 'team-1' }), 'storage-hard-limit');
 });

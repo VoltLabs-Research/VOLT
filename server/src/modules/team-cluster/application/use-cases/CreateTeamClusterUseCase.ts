@@ -5,7 +5,6 @@ import {
 } from '@modules/team-cluster/application/dtos/CreateTeamClusterDTO';
 import { toTeamClusterDTO } from '@modules/team-cluster/application/dtos/TeamClusterDTO';
 import TeamCluster, {
-    createDefaultTeamClusterEffectiveCapabilities,
     createDefaultTeamClusterRoleConfig,
     DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
     TeamClusterStatus
@@ -115,7 +114,6 @@ export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClus
             },
             queueConcurrency: DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
             roleConfig: createDefaultTeamClusterRoleConfig(),
-            effectiveCapabilities: createDefaultTeamClusterEffectiveCapabilities(),
             createdAt: new Date(),
             updatedAt: new Date()
         });

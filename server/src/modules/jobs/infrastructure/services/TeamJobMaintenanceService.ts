@@ -1,3 +1,5 @@
+import { JobStatus } from '@modules/jobs/domain/entities/Job';
+import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
@@ -13,6 +15,7 @@ import type {
 } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
 import type { TeamJobSummary } from '@modules/team/socket/team/TeamJobsService';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import type { IEventBus } from '@shared/application/events/IEventBus';
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 
@@ -57,35 +60,23 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis,
 
+        @inject(SHARED_TOKENS.EventBus)
+        private readonly eventBus: IEventBus,
+
         @inject(TEAM_TOKENS.TeamJobsService)
         private readonly teamJobsService: TeamJobsReader
     ) {}
 
     async clearHistory(teamId: string): Promise<ClearTeamJobsHistoryResult> {
         const teamJobs = await this.teamJobsService.getFlatTeamJobs(teamId);
-        const { daemonJobs, localJobs } = this.partitionVisibleJobs(teamJobs);
-        const localCleanupTargets = await this.collectLocalCleanupTargets(teamId, localJobs);
-        const daemonResult = await this.callPerCluster(this.groupJobsByCluster(daemonJobs), (teamClusterId, jobIds) => {
-            return this.teamClusterDaemonClient.command<ClusterActionResponse>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.jobs.clearHistory, {
-                teamId,
-                jobIds
-            });
-        }, {
-            requireFullConfirmation: true
-        });
-        const localResult = daemonResult.allClustersConfirmed
-            ? await this.removeProjectedJobs(teamId, localCleanupTargets)
-            : this.emptyLocalMutationResult();
-        const deletedAnalyses = this.combineAnalysisIds(
-            daemonResult.confirmedAnalysisIds,
-            localResult.affectedAnalysisIds
-        );
+        const localCleanupTargets = await this.collectLocalCleanupTargets(teamId, teamJobs);
+        const localResult = await this.removeProjectedJobs(teamId, localCleanupTargets);
 
         return {
-            deletedJobs: daemonResult.affectedJobs + localResult.affectedJobs,
-            deletedAnalyses: deletedAnalyses.size,
-            affectedClusters: daemonResult.affectedClusters,
-            clusterFailures: daemonResult.clusterFailures
+            deletedJobs: localResult.affectedJobs,
+            deletedAnalyses: localResult.affectedAnalysisIds.size,
+            affectedClusters: 0,
+            clusterFailures: []
         };
     }
 
@@ -132,16 +123,55 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         });
         const { daemonJobs } = this.partitionVisibleJobs(failedJobs);
         const retryableDaemonJobs = daemonJobs.filter((job) => this.isRetryableDaemonJob(job));
-        const daemonResult = await this.callPerCluster(this.groupJobsByCluster(retryableDaemonJobs), (teamClusterId, jobIds) => {
-            return this.teamClusterDaemonClient.command<ClusterActionResponse>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.jobs.retry, {
-                jobIds
-            });
-        });
+        const jobsByCluster = this.groupJobsByCluster(retryableDaemonJobs);
+        let retriedFrames = 0;
+        let affectedClusters = 0;
+        const clusterFailures: TeamClusterFailureDetail[] = [];
+
+        for (const [teamClusterId, jobs] of jobsByCluster.entries()) {
+            try {
+                const response = await this.teamClusterDaemonClient.command<ClusterActionResponse>(
+                    teamClusterId,
+                    TEAM_CLUSTER_DAEMON_COMMAND.jobs.retry,
+                    {
+                        jobIds: jobs.map((job) => job.jobId)
+                    }
+                );
+                const confirmedAffectedJobs = this.normalizeAffectedJobs(response.affectedJobs, jobs.length);
+
+                if (confirmedAffectedJobs !== jobs.length) {
+                    clusterFailures.push({
+                        teamClusterId,
+                        requestedJobs: jobs.length,
+                        affectedJobs: confirmedAffectedJobs,
+                        reason: 'partial-confirmation',
+                        message: `Cluster confirmed ${confirmedAffectedJobs} of ${jobs.length} requested job retries`
+                    });
+                } else {
+                    await Promise.all(jobs.map(async (job) => {
+                        await this.resetRetriedDaemonJobState(job);
+                        await this.publishRetriedDaemonJob(job);
+                    }));
+                }
+
+                affectedClusters += 1;
+                retriedFrames += confirmedAffectedJobs;
+            } catch (error) {
+                clusterFailures.push({
+                    teamClusterId,
+                    requestedJobs: jobs.length,
+                    affectedJobs: 0,
+                    reason: 'command-failed',
+                    message: this.getErrorMessage(error)
+                });
+                logger.warn(error, `[TeamJobMaintenanceService] Failed to retry jobs on cluster ${teamClusterId}`);
+            }
+        }
 
         return {
-            retriedFrames: daemonResult.affectedJobs,
-            affectedClusters: daemonResult.affectedClusters,
-            clusterFailures: daemonResult.clusterFailures
+            retriedFrames,
+            affectedClusters,
+            clusterFailures
         };
     }
 
@@ -354,13 +384,14 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
 
             analysisIdsByJobId.set(target.jobId, analysisId);
             pipeline.del(this.jobStatusKey(target.jobId));
-            pipeline.srem(this.teamJobsKey(teamId), target.jobId);
             pipeline.srem(this.projectedTeamJobsKey(teamId), target.jobId);
 
             if (analysisId) {
                 pipeline.srem(this.projectedAnalysisJobsKey(analysisId), target.jobId);
             }
         }
+
+        pipeline.incr(this.projectedTeamJobsRevisionKey(teamId));
 
         const results = await pipeline.exec();
         const affectedAnalysisIds = new Set<string>();
@@ -409,7 +440,9 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
     }
 
     private isDaemonJob(job: TeamJobSummary): boolean {
-        return typeof job.teamClusterId === 'string' && job.teamClusterId.length > 0 && job.source !== 'projected';
+        return typeof job.teamClusterId === 'string'
+            && job.teamClusterId.length > 0
+            && this.getJobString(job, 'backingSource') === 'daemon';
     }
 
     private isRetryableDaemonJob(job: TeamJobSummary): boolean {
@@ -429,15 +462,57 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
             return false;
         }
 
-        if (this.getJobString(job, 'source') === 'projected') {
-            return false;
-        }
-
-        if (this.getJobString(job, 'backingSource') === 'local') {
+        if (this.getJobString(job, 'backingSource') !== 'daemon') {
             return false;
         }
 
         return true;
+    }
+
+    private async resetRetriedDaemonJobState(job: TeamJobSummary): Promise<void> {
+        const analysisId = this.resolveAnalysisId(job);
+        const trajectoryId = this.resolveTrajectoryId(job);
+        const pipeline = this.redis.pipeline();
+
+        if (job.queueType === 'analysis_processing' && analysisId) {
+            const terminalReceiptKey = this.analysisTerminalReceiptKey(analysisId, job.jobId);
+            pipeline.del(terminalReceiptKey);
+            pipeline.srem(this.analysisTerminalReceiptSetKey(analysisId), terminalReceiptKey);
+        }
+
+        if (job.queueType === 'trajectory_glb_conversion' && trajectoryId) {
+            const terminalReceiptKey = this.glbTerminalReceiptKey(trajectoryId, job.jobId);
+            pipeline.del(terminalReceiptKey);
+            pipeline.srem(this.glbTerminalReceiptSetKey(trajectoryId), terminalReceiptKey);
+        }
+
+        await pipeline.exec();
+    }
+
+    private async publishRetriedDaemonJob(job: TeamJobSummary): Promise<void> {
+        await this.eventBus.publish(new JobStatusChangedEvent({
+            jobId: job.jobId,
+            teamId: job.teamId,
+            status: 'retrying',
+            queueType: job.queueType,
+            metadata: {
+                ...job.metadata,
+                jobId: job.jobId,
+                name: typeof job.name === 'string' ? job.name : this.getJobString(job, 'name'),
+                status: 'retrying',
+                queueType: job.queueType,
+                source: 'projected',
+                backingSource: 'daemon',
+                cleanupScope: this.getJobString(job, 'cleanupScope'),
+                teamClusterId: job.teamClusterId,
+                analysisId: this.resolveAnalysisId(job),
+                trajectoryId: this.resolveTrajectoryId(job),
+                trajectoryName: this.getJobString(job, 'trajectoryName'),
+                timestep: typeof job.timestep === 'number' ? job.timestep : undefined,
+                message: undefined,
+                error: undefined
+            }
+        }));
     }
 
     private normalizeAffectedJobs(affectedJobs: number, requestedJobs: number): number {
@@ -502,6 +577,18 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         return undefined;
     }
 
+    private resolveTrajectoryId(job: TeamJobSummary): string | undefined {
+        if (typeof job.trajectoryId === 'string') {
+            return job.trajectoryId;
+        }
+
+        if (typeof job.metadata?.trajectoryId === 'string') {
+            return job.metadata.trajectoryId;
+        }
+
+        return undefined;
+    }
+
     private getJobString(job: TeamJobSummary, key: string): string | undefined {
         const topLevelValue = job[key];
         if (typeof topLevelValue === 'string') {
@@ -534,15 +621,31 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         return `${JOB_STATUS_KEY_PREFIX}${jobId}`;
     }
 
-    private teamJobsKey(teamId: string): string {
-        return `team:${teamId}:jobs`;
-    }
-
     private projectedTeamJobsKey(teamId: string): string {
         return `team:${teamId}:projected-jobs`;
     }
 
+    private projectedTeamJobsRevisionKey(teamId: string): string {
+        return `team:${teamId}:projected-jobs:revision`;
+    }
+
     private projectedAnalysisJobsKey(analysisId: string): string {
         return `analysis:${analysisId}:projected-jobs`;
+    }
+
+    private analysisTerminalReceiptKey(analysisId: string, jobId: string): string {
+        return `daemon-analysis:${analysisId}:terminal:${jobId}`;
+    }
+
+    private analysisTerminalReceiptSetKey(analysisId: string): string {
+        return `daemon-analysis:${analysisId}:terminal-keys`;
+    }
+
+    private glbTerminalReceiptKey(trajectoryId: string, jobId: string): string {
+        return `daemon-glb:${trajectoryId}:terminal:${jobId}`;
+    }
+
+    private glbTerminalReceiptSetKey(trajectoryId: string): string {
+        return `daemon-glb:${trajectoryId}:terminal-keys`;
     }
 }

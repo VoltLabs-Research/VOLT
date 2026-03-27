@@ -38,5 +38,6 @@ export interface TeamJobSnapshot {
     source?: string;
     backingSource?: string;
     cleanupScope?: string;
+    revision?: number;
     [key: string]: unknown;
 }

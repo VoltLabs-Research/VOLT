@@ -1,5 +1,4 @@
 import TeamCluster, {
-    TeamClusterEffectiveCapabilitiesProps,
     TeamClusterDaemonServiceProps,
     TeamClusterRuntimeRoleConfigProps,
     TeamClusterServiceProps,
@@ -92,7 +91,7 @@ export const toTeamClusterDTO = (
 ): TeamClusterDTO => {
     const services: TeamClusterServicesProps = teamCluster.props.services;
     const roleConfig = teamCluster.props.roleConfig;
-    const effectiveCapabilities: TeamClusterEffectiveCapabilitiesProps = teamCluster.props.effectiveCapabilities;
+    const effectiveCapabilities = teamCluster.effectiveCapabilities;
     const activeTransfers = options.activeTransfers?.map((job) => ({
         ...job,
         buckets: job.buckets.map((bucketRef) => ({

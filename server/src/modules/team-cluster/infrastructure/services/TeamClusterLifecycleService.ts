@@ -4,7 +4,6 @@ import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { toTeamClusterDTO, TeamClusterDTO } from '@modules/team-cluster/application/dtos/TeamClusterDTO';
 import TeamCluster, {
-    TeamClusterEffectiveCapabilitiesProps,
     TeamClusterRuntimeRoleConfigProps,
     TeamClusterStatus
 } from '@modules/team-cluster/domain/entities/TeamCluster';
@@ -144,7 +143,6 @@ interface TeamClusterLifecycleUpdate {
     lastDisconnectAt?: Date | null;
     clearEnrollmentToken?: boolean;
     roleConfig?: TeamClusterRuntimeRoleConfigProps;
-    effectiveCapabilities?: TeamClusterEffectiveCapabilitiesProps;
 };
 
 interface PersistLifecycleUpdateOptions {
@@ -231,7 +229,6 @@ export default class TeamClusterLifecycleService {
         installedVersion?: string,
         runtime?: {
             roleConfig: TeamClusterRuntimeRoleConfigProps;
-            effectiveCapabilities: TeamClusterEffectiveCapabilitiesProps;
         },
         metrics?: DaemonMetricsSnapshot
     ): Promise<TeamClusterDTO> {
@@ -245,8 +242,7 @@ export default class TeamClusterLifecycleService {
             status: nextStatus,
             installedVersion,
             lastHeartbeatAt: new Date(),
-            roleConfig: runtime?.roleConfig,
-            effectiveCapabilities: runtime?.effectiveCapabilities
+            roleConfig: runtime?.roleConfig
         }, {
             preconditions: {
                 allowedCurrentStatuses: [teamCluster.props.status]
@@ -586,8 +582,7 @@ export default class TeamClusterLifecycleService {
             lastDisconnectAt: update.lastDisconnectAt === undefined
                 ? teamCluster.props.lastDisconnectAt
                 : update.lastDisconnectAt,
-            roleConfig: update.roleConfig ?? teamCluster.props.roleConfig,
-            effectiveCapabilities: update.effectiveCapabilities ?? teamCluster.props.effectiveCapabilities
+            roleConfig: update.roleConfig ?? teamCluster.props.roleConfig
         }, options.preconditions);
 
         if (!updatedTeamCluster) {

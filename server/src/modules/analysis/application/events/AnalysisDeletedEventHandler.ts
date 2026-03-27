@@ -38,13 +38,12 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
     }
 
     private async removeProjectedJobHistory(analysisId: string, teamId: string): Promise<void> {
-        const [analysisJobIds, teamProjectedJobIds, teamJobIds] = await Promise.all([
+        const [analysisJobIds, teamProjectedJobIds] = await Promise.all([
             this.redis.smembers(this.projectedAnalysisJobsKey(analysisId)),
-            teamId ? this.redis.smembers(this.projectedTeamJobsKey(teamId)) : Promise.resolve([]),
-            teamId ? this.redis.smembers(this.teamJobsKey(teamId)) : Promise.resolve([])
+            teamId ? this.redis.smembers(this.projectedTeamJobsKey(teamId)) : Promise.resolve([])
         ]);
         const indexedTeamJobIds = await this.filterJobIdsByAnalysis(
-            this.uniqueJobIds([...teamProjectedJobIds, ...teamJobIds]),
+            this.uniqueJobIds(teamProjectedJobIds),
             analysisId
         );
         const jobIds = this.uniqueJobIds([...analysisJobIds, ...indexedTeamJobIds]);
@@ -60,7 +59,10 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
             }
 
             pipeline.srem(this.projectedTeamJobsKey(teamId), jobId);
-            pipeline.srem(this.teamJobsKey(teamId), jobId);
+        }
+
+        if (teamId) {
+            pipeline.incr(this.projectedTeamJobsRevisionKey(teamId));
         }
 
         await pipeline.exec();
@@ -132,12 +134,12 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
         return `${JOB_STATUS_KEY_PREFIX}${jobId}`;
     }
 
-    private teamJobsKey(teamId: string): string {
-        return `team:${teamId}:jobs`;
-    }
-
     private projectedTeamJobsKey(teamId: string): string {
         return `team:${teamId}:projected-jobs`;
+    }
+
+    private projectedTeamJobsRevisionKey(teamId: string): string {
+        return `team:${teamId}:projected-jobs:revision`;
     }
 
     private projectedAnalysisJobsKey(analysisId: string): string {

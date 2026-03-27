@@ -58,6 +58,15 @@ const normalizeJobTimestep = (job: Job, timestep: number): Job => {
     };
 };
 
+const parseTimestamp = (timestamp?: string): number => {
+    if (typeof timestamp !== 'string' || timestamp.trim().length === 0) {
+        return 0;
+    }
+
+    const parsedTimestamp = Date.parse(timestamp);
+    return Number.isFinite(parsedTimestamp) ? parsedTimestamp : 0;
+};
+
 const UNGROUPED_TIMESTEP = -1;
 
 const buildTrajectoryGroup = (updatedJob: Job): TrajectoryJobGroup | null => {
@@ -98,7 +107,7 @@ export const applyJobUpdate = (
         return [trajectoryGroup, ...groups];
     }
 
-    return groups.map((group, index) => {
+    const updatedGroups = groups.map((group, index) => {
         if (index !== trajIndex) return group;
 
         let existingJob: Job | undefined;
@@ -115,12 +124,21 @@ export const applyJobUpdate = (
                 };
             })
             .filter((frame) => frame.jobs.length > 0);
-        const nextJob = existingJob
-            ? normalizeJobTimestep({
-                ...existingJob,
-                ...normalizedJob
-            }, timestep)
-            : normalizedJob;
+        const nextJobSource = existingJob
+            && typeof existingJob.revision === 'number'
+            && typeof normalizedJob.revision === 'number'
+            && normalizedJob.revision < existingJob.revision
+            ? existingJob
+            : existingJob
+                ? {
+                    ...existingJob,
+                    ...normalizedJob
+                }
+                : normalizedJob;
+        const nextJob = normalizeJobTimestep(
+            nextJobSource,
+            resolveJobTimestep(nextJobSource) ?? timestep
+        );
         const frameIndex = frameGroupsWithoutExistingJob.findIndex((frame) => frame.timestep === timestep);
         let newFrameGroups = frameGroupsWithoutExistingJob;
 
@@ -151,12 +169,21 @@ export const applyJobUpdate = (
 
         return {
             ...group,
-            trajectoryName: updatedJob.trajectoryName || group.trajectoryName,
+            trajectoryName: nextJob.trajectoryName || group.trajectoryName,
             frameGroups: newFrameGroups,
             overallStatus,
             completedCount: allJobs.filter((job) => job.status === JobStatus.Completed).length,
             totalCount: allJobs.length,
-            latestTimestamp: updatedJob.timestamp || group.latestTimestamp
+            latestTimestamp: nextJob.timestamp || group.latestTimestamp
         };
+    });
+
+    return updatedGroups.sort((left, right) => {
+        const timestampDifference = parseTimestamp(right.latestTimestamp) - parseTimestamp(left.latestTimestamp);
+        if (timestampDifference !== 0) {
+            return timestampDifference;
+        }
+
+        return left.trajectoryId.localeCompare(right.trajectoryId);
     });
 };

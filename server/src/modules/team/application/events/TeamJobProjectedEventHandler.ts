@@ -17,7 +17,7 @@ export default class TeamJobProjectedEventHandler implements IEventHandler<TeamJ
     ){}
 
     async handle(event: TeamJobProjectedEvent): Promise<void> {
-        const { teamId, jobId, status, queueType, metadata, timestamp, trajectoryId, trajectoryName, timestep, message, analysisId } = event.payload;
+        const { teamId, jobId, status, queueType, metadata, timestamp, trajectoryId, trajectoryName, timestep, message, analysisId, revision } = event.payload;
 
         this.teamJobsService.invalidateInitialTeamJobs(teamId);
 
@@ -37,6 +37,7 @@ export default class TeamJobProjectedEventHandler implements IEventHandler<TeamJ
                 message: message ?? metadata?.message,
                 error: metadata?.error,
                 analysisId: analysisId ?? metadata?.analysisId,
+                revision,
                 teamId
             }
         );
