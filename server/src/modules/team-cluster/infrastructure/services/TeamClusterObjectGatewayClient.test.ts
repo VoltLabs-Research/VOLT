@@ -76,7 +76,9 @@ const readBody = async (request: http.IncomingMessage): Promise<Buffer> => {
     return Buffer.concat(chunks);
 };
 
-const buildObjectGatewayServer = async () => {
+const buildObjectGatewayServer = async (options: {
+    putResponseBody?: Buffer;
+} = {}) => {
     const objects = new Map<string, StoredObject>();
     const requests: Array<{ method: string; path: string; token?: string; connectionId: string; skipMetadata?: string; }> = [];
 
@@ -141,6 +143,13 @@ const buildObjectGatewayServer = async () => {
                     : undefined
             });
             response.statusCode = 201;
+            if (options.putResponseBody) {
+                response.setHeader('content-type', 'text/plain');
+                response.setHeader('content-length', String(options.putResponseBody.length));
+                response.end(options.putResponseBody);
+                return;
+            }
+
             response.end();
             return;
         }
@@ -412,5 +421,37 @@ test('TeamClusterObjectGatewayClient honors feature flags without attempting an 
     } finally {
         process.env.TEAM_CLUSTER_OBJECT_GATEWAY_READS_ENABLED = 'true';
         process.env.TEAM_CLUSTER_OBJECT_GATEWAY_WRITES_ENABLED = 'true';
+    }
+});
+
+test('TeamClusterObjectGatewayClient drains successful write responses so tunnel sessions remain reusable', async () => {
+    process.env.TEAM_CLUSTER_OBJECT_GATEWAY_ENABLED = 'true';
+    process.env.TEAM_CLUSTER_OBJECT_GATEWAY_READS_ENABLED = 'true';
+    process.env.TEAM_CLUSTER_OBJECT_GATEWAY_WRITES_ENABLED = 'true';
+
+    const { server, requests, port } = await buildObjectGatewayServer({
+        putResponseBody: Buffer.from('ok')
+    });
+    const harness = createClientHarness(port);
+
+    try {
+        for (let index = 0; index < 12; index += 1) {
+            await harness.client.putBuffer(TEST_CLUSTER_ID, {
+                bucket: TEST_BUCKET,
+                objectKey: `bulk/object-${index}.glb`,
+                buffer: Buffer.from(`payload-${index}`),
+                contentLength: Buffer.byteLength(`payload-${index}`),
+                contentType: 'model/gltf-binary'
+            });
+        }
+
+        const putRequests = requests.filter((entry) => entry.method === 'PUT');
+        assert.equal(putRequests.length, 12);
+        assert.ok(harness.daemonClient.openTunnelCalls.length < putRequests.length);
+        assert.ok(new Set(putRequests.map((entry) => entry.connectionId)).size < putRequests.length);
+    } finally {
+        await new Promise<void>((resolve, reject) => {
+            server.close((error) => error ? reject(error) : resolve());
+        });
     }
 });

@@ -44,50 +44,42 @@ type ParsedFrame = {
 };
 
 interface TeamClusterCommandClient {
-    command<T = unknown>(teamClusterId: string, command: string, payload?: Record<string, unknown>): Promise<T>;
+    command<T = unknown>(
+        teamClusterId: string,
+        command: string,
+        payload?: Record<string, unknown>,
+        options?: { timeoutMs?: number; timeoutClass?: string; }
+    ): Promise<T>;
 };
 
 interface GlbPreprocessingEnqueueResult {
     queuedJobs: number;
     duplicateJobs: number;
     skippedJobs: number;
-    jobs?: Array<{
-        jobId: string;
-        teamId: string;
-        queueType: string;
-        name?: string;
-        trajectoryId?: string;
-        trajectoryName?: string;
-        timestep?: number;
-    }>;
 };
 
 const GLB_SESSION_TTL_SECONDS = 86400;
+const GLB_ENQUEUE_BATCH_SIZE = 500;
 
-const RECONCILE_GLB_SESSION_SCRIPT = `
-    local queuedJobs = tonumber(ARGV[1])
-    local ttl = tonumber(ARGV[2])
-    local terminalCount = redis.call('SCARD', KEYS[3])
-    local failedJobs = tonumber(redis.call('GET', KEYS[2]) or '0')
-    local remainingJobs = queuedJobs - terminalCount
+interface GlbFrameDescriptor {
+    timestep: number;
+    objectKey: string;
+    ownerClusterId: string;
+};
 
-    if remainingJobs > 0 then
-        redis.call('SET', KEYS[1], tostring(remainingJobs), 'EX', ttl)
-    else
-        redis.call('DEL', KEYS[1])
-        remainingJobs = 0
-    end
+const chunkItems = <T>(items: T[], chunkSize: number): T[][] => {
+    if (items.length === 0) {
+        return [];
+    }
 
-    if redis.call('EXISTS', KEYS[2]) == 1 then
-        redis.call('EXPIRE', KEYS[2], ttl)
-    end
+    const chunks: T[][] = [];
 
-    if redis.call('EXISTS', KEYS[3]) == 1 then
-        redis.call('EXPIRE', KEYS[3], ttl)
-    end
+    for (let index = 0; index < items.length; index += chunkSize) {
+        chunks.push(items.slice(index, index + chunkSize));
+    }
 
-    return {remainingJobs, failedJobs}
-`;
+    return chunks;
+};
 
 @injectable()
 export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgroundProcessor {
@@ -565,15 +557,17 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
             storageClusterId
         );
 
-        const frameDescriptors = frames.map((frame) => ({
+        const frameDescriptors: GlbFrameDescriptor[] = frames.map((frame) => ({
             timestep: frame.timestep,
             objectKey: this.dumpStorage.getObjectName(trajectory._id, String(frame.timestep)),
             ownerClusterId: storageClusterId
         }));
+        const frameDescriptorBatches = chunkItems(frameDescriptors, GLB_ENQUEUE_BATCH_SIZE);
 
         logger.info(
             {
                 frameCount: frameDescriptors.length,
+                batchCount: frameDescriptorBatches.length,
                 trajectoryId: trajectory._id,
                 computeClusterId,
                 storageClusterId
@@ -583,41 +577,43 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
 
         await this.initializeGlbSession(trajectory._id, frameDescriptors.length);
 
-        try {
+        for (const batch of frameDescriptorBatches) {
             const response = await this.teamClusterDaemonClient.command<GlbPreprocessingEnqueueResult>(
                 computeClusterId,
                 TEAM_CLUSTER_DAEMON_COMMAND.trajectory.enqueuePreprocessing,
                 {
-                trajectoryId: trajectory._id,
-                teamId,
-                trajectoryName: trajectory.props.name,
-                storageClusterId,
-                frames: frameDescriptors
+                    trajectoryId: trajectory._id,
+                    teamId,
+                    trajectoryName: trajectory.props.name,
+                    storageClusterId,
+                    frames: batch
+                },
+                {
+                    timeoutClass: 'long-running-control-plane'
                 }
             );
 
-            await this.reconcileGlbSession(
-                trajectory._id,
-                response.queuedJobs + response.duplicateJobs,
-                teamId
-            );
-
-            if (response.jobs?.length) {
-                await this.daemonAnalysisCompletionService.handleQueuedJobs(
-                    response.jobs,
-                    'glb',
-                    computeClusterId
-                ).catch((projectionError) => {
-                    logger.warn(projectionError, `Failed to project queued GLB jobs for trajectory ${trajectory._id}`);
-                });
+            if (response.skippedJobs > 0) {
+                throw new ApplicationError(
+                    'Trajectory::GlbEnqueueSkippedFrames',
+                    `Daemon skipped ${response.skippedJobs} GLB frame(s) for trajectory ${trajectory._id}`,
+                    500
+                );
             }
-        } catch (error) {
-            throw error;
+
+            await this.daemonAnalysisCompletionService.handleQueuedJobs(
+                this.buildQueuedGlbJobs(trajectory, teamId, batch),
+                'glb',
+                computeClusterId
+            ).catch((projectionError) => {
+                logger.warn(projectionError, `Failed to project queued GLB jobs for trajectory ${trajectory._id}`);
+            });
         }
 
         logger.info(
             {
                 frameCount: frameDescriptors.length,
+                batchCount: frameDescriptorBatches.length,
                 trajectoryId: trajectory._id
             },
             '@trajectory-background-processor: GLB preprocessing enqueued and session initialized'
@@ -651,36 +647,28 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         );
     }
 
-    private async reconcileGlbSession(trajectoryId: string, queuedJobs: number, teamId: string): Promise<void> {
-        const remainingKey = `daemon-glb:${trajectoryId}:remaining`;
-        const failedKey = `daemon-glb:${trajectoryId}:failed`;
-        const terminalReceiptSetKey = `daemon-glb:${trajectoryId}:terminal-keys`;
-        const result = await this.redis.eval(
-            RECONCILE_GLB_SESSION_SCRIPT,
-            3,
-            remainingKey,
-            failedKey,
-            terminalReceiptSetKey,
-            queuedJobs,
-            GLB_SESSION_TTL_SECONDS
-        ) as [number, number] | null;
-        const remainingJobs = Array.isArray(result) && typeof result[0] === 'number' ? result[0] : queuedJobs;
-        const failedJobs = Array.isArray(result) && typeof result[1] === 'number' ? result[1] : 0;
-
-        if (remainingJobs === 0) {
-            const hasFailures = failedJobs > 0;
-
-            await this.trajectoryRepo.updateById(trajectoryId, {
-                status: hasFailures ? TrajectoryStatus.Failed : TrajectoryStatus.Completed
-            });
-
-            await this.eventBus.publish(new TrajectoryUpdatedEvent({
-                trajectoryId,
-                teamId,
-                updates: { status: hasFailures ? TrajectoryStatus.Failed : TrajectoryStatus.Completed },
-                updatedAt: new Date()
-            }));
-        }
+    private buildQueuedGlbJobs(
+        trajectory: Trajectory,
+        teamId: string,
+        frameDescriptors: GlbFrameDescriptor[]
+    ): Array<{
+        jobId: string;
+        teamId: string;
+        queueType: string;
+        name: string;
+        trajectoryId: string;
+        trajectoryName: string;
+        timestep: number;
+    }> {
+        return frameDescriptors.map((frame) => ({
+            jobId: `trajectory-glb:${trajectory._id}:${frame.timestep}`,
+            teamId,
+            queueType: 'trajectory_glb_conversion',
+            name: 'Preprocess trajectory frame',
+            trajectoryId: trajectory._id,
+            trajectoryName: trajectory.props.name,
+            timestep: frame.timestep
+        }));
     }
 
     private async clearGlbSession(trajectoryId: string): Promise<void> {
