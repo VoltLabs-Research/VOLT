@@ -91,6 +91,8 @@ const getAngleDirection = (anglePreset: ScreenshotRequest['anglePreset']) => {
             return new Vector3(0, 0, -1);
         case 'isometric':
             return new Vector3(1, -1, 0.85).normalize();
+        case 'ground-isometric':
+            return new Vector3(1, -1, 0).normalize();
         case 'current':
         default:
             return null;
