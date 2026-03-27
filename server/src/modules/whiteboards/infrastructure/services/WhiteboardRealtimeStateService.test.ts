@@ -105,3 +105,13 @@ test('WhiteboardRealtimeStateService keeps the newest element revision during me
     assert.equal(snapshot?.elements[0]?.x, 40);
     assert.equal(snapshot?.elements[0]?.version, 3);
 });
+
+test('WhiteboardRealtimeStateService preserves fileId updates even when element version metadata is unchanged', async () => {
+    const { service } = buildService();
+
+    await service.mergeScene('board-1', [{ id: 'image-1', type: 'image', version: 1, updated: 10 }], {}, 'user-a');
+    const snapshot = await service.mergeScene('board-1', [{ id: 'image-1', type: 'image', version: 1, updated: 10, fileId: 'asset-1' }], {}, 'user-a');
+
+    assert.ok(snapshot);
+    assert.equal(snapshot?.elements[0]?.fileId, 'asset-1');
+});
