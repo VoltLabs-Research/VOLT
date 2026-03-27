@@ -1,4 +1,5 @@
 import { ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { resolveArgumentRuntimeValue } from '@/modules/plugin/utilities/plugin/argument-values';
 import { sileo } from 'sileo';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -125,7 +126,7 @@ const usePluginExecution = ({
                 }
 
                 if (value !== undefined) {
-                    config[arg.argument] = value;
+                    config[arg.argument] = resolveArgumentRuntimeValue(arg, value);
                 }
             });
 
