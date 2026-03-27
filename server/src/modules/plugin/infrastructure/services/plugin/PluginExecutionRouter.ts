@@ -343,14 +343,18 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
 
         await this.daemonAnalysisCompletionService.initializeSession(
             input.analysisId,
-            response.totalJobs
+            response.totalJobs,
+            input.teamId
         );
 
         if (response.jobs?.length > 0) {
             await this.daemonAnalysisCompletionService.handleJobsQueued(
                 response.jobs,
-                input.teamId
-            );
+                input.teamId,
+                input.teamClusterId
+            ).catch((error) => {
+                logger.warn(error, '@plugin-execution-router: failed to project queued daemon analysis jobs');
+            });
         }
     }
 

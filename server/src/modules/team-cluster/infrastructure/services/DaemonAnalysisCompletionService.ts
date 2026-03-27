@@ -25,6 +25,8 @@ const PROJECTED_JOB_BACKING_SOURCE = 'daemon';
 const ANALYSIS_PROJECTED_JOB_CLEANUP_SCOPE = 'analysis';
 const RASTER_PROJECTED_JOB_CLEANUP_SCOPE = 'raster';
 const GLB_PROJECTED_JOB_CLEANUP_SCOPE = 'glb';
+const SSH_IMPORT_PROJECTED_JOB_CLEANUP_SCOPE = 'ssh-import';
+const SSH_IMPORT_QUEUE_TYPE = 'ssh_import';
 
 interface JobTrajectoryContext {
     trajectoryId?: string;
@@ -80,6 +82,16 @@ interface DaemonAnalysisJobStatusInput {
     error?: string;
 };
 
+interface DaemonSshImportJobStatusInput {
+    teamClusterId: string;
+    jobId: string;
+    teamId: string;
+    trajectoryId: string;
+    trajectoryName?: string;
+    status: JobStatus;
+    error?: string;
+};
+
 interface QueuedJobNotification {
     jobId: string;
     name: string;
@@ -91,9 +103,21 @@ interface QueuedJobNotification {
     queueType: string;
 };
 
+interface QueuedDaemonJobNotification {
+    jobId: string;
+    teamId: string;
+    queueType: string;
+    name?: string;
+    analysisId?: string;
+    trajectoryId?: string;
+    trajectoryName?: string;
+    timestep?: number;
+};
+
 interface ProjectedJobStatusInput {
     jobId: string;
     teamId: string;
+    teamClusterId?: string;
     status: JobStatus;
     queueType: string;
     cleanupScope: string;
@@ -133,15 +157,51 @@ export default class DaemonAnalysisCompletionService {
      * Called by the PluginExecutionRouter after dispatching jobs to the daemon.
      * Initializes a Redis counter so we can track when all jobs have settled.
      */
-    async initializeSession(analysisId: string, totalJobs: number): Promise<void> {
+    async initializeSession(analysisId: string, totalJobs: number, teamId: string): Promise<void> {
         const remainingKey = this.remainingKey(analysisId);
         const failedKey = this.failedKey(analysisId);
         const terminalReceiptSetKey = this.analysisTerminalReceiptSetKey(analysisId);
-        const staleReceiptKeys = await this.redis.smembers(terminalReceiptSetKey);
+        const [terminalReceiptKeys, failedCountRaw] = await Promise.all([
+            this.redis.smembers(terminalReceiptSetKey),
+            this.redis.get(failedKey)
+        ]);
+        const remainingJobs = Math.max(0, totalJobs - terminalReceiptKeys.length);
+        const failedJobs = Number.parseInt(failedCountRaw ?? '0', 10) || 0;
 
         const pipeline = this.redis.pipeline();
-        pipeline.set(remainingKey, totalJobs.toString(), 'EX', SESSION_TTL_SECONDS);
-        pipeline.del(failedKey);
+        if (remainingJobs > 0) {
+            pipeline.set(remainingKey, remainingJobs.toString(), 'EX', SESSION_TTL_SECONDS);
+        } else {
+            pipeline.del(remainingKey);
+        }
+        pipeline.expire(failedKey, SESSION_TTL_SECONDS);
+        pipeline.expire(terminalReceiptSetKey, SESSION_TTL_SECONDS);
+
+        await pipeline.exec();
+
+        logger.info(
+            {
+                analysisId,
+                failedJobs,
+                preSettledJobs: terminalReceiptKeys.length,
+                remainingJobs,
+                totalJobs
+            },
+            '[DaemonAnalysisCompletion] Initialized session for analysis'
+        );
+
+        if (remainingJobs === 0) {
+            await this.finalizeAnalysis(analysisId, teamId, failedJobs);
+        }
+    }
+
+    async clearAnalysisSession(analysisId: string): Promise<void> {
+        const terminalReceiptSetKey = this.analysisTerminalReceiptSetKey(analysisId);
+        const staleReceiptKeys = await this.redis.smembers(terminalReceiptSetKey);
+        const pipeline = this.redis.pipeline();
+
+        pipeline.del(this.remainingKey(analysisId));
+        pipeline.del(this.failedKey(analysisId));
         pipeline.del(terminalReceiptSetKey);
 
         if (staleReceiptKeys.length > 0) {
@@ -149,10 +209,6 @@ export default class DaemonAnalysisCompletionService {
         }
 
         await pipeline.exec();
-
-        logger.info(
-            `[DaemonAnalysisCompletion] Initialized session for analysis ${analysisId} with ${totalJobs} jobs`
-        );
     }
 
     /**
@@ -160,7 +216,7 @@ export default class DaemonAnalysisCompletionService {
      * Publishes queued job events so the jobs module can project them and the
      * team module can notify connected clients.
      */
-    async handleJobsQueued(jobs: QueuedJobNotification[], teamId: string): Promise<void> {
+    async handleJobsQueued(jobs: QueuedJobNotification[], teamId: string, teamClusterId: string): Promise<void> {
         for (const job of jobs) {
             const trajectoryContext: JobTrajectoryContext = {
                 trajectoryId: job.trajectoryId,
@@ -171,6 +227,7 @@ export default class DaemonAnalysisCompletionService {
             await this.publishJobStatusChanged({
                 jobId: job.jobId,
                 teamId,
+                teamClusterId,
                 status: JobStatus.Queued,
                 queueType: ANALYSIS_QUEUE_TYPE,
                 cleanupScope: ANALYSIS_PROJECTED_JOB_CLEANUP_SCOPE,
@@ -183,6 +240,30 @@ export default class DaemonAnalysisCompletionService {
         logger.info(
             `[DaemonAnalysisCompletion] Published ${jobs.length} queued jobs for team ${teamId}`
         );
+    }
+
+    async handleQueuedJobs(
+        jobs: QueuedDaemonJobNotification[],
+        cleanupScope: string,
+        teamClusterId: string
+    ): Promise<void> {
+        for (const job of jobs) {
+            await this.publishJobStatusChanged({
+                jobId: job.jobId,
+                teamId: job.teamId,
+                teamClusterId,
+                status: JobStatus.Queued,
+                queueType: job.queueType,
+                cleanupScope,
+                name: job.name,
+                analysisId: job.analysisId,
+                trajectoryContext: {
+                    trajectoryId: job.trajectoryId,
+                    trajectoryName: job.trajectoryName,
+                    timestep: job.timestep
+                }
+            });
+        }
     }
 
     /**
@@ -210,6 +291,7 @@ export default class DaemonAnalysisCompletionService {
         await this.publishJobStatusChanged({
             jobId,
             teamId,
+            teamClusterId: input.teamClusterId,
             status,
             queueType: ANALYSIS_QUEUE_TYPE,
             cleanupScope: ANALYSIS_PROJECTED_JOB_CLEANUP_SCOPE,
@@ -266,6 +348,7 @@ export default class DaemonAnalysisCompletionService {
         await this.publishJobStatusChanged({
             jobId,
             teamId,
+            teamClusterId: input.teamClusterId,
             status,
             queueType: ANALYSIS_QUEUE_TYPE,
             cleanupScope: ANALYSIS_PROJECTED_JOB_CLEANUP_SCOPE,
@@ -284,9 +367,11 @@ export default class DaemonAnalysisCompletionService {
         await this.publishJobStatusChanged({
             jobId,
             teamId: resolved.teamId,
+            teamClusterId: input.teamClusterId,
             status: input.status,
             queueType: RASTER_QUEUE_TYPE,
             cleanupScope: RASTER_PROJECTED_JOB_CLEANUP_SCOPE,
+            name: 'Rasterize trajectory preview',
             trajectoryContext,
             error: input.error
         });
@@ -323,9 +408,11 @@ export default class DaemonAnalysisCompletionService {
         await this.publishJobStatusChanged({
             jobId,
             teamId,
+            teamClusterId: input.teamClusterId,
             status,
             queueType: GLB_QUEUE_TYPE,
             cleanupScope: GLB_PROJECTED_JOB_CLEANUP_SCOPE,
+            name: 'Preprocess trajectory frame',
             trajectoryContext,
             error
         });
@@ -350,10 +437,27 @@ export default class DaemonAnalysisCompletionService {
         await this.finalizeGlbSession(trajectoryId, teamId, drainResult.failedJobs);
     }
 
+    async handleSshImportJobStatus(input: DaemonSshImportJobStatusInput): Promise<void> {
+        const resolved = await this.resolveTrajectoryOwnership(input);
+
+        await this.publishJobStatusChanged({
+            jobId: input.jobId,
+            teamId: resolved.teamId,
+            teamClusterId: input.teamClusterId,
+            status: input.status,
+            queueType: SSH_IMPORT_QUEUE_TYPE,
+            cleanupScope: SSH_IMPORT_PROJECTED_JOB_CLEANUP_SCOPE,
+            name: 'Import trajectory from SSH',
+            trajectoryContext: resolved.trajectoryContext,
+            error: input.error
+        });
+    }
+
     private async publishJobStatusChanged(input: ProjectedJobStatusInput): Promise<void> {
         const {
             jobId,
             teamId,
+            teamClusterId,
             status,
             queueType,
             cleanupScope,
@@ -373,6 +477,7 @@ export default class DaemonAnalysisCompletionService {
                 analysisId,
                 status,
                 queueType,
+                teamClusterId,
                 source: PROJECTED_JOB_SOURCE,
                 backingSource: PROJECTED_JOB_BACKING_SOURCE,
                 cleanupScope,

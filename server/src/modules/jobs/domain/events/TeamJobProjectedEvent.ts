@@ -22,6 +22,7 @@ export interface TeamJobProjectedEventPayload {
     source?: string;
     backingSource?: string;
     cleanupScope?: string;
+    revision?: number;
 }
 
 export default class TeamJobProjectedEvent extends BaseDomainEvent<TeamJobProjectedEventPayload> {

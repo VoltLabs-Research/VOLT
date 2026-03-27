@@ -9,6 +9,7 @@ import { inject, injectable } from 'tsyringe';
 
 type RasterJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
 type GlbJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
+type SshImportJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
 
 interface DaemonAnalysisJobCompletionPayload {
     teamClusterId: string;
@@ -58,11 +59,22 @@ interface DaemonAnalysisJobStatusPayload {
     error?: string;
 };
 
+interface DaemonSshImportJobStatusPayload {
+    teamClusterId: string;
+    jobId: string;
+    teamId: string;
+    trajectoryId: string;
+    trajectoryName?: string;
+    status: SshImportJobStatus;
+    error?: string;
+};
+
 interface DaemonJobCompletionService {
     handleJobCompletion(input: DaemonAnalysisJobCompletionPayload): Promise<void>;
     handleRasterJobStatus(input: DaemonRasterJobStatusPayload): Promise<void>;
     handleGlbJobStatus(input: DaemonGlbJobStatusPayload): Promise<void>;
     handleAnalysisJobStatus(input: DaemonAnalysisJobStatusPayload): Promise<void>;
+    handleSshImportJobStatus(input: DaemonSshImportJobStatusPayload): Promise<void>;
 };
 
 interface ProcessDaemonAnalysisJobCompletionInputDTO {
@@ -125,11 +137,27 @@ interface ValidProcessDaemonGlbJobStatusInputDTO extends ProcessDaemonGlbJobStat
     status: GlbJobStatus;
 };
 
+interface ProcessDaemonSshImportJobStatusInputDTO {
+    teamClusterId: string;
+    daemonPassword: string;
+    jobId: string;
+    teamId: string;
+    trajectoryId: string;
+    trajectoryName?: string;
+    status: JobStatus;
+    error?: string;
+};
+
+interface ValidProcessDaemonSshImportJobStatusInputDTO extends ProcessDaemonSshImportJobStatusInputDTO {
+    status: SshImportJobStatus;
+};
+
 export type ProcessDaemonJobCompletionInputDTO =
     | ProcessDaemonAnalysisJobCompletionInputDTO
     | ProcessDaemonAnalysisJobStatusInputDTO
     | ProcessDaemonRasterJobStatusInputDTO
-    | ProcessDaemonGlbJobStatusInputDTO;
+    | ProcessDaemonGlbJobStatusInputDTO
+    | ProcessDaemonSshImportJobStatusInputDTO;
 
 interface ProcessDaemonJobCompletionOutputDTO {
     acknowledged: boolean;
@@ -207,6 +235,20 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
                 return Result.ok({ acknowledged: true });
             }
 
+            if (this.isSshImportJobStatusInput(input)) {
+                await this.daemonAnalysisCompletionService.handleSshImportJobStatus({
+                    teamClusterId: input.teamClusterId,
+                    jobId: input.jobId,
+                    teamId: input.teamId,
+                    trajectoryId: input.trajectoryId,
+                    trajectoryName: input.trajectoryName,
+                    status: input.status,
+                    error: input.error
+                });
+
+                return Result.ok({ acknowledged: true });
+            }
+
             if (this.isRasterJobStatusInput(input)) {
                 await this.daemonAnalysisCompletionService.handleRasterJobStatus({
                     teamClusterId: input.teamClusterId,
@@ -260,12 +302,22 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
             && this.isValidJobStatus(input.status);
     }
 
+    private isSshImportJobStatusInput(
+        input: ProcessDaemonJobCompletionInputDTO
+    ): input is ValidProcessDaemonSshImportJobStatusInputDTO {
+        return this.hasJobStatusFields(input)
+            && !this.hasAnalysisJobCompletionFields(input)
+            && this.isSshImportJobId(input.jobId)
+            && this.isValidJobStatus(input.status);
+    }
+
     private isRasterJobStatusInput(
         input: ProcessDaemonJobCompletionInputDTO
     ): input is ValidProcessDaemonRasterJobStatusInputDTO {
         return this.hasJobStatusFields(input)
             && !this.hasAnalysisJobCompletionFields(input)
             && !this.isGlbJobId(input.jobId)
+            && !this.isSshImportJobId(input.jobId)
             && this.isValidJobStatus(input.status);
     }
 
@@ -281,6 +333,10 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
 
     private isGlbJobId(jobId: string): boolean {
         return jobId.startsWith('trajectory-glb:');
+    }
+
+    private isSshImportJobId(jobId: string): boolean {
+        return jobId.startsWith('ssh-import:');
     }
 
     private isValidJobStatus(status: JobStatus): status is RasterJobStatus {

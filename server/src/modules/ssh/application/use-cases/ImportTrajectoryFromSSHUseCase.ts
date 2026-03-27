@@ -16,6 +16,7 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import logger from '@shared/infrastructure/logger';
 import { v4 } from 'uuid';
 import { ErrorCodes } from '@core/constants/error-codes';
+import type DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
@@ -37,7 +38,10 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
         private readonly eventBus: IEventBus,
 
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
+        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
+
+        @inject(TEAM_CLUSTER_TOKENS.DaemonAnalysisCompletionService)
+        private readonly daemonAnalysisCompletionService: DaemonAnalysisCompletionService
     ){}
 
     async execute(input: ImportTrajectoryFromSSHInputDTO): Promise<Result<ImportTrajectoryFromSSHOutputDTO, ApplicationError>>{
@@ -72,6 +76,7 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
         }
 
         const trajectoryId = v4();
+        const jobId = `ssh-import:${trajectoryId}`;
         let queued = false;
 
         try {
@@ -100,6 +105,7 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
             await this.teamClusterDaemonClient.command(connectedTeamCluster.id, TEAM_CLUSTER_DAEMON_COMMAND.queue.dispatch, {
                 queueName: 'ssh_import',
                 payload: {
+                    jobId,
                     teamId,
                     sshConnectionId,
                     remotePath,
@@ -113,6 +119,22 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
                 }
             });
             queued = true;
+
+            await this.daemonAnalysisCompletionService.handleQueuedJobs([
+                {
+                    jobId,
+                    name: 'Import trajectory from SSH',
+                    teamId,
+                    queueType: 'ssh_import',
+                    trajectoryId,
+                    trajectoryName
+                }
+            ], 'ssh-import', connectedTeamCluster.id).catch((projectionError) => {
+                logger.warn(
+                    { err: projectionError, jobId, teamId, trajectoryId },
+                    'Failed to project queued SSH import job'
+                );
+            });
 
             await this.eventBus.publish(new TrajectoryCreatedEvent({
                 trajectoryId,

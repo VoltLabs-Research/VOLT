@@ -58,7 +58,7 @@ export default class TeamJobsSocketModule extends BaseSocketModule {
         try {
             const groupedJobs = await this.teamJobsService.getInitialTeamJobs(payload.teamId);
             this.emitToSocket(connection.id, 'team.jobs.initial', groupedJobs);
-            logger.debug(`[TeamJobsSocketModule] Sent ${groupedJobs.length} job groups to connection ${connection.id}`);
+            logger.debug(`[TeamJobsSocketModule] Sent ${groupedJobs.groups.length} job groups to connection ${connection.id}`);
         } catch (error) {
             logger.error(error, `[TeamJobsSocketModule] Failed to fetch jobs for team ${payload.teamId}`);
         }

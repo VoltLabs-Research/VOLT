@@ -1,5 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
+import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
@@ -7,6 +8,7 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
+import type DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
 import type {
     IRasterJobEnqueuer,
     RasterJobEnqueueResult,
@@ -33,7 +35,10 @@ export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
         private readonly teamClusterSelectionService: TeamClusterSelectionService,
 
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
+        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
+
+        @inject(TEAM_CLUSTER_TOKENS.DaemonAnalysisCompletionService)
+        private readonly daemonAnalysisCompletionService: DaemonAnalysisCompletionService
     ) {}
 
     async triggerRasterization(
@@ -82,6 +87,16 @@ export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
                 TEAM_CLUSTER_DAEMON_COMMAND.trajectory.rasterize,
                 payload
             );
+
+            if (response.jobs?.length) {
+                await this.daemonAnalysisCompletionService.handleQueuedJobs(
+                    response.jobs,
+                    'raster',
+                    computeClusterId
+                ).catch((projectionError) => {
+                    logger.warn(projectionError, `Failed to project queued raster jobs for trajectory ${trajectoryId}`);
+                });
+            }
 
             return response;
         } catch (error) {

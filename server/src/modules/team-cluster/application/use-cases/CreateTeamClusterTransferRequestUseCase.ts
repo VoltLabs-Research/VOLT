@@ -59,7 +59,7 @@ export default class CreateTeamClusterTransferRequestUseCase implements IUseCase
             ));
         }
 
-        if (sourceCluster.props.status !== TeamClusterStatus.Connected || !sourceCluster.props.effectiveCapabilities.servesStorageReads) {
+        if (sourceCluster.props.status !== TeamClusterStatus.Connected || !sourceCluster.effectiveCapabilities.servesStorageReads) {
             return Result.fail(ApplicationError.conflict(
                 'ClusterTransfer::SourceClusterUnavailable',
                 'Source cluster must be connected and able to serve authoritative storage reads'
@@ -68,7 +68,7 @@ export default class CreateTeamClusterTransferRequestUseCase implements IUseCase
 
         if (
             destinationCluster.props.status !== TeamClusterStatus.Connected
-            || !destinationCluster.props.effectiveCapabilities.acceptsStorageWrites
+            || !destinationCluster.effectiveCapabilities.acceptsStorageWrites
         ) {
             return Result.fail(ApplicationError.conflict(
                 'ClusterTransfer::DestinationClusterUnavailable',

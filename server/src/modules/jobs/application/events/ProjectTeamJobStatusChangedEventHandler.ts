@@ -73,7 +73,8 @@ export default class ProjectTeamJobStatusChangedEventHandler implements IEventHa
                 teamClusterId: snapshot.teamClusterId,
                 source: snapshot.source,
                 backingSource: snapshot.backingSource,
-                cleanupScope: snapshot.cleanupScope
+                cleanupScope: snapshot.cleanupScope,
+                revision: snapshot.revision
             }));
         } catch (error) {
             logger.warn(error, `[ProjectTeamJobStatusChangedEventHandler] Failed to publish projected team job event ${jobId}`);

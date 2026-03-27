@@ -280,7 +280,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
                         contractVersion: TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION,
                         queueConcurrency: teamCluster.props.queueConcurrency,
                         roleConfig: teamCluster.props.roleConfig,
-                        effectiveCapabilities: teamCluster.props.effectiveCapabilities
+                        effectiveCapabilities: teamCluster.effectiveCapabilities
                     }
                 }
             });
@@ -343,6 +343,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             || payload.type === 'analysis-job-status'
             || payload.type === 'trajectory-raster-job-status'
             || payload.type === 'trajectory-glb-job-status'
+            || payload.type === 'ssh-import-job-status'
         ) {
             const result = await this.processDaemonJobCompletionUseCase.execute(payload as never);
             if (!result.success) {

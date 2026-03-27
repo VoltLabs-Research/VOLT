@@ -83,8 +83,7 @@ export default class UpdateTeamClusterRoleUseCase implements IUseCase<
                 if (liveApplyResult.accepted) {
                     const roleResult = liveApplyResult.data;
                     updatedTeamCluster = (await this.teamClusterRepository.updateById(updatedTeamCluster.id, {
-                        roleConfig: roleResult.roleConfig,
-                        effectiveCapabilities: roleResult.effectiveCapabilities
+                        roleConfig: roleResult.roleConfig
                     })) ?? updatedTeamCluster;
 
                     this.teamClusterLifecycleService.publishTeamClusterUpdate(updatedTeamCluster);

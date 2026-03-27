@@ -278,7 +278,7 @@ export default class ClusterTransferCoordinator {
                 status: TeamClusterStatus.Connected
             }
         });
-        const storageClusters = teamClusters.filter((cluster) => cluster.props.effectiveCapabilities.acceptsStorageWrites);
+        const storageClusters = teamClusters.filter((cluster) => cluster.effectiveCapabilities.acceptsStorageWrites);
         let createdJobs = 0;
 
         for (const sourceCluster of storageClusters) {
@@ -872,7 +872,7 @@ export default class ClusterTransferCoordinator {
             );
         }
 
-        if (!cluster.props.effectiveCapabilities.servesStorageReads) {
+        if (!cluster.effectiveCapabilities.servesStorageReads) {
             throw ApplicationError.conflict(
                 'ClusterTransfer::SourceClusterReadCapabilityRequired',
                 'Source storage cluster cannot serve authoritative reads for this transfer'
@@ -893,7 +893,7 @@ export default class ClusterTransferCoordinator {
             );
         }
 
-        if (!cluster.props.effectiveCapabilities.acceptsStorageWrites) {
+        if (!cluster.effectiveCapabilities.acceptsStorageWrites) {
             throw ApplicationError.conflict(
                 'ClusterTransfer::DestinationClusterWriteCapabilityRequired',
                 'Destination storage cluster cannot accept authoritative writes for this transfer'

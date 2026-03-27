@@ -17,7 +17,10 @@ import {
 } from './queries';
 import type { Job, TrajectoryJobGroup } from '../api/entities/job';
 
-type TeamJobsEventPayload = TrajectoryJobGroup[];
+interface TeamJobsEventPayload {
+    revision: number;
+    groups: TrajectoryJobGroup[];
+};
 
 const TEAM_JOBS_INITIAL_LOAD_TIMEOUT_MS = 5000;
 const RASTER_QUEUE_TYPE = 'trajectory_rasterization';
@@ -80,6 +83,7 @@ const useTeamJobs = () => {
     const currentTeamId = useSelectedTeamId();
     const socketService = useSocket();
     const previousTeamIdRef = useRef<string | null>(null);
+    const latestObservedRevisionRef = useRef(0);
     const trajectoryInvalidationTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
     const jobsLoadingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -124,14 +128,25 @@ const useTeamJobs = () => {
         }
     }, [clearJobsLoadingTimeout, setConnected, setLoading]);
 
-    const handleTeamJobs = useCallback((incomingGroups: TrajectoryJobGroup[]) => {
+    const handleTeamJobs = useCallback((incomingGroups: TrajectoryJobGroup[], revision?: number) => {
         clearJobsLoadingTimeout();
+
+        if (typeof revision === 'number') {
+            latestObservedRevisionRef.current = Math.max(latestObservedRevisionRef.current, revision);
+        }
+
         setGroups(incomingGroups);
         setLoading(false);
     }, [clearJobsLoadingTimeout, setGroups, setLoading]);
 
     const handleJobUpdate = useCallback((event: Job) => {
         if (!event.trajectoryId) return;
+        if (currentTeamId && typeof event.teamId === 'string' && event.teamId !== currentTeamId) {
+            return;
+        }
+        if (typeof event.revision === 'number' && event.revision < latestObservedRevisionRef.current) {
+            return;
+        }
 
         const isRasterUpdate = event.queueType === RASTER_QUEUE_TYPE;
 
@@ -146,6 +161,10 @@ const useTeamJobs = () => {
 
         updateTeamJobsGroupsQueryData((currentGroups) => applyJobUpdate(currentGroups, event), queryClient);
         const rasterJobState = extractRasterJobState(getTeamJobsGroupsQueryData(queryClient));
+
+        if (typeof event.revision === 'number') {
+            latestObservedRevisionRef.current = Math.max(latestObservedRevisionRef.current, event.revision);
+        }
 
         setPendingRasterKeys(rasterJobState.pendingKeys);
         setCompletedRasterTrajectoryIds(rasterJobState.completedTrajectoryIds);
@@ -166,11 +185,17 @@ const useTeamJobs = () => {
             queryClient.invalidateQueries({ queryKey: TRAJECTORY_QUERY_KEYS.simulationGrid() });
             queryClient.invalidateQueries({ queryKey: TRAJECTORY_QUERY_KEYS.trajectories() });
         }, 500);
-    }, [queryClient, setCompletedRasterTrajectoryIds, setInFlightRasterTrajectoryIds, setPendingRasterKeys]);
+    }, [currentTeamId, queryClient, setCompletedRasterTrajectoryIds, setInFlightRasterTrajectoryIds, setPendingRasterKeys]);
 
     const handleInitialJobsEvent = useCallback((payload: TeamJobsEventPayload) => {
-        handleTeamJobs(payload);
-    }, [handleTeamJobs]);
+        if (payload.revision < latestObservedRevisionRef.current) {
+            clearJobsLoadingTimeout();
+            setLoading(false);
+            return;
+        }
+
+        handleTeamJobs(payload.groups, payload.revision);
+    }, [clearJobsLoadingTimeout, handleTeamJobs, setLoading]);
 
     const handleJobUpdateEvent = useCallback((payload: Job) => {
         handleJobUpdate(payload);
@@ -186,6 +211,7 @@ const useTeamJobs = () => {
 
         const resolvedPreviousTeamId = previousTeamId ?? currentStoreTeamId ?? roomServiceCurrentTeamId ?? undefined;
         setCurrentTeamId(teamId);
+        latestObservedRevisionRef.current = 0;
         setGroups([]);
         setLoading(true);
         startJobsLoadingTimeout();
@@ -199,6 +225,7 @@ const useTeamJobs = () => {
     const clearTeamJobs = useCallback(() => {
         clearJobsLoadingTimeout();
         previousTeamIdRef.current = null;
+        latestObservedRevisionRef.current = 0;
         resetTeamJobsGroupsQueryData(queryClient);
         setPendingRasterKeys(new Set<string>());
         setInFlightRasterTrajectoryIds(new Set<string>());

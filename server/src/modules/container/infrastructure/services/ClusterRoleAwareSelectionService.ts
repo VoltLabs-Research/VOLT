@@ -4,7 +4,10 @@ import {
     SOFT_STORAGE_ASSIGNMENT_PENALTY,
     SOFT_STORAGE_LIMIT_PCT
 } from '@modules/team-cluster/application/services/cluster-storage-policy';
-import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
+import {
+    resolveEffectiveCapabilitiesFromRoleConfig,
+    TeamClusterStatus
+} from '@modules/team-cluster/domain/entities/TeamCluster';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
@@ -32,6 +35,7 @@ interface ScoredCluster {
 const NETWORK_USAGE_SATURATION_KBPS = 25_000;
 const REMOTE_EXECUTION_PENALTY = 20;
 const REMOTE_STORAGE_PENALTY = 8;
+const HARD_STORAGE_ASSIGNMENT_PENALTY = 100;
 
 const buildMissingClusterError = (capability: SelectionCapability): ApplicationError => {
     if (capability === 'storage') {
@@ -70,13 +74,6 @@ const buildCapabilityMismatchError = (
     );
 };
 
-const buildStorageHardLimitError = (): ApplicationError => {
-    return ApplicationError.conflict(
-        'TeamCluster::StorageHardLimitReached',
-        'The requested storage cluster is above its hard storage limit and cannot accept new assignments'
-    );
-};
-
 const normalizePercent = (value: unknown): number => {
     if (typeof value !== 'number' || !Number.isFinite(value)) {
         return 50;
@@ -105,11 +102,15 @@ const supportsCapability = (
         return false;
     }
 
+    const derivedCapabilities = resolveEffectiveCapabilitiesFromRoleConfig(
+        cluster.props.roleConfig
+    );
+
     if (capability === 'storage') {
-        return cluster.props.effectiveCapabilities.acceptsStorageWrites;
+        return derivedCapabilities.acceptsStorageWrites;
     }
 
-    return cluster.props.effectiveCapabilities.acceptsComputeJobs;
+    return derivedCapabilities.acceptsComputeJobs;
 };
 
 @injectable()
@@ -245,13 +246,6 @@ export class ClusterRoleAwareSelectionService {
                 throw buildCapabilityMismatchError(capability);
             }
 
-            if (capability === 'storage') {
-                const metrics = await this.systemMetricsRepository.getLatestByClusterId(requestedTeamCluster.id);
-                if ((metrics?.disk.usagePercent ?? 0) >= HARD_STORAGE_LIMIT_PCT) {
-                    throw buildStorageHardLimitError();
-                }
-            }
-
             return requestedTeamCluster;
         }
 
@@ -272,14 +266,6 @@ export class ClusterRoleAwareSelectionService {
 
         const scoredCandidates: ScoredCluster[] = await Promise.all(candidates.map(async (cluster) => {
             const metrics = await this.systemMetricsRepository.getLatestByClusterId(cluster.id);
-            if (capability === 'storage' && (metrics?.disk.usagePercent ?? 0) >= HARD_STORAGE_LIMIT_PCT) {
-                return {
-                    cluster,
-                    score: Number.NEGATIVE_INFINITY,
-                    metrics
-                };
-            }
-
             return {
                 cluster,
                 score: this.computeClusterScore(
@@ -292,12 +278,7 @@ export class ClusterRoleAwareSelectionService {
             };
         }));
 
-        const eligibleCandidates = scoredCandidates.filter((candidate) => Number.isFinite(candidate.score));
-        if (!eligibleCandidates.length) {
-            throw buildMissingClusterError(capability);
-        }
-
-        eligibleCandidates.sort((left, right) => {
+        scoredCandidates.sort((left, right) => {
             if (right.score !== left.score) {
                 return right.score - left.score;
             }
@@ -311,7 +292,7 @@ export class ClusterRoleAwareSelectionService {
             return left.cluster.props.createdAt.getTime() - right.cluster.props.createdAt.getTime();
         });
 
-        const selectedCluster = eligibleCandidates[0]?.cluster;
+        const selectedCluster = scoredCandidates[0]?.cluster;
         if (!selectedCluster) {
             throw buildMissingClusterError(capability);
         }
@@ -350,6 +331,10 @@ export class ClusterRoleAwareSelectionService {
 
         if (capability === 'storage' && diskUsage >= SOFT_STORAGE_LIMIT_PCT) {
             score -= SOFT_STORAGE_ASSIGNMENT_PENALTY;
+        }
+
+        if (capability === 'storage' && diskUsage >= HARD_STORAGE_LIMIT_PCT) {
+            score -= HARD_STORAGE_ASSIGNMENT_PENALTY;
         }
 
         return score;
