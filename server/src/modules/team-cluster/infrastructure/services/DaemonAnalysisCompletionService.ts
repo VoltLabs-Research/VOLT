@@ -247,8 +247,8 @@ export default class DaemonAnalysisCompletionService {
         cleanupScope: string,
         teamClusterId: string
     ): Promise<void> {
-        for (const job of jobs) {
-            await this.publishJobStatusChanged({
+        await Promise.all(jobs.map((job) => {
+            return this.publishJobStatusChanged({
                 jobId: job.jobId,
                 teamId: job.teamId,
                 teamClusterId,
@@ -263,7 +263,7 @@ export default class DaemonAnalysisCompletionService {
                     timestep: job.timestep
                 }
             });
-        }
+        }));
     }
 
     /**
