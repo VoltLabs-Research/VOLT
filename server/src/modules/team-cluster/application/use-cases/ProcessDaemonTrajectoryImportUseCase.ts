@@ -1,4 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
+import { JobStatus } from '@modules/jobs/domain/entities/Job';
+import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
 import StoragePlacementService from '@modules/team-cluster/application/services/StoragePlacementService';
 import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
@@ -92,6 +94,12 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
                 ? TrajectoryStatus.Completed
                 : TrajectoryStatus.Failed;
             if (trajectory.props.status === targetStatus) {
+                await this.publishImportJobStatus(
+                    trajectory,
+                    input,
+                    input.success ? JobStatus.Completed : JobStatus.Failed,
+                    input.failureDetails
+                );
                 return Result.ok({ acknowledged: true });
             }
 
@@ -106,6 +114,8 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
                 await this.trajectoryRepository.updateById(trajectory.id, {
                     status: TrajectoryStatus.Failed
                 });
+
+                await this.publishImportJobStatus(trajectory, input, JobStatus.Failed, input.failureDetails);
 
                 await this.eventBus.publish(new TrajectoryUpdatedEvent({
                     trajectoryId: trajectory.id,
@@ -156,6 +166,7 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
             });
 
             await this.storagePlacementService.ensurePlacement('trajectory', trajectory.id);
+            await this.publishImportJobStatus(trajectory, input, JobStatus.Completed);
 
             await this.eventBus.publish(new TrajectoryUpdatedEvent({
                 trajectoryId: trajectory.id,
@@ -203,5 +214,32 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
 
     private isTerminalStatus(status: TrajectoryStatus): boolean {
         return status === TrajectoryStatus.Completed || status === TrajectoryStatus.Failed;
+    }
+
+    private async publishImportJobStatus(
+        trajectory: Trajectory,
+        input: ProcessDaemonTrajectoryImportInputDTO,
+        status: JobStatus.Completed | JobStatus.Failed,
+        error?: string
+    ): Promise<void> {
+        await this.eventBus.publish(new JobStatusChangedEvent({
+            jobId: `ssh-import:${trajectory.id}`,
+            teamId: trajectory.props.team,
+            status,
+            queueType: 'ssh_import',
+            metadata: {
+                jobId: `ssh-import:${trajectory.id}`,
+                name: 'Import trajectory from SSH',
+                status,
+                queueType: 'ssh_import',
+                source: 'projected',
+                backingSource: 'daemon',
+                cleanupScope: 'ssh-import',
+                teamClusterId: input.teamClusterId,
+                trajectoryId: trajectory.id,
+                trajectoryName: trajectory.props.name,
+                error
+            }
+        }));
     }
 }

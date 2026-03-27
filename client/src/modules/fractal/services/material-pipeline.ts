@@ -31,6 +31,17 @@ interface PointCloudColorInfo {
     averageColor: [number, number, number] | null;
 };
 
+const TYPE_COLOR_PALETTE: ReadonlyArray<readonly [number, number, number]> = [
+    [0.5, 0.5, 0.5],
+    [1.0, 0.267, 0.267],
+    [0.267, 1.0, 0.267],
+    [0.267, 0.267, 1.0],
+    [1.0, 1.0, 0.267],
+    [1.0, 0.267, 1.0],
+    [0.267, 1.0, 1.0],
+    [0.6, 0.6, 0.6]
+];
+
 const applyOptimizedMaterialSettings = (
     material: THREE.Material,
     clippingPlanes: THREE.Plane[]
@@ -59,7 +70,8 @@ const createPointCloudUniforms = (): PointCloudUniforms => ({
 });
 
 const ensurePointCloudColorAttribute = (geometry: THREE.BufferGeometry) => {
-    const colorAttribute = geometry.getAttribute('color');
+    let colorAttribute = geometry.getAttribute('color');
+    const paletteIndexAttribute = geometry.getAttribute('_color_index');
     const positions = geometry.getAttribute('position');
     const pointCount = positions?.count ?? 0;
     const buildFallbackColors = () => {
@@ -75,8 +87,34 @@ const ensurePointCloudColorAttribute = (geometry: THREE.BufferGeometry) => {
         geometry.setAttribute('color', new THREE.BufferAttribute(fallbackColors, 3));
     };
 
-    if (!colorAttribute || colorAttribute.count === 0) {
+    const buildPaletteColors = () => {
+        if (!paletteIndexAttribute || paletteIndexAttribute.count === 0) {
+            return false;
+        }
+
+        const paletteColors = new Float32Array(pointCount * 3);
+
+        for (let index = 0; index < pointCount; index += 1) {
+            const colorOffset = index * 3;
+            const paletteIndex = Math.max(
+                0,
+                Math.min(TYPE_COLOR_PALETTE.length - 1, Math.round(paletteIndexAttribute.getX(index)))
+            );
+            const color = TYPE_COLOR_PALETTE[paletteIndex];
+            paletteColors[colorOffset] = color[0];
+            paletteColors[colorOffset + 1] = color[1];
+            paletteColors[colorOffset + 2] = color[2];
+        }
+
+        geometry.setAttribute('color', new THREE.BufferAttribute(paletteColors, 3));
+        geometry.deleteAttribute('_color_index');
+        colorAttribute = geometry.getAttribute('color');
+        return true;
+    };
+
+    if ((!colorAttribute || colorAttribute.count === 0) && !buildPaletteColors()) {
         buildFallbackColors();
+        colorAttribute = geometry.getAttribute('color');
         return {
             hasColorAttribute: false,
             injectedFallbackColor: true,

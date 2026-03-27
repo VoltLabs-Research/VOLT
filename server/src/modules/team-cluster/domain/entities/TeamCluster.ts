@@ -135,6 +135,15 @@ export const createDefaultTeamClusterEffectiveCapabilities = (
     return buildTeamClusterEffectiveCapabilities(role);
 };
 
+export const resolveEffectiveCapabilitiesFromRoleConfig = (
+    roleConfig: Pick<TeamClusterRuntimeRoleConfigProps, 'effectiveRole' | 'draining'>
+): TeamClusterEffectiveCapabilitiesProps => {
+    return buildTeamClusterEffectiveCapabilities(
+        roleConfig.effectiveRole,
+        roleConfig.draining
+    );
+};
+
 export interface TeamClusterProps {
     name: string;
     team: string;
@@ -148,7 +157,7 @@ export interface TeamClusterProps {
     services: TeamClusterServicesProps;
     queueConcurrency: TeamClusterQueueConcurrencyProps;
     roleConfig: TeamClusterRuntimeRoleConfigProps;
-    effectiveCapabilities: TeamClusterEffectiveCapabilitiesProps;
+    effectiveCapabilities?: TeamClusterEffectiveCapabilitiesProps;
     createdAt: Date;
     updatedAt: Date;
 };
@@ -161,5 +170,9 @@ export default class TeamCluster {
 
     public get id(): string {
         return this._id;
+    }
+
+    public get effectiveCapabilities(): TeamClusterEffectiveCapabilitiesProps {
+        return resolveEffectiveCapabilitiesFromRoleConfig(this.props.roleConfig);
     }
 };

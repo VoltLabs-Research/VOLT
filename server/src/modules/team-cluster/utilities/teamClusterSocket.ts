@@ -284,6 +284,18 @@ export interface TeamClusterDaemonGlbJobStatusEventPayload {
     error?: string;
 };
 
+export interface TeamClusterDaemonSshImportJobStatusEventPayload {
+    type: 'ssh-import-job-status';
+    teamClusterId: string;
+    daemonPassword: string;
+    jobId: string;
+    teamId: string;
+    trajectoryId: string;
+    trajectoryName?: string;
+    status: 'running' | 'completed' | 'failed';
+    error?: string;
+};
+
 export interface TeamClusterDaemonSceneArtifactUpsertBatchItem {
     trajectory: string;
     storageClusterId: string;
@@ -329,6 +341,7 @@ export type TeamClusterDaemonMessage =
     | TeamClusterDaemonAnalysisJobStatusEventPayload
     | TeamClusterDaemonRasterJobStatusEventPayload
     | TeamClusterDaemonGlbJobStatusEventPayload
+    | TeamClusterDaemonSshImportJobStatusEventPayload
     | TeamClusterDaemonSceneArtifactUpsertBatchEventPayload;
 
 export {

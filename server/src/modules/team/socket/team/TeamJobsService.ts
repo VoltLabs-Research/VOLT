@@ -1,20 +1,15 @@
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
-import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 import IORedis from 'ioredis';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const SAFE_FALLBACK_GROUP_TIMESTAMP = '1970-01-01T00:00:00.000Z';
-const TEAM_JOBS_INITIAL_CACHE_TTL_MS = 2_000;
 const UNGROUPED_TIMESTEP = -1;
+const MAX_INITIAL_SNAPSHOT_ATTEMPTS = 5;
 
 const compareFrameTimesteps = (left: number, right: number): number => {
     if (left === UNGROUPED_TIMESTEP && right === UNGROUPED_TIMESTEP) {
@@ -62,6 +57,7 @@ interface TeamJobStatusRecord {
     timestep?: number;
     teamClusterId?: string;
     source?: TeamJobSource;
+    revision?: number;
 };
 
 export interface TeamJobSummary extends TeamJobStatusRecord {
@@ -93,27 +89,14 @@ interface FrameJobGroup {
     overallStatus: string;
 };
 
-interface DaemonTeamJobsResponse {
-    data: TeamJobSummary[];
-};
-
-interface TeamJobsInitialCacheEntry {
-    expiresAt: number;
-    groupedJobsPromise?: Promise<TrajectoryJobGroup[]>;
-    groupedJobsValue?: TrajectoryJobGroup[];
+export interface TeamJobsInitialPayload {
+    revision: number;
+    groups: TrajectoryJobGroup[];
 };
 
 @injectable()
 export default class TeamJobsService {
-    private readonly teamJobsInitialCache = new Map<string, TeamJobsInitialCacheEntry>();
-
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
-
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-
         @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis,
 
@@ -125,127 +108,37 @@ export default class TeamJobsService {
         return this.groupJobsByTrajectory(await this.getFlatTeamJobs(teamId));
     }
 
-    async getInitialTeamJobs(teamId: string): Promise<TrajectoryJobGroup[]> {
-        const cachedEntry = this.teamJobsInitialCache.get(teamId);
-        const now = Date.now();
+    async getInitialTeamJobs(teamId: string): Promise<TeamJobsInitialPayload> {
+        for (let attempt = 0; attempt < MAX_INITIAL_SNAPSHOT_ATTEMPTS; attempt += 1) {
+            const revisionBefore = await this.getProjectedTeamJobsRevision(teamId);
+            const groupedJobs = await this.getTeamJobs(teamId);
+            const revisionAfter = await this.getProjectedTeamJobsRevision(teamId);
 
-        if (cachedEntry?.groupedJobsValue && cachedEntry.expiresAt > now) {
-            logger.debug({ action: 'team.jobs.initial.cache-hit', teamId }, 'Serving cached initial team jobs');
-            return cachedEntry.groupedJobsValue;
+            if (revisionBefore === revisionAfter) {
+                return {
+                    revision: revisionAfter,
+                    groups: groupedJobs
+                };
+            }
         }
 
-        if (cachedEntry?.groupedJobsPromise && cachedEntry.expiresAt > now) {
-            logger.debug({ action: 'team.jobs.initial.cache-hit', teamId, source: 'in-flight' }, 'Joining in-flight initial team jobs request');
-            return cachedEntry.groupedJobsPromise;
-        }
-
-        logger.debug({ action: 'team.jobs.initial.cache-miss', teamId }, 'Refreshing initial team jobs cache');
-
-        const groupedJobsPromise = this.getTeamJobs(teamId)
-            .then((groupedJobs) => {
-                this.teamJobsInitialCache.set(teamId, {
-                    expiresAt: Date.now() + TEAM_JOBS_INITIAL_CACHE_TTL_MS,
-                    groupedJobsValue: groupedJobs
-                });
-
-                return groupedJobs;
-            })
-            .catch((error: unknown) => {
-                this.teamJobsInitialCache.delete(teamId);
-                throw error;
-            });
-
-        this.teamJobsInitialCache.set(teamId, {
-            expiresAt: now + TEAM_JOBS_INITIAL_CACHE_TTL_MS,
-            groupedJobsPromise
-        });
-
-        return groupedJobsPromise;
+        return {
+            revision: await this.getProjectedTeamJobsRevision(teamId),
+            groups: await this.getTeamJobs(teamId)
+        };
     }
 
-    invalidateInitialTeamJobs(teamId?: string): void {
-        if (teamId) {
-            this.teamJobsInitialCache.delete(teamId);
-            return;
-        }
-
-        this.teamJobsInitialCache.clear();
-    }
+    invalidateInitialTeamJobs(_teamId?: string): void {}
 
     async getFlatTeamJobs(teamId: string): Promise<TeamJobSummary[]> {
-        const [clusterJobs, projectedJobs] = await Promise.all([
-            this.getClusterTeamJobs(teamId),
-            this.getProjectedTeamJobs(teamId)
-        ]);
-
-        const mergedJobs = this.mergeVisibleTeamJobs(clusterJobs, projectedJobs);
-        const enrichedJobs = await this.enrichTrajectoryNames(mergedJobs);
+        const projectedJobs = await this.getProjectedTeamJobs(teamId);
+        const enrichedJobs = await this.enrichTrajectoryNames(projectedJobs);
 
         return enrichedJobs.sort((left, right) => this.compareJobsForDisplay(left, right));
     }
 
-    private async getClusterTeamJobs(teamId: string): Promise<TeamJobSummary[]> {
-        const teamClusters = await this.teamClusterRepository.findAll({
-            filter: {
-                team: teamId,
-                status: TeamClusterStatus.Connected
-            },
-            page: 1,
-            limit: 100
-        });
-
-        const jobs: TeamJobSummary[] = [];
-        const responses = await Promise.all(teamClusters.data.map(async (teamCluster) => {
-            try {
-                const response = await this.teamClusterDaemonClient.command<DaemonTeamJobsResponse>(
-                    teamCluster.id,
-                    TEAM_CLUSTER_DAEMON_COMMAND.jobs.list,
-                    {
-                        teamId
-                    },
-                    {
-                        timeoutClass: 'interactive',
-                        timeoutMs: 5_000
-                    }
-                );
-
-                return {
-                    teamClusterId: teamCluster.id,
-                    jobs: response.data || []
-                };
-            } catch (error: unknown) {
-                logger.warn({
-                    action: 'team.jobs.cluster-fetch-failed',
-                    teamId,
-                    teamClusterId: teamCluster.id,
-                    err: error
-                }, 'Failed to fetch jobs from one connected team cluster');
-
-                return null;
-            }
-        }));
-
-        for (const response of responses) {
-            if (!response) {
-                continue;
-            }
-
-            for (const job of response.jobs) {
-                if (this.isTeamJobSummary(job)) {
-                    jobs.push({
-                        ...job,
-                        teamClusterId: response.teamClusterId,
-                        source: 'daemon'
-                    });
-                }
-            }
-        }
-
-        return jobs;
-    }
-
     private async getProjectedTeamJobs(teamId: string): Promise<TeamJobSummary[]> {
-        const jobIds = await this.redis.smembers(`team:${teamId}:jobs`);
+        const jobIds = await this.redis.smembers(this.projectedTeamJobsKey(teamId));
         if (jobIds.length === 0) {
             return [];
         }
@@ -276,7 +169,7 @@ export default class TeamJobsService {
         }
 
         if (staleJobIds.length > 0) {
-            this.redis.srem(`team:${teamId}:jobs`, ...staleJobIds).catch((error) => {
+            this.redis.srem(this.projectedTeamJobsKey(teamId), ...staleJobIds).catch((error) => {
                 logger.warn({ err: error, staleJobCount: staleJobIds.length, teamId }, 'Failed to prune stale projected team jobs');
             });
         }
@@ -375,68 +268,6 @@ export default class TeamJobsService {
         ) || left.trajectoryId.localeCompare(right.trajectoryId));
 
         return groups;
-    }
-
-    private mergeVisibleTeamJobs(clusterJobs: TeamJobSummary[], projectedJobs: TeamJobSummary[]): TeamJobSummary[] {
-        const jobsById = new Map<string, TeamJobSummary>();
-        const clusterJobsById = this.indexJobsById(clusterJobs);
-        const projectedJobsById = this.indexJobsById(projectedJobs);
-        const jobIds = new Set<string>([
-            ...clusterJobsById.keys(),
-            ...projectedJobsById.keys()
-        ]);
-
-        for (const jobId of jobIds) {
-            const clusterJob = clusterJobsById.get(jobId);
-            const projectedJob = projectedJobsById.get(jobId);
-
-            if (clusterJob && projectedJob) {
-                const primaryJob = this.compareJobsForFreshness(clusterJob, projectedJob) <= 0
-                    ? clusterJob
-                    : projectedJob;
-                const secondaryJob = primaryJob === clusterJob ? projectedJob : clusterJob;
-
-                jobsById.set(jobId, this.mergeTeamJob(primaryJob, secondaryJob));
-                continue;
-            }
-
-            if (clusterJob) {
-                jobsById.set(jobId, clusterJob);
-                continue;
-            }
-
-            if (projectedJob) {
-                jobsById.set(jobId, projectedJob);
-            }
-        }
-
-        return Array.from(jobsById.values());
-    }
-
-    private mergeTeamJob(primaryJob: TeamJobSummary, secondaryJob: TeamJobSummary): TeamJobSummary {
-        return {
-            ...secondaryJob,
-            ...primaryJob,
-            metadata: {
-                ...(secondaryJob.metadata ?? {}),
-                ...(primaryJob.metadata ?? {})
-            },
-            source: primaryJob.source === secondaryJob.source ? primaryJob.source : 'merged'
-        };
-    }
-
-    private indexJobsById(jobs: TeamJobSummary[]): Map<string, TeamJobSummary> {
-        const jobsById = new Map<string, TeamJobSummary>();
-
-        const sortedJobs = [...jobs].sort((left, right) => this.compareJobsForFreshness(left, right));
-
-        for (const job of sortedJobs) {
-            if (!jobsById.has(job.jobId)) {
-                jobsById.set(job.jobId, job);
-            }
-        }
-
-        return jobsById;
     }
 
     private async enrichTrajectoryNames(jobs: TeamJobSummary[]): Promise<TeamJobSummary[]> {
@@ -568,88 +399,12 @@ export default class TeamJobsService {
             return timestampComparison;
         }
 
-        const sourceComparison = this.compareSourcePriority(left.source, right.source);
-        if (sourceComparison !== 0) {
-            return sourceComparison;
-        }
-
         const clusterComparison = (left.teamClusterId ?? '').localeCompare(right.teamClusterId ?? '');
         if (clusterComparison !== 0) {
             return clusterComparison;
         }
 
         return left.jobId.localeCompare(right.jobId);
-    }
-
-    private compareJobsForFreshness(left: TeamJobSummary, right: TeamJobSummary): number {
-        const timestampComparison = this.compareTimestampValues(
-            this.resolveJobTimestampValue(right),
-            this.resolveJobTimestampValue(left)
-        );
-
-        if (timestampComparison !== 0) {
-            return timestampComparison;
-        }
-
-        const completenessComparison = this.getJobCompletenessScore(right) - this.getJobCompletenessScore(left);
-        if (completenessComparison !== 0) {
-            return completenessComparison;
-        }
-
-        const displayComparison = this.compareJobsForDisplay(left, right);
-        if (displayComparison !== 0) {
-            return displayComparison;
-        }
-
-        return left.status.localeCompare(right.status);
-    }
-
-    private compareSourcePriority(left?: TeamJobSource, right?: TeamJobSource): number {
-        return this.getSourcePriority(right) - this.getSourcePriority(left);
-    }
-
-    private getSourcePriority(source?: TeamJobSource): number {
-        if (source === 'daemon') {
-            return 2;
-        }
-
-        if (source === 'merged') {
-            return 3;
-        }
-
-        if (source === 'projected') {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    private getJobCompletenessScore(job: TeamJobSummary): number {
-        const fields: Array<unknown> = [
-            job.name,
-            job.sessionId,
-            job.message,
-            job.metadata,
-            job.timestamp,
-            job.updatedAt,
-            job.createdAt,
-            job.analysisId,
-            job.trajectoryId,
-            job.trajectoryName,
-            job.timestep,
-            job.teamClusterId,
-            job.source
-        ];
-
-        let score = 0;
-
-        for (const field of fields) {
-            if (typeof field !== 'undefined') {
-                score += 1;
-            }
-        }
-
-        return score;
     }
 
     private resolveJobTimestamp(job: TeamJobSummary): string | undefined {
@@ -730,5 +485,22 @@ export default class TeamJobsService {
             || status === JobStatus.Failed
             || status === 'retrying'
             || status === 'partial';
+    }
+
+    private async getProjectedTeamJobsRevision(teamId: string): Promise<number> {
+        const revision = await this.redis.get(this.projectedTeamJobsRevisionKey(teamId));
+        const parsedRevision = Number(revision);
+
+        return Number.isFinite(parsedRevision) && parsedRevision >= 0
+            ? parsedRevision
+            : 0;
+    }
+
+    private projectedTeamJobsKey(teamId: string): string {
+        return `team:${teamId}:projected-jobs`;
+    }
+
+    private projectedTeamJobsRevisionKey(teamId: string): string {
+        return `team:${teamId}:projected-jobs:revision`;
     }
 };

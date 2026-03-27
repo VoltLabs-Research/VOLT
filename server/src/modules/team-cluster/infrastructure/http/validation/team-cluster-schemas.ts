@@ -100,13 +100,6 @@ const teamClusterRoleSchema = z.union([
     z.literal('compute-node')
 ]);
 
-const effectiveCapabilitiesSchema = z.object({
-    acceptsComputeJobs: z.boolean(),
-    acceptsStorageWrites: z.boolean(),
-    servesStorageReads: z.boolean(),
-    servesArtifactDownloads: z.boolean()
-}).strict();
-
 const runtimeRoleConfigSchema = z.object({
     desiredRole: teamClusterRoleSchema,
     effectiveRole: teamClusterRoleSchema,
@@ -137,9 +130,8 @@ const teamClusterHeartbeatSchema = z.object({
     daemonPassword: requiredTextSchema,
     installedVersion: installedVersionSchema,
     runtime: z.object({
-        roleConfig: runtimeRoleConfigSchema,
-        effectiveCapabilities: effectiveCapabilitiesSchema
-    }).strict().optional(),
+        roleConfig: runtimeRoleConfigSchema
+    }).passthrough().optional(),
     metrics: daemonMetricsSnapshotSchema.optional()
 }).strict();
 

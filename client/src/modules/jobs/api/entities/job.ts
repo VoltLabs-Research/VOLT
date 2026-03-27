@@ -23,6 +23,7 @@ export interface Job {
     analysisId?: string;
     processingTimeMs?: number;
     error?: string;
+    revision?: number;
     [key: string]: JobMetadataValue;
 };
 

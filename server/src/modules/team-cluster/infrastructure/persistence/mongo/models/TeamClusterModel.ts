@@ -1,6 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import {
-    TeamClusterEffectiveCapabilitiesProps,
     TeamClusterProps,
     TeamClusterRole,
     TeamClusterStatus
@@ -117,31 +116,6 @@ const teamClusterRoleSchema = new Schema({
     _id: false
 });
 
-const effectiveCapabilitiesSchema = new Schema<Record<keyof TeamClusterEffectiveCapabilitiesProps, unknown>>({
-    acceptsComputeJobs: {
-        type: Boolean,
-        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
-        default: true
-    },
-    acceptsStorageWrites: {
-        type: Boolean,
-        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
-        default: true
-    },
-    servesStorageReads: {
-        type: Boolean,
-        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
-        default: true
-    },
-    servesArtifactDownloads: {
-        type: Boolean,
-        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
-        default: true
-    }
-}, {
-    _id: false
-});
-
 const TeamClusterSchema = new Schema({
     name: {
         type: String,
@@ -209,10 +183,6 @@ const TeamClusterSchema = new Schema({
     },
     roleConfig: {
         type: teamClusterRoleSchema,
-        required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
-    },
-    effectiveCapabilities: {
-        type: effectiveCapabilitiesSchema,
         required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
     }
 }, {
