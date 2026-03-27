@@ -2,9 +2,11 @@ import { DragControls } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
 import type { BoxBounds } from '@/modules/fractal/types';
 import { getBoxDimensions } from '@/modules/fractal/utilities/box-utils';
+import { Theme } from '@/shared/presentation/hooks/use-theme';
+import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
 import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
-import { useMemo, useRef, useEffect, forwardRef } from 'react';
+import { useMemo, useRef, useEffect, forwardRef, useState } from 'react';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import type { ReactNode, RefObject } from 'react';
 
@@ -49,6 +51,25 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     // React re-renders of the entire subtree (model with millions of points).
     const dragMatrixRef = useRef(new THREE.Matrix4());
     const showSimulationCell = useEditorStore((state) => state.showSimulationCell);
+    const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
+
+    useEffect(() => {
+        return subscribeToAppTheme(setTheme);
+    }, []);
+
+    const simulationCellMaterial = useMemo(() => {
+        if (theme === Theme.Light) {
+            return {
+                color: '#121212',
+                opacity: 0.16
+            };
+        }
+
+        return {
+            color: '#ffffff',
+            opacity: 0.1
+        };
+    }, [theme]);
 
     useEffect(() => {
         const target = contentRef.current;
@@ -186,7 +207,7 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
 
                 {showSimulationCell && (
                     <lineSegments geometry={geometry}>
-                        <lineBasicMaterial color='white' opacity={0.1} transparent />
+                        <lineBasicMaterial color={simulationCellMaterial.color} opacity={simulationCellMaterial.opacity} transparent />
                     </lineSegments>
                 )}
 
