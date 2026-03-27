@@ -218,7 +218,7 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         });
         const containerResources = this.requireCreateInputContainerResources(input);
         const teamClusterIdInput = this.requireCreateInputTeamClusterId(input);
-        const teamClusterId = await this.teamClusterSelectionService.resolveTeamClusterId(
+        const teamClusterId = await this.teamClusterSelectionService.resolveConnectedClusterId(
             input.teamId,
             teamClusterIdInput
         );
@@ -254,7 +254,7 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             );
         }
 
-        return this.teamClusterSelectionService.resolveTeamClusterId(
+        return this.teamClusterSelectionService.resolveConnectedClusterId(
             input.teamId,
             notebookTeamClusterId
         );

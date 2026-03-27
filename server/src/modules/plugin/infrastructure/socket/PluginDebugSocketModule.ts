@@ -132,7 +132,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                     return;
                 }
 
-                const teamClusterId = await this.teamClusterSelectionService.resolveTeamClusterId(teamId);
+                const teamClusterId = await this.teamClusterSelectionService.resolveComputeClusterId(teamId);
 
                 // Load plugin to get workflow
                 const plugin = await this.pluginRepository.findById(payload.pluginId);

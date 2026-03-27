@@ -61,7 +61,7 @@ export class UpdateScriptingNotebookUseCase implements IUseCase<UpdateScriptingN
             }
 
             if (input.teamClusterId) {
-                const resolvedTeamClusterId = await this.teamClusterSelectionService.resolveTeamClusterId(
+                const resolvedTeamClusterId = await this.teamClusterSelectionService.resolveConnectedClusterId(
                     input.teamId,
                     input.teamClusterId
                 );
