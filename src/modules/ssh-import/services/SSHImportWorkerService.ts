@@ -1,9 +1,10 @@
 import { ObjectBucketName } from '@/shared/contracts';
 import { DAEMON_PATHS } from '@/core/paths';
 import { MinioService } from '@/modules/platform/services';
-import { RedisConnectionService } from '@/modules/platform/services';
 import { QueueService } from '@/modules/platform/services';
 import { SSH_IMPORT_QUEUE_NAME } from '@/modules/platform/services';
+import type { DaemonJobReporterService, SshImportJobStatus } from '@/modules/cloud-control/services';
+import type { VoltCloudConnection } from '@/modules/cloud-control/services';
 import type { GlbExporterService } from '@/modules/trajectory-native/services';
 import { FileExtractorService } from './FileExtractorService';
 import { SSHConnectionService, type SSHConnectionConfig } from './SSHConnectionService';
@@ -21,6 +22,7 @@ import { DelayedError, type Job, type Worker } from 'bullmq';
 import type { DaemonConfig } from '@/core/config';
 
 interface SSHImportJobPayload extends Record<string, unknown> {
+    jobId: string;
     teamId: string;
     sshConnectionId: string;
     remotePath: string;
@@ -48,9 +50,10 @@ export class SSHImportWorkerService {
     constructor(
         private readonly config: DaemonConfig,
         private readonly queueService: QueueService,
-        private readonly redisConnectionService: RedisConnectionService,
         private readonly minioService: MinioService,
         private readonly glbExporterService: GlbExporterService,
+        private readonly daemonJobReporterService: DaemonJobReporterService,
+        private readonly voltCloudConnection: VoltCloudConnection,
         private readonly sshConnectionService: SSHConnectionService,
         private readonly fileExtractorService: FileExtractorService
     ) {
@@ -104,21 +107,11 @@ export class SSHImportWorkerService {
 
     private async processJob(job: SSHImportJobPayload): Promise<void> {
         const workdir = path.join(DAEMON_PATHS.sshImport, `${job.trajectoryId}-${Date.now()}`);
-        const jobId = `ssh-import:${job.trajectoryId}`;
+        const jobId = job.jobId;
 
         try {
             await fs.mkdir(workdir, { recursive: true });
-
-            await this.redisConnectionService.projectJobStatus({
-                jobId,
-                teamId: job.teamId,
-                queueType: SSH_IMPORT_QUEUE_NAME,
-                status: 'running',
-                metadata: {
-                    trajectoryId: job.trajectoryId,
-                    trajectoryName: job.trajectoryName
-                }
-            });
+            await this.reportJobStatusBestEffort(job, 'running');
 
             const password = await this.decryptPassword(job.encryptedPassword);
             const connection: SSHConnectionConfig = {
@@ -215,7 +208,7 @@ export class SSHImportWorkerService {
                 });
             }
 
-            await this.reportTrajectoryImport({
+            const wasReported = await this.reportTrajectoryImport({
                 teamClusterId: this.config.teamClusterId,
                 daemonPassword: this.config.daemonPassword,
                 trajectoryId: job.trajectoryId,
@@ -224,23 +217,19 @@ export class SSHImportWorkerService {
                 userId: job.userId,
                 success: true,
                 frames
+            }).catch((reportError) => {
+                logger.error({ err: reportError, jobId, trajectoryId: job.trajectoryId }, 'Failed to report successful SSH import completion');
+                return false;
             });
 
-            await this.redisConnectionService.projectJobStatus({
-                jobId,
-                teamId: job.teamId,
-                queueType: SSH_IMPORT_QUEUE_NAME,
-                status: 'completed',
-                metadata: {
-                    trajectoryId: job.trajectoryId,
-                    trajectoryName: job.trajectoryName
-                }
-            });
+            if (wasReported === false) {
+                await this.reportJobStatusBestEffort(job, 'completed');
+            }
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : String(error);
             logger.error({ err: error, trajectoryId: job.trajectoryId }, 'SSH import failed');
 
-            await this.reportTrajectoryImport({
+            const wasReported = await this.reportTrajectoryImport({
                 teamClusterId: this.config.teamClusterId,
                 daemonPassword: this.config.daemonPassword,
                 trajectoryId: job.trajectoryId,
@@ -250,23 +239,45 @@ export class SSHImportWorkerService {
                 success: false,
                 failureCode: 'SSH::Import::Error',
                 failureDetails: message
+            }).catch((reportError) => {
+                logger.error({ err: reportError, jobId, trajectoryId: job.trajectoryId }, 'Failed to report failed SSH import completion');
+                return false;
             });
 
-            await this.redisConnectionService.projectJobStatus({
-                jobId,
-                teamId: job.teamId,
-                queueType: SSH_IMPORT_QUEUE_NAME,
-                status: 'failed',
-                error: message,
-                metadata: {
-                    trajectoryId: job.trajectoryId,
-                    trajectoryName: job.trajectoryName
-                }
-            });
+            if (wasReported === false) {
+                await this.reportJobStatusBestEffort(job, 'failed', message);
+            }
 
             throw error instanceof Error ? error : new Error(message);
         } finally {
             await fs.rm(workdir, { recursive: true, force: true }).catch(() => {});
+        }
+    }
+
+    private async reportJobStatusBestEffort(
+        job: SSHImportJobPayload,
+        status: SshImportJobStatus,
+        error?: string
+    ): Promise<void> {
+        try {
+            await this.daemonJobReporterService.reportSshImportJobStatus({
+                jobId: job.jobId,
+                teamId: job.teamId,
+                trajectoryId: job.trajectoryId,
+                trajectoryName: job.trajectoryName,
+                status,
+                error
+            });
+        } catch (reportError) {
+            logger.error(
+                {
+                    err: reportError,
+                    jobId: job.jobId,
+                    status,
+                    trajectoryId: job.trajectoryId
+                },
+                'Failed to report SSH import job status to cloud control'
+            );
         }
     }
 
@@ -289,18 +300,16 @@ export class SSHImportWorkerService {
         return decrypted;
     }
 
-    private async reportTrajectoryImport(payload: Record<string, unknown>): Promise<void> {
-        const response = await fetch(`${this.config.voltCloudUrl}/api/v1/daemon/trajectory-import`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
+    private async reportTrajectoryImport(payload: Record<string, unknown>): Promise<boolean> {
+        const queuedResult = await this.voltCloudConnection.sendBackgroundServerCommand('trajectory.import-complete', payload, {
+            dedupeKey: `trajectory.import:${String(payload.trajectoryId)}:${payload.success === true ? 'completed' : 'failed'}`
         });
 
-        if (!response.ok) {
-            const body = await response.text().catch(() => '');
-            throw new Error(`Failed to report trajectory import: ${response.status} ${body}`.trim());
+        if (typeof queuedResult !== 'undefined') {
+            return true;
         }
+
+        const directResult = await this.voltCloudConnection.sendServerCommand('trajectory.import-complete', payload);
+        return typeof directResult !== 'undefined';
     }
 };

@@ -103,7 +103,6 @@ export const createGlbExporterService = (
     const trajectoryRasterQueueService = createTrajectoryRasterQueueService(
         objectStore,
         queueService,
-        redisConnectionService,
         trajectoryAutoPreviewClaimStore
     );
 

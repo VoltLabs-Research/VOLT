@@ -45,6 +45,7 @@ interface JobsListRequest {
 };
 
 interface SSHImportQueueJobPayload extends Record<string, unknown> {
+    jobId: string;
     teamId: string;
     sshConnectionId: string;
     remotePath: string;
@@ -154,9 +155,13 @@ const normalizeSshImportQueuePayload = (payload: Record<string, unknown>): SSHIm
     const port = typeof portValue === 'undefined'
         ? undefined
         : readNumber(portValue, 'payload.port');
+    const trajectoryId = readString(payload.trajectoryId, 'payload.trajectoryId');
 
     return {
         ...payload,
+        jobId: typeof payload.jobId === 'string' && payload.jobId.trim().length > 0
+            ? payload.jobId
+            : `ssh-import:${trajectoryId}`,
         teamId: readString(payload.teamId, 'payload.teamId'),
         sshConnectionId: readString(payload.sshConnectionId, 'payload.sshConnectionId'),
         remotePath: readString(payload.remotePath, 'payload.remotePath'),
@@ -165,7 +170,7 @@ const normalizeSshImportQueuePayload = (payload: Record<string, unknown>): SSHIm
         port,
         username: readString(payload.username, 'payload.username'),
         encryptedPassword: readString(payload.encryptedPassword, 'payload.encryptedPassword'),
-        trajectoryId: readString(payload.trajectoryId, 'payload.trajectoryId'),
+        trajectoryId,
         trajectoryName: readString(payload.trajectoryName, 'payload.trajectoryName')
     };
 };
@@ -266,7 +271,7 @@ const readClearJobsHistoryRequest = (payload: unknown): ClearJobsHistoryRequest 
 };
 
 export const createJobHandlers = (deps: JobHandlersDependencies): ReverseChannelCommandHandler[] => {
-    const jobControlService = createJobControlService(deps.queueService, deps.redisConnectionService);
+    const jobControlService = createJobControlService(deps.queueService);
 
     return [
         {

@@ -3,7 +3,7 @@ import { TRAJECTORY_RASTER_QUEUE_NAME } from '@/modules/platform/services';
 import { createMemoryAwareWorkerShell, delayJobWhenMemoryPressured, type MemoryAwareWorkerShell } from '@/modules/platform/services';
 import { ObjectBucketName } from '@/shared/contracts';
 import type { DaemonJobReporterService, RasterJobStatus } from '@/modules/cloud-control/services/DaemonJobReporterService';
-import type { QueueService, RedisConnectionService } from '@/modules/platform/services';
+import type { QueueService } from '@/modules/platform/services';
 import type { RasterQueueJobPayload } from '@/shared/contracts';
 import { isRecord } from '@/shared/utilities/type-guards';
 import { DelayedError, type Job } from 'bullmq';
@@ -23,7 +23,6 @@ export class TrajectoryRasterWorkerService {
 
     constructor(
         private readonly queueService: QueueService,
-        private readonly redisConnectionService: RedisConnectionService,
         private readonly trajectoryAutoPreviewClaimStore: TrajectoryAutoPreviewClaimStore,
         private readonly rasterizerService: RasterizerService,
         private readonly daemonJobReporterService: DaemonJobReporterService
@@ -53,30 +52,6 @@ export class TrajectoryRasterWorkerService {
     setConcurrency(concurrency: number): void {
         this.workerShell.setConcurrency(concurrency);
         logger.info({ concurrency }, 'TrajectoryRasterWorkerService concurrency updated');
-    }
-
-    private buildJobStatusProjection(
-        job: RasterQueueJobPayload,
-        status: 'running' | 'completed' | 'failed',
-        timestamp: string,
-        error?: string
-    ): RasterQueueJobPayload & { timestamp: string; } {
-        return {
-            jobId: job.jobId,
-            teamId: job.teamId,
-            trajectoryId: job.trajectoryId,
-            trajectoryName: job.trajectoryName,
-            timestep: job.timestep,
-            modelObjectKey: job.modelObjectKey,
-            outputObjectKey: job.outputObjectKey,
-            status,
-            queueType: job.queueType,
-            metadata: job.metadata,
-            error,
-            createdAt: job.createdAt,
-            updatedAt: timestamp,
-            timestamp
-        };
     }
 
     private async reportJobStatus(
@@ -121,13 +96,9 @@ export class TrajectoryRasterWorkerService {
             message: 'Heap memory pressure detected — delaying raster job'
         });
 
-        const runningTimestamp = new Date().toISOString();
         let shouldReleaseAutoPreviewClaim = false;
 
         try {
-            await this.redisConnectionService.projectJobStatus(
-                this.buildJobStatusProjection(job, 'running', runningTimestamp)
-            );
             void this.reportJobStatusBestEffort(job, 'running');
 
             await bullJob.updateProgress(10);
@@ -140,10 +111,6 @@ export class TrajectoryRasterWorkerService {
             });
             await bullJob.updateProgress(100);
 
-            const completedTimestamp = new Date().toISOString();
-            await this.redisConnectionService.projectJobStatus(
-                this.buildJobStatusProjection(job, 'completed', completedTimestamp)
-            );
             void this.reportJobStatusBestEffort(job, 'completed');
             shouldReleaseAutoPreviewClaim = true;
         } catch (error: unknown) {
@@ -152,11 +119,6 @@ export class TrajectoryRasterWorkerService {
             }
 
             const message = error instanceof Error ? error.message : String(error);
-            const failedTimestamp = new Date().toISOString();
-
-            await this.redisConnectionService.projectJobStatus(
-                this.buildJobStatusProjection(job, 'failed', failedTimestamp, message)
-            );
             void this.reportJobStatusBestEffort(job, 'failed', message);
             shouldReleaseAutoPreviewClaim = true;
 

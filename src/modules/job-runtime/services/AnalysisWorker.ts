@@ -1,7 +1,7 @@
 import { logger } from '@/core/logger';
 import { DAEMON_PATHS } from '@/core/paths';
 import { forceGC, isMemoryPressured } from '@/core/memory';
-import { ANALYSIS_QUEUE_NAME, QueueService, RedisConnectionService } from '@/modules/platform/services';
+import { ANALYSIS_QUEUE_NAME, QueueService } from '@/modules/platform/services';
 import { WorkflowGraph, WorkflowNodeType } from '@/modules/workflow-runtime/contracts';
 import { createWorkflowNodeRegistry } from '@/modules/workflow-runtime/factories';
 import { resolveWorkflowTemplate } from '@/modules/workflow-runtime/services/WorkflowOutputResolution';
@@ -524,7 +524,6 @@ export class AnalysisWorker {
     constructor(
         private readonly queueService: QueueService,
         private readonly analysisExecutionDataStore: AnalysisExecutionDataStore,
-        private readonly redisConnectionService: RedisConnectionService,
         private readonly objectStore: ClusterObjectStore,
         private readonly pluginBinaryCacheService: PluginBinaryCacheService,
         private readonly binaryExecutorService: BinaryExecutorService,
@@ -625,14 +624,6 @@ export class AnalysisWorker {
             if (!isBatchMode && typeof timestep === 'undefined') {
                 throw new Error(`Missing timestep for analysis job ${job.jobId}`);
             }
-
-            const runningTimestamp = new Date().toISOString();
-            await this.redisConnectionService.projectJobStatus({
-                ...job,
-                status: 'running',
-                updatedAt: runningTimestamp,
-                timestamp: runningTimestamp
-            });
 
             // Report running status to the Volt server for real-time client visibility
             void this.daemonJobReporterService.reportAnalysisJobStatus({
@@ -807,14 +798,6 @@ export class AnalysisWorker {
             logMemoryUsage('after-result-processing', job.jobId);
             await bullJob.updateProgress(95);
 
-            const completedTimestamp = new Date().toISOString();
-            await this.redisConnectionService.projectJobStatus({
-                ...job,
-                status: 'completed',
-                updatedAt: completedTimestamp,
-                timestamp: completedTimestamp
-            });
-
             await this.daemonJobReporterService.reportJobCompletion({
                 jobId: job.jobId,
                 name: job.name,
@@ -836,14 +819,6 @@ export class AnalysisWorker {
             const analysisId = executionData?.analysisId
                 ?? (typeof metadata.analysisId === 'string' ? metadata.analysisId : 'unknown-analysis');
 
-            const failedTimestamp = new Date().toISOString();
-            await this.redisConnectionService.projectJobStatus({
-                ...job,
-                status: 'failed',
-                error: message,
-                updatedAt: failedTimestamp,
-                timestamp: failedTimestamp
-            });
             await this.daemonJobReporterService.reportJobCompletion({
                 jobId: job.jobId,
                 name: job.name,

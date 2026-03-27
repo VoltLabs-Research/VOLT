@@ -343,6 +343,7 @@ export interface RasterizeTrajectoryResponse {
     duplicateJobs: number;
     skippedJobs: number;
     alreadyRasterizedJobs: number;
+    jobs: QueuedJobNotification[];
 };
 
 export interface GlbConversionQueueJobPayload extends Record<string, unknown> {
@@ -377,12 +378,12 @@ export interface EnqueuePreprocessingRequest {
 
 export interface QueuedJobNotification {
     jobId: string;
-    name: string;
     teamId: string;
-    timestep: number;
-    trajectoryId: string;
+    name?: string;
+    timestep?: number;
+    trajectoryId?: string;
     trajectoryName?: string;
-    analysisId: string;
+    analysisId?: string;
     queueType: string;
 };
 
@@ -396,4 +397,5 @@ export interface EnqueuePreprocessingResponse {
     queuedJobs: number;
     duplicateJobs: number;
     skippedJobs: number;
+    jobs: QueuedJobNotification[];
 };

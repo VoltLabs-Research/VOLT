@@ -16,12 +16,14 @@ interface EnqueueOptions {
     preserveExistingJob?: boolean;
 };
 
-const KNOWN_QUEUE_NAMES = new Set<string>([
+const KNOWN_QUEUE_NAMES = [
     ANALYSIS_QUEUE_NAME,
     SSH_IMPORT_QUEUE_NAME,
     TRAJECTORY_RASTER_QUEUE_NAME,
     TRAJECTORY_GLB_QUEUE_NAME
-]);
+] as const;
+
+const KNOWN_QUEUE_NAME_SET = new Set<string>(KNOWN_QUEUE_NAMES);
 
 const isActiveQueueState = (state: string): boolean => {
     return state === 'active'
@@ -103,6 +105,38 @@ export class QueueService {
         return true;
     }
 
+    async enqueueBulk(queueName: string, payloads: Record<string, unknown>[]): Promise<void> {
+        this.assertKnownQueue(queueName);
+
+        if (payloads.length === 0) {
+            return;
+        }
+
+        const queue = this.getQueue(queueName);
+        const startedAt = Date.now();
+
+        await queue.addBulk(payloads.map((payload) => ({
+            name: queueName,
+            data: payload,
+            opts: {
+                jobId: typeof payload.jobId === 'string' ? payload.jobId : undefined,
+                attempts: 1,
+                removeOnComplete: 1000,
+                removeOnFail: 1000
+            }
+        })));
+
+        logger.info(
+            {
+                durationMs: Date.now() - startedAt,
+                payloadCount: payloads.length,
+                payloadBytes: payloads.reduce((total, payload) => total + this.measurePayloadBytes(payload), 0),
+                queueName
+            },
+            'Enqueued queue jobs in bulk'
+        );
+    }
+
     createWorker<T extends Record<string, unknown>>(
         queueName: string,
         processor: (payload: T, job: Job<T>) => Promise<void>,
@@ -147,6 +181,21 @@ export class QueueService {
         return false;
     }
 
+    async retryJobById(jobId: string): Promise<boolean> {
+        const locatedJob = await this.findJob(jobId);
+        if (!locatedJob) {
+            return false;
+        }
+
+        const state = await locatedJob.job.getState();
+        if (state !== 'failed') {
+            return false;
+        }
+
+        await locatedJob.job.retry();
+        return true;
+    }
+
     async removeJob(queueName: string, jobId: string): Promise<boolean> {
         const queue = this.getQueue(queueName);
         const job = await queue.getJob(jobId);
@@ -156,6 +205,30 @@ export class QueueService {
 
         await job.remove();
         return true;
+    }
+
+    async removeJobById(jobId: string): Promise<boolean> {
+        const locatedJob = await this.findJob(jobId);
+        if (!locatedJob) {
+            return false;
+        }
+
+        await locatedJob.job.remove();
+        return true;
+    }
+
+    async findJob(jobId: string): Promise<{ queueName: string; job: Job<Record<string, unknown>>; } | null> {
+        for (const queueName of KNOWN_QUEUE_NAMES) {
+            const job = await this.getQueue(queueName).getJob(jobId);
+            if (job) {
+                return {
+                    queueName,
+                    job
+                };
+            }
+        }
+
+        return null;
     }
 
     private getQueue(queueName: string): Queue<Record<string, unknown>> {
@@ -174,7 +247,7 @@ export class QueueService {
     }
 
     private assertKnownQueue(queueName: string): void {
-        if (!KNOWN_QUEUE_NAMES.has(queueName)) {
+        if (!KNOWN_QUEUE_NAME_SET.has(queueName)) {
             throw new Error(`Unsupported queue: ${queueName}`);
         }
     }

@@ -3,7 +3,7 @@ import type { ResultProcessorService } from '@/modules/artifacts/services';
 import type { AnalysisExecutionDataStore } from '@/modules/platform/services';
 import type { WorkflowEngine } from '@/modules/workflow-runtime/services';
 import type { RuntimeEventBroker } from '@/shared/services';
-import type { QueueService, RedisConnectionService } from '@/modules/platform/services';
+import type { QueueService } from '@/modules/platform/services';
 import type { DaemonJobReporterService } from '@/modules/cloud-control/services';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
@@ -15,14 +15,12 @@ export const createJobRuntimeModule = (deps: {
     workflowEngine: WorkflowEngine;
     queueService: QueueService;
     analysisExecutionDataStore: AnalysisExecutionDataStore;
-    redisConnectionService: RedisConnectionService;
     eventBroker: RuntimeEventBroker;
 }): JobRuntimeModule => {
     const analysisDispatchService = new AnalysisDispatchService(
         deps.workflowEngine,
         deps.queueService,
         deps.analysisExecutionDataStore,
-        deps.redisConnectionService,
         deps.eventBroker
     );
 
@@ -34,7 +32,6 @@ export const createJobRuntimeModule = (deps: {
 export const createAnalysisWorker = (deps: {
     queueService: QueueService;
     analysisExecutionDataStore: AnalysisExecutionDataStore;
-    redisConnectionService: RedisConnectionService;
     objectStore: ClusterObjectStore;
     resultProcessorService: ResultProcessorService;
     daemonJobReporterService: DaemonJobReporterService;
@@ -45,7 +42,6 @@ export const createAnalysisWorker = (deps: {
     return new AnalysisWorker(
         deps.queueService,
         deps.analysisExecutionDataStore,
-        deps.redisConnectionService,
         deps.objectStore,
         pluginBinaryCacheService,
         binaryExecutorService,

@@ -2,7 +2,7 @@ import { logger } from '@/core/logger';
 import { TRAJECTORY_GLB_QUEUE_NAME } from '@/modules/platform/services';
 import { createMemoryAwareWorkerShell, delayJobWhenMemoryPressured, type MemoryAwareWorkerShell } from '@/modules/platform/services';
 import type { DaemonJobReporterService, GlbJobStatus } from '@/modules/cloud-control/services/DaemonJobReporterService';
-import type { QueueService, RedisConnectionService } from '@/modules/platform/services';
+import type { QueueService } from '@/modules/platform/services';
 import type { GlbConversionQueueJobPayload } from '@/shared/contracts';
 import { DelayedError, type Job } from 'bullmq';
 import type { GlbExporterService } from './GlbExporterService';
@@ -12,7 +12,6 @@ export class TrajectoryGlbWorkerService {
 
     constructor(
         private readonly queueService: QueueService,
-        private readonly redisConnectionService: RedisConnectionService,
         private readonly glbExporterService: GlbExporterService,
         private readonly daemonJobReporterService: DaemonJobReporterService
     ) {
@@ -41,29 +40,6 @@ export class TrajectoryGlbWorkerService {
     setConcurrency(concurrency: number): void {
         this.workerShell.setConcurrency(concurrency);
         logger.info({ concurrency }, 'TrajectoryGlbWorkerService concurrency updated');
-    }
-
-    private buildJobStatusProjection(
-        job: GlbConversionQueueJobPayload,
-        status: 'running' | 'completed' | 'failed',
-        timestamp: string,
-        error?: string
-    ): GlbConversionQueueJobPayload & { timestamp: string; } {
-        return {
-            jobId: job.jobId,
-            teamId: job.teamId,
-            trajectoryId: job.trajectoryId,
-            trajectoryName: job.trajectoryName,
-            timestep: job.timestep,
-            objectKey: job.objectKey,
-            status,
-            queueType: job.queueType,
-            metadata: job.metadata,
-            error,
-            createdAt: job.createdAt,
-            updatedAt: timestamp,
-            timestamp
-        };
     }
 
     private async reportJobStatus(
@@ -108,12 +84,7 @@ export class TrajectoryGlbWorkerService {
             message: 'Heap memory pressure detected — delaying GLB conversion job'
         });
 
-        const runningTimestamp = new Date().toISOString();
-
         try {
-            await this.redisConnectionService.projectJobStatus(
-                this.buildJobStatusProjection(job, 'running', runningTimestamp)
-            );
             void this.reportJobStatusBestEffort(job, 'running');
 
             await bullJob.updateProgress(10);
@@ -127,10 +98,6 @@ export class TrajectoryGlbWorkerService {
             });
             await bullJob.updateProgress(100);
 
-            const completedTimestamp = new Date().toISOString();
-            await this.redisConnectionService.projectJobStatus(
-                this.buildJobStatusProjection(job, 'completed', completedTimestamp)
-            );
             void this.reportJobStatusBestEffort(job, 'completed');
         } catch (error: unknown) {
             if (error instanceof DelayedError) {
@@ -138,11 +105,6 @@ export class TrajectoryGlbWorkerService {
             }
 
             const message = error instanceof Error ? error.message : String(error);
-            const failedTimestamp = new Date().toISOString();
-
-            await this.redisConnectionService.projectJobStatus(
-                this.buildJobStatusProjection(job, 'failed', failedTimestamp, message)
-            );
             void this.reportJobStatusBestEffort(job, 'failed', message);
 
             throw error instanceof Error ? error : new Error(message);

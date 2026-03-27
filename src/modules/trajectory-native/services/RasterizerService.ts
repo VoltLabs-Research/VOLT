@@ -11,6 +11,9 @@ import { pipeline } from 'node:stream/promises';
 import type { NativeModuleLoader, RasterizePreviewInput } from './NativeModuleLoader';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
+const TRAJECTORY_PREVIEW_WIDTH = 3840;
+const TRAJECTORY_PREVIEW_HEIGHT = 2160;
+
 export interface RasterizerService {
     rasterizePreview(input: RasterizePreviewInput): Promise<void>;
     rasterizeLocalGlb(tempGlbPath: string, tempPngPath: string): Promise<void>;
@@ -80,8 +83,8 @@ export const createRasterizerService = (
         const rasterized = nativeModuleLoader.getRasterizerModule().rasterize(
             tempGlbPath,
             tempPngPath,
-            1600,
-            900,
+            TRAJECTORY_PREVIEW_WIDTH,
+            TRAJECTORY_PREVIEW_HEIGHT,
             45,
             25,
             {

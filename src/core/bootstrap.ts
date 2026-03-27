@@ -55,18 +55,10 @@ const createBootstrapContext = (): BootstrapContext => {
     const workflowRuntime = createWorkflowRuntimeModule();
     const jupyter = createJupyterModule(config, platform.dockerRuntimeService);
     const pluginListingRepository = createPluginListingRepository(clusterObjectStore, config.teamClusterId);
-    const sshImport = createSSHImportModule({
-        config,
-        queueService: platform.queueService,
-        redisConnectionService: platform.redisConnectionService,
-        minioService: platform.minioService,
-        glbExporterService: trajectoryNative.glbExporterService
-    });
     const jobRuntime = createJobRuntimeModule({
         workflowEngine: workflowRuntime.workflowEngine,
         queueService: platform.queueService,
         analysisExecutionDataStore: platform.analysisExecutionDataStore,
-        redisConnectionService: platform.redisConnectionService,
         eventBroker: platform.eventBroker
     });
     const cloudControl = createCloudControlModule({
@@ -92,6 +84,14 @@ const createBootstrapContext = (): BootstrapContext => {
         debugSessionManager: workflowRuntime.debugSessionManager,
         runtimeRoleCoordinator
     });
+    const sshImport = createSSHImportModule({
+        config,
+        queueService: platform.queueService,
+        minioService: platform.minioService,
+        glbExporterService: trajectoryNative.glbExporterService,
+        daemonJobReporterService: cloudControl.daemonJobReporterService,
+        voltCloudConnection: cloudControl.voltCloudConnection
+    });
     const artifacts = createArtifactsModule(
         clusterObjectStore,
         config.teamClusterId,
@@ -102,21 +102,18 @@ const createBootstrapContext = (): BootstrapContext => {
     const analysisWorker = createAnalysisWorker({
         queueService: platform.queueService,
         analysisExecutionDataStore: platform.analysisExecutionDataStore,
-        redisConnectionService: platform.redisConnectionService,
         objectStore: clusterObjectStore,
         resultProcessorService: artifacts.resultProcessorService,
         daemonJobReporterService: cloudControl.daemonJobReporterService
     });
     const trajectoryRasterWorkerService = new TrajectoryRasterWorkerService(
         platform.queueService,
-        platform.redisConnectionService,
         platform.trajectoryAutoPreviewClaimStore,
         trajectoryNative.rasterizerService,
         cloudControl.daemonJobReporterService
     );
     const trajectoryGlbWorkerService = new TrajectoryGlbWorkerService(
         platform.queueService,
-        platform.redisConnectionService,
         trajectoryNative.glbExporterService,
         cloudControl.daemonJobReporterService
     );

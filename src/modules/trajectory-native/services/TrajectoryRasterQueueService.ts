@@ -1,7 +1,12 @@
-import { TRAJECTORY_RASTER_QUEUE_NAME, enqueueProjectedJob } from '@/modules/platform/services';
-import type { QueueService, RedisConnectionService } from '@/modules/platform/services';
+import { TRAJECTORY_RASTER_QUEUE_NAME } from '@/modules/platform/services';
+import type { QueueService } from '@/modules/platform/services';
 import { ObjectBucketName } from '@/shared/contracts';
-import type { RasterQueueJobPayload, RasterizeTrajectoryRequest, RasterizeTrajectoryResponse } from '@/shared/contracts';
+import type {
+    QueuedJobNotification,
+    RasterQueueJobPayload,
+    RasterizeTrajectoryRequest,
+    RasterizeTrajectoryResponse
+} from '@/shared/contracts';
 import { isRecord } from '@/shared/utilities/type-guards';
 import type { TrajectoryAutoPreviewClaimStore } from './TrajectoryAutoPreviewClaimStore';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
@@ -19,6 +24,7 @@ interface QueueRasterizationJobsResult {
     duplicateJobs: number;
     skippedJobs: number;
     alreadyRasterizedJobs: number;
+    jobs: QueuedJobNotification[];
 };
 
 interface AutoPreviewRasterizationConfig {
@@ -47,7 +53,8 @@ const createQueueRasterizationJobsResult = (): QueueRasterizationJobsResult => {
         queuedJobs: 0,
         duplicateJobs: 0,
         skippedJobs: 0,
-        alreadyRasterizedJobs: 0
+        alreadyRasterizedJobs: 0,
+        jobs: []
     };
 };
 
@@ -197,10 +204,20 @@ const buildRasterJobPayload = (
     };
 };
 
+const toQueuedJobNotification = (job: RasterQueueJobPayload): QueuedJobNotification => ({
+    jobId: job.jobId,
+    name: 'Rasterize trajectory preview',
+    teamId: job.teamId,
+    timestep: job.timestep,
+    trajectoryId: job.trajectoryId,
+    trajectoryName: job.trajectoryName,
+    analysisId: typeof job.metadata?.analysisId === 'string' ? job.metadata.analysisId : undefined,
+    queueType: TRAJECTORY_RASTER_QUEUE_NAME
+});
+
 const queueAutoPreviewRasterizationJob = async (
     input: RasterizeTrajectoryRequest,
     queueService: QueueService,
-    redisConnectionService: RedisConnectionService,
     trajectoryAutoPreviewClaimStore: TrajectoryAutoPreviewClaimStore,
     config: AutoPreviewRasterizationConfig
 ): Promise<RasterizeTrajectoryResponse> => {
@@ -221,11 +238,7 @@ const queueAutoPreviewRasterizationJob = async (
     let wasEnqueued = false;
 
     try {
-        wasEnqueued = await enqueueProjectedJob({
-            queueService,
-            queueName: TRAJECTORY_RASTER_QUEUE_NAME,
-            job,
-            projectJobStatus: (projectedJob) => redisConnectionService.projectJobStatus(projectedJob),
+        wasEnqueued = await queueService.enqueue(TRAJECTORY_RASTER_QUEUE_NAME, job, {
             preserveExistingJob: true
         });
     } catch (error) {
@@ -241,13 +254,13 @@ const queueAutoPreviewRasterizationJob = async (
     }
 
     result.queuedJobs += 1;
+    result.jobs.push(toQueuedJobNotification(job));
     return result;
 };
 
 export const createTrajectoryRasterQueueService = (
     objectStore: ClusterObjectStore,
     queueService: QueueService,
-    redisConnectionService: RedisConnectionService,
     trajectoryAutoPreviewClaimStore: TrajectoryAutoPreviewClaimStore
 ): TrajectoryRasterQueueService => ({
     async queueRasterizationJobs(input) {
@@ -261,7 +274,6 @@ export const createTrajectoryRasterQueueService = (
             return queueAutoPreviewRasterizationJob(
                 input,
                 queueService,
-                redisConnectionService,
                 trajectoryAutoPreviewClaimStore,
                 autoPreviewRasterizationConfig
             );
@@ -312,11 +324,7 @@ export const createTrajectoryRasterQueueService = (
                 continue;
             }
 
-            const wasEnqueued = await enqueueProjectedJob({
-                queueService,
-                queueName: TRAJECTORY_RASTER_QUEUE_NAME,
-                job,
-                projectJobStatus: (projectedJob) => redisConnectionService.projectJobStatus(projectedJob),
+            const wasEnqueued = await queueService.enqueue(TRAJECTORY_RASTER_QUEUE_NAME, job, {
                 preserveExistingJob: true
             });
 
@@ -327,6 +335,7 @@ export const createTrajectoryRasterQueueService = (
             }
 
             result.queuedJobs += 1;
+            result.jobs.push(toQueuedJobNotification(job));
         }
 
         return result;

@@ -24,10 +24,6 @@ class StubAnalysisExecutionDataStore {
     }
 }
 
-class StubRedisConnectionService {
-    async projectJobStatus(): Promise<void> {}
-}
-
 class StubRuntimeEventBroker {
     emitProgress(): void {}
 }
@@ -77,7 +73,6 @@ test('AnalysisDispatchService rejects invalid entrypoint data as an operational 
         }]) as any,
         new StubQueueService() as any,
         new StubAnalysisExecutionDataStore() as any,
-        new StubRedisConnectionService() as any,
         new StubRuntimeEventBroker() as any
     );
 

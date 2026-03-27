@@ -1,12 +1,12 @@
 import { TRAJECTORY_GLB_QUEUE_NAME } from '@/modules/platform/services';
-import { enqueueProjectedJob } from '@/modules/platform/services';
 import { logger } from '@/core/logger';
-import type { QueueService, RedisConnectionService } from '@/modules/platform/services';
+import type { QueueService } from '@/modules/platform/services';
 import type {
     EnqueuePreprocessingRequest,
     EnqueuePreprocessingResponse,
     EnqueuePreprocessingFrameDescriptor,
-    GlbConversionQueueJobPayload
+    GlbConversionQueueJobPayload,
+    QueuedJobNotification
 } from '@/shared/contracts';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
@@ -14,6 +14,7 @@ interface EnqueueGlbJobsResult {
     queuedJobs: number;
     duplicateJobs: number;
     skippedJobs: number;
+    jobs: QueuedJobNotification[];
 };
 
 const buildGlbJobId = (trajectoryId: string, timestep: number): string => {
@@ -52,14 +53,14 @@ export interface TrajectoryGlbQueueService {
 
 export const createTrajectoryGlbQueueService = (
     _objectStore: ClusterObjectStore,
-    queueService: QueueService,
-    redisConnectionService: RedisConnectionService
+    queueService: QueueService
 ): TrajectoryGlbQueueService => ({
     async enqueueGlbConversionJobs(input) {
         const result: EnqueueGlbJobsResult = {
             queuedJobs: 0,
             duplicateJobs: 0,
-            skippedJobs: 0
+            skippedJobs: 0,
+            jobs: []
         };
 
         for (const frame of input.frames) {
@@ -82,11 +83,7 @@ export const createTrajectoryGlbQueueService = (
                 ...frame,
                 ownerClusterId
             });
-            const wasEnqueued = await enqueueProjectedJob({
-                queueService,
-                queueName: TRAJECTORY_GLB_QUEUE_NAME,
-                job,
-                projectJobStatus: (projectedJob) => redisConnectionService.projectJobStatus(projectedJob),
+            const wasEnqueued = await queueService.enqueue(TRAJECTORY_GLB_QUEUE_NAME, job, {
                 preserveExistingJob: true
             });
 
@@ -96,6 +93,15 @@ export const createTrajectoryGlbQueueService = (
             }
 
             result.queuedJobs += 1;
+            result.jobs.push({
+                jobId: job.jobId,
+                name: 'Preprocess trajectory frame',
+                teamId: job.teamId,
+                timestep: job.timestep,
+                trajectoryId: job.trajectoryId,
+                trajectoryName: job.trajectoryName,
+                queueType: TRAJECTORY_GLB_QUEUE_NAME
+            });
         }
 
         return result;

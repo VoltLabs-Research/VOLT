@@ -8,7 +8,7 @@ import { WorkflowEngine } from '@/modules/workflow-runtime/services';
 import { EntrypointType, OrchestrationAction } from '@/shared/contracts';
 import { RuntimeEventBroker } from '@/shared/services';
 import { ProgressStageType } from '@voltstack/daemon-cluster-client';
-import type { AnalysisExecutionDataStore, RedisConnectionService } from '@/modules/platform/services';
+import type { AnalysisExecutionDataStore } from '@/modules/platform/services';
 import type {
     AnalysisExecutionDataReference,
     AnalysisJobExecutionData,
@@ -58,7 +58,6 @@ export class AnalysisDispatchService {
         private readonly workflowEngine: WorkflowEngine,
         private readonly queueService: QueueService,
         private readonly analysisExecutionDataStore: AnalysisExecutionDataStore,
-        private readonly redisConnectionService: RedisConnectionService,
         private readonly eventBroker: RuntimeEventBroker
     ) {}
 
@@ -185,26 +184,18 @@ export class AnalysisDispatchService {
             'Prepared daemon analysis queue payload optimization'
         );
 
-        for (const job of jobs) {
-            await this.queueService.enqueue(ANALYSIS_QUEUE_NAME, executionDataReference
-                ? {
-                    ...job,
-                    executionDataCompressed,
-                    executionDataReference
-                }
-                : {
-                    ...job,
-                    executionData
-                });
-
-            await this.redisConnectionService.projectJobStatus({
+        const queuedPayloads = jobs.map((job) => executionDataReference
+            ? {
                 ...job,
-                jobId: job.jobId,
-                teamId: job.teamId,
-                status: 'queued',
-                queueType: ANALYSIS_QUEUE_NAME
+                executionDataCompressed,
+                executionDataReference
+            }
+            : {
+                ...job,
+                executionData
             });
-        }
+
+        await this.queueService.enqueueBulk(ANALYSIS_QUEUE_NAME, queuedPayloads);
 
         this.eventBroker.emitProgress({
             action: OrchestrationAction.AnalysisStart,

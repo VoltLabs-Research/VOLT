@@ -1,6 +1,8 @@
 import type { DaemonConfig } from '@/core/config';
+import type { DaemonJobReporterService } from '@/modules/cloud-control/services';
+import type { VoltCloudConnection } from '@/modules/cloud-control/services';
 import type { GlbExporterService } from '@/modules/trajectory-native/services';
-import type { MinioService, QueueService, RedisConnectionService } from '@/modules/platform/services';
+import type { MinioService, QueueService } from '@/modules/platform/services';
 import { FileExtractorService, SSHConnectionService, SSHImportWorkerService } from './services';
 
 export interface SSHImportModule {
@@ -10,9 +12,10 @@ export interface SSHImportModule {
 export const createSSHImportModule = (deps: {
     config: DaemonConfig;
     queueService: QueueService;
-    redisConnectionService: RedisConnectionService;
     minioService: MinioService;
     glbExporterService: GlbExporterService;
+    daemonJobReporterService: DaemonJobReporterService;
+    voltCloudConnection: VoltCloudConnection;
 }): SSHImportModule => {
     const sshConnectionService = new SSHConnectionService();
     const fileExtractorService = new FileExtractorService();
@@ -21,9 +24,10 @@ export const createSSHImportModule = (deps: {
         sshImportWorkerService: new SSHImportWorkerService(
             deps.config,
             deps.queueService,
-            deps.redisConnectionService,
             deps.minioService,
             deps.glbExporterService,
+            deps.daemonJobReporterService,
+            deps.voltCloudConnection,
             sshConnectionService,
             fileExtractorService
         )

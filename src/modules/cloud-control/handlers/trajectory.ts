@@ -337,13 +337,11 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
     const trajectoryRasterQueueService = createTrajectoryRasterQueueService(
         deps.objectStore,
         deps.queueService,
-        deps.redisConnectionService,
         deps.trajectoryAutoPreviewClaimStore
     );
     const trajectoryGlbQueueService = createTrajectoryGlbQueueService(
         deps.objectStore,
-        deps.queueService,
-        deps.redisConnectionService
+        deps.queueService
     );
 
     return [

@@ -3,6 +3,7 @@ import type { VoltCloudConnection } from './VoltCloudConnection';
 export type RasterJobStatus = 'running' | 'completed' | 'failed';
 export type GlbJobStatus = 'running' | 'completed' | 'failed';
 export type AnalysisJobStatus = 'running' | 'completed' | 'failed';
+export type SshImportJobStatus = 'running' | 'completed' | 'failed';
 
 export interface ReportJobCompletionInput {
     jobId: string;
@@ -46,11 +47,21 @@ export interface ReportGlbJobStatusInput {
     error?: string;
 };
 
+export interface ReportSshImportJobStatusInput {
+    jobId: string;
+    teamId: string;
+    trajectoryId: string;
+    trajectoryName?: string;
+    status: SshImportJobStatus;
+    error?: string;
+};
+
 export interface DaemonJobReporterService {
     reportJobCompletion(input: ReportJobCompletionInput): Promise<void>;
     reportAnalysisJobStatus(input: ReportAnalysisJobStatusInput): Promise<void>;
     reportRasterJobStatus(input: ReportRasterJobStatusInput): Promise<void>;
     reportGlbJobStatus(input: ReportGlbJobStatusInput): Promise<void>;
+    reportSshImportJobStatus(input: ReportSshImportJobStatusInput): Promise<void>;
 };
 
 export const createDaemonJobReporterService = (voltCloudConnection: VoltCloudConnection): DaemonJobReporterService => ({
@@ -95,6 +106,17 @@ export const createDaemonJobReporterService = (voltCloudConnection: VoltCloudCon
             ...input
         }, {
             dedupeKey: `trajectory.glb-job-status:${input.jobId}:${input.status}:${input.timestep ?? 'none'}`
+        });
+    },
+
+    async reportSshImportJobStatus(input) {
+        voltCloudConnection.emitBufferedMessage({
+            type: 'ssh-import-job-status',
+            teamClusterId: voltCloudConnection.getTeamClusterId(),
+            daemonPassword: voltCloudConnection.getDaemonPassword(),
+            ...input
+        }, {
+            dedupeKey: `ssh-import.job-status:${input.jobId}:${input.status}`
         });
     }
 });
