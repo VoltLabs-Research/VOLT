@@ -78,6 +78,7 @@ const readBody = async (request: http.IncomingMessage): Promise<Buffer> => {
 
 const buildObjectGatewayServer = async (options: {
     putResponseBody?: Buffer;
+    putDelayMs?: number;
 } = {}) => {
     const objects = new Map<string, StoredObject>();
     const requests: Array<{ method: string; path: string; token?: string; connectionId: string; skipMetadata?: string; }> = [];
@@ -142,6 +143,9 @@ const buildObjectGatewayServer = async (options: {
                     ? request.headers['content-encoding']
                     : undefined
             });
+            if (options.putDelayMs && options.putDelayMs > 0) {
+                await new Promise((resolve) => setTimeout(resolve, options.putDelayMs));
+            }
             response.statusCode = 201;
             if (options.putResponseBody) {
                 response.setHeader('content-type', 'text/plain');
@@ -449,6 +453,39 @@ test('TeamClusterObjectGatewayClient drains successful write responses so tunnel
         assert.equal(putRequests.length, 12);
         assert.ok(harness.daemonClient.openTunnelCalls.length < putRequests.length);
         assert.ok(new Set(putRequests.map((entry) => entry.connectionId)).size < putRequests.length);
+    } finally {
+        await new Promise<void>((resolve, reject) => {
+            server.close((error) => error ? reject(error) : resolve());
+        });
+    }
+});
+
+test('TeamClusterObjectGatewayClient waits for a reusable HTTP proxy session instead of opening unlimited tunnels', async () => {
+    process.env.TEAM_CLUSTER_OBJECT_GATEWAY_ENABLED = 'true';
+    process.env.TEAM_CLUSTER_OBJECT_GATEWAY_READS_ENABLED = 'true';
+    process.env.TEAM_CLUSTER_OBJECT_GATEWAY_WRITES_ENABLED = 'true';
+
+    const { server, requests, port } = await buildObjectGatewayServer({
+        putDelayMs: 50
+    });
+    const harness = createClientHarness(port);
+
+    try {
+        await Promise.all(Array.from({ length: 10 }, (_, index) => {
+            const payload = Buffer.from(`payload-${index}`);
+
+            return harness.client.putBuffer(TEST_CLUSTER_ID, {
+                bucket: TEST_BUCKET,
+                objectKey: `burst/object-${index}.glb`,
+                buffer: payload,
+                contentLength: payload.length,
+                contentType: 'model/gltf-binary'
+            });
+        }));
+
+        const putRequests = requests.filter((entry) => entry.method === 'PUT');
+        assert.equal(putRequests.length, 10);
+        assert.ok(harness.daemonClient.openTunnelCalls.length <= 4);
     } finally {
         await new Promise<void>((resolve, reject) => {
             server.close((error) => error ? reject(error) : resolve());

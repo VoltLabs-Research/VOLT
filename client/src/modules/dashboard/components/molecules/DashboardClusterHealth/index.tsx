@@ -163,22 +163,7 @@ const DashboardClusterHealth = () => {
 
     return (
         <DashboardCard className='dashboard-cluster-card dashboard-cluster-card--hero d-flex column' overflowHidden={true}>
-            <Container className='dashboard-cluster-header'>
-                <Title className='font-size-4 color-primary font-weight-6'>
-                    Clusters
-                </Title>
-                <Button
-                    variant='ghost'
-                    intent='neutral'
-                    size='sm'
-                    onClick={() => navigate('/dashboard/clusters')}
-                    rightIcon={<GoArrowRight size={12} />}
-                >
-                    View clusters
-                </Button>
-            </Container>
-
-            <Container className='dashboard-cluster-panels y-auto'>
+                <Container className='dashboard-cluster-panels y-auto'>
                 {orderedClusters.map((teamCluster) => {
                     const liveMetrics = metricsByClusterId.get(teamCluster._id) ?? null;
                     const metricsRecoveryState = getClusterMetricsRecoveryState({
@@ -192,8 +177,8 @@ const DashboardClusterHealth = () => {
                     const networkOutgoingLabel = liveMetrics ? formatNetworkSpeed(liveMetrics.network.outgoing) : null;
 
                     return (
-                        <Container key={teamCluster._id} className={`dashboard-cluster-panel role-${roleClassName} d-flex column gap-1`}>
-                            <Container className='dashboard-cluster-panel-header d-flex column gap-075'>
+                        <Container key={teamCluster._id} className={`dashboard-cluster-panel role-${roleClassName} d-flex column content-between`}>
+                            <Container className='d-flex column gap-1'>
                                 <Container className='d-flex column gap-025 min-w-0'>
                                     <Container className='cluster-card-title-container d-flex column w-max content-between gap-025'>
                                         <Title className='font-size-3 color-primary font-weight-6 text-truncate'>
@@ -204,54 +189,54 @@ const DashboardClusterHealth = () => {
                                         {ROLE_LABELS[teamCluster.roleConfig.effectiveRole]}
                                     </span>
                                 </Container>
+                                {liveMetrics && (
+                                    <Container className='dashboard-cluster-metric-grid'>
+                                        <ClusterMetricStrip
+                                            label='CPU'
+                                            value={`${Math.round(liveMetrics.cpu.usage)}%`}
+                                            detail={`${liveMetrics.cpu.cores} cores`}
+                                            percent={liveMetrics.cpu.usage}
+                                            icon={<Cpu size={12} strokeWidth={1.8} />}
+                                            stateClassName={getMetricStateClassName(liveMetrics.cpu.usage)}
+                                        />
+                                        <ClusterMetricStrip
+                                            label='Memory'
+                                            value={`${liveMetrics.memory.used.toFixed(1)} / ${liveMetrics.memory.total.toFixed(1)} GB`}
+                                            detail={`${liveMetrics.memory.free.toFixed(1)} GB free`}
+                                            percent={liveMetrics.memory.usagePercent}
+                                            icon={<MemoryStick size={12} strokeWidth={1.8} />}
+                                            stateClassName={getMetricStateClassName(liveMetrics.memory.usagePercent)}
+                                        />
+                                        <ClusterMetricStrip
+                                            label='Disk'
+                                            value={`${liveMetrics.disk.used.toFixed(1)} / ${liveMetrics.disk.total.toFixed(1)} GB`}
+                                            detail={`${liveMetrics.disk.free.toFixed(1)} GB free`}
+                                            percent={liveMetrics.disk.usagePercent}
+                                            icon={<HardDrive size={12} strokeWidth={1.8} />}
+                                            stateClassName={getMetricStateClassName(liveMetrics.disk.usagePercent)}
+                                        />
+                                    </Container>
+                                )}
                             </Container>
-
+                                
                             {liveMetrics
                                 ? (
-                                    <>
-                                        <Container className='dashboard-cluster-metric-grid'>
-                                            <ClusterMetricStrip
-                                                label='CPU'
-                                                value={`${Math.round(liveMetrics.cpu.usage)}%`}
-                                                detail={`${liveMetrics.cpu.cores} cores`}
-                                                percent={liveMetrics.cpu.usage}
-                                                icon={<Cpu size={12} strokeWidth={1.8} />}
-                                                stateClassName={getMetricStateClassName(liveMetrics.cpu.usage)}
-                                            />
-                                            <ClusterMetricStrip
-                                                label='Memory'
-                                                value={`${liveMetrics.memory.used.toFixed(1)} / ${liveMetrics.memory.total.toFixed(1)} GB`}
-                                                detail={`${liveMetrics.memory.free.toFixed(1)} GB free`}
-                                                percent={liveMetrics.memory.usagePercent}
-                                                icon={<MemoryStick size={12} strokeWidth={1.8} />}
-                                                stateClassName={getMetricStateClassName(liveMetrics.memory.usagePercent)}
-                                            />
-                                            <ClusterMetricStrip
-                                                label='Disk'
-                                                value={`${liveMetrics.disk.used.toFixed(1)} / ${liveMetrics.disk.total.toFixed(1)} GB`}
-                                                detail={`${liveMetrics.disk.free.toFixed(1)} GB free`}
-                                                percent={liveMetrics.disk.usagePercent}
-                                                icon={<HardDrive size={12} strokeWidth={1.8} />}
-                                                stateClassName={getMetricStateClassName(liveMetrics.disk.usagePercent)}
-                                            />
-                                        </Container>
-                                        <Container className='dashboard-cluster-footer-metrics d-flex items-center gap-075 flex-shrink-0'>
+                                    <Container className='dashboard-cluster-footer-metrics d-flex items-center gap-075 flex-shrink-0'>
+                                        <span className='dashboard-cluster-title-metric font-size-1 color-muted'>
+                                            <ArrowDown size={12} strokeWidth={1.8} />
+                                            {networkIncomingLabel}
+                                        </span>
+                                        <span className='dashboard-cluster-title-metric font-size-1 color-muted'>
+                                            <ArrowUp size={12} strokeWidth={1.8} />
+                                            {networkOutgoingLabel}
+                                        </span>
+                                        {clusterLatencyLabel && (
                                             <span className='dashboard-cluster-title-metric font-size-1 color-muted'>
-                                                <ArrowDown size={12} strokeWidth={1.8} />
-                                                {networkIncomingLabel}
+                                                <Clock3 size={12} strokeWidth={1.8} />
+                                                {clusterLatencyLabel}
                                             </span>
-                                            <span className='dashboard-cluster-title-metric font-size-1 color-muted'>
-                                                <ArrowUp size={12} strokeWidth={1.8} />
-                                                {networkOutgoingLabel}
-                                            </span>
-                                            {clusterLatencyLabel && (
-                                                <span className='dashboard-cluster-title-metric font-size-1 color-muted'>
-                                                    <Clock3 size={12} strokeWidth={1.8} />
-                                                    {clusterLatencyLabel}
-                                                </span>
-                                            )}
-                                        </Container>
-                                    </>
+                                        )}
+                                    </Container>
                                 )
                                 : (
                                     <Container className='dashboard-cluster-panel-recovery'>

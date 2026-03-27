@@ -19,12 +19,14 @@ import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Traj
 const ANALYSIS_QUEUE_TYPE = 'analysis_processing';
 const RASTER_QUEUE_TYPE = 'trajectory_rasterization';
 const GLB_QUEUE_TYPE = 'trajectory_glb_conversion';
+const ARTIFACT_UPLOAD_QUEUE_TYPE = 'artifact_upload';
 const SESSION_TTL_SECONDS = 86400;
 const PROJECTED_JOB_SOURCE = 'projected';
 const PROJECTED_JOB_BACKING_SOURCE = 'daemon';
 const ANALYSIS_PROJECTED_JOB_CLEANUP_SCOPE = 'analysis';
 const RASTER_PROJECTED_JOB_CLEANUP_SCOPE = 'raster';
 const GLB_PROJECTED_JOB_CLEANUP_SCOPE = 'glb';
+const ARTIFACT_UPLOAD_PROJECTED_JOB_CLEANUP_SCOPE = 'artifact-upload';
 const SSH_IMPORT_PROJECTED_JOB_CLEANUP_SCOPE = 'ssh-import';
 const SSH_IMPORT_QUEUE_TYPE = 'ssh_import';
 
@@ -88,6 +90,18 @@ interface DaemonSshImportJobStatusInput {
     teamId: string;
     trajectoryId: string;
     trajectoryName?: string;
+    status: JobStatus;
+    error?: string;
+};
+
+interface DaemonArtifactUploadJobStatusInput {
+    teamClusterId: string;
+    jobId: string;
+    analysisId: string;
+    teamId: string;
+    trajectoryId: string;
+    trajectoryName?: string;
+    timestep?: number;
     status: JobStatus;
     error?: string;
 };
@@ -449,6 +463,25 @@ export default class DaemonAnalysisCompletionService {
             cleanupScope: SSH_IMPORT_PROJECTED_JOB_CLEANUP_SCOPE,
             name: 'Import trajectory from SSH',
             trajectoryContext: resolved.trajectoryContext,
+            error: input.error
+        });
+    }
+
+    async handleArtifactUploadJobStatus(input: DaemonArtifactUploadJobStatusInput): Promise<void> {
+        await this.publishJobStatusChanged({
+            jobId: input.jobId,
+            teamId: input.teamId,
+            teamClusterId: input.teamClusterId,
+            status: input.status,
+            queueType: ARTIFACT_UPLOAD_QUEUE_TYPE,
+            cleanupScope: ARTIFACT_UPLOAD_PROJECTED_JOB_CLEANUP_SCOPE,
+            name: 'Artifact Upload',
+            analysisId: input.analysisId,
+            trajectoryContext: {
+                trajectoryId: input.trajectoryId,
+                trajectoryName: input.trajectoryName,
+                timestep: input.timestep
+            },
             error: input.error
         });
     }
