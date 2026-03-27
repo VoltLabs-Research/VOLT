@@ -261,6 +261,7 @@ export interface AnalysisJobExecutionData {
     binaryObjectPath: string;
     entrypointType?: EntrypointType;
     arguments: string;
+    timeoutMs?: number;
     requirementsFile?: string;
     entrypointScript?: string;
     pluginId: string;

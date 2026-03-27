@@ -323,6 +323,7 @@ export class AnalysisDispatchService {
         binaryObjectPath: string;
         entrypointType: EntrypointType;
         arguments: string;
+        timeoutMs?: number;
         requirementsFile?: string;
         entrypointScript?: string;
     } {
@@ -341,6 +342,9 @@ export class AnalysisDispatchService {
                 ? EntrypointType.PythonScript
                 : EntrypointType.Executable,
             arguments: String(entrypointData.arguments),
+            timeoutMs: typeof entrypointData.timeout === 'number' && Number.isFinite(entrypointData.timeout)
+                ? entrypointData.timeout
+                : undefined,
             requirementsFile: typeof entrypointData.requirementsFile === 'string'
                 ? entrypointData.requirementsFile
                 : undefined,

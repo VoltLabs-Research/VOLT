@@ -4,7 +4,7 @@ import { spawn } from 'node:child_process';
 
 const MAX_OUTPUT_BYTES = 10 * 1024 * 1024;
 const PROCESS_HEARTBEAT_INTERVAL_MS = 30_000;
-const PROCESS_EXECUTION_TIMEOUT_MS = 15 * 60 * 1000;
+const DEFAULT_PROCESS_EXECUTION_TIMEOUT_MS = 15 * 60 * 1000;
 const PROCESS_KILL_GRACE_PERIOD_MS = 5_000;
 
 export interface ProcessResult {
@@ -19,6 +19,7 @@ export interface ProcessExecutionInput {
     args: string[];
     cwd: string;
     env?: NodeJS.ProcessEnv;
+    timeoutMs?: number;
 };
 
 export interface BinaryExecutorService {
@@ -26,9 +27,13 @@ export interface BinaryExecutorService {
 };
 
 export const createBinaryExecutorService = (): BinaryExecutorService => ({
-    executeProcess({ jobId, commandPath, args, cwd, env }) {
+    executeProcess({ jobId, commandPath, args, cwd, env, timeoutMs }) {
         return new Promise((resolve, reject) => {
             const startedAt = Date.now();
+            const resolvedTimeoutMs = typeof timeoutMs === 'number' && Number.isFinite(timeoutMs)
+                ? timeoutMs
+                : DEFAULT_PROCESS_EXECUTION_TIMEOUT_MS;
+            const enforceTimeout = resolvedTimeoutMs > 0;
             const child = spawn(commandPath, args, {
                 cwd,
                 stdio: ['ignore', 'pipe', 'pipe'],
@@ -68,27 +73,29 @@ export const createBinaryExecutorService = (): BinaryExecutorService => ({
                 heartbeat.unref();
             }
             let forceKillTimeout: NodeJS.Timeout | undefined;
-            const executionTimeout = setTimeout(() => {
-                timedOut = true;
-                logger.warn(
-                    {
-                        jobId,
-                        pid: child.pid,
-                        elapsedMs: Date.now() - startedAt,
-                        timeoutMs: PROCESS_EXECUTION_TIMEOUT_MS
-                    },
-                    'Plugin process exceeded execution timeout'
-                );
-                child.kill('SIGTERM');
+            const executionTimeout = enforceTimeout
+                ? setTimeout(() => {
+                    timedOut = true;
+                    logger.warn(
+                        {
+                            jobId,
+                            pid: child.pid,
+                            elapsedMs: Date.now() - startedAt,
+                            timeoutMs: resolvedTimeoutMs
+                        },
+                        'Plugin process exceeded execution timeout'
+                    );
+                    child.kill('SIGTERM');
 
-                forceKillTimeout = setTimeout(() => {
-                    child.kill('SIGKILL');
-                }, PROCESS_KILL_GRACE_PERIOD_MS);
-                if (forceKillTimeout.unref) {
-                    forceKillTimeout.unref();
-                }
-            }, PROCESS_EXECUTION_TIMEOUT_MS);
-            if (executionTimeout.unref) {
+                    forceKillTimeout = setTimeout(() => {
+                        child.kill('SIGKILL');
+                    }, PROCESS_KILL_GRACE_PERIOD_MS);
+                    if (forceKillTimeout.unref) {
+                        forceKillTimeout.unref();
+                    }
+                }, resolvedTimeoutMs)
+                : undefined;
+            if (executionTimeout?.unref) {
                 executionTimeout.unref();
             }
 
@@ -145,7 +152,7 @@ export const createBinaryExecutorService = (): BinaryExecutorService => ({
                 resolve({
                     code: code ?? 1,
                     stdout: Buffer.concat(stdoutChunks).toString('utf-8'),
-                    stderr: `${Buffer.concat(stderrChunks).toString('utf-8')}${timedOut ? `\nProcess timed out after ${PROCESS_EXECUTION_TIMEOUT_MS}ms` : ''}`
+                    stderr: `${Buffer.concat(stderrChunks).toString('utf-8')}${timedOut ? `\nProcess timed out after ${resolvedTimeoutMs}ms` : ''}`
                 });
             });
         });

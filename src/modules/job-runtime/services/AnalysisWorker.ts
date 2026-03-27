@@ -89,6 +89,7 @@ interface WorkflowEntrypointData {
     binaryObjectPath?: string;
     entrypointScript?: string;
     requirementsFile?: string;
+    timeout?: number;
     type?: EntrypointType;
 };
 
@@ -322,7 +323,8 @@ const readWorkflowEntrypointData = (value: unknown): WorkflowEntrypointData | un
             ? value.type
             : undefined,
         requirementsFile: typeof value.requirementsFile === 'string' ? value.requirementsFile : undefined,
-        entrypointScript: typeof value.entrypointScript === 'string' ? value.entrypointScript : undefined
+        entrypointScript: typeof value.entrypointScript === 'string' ? value.entrypointScript : undefined,
+        timeout: typeof value.timeout === 'number' && Number.isFinite(value.timeout) ? value.timeout : undefined
     };
 };
 
@@ -732,7 +734,8 @@ export class AnalysisWorker {
                     commandPath: executionRuntime.commandPath,
                     args: executionArgs,
                     cwd: outputDir,
-                    env: executionRuntime.env
+                    env: executionRuntime.env,
+                    timeoutMs: executionData.timeoutMs
                 });
             } finally {
                 binaryExecutionLease.release();
@@ -1357,7 +1360,8 @@ export class AnalysisWorker {
             commandPath: executionRuntime.commandPath,
             args: [...executionRuntime.argsPrefix, ...args],
             cwd: outputDir,
-            env: executionRuntime.env
+            env: executionRuntime.env,
+            timeoutMs: entrypointData?.timeout
         });
 
         if (result.code !== 0) {
