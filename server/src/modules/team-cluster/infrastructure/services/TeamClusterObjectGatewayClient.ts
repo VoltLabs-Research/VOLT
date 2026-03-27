@@ -283,7 +283,10 @@ export default class TeamClusterObjectGatewayClient {
             path: this.buildObjectPath(bucket, objectKey)
         }, 'head');
 
-        return parseHeadResponse(response.headers);
+        const head = parseHeadResponse(response.headers);
+        await this.readResponseBuffer(response.stream);
+
+        return head;
     }
 
     async exists(teamClusterId: string, bucket: string, objectKey: string): Promise<boolean> {
@@ -337,7 +340,7 @@ export default class TeamClusterObjectGatewayClient {
             path: this.buildObjectPath(request.bucket, request.objectKey),
             headers: this.buildUploadHeaders(request),
             body: request.stream
-        }, 'put');
+        }, 'put').then((response) => this.readResponseBuffer(response.stream));
     }
 
     async putBuffer(teamClusterId: string, request: TeamClusterObjectGatewayPutBufferRequest): Promise<void> {
@@ -347,7 +350,7 @@ export default class TeamClusterObjectGatewayClient {
             path: this.buildObjectPath(request.bucket, request.objectKey),
             headers: this.buildUploadHeaders(request),
             body: request.buffer
-        }, 'put');
+        }, 'put').then((response) => this.readResponseBuffer(response.stream));
     }
 
     async deleteObject(teamClusterId: string, bucket: string, objectKey: string): Promise<void> {
@@ -355,7 +358,7 @@ export default class TeamClusterObjectGatewayClient {
         await this.fetch(teamClusterId, {
             method: 'DELETE',
             path: this.buildObjectPath(bucket, objectKey)
-        }, 'delete');
+        }, 'delete').then((response) => this.readResponseBuffer(response.stream));
     }
 
     async deleteByPrefix(teamClusterId: string, bucket: string, prefix: string): Promise<number | undefined> {
