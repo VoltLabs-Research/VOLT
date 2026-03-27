@@ -25,7 +25,19 @@ const readBooleanValue = (value: unknown): boolean => {
     return Boolean(value);
 };
 
-const readNumberValue = (value: unknown): number | string => {
+const readNumberFieldValue = (value: unknown): number | string => {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+        return value;
+    }
+
+    if (typeof value === 'string') {
+        return value;
+    }
+
+    return '';
+};
+
+const readRuntimeNumberValue = (value: unknown): number | string => {
     if (typeof value === 'number' && Number.isFinite(value)) {
         return value;
     }
@@ -91,7 +103,7 @@ export const getPrimitiveArgumentFieldValue = (
     }
 
     if (definition.type === ArgumentType.NUMBER) {
-        return readNumberValue(resolvedValue);
+        return readNumberFieldValue(resolvedValue);
     }
 
     if (typeof resolvedValue === 'number' || typeof resolvedValue === 'boolean') {
@@ -157,21 +169,45 @@ export const coerceArgumentInputValue = (
     }
 
     if (definition.type === ArgumentType.NUMBER) {
-        if (typeof value === 'number') {
-            return value;
-        }
-
-        if (typeof value === 'string') {
-            if (!value.trim().length) {
-                return '';
-            }
-
-            const parsed = Number(value);
-            return Number.isFinite(parsed) ? parsed : value;
-        }
+        return value;
     }
 
     return value;
+};
+
+export const resolveArgumentRuntimeValue = (
+    definition: IArgumentDefinition,
+    value: unknown
+): unknown => {
+    const resolvedValue = value ?? definition.default;
+
+    if (definition.type === ArgumentType.BOOLEAN) {
+        return readBooleanValue(resolvedValue);
+    }
+
+    if (definition.type === ArgumentType.NUMBER) {
+        return readRuntimeNumberValue(resolvedValue);
+    }
+
+    if (definition.type === ArgumentType.LIST) {
+        const items = getListArgumentValue(definition, resolvedValue);
+        const nestedDefinitions = definition.listArguments ?? [];
+
+        return items.map((item) => {
+            const normalizedItem: ArgumentObjectValue = { ...item };
+
+            for (const nestedDefinition of nestedDefinitions) {
+                normalizedItem[nestedDefinition.argument] = resolveArgumentRuntimeValue(
+                    nestedDefinition,
+                    item[nestedDefinition.argument]
+                );
+            }
+
+            return normalizedItem;
+        });
+    }
+
+    return resolvedValue ?? '';
 };
 
 export const collectDefaultArgumentValues = (definitions: IArgumentDefinition[]): Record<string, unknown> => {
