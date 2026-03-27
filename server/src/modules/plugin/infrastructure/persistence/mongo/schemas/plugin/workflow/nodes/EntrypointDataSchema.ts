@@ -28,6 +28,6 @@ export const EntrypointDataSchema = new Schema({
     },
     timeout: {
         type: Number,
-        default: 300000
+        default: -1
     }
 }, { _id: false });
