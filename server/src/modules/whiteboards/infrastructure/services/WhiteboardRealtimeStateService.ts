@@ -65,6 +65,14 @@ const getElementVersionNonce = (element: WhiteboardElement): number => {
         : 0;
 };
 
+const hasEquivalentElementPayload = (current: WhiteboardElement, incoming: WhiteboardElement): boolean => {
+    try {
+        return JSON.stringify(current) === JSON.stringify(incoming);
+    } catch {
+        return false;
+    }
+};
+
 const shouldReplaceElement = (current: WhiteboardElement | undefined, incoming: WhiteboardElement): boolean => {
     if (!current) {
         return true;
@@ -80,7 +88,12 @@ const shouldReplaceElement = (current: WhiteboardElement | undefined, incoming: 
         return updatedDelta > 0;
     }
 
-    return getElementVersionNonce(incoming) > getElementVersionNonce(current);
+    const versionNonceDelta = getElementVersionNonce(incoming) - getElementVersionNonce(current);
+    if (versionNonceDelta !== 0) {
+        return versionNonceDelta > 0;
+    }
+
+    return !hasEquivalentElementPayload(current, incoming);
 };
 
 const normalizeElements = (value: unknown): WhiteboardElement[] => {
