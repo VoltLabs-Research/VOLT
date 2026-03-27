@@ -261,7 +261,7 @@ const DashboardInAppActivity = () => {
     }
 
     return (
-        <DashboardCard className='dashboard-inapp-activity-card d-flex column'>
+        <DashboardCard className='dashboard-inapp-activity-card d-flex gap-05 column'>
             <Container className='dashboard-inapp-activity-header'>
                 <Title className='font-size-3 color-primary font-weight-5'>In-app Activity</Title>
                 <span className='font-size-1 color-muted'>Avg / day of week</span>

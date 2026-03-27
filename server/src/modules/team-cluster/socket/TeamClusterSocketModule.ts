@@ -344,6 +344,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             || payload.type === 'trajectory-raster-job-status'
             || payload.type === 'trajectory-glb-job-status'
             || payload.type === 'ssh-import-job-status'
+            || payload.type === 'artifact-upload-job-status'
         ) {
             const result = await this.processDaemonJobCompletionUseCase.execute(payload as never);
             if (!result.success) {
