@@ -19,6 +19,7 @@ import {
 import type { ScreenshotRequest } from '@/modules/canvas/utilities/screenshot';
 import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
 import type { OrbitControlsHandle } from '@/modules/fractal/types';
+import type { ScreenshotComposition } from '@/modules/fractal/types/screenshot-composition';
 import type { MutableRefObject } from 'react';
 
 interface ScreenshotCaptureProps {
@@ -27,6 +28,7 @@ interface ScreenshotCaptureProps {
     onStatusChange?: (message: string) => void;
     orbitRef?: MutableRefObject<OrbitControlsHandle | null>;
     modelWorldBounds?: ModelWorldBounds | null;
+    screenshotComposition?: ScreenshotComposition;
 };
 
 interface ScreenshotViewSnapshot {
@@ -44,6 +46,7 @@ interface PendingCapture {
     requestedSize: { width: number; height: number };
     pointCloudScaleSnapshot: Array<{ material: ShaderMaterial; pointScale: number }>;
     snapshot: ScreenshotViewSnapshot;
+    screenshotComposition?: ScreenshotComposition;
     captureInFlight: boolean;
 }
 
@@ -59,8 +62,17 @@ interface ViewBasis {
     up: Vector3;
 }
 
+interface PixelCropRect {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
 const SCREENSHOT_CAPTURE_TARGET_KEY = 'isScreenshotCaptureTarget';
 const SCREENSHOT_CAPTURE_PADDING = 1.15;
+const SCREENSHOT_CROP_MIN_DIMENSION = 4;
+const SCREENSHOT_CROP_PIXEL_PADDING = 2;
 
 const canvasToBlob = (canvas: HTMLCanvasElement) => {
     return new Promise<Blob>((resolve, reject) => {
@@ -152,10 +164,105 @@ const getFallbackBoxFromModelWorldBounds = (modelWorldBounds?: ModelWorldBounds 
     );
 };
 
+const getPixelCropRectFromWorldBounds = (
+    worldBounds: ModelWorldBounds,
+    camera: PerspectiveCamera | OrthographicCamera,
+    canvasWidth: number,
+    canvasHeight: number
+): PixelCropRect | null => {
+    const box = getFallbackBoxFromModelWorldBounds(worldBounds);
+    if (!box || box.isEmpty() || canvasWidth <= 0 || canvasHeight <= 0) {
+        return null;
+    }
+
+    let minX = Number.POSITIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+    let hasProjectedPoint = false;
+
+    getBoxCorners(box).forEach((corner) => {
+        const projected = corner.clone().project(camera);
+
+        if (!Number.isFinite(projected.x) || !Number.isFinite(projected.y)) {
+            return;
+        }
+
+        const x = ((projected.x + 1) * 0.5) * canvasWidth;
+        const y = ((1 - projected.y) * 0.5) * canvasHeight;
+
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+        hasProjectedPoint = true;
+    });
+
+    if (!hasProjectedPoint) {
+        return null;
+    }
+
+    const left = Math.max(0, Math.floor(minX) - SCREENSHOT_CROP_PIXEL_PADDING);
+    const top = Math.max(0, Math.floor(minY) - SCREENSHOT_CROP_PIXEL_PADDING);
+    const right = Math.min(canvasWidth, Math.ceil(maxX) + SCREENSHOT_CROP_PIXEL_PADDING);
+    const bottom = Math.min(canvasHeight, Math.ceil(maxY) + SCREENSHOT_CROP_PIXEL_PADDING);
+    const width = right - left;
+    const height = bottom - top;
+
+    if (width < SCREENSHOT_CROP_MIN_DIMENSION || height < SCREENSHOT_CROP_MIN_DIMENSION) {
+        return null;
+    }
+
+    return {
+        x: left,
+        y: top,
+        width,
+        height
+    };
+};
+
+const cropCanvasToRect = (sourceCanvas: HTMLCanvasElement, cropRect: PixelCropRect) => {
+    const outputCanvas = document.createElement('canvas');
+    outputCanvas.width = cropRect.width;
+    outputCanvas.height = cropRect.height;
+
+    const context = outputCanvas.getContext('2d');
+    if (!context) {
+        throw new Error('Could not create a 2D context for screenshot cropping.');
+    }
+
+    context.drawImage(
+        sourceCanvas,
+        cropRect.x,
+        cropRect.y,
+        cropRect.width,
+        cropRect.height,
+        0,
+        0,
+        cropRect.width,
+        cropRect.height
+    );
+
+    return outputCanvas;
+};
+
 const getCaptureBounds = (
     scene: Scene,
-    modelWorldBounds?: ModelWorldBounds | null
+    modelWorldBounds?: ModelWorldBounds | null,
+    framingBoundsWorld?: ModelWorldBounds | null
 ): CaptureBounds | null => {
+    const explicitFramingBox = getFallbackBoxFromModelWorldBounds(framingBoundsWorld);
+    if (explicitFramingBox && !explicitFramingBox.isEmpty()) {
+        const center = explicitFramingBox.getCenter(new Vector3());
+        const boundingSphere = explicitFramingBox.getBoundingSphere(new Sphere());
+
+        return {
+            box: explicitFramingBox,
+            center,
+            boundingSphere
+        };
+    }
+
     const bounds = new Box3();
     let hasBounds = false;
 
@@ -310,7 +417,8 @@ const ScreenshotCapture = ({
     onCaptureHandled,
     onStatusChange,
     orbitRef,
-    modelWorldBounds
+    modelWorldBounds,
+    screenshotComposition
 }: ScreenshotCaptureProps) => {
     const { gl, scene, camera, invalidate, setDpr, setSize, size } = useThree();
     const pendingRef = useRef<PendingCapture | null>(null);
@@ -368,7 +476,11 @@ const ScreenshotCapture = ({
         }
 
         const controls = orbitRef?.current;
-        const captureBounds = getCaptureBounds(scene, modelWorldBounds);
+        const captureBounds = getCaptureBounds(
+            scene,
+            modelWorldBounds,
+            screenshotComposition?.framingBoundsWorld
+        );
         const target = captureBounds?.center.clone() ?? controls?.target.clone() ?? new Vector3(0, 0, 0);
         const basis = resolveViewBasis(direction, getAngleUpVector(request.anglePreset, scene.up));
 
@@ -398,11 +510,30 @@ const ScreenshotCapture = ({
         }
 
         camera.lookAt(target);
-    }, [camera, modelWorldBounds, orbitRef, scene]);
+    }, [camera, modelWorldBounds, orbitRef, scene, screenshotComposition?.framingBoundsWorld]);
 
     const finishCapture = useCallback(async (pending: PendingCapture) => {
         try {
-            const blob = await canvasToBlob(gl.domElement);
+            const cropBoundsWorld = pending.screenshotComposition?.cropBoundsWorld;
+            const croppedCanvas = cropBoundsWorld && (
+                camera instanceof PerspectiveCamera || camera instanceof OrthographicCamera
+            )
+                ? cropCanvasToRect(
+                    gl.domElement,
+                    getPixelCropRectFromWorldBounds(
+                        cropBoundsWorld,
+                        camera,
+                        gl.domElement.width,
+                        gl.domElement.height
+                    ) ?? {
+                        x: 0,
+                        y: 0,
+                        width: gl.domElement.width,
+                        height: gl.domElement.height
+                    }
+                )
+                : gl.domElement;
+            const blob = await canvasToBlob(croppedCanvas);
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
             triggerBrowserDownload(blob, `volt-screenshot-${timestamp}.png`);
             dismissToast();
@@ -455,6 +586,7 @@ const ScreenshotCapture = ({
             requestedSize: outputSize,
             pointCloudScaleSnapshot,
             snapshot,
+            screenshotComposition,
             captureInFlight: false
         };
 
@@ -475,6 +607,7 @@ const ScreenshotCapture = ({
         invalidate,
         onCaptureHandled,
         onStatusChange,
+        screenshotComposition,
         setDpr,
         setSize
     ]);

@@ -8,6 +8,7 @@ import FractalScene from '@/modules/fractal/components/organisms/FractalScene';
 import TimestepViewer from '@/modules/fractal/components/organisms/TimestepViewer';
 import { debugFractal } from '@/modules/fractal/utilities/debug-log';
 import { getFrameBoxBounds, getTrajectoryFrameByTimestep, hasFrameBoxBounds } from '@/modules/fractal/utilities/frame-box-bounds';
+import { getRenderableScenes } from '@/modules/fractal/utilities/scene-utils';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import EditableTrajectoryName from '@/modules/trajectory/components/atoms/EditableTrajectoryName';
 import {
@@ -25,6 +26,7 @@ import { useShallow } from 'zustand/react/shallow';
 
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
 import type { FractalSceneConfig } from '@/modules/fractal/types/scene-config';
+import type { ScreenshotComposition } from '@/modules/fractal/types/screenshot-composition';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { ReactNode, RefObject } from 'react';
 
@@ -105,6 +107,20 @@ const Viewport = ({
 
         return getFrameBoxBounds(currentFrame);
     }, [currentFrame]);
+    const renderableScenes = useMemo(() => {
+        return getRenderableScenes(activeScenes, false);
+    }, [activeScenes]);
+    const screenshotComposition = useMemo<ScreenshotComposition | undefined>(() => {
+        if (renderableScenes.length !== 1 || !modelWorldBounds) {
+            return undefined;
+        }
+
+        return {
+            framingBoundsWorld: modelWorldBounds,
+            cropBoundsWorld: modelWorldBounds,
+            cropSource: 'simulation-cell'
+        };
+    }, [modelWorldBounds, renderableScenes.length]);
 
     const handleContentTypeDetected = useCallback((info: { hasPointClouds: boolean }) => {
         debugFractal('viewport.content-type-detected', {
@@ -220,6 +236,7 @@ const Viewport = ({
                             onInteractionChange={setSceneInteracting}
                             modelWorldBounds={modelWorldBounds}
                             screenshotRequest={screenshotRequest}
+                            screenshotComposition={screenshotComposition}
                             onScreenshotCaptureHandled={() => useScreenshotStore.getState().clearPendingRequest()}
                         >
                             {trajectory?._id && currentTimestep !== undefined && currentFrame && currentFrameBoxBounds && (
