@@ -1,18 +1,15 @@
 import SingleModelViewer from '@/modules/fractal/components/molecules/SingleModelViewer';
-import { getRenderableScenes } from '@/modules/fractal/utilities/scene-utils';
+import { getRenderableScenes, getSceneKey } from '@/modules/fractal/utilities/scene-utils';
+import { DEFAULT_DISLOCATION_LINE_WIDTH } from '@/modules/canvas/utilities/plugin-exposure-export';
+import { Exporter } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import { useMemo, forwardRef, useState, useCallback } from 'react';
 import type { BoxBounds, ModelLoadingState, OrbitControlsHandle } from '@/modules/fractal/types';
 import type { SlicePlaneConfig } from '@/modules/fractal/types/configuration';
-import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
-import type { PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
+import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
+import type { DislocationLineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
 import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
 import type { RefObject } from 'react';
-
-interface PluginSceneDescriptor {
-    exposureId: string;
-    exportType?: string;
-};
 
 interface OptionalPosition {
     x?: number;
@@ -26,11 +23,10 @@ interface TimestepViewerProps {
     currentTimestep: number | undefined;
     analysisId?: string;
     activeScenes: SceneObjectType[];
-    pluginScenes: PluginSceneDescriptor[];
     slicePlaneConfig: SlicePlaneConfig;
     boxBounds: BoxBounds;
     pointCloudSettings: PointCloudSceneSettings;
-    sceneOpacities: Record<string, number>;
+    sceneVisualOverrides: SceneVisualOverrides;
     setModelWorldBounds?: (bounds: ModelWorldBounds | null) => void;
     activeModelBounds?: BoundsInfo | null;
     onModelBoundsChanged?: (bounds: BoundsInfo) => void;
@@ -59,11 +55,10 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     currentTimestep,
     analysisId = 'default',
     activeScenes: storeActiveScenes,
-    pluginScenes,
     slicePlaneConfig,
     boxBounds,
     pointCloudSettings,
-    sceneOpacities,
+    sceneVisualOverrides,
     setModelWorldBounds,
     activeModelBounds,
     onModelBoundsChanged,
@@ -86,8 +81,8 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     onContentTypeDetected
 }, _ref) => {
     const scenesToRender = useMemo(() => {
-        return getRenderableScenes(storeActiveScenes, pluginScenes, forceDefaultScene);
-    }, [storeActiveScenes, pluginScenes, forceDefaultScene]);
+        return getRenderableScenes(storeActiveScenes, forceDefaultScene);
+    }, [storeActiveScenes, forceDefaultScene]);
 
     const [modelHeights, setModelHeights] = useState<Record<number, number>>({});
     const [selectedModelIndex, setSelectedModelIndex] = useState<number | null>(null);
@@ -137,6 +132,17 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
 
     const renderScene = useCallback((scene: SceneObjectType, index: number) => {
         const scenePosition = scenePositions[index] || position;
+        const sceneKey = getSceneKey(scene);
+        const sceneOverride = sceneVisualOverrides[sceneKey];
+        const dislocationLineSettings: DislocationLineSceneSettings | undefined = scene.source === 'plugin'
+            && scene.sceneRenderMetadata?.exporter === Exporter.DISLOCATION
+            ? {
+                baseLineWidth: scene.sceneRenderMetadata.defaultLineWidth ?? DEFAULT_DISLOCATION_LINE_WIDTH,
+                lineWidth: sceneOverride?.lineWidth
+                    ?? scene.sceneRenderMetadata.defaultLineWidth
+                    ?? DEFAULT_DISLOCATION_LINE_WIDTH
+            }
+            : undefined;
 
         return (
             <SingleModelViewer
@@ -150,7 +156,8 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
                 boxBounds={boxBounds}
                 pointSizeMultiplier={pointCloudSettings.pointSizeMultiplier}
                 pointCloudSettings={pointCloudSettings}
-                sceneOpacities={sceneOpacities}
+                dislocationLineSettings={dislocationLineSettings}
+                sceneVisualOverrides={sceneVisualOverrides}
                 setModelWorldBounds={setModelWorldBounds}
                 activeModelBounds={activeModelBounds}
                 onModelBoundsChanged={onModelBoundsChanged}
@@ -188,7 +195,7 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
         position,
         rotation,
         scale,
-        sceneOpacities,
+        sceneVisualOverrides,
         scenePositions,
         scenesToRender.length,
         selectedModelIndex,

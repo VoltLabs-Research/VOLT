@@ -65,6 +65,19 @@ export type ParticleFilterSceneCondition =
     | ParticleFilterPropertySceneCondition
     | ParticleFilterPresetSceneCondition;
 
+export interface SceneRenderMetadata {
+    exporter?: string;
+    exportType?: string;
+    defaultLineWidth?: number;
+};
+
+export interface SceneVisualOverride {
+    opacity?: number;
+    lineWidth?: number;
+};
+
+export type SceneVisualOverrides = Record<string, SceneVisualOverride>;
+
 export type DefaultScene = {
     sceneType: string;
     source: 'default';
@@ -75,6 +88,7 @@ export type PluginScene = {
     source: 'plugin';
     analysisId: string;
     exposureId: string;
+    sceneRenderMetadata?: SceneRenderMetadata;
 };
 
 export type ColorCodingScene = {

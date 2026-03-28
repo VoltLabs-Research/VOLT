@@ -1,4 +1,5 @@
 import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
 import useSceneInteraction from '../../../hooks/use-scene-interaction';
 
@@ -7,22 +8,13 @@ import { useShallow } from 'zustand/react/shallow';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 
-import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
-
 import './ExposureSettingsWidget.css';
-
-const getSceneKey = (scene: SceneObjectType): string => {
-    if (scene.source === 'plugin') {
-        return `${scene.source}-${(scene as any).analysisId}-${(scene as any).exposureId}`;
-    }
-    return `${scene.source}-${scene.sceneType}`;
-};
 
 const ExposureSettingsWidget = () => {
     const { settingsKey } = useCanvasUrlState();
     const isSceneInteracting = useSceneInteraction();
-    const { sceneOpacities, setSceneOpacity } = useEditorStore(useShallow((s) => ({
-        sceneOpacities: s.sceneOpacities,
+    const { sceneVisualOverrides, setSceneOpacity } = useEditorStore(useShallow((s) => ({
+        sceneVisualOverrides: s.sceneVisualOverrides,
         setSceneOpacity: s.setSceneOpacity
     })));
 
@@ -44,7 +36,7 @@ const ExposureSettingsWidget = () => {
     }, [settingsKey]);
 
     const sceneKey = exposureSettingsScene ? getSceneKey(exposureSettingsScene) : '';
-    const opacity = sceneOpacities[sceneKey];
+    const opacity = sceneVisualOverrides[sceneKey]?.opacity ?? 1;
 
     if (!exposureSettingsScene) return null;
 

@@ -12,8 +12,8 @@ import * as THREE from 'three';
 import { useMemo, useEffect, useCallback, useRef } from 'react';
 import type { BoxBounds, ModelLoadingState, OrbitControlsHandle } from '@/modules/fractal/types';
 import type { SlicePlaneConfig, ModelWorldBounds } from '@/modules/fractal/types/configuration';
-import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
-import type { PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
+import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
+import type { DislocationLineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
 import type { FC, RefObject } from 'react';
 
@@ -87,7 +87,8 @@ interface SingleModelViewerProps {
     boxBounds: BoxBounds;
     pointSizeMultiplier: number;
     pointCloudSettings?: PointCloudSceneSettings;
-    sceneOpacities: Record<string, number>;
+    dislocationLineSettings?: DislocationLineSceneSettings;
+    sceneVisualOverrides: SceneVisualOverrides;
     setModelWorldBounds?: (bounds: ModelWorldBounds | null) => void;
     activeModelBounds?: BoundsInfo | null;
     onModelBoundsChanged?: (bounds: BoundsInfo) => void;
@@ -118,7 +119,8 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     boxBounds,
     pointSizeMultiplier,
     pointCloudSettings,
-    sceneOpacities,
+    dislocationLineSettings,
+    sceneVisualOverrides,
     setModelWorldBounds,
     activeModelBounds,
     onModelBoundsChanged,
@@ -269,7 +271,8 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         boxBounds,
         pointSizeMultiplier,
         pointCloudSettings,
-        sceneOpacities,
+        dislocationLineSettings,
+        sceneVisualOverrides,
         activeModelBounds,
         onModelBoundsChanged,
         onLoadingStateChanged,
