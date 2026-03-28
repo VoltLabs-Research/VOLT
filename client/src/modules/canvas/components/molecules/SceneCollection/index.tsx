@@ -1,7 +1,9 @@
 import AnalysisTreeNode from '../../molecules/AnalysisTreeNode';
 import CanvasSlider from '../../atoms/CanvasSlider';
+import { resolvePluginSceneRenderMetadata } from '../../../utilities/plugin-exposure-export';
 import { isSameScene } from '@/modules/canvas/utilities/scene-identity';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
+import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 
 import { Atom, Box, Eye, Minus, Plus } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
@@ -12,7 +14,7 @@ import type { AnalysisSectionData } from '../../../hooks/use-canvas-sidebar-scen
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { CanvasAnalysisStatusEntry } from '../../../utilities/analysis-status';
 import type { MenuOption } from '@/shared/presentation/types/menu';
-import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
+import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
 import type { RasterSelectableScene } from '@/modules/raster/types/container-selection';
 
 interface SceneCollectionProps {
@@ -39,8 +41,9 @@ interface SceneCollectionProps {
     showDefaultScene?: boolean;
     showSimulationCell?: boolean;
     onToggleSimulationCell?: () => void;
-    sceneOpacities?: Record<string, number>;
+    sceneVisualOverrides?: SceneVisualOverrides;
     setSceneOpacity?: (sceneKey: string, opacity: number) => void;
+    setSceneLineWidth?: (sceneKey: string, lineWidth: number) => void;
     selectionMode?: 'default' | 'raster';
     selectedScene?: RasterSelectableScene | null;
     onSelectRasterScene?: (scene: RasterSelectableScene, label: string) => void;
@@ -66,12 +69,14 @@ const SceneCollection = ({
     showDefaultScene = true,
     showSimulationCell = true,
     onToggleSimulationCell,
-    sceneOpacities = {},
+    sceneVisualOverrides = {},
     setSceneOpacity,
+    setSceneLineWidth,
     selectionMode = 'default',
     selectedScene,
     onSelectRasterScene
 }: SceneCollectionProps) => {
+    const { pluginsById } = usePluginSelectors();
     const defaultScene = { sceneType: 'trajectory', source: 'default' as const };
     const isRasterSelectionMode = selectionMode === 'raster';
     const isDefaultActive = isRasterSelectionMode
@@ -79,7 +84,7 @@ const SceneCollection = ({
         : activeScene?.source === 'default';
 
     const defaultSceneKey = getSceneKey(defaultScene);
-    const defaultOpacity = sceneOpacities[defaultSceneKey] ?? 1;
+    const defaultOpacity = sceneVisualOverrides[defaultSceneKey]?.opacity ?? 1;
 
     const defaultTransparencySubmenu = (
         <div className="context-menu-transparency">
@@ -118,7 +123,7 @@ const SceneCollection = ({
     ];
 
     const simulationCellKey = 'simulation-cell';
-    const simulationCellOpacity = sceneOpacities[simulationCellKey] ?? 1;
+    const simulationCellOpacity = sceneVisualOverrides[simulationCellKey]?.opacity ?? 1;
 
     const simulationCellTransparencySubmenu = (
         <div className="context-menu-transparency">
@@ -250,8 +255,12 @@ const SceneCollection = ({
                     onDeleteAnalysis={onDeleteAnalysis}
                     onDownloadAnalysis={onDownloadAnalysis}
                     onDownloadExposureListing={onDownloadExposureListing}
-                    sceneOpacities={sceneOpacities}
+                    sceneVisualOverrides={sceneVisualOverrides}
                     setSceneOpacity={setSceneOpacity ?? (() => undefined)}
+                    setSceneLineWidth={setSceneLineWidth ?? (() => undefined)}
+                    resolveSceneRenderMetadata={(pluginId, exposureId) => {
+                        return resolvePluginSceneRenderMetadata(pluginsById[pluginId], exposureId);
+                    }}
                     selectionMode={selectionMode}
                     selectedScene={selectedScene}
                     onSelectRasterScene={onSelectRasterScene}

@@ -2,7 +2,8 @@ import type { RefObject } from 'react';
 import type { Camera, Plane, Vector3 } from 'three';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
 import type { BoxBounds, Pos3D, ModelLoadingState } from '@/modules/fractal/api/entities/model';
-import type { PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
+import type { SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
+import type { DislocationLineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
 
 export enum AnalysisStatus {
     Pending = 'pending',
@@ -40,7 +41,8 @@ export type UseGlbSceneParams = {
     boxBounds?: BoxBounds;
     pointSizeMultiplier: number;
     pointCloudSettings?: PointCloudSceneSettings;
-    sceneOpacities: Record<string, number>;
+    dislocationLineSettings?: DislocationLineSceneSettings;
+    sceneVisualOverrides: SceneVisualOverrides;
     activeModelBounds?: BoundsInfo | null;
     onModelBoundsChanged?: (bounds: BoundsInfo) => void;
     onLoadingStateChanged?: (state: ModelLoadingState) => void;

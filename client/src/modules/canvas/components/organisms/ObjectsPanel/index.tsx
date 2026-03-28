@@ -173,14 +173,16 @@ const ObjectsPanel = ({
     const {
         showSimulationCell,
         setShowSimulationCell,
-        sceneOpacities,
+        sceneVisualOverrides,
         setSceneOpacity,
+        setSceneLineWidth,
         setCurrentTimestep
     } = useEditorStore(useShallow((s) => ({
         showSimulationCell: s.showSimulationCell,
         setShowSimulationCell: s.setShowSimulationCell,
-        sceneOpacities: s.sceneOpacities,
+        sceneVisualOverrides: s.sceneVisualOverrides,
         setSceneOpacity: s.setSceneOpacity,
+        setSceneLineWidth: s.setSceneLineWidth,
         setCurrentTimestep: s.setCurrentTimestep
     })));
 
@@ -277,8 +279,9 @@ const ObjectsPanel = ({
                         onDownloadExposureListing={onDownloadExposureListing}
                         showSimulationCell={showSimulationCell}
                         onToggleSimulationCell={handleToggleSimulationCell}
-                        sceneOpacities={sceneOpacities}
+                        sceneVisualOverrides={sceneVisualOverrides}
                         setSceneOpacity={setSceneOpacity}
+                        setSceneLineWidth={setSceneLineWidth}
                         selectionMode="raster"
                         selectedScene={selection.scene}
                         onSelectRasterScene={handleSelectRasterScene}
@@ -301,7 +304,8 @@ const ObjectsPanel = ({
         removeScene,
         sceneCollectionSections,
         sceneCollectionTotalAnalyses,
-        sceneOpacities,
+        sceneVisualOverrides,
+        setSceneLineWidth,
         setSceneOpacity,
         showSectionsSkeleton,
         showSimulationCell,
@@ -315,7 +319,7 @@ const ObjectsPanel = ({
 
         const isActive = isSceneInActiveScenes(scene);
         const sceneKey = getSceneKey(scene);
-        const currentOpacity = sceneOpacities[sceneKey] ?? 1;
+        const currentOpacity = sceneVisualOverrides[sceneKey]?.opacity ?? 1;
         const artifactLabel = formatArtifactLabel(artifact);
 
         const options: MenuOption[] = [];
@@ -360,7 +364,7 @@ const ObjectsPanel = ({
         });
 
         return options;
-    }, [isSceneInActiveScenes, sceneOpacities, addScene, removeScene, setSceneOpacity, syncArtifactTimestep]);
+    }, [isSceneInActiveScenes, sceneVisualOverrides, addScene, removeScene, setSceneOpacity, syncArtifactTimestep]);
 
     const renderArtifactPlaceholder = useCallback((label: string) => {
         return (
@@ -584,8 +588,9 @@ const ObjectsPanel = ({
                             onDownloadExposureListing={onDownloadExposureListing}
                             showSimulationCell={showSimulationCell}
                             onToggleSimulationCell={handleToggleSimulationCell}
-                            sceneOpacities={sceneOpacities}
+                            sceneVisualOverrides={sceneVisualOverrides}
                             setSceneOpacity={setSceneOpacity}
+                            setSceneLineWidth={setSceneLineWidth}
                         />
                     )}
             </CollapsibleSection>
@@ -623,8 +628,9 @@ const ObjectsPanel = ({
                         onDownloadAnalysis={onDownloadAnalysis ?? (() => undefined)}
                         onDownloadExposureListing={onDownloadExposureListing}
                         showDefaultScene={false}
-                        sceneOpacities={sceneOpacities}
+                        sceneVisualOverrides={sceneVisualOverrides}
                         setSceneOpacity={setSceneOpacity}
+                        setSceneLineWidth={setSceneLineWidth}
                     />
                 </CollapsibleSection>
             )}

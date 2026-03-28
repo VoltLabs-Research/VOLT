@@ -19,6 +19,11 @@ export interface PointCloudSceneSettings extends PointCloudSettingsState {
     pointSizeMultiplier: number;
 };
 
+export interface DislocationLineSceneSettings {
+    baseLineWidth: number;
+    lineWidth: number;
+};
+
 export interface FractalSceneConfig {
     rendererCreate: RendererCreateState;
     rendererRuntime: RendererRuntimeState;

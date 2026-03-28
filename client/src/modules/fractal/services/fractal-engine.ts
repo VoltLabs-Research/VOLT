@@ -5,6 +5,7 @@ import { MaterialPipeline } from '@/modules/fractal/services/material-pipeline';
 import { disposeObject3DResources } from '@/modules/fractal/utilities/resource-disposal';
 import { debugFractal, warnFractal } from '@/modules/fractal/utilities/debug-log';
 import type IFractalAssetLoader from '@/modules/fractal/api/entities/asset-loader';
+import type { SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
 import { ModelTransform } from '@/modules/fractal/utilities/model-transform';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
 import {
@@ -12,7 +13,7 @@ import {
     PointCloudStyleMode
 } from '@/modules/fractal/stores/contracts/editor/scene-types';
 
-import type { PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
+import type { DislocationLineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
 
 interface FractalSurface {
     scene: THREE.Scene;
@@ -36,6 +37,11 @@ interface TraversalCache {
     meshes: THREE.Mesh[];
 }
 
+interface DislocationGeometryUserData {
+    basePositionArray?: Float32Array;
+    dislocationLineWidthOffset?: number;
+}
+
 export type FractalParams = {
     url?: string | null;
     sliceClippingPlanes: Plane[];
@@ -49,6 +55,7 @@ export type FractalParams = {
     sceneKey?: string;
     boxBounds?: BoxBounds;
     pointCloudSettings?: PointCloudSceneSettings;
+    dislocationLineSettings?: DislocationLineSceneSettings;
 };
 
 type EngineCallbacks = {
@@ -170,6 +177,8 @@ export class FractalEngine {
     private lastOpacitySceneKey: string | undefined = undefined;
     private lastOpacityValue: number = 1;
     private lastPointOpacityValue: number = 1;
+    private lastDislocationBaseLineWidth: number | undefined = undefined;
+    private lastDislocationLineWidth: number | undefined = undefined;
     private traversalCache: TraversalCache = {
         pointClouds: [],
         meshes: []
@@ -314,8 +323,11 @@ export class FractalEngine {
             this.lastOpacitySceneKey = undefined;
             this.lastOpacityValue = -1;
             this.lastPointOpacityValue = -1;
+            this.lastDislocationBaseLineWidth = undefined;
+            this.lastDislocationLineWidth = undefined;
 
             this.updatePointCloudSettings(this.params.pointCloudSettings, this.params.pointCloudSettings?.pointSizeMultiplier ?? 1);
+            this.updateDislocationLineWidth(this.params.dislocationLineSettings);
 
             this.callbacks.onModelLoaded?.(bounds);
             this.callbacks.onModelAvailable?.(loadedModel);
@@ -471,11 +483,11 @@ export class FractalEngine {
 
     updateOpacity(
         sceneKey: string | undefined,
-        sceneOpacities: Record<string, number>,
+        sceneVisualOverrides: SceneVisualOverrides,
         pointCloudSettings?: PointCloudSceneSettings
     ) {
         if (!this.state.model || !sceneKey) return;
-        const opacity = sceneOpacities[sceneKey] ?? 1.0;
+        const opacity = sceneVisualOverrides[sceneKey]?.opacity ?? 1.0;
         const pointOpacity = pointCloudSettings?.overridesEnabled && !pointCloudSettings.useSceneOpacity
             ? 1
             : opacity;
@@ -549,6 +561,44 @@ export class FractalEngine {
         this.surface.invalidate();
     }
 
+    updateDislocationLineWidth(settings?: DislocationLineSceneSettings) {
+        if (!this.state.model || this.traversalCache.meshes.length === 0) {
+            return;
+        }
+
+        const baseLineWidth = settings?.baseLineWidth;
+        const lineWidth = settings?.lineWidth;
+
+        if (baseLineWidth === this.lastDislocationBaseLineWidth
+            && lineWidth === this.lastDislocationLineWidth) {
+            return;
+        }
+
+        this.lastDislocationBaseLineWidth = baseLineWidth;
+        this.lastDislocationLineWidth = lineWidth;
+
+        const hasValidSettings = Number.isFinite(baseLineWidth)
+            && Number.isFinite(lineWidth)
+            && Number(baseLineWidth) > 0
+            && Number(lineWidth) > 0;
+        const lineWidthOffset = hasValidSettings
+            ? (Number(lineWidth) - Number(baseLineWidth)) * 0.5
+            : 0;
+
+        const processedGeometries = new Set<THREE.BufferGeometry>();
+
+        this.traversalCache.meshes.forEach((mesh) => {
+            if (!(mesh.geometry instanceof THREE.BufferGeometry) || processedGeometries.has(mesh.geometry)) {
+                return;
+            }
+
+            processedGeometries.add(mesh.geometry);
+            this.applyDislocationLineWidthToGeometry(mesh.geometry, lineWidthOffset);
+        });
+
+        this.surface.invalidate();
+    }
+
     updateCameraPosition(cameraPosition: THREE.Vector3) {
         if (!this.state.model || this.traversalCache.pointClouds.length === 0) return;
         this.traversalCache.pointClouds.forEach((pointCloud) => {
@@ -576,6 +626,53 @@ export class FractalEngine {
 
     private setLocalClippingEnabled(enabled: boolean) {
         this.surface.gl.localClippingEnabled = enabled;
+    }
+
+    private applyDislocationLineWidthToGeometry(geometry: THREE.BufferGeometry, lineWidthOffset: number) {
+        const positionAttribute = geometry.getAttribute('position');
+        const normalAttribute = geometry.getAttribute('normal');
+
+        if (!(positionAttribute instanceof THREE.BufferAttribute) || !(normalAttribute instanceof THREE.BufferAttribute)) {
+            warnFractal('engine.dislocation-line-width-missing-attributes', {
+                sceneKey: this.params.sceneKey,
+                hasPositionAttribute: positionAttribute instanceof THREE.BufferAttribute,
+                hasNormalAttribute: normalAttribute instanceof THREE.BufferAttribute,
+                attributeKeys: Object.keys(geometry.attributes)
+            });
+            return;
+        }
+
+        if (positionAttribute.itemSize < 3 || normalAttribute.itemSize < 3) {
+            warnFractal('engine.dislocation-line-width-invalid-item-size', {
+                sceneKey: this.params.sceneKey,
+                positionItemSize: positionAttribute.itemSize,
+                normalItemSize: normalAttribute.itemSize
+            });
+            return;
+        }
+
+        const userData = geometry.userData as THREE.BufferGeometry['userData'] & DislocationGeometryUserData;
+
+        if (!userData.basePositionArray || userData.basePositionArray.length !== positionAttribute.array.length) {
+            userData.basePositionArray = Float32Array.from(positionAttribute.array as ArrayLike<number>);
+        }
+
+        if (userData.dislocationLineWidthOffset === lineWidthOffset) {
+            return;
+        }
+
+        const basePositions = userData.basePositionArray;
+        const positions = positionAttribute.array as Float32Array;
+        const normals = normalAttribute.array as ArrayLike<number>;
+
+        for (let index = 0; index < positions.length; index += 1) {
+            positions[index] = basePositions[index] + (Number(normals[index]) * lineWidthOffset);
+        }
+
+        positionAttribute.needsUpdate = true;
+        geometry.computeBoundingBox();
+        geometry.computeBoundingSphere();
+        userData.dislocationLineWidthOffset = lineWidthOffset;
     }
 
     private applyClippingToModel(root: THREE.Object3D, planes: Plane[]) {

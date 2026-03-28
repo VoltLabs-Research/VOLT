@@ -44,7 +44,8 @@ function extractEngineParams(params: UseGlbSceneParams): FractalParams {
         onEmptyData: params.onEmptyData,
         sceneKey: params.sceneKey,
         boxBounds: params.boxBounds,
-        pointCloudSettings: params.pointCloudSettings
+        pointCloudSettings: params.pointCloudSettings,
+        dislocationLineSettings: params.dislocationLineSettings
     };
 }
 
@@ -68,7 +69,8 @@ export default function useGlbScene(
     const {
         pointSizeMultiplier,
         pointCloudSettings,
-        sceneOpacities,
+        dislocationLineSettings,
+        sceneVisualOverrides,
         activeModelBounds,
         onModelBoundsChanged,
         onLoadingStateChanged,
@@ -215,8 +217,16 @@ export default function useGlbScene(
     }, [modelGeneration, pointCloudSettings, pointSizeMultiplier]);
 
     useEffect(() => {
-        engineRef.current?.updateOpacity(params.sceneKey, sceneOpacities, pointCloudSettings);
-    }, [modelGeneration, pointCloudSettings, sceneOpacities, params.sceneKey]);
+        engineRef.current?.updateOpacity(params.sceneKey, sceneVisualOverrides, pointCloudSettings);
+    }, [modelGeneration, pointCloudSettings, sceneVisualOverrides, params.sceneKey]);
+
+    useEffect(() => {
+        engineRef.current?.updateDislocationLineWidth(dislocationLineSettings);
+    }, [
+        modelGeneration,
+        dislocationLineSettings?.baseLineWidth,
+        dislocationLineSettings?.lineWidth
+    ]);
 
     // Update point cloud cameraPosition uniform each rendered frame.
     // With frameloop="demand" this only runs when a frame is already being

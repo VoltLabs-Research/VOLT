@@ -1,6 +1,12 @@
-import { ChevronDown, ChevronRight, Download, Eye, FlaskConical, Atom, Minus, MousePointerClick, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Download, Eye, FlaskConical, Atom, Minus, MousePointerClick, Plus, SlidersHorizontal, Trash2 } from 'lucide-react';
+import {
+    DEFAULT_DISLOCATION_LINE_WIDTH,
+    buildPluginScene,
+    buildSceneRenderMetadata
+} from '../../../utilities/plugin-exposure-export';
 import { isSameScene } from '@/modules/canvas/utilities/scene-identity';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
+import { Exporter } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import CanvasSlider from '../../atoms/CanvasSlider';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
@@ -12,7 +18,8 @@ import { useMemo } from 'react';
 import type { AnalysisSectionData } from '../../../hooks/use-canvas-sidebar-scene';
 import type { CanvasAnalysisStatus } from '../../../utilities/analysis-status';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
-import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
+import type { SceneObjectType, SceneRenderMetadata, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
+import type { RenderableExposure } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import type { RasterSelectableScene } from '@/modules/raster/types/container-selection';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 
@@ -34,8 +41,10 @@ interface AnalysisTreeNodeProps {
         trajectoryId?: string;
         exposureName?: string;
     }) => void;
-    sceneOpacities: Record<string, number>;
+    sceneVisualOverrides: SceneVisualOverrides;
     setSceneOpacity: (sceneKey: string, opacity: number) => void;
+    setSceneLineWidth: (sceneKey: string, lineWidth: number) => void;
+    resolveSceneRenderMetadata?: (pluginId: string, exposureId: string) => SceneRenderMetadata | undefined;
     selectionMode?: 'default' | 'raster';
     selectedScene?: RasterSelectableScene | null;
     onSelectRasterScene?: (scene: RasterSelectableScene, label: string) => void;
@@ -57,8 +66,10 @@ const AnalysisTreeNode = ({
     onDeleteAnalysis,
     onDownloadAnalysis,
     onDownloadExposureListing,
-    sceneOpacities,
+    sceneVisualOverrides,
     setSceneOpacity,
+    setSceneLineWidth,
+    resolveSceneRenderMetadata,
     selectionMode = 'default',
     selectedScene,
     onSelectRasterScene
@@ -205,18 +216,23 @@ const AnalysisTreeNode = ({
                 </Container>
             )}
 
-            {isExpanded && hasExposures && entry.exposures.map((exposure: { exposureId: string; analysisId: string; name: string }) => {
-                const scene = {
-                    sceneType: exposure.exposureId,
-                    source: 'plugin' as const,
+            {isExpanded && hasExposures && entry.exposures.map((exposure: RenderableExposure) => {
+                const sceneRenderMetadata = buildSceneRenderMetadata(exposure.export)
+                    ?? resolveSceneRenderMetadata?.(section.pluginId, exposure.exposureId);
+                const scene = buildPluginScene({
                     analysisId: exposure.analysisId,
-                    exposureId: exposure.exposureId
-                };
+                    exposureId: exposure.exposureId,
+                    sceneRenderMetadata
+                });
                 const isActive = isRasterSelectionMode
                     ? isSameScene(selectedScene, scene)
                     : isSceneActive(scene);
                 const sceneKey = getSceneKey(scene);
-                const currentOpacity = sceneOpacities[sceneKey] ?? 1;
+                const sceneOverride = sceneVisualOverrides[sceneKey];
+                const currentOpacity = sceneOverride?.opacity ?? 1;
+                const isDislocationExposure = sceneRenderMetadata?.exporter === Exporter.DISLOCATION;
+                const defaultLineWidth = sceneRenderMetadata?.defaultLineWidth ?? DEFAULT_DISLOCATION_LINE_WIDTH;
+                const currentLineWidth = sceneOverride?.lineWidth ?? defaultLineWidth;
 
                 const transparencySubmenu = (
                     <div className="context-menu-transparency">
@@ -232,6 +248,20 @@ const AnalysisTreeNode = ({
                         />
                     </div>
                 );
+                const lineSettingsSubmenu = isDislocationExposure ? (
+                    <div className="context-menu-transparency">
+                        <span className="context-menu-transparency__label">Line Width</span>
+                        <CanvasSlider
+                            ariaLabel={`Adjust ${exposure.name} line width`}
+                            min={Math.max(0.01, defaultLineWidth * 0.25)}
+                            max={Math.max(defaultLineWidth * 3, defaultLineWidth + 0.25)}
+                            step={Math.max(0.01, defaultLineWidth * 0.05)}
+                            value={currentLineWidth}
+                            onChange={(value: number) => setSceneLineWidth(sceneKey, value)}
+                            ariaValueText={`${currentLineWidth.toFixed(2)} line width`}
+                        />
+                    </div>
+                ) : null;
 
                 const exposureMenuOptions: MenuOption[] = [
                     ...(isActive
@@ -263,7 +293,12 @@ const AnalysisTreeNode = ({
                         label: 'Transparency',
                         icon: Eye,
                         submenuContent: transparencySubmenu
-                    }
+                    },
+                    ...(lineSettingsSubmenu ? [{
+                        label: 'Line Settings',
+                        icon: SlidersHorizontal,
+                        submenuContent: lineSettingsSubmenu
+                    }] : [])
                 ];
 
                 const exposureTrigger = (
