@@ -9,6 +9,7 @@ import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
 import type { ScreenshotRequest } from '@/modules/canvas/utilities/screenshot';
 import type { OrbitControlsHandle } from '@/modules/fractal/types';
 import type { FractalSceneConfig } from '@/modules/fractal/types/scene-config';
+import type { ScreenshotComposition } from '@/modules/fractal/types/screenshot-composition';
 import type { ReactNode } from 'react';
 
 export interface FractalSceneRef {
@@ -27,6 +28,7 @@ interface FractalSceneProps {
     showGrid?: boolean;
     modelWorldBounds?: ModelWorldBounds | null;
     screenshotRequest?: ScreenshotRequest | null;
+    screenshotComposition?: ScreenshotComposition;
     onScreenshotCaptureHandled?: () => void;
 };
 
@@ -39,6 +41,7 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
     showGrid,
     modelWorldBounds,
     screenshotRequest,
+    screenshotComposition,
     onScreenshotCaptureHandled
 }, ref) => {
     const orbitControlsRef = useRef<OrbitControlsHandle | null>(null);
@@ -203,6 +206,7 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
                     showGrid={showGrid}
                     modelWorldBounds={modelWorldBounds}
                     screenshotRequest={screenshotRequest}
+                    screenshotComposition={screenshotComposition}
                     onScreenshotCaptureHandled={onScreenshotCaptureHandled}
                     onScreenshotStatusChange={setScreenshotAnnouncement}
                     onControlsRef={onControlsRef}
