@@ -11,9 +11,11 @@ import { useEditorStore } from '@/modules/canvas/stores/editor';
 import useAnalysisStatus from './use-analysis-status';
 import useCanvasUrlState from './use-canvas-url-state';
 import useExposureManager from './use-exposure-manager';
+import { buildPluginScene, resolveExposureSceneRenderMetadata } from '../utilities/plugin-exposure-export';
 
 import { useAnalysesByTrajectoryQuery, analysisQuery } from '@/modules/analysis/hooks/queries';
 import { findCachedAnalysisById, upsertAnalysisCaches, updateAnalysisStatusCaches } from '@/modules/analysis/services/cache';
+import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { SOCKET_TEAM_EVENTS } from '@/modules/socket/team/constants/team-socket-events';
 import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
 import { showPromise } from '@/shared/presentation/hooks/toast';
@@ -23,7 +25,7 @@ import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 
 import type { ExposureEntry } from './use-exposure-manager';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
-import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
+import type { SceneObjectType, SceneRenderMetadata } from '@/modules/fractal/api/entities/scene';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 
 export interface AnalysisSectionData {
@@ -38,6 +40,15 @@ export interface AnalysisSectionData {
 interface UseCanvasSidebarSceneProps {
     trajectory?: Trajectory | null;
     trajectoryId?: string;
+};
+
+const isSameSceneRenderMetadata = (
+    left?: SceneRenderMetadata,
+    right?: SceneRenderMetadata
+): boolean => {
+    return left?.exporter === right?.exporter
+        && left?.exportType === right?.exportType
+        && left?.defaultLineWidth === right?.defaultLineWidth;
 };
 
 const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: UseCanvasSidebarSceneProps) => {
@@ -68,6 +79,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     const { isAnalysisInProgress } = useAnalysisStatus({ trajectoryId, enabled: !!trajectoryId });
 
     const { exposureEntries, getEntry, loadExposuresForAnalysis, resetEntries } = useExposureManager({ trajectoryId });
+    const { pluginsById } = usePluginSelectors();
 
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
     const [searchQuery, setSearchQuery] = useState('');
@@ -104,6 +116,13 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
         return [selectedAnalysis, ...analyses];
     }, [analyses, selectedAnalysis]);
+    const selectedAnalysisPluginId = useMemo(() => {
+        if (!analysisConfigId) {
+            return undefined;
+        }
+
+        return resolvedAnalyses.find((analysis) => analysis._id === analysisConfigId)?.plugin;
+    }, [analysisConfigId, resolvedAnalyses]);
 
     useEffect(() => {
         if (analysesQuery.error) {
@@ -197,48 +216,60 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     useEffect(() => {
         if (!analysisConfigId) return;
 
+        const currentScene = activeSceneRef.current;
+        const entry = getEntry(analysisConfigId);
+
+        if (entry.state !== 'loaded') return;
+
+        const buildSceneFromExposure = (analysisId: string, exposureId: string, exposureExport?: {
+            exporter?: string;
+            type?: string;
+            options?: Record<string, unknown>;
+        }) => {
+            const sceneRenderMetadata = resolveExposureSceneRenderMetadata({
+                exposureId,
+                exposureExport,
+                plugin: selectedAnalysisPluginId ? pluginsById[selectedAnalysisPluginId] : undefined
+            });
+
+            return buildPluginScene({
+                analysisId,
+                exposureId,
+                sceneRenderMetadata
+            });
+        };
+
         if (manualSelectionRef.current === analysisConfigId) {
             manualSelectionRef.current = null;
             return;
         }
-
-        const currentScene = activeSceneRef.current;
-
-        if (currentScene?.source === 'plugin' && 'analysisId' in currentScene && currentScene.analysisId === analysisConfigId) {
-            return;
-        }
-
-        const entry = getEntry(analysisConfigId);
-        if (entry.state !== 'loaded') return;
 
         const exposures = entry.exposures;
 
         if (currentScene?.source === 'plugin') {
             const match = exposures.find((ex) => ex.exposureId === currentScene.sceneType);
             if (match) {
-                setActiveScene({
-                    sceneType: match.exposureId,
-                    source: 'plugin',
-                    analysisId: match.analysisId,
-                    exposureId: match.exposureId
-                });
+                const nextScene = buildSceneFromExposure(match.analysisId, match.exposureId, match.export);
+
+                if (currentScene.analysisId === nextScene.analysisId
+                    && currentScene.exposureId === nextScene.exposureId
+                    && isSameSceneRenderMetadata(currentScene.sceneRenderMetadata, nextScene.sceneRenderMetadata)) {
+                    return;
+                }
+
+                setActiveScene(nextScene);
                 return;
             }
         }
 
         if (exposures.length > 0) {
             const next = exposures[0];
-            setActiveScene({
-                sceneType: next.exposureId,
-                source: 'plugin',
-                analysisId: next.analysisId,
-                exposureId: next.exposureId
-            });
+            setActiveScene(buildSceneFromExposure(next.analysisId, next.exposureId, next.export));
             return;
         }
 
         setActiveScene({ sceneType: 'trajectory', source: 'default' });
-    }, [analysisConfigId, getEntry, setActiveScene]);
+    }, [analysisConfigId, getEntry, pluginsById, selectedAnalysisPluginId, setActiveScene]);
 
     const differingConfigByAnalysis = useMemo(() => {
         if (resolvedAnalyses.length === 0) return new Map<string, [string, unknown][]>();

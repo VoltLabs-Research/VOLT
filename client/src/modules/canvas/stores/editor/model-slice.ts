@@ -63,7 +63,7 @@ const createInitialState = (): ModelState => ({
     modelLoadError: null,
     pointSizeMultiplier: 1.0,
     pointCloudSettings: POINT_CLOUD_SETTINGS_INITIAL,
-    sceneOpacities: {},
+    sceneVisualOverrides: {},
     modelWorldBounds: null,
     showSimulationCell: true,
     isPointCloudScene: false
@@ -183,16 +183,41 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
     },
 
     setSceneOpacity(sceneKey: string, opacity: number) {
+        const nextOpacity = Math.max(0, Math.min(1, opacity));
+
         set((state) => ({
-            sceneOpacities: {
-                ...state.sceneOpacities,
-                [sceneKey]: Math.max(0, Math.min(1, opacity))
+            sceneVisualOverrides: {
+                ...state.sceneVisualOverrides,
+                [sceneKey]: {
+                    ...state.sceneVisualOverrides[sceneKey],
+                    opacity: nextOpacity
+                }
             }
         }));
     },
 
     getSceneOpacity(sceneKey: string): number {
-        return get().sceneOpacities[sceneKey] ?? 1.0;
+        return get().sceneVisualOverrides[sceneKey]?.opacity ?? 1.0;
+    },
+
+    setSceneLineWidth(sceneKey: string, lineWidth: number) {
+        const nextLineWidth = Number.isFinite(lineWidth)
+            ? Math.max(0.01, lineWidth)
+            : 0.01;
+
+        set((state) => ({
+            sceneVisualOverrides: {
+                ...state.sceneVisualOverrides,
+                [sceneKey]: {
+                    ...state.sceneVisualOverrides[sceneKey],
+                    lineWidth: nextLineWidth
+                }
+            }
+        }));
+    },
+
+    getSceneLineWidth(sceneKey: string): number | undefined {
+        return get().sceneVisualOverrides[sceneKey]?.lineWidth;
     },
 
     setShowSimulationCell(show: boolean) {

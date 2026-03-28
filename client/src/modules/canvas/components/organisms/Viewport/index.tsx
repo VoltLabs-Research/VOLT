@@ -8,8 +8,6 @@ import FractalScene from '@/modules/fractal/components/organisms/FractalScene';
 import TimestepViewer from '@/modules/fractal/components/organisms/TimestepViewer';
 import { debugFractal } from '@/modules/fractal/utilities/debug-log';
 import { getFrameBoxBounds, getTrajectoryFrameByTimestep, hasFrameBoxBounds } from '@/modules/fractal/utilities/frame-box-bounds';
-import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
-import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import EditableTrajectoryName from '@/modules/trajectory/components/atoms/EditableTrajectoryName';
 import {
@@ -71,12 +69,10 @@ const Viewport = ({
 }: ViewportProps) => {
     const teamId = useSelectedTeamId() ?? undefined;
     const screenshotRequest = useScreenshotStore((s) => s.pendingRequest);
-    useEnsurePluginCatalogLoaded();
-    const { plugins } = usePluginSelectors();
     const {
         activeScenes,
         slicePlaneConfig,
-        sceneOpacities,
+        sceneVisualOverrides,
         activeModelBounds,
         modelWorldBounds,
         setModelBounds,
@@ -88,7 +84,7 @@ const Viewport = ({
     } = useEditorStore(useShallow((s) => ({
         activeScenes: s.activeScenes,
         slicePlaneConfig: s.configuration.slicePlaneConfig,
-        sceneOpacities: s.sceneOpacities,
+        sceneVisualOverrides: s.sceneVisualOverrides,
         activeModelBounds: s.activeModel?.modelBounds,
         modelWorldBounds: s.modelWorldBounds,
         setModelBounds: s.setModelBounds,
@@ -98,13 +94,6 @@ const Viewport = ({
         performancePreset: s.performanceSettings.preset,
         setPerformancePreset: s.performanceSettings.setPreset
     })));
-
-    const pluginScenes = plugins.flatMap((plugin) => {
-        return (plugin.exposures ?? []).map((exposure) => ({
-            exposureId: exposure._id,
-            exportType: exposure.export?.type
-        }));
-    });
 
     const currentFrame = useMemo(() => {
         return getTrajectoryFrameByTimestep(trajectory, currentTimestep);
@@ -240,11 +229,10 @@ const Viewport = ({
                                     currentTimestep={currentTimestep}
                                     analysisId={analysisId}
                                     activeScenes={activeScenes}
-                                    pluginScenes={pluginScenes}
                                     pointCloudSettings={sceneConfig.pointCloudSettings}
                                     slicePlaneConfig={slicePlaneConfig}
                                     boxBounds={currentFrameBoxBounds}
-                                    sceneOpacities={sceneOpacities}
+                                    sceneVisualOverrides={sceneVisualOverrides}
                                     setModelWorldBounds={setModelWorldBounds}
                                     activeModelBounds={activeModelBounds}
                                     onModelBoundsChanged={setModelBounds}

@@ -1,6 +1,6 @@
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { ModelWorldBounds, ModelLoadingState } from '@/modules/fractal/api/entities/model';
-import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
+import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
 
 export type { SceneObjectType };
@@ -47,7 +47,7 @@ export interface ModelState {
     modelLoadError: string | null;
     pointSizeMultiplier: number;
     pointCloudSettings: PointCloudSettingsState;
-    sceneOpacities: Record<string, number>;
+    sceneVisualOverrides: SceneVisualOverrides;
     modelWorldBounds: ModelWorldBounds | null;
     showSimulationCell: boolean;
     isPointCloudScene: boolean;
@@ -73,6 +73,8 @@ export interface ModelActions {
     resetPointCloudSettings: () => void;
     setSceneOpacity: (sceneKey: string, opacity: number) => void;
     getSceneOpacity: (sceneKey: string) => number;
+    setSceneLineWidth: (sceneKey: string, lineWidth: number) => void;
+    getSceneLineWidth: (sceneKey: string) => number | undefined;
     setShowSimulationCell: (show: boolean) => void;
     setIsPointCloudScene: (isPointCloud: boolean) => void;
 };
