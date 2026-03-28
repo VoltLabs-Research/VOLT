@@ -17,6 +17,7 @@ import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
 import type { ScreenshotRequest } from '@/modules/canvas/utilities/screenshot';
 import type { FractalSceneConfig } from '@/modules/fractal/types/scene-config';
 import type { OrbitControlsHandle } from '@/modules/fractal/types';
+import type { ScreenshotComposition } from '@/modules/fractal/types/screenshot-composition';
 import type { MutableRefObject, ReactNode } from 'react';
 
 interface GizmoColors {
@@ -32,6 +33,7 @@ interface FractalScenePipelineProps {
     showGrid?: boolean;
     modelWorldBounds?: ModelWorldBounds | null;
     screenshotRequest?: ScreenshotRequest | null;
+    screenshotComposition?: ScreenshotComposition;
     onScreenshotCaptureHandled?: () => void;
     onScreenshotStatusChange?: (message: string) => void;
     onControlsRef?: (ref: OrbitControlsHandle | null) => void;
@@ -47,6 +49,7 @@ const FractalScenePipeline = ({
     showGrid,
     modelWorldBounds,
     screenshotRequest,
+    screenshotComposition,
     onScreenshotCaptureHandled,
     onScreenshotStatusChange,
     onControlsRef,
@@ -125,6 +128,7 @@ const FractalScenePipeline = ({
                 onStatusChange={onScreenshotStatusChange}
                 orbitRef={orbitRef}
                 modelWorldBounds={modelWorldBounds}
+                screenshotComposition={screenshotComposition}
             />
         </>
     );
