@@ -6,6 +6,7 @@ import {
     mergeWhiteboardAppState,
     mergeWhiteboardElements
 } from '@/modules/whiteboards/utilities/whiteboards';
+import type { PreparedWhiteboardImageAsset } from '@/modules/whiteboards/utilities/excalidraw-images';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { sileo } from 'sileo';
 import type { Whiteboard } from '@/modules/whiteboards/api/entities/whiteboard';
@@ -34,6 +35,18 @@ interface UseWhiteboardEditorProps {
 
 /** Title save debounce interval in ms */
 const TITLE_SAVE_DEBOUNCE_MS = 1_000;
+const EXCALIDRAW_IMAGE_MIME_TYPES = new Set<PreparedWhiteboardImageAsset['mimeType']>([
+    'image/svg+xml',
+    'image/png',
+    'image/jpeg',
+    'image/gif',
+    'image/webp',
+    'image/bmp',
+    'image/x-icon',
+    'image/avif',
+    'image/jfif',
+    'application/octet-stream'
+]);
 
 const blobToDataURL = (blob: Blob): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -42,6 +55,14 @@ const blobToDataURL = (blob: Blob): Promise<string> =>
         reader.onerror = reject;
         reader.readAsDataURL(blob);
     });
+
+const resolveExcalidrawImageMimeType = (mimeType?: string): PreparedWhiteboardImageAsset['mimeType'] => {
+    if (mimeType && EXCALIDRAW_IMAGE_MIME_TYPES.has(mimeType as PreparedWhiteboardImageAsset['mimeType'])) {
+        return mimeType as PreparedWhiteboardImageAsset['mimeType'];
+    }
+
+    return 'image/png';
+};
 
 const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
     const [whiteboard, setWhiteboard] = useState<Whiteboard | null>(null);
@@ -243,13 +264,38 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
         }
     }, [whiteboardId]);
 
+    const prepareImageAsset = useCallback(async (file: File): Promise<PreparedWhiteboardImageAsset | null> => {
+        try {
+            const result = await service.uploadWhiteboardAsset({ whiteboardId, file });
+            const created = Date.now();
+            const preparedAsset = {
+                id: result.assetId as PreparedWhiteboardImageAsset['id'],
+                mimeType: resolveExcalidrawImageMimeType(file.type),
+                dataURL: await blobToDataURL(file) as PreparedWhiteboardImageAsset['dataURL'],
+                created,
+                lastRetrieved: created
+            } satisfies PreparedWhiteboardImageAsset;
+
+            currentFilesRef.current = {
+                ...currentFilesRef.current,
+                [result.assetId]: preparedAsset
+            };
+
+            return preparedAsset;
+        } catch {
+            sileo.error({ title: 'Failed to upload asset' });
+            return null;
+        }
+    }, [whiteboardId]);
+
     return {
         whiteboard,
         initialState,
         isLoading,
         handleChange,
         mergeRemoteState,
-        generateIdForFile
+        generateIdForFile,
+        prepareImageAsset
     };
 };
 
