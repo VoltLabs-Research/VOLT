@@ -1,5 +1,6 @@
 import { ExportListingRowsByAnalysisIdUseCase } from '@modules/plugin/application/use-cases/listing-row/ExportListingRowsByAnalysisIdUseCase';
 import { ExportPluginListingDocumentsUseCase } from '@modules/plugin/application/use-cases/listing-row/ExportPluginListingDocumentsUseCase';
+import { GetAnalysisListingExportOptionsUseCase } from '@modules/plugin/application/use-cases/listing-row/GetAnalysisListingExportOptionsUseCase';
 import { GetListingRowsByAnalysisIdUseCase } from '@modules/plugin/application/use-cases/listing-row/GetListingRowsByAnalysisIdUseCase';
 import { GetPluginListingDocumentsUseCase } from '@modules/plugin/application/use-cases/listing-row/GetPluginListingDocumentsUseCase';
 import { GetSubListingUseCase } from '@modules/plugin/application/use-cases/listing-row/GetSubListingUseCase';
@@ -12,6 +13,7 @@ import { createControllerRegistry } from '@shared/infrastructure/di/create-contr
 
 const GetPluginListingDocumentsController = createController(GetPluginListingDocumentsUseCase);
 const GetListingRowsByAnalysisIdController = createController(GetListingRowsByAnalysisIdUseCase);
+const GetAnalysisListingExportOptionsController = createController(GetAnalysisListingExportOptionsUseCase);
 const GetSubListingController = createController(GetSubListingUseCase);
 const ExportPluginListingDocumentsController = createPreparedDownloadStreamController(
     ExportPluginListingDocumentsUseCase
@@ -24,6 +26,7 @@ export default createControllerRegistry({
     getPluginListingDocuments: GetPluginListingDocumentsController,
     exportPluginListingDocuments: ExportPluginListingDocumentsController,
     getListingRowsByAnalysisId: GetListingRowsByAnalysisIdController,
+    getAnalysisListingExportOptions: GetAnalysisListingExportOptionsController,
     exportListingRowsByAnalysisId: ExportListingRowsByAnalysisIdController,
     getSubListing: GetSubListingController
 });

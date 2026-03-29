@@ -298,6 +298,8 @@ paths:
     $ref: paths/plugins/by-teamid__by-pluginid__trajectories__by-trajectoryid__executions.yaml
   /api/plugins/{teamId}/listings/analyses/{analysisId}:
     $ref: paths/plugins/by-teamid__listings__analyses__by-analysisid.yaml
+  /api/plugins/{teamId}/listings/analyses/{analysisId}/export/options:
+    $ref: paths/plugins/by-teamid__listings__analyses__by-analysisid__export__options.yaml
   /api/plugins/{teamId}/listings/analyses/{analysisId}/export:
     $ref: paths/plugins/by-teamid__listings__analyses__by-analysisid__export.yaml
   /api/plugins/{teamId}/listings/analyses/{analysisId}/sub-listings/{exposureId}/{timestep}/{subListingName}:

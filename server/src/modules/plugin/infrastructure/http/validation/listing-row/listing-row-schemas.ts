@@ -34,6 +34,23 @@ const optionalBooleanQuerySchema = z.preprocess((value) => {
     return value;
 }, z.boolean().optional());
 
+const optionalStringArrayQuerySchema = z.preprocess((value) => {
+    if (value === undefined || value === null) {
+        return undefined;
+    }
+
+    if (value === '') {
+        return [];
+    }
+
+    const values = Array.isArray(value) ? value : [value];
+
+    return values
+        .flatMap((entry) => String(entry).split(','))
+        .map((entry) => entry.trim())
+        .filter(Boolean);
+}, z.array(z.string().trim().min(1)).optional());
+
 const stripLegacyTeamIdFromQuery = (value: unknown) => {
     const query = asRecord(value);
 
@@ -84,7 +101,15 @@ const subListingQuerySchema = createLegacySafeQuerySchema(
 
 const analysisListingExportQuerySchema = createLegacySafeQuerySchema(
     z.object({
-        format: exportFormatQuerySchema
+        format: exportFormatQuerySchema,
+        includeConfig: optionalBooleanQuerySchema,
+        selectedListingIds: optionalStringArrayQuerySchema,
+        selectedSubListingIds: optionalStringArrayQuerySchema
+    }).strict()
+);
+
+const analysisListingExportOptionsQuerySchema = createLegacySafeQuerySchema(
+    z.object({
     }).strict()
 );
 
@@ -109,6 +134,10 @@ export const listingRowValidation = createResourceValidation({
     exportListingRowsByAnalysisId: {
         params: analysisListingParamsSchema,
         query: analysisListingExportQuerySchema
+    },
+    getAnalysisListingExportOptions: {
+        params: analysisListingParamsSchema,
+        query: analysisListingExportOptionsQuerySchema
     },
     getPluginListingDocuments: {
         params: pluginListingParamsSchema,

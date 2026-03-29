@@ -18,6 +18,9 @@ import PreloadingOverlay from '../../atoms/PreloadingOverlay';
 import ResizeHandle from '../../atoms/ResizeHandle';
 import ExposureSettingsWidget from '../../molecules/ExposureSettingsWidget';
 import ShortcutFeedback from '../../molecules/ShortcutFeedback';
+import AnalysisListingDownloadModal, {
+    ANALYSIS_LISTING_DOWNLOAD_MODAL_ID
+} from '../../organisms/AnalysisListingDownloadModal';
 import KeyboardShortcutsPanel from '../../organisms/KeyboardShortcutsPanel';
 import ObjectsPanel from '../../organisms/ObjectsPanel';
 import PluginResultsViewer from '../../organisms/PluginResultsViewer';
@@ -38,10 +41,12 @@ import { useShallow } from 'zustand/react/shallow';
 import ScriptingWorkspace from '@/modules/scripting/components/organisms/ScriptingWorkspace';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
+import { openModal } from '@/shared/presentation/components/Modal';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import useTip from '@/shared/tips/use-tip';
 
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
+import type { DownloadAnalysisListingParams } from '@/modules/canvas/hooks/use-download-plugin-listing';
 import type { RasterContainerId, RasterContainerSelection } from '@/modules/raster/types/container-selection';
 
 import './CanvasPage.css';
@@ -107,6 +112,7 @@ const CanvasPage = () => {
     const [scriptingJupyterUrl, setScriptingJupyterUrl] = useState<string | null>(null);
     const [rasterContainerSelections, setRasterContainerSelections] = useState<RasterContainerSelection[]>(() => createInitialRasterContainerSelections());
     const [activeRasterContainerId, setActiveRasterContainerId] = useState<RasterContainerId>('container-1');
+    const [downloadAnalysisModalTargetId, setDownloadAnalysisModalTargetId] = useState<string | null>(null);
 
     useEffect(() => {
         setRasterContainerSelections(createInitialRasterContainerSelections());
@@ -186,8 +192,16 @@ const CanvasPage = () => {
             return;
         }
 
-        downloadAnalysisListings({ analysisId: resolvedAnalysisId, format: 'csv' });
-    }, [analysisId, downloadAnalysisListings]);
+        setDownloadAnalysisModalTargetId(resolvedAnalysisId);
+        openModal(ANALYSIS_LISTING_DOWNLOAD_MODAL_ID);
+    }, [analysisId]);
+
+    const handleConfirmAnalysisDownload = useCallback((params: DownloadAnalysisListingParams) => {
+        return downloadAnalysisListings({
+            ...params,
+            format: params.format ?? 'csv'
+        });
+    }, [downloadAnalysisListings]);
 
     const handleExportTrajectory = useCallback(() => {
         if (!trajectory?._id) {
@@ -373,6 +387,12 @@ const CanvasPage = () => {
                     analysisId={analysisId}
                 />
             )}
+            <AnalysisListingDownloadModal
+                analysisId={downloadAnalysisModalTargetId}
+                isDownloading={isDownloading}
+                onDownload={handleConfirmAnalysisDownload}
+                onClose={() => setDownloadAnalysisModalTargetId(null)}
+            />
             <KeyboardShortcutsPanel />
             <ShortcutFeedback />
             <ExposureSettingsWidget />

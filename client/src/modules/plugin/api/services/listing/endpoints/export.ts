@@ -1,6 +1,7 @@
-import { download } from '@/app/core/http/utilities/create-service';
+import { download, get } from '@/app/core/http/utilities/create-service';
 import type { ExportPluginListingInputDTO } from '../../../dtos/listing/export-plugin-listing';
 import type { ExportListingByAnalysisInputDTO } from '../../../dtos/listing/export-listing-by-analysis';
+import type { GetAnalysisListingExportOptionsInputDTO, GetAnalysisListingExportOptionsOutputDTO } from '../../../dtos/listing/get-analysis-listing-export-options';
 
 interface ExposureSelectorParams {
     exposureId?: string;
@@ -24,6 +25,9 @@ const buildExportListingPath = ({ pluginId, trajectoryId }: ExportPluginListingI
 };
 
 const endpoints = {
+    getAnalysisListingExportOptions: get<GetAnalysisListingExportOptionsInputDTO, GetAnalysisListingExportOptionsOutputDTO>(
+        '/listings/analyses/:analysisId/export/options'
+    ),
     exportListing: download<ExportPluginListingInputDTO>('GET',
         buildExportListingPath,
         {
@@ -38,7 +42,18 @@ const endpoints = {
     ),
     exportListingByAnalysis: download<ExportListingByAnalysisInputDTO>('GET',
         '/listings/analyses/:analysisId/export',
-        { query: ({ format }) => ({ format }) }
+        {
+            query: ({ format, includeConfig, selectedListingIds, selectedSubListingIds }) => ({
+                format,
+                ...(includeConfig !== undefined ? { includeConfig } : {}),
+                ...(selectedListingIds
+                    ? { selectedListingIds: selectedListingIds.join(',') }
+                    : {}),
+                ...(selectedSubListingIds
+                    ? { selectedSubListingIds: selectedSubListingIds.join(',') }
+                    : {})
+            })
+        }
     )
 };
 
