@@ -1,15 +1,20 @@
 import useWhiteboardEditor from '@/modules/whiteboards/hooks/use-whiteboard-editor';
 import useWhiteboardPresence from '@/modules/whiteboards/hooks/use-whiteboard-presence';
 import useWhiteboardSync from '@/modules/whiteboards/hooks/use-whiteboard-sync';
+import { insertWhiteboardImages } from '@/modules/whiteboards/utilities/excalidraw-images';
+import { extractWhiteboardImageFiles } from '@/modules/whiteboards/utilities/whiteboard-image-files';
 import useDashboardWorkspaceChrome from '@/modules/dashboard/hooks/use-dashboard-workspace-chrome';
 import { filterPersistableAppState } from '@/modules/whiteboards/utilities/whiteboards';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
+import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
-import type { ComponentProps, CSSProperties, ReactNode } from 'react';
+import type { ChangeEvent, ComponentProps, CSSProperties, DragEvent, ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Excalidraw as ExcalidrawComponent } from '@excalidraw/excalidraw';
+import { ImagePlus } from 'lucide-react';
+import { sileo } from 'sileo';
 import '@excalidraw/excalidraw/index.css';
 import './WhiteboardEditorPage.css';
 
@@ -205,6 +210,7 @@ const WhiteboardEditorPage = () => {
     const excalidrawApiRef = useRef<ExcalidrawAPI | null>(null);
     const pendingSceneRef = useRef<{ elements: Record<string, unknown>[]; appState: Record<string, unknown>; files?: Record<string, unknown>; } | null>(null);
     const ignoredSceneSignatureRef = useRef<string | null>(null);
+    const imageFileInputRef = useRef<HTMLInputElement | null>(null);
     const [shouldRenderAIAssistant, setShouldRenderAIAssistant] = useState(false);
 
     const {
@@ -213,7 +219,8 @@ const WhiteboardEditorPage = () => {
         isLoading,
         handleChange,
         mergeRemoteState,
-        generateIdForFile
+        generateIdForFile,
+        prepareImageAsset
     } = useWhiteboardEditor({ whiteboardId: resolvedWhiteboardId });
 
     usePageTitle(whiteboard?.title ?? 'Whiteboard');
@@ -297,6 +304,81 @@ const WhiteboardEditorPage = () => {
 
     const handleBack = useCallback(() => navigate('/dashboard/whiteboards'), [navigate]);
 
+    const handleInsertImageFiles = useCallback(async (
+        files: File[],
+        insertionPoint?: { clientX: number; clientY: number; }
+    ): Promise<number> => {
+        const api = excalidrawApiRef.current;
+        if (!api) {
+            return 0;
+        }
+
+        try {
+            return await insertWhiteboardImages({
+                api,
+                files,
+                prepareFile: prepareImageAsset,
+                insertionPoint
+            });
+        } catch {
+            sileo.error({ title: 'Failed to insert image' });
+            return 0;
+        }
+    }, [prepareImageAsset]);
+
+    const handleOpenImagePicker = useCallback(() => {
+        imageFileInputRef.current?.click();
+    }, []);
+
+    const handleImagePickerChange = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
+        const imageFiles = extractWhiteboardImageFiles(event.currentTarget.files);
+        event.currentTarget.value = '';
+
+        if (imageFiles.length === 0) {
+            return;
+        }
+
+        await handleInsertImageFiles(imageFiles);
+    }, [handleInsertImageFiles]);
+
+    const handleCanvasDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
+        const imageFiles = extractWhiteboardImageFiles(event.dataTransfer?.files);
+        if (imageFiles.length === 0) {
+            return;
+        }
+
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'copy';
+    }, []);
+
+    const handleCanvasDrop = useCallback(async (event: DragEvent<HTMLDivElement>) => {
+        const imageFiles = extractWhiteboardImageFiles(event.dataTransfer?.files);
+        if (imageFiles.length === 0) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        await handleInsertImageFiles(imageFiles, {
+            clientX: event.clientX,
+            clientY: event.clientY
+        });
+    }, [handleInsertImageFiles]);
+
+    const handleExcalidrawPaste = useCallback<NonNullable<ExcalidrawProps['onPaste']>>(async (data, event) => {
+        if ((data.elements && data.elements.length > 0) || (data.files && Object.keys(data.files).length > 0)) {
+            return false;
+        }
+
+        const imageFiles = extractWhiteboardImageFiles(event?.clipboardData?.files);
+        if (imageFiles.length === 0) {
+            return false;
+        }
+
+        await handleInsertImageFiles(imageFiles);
+        return true;
+    }, [handleInsertImageFiles]);
+
     useEffect(() => {
         if (shouldRenderAIAssistant) {
             return;
@@ -329,8 +411,30 @@ const WhiteboardEditorPage = () => {
         );
     }
 
-    const renderTopRightUI = useCallback<RenderTopRightUI>(() => {
+    const renderTopRightUI = useCallback<RenderTopRightUI>((isMobile) => {
         const collaboratorsLabel = users.length === 1 ? '1 collaborator online' : `${users.length} collaborators online`;
+        const insertImageControl = isMobile ? (
+            <Button
+                variant='soft'
+                intent='neutral'
+                size='sm'
+                iconOnly
+                aria-label='Insert image'
+                onClick={handleOpenImagePicker}
+            >
+                <ImagePlus size={16} />
+            </Button>
+        ) : (
+            <Button
+                variant='soft'
+                intent='neutral'
+                size='sm'
+                leftIcon={<ImagePlus size={16} />}
+                onClick={handleOpenImagePicker}
+            >
+                Insert image
+            </Button>
+        );
 
         return (
             <div className='whiteboard-presence-indicator d-flex items-center gap-05'>
@@ -339,10 +443,11 @@ const WhiteboardEditorPage = () => {
                         {collaboratorsLabel}
                     </div>
                 )}
+                {insertImageControl}
                 {aiAssistantControl}
             </div>
         );
-    }, [aiAssistantControl, users]);
+    }, [aiAssistantControl, handleOpenImagePicker, users]);
 
     if (!whiteboardId) {
         return null;
@@ -360,6 +465,14 @@ const WhiteboardEditorPage = () => {
             <span className='whiteboard-presence-live-region' aria-live='polite' aria-atomic='true'>
                 {announcement?.message ?? ''}
             </span>
+            <input
+                ref={imageFileInputRef}
+                type='file'
+                accept='image/*'
+                multiple
+                className='whiteboard-image-input'
+                onChange={handleImagePickerChange}
+            />
             {isLoading ? (
                 renderLoadingShell()
             ) : (
@@ -368,9 +481,13 @@ const WhiteboardEditorPage = () => {
                         name={whiteboard?.title ?? 'Untitled Whiteboard'}
                         initialData={excalidrawInitialData}
                         onChange={handleExcalidrawChange}
+                        onPaste={handleExcalidrawPaste}
                         generateIdForFile={generateIdForFile}
                         renderTopRightUI={renderTopRightUI}
                         onExcalidrawAPI={handleExcalidrawAPI}
+                        onInsertImage={handleOpenImagePicker}
+                        onCanvasDragOver={handleCanvasDragOver}
+                        onCanvasDrop={handleCanvasDrop}
                         onBack={handleBack}
                     />
                 </Suspense>
