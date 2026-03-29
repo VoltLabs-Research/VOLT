@@ -389,7 +389,6 @@ const CanvasPage = () => {
             )}
             <AnalysisListingDownloadModal
                 analysisId={downloadAnalysisModalTargetId}
-                pluginId={resultsPluginId}
                 isDownloading={isDownloading}
                 onDownload={handleConfirmAnalysisDownload}
                 onClose={() => setDownloadAnalysisModalTargetId(null)}
