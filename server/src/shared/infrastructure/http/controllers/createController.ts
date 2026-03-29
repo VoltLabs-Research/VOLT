@@ -13,6 +13,7 @@ import type { StreamableOutput } from './BaseStreamController';
 import type { InjectionToken } from 'tsyringe';
 
 type ControllerSuccessHandler<TUseCase extends UseCaseInstance> = (
+    req: AuthenticatedRequest,
     res: Response,
     value: UseCaseOutput<TUseCase>
 ) => void | Promise<void>;
@@ -135,12 +136,16 @@ export const createController = <TUseCase extends UseCaseInstance>(
             ) as UseCaseInput<TUseCase>;
         }
 
-        protected override handleSuccess(res: Response, value: UseCaseOutput<TUseCase>): void | Promise<void> {
+        protected override handleSuccess(
+            req: AuthenticatedRequest,
+            res: Response,
+            value: UseCaseOutput<TUseCase>
+        ): void | Promise<void> {
             if (options.handleSuccess) {
-                return options.handleSuccess(res, value);
+                return options.handleSuccess(req, res, value);
             }
 
-            return super.handleSuccess(res, value);
+            return super.handleSuccess(req, res, value);
         }
 
         protected override handleUnexpectedError(res: Response, error: unknown): void {
@@ -185,13 +190,17 @@ export const createPaginatedController = <
             ) as UseCaseInput<TUseCase>;
         }
 
-        protected override async handleSuccess(res: Response, value: UseCaseOutput<TUseCase>): Promise<void> {
+        protected override async handleSuccess(
+            req: AuthenticatedRequest,
+            res: Response,
+            value: UseCaseOutput<TUseCase>
+        ): Promise<void> {
             if (options.handleSuccess) {
-                await options.handleSuccess(res, value);
+                await options.handleSuccess(req, res, value);
                 return;
             }
 
-            super.handleSuccess(res, value);
+            super.handleSuccess(req, res, value);
         }
 
         protected override handleUnexpectedError(res: Response, error: unknown): void {
@@ -248,13 +257,17 @@ export const createStreamController = <
             }
         }
 
-        protected override async handleSuccess(res: Response, value: UseCaseOutput<TUseCase>): Promise<void> {
+        protected override async handleSuccess(
+            req: AuthenticatedRequest,
+            res: Response,
+            value: UseCaseOutput<TUseCase>
+        ): Promise<void> {
             if (options.handleSuccess) {
-                await options.handleSuccess(res, value);
+                await options.handleSuccess(req, res, value);
                 return;
             }
 
-            await super.handleSuccess(res, value);
+            await super.handleSuccess(req, res, value);
         }
 
         protected override handleUnexpectedError(res: Response, error: unknown): void {

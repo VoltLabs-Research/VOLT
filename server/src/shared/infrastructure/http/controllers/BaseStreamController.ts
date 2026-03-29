@@ -3,6 +3,7 @@ import logger from '@shared/infrastructure/logger';
 import type { Response } from 'express';
 import type { Readable } from 'node:stream';
 import type { IUseCase, UseCaseOutput } from '@shared/application/IUseCase';
+import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 
 export interface StreamableOutput {
     stream: Readable;
@@ -22,7 +23,7 @@ export abstract class BaseStreamController<
         };
     }
 
-    protected override async handleSuccess(res: Response, output: StreamableOutput): Promise<void> {
+    protected override async handleSuccess(_req: AuthenticatedRequest, res: Response, output: StreamableOutput): Promise<void> {
         await this.prepareOutput(output);
 
         const headers = this.getHeaders(output);

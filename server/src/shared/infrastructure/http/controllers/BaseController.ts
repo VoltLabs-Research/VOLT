@@ -76,7 +76,7 @@ export abstract class BaseController<TUseCase extends UseCaseInstance> {
         return (this.useCase as IUseCase<UseCaseInput<TUseCase>, UseCaseOutput<TUseCase>, UseCaseError<TUseCase>>).execute(dto);
     }
 
-    protected handleSuccess(res: Response, value: UseCaseOutput<TUseCase>): void | Promise<void> {
+    protected handleSuccess(_req: AuthenticatedRequest, res: Response, value: UseCaseOutput<TUseCase>): void | Promise<void> {
         if (this.statusCode === HttpStatus.NoContent) {
             res.status(this.statusCode).send();
             return;
@@ -103,7 +103,7 @@ export abstract class BaseController<TUseCase extends UseCaseInstance> {
                 return this.handleResultError(res, result.error);
             }
 
-            return await this.handleSuccess(res, result.value);
+            return await this.handleSuccess(req, res, result.value);
         } catch (error) {
             return this.handleUnexpectedError(res, error);
         }

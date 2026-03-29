@@ -11,7 +11,7 @@ export default createController<SendAIConversationMessageUseCase>(AI_TOKENS.Send
         ...params,
         userId: req.userId
     }),
-    handleSuccess: async (res, value: SendAIConversationMessageOutput) => {
+    handleSuccess: async (_req, res, value: SendAIConversationMessageOutput) => {
         value.streamResult.pipeToResponse(res);
     }
 });

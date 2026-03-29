@@ -1,6 +1,8 @@
 import { injectable } from 'tsyringe';
 import jwt from 'jsonwebtoken';
 import type { JwtPayload, Secret, SignOptions } from 'jsonwebtoken';
+import ms from 'ms';
+import type { StringValue } from 'ms';
 
 interface ScriptingJupyterAccessTokenClaims extends JwtPayload {
     type: 'scripting-jupyter';
@@ -19,6 +21,13 @@ export interface VerifiedScriptingJupyterAccessToken {
     teamId: string;
     runtimeNotebookId: string;
     userId: string;
+};
+
+const DEFAULT_SCRIPTING_JUPYTER_ACCESS_TOKEN_TTL = '7d' as const;
+const DEFAULT_SCRIPTING_JUPYTER_ACCESS_TOKEN_MAX_AGE_MS = ms(DEFAULT_SCRIPTING_JUPYTER_ACCESS_TOKEN_TTL);
+
+const isStringValue = (value: string): value is StringValue => {
+    return /^\d+(?:\.\d+)?(?:\s?(?:years?|yrs?|y|weeks?|w|days?|d|hours?|hrs?|h|minutes?|mins?|m|seconds?|secs?|s|milliseconds?|msecs?|ms))?$/i.test(value);
 };
 
 const getSecretKey = (): Secret => {
@@ -42,11 +51,51 @@ const isClaimsPayload = (value: unknown): value is ScriptingJupyterAccessTokenCl
         && typeof payload.userId === 'string';
 };
 
+const resolveExpiresIn = (): SignOptions['expiresIn'] => {
+    const value = process.env.SCRIPTING_JUPYTER_PROXY_ACCESS_TOKEN_TTL;
+    if (!value) {
+        return DEFAULT_SCRIPTING_JUPYTER_ACCESS_TOKEN_TTL;
+    }
+
+    const trimmedValue = value.trim();
+    if (!trimmedValue) {
+        return DEFAULT_SCRIPTING_JUPYTER_ACCESS_TOKEN_TTL;
+    }
+
+    const numericValue = Number(trimmedValue);
+    if (Number.isFinite(numericValue) && String(numericValue) === trimmedValue) {
+        return numericValue;
+    }
+
+    if (isStringValue(trimmedValue)) {
+        return trimmedValue;
+    }
+
+    return DEFAULT_SCRIPTING_JUPYTER_ACCESS_TOKEN_TTL;
+};
+
+const resolveCookieMaxAgeMs = (expiresIn: SignOptions['expiresIn']): number => {
+    if (typeof expiresIn === 'number') {
+        return expiresIn * 1000;
+    }
+
+    if (!expiresIn) {
+        return DEFAULT_SCRIPTING_JUPYTER_ACCESS_TOKEN_MAX_AGE_MS;
+    }
+
+    const parsedDuration = ms(expiresIn);
+    return typeof parsedDuration === 'number' && Number.isFinite(parsedDuration)
+        ? parsedDuration
+        : DEFAULT_SCRIPTING_JUPYTER_ACCESS_TOKEN_MAX_AGE_MS;
+};
+
 @injectable()
 export class ScriptingJupyterAccessTokenService {
+    private readonly expiresIn = resolveExpiresIn();
+    private readonly cookieMaxAgeMs = resolveCookieMaxAgeMs(this.expiresIn);
     private readonly secret = getSecretKey();
     private readonly signOptions: SignOptions = {
-        expiresIn: '10m'
+        expiresIn: this.expiresIn
     };
 
     create(input: CreateScriptingJupyterAccessTokenInput): string {
@@ -56,6 +105,10 @@ export class ScriptingJupyterAccessTokenService {
             runtimeNotebookId: input.runtimeNotebookId,
             userId: input.userId
         }, this.secret, this.signOptions);
+    }
+
+    getCookieMaxAgeMs(): number {
+        return this.cookieMaxAgeMs;
     }
 
     verify(token: string): VerifiedScriptingJupyterAccessToken | null {
