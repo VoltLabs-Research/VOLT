@@ -1,7 +1,7 @@
 import { Excalidraw, MainMenu } from '@excalidraw/excalidraw';
 import { ArrowLeft, ImagePlus } from 'lucide-react';
 import type { ComponentProps } from 'react';
-import type { DragEventHandler } from 'react';
+import type { ClipboardEventHandler, DragEventHandler } from 'react';
 
 type ExcalidrawProps = ComponentProps<typeof Excalidraw>;
 type ExcalidrawAPICallback = NonNullable<ExcalidrawProps['excalidrawAPI']>;
@@ -13,11 +13,11 @@ export interface WhiteboardCanvasProps {
     name: string;
     initialData: ExcalidrawProps['initialData'];
     onChange: ExcalidrawChangeHandler;
-    onPaste: ExcalidrawProps['onPaste'];
     generateIdForFile: ExcalidrawProps['generateIdForFile'];
     renderTopRightUI: RenderTopRightUI;
     onExcalidrawAPI: (api: ExcalidrawAPI) => void;
     onInsertImage: () => void;
+    onCanvasPasteCapture: ClipboardEventHandler<HTMLDivElement>;
     onCanvasDragOver: DragEventHandler<HTMLDivElement>;
     onCanvasDrop: DragEventHandler<HTMLDivElement>;
     onBack: () => void;
@@ -35,22 +35,26 @@ const WhiteboardCanvas = ({
     name,
     initialData,
     onChange,
-    onPaste,
     generateIdForFile,
     renderTopRightUI,
     onExcalidrawAPI,
     onInsertImage,
+    onCanvasPasteCapture,
     onCanvasDragOver,
     onCanvasDrop,
     onBack
 }: WhiteboardCanvasProps) => (
-    <div className='whiteboard-canvas-shell' onDragOver={onCanvasDragOver} onDrop={onCanvasDrop}>
+    <div
+        className='whiteboard-canvas-shell'
+        onPasteCapture={onCanvasPasteCapture}
+        onDragOver={onCanvasDragOver}
+        onDrop={onCanvasDrop}
+    >
         <Excalidraw
             name={name}
             excalidrawAPI={onExcalidrawAPI}
             initialData={initialData}
             onChange={onChange}
-            onPaste={onPaste}
             generateIdForFile={generateIdForFile}
             renderTopRightUI={renderTopRightUI}
             UIOptions={{
