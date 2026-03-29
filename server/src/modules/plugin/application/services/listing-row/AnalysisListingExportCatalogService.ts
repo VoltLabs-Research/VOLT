@@ -107,6 +107,8 @@ export const buildAnalysisSubListingSelectionId = (
     return [exposureId || 'exposure', timestep, subListingName || 'sub-listing'].join('::');
 };
 
+const EMPTY_SELECTION_SENTINEL = '__volt_empty_selection__';
+
 @injectable()
 export class AnalysisListingExportCatalogService {
     constructor(
@@ -196,7 +198,8 @@ export class AnalysisListingExportCatalogService {
 
         const ids = selectionIds
             .map((selectionId) => String(selectionId || '').trim())
-            .filter(Boolean);
+            .filter(Boolean)
+            .filter((selectionId) => selectionId !== EMPTY_SELECTION_SENTINEL);
 
         return new Set(ids);
     }
