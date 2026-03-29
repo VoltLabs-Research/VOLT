@@ -250,3 +250,36 @@ test('ExportListingRowsByAnalysisIdUseCase only exports explicitly selected item
         []
     );
 });
+
+test('ExportListingRowsByAnalysisIdUseCase treats empty-selection sentinel as no listing exports', async () => {
+    const presenter = new StubListingRowsExportPresenter();
+    const daemonClient = new StubDaemonClient();
+    const catalogService = new AnalysisListingExportCatalogService(
+        new StubAnalysisRepository(buildAnalysis()) as any,
+        new StubTrajectoryRepository(buildTrajectory()) as any,
+        new StubPluginRepository(buildPlugin()) as any,
+        daemonClient as any
+    );
+    const useCase = new ExportListingRowsByAnalysisIdUseCase(
+        presenter as any,
+        catalogService as any
+    );
+
+    const result = await useCase.execute({
+        analysisId: 'analysis-1',
+        teamId: 'team-1',
+        format: ExportType.Csv,
+        includeConfig: true,
+        selectedListingIds: ['__volt_empty_selection__'],
+        selectedSubListingIds: ['__volt_empty_selection__']
+    });
+
+    assert.equal(result.success, true);
+    assert.ok(presenter.payload);
+    assert.deepEqual(presenter.payload.listings, []);
+    assert.deepEqual(presenter.payload.subListings, []);
+    assert.deepEqual(
+        daemonClient.calls.filter((call) => call.command === 'plugin.sub-listings.list'),
+        []
+    );
+});

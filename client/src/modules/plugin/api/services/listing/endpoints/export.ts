@@ -8,6 +8,8 @@ interface ExposureSelectorParams {
     exposureName?: string;
 };
 
+const EMPTY_SELECTION_SENTINEL = '__volt_empty_selection__';
+
 const requireExposureSelector = (params: ExposureSelectorParams, message: string) => {
     if (!params.exposureId && !params.exposureName) {
         throw new Error(message);
@@ -47,10 +49,18 @@ const endpoints = {
                 format,
                 ...(includeConfig !== undefined ? { includeConfig } : {}),
                 ...(selectedListingIds
-                    ? { selectedListingIds: selectedListingIds.join(',') }
+                    ? {
+                        selectedListingIds: selectedListingIds.length > 0
+                            ? selectedListingIds.join(',')
+                            : EMPTY_SELECTION_SENTINEL
+                    }
                     : {}),
                 ...(selectedSubListingIds
-                    ? { selectedSubListingIds: selectedSubListingIds.join(',') }
+                    ? {
+                        selectedSubListingIds: selectedSubListingIds.length > 0
+                            ? selectedSubListingIds.join(',')
+                            : EMPTY_SELECTION_SENTINEL
+                    }
                     : {})
             })
         }
