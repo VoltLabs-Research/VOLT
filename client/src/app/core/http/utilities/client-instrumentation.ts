@@ -1,4 +1,6 @@
-import { AxiosHttpClient } from '@voltstack/voltclient';
+import { ApiError, extractServerCode } from '@voltstack/voltclient';
+import axios from 'axios';
+import type { AxiosProgressEvent, AxiosRequestConfig } from 'axios';
 import type { CredentialProvider, HttpClient, HttpHeaders, HttpRequest } from '@voltstack/voltclient';
 
 interface CreateInstrumentedHttpClientOptions {
@@ -81,16 +83,140 @@ const buildTraceHeaders = (headers?: HttpHeaders): HttpHeaders => {
     };
 };
 
+const getHttpFallbackCode = (status: number): string => {
+    if (status === 400) {
+        return 'Http::400';
+    }
+
+    if (status === 401) {
+        return 'Http::401';
+    }
+
+    if (status === 403) {
+        return 'Http::403';
+    }
+
+    if (status === 404) {
+        return 'Http::404';
+    }
+
+    if (status === 409) {
+        return 'Http::409';
+    }
+
+    if (status === 429) {
+        return 'Http::429';
+    }
+
+    if (status === 500) {
+        return 'Http::500';
+    }
+
+    if (status === 502) {
+        return 'Http::502';
+    }
+
+    if (status === 503) {
+        return 'Http::503';
+    }
+
+    if (status === 504) {
+        return 'Http::504';
+    }
+
+    return 'Internal::Server::Error';
+};
+
+class BrowserAxiosHttpClient implements HttpClient {
+    private readonly api = axios.create({
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        timeout: DISABLED_HTTP_TIMEOUT_MS,
+        withCredentials: true
+    });
+
+    constructor(
+        private readonly baseUrl: string,
+        private readonly credential?: CredentialProvider
+    ) {}
+
+    async request<T>(request: HttpRequest): Promise<T> {
+        const token = this.credential ? await this.credential.getToken() : null;
+        const headers = buildTraceHeaders(request.headers);
+
+        if (token) {
+            headers.Authorization = `Bearer ${token}`;
+        }
+
+        if (request.body instanceof FormData) {
+            delete headers['Content-Type'];
+        }
+
+        try {
+            const config: AxiosRequestConfig = {
+                baseURL: this.baseUrl,
+                method: request.method,
+                url: request.url,
+                params: request.query,
+                data: request.body,
+                headers,
+                signal: request.signal,
+                responseType: request.responseType ?? 'json',
+                onUploadProgress: request.onUploadProgress
+                    ? (event: AxiosProgressEvent) => {
+                        request.onUploadProgress?.({
+                            loaded: event.loaded,
+                            total: event.total
+                        });
+                    }
+                    : undefined
+            };
+            const response = await this.api.request<T>(config);
+
+            if (response.status === 204 || response.headers['content-length'] === '0') {
+                return undefined as T;
+            }
+
+            return response.data;
+        } catch (error) {
+            if (error instanceof ApiError) {
+                throw error;
+            }
+
+            if (axios.isCancel(error)) {
+                throw error;
+            }
+
+            if (!axios.isAxiosError(error)) {
+                throw new ApiError('Internal::Server::Error', undefined, error);
+            }
+
+            if (error.code === 'ERR_CANCELED') {
+                throw error;
+            }
+
+            if (error.code === 'ECONNABORTED') {
+                throw new ApiError('Network::Timeout', undefined, error);
+            }
+
+            if (!error.response) {
+                throw new ApiError('Network::ConnectionError', undefined, error);
+            }
+
+            const codeFromServer = extractServerCode(error.response.data);
+            const fallbackCode = getHttpFallbackCode(error.response.status);
+            throw new ApiError(codeFromServer ?? fallbackCode, error.response.status, error);
+        }
+    }
+}
+
 class InstrumentedHttpClient implements HttpClient {
-    private readonly transport: AxiosHttpClient;
+    private readonly transport: BrowserAxiosHttpClient;
     private readonly timeoutMs: number;
 
     constructor({ baseUrl, credential, timeout }: CreateInstrumentedHttpClientOptions) {
-        this.transport = new AxiosHttpClient({
-            baseUrl,
-            credential,
-            timeout: DISABLED_HTTP_TIMEOUT_MS
-        });
+        this.transport = new BrowserAxiosHttpClient(baseUrl, credential);
         this.timeoutMs = timeout;
     }
 
