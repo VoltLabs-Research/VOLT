@@ -17,21 +17,12 @@ interface AnalysisListingDownloadSelection {
 
 interface AnalysisListingDownloadModalProps {
     analysisId?: string | null;
-    pluginId?: string | null;
     isDownloading?: boolean;
     onDownload: (selection: AnalysisListingDownloadSelection) => Promise<boolean>;
     onClose: () => void;
 }
 
 export const ANALYSIS_LISTING_DOWNLOAD_MODAL_ID = 'canvas-analysis-listing-download-modal';
-const ANALYSIS_LISTING_DOWNLOAD_PREFERENCES_STORAGE_KEY = 'volt:analysis-listing-download-preferences:v1';
-
-interface AnalysisListingDownloadPreferences {
-    includeConfig: boolean;
-    selectedListingKeys: string[];
-    selectedSubListingKeys: string[];
-    updatedAt: number;
-}
 
 const formatOptionLabel = (value: string): string => {
     const trimmed = value.trim();
@@ -56,68 +47,8 @@ const getSubListingSelectionName = (subListingName: string, fallbackLabel: strin
     return fallbackLabel.trim();
 };
 
-const getAnalysisListingDownloadPreferencesStorageKey = (pluginId: string): string => {
-    return `${ANALYSIS_LISTING_DOWNLOAD_PREFERENCES_STORAGE_KEY}:${pluginId}`;
-};
-
-const readAnalysisListingDownloadPreferences = (pluginId: string): AnalysisListingDownloadPreferences | null => {
-    if (typeof window === 'undefined') {
-        return null;
-    }
-
-    try {
-        const serializedPreferences = window.localStorage.getItem(
-            getAnalysisListingDownloadPreferencesStorageKey(pluginId)
-        );
-
-        if (!serializedPreferences) {
-            return null;
-        }
-
-        const parsedPreferences = JSON.parse(serializedPreferences) as Partial<AnalysisListingDownloadPreferences>;
-
-        if (
-            typeof parsedPreferences !== 'object'
-            || parsedPreferences === null
-            || !Array.isArray(parsedPreferences.selectedListingKeys)
-            || !Array.isArray(parsedPreferences.selectedSubListingKeys)
-            || typeof parsedPreferences.includeConfig !== 'boolean'
-        ) {
-            return null;
-        }
-
-        return {
-            includeConfig: parsedPreferences.includeConfig,
-            selectedListingKeys: parsedPreferences.selectedListingKeys.map(String),
-            selectedSubListingKeys: parsedPreferences.selectedSubListingKeys.map(String),
-            updatedAt: typeof parsedPreferences.updatedAt === 'number' ? parsedPreferences.updatedAt : Date.now()
-        };
-    } catch {
-        return null;
-    }
-};
-
-const writeAnalysisListingDownloadPreferences = (
-    pluginId: string,
-    preferences: AnalysisListingDownloadPreferences
-): void => {
-    if (typeof window === 'undefined') {
-        return;
-    }
-
-    try {
-        window.localStorage.setItem(
-            getAnalysisListingDownloadPreferencesStorageKey(pluginId),
-            JSON.stringify(preferences)
-        );
-    } catch {
-        return;
-    }
-};
-
 const AnalysisListingDownloadModal = ({
     analysisId,
-    pluginId,
     isDownloading = false,
     onDownload,
     onClose
@@ -129,15 +60,7 @@ const AnalysisListingDownloadModal = ({
     const [includeConfig, setIncludeConfig] = useState(true);
     const [selectedListingIds, setSelectedListingIds] = useState<Set<string>>(new Set());
     const [selectedSubListingNames, setSelectedSubListingNames] = useState<Set<string>>(new Set());
-    const [initializedSelectionScope, setInitializedSelectionScope] = useState<string | null>(null);
-
-    const selectionScope = useMemo(() => {
-        if (!analysisId) {
-            return null;
-        }
-
-        return pluginId ? `${analysisId}:${pluginId}` : analysisId;
-    }, [analysisId, pluginId]);
+    const [initializedAnalysisId, setInitializedAnalysisId] = useState<string | null>(null);
 
     const groupedSubListings = useMemo(() => {
         if (!optionsQuery.data) {
@@ -165,68 +88,24 @@ const AnalysisListingDownloadModal = ({
         return Array.from(groups.values());
     }, [optionsQuery.data]);
 
-    const listingPreferenceEntries = useMemo(() => {
-        return (optionsQuery.data?.listings ?? []).map((listing) => ({
-            id: listing.id,
-            key: listing.listingId
-        }));
-    }, [optionsQuery.data?.listings]);
-
     useEffect(() => {
         if (!analysisId) {
             setIncludeConfig(true);
             setSelectedListingIds(new Set());
             setSelectedSubListingNames(new Set());
-            setInitializedSelectionScope(null);
+            setInitializedAnalysisId(null);
             return;
         }
 
-        if (!selectionScope || !optionsQuery.data || initializedSelectionScope === selectionScope) {
+        if (!analysisId || !optionsQuery.data || initializedAnalysisId === analysisId) {
             return;
         }
 
-        const savedPreferences = pluginId
-            ? readAnalysisListingDownloadPreferences(pluginId)
-            : null;
-
-        if (!savedPreferences) {
-            setIncludeConfig(optionsQuery.data.hasConfig);
-            setSelectedListingIds(new Set(optionsQuery.data.listings.map((listing) => listing.id)));
-            setSelectedSubListingNames(new Set(groupedSubListings.map((subListing) => subListing.name)));
-            setInitializedSelectionScope(selectionScope);
-            return;
-        }
-
-        setIncludeConfig(Boolean(optionsQuery.data.hasConfig && savedPreferences.includeConfig));
-        setSelectedListingIds(new Set(
-            listingPreferenceEntries
-                .filter((listing) => savedPreferences.selectedListingKeys.includes(listing.key))
-                .map((listing) => listing.id)
-        ));
-        setSelectedSubListingNames(new Set(
-            groupedSubListings
-                .filter((subListing) => savedPreferences.selectedSubListingKeys.includes(subListing.name))
-                .map((subListing) => subListing.name)
-        ));
-        setInitializedSelectionScope(selectionScope);
-    }, [analysisId, groupedSubListings, initializedSelectionScope, listingPreferenceEntries, optionsQuery.data, pluginId, selectionScope]);
-
-    useEffect(() => {
-        if (!pluginId || !analysisId || !optionsQuery.data || initializedSelectionScope !== selectionScope) {
-            return;
-        }
-
-        writeAnalysisListingDownloadPreferences(pluginId, {
-            includeConfig: Boolean(optionsQuery.data.hasConfig && includeConfig),
-            selectedListingKeys: listingPreferenceEntries
-                .filter((listing) => selectedListingIds.has(listing.id))
-                .map((listing) => listing.key),
-            selectedSubListingKeys: groupedSubListings
-                .filter((subListing) => selectedSubListingNames.has(subListing.name))
-                .map((subListing) => subListing.name),
-            updatedAt: Date.now()
-        });
-    }, [analysisId, groupedSubListings, includeConfig, initializedSelectionScope, listingPreferenceEntries, optionsQuery.data, pluginId, selectedListingIds, selectedSubListingNames, selectionScope]);
+        setIncludeConfig(optionsQuery.data.hasConfig);
+        setSelectedListingIds(new Set(optionsQuery.data.listings.map((listing) => listing.id)));
+        setSelectedSubListingNames(new Set(groupedSubListings.map((subListing) => subListing.name)));
+        setInitializedAnalysisId(analysisId);
+    }, [analysisId, groupedSubListings, initializedAnalysisId, optionsQuery.data]);
 
     const toggleListing = (listingId: string, nextValue: boolean) => {
         setSelectedListingIds((current) => {
