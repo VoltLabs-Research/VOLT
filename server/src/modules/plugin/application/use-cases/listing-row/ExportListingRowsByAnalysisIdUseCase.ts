@@ -10,6 +10,7 @@ import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepo
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { Exporter } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ExportNode';
 
 import { IUseCase } from '@shared/application/IUseCase';
 import { ExportType } from '@shared/domain/port/IBaseRepository';
@@ -20,6 +21,7 @@ import { injectable, inject } from 'tsyringe';
 
 import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
 import type { IListingRowsExportPresenter } from '@modules/plugin/domain/port/listing-row/IListingRowsExportPresenter';
+import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 
 interface ListingAggregation {
@@ -27,6 +29,15 @@ interface ListingAggregation {
     listingName: string;
     rows: Record<string, unknown>[];
     dynamicColumns: Set<string>;
+};
+
+interface DiscoveredSubListingReference {
+    plugin: string;
+    trajectory: string;
+    exposureId: string;
+    exposureName: string;
+    timestep: number;
+    subListingName: string;
 };
 
 interface SubListingAggregation {
@@ -81,6 +92,16 @@ interface DaemonPaginatedResult<T> {
     limit: number;
 };
 
+interface CollectedListingsResult {
+    listings: ExportListingRowsByAnalysisIdOutputDTO['listings'];
+    subListingReferences: DiscoveredSubListingReference[];
+};
+
+interface ExcludedExposureSet {
+    ids: Set<string>;
+    names: Set<string>;
+};
+
 @injectable()
 export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
     ExportListingRowsByAnalysisIdInputDTO,
@@ -91,8 +112,58 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
         private readonly listingRowsExportPresenter: IListingRowsExportPresenter,
         @inject(ANALYSIS_TOKENS.AnalysisRepository) private analysisRepository: IAnalysisRepository,
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private trajectoryRepository: ITrajectoryRepository,
+        @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository,
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private daemonClient: TeamClusterDaemonClient
     ) {}
+
+    private emptyExcludedExposureSet(): ExcludedExposureSet {
+        return {
+            ids: new Set<string>(),
+            names: new Set<string>()
+        };
+    }
+
+    private shouldExcludeExposure(
+        row: Pick<DaemonListingRow, 'exposureId' | 'exposureName'>,
+        excludedExposures: ExcludedExposureSet
+    ): boolean {
+        if (row.exposureId && excludedExposures.ids.has(String(row.exposureId))) {
+            return true;
+        }
+
+        if (row.exposureName && excludedExposures.names.has(String(row.exposureName))) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private async resolveExcludedExposures(pluginId?: string): Promise<ExcludedExposureSet> {
+        if (!pluginId) {
+            return this.emptyExcludedExposureSet();
+        }
+
+        const plugin = await this.pluginRepository.findById(pluginId);
+        if (!plugin || !Array.isArray(plugin.props.exposures)) {
+            return this.emptyExcludedExposureSet();
+        }
+
+        return plugin.props.exposures.reduce<ExcludedExposureSet>((accumulator, exposure) => {
+            if (exposure?.export?.exporter !== Exporter.Mesh) {
+                return accumulator;
+            }
+
+            if (typeof exposure._id === 'string' && exposure._id) {
+                accumulator.ids.add(exposure._id);
+            }
+
+            if (typeof exposure.name === 'string' && exposure.name) {
+                accumulator.names.add(exposure.name);
+            }
+
+            return accumulator;
+        }, this.emptyExcludedExposureSet());
+    }
 
     private toExportRow(analysisId: string, listingRow: ListingRowByAnalysisData): Record<string, unknown> {
         const baseRow: Record<string, unknown> = {
@@ -211,10 +282,58 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
             }));
     }
 
+    private discoverSubListingReferences(rows: DaemonListingRow[]): DiscoveredSubListingReference[] {
+        const references = new Map<string, DiscoveredSubListingReference>();
+
+        for (const row of rows) {
+            if (!Array.isArray(row.subListingNames) || row.subListingNames.length === 0) {
+                continue;
+            }
+
+            const exposureId = row.exposureId || '';
+            const exposureName = row.exposureName || exposureId;
+            const plugin = String(row.plugin || '');
+            const trajectory = String(row.trajectory || '');
+            const timestep = row.timestep ?? 0;
+
+            for (const subListingName of row.subListingNames.map(String).filter(Boolean)) {
+                const key = [exposureId, timestep, subListingName].join('::');
+
+                if (references.has(key)) {
+                    continue;
+                }
+
+                references.set(key, {
+                    plugin,
+                    trajectory,
+                    exposureId,
+                    exposureName,
+                    timestep,
+                    subListingName
+                });
+            }
+        }
+
+        return Array.from(references.values()).sort((left, right) => {
+            const exposureComparison = left.exposureName.localeCompare(right.exposureName);
+            if (exposureComparison !== 0) {
+                return exposureComparison;
+            }
+
+            const timestepComparison = left.timestep - right.timestep;
+            if (timestepComparison !== 0) {
+                return timestepComparison;
+            }
+
+            return left.subListingName.localeCompare(right.subListingName);
+        });
+    }
+
     private async collectListings(
         teamClusterId: string,
-        analysisId: string
-    ): Promise<ExportListingRowsByAnalysisIdOutputDTO['listings']> {
+        analysisId: string,
+        excludedExposures: ExcludedExposureSet
+    ): Promise<CollectedListingsResult> {
         const pageSize = 200;
         let page = 1;
         let totalPages = 1;
@@ -229,7 +348,9 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
             );
 
             totalPages = Math.max(1, daemonResult.totalPages || 1);
-            listingRows.push(...(daemonResult.data || []));
+            listingRows.push(
+                ...(daemonResult.data || []).filter((row) => !this.shouldExcludeExposure(row, excludedExposures))
+            );
 
             page += 1;
         } while (page <= totalPages);
@@ -255,42 +376,77 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
             this.aggregateListingRow(listingMap, analysisId, mapped);
         }
 
-        return this.finalizeListingMap(listingMap);
+        return {
+            listings: this.finalizeListingMap(listingMap),
+            subListingReferences: this.discoverSubListingReferences(enrichedRows)
+        };
     }
 
-    private async collectSubListings(
+    private async collectSubListingRows(
         teamClusterId: string,
-        analysisId: string
-    ): Promise<AnalysisSubListingExportData[]> {
+        teamId: string,
+        analysisId: string,
+        reference: DiscoveredSubListingReference
+    ): Promise<SubListingExportRowInput[]> {
         const pageSize = 200;
         let page = 1;
         let totalPages = 1;
-        const allRows: SubListingExportRowInput[] = [];
+        const rows: SubListingExportRowInput[] = [];
 
         do {
             const daemonResult = await this.daemonClient.command<DaemonPaginatedResult<DaemonSubListingRow>>(
                 teamClusterId,
                 'plugin.sub-listings.list',
-                { analysisId, page, limit: pageSize }
+                {
+                    teamId,
+                    analysisId,
+                    exposureId: reference.exposureId,
+                    timestep: reference.timestep,
+                    subListingName: reference.subListingName,
+                    page,
+                    limit: pageSize
+                }
             );
 
             totalPages = Math.max(1, daemonResult.totalPages || 1);
 
             for (const doc of (daemonResult.data || [])) {
-                allRows.push({
+                rows.push({
                     _id: doc._id || '',
-                    plugin: String(doc.plugin || ''),
-                    trajectory: String(doc.trajectory || ''),
-                    exposureId: doc.exposureId || '',
-                    exposureName: doc.exposureName || '',
-                    timestep: doc.timestep ?? 0,
-                    subListingName: doc.subListingName || '',
+                    plugin: reference.plugin,
+                    trajectory: reference.trajectory,
+                    exposureId: reference.exposureId,
+                    exposureName: reference.exposureName,
+                    timestep: reference.timestep,
+                    subListingName: reference.subListingName,
                     row: (doc.row && typeof doc.row === 'object') ? doc.row : {}
                 });
             }
 
             page += 1;
         } while (page <= totalPages);
+
+        return rows;
+    }
+
+    private async collectSubListings(
+        teamClusterId: string,
+        teamId: string,
+        analysisId: string,
+        references: DiscoveredSubListingReference[]
+    ): Promise<AnalysisSubListingExportData[]> {
+        if (references.length === 0) {
+            return [];
+        }
+
+        const allRows = (
+            await Promise.all(references.map((reference) => this.collectSubListingRows(
+                teamClusterId,
+                teamId,
+                analysisId,
+                reference
+            )))
+        ).flat();
 
         return this.aggregateSubListingRows(analysisId, allRows);
     }
@@ -352,6 +508,7 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
         const teamClusterId = analysis
             ? resolveAnalysisComputeClusterId(analysis.props)
             : undefined;
+        const excludedExposures = await this.resolveExcludedExposures(analysis?.props.plugin);
 
         if (!teamClusterId) {
             const payload: ExportListingRowsByAnalysisIdOutputDTO = {
@@ -363,10 +520,16 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
             return Result.ok(this.listingRowsExportPresenter.present(payload));
         }
 
-        const [listings, subListings] = await Promise.all([
-            this.collectListings(teamClusterId, input.analysisId),
-            this.collectSubListings(teamClusterId, input.analysisId)
-        ]);
+        const {
+            listings,
+            subListingReferences
+        } = await this.collectListings(teamClusterId, input.analysisId, excludedExposures);
+        const subListings = await this.collectSubListings(
+            teamClusterId,
+            input.teamId,
+            input.analysisId,
+            subListingReferences
+        );
 
         const payload: ExportListingRowsByAnalysisIdOutputDTO = {
             analysisId: input.analysisId,
