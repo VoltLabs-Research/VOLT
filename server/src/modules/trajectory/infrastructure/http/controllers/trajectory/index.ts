@@ -49,7 +49,7 @@ const DeleteTrajectoryFolderController = createController(DeleteTrajectoryFolder
     statusCode: HttpStatus.NoContent
 });
 const GetTeamMetricsController = createController(GetTeamMetricsUseCase, {
-    handleSuccess: (res, value) => {
+    handleSuccess: (_req, res, value) => {
         BaseResponse.success(res, presentTeamMetrics(value as GetTeamMetricsResultDTO));
     }
 });

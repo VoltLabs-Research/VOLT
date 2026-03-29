@@ -4,7 +4,7 @@ import { createController } from '@shared/infrastructure/http/controllers/create
 
 export default createController(GetContainerVncConnectPageUseCase, {
     validationSchema: containerValidation.getVncConnectPage,
-    handleSuccess: (res, value) => {
+    handleSuccess: (_req, res, value) => {
         res.removeHeader('X-Frame-Options');
         res.setHeader('Cache-Control', 'no-store');
         res.setHeader('Content-Type', 'text/html; charset=utf-8');

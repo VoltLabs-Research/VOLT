@@ -14,7 +14,7 @@ export default createController<SendAIConversationMessageUseCase>(AI_TOKENS.Send
         ...params,
         userId: req.userId
     }),
-    handleSuccess: async (res, value: SendAIConversationMessageOutput) => {
+    handleSuccess: async (_req, res, value: SendAIConversationMessageOutput) => {
         const [fullText, assistantMessage] = await Promise.all([
             value.streamResult.consumeText(),
             value.assistantMessage

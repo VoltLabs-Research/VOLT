@@ -10,7 +10,7 @@ import {
     JUPYTER_PROXY_ACCESS_TOKEN_QUERY_PARAM,
     JUPYTER_PROXY_BASE_PATH,
     matchJupyterProxyPath,
-    readJupyterProxyAccessTokenFromUrl
+    setJupyterProxyAccessCookie
 } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import {
     TeamClusterServiceExposureAccessMode
@@ -45,6 +45,7 @@ interface AuthorizedProxyContext {
     teamId: string;
     runtimeNotebookId: string;
     teamClusterId: string;
+    userId: string;
 };
 
 interface TeamMemberRolePopulate {
@@ -90,8 +91,8 @@ const DAEMON_PROXY_UNAVAILABLE_ERROR_MESSAGES = [
     'team cluster daemon reverse channel is not connected',
     'team cluster daemon connection is not ready yet'
 ];
-const AUTHORIZED_PROXY_CONTEXT_CACHE_TTL_MS = 1_500;
-const NOTEBOOK_RUNTIME_CACHE_TTL_MS = 750;
+const AUTHORIZED_PROXY_CONTEXT_CACHE_TTL_MS = 30_000;
+const NOTEBOOK_RUNTIME_CACHE_TTL_MS = 30_000;
 const HTTP_PROXY_SESSION_TTL_MS = 15_000;
 const MAX_HTTP_PROXY_SESSIONS_PER_RUNTIME = 2;
 
@@ -468,7 +469,7 @@ export class ScriptingJupyterProxyService {
             return cachedContext;
         }
 
-        logger.info({
+        logger.debug({
             action: 'scripting.jupyter-proxy.auth-context.cache-miss',
             teamId: match.teamId,
             runtimeNotebookId: match.runtimeNotebookId,
@@ -538,7 +539,8 @@ export class ScriptingJupyterProxyService {
         return {
             teamId,
             runtimeNotebookId,
-            teamClusterId: notebook.props.teamCluster
+            teamClusterId: notebook.props.teamCluster,
+            userId
         };
     }
 
@@ -585,16 +587,20 @@ export class ScriptingJupyterProxyService {
     }
 
     private persistAccessTokenCookie(req: Request, res: Response, context: AuthorizedProxyContext): void {
-        const accessToken = readJupyterProxyAccessTokenFromUrl(req.originalUrl);
-        if (!accessToken) {
-            return;
-        }
-
-        res.cookie(JUPYTER_PROXY_ACCESS_TOKEN_COOKIE_NAME, accessToken, {
-            httpOnly: true,
-            sameSite: 'lax',
-            path: buildJupyterProxyBasePath(context.teamId, context.runtimeNotebookId)
+        const accessToken = this.accessTokenService.create({
+            teamId: context.teamId,
+            runtimeNotebookId: context.runtimeNotebookId,
+            userId: context.userId
         });
+
+        setJupyterProxyAccessCookie(
+            req,
+            res,
+            accessToken,
+            context.teamId,
+            context.runtimeNotebookId,
+            this.accessTokenService.getCookieMaxAgeMs()
+        );
     }
 
     private bindReverseChannelWebSocketProxy(
@@ -1127,7 +1133,6 @@ export class ScriptingJupyterProxyService {
 
     private rewriteProxyLocation(requestLocation: string, requestUrl: string, context: AuthorizedProxyContext): string {
         const publicProxyBasePath = this.buildPublicProxyBasePath(context.teamId, context.runtimeNotebookId);
-        const requestUrlObject = new URL(requestUrl, PROXY_URL_ORIGIN);
         const currentProxyTarget = this.extractProxyTarget(requestUrl);
         const upstreamRequestUrl = new URL(`${currentProxyTarget.proxiedPath}${currentProxyTarget.rawQuery}`, UPSTREAM_URL_ORIGIN);
         const resolvedLocation = new URL(requestLocation, upstreamRequestUrl);
@@ -1140,11 +1145,6 @@ export class ScriptingJupyterProxyService {
         rewrittenUrl.search = resolvedLocation.search;
         rewrittenUrl.hash = resolvedLocation.hash;
         rewrittenUrl.searchParams.delete(JUPYTER_NATIVE_TOKEN_QUERY_PARAM);
-
-        const accessToken = requestUrlObject.searchParams.get(JUPYTER_PROXY_ACCESS_TOKEN_QUERY_PARAM);
-        if (accessToken && !rewrittenUrl.searchParams.has(JUPYTER_PROXY_ACCESS_TOKEN_QUERY_PARAM)) {
-            rewrittenUrl.searchParams.set(JUPYTER_PROXY_ACCESS_TOKEN_QUERY_PARAM, accessToken);
-        }
 
         return `${rewrittenUrl.pathname}${rewrittenUrl.search}${rewrittenUrl.hash}`;
     }
