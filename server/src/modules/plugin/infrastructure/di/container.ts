@@ -4,6 +4,7 @@ import { GetPluginExposureExportUseCase } from '@modules/plugin/application/use-
 import { GetPluginExposureGLBUseCase } from '@modules/plugin/application/use-cases/exposure/GetPluginExposureGLBUseCase';
 import { ExportListingRowsByAnalysisIdUseCase } from '@modules/plugin/application/use-cases/listing-row/ExportListingRowsByAnalysisIdUseCase';
 import { ExportPluginListingDocumentsUseCase } from '@modules/plugin/application/use-cases/listing-row/ExportPluginListingDocumentsUseCase';
+import { GetAnalysisListingExportOptionsUseCase } from '@modules/plugin/application/use-cases/listing-row/GetAnalysisListingExportOptionsUseCase';
 import { CreatePluginUseCase } from '@modules/plugin/application/use-cases/plugin/CreatePluginUseCase';
 import { DeleteBinaryUseCase } from '@modules/plugin/application/use-cases/plugin/DeleteBinaryUseCase';
 import { DeletePluginByIdUseCase } from '@modules/plugin/application/use-cases/plugin/DeletePluginByIdUseCase';
@@ -19,6 +20,7 @@ import { ListingRowsExportPresenter } from '@modules/plugin/infrastructure/http/
 import { DefaultPluginBootstrapService } from '@modules/plugin/infrastructure/services/plugin/DefaultPluginBootstrapService';
 import { PluginExposureExportService } from '@modules/plugin/infrastructure/services/exposure/PluginExposureExportService';
 import { DaemonPluginListingService } from '@modules/plugin/infrastructure/services/listing-row/DaemonPluginListingService';
+import { AnalysisListingExportCatalogService } from '@modules/plugin/application/services/listing-row/AnalysisListingExportCatalogService';
 import { WorkflowValidatorService } from '@modules/plugin/infrastructure/services/plugin/WorkflowValidatorService';
 import { PluginDependencyResolverService } from '@modules/plugin/infrastructure/services/plugin/PluginDependencyResolverService';
 import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
@@ -41,6 +43,7 @@ export const registerPluginDependencies = (): void => {
             [PLUGIN_TOKENS.DefaultPluginBootstrapService, DefaultPluginBootstrapService],
             [PLUGIN_TOKENS.PluginBinaryCacheService, PluginBinaryCacheService],
             [PLUGIN_TOKENS.PluginExecutionRouter, PluginExecutionRouter],
+            AnalysisListingExportCatalogService,
             [PLUGIN_TOKENS.ListingRowsExportPresenter, ListingRowsExportPresenter],
             [PLUGIN_TOKENS.PluginExposureExportService, PluginExposureExportService],
             [PLUGIN_TOKENS.PluginRepository, PluginRepository],
@@ -58,6 +61,7 @@ export const registerPluginDependencies = (): void => {
             UploadBinaryUseCase,
             ExportPluginListingDocumentsUseCase,
             ExportListingRowsByAnalysisIdUseCase,
+            GetAnalysisListingExportOptionsUseCase,
             GetPluginExposureGLBUseCase,
             GetPluginExposureExportUseCase
         ],

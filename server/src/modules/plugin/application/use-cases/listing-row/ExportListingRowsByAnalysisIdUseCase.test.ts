@@ -6,6 +6,7 @@ import Plugin, { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plu
 import Workflow from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
 import { ExportType as WorkflowExportType, Exporter } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ExportNode';
 import Trajectory, { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
+import { AnalysisListingExportCatalogService, buildAnalysisListingSelectionId } from '@modules/plugin/application/services/listing-row/AnalysisListingExportCatalogService';
 import { ExportType } from '@shared/domain/port/IBaseRepository';
 import { Readable } from 'node:stream';
 import { ExportListingRowsByAnalysisIdUseCase } from './ExportListingRowsByAnalysisIdUseCase';
@@ -44,10 +45,6 @@ class StubPluginRepository {
 
     async findById(): Promise<Plugin> {
         return this.plugin;
-    }
-
-    async findByIds(): Promise<Plugin[]> {
-        return [];
     }
 }
 
@@ -178,12 +175,15 @@ const buildTrajectory = () => new Trajectory('trajectory-1', {
 test('ExportListingRowsByAnalysisIdUseCase excludes MeshExporter data from listings and sub-listings', async () => {
     const presenter = new StubListingRowsExportPresenter();
     const daemonClient = new StubDaemonClient();
-    const useCase = new ExportListingRowsByAnalysisIdUseCase(
-        presenter as any,
+    const catalogService = new AnalysisListingExportCatalogService(
         new StubAnalysisRepository(buildAnalysis()) as any,
         new StubTrajectoryRepository(buildTrajectory()) as any,
         new StubPluginRepository(buildPlugin()) as any,
         daemonClient as any
+    );
+    const useCase = new ExportListingRowsByAnalysisIdUseCase(
+        presenter as any,
+        catalogService as any
     );
 
     const result = await useCase.execute({
@@ -211,5 +211,42 @@ test('ExportListingRowsByAnalysisIdUseCase excludes MeshExporter data from listi
     assert.deepEqual(
         daemonClient.calls.filter((call) => call.command === 'plugin.sub-listings.list').map((call) => call.payload.exposureId),
         ['dislocations-exposure']
+    );
+});
+
+test('ExportListingRowsByAnalysisIdUseCase only exports explicitly selected items', async () => {
+    const presenter = new StubListingRowsExportPresenter();
+    const daemonClient = new StubDaemonClient();
+    const catalogService = new AnalysisListingExportCatalogService(
+        new StubAnalysisRepository(buildAnalysis()) as any,
+        new StubTrajectoryRepository(buildTrajectory()) as any,
+        new StubPluginRepository(buildPlugin()) as any,
+        daemonClient as any
+    );
+    const useCase = new ExportListingRowsByAnalysisIdUseCase(
+        presenter as any,
+        catalogService as any
+    );
+
+    const result = await useCase.execute({
+        analysisId: 'analysis-1',
+        teamId: 'team-1',
+        format: ExportType.Csv,
+        includeConfig: false,
+        selectedListingIds: [buildAnalysisListingSelectionId('dislocations-exposure', 'Dislocations')],
+        selectedSubListingIds: []
+    });
+
+    assert.equal(result.success, true);
+    assert.ok(presenter.payload);
+    assert.equal(presenter.payload.config, undefined);
+    assert.deepEqual(
+        presenter.payload.listings.map((listing: { listingId: string }) => listing.listingId),
+        ['dislocations-exposure']
+    );
+    assert.deepEqual(presenter.payload.subListings, []);
+    assert.deepEqual(
+        daemonClient.calls.filter((call) => call.command === 'plugin.sub-listings.list'),
+        []
     );
 });

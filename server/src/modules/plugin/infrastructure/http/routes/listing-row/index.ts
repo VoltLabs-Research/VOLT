@@ -11,6 +11,7 @@ export default createHttpModule({
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
         router.get('/listings/analyses/:analysisId', listingRowValidation.getListingRowsByAnalysisId, controllers.getListingRowsByAnalysisId.handle);
+        router.get('/listings/analyses/:analysisId/export/options', listingRowValidation.getAnalysisListingExportOptions, controllers.getAnalysisListingExportOptions.handle);
         router.get('/listings/analyses/:analysisId/export', listingRowValidation.exportListingRowsByAnalysisId, controllers.exportListingRowsByAnalysisId.handle);
         router.get('/listings/analyses/:analysisId/sub-listings/:exposureId/:timestep/:subListingName', listingRowValidation.getSubListing, controllers.getSubListing.handle);
         router.get('/:pluginId/listings/export', listingRowValidation.exportPluginListingDocuments, controllers.exportPluginListingDocuments.handle);

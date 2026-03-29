@@ -25,6 +25,9 @@ export interface ExportListingRowsByAnalysisIdInputDTO {
     analysisId: string;
     teamId: string;
     format?: ExportType;
+    includeConfig?: boolean;
+    selectedListingIds?: string[];
+    selectedSubListingIds?: string[];
     sortAsc?: boolean;
 };
 

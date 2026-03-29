@@ -10,6 +10,10 @@ import { createMutation, buildKeys } from '@/shared/infrastructure/query';
 import listingService from '../../api/services/listing';
 import type { ExportListingByAnalysisInputDTO } from '../../api/dtos/listing/export-listing-by-analysis';
 import type { ExportPluginListingInputDTO } from '../../api/dtos/listing/export-plugin-listing';
+import type {
+    GetAnalysisListingExportOptionsInputDTO,
+    GetAnalysisListingExportOptionsOutputDTO
+} from '../../api/dtos/listing/get-analysis-listing-export-options';
 import type { GetPluginListingInputDTO, GetPluginListingOutputDTO } from '../../api/dtos/listing/get-plugin-listing';
 import type { GetSubListingInputDTO, GetSubListingOutputDTO } from '../../api/dtos/listing/get-sub-listing';
 
@@ -28,6 +32,9 @@ const listingInfiniteKeys = buildKeys<{
 }>(['plugins', 'listing', 'infinite']);
 
 const subListingKeys = buildKeys<Record<string, never>>(['plugins', 'subListing']);
+const analysisExportOptionsKeys = buildKeys<{
+    detail: GetAnalysisListingExportOptionsInputDTO;
+}>(['plugins', 'analysis-export-options']);
 
 const subListingInfiniteKeys = buildKeys<{
     detail: Omit<GetSubListingInputDTO, 'page'> & { limit: number };
@@ -44,7 +51,9 @@ export const LISTING_QUERY_KEYS = {
     listingInfiniteDetail: listingInfiniteKeys.detail,
     subListing: subListingKeys.prefix,
     subListingInfinite: subListingInfiniteKeys.prefix,
-    subListingDetail: subListingInfiniteKeys.detail
+    subListingDetail: subListingInfiniteKeys.detail,
+    analysisExportOptions: analysisExportOptionsKeys.prefix,
+    analysisExportOptionsDetail: analysisExportOptionsKeys.detail
 };
 
 // ─── Listing queries ─────────────────────────────────────────────────────────
@@ -119,6 +128,17 @@ export const useSubListingInfiniteQuery = (
         initialPageParam: 1,
         getNextPageParam: options.getNextPageParam,
         enabled: options.enabled
+    });
+};
+
+export const useAnalysisListingExportOptionsQuery = (
+    params: GetAnalysisListingExportOptionsInputDTO,
+    options?: QueryOptions<GetAnalysisListingExportOptionsOutputDTO, GetAnalysisListingExportOptionsOutputDTO>
+) => {
+    return useQuery<GetAnalysisListingExportOptionsOutputDTO, Error, GetAnalysisListingExportOptionsOutputDTO, QueryKey>({
+        queryKey: LISTING_QUERY_KEYS.analysisExportOptionsDetail(params),
+        queryFn: () => listingService.getAnalysisListingExportOptions(params),
+        ...options
     });
 };
 

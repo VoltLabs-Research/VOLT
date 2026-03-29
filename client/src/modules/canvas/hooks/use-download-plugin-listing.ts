@@ -17,6 +17,9 @@ export interface DownloadPluginListingParams {
 export interface DownloadAnalysisListingParams {
     analysisId: string;
     format?: ExportType;
+    includeConfig?: boolean;
+    selectedListingIds?: string[];
+    selectedSubListingIds?: string[];
 };
 
 const useDownloadPluginListing = () => {
@@ -31,11 +34,11 @@ const useDownloadPluginListing = () => {
         return fallback;
     }, []);
 
-    const downloadListing = useCallback(async (params: DownloadPluginListingParams) => {
+    const downloadListing = useCallback(async (params: DownloadPluginListingParams): Promise<boolean> => {
         const { pluginId, exposureId, analysisId, trajectoryId, exposureName, format = 'json' } = params;
 
         if (!pluginId || !exposureId) {
-            return;
+            return false;
         }
 
         try {
@@ -60,16 +63,27 @@ const useDownloadPluginListing = () => {
                     error: { title: 'Failed to download listing' }
                 }
             );
+            return true;
         } catch(error: unknown) {
-            if(isAccessDeniedError(error)) return;
+            if (isAccessDeniedError(error)) {
+                return false;
+            }
+
+            return false;
         }
     }, [exportListingMutation]);
 
-    const downloadAnalysisListings = useCallback(async (params: DownloadAnalysisListingParams) => {
-        const { analysisId, format = 'csv' } = params;
+    const downloadAnalysisListings = useCallback(async (params: DownloadAnalysisListingParams): Promise<boolean> => {
+        const {
+            analysisId,
+            format = 'csv',
+            includeConfig,
+            selectedListingIds,
+            selectedSubListingIds
+        } = params;
 
         if (!analysisId) {
-            return;
+            return false;
         }
 
         try {
@@ -77,7 +91,10 @@ const useDownloadPluginListing = () => {
                 (async () => {
                     const blob = await exportListingByAnalysisMutation.mutateAsync({
                         analysisId,
-                        format
+                        format,
+                        ...(includeConfig !== undefined ? { includeConfig } : {}),
+                        ...(selectedListingIds ? { selectedListingIds } : {}),
+                        ...(selectedSubListingIds ? { selectedSubListingIds } : {})
                     });
                     const extension = getExtensionFromBlob(blob, format);
                     triggerBrowserDownload(blob, `AnalysisID-${analysisId}.${extension}`);
@@ -89,8 +106,13 @@ const useDownloadPluginListing = () => {
                     error: { title: 'Failed to download analysis listings' }
                 }
             );
+            return true;
         } catch(error: unknown) {
-            if(isAccessDeniedError(error)) return;
+            if (isAccessDeniedError(error)) {
+                return false;
+            }
+
+            return false;
         }
     }, [getExtensionFromBlob, exportListingByAnalysisMutation]);
 
