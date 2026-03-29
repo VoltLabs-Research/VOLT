@@ -2,7 +2,7 @@ import { Resource } from '@core/constants/resources';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
-import { buildJupyterProxyUrl, persistJupyterProxyAccessCookieFromUrl } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
+import { buildJupyterProxyUrl, clearJupyterProxyAccessCookie, setJupyterProxyAccessCookie } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
 import { ErrorCodes } from '@core/constants/error-codes';
 import scriptingControllers from '@modules/scripting/infrastructure/http/controllers';
@@ -35,6 +35,11 @@ interface ScriptingSessionStatusResponse {
         url: string;
         containerStage?: 'creating' | 'starting' | 'ready';
     };
+};
+
+interface ScriptingSessionStatusResult {
+    runtimeNotebookId?: string;
+    response: ScriptingSessionStatusResponse;
 };
 
 interface DeleteScriptingSessionResponse {
@@ -107,9 +112,8 @@ const getScriptingSessionStatusInput = (
 });
 
 const readScriptingSessionStatus = async (
-    input: ScriptingSessionStatusInput,
-    userId: string
-): Promise<ScriptingSessionStatusResponse> => {
+    input: ScriptingSessionStatusInput
+): Promise<ScriptingSessionStatusResult> => {
     const notebook = await scriptingNotebookRepository.findByTeamAndNotebookId(input.teamId, input.notebookId);
 
     if (!notebook) {
@@ -121,11 +125,13 @@ const readScriptingSessionStatus = async (
 
     if (!notebook.props.runtimeNotebookId) {
         return {
-            notebookId: notebook.id,
-            jupyter: {
-                ready: false,
-                url: '',
-                containerStage: 'creating'
+            response: {
+                notebookId: notebook.id,
+                jupyter: {
+                    ready: false,
+                    url: '',
+                    containerStage: 'creating'
+                }
             }
         };
     }
@@ -133,18 +139,19 @@ const readScriptingSessionStatus = async (
     const jupyterUrl = buildJupyterProxyUrl({
         teamId: input.teamId,
         runtimeNotebookId: notebook.props.runtimeNotebookId,
-        notebookPath: notebook.props.notebookPath,
-        userId,
-        createAccessToken: scriptingJupyterAccessTokenService.create.bind(scriptingJupyterAccessTokenService)
+        notebookPath: notebook.props.notebookPath
     });
 
     if (!notebook.props.teamCluster) {
         return {
-            notebookId: notebook.id,
-            jupyter: {
-                ready: false,
-                url: jupyterUrl,
-                containerStage: 'creating'
+            runtimeNotebookId: notebook.props.runtimeNotebookId,
+            response: {
+                notebookId: notebook.id,
+                jupyter: {
+                    ready: false,
+                    url: jupyterUrl,
+                    containerStage: 'creating'
+                }
             }
         };
     }
@@ -155,11 +162,14 @@ const readScriptingSessionStatus = async (
     );
 
     return {
-        notebookId: notebook.id,
-        jupyter: {
-            ready: Boolean(runtime),
-            url: jupyterUrl,
-            containerStage: runtime ? 'ready' : 'starting'
+        runtimeNotebookId: notebook.props.runtimeNotebookId,
+        response: {
+            notebookId: notebook.id,
+            jupyter: {
+                ready: Boolean(runtime),
+                url: jupyterUrl,
+                containerStage: runtime ? 'ready' : 'starting'
+            }
         }
     };
 };
@@ -177,16 +187,27 @@ const handleScriptingSessionStatus = async (
             );
         }
 
-        const status = await readScriptingSessionStatus(
-            getScriptingSessionStatusInput(req.params),
-            req.userId
-        );
+        const input = getScriptingSessionStatusInput(req.params);
+        const status = await readScriptingSessionStatus(input);
 
-        if (status.jupyter.url) {
-            persistJupyterProxyAccessCookieFromUrl(res, status.jupyter.url);
+        if (status.runtimeNotebookId && status.response.jupyter.url) {
+            const accessToken = scriptingJupyterAccessTokenService.create({
+                teamId: input.teamId,
+                runtimeNotebookId: status.runtimeNotebookId,
+                userId: req.userId
+            });
+
+            setJupyterProxyAccessCookie(
+                req,
+                res,
+                accessToken,
+                input.teamId,
+                status.runtimeNotebookId,
+                scriptingJupyterAccessTokenService.getCookieMaxAgeMs()
+            );
         }
 
-        res.json({ status: 'success', data: status });
+        res.json({ status: 'success', data: status.response });
     } catch (error) {
         next(error);
     }
@@ -225,6 +246,10 @@ const handleDeleteScriptingSession = async (
         await scriptingNotebookRepository.updateById(notebook.id, {
             runtimeNotebookId: undefined
         });
+
+        if (runtimeNotebookId) {
+            clearJupyterProxyAccessCookie(req, res, teamId, runtimeNotebookId);
+        }
 
         const response: DeleteScriptingSessionResponse = {
             notebookId: notebook.id,

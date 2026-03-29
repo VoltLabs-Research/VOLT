@@ -8,7 +8,7 @@ import type { UseCaseOutput } from '@shared/application/IUseCase';
 type GetTrajectoryPreviewOutput = UseCaseOutput<GetTrajectoryPreviewUseCase>;
 
 export default createController(GetTrajectoryPreviewUseCase, {
-    handleSuccess: (res, value: GetTrajectoryPreviewOutput) => {
+    handleSuccess: (_req, res, value: GetTrajectoryPreviewOutput) => {
         const request = res.req;
 
         if (request?.headers['if-none-match'] === value.etag) {

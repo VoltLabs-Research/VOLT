@@ -2,7 +2,6 @@ import { TeamClusterSelectionService } from '@modules/container/infrastructure/s
 import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
 import { buildJupyterProxyBasePath, buildJupyterProxyUrl } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import { JupyterNotebookService } from '@modules/scripting/infrastructure/services/JupyterNotebookService';
-import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
@@ -66,10 +65,7 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         private readonly teamClusterSelectionService: TeamClusterSelectionService,
 
         @inject(JupyterNotebookService)
-        private readonly notebookService: JupyterNotebookService,
-
-        @inject(ScriptingJupyterAccessTokenService)
-        private readonly accessTokenService: ScriptingJupyterAccessTokenService
+        private readonly notebookService: JupyterNotebookService
     ) {}
 
     async startSession(input: ScriptingSessionStartInput): Promise<ScriptingSessionStartResult> {
@@ -112,9 +108,7 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         const jupyterUrl = buildJupyterProxyUrl({
             teamId: input.teamId,
             runtimeNotebookId,
-            daemonPath,
-            userId: input.userId,
-            createAccessToken: this.accessTokenService.create.bind(this.accessTokenService)
+            daemonPath
         });
         return {
             notebookId: input.notebookId,
