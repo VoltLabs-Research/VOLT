@@ -1,9 +1,13 @@
 import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
-import { prepareWorkDir, runCompiler } from './compile-helpers';
+import {
+    getDocumentCompileWorkDirSegment,
+    prepareWorkDir,
+    runCompiler,
+    withDocumentCompileLock
+} from './compile-helpers';
 import { AITool } from '@shared/application/ai/AITool';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { injectable, inject } from 'tsyringe';
-import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
 import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
@@ -47,9 +51,11 @@ export class CompileLatexDocumentAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const workDir = this.tempFileService.getDirPath(`latex-compile-${uuidv4()}`);
+        const workDir = this.tempFileService.getDirPath(
+            getDocumentCompileWorkDirSegment(scope.teamId, params.documentId)
+        );
 
-        try {
+        return withDocumentCompileLock(scope.teamId, params.documentId, async () => {
             const preparation = await prepareWorkDir(
                 {
                     teamId: scope.teamId,
@@ -65,6 +71,26 @@ export class CompileLatexDocumentAITool extends AITool {
                     tempFileService: this.tempFileService
                 }
             );
+
+            if (preparation.status === 'no-document') {
+                return {
+                    summary: 'Compilation failed: LaTeX document not found.',
+                    data: {
+                        success: false,
+                        log: 'LaTeX document not found.'
+                    }
+                };
+            }
+
+            if (preparation.status === 'no-files') {
+                return {
+                    summary: 'Compilation failed: document has no LaTeX files.',
+                    data: {
+                        success: false,
+                        log: 'This document has no LaTeX files. Create main.tex before compiling.'
+                    }
+                };
+            }
 
             if (preparation.status === 'no-entrypoint') {
                 return {
@@ -99,8 +125,6 @@ export class CompileLatexDocumentAITool extends AITool {
                     log: result.log || 'No output produced.'
                 }
             };
-        } finally {
-            await this.tempFileService.delete(workDir, { recursive: true }).catch(() => undefined);
-        }
+        });
     }
 }
