@@ -10,7 +10,7 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
-import type { ChangeEvent, ComponentProps, CSSProperties, DragEvent, ReactNode } from 'react';
+import type { ChangeEvent, ClipboardEvent, ComponentProps, CSSProperties, DragEvent, ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Excalidraw as ExcalidrawComponent } from '@excalidraw/excalidraw';
 import { ImagePlus } from 'lucide-react';
@@ -121,6 +121,11 @@ const createSceneSignature = (elements: Record<string, unknown>[], appState: Rec
         appState: filterPersistableAppState(appState)
     });
 };
+
+const EXCALIDRAW_CLIPBOARD_MIME_TYPES = new Set([
+    'application/vnd.excalidraw+json',
+    'application/vnd.excalidrawlib+json'
+]);
 
 const WhiteboardCanvas = lazy(
     () => import('./WhiteboardCanvas')
@@ -365,18 +370,20 @@ const WhiteboardEditorPage = () => {
         });
     }, [handleInsertImageFiles]);
 
-    const handleExcalidrawPaste = useCallback<NonNullable<ExcalidrawProps['onPaste']>>(async (data, event) => {
-        if ((data.elements && data.elements.length > 0) || (data.files && Object.keys(data.files).length > 0)) {
-            return false;
+    const handleCanvasPasteCapture = useCallback(async (event: ClipboardEvent<HTMLDivElement>) => {
+        const clipboardTypes = new Set(Array.from(event.clipboardData?.types ?? []));
+        if (Array.from(EXCALIDRAW_CLIPBOARD_MIME_TYPES).some((mimeType) => clipboardTypes.has(mimeType))) {
+            return;
         }
 
-        const imageFiles = extractWhiteboardImageFiles(event?.clipboardData?.files);
+        const imageFiles = extractWhiteboardImageFiles(event.clipboardData?.files);
         if (imageFiles.length === 0) {
-            return false;
+            return;
         }
 
+        event.preventDefault();
+        event.stopPropagation();
         await handleInsertImageFiles(imageFiles);
-        return true;
     }, [handleInsertImageFiles]);
 
     useEffect(() => {
@@ -481,11 +488,11 @@ const WhiteboardEditorPage = () => {
                         name={whiteboard?.title ?? 'Untitled Whiteboard'}
                         initialData={excalidrawInitialData}
                         onChange={handleExcalidrawChange}
-                        onPaste={handleExcalidrawPaste}
                         generateIdForFile={generateIdForFile}
                         renderTopRightUI={renderTopRightUI}
                         onExcalidrawAPI={handleExcalidrawAPI}
                         onInsertImage={handleOpenImagePicker}
+                        onCanvasPasteCapture={handleCanvasPasteCapture}
                         onCanvasDragOver={handleCanvasDragOver}
                         onCanvasDrop={handleCanvasDrop}
                         onBack={handleBack}
