@@ -129,9 +129,6 @@ const getHttpFallbackCode = (status: number): string => {
 
 class BrowserAxiosHttpClient implements HttpClient {
     private readonly api = axios.create({
-        headers: {
-            'Content-Type': 'application/json'
-        },
         timeout: DISABLED_HTTP_TIMEOUT_MS,
         withCredentials: true
     });
@@ -144,6 +141,7 @@ class BrowserAxiosHttpClient implements HttpClient {
     async request<T>(request: HttpRequest): Promise<T> {
         const token = this.credential ? await this.credential.getToken() : null;
         const headers = buildTraceHeaders(request.headers);
+        const hasExplicitContentType = headers['Content-Type'] !== undefined || headers['content-type'] !== undefined;
 
         if (token) {
             headers.Authorization = `Bearer ${token}`;
@@ -151,6 +149,9 @@ class BrowserAxiosHttpClient implements HttpClient {
 
         if (request.body instanceof FormData) {
             delete headers['Content-Type'];
+            delete headers['content-type'];
+        } else if (request.body !== undefined && !hasExplicitContentType) {
+            headers['Content-Type'] = 'application/json';
         }
 
         try {

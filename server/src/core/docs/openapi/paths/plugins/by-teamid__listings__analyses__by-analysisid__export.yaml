@@ -13,6 +13,24 @@ get:
     description: Export format
     schema:
       $ref: ../../components/schemas/plugins.yaml#/ExportType
+  - name: includeConfig
+    in: query
+    required: false
+    description: Include Config.csv in the export bundle
+    schema:
+      type: boolean
+  - name: selectedListingIds
+    in: query
+    required: false
+    description: Comma-separated listing selection ids to include. When omitted, all listings are included.
+    schema:
+      type: string
+  - name: selectedSubListingIds
+    in: query
+    required: false
+    description: Comma-separated sublisting selection ids to include. When omitted, all sublistings are included.
+    schema:
+      type: string
   responses:
     '200':
       description: Exported listing data file

@@ -4199,6 +4199,71 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /api/plugins/{teamId}/listings/analyses/{analysisId}/export/options:
+    get:
+      tags:
+        - Plugin Listings
+      summary: Get export options for an analysis listing download
+      description: Returns the available config, listings, and sublistings that can be selected before exporting analysis results.
+      operationId: getAnalysisListingExportOptions
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+        - $ref: '#/components/parameters/AnalysisId'
+      responses:
+        '200':
+          description: Available export options for the analysis
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          analysisId:
+                            type: string
+                          hasConfig:
+                            type: boolean
+                          listings:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                listingId:
+                                  type: string
+                                listingName:
+                                  type: string
+                                label:
+                                  type: string
+                          subListings:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                exposureId:
+                                  type: string
+                                exposureName:
+                                  type: string
+                                timestep:
+                                  type: integer
+                                subListingName:
+                                  type: string
+                                label:
+                                  type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /api/plugins/{teamId}/listings/analyses/{analysisId}/export:
     get:
       tags:
@@ -4215,6 +4280,24 @@ paths:
           description: Export format
           schema:
             $ref: '#/components/schemas/ExportType'
+        - name: includeConfig
+          in: query
+          required: false
+          description: Include Config.csv in the export bundle
+          schema:
+            type: boolean
+        - name: selectedListingIds
+          in: query
+          required: false
+          description: Comma-separated listing selection ids to include. When omitted, all listings are included.
+          schema:
+            type: string
+        - name: selectedSubListingIds
+          in: query
+          required: false
+          description: Comma-separated sublisting selection ids to include. When omitted, all sublistings are included.
+          schema:
+            type: string
       responses:
         '200':
           description: Exported listing data file
