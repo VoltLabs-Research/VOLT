@@ -1,9 +1,14 @@
 import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
-import { prepareWorkDir, runCompiler, TEX_EXTENSION } from './compile-helpers';
+import {
+    getDocumentCompileWorkDirSegment,
+    prepareWorkDir,
+    runCompiler,
+    TEX_EXTENSION,
+    withDocumentCompileLock
+} from './compile-helpers';
 import { AITool } from '@shared/application/ai/AITool';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { injectable, inject } from 'tsyringe';
-import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
 import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
@@ -100,9 +105,11 @@ export class FixLatexErrorsAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const workDir = this.tempFileService.getDirPath(`latex-fix-${uuidv4()}`);
+        const workDir = this.tempFileService.getDirPath(
+            getDocumentCompileWorkDirSegment(scope.teamId, params.documentId)
+        );
 
-        try {
+        return withDocumentCompileLock(scope.teamId, params.documentId, async () => {
             const preparation = await prepareWorkDir(
                 {
                     teamId: scope.teamId,
@@ -117,6 +124,26 @@ export class FixLatexErrorsAITool extends AITool {
                     tempFileService: this.tempFileService
                 }
             );
+
+            if (preparation.status === 'no-document') {
+                return {
+                    summary: 'LaTeX document not found.',
+                    data: {
+                        errors: [],
+                        fileContents: {}
+                    }
+                };
+            }
+
+            if (preparation.status === 'no-files') {
+                return {
+                    summary: 'Document has no LaTeX files — cannot compile.',
+                    data: {
+                        errors: [],
+                        fileContents: {}
+                    }
+                };
+            }
 
             if (preparation.status === 'no-entrypoint') {
                 return {
@@ -171,9 +198,7 @@ export class FixLatexErrorsAITool extends AITool {
                     fileContents: fileContentsMap
                 }
             };
-        } finally {
-            await this.tempFileService.delete(workDir, { recursive: true }).catch(() => undefined);
-        }
+        });
     }
 
     /**
