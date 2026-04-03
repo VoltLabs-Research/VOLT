@@ -10,6 +10,7 @@ const execPromise = promisify(exec);
 const BYTES_PER_GB = 1024 ** 3;
 const SECTOR_SIZE = 512;
 const BYTES_PER_MB = 1024 * 1024;
+const DISK_USAGE_CACHE_TTL_MS = 10_000;
 
 const PHYSICAL_DISK_PATTERN = /^(sd[a-z]|nvme\d+n\d+|vd[a-z]|hd[a-z])$/;
 const PARTITION_SUFFIX_PATTERN = /\d+$/;
@@ -18,27 +19,53 @@ const NVME_DISK_PATTERN = /^nvme\d+n\d+$/;
 @injectable()
 export default class DiskMetricsCollector {
     private lastDiskIO: DiskIOSnapshot | null = null;
+    private cachedUsage: {
+        expiresAt: number;
+        value: DiskMetrics;
+    } | null = null;
+    private pendingUsage: Promise<DiskMetrics> | null = null;
 
     async getUsage(): Promise<DiskMetrics> {
-        try {
-            const { stdout } = await execPromise('df -B1 / | tail -1');
-            const parts = stdout.trim().split(/\s+/);
-
-            const total = parseInt(parts[1]) || 0;
-            const used = parseInt(parts[2]) || 0;
-            const available = parseInt(parts[3]) || 0;
-            const usagePercent = parseInt(parts[4]?.replace('%', '')) || 0;
-
-            return {
-                total: Math.round((total / BYTES_PER_GB) * 100) / 100,
-                used: Math.round((used / BYTES_PER_GB) * 100) / 100,
-                free: Math.round((available / BYTES_PER_GB) * 100) / 100,
-                usagePercent
-            };
-        } catch (error: unknown) {
-            logger.error(`Error getting disk metrics: ${error}`);
-            return { total: 0, used: 0, free: 0, usagePercent: 0 };
+        const cachedUsage = this.cachedUsage;
+        if (cachedUsage && cachedUsage.expiresAt > Date.now()) {
+            return cachedUsage.value;
         }
+
+        if (this.pendingUsage) {
+            return this.pendingUsage;
+        }
+
+        this.pendingUsage = (async () => {
+            try {
+                const { stdout } = await execPromise('df -B1 / | tail -1');
+                const parts = stdout.trim().split(/\s+/);
+
+                const total = parseInt(parts[1]) || 0;
+                const used = parseInt(parts[2]) || 0;
+                const available = parseInt(parts[3]) || 0;
+                const usagePercent = parseInt(parts[4]?.replace('%', '')) || 0;
+                const metrics: DiskMetrics = {
+                    total: Math.round((total / BYTES_PER_GB) * 100) / 100,
+                    used: Math.round((used / BYTES_PER_GB) * 100) / 100,
+                    free: Math.round((available / BYTES_PER_GB) * 100) / 100,
+                    usagePercent
+                };
+
+                this.cachedUsage = {
+                    expiresAt: Date.now() + DISK_USAGE_CACHE_TTL_MS,
+                    value: metrics
+                };
+
+                return metrics;
+            } catch (error: unknown) {
+                logger.error(`Error getting disk metrics: ${error}`);
+                return { total: 0, used: 0, free: 0, usagePercent: 0 };
+            }
+        })().finally(() => {
+            this.pendingUsage = null;
+        });
+
+        return this.pendingUsage;
     }
 
     async getOperations(): Promise<DiskOperations> {

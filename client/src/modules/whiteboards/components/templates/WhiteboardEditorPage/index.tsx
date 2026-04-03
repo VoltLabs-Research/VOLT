@@ -241,8 +241,13 @@ const WhiteboardEditorPage = () => {
     });
 
     const handleRemoteState = useCallback(
-        async (elements: Record<string, unknown>[], appState: Record<string, unknown>, revision: number) => {
-            const mergedState = await mergeRemoteState(elements, appState, revision);
+        async (
+            elements: Record<string, unknown>[],
+            appState: Record<string, unknown>,
+            revision: number,
+            elementOrder?: string[]
+        ) => {
+            const mergedState = await mergeRemoteState(elements, appState, revision, elementOrder);
             const scene = {
                 elements: mergedState.elements,
                 appState: mergedState.appState,

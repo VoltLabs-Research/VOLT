@@ -21,8 +21,22 @@ interface ReadContainerFileResponse {
     contents: string;
 };
 
+const CONTAINER_STATS_CACHE_TTL_MS = 3_000;
+const CONTAINER_PROCESSES_CACHE_TTL_MS = 5_000;
+
 @injectable()
 export class DaemonContainerRuntimeService implements ITeamClusterContainerRuntimeService {
+    private readonly statsCache = new Map<string, {
+        expiresAt: number;
+        value: ContainerStats;
+    }>();
+    private readonly processesCache = new Map<string, {
+        expiresAt: number;
+        value: ContainerProcessInfo[];
+    }>();
+    private readonly pendingStats = new Map<string, Promise<ContainerStats>>();
+    private readonly pendingProcesses = new Map<string, Promise<ContainerProcessInfo[]>>();
+
     constructor(
         @inject(SHARED_TOKENS.TeamClusterDaemonClient)
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
@@ -33,9 +47,11 @@ export class DaemonContainerRuntimeService implements ITeamClusterContainerRunti
     }
 
     async createContainer(teamClusterId: string, config: CreateRuntimeContainerOptions): Promise<RuntimeContainerInfo> {
-        return this.teamClusterDaemonClient.command<RuntimeContainerInfo>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.container.create, { ...config }, {
+        const container = await this.teamClusterDaemonClient.command<RuntimeContainerInfo>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.container.create, { ...config }, {
             timeoutMs: 5 * 60 * 1000
         });
+        this.clearContainerCache(teamClusterId, container.Id);
+        return container;
     }
 
     async getContainer(teamClusterId: string, containerId: string): Promise<RuntimeContainerInfo> {
@@ -56,10 +72,37 @@ export class DaemonContainerRuntimeService implements ITeamClusterContainerRunti
 
     async removeContainer(teamClusterId: string, containerId: string): Promise<void> {
         await this.teamClusterDaemonClient.command<{ deleted: boolean; }>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.container.delete, { containerId });
+        this.clearContainerCache(teamClusterId, containerId);
     }
 
     async getStats(teamClusterId: string, containerId: string): Promise<ContainerStats> {
-        return this.teamClusterDaemonClient.command<ContainerStats>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.container.stats.get, { containerId });
+        const cacheKey = this.buildContainerCacheKey(teamClusterId, containerId);
+        const cachedStats = this.statsCache.get(cacheKey);
+        if (cachedStats && cachedStats.expiresAt > Date.now()) {
+            return cachedStats.value;
+        }
+
+        const pendingStats = this.pendingStats.get(cacheKey);
+        if (pendingStats) {
+            return pendingStats;
+        }
+
+        const statsPromise = this.teamClusterDaemonClient.command<ContainerStats>(
+            teamClusterId,
+            TEAM_CLUSTER_DAEMON_COMMAND.container.stats.get,
+            { containerId }
+        ).then((stats) => {
+            this.statsCache.set(cacheKey, {
+                expiresAt: Date.now() + CONTAINER_STATS_CACHE_TTL_MS,
+                value: stats
+            });
+            return stats;
+        }).finally(() => {
+            this.pendingStats.delete(cacheKey);
+        });
+
+        this.pendingStats.set(cacheKey, statsPromise);
+        return statsPromise;
     }
 
     async getFiles(teamClusterId: string, containerId: string, path: string): Promise<ContainerFileEntry[]> {
@@ -77,10 +120,54 @@ export class DaemonContainerRuntimeService implements ITeamClusterContainerRunti
     }
 
     async getProcesses(teamClusterId: string, containerId: string): Promise<ContainerProcessInfo[]> {
-        return this.teamClusterDaemonClient.command<ContainerProcessInfo[]>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.container.processes.list, { containerId });
+        const cacheKey = this.buildContainerCacheKey(teamClusterId, containerId);
+        const cachedProcesses = this.processesCache.get(cacheKey);
+        if (cachedProcesses && cachedProcesses.expiresAt > Date.now()) {
+            return cachedProcesses.value;
+        }
+
+        const pendingProcesses = this.pendingProcesses.get(cacheKey);
+        if (pendingProcesses) {
+            return pendingProcesses;
+        }
+
+        const processesPromise = this.teamClusterDaemonClient.command<ContainerProcessInfo[]>(
+            teamClusterId,
+            TEAM_CLUSTER_DAEMON_COMMAND.container.processes.list,
+            { containerId }
+        ).then((processes) => {
+            this.processesCache.set(cacheKey, {
+                expiresAt: Date.now() + CONTAINER_PROCESSES_CACHE_TTL_MS,
+                value: processes
+            });
+            return processes;
+        }).finally(() => {
+            this.pendingProcesses.delete(cacheKey);
+        });
+
+        this.pendingProcesses.set(cacheKey, processesPromise);
+        return processesPromise;
     }
 
     private async applyContainerAction(teamClusterId: string, containerId: string, action: ContainerRuntimeAction): Promise<RuntimeContainerInfo> {
-        return this.teamClusterDaemonClient.command<RuntimeContainerInfo>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.container.update, { containerId, action });
+        const container = await this.teamClusterDaemonClient.command<RuntimeContainerInfo>(
+            teamClusterId,
+            TEAM_CLUSTER_DAEMON_COMMAND.container.update,
+            { containerId, action }
+        );
+        this.clearContainerCache(teamClusterId, containerId);
+        return container;
+    }
+
+    private buildContainerCacheKey(teamClusterId: string, containerId: string): string {
+        return `${teamClusterId}:${containerId}`;
+    }
+
+    private clearContainerCache(teamClusterId: string, containerId: string): void {
+        const cacheKey = this.buildContainerCacheKey(teamClusterId, containerId);
+        this.statsCache.delete(cacheKey);
+        this.processesCache.delete(cacheKey);
+        this.pendingStats.delete(cacheKey);
+        this.pendingProcesses.delete(cacheKey);
     }
 };

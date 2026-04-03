@@ -1,4 +1,9 @@
-import { filterPersistableAppState } from '@/modules/whiteboards/utilities/whiteboards';
+import {
+    computeWhiteboardSceneDelta,
+    filterPersistableAppState,
+    mergeWhiteboardAppState,
+    mergeWhiteboardElements
+} from '@/modules/whiteboards/utilities/whiteboards';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 import { useCallback, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
@@ -12,6 +17,7 @@ interface WhiteboardPatchPayload {
     baseRevision: number;
     elements: ExcalidrawElement[];
     appState: AppState;
+    elementOrder?: string[];
 };
 
 interface WhiteboardStatePayload {
@@ -19,8 +25,10 @@ interface WhiteboardStatePayload {
     revision: number;
     elements: ExcalidrawElement[];
     appState: AppState;
+    elementOrder?: string[];
     senderId?: string;
     clientId?: string;
+    baseRevision?: number;
 };
 
 interface QueuedWhiteboardState {
@@ -28,10 +36,20 @@ interface QueuedWhiteboardState {
     appState: AppState;
 };
 
+interface SyncedWhiteboardState {
+    elements: ExcalidrawElement[];
+    appState: AppState;
+};
+
 interface UseWhiteboardSyncProps {
     whiteboardId?: string;
     enabled?: boolean;
-    onRemoteState?: (elements: ExcalidrawElement[], appState: AppState, revision: number) => Promise<void> | void;
+    onRemoteState?: (
+        elements: ExcalidrawElement[],
+        appState: AppState,
+        revision: number,
+        elementOrder?: string[]
+    ) => Promise<void> | void;
 };
 
 const DELTA_DEBOUNCE_MS = 80;
@@ -50,10 +68,26 @@ const useWhiteboardSync = ({
     const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const queuedStateRef = useRef<QueuedWhiteboardState | null>(null);
     const remoteApplyChainRef = useRef(Promise.resolve());
+    const syncedSceneRef = useRef<SyncedWhiteboardState>({
+        elements: [],
+        appState: {}
+    });
 
     const flushQueuedState = useCallback(() => {
         const queuedState = queuedStateRef.current;
         if (!queuedState || !enabled || !whiteboardId || !isConnectedRef.current || !isSubscribedRef.current || !hasSnapshotRef.current) {
+            return;
+        }
+
+        const delta = computeWhiteboardSceneDelta(
+            syncedSceneRef.current.elements,
+            queuedState.elements,
+            syncedSceneRef.current.appState,
+            queuedState.appState
+        );
+
+        if (!delta.changed) {
+            queuedStateRef.current = null;
             return;
         }
 
@@ -63,8 +97,9 @@ const useWhiteboardSync = ({
             whiteboardId,
             clientId: clientIdRef.current,
             baseRevision: revisionRef.current,
-            elements: queuedState.elements,
-            appState: queuedState.appState
+            elements: delta.elements,
+            appState: delta.appState,
+            elementOrder: delta.elementOrder
         };
 
         socketService.emit('whiteboard_patch', payload).catch(() => {
@@ -132,21 +167,80 @@ const useWhiteboardSync = ({
             return;
         }
 
+        const applyRemoteState = (
+            payload: WhiteboardStatePayload,
+            mode: 'snapshot' | 'delta'
+        ) => {
+            if (!payload || payload.whiteboardId !== whiteboardId) {
+                return;
+            }
+
+            const isStalePayload = mode === 'snapshot'
+                ? payload.revision < revisionRef.current
+                : payload.revision <= revisionRef.current;
+
+            if (isStalePayload) {
+                return;
+            }
+
+            revisionRef.current = payload.revision;
+            hasSnapshotRef.current = true;
+
+            if (mode === 'snapshot') {
+                syncedSceneRef.current = {
+                    elements: payload.elements,
+                    appState: filterPersistableAppState(payload.appState)
+                };
+            } else {
+                syncedSceneRef.current = {
+                    elements: mergeWhiteboardElements(
+                        syncedSceneRef.current.elements,
+                        payload.elements,
+                        payload.elementOrder
+                    ),
+                    appState: mergeWhiteboardAppState(
+                        syncedSceneRef.current.appState,
+                        payload.appState
+                    )
+                };
+            }
+
+            remoteApplyChainRef.current = remoteApplyChainRef.current
+                .catch(() => undefined)
+                .then(async () => {
+                    if (payload.clientId === clientIdRef.current && mode === 'delta') {
+                        return;
+                    }
+
+                    const resolvedElementOrder = mode === 'snapshot'
+                        ? payload.elements
+                            .map((element) => element.id)
+                            .filter((id): id is string => typeof id === 'string' && id.length > 0)
+                        : payload.elementOrder;
+
+                    await onRemoteState?.(
+                        payload.elements,
+                        payload.appState,
+                        payload.revision,
+                        resolvedElementOrder
+                    );
+                })
+                .finally(() => {
+                    flushQueuedState();
+                });
+        };
+
         const unsubscribeState = socketService.on<[WhiteboardStatePayload]>(
             'whiteboard_sync_state',
             (payload) => {
-                if (!payload || payload.whiteboardId !== whiteboardId || payload.revision < revisionRef.current) {
-                    return;
-                }
+                applyRemoteState(payload, 'snapshot');
+            }
+        );
 
-                revisionRef.current = payload.revision;
-                hasSnapshotRef.current = true;
-                remoteApplyChainRef.current = remoteApplyChainRef.current
-                    .catch(() => undefined)
-                    .then(() => onRemoteState?.(payload.elements, payload.appState, payload.revision))
-                    .finally(() => {
-                        flushQueuedState();
-                    });
+        const unsubscribeDelta = socketService.on<[WhiteboardStatePayload]>(
+            'whiteboard_apply_delta',
+            (payload) => {
+                applyRemoteState(payload, 'delta');
             }
         );
 
@@ -154,6 +248,7 @@ const useWhiteboardSync = ({
 
         return () => {
             unsubscribeState();
+            unsubscribeDelta();
 
             if (debounceTimerRef.current) {
                 clearTimeout(debounceTimerRef.current);
@@ -167,6 +262,10 @@ const useWhiteboardSync = ({
             isSubscribedRef.current = false;
             hasSnapshotRef.current = false;
             queuedStateRef.current = null;
+            syncedSceneRef.current = {
+                elements: [],
+                appState: {}
+            };
         };
     }, [enabled, flushQueuedState, onRemoteState, subscribeToWhiteboard, whiteboardId, socketService]);
 

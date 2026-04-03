@@ -2,7 +2,7 @@ import { containerQuery } from '@/modules/container/hooks/queries';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 import { TEAM_QUERY_KEYS } from '@/modules/team/hooks/team/queries';
 import queryClient from '@/shared/infrastructure/query/query-client';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { QueryKey } from '@tanstack/react-query';
 
 interface SocketCacheSyncEvent {
@@ -20,15 +20,37 @@ const GLOBAL_SOCKET_CACHE_SYNC_EVENTS: SocketCacheSyncEvent[] = [
 
 const useGlobalSocketCacheSync = (): void => {
     const socketService = useSocket();
+    const pendingQueryKeysRef = useRef(new Map<string, QueryKey>());
+    const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
+        const scheduleInvalidation = (queryKey: QueryKey) => {
+            pendingQueryKeysRef.current.set(JSON.stringify(queryKey), queryKey);
+
+            if (flushTimerRef.current) {
+                return;
+            }
+
+            flushTimerRef.current = setTimeout(() => {
+                const queryKeys = Array.from(pendingQueryKeysRef.current.values());
+                pendingQueryKeysRef.current.clear();
+                flushTimerRef.current = null;
+                Promise.allSettled(queryKeys.map((currentQueryKey) => queryClient.invalidateQueries({ queryKey: currentQueryKey })));
+            }, 150);
+        };
+
         const unsubscribers = GLOBAL_SOCKET_CACHE_SYNC_EVENTS.map(({ event, queryKeys }) => {
             return socketService.on(event, () => {
-                Promise.allSettled(queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
+                queryKeys.forEach(scheduleInvalidation);
             });
         });
 
         return () => {
+            if (flushTimerRef.current) {
+                clearTimeout(flushTimerRef.current);
+                flushTimerRef.current = null;
+            }
+            pendingQueryKeysRef.current.clear();
             unsubscribers.forEach((unsubscribe) => unsubscribe());
         };
     }, [socketService]);

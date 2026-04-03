@@ -20,6 +20,7 @@ interface WhiteboardPatchPayload extends Record<string, unknown> {
     baseRevision: number;
     elements: Record<string, unknown>[];
     appState: Record<string, unknown>;
+    elementOrder?: string[];
 };
 
 @injectable()
@@ -104,24 +105,48 @@ export default class WhiteboardSocketModule extends BaseSocketModule {
                 return;
             }
 
-            const snapshot = await this.realtimeStateService.mergeScene(
+            const mergeResult = await this.realtimeStateService.mergeScene(
                 payload.whiteboardId,
                 Array.isArray(payload.elements) ? payload.elements : [],
                 typeof payload.appState === 'object' && payload.appState !== null ? payload.appState : {},
-                conn.user._id
+                conn.user._id,
+                Array.isArray(payload.elementOrder)
+                    ? payload.elementOrder.filter((id): id is string => typeof id === 'string' && id.length > 0)
+                    : undefined
             );
 
-            if (!snapshot) {
+            if (!mergeResult) {
                 return;
             }
 
-            const room = this.buildRoomId(payload.whiteboardId);
-            this.emitToRoom(room, 'whiteboard_sync_state', {
-                ...snapshot,
+            if (!mergeResult.changed) {
+                if (payload.baseRevision < mergeResult.revision) {
+                    const snapshot = await this.realtimeStateService.getSnapshot(payload.whiteboardId);
+                    if (snapshot) {
+                        this.emitToSocket(conn.id, 'whiteboard_sync_state', {
+                            ...snapshot,
+                            senderId: conn.user._id,
+                            clientId: payload.clientId,
+                            baseRevision: payload.baseRevision
+                        });
+                    }
+                }
+                return;
+            }
+
+            if (!mergeResult.delta) {
+                return;
+            }
+
+            const socketPayload = {
+                ...mergeResult.delta,
                 senderId: conn.user._id,
                 clientId: payload.clientId,
                 baseRevision: payload.baseRevision
-            });
+            };
+
+            const room = this.buildRoomId(payload.whiteboardId);
+            this.emitToRoom(room, 'whiteboard_apply_delta', socketPayload);
         });
     }
 

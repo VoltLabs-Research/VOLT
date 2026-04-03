@@ -59,6 +59,13 @@ interface ObjectStreamSnapshot extends ObjectHeadSnapshot {
     stream: Readable;
 }
 
+interface ObjectListEntry {
+    key: string;
+    contentLength?: number;
+    etag?: string;
+    lastModified?: Date;
+}
+
 interface TransferRequestInput {
     teamId: string;
     scopeType: StoragePlacementScopeType;
@@ -82,6 +89,8 @@ const MONGO_DOCUMENT_TYPES: TeamClusterDaemonPluginMongoDocumentType[] = ['listi
 const CLUSTER_TRANSFER_QUEUE_TYPE = 'cluster_transfer';
 const CLUSTER_TRANSFER_FALLBACK_TRAJECTORY_ID = 'cluster-transfer-operations';
 const CLUSTER_TRANSFER_FALLBACK_TRAJECTORY_NAME = 'Cluster Transfers';
+const TRANSFER_PROGRESS_FLUSH_EVERY_OBJECTS = 50;
+const TRANSFER_PROGRESS_FLUSH_EVERY_BYTES = 64 * 1024 * 1024;
 
 const mapTransferStateToJobStatus = (state: ClusterTransferJobState): JobStatusChangedValue => {
     switch (state) {
@@ -155,6 +164,42 @@ const buildLocalUploadMetadata = (head: ObjectHeadSnapshot): Record<string, stri
     }
 
     return metadata;
+};
+
+const normalizeOpaqueTag = (value?: string): string | undefined => {
+    if (!value) {
+        return undefined;
+    }
+
+    const normalized = value.trim();
+    if (!normalized) {
+        return undefined;
+    }
+
+    return normalized.replace(/^"+|"+$/g, '');
+};
+
+const compareObjectListingEntries = (
+    sourceEntry: ObjectListEntry,
+    destinationEntry: ObjectListEntry
+): 'match' | 'mismatch' | 'inconclusive' => {
+    if (
+        typeof sourceEntry.contentLength === 'number'
+        && typeof destinationEntry.contentLength === 'number'
+        && sourceEntry.contentLength !== destinationEntry.contentLength
+    ) {
+        return 'mismatch';
+    }
+
+    const sourceTag = normalizeOpaqueTag(sourceEntry.etag);
+    const destinationTag = normalizeOpaqueTag(destinationEntry.etag);
+    if (sourceTag && destinationTag) {
+        return sourceTag === destinationTag
+            ? 'match'
+            : 'inconclusive';
+    }
+
+    return 'inconclusive';
 };
 
 @injectable()
@@ -476,13 +521,36 @@ export default class ClusterTransferCoordinator {
 
         for (let bucketIndex = currentJob.props.cursor.bucketIndex; bucketIndex < placement.props.buckets.length; bucketIndex += 1) {
             const bucketRef = placement.props.buckets[bucketIndex];
-            const sourceKeys = await this.listObjectKeys(job.props.sourceClusterId, bucketRef.bucket, bucketRef.prefix);
             const startingAfter = bucketIndex === currentJob.props.cursor.bucketIndex
                 ? currentJob.props.cursor.lastObjectKey
                 : null;
+            const destinationEntries = await this.listObjectEntries(
+                job.props.destinationClusterId,
+                bucketRef.bucket,
+                bucketRef.prefix
+            );
+            const destinationEntryMap = new Map(destinationEntries.map((entry) => [entry.key, entry]));
+            let pendingCopiedObjects = 0;
+            let pendingCopiedBytes = 0;
 
-            for (const objectKey of sourceKeys) {
-                if (startingAfter && objectKey <= startingAfter) {
+            const flushProgress = async (nextCursor: { bucketIndex: number; lastObjectKey: string | null; }) => {
+                currentJob = await this.setJobState(currentJob.id, 'copying', {
+                    cursor: nextCursor,
+                    stats: {
+                        ...currentJob.props.stats,
+                        copiedObjects: currentJob.props.stats.copiedObjects + pendingCopiedObjects,
+                        copiedBytes: currentJob.props.stats.copiedBytes + pendingCopiedBytes
+                    }
+                }, {
+                    publishUpdate: true
+                });
+
+                pendingCopiedObjects = 0;
+                pendingCopiedBytes = 0;
+            };
+
+            for await (const sourceEntry of this.iterateObjectEntries(job.props.sourceClusterId, bucketRef.bucket, bucketRef.prefix)) {
+                if (startingAfter && sourceEntry.key <= startingAfter) {
                     continue;
                 }
 
@@ -490,27 +558,27 @@ export default class ClusterTransferCoordinator {
                     job.props.sourceClusterId,
                     job.props.destinationClusterId,
                     bucketRef.bucket,
-                    objectKey
+                    sourceEntry,
+                    destinationEntryMap.get(sourceEntry.key)
                 );
 
-                currentJob = await this.setJobState(currentJob.id, 'copying', {
-                    cursor: {
+                pendingCopiedObjects += copyResult.copied ? 1 : 0;
+                pendingCopiedBytes += copyResult.bytesTransferred;
+
+                if (
+                    pendingCopiedObjects >= TRANSFER_PROGRESS_FLUSH_EVERY_OBJECTS
+                    || pendingCopiedBytes >= TRANSFER_PROGRESS_FLUSH_EVERY_BYTES
+                ) {
+                    await flushProgress({
                         bucketIndex,
-                        lastObjectKey: objectKey
-                    },
-                    stats: {
-                        ...currentJob.props.stats,
-                        copiedObjects: currentJob.props.stats.copiedObjects + (copyResult.copied ? 1 : 0),
-                        copiedBytes: currentJob.props.stats.copiedBytes + copyResult.bytesTransferred
-                    }
-                });
+                        lastObjectKey: sourceEntry.key
+                    });
+                }
             }
 
-            currentJob = await this.setJobState(currentJob.id, 'copying', {
-                cursor: {
-                    bucketIndex: bucketIndex + 1,
-                    lastObjectKey: null
-                }
+            await flushProgress({
+                bucketIndex: bucketIndex + 1,
+                lastObjectKey: null
             });
         }
 
@@ -528,35 +596,43 @@ export default class ClusterTransferCoordinator {
         let verifiedBytes = 0;
 
         for (const bucketRef of placement.props.buckets) {
-            const sourceKeys = await this.listObjectKeys(job.props.sourceClusterId, bucketRef.bucket, bucketRef.prefix);
-            const destinationKeys = await this.listObjectKeys(job.props.destinationClusterId, bucketRef.bucket, bucketRef.prefix);
+            const destinationEntries = await this.listObjectEntries(job.props.destinationClusterId, bucketRef.bucket, bucketRef.prefix);
+            const destinationEntryMap = new Map(destinationEntries.map((entry) => [entry.key, entry]));
+            let sourceObjectCount = 0;
 
-            if (sourceKeys.length !== destinationKeys.length) {
-                throw ApplicationError.conflict(
-                    'ClusterTransfer::VerificationMismatch',
-                    `Verification failed for ${bucketRef.bucket}:${bucketRef.prefix} because object counts do not match`
-                );
-            }
-
-            const destinationKeySet = new Set(destinationKeys);
-
-            for (const sourceKey of sourceKeys) {
-                if (!destinationKeySet.has(sourceKey)) {
+            for await (const sourceEntry of this.iterateObjectEntries(job.props.sourceClusterId, bucketRef.bucket, bucketRef.prefix)) {
+                sourceObjectCount += 1;
+                const destinationEntry = destinationEntryMap.get(sourceEntry.key);
+                if (!destinationEntry) {
                     throw ApplicationError.conflict(
                         'ClusterTransfer::VerificationMissingDestinationObject',
-                        `Verification failed because destination is missing object ${sourceKey}`
+                        `Verification failed because destination is missing object ${sourceEntry.key}`
                     );
                 }
 
+                const listingComparison = compareObjectListingEntries(sourceEntry, destinationEntry);
+                if (listingComparison === 'mismatch') {
+                    throw ApplicationError.conflict(
+                        'ClusterTransfer::VerificationSizeMismatch',
+                        `Verification failed because ${sourceEntry.key} has mismatched content length`
+                    );
+                }
+
+                if (listingComparison === 'match') {
+                    verifiedObjects += 1;
+                    verifiedBytes += sourceEntry.contentLength ?? destinationEntry.contentLength ?? 0;
+                    continue;
+                }
+
                 const [sourceHead, destinationHead] = await Promise.all([
-                    this.headObject(job.props.sourceClusterId, bucketRef.bucket, sourceKey),
-                    this.headObject(job.props.destinationClusterId, bucketRef.bucket, sourceKey)
+                    this.headObject(job.props.sourceClusterId, bucketRef.bucket, sourceEntry.key),
+                    this.headObject(job.props.destinationClusterId, bucketRef.bucket, sourceEntry.key)
                 ]);
 
                 if ((sourceHead.contentLength ?? null) !== (destinationHead.contentLength ?? null)) {
                     throw ApplicationError.conflict(
                         'ClusterTransfer::VerificationSizeMismatch',
-                        `Verification failed because ${sourceKey} has mismatched content length`
+                        `Verification failed because ${sourceEntry.key} has mismatched content length`
                     );
                 }
 
@@ -564,12 +640,19 @@ export default class ClusterTransferCoordinator {
                 if (expectedHash && destinationHead.metadata.sha256 && expectedHash !== destinationHead.metadata.sha256) {
                     throw ApplicationError.conflict(
                         'ClusterTransfer::VerificationHashMismatch',
-                        `Verification failed because ${sourceKey} has mismatched sha256 metadata`
+                        `Verification failed because ${sourceEntry.key} has mismatched sha256 metadata`
                     );
                 }
 
                 verifiedObjects += 1;
                 verifiedBytes += sourceHead.contentLength ?? 0;
+            }
+
+            if (sourceObjectCount !== destinationEntries.length) {
+                throw ApplicationError.conflict(
+                    'ClusterTransfer::VerificationMismatch',
+                    `Verification failed for ${bucketRef.bucket}:${bucketRef.prefix} because object counts do not match`
+                );
             }
         }
 
@@ -613,29 +696,42 @@ export default class ClusterTransferCoordinator {
         sourceClusterId: string,
         destinationClusterId: string,
         bucket: string,
-        objectKey: string
+        sourceEntry: ObjectListEntry,
+        destinationEntry?: ObjectListEntry
     ): Promise<{ copied: boolean; bytesTransferred: number; }> {
-        const sourceHead = await this.headObject(sourceClusterId, bucket, objectKey);
-        const destinationHead = await this.tryHeadObject(destinationClusterId, bucket, objectKey);
+        if (destinationEntry) {
+            const listingComparison = compareObjectListingEntries(sourceEntry, destinationEntry);
+            if (listingComparison === 'match') {
+                return {
+                    copied: false,
+                    bytesTransferred: 0
+                };
+            }
 
-        if (
-            destinationHead
-            && destinationHead.contentLength === sourceHead.contentLength
-            && (!sourceHead.metadata.sha256 || destinationHead.metadata.sha256 === sourceHead.metadata.sha256)
-        ) {
-            return {
-                copied: false,
-                bytesTransferred: 0
-            };
+            if (listingComparison === 'inconclusive') {
+                const sourceHead = await this.headObject(sourceClusterId, bucket, sourceEntry.key);
+                const destinationHead = await this.tryHeadObject(destinationClusterId, bucket, sourceEntry.key);
+
+                if (
+                    destinationHead
+                    && destinationHead.contentLength === sourceHead.contentLength
+                    && (!sourceHead.metadata.sha256 || destinationHead.metadata.sha256 === sourceHead.metadata.sha256)
+                ) {
+                    return {
+                        copied: false,
+                        bytesTransferred: 0
+                    };
+                }
+            }
         }
 
-        const sourceObject = await this.getObjectStream(sourceClusterId, bucket, objectKey);
+        const sourceObject = await this.getObjectStream(sourceClusterId, bucket, sourceEntry.key);
 
-        await this.putObjectStream(destinationClusterId, bucket, objectKey, sourceObject);
+        await this.putObjectStream(destinationClusterId, bucket, sourceEntry.key, sourceObject);
 
         return {
             copied: true,
-            bytesTransferred: sourceHead.contentLength ?? 0
+            bytesTransferred: sourceObject.contentLength ?? sourceEntry.contentLength ?? 0
         };
     }
 
@@ -909,25 +1005,42 @@ export default class ClusterTransferCoordinator {
         }
     }
 
+    private async *iterateObjectEntries(
+        ownerClusterId: string,
+        bucket: string,
+        prefix: string
+    ): AsyncIterable<ObjectListEntry> {
+        if (ownerClusterId === VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID) {
+            for await (const key of this.storageService.listByPrefix(bucket, prefix, true)) {
+                yield {
+                    key
+                };
+            }
+            return;
+        }
+
+        yield* this.objectGatewayClient.listAllEntries(ownerClusterId, { bucket, prefix });
+    }
+
+    private async listObjectEntries(
+        ownerClusterId: string,
+        bucket: string,
+        prefix: string
+    ): Promise<ObjectListEntry[]> {
+        const entries: ObjectListEntry[] = [];
+        for await (const entry of this.iterateObjectEntries(ownerClusterId, bucket, prefix)) {
+            entries.push(entry);
+        }
+
+        return entries.sort((left, right) => left.key.localeCompare(right.key));
+    }
+
     private async listObjectKeys(
         ownerClusterId: string,
         bucket: string,
         prefix: string
     ): Promise<string[]> {
-        if (ownerClusterId === VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID) {
-            const keys: string[] = [];
-            for await (const key of this.storageService.listByPrefix(bucket, prefix, true)) {
-                keys.push(key);
-            }
-            return keys.sort((left, right) => left.localeCompare(right));
-        }
-
-        const keys: string[] = [];
-        for await (const key of this.objectGatewayClient.listAll(ownerClusterId, { bucket, prefix })) {
-            keys.push(key);
-        }
-
-        return keys.sort((left, right) => left.localeCompare(right));
+        return (await this.listObjectEntries(ownerClusterId, bucket, prefix)).map((entry) => entry.key);
     }
 
     private async tryHeadObject(
@@ -953,7 +1066,7 @@ export default class ClusterTransferCoordinator {
     ): Promise<ObjectHeadSnapshot> {
         if (ownerClusterId === VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID) {
             const stat = await this.storageService.getStat(bucket, objectKey);
-            return {
+            const head = {
                 contentLength: stat.size,
                 contentType: stat.mimetype,
                 contentEncoding: readStringMetadata(stat, 'Content-Encoding') ?? readStringMetadata(stat, 'content-encoding'),
@@ -965,9 +1078,17 @@ export default class ClusterTransferCoordinator {
                         .map(([key, value]) => [key.slice('x-amz-meta-'.length), value as string])
                 )
             };
+            return {
+                ...head,
+                etag: normalizeOpaqueTag(head.etag)
+            };
         }
 
-        return this.objectGatewayClient.head(ownerClusterId, bucket, objectKey);
+        const head = await this.objectGatewayClient.head(ownerClusterId, bucket, objectKey);
+        return {
+            ...head,
+            etag: normalizeOpaqueTag(head.etag)
+        };
     }
 
     private async getObjectStream(
@@ -986,7 +1107,7 @@ export default class ClusterTransferCoordinator {
                 contentLength: stat.size,
                 contentType: stat.mimetype,
                 contentEncoding: readStringMetadata(stat, 'Content-Encoding') ?? readStringMetadata(stat, 'content-encoding'),
-                etag: stat.etag,
+                etag: normalizeOpaqueTag(stat.etag),
                 lastModified: stat.lastModified,
                 metadata: Object.fromEntries(
                     Object.entries(stat)
@@ -996,7 +1117,11 @@ export default class ClusterTransferCoordinator {
             };
         }
 
-        return this.objectGatewayClient.getStream(ownerClusterId, bucket, objectKey);
+        const response = await this.objectGatewayClient.getStream(ownerClusterId, bucket, objectKey);
+        return {
+            ...response,
+            etag: normalizeOpaqueTag(response.etag)
+        };
     }
 
     private async putObjectStream(

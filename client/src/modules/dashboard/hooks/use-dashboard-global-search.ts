@@ -17,8 +17,9 @@ import { useNavigate } from 'react-router-dom';
 import type { GlobalSearchOutputDTO, GlobalSearchSectionKey } from '@/modules/dashboard/api/dtos/global-search';
 import type { KeyboardEvent } from 'react';
 
-const SEARCH_DEBOUNCE_MS = 300;
+const SEARCH_DEBOUNCE_MS = 500;
 const SEARCH_RESULT_LIMIT = 5;
+const MIN_SEARCH_QUERY_LENGTH = 2;
 
 export interface DashboardGlobalSearchItem {
     id: string;
@@ -165,9 +166,10 @@ export const useDashboardGlobalSearch = () => {
             clearTimeout(debounceRef.current);
         }
 
-        if (!nextQuery) {
+        if (nextQuery.length < MIN_SEARCH_QUERY_LENGTH) {
             setDebouncedQuery('');
             setShowResults(false);
+            setActiveIndex(-1);
             return;
         }
 
@@ -185,7 +187,7 @@ export const useDashboardGlobalSearch = () => {
 
     const searchQuery = useGlobalSearchQuery(
         { query: debouncedQuery, limit: SEARCH_RESULT_LIMIT },
-        { enabled: Boolean(debouncedQuery) }
+        { enabled: debouncedQuery.length >= MIN_SEARCH_QUERY_LENGTH }
     );
 
     const results = searchQuery.data ?? EMPTY_GLOBAL_SEARCH_RESULTS;
@@ -197,8 +199,8 @@ export const useDashboardGlobalSearch = () => {
         () => sections.reduce((count, section) => count + section.items.length, 0),
         [sections]
     );
-    const isDebouncing = Boolean(query.trim()) && query.trim() !== debouncedQuery;
-    const isLoading = isDebouncing || (Boolean(debouncedQuery) && searchQuery.isLoading);
+    const isDebouncing = query.trim().length >= MIN_SEARCH_QUERY_LENGTH && query.trim() !== debouncedQuery;
+    const isLoading = isDebouncing || (debouncedQuery.length >= MIN_SEARCH_QUERY_LENGTH && searchQuery.isLoading);
 
     const resetSearch = () => {
         setQuery('');
@@ -217,7 +219,7 @@ export const useDashboardGlobalSearch = () => {
     };
 
     const handleFocus = () => {
-        if (query.trim()) {
+        if (query.trim().length >= MIN_SEARCH_QUERY_LENGTH) {
             setShowResults(true);
         }
     };

@@ -185,8 +185,12 @@ const useClusterManagement = (): ClusterManagementResult => {
     const teamClustersQuery = useTeamClustersQuery(selectedTeamId ?? '', {
         enabled: Boolean(selectedTeamId),
         refetchInterval: (query) => {
+            if (typeof document !== 'undefined' && document.hidden) {
+                return false;
+            }
+
             const data = query.state.data?.data ?? [];
-            return data.some((cluster) => isTeamClusterWaiting(cluster.status)) ? 3000 : false;
+            return data.some((cluster) => isTeamClusterWaiting(cluster.status)) ? 5000 : false;
         }
     });
     const createMutation = useCreateTeamClusterMutation();

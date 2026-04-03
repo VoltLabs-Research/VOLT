@@ -50,11 +50,13 @@ export default class MetricsCollector implements IMetricsService {
         };
 
         const memory = this.memoryCollector.collect();
-        const disk = await this.diskCollector.getUsage();
-        const network = await this.networkCollector.collect();
-        const mongodb = await this.mongoCollector.collect();
-        const responseTimes = await this.healthPinger.collectAll();
-        const diskOperations = await this.diskCollector.getOperations();
+        const [disk, network, mongodb, responseTimes, diskOperations] = await Promise.all([
+            this.diskCollector.getUsage(),
+            this.networkCollector.collect(),
+            this.mongoCollector.collect(),
+            this.healthPinger.collectAll(),
+            this.diskCollector.getOperations()
+        ]);
 
         const status = this.determineStatus(cpu.usage, memory.usagePercent, disk.usagePercent);
 

@@ -14,6 +14,7 @@ import ChatHttpModule from '@modules/chat/infrastructure/http/routes/chat/chat-r
 import ContainerHttpModule from '@modules/container/infrastructure/http/routes/container-routes';
 import ContainerVncConnectHttpModule from '@modules/container/infrastructure/http/routes/container-vnc-connect-routes';
 import ContainerVncHttpModule from '@modules/container/infrastructure/http/routes/container-vnc-routes';
+import DashboardHttpModule from '@modules/dashboard/infrastructure/http/routes/dashboard-routes';
 import DailyActivityHttpModule from '@modules/daily-activity/infrastructure/http/routes/daily-activity-routes';
 import NotificationHttpModule from '@modules/notification/infrastructure/http/routes/notification-routes';
 import PluginExposureHttpModule from '@modules/plugin/infrastructure/http/routes/exposure';
@@ -79,6 +80,7 @@ const HTTP_MODULES: HttpModule[] = [
     TeamClusterHttpModule,
     TeamClusterObjectStoreProxyHttpModule,
     TeamClusterLifecycleHttpModule,
+    DashboardHttpModule,
     ChatHttpModule,
     ChatMessageHttpModule,
     NotificationHttpModule,

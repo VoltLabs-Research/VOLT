@@ -12,6 +12,7 @@ const PROJECTED_JOB_SOURCE = 'projected';
 const LOCAL_PROJECTED_JOB_BACKING_SOURCE = 'local';
 const MISSING_SNAPSHOT_SENTINEL = '__missing__';
 const MAX_UPSERT_RETRIES = 8;
+const LOCAL_SNAPSHOT_CACHE_TTL_MS = 5 * 60 * 1000;
 
 const UPSERT_PROJECTED_JOB_SNAPSHOT_SCRIPT = `
 local expected = ARGV[1]
@@ -103,6 +104,11 @@ const resolveProjectedStatus = (
 @injectable()
 export default class TeamJobProjectionService {
     private readonly pendingJobUpdates = new Map<string, Promise<void>>();
+    private readonly localSnapshotCache = new Map<string, {
+        rawSnapshot: string | null;
+        parsedSnapshot: TeamJobSnapshot | null;
+        expiresAt: number;
+    }>();
 
     constructor(
         @inject(SHARED_TOKENS.RedisClient)
@@ -118,10 +124,17 @@ export default class TeamJobProjectionService {
         const jobStatusKey = this.jobStatusKey(jobId);
         const projectedTeamJobsKey = this.projectedTeamJobsKey(teamId);
         const revisionKey = this.projectedTeamJobsRevisionKey(teamId);
+        const cachedSnapshot = this.getCachedSnapshot(jobId);
+        let previousRawSnapshot = cachedSnapshot?.rawSnapshot;
+        let previousSnapshot = cachedSnapshot?.parsedSnapshot;
+
+        if (typeof previousRawSnapshot === 'undefined') {
+            previousRawSnapshot = await this.redis.get(jobStatusKey);
+            previousSnapshot = this.parseSnapshot(previousRawSnapshot, jobId);
+            this.cacheSnapshot(jobId, previousRawSnapshot, previousSnapshot);
+        }
 
         for (let attempt = 0; attempt < MAX_UPSERT_RETRIES; attempt += 1) {
-            const previousRawSnapshot = await this.redis.get(jobStatusKey);
-            const previousSnapshot = this.parseSnapshot(previousRawSnapshot, jobId);
             const resolvedStatus = resolveProjectedStatus(previousSnapshot?.status, status);
             const timestamp = resolvedStatus.shouldAdvanceTimestamps
                 ? new Date().toISOString()
@@ -160,6 +173,7 @@ export default class TeamJobProjectionService {
                 backingSource: this.resolveString(payload.metadata?.backingSource, previousSnapshot?.backingSource, LOCAL_PROJECTED_JOB_BACKING_SOURCE),
                 cleanupScope: this.resolveString(payload.metadata?.cleanupScope, previousSnapshot?.cleanupScope)
             };
+            const nextSnapshotRaw = JSON.stringify(nextSnapshot);
 
             const result = await this.redis.eval(
                 UPSERT_PROJECTED_JOB_SNAPSHOT_SCRIPT,
@@ -169,7 +183,7 @@ export default class TeamJobProjectionService {
                 this.projectedAnalysisJobsKey(analysisId ?? 'noop'),
                 revisionKey,
                 previousRawSnapshot ?? MISSING_SNAPSHOT_SENTINEL,
-                JSON.stringify(nextSnapshot),
+                nextSnapshotRaw,
                 STATUS_TTL_SECONDS,
                 analysisId ? '1' : '0'
             ) as [number, string] | null;
@@ -180,8 +194,16 @@ export default class TeamJobProjectionService {
                     throw new Error(`Failed to parse persisted projected job snapshot ${jobId}`);
                 }
 
+                this.cacheSnapshot(jobId, result[1], persistedSnapshot);
+
                 return persistedSnapshot;
             }
+
+            previousRawSnapshot = Array.isArray(result) && result[1]
+                ? result[1]
+                : null;
+            previousSnapshot = this.parseSnapshot(previousRawSnapshot, jobId);
+            this.cacheSnapshot(jobId, previousRawSnapshot, previousSnapshot);
         }
 
         throw new Error(`Failed to atomically upsert projected team job snapshot ${jobId}`);
@@ -245,6 +267,38 @@ export default class TeamJobProjectionService {
 
             return null;
         }
+    }
+
+    private getCachedSnapshot(jobId: string): {
+        rawSnapshot: string | null;
+        parsedSnapshot: TeamJobSnapshot | null;
+    } | null {
+        const cachedSnapshot = this.localSnapshotCache.get(jobId);
+        if (!cachedSnapshot) {
+            return null;
+        }
+
+        if (cachedSnapshot.expiresAt <= Date.now()) {
+            this.localSnapshotCache.delete(jobId);
+            return null;
+        }
+
+        return {
+            rawSnapshot: cachedSnapshot.rawSnapshot,
+            parsedSnapshot: cachedSnapshot.parsedSnapshot
+        };
+    }
+
+    private cacheSnapshot(
+        jobId: string,
+        rawSnapshot: string | null,
+        parsedSnapshot: TeamJobSnapshot | null
+    ): void {
+        this.localSnapshotCache.set(jobId, {
+            rawSnapshot,
+            parsedSnapshot,
+            expiresAt: Date.now() + LOCAL_SNAPSHOT_CACHE_TTL_MS
+        });
     }
 
     private isRecord(value: unknown): value is Record<string, unknown> {
