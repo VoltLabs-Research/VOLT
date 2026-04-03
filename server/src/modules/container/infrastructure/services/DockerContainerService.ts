@@ -40,10 +40,23 @@ interface RuntimeNetworking {
     publishedPorts: RuntimePublishedPort[];
 };
 
+const CONTAINER_STATS_CACHE_TTL_MS = 3_000;
+const CONTAINER_PROCESSES_CACHE_TTL_MS = 5_000;
+
 @injectable()
 export class DockerContainerService implements IContainerService {
     private docker: Docker;
     private pullLocks: Map<string, Promise<void>> = new Map();
+    private readonly statsCache = new Map<string, {
+        expiresAt: number;
+        value: ContainerStats;
+    }>();
+    private readonly processesCache = new Map<string, {
+        expiresAt: number;
+        value: ContainerProcessInfo[];
+    }>();
+    private readonly pendingStats = new Map<string, Promise<ContainerStats>>();
+    private readonly pendingProcesses = new Map<string, Promise<ContainerProcessInfo[]>>();
 
     constructor() {
         this.docker = new Docker({
@@ -73,6 +86,7 @@ export class DockerContainerService implements IContainerService {
         try {
             const container = this.docker.getContainer(containerId);
             await container.start();
+            this.clearContainerCache(containerId);
         } catch (error: unknown) {
             const dockerError = this.getDockerError(error);
 
@@ -94,6 +108,7 @@ export class DockerContainerService implements IContainerService {
         try {
             const container = this.docker.getContainer(containerId);
             await container.stop();
+            this.clearContainerCache(containerId);
         } catch (error: unknown) {
             const dockerError = this.getDockerError(error);
 
@@ -115,6 +130,7 @@ export class DockerContainerService implements IContainerService {
         try {
             const container = this.docker.getContainer(containerId);
             await container.remove({ force: true, v: true });
+            this.clearContainerCache(containerId);
         } catch (error: unknown) {
             const dockerError = this.getDockerError(error);
 
@@ -137,12 +153,36 @@ export class DockerContainerService implements IContainerService {
     }
 
     async getStats(containerId: string): Promise<ContainerStats> {
+        const cachedStats = this.statsCache.get(containerId);
+        if (cachedStats && cachedStats.expiresAt > Date.now()) {
+            return cachedStats.value;
+        }
+
+        const pendingStats = this.pendingStats.get(containerId);
+        if (pendingStats) {
+            return pendingStats;
+        }
+
         try {
-            const container = this.docker.getContainer(containerId);
-            return await container.stats({ stream: false });
+            const statsPromise = this.docker.getContainer(containerId)
+                .stats({ stream: false })
+                .then((stats) => {
+                    this.statsCache.set(containerId, {
+                        expiresAt: Date.now() + CONTAINER_STATS_CACHE_TTL_MS,
+                        value: stats
+                    });
+                    return stats;
+                })
+                .finally(() => {
+                    this.pendingStats.delete(containerId);
+                });
+
+            this.pendingStats.set(containerId, statsPromise);
+            return await statsPromise;
         } catch (error: unknown) {
             const errorMessage = this.getErrorMessage(error);
             logger.error(`Failed to get stats for ${containerId}: ${errorMessage}`);
+            this.pendingStats.delete(containerId);
             throw this.toOperationError(
                 error,
                 ErrorCodes.CONTAINER_STATS_FAILED,
@@ -235,13 +275,37 @@ export class DockerContainerService implements IContainerService {
     }
 
     async getProcesses(containerId: string): Promise<ContainerProcessInfo[]> {
+        const cachedProcesses = this.processesCache.get(containerId);
+        if (cachedProcesses && cachedProcesses.expiresAt > Date.now()) {
+            return cachedProcesses.value;
+        }
+
+        const pendingProcesses = this.pendingProcesses.get(containerId);
+        if (pendingProcesses) {
+            return pendingProcesses;
+        }
+
         try {
-            const container = this.docker.getContainer(containerId);
-            const result = await container.top({ ps_args: '-o pid,comm,nlwp,user,rss,pcpu,args' });
-            return Array.isArray(result.Processes) ? result.Processes : [];
+            const processesPromise = this.docker.getContainer(containerId)
+                .top({ ps_args: '-o pid,comm,nlwp,user,rss,pcpu,args' })
+                .then((result) => {
+                    const processes = Array.isArray(result.Processes) ? result.Processes : [];
+                    this.processesCache.set(containerId, {
+                        expiresAt: Date.now() + CONTAINER_PROCESSES_CACHE_TTL_MS,
+                        value: processes
+                    });
+                    return processes;
+                })
+                .finally(() => {
+                    this.pendingProcesses.delete(containerId);
+                });
+
+            this.pendingProcesses.set(containerId, processesPromise);
+            return await processesPromise;
         } catch (error: unknown) {
             const errorMessage = this.getErrorMessage(error);
             logger.error(`Failed to get processes for ${containerId}: ${errorMessage}`);
+            this.pendingProcesses.delete(containerId);
             throw this.toOperationError(
                 error,
                 ErrorCodes.CONTAINER_EXEC_FAILED,
@@ -271,6 +335,13 @@ export class DockerContainerService implements IContainerService {
             internalIp: this.getContainerInternalIp(info),
             publishedPorts: this.getPublishedPorts(info)
         };
+    }
+
+    private clearContainerCache(containerId: string): void {
+        this.statsCache.delete(containerId);
+        this.processesCache.delete(containerId);
+        this.pendingStats.delete(containerId);
+        this.pendingProcesses.delete(containerId);
     }
 
     async resolveDockerSocketGroupAdd(): Promise<string[]> {

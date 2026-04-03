@@ -14,6 +14,14 @@ const PERSISTABLE_APP_STATE_KEYS = new Set([
 ]);
 
 type WhiteboardElement = Record<string, unknown>;
+type WhiteboardAppState = Record<string, unknown>;
+
+interface WhiteboardSceneDelta {
+    changed: boolean;
+    elements: WhiteboardElement[];
+    appState: WhiteboardAppState;
+    elementOrder?: string[];
+};
 
 const getElementId = (element: WhiteboardElement): string | null => {
     const id = element.id;
@@ -44,6 +52,62 @@ const hasEquivalentElementPayload = (current: WhiteboardElement, incoming: White
     } catch {
         return false;
     }
+};
+
+const areStringArraysEqual = (left: string[], right: string[]): boolean => {
+    if (left.length !== right.length) {
+        return false;
+    }
+
+    for (let index = 0; index < left.length; index += 1) {
+        if (left[index] !== right[index]) {
+            return false;
+        }
+    }
+
+    return true;
+};
+
+const buildOrderedElements = (
+    elements: Map<string, WhiteboardElement>,
+    primaryOrder: string[],
+    secondaryOrder: string[]
+): WhiteboardElement[] => {
+    const orderedIds = new Set<string>();
+    const orderedElements: WhiteboardElement[] = [];
+
+    const appendById = (id: string) => {
+        if (orderedIds.has(id)) {
+            return;
+        }
+
+        const element = elements.get(id);
+        if (!element) {
+            return;
+        }
+
+        orderedIds.add(id);
+        orderedElements.push(element);
+    };
+
+    for (const id of primaryOrder) {
+        appendById(id);
+    }
+
+    for (const id of secondaryOrder) {
+        appendById(id);
+    }
+
+    for (const [id, element] of elements.entries()) {
+        if (orderedIds.has(id)) {
+            continue;
+        }
+
+        orderedIds.add(id);
+        orderedElements.push(element);
+    }
+
+    return orderedElements;
 };
 
 const shouldReplaceElement = (current: WhiteboardElement | undefined, incoming: WhiteboardElement): boolean => {
@@ -88,7 +152,8 @@ export const filterPersistableAppState = (
 
 export const mergeWhiteboardElements = (
     currentElements: WhiteboardElement[],
-    incomingElements: WhiteboardElement[]
+    incomingElements: WhiteboardElement[],
+    incomingElementOrder?: string[]
 ): WhiteboardElement[] => {
     const merged = new Map<string, WhiteboardElement>();
     const currentOrder: string[] = [];
@@ -116,30 +181,11 @@ export const mergeWhiteboardElements = (
         }
     }
 
-    const orderedIds = new Set<string>();
-    const result: WhiteboardElement[] = [];
-
-    for (const id of incomingOrder) {
-        const element = merged.get(id);
-        if (!element || orderedIds.has(id)) {
-            continue;
-        }
-
-        orderedIds.add(id);
-        result.push(element);
+    if (Array.isArray(incomingElementOrder) && incomingElementOrder.length > 0) {
+        return buildOrderedElements(merged, incomingElementOrder, currentOrder);
     }
 
-    for (const id of currentOrder) {
-        const element = merged.get(id);
-        if (!element || orderedIds.has(id)) {
-            continue;
-        }
-
-        orderedIds.add(id);
-        result.push(element);
-    }
-
-    return result;
+    return buildOrderedElements(merged, currentOrder, incomingOrder);
 };
 
 export const mergeWhiteboardAppState = (
@@ -149,6 +195,60 @@ export const mergeWhiteboardAppState = (
     ...currentAppState,
     ...filterPersistableAppState(incomingAppState)
 });
+
+export const computeWhiteboardSceneDelta = (
+    currentElements: WhiteboardElement[],
+    nextElements: WhiteboardElement[],
+    currentAppState: WhiteboardAppState,
+    nextAppState: WhiteboardAppState
+): WhiteboardSceneDelta => {
+    const currentElementsById = new Map<string, WhiteboardElement>();
+    const currentOrder: string[] = [];
+    const nextOrder: string[] = [];
+    const changedElements: WhiteboardElement[] = [];
+
+    for (const element of currentElements) {
+        const id = getElementId(element);
+        if (!id) {
+            continue;
+        }
+
+        currentElementsById.set(id, element);
+        currentOrder.push(id);
+    }
+
+    for (const element of nextElements) {
+        const id = getElementId(element);
+        if (!id) {
+            continue;
+        }
+
+        nextOrder.push(id);
+        const currentElement = currentElementsById.get(id);
+        if (!currentElement || !hasEquivalentElementPayload(currentElement, element)) {
+            changedElements.push(element);
+        }
+    }
+
+    const currentPersistableAppState = filterPersistableAppState(currentAppState);
+    const nextPersistableAppState = filterPersistableAppState(nextAppState);
+    const changedAppState: WhiteboardAppState = {};
+
+    for (const [key, value] of Object.entries(nextPersistableAppState)) {
+        if (!Object.is(currentPersistableAppState[key], value)) {
+            changedAppState[key] = value;
+        }
+    }
+
+    const elementOrderChanged = !areStringArraysEqual(currentOrder, nextOrder);
+
+    return {
+        changed: changedElements.length > 0 || elementOrderChanged || Object.keys(changedAppState).length > 0,
+        elements: changedElements,
+        appState: changedAppState,
+        elementOrder: elementOrderChanged ? nextOrder : undefined
+    };
+};
 
 export const extractWhiteboardFileIds = (elements: WhiteboardElement[]): string[] => {
     const fileIds = new Set<string>();

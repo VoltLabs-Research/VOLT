@@ -24,12 +24,18 @@ interface MetricsHistoryResponse {
     history: SystemMetrics[];
 };
 
+const TEAM_CLUSTER_TEAM_CACHE_TTL_MS = 30_000;
+
 @singleton()
 export default class SystemSocketModule extends BaseSocketModule {
     public readonly name = 'SystemSocketModule';
     private initialized = false;
     private unsubscribeFromTeamSubscription?: () => void;
     private latestMetricsByTeamId = new Map<string, ClusterSystemMetrics[]>();
+    private readonly teamIdByClusterIdCache = new Map<string, {
+        expiresAt: number;
+        teamId: string;
+    }>();
 
     constructor(
         @inject(SYSTEM_TOKENS.MetricsSocketOrchestrator)
@@ -112,6 +118,7 @@ export default class SystemSocketModule extends BaseSocketModule {
         this.unsubscribeFromTeamSubscription?.();
         this.unsubscribeFromTeamSubscription = undefined;
         this.latestMetricsByTeamId.clear();
+        this.teamIdByClusterIdCache.clear();
         this.metricsOrchestrator.stop();
         this.initialized = false;
     }
@@ -139,19 +146,38 @@ export default class SystemSocketModule extends BaseSocketModule {
             return new Map<string, ClusterSystemMetrics[]>();
         }
 
-        const teamClusters = await this.teamClusterRepository.findAll({
-            filter: {
-                _id: {
-                    $in: teamClusterIds
-                }
-            },
-            page: 1,
-            limit: teamClusterIds.length
-        });
         const teamIdByClusterId = new Map<string, string>();
+        const missingClusterIds: string[] = [];
 
-        for (const teamCluster of teamClusters.data) {
-            teamIdByClusterId.set(teamCluster.id, teamCluster.props.team);
+        for (const teamClusterId of teamClusterIds) {
+            const cachedTeam = this.teamIdByClusterIdCache.get(teamClusterId);
+            if (cachedTeam && cachedTeam.expiresAt > Date.now()) {
+                teamIdByClusterId.set(teamClusterId, cachedTeam.teamId);
+                continue;
+            }
+
+            missingClusterIds.push(teamClusterId);
+        }
+
+        if (missingClusterIds.length > 0) {
+            const teamClusters = await this.teamClusterRepository.findAll({
+                filter: {
+                    _id: {
+                        $in: missingClusterIds
+                    }
+                },
+                page: 1,
+                limit: missingClusterIds.length
+            });
+
+            for (const teamCluster of teamClusters.data) {
+                const teamId = teamCluster.props.team;
+                this.teamIdByClusterIdCache.set(teamCluster.id, {
+                    expiresAt: Date.now() + TEAM_CLUSTER_TEAM_CACHE_TTL_MS,
+                    teamId
+                });
+                teamIdByClusterId.set(teamCluster.id, teamId);
+            }
         }
 
         const metricsByTeamId = new Map<string, ClusterSystemMetrics[]>();

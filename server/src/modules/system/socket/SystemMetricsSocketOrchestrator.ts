@@ -9,6 +9,9 @@ interface MetricsHistoryRequest {
     clusterId?: string;
 };
 
+const METRICS_LOOP_INTERVAL_MS = 2_500;
+const METRICS_HISTORY_CLEANUP_INTERVAL_TICKS = 12;
+
 @injectable()
 export default class SystemMetricsSocketOrchestrator {
     private metricsInterval: NodeJS.Timeout | null = null;
@@ -46,19 +49,19 @@ export default class SystemMetricsSocketOrchestrator {
                 await this.metricsService.collect();
 
                 this.cleanupCounter++;
-                if (this.cleanupCounter >= 30) {
+                if (this.cleanupCounter >= METRICS_HISTORY_CLEANUP_INTERVAL_TICKS) {
                     this.cleanupCounter = 0;
                     await this.metricsService.cleanExpiredHistory();
                 }
 
                 const allMetrics = await this.metricsService.getAllClustersMetrics();
-                onMetrics(allMetrics);
+                await onMetrics(allMetrics);
             } catch (error) {
                 logger.error(`[SystemMetricsSocketOrchestrator] Error in metrics loop: ${error}`);
             }
 
             if (this.running) {
-                this.metricsInterval = setTimeout(loop, 1000);
+                this.metricsInterval = setTimeout(loop, METRICS_LOOP_INTERVAL_MS);
             }
         };
 

@@ -10,6 +10,8 @@ import { inject, injectable } from 'tsyringe';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 
 const STALE_CLUSTER_THRESHOLD_MS = 15_000;
+const ANALYSIS_COUNTS_CACHE_TTL_MS = 10_000;
+const CLUSTER_IDENTITY_CACHE_TTL_MS = 30_000;
 
 interface ClusterMetricIdentity {
     clusterId: string;
@@ -18,6 +20,16 @@ interface ClusterMetricIdentity {
 
 @injectable()
 export default class ClusterMetricsAggregator {
+    private readonly clusterIdentityCache = new Map<string, {
+        expiresAt: number;
+        value: ClusterMetricIdentity;
+    }>();
+    private cachedAnalysisCounts: {
+        expiresAt: number;
+        value: Record<string, number>;
+    } | null = null;
+    private pendingAnalysisCounts: Promise<Record<string, number>> | null = null;
+
     constructor(
         @inject(SYSTEM_TOKENS.SystemMetricsRepository)
         private readonly metricsRepository: ISystemMetricsRepository,
@@ -32,38 +44,87 @@ export default class ClusterMetricsAggregator {
             return [];
         }
 
-        const validTeamClusterIds = activeClusterIds.filter((clusterId) => mongoose.Types.ObjectId.isValid(clusterId));
+        const identitiesByClusterId = new Map<string, ClusterMetricIdentity>();
+        const missingValidTeamClusterIds: string[] = [];
 
-        if (!validTeamClusterIds.length) {
-            return activeClusterIds.map((clusterId) => ({
-                clusterId,
-                teamClusterId: null
-            }));
+        for (const clusterId of activeClusterIds) {
+            const cachedIdentity = this.clusterIdentityCache.get(clusterId);
+            if (cachedIdentity && cachedIdentity.expiresAt > Date.now()) {
+                identitiesByClusterId.set(clusterId, cachedIdentity.value);
+                continue;
+            }
+
+            if (!mongoose.Types.ObjectId.isValid(clusterId)) {
+                const identity = {
+                    clusterId,
+                    teamClusterId: null
+                };
+                this.clusterIdentityCache.set(clusterId, {
+                    expiresAt: Date.now() + CLUSTER_IDENTITY_CACHE_TTL_MS,
+                    value: identity
+                });
+                identitiesByClusterId.set(clusterId, identity);
+                continue;
+            }
+
+            missingValidTeamClusterIds.push(clusterId);
         }
 
-        const teamClusters = await this.teamClusterRepository.export({
-            filter: {
-                _id: {
-                    $in: validTeamClusterIds
+        if (missingValidTeamClusterIds.length > 0) {
+            const teamClusters = await this.teamClusterRepository.export({
+                filter: {
+                    _id: {
+                        $in: missingValidTeamClusterIds
+                    }
                 }
+            });
+
+            const teamClusterIds = new Set(teamClusters.map((teamCluster) => teamCluster.id));
+            for (const clusterId of missingValidTeamClusterIds) {
+                const identity = {
+                    clusterId,
+                    teamClusterId: teamClusterIds.has(clusterId) ? clusterId : null
+                };
+                this.clusterIdentityCache.set(clusterId, {
+                    expiresAt: Date.now() + CLUSTER_IDENTITY_CACHE_TTL_MS,
+                    value: identity
+                });
+                identitiesByClusterId.set(clusterId, identity);
             }
-        });
+        }
 
-        const teamClusterIds = new Set(teamClusters.map((teamCluster) => teamCluster.id));
-
-        return activeClusterIds.map((clusterId) => ({
-            clusterId,
-            teamClusterId: teamClusterIds.has(clusterId) ? clusterId : null
-        }));
+        return activeClusterIds
+            .map((clusterId) => identitiesByClusterId.get(clusterId))
+            .filter((identity): identity is ClusterMetricIdentity => Boolean(identity));
     }
 
     async getClusterAnalysisCounts(): Promise<Record<string, number>> {
-        try {
-            return this.analysisRepository.getCompletedFramesByCluster();
-        } catch (error: unknown) {
-            logger.error(`Error aggregating analysis counts: ${error}`);
-            return {};
+        const cachedAnalysisCounts = this.cachedAnalysisCounts;
+        if (cachedAnalysisCounts && cachedAnalysisCounts.expiresAt > Date.now()) {
+            return cachedAnalysisCounts.value;
         }
+
+        if (this.pendingAnalysisCounts) {
+            return this.pendingAnalysisCounts;
+        }
+
+        this.pendingAnalysisCounts = this.analysisRepository.getCompletedFramesByCluster()
+            .then((counts) => {
+                this.cachedAnalysisCounts = {
+                    expiresAt: Date.now() + ANALYSIS_COUNTS_CACHE_TTL_MS,
+                    value: counts
+                };
+                return counts;
+            })
+            .catch((error: unknown) => {
+                logger.error(`Error aggregating analysis counts: ${error}`);
+                return {};
+            })
+            .finally(() => {
+                this.pendingAnalysisCounts = null;
+            });
+
+        return this.pendingAnalysisCounts;
     }
 
     async getAllClustersMetrics(): Promise<ClusterSystemMetrics[]> {

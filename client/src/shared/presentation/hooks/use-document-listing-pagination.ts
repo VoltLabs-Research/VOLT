@@ -1,5 +1,4 @@
 import { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import { deduplicateById } from '@/shared/domain/utils/deduplicateById';
 import usePaginationParams from './use-pagination-params';
 import { ErrorSurface, isApiError, reportError } from '@/shared/errors/core';
 import queryClient from '@/shared/infrastructure/query/query-client';
@@ -104,9 +103,24 @@ export function useDocumentListingPagination<T extends { _id: string }, TContext
 
     // Derive flat data from pages, deduplicate, and optionally transform
     const data = useMemo(() => {
-        if (!infiniteData?.pages) return [];
-        const allItems = infiniteData.pages.flatMap((p) => p.data);
-        const deduplicated = deduplicateById([], allItems);
+        if (!infiniteData?.pages) {
+            return [];
+        }
+
+        const deduplicated: T[] = [];
+        const seenIds = new Set<string>();
+
+        for (const page of infiniteData.pages) {
+            for (const item of page.data) {
+                if (seenIds.has(item._id)) {
+                    continue;
+                }
+
+                seenIds.add(item._id);
+                deduplicated.push(item);
+            }
+        }
+
         return transformData ? transformData(deduplicated) : deduplicated;
     }, [infiniteData, transformData]);
 

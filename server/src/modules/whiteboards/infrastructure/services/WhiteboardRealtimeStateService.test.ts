@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import WhiteboardRealtimeStateService from './WhiteboardRealtimeStateService';
@@ -84,11 +85,15 @@ test('WhiteboardRealtimeStateService merges concurrent element snapshots without
     const { service } = buildService();
 
     await service.mergeScene('board-1', [{ id: 'x', version: 1, updated: 10 }], { viewBackgroundColor: '#fff' }, 'user-a');
-    const snapshot = await service.mergeScene('board-1', [{ id: 'y', version: 1, updated: 11 }], { gridSize: 16 }, 'user-b');
+    const mergeResult = await service.mergeScene('board-1', [{ id: 'y', version: 1, updated: 11 }], { gridSize: 16 }, 'user-b');
+    const snapshot = await service.getSnapshot('board-1');
 
+    assert.equal(mergeResult?.changed, true);
+    assert.deepEqual(mergeResult?.delta?.elements.map((element) => element.id), ['y']);
+    assert.deepEqual(mergeResult?.delta?.appState, { gridSize: 16 });
     assert.ok(snapshot);
     assert.equal(snapshot?.revision, 2);
-    assert.deepEqual(snapshot?.elements.map((element) => element.id), ['y', 'x']);
+    assert.deepEqual(snapshot?.elements.map((element) => element.id), ['x', 'y']);
     assert.deepEqual(snapshot?.appState, {
         viewBackgroundColor: '#fff',
         gridSize: 16
@@ -99,8 +104,11 @@ test('WhiteboardRealtimeStateService keeps the newest element revision during me
     const { service } = buildService();
 
     await service.mergeScene('board-1', [{ id: 'shape-1', version: 3, updated: 30, x: 40 }], {}, 'user-a');
-    const snapshot = await service.mergeScene('board-1', [{ id: 'shape-1', version: 2, updated: 20, x: 10 }], {}, 'user-b');
+    const mergeResult = await service.mergeScene('board-1', [{ id: 'shape-1', version: 2, updated: 20, x: 10 }], {}, 'user-b');
+    const snapshot = await service.getSnapshot('board-1');
 
+    assert.equal(mergeResult?.changed, false);
+    assert.equal(mergeResult?.revision, 1);
     assert.ok(snapshot);
     assert.equal(snapshot?.elements[0]?.x, 40);
     assert.equal(snapshot?.elements[0]?.version, 3);
@@ -110,8 +118,25 @@ test('WhiteboardRealtimeStateService preserves fileId updates even when element 
     const { service } = buildService();
 
     await service.mergeScene('board-1', [{ id: 'image-1', type: 'image', version: 1, updated: 10 }], {}, 'user-a');
-    const snapshot = await service.mergeScene('board-1', [{ id: 'image-1', type: 'image', version: 1, updated: 10, fileId: 'asset-1' }], {}, 'user-a');
+    const mergeResult = await service.mergeScene('board-1', [{ id: 'image-1', type: 'image', version: 1, updated: 10, fileId: 'asset-1' }], {}, 'user-a');
+    const snapshot = await service.getSnapshot('board-1');
 
+    assert.equal(mergeResult?.changed, true);
+    assert.equal(mergeResult?.delta?.elements[0]?.fileId, 'asset-1');
     assert.ok(snapshot);
     assert.equal(snapshot?.elements[0]?.fileId, 'asset-1');
+});
+
+test('WhiteboardRealtimeStateService only broadcasts full element order when z-order changes explicitly', async () => {
+    const { service } = buildService();
+
+    await service.mergeScene('board-1', [{ id: 'x', version: 1, updated: 10 }], {}, 'user-a');
+    await service.mergeScene('board-1', [{ id: 'y', version: 1, updated: 11 }], {}, 'user-a');
+
+    const mergeResult = await service.mergeScene('board-1', [], {}, 'user-a', ['y', 'x']);
+    const snapshot = await service.getSnapshot('board-1');
+
+    assert.equal(mergeResult?.changed, true);
+    assert.deepEqual(mergeResult?.delta?.elementOrder, ['y', 'x']);
+    assert.deepEqual(snapshot?.elements.map((element) => element.id), ['y', 'x']);
 });

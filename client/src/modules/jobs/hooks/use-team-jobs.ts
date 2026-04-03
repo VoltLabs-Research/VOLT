@@ -25,6 +25,10 @@ interface TeamJobsEventPayload {
 const TEAM_JOBS_INITIAL_LOAD_TIMEOUT_MS = 5000;
 const RASTER_QUEUE_TYPE = 'trajectory_rasterization';
 
+const isTerminalJobStatus = (status: JobStatus): boolean => {
+    return status === JobStatus.Completed || status === JobStatus.Failed;
+};
+
 const buildRasterJobKey = (trajectoryId: string, timestep?: number): string | null => {
     if (typeof timestep !== 'number' || !Number.isFinite(timestep)) {
         return null;
@@ -177,6 +181,10 @@ const useTeamJobs = () => {
                 });
             }
 
+            return;
+        }
+
+        if (!isTerminalJobStatus(event.status)) {
             return;
         }
 

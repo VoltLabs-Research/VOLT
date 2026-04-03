@@ -21,10 +21,13 @@ interface WhiteboardRoomState {
     payloadKey: string;
     revision: number;
     elements: Map<string, WhiteboardElement>;
+    elementSignatures: Map<string, string>;
     elementOrder: string[];
     appState: WhiteboardAppState;
+    snapshotCache: WhiteboardSceneSnapshot | null;
     persistTimer: ReturnType<typeof setTimeout> | null;
     lastEditedBy: string | null;
+    lastPersistedRevision: number;
 };
 
 interface WhiteboardSceneSnapshot {
@@ -32,6 +35,20 @@ interface WhiteboardSceneSnapshot {
     revision: number;
     elements: WhiteboardElement[];
     appState: WhiteboardAppState;
+};
+
+interface WhiteboardSceneDelta {
+    whiteboardId: string;
+    revision: number;
+    elements: WhiteboardElement[];
+    appState: WhiteboardAppState;
+    elementOrder?: string[];
+};
+
+interface MergeSceneResult {
+    changed: boolean;
+    revision: number;
+    delta?: WhiteboardSceneDelta;
 };
 
 const PERSIST_DEBOUNCE_MS = 500;
@@ -65,15 +82,36 @@ const getElementVersionNonce = (element: WhiteboardElement): number => {
         : 0;
 };
 
-const hasEquivalentElementPayload = (current: WhiteboardElement, incoming: WhiteboardElement): boolean => {
+const getElementSignature = (element: WhiteboardElement): string | null => {
     try {
-        return JSON.stringify(current) === JSON.stringify(incoming);
+        return JSON.stringify(element);
     } catch {
-        return false;
+        return null;
     }
 };
 
-const shouldReplaceElement = (current: WhiteboardElement | undefined, incoming: WhiteboardElement): boolean => {
+const hasEquivalentElementPayload = (
+    current: WhiteboardElement,
+    incoming: WhiteboardElement,
+    currentSignature?: string | null,
+    incomingSignature?: string | null
+): boolean => {
+    const resolvedCurrentSignature = currentSignature ?? getElementSignature(current);
+    const resolvedIncomingSignature = incomingSignature ?? getElementSignature(incoming);
+
+    if (typeof resolvedCurrentSignature === 'string' && typeof resolvedIncomingSignature === 'string') {
+        return resolvedCurrentSignature === resolvedIncomingSignature;
+    }
+
+    return false;
+};
+
+const shouldReplaceElement = (
+    current: WhiteboardElement | undefined,
+    incoming: WhiteboardElement,
+    currentSignature?: string | null,
+    incomingSignature?: string | null
+): boolean => {
     if (!current) {
         return true;
     }
@@ -93,7 +131,7 @@ const shouldReplaceElement = (current: WhiteboardElement | undefined, incoming: 
         return versionNonceDelta > 0;
     }
 
-    return !hasEquivalentElementPayload(current, incoming);
+    return !hasEquivalentElementPayload(current, incoming, currentSignature, incomingSignature);
 };
 
 const normalizeElements = (value: unknown): WhiteboardElement[] => {
@@ -110,6 +148,20 @@ const normalizeAppState = (value: unknown): WhiteboardAppState => {
     return typeof value === 'object' && value !== null
         ? { ...(value as WhiteboardAppState) }
         : {};
+};
+
+const areStringArraysEqual = (left: string[], right: string[]): boolean => {
+    if (left.length !== right.length) {
+        return false;
+    }
+
+    for (let index = 0; index < left.length; index += 1) {
+        if (left[index] !== right[index]) {
+            return false;
+        }
+    }
+
+    return true;
 };
 
 @injectable()
@@ -134,14 +186,18 @@ export default class WhiteboardRealtimeStateService {
         whiteboardId: string,
         elements: WhiteboardElement[],
         appState: WhiteboardAppState,
-        userId: string
-    ): Promise<WhiteboardSceneSnapshot | null> {
+        userId: string,
+        elementOrder?: string[]
+    ): Promise<MergeSceneResult | null> {
         const room = await this.getOrLoadRoom(whiteboardId);
         if (!room) {
             return null;
         }
 
         const incomingOrder: string[] = [];
+        const changedElements: WhiteboardElement[] = [];
+        let shouldBroadcastOrder = false;
+        let didChange = false;
 
         for (const element of elements) {
             const id = getElementId(element);
@@ -150,23 +206,29 @@ export default class WhiteboardRealtimeStateService {
             }
 
             incomingOrder.push(id);
-            if (shouldReplaceElement(room.elements.get(id), element)) {
+            const incomingSignature = getElementSignature(element);
+            if (shouldReplaceElement(room.elements.get(id), element, room.elementSignatures.get(id), incomingSignature)) {
                 room.elements.set(id, element);
+                if (incomingSignature) {
+                    room.elementSignatures.set(id, incomingSignature);
+                } else {
+                    room.elementSignatures.delete(id);
+                }
+                changedElements.push(element);
+                didChange = true;
             }
         }
 
-        if (incomingOrder.length > 0) {
+        if (Array.isArray(elementOrder) && elementOrder.length > 0) {
+            const nextOrder = this.buildOrderedIds(elementOrder, room.elementOrder, room.elements);
+            if (!areStringArraysEqual(room.elementOrder, nextOrder)) {
+                room.elementOrder = nextOrder;
+                shouldBroadcastOrder = true;
+                didChange = true;
+            }
+        } else if (incomingOrder.length > 0) {
             const nextOrder: string[] = [];
             const seen = new Set<string>();
-
-            for (const id of incomingOrder) {
-                if (seen.has(id) || !room.elements.has(id)) {
-                    continue;
-                }
-
-                seen.add(id);
-                nextOrder.push(id);
-            }
 
             for (const id of room.elementOrder) {
                 if (seen.has(id) || !room.elements.has(id)) {
@@ -177,18 +239,63 @@ export default class WhiteboardRealtimeStateService {
                 nextOrder.push(id);
             }
 
-            room.elementOrder = nextOrder;
+            for (const id of incomingOrder) {
+                if (seen.has(id) || !room.elements.has(id)) {
+                    continue;
+                }
+
+                seen.add(id);
+                nextOrder.push(id);
+            }
+
+            if (!areStringArraysEqual(room.elementOrder, nextOrder)) {
+                room.elementOrder = nextOrder;
+                didChange = true;
+            }
         }
 
-        room.appState = {
-            ...room.appState,
-            ...normalizeAppState(appState)
-        };
+        const normalizedAppState = normalizeAppState(appState);
+        const appStateDelta: WhiteboardAppState = {};
+
+        for (const [key, value] of Object.entries(normalizedAppState)) {
+            if (Object.is(room.appState[key], value)) {
+                continue;
+            }
+
+            appStateDelta[key] = value;
+        }
+
+        if (Object.keys(appStateDelta).length > 0) {
+            room.appState = {
+                ...room.appState,
+                ...appStateDelta
+            };
+            didChange = true;
+        }
+
+        if (!didChange) {
+            return {
+                changed: false,
+                revision: room.revision
+            };
+        }
+
+        room.snapshotCache = null;
         room.revision += 1;
         room.lastEditedBy = userId;
         this.schedulePersist(room);
 
-        return this.toSnapshot(room);
+        return {
+            changed: true,
+            revision: room.revision,
+            delta: {
+                whiteboardId: room.whiteboardId,
+                revision: room.revision,
+                elements: changedElements,
+                appState: appStateDelta,
+                elementOrder: shouldBroadcastOrder ? [...room.elementOrder] : undefined
+            }
+        };
     }
 
     async flushAndRelease(whiteboardId: string): Promise<void> {
@@ -254,10 +361,18 @@ export default class WhiteboardRealtimeStateService {
             payloadKey,
             revision: typeof storedScene.revision === 'number' ? storedScene.revision : 0,
             elements: new Map(elements.map((element) => [element.id as string, element])),
+            elementSignatures: new Map(elements
+                .map((element) => {
+                    const signature = getElementSignature(element);
+                    return signature ? [element.id as string, signature] as const : null;
+                })
+                .filter((entry): entry is readonly [string, string] => Boolean(entry))),
             elementOrder: elements.map((element) => element.id as string),
             appState: normalizeAppState(storedScene.appState),
+            snapshotCache: null,
             persistTimer: null,
-            lastEditedBy: typeof whiteboard.props.lastEditedBy === 'string' ? whiteboard.props.lastEditedBy : null
+            lastEditedBy: typeof whiteboard.props.lastEditedBy === 'string' ? whiteboard.props.lastEditedBy : null,
+            lastPersistedRevision: typeof storedScene.revision === 'number' ? storedScene.revision : 0
         };
 
         this.rooms.set(whiteboardId, room);
@@ -276,6 +391,10 @@ export default class WhiteboardRealtimeStateService {
     }
 
     private async persistRoom(room: WhiteboardRoomState): Promise<void> {
+        if (room.revision === room.lastPersistedRevision) {
+            return;
+        }
+
         const snapshot = this.toSnapshot(room);
         const storedScene: StoredWhiteboardScene = {
             revision: snapshot.revision,
@@ -289,6 +408,7 @@ export default class WhiteboardRealtimeStateService {
             Buffer.from(JSON.stringify(storedScene)),
             { 'Content-Type': 'application/json' }
         );
+        room.lastPersistedRevision = room.revision;
 
         if (room.lastEditedBy) {
             await this.whiteboardRepository.updateById(room.whiteboardId, {
@@ -298,7 +418,11 @@ export default class WhiteboardRealtimeStateService {
     }
 
     private toSnapshot(room: WhiteboardRoomState): WhiteboardSceneSnapshot {
-        return {
+        if (room.snapshotCache) {
+            return room.snapshotCache;
+        }
+
+        room.snapshotCache = {
             whiteboardId: room.whiteboardId,
             revision: room.revision,
             elements: room.elementOrder
@@ -306,5 +430,39 @@ export default class WhiteboardRealtimeStateService {
                 .filter((element): element is WhiteboardElement => Boolean(element)),
             appState: { ...room.appState }
         };
+
+        return room.snapshotCache;
+    }
+
+    private buildOrderedIds(
+        primaryOrder: string[],
+        secondaryOrder: string[],
+        elements: Map<string, WhiteboardElement>
+    ): string[] {
+        const orderedIds = new Set<string>();
+        const result: string[] = [];
+
+        const appendId = (id: string) => {
+            if (orderedIds.has(id) || !elements.has(id)) {
+                return;
+            }
+
+            orderedIds.add(id);
+            result.push(id);
+        };
+
+        for (const id of primaryOrder) {
+            appendId(id);
+        }
+
+        for (const id of secondaryOrder) {
+            appendId(id);
+        }
+
+        for (const id of elements.keys()) {
+            appendId(id);
+        }
+
+        return result;
     }
 }

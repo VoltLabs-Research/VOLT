@@ -31,7 +31,7 @@ import './DocumentListing.css';
 import { Skeleton } from '@mui/material';
 import { motion } from 'framer-motion';
 import { ExternalLink, Plus } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { RxDotsHorizontal } from 'react-icons/rx';
 import { sileo } from 'sileo';
@@ -310,21 +310,43 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         defaultLimit,
         enabled
     });
+    const deferredData = useDeferredValue(data);
+    const socketInvalidationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         if (!socketInvalidation?.length) {
             return;
         }
 
+        const pendingQueryKeys = new Map<string, QueryKey>();
+        const flushInvalidations = () => {
+            const queryKeys = Array.from(pendingQueryKeys.values());
+            pendingQueryKeys.clear();
+            socketInvalidationTimerRef.current = null;
+            Promise.allSettled(
+                queryKeys.map((currentQueryKey) => queryClient.invalidateQueries({ queryKey: currentQueryKey }))
+            );
+        };
+
         const unsubscribers = socketInvalidation.map(({ event, queryKeys: invalidationQueryKeys }) => {
             return socketService.on(event, () => {
-                Promise.allSettled(
-                    invalidationQueryKeys.map((currentQueryKey) => queryClient.invalidateQueries({ queryKey: currentQueryKey }))
-                );
+                invalidationQueryKeys.forEach((currentQueryKey) => {
+                    pendingQueryKeys.set(JSON.stringify(currentQueryKey), currentQueryKey);
+                });
+
+                if (socketInvalidationTimerRef.current) {
+                    return;
+                }
+
+                socketInvalidationTimerRef.current = setTimeout(flushInvalidations, 150);
             });
         });
 
         return () => {
+            if (socketInvalidationTimerRef.current) {
+                clearTimeout(socketInvalidationTimerRef.current);
+                socketInvalidationTimerRef.current = null;
+            }
             unsubscribers.forEach((unsubscribe) => unsubscribe());
         };
     }, [socketService, socketInvalidation]);
@@ -340,8 +362,12 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     }, [getMenuOptions]);
 
     const sortedData = useMemo(() => {
-        return sortData(data, sortConfig, getValueByPath);
-    }, [data, sortConfig]);
+        if (!sortConfig || deferredData.length < 2) {
+            return deferredData;
+        }
+
+        return sortData(deferredData, sortConfig, getValueByPath);
+    }, [deferredData, sortConfig]);
 
     const handleSort = useCallback((col: ColumnConfig<T>) => {
         if (!col.sortable) {
