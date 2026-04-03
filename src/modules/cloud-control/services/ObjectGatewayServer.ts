@@ -355,6 +355,7 @@ export class ObjectGatewayServer {
 
             const bytesOut = this.writeJson(response, 200, {
                 keys: result.keys,
+                objects: result.objects,
                 nextCursor: result.nextCursor
             });
             tracker.complete({

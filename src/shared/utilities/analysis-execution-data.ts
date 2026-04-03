@@ -56,17 +56,38 @@ export const isAnalysisJobExecutionData = (value: unknown): value is AnalysisJob
         && hasValidDumpUrls(value.allDumpUrls);
 };
 
+export const serializeAnalysisExecutionData = (executionData: AnalysisJobExecutionData): string => {
+    return JSON.stringify(executionData);
+};
+
+const parseSerializedAnalysisExecutionData = (serializedValue: string): AnalysisJobExecutionData => {
+    const parsedExecutionData: unknown = JSON.parse(serializedValue);
+
+    if (!isAnalysisJobExecutionData(parsedExecutionData)) {
+        throw new Error('Analysis execution data must contain a valid analysis execution payload');
+    }
+
+    return parsedExecutionData;
+};
+
+export const compressSerializedAnalysisExecutionData = (serializedValue: string): string => {
+    return zlib.gzipSync(serializedValue).toString('base64');
+};
+
 export const compressAnalysisExecutionData = (executionData: AnalysisJobExecutionData): string => {
-    return zlib.gzipSync(JSON.stringify(executionData)).toString('base64');
+    return compressSerializedAnalysisExecutionData(serializeAnalysisExecutionData(executionData));
 };
 
 export const inflateAnalysisExecutionData = (compressedValue: string): AnalysisJobExecutionData => {
     const compressedBuffer = Buffer.from(compressedValue, 'base64');
-    const parsedExecutionData: unknown = JSON.parse(zlib.gunzipSync(compressedBuffer).toString('utf8'));
+    const serializedValue = zlib.gunzipSync(compressedBuffer).toString('utf8');
+    return parseSerializedAnalysisExecutionData(serializedValue);
+};
 
-    if (!isAnalysisJobExecutionData(parsedExecutionData)) {
-        throw new Error('Compressed analysis execution data must contain a valid analysis execution payload');
+export const parseStoredAnalysisExecutionData = (storedValue: string): AnalysisJobExecutionData => {
+    try {
+        return inflateAnalysisExecutionData(storedValue);
+    } catch {
+        return parseSerializedAnalysisExecutionData(storedValue);
     }
-
-    return parsedExecutionData;
 };

@@ -112,6 +112,8 @@ interface TrajectoryFrameMetadata {
     simulationCell: string;
 };
 
+const MAX_INLINE_NESTED_PLUGIN_CONCURRENCY = 2;
+
 const parseArguments = (value: string): string[] => {
     if (!value) {
         return [];
@@ -124,6 +126,39 @@ const parseArguments = (value: string): string[] => {
         const encodedArguments = decodeCliArgumentsToken(token);
         return encodedArguments ?? [token];
     });
+};
+
+const resolveInlineNestedPluginConcurrency = (itemCount: number): number => {
+    return Math.max(1, Math.min(MAX_INLINE_NESTED_PLUGIN_CONCURRENCY, itemCount));
+};
+
+const runWithConcurrencyLimit = async <TItem, TResult>(
+    items: TItem[],
+    concurrency: number,
+    task: (item: TItem, index: number) => Promise<TResult>
+): Promise<TResult[]> => {
+    if (items.length === 0) {
+        return [];
+    }
+
+    const workerCount = Math.max(1, Math.min(concurrency, items.length));
+    const results = new Array<TResult>(items.length);
+    let nextIndex = 0;
+
+    await Promise.all(Array.from({ length: workerCount }, async () => {
+        while (true) {
+            const currentIndex = nextIndex;
+            nextIndex += 1;
+
+            if (currentIndex >= items.length) {
+                return;
+            }
+
+            results[currentIndex] = await task(items[currentIndex], currentIndex);
+        }
+    }));
+
+    return results;
 };
 
 const findThreadsArgumentIndex = (args: string[]): number => {
@@ -1090,20 +1125,27 @@ export class AnalysisWorker {
 
         for (const pluginNode of pluginNodes) {
             const aggregatedArtifacts: InlineExposureArtifact[] = [];
+            const artifactGroups = await runWithConcurrencyLimit(
+                dumpTargets,
+                resolveInlineNestedPluginConcurrency(dumpTargets.length),
+                async (dumpTarget, index) => {
+                    const dumpOutputs = perDumpOutputs[index];
 
-            for (const [index, dumpTarget] of dumpTargets.entries()) {
-                const dumpOutputs = perDumpOutputs[index];
+                    const output = await this.executeNestedPluginWorkflow(
+                        executionData,
+                        readWorkflowPluginNodeData(pluginNode.data.pluginNode),
+                        dumpOutputs,
+                        dumpTarget,
+                        `${outputDir}_batch_${index}`
+                    );
 
-                const output = await this.executeNestedPluginWorkflow(
-                    executionData,
-                    readWorkflowPluginNodeData(pluginNode.data.pluginNode),
-                    dumpOutputs,
-                    dumpTarget,
-                    `${outputDir}_batch_${index}`
-                );
+                    dumpOutputs.set(pluginNode.id, output);
+                    return readNestedExposureItems(output);
+                }
+            );
 
-                dumpOutputs.set(pluginNode.id, output);
-                aggregatedArtifacts.push(...readNestedExposureItems(output));
+            for (const artifacts of artifactGroups) {
+                aggregatedArtifacts.push(...artifacts);
             }
 
             outputs.set(pluginNode.id, createNestedExecutionResult(aggregatedArtifacts));
@@ -1135,19 +1177,28 @@ export class AnalysisWorker {
 
         for (const [dedupeKey, request] of dedupedRequests.entries()) {
             const aggregatedArtifacts: InlineExposureArtifact[] = [];
-            for (const [index, dumpTarget] of dumpTargets.entries()) {
-                const output = await this.executeNestedPluginWorkflow(
-                    executionData,
-                    {
-                        pluginId: request.pluginId,
-                        config: request.config,
-                        selectedTimesteps: [dumpTarget.timestep]
-                    },
-                    outputs,
-                    dumpTarget,
-                    `${outputDir}_plugin_reference_${index}`
-                );
-                aggregatedArtifacts.push(...readNestedExposureItems(output));
+            const artifactGroups = await runWithConcurrencyLimit(
+                dumpTargets,
+                resolveInlineNestedPluginConcurrency(dumpTargets.length),
+                async (dumpTarget, index) => {
+                    const output = await this.executeNestedPluginWorkflow(
+                        executionData,
+                        {
+                            pluginId: request.pluginId,
+                            config: request.config,
+                            selectedTimesteps: [dumpTarget.timestep]
+                        },
+                        outputs,
+                        dumpTarget,
+                        `${outputDir}_plugin_reference_${index}`
+                    );
+
+                    return readNestedExposureItems(output);
+                }
+            );
+
+            for (const artifacts of artifactGroups) {
+                aggregatedArtifacts.push(...artifacts);
             }
 
             dedupedResults.set(dedupeKey, createNestedExecutionResult(aggregatedArtifacts));

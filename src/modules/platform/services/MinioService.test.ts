@@ -121,6 +121,13 @@ test('MinioService.listObjectsPage stitches multiple safe MinIO pages for larger
     });
 
     assert.equal(page.keys.length, 250);
+    assert.equal(page.objects.length, 250);
+    assert.deepEqual(page.objects[0], {
+        key: 'prefix/object-0',
+        contentLength: undefined,
+        etag: undefined,
+        lastModified: undefined
+    });
     assert.equal(page.nextCursor, 'prefix/object-249');
     assert.deepEqual(calls, [
         {

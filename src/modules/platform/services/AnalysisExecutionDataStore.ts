@@ -1,5 +1,9 @@
 import { logger } from '@/core/logger';
-import { isAnalysisJobExecutionData } from '@/shared/utilities/analysis-execution-data';
+import {
+    compressSerializedAnalysisExecutionData,
+    parseStoredAnalysisExecutionData,
+    serializeAnalysisExecutionData
+} from '@/shared/utilities/analysis-execution-data';
 import Redis from 'ioredis';
 import type { DaemonConfig } from '@/core/config';
 import type { AnalysisExecutionDataReference, AnalysisJobExecutionData } from '@/shared/contracts';
@@ -56,19 +60,27 @@ export class AnalysisExecutionDataStore {
         await this.client.quit();
     }
 
-    async store(executionData: AnalysisJobExecutionData): Promise<AnalysisExecutionDataReference> {
+    async store(
+        executionData: AnalysisJobExecutionData,
+        payload?: {
+            serializedPayload?: string;
+            compressedPayload?: string;
+        }
+    ): Promise<AnalysisExecutionDataReference> {
         await this.connect();
 
         const storedAt = new Date().toISOString();
         const key = createAnalysisExecutionDataKey(executionData.analysisId);
-        const payload = JSON.stringify(executionData);
+        const serializedPayload = payload?.serializedPayload ?? serializeAnalysisExecutionData(executionData);
+        const compressedPayload = payload?.compressedPayload ?? compressSerializedAnalysisExecutionData(serializedPayload);
 
-        await this.client.set(key, payload, 'EX', ANALYSIS_EXECUTION_DATA_TTL_SECONDS);
+        await this.client.set(key, compressedPayload, 'EX', ANALYSIS_EXECUTION_DATA_TTL_SECONDS);
 
         logger.info(
             {
                 analysisId: executionData.analysisId,
-                executionDataBytes: Buffer.byteLength(payload),
+                compressedExecutionDataBytes: Buffer.byteLength(compressedPayload),
+                executionDataBytes: Buffer.byteLength(serializedPayload),
                 key,
                 ttlSeconds: ANALYSIS_EXECUTION_DATA_TTL_SECONDS
             },
@@ -101,21 +113,12 @@ export class AnalysisExecutionDataStore {
         this.client.expire(reference.key, ANALYSIS_EXECUTION_DATA_TTL_SECONDS).catch(() => {});
 
         try {
-            const parsedPayload: unknown = JSON.parse(payload);
-            if (!isAnalysisJobExecutionData(parsedPayload)) {
-                logger.warn(
-                    {
-                        key: reference.key
-                    },
-                    'Shared analysis execution data reference contained an invalid payload'
-                );
-                return null;
-            }
+            const parsedPayload = parseStoredAnalysisExecutionData(payload);
 
             logger.info(
                 {
                     analysisId: parsedPayload.analysisId,
-                    executionDataBytes: Buffer.byteLength(payload),
+                    storedExecutionDataBytes: Buffer.byteLength(payload),
                     key: reference.key
                 },
                 'Resolved shared analysis execution data reference'

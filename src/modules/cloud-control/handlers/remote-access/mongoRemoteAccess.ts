@@ -3,6 +3,7 @@ import {
     RemoteExplorerEntryType,
     RemoteExplorerNodeType,
     type RemoteExplorerEntry,
+    type RemoteExplorerMongoDocument,
     type RemoteExplorerNode
 } from '@/shared/contracts';
 import type { ReverseChannelCommandResult } from '../../services';
@@ -23,6 +24,49 @@ const readDatabase = () => {
     }
 
     return database;
+};
+
+const createMongoCursor = (collectionName: string) => {
+    return readDatabase().collection(collectionName)
+        .find({})
+        .limit(MAX_MONGO_DOCUMENTS);
+};
+
+const collectMongoDocuments = async (collectionName: string): Promise<RemoteExplorerMongoDocument[]> => {
+    const cursor = createMongoCursor(collectionName);
+    const documents: RemoteExplorerMongoDocument[] = [];
+
+    try {
+        for await (const document of cursor) {
+            documents.push(toMongoDocument(document));
+        }
+    } finally {
+        await cursor.close().catch(() => undefined);
+    }
+
+    return documents;
+};
+
+const createMongoDocumentsJsonStream = (collectionName: string): Readable => {
+    const cursor = createMongoCursor(collectionName);
+
+    return Readable.from((async function* () {
+        let isFirst = true;
+
+        try {
+            yield Buffer.from('[', 'utf8');
+
+            for await (const document of cursor) {
+                const serializedDocument = JSON.stringify(toMongoDocument(document));
+                yield Buffer.from(isFirst ? serializedDocument : `,${serializedDocument}`, 'utf8');
+                isFirst = false;
+            }
+
+            yield Buffer.from(']', 'utf8');
+        } finally {
+            await cursor.close().catch(() => undefined);
+        }
+    })());
 };
 
 export const buildMongoEntries = async (): Promise<RemoteExplorerEntry[]> => {
@@ -54,18 +98,13 @@ export const buildMongoNode = async (path: string): Promise<RemoteExplorerNode> 
         };
     }
 
-    const documents = await readDatabase().collection(collectionName)
-        .find({})
-        .limit(MAX_MONGO_DOCUMENTS)
-        .toArray();
-
     return {
         path,
         title: collectionName,
         type: RemoteExplorerNodeType.Collection,
         contentType: RemoteExplorerContentType.MongoDocuments,
         textContent: null,
-        mongoDocuments: documents.map(toMongoDocument)
+        mongoDocuments: await collectMongoDocuments(collectionName)
     };
 };
 
@@ -75,19 +114,12 @@ export const buildMongoDownloadResponse = async (path: string): Promise<ReverseC
         throw new Error('Mongo download requires a collection name');
     }
 
-    const documents = await readDatabase().collection(collectionName)
-        .find({})
-        .limit(MAX_MONGO_DOCUMENTS)
-        .toArray();
-    const buffer = Buffer.from(JSON.stringify(documents.map(toMongoDocument), null, 2), 'utf-8');
-
     return {
         status: 200,
         headers: {
             'content-type': 'application/json',
-            'content-length': String(buffer.byteLength),
             'content-disposition': buildAttachmentContentDisposition(`${collectionName}.json`)
         },
-        stream: toWebReadableStream(Readable.from([buffer]))
+        stream: toWebReadableStream(createMongoDocumentsJsonStream(collectionName))
     };
 };

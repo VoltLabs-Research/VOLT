@@ -2,7 +2,10 @@ import { logger } from '@/core/logger';
 import { DaemonCommandError } from '@/modules/cloud-control/services/DaemonCommandError';
 import { ANALYSIS_QUEUE_NAME, QueueService } from '@/modules/platform/services';
 import { createTraceLogContext, serializeDaemonTraceContext } from '@/shared/observability/daemonInstrumentation';
-import { compressAnalysisExecutionData } from '@/shared/utilities/analysis-execution-data';
+import {
+    compressSerializedAnalysisExecutionData,
+    serializeAnalysisExecutionData
+} from '@/shared/utilities/analysis-execution-data';
 import { isRecord } from '@/shared/utils';
 import { WorkflowEngine } from '@/modules/workflow-runtime/services';
 import { EntrypointType, OrchestrationAction } from '@/shared/contracts';
@@ -151,8 +154,12 @@ export class AnalysisDispatchService {
         let executionDataCompressed: string | undefined;
 
         try {
-            executionDataReference = await this.analysisExecutionDataStore.store(executionData);
-            executionDataCompressed = compressAnalysisExecutionData(executionData);
+            const serializedExecutionData = serializeAnalysisExecutionData(executionData);
+            executionDataCompressed = compressSerializedAnalysisExecutionData(serializedExecutionData);
+            executionDataReference = await this.analysisExecutionDataStore.store(executionData, {
+                serializedPayload: serializedExecutionData,
+                compressedPayload: executionDataCompressed
+            });
         } catch (error: unknown) {
             logger.warn(
                 {

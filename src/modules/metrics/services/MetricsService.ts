@@ -28,17 +28,29 @@ interface CpuTimeSnapshot {
     total: number;
 };
 
+interface DiskUsageSnapshot {
+    totalBytes: number;
+    freeBytes: number;
+    usedBytes: number;
+    usagePercent: number;
+};
+
 const execAsync = promisify(exec);
 const BYTES_PER_MB = 1024 * 1024;
 const SECTOR_SIZE = 512;
 const PHYSICAL_DISK_PATTERN = /^(sd[a-z]|nvme\d+n\d+|vd[a-z]|hd[a-z])$/;
 const PARTITION_SUFFIX_PATTERN = /\d+$/;
 const NVME_DISK_PATTERN = /^nvme\d+n\d+$/;
+const DISK_USAGE_CACHE_TTL_MS = 10_000;
 
 export class MetricsService {
     private lastDiskIO: DiskIOSnapshot | null = null;
     private lastNetworkSnapshot: NetworkCounterSnapshot | null = null;
     private lastCpuTimes: CpuTimeSnapshot[] | null = null;
+    private cachedDiskUsage: {
+        expiresAt: number;
+        value: DiskUsageSnapshot;
+    } | null = null;
 
     async collectSnapshot(cloudMetrics?: CloudMetricsSnapshot): Promise<MetricsSnapshot> {
         const cpuPerCoreUsagePercent = this.getCpuPerCoreUsagePercent();
@@ -79,22 +91,29 @@ export class MetricsService {
     }
 
     private async collectDiskUsage() {
+        const cachedDiskUsage = this.cachedDiskUsage;
+        if (cachedDiskUsage && cachedDiskUsage.expiresAt > Date.now()) {
+            return cachedDiskUsage.value;
+        }
+
         const { stdout } = await execAsync('df -B1 /');
         const lines = stdout.trim().split('\n');
         const lastLine = lines[lines.length - 1] || '';
         const parts = lastLine.trim().split(/\s+/);
 
-        const totalBytes = Number(parts[1] || 0);
-        const usedBytes = Number(parts[2] || 0);
-        const freeBytes = Number(parts[3] || 0);
-        const usagePercent = Number((parts[4] || '0').replace('%', ''));
-
-        return {
-            totalBytes,
-            freeBytes,
-            usedBytes,
-            usagePercent
+        const snapshot: DiskUsageSnapshot = {
+            totalBytes: Number(parts[1] || 0),
+            usedBytes: Number(parts[2] || 0),
+            freeBytes: Number(parts[3] || 0),
+            usagePercent: Number((parts[4] || '0').replace('%', ''))
         };
+
+        this.cachedDiskUsage = {
+            expiresAt: Date.now() + DISK_USAGE_CACHE_TTL_MS,
+            value: snapshot
+        };
+
+        return snapshot;
     }
 
     private async collectDiskOperations() {

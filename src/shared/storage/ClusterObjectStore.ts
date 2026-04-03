@@ -24,6 +24,13 @@ export interface ClusterObjectStreamResponse extends ClusterObjectHeadResponse {
     stream: Readable;
 }
 
+export interface ClusterObjectListEntry {
+    key: string;
+    contentLength?: number;
+    etag?: string;
+    lastModified?: Date;
+}
+
 export interface ClusterObjectReadOptions {
     skipMetadata?: boolean;
 }
@@ -58,7 +65,7 @@ export interface ClusterObjectStore {
         prefix?: string;
         cursor?: string;
         limit?: number;
-    }): Promise<{ keys: string[]; nextCursor?: string; }>;
+    }): Promise<{ keys: string[]; objects: ClusterObjectListEntry[]; nextCursor?: string; }>;
     deleteByPrefix(ownerClusterId: string, bucket: string, prefix: string): Promise<number | undefined>;
     removeObject(ownerClusterId: string, bucket: string, objectKey: string): Promise<void>;
 }

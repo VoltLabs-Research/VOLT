@@ -1,5 +1,6 @@
 import { DockerRuntimeService } from '@/modules/platform/services';
 import { logger } from '@/core/logger';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import type {
     CreateNotebookSessionResponse,
@@ -33,6 +34,7 @@ interface NotebookRuntimeState {
     publishedHost?: string;
     publicBasePath: string;
     readinessOrigin?: string;
+    lastNotebookDigest?: string;
 };
 
 interface RuntimeContainerCandidate {
@@ -128,18 +130,23 @@ export class JupyterRuntimeService {
         });
         const notebookFilePath = this.getNotebookFilePath(input.notebook.notebookPath);
         const internalPath = this.buildJupyterPath(input.notebook.notebookPath);
+        const notebookContents = JSON.stringify(input.notebook.content, null, 2);
+        const nextNotebookDigest = this.createNotebookDigest(notebookContents);
+
+        if (runtimeState.lastNotebookDigest !== nextNotebookDigest) {
+            await this.dockerRuntimeService.writeContainerFile(
+                runtimeState.containerId,
+                notebookFilePath,
+                notebookContents,
+                {
+                    operationName: 'jupyter-write-notebook',
+                    timeoutMs: this.config.jupyter.execTimeoutMs
+                }
+            );
+            runtimeState.lastNotebookDigest = nextNotebookDigest;
+        }
 
         this.setRuntimeState(input.notebook._id, runtimeState);
-
-        await this.dockerRuntimeService.writeContainerFile(
-            runtimeState.containerId,
-            notebookFilePath,
-            JSON.stringify(input.notebook.content, null, 2),
-            {
-                operationName: 'jupyter-write-notebook',
-                timeoutMs: this.config.jupyter.execTimeoutMs
-            }
-        );
 
         const ready = await this.ensureJupyterServer({
             notebookId: input.notebook._id,
@@ -224,6 +231,9 @@ export class JupyterRuntimeService {
                         hostPort,
                         publishedHost: publishedBinding?.host,
                         publicBasePath,
+                        lastNotebookDigest: existingContainer.isRunning && currentRuntimeState?.containerId === existingContainer.containerId
+                            ? currentRuntimeState.lastNotebookDigest
+                            : undefined,
                         readinessOrigin: existingContainer.isRunning && currentRuntimeState?.containerId === existingContainer.containerId
                             ? currentRuntimeState.readinessOrigin
                             : undefined
@@ -333,6 +343,9 @@ export class JupyterRuntimeService {
             hostPort: runtimeContainer.hostPort,
             publishedHost: await this.resolvePublishedHost(runtimeContainer.containerId),
             publicBasePath,
+            lastNotebookDigest: currentRuntimeState?.containerId === runtimeContainer.containerId
+                ? currentRuntimeState.lastNotebookDigest
+                : undefined,
             readinessOrigin: currentRuntimeState?.containerId === runtimeContainer.containerId
                 ? currentRuntimeState.readinessOrigin
                 : undefined
@@ -609,6 +622,10 @@ export class JupyterRuntimeService {
         }
 
         return normalizedValue.endsWith('/') ? normalizedValue.slice(0, -1) : normalizedValue;
+    }
+
+    private createNotebookDigest(contents: string): string {
+        return createHash('sha1').update(contents).digest('hex');
     }
 
     private setRuntimeState(notebookId: string, runtimeState: NotebookRuntimeState): void {

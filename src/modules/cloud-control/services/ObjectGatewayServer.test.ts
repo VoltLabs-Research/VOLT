@@ -25,8 +25,11 @@ class StubMinioService {
         return [TEST_BUCKET];
     }
 
-    async listObjectsPage(): Promise<{ keys: string[]; }> {
-        return { keys: [] };
+    async listObjectsPage(): Promise<{ keys: string[]; objects: Array<{ key: string; }>; }> {
+        return {
+            keys: [],
+            objects: []
+        };
     }
 
     async deleteByPrefix(bucket: string, prefix: string): Promise<number> {

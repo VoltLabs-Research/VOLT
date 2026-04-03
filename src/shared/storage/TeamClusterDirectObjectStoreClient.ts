@@ -28,12 +28,20 @@ export interface DirectObjectStoreStreamResponse extends DirectObjectStoreHeadRe
     stream: NodeReadable;
 }
 
+export interface DirectObjectStoreListEntry {
+    key: string;
+    contentLength?: number;
+    etag?: string;
+    lastModified?: Date;
+}
+
 export interface DirectObjectStoreReadOptions {
     skipMetadata?: boolean;
 }
 
 interface ObjectStoreListResponse {
     keys?: unknown;
+    objects?: unknown;
     nextCursor?: unknown;
 }
 
@@ -136,6 +144,36 @@ const parseHeadResponse = (headers: Headers): DirectObjectStoreHeadResponse => {
     };
 };
 
+const parseListEntry = (value: unknown): DirectObjectStoreListEntry | null => {
+    if (typeof value !== 'object' || value === null) {
+        return null;
+    }
+
+    const entry = value as Record<string, unknown>;
+    if (typeof entry.key !== 'string' || entry.key.length === 0) {
+        return null;
+    }
+
+    const lastModified = entry.lastModified instanceof Date
+        ? entry.lastModified
+        : typeof entry.lastModified === 'string' && entry.lastModified.length > 0
+            ? new Date(entry.lastModified)
+            : undefined;
+
+    return {
+        key: entry.key,
+        contentLength: typeof entry.contentLength === 'number'
+            ? entry.contentLength
+            : undefined,
+        etag: typeof entry.etag === 'string' && entry.etag.length > 0
+            ? entry.etag
+            : undefined,
+        lastModified: lastModified && !Number.isNaN(lastModified.getTime())
+            ? lastModified
+            : undefined
+    };
+};
+
 export class TeamClusterDirectObjectStoreClient {
     private readonly httpAgent = new http.Agent({
         keepAlive: true,
@@ -163,7 +201,7 @@ export class TeamClusterDirectObjectStoreClient {
             cursor?: string;
             limit?: number;
         }
-    ): Promise<{ keys: string[]; nextCursor?: string; }> {
+    ): Promise<{ keys: string[]; objects: DirectObjectStoreListEntry[]; nextCursor?: string; }> {
         const query = new URLSearchParams();
         if (request.prefix) {
             query.set('prefix', request.prefix);
@@ -181,11 +219,18 @@ export class TeamClusterDirectObjectStoreClient {
             this.buildCollectionPath(ownerClusterId, request.bucket, query),
             { method: 'GET' }
         );
+        const objects = Array.isArray(response.objects)
+            ? response.objects.map(parseListEntry).filter((entry): entry is DirectObjectStoreListEntry => entry !== null)
+            : [];
+        const keys = Array.isArray(response.keys)
+            ? response.keys.filter((value): value is string => typeof value === 'string')
+            : objects.map((object) => object.key);
 
         return {
-            keys: Array.isArray(response.keys)
-                ? response.keys.filter((value): value is string => typeof value === 'string')
-                : [],
+            keys,
+            objects: objects.length > 0
+                ? objects
+                : keys.map((key) => ({ key })),
             nextCursor: typeof response.nextCursor === 'string'
                 ? response.nextCursor
                 : undefined

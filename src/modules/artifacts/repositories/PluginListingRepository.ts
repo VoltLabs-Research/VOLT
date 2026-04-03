@@ -2,7 +2,8 @@ import { PluginListingRowModel } from '../models/PluginListingRowModel';
 import { PluginSubListingRowModel } from '../models/PluginSubListingRowModel';
 import { calculatePaginationOffset, calculateTotalPages, normalizePagination } from '@/shared/contracts';
 import { ObjectBucketName } from '@/shared/contracts';
-import { decodeMultiStream, mergeSelectiveChunk } from '@/shared/utilities/selective-msgpack';
+import { decodeMultiStream } from '@/shared/utilities/selective-msgpack';
+import mergeChunkedValue from '@/shared/utilities/merge-chunked-value';
 import { isRecord, readString, toRecord } from '@/shared/utils';
 import type { PluginListingRowDocument } from '../models/PluginListingRowModel';
 import type { PluginSubListingRowDocument } from '../models/PluginSubListingRowModel';
@@ -99,6 +100,11 @@ interface PagedDocumentsResult<TDocument> {
     documents: TDocument[];
     page: number;
     limit: number;
+    total: number;
+};
+
+interface SubListingPageResult {
+    rows: Record<string, unknown>[];
     total: number;
 };
 
@@ -247,16 +253,24 @@ const buildPluginPayloadObjectKey = (
     return `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack`;
 };
 
-const normalizeSubListingRows = (value: unknown): Record<string, unknown>[] => {
-    if (Array.isArray(value)) {
-        return value.filter(isRecord);
+const appendRowsWithinPage = (
+    pageRows: Record<string, unknown>[],
+    rows: Record<string, unknown>[],
+    total: number,
+    offset: number,
+    limit: number
+): number => {
+    let nextTotal = total;
+
+    for (const row of rows) {
+        if (nextTotal >= offset && pageRows.length < limit) {
+            pageRows.push(row);
+        }
+
+        nextTotal += 1;
     }
 
-    if (isRecord(value)) {
-        return [value];
-    }
-
-    return [];
+    return nextTotal;
 };
 
 const normalizeMongoExportRows = (rows: Array<Record<string, unknown>>): Record<string, unknown>[] => {
@@ -508,17 +522,18 @@ export class MongoPluginListingRepository implements PluginListingRepository {
         }
 
         try {
-            const rows = await this.readSubListingRowsFromObject(
-                source.ownerClusterId,
-                source.objectKey,
-                filter.subListingName || ''
-            );
             const pagination = normalizePagination(filter.page, filter.limit);
             const offset = calculatePaginationOffset(pagination.page, pagination.limit);
-            const pageRows = rows.slice(offset, offset + pagination.limit);
+            const pagedRows = await this.readPagedSubListingRowsFromObject(
+                source.ownerClusterId,
+                source.objectKey,
+                filter.subListingName || '',
+                offset,
+                pagination.limit
+            );
 
             return {
-                data: pageRows.map((row, index) => ({
+                data: pagedRows.rows.map((row, index) => ({
                     _id: `${filter.analysisId || 'analysis'}:${filter.exposureId || 'exposure'}:${String(filter.timestep ?? 'timestep')}:${filter.subListingName || 'sub-listing'}:${offset + index}`,
                     analysis: filter.analysisId,
                     exposureId: filter.exposureId,
@@ -528,8 +543,8 @@ export class MongoPluginListingRepository implements PluginListingRepository {
                 })),
                 page: pagination.page,
                 limit: pagination.limit,
-                total: rows.length,
-                totalPages: calculateTotalPages(rows.length, pagination.limit)
+                total: pagedRows.total,
+                totalPages: calculateTotalPages(pagedRows.total, pagination.limit)
             };
         } catch {
             return null;
@@ -577,29 +592,70 @@ export class MongoPluginListingRepository implements PluginListingRepository {
         return null;
     }
 
-    private async readSubListingRowsFromObject(
+    private async readPagedSubListingRowsFromObject(
         ownerClusterId: string,
         objectKey: string,
-        subListingName: string
-    ): Promise<Record<string, unknown>[]> {
+        subListingName: string,
+        offset: number,
+        limit: number
+    ): Promise<SubListingPageResult> {
         if (!ownerClusterId) {
-            return [];
+            return {
+                rows: [],
+                total: 0
+            };
         }
 
         const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, objectKey, {
             skipMetadata: true
         });
-        let decoded: Record<string, unknown> | null = null;
+        const pageRows: Record<string, unknown>[] = [];
+        let totalRows = 0;
+        let mergedObjectRow: Record<string, unknown> | null = null;
+        let hasMergedObjectRow = false;
 
         for await (const message of decodeMultiStream(response.stream as AsyncIterable<Uint8Array>)) {
-            decoded = mergeSelectiveChunk(decoded, message, (key) => key === 'sub_listings');
+            if (!isRecord(message) || !isRecord(message.sub_listings)) {
+                continue;
+            }
+
+            const subListingChunk = message.sub_listings[subListingName];
+            if (Array.isArray(subListingChunk)) {
+                totalRows = appendRowsWithinPage(
+                    pageRows,
+                    subListingChunk.filter(isRecord),
+                    totalRows,
+                    offset,
+                    limit
+                );
+                continue;
+            }
+
+            if (!isRecord(subListingChunk)) {
+                continue;
+            }
+
+            const mergedValue = mergeChunkedValue(mergedObjectRow, subListingChunk);
+            mergedObjectRow = isRecord(mergedValue)
+                ? mergedValue
+                : mergedObjectRow;
+            hasMergedObjectRow = true;
         }
 
-        if (!decoded || !isRecord(decoded.sub_listings)) {
-            return [];
+        if (hasMergedObjectRow && mergedObjectRow) {
+            totalRows = appendRowsWithinPage(
+                pageRows,
+                [mergedObjectRow],
+                totalRows,
+                offset,
+                limit
+            );
         }
 
-        return normalizeSubListingRows(decoded.sub_listings[subListingName]);
+        return {
+            rows: pageRows,
+            total: totalRows
+        };
     }
 };
 

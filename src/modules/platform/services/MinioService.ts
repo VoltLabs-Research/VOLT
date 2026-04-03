@@ -26,8 +26,16 @@ export interface ListObjectsPageInput {
     limit: number;
 };
 
+export interface ListObjectsPageEntry {
+    key: string;
+    contentLength?: number;
+    etag?: string;
+    lastModified?: Date;
+};
+
 export interface ListObjectsPageResult {
     keys: string[];
+    objects: ListObjectsPageEntry[];
     nextCursor?: string;
 };
 
@@ -103,12 +111,12 @@ export class MinioService {
             );
 
             for (const item of result.objects) {
-                const key = this.readListItemKey(item);
-                if (!key) {
+                const listedObject = this.readListItem(item);
+                if (!listedObject) {
                     continue;
                 }
 
-                keys.push(key);
+                keys.push(listedObject.key);
                 if (requestedMaxKeys && keys.length >= requestedMaxKeys) {
                     return keys;
                 }
@@ -127,31 +135,33 @@ export class MinioService {
             ? input.limit
             : 100;
         const maxKeys = requestedLimit + 1;
-        const collectedKeys: string[] = [];
+        const collectedObjects: ListObjectsPageEntry[] = [];
         let continuationToken = '';
         let startAfter = input.cursor ?? '';
 
-        while (collectedKeys.length < maxKeys) {
+        while (collectedObjects.length < maxKeys) {
             const result = await this.client.listObjectsV2Query(
                 input.bucket,
                 input.prefix,
                 continuationToken,
                 '',
-                Math.min(maxKeys - collectedKeys.length, MinioService.SAFE_LIST_PAGE_SIZE),
+                Math.min(maxKeys - collectedObjects.length, MinioService.SAFE_LIST_PAGE_SIZE),
                 startAfter
             );
 
             for (const item of result.objects) {
-                const key = this.readListItemKey(item);
-                if (!key) {
+                const listedObject = this.readListItem(item);
+                if (!listedObject) {
                     continue;
                 }
 
-                collectedKeys.push(key);
-                if (collectedKeys.length >= maxKeys) {
+                collectedObjects.push(listedObject);
+                if (collectedObjects.length >= maxKeys) {
+                    const objects = collectedObjects.slice(0, requestedLimit);
                     return {
-                        keys: collectedKeys.slice(0, requestedLimit),
-                        nextCursor: collectedKeys[requestedLimit - 1]
+                        keys: objects.map((object) => object.key),
+                        objects,
+                        nextCursor: objects[requestedLimit - 1]?.key
                     };
                 }
             }
@@ -165,7 +175,8 @@ export class MinioService {
         }
 
         return {
-            keys: collectedKeys
+            keys: collectedObjects.map((object) => object.key),
+            objects: collectedObjects
         };
     }
 
@@ -186,12 +197,12 @@ export class MinioService {
             );
 
             for (const item of result.objects) {
-                const key = this.readListItemKey(item);
-                if (!key) {
+                const listedObject = this.readListItem(item);
+                if (!listedObject) {
                     continue;
                 }
 
-                batch.push(key);
+                batch.push(listedObject.key);
 
                 if (batch.length >= BATCH_SIZE) {
                     deletedCount += batch.length;
@@ -217,9 +228,31 @@ export class MinioService {
         await this.client.removeObject(bucket, objectKey);
     }
 
-    private readListItemKey(item: BucketItem): string | null {
-        return 'name' in item && typeof item.name === 'string'
-            ? item.name
-            : null;
+    private readListItem(item: BucketItem): ListObjectsPageEntry | null {
+        if (!('name' in item) || typeof item.name !== 'string') {
+            return null;
+        }
+
+        const lastModifiedValue: unknown = 'lastModified' in item
+            ? (item as Record<string, unknown>).lastModified
+            : undefined;
+        const lastModified = lastModifiedValue instanceof Date
+            ? lastModifiedValue
+            : typeof lastModifiedValue === 'string' && lastModifiedValue.length > 0
+                ? new Date(lastModifiedValue)
+                : undefined;
+
+        return {
+            key: item.name,
+            contentLength: typeof item.size === 'number'
+                ? item.size
+                : undefined,
+            etag: typeof item.etag === 'string' && item.etag.length > 0
+                ? item.etag
+                : undefined,
+            lastModified: lastModified && !Number.isNaN(lastModified.getTime())
+                ? lastModified
+                : undefined
+        };
     }
 };
