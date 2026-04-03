@@ -23,13 +23,28 @@ interface CompletedFramesGroupStage {
     };
 };
 
+interface CompletedFramesMatchStage {
+    $match: {
+        completedFrames: {
+            $gt: number;
+        };
+    };
+};
+
 @injectable()
 export default class AnalysisRepository
     extends MongooseBaseRepository<Analysis, AnalysisProps, AnalysisDocument>
     implements IAnalysisRepository {
 
     async getCompletedFramesByCluster(): Promise<Record<string, number>> {
-        const pipeline: CompletedFramesGroupStage[] = [
+        const pipeline: Array<CompletedFramesMatchStage | CompletedFramesGroupStage> = [
+            {
+                $match: {
+                    completedFrames: {
+                        $gt: 0
+                    }
+                }
+            },
             {
                 $group: {
                     _id: '$computeClusterId',

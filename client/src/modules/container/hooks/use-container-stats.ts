@@ -21,7 +21,15 @@ const useContainerStats = ({ containerId, isRunning }: UseContainerStatsProps): 
 
     const { data: statsResponse } = useContainerStatsQuery(containerId!, {
         enabled: !!containerId && isRunning,
-        refetchInterval: 2000
+        refetchInterval: () => {
+            if (typeof document === 'undefined') {
+                return 5000;
+            }
+
+            return document.hidden ? false : 5000;
+        },
+        refetchIntervalInBackground: false,
+        refetchOnWindowFocus: false
     });
 
     useEffect(() => {

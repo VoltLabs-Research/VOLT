@@ -233,10 +233,15 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
         }
     }, [updateWhiteboard, whiteboardId]);
 
-    const mergeRemoteState = useCallback(async (elements: ExcalidrawElements, appState: AppState, revision: number) => {
+    const mergeRemoteState = useCallback(async (
+        elements: ExcalidrawElements,
+        appState: AppState,
+        revision: number,
+        elementOrder?: string[]
+    ) => {
         const files = await hydrateFiles(elements);
         const nextState = {
-            elements: mergeWhiteboardElements(currentElementsRef.current, elements),
+            elements: mergeWhiteboardElements(currentElementsRef.current, elements, elementOrder),
             appState: mergeWhiteboardAppState(currentAppStateRef.current, appState),
             files,
             revision

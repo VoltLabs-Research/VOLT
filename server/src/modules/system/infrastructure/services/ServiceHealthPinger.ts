@@ -3,8 +3,16 @@ import { injectable } from 'tsyringe';
 import { redis } from '@core/config/redis';
 import type { ResponseTimes } from '@modules/system/domain/value-objects/SystemMetrics';
 
+const HEALTH_CHECK_CACHE_TTL_MS = 5_000;
+
 @injectable()
 export default class ServiceHealthPinger {
+    private cachedResponseTimes: {
+        expiresAt: number;
+        value: ResponseTimes;
+    } | null = null;
+    private pendingCollection: Promise<ResponseTimes> | null = null;
+
     private async pingMongoose(): Promise<number> {
         try {
             const start = Date.now();
@@ -39,16 +47,40 @@ export default class ServiceHealthPinger {
     }
 
     async collectAll(): Promise<ResponseTimes> {
-        const mongooseLatency = await this.pingMongoose();
-        const redisLatency = await this.pingRedis();
-        const minioLatency = await this.pingMinIO();
+        const cachedResponseTimes = this.cachedResponseTimes;
+        if (cachedResponseTimes && cachedResponseTimes.expiresAt > Date.now()) {
+            return cachedResponseTimes.value;
+        }
 
-        return {
-            mongodb: mongooseLatency,
-            redis: redisLatency,
-            minio: minioLatency,
-            self: 0,
-            average: Math.round((mongooseLatency + redisLatency + minioLatency) / 3)
-        };
+        if (this.pendingCollection) {
+            return this.pendingCollection;
+        }
+
+        this.pendingCollection = Promise.all([
+            this.pingMongoose(),
+            this.pingRedis(),
+            this.pingMinIO()
+        ])
+            .then(([mongooseLatency, redisLatency, minioLatency]) => {
+                const responseTimes: ResponseTimes = {
+                    mongodb: mongooseLatency,
+                    redis: redisLatency,
+                    minio: minioLatency,
+                    self: 0,
+                    average: Math.round((mongooseLatency + redisLatency + minioLatency) / 3)
+                };
+
+                this.cachedResponseTimes = {
+                    expiresAt: Date.now() + HEALTH_CHECK_CACHE_TTL_MS,
+                    value: responseTimes
+                };
+
+                return responseTimes;
+            })
+            .finally(() => {
+                this.pendingCollection = null;
+            });
+
+        return this.pendingCollection;
     }
 }

@@ -105,11 +105,23 @@ const buildObjectGatewayServer = async (options: {
 
         if (method === 'GET' && pathParts.length === 6) {
             const prefix = url.searchParams.get('prefix') || '';
-            const keys = Array.from(objects.keys())
+            const listedKeys = Array.from(objects.keys())
                 .filter((key) => key.startsWith(`${bucket}/${prefix}`))
                 .map((key) => key.slice(bucket.length + 1));
+            const objectsPayload = listedKeys.map((key) => {
+                const storedObject = objects.get(buildObjectId(bucket, key));
+                return {
+                    key,
+                    contentLength: storedObject?.body.length,
+                    etag: `"etag:${key}"`,
+                    lastModified: '2026-04-01T00:00:00.000Z'
+                };
+            });
 
-            const body = Buffer.from(JSON.stringify({ keys }));
+            const body = Buffer.from(JSON.stringify({
+                keys: listedKeys,
+                objects: objectsPayload
+            }));
             response.statusCode = 200;
             response.setHeader('content-type', 'application/json');
             response.setHeader('content-length', String(body.length));
@@ -274,6 +286,12 @@ test('TeamClusterObjectGatewayClient performs object gateway operations through 
             prefix: 'path/to'
         });
         assert.deepEqual(list.keys, [TEST_OBJECT_KEY]);
+        assert.deepEqual(list.objects, [{
+            key: TEST_OBJECT_KEY,
+            contentLength: payload.length,
+            etag: `"etag:${TEST_OBJECT_KEY}"`,
+            lastModified: new Date('2026-04-01T00:00:00.000Z')
+        }]);
 
         const deletedCount = await harness.client.deleteByPrefix(TEST_CLUSTER_ID, TEST_BUCKET, 'path/');
         assert.equal(deletedCount, 1);

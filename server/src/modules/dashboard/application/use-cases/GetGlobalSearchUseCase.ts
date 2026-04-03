@@ -1,0 +1,226 @@
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { extractPluginId } from '@modules/analysis/infrastructure/services/AnalysisPluginDisplayNameService';
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import {
+    EMPTY_GLOBAL_SEARCH_RESULTS,
+    GetGlobalSearchInputDTO,
+    GetGlobalSearchOutputDTO
+} from '@modules/dashboard/application/dtos/GetGlobalSearchDTO';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { mapPluginToPersistedDTO } from '@modules/plugin/utilities/mappers/plugin/mapPluginToPersistedDTO';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { TRAJECTORY_POPULATE } from '@shared/application/PopulatePresets';
+import { IUseCase } from '@shared/application/IUseCase';
+import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
+import { Result } from '@shared/domain/port/Result';
+import { inject, injectable } from 'tsyringe';
+
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import type { GetUserChatsOutputDTO } from '@modules/chat/application/dtos/chat/GetUserChatsDTO';
+import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
+import type { ChatParticipant } from '@modules/chat/domain/entities/chat/Chat';
+import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
+import type { PersistedPluginDTO } from '@modules/plugin/application/dtos/plugin/PersistedPluginDTO';
+import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
+import type { ListUserTeamsOutputDTO } from '@modules/team/application/dtos/team/ListUserTeamsDTO';
+import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+
+const DEFAULT_LIMIT = 5;
+const MAX_LIMIT = 10;
+const MIN_SEARCH_QUERY_LENGTH = 2;
+
+const normalizeQuery = (value: unknown): string => {
+    return typeof value === 'string' ? value.trim() : '';
+};
+
+const normalizeLimit = (value: unknown): number => {
+    const parsedLimit = Number(value);
+
+    if (!Number.isFinite(parsedLimit)) {
+        return DEFAULT_LIMIT;
+    }
+
+    return Math.min(MAX_LIMIT, Math.max(1, Math.trunc(parsedLimit)));
+};
+
+const escapeRegex = (value: string): string => {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+const matchesNormalizedQuery = (normalizedQuery: string, ...values: unknown[]): boolean => {
+    return values.some((value) => {
+        return typeof value === 'string' && value.toLowerCase().includes(normalizedQuery);
+    });
+};
+
+const getParticipantSearchTokens = (participant: ChatParticipant): string[] => {
+    if (typeof participant === 'string') {
+        return [participant];
+    }
+
+    const searchTokens: string[] = [];
+    const candidateRecord = participant as Record<string, unknown>;
+
+    for (const key of ['firstName', 'lastName', 'email']) {
+        const value = candidateRecord[key];
+        if (typeof value === 'string' && value.length > 0) {
+            searchTokens.push(value);
+        }
+    }
+
+    return searchTokens;
+};
+
+const getLastMessageContent = (chat: GetUserChatsOutputDTO): string | undefined => {
+    const lastMessage = chat.lastMessage;
+    if (typeof lastMessage !== 'object' || lastMessage === null) {
+        return undefined;
+    }
+
+    const content = (lastMessage as Record<string, unknown>).content;
+    return typeof content === 'string' ? content : undefined;
+};
+
+@injectable()
+export default class GetGlobalSearchUseCase
+implements IUseCase<GetGlobalSearchInputDTO, GetGlobalSearchOutputDTO> {
+    constructor(
+        @inject(ANALYSIS_TOKENS.AnalysisRepository)
+        private readonly analysisRepository: IAnalysisRepository,
+
+        @inject(CONTAINER_TOKENS.ContainerRepository)
+        private readonly containerRepository: IContainerRepository,
+
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
+        private readonly trajectoryRepository: ITrajectoryRepository,
+
+        @inject(PLUGIN_TOKENS.PluginRepository)
+        private readonly pluginRepository: IPluginRepository,
+
+        @inject(TEAM_TOKENS.TeamRepository)
+        private readonly teamRepository: ITeamRepository,
+
+        @inject(CHAT_TOKENS.ChatRepository)
+        private readonly chatRepository: IChatRepository
+    ) {}
+
+    async execute(input: GetGlobalSearchInputDTO): Promise<Result<GetGlobalSearchOutputDTO>> {
+        const normalizedQuery = normalizeQuery(input.query);
+        if (normalizedQuery.length < MIN_SEARCH_QUERY_LENGTH) {
+            return Result.ok(EMPTY_GLOBAL_SEARCH_RESULTS);
+        }
+
+        const limit = normalizeLimit(input.limit);
+        const normalizedLowerCaseQuery = normalizedQuery.toLowerCase();
+        const regex = new RegExp(escapeRegex(normalizedQuery), 'i');
+
+        const [
+            trajectoryIds,
+            teams,
+            chats
+        ] = await Promise.all([
+            this.trajectoryRepository.searchIdsByTeamAndName(input.teamId, normalizedQuery),
+            this.teamRepository.findUserTeams(input.userId),
+            this.chatRepository.findChatsByUserId(input.userId)
+        ]);
+
+        const [
+            analysesResult,
+            containersResult,
+            trajectoriesResult,
+            pluginsResult
+        ] = await Promise.all([
+            this.analysisRepository.findByTeamAndSearch({
+                teamId: input.teamId,
+                search: normalizedQuery,
+                trajectoryIds,
+                limit,
+                page: 1,
+                populate: [TRAJECTORY_POPULATE]
+            }),
+            this.containerRepository.findAll({
+                filter: {
+                    team: input.teamId,
+                    name: { $regex: regex }
+                },
+                sort: { updatedAt: -1 },
+                limit,
+                page: 1
+            }),
+            this.trajectoryRepository.findAll({
+                filter: {
+                    team: input.teamId,
+                    name: { $regex: regex }
+                },
+                sort: { updatedAt: -1 },
+                limit,
+                page: 1
+            }),
+            this.pluginRepository.findAll({
+                filter: {
+                    team: input.teamId,
+                    $or: [
+                        { 'modifier.name': { $regex: regex } },
+                        { 'modifier.description': { $regex: regex } }
+                    ]
+                },
+                sort: { updatedAt: -1 },
+                limit,
+                page: 1
+            })
+        ]);
+
+        return Result.ok({
+            analyses: analysesResult.data.map((analysis) => ({
+                ...analysis.props,
+                _id: analysis._id,
+                plugin: extractPluginId(analysis.props.plugin),
+                trajectory: analysis.props.trajectory
+            })),
+            containers: containersResult.data.map((container) => ({
+                _id: container._id,
+                name: container.name,
+                image: container.image,
+                containerId: container.containerId,
+                folder: container.folder,
+                createdBy: container.createdBy,
+                status: container.status,
+                memory: container.memory,
+                cpus: container.cpus,
+                internalIp: container.internalIp,
+                team: container.team,
+                teamCluster: container.teamCluster,
+                env: container.env,
+                ports: container.ports,
+                network: container.network,
+                volume: container.volume,
+                mountDockerSocket: container.mountDockerSocket,
+                capabilities: container.capabilities,
+                accessiblePorts: container.accessiblePorts,
+                createdAt: container.createdAt,
+                updatedAt: container.updatedAt
+            })),
+            trajectories: trajectoriesResult.data.map((trajectory) => toPersistedOutput(trajectory)),
+            teams: teams
+                .filter((team) => matchesNormalizedQuery(
+                    normalizedLowerCaseQuery,
+                    team.name,
+                    team.description
+                ))
+                .slice(0, limit),
+            plugins: pluginsResult.data.map((plugin): PersistedPluginDTO => mapPluginToPersistedDTO(plugin)),
+            chats: chats
+                .filter((chat) => {
+                    return matchesNormalizedQuery(
+                        normalizedLowerCaseQuery,
+                        getLastMessageContent(chat),
+                        ...chat.participants.flatMap((participant) => getParticipantSearchTokens(participant))
+                    );
+                })
+                .slice(0, limit)
+        });
+    }
+}

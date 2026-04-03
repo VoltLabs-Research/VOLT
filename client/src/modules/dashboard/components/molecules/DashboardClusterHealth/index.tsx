@@ -5,7 +5,6 @@ import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
 import { getClusterMetricsRecoveryState } from '@/modules/cluster/utilities/cluster-live-metrics-status';
 import { formatNetworkSpeed } from '@/modules/cluster/utilities/format-network';
 import { resolveClusterMetricId } from '@/modules/cluster/utilities/resolve-cluster-metric-id';
-import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
@@ -13,8 +12,6 @@ import Title from '@/shared/presentation/components/Title';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { ArrowDown, ArrowUp, Clock3, Cpu, HardDrive, MemoryStick } from 'lucide-react';
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { GoArrowRight } from 'react-icons/go';
 import type { TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
 import type { ReactNode } from 'react';
 
@@ -100,7 +97,6 @@ const ClusterMetricStrip = ({
 };
 
 const DashboardClusterHealth = () => {
-    const navigate = useNavigate();
     const selectedTeamId = useSelectedTeamId();
     const teamClustersQuery = useTeamClustersQuery(selectedTeamId ?? '', {
         enabled: Boolean(selectedTeamId)

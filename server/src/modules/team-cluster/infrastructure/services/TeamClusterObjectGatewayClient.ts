@@ -31,6 +31,19 @@ interface TeamClusterObjectGatewayListRequest {
     limit?: number;
 }
 
+export interface TeamClusterObjectGatewayListEntry {
+    key: string;
+    contentLength?: number;
+    etag?: string;
+    lastModified?: Date;
+}
+
+export interface TeamClusterObjectGatewayListResponse {
+    keys: string[];
+    objects: TeamClusterObjectGatewayListEntry[];
+    nextCursor?: string;
+}
+
 export interface TeamClusterObjectGatewayHeadResponse {
     contentLength?: number;
     contentType?: string;
@@ -68,6 +81,7 @@ interface TeamClusterObjectGatewayReadOptions {
 
 interface ObjectGatewayJsonListResponse {
     keys?: unknown;
+    objects?: unknown;
     nextCursor?: unknown;
 }
 
@@ -198,6 +212,36 @@ const parseHeadResponse = (headers: Headers): TeamClusterObjectGatewayHeadRespon
     };
 };
 
+const parseListEntry = (value: unknown): TeamClusterObjectGatewayListEntry | null => {
+    if (typeof value !== 'object' || value === null) {
+        return null;
+    }
+
+    const entry = value as Record<string, unknown>;
+    if (typeof entry.key !== 'string' || entry.key.length === 0) {
+        return null;
+    }
+
+    const lastModified = entry.lastModified instanceof Date
+        ? entry.lastModified
+        : typeof entry.lastModified === 'string' && entry.lastModified.length > 0
+            ? new Date(entry.lastModified)
+            : undefined;
+
+    return {
+        key: entry.key,
+        contentLength: typeof entry.contentLength === 'number'
+            ? entry.contentLength
+            : undefined,
+        etag: typeof entry.etag === 'string' && entry.etag.length > 0
+            ? entry.etag
+            : undefined,
+        lastModified: lastModified && !Number.isNaN(lastModified.getTime())
+            ? lastModified
+            : undefined
+    };
+};
+
 const mapStatusToApplicationError = (statusCode: number, code: string, message: string): ApplicationError => {
     if (statusCode === 400) return ApplicationError.badRequest(code, message);
     if (statusCode === 401) return ApplicationError.unauthorized(code, message);
@@ -233,7 +277,7 @@ export default class TeamClusterObjectGatewayClient {
     async list(
         teamClusterId: string,
         request: TeamClusterObjectGatewayListRequest
-    ): Promise<{ keys: string[]; nextCursor?: string; }> {
+    ): Promise<TeamClusterObjectGatewayListResponse> {
         ensureObjectGatewayAccessEnabled('read');
         const query = new URLSearchParams();
         query.set('limit', String(request.limit ?? DEFAULT_LIST_LIMIT));
@@ -250,18 +294,28 @@ export default class TeamClusterObjectGatewayClient {
             method: 'GET',
             path: `${this.buildCollectionPath(request.bucket)}?${query.toString()}`
         }, 'list');
+        const objects = Array.isArray(response.objects)
+            ? response.objects.map(parseListEntry).filter((entry): entry is TeamClusterObjectGatewayListEntry => entry !== null)
+            : [];
+        const keys = Array.isArray(response.keys)
+            ? response.keys.filter((value): value is string => typeof value === 'string')
+            : objects.map((object) => object.key);
 
         return {
-            keys: Array.isArray(response.keys)
-                ? response.keys.filter((value): value is string => typeof value === 'string')
-                : [],
+            keys,
+            objects: objects.length > 0
+                ? objects
+                : keys.map((key) => ({ key })),
             nextCursor: typeof response.nextCursor === 'string'
                 ? response.nextCursor
                 : undefined
         };
     }
 
-    async *listAll(teamClusterId: string, request: Omit<TeamClusterObjectGatewayListRequest, 'cursor'>): AsyncIterable<string> {
+    async *listAllEntries(
+        teamClusterId: string,
+        request: Omit<TeamClusterObjectGatewayListRequest, 'cursor'>
+    ): AsyncIterable<TeamClusterObjectGatewayListEntry> {
         let cursor: string | undefined;
 
         do {
@@ -270,12 +324,18 @@ export default class TeamClusterObjectGatewayClient {
                 cursor
             });
 
-            for (const key of page.keys) {
-                yield key;
+            for (const entry of page.objects) {
+                yield entry;
             }
 
             cursor = page.nextCursor;
         } while (cursor);
+    }
+
+    async *listAll(teamClusterId: string, request: Omit<TeamClusterObjectGatewayListRequest, 'cursor'>): AsyncIterable<string> {
+        for await (const entry of this.listAllEntries(teamClusterId, request)) {
+            yield entry.key;
+        }
     }
 
     async head(teamClusterId: string, bucket: string, objectKey: string): Promise<TeamClusterObjectGatewayHeadResponse> {
