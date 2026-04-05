@@ -7,9 +7,9 @@ import {
 } from './NativeModuleLoader';
 import { createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
-import zlib from 'node:zlib';
 import { pipeline } from 'node:stream/promises';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
+import { createZstdDecompressionStream, toCompressedDumpObjectKey } from '@/shared/utilities/storage-codec';
 import type {
     NativeAtomPageEntry,
     NativeAtomsPageRequest,
@@ -26,7 +26,7 @@ import type {
 } from './NativeModuleLoader';
 
 const getDumpObjectKey = (trajectoryId: string, timestep: number): string => {
-    return `trajectory-${trajectoryId}/timestep-${timestep}.dump.gz`;
+    return toCompressedDumpObjectKey(trajectoryId, timestep);
 };
 
 const extractAxisValues = (positions: Float32Array, axis: number): Float32Array => {
@@ -252,7 +252,9 @@ export const createTrajectoryParserService = (
             const response = await objectStore.getStream(ownerClusterId, ObjectBucketName.Dumps, objectKey, {
                 skipMetadata: true
             });
-            await pipeline(response.stream, zlib.createGunzip(), createWriteStream(tempDumpPath));
+            const decompressed = createZstdDecompressionStream(response.stream);
+            await pipeline(decompressed.stream, createWriteStream(tempDumpPath));
+            await decompressed.completion;
             const dumpStats = await fs.stat(tempDumpPath);
 
             logger.info(
@@ -428,7 +430,7 @@ export const createTrajectoryParserService = (
     },
 
     getModelObjectKey(trajectoryId, timestep) {
-        return `trajectory-${trajectoryId}/timestep-${timestep}.glb`;
+        return `trajectory-${trajectoryId}/timestep-${timestep}.glb.zst`;
     },
 
     getPreviewObjectKey(trajectoryId, timestep) {

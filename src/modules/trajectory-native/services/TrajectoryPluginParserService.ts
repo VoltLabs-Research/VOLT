@@ -3,6 +3,7 @@ import { decodeMultiStream, mergeSelectiveChunk } from '@/shared/utilities/selec
 import { isRecord } from '@/shared/utilities/type-guards';
 import { ObjectBucketName } from '@/shared/contracts';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
+import { createZstdDecompressionStream } from '@/shared/utilities/storage-codec';
 
 type PerAtomRow = Record<string, unknown>;
 type PerAtomColumnarData = Record<string, unknown[]>;
@@ -99,7 +100,7 @@ export class TrajectoryPluginParserService {
             const objects = await this.listAllObjectKeys(ownerClusterId, ObjectBucketName.Plugins, prefix);
 
             for (const candidateObjectName of objects) {
-                if (candidateObjectName.endsWith('.msgpack')) {
+                if (candidateObjectName.endsWith('.msgpack.zst')) {
                     objectName = candidateObjectName;
                     break;
                 }
@@ -109,12 +110,11 @@ export class TrajectoryPluginParserService {
         if (!objectName) return [];
 
         try {
-            const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, objectName, {
-                skipMetadata: true
-            });
+            const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, objectName, { skipMetadata: true });
+            const stream = createZstdDecompressionStream(response.stream).stream;
 
             let decoded: Record<string, unknown> | null = null;
-            for await (const message of decodeMultiStream(response.stream as AsyncIterable<Uint8Array>)) {
+            for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
                 decoded = mergeSelectiveChunk(decoded, message, (key) => key === 'per-atom-properties');
             }
 
@@ -131,13 +131,12 @@ export class TrajectoryPluginParserService {
         const key = this.getPluginMsgpackKey(trajectoryId, analysisId, exposureId, String(timestep));
         
         try {
-            const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, key, {
-                skipMetadata: true
-            });
+            const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, key, { skipMetadata: true });
+            const stream = createZstdDecompressionStream(response.stream).stream;
 
             // Selective decode: only keep 'per-atom-properties' key
             let decoded: Record<string, unknown> | null = null;
-            for await (const message of decodeMultiStream(response.stream as AsyncIterable<Uint8Array>)) {
+            for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
                 decoded = mergeSelectiveChunk(decoded, message, (k) => k === 'per-atom-properties');
             }
 
@@ -184,12 +183,10 @@ export class TrajectoryPluginParserService {
         const key = this.getPluginMsgpackKey(trajectoryId, analysisId, exposureId, String(timestep));
         
         try {
-            const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, key, {
-                skipMetadata: true
-            });
+            const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, key, { skipMetadata: true });
             const pluginIndex: PluginAtomIndex = {};
             let matchedAtomCount = 0;
-            const stream = response.stream as unknown as AsyncIterable<Uint8Array>;
+            const stream = createZstdDecompressionStream(response.stream).stream as unknown as AsyncIterable<Uint8Array>;
 
             for await (const message of decodeMultiStream(stream)) {
                 if (!isRecord(message)) continue;
@@ -263,7 +260,7 @@ export class TrajectoryPluginParserService {
         const allObjects = await this.listAllObjectKeys(ownerClusterId, ObjectBucketName.Plugins, analysisPrefix);
 
         // Extract unique exposure IDs from object paths
-        // Path format: plugins/trajectory-{id}/analysis-{id}/{exposureId}/timestep-{ts}.msgpack
+        // Path format: plugins/trajectory-{id}/analysis-{id}/{exposureId}/timestep-{ts}.msgpack.zst
         const exposureIds = new Set<string>();
         for (const objectKey of allObjects) {
             const relativePath = objectKey.slice(analysisPrefix.length);
@@ -370,7 +367,7 @@ export class TrajectoryPluginParserService {
     }
 
     private getPluginMsgpackKey(trajectoryId: string, analysisId: string, exposureId: string, timestep: string): string {
-        return `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack`;
+        return `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack.zst`;
     }
 
     private toFloat32ByAtomId(data: unknown, property: string): Float32Array | undefined {

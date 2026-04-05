@@ -7,11 +7,47 @@ import type { DaemonJobReporterService } from '@/modules/cloud-control/services'
 import { ARTIFACT_UPLOAD_QUEUE_NAME, QueueService, createMemoryAwareWorkerShell, type MemoryAwareWorkerShell } from '@/modules/platform/services';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 import { readPositiveIntegerEnv } from '@/shared/utilities/runtime-capacity';
+import {
+    compressFileWithZstd,
+    toCompressedGlbObjectKey,
+    toCompressedMsgpackObjectKey
+} from '@/shared/utilities/storage-codec';
 import type { Job } from 'bullmq';
 
 import type { ArtifactUploadBatchJobPayload } from './ArtifactUploadQueueService';
 
 const DEFAULT_ARTIFACT_UPLOAD_CONCURRENCY = readPositiveIntegerEnv('ARTIFACT_UPLOAD_CONCURRENCY') ?? 8;
+
+const prepareCompressedArtifactUpload = async (upload: ArtifactUploadBatchJobPayload['uploads'][number]) => {
+    if (upload.contentType === 'application/msgpack') {
+        const compressedPath = `${upload.sourcePath}.zst`;
+        await compressFileWithZstd(upload.sourcePath, compressedPath);
+        return {
+            sourcePath: compressedPath,
+            objectKey: toCompressedMsgpackObjectKey(upload.objectKey),
+            contentEncoding: 'zstd',
+            cleanupPath: compressedPath
+        };
+    }
+
+    if (upload.contentType === 'model/gltf-binary') {
+        const compressedPath = `${upload.sourcePath}.zst`;
+        await compressFileWithZstd(upload.sourcePath, compressedPath);
+        return {
+            sourcePath: compressedPath,
+            objectKey: toCompressedGlbObjectKey(upload.objectKey),
+            contentEncoding: 'zstd',
+            cleanupPath: compressedPath
+        };
+    }
+
+    return {
+        sourcePath: upload.sourcePath,
+        objectKey: upload.objectKey,
+        contentEncoding: upload.contentEncoding,
+        cleanupPath: undefined
+    };
+};
 
 export class ArtifactUploadWorkerService {
     private readonly workerShell: MemoryAwareWorkerShell<ArtifactUploadBatchJobPayload>;
@@ -92,23 +128,38 @@ export class ArtifactUploadWorkerService {
 
             for (let index = 0; index < payload.uploads.length; index += 1) {
                 const upload = payload.uploads[index]!;
-                const fileStat = await fs.stat(upload.sourcePath);
+                const preparedUpload = await prepareCompressedArtifactUpload(upload);
 
-                await this.objectStore.putObjectStream({
-                    ownerClusterId: upload.ownerClusterId,
-                    bucket: upload.bucket,
-                    objectKey: upload.objectKey,
-                    stream: createReadStream(upload.sourcePath),
-                    size: fileStat.size,
-                    metadata: {
-                        ...(upload.contentType ? { 'Content-Type': upload.contentType } : {}),
-                        ...(upload.contentEncoding ? { 'Content-Encoding': upload.contentEncoding } : {}),
-                        ...(upload.metadata ?? {})
+                try {
+                    const fileStat = await fs.stat(preparedUpload.sourcePath);
+
+                    await this.objectStore.putObjectStream({
+                        ownerClusterId: upload.ownerClusterId,
+                        bucket: upload.bucket,
+                        objectKey: preparedUpload.objectKey,
+                        stream: createReadStream(preparedUpload.sourcePath),
+                        size: fileStat.size,
+                        metadata: {
+                            ...(upload.contentType ? { 'Content-Type': upload.contentType } : {}),
+                            ...(preparedUpload.contentEncoding ? { 'Content-Encoding': preparedUpload.contentEncoding } : {}),
+                            ...(upload.metadata ?? {})
+                        }
+                    });
+
+                    if (upload.reportArtifact) {
+                        await this.daemonArtifactReporterService.reportArtifact({
+                            ...upload.reportArtifact,
+                            objectName: preparedUpload.objectKey,
+                            metadata: {
+                                ...(upload.reportArtifact.metadata ?? {}),
+                                compressionCodec: preparedUpload.contentEncoding === 'zstd' ? 'zstd' : undefined
+                            }
+                        });
                     }
-                });
-
-                if (upload.reportArtifact) {
-                    await this.daemonArtifactReporterService.reportArtifact(upload.reportArtifact);
+                } finally {
+                    if (preparedUpload.cleanupPath) {
+                        await fs.rm(preparedUpload.cleanupPath, { force: true }).catch(() => {});
+                    }
                 }
 
                 await bullJob.updateProgress(Math.round(((index + 1) / Math.max(1, payload.uploads.length)) * 100));

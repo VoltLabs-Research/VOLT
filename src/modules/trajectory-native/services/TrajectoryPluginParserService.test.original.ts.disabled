@@ -53,7 +53,7 @@ test('getModifierValues and getAnalysisAllPerAtomData normalize string ids consi
 
     const minioService = {
         listObjects: async () => [
-            'plugins/trajectory-traj-1/analysis-analysis-1/exposure-a/timestep-0.msgpack'
+            'plugins/trajectory-traj-1/analysis-analysis-1/exposure-a/timestep-0.msgpack.zst'
         ],
         getObjectStream: async () => createAsyncStream(timestepPayload)
     } as unknown as MinioService;

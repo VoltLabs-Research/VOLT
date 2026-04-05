@@ -29,7 +29,7 @@ test('flushPendingArtifacts emits queued artifact metadata immediately', async (
         plugin: 'plugin-1',
         sourceType: 'plugin-exposure',
         timestep: 1,
-        objectName: 'trajectory-1/analysis-1/glb/1/exposure.glb',
+        objectName: 'trajectory-1/analysis-1/glb/1/exposure.glb.zst',
         storageBucket: 'volt-models',
         params: {
             exposureId: 'exposure-1'
@@ -57,7 +57,7 @@ test('flushPendingArtifacts emits queued artifact metadata immediately', async (
             plugin: 'plugin-1',
             sourceType: 'plugin-exposure',
             timestep: 1,
-            objectName: 'trajectory-1/analysis-1/glb/1/exposure.glb',
+            objectName: 'trajectory-1/analysis-1/glb/1/exposure.glb.zst',
             storageBucket: 'volt-models',
             params: {
                 exposureId: 'exposure-1'

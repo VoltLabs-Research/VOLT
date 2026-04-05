@@ -5,6 +5,7 @@ import { ObjectBucketName } from '@/shared/contracts';
 import { decodeMultiStream } from '@/shared/utilities/selective-msgpack';
 import mergeChunkedValue from '@/shared/utilities/merge-chunked-value';
 import { isRecord, readString, toRecord } from '@/shared/utils';
+import { createZstdDecompressionStream } from '@/shared/utilities/storage-codec';
 import type { PluginListingRowDocument } from '../models/PluginListingRowModel';
 import type { PluginSubListingRowDocument } from '../models/PluginSubListingRowModel';
 import type { PaginatedResult } from '@/shared/contracts';
@@ -250,7 +251,7 @@ const buildPluginPayloadObjectKey = (
     exposureId: string,
     timestep: number
 ): string => {
-    return `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack`;
+    return `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack.zst`;
 };
 
 const appendRowsWithinPage = (
@@ -609,12 +610,13 @@ export class MongoPluginListingRepository implements PluginListingRepository {
         const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, objectKey, {
             skipMetadata: true
         });
+        const stream = createZstdDecompressionStream(response.stream).stream;
         const pageRows: Record<string, unknown>[] = [];
         let totalRows = 0;
         let mergedObjectRow: Record<string, unknown> | null = null;
         let hasMergedObjectRow = false;
 
-        for await (const message of decodeMultiStream(response.stream as AsyncIterable<Uint8Array>)) {
+        for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
             if (!isRecord(message) || !isRecord(message.sub_listings)) {
                 continue;
             }

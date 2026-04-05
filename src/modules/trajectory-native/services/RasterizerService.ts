@@ -10,6 +10,7 @@ import fs from 'node:fs/promises';
 import { pipeline } from 'node:stream/promises';
 import type { NativeModuleLoader, RasterizePreviewInput } from './NativeModuleLoader';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
+import { createZstdDecompressionStream, isZstdObjectKey } from '@/shared/utilities/storage-codec';
 
 const TRAJECTORY_PREVIEW_WIDTH = 3840;
 const TRAJECTORY_PREVIEW_HEIGHT = 2160;
@@ -42,7 +43,13 @@ export const createRasterizerService = (
                 skipMetadata: true
             });
             const fileWriter = createWriteStream(tempGlbPath);
-            await pipeline(response.stream, fileWriter);
+            if (isZstdObjectKey(input.inputObjectKey)) {
+                const decompressed = createZstdDecompressionStream(response.stream);
+                await pipeline(decompressed.stream, fileWriter);
+                await decompressed.completion;
+            } else {
+                await pipeline(response.stream, fileWriter);
+            }
 
             await this.rasterizeLocalGlb(tempGlbPath, tempPngPath);
 

@@ -60,7 +60,7 @@ const createQueueRasterizationJobsResult = (): QueueRasterizationJobsResult => {
 
 const createParsedRasterModel = (trajectoryId: string, timestep: number): ParsedRasterModel => {
     return {
-        modelObjectKey: `trajectory-${trajectoryId}/timestep-${timestep}.glb`,
+        modelObjectKey: `trajectory-${trajectoryId}/timestep-${timestep}.glb.zst`,
         outputObjectKey: `trajectory-${trajectoryId}/previews/timestep-${timestep}.png`,
         timestep
     };
@@ -84,7 +84,7 @@ const readAutoPreviewRasterizationConfig = (
 
 const STAT_CONCURRENCY = 10;
 
-const ANALYSIS_MODEL_PATTERN = /^trajectory-[^/]+\/analysis-([^/]+)\/glb\/(\d+)\/([^/]+)\.glb$/;
+const ANALYSIS_MODEL_PATTERN = /^trajectory-[^/]+\/analysis-([^/]+)\/glb\/(\d+)\/([^/]+)\.glb\.zst$/;
 
 const isObjectNotFoundError = (error: unknown): boolean => {
     if (!isRecord(error)) {
@@ -132,7 +132,7 @@ const getExistingOutputKeys = async (
 };
 
 const parseTrajectoryModel = (trajectoryId: string, objectKey: string): ParsedRasterModel | null => {
-    const match = objectKey.match(/timestep-(\d+)\.glb$/);
+    const match = objectKey.match(/timestep-(\d+)\.glb\.zst$/);
     if (!match) {
         return null;
     }
@@ -293,7 +293,7 @@ export const createTrajectoryRasterQueueService = (
             keys.push(...page.keys);
             cursor = page.nextCursor;
         } while (cursor);
-        const glbKeys = keys.filter((key) => key.endsWith('.glb'));
+        const glbKeys = keys.filter((key) => key.endsWith('.glb.zst'));
 
         const rasterModels: ParsedRasterModel[] = [];
         for (const key of glbKeys) {

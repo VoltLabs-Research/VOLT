@@ -16,6 +16,7 @@ import { promisify } from 'node:util';
 import fs from 'node:fs/promises';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
+import { compressFileWithZstd, toCompressedDumpObjectKey } from '@/shared/utilities/storage-codec';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { DelayedError, type Job, type Worker } from 'bullmq';
@@ -148,14 +149,10 @@ export class SSHImportWorkerService {
             const frames: ImportedFrameRecord[] = [];
             for (const file of extractedFiles) {
                 const metadata = await TrajectoryParserFactory.parseMetadata(file.path);
-                const objectKey = `trajectory-${job.trajectoryId}/timestep-${metadata.timestep}.dump.gz`;
-                const tempGzPath = `${file.path}.gz`;
+                const objectKey = toCompressedDumpObjectKey(job.trajectoryId, metadata.timestep);
+                const tempGzPath = `${file.path}.zst`;
                 try {
-                    await pipeline(
-                        createReadStream(file.path),
-                        zlib.createGzip({ level: zlib.constants.Z_BEST_SPEED }),
-                        createWriteStream(tempGzPath)
-                    );
+                    await compressFileWithZstd(file.path, tempGzPath);
                     const gzStat = await fs.stat(tempGzPath);
                     await this.minioService.putObjectStream({
                         bucket: ObjectBucketName.Dumps,
@@ -163,8 +160,8 @@ export class SSHImportWorkerService {
                         stream: createReadStream(tempGzPath),
                         size: gzStat.size,
                         metadata: {
-                            'Content-Type': 'application/gzip',
-                            'Content-Encoding': 'gzip'
+                            'Content-Type': 'application/zstd',
+                            'Content-Encoding': 'zstd'
                         }
                     });
                 } finally {

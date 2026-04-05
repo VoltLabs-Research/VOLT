@@ -853,6 +853,8 @@ export const createFilterEvaluatorService = (
                 objectKey: input.objectKey,
                 buffer,
                 contentType: 'model/gltf-binary',
+                contentEncoding: input.objectKey.endsWith('.zst') ? 'zstd' : undefined,
+                compressionCodec: input.objectKey.endsWith('.zst') ? 'zstd' : undefined,
                 tempDirectory: DAEMON_PATHS.analysisOutput,
                 tempFilePrefix: 'volt-filter-export',
                 tempFileSuffix: '.glb'
@@ -930,6 +932,8 @@ export const createFilterEvaluatorService = (
                 objectKey: input.objectKey,
                 buffer,
                 contentType: 'model/gltf-binary',
+                contentEncoding: input.objectKey.endsWith('.zst') ? 'zstd' : undefined,
+                compressionCodec: input.objectKey.endsWith('.zst') ? 'zstd' : undefined,
                 tempDirectory: DAEMON_PATHS.analysisOutput,
                 tempFilePrefix: 'volt-filter-export',
                 tempFileSuffix: '.glb'

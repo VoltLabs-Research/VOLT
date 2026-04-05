@@ -15,7 +15,7 @@ import { decodeCliArgumentsToken, isRecord } from '@/shared/utils';
 import { createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import zlib from 'node:zlib';
+import { createZstdDecompressionStream } from '@/shared/utilities/storage-codec';
 import { pipeline } from 'node:stream/promises';
 import { DelayedError } from 'bullmq';
 import type { DaemonJobReporterService } from '@/modules/cloud-control/services';
@@ -1429,14 +1429,12 @@ export class AnalysisWorker {
             ? objectKey.slice(1)
             : objectKey;
 
-        if (!normalizedObjectKey.endsWith('.dump') && !normalizedObjectKey.endsWith('.dump.gz')) {
+        if (!normalizedObjectKey.endsWith('.dump.zst')) {
             throw new Error(`Invalid dump object key received: ${objectKey}`);
         }
 
         const fileName = path.basename(normalizedObjectKey);
-        const localFileName = fileName.endsWith('.gz')
-            ? fileName.slice(0, -3)
-            : fileName;
+        const localFileName = fileName.slice(0, -4);
         const localPath = path.join(DAEMON_PATHS.analysisDumps, `${localFileName}-${Date.now()}`);
         await fs.mkdir(path.dirname(localPath), { recursive: true });
 
@@ -1453,7 +1451,7 @@ export class AnalysisWorker {
                 skipMetadata: true
             }
         );
-        await this.writeStreamToFile(response.stream, localPath, normalizedObjectKey.endsWith('.gz'));
+        await this.writeStreamToFile(response.stream, localPath);
 
         logger.info(`Dump downloaded: ${normalizedObjectKey} -> ${localPath}`);
         return localPath;
@@ -1505,11 +1503,9 @@ export class AnalysisWorker {
         await Promise.all(dumpPaths.map((dumpPath) => fs.rm(dumpPath, { force: true }).catch(() => {})));
     }
 
-    private async writeStreamToFile(stream: Readable, filePath: string, decompressGzip: boolean): Promise<void> {
-        if (decompressGzip) {
-            await pipeline(stream, zlib.createGunzip(), createWriteStream(filePath));
-        } else {
-            await pipeline(stream, createWriteStream(filePath));
-        }
+    private async writeStreamToFile(stream: Readable, filePath: string): Promise<void> {
+        const decompressed = createZstdDecompressionStream(stream);
+        await pipeline(decompressed.stream, createWriteStream(filePath));
+        await decompressed.completion;
     }
 };

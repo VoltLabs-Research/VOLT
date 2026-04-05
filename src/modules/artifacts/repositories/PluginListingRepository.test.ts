@@ -24,7 +24,7 @@ test('MongoPluginListingRepository.importMongoRows rewrites payloadOwnerClusterI
                 {
                     _id: 'row-1',
                     analysis: 'analysis-1',
-                    payloadObjectKey: 'plugins/trajectory-1/analysis-1/exposure-1/timestep-1.msgpack',
+                    payloadObjectKey: 'plugins/trajectory-1/analysis-1/exposure-1/timestep-1.msgpack.zst',
                     payloadOwnerClusterId: 'source-cluster'
                 }
             ]
@@ -47,7 +47,7 @@ test('MongoPluginListingRepository.listPluginSubListings paginates payload-backe
 
     listingRowModel.findOne = () => ({
         lean: async () => ({
-            payloadObjectKey: 'plugins/trajectory-1/analysis-1/exposure-1/timestep-1.msgpack',
+            payloadObjectKey: 'plugins/trajectory-1/analysis-1/exposure-1/timestep-1.msgpack.zst',
             payloadOwnerClusterId: 'source-cluster'
         })
     });

@@ -13,6 +13,7 @@ import type { NativeModuleLoader, NativeTrajectoryRequest } from './NativeModule
 import type { TrajectoryRasterQueueService } from './TrajectoryRasterQueueService';
 import type { TrajectoryParserService } from './TrajectoryParserService';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
+import { compressFileWithZstd } from '@/shared/utilities/storage-codec';
 
 const readOptionalStringProperty = (input: object, key: string): string | undefined => {
     const value = Reflect.get(input, key);
@@ -125,6 +126,7 @@ export const createGlbExporterService = (
             );
             await trajectoryParserService.withDumpFile(input, async (dumpPath) => {
                 const tempGlbPath = `${dumpPath}.glb`;
+                const tempCompressedGlbPath = `${tempGlbPath}.zst`;
                 const modelObjectKey = trajectoryParserService.getModelObjectKey(input.trajectoryId, input.timestep);
 
                 try {
@@ -163,7 +165,8 @@ export const createGlbExporterService = (
                     }
                     // parsed is now out of scope — typed arrays eligible for GC
 
-                    const glbStats = await fs.stat(tempGlbPath);
+                    await compressFileWithZstd(tempGlbPath, tempCompressedGlbPath);
+                    const glbStats = await fs.stat(tempCompressedGlbPath);
                     logger.info(
                         {
                             durationMs: Date.now() - startTime,
@@ -185,10 +188,11 @@ export const createGlbExporterService = (
                         ownerClusterId,
                         bucket: ObjectBucketName.Models,
                         objectKey: modelObjectKey,
-                        stream: createReadStream(tempGlbPath),
+                        stream: createReadStream(tempCompressedGlbPath),
                         size: glbStats.size,
                         metadata: {
-                            'Content-Type': 'model/gltf-binary'
+                            'Content-Type': 'model/gltf-binary',
+                            'Content-Encoding': 'zstd'
                         }
                     });
                     logger.info(
@@ -225,6 +229,7 @@ export const createGlbExporterService = (
                     );
                 } finally {
                     await fs.unlink(tempGlbPath).catch(() => {});
+                    await fs.unlink(tempCompressedGlbPath).catch(() => {});
                 }
             });
         }

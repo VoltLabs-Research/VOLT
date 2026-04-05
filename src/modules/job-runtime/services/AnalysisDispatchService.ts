@@ -256,7 +256,7 @@ export class AnalysisDispatchService {
             }
 
             const inputFile = resolvePlannedDumpPath(item)
-                ?? `trajectory-${input.trajectoryId}/timestep-${String(timestep)}.dump.gz`;
+                ?? `trajectory-${input.trajectoryId}/timestep-${String(timestep)}.dump.zst`;
 
             return {
                 jobId: `${input.analysisId}-${index}`,

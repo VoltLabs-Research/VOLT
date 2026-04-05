@@ -219,7 +219,7 @@ export const createResultProcessorService = (
                 return;
             }
 
-            const storageKey = `plugins/trajectory-${executionData.trajectoryId}/analysis-${executionData.analysisId}/${exposure.nodeId}/timestep-${timestep}.msgpack`;
+            const storageKey = `plugins/trajectory-${executionData.trajectoryId}/analysis-${executionData.analysisId}/${exposure.nodeId}/timestep-${timestep}.msgpack.zst`;
             const fileStat = await fs.stat(outputFilePath);
             const storageOwnerClusterId = executionData.storageClusterId;
             if (!storageOwnerClusterId) {
@@ -244,7 +244,7 @@ export const createResultProcessorService = (
                 bucket: PLUGINS_BUCKET,
                 objectKey: storageKey,
                 contentType: 'application/msgpack',
-                fileName: `${exposure.nodeId}-timestep-${timestep}.msgpack`
+                fileName: `${exposure.nodeId}-timestep-${timestep}.msgpack.zst`
             });
 
             logger.info({ storageKey }, 'Queued exposure .msgpack upload');

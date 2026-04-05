@@ -67,7 +67,7 @@ test('AnalysisDispatchService rejects invalid entrypoint data as an operational 
     const service = new AnalysisDispatchService(
         new StubWorkflowEngine([{
             timestep: 1,
-            path: 'trajectory-1/timestep-1.dump.gz',
+            path: 'trajectory-1/timestep-1.dump.zst',
             natoms: 64,
             simulationCell: '10 0 0 0 10 0 0 0 10'
         }]) as any,

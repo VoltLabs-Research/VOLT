@@ -25,7 +25,7 @@ const resolveSelectedTrajectoryFrames = (context: WorkflowExecutionContext): Rec
 
     return selected.map((frame) => ({
         ...frame,
-        path: `trajectory-${context.trajectoryId}/timestep-${String(frame.timestep)}.dump.gz`
+        path: `trajectory-${context.trajectoryId}/timestep-${String(frame.timestep)}.dump.zst`
     }));
 };
 

@@ -42,13 +42,13 @@ test('ArtifactUploadQueueService stages files and buffers into a single batch jo
             sourcePath,
             ownerClusterId: 'storage-1',
             bucket: 'volt-plugins',
-            objectKey: 'plugins/analysis-1/frame-25.msgpack',
+            objectKey: 'plugins/analysis-1/frame-25.msgpack.zst',
             contentType: 'application/msgpack'
         });
         await batch.stageBufferUpload({
             ownerClusterId: 'storage-1',
             bucket: 'volt-models',
-            objectKey: 'models/analysis-1/frame-25.glb',
+            objectKey: 'models/analysis-1/frame-25.glb.zst',
             buffer: Buffer.from('buffer-payload'),
             contentType: 'model/gltf-binary'
         });
@@ -103,7 +103,7 @@ test('ArtifactUploadQueueService cleanup removes staged files before enqueue', a
     await batch.stageBufferUpload({
         ownerClusterId: 'storage-1',
         bucket: 'volt-models',
-        objectKey: 'models/analysis-2/frame-50.glb',
+        objectKey: 'models/analysis-2/frame-50.glb.zst',
         buffer: Buffer.from('buffer-payload'),
         contentType: 'model/gltf-binary'
     });
