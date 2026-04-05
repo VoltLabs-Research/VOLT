@@ -18,6 +18,8 @@ import SceneArtifactRepository from '@modules/trajectory/infrastructure/persiste
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import CloudUploadProcessor from '@modules/trajectory/infrastructure/services/trajectory/CloudUploadProcessor';
 import CloudUploadQueueService from '@modules/trajectory/infrastructure/services/trajectory/CloudUploadQueueService';
+import CompressionProcessor from '@modules/trajectory/infrastructure/services/trajectory/CompressionProcessor';
+import CompressionQueueService from '@modules/trajectory/infrastructure/services/trajectory/CompressionQueueService';
 import AtomPropertiesService from '@modules/trajectory/infrastructure/services/trajectory/AtomPropertiesService';
 import ColorCodingService from '@modules/trajectory/infrastructure/services/color-coding/ColorCodingService';
 import ParticleFilterService from '@modules/trajectory/infrastructure/services/particle-filter/ParticleFilterService';
@@ -45,6 +47,8 @@ export const registerTrajectoryDependencies = (): void => {
             [TRAJECTORY_TOKENS.TrajectoryFolderRepository, TrajectoryFolderRepository],
             [TRAJECTORY_TOKENS.TeamMetricsQueryService, TeamMetricsQueryService],
             [TRAJECTORY_TOKENS.SceneArtifactRepository, SceneArtifactRepository],
+            [TRAJECTORY_TOKENS.CompressionProcessor, CompressionProcessor],
+            [TRAJECTORY_TOKENS.CompressionQueueService, CompressionQueueService],
             [TRAJECTORY_TOKENS.CloudUploadProcessor, CloudUploadProcessor],
             [TRAJECTORY_TOKENS.CloudUploadQueueService, CloudUploadQueueService],
             [TRAJECTORY_TOKENS.TrajectoryNativeDaemonService, TrajectoryNativeDaemonService],

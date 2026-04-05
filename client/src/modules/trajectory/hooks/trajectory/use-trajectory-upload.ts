@@ -7,7 +7,7 @@ import type { Trajectory } from '../../api/entities/trajectory';
 
 const UPLOAD_TRAJECTORY_TOAST = {
     loading: { title: 'Uploading...' },
-    success: { title: 'Trajectory uploaded successfully' },
+    success: { title: 'Upload received, processing started' },
     error: {
         title: 'Failed to upload trajectory',
         description: 'Please check your files and try again.'

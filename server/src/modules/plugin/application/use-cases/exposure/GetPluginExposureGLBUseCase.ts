@@ -21,6 +21,7 @@ import type { SceneArtifactProps } from '@modules/trajectory/domain/entities/sce
 import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
+import { getClusterGlbStream, getLocalGlbStream } from '@modules/trajectory/utilities/storage/glb-stream-resolution';
 
 @injectable()
 export class GetPluginExposureGLBUseCase implements IUseCase<
@@ -83,18 +84,14 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
 
         if (teamClusterId) {
             try {
-                const response = await this.objectGatewayClient.getStream(
-                    teamClusterId,
-                    bucket,
-                    objectName
-                );
+                const response = await getClusterGlbStream(this.objectGatewayClient, teamClusterId, objectName);
 
                 return Result.ok(createDownloadStreamResponse({
                     stream: response.stream,
-                    contentType: response.contentType || 'model/gltf-binary',
-                    contentLength: response.contentLength,
+                    contentType: 'model/gltf-binary',
+                    contentLength: response.size,
                     disposition: 'inline',
-                    filename: objectName,
+                    filename: response.objectName,
                     cacheControl: 'public, max-age=31536000, immutable'
                 }));
             } catch (error) {
@@ -111,17 +108,14 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
             }
         }
 
-        const [stat, stream] = await Promise.all([
-            this.storageService.getStat(bucket, objectName),
-            this.storageService.getStream(bucket, objectName)
-        ]);
+        const response = await getLocalGlbStream(this.storageService, objectName);
 
         return Result.ok(createDownloadStreamResponse({
-            stream,
+            stream: response.stream,
             contentType: 'model/gltf-binary',
-            contentLength: stat.size,
+            contentLength: response.size,
             disposition: 'inline',
-            filename: objectName,
+            filename: response.objectName,
             cacheControl: 'public, max-age=31536000, immutable'
         }));
     }

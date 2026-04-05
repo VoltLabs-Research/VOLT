@@ -123,7 +123,8 @@ export class PluginExposureExportService implements IPluginExposureExportService
                 bucket: SYS_BUCKETS.PLUGINS,
                 prefix: `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/`,
                 type: 'data',
-                timestepRegex: /\/timestep-(\d+)\.msgpack$/
+                timestepRegex: /\/timestep-(\d+)\.msgpack\.zst$/,
+                extensionFilter: '.msgpack.zst'
             },
             {
                 bucket: SYS_BUCKETS.PLUGINS,
@@ -137,7 +138,7 @@ export class PluginExposureExportService implements IPluginExposureExportService
                 prefix: `trajectory-${trajectoryId}/analysis-${analysisId}/glb/`,
                 type: 'model',
                 timestepRegex: /\/glb\/(\d+)\//,
-                extensionFilter: '.glb'
+                extensionFilter: '.glb.zst'
             }
         ];
     }

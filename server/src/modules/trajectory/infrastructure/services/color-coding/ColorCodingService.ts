@@ -11,8 +11,10 @@ import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-
 import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { getLocalGlbStream } from '@modules/trajectory/utilities/storage/glb-stream-resolution';
 import { buildColorCodingObjectName } from '@modules/trajectory/utilities/trajectory/minio-path-builder';
 import { normalizeAnalysisId } from '@modules/trajectory/utilities/trajectory/modifier-data';
+import { resolveTrajectoryNativeClusterContext } from '@modules/trajectory/utilities/team-cluster/resolve-trajectory-native-cluster-context';
 import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
 import { resolveSceneArtifactStorageCluster } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-storage-cluster';
 import { IStorageService } from '@shared/domain/port/IStorageService';
@@ -83,27 +85,22 @@ export default class ColorCodingService implements IColorCodingService {
         analysisId?: string
     ): Promise<{ base: string[]; modifiers: Record<string, string[]> }> {
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
-        const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
-        const storageClusterId = trajectory
-            ? resolveTrajectoryStorageClusterId(trajectory.props)
-            : undefined;
+        const clusterContext = await resolveTrajectoryNativeClusterContext({
+            trajectoryId: String(trajectoryId),
+            trajectoryRepository: this.trajectoryRepository,
+            teamClusterSelectionService: this.teamClusterSelectionService
+        });
 
-        if (!trajectory || !storageClusterId) {
+        if (!clusterContext) {
             throw buildClusterRequiredError();
         }
 
-        const computeClusterId = await this.teamClusterSelectionService.resolveComputeClusterId(
-            trajectory.props.team,
-            undefined,
-            storageClusterId
-        );
-
         const metadata = await this.trajectoryNativeDaemonService.getTrajectoryMetadata({
-            teamClusterId: computeClusterId,
+            teamClusterId: clusterContext.computeClusterId,
             trajectoryId: String(trajectoryId),
             timestep: Number(timestep),
             objectKey: this.dumpStorage.getObjectName(String(trajectoryId), String(timestep)),
-            ownerClusterId: storageClusterId
+            ownerClusterId: clusterContext.storageClusterId
         });
         const headers = metadata.headers || [];
 
@@ -155,38 +152,33 @@ export default class ColorCodingService implements IColorCodingService {
                 max = stats.max;
             }
         } else {
-            const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
-            const storageClusterId = trajectory
-                ? resolveTrajectoryStorageClusterId(trajectory.props)
-                : undefined;
+            const clusterContext = await resolveTrajectoryNativeClusterContext({
+                trajectoryId: String(trajectoryId),
+                trajectoryRepository: this.trajectoryRepository,
+                teamClusterSelectionService: this.teamClusterSelectionService
+            });
 
-            if (!trajectory || !storageClusterId) {
+            if (!clusterContext) {
                 throw buildClusterRequiredError();
             }
 
-            const computeClusterId = await this.teamClusterSelectionService.resolveComputeClusterId(
-                trajectory.props.team,
-                undefined,
-                storageClusterId
-            );
-
             const metadata = await this.trajectoryNativeDaemonService.getTrajectoryMetadata({
-                teamClusterId: computeClusterId,
+                teamClusterId: clusterContext.computeClusterId,
                 trajectoryId: String(trajectoryId),
                 timestep: Number(timestep),
                 objectKey: this.dumpStorage.getObjectName(String(trajectoryId), String(timestep)),
-                ownerClusterId: storageClusterId
+                ownerClusterId: clusterContext.storageClusterId
             });
             const headers = metadata.headers || [];
             const propIdx = headers.indexOf(property.toLowerCase());
 
             if (propIdx !== -1) {
                 const stats = await this.trajectoryNativeDaemonService.getPropertyStats({
-                    teamClusterId: computeClusterId,
+                    teamClusterId: clusterContext.computeClusterId,
                     trajectoryId: String(trajectoryId),
                     timestep: Number(timestep),
                     objectKey: this.dumpStorage.getObjectName(String(trajectoryId), String(timestep)),
-                    ownerClusterId: storageClusterId,
+                    ownerClusterId: clusterContext.storageClusterId,
                     property
                 });
                 if (stats) {
@@ -354,6 +346,7 @@ export default class ColorCodingService implements IColorCodingService {
             throw buildDumpNotFoundError();
         }
 
-        return this.storageService.getStream(SYS_BUCKETS.MODELS, objectName);
+        const response = await getLocalGlbStream(this.storageService, objectName);
+        return response.stream;
     }
 };
