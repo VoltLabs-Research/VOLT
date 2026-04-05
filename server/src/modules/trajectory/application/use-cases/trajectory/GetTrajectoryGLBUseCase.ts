@@ -7,6 +7,11 @@ import { SYS_BUCKETS } from '@core/config/minio';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import {
+    getClusterGlbStream,
+    getLocalGlbStream,
+    resolveTrajectoryGlbObjectName
+} from '@modules/trajectory/utilities/storage/glb-stream-resolution';
 
 import { injectable, inject } from 'tsyringe';
 
@@ -30,7 +35,6 @@ export default class GetTrajectoryGLBUseCase implements IUseCase<GetTrajectoryGL
     async execute(input: GetTrajectoryGLBInputDTO): Promise<Result<GetTrajectoryGLBOutputDTO, ApplicationError>> {
         try {
             const { trajectoryId, timestep } = input;
-            const objectName = `trajectory-${trajectoryId}/timestep-${timestep}.glb`;
 
             const trajectory = await this.trajectoryRepository.findById(trajectoryId);
             if (!trajectory) {
@@ -40,25 +44,16 @@ export default class GetTrajectoryGLBUseCase implements IUseCase<GetTrajectoryGL
             const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
 
             if (storageClusterId) {
-                const response = await this.objectGatewayClient.getStream(
-                    storageClusterId,
-                    SYS_BUCKETS.MODELS,
-                    objectName
-                );
-
-                return Result.ok({
-                    stream: response.stream,
-                    size: response.contentLength,
-                    objectName
+                const objectName = await resolveTrajectoryGlbObjectName(trajectoryId, timestep, (candidate) => {
+                    return this.objectGatewayClient.exists(storageClusterId, SYS_BUCKETS.MODELS, candidate);
                 });
+                return Result.ok(await getClusterGlbStream(this.objectGatewayClient, storageClusterId, objectName));
             }
 
-            const [stat, stream] = await Promise.all([
-                this.storageService.getStat(SYS_BUCKETS.MODELS, objectName),
-                this.storageService.getStream(SYS_BUCKETS.MODELS, objectName)
-            ]);
-
-            return Result.ok({ stream, size: stat.size, objectName });
+            const objectName = await resolveTrajectoryGlbObjectName(trajectoryId, timestep, (candidate) => {
+                return this.storageService.exists(SYS_BUCKETS.MODELS, candidate);
+            });
+            return Result.ok(await getLocalGlbStream(this.storageService, objectName));
         } catch {
             return Result.fail(new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'GLB model not found', 404));
         }

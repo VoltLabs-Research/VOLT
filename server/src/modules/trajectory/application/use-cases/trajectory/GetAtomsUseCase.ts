@@ -1,10 +1,12 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import {
     resolveAnalysisComputeClusterId,
     resolveTrajectoryStorageClusterId
 } from '@modules/team-cluster/application/utilities/cluster-location';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { resolveTrajectoryNativeClusterContext } from '@modules/trajectory/utilities/team-cluster/resolve-trajectory-native-cluster-context';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
@@ -28,7 +30,10 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
         private readonly trajectoryRepository: ITrajectoryRepository,
 
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository
+        private readonly analysisRepository: IAnalysisRepository,
+
+        @inject(TeamClusterSelectionService)
+        private readonly teamClusterSelectionService: TeamClusterSelectionService
     ) {}
 
     async execute(input: GetAtomsInputDTO): Promise<Result<PaginatedResult<AtomRecord>, ApplicationError>> {
@@ -50,7 +55,7 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
             }
 
             const ownerClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
-            let teamClusterId = ownerClusterId;
+            let teamClusterId: string | undefined;
             if (analysisId) {
                 const analysis = await this.analysisRepository.findById(analysisId);
 
@@ -69,6 +74,13 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
                 }
 
                 teamClusterId = resolveAnalysisComputeClusterId(analysis.props) ?? teamClusterId;
+            } else {
+                const clusterContext = await resolveTrajectoryNativeClusterContext({
+                    trajectoryId,
+                    trajectoryRepository: this.trajectoryRepository,
+                    teamClusterSelectionService: this.teamClusterSelectionService
+                });
+                teamClusterId = clusterContext?.computeClusterId;
             }
 
             if (!teamClusterId) {

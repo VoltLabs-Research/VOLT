@@ -7,6 +7,8 @@ export const TRAJECTORY_TOKENS = {
     TrajectoryDumpStorageService: Symbol.for('TrajectoryDumpStorageService'),
     TrajectoryUploadStagingService: Symbol.for('TrajectoryUploadStagingService'),
     TrajectoryBackgroundProcessor: Symbol.for('TrajectoryBackgroundProcessor'),
+    CompressionProcessor: Symbol.for('CompressionProcessor'),
+    CompressionQueueService: Symbol.for('CompressionQueueService'),
     CloudUploadProcessor: Symbol.for('CloudUploadProcessor'),
     TrajectoryNativeDaemonService: Symbol.for('TrajectoryNativeDaemonService'),
     AtomPropertiesService: Symbol.for('AtomPropertiesService'),

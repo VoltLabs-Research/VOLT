@@ -3,6 +3,7 @@ import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/te
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import { createZstdDecompressionStream } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 
 import { Readable } from 'node:stream';
 
@@ -214,6 +215,12 @@ export default class TrajectoryNativeDaemonService {
 
     async getObjectStream(teamClusterId: string, bucket: string, objectKey: string): Promise<Readable> {
         const response = await this.objectGatewayClient.getStream(teamClusterId, bucket, objectKey);
+        if (objectKey.endsWith('.zst') || response.contentEncoding === 'zstd') {
+            const decompressed = createZstdDecompressionStream(response.stream);
+            void decompressed.completion;
+            return decompressed.stream;
+        }
+
         return response.stream;
     }
 

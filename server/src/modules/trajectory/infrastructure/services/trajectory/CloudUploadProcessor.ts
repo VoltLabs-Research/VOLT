@@ -1,33 +1,13 @@
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { isRetryableTeamClusterTransportError } from '@modules/team-cluster/infrastructure/services/TeamClusterTransportError';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { WorkerFailureError, createWorkerFailureEnvelope } from '@shared/infrastructure/workers/WorkerFailureEnvelope';
 import logger from '@shared/infrastructure/logger';
 import { injectable, inject } from 'tsyringe';
 import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { Readable } from 'node:stream';
-import zlib from 'node:zlib';
-
-import type { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
-import type { FileHandle } from 'node:fs/promises';
-
-/**
- * Compressed payloads at or below this threshold are buffered and sent as a
- * single HTTP PUT through the object gateway. Larger payloads spill to disk
- * and are streamed through the same gateway path.
- */
-const DIRECT_UPLOAD_THRESHOLD = 768 * 1024; // 768 KB compressed
-
-/**
- * Each chunk carries 512 KB of binary data (~682 KB after base64 encoding),
- * well within the 10 MB `maxHttpBufferSize` configured on the Socket.IO server.
- */
-const CHUNK_SIZE = 512 * 1024; // 512 KB binary per chunk
 
 interface CloudUploadTask {
     trajectoryId: string;
@@ -36,18 +16,12 @@ interface CloudUploadTask {
     trajectoryName?: string;
     timestep: number;
     frameFilePath: string;
-};
+    objectKey: string;
+    contentType?: string;
+    contentEncoding?: string;
+}
 
 interface TeamClusterObjectStoreClient {
-    putBuffer(teamClusterId: string, request: {
-        bucket: string;
-        objectKey: string;
-        buffer: Buffer;
-        contentLength: number;
-        contentType?: string;
-        contentEncoding?: string;
-        metadata?: Record<string, string>;
-    }): Promise<void>;
     putStream(teamClusterId: string, request: {
         bucket: string;
         objectKey: string;
@@ -57,32 +31,12 @@ interface TeamClusterObjectStoreClient {
         contentEncoding?: string;
         metadata?: Record<string, string>;
     }): Promise<void>;
-};
+}
 
 interface RetryOptions {
     maxAttempts: number;
     baseDelayMs: number;
-};
-
-enum UploadCompressionMode {
-    Direct = 'direct',
-    Chunked = 'chunked'
-};
-
-interface DirectCompressedPayload {
-    mode: UploadCompressionMode.Direct;
-    compressedDump: Buffer;
-    compressedSize: number;
-};
-
-interface ChunkedCompressedPayload {
-    mode: UploadCompressionMode.Chunked;
-    chunkDirectoryPath: string;
-    compressedSize: number;
-    totalChunks: number;
-};
-
-type PreparedCompressedPayload = DirectCompressedPayload | ChunkedCompressedPayload;
+}
 
 const RETRY_OPTIONS: RetryOptions = {
     maxAttempts: 3,
@@ -98,9 +52,6 @@ const wait = async (delayMs: number): Promise<void> => {
 @injectable()
 export default class CloudUploadProcessor {
     constructor(
-        @inject(TRAJECTORY_TOKENS.TrajectoryDumpStorageService)
-        private readonly dumpStorage: ITrajectoryDumpStorageService,
-
         @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
         private readonly objectGatewayClient: TeamClusterObjectStoreClient
     ) {}
@@ -108,14 +59,12 @@ export default class CloudUploadProcessor {
     async process(task: CloudUploadTask): Promise<void> {
         const {
             trajectoryId,
-            teamId,
             teamClusterId,
-            trajectoryName,
             timestep,
             frameFilePath
         } = task;
 
-        logger.info(`@cloud-upload-processor: uploading frame for GLB preprocess trajectoryId=${trajectoryId} timestep=${timestep} teamClusterId=${teamClusterId || 'none'} localPath=${frameFilePath}`);
+        logger.info(`@cloud-upload-processor: uploading compressed frame trajectoryId=${trajectoryId} timestep=${timestep} teamClusterId=${teamClusterId || 'none'} localPath=${frameFilePath}`);
 
         if (!teamClusterId) {
             throw new Error('Cloud upload requires a team cluster. No local native modules available.');
@@ -124,199 +73,26 @@ export default class CloudUploadProcessor {
         await this.executeWithTransportRetry(
             task,
             'object-gateway.put',
-            () => this.uploadDumpToTeamCluster(teamClusterId, trajectoryId, timestep, frameFilePath)
+            () => this.uploadDumpToTeamCluster(task)
         );
-
-        logger.info(`@cloud-upload-processor: uploaded dump for trajectoryId=${trajectoryId} timestep=${timestep}`);
     }
 
-    private async uploadDumpToTeamCluster(
-        teamClusterId: string,
-        trajectoryId: string,
-        timestep: number,
-        localPath: string
-    ): Promise<void> {
-        const objectKey = this.dumpStorage.getObjectName(trajectoryId, String(timestep));
-        const preparedPayload = await this.prepareCompressedPayload(localPath, objectKey);
-
-        try {
-            if (preparedPayload.mode === UploadCompressionMode.Direct) {
-                await this.objectGatewayClient.putBuffer(teamClusterId, {
-                    bucket: SYS_BUCKETS.DUMPS,
-                    objectKey,
-                    buffer: preparedPayload.compressedDump,
-                    contentLength: preparedPayload.compressedSize,
-                    contentType: 'application/gzip',
-                    contentEncoding: 'gzip'
-                });
-                return;
-            }
-
-            await this.objectGatewayClient.putStream(
-                teamClusterId,
-                {
-                    bucket: SYS_BUCKETS.DUMPS,
-                    objectKey,
-                    stream: this.createChunkedUploadStream(
-                        preparedPayload.chunkDirectoryPath,
-                        preparedPayload.totalChunks
-                    ),
-                    contentLength: preparedPayload.compressedSize,
-                    contentType: 'application/gzip',
-                    contentEncoding: 'gzip'
-                }
-            );
-        } finally {
-            if (preparedPayload.mode === UploadCompressionMode.Chunked) {
-                await fs.rm(preparedPayload.chunkDirectoryPath, { force: true, recursive: true });
-            }
+    private async uploadDumpToTeamCluster(task: CloudUploadTask): Promise<void> {
+        if (!task.teamClusterId) {
+            throw new Error('Cloud upload requires a team cluster.');
         }
+
+        const stat = await fs.stat(task.frameFilePath);
+        await this.objectGatewayClient.putStream(task.teamClusterId, {
+            bucket: SYS_BUCKETS.DUMPS,
+            objectKey: task.objectKey,
+            stream: createReadStream(task.frameFilePath),
+            contentLength: stat.size,
+            contentType: task.contentType,
+            contentEncoding: task.contentEncoding
+        });
     }
 
-    /**
-     * Gzips the dump as a stream and only keeps compressed bytes in memory
-     * while the payload stays within the direct-upload threshold.
-     */
-    private async prepareCompressedPayload(
-        localPath: string,
-        objectKey: string
-    ): Promise<PreparedCompressedPayload> {
-        const gzipStream = createReadStream(localPath).pipe(zlib.createGzip({
-            level: zlib.constants.Z_BEST_SPEED
-        }));
-        const inMemoryChunks: Buffer[] = [];
-        let inMemorySize = 0;
-        let compressedSize = 0;
-        let chunkDirectoryPath: string | undefined;
-        let chunkFile: FileHandle | undefined;
-        let currentChunkSize = 0;
-        let totalChunks = 0;
-
-        const closeChunkFile = async (): Promise<void> => {
-            if (!chunkFile) {
-                return;
-            }
-
-            await chunkFile.close();
-            chunkFile = undefined;
-            currentChunkSize = 0;
-        };
-
-        const startChunkedWrite = async (): Promise<void> => {
-            if (chunkDirectoryPath) {
-                return;
-            }
-
-            chunkDirectoryPath = await fs.mkdtemp(join(tmpdir(), 'trajectory-dump-'));
-
-            logger.info(
-                `@cloud-upload-processor: switching to streamed chunked upload objectKey=${objectKey} compressedBytesBuffered=${inMemorySize}`
-            );
-
-            for (const inMemoryChunk of inMemoryChunks) {
-                await writeCompressedChunk(inMemoryChunk);
-            }
-
-            inMemoryChunks.length = 0;
-            inMemorySize = 0;
-        };
-
-        const writeCompressedChunk = async (chunk: Buffer): Promise<void> => {
-            let offset = 0;
-
-            while (offset < chunk.length) {
-                if (!chunkDirectoryPath) {
-                    throw new Error('Chunk directory must exist before writing chunked upload data.');
-                }
-
-                if (!chunkFile) {
-                    const chunkPath = join(chunkDirectoryPath, `${String(totalChunks).padStart(8, '0')}.part`);
-                    chunkFile = await fs.open(chunkPath, 'w');
-                }
-
-                const writableBytes = Math.min(CHUNK_SIZE - currentChunkSize, chunk.length - offset);
-                const chunkSlice = chunk.subarray(offset, offset + writableBytes);
-
-                await chunkFile.write(chunkSlice);
-
-                currentChunkSize += writableBytes;
-                offset += writableBytes;
-
-                if (currentChunkSize === CHUNK_SIZE) {
-                    totalChunks += 1;
-                    await closeChunkFile();
-                }
-            }
-        };
-
-        try {
-            for await (const outputChunk of gzipStream) {
-                const chunk = Buffer.isBuffer(outputChunk) ? outputChunk : Buffer.from(outputChunk);
-                compressedSize += chunk.length;
-
-                if (!chunkDirectoryPath && inMemorySize + chunk.length <= DIRECT_UPLOAD_THRESHOLD) {
-                    inMemoryChunks.push(chunk);
-                    inMemorySize += chunk.length;
-                    continue;
-                }
-
-                await startChunkedWrite();
-                await writeCompressedChunk(chunk);
-            }
-
-            if (!chunkDirectoryPath) {
-                return {
-                    mode: UploadCompressionMode.Direct,
-                    compressedDump: Buffer.concat(inMemoryChunks, compressedSize),
-                    compressedSize
-                };
-            }
-
-            if (chunkFile) {
-                totalChunks += 1;
-                await closeChunkFile();
-            }
-
-            return {
-                mode: UploadCompressionMode.Chunked,
-                chunkDirectoryPath,
-                compressedSize,
-                totalChunks
-            };
-        } catch (error) {
-            await closeChunkFile();
-
-            if (chunkDirectoryPath) {
-                await fs.rm(chunkDirectoryPath, { force: true, recursive: true });
-            }
-
-            throw error;
-        }
-    }
-
-    private createChunkedUploadStream(
-        chunkDirectoryPath: string,
-        totalChunks: number
-    ): Readable {
-        return Readable.from((async function* () {
-            for (let index = 0; index < totalChunks; index += 1) {
-                const chunkPath = join(chunkDirectoryPath, `${String(index).padStart(8, '0')}.part`);
-                const chunk = await fs.readFile(chunkPath);
-
-                if (chunk.length === 0) {
-                    throw new Error(`Compressed dump chunk is empty index=${index} path=${chunkPath}`);
-                }
-
-                if (chunk.length > CHUNK_SIZE) {
-                    throw new Error(`Compressed dump chunk exceeds size limit index=${index} size=${chunk.length}`);
-                }
-
-                yield chunk;
-            }
-        })());
-    }
-
-    /** Retries transient daemon transport failures before surfacing a terminal trajectory failure. */
     private async executeWithTransportRetry(
         task: CloudUploadTask,
         commandName: string,
@@ -359,4 +135,4 @@ export default class CloudUploadProcessor {
                 : 'Trajectory daemon transport retries exhausted'
         }));
     }
-};
+}

@@ -18,8 +18,10 @@ import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-
 import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { getLocalGlbStream } from '@modules/trajectory/utilities/storage/glb-stream-resolution';
 import { buildParticleFilterObjectName } from '@modules/trajectory/utilities/trajectory/minio-path-builder';
 import { normalizeAnalysisId } from '@modules/trajectory/utilities/trajectory/modifier-data';
+import { resolveTrajectoryNativeClusterContext } from '@modules/trajectory/utilities/team-cluster/resolve-trajectory-native-cluster-context';
 import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
 import { resolveSceneArtifactStorageCluster } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-storage-cluster';
 import { IStorageService } from '@shared/domain/port/IStorageService';
@@ -136,27 +138,22 @@ export default class ParticleFilterService implements IParticleFilterService {
         analysisId?: string
     ): Promise<{ dump: string[]; perAtom: Record<string, string[]>; exposureNames: Record<string, string> }> {
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
-        const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
-        const storageClusterId = trajectory
-            ? resolveTrajectoryStorageClusterId(trajectory.props)
-            : undefined;
+        const clusterContext = await resolveTrajectoryNativeClusterContext({
+            trajectoryId: String(trajectoryId),
+            trajectoryRepository: this.trajectoryRepository,
+            teamClusterSelectionService: this.teamClusterSelectionService
+        });
 
-        if (!trajectory || !storageClusterId) {
+        if (!clusterContext) {
             throw buildClusterRequiredError();
         }
 
-        const computeClusterId = await this.teamClusterSelectionService.resolveComputeClusterId(
-            trajectory.props.team,
-            undefined,
-            storageClusterId
-        );
-
         const metadata = await this.trajectoryNativeDaemonService.getTrajectoryMetadata({
-            teamClusterId: computeClusterId,
+            teamClusterId: clusterContext.computeClusterId,
             trajectoryId: String(trajectoryId),
             timestep: Number(timestep),
             objectKey: this.dumpStorage.getObjectName(String(trajectoryId), String(timestep)),
-            ownerClusterId: storageClusterId
+            ownerClusterId: clusterContext.storageClusterId
         });
         const dumpHeaders = metadata.headers || [];
 
@@ -211,22 +208,16 @@ export default class ParticleFilterService implements IParticleFilterService {
             );
         }
 
-        if (!trajectory || !storageClusterId) {
+        if (!clusterContext) {
             throw buildClusterRequiredError();
         }
 
-        const computeClusterId = await this.teamClusterSelectionService.resolveComputeClusterId(
-            trajectory.props.team,
-            undefined,
-            storageClusterId
-        );
-
         return this.trajectoryNativeDaemonService.getUniqueValues({
-            teamClusterId: computeClusterId,
+            teamClusterId: clusterContext.computeClusterId,
             trajectoryId: String(trajectoryId),
             timestep: Number(timestep),
             objectKey: this.dumpStorage.getObjectName(String(trajectoryId), String(timestep)),
-            ownerClusterId: storageClusterId,
+            ownerClusterId: clusterContext.storageClusterId,
             property,
             maxValues
         });
@@ -385,7 +376,8 @@ export default class ParticleFilterService implements IParticleFilterService {
             throw buildDumpNotFoundError();
         }
 
-        return this.storageService.getStream(SYS_BUCKETS.MODELS, objectName);
+        const response = await getLocalGlbStream(this.storageService, objectName);
+        return response.stream;
     }
 
     private async getRemoteFilterResult(
@@ -541,7 +533,7 @@ export default class ParticleFilterService implements IParticleFilterService {
                 .slice(0, 12);
             const segment = analysisId || 'default';
 
-            return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/particle-filter/preset/${condition.preset}-${filterHash}-${action}.glb`;
+            return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/particle-filter/preset/${condition.preset}-${filterHash}-${action}.glb.zst`;
         }
 
         if (request.conditions.length === 1) {
@@ -550,7 +542,7 @@ export default class ParticleFilterService implements IParticleFilterService {
                 const filterHash = createHash('sha1').update(JSON.stringify(request)).digest('hex').slice(0, 12);
                 const segment = analysisId || 'default';
 
-                return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/particle-filter/composite/${request.combinator.toLowerCase()}-${filterHash}-${action}.glb`;
+                return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/particle-filter/composite/${request.combinator.toLowerCase()}-${filterHash}-${action}.glb.zst`;
             }
 
             return buildParticleFilterObjectName(
@@ -568,7 +560,7 @@ export default class ParticleFilterService implements IParticleFilterService {
         const filterHash = createHash('sha1').update(JSON.stringify(request)).digest('hex').slice(0, 12);
         const segment = analysisId || 'default';
 
-        return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/particle-filter/composite/${request.combinator.toLowerCase()}-${filterHash}-${action}.glb`;
+        return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/particle-filter/composite/${request.combinator.toLowerCase()}-${filterHash}-${action}.glb.zst`;
     }
 
     private buildArtifactParams(

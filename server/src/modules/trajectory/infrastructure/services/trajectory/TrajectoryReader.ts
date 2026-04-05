@@ -7,6 +7,7 @@ import { inject, injectable } from 'tsyringe';
 import type { ITrajectoryReader } from '@modules/trajectory/domain/port/trajectory/ITrajectoryReader';
 import type { AtomPageResult } from '@modules/trajectory/domain/contracts/trajectory';
 import type TrajectoryNativeDaemonService from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
+import { buildTrajectoryDumpObjectName } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 
 @injectable()
 export default class TrajectoryReader implements ITrajectoryReader {
@@ -44,6 +45,6 @@ export default class TrajectoryReader implements ITrajectoryReader {
     }
 
     private getDumpObjectKey(trajectoryId: string, timestep: string | number): string {
-        return `trajectory-${trajectoryId}/timestep-${timestep}.dump.gz`;
+        return buildTrajectoryDumpObjectName(trajectoryId, timestep);
     }
 }
