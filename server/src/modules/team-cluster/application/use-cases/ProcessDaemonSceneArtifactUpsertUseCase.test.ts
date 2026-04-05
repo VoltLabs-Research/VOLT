@@ -98,7 +98,7 @@ test('accepts plugin exposure scene artifacts reported by the analysis compute c
         plugin: 'plugin-1',
         sourceType: SceneArtifactSourceType.PluginExposure,
         timestep: 75000,
-        objectName: 'trajectory-trajectory-1/analysis-analysis-1/glb/75000/exposure-1.glb',
+        objectName: 'trajectory-trajectory-1/analysis-analysis-1/glb/75000/exposure-1.glb.zst',
         storageBucket: 'volt-models',
         params: {
             exposureId: 'exposure-1'
@@ -137,7 +137,7 @@ test('rejects plugin exposure scene artifacts reported by an unrelated cluster',
         plugin: 'plugin-1',
         sourceType: SceneArtifactSourceType.PluginExposure,
         timestep: 75000,
-        objectName: 'trajectory-trajectory-1/analysis-analysis-1/glb/75000/exposure-1.glb',
+        objectName: 'trajectory-trajectory-1/analysis-analysis-1/glb/75000/exposure-1.glb.zst',
         storageBucket: 'volt-models',
         params: {
             exposureId: 'exposure-1'

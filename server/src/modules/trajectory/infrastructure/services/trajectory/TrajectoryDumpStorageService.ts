@@ -4,21 +4,23 @@ import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure
 import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import {
+    buildTrajectoryDumpObjectName,
+    createZstdDecompressionStream
+} from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 import { IStorageService } from '@shared/domain/port/IStorageService';
 import { ITempFileService } from '@shared/domain/port/ITempFileService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-
 import { createReadStream, createWriteStream } from 'node:fs';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { injectable, inject } from 'tsyringe';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import zlib from 'node:zlib';
 
 @injectable()
-export default class TrajectoryDumpStorageService implements ITrajectoryDumpStorageService{
+export default class TrajectoryDumpStorageService implements ITrajectoryDumpStorageService {
     private static readonly CACHE_TTL_MS = 30 * 60 * 1000;
     private readonly cacheDir: string;
     private readonly pendingRequests = new Map<string, Promise<string | null>>();
@@ -35,27 +37,23 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
 
         @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient
-    ){
+    ) {
         this.cacheDir = this.tempFileService.getDirPath('trajectory-cache');
     }
 
-    getObjectName(trajectoryId: string, timestep: string): string{
-        return `trajectory-${trajectoryId}/timestep-${timestep}.dump.gz`;
+    getObjectName(trajectoryId: string, timestep: string): string {
+        return buildTrajectoryDumpObjectName(trajectoryId, timestep);
     }
 
-    getPrefix(trajectoryId: string): string{
+    getPrefix(trajectoryId: string): string {
         return `trajectory-${trajectoryId}/`;
     }
 
-    getCachePath(trajectoryId: string, timestep: string): string{
-        return path.join(this.cacheDir, trajectoryId, `${timestep}.dump`);   
+    getCachePath(trajectoryId: string, timestep: string): string {
+        return path.join(this.cacheDir, trajectoryId, `${timestep}.dump`);
     }
 
-    async getDump(
-        trajectoryId: string,
-        timestep: string
-    ): Promise<string | null>{
-        const objectName = this.getObjectName(trajectoryId, timestep);
+    async getDump(trajectoryId: string, timestep: string): Promise<string | null> {
         const cachePath = this.getCachePath(trajectoryId, timestep);
         const cacheKey = `${trajectoryId}:${timestep}`;
         const trajectory = await this.trajectoryRepo.findById(trajectoryId);
@@ -63,88 +61,60 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
             ? resolveTrajectoryStorageClusterId(trajectory.props)
             : undefined;
 
-        // Check valid cache on disk
-        if(await this.isCacheValid(cachePath)){
-            // Update access time
-            fs.utimes(cachePath, new Date(), new Date());
+        if (await this.isCacheValid(cachePath)) {
+            fs.utimes(cachePath, new Date(), new Date()).catch(() => {});
             return cachePath;
         }
 
-        // Check if already downloading (promise locking)
-        if(this.pendingRequests.has(cacheKey)){
+        if (this.pendingRequests.has(cacheKey)) {
             return this.pendingRequests.get(cacheKey)!;
         }
 
-        // Start new download
-        const downloadTask = this.downloadDump(objectName, cachePath, cacheKey, storageClusterId);
+        const downloadTask = this.downloadDump(trajectoryId, timestep, cachePath, cacheKey, storageClusterId);
         this.pendingRequests.set(cacheKey, downloadTask);
         return downloadTask;
     }
 
     private async downloadDump(
-        objectName: string,
+        trajectoryId: string,
+        timestep: string,
         cachePath: string,
         cacheKey: string,
         storageClusterId?: string
-    ): Promise<string | null>{
-        try{
-            const exists = storageClusterId
-                ? await this.objectGatewayClient.exists(
-                    storageClusterId,
-                    SYS_BUCKETS.DUMPS,
-                    objectName
-                )
-                : await this.storageService.exists(
-                    SYS_BUCKETS.DUMPS,
-                    objectName
-                );
+    ): Promise<string | null> {
+        try {
+            const objectName = buildTrajectoryDumpObjectName(trajectoryId, timestep);
 
-            if(!exists) return null;
-
-            const cacheDir = path.dirname(cachePath);
-            await this.tempFileService.ensureDir(cacheDir);
+            await this.tempFileService.ensureDir(path.dirname(cachePath));
 
             const remoteStream = storageClusterId
-                ? (await this.objectGatewayClient.getStream(
-                    storageClusterId,
-                    SYS_BUCKETS.DUMPS,
-                    objectName
-                )).stream
-                : await this.storageService.getStream(
-                    SYS_BUCKETS.DUMPS,
-                    objectName
-                );
+                ? (await this.objectGatewayClient.getStream(storageClusterId, SYS_BUCKETS.DUMPS, objectName)).stream
+                : await this.storageService.getStream(SYS_BUCKETS.DUMPS, objectName);
 
-            // Stream Pipeline: Remote -> Decompress -> Disk
-            const gunzip = zlib.createGunzip();
             const fileWriter = createWriteStream(cachePath);
-
-            await pipeline(remoteStream, gunzip, fileWriter);
+            const decompressed = createZstdDecompressionStream(remoteStream);
+            await pipeline(decompressed.stream, fileWriter);
+            await decompressed.completion;
 
             return cachePath;
-        }catch(error: any){
+        } catch (error) {
             await fs.unlink(cachePath).catch(() => {});
-            logger.error(`@trajectory-dump-storage-service: error downloading ${objectName}:`, error);
-
+            logger.error(`@trajectory-dump-storage-service: error downloading trajectory=${trajectoryId} timestep=${timestep}:`, error);
             return null;
-        }finally{
-            // Unlock
+        } finally {
             this.pendingRequests.delete(cacheKey);
         }
     }
 
-    async getDumpStream(
-        trajectoryId: string,
-        timestep: string
-    ): Promise<Readable>{
+    async getDumpStream(trajectoryId: string, timestep: string): Promise<Readable> {
         const cachePath = this.getCachePath(trajectoryId, timestep);
-        if(await this.isCacheValid(cachePath)){
+        if (await this.isCacheValid(cachePath)) {
             fs.utimes(cachePath, new Date(), new Date()).catch(() => {});
             return createReadStream(cachePath);
         }
 
         const localPath = await this.getDump(trajectoryId, timestep);
-        if(!localPath){
+        if (!localPath) {
             throw new Error(`Dump not found: trajectoryId=${trajectoryId}, timestep=${timestep}`);
         }
 
@@ -152,71 +122,47 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
     }
 
     async existsDump(trajectoryId: string, timestep: string): Promise<boolean> {
-        const objectName = this.getObjectName(trajectoryId, timestep);
+        const trajectory = await this.trajectoryRepo.findById(trajectoryId);
+        const storageClusterId = trajectory
+            ? resolveTrajectoryStorageClusterId(trajectory.props)
+            : undefined;
+        const objectName = buildTrajectoryDumpObjectName(trajectoryId, timestep);
+
+        return storageClusterId
+            ? this.objectGatewayClient.exists(storageClusterId, SYS_BUCKETS.DUMPS, objectName)
+            : this.storageService.exists(SYS_BUCKETS.DUMPS, objectName);
+    }
+
+    async listDumps(trajectoryId: string): Promise<string[]> {
         const trajectory = await this.trajectoryRepo.findById(trajectoryId);
         const storageClusterId = trajectory
             ? resolveTrajectoryStorageClusterId(trajectory.props)
             : undefined;
 
-        if (storageClusterId) {
-            return this.objectGatewayClient.exists(
-                storageClusterId,
-                SYS_BUCKETS.DUMPS,
-                objectName
-            );
-        }
-
-        return this.storageService.exists(SYS_BUCKETS.DUMPS, objectName);
-    }
-
-    async listDumps(trajectoryId: string): Promise<string[]>{
-        const trajectory = await this.trajectoryRepo.findById(trajectoryId);
-        const storageClusterId = trajectory
-            ? resolveTrajectoryStorageClusterId(trajectory.props)
-            : undefined;
-
-        if(storageClusterId){
-            return this.listDumpsFromDaemon(storageClusterId, trajectoryId);
-        }
-
         const prefix = this.getPrefix(trajectoryId);
-        const timesteps: string[] = [];
-        
-        logger.info(`@trajectory-dump-storage-service: Listing dumps with prefix: ${prefix} in bucket: ${SYS_BUCKETS.DUMPS}`);
-        for await(const name of this.storageService.listByPrefix(SYS_BUCKETS.DUMPS, prefix)){
-            const match = name.match(/timestep-(\d+)\.dump\.gz$/);
-            if(!match) continue;
-            timesteps.push(match[1]);
+        const timesteps = new Set<string>();
+        const source = storageClusterId
+            ? this.objectGatewayClient.listAll(storageClusterId, {
+                bucket: SYS_BUCKETS.DUMPS,
+                prefix
+            })
+            : this.storageService.listByPrefix(SYS_BUCKETS.DUMPS, prefix);
+
+        for await (const name of source) {
+            const match = name.match(/timestep-(\d+)\.dump\.zst$/);
+            if (!match) continue;
+            timesteps.add(match[1]);
         }
 
-        logger.info(`@trajectory-dump-storage-service: Found ${timesteps.length} dumps for trajectory ${trajectoryId}`);
-        return timesteps.sort((a, b) => Number(a) - Number(b));
+        return Array.from(timesteps).sort((a, b) => Number(a) - Number(b));
     }
 
-    private async listDumpsFromDaemon(teamClusterId: string, trajectoryId: string): Promise<string[]>{
-        const prefix = this.getPrefix(trajectoryId);
-        logger.info(`@trajectory-dump-storage-service: Listing dumps from daemon for trajectory ${trajectoryId} (cluster: ${teamClusterId})`);
-
-        const timesteps: string[] = [];
-        for await (const name of this.objectGatewayClient.listAll(teamClusterId, {
-            bucket: SYS_BUCKETS.DUMPS,
-            prefix
-        })) {
-            const match = name.match(/timestep-(\d+)\.dump\.gz$/);
-            if(!match) continue;
-            timesteps.push(match[1]);
-        }
-
-        logger.info(`@trajectory-dump-storage-service: Found ${timesteps.length} dumps from daemon for trajectory ${trajectoryId}`);
-        return timesteps.sort((a, b) => Number(a) - Number(b));
-    }
-
-    private async isCacheValid(filePath: string): Promise<boolean>{
-        try{
+    private async isCacheValid(filePath: string): Promise<boolean> {
+        try {
             const stats = await fs.stat(filePath);
             return (Date.now() - stats.mtimeMs) < TrajectoryDumpStorageService.CACHE_TTL_MS;
-        }catch{
+        } catch {
             return false;
         }
     }
-};
+}

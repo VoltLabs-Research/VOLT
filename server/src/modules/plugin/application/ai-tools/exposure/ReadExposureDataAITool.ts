@@ -9,6 +9,7 @@ import { decodeMultiStream } from '@shared/infrastructure/utilities/msgpack';
 import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { createZstdDecompressionStream } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 
 import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
@@ -47,13 +48,14 @@ export class ReadExposureDataAITool extends AITool {
             exposureId,
             timestep
         );
-        if (!(await this.storageService.exists(SYS_BUCKETS.PLUGINS, objectName))) {
+        if (!await this.storageService.exists(SYS_BUCKETS.PLUGINS, objectName)) {
             throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Exposure data not found');
         }
 
         const stream = await this.storageService.getStream(SYS_BUCKETS.PLUGINS, objectName);
+        const decodedStream = createZstdDecompressionStream(stream).stream;
         const decoded: unknown[] = [];
-        for await (const value of decodeMultiStream(stream)) decoded.push(value);
+        for await (const value of decodeMultiStream(decodedStream)) decoded.push(value);
 
         let payload: unknown = decoded.length === 1 ? decoded[0] : decoded;
         const serialized = JSON.stringify(payload);

@@ -28,6 +28,9 @@ export interface CloudUploadJobData {
     trajectoryName: string;
     timestep: number;
     frameFilePath: string;
+    objectKey: string;
+    contentType: string;
+    contentEncoding?: string;
 };
 
 /**
@@ -110,7 +113,10 @@ export default class CloudUploadQueueService {
                     teamClusterId: job.data.teamClusterId,
                     trajectoryName,
                     timestep,
-                    frameFilePath: job.data.frameFilePath
+                    frameFilePath: job.data.frameFilePath,
+                    objectKey: job.data.objectKey,
+                    contentType: job.data.contentType,
+                    contentEncoding: job.data.contentEncoding
                 });
 
                 return job.data;
@@ -216,6 +222,9 @@ export default class CloudUploadQueueService {
             trajectoryName: string;
             timestep: number;
             frameFilePath: string;
+            objectKey: string;
+            contentType: string;
+            contentEncoding?: string;
         }>
     ): Promise<string[]> {
         this.start();

@@ -15,7 +15,7 @@ export const buildColorCodingObjectName = (
     const segment = analysisSegment || DEFAULT_ANALYSIS_ID;
     const formattedStart = formatValueForPath(startValue);
     const formattedEnd = formatValueForPath(endValue);
-    return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${formattedStart}-${formattedEnd}/${gradient}.glb`;
+    return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${formattedStart}-${formattedEnd}/${gradient}.glb.zst`;
 };
 
 export const buildParticleFilterObjectName = (
@@ -31,5 +31,5 @@ export const buildParticleFilterObjectName = (
     const segment = analysisSegment || DEFAULT_ANALYSIS_ID;
     const formattedValue = typeof value === 'number' ? formatValueForPath(value) : String(value);
     const exposurePart = exposureId ? String(exposureId) : 'dump';
-    return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/particle-filter/${exposurePart}/${property}-${operator}-${formattedValue}-${action}.glb`;
+    return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/particle-filter/${exposurePart}/${property}-${operator}-${formattedValue}-${action}.glb.zst`;
 };

@@ -36,6 +36,14 @@ const sortByTimestepAndName = (left: AnalysisFileRef, right: AnalysisFileRef): n
     return left.objectName.localeCompare(right.objectName);
 };
 
+const matchesConfiguredExtension = (objectName: string, extensionFilter?: string): boolean => {
+    if (!extensionFilter) {
+        return true;
+    }
+
+    return objectName.endsWith(extensionFilter);
+};
+
 const collectFilesByPrefix = async (
     storageService: IStorageService,
     config: PrefixCollectionConfig,
@@ -45,7 +53,7 @@ const collectFilesByPrefix = async (
 
     try {
         for await (const objectName of storageService.listByPrefix(config.bucket, config.prefix, true)) {
-            if (config.extensionFilter && !objectName.endsWith(config.extensionFilter)) {
+            if (!matchesConfiguredExtension(objectName, config.extensionFilter)) {
                 continue;
             }
 
@@ -76,7 +84,7 @@ export const buildExposurePayloadObjectName = (
     exposureId: string,
     timestep: number
 ): string => {
-    return `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack`;
+    return `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack.zst`;
 };
 
 export const listExposurePayloadObjects = async (
@@ -91,8 +99,8 @@ export const listExposurePayloadObjects = async (
             bucket: SYS_BUCKETS.PLUGINS,
             prefix: `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/`,
             type: 'data',
-            timestepRegex: /timestep-(\d+)\.msgpack$/,
-            extensionFilter: '.msgpack'
+            timestepRegex: /timestep-(\d+)\.msgpack\.zst$/,
+            extensionFilter: '.msgpack.zst'
         }
     );
 
@@ -115,7 +123,8 @@ export const listAnalysisFiles = async (
             bucket: SYS_BUCKETS.PLUGINS,
             prefix: `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/`,
             type: 'data',
-            timestepRegex: /\/timestep-(\d+)\.msgpack$/
+            timestepRegex: /\/timestep-(\d+)\.msgpack\.zst$/,
+            extensionFilter: '.msgpack.zst'
         },
         {
             bucket: SYS_BUCKETS.PLUGINS,
@@ -129,7 +138,7 @@ export const listAnalysisFiles = async (
             prefix: `trajectory-${trajectoryId}/analysis-${analysisId}/glb/`,
             type: 'model',
             timestepRegex: /\/glb\/(\d+)\//,
-            extensionFilter: '.glb'
+            extensionFilter: '.glb.zst'
         }
     ];
 

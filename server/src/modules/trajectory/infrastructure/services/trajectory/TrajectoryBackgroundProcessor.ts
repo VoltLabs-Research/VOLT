@@ -13,6 +13,7 @@ import Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajector
 import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/trajectory/TrajectoryParserFactory';
 import CloudUploadQueueService from '@modules/trajectory/infrastructure/services/trajectory/CloudUploadQueueService';
+import CompressionQueueService, { CompressionJobData } from '@modules/trajectory/infrastructure/services/trajectory/CompressionQueueService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import logger from '@shared/infrastructure/logger';
 
@@ -33,6 +34,7 @@ import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { ExtractedFile } from '@shared/domain/port/IFileExtractorService';
 import type { IFileExtractorService } from '@shared/domain/port/IFileExtractorService';
 import type { ITempFileService } from '@shared/domain/port/ITempFileService';
+import { buildTrajectoryDumpObjectName } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 
 type ParsedFrame = {
     timestep: number;
@@ -85,6 +87,7 @@ const chunkItems = <T>(items: T[], chunkSize: number): T[][] => {
 export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgroundProcessor {
     private readonly concurrency = getTrajectoryBackgroundProcessorConcurrency();
     private drainCallbackRegistered = false;
+    private compressionDrainCallbackRegistered = false;
 
     constructor(
         @inject(SHARED_TOKENS.TempFileService)
@@ -98,6 +101,9 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
 
         @inject(TRAJECTORY_TOKENS.CloudUploadQueueService)
         private readonly cloudUploadQueueService: CloudUploadQueueService,
+
+        @inject(TRAJECTORY_TOKENS.CompressionQueueService)
+        private readonly compressionQueueService: CompressionQueueService,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
@@ -202,6 +208,30 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         );
     }
 
+    private registerCompressionDrainCallback(): void {
+        if (this.compressionDrainCallbackRegistered) return;
+        this.compressionDrainCallbackRegistered = true;
+
+        this.compressionQueueService.onSessionDrain(
+            async (trajectoryId, teamId, _teamClusterId, _trajectoryName, failedCount, successfulJobs) => {
+                if (failedCount > 0 || successfulJobs.length === 0) {
+                    await this.updateStatus(
+                        trajectoryId,
+                        teamId,
+                        TrajectoryStatus.Failed,
+                        {
+                            failureCode: ErrorCodes.WORKER_FAILURE,
+                            failureDetails: 'One or more trajectory frame compression jobs failed before upload.'
+                        }
+                    );
+                    return;
+                }
+
+                await this.dispatchCloudUploadJobs(successfulJobs);
+            }
+        );
+    }
+
     /**
      * Entry point for trajectory background processing.
      */
@@ -211,6 +241,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         teamId: string
     ): Promise<void>{
         this.registerUploadDrainCallback();
+        this.registerCompressionDrainCallback();
 
         const ctx = await this.createContext(trajectoryId);
         let failureCode: ErrorCode | undefined;
@@ -469,7 +500,36 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         trajectory: Trajectory,
         teamId: string
     ): Promise<void>{
-        await this.dispatchCloudUploadJobs(frames, trajectory, teamId);
+        await this.dispatchCompressionJobs(frames, trajectory, teamId);
+    }
+
+    private async dispatchCompressionJobs(
+        frames: ParsedFrame[],
+        trajectory: Trajectory,
+        teamId: string
+    ): Promise<void> {
+        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        if (!storageClusterId) {
+            logger.warn(
+                { trajectoryId: trajectory._id },
+                '@trajectory-background-processor: skipping compression — no storageClusterId'
+            );
+            return;
+        }
+
+        await this.compressionQueueService.enqueueBatch(frames.map((frame) => ({
+            trajectoryId: trajectory._id,
+            teamId,
+            teamClusterId: storageClusterId,
+            trajectoryName: trajectory.props.name,
+            timestep: frame.timestep,
+            sourceFramePath: frame.cachePath,
+            compressedFramePath: `${frame.cachePath}.zst`,
+            objectKey: buildTrajectoryDumpObjectName(trajectory._id, frame.timestep),
+            compressionCodec: 'zstd',
+            contentType: 'application/zstd',
+            contentEncoding: 'zstd'
+        })));
     }
 
     /**
@@ -497,34 +557,24 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
      * Dispatches cloud upload jobs via BullMQ queue for crash recovery and per-file visibility.
      */    
     private async dispatchCloudUploadJobs(
-        frames: ParsedFrame[],
-        trajectory: Trajectory,
-        teamId: string
+        jobs: CompressionJobData[]
     ): Promise<void>{
-        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
-        if (!storageClusterId) {
-            logger.warn(
-                { trajectoryId: trajectory._id },
-                '@trajectory-background-processor: skipping cloud upload — no storageClusterId'
-            );
-            return;
-        }
+        logger.info(`@trajectory-background-processor: Enqueuing ${jobs.length} cloud upload job(s) via BullMQ`);
 
-        logger.info(`@trajectory-background-processor: Enqueuing ${frames.length} cloud upload job(s) via BullMQ`);
-
-        const jobs = frames.map((frame) => ({
-            trajectoryId: trajectory._id,
-            teamClusterId: storageClusterId,
-            teamId,
-            trajectoryName: trajectory.props.name,
-            timestep: frame.timestep,
-            frameFilePath: frame.cachePath
-        }));
-
-        await this.cloudUploadQueueService.enqueueBatch(jobs);
+        await this.cloudUploadQueueService.enqueueBatch(jobs.map((job) => ({
+            trajectoryId: job.trajectoryId,
+            teamClusterId: job.teamClusterId,
+            teamId: job.teamId,
+            trajectoryName: job.trajectoryName,
+            timestep: job.timestep,
+            frameFilePath: job.compressedFramePath,
+            objectKey: job.objectKey,
+            contentType: job.contentType,
+            contentEncoding: job.contentEncoding
+        })));
 
         logger.info(
-            { frameCount: frames.length, trajectoryId: trajectory._id },
+            { frameCount: jobs.length, trajectoryId: jobs[0]?.trajectoryId },
             '@trajectory-background-processor: all cloud upload jobs enqueued'
         );
     }
