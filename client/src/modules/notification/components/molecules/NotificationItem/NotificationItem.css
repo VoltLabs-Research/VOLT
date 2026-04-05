@@ -21,21 +21,3 @@
 .notification-item-title {
     min-width: 0;
 }
-
-.notification-item-state {
-    flex-shrink: 0;
-    padding: 0.125rem 0.5rem;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-.notification-item-state.is-unread {
-    background: var(--color-brand-primary);
-    color: #fff;
-}
-
-.notification-item-state.is-read {
-    background: var(--color-surface-3);
-    color: var(--color-text-secondary);
-}
