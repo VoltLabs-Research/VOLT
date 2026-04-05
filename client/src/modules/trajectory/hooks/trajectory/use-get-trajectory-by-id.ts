@@ -32,6 +32,7 @@ export default function useGetTrajectoryById(params: UseGetTrajectoryByIdParams 
         { trajectoryId: trajectoryId || '' },
         {
             enabled: shouldFetch,
+            refetchOnMount: 'always',
             retry: (failureCount, error) => {
                 if (checkAccessDeniedError(error)) {
                     return false;

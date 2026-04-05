@@ -40,8 +40,8 @@ interface TimelineHeaderProps {
     activeTab: string;
     onTabChange: (tab: string) => void;
     tabs?: TimelineTabOption[];
-    startFrame: number;
-    endFrame: number;
+    startFrame: number | undefined;
+    endFrame: number | undefined;
     availableTimesteps: number[];
     zoomPercent: number;
     onZoomPreset: (preset: number) => void;

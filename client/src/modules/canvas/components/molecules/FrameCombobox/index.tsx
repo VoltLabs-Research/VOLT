@@ -3,9 +3,9 @@ import { useMemo, useCallback } from 'react';
 import type { SelectOption } from '@/shared/presentation/components/Select';
 
 interface FrameComboboxProps {
-    value: number;
+    value: number | undefined;
     options: number[];
-    onChange: (value: number) => void;
+    onChange: (value: number | undefined) => void;
     title?: string;
 };
 
@@ -16,19 +16,29 @@ const FrameCombobox = ({ value, options, onChange, title }: FrameComboboxProps) 
     );
 
     const handleChange = useCallback((val: string) => {
-        onChange(Number(val));
+        if (val === '') {
+            onChange(undefined);
+            return;
+        }
+
+        const nextValue = Number(val);
+        onChange(Number.isFinite(nextValue) ? nextValue : undefined);
     }, [onChange]);
+
+    const normalizedValue = value !== undefined ? String(value) : '';
+    const placeholder = value !== undefined ? String(value) : 'No frames';
 
     return (
         <Select
             isEditable
             options={selectOptions}
-            value={String(value)}
+            value={normalizedValue}
             onChange={handleChange}
-            placeholder={String(value)}
+            placeholder={placeholder}
             className='form-field-canvas-input--compact'
             showSelectionIcon={false}
             title={title}
+            disabled={options.length === 0}
         />
     );
 };
