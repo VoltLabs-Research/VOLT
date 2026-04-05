@@ -222,9 +222,16 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     const socketService = useSocket();
     const prefersReducedMotion = usePrefersReducedMotion();
     const { searchParams, updateSearchParams } = useSearchParamsState();
+    const canExport = Boolean(exportConfig?.onExport);
     const resolvedTabs = useMemo(() => {
-        return tabs?.length ? tabs : DEFAULT_TABS;
-    }, [tabs]);
+        const availableTabs = tabs?.length ? tabs : DEFAULT_TABS;
+
+        if (canExport) {
+            return availableTabs;
+        }
+
+        return availableTabs.filter((tab) => tab.action !== DocumentListingTabAction.Export);
+    }, [canExport, tabs]);
     const persistenceKey = useMemo(() => resolvePersistenceKey(queryKey, title), [queryKey, title]);
     const tabParamKey = `${persistenceKey}-tab`;
     const sortKeyParamKey = `${persistenceKey}-sort`;
@@ -270,23 +277,26 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         const currentSortKey = searchParams.get(sortKeyParamKey);
         const currentSortDirection = searchParams.get(sortDirectionParamKey);
         const currentExportType = searchParams.get(exportTypeParamKey);
+        const shouldPersistTab = !hideTabs && resolvedTabs.length > 1;
+        const nextTab = shouldPersistTab ? activeTabId : null;
+        const nextExportType = canExport ? selectedExportType : null;
 
         if (
-            currentTab === activeTabId
+            currentTab === nextTab
             && currentSortKey === (sortConfig?.key ?? null)
             && currentSortDirection === (sortConfig?.direction ?? null)
-            && currentExportType === selectedExportType
+            && currentExportType === nextExportType
         ) {
             return;
         }
 
         updateSearchParams({
-            [tabParamKey]: activeTabId,
+            [tabParamKey]: nextTab,
             [sortKeyParamKey]: sortConfig?.key ?? null,
             [sortDirectionParamKey]: sortConfig?.direction ?? null,
-            [exportTypeParamKey]: selectedExportType
+            [exportTypeParamKey]: nextExportType
         }, { replace: true });
-    }, [activeTabId, exportTypeParamKey, searchParams, selectedExportType, sortConfig, sortDirectionParamKey, sortKeyParamKey, tabParamKey, updateSearchParams]);
+    }, [activeTabId, canExport, exportTypeParamKey, hideTabs, resolvedTabs.length, searchParams, selectedExportType, sortConfig, sortDirectionParamKey, sortKeyParamKey, tabParamKey, updateSearchParams]);
 
     const getColumnSortKey = useCallback((col: ColumnConfig<T>): string => {
         return String(col.key ?? col.path ?? '');
