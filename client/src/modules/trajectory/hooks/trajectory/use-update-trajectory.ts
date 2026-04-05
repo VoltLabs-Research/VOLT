@@ -1,5 +1,6 @@
-import { trajectoryQuery } from './queries';
+import { trajectoryQuery, TRAJECTORY_QUERY_KEYS } from './queries';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
+import queryClient from '@/shared/infrastructure/query/query-client';
 import { sileo } from 'sileo';
 import { useCallback } from 'react';
 
@@ -9,7 +10,13 @@ interface UpdateTrajectoryPayload {
 };
 
 export default function useUpdateTrajectory() {
-    const mutation = trajectoryQuery.useUpdateMutation();
+    const mutation = trajectoryQuery.useUpdateMutation({
+        onSuccess: (trajectory) => {
+            queryClient.removeQueries({
+                queryKey: TRAJECTORY_QUERY_KEYS.trajectory(trajectory._id)
+            });
+        }
+    });
 
     const updateTrajectory = useCallback(async (_id: string, data: UpdateTrajectoryPayload) => {
         try {

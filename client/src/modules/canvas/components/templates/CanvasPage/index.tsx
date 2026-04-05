@@ -119,6 +119,13 @@ const CanvasPage = () => {
         setActiveRasterContainerId('container-1');
     }, [trajectoryId]);
 
+    useEffect(() => {
+        const editorState = useEditorStore.getState();
+        editorState.resetPlayback();
+        editorState.resetTimesteps();
+        editorState.resetModel();
+    }, [trajectoryId]);
+
     const hasFrames = !!(trajectory?.frames && trajectory.frames.length > 0);
     const showLoading = useMemo(() =>
         trajectoryLoading || !trajectory || (hasFrames && ((isModelLoading && !(didPreload && isPlaying)) || currentTimestep === undefined)),
