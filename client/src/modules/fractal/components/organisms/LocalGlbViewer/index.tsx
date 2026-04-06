@@ -1,9 +1,11 @@
 import { FractalAssetLoader } from '@/modules/fractal/api/service/asset-loader';
+import { useLocalGlbStore } from '@/modules/canvas/stores/use-local-glb-store';
 import { disposeObject3DResources } from '@/modules/fractal/utilities/resource-disposal';
 import { useThree } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
 import { sileo } from 'sileo';
 import * as THREE from 'three';
+import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
 
 interface LocalGlbViewerProps {
     url: string;
@@ -11,6 +13,8 @@ interface LocalGlbViewerProps {
 };
 
 const DEFAULT_CAMERA_DIRECTION = new THREE.Vector3(1, 1, 0.75).normalize();
+const AUTO_SIMULATION_CELL_PADDING_RATIO = 0.05;
+const AUTO_SIMULATION_CELL_MIN_PADDING = 0.01;
 type OrbitControlsLike = {
     target: THREE.Vector3;
     minDistance: number;
@@ -71,10 +75,47 @@ const fitCameraToObject = (
     }
 };
 
+const toModelWorldBounds = (box: THREE.Box3): ModelWorldBounds => ({
+    min: {
+        x: box.min.x,
+        y: box.min.y,
+        z: box.min.z
+    },
+    max: {
+        x: box.max.x,
+        y: box.max.y,
+        z: box.max.z
+    }
+});
+
+const buildAutoSimulationCellBounds = (box: THREE.Box3): ModelWorldBounds => {
+    const size = box.getSize(new THREE.Vector3());
+    const maxDimension = Math.max(size.x, size.y, size.z);
+    const padding = Math.max(
+        maxDimension * AUTO_SIMULATION_CELL_PADDING_RATIO,
+        AUTO_SIMULATION_CELL_MIN_PADDING
+    );
+
+    return {
+        min: {
+            x: box.min.x - padding,
+            y: box.min.y - padding,
+            z: box.min.z - padding
+        },
+        max: {
+            x: box.max.x + padding,
+            y: box.max.y + padding,
+            z: box.max.z + padding
+        }
+    };
+};
+
 const LocalGlbViewer = ({ url, onContentTypeDetected }: LocalGlbViewerProps) => {
     const containerRef = useRef<THREE.Group>(null);
     const modelRef = useRef<THREE.Group | null>(null);
     const { camera, invalidate } = useThree();
+    const setLocalModelWorldBounds = useLocalGlbStore((s) => s.setLocalModelWorldBounds);
+    const setLocalAutoSimulationCellWorldBounds = useLocalGlbStore((s) => s.setLocalAutoSimulationCellWorldBounds);
     const controls = useThree((state) => (state as typeof state & {
         controls?: {
             target: THREE.Vector3;
@@ -98,6 +139,8 @@ const LocalGlbViewer = ({ url, onContentTypeDetected }: LocalGlbViewerProps) => 
             disposeObject3DResources(modelRef.current);
             modelRef.current = null;
         }
+        setLocalModelWorldBounds(null);
+        setLocalAutoSimulationCellWorldBounds(null);
 
         const load = async () => {
             try {
@@ -127,6 +170,14 @@ const LocalGlbViewer = ({ url, onContentTypeDetected }: LocalGlbViewerProps) => 
                     model.updateMatrixWorld(true);
                 }
 
+                const centeredWorldBounds = new THREE.Box3().setFromObject(model);
+                if (!centeredWorldBounds.isEmpty()) {
+                    setLocalModelWorldBounds(toModelWorldBounds(centeredWorldBounds));
+                    setLocalAutoSimulationCellWorldBounds(
+                        buildAutoSimulationCellBounds(centeredWorldBounds)
+                    );
+                }
+
                 fitCameraToObject(camera, controls, model);
 
                 invalidate();
@@ -139,6 +190,8 @@ const LocalGlbViewer = ({ url, onContentTypeDetected }: LocalGlbViewerProps) => 
                     title: 'Failed to load GLB',
                     description: error instanceof Error ? error.message : 'Unexpected loader error.'
                 });
+                setLocalModelWorldBounds(null);
+                setLocalAutoSimulationCellWorldBounds(null);
             }
         };
 
@@ -153,8 +206,17 @@ const LocalGlbViewer = ({ url, onContentTypeDetected }: LocalGlbViewerProps) => 
                 disposeObject3DResources(modelRef.current);
                 modelRef.current = null;
             }
+            setLocalModelWorldBounds(null);
+            setLocalAutoSimulationCellWorldBounds(null);
         };
-    }, [camera, invalidate, onContentTypeDetected, url]);
+    }, [
+        camera,
+        invalidate,
+        onContentTypeDetected,
+        setLocalAutoSimulationCellWorldBounds,
+        setLocalModelWorldBounds,
+        url
+    ]);
 
     useEffect(() => {
         if (!modelRef.current) {
