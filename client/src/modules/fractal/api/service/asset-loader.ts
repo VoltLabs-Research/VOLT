@@ -43,6 +43,28 @@ export class FractalAssetLoader implements IFractalAssetLoader {
         return error;
     }
 
+    private static isDirectBrowserAssetUrl(url: string): boolean {
+        return url.startsWith('blob:') || url.startsWith('data:');
+    }
+
+    private static async requestBlob(url: string, signal?: AbortSignal): Promise<Blob> {
+        if (FractalAssetLoader.isDirectBrowserAssetUrl(url)) {
+            const response = await fetch(url, { signal });
+            if (!response.ok) {
+                throw new Error(`Failed to load local GLB (status ${response.status})`);
+            }
+
+            return response.blob();
+        }
+
+        return http.request<Blob>({
+            method: 'GET',
+            url,
+            signal,
+            responseType: 'blob'
+        });
+    }
+
     private static getDracoLoader(): DRACOLoader {
         if (!FractalAssetLoader.sharedDracoLoader) {
             FractalAssetLoader.sharedDracoLoader = new DRACOLoader();
@@ -118,12 +140,7 @@ export class FractalAssetLoader implements IFractalAssetLoader {
     static async preload(url: string, signal?: AbortSignal): Promise<void> {
         if (FractalAssetLoader.cache.has(url)) return;
 
-        const blob = await http.request<Blob>({
-            method: 'GET',
-            url,
-            signal,
-            responseType: 'blob'
-        });
+        const blob = await FractalAssetLoader.requestBlob(url, signal);
 
         if (signal?.aborted) return;
 
@@ -167,12 +184,7 @@ export class FractalAssetLoader implements IFractalAssetLoader {
             return cachedEntry.buffer;
         }
 
-        const blob = await http.request<Blob>({
-            method: 'GET',
-            url,
-            signal,
-            responseType: 'blob'
-        });
+        const blob = await FractalAssetLoader.requestBlob(url, signal);
 
         if (signal?.aborted) {
             throw FractalAssetLoader.createAbortError();

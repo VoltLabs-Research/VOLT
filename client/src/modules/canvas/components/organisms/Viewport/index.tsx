@@ -5,6 +5,7 @@ import ScreenshotMenuPopover from '../../molecules/ScreenshotMenuPopover';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
 import FractalScene from '@/modules/fractal/components/organisms/FractalScene';
+import LocalGlbViewer from '@/modules/fractal/components/organisms/LocalGlbViewer';
 import TimestepViewer from '@/modules/fractal/components/organisms/TimestepViewer';
 import { debugFractal } from '@/modules/fractal/utilities/debug-log';
 import { getFrameBoxBounds, getTrajectoryFrameByTimestep, hasFrameBoxBounds } from '@/modules/fractal/utilities/frame-box-bounds';
@@ -37,6 +38,7 @@ interface ViewportProps {
     currentTimestep: number | undefined;
     sceneConfig: FractalSceneConfig;
     analysisId: string | undefined;
+    forcedGlbUrl?: string | null;
     showGrid: boolean;
     showGizmo: boolean;
     isLoading: boolean;
@@ -59,6 +61,7 @@ const Viewport = ({
     currentTimestep,
     sceneConfig,
     analysisId,
+    forcedGlbUrl,
     showGrid,
     showGizmo,
     isLoading,
@@ -143,6 +146,18 @@ const Viewport = ({
             sceneCount: activeScenes.length
         });
     }, [activeScenes.length, currentFrameBoxBounds, currentTimestep, trajectory?._id]);
+
+    const localGlbMode = Boolean(forcedGlbUrl && !trajectory?._id);
+    const resolvedTimestep = currentTimestep ?? 0;
+    const resolvedBoxBounds = currentFrameBoxBounds;
+    const canRenderTimestepViewer = Boolean(
+        resolvedBoxBounds
+        && trajectory?._id
+        && currentTimestep !== undefined
+        && currentFrame
+    );
+    const viewerTrajectoryId = trajectory?._id ?? '__local_glb__';
+    const autoFitKeyOverride = trajectory?._id ?? null;
 
     return (
         <Container className="canvas-viewport d-flex column flex-1 overflow-hidden p-relative min-h-0">
@@ -239,16 +254,22 @@ const Viewport = ({
                             screenshotComposition={screenshotComposition}
                             onScreenshotCaptureHandled={() => useScreenshotStore.getState().clearPendingRequest()}
                         >
-                            {trajectory?._id && currentTimestep !== undefined && currentFrame && currentFrameBoxBounds && (
+                            {localGlbMode && forcedGlbUrl && (
+                                <LocalGlbViewer
+                                    url={forcedGlbUrl}
+                                    onContentTypeDetected={handleContentTypeDetected}
+                                />
+                            )}
+                            {canRenderTimestepViewer && resolvedBoxBounds && (
                                 <TimestepViewer
                                     teamId={teamId}
-                                    trajectoryId={trajectory._id}
-                                    currentTimestep={currentTimestep}
+                                    trajectoryId={viewerTrajectoryId}
+                                    currentTimestep={resolvedTimestep}
                                     analysisId={analysisId}
                                     activeScenes={activeScenes}
                                     pointCloudSettings={sceneConfig.pointCloudSettings}
                                     slicePlaneConfig={slicePlaneConfig}
-                                    boxBounds={currentFrameBoxBounds}
+                                    boxBounds={resolvedBoxBounds}
                                     sceneVisualOverrides={sceneVisualOverrides}
                                     setModelWorldBounds={setModelWorldBounds}
                                     activeModelBounds={activeModelBounds}
@@ -258,7 +279,7 @@ const Viewport = ({
                                     rotation={TIMESTEP_VIEWER_DEFAULTS.rotation}
                                     position={TIMESTEP_VIEWER_DEFAULTS.position}
                                     autoFit
-                                    autoFitKeyOverride={trajectory._id}
+                                    autoFitKeyOverride={autoFitKeyOverride}
                                     onContentTypeDetected={handleContentTypeDetected}
                                 />
                             )}

@@ -1,7 +1,7 @@
 const FRACTAL_DEBUG_PREFIX = '[fractal-debug]';
 
 const isDevLoggingEnabled = (): boolean => {
-    return import.meta.env.DEV;
+    return import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEBUG_LOGS === 'true';
 };
 
 export const debugFractal = (
