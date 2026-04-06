@@ -3,6 +3,7 @@ import CameraMenuPopover from '../../molecules/CameraMenuPopover';
 import RenderMenuPopover from '../../molecules/RenderMenuPopover';
 import ScreenshotMenuPopover from '../../molecules/ScreenshotMenuPopover';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useLocalGlbStore } from '@/modules/canvas/stores/use-local-glb-store';
 import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
 import FractalScene from '@/modules/fractal/components/organisms/FractalScene';
 import LocalGlbViewer from '@/modules/fractal/components/organisms/LocalGlbViewer';
@@ -110,10 +111,32 @@ const Viewport = ({
 
         return getFrameBoxBounds(currentFrame);
     }, [currentFrame]);
+    const localGlbMode = Boolean(forcedGlbUrl && !trajectory?._id);
+    const localModelWorldBounds = useLocalGlbStore((s) => s.localModelWorldBounds);
+    const localAutoSimulationCellWorldBounds = useLocalGlbStore((s) => s.localAutoSimulationCellWorldBounds);
     const renderableScenes = useMemo(() => {
         return getRenderableScenes(activeScenes, false);
     }, [activeScenes]);
+    const effectiveModelWorldBounds = useMemo(() => {
+        if (!localGlbMode) {
+            return modelWorldBounds;
+        }
+
+        return localModelWorldBounds ?? localAutoSimulationCellWorldBounds ?? null;
+    }, [localAutoSimulationCellWorldBounds, localGlbMode, localModelWorldBounds, modelWorldBounds]);
     const screenshotComposition = useMemo<ScreenshotComposition | undefined>(() => {
+        if (localGlbMode) {
+            if (!localAutoSimulationCellWorldBounds) {
+                return undefined;
+            }
+
+            return {
+                framingBoundsWorld: localAutoSimulationCellWorldBounds,
+                cropBoundsWorld: localAutoSimulationCellWorldBounds,
+                cropSource: 'auto-simulation-cell'
+            };
+        }
+
         if (renderableScenes.length !== 1 || !modelWorldBounds) {
             return undefined;
         }
@@ -123,7 +146,7 @@ const Viewport = ({
             cropBoundsWorld: modelWorldBounds,
             cropSource: 'simulation-cell'
         };
-    }, [modelWorldBounds, renderableScenes.length]);
+    }, [localAutoSimulationCellWorldBounds, localGlbMode, modelWorldBounds, renderableScenes.length]);
 
     const handleContentTypeDetected = useCallback((info: { hasPointClouds: boolean }) => {
         debugFractal('viewport.content-type-detected', {
@@ -147,7 +170,6 @@ const Viewport = ({
         });
     }, [activeScenes.length, currentFrameBoxBounds, currentTimestep, trajectory?._id]);
 
-    const localGlbMode = Boolean(forcedGlbUrl && !trajectory?._id);
     const resolvedTimestep = currentTimestep ?? 0;
     const resolvedBoxBounds = currentFrameBoxBounds;
     const canRenderTimestepViewer = Boolean(
@@ -249,7 +271,7 @@ const Viewport = ({
                             showGrid={showGrid}
                             showGizmo={showGizmo}
                             onInteractionChange={setSceneInteracting}
-                            modelWorldBounds={modelWorldBounds}
+                            modelWorldBounds={effectiveModelWorldBounds}
                             screenshotRequest={screenshotRequest}
                             screenshotComposition={screenshotComposition}
                             onScreenshotCaptureHandled={() => useScreenshotStore.getState().clearPendingRequest()}
