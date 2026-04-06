@@ -138,6 +138,11 @@ export const protectedRoutes: RouteConfig[] = [
         requiredPermissions: ['trajectory:read']
     },
     {
+        path: '/canvas/glb',
+        title: 'GLB Viewer',
+        loader: () => import('@/modules/canvas/components/templates/CanvasPage')
+    },
+    {
         path: '/canvas/:trajectoryId',
         title: 'Canvas',
         loader: () => import('@/modules/canvas/components/templates/CanvasPage'),

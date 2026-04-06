@@ -1,0 +1,173 @@
+import { FractalAssetLoader } from '@/modules/fractal/api/service/asset-loader';
+import { disposeObject3DResources } from '@/modules/fractal/utilities/resource-disposal';
+import { useThree } from '@react-three/fiber';
+import { useEffect, useRef } from 'react';
+import { sileo } from 'sileo';
+import * as THREE from 'three';
+
+interface LocalGlbViewerProps {
+    url: string;
+    onContentTypeDetected?: (info: { hasPointClouds: boolean }) => void;
+};
+
+const DEFAULT_CAMERA_DIRECTION = new THREE.Vector3(1, 1, 0.75).normalize();
+type OrbitControlsLike = {
+    target: THREE.Vector3;
+    minDistance: number;
+    maxDistance: number;
+    update?: () => void;
+} | null;
+
+const isAbortLike = (error: unknown): boolean => {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+        return true;
+    }
+
+    if (!(error instanceof Error)) {
+        return false;
+    }
+
+    return error.name === 'AbortError' || error.name === 'CanceledError';
+};
+
+const fitCameraToObject = (
+    camera: THREE.Camera,
+    controls: OrbitControlsLike,
+    object: THREE.Object3D
+) => {
+    if (!(camera instanceof THREE.PerspectiveCamera)) {
+        return;
+    }
+
+    const worldBounds = new THREE.Box3().setFromObject(object);
+    if (worldBounds.isEmpty()) {
+        return;
+    }
+
+    const sphere = worldBounds.getBoundingSphere(new THREE.Sphere());
+    const referenceTarget = controls?.target ?? new THREE.Vector3(0, 0, 0);
+    const currentDirection = camera.position.clone().sub(referenceTarget);
+    const direction = currentDirection.lengthSq() > 0.0001
+        ? currentDirection.normalize()
+        : DEFAULT_CAMERA_DIRECTION;
+    const verticalFov = THREE.MathUtils.degToRad(camera.fov);
+    const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * camera.aspect);
+    const fitFov = Math.min(verticalFov, horizontalFov);
+    const desiredDistance = (sphere.radius / Math.sin(fitFov / 2)) * 1.2;
+    const distance = controls
+        ? Math.min(controls.maxDistance, Math.max(controls.minDistance, desiredDistance))
+        : desiredDistance;
+    const nextTarget = sphere.center.clone();
+
+    camera.position.copy(nextTarget.clone().addScaledVector(direction, distance));
+    camera.near = 0.01;
+    camera.far = Math.max(1000, distance + (sphere.radius * 8));
+    camera.lookAt(nextTarget);
+    camera.updateProjectionMatrix();
+
+    if (controls) {
+        controls.target.copy(nextTarget);
+        controls.update?.();
+    }
+};
+
+const LocalGlbViewer = ({ url, onContentTypeDetected }: LocalGlbViewerProps) => {
+    const containerRef = useRef<THREE.Group>(null);
+    const modelRef = useRef<THREE.Group | null>(null);
+    const { camera, invalidate } = useThree();
+    const controls = useThree((state) => (state as typeof state & {
+        controls?: {
+            target: THREE.Vector3;
+            minDistance: number;
+            maxDistance: number;
+            update?: () => void;
+        } | null;
+    }).controls ?? null);
+
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) {
+            return;
+        }
+
+        const abortController = new AbortController();
+        let cancelled = false;
+
+        if (modelRef.current) {
+            modelRef.current.removeFromParent();
+            disposeObject3DResources(modelRef.current);
+            modelRef.current = null;
+        }
+
+        const load = async () => {
+            try {
+                const loader = new FractalAssetLoader();
+                const model = await loader.load(url, undefined, abortController.signal);
+
+                if (cancelled) {
+                    disposeObject3DResources(model);
+                    return;
+                }
+
+                container.add(model);
+                modelRef.current = model;
+
+                let hasPointClouds = false;
+                model.traverse((child) => {
+                    if (child instanceof THREE.Points) {
+                        hasPointClouds = true;
+                    }
+                });
+                onContentTypeDetected?.({ hasPointClouds });
+
+                const originalBounds = new THREE.Box3().setFromObject(model);
+                if (!originalBounds.isEmpty()) {
+                    const center = originalBounds.getCenter(new THREE.Vector3());
+                    model.position.sub(center);
+                    model.updateMatrixWorld(true);
+                }
+
+                fitCameraToObject(camera, controls, model);
+
+                invalidate();
+            } catch (error: unknown) {
+                if (isAbortLike(error)) {
+                    return;
+                }
+
+                sileo.error({
+                    title: 'Failed to load GLB',
+                    description: error instanceof Error ? error.message : 'Unexpected loader error.'
+                });
+            }
+        };
+
+        void load();
+
+        return () => {
+            cancelled = true;
+            abortController.abort();
+
+            if (modelRef.current) {
+                modelRef.current.removeFromParent();
+                disposeObject3DResources(modelRef.current);
+                modelRef.current = null;
+            }
+        };
+    }, [camera, invalidate, onContentTypeDetected, url]);
+
+    useEffect(() => {
+        if (!modelRef.current) {
+            return;
+        }
+
+        fitCameraToObject(camera, controls, modelRef.current);
+        invalidate();
+    }, [camera, controls, invalidate, url]);
+
+    return (
+        <group ref={containerRef} userData={{ isScreenshotCaptureTarget: true }} />
+    );
+};
+
+export default LocalGlbViewer;

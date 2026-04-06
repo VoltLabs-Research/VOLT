@@ -24,13 +24,15 @@ interface TopToolbarProps {
     canDownloadAnalyses?: boolean;
     onExport?: () => void;
     onDownloadAnalyses?: () => void;
+    localGlbMode?: boolean;
 }
 
 const TopToolbar = ({
     canExport = false,
     canDownloadAnalyses = false,
     onExport,
-    onDownloadAnalyses
+    onDownloadAnalyses,
+    localGlbMode = false
 }: TopToolbarProps) => {
     const [openMenu, setOpenMenu] = useState<string | null>(null);
     const [isSigningOut, setIsSigningOut] = useState(false);
@@ -74,6 +76,7 @@ const TopToolbar = ({
 
     const menus = buildMenus({
         showStatusBar,
+        allowStatusBarToggle: !localGlbMode,
         onToggleFullscreen: handleToggleFullscreen,
         onToggleStatusBar: () => setShowStatusBar(!showStatusBar),
         onScreenshot: handleScreenshot,
@@ -117,7 +120,7 @@ const TopToolbar = ({
                 ))}
             </nav>
 
-            <WorkspaceTabs />
+            <WorkspaceTabs disableAuxWorkspaces={localGlbMode} />
 
             <Container className="canvas-toolbar-info d-flex items-center content-end w-max">
                 <ThemeToggleButton className="canvas-toolbar-theme-toggle" />
