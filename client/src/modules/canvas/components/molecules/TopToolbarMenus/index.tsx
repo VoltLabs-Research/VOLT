@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 
 interface BuildMenusParams {
     showStatusBar: boolean;
+    allowStatusBarToggle?: boolean;
     onToggleFullscreen: () => void;
     onToggleStatusBar: () => void;
     onScreenshot: () => void;
@@ -39,6 +40,7 @@ const openExternalUrl = (url: string) => window.open(url, '_blank', 'noopener,no
 
 export const buildMenus = ({
     showStatusBar,
+    allowStatusBarToggle = true,
     onToggleFullscreen,
     onToggleStatusBar,
     onScreenshot,
@@ -129,7 +131,8 @@ export const buildMenus = ({
                 label: 'Show Status Bar',
                 icon: statusBarIcon,
                 checked: showStatusBar,
-                action: onToggleStatusBar
+                action: onToggleStatusBar,
+                disabled: !allowStatusBarToggle
             },
             {
                 type: MenuItemType.Item,

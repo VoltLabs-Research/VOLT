@@ -32,7 +32,9 @@ const logInstrumentation = (
     metadata?: Record<string, unknown>,
     warn = false
 ): void => {
-    if (!warn && !import.meta.env.DEV) {
+    const shouldDebugLog = import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEBUG_LOGS === 'true';
+
+    if (!warn && !shouldDebugLog) {
         return;
     }
 

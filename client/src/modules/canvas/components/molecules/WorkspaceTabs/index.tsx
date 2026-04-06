@@ -3,7 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 
-const WorkspaceTabs = () => {
+interface WorkspaceTabsProps {
+    disableAuxWorkspaces?: boolean;
+};
+
+const WorkspaceTabs = ({ disableAuxWorkspaces = false }: WorkspaceTabsProps) => {
     const navigate = useNavigate();
     const { activeWorkspace, setActiveWorkspace } = useCanvasUrlState();
     const isRaster = activeWorkspace === CanvasWorkspace.Raster;
@@ -42,6 +46,7 @@ const WorkspaceTabs = () => {
                     className="font-size-1 canvas-btn-compact"
                     role="tab"
                     aria-selected={isRaster}
+                    disabled={disableAuxWorkspaces}
                     onClick={() => setActiveWorkspace(CanvasWorkspace.Raster)}
                 >
                     Raster
@@ -54,6 +59,7 @@ const WorkspaceTabs = () => {
                     className="font-size-1 canvas-btn-compact"
                     role="tab"
                     aria-selected={isScripting}
+                    disabled={disableAuxWorkspaces}
                     onClick={() => setActiveWorkspace(CanvasWorkspace.Scripting)}
                 >
                     Scripting

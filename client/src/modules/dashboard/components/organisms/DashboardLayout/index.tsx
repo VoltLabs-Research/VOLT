@@ -1,6 +1,7 @@
 import DashboardHeader from '@/modules/dashboard/components/molecules/DashboardHeader';
 import DashboardSidebar from '@/modules/dashboard/components/organisms/DashboardSidebar';
 import useGlobalSocketCacheSync from '@/modules/dashboard/hooks/use-global-socket-cache-sync';
+import TrajectoryUploaderContainer from '@/modules/trajectory/components/organisms/TrajectoryUploaderContainer';
 import {
     DASHBOARD_LAYOUT_EVENTS,
     getDashboardWorkspaceChromeState,
@@ -154,9 +155,11 @@ const DashboardLayout = () => {
                 )}
 
                 <Container className='dashboard-content-main flex-1 min-h-0 y-auto'>
-                    <PageTransition key={location.pathname}>
-                        <Outlet context={outletContext} />
-                    </PageTransition>
+                    <TrajectoryUploaderContainer>
+                        <PageTransition key={location.pathname}>
+                            <Outlet context={outletContext} />
+                        </PageTransition>
+                    </TrajectoryUploaderContainer>
                 </Container>
             </Container>
         </main>

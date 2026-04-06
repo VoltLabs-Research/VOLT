@@ -7,6 +7,7 @@ import useCanvasCleanup from '../../../hooks/use-canvas-cleanup';
 import useCanvasCoordinator from '../../../hooks/use-canvas-coordinator';
 import useCanvasPresence from '../../../hooks/use-canvas-presence';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
+import { useLocalGlbStore } from '@/modules/canvas/stores/use-local-glb-store';
 import useDownloadPluginListing from '../../../hooks/use-download-plugin-listing';
 import useKeyboardShortcuts from '../../../hooks/use-keyboard-shortcuts';
 import useResizable from '../../../hooks/use-resizable';
@@ -41,6 +42,7 @@ import { useShallow } from 'zustand/react/shallow';
 import ScriptingWorkspace from '@/modules/scripting/components/organisms/ScriptingWorkspace';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
+import EmptyState from '@/shared/presentation/components/EmptyState';
 import { openModal } from '@/shared/presentation/components/Modal';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import useTip from '@/shared/tips/use-tip';
@@ -64,6 +66,7 @@ const CanvasPage = () => {
     usePageTitle('Canvas');
     const { trajectoryId: rawTrajectoryId } = useParams<{ trajectoryId?: string }>();
     const trajectoryId = rawTrajectoryId ?? '';
+    const isLocalGlbViewer = !rawTrajectoryId;
 
     useCanvasCleanup();
     const { trajectory, currentTimestep, isLoading: trajectoryLoading } = useCanvasCoordinator({ trajectoryId });
@@ -97,11 +100,15 @@ const CanvasPage = () => {
         showWidgets,
         searchParams,
         activeWorkspace,
-        selectedNotebookId
+        selectedNotebookId,
+        setActiveWorkspace
     } = useCanvasUrlState({ trajectory });
+    const localGlbUrl = useLocalGlbStore((s) => s.localGlbUrl);
+    const clearLocalGlb = useLocalGlbStore((s) => s.clearLocalGlb);
+    const forcedGlbUrl = isLocalGlbViewer ? localGlbUrl : null;
     const showStatusBar = searchParams.get('statusBar') !== 'false';
-    const isRasterWorkspace = activeWorkspace === CanvasWorkspace.Raster;
-    const isScriptingWorkspace = activeWorkspace === CanvasWorkspace.Scripting;
+    const isRasterWorkspace = !isLocalGlbViewer && activeWorkspace === CanvasWorkspace.Raster;
+    const isScriptingWorkspace = !isLocalGlbViewer && activeWorkspace === CanvasWorkspace.Scripting;
     const { downloadListing, downloadAnalysisListings, isDownloading } = useDownloadPluginListing();
     const {
         downloadTrajectoryAnalyses,
@@ -117,19 +124,39 @@ const CanvasPage = () => {
     useEffect(() => {
         setRasterContainerSelections(createInitialRasterContainerSelections());
         setActiveRasterContainerId('container-1');
-    }, [trajectoryId]);
+    }, []);
+
+    useEffect(() => {
+        if (!isLocalGlbViewer) {
+            return;
+        }
+
+        setActiveWorkspace(CanvasWorkspace.Modeling, { replace: true });
+    }, [isLocalGlbViewer, setActiveWorkspace]);
+
+    const wasLocalGlbViewerRef = useRef(isLocalGlbViewer);
+    useEffect(() => {
+        const wasLocalGlbViewer = wasLocalGlbViewerRef.current;
+        if (wasLocalGlbViewer && !isLocalGlbViewer) {
+            clearLocalGlb();
+        }
+
+        wasLocalGlbViewerRef.current = isLocalGlbViewer;
+    }, [clearLocalGlb, isLocalGlbViewer]);
 
     useEffect(() => {
         const editorState = useEditorStore.getState();
         editorState.resetPlayback();
         editorState.resetTimesteps();
         editorState.resetModel();
-    }, [trajectoryId]);
+    }, [trajectoryId, isLocalGlbViewer]);
 
     const hasFrames = !!(trajectory?.frames && trajectory.frames.length > 0);
     const showLoading = useMemo(() =>
-        trajectoryLoading || !trajectory || (hasFrames && ((isModelLoading && !(didPreload && isPlaying)) || currentTimestep === undefined)),
-        [isModelLoading, didPreload, isPlaying, trajectory, hasFrames, currentTimestep, trajectoryLoading]
+        isLocalGlbViewer
+            ? false
+            : trajectoryLoading || !trajectory || (hasFrames && ((isModelLoading && !(didPreload && isPlaying)) || currentTimestep === undefined)),
+        [isLocalGlbViewer, isModelLoading, didPreload, isPlaying, trajectory, hasFrames, currentTimestep, trajectoryLoading]
     );
 
     const leftPanel = useResizable({
@@ -276,7 +303,16 @@ const CanvasPage = () => {
         : null;
 
     let viewportBodyContent = undefined;
-    if (isScriptingWorkspace) {
+    if (isLocalGlbViewer && !forcedGlbUrl) {
+        viewportBodyContent = (
+            <Container className="d-flex items-center content-center w-max h-max">
+                <EmptyState
+                    title='Drop a GLB file to preview'
+                    description='Use the global dashboard dropzone to open a local GLB viewer.'
+                />
+            </Container>
+        );
+    } else if (isScriptingWorkspace) {
         viewportBodyContent = (
             <ScriptingWorkspace
                 trajectoryId={trajectoryId}
@@ -305,32 +341,37 @@ const CanvasPage = () => {
                 canDownloadAnalyses={canDownloadTrajectoryAnalyses}
                 onExport={handleExportTrajectory}
                 onDownloadAnalyses={handleDownloadTrajectoryAnalyses}
+                localGlbMode={isLocalGlbViewer}
             />
             <PreloadingOverlay />
             <CanvasPresence users={canvasUsers} />
 
             <Container className="canvas-editor-main d-flex flex-1 overflow-hidden p-relative min-h-0">
-                <Container id="canvas-left-panel" className="canvas-left-panel d-flex column f-shrink-0 min-h-0" style={{ width: leftPanel.size }}>
-                    <Container id="canvas-left-panel-top" className="canvas-left-panel-top d-flex column min-h-0 overflow-hidden flex-1">
-                        <ObjectsPanel
-                            trajectory={trajectory}
-                            onDownloadAnalysis={handleDownloadAnalysisListing}
-                            onDownloadExposureListing={handleDownloadExposureListing}
-                            rasterContainerSelections={rasterContainerSelections}
-                            activeRasterContainerId={activeRasterContainerId}
-                            onSetActiveRasterContainer={setActiveRasterContainerId}
-                            onUpdateRasterContainerSelection={handleUpdateRasterContainerSelection}
-                        />
-                    </Container>
-                </Container>
+                {!isLocalGlbViewer && (
+                    <>
+                        <Container id="canvas-left-panel" className="canvas-left-panel d-flex column f-shrink-0 min-h-0" style={{ width: leftPanel.size }}>
+                            <Container id="canvas-left-panel-top" className="canvas-left-panel-top d-flex column min-h-0 overflow-hidden flex-1">
+                                <ObjectsPanel
+                                    trajectory={trajectory}
+                                    onDownloadAnalysis={handleDownloadAnalysisListing}
+                                    onDownloadExposureListing={handleDownloadExposureListing}
+                                    rasterContainerSelections={rasterContainerSelections}
+                                    activeRasterContainerId={activeRasterContainerId}
+                                    onSetActiveRasterContainer={setActiveRasterContainerId}
+                                    onUpdateRasterContainerSelection={handleUpdateRasterContainerSelection}
+                                />
+                            </Container>
+                        </Container>
 
-                <ResizeHandle
-                    direction={ResizeDirection.Horizontal}
-                    isDragging={leftPanel.isDragging}
-                    label="Resize left sidebar"
-                    controls="canvas-left-panel"
-                    {...leftPanel.handleProps}
-                />
+                        <ResizeHandle
+                            direction={ResizeDirection.Horizontal}
+                            isDragging={leftPanel.isDragging}
+                            label="Resize left sidebar"
+                            controls="canvas-left-panel"
+                            {...leftPanel.handleProps}
+                        />
+                    </>
+                )}
 
                 <Container className="canvas-center-panel d-flex column flex-1 overflow-hidden">
                     <Container className="canvas-center-viewport d-flex column flex-1 overflow-hidden">
@@ -339,6 +380,7 @@ const CanvasPage = () => {
                             currentTimestep={currentTimestep}
                             sceneConfig={sceneConfig}
                             analysisId={analysisId}
+                            forcedGlbUrl={forcedGlbUrl}
                             showGrid={showGrid}
                             showGizmo={showGizmo}
                             isLoading={isRasterWorkspace ? false : showLoading}
@@ -350,7 +392,7 @@ const CanvasPage = () => {
                             headerActionsBeforePerformance={viewportHeaderActions}
                         />
                     </Container>
-                    {!isScriptingWorkspace && (
+                    {!isLocalGlbViewer && !isScriptingWorkspace && (
                         <>
                             <ResizeHandle
                                 direction={ResizeDirection.Vertical}
@@ -372,23 +414,27 @@ const CanvasPage = () => {
                     )}
                 </Container>
 
-                <ResizeHandle
-                    direction={ResizeDirection.Horizontal}
-                    isDragging={rightPanel.isDragging}
-                    label="Resize right sidebar"
-                    controls="canvas-right-panel"
-                    {...rightPanel.handleProps}
-                />
+                {!isLocalGlbViewer && (
+                    <>
+                        <ResizeHandle
+                            direction={ResizeDirection.Horizontal}
+                            isDragging={rightPanel.isDragging}
+                            label="Resize right sidebar"
+                            controls="canvas-right-panel"
+                            {...rightPanel.handleProps}
+                        />
 
-                <Container id="canvas-right-panel" className="canvas-right-panel-container d-flex column f-shrink-0" style={{ width: rightPanel.size }}>
-                    <RightPanel trajectory={trajectory} trajectoryId={trajectoryId} analysisId={analysisId} currentTimestep={currentTimestep} />
-                </Container>
+                        <Container id="canvas-right-panel" className="canvas-right-panel-container d-flex column f-shrink-0" style={{ width: rightPanel.size }}>
+                            <RightPanel trajectory={trajectory} trajectoryId={trajectoryId} analysisId={analysisId} currentTimestep={currentTimestep} />
+                        </Container>
+                    </>
+                )}
             </Container>
 
-            {showStatusBar && trajectory && currentTimestep !== undefined && (
+            {!isLocalGlbViewer && showStatusBar && trajectory && currentTimestep !== undefined && (
                 <StatusBar trajectory={trajectory} currentTimestep={currentTimestep} />
             )}
-            {showWidgets && resultsPluginId && analysisId && (
+            {!isLocalGlbViewer && showWidgets && resultsPluginId && analysisId && (
                 <PluginResultsViewer
                     pluginId={resultsPluginId}
                     analysisId={analysisId}
