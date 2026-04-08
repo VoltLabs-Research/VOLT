@@ -1,6 +1,13 @@
 import { logger } from '@/core/logger';
 import { createExportNodeProcessorService, type ExportNodeProcessorService } from '@/modules/artifacts/services/ExportNodeProcessorService';
-import type { BinaryExecutorService } from '@/modules/job-runtime/services/BinaryExecutorService';
+import {
+    createDebugExecutionLogSink,
+    type ExecutionLogSegmentMetadata
+} from '@/modules/job-runtime/services/ExecutionLogStreaming';
+import type {
+    BinaryExecutorService,
+    ProcessExecutionLogSink
+} from '@/modules/job-runtime/services/BinaryExecutorService';
 import type { PluginBinaryCacheService } from '@/modules/job-runtime/services/PluginBinaryCacheService';
 import type { NativeModuleLoader } from '@/modules/trajectory-native/services';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
@@ -27,6 +34,7 @@ import { WorkflowGraph, WorkflowNodeType, type WorkflowExecutionContext, type Wo
 import type { WorkflowNodeRegistry } from './NodeRegistry';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import type { DaemonJobReporterService } from '@/modules/cloud-control/services';
 
 const SESSION_IDLE_TTL_MS = 5 * 60 * 1000;
 const SESSION_SWEEP_INTERVAL_MS = 30 * 1000;
@@ -190,6 +198,7 @@ export class DebugSessionManager {
     private readonly debugEntrypointExecutor: DebugEntrypointExecutor;
     private readonly debugInlinePluginRuntime: DebugInlinePluginRuntime;
     private readonly exportNodeProcessorService: ExportNodeProcessorService;
+    private executionLogReporter: Pick<DaemonJobReporterService, 'reportDebugLogChunk'> | null = null;
 
     constructor(
         private readonly registry: WorkflowNodeRegistry,
@@ -212,6 +221,12 @@ export class DebugSessionManager {
         );
         this.exportNodeProcessorService = createExportNodeProcessorService(deps.nativeModuleLoader);
         this.startIdleSweep();
+    }
+
+    setExecutionLogReporter(
+        reporter: Pick<DaemonJobReporterService, 'reportDebugLogChunk'>
+    ): void {
+        this.executionLogReporter = reporter;
     }
 
     createSession(request: DebugSessionRequest): DebugSessionInfo {
@@ -484,7 +499,19 @@ export class DebugSessionManager {
                 trajectoryId: session.context.trajectoryId,
                 analysisId: session.context.analysisId,
                 teamId: session.context.teamId,
-                trajectoryFrames: session.context.trajectoryFrames
+                trajectoryFrames: session.context.trajectoryFrames,
+                rootNodeId: node.id,
+                executionPath: [node.id],
+                logSinkFactory: (context) => this.createDebugLogSink(
+                    session.sessionId,
+                    node.id,
+                    {
+                        nodeId: context.nodeId,
+                        nodeType: context.nodeType,
+                        pluginId: context.pluginId,
+                        executionPath: context.executionPath
+                    }
+                )
             });
             if (argumentReferenceExecution.output) {
                 output = argumentReferenceExecution.output;
@@ -518,7 +545,19 @@ export class DebugSessionManager {
             trajectoryId: session.context.trajectoryId,
             analysisId: session.context.analysisId,
             teamId: session.context.teamId,
-            trajectoryFrames: session.context.trajectoryFrames
+            trajectoryFrames: session.context.trajectoryFrames,
+            rootNodeId: node.id,
+            executionPath: [node.id],
+            logSinkFactory: (context) => this.createDebugLogSink(
+                session.sessionId,
+                node.id,
+                {
+                    nodeId: context.nodeId,
+                    nodeType: context.nodeType,
+                    pluginId: context.pluginId,
+                    executionPath: context.executionPath
+                }
+            )
         });
 
         session.context.outputs.set(node.id, execution.output);
@@ -537,7 +576,17 @@ export class DebugSessionManager {
         const execution = await this.debugEntrypointExecutor.executePrepared(
             node,
             session.context,
-            preparedExecution
+            preparedExecution,
+            this.createDebugLogSink(
+                session.sessionId,
+                node.id,
+                {
+                    nodeId: node.id,
+                    nodeType: node.type,
+                    pluginId: session.context.pluginId,
+                    executionPath: [node.id]
+                }
+            )
         );
 
         session.context.outputs.set(node.id, execution.output);
@@ -597,6 +646,23 @@ export class DebugSessionManager {
             status: 'executed',
             output
         };
+    }
+
+    private createDebugLogSink(
+        sessionId: string,
+        nodeId: string,
+        metadata: ExecutionLogSegmentMetadata
+    ): ProcessExecutionLogSink | undefined {
+        if (!this.executionLogReporter) {
+            return undefined;
+        }
+
+        return createDebugExecutionLogSink({
+            reporter: this.executionLogReporter,
+            sessionId,
+            nodeId,
+            metadata
+        });
     }
 
     private async executeExportNode(

@@ -1,4 +1,12 @@
-import { InlineWorkflowRuntime, InlineWorkflowTraceError, cloneInlineWorkflowTraceNodes, type ExecuteInlinePluginNodeInput, type InlineWorkflowExecutionResult, type InlineWorkflowTraceNode } from './InlineWorkflowRuntime';
+import {
+    InlineWorkflowRuntime,
+    InlineWorkflowTraceError,
+    cloneInlineWorkflowTraceNodes,
+    type ExecuteInlinePluginNodeInput,
+    type InlineWorkflowExecutionResult,
+    type InlineWorkflowLogSinkFactory,
+    type InlineWorkflowTraceNode
+} from './InlineWorkflowRuntime';
 import {
     createInlinePluginReferenceDedupeKey,
     createNestedExecutionResult,
@@ -22,6 +30,9 @@ interface InlineExecutionBaseInput {
     analysisId: string;
     teamId: string;
     trajectoryFrames?: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
+    rootNodeId?: string;
+    executionPath?: string[];
+    logSinkFactory?: InlineWorkflowLogSinkFactory;
 }
 
 interface ExecutePluginNodeInput extends InlineExecutionBaseInput {
@@ -99,7 +110,10 @@ export class DebugInlinePluginRuntime {
                     analysisId: input.analysisId,
                     teamId: input.teamId,
                     request,
-                    captureTrace: true
+                    captureTrace: true,
+                    rootNodeId: input.rootNodeId,
+                    executionPath: input.executionPath,
+                    logSinkFactory: input.logSinkFactory
                 });
                 dedupedResults.set(dedupeKey, execution);
             } catch (error: unknown) {
@@ -193,7 +207,10 @@ export class DebugInlinePluginRuntime {
             analysisId: input.analysisId,
             teamId: input.teamId,
             node: input.node,
-            captureTrace: true
+            captureTrace: true,
+            rootNodeId: input.rootNodeId,
+            executionPath: input.executionPath,
+            logSinkFactory: input.logSinkFactory
         });
     }
 }

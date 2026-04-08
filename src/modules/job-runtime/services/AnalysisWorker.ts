@@ -42,7 +42,14 @@ import type { AnalysisExecutionDataStore } from '@/modules/platform/services';
 import type { Job as BullMQJob, Worker } from 'bullmq';
 import type { Readable } from 'node:stream';
 import type { WorkflowNodeRegistry } from '@/modules/workflow-runtime/services';
-import type { BinaryExecutorService } from './BinaryExecutorService';
+import {
+    createAnalysisExecutionLogSink,
+    type ExecutionLogSegmentMetadata
+} from './ExecutionLogStreaming';
+import type {
+    BinaryExecutorService,
+    ProcessExecutionLogSink
+} from './BinaryExecutorService';
 import type { PluginBinaryCacheService } from './PluginBinaryCacheService';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 const DUMPS_BUCKET = ObjectBucketName.Dumps;
@@ -271,6 +278,38 @@ export class AnalysisWorker {
         );
     }
 
+    private createAnalysisLogSink(
+        jobId: string,
+        executionData: AnalysisJobExecutionData,
+        timesteps: number[],
+        metadata: ExecutionLogSegmentMetadata
+    ): ProcessExecutionLogSink | undefined {
+        const teamId = typeof executionData.teamId === 'string'
+            ? executionData.teamId.trim()
+            : '';
+        const trajectoryId = typeof executionData.trajectoryId === 'string'
+            ? executionData.trajectoryId.trim()
+            : '';
+        if (!teamId || !trajectoryId) {
+            return undefined;
+        }
+
+        return createAnalysisExecutionLogSink({
+            reporter: this.daemonJobReporterService,
+            jobId,
+            analysisId: executionData.analysisId,
+            teamId,
+            trajectoryId,
+            timesteps,
+            metadata
+        });
+    }
+
+    private resolveEntrypointNodeId(workflow: AnalysisJobExecutionData['workflow']): string | null {
+        const entrypointNode = workflow.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint);
+        return entrypointNode?.id ?? null;
+    }
+
     start(concurrency?: number): void {
         if (this.running) {
             return;
@@ -424,9 +463,9 @@ export class AnalysisWorker {
             }
 
             if (isBatchMode && batchDumpLocalPaths) {
-                await this.executeBatchInlinePluginNodes(executionData, outputs, batchDumpLocalPaths, outputDir);
+                await this.executeBatchInlinePluginNodes(job.jobId, executionData, outputs, batchDumpLocalPaths, outputDir);
             } else {
-                await this.executeInlinePluginNodes(executionData, outputs, timestep!, dumpLocalPath!, outputDir);
+                await this.executeInlinePluginNodes(job.jobId, executionData, outputs, timestep!, dumpLocalPath!, outputDir);
             }
 
             const resolvedArgs = resolveWorkflowTemplate(executionData.arguments, outputs);
@@ -452,6 +491,21 @@ export class AnalysisWorker {
             }
 
             const executionArgs = [...executionRuntime.argsPrefix, ...binaryExecutionLease.args];
+            const rootLogTimesteps = isBatchMode
+                ? this.createDumpExecutionTargets(executionData, batchDumpLocalPaths ?? []).map((dumpTarget) => dumpTarget.timestep)
+                : [timestep!];
+            const rootEntrypointNodeId = this.resolveEntrypointNodeId(executionData.workflow) ?? 'entrypoint';
+            const rootLogSink = this.createAnalysisLogSink(
+                job.jobId,
+                executionData,
+                rootLogTimesteps,
+                {
+                    nodeId: rootEntrypointNodeId,
+                    nodeType: WorkflowNodeType.Entrypoint,
+                    pluginId: executionData.pluginId,
+                    executionPath: [rootEntrypointNodeId]
+                }
+            );
             logger.info(
                 {
                     jobId: job.jobId,
@@ -471,7 +525,8 @@ export class AnalysisWorker {
                     args: executionArgs,
                     cwd: outputDir,
                     env: executionRuntime.env,
-                    timeoutMs: executionData.timeoutMs
+                    timeoutMs: executionData.timeoutMs,
+                    logSink: rootLogSink
                 });
             } finally {
                 binaryExecutionLease.release();
@@ -766,6 +821,7 @@ export class AnalysisWorker {
     }
 
     private async executeInlinePluginNodes(
+        jobId: string,
         executionData: AnalysisJobExecutionData,
         outputs: Map<string, Record<string, unknown>>,
         timestep: number,
@@ -777,7 +833,7 @@ export class AnalysisWorker {
             return;
         }
 
-        await this.executeArgumentPluginReferences(executionData, outputs, [dumpTarget], outputDir);
+        await this.executeArgumentPluginReferences(jobId, executionData, outputs, [dumpTarget], outputDir);
 
         const pluginNodes = resolveInlinePluginExecutionOrder(executionData.workflow);
         if (!pluginNodes.length) {
@@ -793,13 +849,27 @@ export class AnalysisWorker {
                 outputDir,
                 trajectoryId: executionData.trajectoryId,
                 analysisId: executionData.analysisId,
-                teamId: executionData.teamId ?? ''
+                teamId: executionData.teamId ?? '',
+                rootNodeId: pluginNode.id,
+                executionPath: [pluginNode.id],
+                logSinkFactory: (context) => this.createAnalysisLogSink(
+                    jobId,
+                    executionData,
+                    [dumpTarget.timestep],
+                    {
+                        nodeId: context.nodeId,
+                        nodeType: context.nodeType,
+                        pluginId: context.pluginId,
+                        executionPath: context.executionPath
+                    }
+                )
             });
             outputs.set(pluginNode.id, execution.output);
         }
     }
 
     private async executeBatchInlinePluginNodes(
+        jobId: string,
         executionData: AnalysisJobExecutionData,
         outputs: Map<string, Record<string, unknown>>,
         dumpLocalPaths: string[],
@@ -807,7 +877,7 @@ export class AnalysisWorker {
     ): Promise<void> {
         const dumpTargets = this.createDumpExecutionTargets(executionData, dumpLocalPaths);
         if (dumpTargets.length > 0) {
-            await this.executeArgumentPluginReferences(executionData, outputs, dumpTargets, outputDir);
+            await this.executeArgumentPluginReferences(jobId, executionData, outputs, dumpTargets, outputDir);
         }
 
         const pluginNodes = resolveInlinePluginExecutionOrder(executionData.workflow);
@@ -843,7 +913,20 @@ export class AnalysisWorker {
                         outputDir: `${outputDir}_batch_${index}`,
                         trajectoryId: executionData.trajectoryId,
                         analysisId: executionData.analysisId,
-                        teamId: executionData.teamId ?? ''
+                        teamId: executionData.teamId ?? '',
+                        rootNodeId: pluginNode.id,
+                        executionPath: [pluginNode.id],
+                        logSinkFactory: (context) => this.createAnalysisLogSink(
+                            jobId,
+                            executionData,
+                            [dumpTarget.timestep],
+                            {
+                                nodeId: context.nodeId,
+                                nodeType: context.nodeType,
+                                pluginId: context.pluginId,
+                                executionPath: context.executionPath
+                            }
+                        )
                     });
 
                     dumpOutputs.set(pluginNode.id, execution.output);
@@ -860,6 +943,7 @@ export class AnalysisWorker {
     }
 
     private async executeArgumentPluginReferences(
+        jobId: string,
         executionData: AnalysisJobExecutionData,
         outputs: Map<string, Record<string, unknown>>,
         dumpTargets: InlineWorkflowDumpTarget[],
@@ -869,6 +953,11 @@ export class AnalysisWorker {
             ? executionData.pluginReferenceExecutions.filter(isInlinePluginReferenceExecutionRequest)
             : [];
         if (!requests.length || !dumpTargets.length) {
+            return;
+        }
+
+        const argumentsNode = executionData.workflow.nodes.find((node) => node.type === WorkflowNodeType.Arguments);
+        if (!argumentsNode) {
             return;
         }
 
@@ -896,7 +985,20 @@ export class AnalysisWorker {
                         outputDir: `${outputDir}_plugin_reference_${index}`,
                         trajectoryId: executionData.trajectoryId,
                         analysisId: executionData.analysisId,
-                        teamId: executionData.teamId ?? ''
+                        teamId: executionData.teamId ?? '',
+                        rootNodeId: argumentsNode.id,
+                        executionPath: [argumentsNode.id, request.referencePath],
+                        logSinkFactory: (context) => this.createAnalysisLogSink(
+                            jobId,
+                            executionData,
+                            [dumpTarget.timestep],
+                            {
+                                nodeId: context.nodeId,
+                                nodeType: context.nodeType,
+                                pluginId: context.pluginId,
+                                executionPath: context.executionPath
+                            }
+                        )
                     });
 
                     return readNestedExposureItems(execution.output);
@@ -908,11 +1010,6 @@ export class AnalysisWorker {
             }
 
             dedupedResults.set(dedupeKey, createNestedExecutionResult(aggregatedArtifacts));
-        }
-
-        const argumentsNode = executionData.workflow.nodes.find((node) => node.type === WorkflowNodeType.Arguments);
-        if (!argumentsNode) {
-            return;
         }
 
         const argumentsOutput = { ...(outputs.get(argumentsNode.id) ?? {}) };

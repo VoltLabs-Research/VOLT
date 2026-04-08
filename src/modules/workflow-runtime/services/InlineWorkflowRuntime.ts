@@ -15,7 +15,10 @@ import {
 import { WorkflowGraph, WorkflowNodeType, type WorkflowNode } from '../contracts';
 import { EntrypointType, type NestedPluginDefinition, type PluginReferenceExecutionRequest, type WorkflowNodeDefinition } from '@/shared/contracts';
 import { isRecord } from '@/shared/utils';
-import type { BinaryExecutorService } from '@/modules/job-runtime/services/BinaryExecutorService';
+import type {
+    BinaryExecutorService,
+    ProcessExecutionLogSink
+} from '@/modules/job-runtime/services/BinaryExecutorService';
 import type { PluginBinaryCacheService } from '@/modules/job-runtime/services/PluginBinaryCacheService';
 import fs from 'node:fs/promises';
 
@@ -29,6 +32,18 @@ interface TraceRuntimeContext {
     nextTraceId: () => string;
 }
 
+export interface InlineWorkflowProcessLogContext {
+    rootNodeId: string;
+    nodeId: string;
+    nodeType: string;
+    pluginId: string;
+    executionPath: string[];
+}
+
+export type InlineWorkflowLogSinkFactory = (
+    context: InlineWorkflowProcessLogContext
+) => ProcessExecutionLogSink | undefined;
+
 interface InlineExecutionBaseInput {
     nestedPlugins: NestedPluginDefinition[];
     outputs: Map<string, Record<string, unknown>>;
@@ -37,6 +52,9 @@ interface InlineExecutionBaseInput {
     trajectoryId: string;
     analysisId: string;
     teamId: string;
+    rootNodeId?: string;
+    executionPath?: string[];
+    logSinkFactory?: InlineWorkflowLogSinkFactory;
 }
 
 type InlinePluginNodeLike = Pick<WorkflowNodeDefinition, 'id' | 'type' | 'data'>;
@@ -165,7 +183,12 @@ export class InlineWorkflowRuntime {
             readWorkflowPluginNodeData(input.node.data.pluginNode),
             input.outputs,
             input.outputDir,
-            createTraceContext(input.node.id, nextTraceId, input.captureTrace === true)
+            createTraceContext(input.node.id, nextTraceId, input.captureTrace === true),
+            input.rootNodeId ?? input.node.id,
+            Array.isArray(input.executionPath) && input.executionPath.length > 0
+                ? [...input.executionPath]
+                : [input.node.id],
+            input.logSinkFactory
         );
     }
 
@@ -182,7 +205,12 @@ export class InlineWorkflowRuntime {
             },
             input.outputs,
             input.outputDir,
-            createTraceContext(input.request.pluginId, nextTraceId, input.captureTrace === true)
+            createTraceContext(input.request.pluginId, nextTraceId, input.captureTrace === true),
+            input.rootNodeId ?? input.request.referencePath,
+            Array.isArray(input.executionPath) && input.executionPath.length > 0
+                ? [...input.executionPath]
+                : [input.request.referencePath],
+            input.logSinkFactory
         );
     }
 
@@ -191,7 +219,10 @@ export class InlineWorkflowRuntime {
         pluginNodeData: WorkflowPluginNodeData | undefined,
         parentOutputs: Map<string, Record<string, unknown>>,
         parentOutputDir: string,
-        traceContext: TraceRuntimeContext | null
+        traceContext: TraceRuntimeContext | null,
+        rootNodeId: string,
+        executionPath: string[],
+        logSinkFactory: InlineWorkflowLogSinkFactory | undefined
     ): Promise<NestedWorkflowExecutionResult> {
         const pluginId = typeof pluginNodeData?.pluginId === 'string' ? pluginNodeData.pluginId : '';
         if (!pluginId) {
@@ -335,7 +366,10 @@ export class InlineWorkflowRuntime {
                     childPluginNodeData,
                     nestedOutputs,
                     nestedOutputDir,
-                    createTraceContext(childPluginId, traceContext?.nextTraceId, traceContext !== null)
+                    createTraceContext(childPluginId, traceContext?.nextTraceId, traceContext !== null),
+                    rootNodeId,
+                    [...executionPath, pluginNode.id],
+                    logSinkFactory
                 );
                 nestedOutputs.set(pluginNode.id, nestedOutput.output);
                 appendTraceNode(trace, createTraceNode(workflowTraceContext, {
@@ -378,7 +412,11 @@ export class InlineWorkflowRuntime {
                     analysisId: input.analysisId,
                     pluginId
                 },
-                nestedOutputDir
+                nestedOutputDir,
+                rootNodeId,
+                nestedEntrypointNode.id,
+                [...executionPath, nestedEntrypointNode.id],
+                logSinkFactory
             );
             appendTraceNode(trace, createTraceNode(workflowTraceContext, {
                 nodeId: nestedEntrypointNode.id,
@@ -455,7 +493,11 @@ export class InlineWorkflowRuntime {
         entrypointData: WorkflowEntrypointData | undefined,
         outputs: Map<string, Record<string, unknown>>,
         context: NestedEntrypointContext,
-        outputDir: string
+        outputDir: string,
+        rootNodeId: string,
+        nodeId: string,
+        executionPath: string[],
+        logSinkFactory?: InlineWorkflowLogSinkFactory
     ): Promise<Record<string, unknown>> {
         const binaryObjectPath = typeof entrypointData?.binaryObjectPath === 'string'
             ? entrypointData.binaryObjectPath
@@ -488,13 +530,21 @@ export class InlineWorkflowRuntime {
         });
         const resolvedArgs = resolveWorkflowTemplate(argumentsTemplate, outputs);
         const args = parseInlineWorkflowArguments(resolvedArgs);
+        const logSink = logSinkFactory?.({
+            rootNodeId,
+            nodeId,
+            nodeType: WorkflowNodeType.Entrypoint,
+            pluginId: context.pluginId,
+            executionPath
+        });
         const result = await this.binaryExecutorService.executeProcess({
             jobId: `${context.analysisId}:${context.pluginId}:inline`,
             commandPath: executionRuntime.commandPath,
             args: [...executionRuntime.argsPrefix, ...args],
             cwd: outputDir,
             env: executionRuntime.env,
-            timeoutMs: entrypointData?.timeout
+            timeoutMs: entrypointData?.timeout,
+            logSink
         });
 
         if (result.code !== 0) {

@@ -97,6 +97,7 @@ const createBootstrapContext = (): BootstrapContext => {
         debugSessionManager: workflowRuntime.debugSessionManager,
         runtimeRoleCoordinator
     });
+    workflowRuntime.debugSessionManager.setExecutionLogReporter(cloudControl.daemonJobReporterService);
     const sshImport = createSSHImportModule({
         config,
         queueService: platform.queueService,

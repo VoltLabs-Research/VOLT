@@ -1,4 +1,5 @@
 import type { VoltCloudConnection } from './VoltCloudConnection';
+import type { TeamClusterDaemonExecutionLogSegment } from '@/shared/contracts';
 
 export type RasterJobStatus = 'running' | 'completed' | 'failed';
 export type GlbJobStatus = 'running' | 'completed' | 'failed';
@@ -68,9 +69,26 @@ export interface ReportArtifactUploadJobStatusInput {
     error?: string;
 };
 
+export interface ReportAnalysisLogChunkInput {
+    jobId: string;
+    analysisId: string;
+    teamId: string;
+    trajectoryId: string;
+    timestep: number;
+    segments: TeamClusterDaemonExecutionLogSegment[];
+};
+
+export interface ReportDebugLogChunkInput {
+    sessionId: string;
+    nodeId: string;
+    segments: TeamClusterDaemonExecutionLogSegment[];
+};
+
 export interface DaemonJobReporterService {
     reportJobCompletion(input: ReportJobCompletionInput): Promise<void>;
     reportAnalysisJobStatus(input: ReportAnalysisJobStatusInput): Promise<void>;
+    reportAnalysisLogChunk(input: ReportAnalysisLogChunkInput): Promise<void>;
+    reportDebugLogChunk(input: ReportDebugLogChunkInput): Promise<void>;
     reportRasterJobStatus(input: ReportRasterJobStatusInput): Promise<void>;
     reportGlbJobStatus(input: ReportGlbJobStatusInput): Promise<void>;
     reportSshImportJobStatus(input: ReportSshImportJobStatusInput): Promise<void>;
@@ -97,6 +115,32 @@ export const createDaemonJobReporterService = (voltCloudConnection: VoltCloudCon
             ...input
         }, {
             dedupeKey: `analysis.job-status:${input.jobId}:${input.status}:${input.timestep ?? 'none'}`
+        });
+    },
+
+    async reportAnalysisLogChunk(input) {
+        if (!Array.isArray(input.segments) || input.segments.length === 0) {
+            return;
+        }
+
+        voltCloudConnection.emitMessage({
+            type: 'analysis-log-chunk',
+            teamClusterId: voltCloudConnection.getTeamClusterId(),
+            daemonPassword: voltCloudConnection.getDaemonPassword(),
+            ...input
+        });
+    },
+
+    async reportDebugLogChunk(input) {
+        if (!Array.isArray(input.segments) || input.segments.length === 0) {
+            return;
+        }
+
+        voltCloudConnection.emitMessage({
+            type: 'debug-log-chunk',
+            teamClusterId: voltCloudConnection.getTeamClusterId(),
+            daemonPassword: voltCloudConnection.getDaemonPassword(),
+            ...input
         });
     },
 

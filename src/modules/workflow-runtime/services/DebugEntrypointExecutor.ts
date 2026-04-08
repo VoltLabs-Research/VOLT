@@ -3,7 +3,10 @@ import { DAEMON_PATHS } from '@/core/paths';
 import { EntrypointType, ObjectBucketName, VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@/shared/contracts';
 import { createZstdDecompressionStream, stripZstdExtension } from '@/shared/utilities/storage-codec';
 import { decodeCliArgumentsToken, isRecord } from '@/shared/utils';
-import type { BinaryExecutorService } from '@/modules/job-runtime/services/BinaryExecutorService';
+import type {
+    BinaryExecutorService,
+    ProcessExecutionLogSink
+} from '@/modules/job-runtime/services/BinaryExecutorService';
 import type { PluginBinaryCacheService } from '@/modules/job-runtime/services/PluginBinaryCacheService';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 import type { WorkflowExecutionContext, WorkflowNode } from '../contracts';
@@ -276,7 +279,8 @@ export class DebugEntrypointExecutor {
     async executePrepared(
         node: WorkflowNode,
         context: WorkflowExecutionContext,
-        preparedEnvironment: PreparedDebugExecutionEnvironment
+        preparedEnvironment: PreparedDebugExecutionEnvironment,
+        logSink?: ProcessExecutionLogSink
     ): Promise<DebugEntrypointExecutionResult> {
         const entrypointData = isRecord(node.data.entrypoint)
             ? node.data.entrypoint as WorkflowEntrypointData
@@ -330,7 +334,8 @@ export class DebugEntrypointExecutor {
             env: executionRuntime.env,
             timeoutMs: typeof normalizedEntrypointData.timeout === 'number' && Number.isFinite(normalizedEntrypointData.timeout)
                 ? normalizedEntrypointData.timeout
-                : undefined
+                : undefined,
+            logSink
         });
         const outputFiles = await fs.readdir(preparedEnvironment.outputDir).catch(() => []);
 
