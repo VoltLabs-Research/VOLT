@@ -10,6 +10,17 @@ export enum DebugNodeStatus {
 
 type DebugContextSnapshot = Record<string, Record<string, unknown>>;
 
+export interface DebugExecutionLogSegment {
+    stream: 'stdout' | 'stderr' | 'system';
+    text: string;
+    occurredAt: string;
+    nodeId?: string;
+    nodeType?: string;
+    nodeLabel?: string;
+    pluginId?: string;
+    executionPath?: string[];
+}
+
 export interface DebugNodeState {
     status: DebugNodeStatus;
     output?: Record<string, unknown>;
@@ -18,6 +29,7 @@ export interface DebugNodeState {
     durationMs?: number;
     reason?: string;
     nestedTrace?: DebugTraceNode[];
+    logSegments?: DebugExecutionLogSegment[];
 };
 
 export interface DebugTraceNode {
@@ -82,6 +94,7 @@ interface PluginDebugActions {
     setStarting: () => void;
     onSessionCreated: (sessionId: string, executionOrder: ExecutionOrderItem[], forEachNodeId: string | null, totalIterations: number) => void;
     onNodeStarted: (nodeId: string, index: number, total: number) => void;
+    onNodeLogChunk: (nodeId: string, segments: DebugExecutionLogSegment[]) => void;
     onNodeCompleted: (nodeId: string, output: Record<string, unknown>, durationMs: number, contextSnapshot: DebugContextSnapshot, nestedTrace?: DebugTraceNode[]) => void;
     onNodeSkipped: (nodeId: string, reason: string, nestedTrace?: DebugTraceNode[]) => void;
     onNodeError: (nodeId: string, error: string, stack?: string, nestedTrace?: DebugTraceNode[]) => void;
@@ -170,6 +183,16 @@ export const usePluginDebugStore = create<PluginDebugStore>((set) => ({
         };
     }),
 
+    onNodeLogChunk: (nodeId, segments) => set((state) => ({
+        nodeStates: {
+            ...state.nodeStates,
+            [nodeId]: {
+                ...state.nodeStates[nodeId],
+                logSegments: (state.nodeStates[nodeId]?.logSegments ?? []).concat(segments)
+            }
+        }
+    })),
+
     onNodeCompleted: (nodeId, output, durationMs, contextSnapshot, nestedTrace) => set((state) => {
         return {
             isPaused: false,
@@ -177,6 +200,7 @@ export const usePluginDebugStore = create<PluginDebugStore>((set) => ({
             nodeStates: {
                 ...state.nodeStates,
                 [nodeId]: {
+                    ...state.nodeStates[nodeId],
                     status: DebugNodeStatus.Completed,
                     output,
                     durationMs,
@@ -189,11 +213,12 @@ export const usePluginDebugStore = create<PluginDebugStore>((set) => ({
     onNodeSkipped: (nodeId, reason, nestedTrace) => set((state) => ({
         nodeStates: {
             ...state.nodeStates,
-                [nodeId]: {
-                    status: DebugNodeStatus.Skipped,
-                    reason,
-                    nestedTrace
-                }
+            [nodeId]: {
+                ...state.nodeStates[nodeId],
+                status: DebugNodeStatus.Skipped,
+                reason,
+                nestedTrace
+            }
         }
     })),
 
@@ -206,6 +231,7 @@ export const usePluginDebugStore = create<PluginDebugStore>((set) => ({
             nodeStates: {
                 ...state.nodeStates,
                 [nodeId]: {
+                    ...state.nodeStates[nodeId],
                     status: DebugNodeStatus.Failed,
                     error,
                     stack,

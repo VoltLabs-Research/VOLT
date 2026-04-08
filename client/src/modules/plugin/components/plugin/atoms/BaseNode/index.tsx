@@ -183,9 +183,13 @@ const BaseNode = ({
         (debugState.status === 'completed' || debugState.status === 'failed' || debugState.status === 'skipped');
     const nestedTrace = Array.isArray(debugState?.nestedTrace) ? debugState.nestedTrace : [];
     const hasNestedTrace = nestedTrace.length > 0;
+    const logSegments = Array.isArray(debugState?.logSegments) ? debugState.logSegments : [];
 
     const isEntrypoint = nodeType === NodeType.ENTRYPOINT;
-    const hasLog = Boolean(isEntrypoint && hasInspectableOutput && debugState?.output);
+    const hasLog = Boolean(
+        hasInspectableOutput
+        && (logSegments.length > 0 || (isEntrypoint && debugState?.output))
+    );
 
     let debugClass = '';
     if (isDebugging && debugState) {
@@ -392,11 +396,26 @@ const BaseNode = ({
                         )}
                     </Container>
                     <pre className='m-0 p-05 y-auto scrollbar-thin workflow-node-exec-log-content'>
-                        {stdout && (
-                            <span className='workflow-node-exec-log-stdout'>{stdout}</span>
-                        )}
-                        {stderr && (
-                            <span className='workflow-node-exec-log-stderr'>{stderr}</span>
+                        {logSegments.length > 0 ? (
+                            <>
+                                {logSegments.map((segment, index) => (
+                                    <span
+                                        key={`${segment.occurredAt}-${index}`}
+                                        className={`workflow-node-exec-log-chunk workflow-node-exec-log-chunk--${segment.stream}`}
+                                    >
+                                        {segment.text}
+                                    </span>
+                                ))}
+                            </>
+                        ) : (
+                            <>
+                                {stdout && (
+                                    <span className='workflow-node-exec-log-stdout'>{stdout}</span>
+                                )}
+                                {stderr && (
+                                    <span className='workflow-node-exec-log-stderr'>{stderr}</span>
+                                )}
+                            </>
                         )}
                     </pre>
                 </Container>

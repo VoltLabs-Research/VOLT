@@ -1,4 +1,5 @@
 import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import logger from '@shared/infrastructure/logger';
@@ -6,6 +7,7 @@ import { inject, injectable } from 'tsyringe';
 import type IORedis from 'ioredis';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
+import type AnalysisExecutionLogService from '@modules/analysis/infrastructure/services/AnalysisExecutionLogService';
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 
@@ -21,7 +23,10 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
         private readonly redis: IORedis,
 
         @inject(TRAJECTORY_TOKENS.SceneArtifactRepository)
-        private readonly sceneArtifactRepository: ISceneArtifactRepository
+        private readonly sceneArtifactRepository: ISceneArtifactRepository,
+
+        @inject(ANALYSIS_TOKENS.AnalysisExecutionLogService)
+        private readonly analysisExecutionLogService: AnalysisExecutionLogService
     ) {}
 
     async handle(event: AnalysisDeletedEvent): Promise<void> {
@@ -32,6 +37,12 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
             await this.removeProjectedJobHistory(analysisId, teamId);
         } catch (error) {
             logger.warn(error, `[AnalysisDeletedEventHandler] Failed to remove projected job history for analysis ${analysisId}`);
+        }
+
+        try {
+            await this.analysisExecutionLogService.clearRuntimeState(analysisId);
+        } catch (error) {
+            logger.warn(error, `[AnalysisDeletedEventHandler] Failed to remove runtime frame logs for analysis ${analysisId}`);
         }
 
         await this.sceneArtifactRepository.deleteMany(query);
