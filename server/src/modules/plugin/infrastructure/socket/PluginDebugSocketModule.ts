@@ -3,6 +3,7 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@shared/infrastructure/contracts/team-cluster';
+import { PluginDependencyResolverService } from '@modules/plugin/infrastructure/services/plugin/PluginDependencyResolverService';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import logger from '@shared/infrastructure/logger';
 import { injectable, inject } from 'tsyringe';
@@ -14,8 +15,17 @@ import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamCl
 import type SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
+import Workflow, { type WorkflowProps } from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
 import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
+import type { PluginReferenceExecutionRequest } from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
+import type {
+    IWorkflowValidatorService
+} from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
+import {
+    WorkflowValidationMode
+} from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import Plugin, { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 
 // --- Payload types from the client ---
 
@@ -24,6 +34,7 @@ interface DebugStartPayload {
     trajectoryId: string;
     timestep: number;
     config: Record<string, unknown>;
+    workflow?: WorkflowProps;
 }
 
 interface DebugSessionPayload {
@@ -40,8 +51,24 @@ interface DaemonDebugNodeResult {
     error?: string;
     stack?: string;
     reason?: string;
+    nestedTrace?: DebugTraceNode[];
     durationMs: number;
     contextSnapshot: Record<string, Record<string, unknown>>;
+}
+
+interface DebugTraceNode {
+    traceId: string;
+    nodeId: string;
+    nodeType: string;
+    status: 'completed' | 'skipped' | 'error';
+    durationMs: number;
+    output?: Record<string, unknown>;
+    reason?: string;
+    error?: string;
+    stack?: string;
+    pluginId?: string;
+    label?: string;
+    children?: DebugTraceNode[];
 }
 
 interface DaemonDebugStartResponse {
@@ -50,6 +77,25 @@ interface DaemonDebugStartResponse {
     forEachNodeId: string | null;
     totalIterations: number;
     firstNode: { nodeId: string; nodeType: string; index: number; total: number } | null;
+}
+
+interface NestedPluginDefinition {
+    pluginId: string;
+    workflow: {
+        nodes: Array<{
+            id: string;
+            type: string;
+            position: { x: number; y: number; };
+            data: Record<string, unknown>;
+        }>;
+        edges: Array<{
+            id?: string;
+            source: string;
+            target: string;
+            sourceHandle?: string;
+            targetHandle?: string;
+        }>;
+    };
 }
 
 interface DaemonDebugStepResponse {
@@ -68,6 +114,17 @@ interface DebugSessionEntry {
     socketId: string;
     teamClusterId: string;
 }
+
+const buildNestedPluginDefinition = (plugin: Plugin): NestedPluginDefinition => ({
+    pluginId: plugin.id,
+    workflow: plugin.props.workflow.props as NestedPluginDefinition['workflow']
+});
+
+const createRuntimePlugin = (plugin: Plugin, workflow: WorkflowProps): Plugin => new Plugin(plugin.id, {
+    ...plugin.props,
+    workflow: new Workflow(plugin.id, workflow),
+    status: plugin.props.status ?? PluginStatus.Draft
+});
 
 @injectable()
 export default class PluginDebugSocketModule extends BaseSocketModule {
@@ -89,7 +146,11 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly trajectoryRepository: ITrajectoryRepository,
         @inject(TeamClusterSelectionService)
-        private readonly teamClusterSelectionService: TeamClusterSelectionService
+        private readonly teamClusterSelectionService: TeamClusterSelectionService,
+        @inject(PLUGIN_TOKENS.PluginDependencyResolverService)
+        private readonly pluginDependencyResolverService: PluginDependencyResolverService,
+        @inject(PLUGIN_TOKENS.WorkflowValidatorService)
+        private readonly workflowValidator: IWorkflowValidatorService
     ) {
         super(emitter, roomManager, eventRegistry);
     }
@@ -144,6 +205,19 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                     });
                     return;
                 }
+                const workflow = payload.workflow ?? plugin.props.workflow.props;
+                const workflowValidation = await this.workflowValidator.validate(
+                    workflow,
+                    plugin.id,
+                    WorkflowValidationMode.Strict
+                );
+                if (!workflowValidation.isValid) {
+                    this.emitToSocket(conn.id, 'debug:session:error', {
+                        error: workflowValidation.errors?.join('; ') || 'Workflow validation failed'
+                    });
+                    return;
+                }
+                const runtimePlugin = createRuntimePlugin(plugin, workflow);
 
                 // Load trajectory to get frames
                 const trajectory = await this.trajectoryRepository.findById(payload.trajectoryId);
@@ -155,18 +229,40 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                 }
                 const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props)
                     ?? VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID;
+                const pluginReferenceExecutions = this.pluginDependencyResolverService.getArgumentPluginReferenceExecutions(
+                    runtimePlugin,
+                    payload.config ?? {}
+                );
+                const dependencyResolution = await this.pluginDependencyResolverService.collectTransitivePublishedDependencies(runtimePlugin);
+                if (dependencyResolution.errors.length > 0) {
+                    this.emitToSocket(conn.id, 'debug:session:error', {
+                        error: dependencyResolution.errors.join('; ')
+                    });
+                    return;
+                }
+
+                const runtimePluginIds = Array.from(new Set(pluginReferenceExecutions.map((reference) => reference.pluginId)));
+                const runtimePlugins = runtimePluginIds.length > 0
+                    ? await this.pluginRepository.findByIds(runtimePluginIds)
+                    : [];
+                const nestedPlugins = Array.from(new Map(
+                    [...dependencyResolution.dependencies, ...runtimePlugins]
+                        .map((candidate) => [candidate.id, candidate])
+                ).values()).map(buildNestedPluginDefinition);
 
                 // Send debug.start command to daemon
                 const response = await this.daemonClient.command<DaemonDebugStartResponse>(
                     teamClusterId,
                     'debug.start',
                     {
-                        workflow: plugin.props.workflow.props,
+                        workflow,
                         trajectoryId: payload.trajectoryId,
                         trajectoryFrames: trajectory.props.frames,
                         pluginId: payload.pluginId,
                         teamId,
                         storageClusterId,
+                        nestedPlugins,
+                        pluginReferenceExecutions: pluginReferenceExecutions as PluginReferenceExecutionRequest[],
                         config: payload.config ?? {},
                         timestep: payload.timestep
                     }
@@ -330,6 +426,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                 nodeId: result.nodeId,
                 nodeType: result.nodeType,
                 output: result.output ?? {},
+                nestedTrace: result.nestedTrace ?? [],
                 durationMs: result.durationMs,
                 index: 0,
                 contextSnapshot: result.contextSnapshot
@@ -339,7 +436,8 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                 sessionId,
                 nodeId: result.nodeId,
                 nodeType: result.nodeType,
-                reason: result.reason ?? 'Skipped'
+                reason: result.reason ?? 'Skipped',
+                nestedTrace: result.nestedTrace ?? []
             });
         } else if (result.status === 'error') {
             this.emitToSocket(socketId, 'debug:node:error', {
@@ -347,7 +445,8 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                 nodeId: result.nodeId,
                 nodeType: result.nodeType,
                 error: result.error ?? 'Unknown error',
-                stack: result.stack
+                stack: result.stack,
+                nestedTrace: result.nestedTrace ?? []
             });
         }
     }

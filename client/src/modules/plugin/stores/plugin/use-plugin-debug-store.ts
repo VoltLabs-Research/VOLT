@@ -17,7 +17,23 @@ export interface DebugNodeState {
     stack?: string;
     durationMs?: number;
     reason?: string;
+    nestedTrace?: DebugTraceNode[];
 };
+
+export interface DebugTraceNode {
+    traceId: string;
+    nodeId: string;
+    nodeType: string;
+    status: 'completed' | 'skipped' | 'error';
+    durationMs: number;
+    output?: Record<string, unknown>;
+    reason?: string;
+    error?: string;
+    stack?: string;
+    pluginId?: string;
+    label?: string;
+    children?: DebugTraceNode[];
+}
 
 interface ExecutionOrderItem {
     nodeId: string;
@@ -66,9 +82,9 @@ interface PluginDebugActions {
     setStarting: () => void;
     onSessionCreated: (sessionId: string, executionOrder: ExecutionOrderItem[], forEachNodeId: string | null, totalIterations: number) => void;
     onNodeStarted: (nodeId: string, index: number, total: number) => void;
-    onNodeCompleted: (nodeId: string, output: Record<string, unknown>, durationMs: number, contextSnapshot: DebugContextSnapshot) => void;
-    onNodeSkipped: (nodeId: string, reason: string) => void;
-    onNodeError: (nodeId: string, error: string, stack?: string) => void;
+    onNodeCompleted: (nodeId: string, output: Record<string, unknown>, durationMs: number, contextSnapshot: DebugContextSnapshot, nestedTrace?: DebugTraceNode[]) => void;
+    onNodeSkipped: (nodeId: string, reason: string, nestedTrace?: DebugTraceNode[]) => void;
+    onNodeError: (nodeId: string, error: string, stack?: string, nestedTrace?: DebugTraceNode[]) => void;
     onSessionCompleted: (totalDuration: number) => void;
     onSessionError: (error: string) => void;
 
@@ -154,7 +170,7 @@ export const usePluginDebugStore = create<PluginDebugStore>((set) => ({
         };
     }),
 
-    onNodeCompleted: (nodeId, output, durationMs, contextSnapshot) => set((state) => {
+    onNodeCompleted: (nodeId, output, durationMs, contextSnapshot, nestedTrace) => set((state) => {
         return {
             isPaused: false,
             contextSnapshot: contextSnapshot ?? state.contextSnapshot,
@@ -163,23 +179,25 @@ export const usePluginDebugStore = create<PluginDebugStore>((set) => ({
                 [nodeId]: {
                     status: DebugNodeStatus.Completed,
                     output,
-                    durationMs
+                    durationMs,
+                    nestedTrace
                 }
             }
         };
     }),
 
-    onNodeSkipped: (nodeId, reason) => set((state) => ({
+    onNodeSkipped: (nodeId, reason, nestedTrace) => set((state) => ({
         nodeStates: {
             ...state.nodeStates,
                 [nodeId]: {
                     status: DebugNodeStatus.Skipped,
-                    reason
+                    reason,
+                    nestedTrace
                 }
         }
     })),
 
-    onNodeError: (nodeId, error, stack) => set((state) => {
+    onNodeError: (nodeId, error, stack, nestedTrace) => set((state) => {
         return {
             isPaused: false,
             isDebugging: false,
@@ -190,7 +208,8 @@ export const usePluginDebugStore = create<PluginDebugStore>((set) => ({
                 [nodeId]: {
                     status: DebugNodeStatus.Failed,
                     error,
-                    stack
+                    stack,
+                    nestedTrace
                 }
             }
         };
