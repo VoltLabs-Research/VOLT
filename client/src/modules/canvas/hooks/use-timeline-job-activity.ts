@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Job } from '@/modules/jobs/api/entities/job';
 
 export type TimelineTickTone = 'queued' | 'running' | 'completed';
+export type AnalysisFrameActivityStatus = 'queued' | 'running' | 'completed' | 'failed';
 
 const SESSION_COMPLETION_HIGHLIGHT_MS = 3500;
 
@@ -16,6 +17,18 @@ const isQueuedStatus = (status: JobStatus | string | undefined): boolean => {
 
 const isRunningStatus = (status: JobStatus | string | undefined): boolean => {
     return status === JobStatus.Running || status === JobStatus.Retrying;
+};
+
+const resolveAnalysisId = (job: Job): string | undefined => {
+    if (typeof job.analysisId === 'string' && job.analysisId.trim().length > 0) {
+        return job.analysisId;
+    }
+
+    if (typeof job.metadata?.analysisId === 'string' && job.metadata.analysisId.trim().length > 0) {
+        return job.metadata.analysisId;
+    }
+
+    return undefined;
 };
 
 const resolveTimestep = (job: Job): number | undefined => {
@@ -179,8 +192,52 @@ const useTimelineJobActivity = (trajectoryId?: string) => {
         return next;
     }, [completedTimesteps, groups, trajectoryId]);
 
+    const getAnalysisFrameStatus = useCallback((
+        analysisId: string,
+        timestep: number
+    ): AnalysisFrameActivityStatus | undefined => {
+        if (!trajectoryId) {
+            return undefined;
+        }
+
+        for (const group of groups) {
+            if (group.trajectoryId !== trajectoryId) {
+                continue;
+            }
+
+            const frameGroup = group.frameGroups.find((frame) => frame.timestep === timestep);
+            if (!frameGroup) {
+                continue;
+            }
+
+            const matchingJobs = frameGroup.jobs.filter((job) => resolveAnalysisId(job) === analysisId);
+            if (matchingJobs.length === 0) {
+                continue;
+            }
+
+            if (matchingJobs.some((job) => isRunningStatus(job.status))) {
+                return 'running';
+            }
+
+            if (matchingJobs.some((job) => isQueuedStatus(job.status))) {
+                return 'queued';
+            }
+
+            if (matchingJobs.some((job) => job.status === JobStatus.Failed)) {
+                return 'failed';
+            }
+
+            if (matchingJobs.some((job) => job.status === JobStatus.Completed)) {
+                return 'completed';
+            }
+        }
+
+        return undefined;
+    }, [groups, trajectoryId]);
+
     return {
-        toneByTimestep
+        toneByTimestep,
+        getAnalysisFrameStatus
     };
 };
 

@@ -14,7 +14,8 @@ import type { ReactNode } from 'react';
 export enum TimelineTab {
     Timeline = 'timeline',
     Particles = 'particles',
-    SimulationCell = 'simulation-cell'
+    SimulationCell = 'simulation-cell',
+    Log = 'log'
 };
 
 interface TimelineDownloadContext {
@@ -24,7 +25,7 @@ interface TimelineDownloadContext {
 };
 
 interface TimelineFrameOption {
-    value: number;
+    value: number | undefined;
     onChange: (value: number | undefined) => void;
     title: string;
 };

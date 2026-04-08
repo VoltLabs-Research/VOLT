@@ -310,6 +310,38 @@ export interface TeamClusterDaemonArtifactUploadJobStatusEventPayload {
     error?: string;
 };
 
+export interface TeamClusterDaemonExecutionLogSegment {
+    stream: 'stdout' | 'stderr' | 'system';
+    text: string;
+    occurredAt: string;
+    nodeId?: string;
+    nodeType?: string;
+    nodeLabel?: string;
+    pluginId?: string;
+    executionPath?: string[];
+};
+
+export interface TeamClusterDaemonAnalysisLogChunkEventPayload {
+    type: 'analysis-log-chunk';
+    teamClusterId: string;
+    daemonPassword: string;
+    jobId: string;
+    analysisId: string;
+    teamId: string;
+    trajectoryId: string;
+    timestep: number;
+    segments: TeamClusterDaemonExecutionLogSegment[];
+};
+
+export interface TeamClusterDaemonDebugLogChunkEventPayload {
+    type: 'debug-log-chunk';
+    teamClusterId: string;
+    daemonPassword: string;
+    sessionId: string;
+    nodeId: string;
+    segments: TeamClusterDaemonExecutionLogSegment[];
+};
+
 export interface TeamClusterDaemonSceneArtifactUpsertBatchItem {
     trajectory: string;
     storageClusterId: string;
@@ -332,6 +364,17 @@ export interface TeamClusterDaemonSceneArtifactUpsertBatchEventPayload {
     items: TeamClusterDaemonSceneArtifactUpsertBatchItem[];
 };
 
+export type TeamClusterDaemonServerEventMessage =
+    | TeamClusterDaemonAnalysisJobCompletionEventPayload
+    | TeamClusterDaemonAnalysisJobStatusEventPayload
+    | TeamClusterDaemonAnalysisLogChunkEventPayload
+    | TeamClusterDaemonDebugLogChunkEventPayload
+    | TeamClusterDaemonRasterJobStatusEventPayload
+    | TeamClusterDaemonGlbJobStatusEventPayload
+    | TeamClusterDaemonSshImportJobStatusEventPayload
+    | TeamClusterDaemonArtifactUploadJobStatusEventPayload
+    | TeamClusterDaemonSceneArtifactUpsertBatchEventPayload;
+
 export type TeamClusterDaemonMessage =
     | TeamClusterDaemonCommandMessage
     | TeamClusterDaemonSocketResponsePayload
@@ -351,13 +394,7 @@ export type TeamClusterDaemonMessage =
     | TeamClusterDaemonTunnelClosePayload
     | TeamClusterDaemonTunnelHeartbeatPayload
     | TeamClusterDaemonRuntimeProgressPayload
-    | TeamClusterDaemonAnalysisJobCompletionEventPayload
-    | TeamClusterDaemonAnalysisJobStatusEventPayload
-    | TeamClusterDaemonRasterJobStatusEventPayload
-    | TeamClusterDaemonGlbJobStatusEventPayload
-    | TeamClusterDaemonSshImportJobStatusEventPayload
-    | TeamClusterDaemonArtifactUploadJobStatusEventPayload
-    | TeamClusterDaemonSceneArtifactUpsertBatchEventPayload;
+    | TeamClusterDaemonServerEventMessage;
 
 export {
     TeamClusterServiceExposureAccessMode,

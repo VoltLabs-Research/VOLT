@@ -25,6 +25,7 @@ import { WorkflowValidatorService } from '@modules/plugin/infrastructure/service
 import { PluginDependencyResolverService } from '@modules/plugin/infrastructure/services/plugin/PluginDependencyResolverService';
 import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
 import PluginBinaryCacheService from '@modules/plugin/infrastructure/services/plugin/PluginBinaryCacheService';
+import PluginDebugSessionRegistryService from '@modules/plugin/infrastructure/services/PluginDebugSessionRegistryService';
 import PluginExecutionRouter from '@modules/plugin/infrastructure/services/plugin/PluginExecutionRouter';
 import PluginStorageService from '@modules/plugin/infrastructure/services/plugin/PluginStorageService';
 import PluginDebugSocketModule from '@modules/plugin/infrastructure/socket/PluginDebugSocketModule';
@@ -42,6 +43,7 @@ export const registerPluginDependencies = (): void => {
             [PLUGIN_TOKENS.PluginStorageService, PluginStorageService],
             [PLUGIN_TOKENS.DefaultPluginBootstrapService, DefaultPluginBootstrapService],
             [PLUGIN_TOKENS.PluginBinaryCacheService, PluginBinaryCacheService],
+            [PLUGIN_TOKENS.PluginDebugSessionRegistryService, PluginDebugSessionRegistryService],
             [PLUGIN_TOKENS.PluginExecutionRouter, PluginExecutionRouter],
             AnalysisListingExportCatalogService,
             [PLUGIN_TOKENS.ListingRowsExportPresenter, ListingRowsExportPresenter],

@@ -4,6 +4,7 @@ import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@shared/infrastructure/contracts/team-cluster';
 import { PluginDependencyResolverService } from '@modules/plugin/infrastructure/services/plugin/PluginDependencyResolverService';
+import PluginDebugSessionRegistryService from '@modules/plugin/infrastructure/services/PluginDebugSessionRegistryService';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import logger from '@shared/infrastructure/logger';
 import { injectable, inject } from 'tsyringe';
@@ -108,13 +109,6 @@ interface DaemonDebugContinueResponse {
     results: DaemonDebugNodeResult[];
 }
 
-// --- Session tracking ---
-
-interface DebugSessionEntry {
-    socketId: string;
-    teamClusterId: string;
-}
-
 const buildNestedPluginDefinition = (plugin: Plugin): NestedPluginDefinition => ({
     pluginId: plugin.id,
     workflow: plugin.props.workflow.props as NestedPluginDefinition['workflow']
@@ -130,9 +124,6 @@ const createRuntimePlugin = (plugin: Plugin, workflow: WorkflowProps): Plugin =>
 export default class PluginDebugSocketModule extends BaseSocketModule {
     public readonly name = 'PluginDebugSocketModule';
 
-    /** Maps daemonSessionId -> { socketId, teamClusterId } */
-    private readonly activeSessions = new Map<string, DebugSessionEntry>();
-
     constructor(
         @inject(SOCKET_TOKENS.SocketEventEmitter) emitter: ISocketEmitter,
         @inject(SOCKET_TOKENS.SocketRoomManager) roomManager: ISocketRoomManager,
@@ -147,6 +138,8 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
         private readonly trajectoryRepository: ITrajectoryRepository,
         @inject(TeamClusterSelectionService)
         private readonly teamClusterSelectionService: TeamClusterSelectionService,
+        @inject(PLUGIN_TOKENS.PluginDebugSessionRegistryService)
+        private readonly pluginDebugSessionRegistry: PluginDebugSessionRegistryService,
         @inject(PLUGIN_TOKENS.PluginDependencyResolverService)
         private readonly pluginDependencyResolverService: PluginDependencyResolverService,
         @inject(PLUGIN_TOKENS.WorkflowValidatorService)
@@ -172,14 +165,13 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
 
     async onShutdown(): Promise<void> {
         // Best-effort cleanup of all active sessions
-        for (const [sessionId, entry] of this.activeSessions) {
+        for (const [sessionId, entry] of this.pluginDebugSessionRegistry.listSessions()) {
             try {
                 await this.daemonClient.command(entry.teamClusterId, 'debug.stop', { sessionId });
             } catch {
                 // Ignore errors during shutdown
             }
         }
-        this.activeSessions.clear();
     }
 
     // --- debug:start ---
@@ -269,7 +261,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                 );
 
                 // Track session
-                this.activeSessions.set(response.sessionId, {
+                this.pluginDebugSessionRegistry.registerSession(response.sessionId, {
                     socketId: conn.id,
                     teamClusterId
                 });
@@ -306,7 +298,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
 
     private registerDebugStep(connection: ISocketConnection): void {
         this.on<DebugSessionPayload>(connection.id, 'debug:step', async (conn, payload) => {
-            const entry = this.activeSessions.get(payload.sessionId);
+            const entry = this.pluginDebugSessionRegistry.getSession(payload.sessionId);
             if (!entry || entry.socketId !== conn.id) {
                 this.emitToSocket(conn.id, 'debug:session:error', {
                     sessionId: payload.sessionId,
@@ -340,6 +332,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
             } catch (error: unknown) {
                 const message = error instanceof Error ? error.message : 'Step execution failed';
                 logger.error({ err: error }, '@plugin-debug-socket: debug:step failed');
+                this.pluginDebugSessionRegistry.unregisterSession(payload.sessionId);
                 this.emitToSocket(conn.id, 'debug:session:error', {
                     sessionId: payload.sessionId,
                     error: message
@@ -352,7 +345,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
 
     private registerDebugContinue(connection: ISocketConnection): void {
         this.on<DebugSessionPayload>(connection.id, 'debug:continue', async (conn, payload) => {
-            const entry = this.activeSessions.get(payload.sessionId);
+            const entry = this.pluginDebugSessionRegistry.getSession(payload.sessionId);
             if (!entry || entry.socketId !== conn.id) {
                 this.emitToSocket(conn.id, 'debug:session:error', {
                     sessionId: payload.sessionId,
@@ -381,6 +374,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
             } catch (error: unknown) {
                 const message = error instanceof Error ? error.message : 'Continue execution failed';
                 logger.error({ err: error }, '@plugin-debug-socket: debug:continue failed');
+                this.pluginDebugSessionRegistry.unregisterSession(payload.sessionId);
                 this.emitToSocket(conn.id, 'debug:session:error', {
                     sessionId: payload.sessionId,
                     error: message
@@ -393,7 +387,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
 
     private registerDebugStop(connection: ISocketConnection): void {
         this.on<DebugSessionPayload>(connection.id, 'debug:stop', async (conn, payload) => {
-            const entry = this.activeSessions.get(payload.sessionId);
+            const entry = this.pluginDebugSessionRegistry.getSession(payload.sessionId);
             if (!entry || entry.socketId !== conn.id) {
                 return;
             }
@@ -408,7 +402,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                 // Ignore errors when stopping
             }
 
-            this.activeSessions.delete(payload.sessionId);
+            this.pluginDebugSessionRegistry.unregisterSession(payload.sessionId);
             logger.info(`@plugin-debug-socket: session ${payload.sessionId} stopped by user`);
         });
     }
@@ -440,6 +434,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                 nestedTrace: result.nestedTrace ?? []
             });
         } else if (result.status === 'error') {
+            this.pluginDebugSessionRegistry.unregisterSession(sessionId);
             this.emitToSocket(socketId, 'debug:node:error', {
                 sessionId,
                 nodeId: result.nodeId,
@@ -457,15 +452,12 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
             exposureResults: [],
             totalDuration: 0
         });
-        this.activeSessions.delete(sessionId);
+        this.pluginDebugSessionRegistry.unregisterSession(sessionId);
     }
 
     private cleanupSessionsForSocket(socketId: string): void {
-        for (const [sessionId, entry] of this.activeSessions) {
-            if (entry.socketId === socketId) {
-                this.daemonClient.command(entry.teamClusterId, 'debug.stop', { sessionId }).catch(() => {});
-                this.activeSessions.delete(sessionId);
-            }
+        for (const [sessionId, entry] of this.pluginDebugSessionRegistry.unregisterSessionsForSocket(socketId)) {
+            this.daemonClient.command(entry.teamClusterId, 'debug.stop', { sessionId }).catch(() => {});
         }
     }
 }

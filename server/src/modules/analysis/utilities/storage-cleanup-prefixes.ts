@@ -27,6 +27,10 @@ export const getAnalysisStorageCleanupTargets = (
         {
             bucket: SYS_BUCKETS.RASTERIZER,
             prefix: analysisPrefix
+        },
+        {
+            bucket: SYS_BUCKETS.ANALYSIS_LOGS,
+            prefix: analysisPrefix
         }
     ];
 };
