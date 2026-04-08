@@ -12,6 +12,7 @@ import logger from '@shared/infrastructure/logger';
 import { ISocketModule } from '@modules/socket/domain/port/ISocketModule';
 import AuthenticateSocketConnectionUseCase from '@modules/socket/application/use-cases/AuthenticateSocketConnectionUseCase';
 import { TRACE_ID_HEADER } from '@shared/infrastructure/http/middleware/request-context';
+import { collectAllowedClientOrigins } from '@shared/infrastructure/utilities/client-origins';
 import type { ISocketAuthenticationResult, ISocketConnectionData, ISocketConnectionUser } from '@modules/socket/domain/port/ISocketModule';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { randomUUID } from 'node:crypto';
@@ -29,10 +30,10 @@ interface SocketConnectionRuntimeData extends ISocketConnectionData {
     authReason?: ISocketAuthenticationResult['reason'];
 };
 
-const SOCKET_CORS_ORIGINS = [
+const SOCKET_CORS_ORIGINS = collectAllowedClientOrigins([
     process.env.CLIENT_DEV_HOST,
     process.env.CLIENT_HOST
-].filter((origin): origin is string => Boolean(origin));
+]);
 const SOCKET_GATEWAY_CLOSE_TIMEOUT_MS = 1_500;
 
 export interface AuthenticatedSocket extends Socket{

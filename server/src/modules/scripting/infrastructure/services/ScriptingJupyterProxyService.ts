@@ -20,6 +20,7 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
+import { collectAllowedClientOrigins } from '@shared/infrastructure/utilities/client-origins';
 import {
     normalizeWebSocketPayload,
     writeUpgradeError
@@ -137,10 +138,8 @@ const readCookies = (rawCookieHeader?: string): Record<string, string> => {
 const buildFrameAncestorsDirective = (): string => {
     const frameAncestors = new Set<string>(['\'self\'']);
 
-    for (const origin of [process.env.CLIENT_HOST, process.env.CLIENT_DEV_HOST]) {
-        if (origin?.trim()) {
-            frameAncestors.add(origin.trim());
-        }
+    for (const origin of collectAllowedClientOrigins([process.env.CLIENT_HOST, process.env.CLIENT_DEV_HOST])) {
+        frameAncestors.add(origin);
     }
 
     return `frame-ancestors ${Array.from(frameAncestors).join(' ')}`;
