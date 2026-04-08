@@ -2,9 +2,12 @@ import { useEffect, useCallback } from 'react';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
 import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
+import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { PLUGIN_DEBUG_SOCKET_EVENTS } from '@/modules/plugin/api/entities/plugin/plugin-constants';
 import { sileo } from 'sileo';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
+import type { IWorkflow } from '@/modules/plugin/api/entities/plugin/workflow';
+import type { DebugTraceNode } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 
 interface DebugSessionCreatedEvent {
     sessionId: string;
@@ -26,6 +29,7 @@ interface DebugNodeCompletedEvent {
     nodeId: string;
     nodeType: string;
     output: Record<string, unknown>;
+    nestedTrace?: DebugTraceNode[];
     durationMs: number;
     index: number;
     contextSnapshot: Record<string, Record<string, unknown>>;
@@ -36,6 +40,7 @@ interface DebugNodeSkippedEvent {
     nodeId: string;
     nodeType: string;
     reason: string;
+    nestedTrace?: DebugTraceNode[];
 };
 
 interface DebugNodeErrorEvent {
@@ -44,6 +49,7 @@ interface DebugNodeErrorEvent {
     nodeType: string;
     error: string;
     stack?: string;
+    nestedTrace?: DebugTraceNode[];
 };
 
 interface DebugSessionCompletedEvent {
@@ -56,6 +62,14 @@ interface DebugSessionErrorEvent {
     sessionId?: string;
     error: string;
 };
+
+interface DebugStartPayload {
+    pluginId: string;
+    trajectoryId: string;
+    timestep: number;
+    config: Record<string, unknown>;
+    workflow: IWorkflow;
+}
 
 interface UsePluginDebugSocketOptions {
     subscribe?: boolean;
@@ -106,7 +120,13 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
             return;
         }
 
-        usePluginDebugStore.getState().onNodeCompleted(event.nodeId, event.output, event.durationMs, event.contextSnapshot);
+        usePluginDebugStore.getState().onNodeCompleted(
+            event.nodeId,
+            event.output,
+            event.durationMs,
+            event.contextSnapshot,
+            event.nestedTrace
+        );
     }, { enabled: subscribe && !!sessionId });
 
     useSocketEvent<DebugNodeSkippedEvent>(PLUGIN_DEBUG_SOCKET_EVENTS.NODE_SKIPPED, (event) => {
@@ -114,7 +134,7 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
             return;
         }
 
-        usePluginDebugStore.getState().onNodeSkipped(event.nodeId, event.reason);
+        usePluginDebugStore.getState().onNodeSkipped(event.nodeId, event.reason, event.nestedTrace);
     }, { enabled: subscribe && !!sessionId });
 
     useSocketEvent<DebugNodeErrorEvent>(PLUGIN_DEBUG_SOCKET_EVENTS.NODE_ERROR, (event) => {
@@ -122,7 +142,7 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
             return;
         }
 
-        usePluginDebugStore.getState().onNodeError(event.nodeId, event.error, event.stack);
+        usePluginDebugStore.getState().onNodeError(event.nodeId, event.error, event.stack, event.nestedTrace);
         sileo.error({ title: 'Node execution failed', description: event.error });
     }, { enabled: subscribe && !!sessionId });
 
@@ -159,12 +179,14 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
         }
 
         const { debugConfig } = usePluginDebugStore.getState();
+        const workflow = usePluginBuilderStore.getState().getWorkflow();
         setStarting();
-        void socket.emit(PLUGIN_DEBUG_SOCKET_EVENTS.START, {
+        void socket.emit<DebugStartPayload>(PLUGIN_DEBUG_SOCKET_EVENTS.START, {
             pluginId: currentPluginId,
             trajectoryId: selectedTrajectoryId,
             timestep: selectedTimestep,
-            config: debugConfig
+            config: debugConfig,
+            workflow
         }).catch(() => undefined);
     }, [socket, currentPluginId, selectedTrajectoryId, selectedTimestep, setStarting]);
 
