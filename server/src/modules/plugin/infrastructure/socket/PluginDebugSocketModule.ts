@@ -2,6 +2,7 @@ import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@shared/infrastructure/contracts/team-cluster';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import logger from '@shared/infrastructure/logger';
 import { injectable, inject } from 'tsyringe';
@@ -12,6 +13,7 @@ import type { ISocketRoomManager } from '@modules/socket/domain/port/ISocketRoom
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
+import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 
@@ -151,6 +153,8 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                     });
                     return;
                 }
+                const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props)
+                    ?? VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID;
 
                 // Send debug.start command to daemon
                 const response = await this.daemonClient.command<DaemonDebugStartResponse>(
@@ -162,6 +166,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                         trajectoryFrames: trajectory.props.frames,
                         pluginId: payload.pluginId,
                         teamId,
+                        storageClusterId,
                         config: payload.config ?? {},
                         timestep: payload.timestep
                     }

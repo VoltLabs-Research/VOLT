@@ -4,6 +4,7 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { InMemoryAbsoluteExpiryStore } from '@shared/infrastructure/services/InMemoryAbsoluteExpiryStore';
+import { collectAllowedClientOrigins, normalizeOrigin } from '@shared/infrastructure/utilities/client-origins';
 import {
     bridgeWebSocketAndDuplex,
     writeUpgradeError
@@ -104,29 +105,15 @@ const readNumberEnv = (name: string, fallback: number): number => {
 const buildFrameAncestorsDirective = (input: ContainerVncFrameAncestorsDirectiveInput): string => {
     const frameAncestors = new Set<string>(['\'self\'']);
 
-    for (const origin of [input.clientHost, input.clientDevHost]) {
-        if (origin?.trim()) {
-            frameAncestors.add(origin.trim());
-        }
+    for (const origin of collectAllowedClientOrigins([input.clientHost, input.clientDevHost])) {
+        frameAncestors.add(origin);
     }
 
     return `frame-ancestors ${Array.from(frameAncestors).join(' ')}`;
 };
 
-const normalizeOrigin = (value: string): string => {
-    return new URL(value).origin;
-};
-
 const getAllowedParentOrigins = (): string[] => {
-    const origins = new Set<string>();
-
-    for (const origin of [process.env.CLIENT_HOST, process.env.CLIENT_DEV_HOST]) {
-        if (origin?.trim()) {
-            origins.add(normalizeOrigin(origin.trim()));
-        }
-    }
-
-    return Array.from(origins);
+    return collectAllowedClientOrigins([process.env.CLIENT_HOST, process.env.CLIENT_DEV_HOST]);
 };
 
 const getSecretKey = (): Buffer => {
@@ -492,10 +479,8 @@ initializeRemoteDesktop().catch((error) => {
             throw ApplicationError.badRequest(ErrorCodes.VALIDATION_INVALID_INPUT, 'Parent origin is required');
         }
 
-        let normalizedParentOrigin: string;
-        try {
-            normalizedParentOrigin = normalizeOrigin(parentOrigin);
-        } catch {
+        const normalizedParentOrigin = normalizeOrigin(parentOrigin);
+        if (!normalizedParentOrigin) {
             throw ApplicationError.badRequest(ErrorCodes.VALIDATION_INVALID_INPUT, 'Parent origin must be a valid HTTP(S) origin');
         }
 
