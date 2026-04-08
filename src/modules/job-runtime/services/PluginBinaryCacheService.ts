@@ -16,6 +16,7 @@ const PYTHON_REQUIREMENTS_FILENAME = 'requirements.txt';
 const PYTHON_INSTALL_MARKER_FILENAME = '.requirements-installed';
 const PYTHON_PROJECT_DIRECTORY = 'project';
 const PYTHON_ZIP_EXTRACTED_MARKER = '.zip-extracted';
+const PYTHON_PROJECT_REQUIREMENTS_FILENAME = '.volt-requirements.txt';
 const HASH_MARKER_FILENAME_SUFFIX = '.sha256';
 
 const buildCacheKey = (binaryObjectPath: string, expectedHash?: string): string => {
@@ -135,6 +136,95 @@ const computeFileHash = async (filePath: string): Promise<string> => {
     return hash.digest('hex');
 };
 
+const pathExists = async (targetPath: string): Promise<boolean> => {
+    try {
+        await fs.access(targetPath, fs.constants.F_OK);
+        return true;
+    } catch {
+        return false;
+    }
+};
+
+const normalizeProjectRelativePath = (value: string): string => {
+    return path.posix.normalize(value.replace(/\\/g, '/'))
+        .replace(/^(\.\/)+/, '')
+        .replace(/^\/+/, '');
+};
+
+const collectProjectFiles = async (rootDir: string, relativeDir: string = ''): Promise<string[]> => {
+    const directoryPath = relativeDir ? path.join(rootDir, relativeDir) : rootDir;
+    const directoryEntries = await fs.readdir(directoryPath, { withFileTypes: true }).catch(() => []);
+    const files: string[] = [];
+
+    for (const entry of directoryEntries) {
+        if (entry.name === '__MACOSX') {
+            continue;
+        }
+
+        const relativePath = relativeDir
+            ? path.posix.join(relativeDir, entry.name)
+            : entry.name;
+
+        if (entry.isDirectory()) {
+            files.push(...await collectProjectFiles(rootDir, relativePath));
+            continue;
+        }
+
+        if (entry.isFile()) {
+            files.push(relativePath);
+        }
+    }
+
+    return files;
+};
+
+const resolveExtractedPythonEntrypoint = async (
+    projectDir: string,
+    entrypointScript: string
+): Promise<{ scriptPath: string; projectRootDir: string; resolvedRelativePath: string; }> => {
+    const normalizedEntrypoint = normalizeProjectRelativePath(entrypointScript);
+
+    if (!normalizedEntrypoint) {
+        throw new Error('Python entrypointScript is empty');
+    }
+
+    const directScriptPath = path.join(projectDir, normalizedEntrypoint);
+    if (await pathExists(directScriptPath)) {
+        return {
+            scriptPath: directScriptPath,
+            projectRootDir: projectDir,
+            resolvedRelativePath: normalizedEntrypoint
+        };
+    }
+
+    const projectFiles = (await collectProjectFiles(projectDir))
+        .map((filePath) => normalizeProjectRelativePath(filePath))
+        .sort((left, right) => left.length - right.length);
+
+    const suffixMatches = projectFiles.filter((filePath) => {
+        return filePath === normalizedEntrypoint || filePath.endsWith(`/${normalizedEntrypoint}`);
+    });
+
+    if (suffixMatches.length === 1) {
+        const resolvedRelativePath = suffixMatches[0];
+        const rootPrefix = resolvedRelativePath === normalizedEntrypoint
+            ? ''
+            : resolvedRelativePath.slice(0, resolvedRelativePath.length - normalizedEntrypoint.length).replace(/\/$/, '');
+
+        return {
+            scriptPath: path.join(projectDir, resolvedRelativePath),
+            projectRootDir: rootPrefix ? path.join(projectDir, rootPrefix) : projectDir,
+            resolvedRelativePath
+        };
+    }
+
+    const availableEntriesPreview = projectFiles.slice(0, 12).join(', ');
+    throw new Error(
+        `Python entrypoint "${entrypointScript}" was not found after extracting the project archive`
+        + (availableEntriesPreview ? `; sample extracted files: ${availableEntriesPreview}` : '')
+    );
+};
+
 export const createPluginBinaryCacheService = (objectStore: ClusterObjectStore): PluginBinaryCacheService => {
     const resolvePluginBinarySource = async (binaryObjectPath: string): Promise<ResolvedPluginBinarySource> => {
         const headResponse = await objectStore.head(
@@ -244,7 +334,6 @@ export const createPluginBinaryCacheService = (objectStore: ClusterObjectStore):
         const nextPromise = (async () => {
             const runtimeDirectory = path.join(DAEMON_PATHS.pluginBinCache, runtimeKey);
             const venvPath = path.join(runtimeDirectory, PYTHON_VENV_DIRECTORY);
-            const requirementsPath = path.join(runtimeDirectory, PYTHON_REQUIREMENTS_FILENAME);
             const installMarkerPath = path.join(runtimeDirectory, PYTHON_INSTALL_MARKER_FILENAME);
             const pythonPath = path.join(venvPath, 'bin', 'python3');
 
@@ -255,6 +344,7 @@ export const createPluginBinaryCacheService = (objectStore: ClusterObjectStore):
             // references (e.g. "." or "./mypackage") in requirements.txt resolve
             // correctly against the extracted project tree.
             let scriptPath = artifactPath;
+            let projectRootDir = runtimeDirectory;
             if (entrypointScript) {
                 const projectDir = path.join(runtimeDirectory, PYTHON_PROJECT_DIRECTORY);
                 const extractMarkerPath = path.join(runtimeDirectory, PYTHON_ZIP_EXTRACTED_MARKER);
@@ -273,9 +363,24 @@ export const createPluginBinaryCacheService = (objectStore: ClusterObjectStore):
                     logger.info(`Python project extracted: ${artifactPath} -> ${projectDir}`);
                 }
 
-                scriptPath = path.join(projectDir, entrypointScript);
+                const resolvedEntrypoint = await resolveExtractedPythonEntrypoint(projectDir, entrypointScript);
+                scriptPath = resolvedEntrypoint.scriptPath;
+                projectRootDir = resolvedEntrypoint.projectRootDir;
+                logger.info(
+                    {
+                        artifactPath,
+                        entrypointScript,
+                        projectRootDir,
+                        resolvedRelativePath: resolvedEntrypoint.resolvedRelativePath,
+                        scriptPath
+                    },
+                    'Resolved extracted Python plugin entrypoint'
+                );
             }
 
+            const requirementsPath = entrypointScript
+                ? path.join(projectRootDir, PYTHON_PROJECT_REQUIREMENTS_FILENAME)
+                : path.join(runtimeDirectory, PYTHON_REQUIREMENTS_FILENAME);
             await writeFileIfChanged(requirementsPath, requirementsFile);
 
             try {
@@ -287,7 +392,7 @@ export const createPluginBinaryCacheService = (objectStore: ClusterObjectStore):
             try {
                 await fs.access(installMarkerPath, fs.constants.F_OK);
             } catch {
-                await runCommand(pythonPath, ['-m', 'pip', 'install', '-r', requirementsPath], runtimeDirectory);
+                await runCommand(pythonPath, ['-m', 'pip', 'install', '-r', requirementsPath], projectRootDir);
                 await fs.writeFile(installMarkerPath, runtimeKey, 'utf-8');
             }
 
@@ -297,7 +402,7 @@ export const createPluginBinaryCacheService = (objectStore: ClusterObjectStore):
             };
 
             if (entrypointScript) {
-                runtimeEnv.PLUGIN_PROJECT_DIR = path.join(runtimeDirectory, PYTHON_PROJECT_DIRECTORY);
+                runtimeEnv.PLUGIN_PROJECT_DIR = projectRootDir;
             }
 
             return {
