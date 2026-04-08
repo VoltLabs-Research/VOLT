@@ -13,7 +13,12 @@ import { createArtifactsModule, createPluginListingRepository } from '@/modules/
 import { createWorkflowRuntimeModule } from '@/modules/workflow-runtime';
 import { createCloudControlModule } from '@/modules/cloud-control';
 import { RuntimeRoleCoordinator } from '@/modules/cloud-control/services';
-import { createAnalysisWorker, createJobRuntimeModule } from '@/modules/job-runtime';
+import {
+    createAnalysisWorker,
+    createBinaryExecutorService,
+    createJobRuntimeModule,
+    createPluginBinaryCacheService
+} from '@/modules/job-runtime';
 import { OBJECT_GATEWAY_EXPOSURE } from '@/modules/cloud-control/services';
 import { createClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 import { TeamClusterDirectObjectStoreClient } from '@/shared/storage/TeamClusterDirectObjectStoreClient';
@@ -53,7 +58,13 @@ const createBootstrapContext = (): BootstrapContext => {
         platform.queueService,
         platform.redisConnectionService
     );
-    const workflowRuntime = createWorkflowRuntimeModule();
+    const pluginBinaryCacheService = createPluginBinaryCacheService(clusterObjectStore);
+    const binaryExecutorService = createBinaryExecutorService();
+    const workflowRuntime = createWorkflowRuntimeModule({
+        objectStore: clusterObjectStore,
+        pluginBinaryCacheService,
+        binaryExecutorService
+    });
     const jupyter = createJupyterModule(config, platform.dockerRuntimeService);
     const pluginListingRepository = createPluginListingRepository(clusterObjectStore, config.teamClusterId);
     const jobRuntime = createJobRuntimeModule({
@@ -106,6 +117,8 @@ const createBootstrapContext = (): BootstrapContext => {
         queueService: platform.queueService,
         analysisExecutionDataStore: platform.analysisExecutionDataStore,
         objectStore: clusterObjectStore,
+        pluginBinaryCacheService,
+        binaryExecutorService,
         artifactUploadQueueService: artifacts.artifactUploadQueueService,
         resultProcessorService: artifacts.resultProcessorService,
         daemonJobReporterService: cloudControl.daemonJobReporterService

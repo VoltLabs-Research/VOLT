@@ -3,6 +3,7 @@ import type { ReverseChannelCommandHandler } from '../services';
 import {
     readOptionalNumber,
     readOptionalRecord,
+    readOptionalString,
     readPayloadRecord,
     readString,
     readTrajectoryFrames,
@@ -25,6 +26,7 @@ export const createDebugHandlers = (deps: DebugHandlersDependencies): ReverseCha
             const trajectoryId = readString(record.trajectoryId, 'trajectoryId');
             const userConfig = readOptionalRecord(record.config) ?? {};
             const timestep = readOptionalNumber(record.timestep);
+            const storageClusterId = readOptionalString(record.storageClusterId, '');
 
             const sessionInfo = deps.debugSessionManager.createSession({
                 workflow,
@@ -33,6 +35,7 @@ export const createDebugHandlers = (deps: DebugHandlersDependencies): ReverseCha
                 pluginId,
                 teamId,
                 userConfig,
+                storageClusterId: storageClusterId || undefined,
                 timestep
             });
 

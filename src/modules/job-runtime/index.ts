@@ -33,23 +33,26 @@ export const createAnalysisWorker = (deps: {
     queueService: QueueService;
     analysisExecutionDataStore: AnalysisExecutionDataStore;
     objectStore: ClusterObjectStore;
+    pluginBinaryCacheService: ReturnType<typeof createPluginBinaryCacheService>;
+    binaryExecutorService: ReturnType<typeof createBinaryExecutorService>;
     artifactUploadQueueService: ArtifactUploadQueueService;
     resultProcessorService: ResultProcessorService;
     daemonJobReporterService: DaemonJobReporterService;
 }): AnalysisWorker => {
-    const pluginBinaryCacheService = createPluginBinaryCacheService(deps.objectStore);
-    const binaryExecutorService = createBinaryExecutorService();
-
     return new AnalysisWorker(
         deps.queueService,
         deps.analysisExecutionDataStore,
         deps.objectStore,
-        pluginBinaryCacheService,
-        binaryExecutorService,
+        deps.pluginBinaryCacheService,
+        deps.binaryExecutorService,
         deps.artifactUploadQueueService,
         deps.resultProcessorService,
         deps.daemonJobReporterService
     );
 };
 
-export { createJobControlService };
+export {
+    createBinaryExecutorService,
+    createJobControlService,
+    createPluginBinaryCacheService
+};

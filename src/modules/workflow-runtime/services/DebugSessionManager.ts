@@ -1,9 +1,14 @@
 import { logger } from '@/core/logger';
 import { createWorkflowExecutionContext, snapshotWorkflowOutputs } from './WorkflowExecutionContextFactory';
+import { DebugEntrypointExecutor } from './DebugEntrypointExecutor';
 import { WorkflowNodeRegistry } from './NodeRegistry';
 import { runOrderedWorkflowNodes } from './OrderedNodeRunner';
 import { WorkflowGraph, WorkflowNodeType, type WorkflowExecutionContext, type WorkflowNode } from '../contracts';
 import type { DaemonAnalysisDocument, WorkflowDefinition } from '@/shared/contracts';
+import type { BinaryExecutorService } from '@/modules/job-runtime/services/BinaryExecutorService';
+import type { PluginBinaryCacheService } from '@/modules/job-runtime/services/PluginBinaryCacheService';
+import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
+import fs from 'node:fs/promises';
 
 /**
  * Idle TTL for debug sessions (5 minutes).
@@ -17,14 +22,15 @@ const SESSION_IDLE_TTL_MS = 5 * 60 * 1000;
 const SESSION_SWEEP_INTERVAL_MS = 30 * 1000;
 
 /**
- * Node types that have registered handlers and can be executed.
- * Structural nodes (entrypoint, plugin-node, exposure, export) are skipped.
+ * Node types that participate in the interactive debug flow.
+ * Structural nodes that still require the full job-runtime pipeline remain skipped.
  */
 const EXECUTABLE_NODE_TYPES = new Set<WorkflowNodeType>([
     WorkflowNodeType.Modifier,
     WorkflowNodeType.Arguments,
     WorkflowNodeType.Context,
     WorkflowNodeType.ForEach,
+    WorkflowNodeType.Entrypoint,
     WorkflowNodeType.IfStatement
 ]);
 
@@ -35,6 +41,7 @@ export interface DebugSessionRequest {
     pluginId: string;
     teamId: string;
     userConfig: Record<string, unknown>;
+    storageClusterId?: string;
     timestep?: number;
 };
 
@@ -62,12 +69,15 @@ interface DebugSession {
     context: WorkflowExecutionContext;
     /** All nodes in topological order */
     allNodes: WorkflowNode[];
-    /** Only executable nodes (those with handlers) */
+    /** Nodes that the interactive debugger can step through. */
     executableNodes: WorkflowNode[];
     /** Current index into executableNodes */
     currentIndex: number;
     lastActivity: number;
     forEachNodeId: string | null;
+    storageClusterId?: string;
+    cleanupPaths: string[];
+    cleanupDirectories: string[];
 };
 
 let sessionCounter = 0;
@@ -79,10 +89,21 @@ const generateSessionId = (): string => {
 export class DebugSessionManager {
     private readonly sessions = new Map<string, DebugSession>();
     private sweepTimer: ReturnType<typeof setInterval> | null = null;
+    private readonly debugEntrypointExecutor: DebugEntrypointExecutor;
 
     constructor(
-        private readonly registry: WorkflowNodeRegistry
+        private readonly registry: WorkflowNodeRegistry,
+        deps: {
+            objectStore: ClusterObjectStore;
+            pluginBinaryCacheService: PluginBinaryCacheService;
+            binaryExecutorService: BinaryExecutorService;
+        }
     ) {
+        this.debugEntrypointExecutor = new DebugEntrypointExecutor(
+            deps.objectStore,
+            deps.pluginBinaryCacheService,
+            deps.binaryExecutorService
+        );
         this.startIdleSweep();
     }
 
@@ -108,7 +129,9 @@ export class DebugSessionManager {
             analysisId: `debug_${sessionId}`,
             pluginId: request.pluginId,
             teamId: request.teamId,
+            selectedFrameOnly: typeof request.timestep === 'number',
             selectedTimesteps: typeof request.timestep === 'number' ? [request.timestep] : undefined,
+            selectedTimestep: request.timestep,
             workflow,
             nestedWorkflows: new Map()
         });
@@ -129,7 +152,10 @@ export class DebugSessionManager {
             executableNodes,
             currentIndex: 0,
             lastActivity: Date.now(),
-            forEachNodeId
+            forEachNodeId,
+            storageClusterId: request.storageClusterId,
+            cleanupPaths: [],
+            cleanupDirectories: []
         };
 
         this.sessions.set(sessionId, session);
@@ -159,14 +185,50 @@ export class DebugSessionManager {
         const startTime = Date.now();
 
         try {
-            const [result] = await runOrderedWorkflowNodes({
-                nodes: [node],
-                context: session.context,
-                registry: this.registry
-            });
+            let result: { status: 'executed' | 'skipped'; output?: Record<string, unknown>; reason?: string; } | null = null;
+
+            if (node.type === WorkflowNodeType.Entrypoint) {
+                const execution = await this.debugEntrypointExecutor.execute(
+                    session.sessionId,
+                    node,
+                    session.context,
+                    session.storageClusterId
+                );
+
+                session.cleanupPaths.push(execution.dumpPath);
+                session.cleanupDirectories.push(execution.outputDir);
+                session.context.outputs.set(node.id, execution.output);
+                result = {
+                    status: 'executed',
+                    output: execution.output
+                };
+
+                const exitCode = execution.output.exitCode;
+                if (typeof exitCode === 'number' && exitCode !== 0) {
+                    const stderr = typeof execution.output.stderr === 'string'
+                        ? execution.output.stderr
+                        : '';
+                    const stdout = typeof execution.output.stdout === 'string'
+                        ? execution.output.stdout
+                        : '';
+                    throw new Error(
+                        `Entrypoint exited with code ${exitCode}: ${stderr || stdout || 'Unknown error'}`
+                    );
+                }
+            } else {
+                const [orderedResult] = await runOrderedWorkflowNodes({
+                    nodes: [node],
+                    context: session.context,
+                    registry: this.registry
+                });
+                result = orderedResult ?? null;
+            }
             const durationMs = Date.now() - startTime;
 
             session.currentIndex++;
+            if (session.currentIndex >= session.executableNodes.length) {
+                this.destroySession(sessionId);
+            }
 
             if (!result || result.status === 'skipped') {
                 return {
@@ -255,9 +317,22 @@ export class DebugSessionManager {
     }
 
     destroySession(sessionId: string): void {
-        if (this.sessions.delete(sessionId)) {
-            logger.info(`@debug-session-manager: destroyed session ${sessionId}`);
+        const session = this.sessions.get(sessionId);
+        if (!session) {
+            return;
         }
+
+        this.sessions.delete(sessionId);
+        void this.cleanupSessionArtifacts(session).catch((error: unknown) => {
+            logger.warn(
+                {
+                    err: error,
+                    sessionId
+                },
+                '@debug-session-manager: failed to cleanup debug session artifacts'
+            );
+        });
+        logger.info(`@debug-session-manager: destroyed session ${sessionId}`);
     }
 
     shutdown(): void {
@@ -282,5 +357,14 @@ export class DebugSessionManager {
             }
         }, SESSION_SWEEP_INTERVAL_MS);
         this.sweepTimer.unref();
+    }
+
+    private async cleanupSessionArtifacts(session: DebugSession): Promise<void> {
+        const cleanupTasks = [
+            ...session.cleanupPaths.map((filePath) => fs.rm(filePath, { force: true }).catch(() => {})),
+            ...session.cleanupDirectories.map((directoryPath) => fs.rm(directoryPath, { recursive: true, force: true }).catch(() => {}))
+        ];
+
+        await Promise.all(cleanupTasks);
     }
 };
