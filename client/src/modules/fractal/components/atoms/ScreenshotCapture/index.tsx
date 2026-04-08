@@ -36,6 +36,7 @@ interface ScreenshotViewSnapshot {
     target: Vector3;
     up: Vector3;
     zoom: number;
+    aspect?: number;
 }
 
 interface PendingCapture {
@@ -444,7 +445,8 @@ const ScreenshotCapture = ({
             position: camera.position.clone(),
             target: controls?.target.clone() ?? new Vector3(0, 0, 0),
             up: camera.up.clone(),
-            zoom: 'zoom' in camera && typeof camera.zoom === 'number' ? camera.zoom : 1
+            zoom: 'zoom' in camera && typeof camera.zoom === 'number' ? camera.zoom : 1,
+            aspect: camera instanceof PerspectiveCamera ? camera.aspect : undefined
         };
     }, [camera, orbitRef]);
 
@@ -455,6 +457,9 @@ const ScreenshotCapture = ({
 
         if ('zoom' in camera && typeof camera.zoom === 'number') {
             camera.zoom = snapshot.zoom;
+        }
+        if (camera instanceof PerspectiveCamera && typeof snapshot.aspect === 'number') {
+            camera.aspect = snapshot.aspect;
         }
 
         if ('updateProjectionMatrix' in camera && typeof camera.updateProjectionMatrix === 'function') {
@@ -576,6 +581,10 @@ const ScreenshotCapture = ({
 
         setDpr(1);
         setSize(outputSize.width, outputSize.height, false);
+        if (camera instanceof PerspectiveCamera) {
+            camera.aspect = outputSize.width / outputSize.height;
+            camera.updateProjectionMatrix();
+        }
         applyAnglePreset(captureRequest);
 
         pendingRef.current = {
@@ -627,6 +636,17 @@ const ScreenshotCapture = ({
             pending.framesRemaining = Math.max(pending.framesRemaining, 2);
             invalidate();
             return;
+        }
+
+        if (camera instanceof PerspectiveCamera) {
+            const requestedAspect = pending.requestedSize.width / pending.requestedSize.height;
+            if (Math.abs(camera.aspect - requestedAspect) > 1e-6) {
+                camera.aspect = requestedAspect;
+                camera.updateProjectionMatrix();
+                pending.framesRemaining = Math.max(pending.framesRemaining, 2);
+                invalidate();
+                return;
+            }
         }
 
         if (pending.framesRemaining > 0) {

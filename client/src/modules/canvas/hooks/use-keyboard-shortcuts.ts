@@ -10,6 +10,8 @@ const normalizeKey = (key: string): string => {
         ' ': 'space',
         '+': '=',
         '_': '-',
+        add: '=',
+        subtract: '-'
     };
     const lower = key.toLowerCase();
     return keyMap[lower] ?? lower;
