@@ -1,5 +1,7 @@
 import { FractalAssetLoader } from '@/modules/fractal/api/service/asset-loader';
 import { useLocalGlbStore } from '@/modules/canvas/stores/use-local-glb-store';
+import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { MaterialPipeline } from '@/modules/fractal/services/material-pipeline';
 import { disposeObject3DResources } from '@/modules/fractal/utilities/resource-disposal';
 import { useThree } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
@@ -110,10 +112,37 @@ const buildAutoSimulationCellBounds = (box: THREE.Box3): ModelWorldBounds => {
     };
 };
 
+const applyPointSizeMultiplier = (root: THREE.Object3D, multiplier: number) => {
+    root.traverse((child) => {
+        if (!(child instanceof THREE.Points) || !child.material) {
+            return;
+        }
+
+        const material = child.material;
+        if (material instanceof THREE.ShaderMaterial && material.uniforms?.pointScale) {
+            const basePointScale = material.userData.basePointScale;
+            if (typeof basePointScale === 'number') {
+                material.uniforms.pointScale.value = basePointScale * multiplier;
+                material.needsUpdate = true;
+            }
+            return;
+        }
+
+        if (material instanceof THREE.PointsMaterial) {
+            const currentBaseSize = (material.userData.basePointSize as number | undefined) ?? material.size;
+            material.userData.basePointSize = currentBaseSize;
+            material.size = currentBaseSize * multiplier;
+            material.needsUpdate = true;
+        }
+    });
+};
+
 const LocalGlbViewer = ({ url, onContentTypeDetected }: LocalGlbViewerProps) => {
     const containerRef = useRef<THREE.Group>(null);
     const modelRef = useRef<THREE.Group | null>(null);
+    const materialPipelineRef = useRef(new MaterialPipeline());
     const { camera, invalidate } = useThree();
+    const pointSizeMultiplier = useEditorStore((s) => s.pointSizeMultiplier);
     const setLocalModelWorldBounds = useLocalGlbStore((s) => s.setLocalModelWorldBounds);
     const setLocalAutoSimulationCellWorldBounds = useLocalGlbStore((s) => s.setLocalAutoSimulationCellWorldBounds);
     const controls = useThree((state) => (state as typeof state & {
@@ -155,13 +184,13 @@ const LocalGlbViewer = ({ url, onContentTypeDetected }: LocalGlbViewerProps) => 
                 container.add(model);
                 modelRef.current = model;
 
-                let hasPointClouds = false;
-                model.traverse((child) => {
-                    if (child instanceof THREE.Points) {
-                        hasPointClouds = true;
-                    }
+                const pointClouds = materialPipelineRef.current.detectPointClouds(model);
+                pointClouds.forEach((points) => {
+                    materialPipelineRef.current.configurePointCloud(points);
                 });
+                const hasPointClouds = pointClouds.length > 0;
                 onContentTypeDetected?.({ hasPointClouds });
+                applyPointSizeMultiplier(model, useEditorStore.getState().pointSizeMultiplier);
 
                 const originalBounds = new THREE.Box3().setFromObject(model);
                 if (!originalBounds.isEmpty()) {
@@ -208,6 +237,8 @@ const LocalGlbViewer = ({ url, onContentTypeDetected }: LocalGlbViewerProps) => 
             }
             setLocalModelWorldBounds(null);
             setLocalAutoSimulationCellWorldBounds(null);
+            materialPipelineRef.current.dispose();
+            materialPipelineRef.current = new MaterialPipeline();
         };
     }, [
         camera,
@@ -217,6 +248,15 @@ const LocalGlbViewer = ({ url, onContentTypeDetected }: LocalGlbViewerProps) => 
         setLocalModelWorldBounds,
         url
     ]);
+
+    useEffect(() => {
+        if (!modelRef.current) {
+            return;
+        }
+
+        applyPointSizeMultiplier(modelRef.current, pointSizeMultiplier);
+        invalidate();
+    }, [invalidate, pointSizeMultiplier]);
 
     useEffect(() => {
         if (!modelRef.current) {
