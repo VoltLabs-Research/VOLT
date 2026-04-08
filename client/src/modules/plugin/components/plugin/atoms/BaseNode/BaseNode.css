@@ -128,6 +128,114 @@
     font-family: monospace;
 }
 
+.workflow-node-trace-panel {
+    padding-top: 0.35rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-border-soft) 80%, transparent);
+}
+
+.workflow-node-trace-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.workflow-node-trace-tree--depth-1,
+.workflow-node-trace-tree--depth-2,
+.workflow-node-trace-tree--depth-3 {
+    margin-left: 0.6rem;
+    padding-left: 0.55rem;
+    border-left: 1px solid color-mix(in srgb, var(--color-border-soft) 80%, transparent);
+}
+
+.workflow-node-trace-item {
+    padding: 0.35rem 0.4rem;
+    border: 1px solid color-mix(in srgb, var(--color-border-soft) 85%, transparent);
+    border-radius: 0.35rem;
+    background: color-mix(in srgb, var(--color-surface-2) 85%, transparent);
+}
+
+.workflow-node-trace-item--completed {
+    border-color: color-mix(in srgb, var(--status-success) 25%, var(--color-border-soft));
+}
+
+.workflow-node-trace-item--skipped {
+    border-color: color-mix(in srgb, var(--color-border-strong) 30%, var(--color-border-soft));
+}
+
+.workflow-node-trace-item--error {
+    border-color: color-mix(in srgb, var(--status-error) 30%, var(--color-border-soft));
+}
+
+.workflow-node-trace-row {
+    font-size: 0.7rem;
+}
+
+.workflow-node-trace-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.1rem;
+}
+
+.workflow-node-trace-status--completed {
+    color: var(--status-success);
+}
+
+.workflow-node-trace-status--skipped {
+    color: var(--color-border-strong);
+}
+
+.workflow-node-trace-status--error {
+    color: var(--status-error);
+}
+
+.workflow-node-trace-title {
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.workflow-node-trace-meta {
+    font-size: 0.62rem;
+    line-height: 1.3;
+    word-break: break-all;
+}
+
+.workflow-node-trace-duration {
+    font-size: 0.58rem;
+    color: var(--color-text-secondary);
+    font-family: monospace;
+    white-space: nowrap;
+}
+
+.workflow-node-trace-details {
+    margin-top: 0.35rem;
+}
+
+.workflow-node-trace-message {
+    padding: 0.35rem 0.4rem;
+    border-radius: 0.3rem;
+}
+
+.workflow-node-trace-message--error {
+    background: color-mix(in srgb, var(--status-error) 8%, transparent);
+    color: var(--status-error);
+}
+
+.workflow-node-trace-message--skipped {
+    background: color-mix(in srgb, var(--color-border-strong) 8%, transparent);
+    color: var(--color-border-strong);
+}
+
+.workflow-node-trace-json {
+    padding: 0.25rem 0.3rem;
+    border-radius: 0.3rem;
+    background: color-mix(in srgb, var(--color-surface-1) 82%, transparent);
+}
+
+.workflow-node-trace-children {
+    padding-top: 0.15rem;
+}
+
 .workflow-node-debug-error {
     background: color-mix(in srgb, var(--status-error) 8%, transparent);
     color: var(--status-error);

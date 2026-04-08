@@ -4,10 +4,11 @@ import DynamicIcon from '@/shared/presentation/components/DynamicIcon';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
 import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
+import type { DebugTraceNode } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import { Handle, Position } from '@xyflow/react';
-import { AlertCircle, Database, SkipForward, Terminal } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Database, SkipForward, Terminal } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import type { ReactNode } from 'react';
@@ -32,6 +33,134 @@ interface BaseNodeProps extends NodeProps {
     children?: ReactNode;
 };
 
+interface DebugExecutionTraceTreeProps {
+    nodes: DebugTraceNode[];
+    expandedTraceIds: Set<string>;
+    onToggleTraceNode: (traceId: string) => void;
+    depth?: number;
+}
+
+const formatTraceDuration = (durationMs: number): string => {
+    if (durationMs < 1000) {
+        return `${durationMs}ms`;
+    }
+
+    return `${(durationMs / 1000).toFixed(1)}s`;
+};
+
+const resolveTraceNodeLabel = (node: DebugTraceNode): string => {
+    if (typeof node.label === 'string' && node.label.trim().length > 0) {
+        return node.label;
+    }
+
+    if (node.nodeType === 'plugin-reference') {
+        return 'Plugin Reference';
+    }
+
+    const resolvedNodeType = node.nodeType as NodeType;
+    const configuredLabel = NODE_CONFIGS[resolvedNodeType]?.label;
+    if (configuredLabel) {
+        return configuredLabel;
+    }
+
+    return node.nodeType
+        .split(/[-_]/g)
+        .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+        .join(' ');
+};
+
+const DebugExecutionTraceTree = ({
+    nodes,
+    expandedTraceIds,
+    onToggleTraceNode,
+    depth = 0
+}: DebugExecutionTraceTreeProps) => {
+    if (nodes.length === 0) {
+        return null;
+    }
+
+    return (
+        <Container className={`workflow-node-trace-tree workflow-node-trace-tree--depth-${depth}`}>
+            {nodes.map((node) => {
+                const hasDetails = Boolean(node.output || node.error || node.reason || (node.children?.length ?? 0) > 0);
+                const isExpanded = expandedTraceIds.has(node.traceId);
+
+                return (
+                    <Container key={node.traceId} className={`workflow-node-trace-item workflow-node-trace-item--${node.status}`}>
+                        <Container
+                            className={`workflow-node-trace-row d-flex items-start content-between gap-05 ${hasDetails ? 'cursor-pointer' : ''}`}
+                            onClick={() => {
+                                if (hasDetails) {
+                                    onToggleTraceNode(node.traceId);
+                                }
+                            }}
+                        >
+                            <Container className='d-flex items-start gap-035'>
+                                <span className={`workflow-node-trace-status workflow-node-trace-status--${node.status}`}>
+                                    {node.status === 'completed' && <CheckCircle2 size={11} />}
+                                    {node.status === 'skipped' && <SkipForward size={11} />}
+                                    {node.status === 'error' && <AlertCircle size={11} />}
+                                </span>
+                                <Container className='d-flex column gap-02'>
+                                    <Paragraph className='workflow-node-trace-title'>{resolveTraceNodeLabel(node)}</Paragraph>
+                                    <Paragraph className='workflow-node-trace-meta color-muted'>
+                                        {node.pluginId ? `${node.pluginId} · ` : ''}{node.nodeId}
+                                    </Paragraph>
+                                </Container>
+                            </Container>
+
+                            <Container className='d-flex items-center gap-035'>
+                                <span className='workflow-node-trace-duration'>
+                                    {formatTraceDuration(node.durationMs)}
+                                </span>
+                                {hasDetails && (
+                                    isExpanded ? <ChevronDown size={11} /> : <ChevronRight size={11} />
+                                )}
+                            </Container>
+                        </Container>
+
+                        {isExpanded && (
+                            <Container className='workflow-node-trace-details d-flex column gap-035'>
+                                {node.error && (
+                                    <Container className='workflow-node-trace-message workflow-node-trace-message--error'>
+                                        <Paragraph className='font-size-1'>{node.error}</Paragraph>
+                                        {node.stack && (
+                                            <pre className='m-0 workflow-node-debug-stack'>{node.stack}</pre>
+                                        )}
+                                    </Container>
+                                )}
+
+                                {node.reason && !node.error && (
+                                    <Container className='workflow-node-trace-message workflow-node-trace-message--skipped'>
+                                        <Paragraph className='font-size-1'>{node.reason}</Paragraph>
+                                    </Container>
+                                )}
+
+                                {node.output && (
+                                    <Container className='workflow-node-trace-json'>
+                                        <JsonTree data={node.output} defaultExpanded={false} />
+                                    </Container>
+                                )}
+
+                                {Array.isArray(node.children) && node.children.length > 0 && (
+                                    <Container className='workflow-node-trace-children'>
+                                        <DebugExecutionTraceTree
+                                            nodes={node.children}
+                                            expandedTraceIds={expandedTraceIds}
+                                            onToggleTraceNode={onToggleTraceNode}
+                                            depth={depth + 1}
+                                        />
+                                    </Container>
+                                )}
+                            </Container>
+                        )}
+                    </Container>
+                );
+            })}
+        </Container>
+    );
+};
+
 const BaseNode = ({
     id,
     selected,
@@ -47,10 +176,13 @@ const BaseNode = ({
     const setInspectedNode = usePluginDebugStore((s) => s.setInspectedNode);
 
     const [showLog, setShowLog] = useState(false);
+    const [expandedTraceIds, setExpandedTraceIds] = useState<Set<string>>(new Set());
 
     const isExpanded = inspectedNodeId === id;
     const hasInspectableOutput = isDebugging && debugState &&
         (debugState.status === 'completed' || debugState.status === 'failed' || debugState.status === 'skipped');
+    const nestedTrace = Array.isArray(debugState?.nestedTrace) ? debugState.nestedTrace : [];
+    const hasNestedTrace = nestedTrace.length > 0;
 
     const isEntrypoint = nodeType === NodeType.ENTRYPOINT;
     const hasLog = Boolean(isEntrypoint && hasInspectableOutput && debugState?.output);
@@ -79,6 +211,18 @@ const BaseNode = ({
             setShowLog(true);
         }
     }, [showLog, setInspectedNode]);
+
+    const toggleTraceNode = useCallback((traceId: string) => {
+        setExpandedTraceIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(traceId)) {
+                next.delete(traceId);
+            } else {
+                next.add(traceId);
+            }
+            return next;
+        });
+    }, []);
 
     let durationLabel: string | null = null;
     if (isDebugging && debugState?.status === 'completed' && debugState.durationMs !== undefined) {
@@ -181,19 +325,56 @@ const BaseNode = ({
                             {debugState.stack && (
                                 <pre className='m-0 workflow-node-debug-stack'>{debugState.stack}</pre>
                             )}
+
+                            {hasNestedTrace && (
+                                <Container className='workflow-node-trace-panel d-flex column gap-035'>
+                                    <Paragraph className='font-size-1 font-weight-6'>Nested Execution</Paragraph>
+                                    <DebugExecutionTraceTree
+                                        nodes={nestedTrace}
+                                        expandedTraceIds={expandedTraceIds}
+                                        onToggleTraceNode={toggleTraceNode}
+                                    />
+                                </Container>
+                            )}
                         </Container>
                     )}
 
                     {debugState.status === 'skipped' && (
-                        <Container className='p-05 radius-sm font-size-05 workflow-node-debug-skipped d-flex items-center gap-025'>
-                            <SkipForward size={12} />
-                            <Paragraph className='font-size-1'>{debugState.reason || 'Skipped'}</Paragraph>
+                        <Container className='p-05 radius-sm font-size-05 workflow-node-debug-skipped d-flex column gap-035'>
+                            <Container className='d-flex items-center gap-025'>
+                                <SkipForward size={12} />
+                                <Paragraph className='font-size-1'>{debugState.reason || 'Skipped'}</Paragraph>
+                            </Container>
+
+                            {hasNestedTrace && (
+                                <Container className='workflow-node-trace-panel d-flex column gap-035'>
+                                    <Paragraph className='font-size-1 font-weight-6'>Nested Execution</Paragraph>
+                                    <DebugExecutionTraceTree
+                                        nodes={nestedTrace}
+                                        expandedTraceIds={expandedTraceIds}
+                                        onToggleTraceNode={toggleTraceNode}
+                                    />
+                                </Container>
+                            )}
                         </Container>
                     )}
 
-                    {debugState.status === 'completed' && debugState.output && (
-                        <Container className='workflow-node-debug-tree font-size-05 line-height-5'>
-                            <JsonTree data={debugState.output} defaultExpanded={true} />
+                    {debugState.status === 'completed' && (
+                        <Container className='workflow-node-debug-tree font-size-05 line-height-5 d-flex column gap-05'>
+                            {hasNestedTrace && (
+                                <Container className='workflow-node-trace-panel d-flex column gap-035'>
+                                    <Paragraph className='font-size-1 font-weight-6'>Nested Execution</Paragraph>
+                                    <DebugExecutionTraceTree
+                                        nodes={nestedTrace}
+                                        expandedTraceIds={expandedTraceIds}
+                                        onToggleTraceNode={toggleTraceNode}
+                                    />
+                                </Container>
+                            )}
+
+                            {debugState.output && (
+                                <JsonTree data={debugState.output} defaultExpanded={true} />
+                            )}
                         </Container>
                     )}
                 </Container>

@@ -140,7 +140,7 @@ const DebugContextPanel = () => {
     }
 
     return (
-        <Container className='debug-context-panel p-absolute d-flex column panel-floating top-1 right-1 z-10'>
+        <Container className='debug-context-panel glass-bg p-absolute d-flex column panel-floating top-1 right-1 z-10'>
             <Container
                 className='debug-context-row debug-context-panel-header d-flex items-center content-between gap-05 cursor-pointer u-select-none'
                 onClick={() => setIsOpen((v) => !v)}
