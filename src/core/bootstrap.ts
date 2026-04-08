@@ -63,7 +63,8 @@ const createBootstrapContext = (): BootstrapContext => {
     const workflowRuntime = createWorkflowRuntimeModule({
         objectStore: clusterObjectStore,
         pluginBinaryCacheService,
-        binaryExecutorService
+        binaryExecutorService,
+        nativeModuleLoader: trajectoryNative.nativeModuleLoader
     });
     const jupyter = createJupyterModule(config, platform.dockerRuntimeService);
     const pluginListingRepository = createPluginListingRepository(clusterObjectStore, config.teamClusterId);

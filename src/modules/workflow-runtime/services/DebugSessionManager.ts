@@ -1,41 +1,40 @@
 import { logger } from '@/core/logger';
-import { createWorkflowExecutionContext, snapshotWorkflowOutputs } from './WorkflowExecutionContextFactory';
-import { DebugEntrypointExecutor } from './DebugEntrypointExecutor';
-import { WorkflowNodeRegistry } from './NodeRegistry';
-import { runOrderedWorkflowNodes } from './OrderedNodeRunner';
-import { WorkflowGraph, WorkflowNodeType, type WorkflowExecutionContext, type WorkflowNode } from '../contracts';
-import type { DaemonAnalysisDocument, WorkflowDefinition } from '@/shared/contracts';
+import { createExportNodeProcessorService, type ExportNodeProcessorService } from '@/modules/artifacts/services/ExportNodeProcessorService';
 import type { BinaryExecutorService } from '@/modules/job-runtime/services/BinaryExecutorService';
 import type { PluginBinaryCacheService } from '@/modules/job-runtime/services/PluginBinaryCacheService';
+import type { NativeModuleLoader } from '@/modules/trajectory-native/services';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
+import type {
+    AnalysisExposureDefinition,
+    AnalysisJobExecutionData,
+    DaemonAnalysisDocument,
+    NestedPluginDefinition,
+    PluginReferenceExecutionRequest,
+    WorkflowDefinition
+} from '@/shared/contracts';
+import { createWorkflowExecutionContext, snapshotWorkflowOutputs } from './WorkflowExecutionContextFactory';
+import { DebugEntrypointExecutor, type PreparedDebugExecutionEnvironment } from './DebugEntrypointExecutor';
+import { createDebugArtifactBatch } from './DebugArtifactBatch';
+import { inspectDebugExposureResult, type DebugExposureInspectionResult } from './DebugExposureProcessor';
+import {
+    DebugInlinePluginRuntime,
+    DebugTraceError,
+    type DebugDumpExecutionTarget,
+    type DebugTraceNode
+} from './DebugInlinePluginRuntime';
+import { runOrderedWorkflowNodes } from './OrderedNodeRunner';
+import { WorkflowGraph, WorkflowNodeType, type WorkflowExecutionContext, type WorkflowNode } from '../contracts';
+import type { WorkflowNodeRegistry } from './NodeRegistry';
 import fs from 'node:fs/promises';
+import path from 'node:path';
 
-/**
- * Idle TTL for debug sessions (5 minutes).
- * Sessions not stepped/continued within this window are automatically destroyed.
- */
 const SESSION_IDLE_TTL_MS = 5 * 60 * 1000;
-
-/**
- * How often to sweep for idle sessions.
- */
 const SESSION_SWEEP_INTERVAL_MS = 30 * 1000;
-
-/**
- * Node types that participate in the interactive debug flow.
- * Structural nodes that still require the full job-runtime pipeline remain skipped.
- */
-const EXECUTABLE_NODE_TYPES = new Set<WorkflowNodeType>([
-    WorkflowNodeType.Modifier,
-    WorkflowNodeType.Arguments,
-    WorkflowNodeType.Context,
-    WorkflowNodeType.ForEach,
-    WorkflowNodeType.Entrypoint,
-    WorkflowNodeType.IfStatement
-]);
 
 export interface DebugSessionRequest {
     workflow: WorkflowDefinition;
+    nestedPlugins?: NestedPluginDefinition[];
+    pluginReferenceExecutions?: PluginReferenceExecutionRequest[];
     trajectoryId: string;
     trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string }>;
     pluginId: string;
@@ -53,6 +52,7 @@ export interface DebugNodeResult {
     error?: string;
     stack?: string;
     reason?: string;
+    nestedTrace?: DebugTraceNode[];
     durationMs: number;
     contextSnapshot: Record<string, Record<string, unknown>>;
 };
@@ -67,18 +67,23 @@ export interface DebugSessionInfo {
 interface DebugSession {
     sessionId: string;
     context: WorkflowExecutionContext;
-    /** All nodes in topological order */
     allNodes: WorkflowNode[];
-    /** Nodes that the interactive debugger can step through. */
     executableNodes: WorkflowNode[];
-    /** Current index into executableNodes */
     currentIndex: number;
     lastActivity: number;
+    startedAt: number;
     forEachNodeId: string | null;
     storageClusterId?: string;
+    nestedPlugins: NestedPluginDefinition[];
+    pluginReferenceExecutions: PluginReferenceExecutionRequest[];
+    runtimePreparationsApplied: boolean;
+    preparedExecution: PreparedDebugExecutionEnvironment | null;
+    exposureCache: Map<string, DebugExposureInspectionResult>;
+    exposuresByNodeId: Map<string, AnalysisExposureDefinition>;
+    exportNodeToExposureNodeId: Map<string, string>;
     cleanupPaths: string[];
     cleanupDirectories: string[];
-};
+}
 
 let sessionCounter = 0;
 
@@ -86,10 +91,105 @@ const generateSessionId = (): string => {
     return `dbg_${Date.now()}_${++sessionCounter}`;
 };
 
+const isFiniteNumber = (value: unknown): value is number => {
+    return typeof value === 'number' && Number.isFinite(value);
+};
+
+const readExportDefinition = (value: unknown): AnalysisExposureDefinition['export'] | undefined => {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+        return undefined;
+    }
+
+    const exportData = value as Record<string, unknown>;
+    const exporter = typeof exportData.exporter === 'string' ? exportData.exporter : '';
+    const type = typeof exportData.type === 'string' ? exportData.type : '';
+
+    if (!exporter || !type) {
+        return undefined;
+    }
+
+    return {
+        exporter,
+        type,
+        options: typeof exportData.options === 'object' && exportData.options !== null && !Array.isArray(exportData.options)
+            ? exportData.options as Record<string, unknown>
+            : undefined
+    };
+};
+
+const buildExposureMaps = (
+    workflow: WorkflowDefinition
+): {
+    exposuresByNodeId: Map<string, AnalysisExposureDefinition>;
+    exportNodeToExposureNodeId: Map<string, string>;
+} => {
+    const nodeById = new Map(workflow.nodes.map((node) => [node.id, node]));
+    const exposuresByNodeId = new Map<string, AnalysisExposureDefinition>();
+    const exportNodeToExposureNodeId = new Map<string, string>();
+
+    for (const node of workflow.nodes) {
+        if (node.type !== WorkflowNodeType.Exposure) {
+            continue;
+        }
+
+        const exposureData = typeof node.data.exposure === 'object' && node.data.exposure !== null
+            ? node.data.exposure as Record<string, unknown>
+            : {};
+        const exportEdge = workflow.edges.find((edge) => edge.source === node.id);
+        const exportNode = exportEdge
+            ? nodeById.get(exportEdge.target)
+            : undefined;
+
+        if (exportNode?.type === WorkflowNodeType.Export) {
+            exportNodeToExposureNodeId.set(exportNode.id, node.id);
+        }
+
+        exposuresByNodeId.set(node.id, {
+            nodeId: node.id,
+            name: typeof exposureData.name === 'string' ? exposureData.name : node.id,
+            results: typeof exposureData.results === 'string' ? exposureData.results : '',
+            iterable: typeof exposureData.iterable === 'string' ? exposureData.iterable : undefined,
+            export: exportNode?.type === WorkflowNodeType.Export
+                ? readExportDefinition(exportNode.data.export)
+                : undefined
+        });
+    }
+
+    return {
+        exposuresByNodeId,
+        exportNodeToExposureNodeId
+    };
+};
+
+const toDebugDumpExecutionTarget = (
+    preparedExecution: PreparedDebugExecutionEnvironment
+): DebugDumpExecutionTarget => ({
+    localPath: preparedExecution.dumpPath,
+    originalPath: preparedExecution.selectedDump.originalPath ?? preparedExecution.selectedDump.path,
+    timestep: preparedExecution.selectedDump.timestep,
+    natoms: preparedExecution.selectedDump.natoms,
+    simulationCell: preparedExecution.selectedDump.simulationCell
+});
+
+interface NodeExecutionOutcome {
+    status: 'executed' | 'skipped';
+    output?: Record<string, unknown>;
+    reason?: string;
+    nestedTrace?: DebugTraceNode[];
+}
+
+const readNestedTraceFromError = (error: unknown): DebugTraceNode[] | undefined => {
+    return error instanceof DebugTraceError
+        ? error.trace
+        : undefined;
+};
+
 export class DebugSessionManager {
     private readonly sessions = new Map<string, DebugSession>();
     private sweepTimer: ReturnType<typeof setInterval> | null = null;
     private readonly debugEntrypointExecutor: DebugEntrypointExecutor;
+    private readonly debugInlinePluginRuntime: DebugInlinePluginRuntime;
+    private readonly exportNodeProcessorService: ExportNodeProcessorService;
 
     constructor(
         private readonly registry: WorkflowNodeRegistry,
@@ -97,6 +197,7 @@ export class DebugSessionManager {
             objectStore: ClusterObjectStore;
             pluginBinaryCacheService: PluginBinaryCacheService;
             binaryExecutorService: BinaryExecutorService;
+            nativeModuleLoader: NativeModuleLoader;
         }
     ) {
         this.debugEntrypointExecutor = new DebugEntrypointExecutor(
@@ -104,6 +205,12 @@ export class DebugSessionManager {
             deps.pluginBinaryCacheService,
             deps.binaryExecutorService
         );
+        this.debugInlinePluginRuntime = new DebugInlinePluginRuntime(
+            registry,
+            deps.pluginBinaryCacheService,
+            deps.binaryExecutorService
+        );
+        this.exportNodeProcessorService = createExportNodeProcessorService(deps.nativeModuleLoader);
         this.startIdleSweep();
     }
 
@@ -111,10 +218,8 @@ export class DebugSessionManager {
         const sessionId = generateSessionId();
         const workflow = new WorkflowGraph(request.workflow);
         const allNodes = workflow.topologicalSort();
-        const executableNodes = allNodes.filter((node) => EXECUTABLE_NODE_TYPES.has(node.type));
+        const executableNodes = [...allNodes];
 
-        // Create a stub analysis for the execution context.
-        // Debug sessions don't have a real analysis — we create a minimal one.
         const stubAnalysis: DaemonAnalysisDocument = {
             _id: `debug_${sessionId}`,
             pluginDisplayName: 'Debug Session'
@@ -133,17 +238,14 @@ export class DebugSessionManager {
             selectedTimesteps: typeof request.timestep === 'number' ? [request.timestep] : undefined,
             selectedTimestep: request.timestep,
             workflow,
-            nestedWorkflows: new Map()
+            nestedPlugins: request.nestedPlugins ?? []
         });
 
-        // Detect forEach node
-        let forEachNodeId: string | null = null;
-        for (const node of executableNodes) {
-            if (node.type === WorkflowNodeType.ForEach) {
-                forEachNodeId = node.id;
-                break;
-            }
-        }
+        const { exposuresByNodeId, exportNodeToExposureNodeId } = buildExposureMaps(request.workflow);
+        const forEachNode = executableNodes.find((node) => node.type === WorkflowNodeType.ForEach);
+        const totalIterations = forEachNode
+            ? (typeof request.timestep === 'number' ? 1 : request.trajectoryFrames.length)
+            : 0;
 
         const session: DebugSession = {
             sessionId,
@@ -152,20 +254,30 @@ export class DebugSessionManager {
             executableNodes,
             currentIndex: 0,
             lastActivity: Date.now(),
-            forEachNodeId,
+            startedAt: Date.now(),
+            forEachNodeId: forEachNode?.id ?? null,
             storageClusterId: request.storageClusterId,
+            nestedPlugins: request.nestedPlugins ?? [],
+            pluginReferenceExecutions: request.pluginReferenceExecutions ?? [],
+            runtimePreparationsApplied: false,
+            preparedExecution: null,
+            exposureCache: new Map(),
+            exposuresByNodeId,
+            exportNodeToExposureNodeId,
             cleanupPaths: [],
             cleanupDirectories: []
         };
 
         this.sessions.set(sessionId, session);
-        logger.info(`@debug-session-manager: created session ${sessionId} with ${executableNodes.length} executable nodes (${allNodes.length} total)`);
+        logger.info(
+            `@debug-session-manager: created session ${sessionId} with ${executableNodes.length} executable nodes (${allNodes.length} total)`
+        );
 
         return {
             sessionId,
             executionOrder: executableNodes.map((node) => ({ nodeId: node.id, type: node.type })),
-            forEachNodeId,
-            totalIterations: 0
+            forEachNodeId: session.forEachNodeId,
+            totalIterations
         };
     }
 
@@ -185,47 +297,10 @@ export class DebugSessionManager {
         const startTime = Date.now();
 
         try {
-            let result: { status: 'executed' | 'skipped'; output?: Record<string, unknown>; reason?: string; } | null = null;
-
-            if (node.type === WorkflowNodeType.Entrypoint) {
-                const execution = await this.debugEntrypointExecutor.execute(
-                    session.sessionId,
-                    node,
-                    session.context,
-                    session.storageClusterId
-                );
-
-                session.cleanupPaths.push(execution.dumpPath);
-                session.cleanupDirectories.push(execution.outputDir);
-                session.context.outputs.set(node.id, execution.output);
-                result = {
-                    status: 'executed',
-                    output: execution.output
-                };
-
-                const exitCode = execution.output.exitCode;
-                if (typeof exitCode === 'number' && exitCode !== 0) {
-                    const stderr = typeof execution.output.stderr === 'string'
-                        ? execution.output.stderr
-                        : '';
-                    const stdout = typeof execution.output.stdout === 'string'
-                        ? execution.output.stdout
-                        : '';
-                    throw new Error(
-                        `Entrypoint exited with code ${exitCode}: ${stderr || stdout || 'Unknown error'}`
-                    );
-                }
-            } else {
-                const [orderedResult] = await runOrderedWorkflowNodes({
-                    nodes: [node],
-                    context: session.context,
-                    registry: this.registry
-                });
-                result = orderedResult ?? null;
-            }
+            const result = await this.executeNode(session, node);
             const durationMs = Date.now() - startTime;
 
-            session.currentIndex++;
+            session.currentIndex += 1;
             if (session.currentIndex >= session.executableNodes.length) {
                 this.destroySession(sessionId);
             }
@@ -236,6 +311,7 @@ export class DebugSessionManager {
                     nodeType: node.type,
                     status: 'skipped',
                     reason: result?.reason ?? `No handler registered for node type "${node.type}"`,
+                    nestedTrace: result?.nestedTrace,
                     durationMs,
                     contextSnapshot: snapshotWorkflowOutputs(session.context.outputs)
                 };
@@ -246,6 +322,7 @@ export class DebugSessionManager {
                 nodeType: node.type,
                 status: 'completed',
                 output: result.output,
+                nestedTrace: result.nestedTrace,
                 durationMs,
                 contextSnapshot: snapshotWorkflowOutputs(session.context.outputs)
             };
@@ -254,13 +331,13 @@ export class DebugSessionManager {
             const message = error instanceof Error ? error.message : 'Unknown error';
             const stack = error instanceof Error ? error.stack : undefined;
 
-            // Don't advance index on error — session is effectively dead
             return {
                 nodeId: node.id,
                 nodeType: node.type,
                 status: 'error',
                 error: message,
                 stack,
+                nestedTrace: readNestedTraceFromError(error),
                 durationMs,
                 contextSnapshot: snapshotWorkflowOutputs(session.context.outputs)
             };
@@ -283,7 +360,6 @@ export class DebugSessionManager {
 
             results.push(result);
 
-            // Stop on error — don't continue past a failed node
             if (result.status === 'error') {
                 break;
             }
@@ -346,6 +422,297 @@ export class DebugSessionManager {
         }
     }
 
+    private async executeNode(
+        session: DebugSession,
+        node: WorkflowNode
+    ): Promise<NodeExecutionOutcome | null> {
+        switch (node.type) {
+            case WorkflowNodeType.Arguments:
+                return this.executeArgumentsNode(session, node);
+            case WorkflowNodeType.Plugin:
+                return this.executePluginNode(session, node);
+            case WorkflowNodeType.Entrypoint:
+                return this.executeEntrypointNode(session, node);
+            case WorkflowNodeType.Exposure:
+                return this.executeExposureNode(session, node);
+            case WorkflowNodeType.Export:
+                return this.executeExportNode(session, node);
+            default: {
+                const [orderedResult] = await runOrderedWorkflowNodes({
+                    nodes: [node],
+                    context: session.context,
+                    registry: this.registry
+                });
+                return orderedResult ?? null;
+            }
+        }
+    }
+
+    private async executeArgumentsNode(
+        session: DebugSession,
+        node: WorkflowNode
+    ): Promise<NodeExecutionOutcome | null> {
+        const [orderedResult] = await runOrderedWorkflowNodes({
+            nodes: [node],
+            context: session.context,
+            registry: this.registry
+        });
+
+        if (!orderedResult) {
+            return null;
+        }
+
+        if (orderedResult.status === 'skipped') {
+            return {
+                status: 'skipped',
+                reason: orderedResult.reason
+            };
+        }
+
+        let output = orderedResult.output ?? session.context.outputs.get(node.id) ?? {};
+        let nestedTrace: DebugTraceNode[] | undefined;
+
+        if (session.pluginReferenceExecutions.length > 0) {
+            const preparedExecution = await this.ensurePreparedExecutionEnvironment(session);
+            const argumentReferenceExecution = await this.debugInlinePluginRuntime.executeArgumentPluginReferences({
+                workflow: session.context.workflow.definition,
+                nestedPlugins: session.nestedPlugins,
+                pluginReferenceExecutions: session.pluginReferenceExecutions,
+                outputs: session.context.outputs,
+                dumpTarget: toDebugDumpExecutionTarget(preparedExecution),
+                outputDir: preparedExecution.outputDir,
+                trajectoryId: session.context.trajectoryId,
+                analysisId: session.context.analysisId,
+                teamId: session.context.teamId,
+                trajectoryFrames: session.context.trajectoryFrames
+            });
+            if (argumentReferenceExecution.output) {
+                output = argumentReferenceExecution.output;
+            }
+            if (argumentReferenceExecution.trace.length > 0) {
+                nestedTrace = argumentReferenceExecution.trace;
+            }
+            session.runtimePreparationsApplied = true;
+        }
+
+        session.context.outputs.set(node.id, output);
+        return {
+            status: 'executed',
+            output,
+            nestedTrace
+        };
+    }
+
+    private async executePluginNode(
+        session: DebugSession,
+        node: WorkflowNode
+    ): Promise<NodeExecutionOutcome> {
+        const preparedExecution = await this.ensureRuntimePreparations(session);
+        const execution = await this.debugInlinePluginRuntime.executePluginNode({
+            node,
+            workflow: session.context.workflow.definition,
+            nestedPlugins: session.nestedPlugins,
+            outputs: session.context.outputs,
+            dumpTarget: toDebugDumpExecutionTarget(preparedExecution),
+            outputDir: preparedExecution.outputDir,
+            trajectoryId: session.context.trajectoryId,
+            analysisId: session.context.analysisId,
+            teamId: session.context.teamId,
+            trajectoryFrames: session.context.trajectoryFrames
+        });
+
+        session.context.outputs.set(node.id, execution.output);
+        return {
+            status: 'executed',
+            output: execution.output,
+            nestedTrace: execution.trace
+        };
+    }
+
+    private async executeEntrypointNode(
+        session: DebugSession,
+        node: WorkflowNode
+    ): Promise<NodeExecutionOutcome> {
+        const preparedExecution = await this.ensureRuntimePreparations(session);
+        const execution = await this.debugEntrypointExecutor.executePrepared(
+            node,
+            session.context,
+            preparedExecution
+        );
+
+        session.context.outputs.set(node.id, execution.output);
+
+        const exitCode = execution.output.exitCode;
+        if (isFiniteNumber(exitCode) && exitCode !== 0) {
+            const stderr = typeof execution.output.stderr === 'string'
+                ? execution.output.stderr
+                : '';
+            const stdout = typeof execution.output.stdout === 'string'
+                ? execution.output.stdout
+                : '';
+            throw new Error(
+                `Entrypoint exited with code ${exitCode}: ${stderr || stdout || 'Unknown error'}`
+            );
+        }
+
+        return {
+            status: 'executed',
+            output: execution.output
+        };
+    }
+
+    private async executeExposureNode(
+        session: DebugSession,
+        node: WorkflowNode
+    ): Promise<NodeExecutionOutcome> {
+        const preparedExecution = await this.ensurePreparedExecutionEnvironment(session);
+        const exposure = session.exposuresByNodeId.get(node.id);
+        if (!exposure || !exposure.results) {
+            return {
+                status: 'skipped',
+                reason: `Exposure node ${node.id} has no results file configured`
+            };
+        }
+
+        const inspection = await inspectDebugExposureResult(
+            preparedExecution.outputDir,
+            exposure.results
+        );
+        session.exposureCache.set(node.id, inspection);
+
+        const output: Record<string, unknown> = {
+            outputFilePath: inspection.outputFilePath,
+            listingRowCount: inspection.listingRowCount,
+            subListingNames: inspection.subListingNames,
+            hasExportPayload: inspection.exportPayload !== null
+        };
+        const linkedExportNodeId = Array.from(session.exportNodeToExposureNodeId.entries())
+            .find(([, exposureNodeId]) => exposureNodeId === node.id)?.[0];
+        if (linkedExportNodeId) {
+            output.linkedExportNodeId = linkedExportNodeId;
+        }
+
+        session.context.outputs.set(node.id, output);
+        return {
+            status: 'executed',
+            output
+        };
+    }
+
+    private async executeExportNode(
+        session: DebugSession,
+        node: WorkflowNode
+    ): Promise<NodeExecutionOutcome> {
+        const preparedExecution = await this.ensurePreparedExecutionEnvironment(session);
+        const exposureNodeId = session.exportNodeToExposureNodeId.get(node.id);
+        if (!exposureNodeId) {
+            return {
+                status: 'skipped',
+                reason: `Export node ${node.id} is not linked to an exposure node`
+            };
+        }
+
+        const exposure = session.exposuresByNodeId.get(exposureNodeId);
+        if (!exposure?.export) {
+            return {
+                status: 'skipped',
+                reason: `Export node ${node.id} has no valid export configuration`
+            };
+        }
+
+        let inspection = session.exposureCache.get(exposureNodeId);
+        if (!inspection) {
+            inspection = await inspectDebugExposureResult(
+                preparedExecution.outputDir,
+                exposure.results
+            );
+            session.exposureCache.set(exposureNodeId, inspection);
+        }
+
+        if (!inspection.exportPayload) {
+            return {
+                status: 'skipped',
+                reason: `Exposure ${exposureNodeId} did not produce export payload data`
+            };
+        }
+
+        const exportDirectory = `${preparedExecution.outputDir}_debug_export_${node.id}_${Date.now()}`;
+        const artifactBatch = createDebugArtifactBatch(exportDirectory);
+
+        await this.exportNodeProcessorService.process({
+            executionData: {
+                analysisId: session.context.analysisId,
+                trajectoryId: session.context.trajectoryId,
+                pluginId: session.context.pluginId,
+                storageClusterId: session.storageClusterId ?? 'debug-storage-cluster'
+            } as AnalysisJobExecutionData,
+            exposure,
+            decodedPayload: inspection.exportPayload,
+            timestep: session.context.selectedTimestep ?? preparedExecution.selectedDump.timestep,
+            storageClusterId: session.storageClusterId ?? 'debug-storage-cluster',
+            artifactUploadBatch: artifactBatch
+        });
+
+        const artifacts = artifactBatch.getArtifacts().map((artifact) => ({
+            path: artifact.path,
+            objectKey: artifact.objectKey,
+            bucket: artifact.bucket,
+            contentType: artifact.contentType,
+            fileName: artifact.fileName
+        }));
+        const output: Record<string, unknown> = {
+            artifacts,
+            exporter: exposure.export.exporter,
+            exportType: exposure.export.type,
+            sourceExposureNodeId: exposureNodeId
+        };
+
+        session.context.outputs.set(node.id, output);
+        return {
+            status: 'executed',
+            output
+        };
+    }
+
+    private async ensureRuntimePreparations(session: DebugSession): Promise<PreparedDebugExecutionEnvironment> {
+        const preparedExecution = await this.ensurePreparedExecutionEnvironment(session);
+
+        if (!session.runtimePreparationsApplied) {
+            await this.debugInlinePluginRuntime.executeArgumentPluginReferences({
+                workflow: session.context.workflow.definition,
+                nestedPlugins: session.nestedPlugins,
+                pluginReferenceExecutions: session.pluginReferenceExecutions,
+                outputs: session.context.outputs,
+                dumpTarget: toDebugDumpExecutionTarget(preparedExecution),
+                outputDir: preparedExecution.outputDir,
+                trajectoryId: session.context.trajectoryId,
+                analysisId: session.context.analysisId,
+                teamId: session.context.teamId,
+                trajectoryFrames: session.context.trajectoryFrames
+            });
+            session.runtimePreparationsApplied = true;
+        }
+
+        return preparedExecution;
+    }
+
+    private async ensurePreparedExecutionEnvironment(session: DebugSession): Promise<PreparedDebugExecutionEnvironment> {
+        if (session.preparedExecution) {
+            return session.preparedExecution;
+        }
+
+        const preparedExecution = await this.debugEntrypointExecutor.prepareExecutionEnvironment(
+            session.sessionId,
+            session.context,
+            session.storageClusterId
+        );
+        session.preparedExecution = preparedExecution;
+        session.cleanupPaths.push(preparedExecution.dumpPath);
+        session.cleanupDirectories.push(preparedExecution.outputDir);
+
+        return preparedExecution;
+    }
+
     private startIdleSweep(): void {
         this.sweepTimer = setInterval(() => {
             const now = Date.now();
@@ -360,11 +727,27 @@ export class DebugSessionManager {
     }
 
     private async cleanupSessionArtifacts(session: DebugSession): Promise<void> {
+        const cleanupDirectorySet = new Set(session.cleanupDirectories);
         const cleanupTasks = [
             ...session.cleanupPaths.map((filePath) => fs.rm(filePath, { force: true }).catch(() => {})),
-            ...session.cleanupDirectories.map((directoryPath) => fs.rm(directoryPath, { recursive: true, force: true }).catch(() => {}))
+            ...Array.from(cleanupDirectorySet).map(async (directoryPath) => {
+                await fs.rm(directoryPath, { recursive: true, force: true }).catch(() => {});
+
+                try {
+                    const parentDir = path.dirname(directoryPath);
+                    const baseName = path.basename(directoryPath);
+                    const entries = await fs.readdir(parentDir);
+                    await Promise.all(entries
+                        .filter((entry) => entry.startsWith(`${baseName}_`))
+                        .map((entry) => fs.rm(path.join(parentDir, entry), {
+                            recursive: true,
+                            force: true
+                        }).catch(() => {})));
+                } catch {
+                }
+            })
         ];
 
         await Promise.all(cleanupTasks);
     }
-};
+}

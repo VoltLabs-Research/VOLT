@@ -37,6 +37,12 @@ export interface DebugEntrypointExecutionResult {
     outputDir: string;
 }
 
+export interface PreparedDebugExecutionEnvironment {
+    selectedDump: DebugDumpDescriptor;
+    dumpPath: string;
+    outputDir: string;
+}
+
 const isDebugDumpDescriptor = (value: unknown): value is DebugDumpDescriptor => {
     return isRecord(value)
         && typeof value.timestep === 'number'
@@ -211,6 +217,67 @@ export class DebugEntrypointExecutor {
         context: WorkflowExecutionContext,
         storageClusterId?: string
     ): Promise<DebugEntrypointExecutionResult> {
+        const preparedEnvironment = await this.prepareExecutionEnvironment(
+            sessionId,
+            context,
+            storageClusterId
+        );
+
+        try {
+            return await this.executePrepared(node, context, preparedEnvironment);
+        } catch (error) {
+            const cleanupTasks: Array<Promise<unknown>> = [
+                fs.rm(preparedEnvironment.dumpPath, { force: true }).catch(() => {}),
+                fs.rm(preparedEnvironment.outputDir, { recursive: true, force: true }).catch(() => {})
+            ];
+            await Promise.all(cleanupTasks);
+            throw error;
+        }
+    }
+
+    async prepareExecutionEnvironment(
+        sessionId: string,
+        context: WorkflowExecutionContext,
+        storageClusterId?: string
+    ): Promise<PreparedDebugExecutionEnvironment> {
+        const resolvedStorageClusterId = storageClusterId || VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID;
+        if (!storageClusterId) {
+            logger.warn(
+                {
+                    sessionId,
+                    fallbackOwnerClusterId: resolvedStorageClusterId
+                },
+                '@debug-entrypoint-executor: missing trajectory storage cluster id, falling back to Volt server owner'
+            );
+        }
+
+        const selectedDump = resolveSelectedDumpDescriptor(context);
+        if (!selectedDump) {
+            throw new Error('No selected trajectory dump is available for debug execution');
+        }
+
+        const dumpPath = await downloadDumpForDebugExecution(
+            this.objectStore,
+            selectedDump.path,
+            resolvedStorageClusterId
+        );
+        const outputDir = path.join(DAEMON_PATHS.analysisOutput, `debug-${sessionId}-${Date.now()}`);
+        await fs.mkdir(outputDir, { recursive: true });
+
+        updateContextOutputsForDebugExecution(context, selectedDump, dumpPath, outputDir);
+
+        return {
+            selectedDump,
+            dumpPath,
+            outputDir
+        };
+    }
+
+    async executePrepared(
+        node: WorkflowNode,
+        context: WorkflowExecutionContext,
+        preparedEnvironment: PreparedDebugExecutionEnvironment
+    ): Promise<DebugEntrypointExecutionResult> {
         const entrypointData = isRecord(node.data.entrypoint)
             ? node.data.entrypoint as WorkflowEntrypointData
             : undefined;
@@ -225,107 +292,64 @@ export class DebugEntrypointExecutor {
             throw new Error(`Entrypoint ${node.id} is missing runtime configuration`);
         }
 
-        const resolvedStorageClusterId = storageClusterId || VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID;
-        if (!storageClusterId) {
-            logger.warn(
-                {
-                    sessionId,
-                    nodeId: node.id,
-                    fallbackOwnerClusterId: resolvedStorageClusterId
-                },
-                '@debug-entrypoint-executor: missing trajectory storage cluster id, falling back to Volt server owner'
-            );
-        }
-
-        const selectedDump = resolveSelectedDumpDescriptor(context);
-        if (!selectedDump) {
-            throw new Error('No selected trajectory dump is available for debug execution');
-        }
-
         const normalizedEntrypointData = entrypointData ?? {};
-        let dumpPath = '';
-        let outputDir = '';
-
-        try {
-            dumpPath = await downloadDumpForDebugExecution(
-                this.objectStore,
-                selectedDump.path,
-                resolvedStorageClusterId
-            );
-            outputDir = path.join(DAEMON_PATHS.analysisOutput, `debug-${sessionId}-${Date.now()}`);
-            await fs.mkdir(outputDir, { recursive: true });
-
-            updateContextOutputsForDebugExecution(context, selectedDump, dumpPath, outputDir);
-
-            const executionRuntime = await this.pluginBinaryCacheService.getExecutionRuntime({
-                binaryObjectPath,
-                entrypointType: normalizedEntrypointData.type === EntrypointType.PythonScript
-                    ? EntrypointType.PythonScript
-                    : normalizedEntrypointData.type === EntrypointType.Executable
-                        ? EntrypointType.Executable
-                        : undefined,
-                requirementsFile: typeof normalizedEntrypointData.requirementsFile === 'string'
-                    ? normalizedEntrypointData.requirementsFile
+        const executionRuntime = await this.pluginBinaryCacheService.getExecutionRuntime({
+            binaryObjectPath,
+            entrypointType: normalizedEntrypointData.type === EntrypointType.PythonScript
+                ? EntrypointType.PythonScript
+                : normalizedEntrypointData.type === EntrypointType.Executable
+                    ? EntrypointType.Executable
                     : undefined,
-                entrypointScript: typeof normalizedEntrypointData.entrypointScript === 'string'
-                    ? normalizedEntrypointData.entrypointScript
-                    : undefined
-            });
-            const resolvedArguments = resolveWorkflowTemplate(argumentsTemplate, context.outputs);
-            const args = parseArguments(resolvedArguments);
-            const executionArgs = [...executionRuntime.argsPrefix, ...args];
-            const jobId = `${sessionId}:${node.id}`;
+            requirementsFile: typeof normalizedEntrypointData.requirementsFile === 'string'
+                ? normalizedEntrypointData.requirementsFile
+                : undefined,
+            entrypointScript: typeof normalizedEntrypointData.entrypointScript === 'string'
+                ? normalizedEntrypointData.entrypointScript
+                : undefined
+        });
+        const resolvedArguments = resolveWorkflowTemplate(argumentsTemplate, context.outputs);
+        const args = parseArguments(resolvedArguments);
+        const executionArgs = [...executionRuntime.argsPrefix, ...args];
+        const jobId = `debug:${node.id}:${Date.now()}`;
 
-            logger.info(
-                {
-                    sessionId,
-                    nodeId: node.id,
-                    binaryObjectPath,
-                    args: executionArgs,
-                    outputDir
-                },
-                '@debug-entrypoint-executor: executing plugin entrypoint'
-            );
-
-            const processResult = await this.binaryExecutorService.executeProcess({
-                jobId,
-                commandPath: executionRuntime.commandPath,
+        logger.info(
+            {
+                nodeId: node.id,
+                binaryObjectPath,
                 args: executionArgs,
-                cwd: outputDir,
-                env: executionRuntime.env,
-                timeoutMs: typeof normalizedEntrypointData.timeout === 'number' && Number.isFinite(normalizedEntrypointData.timeout)
-                    ? normalizedEntrypointData.timeout
-                    : undefined
-            });
-            const outputFiles = await fs.readdir(outputDir).catch(() => []);
+                outputDir: preparedEnvironment.outputDir
+            },
+            '@debug-entrypoint-executor: executing plugin entrypoint'
+        );
 
-            return {
-                dumpPath,
-                outputDir,
-                output: {
-                    binaryObjectPath,
-                    commandPath: executionRuntime.commandPath,
-                    artifactPath: executionRuntime.artifactPath,
-                    args: executionArgs,
-                    resolvedArguments,
-                    dumpPath,
-                    outputPath: outputDir,
-                    outputFiles,
-                    exitCode: processResult.code,
-                    stdout: processResult.stdout,
-                    stderr: processResult.stderr
-                }
-            };
-        } catch (error) {
-            const cleanupTasks: Array<Promise<unknown>> = [];
-            if (dumpPath) {
-                cleanupTasks.push(fs.rm(dumpPath, { force: true }).catch(() => {}));
+        const processResult = await this.binaryExecutorService.executeProcess({
+            jobId,
+            commandPath: executionRuntime.commandPath,
+            args: executionArgs,
+            cwd: preparedEnvironment.outputDir,
+            env: executionRuntime.env,
+            timeoutMs: typeof normalizedEntrypointData.timeout === 'number' && Number.isFinite(normalizedEntrypointData.timeout)
+                ? normalizedEntrypointData.timeout
+                : undefined
+        });
+        const outputFiles = await fs.readdir(preparedEnvironment.outputDir).catch(() => []);
+
+        return {
+            dumpPath: preparedEnvironment.dumpPath,
+            outputDir: preparedEnvironment.outputDir,
+            output: {
+                binaryObjectPath,
+                commandPath: executionRuntime.commandPath,
+                artifactPath: executionRuntime.artifactPath,
+                args: executionArgs,
+                resolvedArguments,
+                dumpPath: preparedEnvironment.dumpPath,
+                outputPath: preparedEnvironment.outputDir,
+                outputFiles,
+                exitCode: processResult.code,
+                stdout: processResult.stdout,
+                stderr: processResult.stderr
             }
-            if (outputDir) {
-                cleanupTasks.push(fs.rm(outputDir, { recursive: true, force: true }).catch(() => {}));
-            }
-            await Promise.all(cleanupTasks);
-            throw error;
-        }
+        };
     }
 }

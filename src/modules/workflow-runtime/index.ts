@@ -2,6 +2,7 @@ import { createWorkflowNodeRegistry } from './factories';
 import { DebugSessionManager, WorkflowEngine, type WorkflowNodeRegistry } from './services';
 import type { BinaryExecutorService } from '@/modules/job-runtime/services/BinaryExecutorService';
 import type { PluginBinaryCacheService } from '@/modules/job-runtime/services/PluginBinaryCacheService';
+import type { NativeModuleLoader } from '@/modules/trajectory-native/services';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
 export interface WorkflowRuntimeModule {
@@ -14,6 +15,7 @@ export const createWorkflowRuntimeModule = (deps: {
     objectStore: ClusterObjectStore;
     pluginBinaryCacheService: PluginBinaryCacheService;
     binaryExecutorService: BinaryExecutorService;
+    nativeModuleLoader: NativeModuleLoader;
 }): WorkflowRuntimeModule => {
     const workflowNodeRegistry = createWorkflowNodeRegistry();
 

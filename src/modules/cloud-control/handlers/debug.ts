@@ -1,6 +1,8 @@
 import type { DebugSessionManager } from '@/modules/workflow-runtime/services';
+import type { NestedPluginDefinition, PluginReferenceExecutionRequest } from '@/shared/contracts';
 import type { ReverseChannelCommandHandler } from '../services';
 import {
+    readRecord,
     readOptionalNumber,
     readOptionalRecord,
     readOptionalString,
@@ -13,6 +15,41 @@ import {
 interface DebugHandlersDependencies {
     debugSessionManager: DebugSessionManager;
 }
+
+const readOptionalArray = <T>(
+    value: unknown,
+    fieldName: string,
+    readEntry: (entry: unknown) => T
+): T[] => {
+    if (typeof value === 'undefined') {
+        return [];
+    }
+
+    if (!Array.isArray(value)) {
+        throw new Error(`${fieldName} must be an array`);
+    }
+
+    return value.map(readEntry);
+};
+
+const readNestedPluginDefinition = (value: unknown): NestedPluginDefinition => {
+    const record = readRecord(value, 'nestedPlugins');
+
+    return {
+        pluginId: readString(record.pluginId, 'nestedPlugins.pluginId'),
+        workflow: readWorkflowDefinition(record.workflow)
+    };
+};
+
+const readPluginReferenceExecutionRequest = (value: unknown): PluginReferenceExecutionRequest => {
+    const record = readRecord(value, 'pluginReferenceExecutions');
+
+    return {
+        referencePath: readString(record.referencePath, 'pluginReferenceExecutions.referencePath'),
+        pluginId: readString(record.pluginId, 'pluginReferenceExecutions.pluginId'),
+        config: readRecord(record.config, 'pluginReferenceExecutions.config')
+    };
+};
 
 export const createDebugHandlers = (deps: DebugHandlersDependencies): ReverseChannelCommandHandler[] => [
     {
@@ -27,9 +64,21 @@ export const createDebugHandlers = (deps: DebugHandlersDependencies): ReverseCha
             const userConfig = readOptionalRecord(record.config) ?? {};
             const timestep = readOptionalNumber(record.timestep);
             const storageClusterId = readOptionalString(record.storageClusterId, '');
+            const nestedPlugins = readOptionalArray(
+                record.nestedPlugins,
+                'nestedPlugins',
+                readNestedPluginDefinition
+            );
+            const pluginReferenceExecutions = readOptionalArray(
+                record.pluginReferenceExecutions,
+                'pluginReferenceExecutions',
+                readPluginReferenceExecutionRequest
+            );
 
             const sessionInfo = deps.debugSessionManager.createSession({
                 workflow,
+                nestedPlugins,
+                pluginReferenceExecutions,
                 trajectoryId,
                 trajectoryFrames,
                 pluginId,
