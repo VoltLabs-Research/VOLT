@@ -323,7 +323,7 @@ const ArgumentDefinitionSection = ({
                         <Container className='d-flex column gap-05 mt-05'>
                             <Paragraph className='font-size-085 font-bold'>Options</Paragraph>
                             {(argument.options ?? []).map((option, optionIndex) => (
-                                <Container key={optionIndex} className='d-flex items-center gap-05'>
+                                <Container key={optionIndex} className='d-flex column items-center gap-05'>
                                     <FormFieldRHF
                                         variant='inline'
                                         label='Key'

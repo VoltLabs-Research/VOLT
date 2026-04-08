@@ -9,5 +9,6 @@ export const PLUGIN_TOKENS = Object.freeze({
     PluginExecutionRouter: Symbol.for('PluginExecutionRouter'),
     ListingRowsExportPresenter: Symbol.for('ListingRowsExportPresenter'),
     PluginExposureExportService: Symbol.for('PluginExposureExportService'),
+    PluginDebugSessionRegistryService: Symbol.for('PluginDebugSessionRegistryService'),
     PluginDebugSocketModule: Symbol.for('PluginDebugSocketModule')
 });

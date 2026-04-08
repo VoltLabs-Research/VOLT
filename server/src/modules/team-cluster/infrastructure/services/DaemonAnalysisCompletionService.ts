@@ -1,10 +1,10 @@
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
 import { resolveAnalysisComputeClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
@@ -14,6 +14,7 @@ import IORedis from 'ioredis';
 import logger from '@shared/infrastructure/logger';
 import { injectable, inject } from 'tsyringe';
 import type Analysis from '@modules/analysis/domain/entities/Analysis';
+import type AnalysisExecutionLogService from '@modules/analysis/infrastructure/services/AnalysisExecutionLogService';
 import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 
 const ANALYSIS_QUEUE_TYPE = 'analysis_processing';
@@ -162,6 +163,9 @@ export default class DaemonAnalysisCompletionService {
 
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
         private readonly analysisRepo: IAnalysisRepository,
+
+        @inject(ANALYSIS_TOKENS.AnalysisExecutionLogService)
+        private readonly analysisExecutionLogService: AnalysisExecutionLogService,
 
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly trajectoryRepo: ITrajectoryRepository
@@ -315,6 +319,22 @@ export default class DaemonAnalysisCompletionService {
             error
         });
 
+        if (typeof trajectoryContext.timestep === 'number' && trajectoryContext.trajectoryId) {
+            await this.analysisExecutionLogService.sealFrameLog({
+                analysisId,
+                teamId,
+                trajectoryId: trajectoryContext.trajectoryId,
+                jobId,
+                timestep: trajectoryContext.timestep,
+                status: success ? 'completed' : 'failed'
+            }).catch((sealError: unknown) => {
+                logger.warn(
+                    { analysisId, jobId, err: sealError, timestep: trajectoryContext.timestep },
+                    '[DaemonAnalysisCompletion] Failed to seal frame log'
+                );
+            });
+        }
+
         // 2. Increment completedFrames on analysis
         if (success) {
             const completedFramesUpdate: Record<string, unknown> = {
@@ -357,6 +377,21 @@ export default class DaemonAnalysisCompletionService {
 
         if (await this.hasTerminalReceipt(this.analysisTerminalReceiptKey(analysisId, jobId))) {
             return;
+        }
+
+        if (status === JobStatus.Running && typeof trajectoryContext.timestep === 'number' && trajectoryContext.trajectoryId) {
+            await this.analysisExecutionLogService.markFrameRunning({
+                analysisId,
+                teamId,
+                trajectoryId: trajectoryContext.trajectoryId,
+                jobId,
+                timestep: trajectoryContext.timestep
+            }).catch((markError: unknown) => {
+                logger.warn(
+                    { analysisId, jobId, err: markError, timestep: trajectoryContext.timestep },
+                    '[DaemonAnalysisCompletion] Failed to initialize frame log state'
+                );
+            });
         }
 
         await this.publishJobStatusChanged({

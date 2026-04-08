@@ -1,4 +1,5 @@
-import { CORE_TABS } from '../../molecules/TimelineHeader';
+import { CORE_TABS, TimelineTab } from '../../molecules/TimelineHeader';
+import AnalysisLogPanel from '../AnalysisLogPanel';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import SimulationCellView from '../../molecules/SimulationCellView';
 import TimelineHeader from '../../molecules/TimelineHeader';
@@ -44,7 +45,7 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
     const { timelineExposureId, setTimelineExposureId } = useCanvasUrlState();
     const selectedTeamId = useSelectedTeamId();
     const { pluginId, isPluginReady, listingExposures } = useCanvasTimelineTabs({ trajectory, analysisId });
-    const { toneByTimestep } = useTimelineJobActivity(trajectory?._id);
+    const { toneByTimestep, getAnalysisFrameStatus } = useTimelineJobActivity(trajectory?._id);
 
     const exposureTabs = useMemo<TimelineTabOption[]>(() => {
         return listingExposures.map((exposure) => ({
@@ -55,8 +56,17 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
     }, [listingExposures]);
 
     const tabs = useMemo<TimelineTabOption[]>(() => {
-        return [...CORE_TABS, ...exposureTabs];
-    }, [exposureTabs]);
+        const nextTabs = [...CORE_TABS];
+
+        if (analysisId) {
+            nextTabs.push({
+                id: TimelineTab.Log,
+                label: 'Log'
+            });
+        }
+
+        return [...nextTabs, ...exposureTabs];
+    }, [analysisId, exposureTabs]);
 
     const hasExposure = useCallback((exposureId?: string) => {
         if (!exposureId) return false;
@@ -103,7 +113,11 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
             setTimelineExposureId(undefined, { replace: true });
             setActiveTab('timeline');
         }
-    }, [analysisId, timelineExposureId, setTimelineExposureId]);
+
+        if (!analysisId && activeTab === TimelineTab.Log) {
+            setActiveTab(TimelineTab.Timeline);
+        }
+    }, [activeTab, analysisId, timelineExposureId, setTimelineExposureId]);
 
     const activeExposureId = useMemo(() => {
         return activeTab.startsWith('exposure:')
@@ -163,6 +177,10 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
     const startFrame = rangeStart ?? availableTimesteps[0];
     const endFrame = rangeEnd ?? availableTimesteps[availableTimesteps.length - 1];
     const currentFrame = currentTimestep ?? startFrame;
+    const analysisFrameStatus = analysisId && typeof currentFrame === 'number'
+        ? getAnalysisFrameStatus(analysisId, currentFrame)
+        : undefined;
+    const isLiveLogFrame = analysisFrameStatus === 'running';
 
     const rulerRef = useRef<HTMLDivElement>(null);
     const tickElementsRef = useRef<HTMLDivElement[]>([]);
@@ -452,6 +470,18 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
             {activeTab === 'simulation-cell' && (
                 <Container className="canvas-timeline-body flex-1 p-relative overflow-hidden min-h-0">
                     <SimulationCellView trajectory={trajectory} currentTimestep={currentTimestep} />
+                </Container>
+            )}
+
+            {activeTab === TimelineTab.Log && analysisId && (
+                <Container className="canvas-timeline-body flex-1 p-relative overflow-hidden min-h-0">
+                    <AnalysisLogPanel
+                        analysisId={analysisId}
+                        timestep={currentFrame}
+                        active={activeTab === TimelineTab.Log}
+                        live={isLiveLogFrame}
+                        activityStatus={analysisFrameStatus}
+                    />
                 </Container>
             )}
 

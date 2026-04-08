@@ -1,5 +1,9 @@
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import type AnalysisExecutionLogService from '@modules/analysis/infrastructure/services/AnalysisExecutionLogService';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import PluginDebugSessionRegistryService from '@modules/plugin/infrastructure/services/PluginDebugSessionRegistryService';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import CompleteTeamClusterDeletionUseCase from '@modules/team-cluster/application/use-cases/CompleteTeamClusterDeletionUseCase';
 import ProcessDaemonJobCompletionUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonJobCompletionUseCase';
@@ -97,7 +101,13 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         private readonly processDaemonSceneArtifactUpsertUseCase: ProcessDaemonSceneArtifactUpsertUseCase,
 
         @inject(ProcessDaemonTrajectoryImportUseCase)
-        private readonly processDaemonTrajectoryImportUseCase: ProcessDaemonTrajectoryImportUseCase
+        private readonly processDaemonTrajectoryImportUseCase: ProcessDaemonTrajectoryImportUseCase,
+
+        @inject(ANALYSIS_TOKENS.AnalysisExecutionLogService)
+        private readonly analysisExecutionLogService: AnalysisExecutionLogService,
+
+        @inject(PLUGIN_TOKENS.PluginDebugSessionRegistryService)
+        private readonly pluginDebugSessionRegistry: PluginDebugSessionRegistryService
     ) {
         super(emitter, roomManager, eventRegistry);
     }
@@ -219,7 +229,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
                 }
 
                 if (this.teamClusterReverseChannelService.isRegisteredDaemonSocket(connection.id)) {
-                    const handled = await this.handleDaemonServerEvent(payload);
+                    const handled = await this.handleDaemonServerEvent(connection.id, payload);
                     if (handled) {
                         return;
                     }
@@ -337,7 +347,21 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         });
     }
 
-    private async handleDaemonServerEvent(payload: TeamClusterDaemonMessage): Promise<boolean> {
+    private async handleDaemonServerEvent(socketId: string, payload: TeamClusterDaemonMessage): Promise<boolean> {
+        const registeredTeamClusterId = this.teamClusterReverseChannelService.getRegisteredTeamClusterId(socketId);
+
+        if ('teamClusterId' in payload && registeredTeamClusterId && payload.teamClusterId !== registeredTeamClusterId) {
+            logger.warn(
+                {
+                    registeredTeamClusterId,
+                    payloadTeamClusterId: payload.teamClusterId,
+                    type: payload.type
+                },
+                'Ignoring daemon server event with mismatched team cluster id'
+            );
+            return true;
+        }
+
         if (
             payload.type === 'analysis-job-completion'
             || payload.type === 'analysis-job-status'
@@ -357,6 +381,30 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
                     'Failed to process daemon job event'
                 );
             }
+
+            return true;
+        }
+
+        if (payload.type === 'analysis-log-chunk') {
+            await this.analysisExecutionLogService.appendFrameSegments({
+                analysisId: payload.analysisId,
+                teamId: payload.teamId,
+                trajectoryId: payload.trajectoryId,
+                jobId: payload.jobId,
+                timestep: payload.timestep,
+                segments: payload.segments
+            });
+
+            return true;
+        }
+
+        if (payload.type === 'debug-log-chunk') {
+            this.pluginDebugSessionRegistry.emitLogChunk(
+                payload.sessionId,
+                payload.teamClusterId,
+                payload.nodeId,
+                payload.segments
+            );
 
             return true;
         }

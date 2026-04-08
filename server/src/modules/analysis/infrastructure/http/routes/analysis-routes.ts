@@ -10,6 +10,7 @@ export default createHttpModule({
     routes: (router) => {
         router.get('/', controllers.listByTeamId.handle);
         router.get('/trajectory/:trajectoryId', controllers.listByTrajectoryId.handle);
+        router.get('/:analysisId/logs/:timestep', controllers.getFrameLog.handle);
         router.post('/:analysisId/failed-frames/retries', controllers.retryFailedFrames.handle);
         router.route('/:analysisId')
             .get(controllers.getById.handle)

@@ -7,7 +7,10 @@ import { PLUGIN_DEBUG_SOCKET_EVENTS } from '@/modules/plugin/api/entities/plugin
 import { sileo } from 'sileo';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import type { IWorkflow } from '@/modules/plugin/api/entities/plugin/workflow';
-import type { DebugTraceNode } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
+import type {
+    DebugExecutionLogSegment,
+    DebugTraceNode
+} from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 
 interface DebugSessionCreatedEvent {
     sessionId: string;
@@ -57,6 +60,12 @@ interface DebugSessionCompletedEvent {
     exposureResults: unknown[];
     totalDuration: number;
 };
+
+interface DebugNodeLogChunkEvent {
+    sessionId: string;
+    nodeId: string;
+    segments: DebugExecutionLogSegment[];
+}
 
 interface DebugSessionErrorEvent {
     sessionId?: string;
@@ -144,6 +153,14 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
 
         usePluginDebugStore.getState().onNodeError(event.nodeId, event.error, event.stack, event.nestedTrace);
         sileo.error({ title: 'Node execution failed', description: event.error });
+    }, { enabled: subscribe && !!sessionId });
+
+    useSocketEvent<DebugNodeLogChunkEvent>(PLUGIN_DEBUG_SOCKET_EVENTS.NODE_LOG_CHUNK, (event) => {
+        if (!isCurrentSessionEvent(event.sessionId)) {
+            return;
+        }
+
+        usePluginDebugStore.getState().onNodeLogChunk(event.nodeId, event.segments);
     }, { enabled: subscribe && !!sessionId });
 
     useSocketEvent<DebugSessionCompletedEvent>(PLUGIN_DEBUG_SOCKET_EVENTS.SESSION_COMPLETED, (event) => {

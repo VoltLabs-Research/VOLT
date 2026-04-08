@@ -4,6 +4,7 @@ export const PLUGIN_DEBUG_SOCKET_EVENTS = {
     NODE_COMPLETED: 'debug:node:completed',
     NODE_SKIPPED: 'debug:node:skipped',
     NODE_ERROR: 'debug:node:error',
+    NODE_LOG_CHUNK: 'debug:node:log-chunk',
     SESSION_COMPLETED: 'debug:session:completed',
     SESSION_ERROR: 'debug:session:error',
     START: 'debug:start',
