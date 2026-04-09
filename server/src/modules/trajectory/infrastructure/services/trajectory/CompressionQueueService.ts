@@ -6,9 +6,15 @@ import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/Traject
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import CompressionProcessor from './CompressionProcessor';
+import {
+    delayJobOnQueueScopeContention,
+    tryAcquireQueueScopeLease,
+    type QueueScopeLease
+} from './queue-scope-lease';
+import TeamClusterQueueScopeLimitsService from './TeamClusterQueueScopeLimitsService';
 import logger from '@shared/infrastructure/logger';
 import { injectable, inject } from 'tsyringe';
-import { Queue, Worker } from 'bullmq';
+import { DelayedError, Queue, Worker } from 'bullmq';
 import type { Job } from 'bullmq';
 import { v4 as uuid } from 'uuid';
 import IORedis from 'ioredis';
@@ -52,6 +58,9 @@ export default class CompressionQueueService {
         @inject(TRAJECTORY_TOKENS.CompressionProcessor)
         private readonly compressionProcessor: CompressionProcessor,
 
+        @inject(TRAJECTORY_TOKENS.TeamClusterQueueScopeLimitsService)
+        private readonly teamClusterQueueScopeLimitsService: TeamClusterQueueScopeLimitsService,
+
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
 
@@ -85,15 +94,61 @@ export default class CompressionQueueService {
         this.worker = new Worker<CompressionJobData>(
             QUEUE_NAME,
             async (job) => {
-                await this.publishStatus(job.data.jobId, job.data.teamId, JobStatus.Running, {
-                    trajectoryId: job.data.trajectoryId,
-                    trajectoryName: job.data.trajectoryName,
-                    timestep: job.data.timestep,
-                    message: 'Compressing frame with zstd'
-                });
+                let queueScopeLease: QueueScopeLease | null = null;
 
-                await this.compressionProcessor.process(job.data);
-                return job.data;
+                try {
+                    const trajectoryId = job.data.trajectoryId.trim();
+                    if (!trajectoryId) {
+                        throw new Error(`Missing trajectoryId for compression job ${job.data.jobId}`);
+                    }
+
+                    const queueScopeLimits = await this.teamClusterQueueScopeLimitsService.getLimits(
+                        job.data.teamClusterId,
+                        'trajectoryCompression'
+                    );
+                    const { lease, blockingScope } = await tryAcquireQueueScopeLease(
+                        this.redis,
+                        QUEUE_NAME,
+                        [
+                            {
+                                scope: 'trajectory',
+                                scopeId: trajectoryId,
+                                limit: queueScopeLimits.maxRunningPerTrajectory
+                            },
+                            {
+                                scope: 'team',
+                                scopeId: job.data.teamId,
+                                limit: queueScopeLimits.maxRunningPerTeam
+                            }
+                        ]
+                    );
+                    queueScopeLease = lease;
+                    if (!queueScopeLease || blockingScope) {
+                        await delayJobOnQueueScopeContention(job, {
+                            queueName: QUEUE_NAME,
+                            jobId: job.data.jobId,
+                            scope: blockingScope ?? {
+                                scope: 'trajectory',
+                                scopeId: trajectoryId,
+                                limit: queueScopeLimits.maxRunningPerTrajectory
+                            }
+                        });
+                    }
+
+                    await this.publishStatus(job.data.jobId, job.data.teamId, JobStatus.Running, {
+                        trajectoryId,
+                        trajectoryName: job.data.trajectoryName,
+                        timestep: job.data.timestep,
+                        message: 'Compressing frame with zstd'
+                    });
+
+                    await this.compressionProcessor.process(job.data);
+                    return job.data;
+                } finally {
+                    if (queueScopeLease) {
+                        await queueScopeLease.release();
+                    }
+                }
             },
             {
                 connection,
@@ -126,6 +181,7 @@ export default class CompressionQueueService {
 
         this.worker.on('failed', async (job, error) => {
             if (!job) return;
+            if (error instanceof DelayedError) return;
             const terminalFailure = this.isTerminalFailure(job);
 
             if (!terminalFailure) {

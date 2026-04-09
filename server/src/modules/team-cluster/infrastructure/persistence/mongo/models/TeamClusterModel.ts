@@ -77,6 +77,46 @@ const queueConcurrencySchema = new Schema({
     _id: false
 });
 
+const queueScopeLimitSchema = new Schema({
+    maxRunningPerTrajectory: {
+        type: Number,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
+        min: [0, TEAM_CLUSTER_VALIDATION_ERROR]
+    },
+    maxRunningPerTeam: {
+        type: Number,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
+        min: [0, TEAM_CLUSTER_VALIDATION_ERROR]
+    }
+}, {
+    _id: false
+});
+
+const queueScopeLimitsSchema = new Schema({
+    analysisProcessing: {
+        type: queueScopeLimitSchema,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
+    },
+    artifactUpload: {
+        type: queueScopeLimitSchema,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
+    },
+    trajectoryGlbConversion: {
+        type: queueScopeLimitSchema,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
+    },
+    cloudUpload: {
+        type: queueScopeLimitSchema,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
+    },
+    trajectoryCompression: {
+        type: queueScopeLimitSchema,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
+    }
+}, {
+    _id: false
+});
+
 const teamClusterRoleSchema = new Schema({
     desiredRole: {
         type: String,
@@ -179,6 +219,10 @@ const TeamClusterSchema = new Schema({
     },
     queueConcurrency: {
         type: queueConcurrencySchema,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
+    },
+    queueScopeLimits: {
+        type: queueScopeLimitsSchema,
         required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
     },
     roleConfig: {

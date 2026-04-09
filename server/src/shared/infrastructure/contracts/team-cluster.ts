@@ -1,11 +1,12 @@
 import type {
     TeamClusterEffectiveCapabilitiesProps,
     TeamClusterQueueConcurrencyProps,
+    TeamClusterQueueScopeLimitsProps,
     TeamClusterRuntimeRoleConfigProps,
     TeamClusterServicesProps
 } from '@modules/team-cluster/domain/entities/TeamCluster';
 
-export const TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION = 1;
+export const TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION = 2;
 export const TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH = '/internal/team-cluster/object-store/v1';
 export const TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER = 'x-team-cluster-id';
 export const TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER = 'x-team-cluster-daemon-password';
@@ -151,11 +152,13 @@ export interface ResolvedTeamClusterServices {
 export interface TeamClusterDaemonQueueConcurrencyApplyPayload {
     [key: string]: unknown;
     queueConcurrency: TeamClusterQueueConcurrencyProps;
+    queueScopeLimits: TeamClusterQueueScopeLimitsProps;
 };
 
 export interface TeamClusterRuntimeSnapshot {
     contractVersion: number;
     queueConcurrency: TeamClusterQueueConcurrencyProps;
+    queueScopeLimits: TeamClusterQueueScopeLimitsProps;
     roleConfig: TeamClusterRuntimeRoleConfigProps;
     effectiveCapabilities: TeamClusterEffectiveCapabilitiesProps;
 }

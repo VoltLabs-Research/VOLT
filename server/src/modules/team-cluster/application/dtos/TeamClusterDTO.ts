@@ -41,6 +41,19 @@ export interface TeamClusterQueueConcurrencyDTO {
     sshImport: number;
 };
 
+export interface TeamClusterQueueScopeLimitDTO {
+    maxRunningPerTrajectory: number;
+    maxRunningPerTeam: number;
+};
+
+export interface TeamClusterQueueScopeLimitsDTO {
+    analysisProcessing: TeamClusterQueueScopeLimitDTO;
+    artifactUpload: TeamClusterQueueScopeLimitDTO;
+    trajectoryGlbConversion: TeamClusterQueueScopeLimitDTO;
+    cloudUpload: TeamClusterQueueScopeLimitDTO;
+    trajectoryCompression: TeamClusterQueueScopeLimitDTO;
+};
+
 export interface TeamClusterRuntimeRoleConfigDTO {
     desiredRole: TeamClusterRuntimeRoleConfigProps['desiredRole'];
     effectiveRole: TeamClusterRuntimeRoleConfigProps['effectiveRole'];
@@ -70,6 +83,7 @@ export interface TeamClusterDTO {
     lastDisconnectAt: Date | null;
     services: TeamClusterServicesDTO;
     queueConcurrency: TeamClusterQueueConcurrencyDTO;
+    queueScopeLimits: TeamClusterQueueScopeLimitsDTO;
     roleConfig: TeamClusterRuntimeRoleConfigDTO;
     effectiveCapabilities: TeamClusterEffectiveCapabilitiesDTO;
     activeTransfers?: ClusterTransferJobDTO[];
@@ -128,6 +142,23 @@ export const toTeamClusterDTO = (
         },
         queueConcurrency: {
             ...teamCluster.props.queueConcurrency
+        },
+        queueScopeLimits: {
+            analysisProcessing: {
+                ...teamCluster.props.queueScopeLimits.analysisProcessing
+            },
+            artifactUpload: {
+                ...teamCluster.props.queueScopeLimits.artifactUpload
+            },
+            trajectoryGlbConversion: {
+                ...teamCluster.props.queueScopeLimits.trajectoryGlbConversion
+            },
+            cloudUpload: {
+                ...teamCluster.props.queueScopeLimits.cloudUpload
+            },
+            trajectoryCompression: {
+                ...teamCluster.props.queueScopeLimits.trajectoryCompression
+            }
         },
         roleConfig: {
             desiredRole: roleConfig.desiredRole,

@@ -37,6 +37,19 @@ export interface TeamClusterQueueConcurrencyProps {
     sshImport: number;
 };
 
+export interface TeamClusterQueueScopeLimitProps {
+    maxRunningPerTrajectory: number;
+    maxRunningPerTeam: number;
+};
+
+export interface TeamClusterQueueScopeLimitsProps {
+    analysisProcessing: TeamClusterQueueScopeLimitProps;
+    artifactUpload: TeamClusterQueueScopeLimitProps;
+    trajectoryGlbConversion: TeamClusterQueueScopeLimitProps;
+    cloudUpload: TeamClusterQueueScopeLimitProps;
+    trajectoryCompression: TeamClusterQueueScopeLimitProps;
+};
+
 export type TeamClusterRole = 'cluster' | 'storage-server' | 'compute-node';
 
 export interface TeamClusterRoleCapabilitiesProps {
@@ -69,6 +82,29 @@ export const DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY: TeamClusterQueueConcurrency
     rasterizer: 3,
     glbPreprocessing: 5,
     sshImport: 1
+};
+
+export const DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS: TeamClusterQueueScopeLimitsProps = {
+    analysisProcessing: {
+        maxRunningPerTrajectory: 1,
+        maxRunningPerTeam: 0
+    },
+    artifactUpload: {
+        maxRunningPerTrajectory: 1,
+        maxRunningPerTeam: 0
+    },
+    trajectoryGlbConversion: {
+        maxRunningPerTrajectory: 1,
+        maxRunningPerTeam: 0
+    },
+    cloudUpload: {
+        maxRunningPerTrajectory: 1,
+        maxRunningPerTeam: 0
+    },
+    trajectoryCompression: {
+        maxRunningPerTrajectory: 1,
+        maxRunningPerTeam: 0
+    }
 };
 
 export const DEFAULT_TEAM_CLUSTER_ROLE: TeamClusterRole = 'cluster';
@@ -156,6 +192,7 @@ export interface TeamClusterProps {
     lastDisconnectAt: Date | null;
     services: TeamClusterServicesProps;
     queueConcurrency: TeamClusterQueueConcurrencyProps;
+    queueScopeLimits: TeamClusterQueueScopeLimitsProps;
     roleConfig: TeamClusterRuntimeRoleConfigProps;
     effectiveCapabilities?: TeamClusterEffectiveCapabilitiesProps;
     createdAt: Date;
