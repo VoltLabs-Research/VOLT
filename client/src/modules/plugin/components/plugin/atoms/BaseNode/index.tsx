@@ -3,7 +3,7 @@ import Container from '@/shared/presentation/components/Container';
 import DynamicIcon from '@/shared/presentation/components/DynamicIcon';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
-import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
+import { DebugNodeStatus, usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import type { DebugTraceNode } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import type { INodeData } from '@/modules/plugin/api/entities/plugin/workflow';
 import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
@@ -193,16 +193,30 @@ const BaseNode = ({
 
     const isExpanded = inspectedNodeId === id;
     const hasInspectableOutput = isDebugging && debugState &&
-        (debugState.status === 'completed' || debugState.status === 'failed' || debugState.status === 'skipped');
+        (debugState.status === DebugNodeStatus.Completed
+            || debugState.status === DebugNodeStatus.Failed
+            || debugState.status === DebugNodeStatus.Skipped);
     const nestedTrace = Array.isArray(debugState?.nestedTrace) ? debugState.nestedTrace : [];
     const hasNestedTrace = nestedTrace.length > 0;
     const logSegments = Array.isArray(debugState?.logSegments) ? debugState.logSegments : [];
 
     const isEntrypoint = nodeType === NodeType.ENTRYPOINT;
-    const hasLog = Boolean(
-        hasInspectableOutput
-        && (logSegments.length > 0 || (isEntrypoint && debugState?.output))
+    const supportsExecutionLog = nodeType === NodeType.ENTRYPOINT || nodeType === NodeType.PLUGIN;
+    const canInspectExecutionLog = Boolean(
+        isDebugging
+        && debugState
+        && supportsExecutionLog
+        && (debugState.status === DebugNodeStatus.Running || hasInspectableOutput)
     );
+    const hasLog = Boolean(
+        canInspectExecutionLog
+        && (
+            logSegments.length > 0
+            || (isEntrypoint && debugState?.output)
+            || debugState?.status === DebugNodeStatus.Running
+        )
+    );
+    const showDebugActions = hasInspectableOutput || hasLog;
 
     let debugClass = '';
     if (isDebugging && debugState) {
@@ -319,15 +333,17 @@ const BaseNode = ({
                 {children}
             </Container>
 
-            {hasInspectableOutput && (
+            {showDebugActions && (
                 <Container className='p-absolute center-x items-center workflow-node-btn-group'>
-                    <button
-                        className={`b-soft radius-full cursor-pointer font-weight-6 workflow-node-data-btn ${isExpanded ? 'workflow-node-data-btn--active' : ''}`}
-                        onClick={handleDataToggle}
-                    >
-                        <Database size={11} />
-                        Data
-                    </button>
+                    {hasInspectableOutput && (
+                        <button
+                            className={`b-soft radius-full cursor-pointer font-weight-6 workflow-node-data-btn ${isExpanded ? 'workflow-node-data-btn--active' : ''}`}
+                            onClick={handleDataToggle}
+                        >
+                            <Database size={11} />
+                            Data
+                        </button>
+                    )}
 
                     {hasLog && (
                         <button
@@ -438,6 +454,9 @@ const BaseNode = ({
                                 )}
                                 {stderr && (
                                     <span className='workflow-node-exec-log-stderr'>{stderr}</span>
+                                )}
+                                {!stdout && !stderr && (
+                                    <span className='workflow-node-exec-log-empty'>Waiting for output...</span>
                                 )}
                             </>
                         )}

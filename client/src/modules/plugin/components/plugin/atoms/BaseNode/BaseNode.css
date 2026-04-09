@@ -302,6 +302,11 @@
     color: var(--status-error);
 }
 
+.workflow-node-exec-log-empty {
+    color: var(--color-text-secondary);
+    font-style: italic;
+}
+
 .workflow-node-exec-log-chunk--stderr {
     color: var(--status-error);
 }
