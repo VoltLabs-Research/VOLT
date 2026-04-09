@@ -2,7 +2,9 @@ import Workflow, { WorkflowProps } from '@modules/plugin/domain/entities/plugin/
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import { WorkflowEdge } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowEdge';
 import { WorkflowNode, WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
+import { ArgumentType, type ArgumentDefinition } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
 import { EntrypointNodeType } from '@modules/plugin/domain/entities/plugin/workflow/nodes/EntrypointNode';
+import { PluginNodeExecutionMode } from '@modules/plugin/domain/entities/plugin/workflow/nodes/PluginNode';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import {
     IWorkflowValidatorService,
@@ -13,6 +15,44 @@ import { PluginDependencyResolverService } from '@modules/plugin/infrastructure/
 import Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
 
 import { inject, injectable } from 'tsyringe';
+
+const RUNTIME_REACHABLE_ANCESTORS = new Set<WorkflowNodeType>([
+    WorkflowNodeType.Context,
+    WorkflowNodeType.ForEach
+]);
+
+const isAllowedSwitchHandle = (handle: string | undefined): boolean => {
+    return handle === 'cases' || handle === 'continue';
+};
+
+const resolvePluginNodeExecutionMode = (
+    pluginNodeData: {
+        executionMode?: unknown;
+        pluginId?: unknown;
+        argumentReference?: unknown;
+    }
+): PluginNodeExecutionMode => {
+    if (pluginNodeData.executionMode === PluginNodeExecutionMode.ArgumentReference) {
+        return PluginNodeExecutionMode.ArgumentReference;
+    }
+
+    if (pluginNodeData.executionMode === PluginNodeExecutionMode.Manual) {
+        return PluginNodeExecutionMode.Manual;
+    }
+
+    const pluginId = typeof pluginNodeData.pluginId === 'string'
+        ? pluginNodeData.pluginId.trim()
+        : '';
+    const argumentReference = typeof pluginNodeData.argumentReference === 'string'
+        ? pluginNodeData.argumentReference.trim()
+        : '';
+
+    if (!pluginId && argumentReference) {
+        return PluginNodeExecutionMode.ArgumentReference;
+    }
+
+    return PluginNodeExecutionMode.Manual;
+};
 
 @injectable()
 export class WorkflowValidatorService implements IWorkflowValidatorService {
@@ -55,6 +95,9 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
         }
 
         if (Array.isArray(workflow.edges)) {
+            this.validateRuntimeEdgeTopology(workflow, errors);
+            this.validateIfStatementTopology(workflow, errors);
+            this.validateSwitchStatementTopology(workflow, errors);
             this.validateEntrypointTopology(workflow, errors);
         }
 
@@ -131,6 +174,8 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
             : '';
         const entrypointType = entrypointData.type === EntrypointNodeType.PythonScript
             ? EntrypointNodeType.PythonScript
+            : entrypointData.type === EntrypointNodeType.PackagedExecutable
+                ? EntrypointNodeType.PackagedExecutable
             : EntrypointNodeType.Executable;
 
         if (!binaryObjectPath) {
@@ -141,7 +186,10 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
             errors.push(`Top-level entrypoint ${entrypointNode.id} must define execution arguments`);
         }
 
-        if (entrypointType === EntrypointNodeType.PythonScript) {
+        if (
+            entrypointType === EntrypointNodeType.PythonScript
+            || entrypointType === EntrypointNodeType.PackagedExecutable
+        ) {
             const entrypointScript = typeof entrypointData.entrypointScript === 'string'
                 ? entrypointData.entrypointScript.trim()
                 : '';
@@ -190,61 +238,152 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
         return false;
     }
 
-    private validatePluginNodeTopology(workflow: WorkflowProps, errors: string[]): void {
-        const parentMap = new Map<string, WorkflowNode[]>();
-        const childMap = new Map<string, WorkflowNode[]>();
+    private validateRuntimeEdgeTopology(workflow: WorkflowProps, errors: string[]): void {
         const nodeMap = new Map(workflow.nodes.map((node) => [node.id, node]));
 
         for (const edge of workflow.edges) {
-            const parentNode = nodeMap.get(edge.source);
-            const childNode = nodeMap.get(edge.target);
-            if (!parentNode) {
+            const sourceNode = nodeMap.get(edge.source);
+            const targetNode = nodeMap.get(edge.target);
+            if (!sourceNode || !targetNode) {
                 continue;
             }
 
-            const parents = parentMap.get(edge.target) ?? [];
-            parents.push(parentNode);
-            parentMap.set(edge.target, parents);
-
-            if (childNode) {
-                const children = childMap.get(edge.source) ?? [];
-                children.push(childNode);
-                childMap.set(edge.source, children);
+            if (!this.isAllowedEdge(sourceNode.type, targetNode.type, edge.sourceHandle)) {
+                errors.push(`Edge ${edge.source} -> ${edge.target} is not valid for node types ${sourceNode.type} -> ${targetNode.type}`);
             }
         }
+
+        for (const node of workflow.nodes) {
+            if (
+                node.type === WorkflowNodeType.Modifier
+                || node.type === WorkflowNodeType.Arguments
+                || node.type === WorkflowNodeType.Context
+                || node.type === WorkflowNodeType.ForEach
+            ) {
+                continue;
+            }
+
+            const parents = workflow.edges.filter((edge) => edge.target === node.id);
+            if (node.type === WorkflowNodeType.Entrypoint || node.type === WorkflowNodeType.Plugin || node.type === WorkflowNodeType.IfStatement || node.type === WorkflowNodeType.SwitchStatement || node.type === WorkflowNodeType.SwitchCase || node.type === WorkflowNodeType.Exposure || node.type === WorkflowNodeType.Export) {
+                if (parents.length > 1) {
+                    errors.push(`Node ${node.id} does not support multiple incoming connections`);
+                }
+            }
+        }
+    }
+
+    private validateIfStatementTopology(workflow: WorkflowProps, errors: string[]): void {
+        for (const node of workflow.nodes) {
+            if (node.type !== WorkflowNodeType.IfStatement) {
+                continue;
+            }
+
+            const outgoingEdges = workflow.edges.filter((edge) => edge.source === node.id);
+            const invalidEdges = outgoingEdges.filter((edge) => {
+                return typeof edge.sourceHandle !== 'undefined'
+                    && edge.sourceHandle !== 'output-true'
+                    && edge.sourceHandle !== 'output-false'
+                    && edge.sourceHandle !== 'true'
+                    && edge.sourceHandle !== 'false';
+            });
+            if (invalidEdges.length > 0) {
+                errors.push(`If statement ${node.id} has invalid branch handles`);
+            }
+        }
+    }
+
+    private validateSwitchStatementTopology(workflow: WorkflowProps, errors: string[]): void {
+        const nodeMap = new Map(workflow.nodes.map((node) => [node.id, node]));
+
+        for (const node of workflow.nodes) {
+            if (node.type !== WorkflowNodeType.SwitchStatement) {
+                continue;
+            }
+
+            const outgoingEdges = workflow.edges.filter((edge) => edge.source === node.id);
+            const invalidHandles = outgoingEdges.filter((edge) => !isAllowedSwitchHandle(edge.sourceHandle));
+            if (invalidHandles.length > 0) {
+                errors.push(`Switch statement ${node.id} must only use "cases" or "continue" handles`);
+            }
+
+            const caseEdges = outgoingEdges.filter((edge) => edge.sourceHandle === 'cases');
+            if (caseEdges.length === 0) {
+                errors.push(`Switch statement ${node.id} must connect at least one switch case`);
+            }
+
+            const caseNodes = caseEdges
+                .map((edge) => nodeMap.get(edge.target))
+                .filter((candidate): candidate is WorkflowNode => Boolean(candidate));
+            const invalidCaseTargets = caseNodes.filter((candidate) => candidate.type !== WorkflowNodeType.SwitchCase);
+            if (invalidCaseTargets.length > 0) {
+                errors.push(`Switch statement ${node.id} can only connect its "cases" handle to switch case nodes`);
+            }
+
+            const defaultCaseCount = caseNodes.filter((caseNode) => caseNode.data.switchCase?.defaultCase === true).length;
+            if (defaultCaseCount > 1) {
+                errors.push(`Switch statement ${node.id} cannot have more than one default case`);
+            }
+        }
+
+        for (const node of workflow.nodes) {
+            if (node.type !== WorkflowNodeType.SwitchCase) {
+                continue;
+            }
+
+            const parentEdges = workflow.edges.filter((edge) => edge.target === node.id);
+            if (parentEdges.length !== 1) {
+                errors.push(`Switch case ${node.id} must have exactly one parent switch statement`);
+                continue;
+            }
+
+            const parentNode = nodeMap.get(parentEdges[0].source);
+            if (parentNode?.type !== WorkflowNodeType.SwitchStatement || parentEdges[0].sourceHandle !== 'cases') {
+                errors.push(`Switch case ${node.id} must be connected from a switch statement "cases" handle`);
+            }
+        }
+    }
+
+    private validatePluginNodeTopology(workflow: WorkflowProps, errors: string[]): void {
+        const argumentsDefinitions = this.getArgumentsDefinitions(workflow);
 
         for (const node of workflow.nodes) {
             if (node.type !== WorkflowNodeType.Plugin) {
                 continue;
             }
 
-            const pluginId = node.data.pluginNode?.pluginId?.trim() ?? '';
-            if (!pluginId) {
-                errors.push(`Plugin node ${node.id} must reference a published plugin`);
+            const pluginNodeData = node.data.pluginNode ?? {};
+            const executionMode = resolvePluginNodeExecutionMode(pluginNodeData);
+
+            if (executionMode === PluginNodeExecutionMode.Manual) {
+                const pluginId = typeof pluginNodeData.pluginId === 'string'
+                    ? pluginNodeData.pluginId.trim()
+                    : '';
+                if (!pluginId) {
+                    errors.push(`Plugin node ${node.id} must reference a published plugin`);
+                }
             }
 
-            const parents = parentMap.get(node.id) ?? [];
-            const invalidParents = parents.filter((parent) => !this.isAllowedRuntimeParent(parent.type));
-            if (parents.length !== 1 || invalidParents.length > 0) {
-                errors.push(`Plugin node ${node.id} must be connected directly after a forEach node or another plugin node`);
+            if (executionMode === PluginNodeExecutionMode.ArgumentReference) {
+                const argumentReference = typeof pluginNodeData.argumentReference === 'string'
+                    ? pluginNodeData.argumentReference.trim()
+                    : '';
+                if (!argumentReference) {
+                    errors.push(`Plugin node ${node.id} must define an arguments reference`);
+                } else {
+                    const referencedArgument = argumentsDefinitions.find((definition) => definition.argument === argumentReference);
+                    if (!referencedArgument || referencedArgument.type !== ArgumentType.PluginReference) {
+                        errors.push(`Plugin node ${node.id} references unknown plugin argument "${argumentReference}"`);
+                    }
+                }
             }
 
-            if (!this.hasAncestorOfType(node.id, workflow, new Set([WorkflowNodeType.ForEach]))) {
-                errors.push(`Plugin node ${node.id} must run after the top-level planning segment`);
+            const parentEdges = workflow.edges.filter((edge) => edge.target === node.id);
+            if (parentEdges.length !== 1) {
+                errors.push(`Plugin node ${node.id} must have exactly one incoming runtime connection`);
             }
 
-            if (this.hasAncestorOfType(node.id, workflow, new Set([WorkflowNodeType.Entrypoint]))) {
-                errors.push(`Plugin node ${node.id} must run before the top-level entrypoint`);
-            }
-
-            const children = childMap.get(node.id) ?? [];
-            const invalidChildren = children.filter((child) => !this.isAllowedRuntimeChild(child.type));
-            if (children.length !== 1 || invalidChildren.length > 0) {
-                errors.push(`Plugin node ${node.id} must connect only to a downstream plugin node or the top-level entrypoint`);
-            }
-
-            if (!this.hasDescendantOfType(node.id, workflow, new Set([WorkflowNodeType.Entrypoint]))) {
-                errors.push(`Plugin node ${node.id} must eventually connect to the top-level entrypoint`);
+            if (!this.hasAncestorOfType(node.id, workflow, RUNTIME_REACHABLE_ANCESTORS)) {
+                errors.push(`Plugin node ${node.id} must run after the workflow planning segment`);
             }
         }
     }
@@ -257,19 +396,21 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
         }
 
         const entrypointNode = entrypointNodes[0];
-        const parentNodes = workflow.edges
-            .filter((edge) => edge.target === entrypointNode.id)
-            .map((edge) => workflow.nodes.find((node) => node.id === edge.source))
-            .filter((node): node is WorkflowNode => Boolean(node));
-        const invalidParents = parentNodes.filter((node) => !this.isAllowedRuntimeParent(node.type));
-
-        if (parentNodes.length !== 1 || invalidParents.length > 0) {
-            errors.push(`Top-level entrypoint ${entrypointNode.id} must be connected to exactly one runtime chain`);
+        const parentEdges = workflow.edges.filter((edge) => edge.target === entrypointNode.id);
+        if (parentEdges.length !== 1) {
+            errors.push(`Top-level entrypoint ${entrypointNode.id} must have exactly one incoming runtime connection`);
         }
 
-        if (!this.hasAncestorOfType(entrypointNode.id, workflow, new Set([WorkflowNodeType.ForEach]))) {
-            errors.push(`Top-level entrypoint ${entrypointNode.id} must run after the top-level planning segment`);
+        if (!this.hasAncestorOfType(entrypointNode.id, workflow, RUNTIME_REACHABLE_ANCESTORS)) {
+            errors.push(`Top-level entrypoint ${entrypointNode.id} must run after the planning segment`);
         }
+    }
+
+    private getArgumentsDefinitions(workflow: WorkflowProps): ArgumentDefinition[] {
+        const argumentsNode = workflow.nodes.find((node) => node.type === WorkflowNodeType.Arguments);
+        return Array.isArray(argumentsNode?.data.arguments?.arguments)
+            ? argumentsNode.data.arguments.arguments as ArgumentDefinition[]
+            : [];
     }
 
     private hasAncestorOfType(nodeId: string, workflow: WorkflowProps, blockedTypes: Set<WorkflowNodeType>): boolean {
@@ -330,13 +471,85 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
         return false;
     }
 
-    private isAllowedRuntimeParent(nodeType: WorkflowNodeType): boolean {
-        return nodeType === WorkflowNodeType.ForEach
-            || nodeType === WorkflowNodeType.Plugin;
-    }
+    private isAllowedEdge(
+        sourceType: WorkflowNodeType,
+        targetType: WorkflowNodeType,
+        sourceHandle?: string
+    ): boolean {
+        if (sourceType === WorkflowNodeType.Modifier) {
+            return targetType === WorkflowNodeType.Arguments;
+        }
 
-    private isAllowedRuntimeChild(nodeType: WorkflowNodeType): boolean {
-        return nodeType === WorkflowNodeType.Entrypoint
-            || nodeType === WorkflowNodeType.Plugin;
+        if (sourceType === WorkflowNodeType.Arguments) {
+            return targetType === WorkflowNodeType.Context;
+        }
+
+        if (sourceType === WorkflowNodeType.Context) {
+            return targetType === WorkflowNodeType.ForEach
+                || targetType === WorkflowNodeType.Entrypoint
+                || targetType === WorkflowNodeType.Plugin
+                || targetType === WorkflowNodeType.IfStatement
+                || targetType === WorkflowNodeType.SwitchStatement;
+        }
+
+        if (sourceType === WorkflowNodeType.ForEach) {
+            return targetType === WorkflowNodeType.Entrypoint
+                || targetType === WorkflowNodeType.Plugin
+                || targetType === WorkflowNodeType.IfStatement
+                || targetType === WorkflowNodeType.SwitchStatement;
+        }
+
+        if (sourceType === WorkflowNodeType.Entrypoint) {
+            return targetType === WorkflowNodeType.Exposure
+                || targetType === WorkflowNodeType.IfStatement
+                || targetType === WorkflowNodeType.SwitchStatement;
+        }
+
+        if (sourceType === WorkflowNodeType.Plugin) {
+            return targetType === WorkflowNodeType.Plugin
+                || targetType === WorkflowNodeType.Entrypoint
+                || targetType === WorkflowNodeType.IfStatement
+                || targetType === WorkflowNodeType.SwitchStatement;
+        }
+
+        if (sourceType === WorkflowNodeType.Exposure) {
+            return targetType === WorkflowNodeType.Export;
+        }
+
+        if (sourceType === WorkflowNodeType.Export) {
+            return false;
+        }
+
+        if (sourceType === WorkflowNodeType.IfStatement) {
+            return targetType === WorkflowNodeType.Plugin
+                || targetType === WorkflowNodeType.Entrypoint
+                || targetType === WorkflowNodeType.Exposure
+                || targetType === WorkflowNodeType.Export
+                || targetType === WorkflowNodeType.SwitchStatement;
+        }
+
+        if (sourceType === WorkflowNodeType.SwitchStatement) {
+            if (sourceHandle === 'cases') {
+                return targetType === WorkflowNodeType.SwitchCase;
+            }
+
+            return targetType === WorkflowNodeType.Plugin
+                || targetType === WorkflowNodeType.Entrypoint
+                || targetType === WorkflowNodeType.Exposure
+                || targetType === WorkflowNodeType.Export
+                || targetType === WorkflowNodeType.IfStatement
+                || targetType === WorkflowNodeType.SwitchStatement;
+        }
+
+        if (sourceType === WorkflowNodeType.SwitchCase) {
+            return targetType === WorkflowNodeType.Plugin
+                || targetType === WorkflowNodeType.Entrypoint
+                || targetType === WorkflowNodeType.Exposure
+                || targetType === WorkflowNodeType.Export
+                || targetType === WorkflowNodeType.IfStatement
+                || targetType === WorkflowNodeType.SwitchStatement;
+        }
+
+        return false;
     }
 };

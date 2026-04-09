@@ -2,7 +2,9 @@ import { ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enum
 import {
     coerceArgumentInputValue,
     createDefaultListItem,
+    getArgumentDefaultValue,
     getListArgumentValue,
+    getSelectArgumentValue,
     getPrimitiveArgumentFieldValue,
     isPluginReferenceArgumentType
 } from '@/modules/plugin/utilities/plugin/argument-values';
@@ -12,6 +14,7 @@ import CollapsibleSection from '@/shared/presentation/components/CollapsibleSect
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import Select from '@/shared/presentation/components/Select';
 import { Plus } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
@@ -26,6 +29,7 @@ interface ArgumentFieldsRendererProps {
     emptyMessage?: string;
     path?: string;
     autocompleteOptions?: FormFieldAutocompleteOption[];
+    allowTemplateReferenceMode?: boolean;
 };
 
 interface ListItemValue {
@@ -101,7 +105,8 @@ const ArgumentFieldsRenderer = ({
     frameOptions,
     emptyMessage = 'No arguments configured.',
     path = 'root',
-    autocompleteOptions
+    autocompleteOptions,
+    allowTemplateReferenceMode = false
 }: ArgumentFieldsRendererProps) => {
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
@@ -174,11 +179,20 @@ const ArgumentFieldsRenderer = ({
                         emptyMessage='No nested arguments configured.'
                         path={itemPath}
                         autocompleteOptions={autocompleteOptions}
+                        allowTemplateReferenceMode={allowTemplateReferenceMode}
                     />
                 </CollapsibleSection>
             );
         };
-    }, [expandedSections, handleListItemChange, handleListItemRemove, resolvedFrameOptions, setSectionExpanded]);
+    }, [
+        allowTemplateReferenceMode,
+        autocompleteOptions,
+        expandedSections,
+        handleListItemChange,
+        handleListItemRemove,
+        resolvedFrameOptions,
+        setSectionExpanded
+    ]);
 
     const renderArgument = useCallback((argument: IArgumentDefinition, index: number) => {
         const argumentValue = values[argument.argument];
@@ -193,6 +207,7 @@ const ArgumentFieldsRenderer = ({
                     onChange={onChange}
                     fieldKey={fieldKey}
                     frameOptions={resolvedFrameOptions}
+                    autocompleteOptions={autocompleteOptions}
                 />
             );
         }
@@ -222,23 +237,94 @@ const ArgumentFieldsRenderer = ({
             );
         }
 
+        if (argument.type === ArgumentType.SELECT && argument.multipleSelection) {
+            const selectedValues = getSelectArgumentValue(argument, argumentValue);
+            const selectValues = Array.isArray(selectedValues) ? selectedValues : [];
+            const selectOptions = (argument.options ?? []).map((option) => ({
+                value: option.key,
+                title: option.label
+            }));
+
+            return (
+                <Container key={fieldKey} className='d-flex column gap-05'>
+                    <Paragraph className='canvas-form-label'>
+                        {argument.label || argument.argument}
+                    </Paragraph>
+                    <Select
+                        id={`${fieldKey}-multi-select`}
+                        options={selectOptions}
+                        isMulti
+                        selectedValues={selectValues}
+                        onMultiChange={(nextValues) => onChange(argument.argument, coerceArgumentInputValue(argument, nextValues))}
+                        placeholder='Select options'
+                        renderTriggerLabel={(selectedCount) => {
+                            if (selectedCount === 0) {
+                                return 'Select options';
+                            }
+
+                            if (selectedCount === 1) {
+                                const selectedValue = selectValues[0];
+                                return selectOptions.find((option) => option.value === selectedValue)?.title ?? '1 selected';
+                            }
+
+                            return `${selectedCount} selected`;
+                        }}
+                    />
+                </Container>
+            );
+        }
+
+        const isTemplateReferenceMode = allowTemplateReferenceMode
+            && typeof argumentValue === 'string'
+            && argumentValue.includes('{{');
+
         const fieldConfig = getPrimitiveFieldConfig(argument, argumentValue, resolvedFrameOptions);
 
         return (
-            <FormFieldRHF
-                key={fieldKey}
-                label={argument.label || argument.argument}
-                fieldKey={fieldKey}
-                fieldType={fieldConfig.fieldType}
-                fieldValue={fieldConfig.fieldValue}
-                options={fieldConfig.options}
-                inputProps={fieldConfig.inputProps}
-                onFieldChange={(_, nextValue) => handlePrimitiveChange(argument, nextValue)}
-                variant='canvas'
-                autocomplete={autocompleteOptions?.length ? { options: autocompleteOptions } : undefined}
-            />
+            <Container key={fieldKey} className='d-flex column gap-05'>
+                {allowTemplateReferenceMode && (
+                    <FormFieldRHF
+                        label='Use reference'
+                        fieldKey={`${fieldKey}-reference-mode`}
+                        fieldType='checkbox'
+                        fieldValue={isTemplateReferenceMode}
+                        onFieldChange={(_, nextValue) => {
+                            const enabled = Boolean(nextValue);
+                            if (enabled) {
+                                onChange(argument.argument, typeof argumentValue === 'string' ? argumentValue : '');
+                                return;
+                            }
+
+                            onChange(argument.argument, getArgumentDefaultValue(argument));
+                        }}
+                        variant='canvas'
+                    />
+                )}
+                <FormFieldRHF
+                    label={argument.label || argument.argument}
+                    fieldKey={fieldKey}
+                    fieldType={isTemplateReferenceMode ? 'input' : fieldConfig.fieldType}
+                    fieldValue={isTemplateReferenceMode ? String(argumentValue ?? '') : fieldConfig.fieldValue}
+                    options={isTemplateReferenceMode ? undefined : fieldConfig.options}
+                    inputProps={isTemplateReferenceMode ? undefined : fieldConfig.inputProps}
+                    onFieldChange={(_, nextValue) => handlePrimitiveChange(argument, nextValue)}
+                    variant='canvas'
+                    autocomplete={autocompleteOptions?.length ? { options: autocompleteOptions } : undefined}
+                    placeholder={isTemplateReferenceMode ? '{{ arguments.some-value }}' : undefined}
+                />
+            </Container>
         );
-    }, [autocompleteOptions, handleListItemAdd, handlePrimitiveChange, onChange, path, renderListItem, resolvedFrameOptions, values]);
+    }, [
+        allowTemplateReferenceMode,
+        autocompleteOptions,
+        handleListItemAdd,
+        handlePrimitiveChange,
+        onChange,
+        path,
+        renderListItem,
+        resolvedFrameOptions,
+        values
+    ]);
 
     if (!argumentDefinitions.length) {
         return (

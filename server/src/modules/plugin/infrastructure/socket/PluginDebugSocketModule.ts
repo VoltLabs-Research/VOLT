@@ -237,8 +237,18 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                 const runtimePlugins = runtimePluginIds.length > 0
                     ? await this.pluginRepository.findByIds(runtimePluginIds)
                     : [];
+                const runtimeDependencyResolution = await this.pluginDependencyResolverService.collectTransitivePublishedDependenciesForPlugins(
+                    runtimePlugins
+                );
+                if (runtimeDependencyResolution.errors.length > 0) {
+                    this.emitToSocket(conn.id, 'debug:session:error', {
+                        error: runtimeDependencyResolution.errors.join('; ')
+                    });
+                    return;
+                }
                 const nestedPlugins = Array.from(new Map(
                     [...dependencyResolution.dependencies, ...runtimePlugins]
+                        .concat(runtimeDependencyResolution.dependencies)
                         .map((candidate) => [candidate.id, candidate])
                 ).values()).map(buildNestedPluginDefinition);
 

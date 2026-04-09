@@ -6,7 +6,8 @@ import type {
     Exporter,
     ExportType_,
     ConditionType,
-    ConditionHandler
+    ConditionHandler,
+    PluginNodeExecutionMode
 } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 
 export interface IWorkflow {
@@ -33,6 +34,17 @@ export interface IPosition {
     y: number;
 };
 
+export type NodeConnectorSide = 'left' | 'right' | 'top' | 'bottom';
+
+export interface INodeConnectorPlacement {
+    side: NodeConnectorSide;
+    offset: number;
+};
+
+export interface INodeConnectorLayout {
+    [handleId: string]: INodeConnectorPlacement;
+};
+
 export interface IWorkflowEdge {
     id: string;
     source: string;
@@ -54,10 +66,21 @@ export interface IArgumentDefinition {
     value?: unknown;
     options?: IArgumentOption[];
     listArguments?: IArgumentDefinition[];
+    multipleSelection?: boolean;
     pluginReferenceFilter?: string[];
+    showPluginConfiguration?: boolean;
     min?: number;
     max?: number;
     step?: number;
+};
+
+export interface IPluginReferenceSelection {
+    pluginId: string;
+    config?: Record<string, unknown>;
+};
+
+export interface IPluginReferenceValue {
+    selections: IPluginReferenceSelection[];
 };
 
 export interface IModifierData {
@@ -97,10 +120,13 @@ export interface IEntrypointData {
 };
 
 export interface IPluginNodeData {
+    executionMode?: PluginNodeExecutionMode;
     pluginId?: string;
+    argumentReference?: string;
     selectedTeamClusterId?: string;
     selectedTimesteps?: number[];
     config?: Record<string, unknown>;
+    configByPluginId?: Record<string, Record<string, unknown>>;
 };
 
 export interface IExposureData {
@@ -131,6 +157,15 @@ export interface IIfStatementData {
     conditions: ICondition[];
 };
 
+export interface ISwitchStatementData {
+    expression: string;
+};
+
+export interface ISwitchCaseData {
+    value: string;
+    defaultCase?: boolean;
+};
+
 export interface INodeData {
     modifier?: IModifierData;
     arguments?: IArgumentsData;
@@ -141,5 +176,8 @@ export interface INodeData {
     exposure?: IExposureData;
     export?: IExportData;
     ifStatement?: IIfStatementData;
+    switchStatement?: ISwitchStatementData;
+    switchCase?: ISwitchCaseData;
+    connectorLayout?: INodeConnectorLayout;
     [key: string]: unknown;
 };

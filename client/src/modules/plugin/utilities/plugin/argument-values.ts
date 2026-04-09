@@ -1,5 +1,9 @@
 import { ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
-import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
+import type {
+    IArgumentDefinition,
+    IPluginReferenceSelection,
+    IPluginReferenceValue
+} from '@/modules/plugin/api/entities/plugin/workflow';
 
 interface ArgumentObjectValue {
     [key: string]: unknown;
@@ -11,6 +15,10 @@ const isRecord = (value: unknown): value is ArgumentObjectValue => {
 
 const isListItemArray = (value: unknown): value is ArgumentObjectValue[] => {
     return Array.isArray(value) && value.every(isRecord);
+};
+
+const isStringArray = (value: unknown): value is string[] => {
+    return Array.isArray(value) && value.every((entry) => typeof entry === 'string');
 };
 
 const readBooleanValue = (value: unknown): boolean => {
@@ -75,8 +83,12 @@ export const getArgumentDefaultValue = (definition: IArgumentDefinition): unknow
         return [];
     }
 
+    if (definition.type === ArgumentType.SELECT && definition.multipleSelection) {
+        return [];
+    }
+
     if (definition.type === ArgumentType.PLUGIN_REFERENCE) {
-        return { pluginId: '', config: {} };
+        return { selections: [] };
     }
 
     return '';
@@ -132,7 +144,7 @@ export const getListArgumentValue = (
     return [];
 };
 
-export interface PluginConfigValue {
+export interface PluginReferenceSelectionValue {
     pluginId: string;
     config: Record<string, unknown>;
 };
@@ -141,28 +153,73 @@ export const isPluginReferenceArgumentType = (type: ArgumentType): boolean => {
     return type === ArgumentType.PLUGIN_REFERENCE;
 };
 
-const isPluginConfigValue = (value: unknown): value is PluginConfigValue => {
+const isPluginReferenceSelectionValue = (value: unknown): value is PluginReferenceSelectionValue => {
     return isRecord(value) && typeof value.pluginId === 'string';
 };
 
-export const getPluginConfigValue = (
+const normalizePluginReferenceSelection = (value: unknown): IPluginReferenceSelection | null => {
+    if (!isPluginReferenceSelectionValue(value)) {
+        return null;
+    }
+
+    const pluginId = value.pluginId.trim();
+    if (!pluginId) {
+        return null;
+    }
+
+    return {
+        pluginId,
+        config: isRecord(value.config) ? value.config : {}
+    };
+};
+
+const isPluginReferenceValue = (value: unknown): value is IPluginReferenceValue => {
+    return isRecord(value) && Array.isArray(value.selections);
+};
+
+const normalizePluginReferenceSelections = (value: unknown): IPluginReferenceSelection[] => {
+    if (isPluginReferenceValue(value)) {
+        return value.selections
+            .map(normalizePluginReferenceSelection)
+            .filter((selection): selection is IPluginReferenceSelection => selection !== null);
+    }
+
+    if (Array.isArray(value)) {
+        return value
+            .map(normalizePluginReferenceSelection)
+            .filter((selection): selection is IPluginReferenceSelection => selection !== null);
+    }
+
+    const legacySelection = normalizePluginReferenceSelection(value);
+    return legacySelection ? [legacySelection] : [];
+};
+
+export const getPluginReferenceValue = (
     definition: IArgumentDefinition,
     value: unknown
-): PluginConfigValue => {
-    if (isPluginConfigValue(value)) {
-        return value;
+): IPluginReferenceValue => {
+    const resolvedSelections = normalizePluginReferenceSelections(value);
+    if (resolvedSelections.length > 0) {
+        return {
+            selections: resolvedSelections
+        };
     }
 
-    if (isPluginConfigValue(definition.default)) {
-        return definition.default;
+    const defaultSelections = normalizePluginReferenceSelections(definition.default);
+    if (defaultSelections.length > 0) {
+        return {
+            selections: defaultSelections
+        };
     }
 
-    return { pluginId: '', config: {} };
+    return {
+        selections: []
+    };
 };
 
 export const coerceArgumentInputValue = (
     definition: IArgumentDefinition,
-    value: string | number | boolean
+    value: unknown
 ): unknown => {
     if (definition.type === ArgumentType.BOOLEAN) {
         return readBooleanValue(value);
@@ -170,6 +227,14 @@ export const coerceArgumentInputValue = (
 
     if (definition.type === ArgumentType.NUMBER) {
         return value;
+    }
+
+    if (definition.type === ArgumentType.SELECT && definition.multipleSelection) {
+        return isStringArray(value) ? value : [];
+    }
+
+    if (definition.type === ArgumentType.PLUGIN_REFERENCE) {
+        return getPluginReferenceValue(definition, value);
     }
 
     return value;
@@ -187,6 +252,18 @@ export const resolveArgumentRuntimeValue = (
 
     if (definition.type === ArgumentType.NUMBER) {
         return readRuntimeNumberValue(resolvedValue);
+    }
+
+    if (definition.type === ArgumentType.SELECT && definition.multipleSelection) {
+        if (isStringArray(resolvedValue)) {
+            return resolvedValue;
+        }
+
+        if (typeof resolvedValue === 'string' && resolvedValue.trim().length > 0) {
+            return [resolvedValue];
+        }
+
+        return [];
     }
 
     if (definition.type === ArgumentType.LIST) {
@@ -207,7 +284,40 @@ export const resolveArgumentRuntimeValue = (
         });
     }
 
+    if (definition.type === ArgumentType.PLUGIN_REFERENCE) {
+        return getPluginReferenceValue(definition, resolvedValue);
+    }
+
     return resolvedValue ?? '';
+};
+
+export const getSelectArgumentValue = (
+    definition: IArgumentDefinition,
+    value: unknown
+): string | string[] => {
+    const resolvedValue = value ?? definition.default;
+
+    if (!definition.multipleSelection) {
+        if (typeof resolvedValue === 'string') {
+            return resolvedValue;
+        }
+
+        if (typeof resolvedValue === 'number' || typeof resolvedValue === 'boolean') {
+            return String(resolvedValue);
+        }
+
+        return '';
+    }
+
+    if (isStringArray(resolvedValue)) {
+        return resolvedValue;
+    }
+
+    if (typeof resolvedValue === 'string' && resolvedValue.trim().length > 0) {
+        return [resolvedValue];
+    }
+
+    return [];
 };
 
 export const collectDefaultArgumentValues = (definitions: IArgumentDefinition[]): Record<string, unknown> => {

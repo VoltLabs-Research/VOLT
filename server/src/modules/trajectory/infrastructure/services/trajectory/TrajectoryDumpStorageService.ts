@@ -99,7 +99,10 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
             return cachePath;
         } catch (error) {
             await fs.unlink(cachePath).catch(() => {});
-            logger.error(`@trajectory-dump-storage-service: error downloading trajectory=${trajectoryId} timestep=${timestep}:`, error);
+            logger.error(
+                { err: error },
+                `@trajectory-dump-storage-service: error downloading trajectory=${trajectoryId} timestep=${timestep}`
+            );
             return null;
         } finally {
             this.pendingRequests.delete(cacheKey);

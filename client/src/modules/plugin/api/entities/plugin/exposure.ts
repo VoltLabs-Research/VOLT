@@ -32,6 +32,9 @@ export interface IComputedArgumentDefinition {
     value?: unknown;
     options?: IComputedArgumentOption[];
     listArguments?: IComputedArgumentDefinition[];
+    multipleSelection?: boolean;
+    pluginReferenceFilter?: string[];
+    showPluginConfiguration?: boolean;
     min?: number;
     max?: number;
     step?: number;

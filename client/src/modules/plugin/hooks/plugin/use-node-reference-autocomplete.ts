@@ -16,11 +16,13 @@ const BASE_OUTPUT_PROPERTIES: Partial<Record<NodeType, string[]>> = {
     [NodeType.ARGUMENTS]: ['as_str', 'as_array', 'selectedTimesteps'],
     [NodeType.CONTEXT]: ['trajectory_dumps', 'count', 'trajectory'],
     [NodeType.FOREACH]: ['items', 'count', 'currentValue', 'currentValue.path', 'currentValue.frame', 'currentIndex', 'outputPath'],
-    [NodeType.ENTRYPOINT]: ['results', 'successCount', 'failCount', 'stdout', 'stderr', 'exitCode'],
+    [NodeType.ENTRYPOINT]: ['results', 'successCount', 'failCount', 'stdout', 'stderr', 'exitCode', 'projectPath'],
     [NodeType.PLUGIN]: ['execution_result', 'execution_result.exposures', 'execution_result.exposures.items', 'execution_result.exposures.str_json'],
     [NodeType.EXPOSURE]: ['results', 'sample'],
     [NodeType.EXPORT]: ['results'],
-    [NodeType.IF_STATEMENT]: ['result', 'branch']
+    [NodeType.IF_STATEMENT]: ['result', 'branch'],
+    [NodeType.SWITCH_STATEMENT]: ['expression', 'resolvedValue', 'matchedCaseId', 'matchedValue'],
+    [NodeType.SWITCH_CASE]: ['value', 'defaultCase']
 };
 
 const getNodeOutputProperties = (node: Node<INodeData>): string[] => {

@@ -13,6 +13,9 @@ export const EntrypointDataSchema = new Schema({
     binaryFileName: {
         type: String
     },
+    binaryHash: {
+        type: String
+    },
     type: {
         type: String,
         enum: Object.values(EntrypointNodeType)
