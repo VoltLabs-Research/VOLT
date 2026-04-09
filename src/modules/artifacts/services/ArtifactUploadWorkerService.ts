@@ -4,7 +4,17 @@ import fs from 'node:fs/promises';
 import { logger } from '@/core/logger';
 import type { DaemonArtifactReporterService } from '@/modules/cloud-control/services';
 import type { DaemonJobReporterService } from '@/modules/cloud-control/services';
-import { ARTIFACT_UPLOAD_QUEUE_NAME, QueueService, createMemoryAwareWorkerShell, type MemoryAwareWorkerShell } from '@/modules/platform/services';
+import {
+    ARTIFACT_UPLOAD_QUEUE_NAME,
+    QueueService,
+    type QueueScopeLimitsRegistry,
+    createMemoryAwareWorkerShell,
+    delayJobOnQueueScopeContention,
+    tryAcquireQueueScopeLease,
+    type MemoryAwareWorkerShell,
+    type QueueScopeLease,
+    type RedisConnectionService
+} from '@/modules/platform/services';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 import { readPositiveIntegerEnv } from '@/shared/utilities/runtime-capacity';
 import {
@@ -12,7 +22,7 @@ import {
     toCompressedGlbObjectKey,
     toCompressedMsgpackObjectKey
 } from '@/shared/utilities/storage-codec';
-import type { Job } from 'bullmq';
+import { DelayedError, type Job } from 'bullmq';
 
 import type { ArtifactUploadBatchJobPayload } from './ArtifactUploadQueueService';
 
@@ -54,6 +64,8 @@ export class ArtifactUploadWorkerService {
 
     constructor(
         private readonly queueService: QueueService,
+        private readonly redisConnectionService: RedisConnectionService,
+        private readonly queueScopeLimitsRegistry: QueueScopeLimitsRegistry,
         private readonly objectStore: ClusterObjectStore,
         private readonly daemonArtifactReporterService: DaemonArtifactReporterService,
         private readonly daemonJobReporterService: DaemonJobReporterService
@@ -105,17 +117,54 @@ export class ArtifactUploadWorkerService {
     }
 
     private async processBatch(payload: ArtifactUploadBatchJobPayload, bullJob: Job<ArtifactUploadBatchJobPayload>): Promise<void> {
-        await this.daemonJobReporterService.reportArtifactUploadJobStatus({
-            jobId: payload.jobId,
-            analysisId: payload.analysisId,
-            teamId: payload.teamId,
-            trajectoryId: payload.trajectoryId,
-            trajectoryName: payload.trajectoryName,
-            timestep: payload.timestep,
-            status: 'running'
-        });
+        let queueScopeLease: QueueScopeLease | null = null;
 
         try {
+            const trajectoryId = payload.trajectoryId.trim();
+            if (!trajectoryId) {
+                throw new Error(`Missing trajectoryId for artifact upload job ${payload.jobId}`);
+            }
+
+            const queueScopeLimits = this.queueScopeLimitsRegistry.getSnapshot();
+            const { lease, blockingScope } = await tryAcquireQueueScopeLease(
+                this.redisConnectionService,
+                ARTIFACT_UPLOAD_QUEUE_NAME,
+                [
+                    {
+                        scope: 'trajectory',
+                        scopeId: trajectoryId,
+                        limit: queueScopeLimits.artifactUpload.maxRunningPerTrajectory
+                    },
+                    {
+                        scope: 'team',
+                        scopeId: payload.teamId,
+                        limit: queueScopeLimits.artifactUpload.maxRunningPerTeam
+                    }
+                ]
+            );
+            queueScopeLease = lease;
+            if (!queueScopeLease || blockingScope) {
+                await delayJobOnQueueScopeContention(bullJob, {
+                    queueName: ARTIFACT_UPLOAD_QUEUE_NAME,
+                    jobId: payload.jobId,
+                    scope: blockingScope ?? {
+                        scope: 'trajectory',
+                        scopeId: trajectoryId,
+                        limit: queueScopeLimits.artifactUpload.maxRunningPerTrajectory
+                    }
+                });
+            }
+
+            await this.daemonJobReporterService.reportArtifactUploadJobStatus({
+                jobId: payload.jobId,
+                analysisId: payload.analysisId,
+                teamId: payload.teamId,
+                trajectoryId: payload.trajectoryId,
+                trajectoryName: payload.trajectoryName,
+                timestep: payload.timestep,
+                status: 'running'
+            });
+
             logger.info(
                 {
                     analysisId: payload.analysisId,
@@ -177,6 +226,10 @@ export class ArtifactUploadWorkerService {
             });
             await this.cleanupBatchDirectory(payload.batchDirectory);
         } catch (error) {
+            if (error instanceof DelayedError) {
+                return;
+            }
+
             const maxAttempts = typeof bullJob.opts.attempts === 'number' ? bullJob.opts.attempts : 1;
             const willExhaustAttempts = bullJob.attemptsMade + 1 >= maxAttempts;
 
@@ -197,6 +250,10 @@ export class ArtifactUploadWorkerService {
             }
 
             throw error;
+        } finally {
+            if (queueScopeLease) {
+                await queueScopeLease.release();
+            }
         }
     }
     private async cleanupBatchDirectory(batchDirectory: string): Promise<void> {

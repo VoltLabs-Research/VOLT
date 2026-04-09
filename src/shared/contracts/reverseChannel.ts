@@ -3,6 +3,7 @@ import {
     type TeamClusterServiceExposure
 } from './serviceExposure';
 import type {
+    TeamClusterDaemonQueueScopeLimits,
     TeamClusterDaemonRoleApplyPayload,
     TeamClusterDaemonRoleApplyResult,
     TeamClusterEffectiveCapabilities,
@@ -167,11 +168,13 @@ export interface TeamClusterDaemonQueueConcurrency {
 export interface TeamClusterDaemonQueueConcurrencyApplyPayload {
     [key: string]: unknown;
     queueConcurrency: TeamClusterDaemonQueueConcurrency;
+    queueScopeLimits: TeamClusterDaemonQueueScopeLimits;
 };
 
 export interface TeamClusterDaemonRuntimeConfig {
     contractVersion: number;
     queueConcurrency: TeamClusterDaemonQueueConcurrency;
+    queueScopeLimits: TeamClusterDaemonQueueScopeLimits;
     roleConfig: TeamClusterRuntimeRoleConfig;
     effectiveCapabilities: TeamClusterEffectiveCapabilities;
 }

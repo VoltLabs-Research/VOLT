@@ -5,7 +5,7 @@ import { createJupyterModule } from '@/modules/jupyter';
 import { createMetricsModule } from '@/modules/metrics';
 import { createSSHImportModule } from '@/modules/ssh-import';
 import { createPlatformModule } from '@/modules/platform';
-import { QueueConcurrencyCoordinator } from '@/modules/platform/services';
+import { QueueConcurrencyCoordinator, QueueScopeLimitsRegistry } from '@/modules/platform/services';
 import { createTrajectoryNativeModule } from '@/modules/trajectory-native';
 import { TrajectoryRasterWorkerService } from '@/modules/trajectory-native/services';
 import { TrajectoryGlbWorkerService } from '@/modules/trajectory-native/services';
@@ -45,7 +45,11 @@ const createBootstrapContext = (): BootstrapContext => {
     const platform = createPlatformModule(config);
     const metrics = createMetricsModule();
     const queueConcurrencyCoordinator = new QueueConcurrencyCoordinator();
-    const runtimeRoleCoordinator = new RuntimeRoleCoordinator(queueConcurrencyCoordinator);
+    const queueScopeLimitsRegistry = new QueueScopeLimitsRegistry();
+    const runtimeRoleCoordinator = new RuntimeRoleCoordinator(
+        queueConcurrencyCoordinator,
+        queueScopeLimitsRegistry
+    );
     const remoteClient = new TeamClusterDirectObjectStoreClient(config);
     const clusterObjectStore = createClusterObjectStore({
         config,
@@ -113,10 +117,14 @@ const createBootstrapContext = (): BootstrapContext => {
         cloudControl.daemonArtifactReporterService,
         cloudControl.daemonJobReporterService,
         platform.queueService,
+        platform.redisConnectionService,
+        queueScopeLimitsRegistry,
         pluginListingRepository
     );
     const analysisWorker = createAnalysisWorker({
         queueService: platform.queueService,
+        redisConnectionService: platform.redisConnectionService,
+        queueScopeLimitsRegistry,
         analysisExecutionDataStore: platform.analysisExecutionDataStore,
         objectStore: clusterObjectStore,
         pluginBinaryCacheService,
@@ -133,6 +141,8 @@ const createBootstrapContext = (): BootstrapContext => {
     );
     const trajectoryGlbWorkerService = new TrajectoryGlbWorkerService(
         platform.queueService,
+        platform.redisConnectionService,
+        queueScopeLimitsRegistry,
         trajectoryNative.glbExporterService,
         cloudControl.daemonJobReporterService
     );

@@ -21,6 +21,48 @@ export interface TeamJobRecord {
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const STATUS_TTL_SECONDS = 86_400;
+const RENEW_EXPIRING_KEY_SCRIPT = `
+if redis.call('GET', KEYS[1]) == ARGV[1] then
+    return redis.call('PEXPIRE', KEYS[1], ARGV[2])
+end
+return 0
+`;
+const DELETE_KEY_IF_VALUE_MATCHES_SCRIPT = `
+if redis.call('GET', KEYS[1]) == ARGV[1] then
+    return redis.call('DEL', KEYS[1])
+end
+return 0
+`;
+const ACQUIRE_EXPIRING_SLOT_SCRIPT = `
+redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', ARGV[1])
+local current = redis.call('ZCARD', KEYS[1])
+if current < tonumber(ARGV[3]) then
+    redis.call('ZADD', KEYS[1], ARGV[2], ARGV[4])
+    redis.call('PEXPIRE', KEYS[1], ARGV[5])
+    return 1
+end
+return 0
+`;
+const RENEW_EXPIRING_SLOT_SCRIPT = `
+redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', ARGV[1])
+local score = redis.call('ZSCORE', KEYS[1], ARGV[3])
+if score then
+    redis.call('ZADD', KEYS[1], ARGV[2], ARGV[3])
+    redis.call('PEXPIRE', KEYS[1], ARGV[4])
+    return 1
+end
+return 0
+`;
+const RELEASE_EXPIRING_SLOT_SCRIPT = `
+local removed = redis.call('ZREM', KEYS[1], ARGV[1])
+local remaining = redis.call('ZCARD', KEYS[1])
+if remaining <= 0 then
+    redis.call('DEL', KEYS[1])
+else
+    redis.call('PEXPIRE', KEYS[1], ARGV[2])
+end
+return removed
+`;
 
 const countDeletedJobStatusKeys = (
     responses: Array<[Error | null, unknown]> | null,
@@ -109,6 +151,91 @@ export class RedisConnectionService {
             : await this.client.set(key, value, 'NX');
 
         return result === 'OK';
+    }
+
+    async setExpiringKeyIfAbsent(key: string, value: string, ttlMs: number): Promise<boolean> {
+        await this.connect();
+
+        const result = await this.client.set(key, value, 'PX', ttlMs, 'NX');
+        return result === 'OK';
+    }
+
+    async renewExpiringKeyIfValueMatches(key: string, expectedValue: string, ttlMs: number): Promise<boolean> {
+        await this.connect();
+
+        const result = await this.client.eval(
+            RENEW_EXPIRING_KEY_SCRIPT,
+            1,
+            key,
+            expectedValue,
+            String(ttlMs)
+        );
+
+        return result === 1;
+    }
+
+    async deleteKeyIfValueMatches(key: string, expectedValue: string): Promise<boolean> {
+        await this.connect();
+
+        const result = await this.client.eval(
+            DELETE_KEY_IF_VALUE_MATCHES_SCRIPT,
+            1,
+            key,
+            expectedValue
+        );
+
+        return result === 1;
+    }
+
+    async tryAcquireExpiringSlot(key: string, token: string, limit: number, ttlMs: number): Promise<boolean> {
+        await this.connect();
+
+        const now = Date.now();
+        const expiresAt = now + ttlMs;
+        const result = await this.client.eval(
+            ACQUIRE_EXPIRING_SLOT_SCRIPT,
+            1,
+            key,
+            String(now),
+            String(expiresAt),
+            String(limit),
+            token,
+            String(ttlMs)
+        );
+
+        return result === 1;
+    }
+
+    async renewExpiringSlot(key: string, token: string, ttlMs: number): Promise<boolean> {
+        await this.connect();
+
+        const now = Date.now();
+        const expiresAt = now + ttlMs;
+        const result = await this.client.eval(
+            RENEW_EXPIRING_SLOT_SCRIPT,
+            1,
+            key,
+            String(now),
+            String(expiresAt),
+            token,
+            String(ttlMs)
+        );
+
+        return result === 1;
+    }
+
+    async releaseExpiringSlot(key: string, token: string, ttlMs: number): Promise<boolean> {
+        await this.connect();
+
+        const result = await this.client.eval(
+            RELEASE_EXPIRING_SLOT_SCRIPT,
+            1,
+            key,
+            token,
+            String(ttlMs)
+        );
+
+        return result === 1;
     }
 
     async deleteKey(key: string): Promise<number> {

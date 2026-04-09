@@ -1,4 +1,4 @@
-export const TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION = 1;
+export const TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION = 2;
 
 export type TeamClusterRole = 'cluster' | 'storage-server' | 'compute-node';
 
@@ -26,6 +26,42 @@ export interface TeamClusterEffectiveCapabilities {
     servesStorageReads: boolean;
     servesArtifactDownloads: boolean;
 }
+
+export interface TeamClusterQueueScopeLimit {
+    maxRunningPerTrajectory: number;
+    maxRunningPerTeam: number;
+}
+
+export interface TeamClusterDaemonQueueScopeLimits {
+    analysisProcessing: TeamClusterQueueScopeLimit;
+    artifactUpload: TeamClusterQueueScopeLimit;
+    trajectoryGlbConversion: TeamClusterQueueScopeLimit;
+    cloudUpload: TeamClusterQueueScopeLimit;
+    trajectoryCompression: TeamClusterQueueScopeLimit;
+}
+
+export const DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS: TeamClusterDaemonQueueScopeLimits = {
+    analysisProcessing: {
+        maxRunningPerTrajectory: 1,
+        maxRunningPerTeam: 0
+    },
+    artifactUpload: {
+        maxRunningPerTrajectory: 1,
+        maxRunningPerTeam: 0
+    },
+    trajectoryGlbConversion: {
+        maxRunningPerTrajectory: 1,
+        maxRunningPerTeam: 0
+    },
+    cloudUpload: {
+        maxRunningPerTrajectory: 1,
+        maxRunningPerTeam: 0
+    },
+    trajectoryCompression: {
+        maxRunningPerTrajectory: 1,
+        maxRunningPerTeam: 0
+    }
+};
 
 const TEAM_CLUSTER_ROLE_CAPABILITIES: Record<TeamClusterRole, TeamClusterRoleCapabilities> = {
     cluster: {

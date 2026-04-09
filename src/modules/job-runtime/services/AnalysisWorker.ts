@@ -2,6 +2,12 @@ import { logger } from '@/core/logger';
 import { DAEMON_PATHS } from '@/core/paths';
 import { forceGC, isMemoryPressured } from '@/core/memory';
 import { ANALYSIS_QUEUE_NAME, QueueService } from '@/modules/platform/services';
+import {
+    delayJobOnQueueScopeContention,
+    tryAcquireQueueScopeLease,
+    type QueueScopeLease,
+    type QueueScopeLimitsRegistry
+} from '@/modules/platform/services';
 import { WorkflowGraph, WorkflowNodeType, type WorkflowNode } from '@/modules/workflow-runtime/contracts';
 import { createWorkflowNodeRegistry } from '@/modules/workflow-runtime/factories';
 import { createWorkflowExecutionContext } from '@/modules/workflow-runtime/services/WorkflowExecutionContextFactory';
@@ -35,6 +41,7 @@ import type {
     TrajectoryDumpDescriptor
 } from '@/shared/contracts';
 import type { AnalysisExecutionDataStore } from '@/modules/platform/services';
+import type { RedisConnectionService } from '@/modules/platform/services';
 import type { Job as BullMQJob, Worker } from 'bullmq';
 import type { Readable } from 'node:stream';
 import type { WorkflowNodeRegistry } from '@/modules/workflow-runtime/services';
@@ -296,6 +303,8 @@ export class AnalysisWorker {
 
     constructor(
         private readonly queueService: QueueService,
+        private readonly redisConnectionService: RedisConnectionService,
+        private readonly queueScopeLimitsRegistry: QueueScopeLimitsRegistry,
         private readonly analysisExecutionDataStore: AnalysisExecutionDataStore,
         private readonly objectStore: ClusterObjectStore,
         private readonly pluginBinaryCacheService: PluginBinaryCacheService,
@@ -426,9 +435,45 @@ export class AnalysisWorker {
         let batchDumpLocalPaths: string[] | undefined;
         let outputDir: string | undefined;
         let artifactUploadBatch: ArtifactUploadBatch | null = null;
+        let queueScopeLease: QueueScopeLease | null = null;
 
         try {
             executionData = await this.resolveExecutionData(job);
+            const trajectoryId = executionData.trajectoryId.trim();
+            if (!trajectoryId) {
+                throw new Error(`Missing trajectoryId for analysis ${executionData.analysisId}`);
+            }
+
+            const queueScopeLimits = this.queueScopeLimitsRegistry.getSnapshot();
+            const { lease, blockingScope } = await tryAcquireQueueScopeLease(
+                this.redisConnectionService,
+                ANALYSIS_QUEUE_NAME,
+                [
+                    {
+                        scope: 'trajectory',
+                        scopeId: trajectoryId,
+                        limit: queueScopeLimits.analysisProcessing.maxRunningPerTrajectory
+                    },
+                    {
+                        scope: 'team',
+                        scopeId: executionData.teamId ?? '',
+                        limit: queueScopeLimits.analysisProcessing.maxRunningPerTeam
+                    }
+                ]
+            );
+            queueScopeLease = lease;
+            if (!queueScopeLease || blockingScope) {
+                await delayJobOnQueueScopeContention(bullJob, {
+                    queueName: ANALYSIS_QUEUE_NAME,
+                    jobId: job.jobId,
+                    scope: blockingScope ?? {
+                        scope: 'trajectory',
+                        scopeId: trajectoryId,
+                        limit: queueScopeLimits.analysisProcessing.maxRunningPerTrajectory
+                    }
+                });
+            }
+
             isBatchMode = executionData.batchMode === true;
             timestep = isBatchMode ? 0 : this.resolveJobTimestep(job, metadata);
             inputFile = typeof metadata.inputFile === 'string' ? metadata.inputFile : '';
@@ -583,6 +628,10 @@ export class AnalysisWorker {
                 await artifactUploadBatch.cleanup().catch((err) => {
                     logger.warn({ jobId: job.jobId, err }, 'Artifact upload batch cleanup failed');
                 });
+            }
+
+            if (queueScopeLease) {
+                await queueScopeLease.release();
             }
         }
     }

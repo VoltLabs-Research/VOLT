@@ -10,7 +10,7 @@ import {
 } from './services';
 import type { NativeModuleLoader } from '@/modules/trajectory-native/services';
 import type { DaemonArtifactReporterService, DaemonJobReporterService } from '@/modules/cloud-control/services';
-import type { QueueService } from '@/modules/platform/services';
+import type { QueueScopeLimitsRegistry, QueueService, RedisConnectionService } from '@/modules/platform/services';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
 export interface ArtifactsModule {
@@ -28,11 +28,15 @@ export const createArtifactsModule = (
     daemonArtifactReporterService: DaemonArtifactReporterService,
     daemonJobReporterService: DaemonJobReporterService,
     queueService: QueueService,
+    redisConnectionService: RedisConnectionService,
+    queueScopeLimitsRegistry: QueueScopeLimitsRegistry,
     pluginListingRepository: PluginListingRepository = createPluginListingRepository(objectStore, localOwnerClusterId)
 ): ArtifactsModule => {
     const artifactUploadQueueService = createArtifactUploadQueueService(queueService);
     const artifactUploadWorkerService = new ArtifactUploadWorkerService(
         queueService,
+        redisConnectionService,
+        queueScopeLimitsRegistry,
         objectStore,
         daemonArtifactReporterService,
         daemonJobReporterService

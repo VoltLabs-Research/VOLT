@@ -130,7 +130,9 @@ export const createCloudControlModule = (deps: {
             emitLifecycle: (type, details) => {
                 voltCloudConnection.emitLifecycleEvent(type, details);
             },
-            applyQueueConcurrency: (queueConcurrency) => deps.runtimeRoleCoordinator.applyQueueConcurrency(queueConcurrency),
+            applyQueueSettings: (queueConcurrency, queueScopeLimits) => {
+                deps.runtimeRoleCoordinator.applyQueueSettings(queueConcurrency, queueScopeLimits);
+            },
             applyRoleConfig: (roleConfig) => deps.runtimeRoleCoordinator.applyRoleConfig(roleConfig),
             reportUpdateFailed: (details) => voltCloudConnection.reportUpdateFailed(details),
             reportDeleteFailed: (details) => voltCloudConnection.reportDeleteFailed(details)

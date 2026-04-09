@@ -1,15 +1,17 @@
 import { logger } from '@/core/logger';
 import {
+    DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS,
     TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION,
     buildTeamClusterEffectiveCapabilities,
     createDefaultTeamClusterRuntimeRoleConfig,
     type TeamClusterDaemonQueueConcurrency,
+    type TeamClusterDaemonQueueScopeLimits,
     type TeamClusterDaemonRoleApplyResult,
     type TeamClusterDaemonRuntimeConfig,
     type TeamClusterEffectiveCapabilities,
     type TeamClusterRuntimeRoleConfig
 } from '@/shared/contracts';
-import type { QueueConcurrencyCoordinator } from '@/modules/platform/services';
+import type { QueueConcurrencyCoordinator, QueueScopeLimitsRegistry } from '@/modules/platform/services';
 import type { ArtifactUploadWorkerService } from '@/modules/artifacts/services';
 import type { AnalysisWorker } from '@/modules/job-runtime/services';
 import type { SSHImportWorkerService } from '@/modules/ssh-import/services';
@@ -40,6 +42,26 @@ const cloneQueueConcurrency = (
     rasterizer: queueConcurrency.rasterizer,
     glbPreprocessing: queueConcurrency.glbPreprocessing,
     sshImport: queueConcurrency.sshImport
+});
+
+const cloneQueueScopeLimits = (
+    queueScopeLimits: TeamClusterDaemonQueueScopeLimits
+): TeamClusterDaemonQueueScopeLimits => ({
+    analysisProcessing: {
+        ...queueScopeLimits.analysisProcessing
+    },
+    artifactUpload: {
+        ...queueScopeLimits.artifactUpload
+    },
+    trajectoryGlbConversion: {
+        ...queueScopeLimits.trajectoryGlbConversion
+    },
+    cloudUpload: {
+        ...queueScopeLimits.cloudUpload
+    },
+    trajectoryCompression: {
+        ...queueScopeLimits.trajectoryCompression
+    }
 });
 
 const cloneRoleConfig = (
@@ -89,12 +111,14 @@ export class RuntimeRoleCoordinator {
     private snapshot: TeamClusterDaemonRuntimeConfig = {
         contractVersion: TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION,
         queueConcurrency: cloneQueueConcurrency(DEFAULT_QUEUE_CONCURRENCY),
+        queueScopeLimits: cloneQueueScopeLimits(DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS),
         roleConfig: createDefaultTeamClusterRuntimeRoleConfig(),
         effectiveCapabilities: buildTeamClusterEffectiveCapabilities('cluster')
     };
 
     constructor(
-        private readonly queueConcurrencyCoordinator: QueueConcurrencyCoordinator
+        private readonly queueConcurrencyCoordinator: QueueConcurrencyCoordinator,
+        private readonly queueScopeLimitsRegistry: QueueScopeLimitsRegistry
     ) {}
 
     bind(dependencies: RuntimeRoleCoordinatorDependencies): void {
@@ -105,12 +129,15 @@ export class RuntimeRoleCoordinator {
         this.snapshot = {
             contractVersion: runtimeConfig.contractVersion ?? TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION,
             queueConcurrency: cloneQueueConcurrency(runtimeConfig.queueConcurrency),
+            queueScopeLimits: cloneQueueScopeLimits(runtimeConfig.queueScopeLimits),
             roleConfig: normalizeRoleConfig(runtimeConfig.roleConfig),
             effectiveCapabilities: cloneEffectiveCapabilities(
                 runtimeConfig.effectiveCapabilities
                 ?? buildTeamClusterEffectiveCapabilities(runtimeConfig.roleConfig?.effectiveRole ?? 'cluster')
             )
         };
+
+        this.queueScopeLimitsRegistry.apply(this.snapshot.queueScopeLimits);
 
         await this.applyRoleConfig(this.snapshot.roleConfig);
         return this.getSnapshot();
@@ -120,13 +147,19 @@ export class RuntimeRoleCoordinator {
         return {
             contractVersion: this.snapshot.contractVersion,
             queueConcurrency: cloneQueueConcurrency(this.snapshot.queueConcurrency),
+            queueScopeLimits: cloneQueueScopeLimits(this.snapshot.queueScopeLimits),
             roleConfig: cloneRoleConfig(this.snapshot.roleConfig),
             effectiveCapabilities: cloneEffectiveCapabilities(this.snapshot.effectiveCapabilities)
         };
     }
 
-    applyQueueConcurrency(queueConcurrency: TeamClusterDaemonQueueConcurrency): TeamClusterDaemonQueueConcurrency {
+    applyQueueSettings(
+        queueConcurrency: TeamClusterDaemonQueueConcurrency,
+        queueScopeLimits: TeamClusterDaemonQueueScopeLimits
+    ): { queueConcurrency: TeamClusterDaemonQueueConcurrency; queueScopeLimits: TeamClusterDaemonQueueScopeLimits } {
         this.snapshot.queueConcurrency = cloneQueueConcurrency(queueConcurrency);
+        this.snapshot.queueScopeLimits = cloneQueueScopeLimits(queueScopeLimits);
+        this.queueScopeLimitsRegistry.apply(this.snapshot.queueScopeLimits);
 
         if (this.computeWorkersRunning) {
             this.queueConcurrencyCoordinator.apply(queueConcurrency);
@@ -135,11 +168,15 @@ export class RuntimeRoleCoordinator {
         logger.info({
             action: 'cluster.capabilities.snapshot',
             queueConcurrency: this.snapshot.queueConcurrency,
+            queueScopeLimits: this.snapshot.queueScopeLimits,
             effectiveCapabilities: this.snapshot.effectiveCapabilities,
             effectiveRole: this.snapshot.roleConfig.effectiveRole
         }, 'Applied runtime queue concurrency snapshot');
 
-        return cloneQueueConcurrency(this.snapshot.queueConcurrency);
+        return {
+            queueConcurrency: cloneQueueConcurrency(this.snapshot.queueConcurrency),
+            queueScopeLimits: cloneQueueScopeLimits(this.snapshot.queueScopeLimits)
+        };
     }
 
     async applyRoleConfig(roleConfig: TeamClusterRuntimeRoleConfig): Promise<TeamClusterDaemonRoleApplyResult> {

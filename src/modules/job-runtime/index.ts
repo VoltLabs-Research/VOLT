@@ -1,6 +1,10 @@
 import { AnalysisDispatchService, AnalysisWorker, createBinaryExecutorService, createPluginBinaryCacheService, createJobControlService } from './services';
 import type { ArtifactUploadQueueService, ResultProcessorService } from '@/modules/artifacts/services';
-import type { AnalysisExecutionDataStore } from '@/modules/platform/services';
+import type {
+    AnalysisExecutionDataStore,
+    QueueScopeLimitsRegistry,
+    RedisConnectionService
+} from '@/modules/platform/services';
 import type { WorkflowEngine } from '@/modules/workflow-runtime/services';
 import type { RuntimeEventBroker } from '@/shared/services';
 import type { QueueService } from '@/modules/platform/services';
@@ -31,6 +35,8 @@ export const createJobRuntimeModule = (deps: {
 
 export const createAnalysisWorker = (deps: {
     queueService: QueueService;
+    redisConnectionService: RedisConnectionService;
+    queueScopeLimitsRegistry: QueueScopeLimitsRegistry;
     analysisExecutionDataStore: AnalysisExecutionDataStore;
     objectStore: ClusterObjectStore;
     pluginBinaryCacheService: ReturnType<typeof createPluginBinaryCacheService>;
@@ -41,6 +47,8 @@ export const createAnalysisWorker = (deps: {
 }): AnalysisWorker => {
     return new AnalysisWorker(
         deps.queueService,
+        deps.redisConnectionService,
+        deps.queueScopeLimitsRegistry,
         deps.analysisExecutionDataStore,
         deps.objectStore,
         deps.pluginBinaryCacheService,

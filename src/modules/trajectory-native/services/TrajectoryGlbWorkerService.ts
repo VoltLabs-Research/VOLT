@@ -1,6 +1,15 @@
 import { logger } from '@/core/logger';
 import { TRAJECTORY_GLB_QUEUE_NAME } from '@/modules/platform/services';
-import { createMemoryAwareWorkerShell, delayJobWhenMemoryPressured, type MemoryAwareWorkerShell } from '@/modules/platform/services';
+import {
+    createMemoryAwareWorkerShell,
+    delayJobOnQueueScopeContention,
+    delayJobWhenMemoryPressured,
+    tryAcquireQueueScopeLease,
+    type MemoryAwareWorkerShell,
+    type QueueScopeLease,
+    type QueueScopeLimitsRegistry,
+    type RedisConnectionService
+} from '@/modules/platform/services';
 import type { DaemonJobReporterService, GlbJobStatus } from '@/modules/cloud-control/services/DaemonJobReporterService';
 import type { QueueService } from '@/modules/platform/services';
 import type { GlbConversionQueueJobPayload } from '@/shared/contracts';
@@ -12,6 +21,8 @@ export class TrajectoryGlbWorkerService {
 
     constructor(
         private readonly queueService: QueueService,
+        private readonly redisConnectionService: RedisConnectionService,
+        private readonly queueScopeLimitsRegistry: QueueScopeLimitsRegistry,
         private readonly glbExporterService: GlbExporterService,
         private readonly daemonJobReporterService: DaemonJobReporterService
     ) {
@@ -84,7 +95,44 @@ export class TrajectoryGlbWorkerService {
             message: 'Heap memory pressure detected — delaying GLB conversion job'
         });
 
+        let queueScopeLease: QueueScopeLease | null = null;
+
         try {
+            const trajectoryId = job.trajectoryId.trim();
+            if (!trajectoryId) {
+                throw new Error(`Missing trajectoryId for GLB conversion job ${job.jobId}`);
+            }
+
+            const queueScopeLimits = this.queueScopeLimitsRegistry.getSnapshot();
+            const { lease, blockingScope } = await tryAcquireQueueScopeLease(
+                this.redisConnectionService,
+                TRAJECTORY_GLB_QUEUE_NAME,
+                [
+                    {
+                        scope: 'trajectory',
+                        scopeId: trajectoryId,
+                        limit: queueScopeLimits.trajectoryGlbConversion.maxRunningPerTrajectory
+                    },
+                    {
+                        scope: 'team',
+                        scopeId: job.teamId,
+                        limit: queueScopeLimits.trajectoryGlbConversion.maxRunningPerTeam
+                    }
+                ]
+            );
+            queueScopeLease = lease;
+            if (!queueScopeLease || blockingScope) {
+                await delayJobOnQueueScopeContention(bullJob, {
+                    queueName: TRAJECTORY_GLB_QUEUE_NAME,
+                    jobId: job.jobId,
+                    scope: blockingScope ?? {
+                        scope: 'trajectory',
+                        scopeId: trajectoryId,
+                        limit: queueScopeLimits.trajectoryGlbConversion.maxRunningPerTrajectory
+                    }
+                });
+            }
+
             void this.reportJobStatusBestEffort(job, 'running');
 
             await bullJob.updateProgress(10);
@@ -108,6 +156,10 @@ export class TrajectoryGlbWorkerService {
             void this.reportJobStatusBestEffort(job, 'failed', message);
 
             throw error instanceof Error ? error : new Error(message);
+        } finally {
+            if (queueScopeLease) {
+                await queueScopeLease.release();
+            }
         }
     }
 }

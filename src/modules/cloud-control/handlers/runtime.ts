@@ -5,6 +5,7 @@ import {
     type TeamClusterDaemonRoleApplyResult,
     type TeamClusterDaemonQueueConcurrency,
     type TeamClusterDaemonQueueConcurrencyApplyPayload,
+    type TeamClusterDaemonQueueScopeLimits,
     type TeamClusterRole
 } from '@/shared/contracts';
 import fs from 'node:fs/promises';
@@ -25,7 +26,10 @@ interface RuntimeHandlersDependencies {
      */
     reportUpdateFailed: (details: string) => Promise<void>;
     reportDeleteFailed: (details: string) => Promise<void>;
-    applyQueueConcurrency: (queueConcurrency: TeamClusterDaemonQueueConcurrency) => void;
+    applyQueueSettings: (
+        queueConcurrency: TeamClusterDaemonQueueConcurrency,
+        queueScopeLimits: TeamClusterDaemonQueueScopeLimits
+    ) => void;
     applyRoleConfig: (payload: TeamClusterDaemonRoleApplyPayload['roleConfig']) => Promise<TeamClusterDaemonRoleApplyResult>;
 };
 
@@ -78,11 +82,45 @@ const readQueueConcurrencyValue = (value: unknown, fieldName: string): number =>
     return parsedValue;
 };
 
+const readQueueScopeLimitValue = (value: unknown, fieldName: string): number => {
+    const parsedValue = readNumber(value, fieldName);
+    if (!Number.isInteger(parsedValue) || parsedValue < 0) {
+        throw new Error(`${fieldName} must be an integer greater than or equal to 0`);
+    }
+
+    return parsedValue;
+};
+
+const readQueueScopeLimitRecord = (
+    value: unknown,
+    fieldName: string
+): { maxRunningPerTrajectory: number; maxRunningPerTeam: number } => {
+    const record = readPayloadRecord(value);
+    const keys = Object.keys(record).sort();
+    const expectedKeys = ['maxRunningPerTeam', 'maxRunningPerTrajectory'];
+
+    if (keys.length !== expectedKeys.length || keys.some((key, index) => key !== expectedKeys[index])) {
+        throw new Error(`${fieldName} must include maxRunningPerTrajectory and maxRunningPerTeam`);
+    }
+
+    return {
+        maxRunningPerTrajectory: readQueueScopeLimitValue(
+            record.maxRunningPerTrajectory,
+            `${fieldName}.maxRunningPerTrajectory`
+        ),
+        maxRunningPerTeam: readQueueScopeLimitValue(
+            record.maxRunningPerTeam,
+            `${fieldName}.maxRunningPerTeam`
+        )
+    };
+};
+
 const readQueueConcurrencyApplyPayload = (payload: unknown): TeamClusterDaemonQueueConcurrencyApplyPayload => {
     const record = readPayloadRecord(payload);
-    const recordKeys = Object.keys(record).filter((key) => key !== 'metadata');
-    if (recordKeys.length !== 1 || recordKeys[0] !== 'queueConcurrency') {
-        throw new Error('payload must contain queueConcurrency only');
+    const recordKeys = Object.keys(record).filter((key) => key !== 'metadata').sort();
+    const expectedRootKeys = ['queueConcurrency', 'queueScopeLimits'];
+    if (recordKeys.length !== expectedRootKeys.length || recordKeys.some((key, index) => key !== expectedRootKeys[index])) {
+        throw new Error('payload must contain queueConcurrency and queueScopeLimits');
     }
 
     const queueConcurrencyRecord = readPayloadRecord(record.queueConcurrency);
@@ -99,12 +137,54 @@ const readQueueConcurrencyApplyPayload = (payload: unknown): TeamClusterDaemonQu
         }
     }
 
+    const queueScopeLimitsRecord = readPayloadRecord(record.queueScopeLimits);
+    const queueScopeLimitKeys = Object.keys(queueScopeLimitsRecord).sort();
+    const expectedScopeKeys = [
+        'analysisProcessing',
+        'artifactUpload',
+        'cloudUpload',
+        'trajectoryCompression',
+        'trajectoryGlbConversion'
+    ];
+
+    if (queueScopeLimitKeys.length !== expectedScopeKeys.length) {
+        throw new Error('queueScopeLimits must include analysisProcessing, artifactUpload, trajectoryGlbConversion, cloudUpload, and trajectoryCompression');
+    }
+
+    for (const [index, key] of expectedScopeKeys.entries()) {
+        if (queueScopeLimitKeys[index] !== key) {
+            throw new Error('queueScopeLimits must include analysisProcessing, artifactUpload, trajectoryGlbConversion, cloudUpload, and trajectoryCompression');
+        }
+    }
+
     return {
         queueConcurrency: {
             analysis: readQueueConcurrencyValue(queueConcurrencyRecord.analysis, 'queueConcurrency.analysis'),
             rasterizer: readQueueConcurrencyValue(queueConcurrencyRecord.rasterizer, 'queueConcurrency.rasterizer'),
             glbPreprocessing: readQueueConcurrencyValue(queueConcurrencyRecord.glbPreprocessing, 'queueConcurrency.glbPreprocessing'),
             sshImport: readQueueConcurrencyValue(queueConcurrencyRecord.sshImport, 'queueConcurrency.sshImport')
+        },
+        queueScopeLimits: {
+            analysisProcessing: readQueueScopeLimitRecord(
+                queueScopeLimitsRecord.analysisProcessing,
+                'queueScopeLimits.analysisProcessing'
+            ),
+            artifactUpload: readQueueScopeLimitRecord(
+                queueScopeLimitsRecord.artifactUpload,
+                'queueScopeLimits.artifactUpload'
+            ),
+            trajectoryGlbConversion: readQueueScopeLimitRecord(
+                queueScopeLimitsRecord.trajectoryGlbConversion,
+                'queueScopeLimits.trajectoryGlbConversion'
+            ),
+            cloudUpload: readQueueScopeLimitRecord(
+                queueScopeLimitsRecord.cloudUpload,
+                'queueScopeLimits.cloudUpload'
+            ),
+            trajectoryCompression: readQueueScopeLimitRecord(
+                queueScopeLimitsRecord.trajectoryCompression,
+                'queueScopeLimits.trajectoryCompression'
+            )
         }
     };
 };
@@ -299,24 +379,25 @@ export const createRuntimeHandlers = (deps: RuntimeHandlersDependencies): Revers
                 request = readQueueConcurrencyApplyPayload(payload);
             } catch {
                 return rejectRuntimeCommand(
-                    'Invalid queue concurrency payload: queueConcurrency.analysis, queueConcurrency.rasterizer, queueConcurrency.glbPreprocessing, and queueConcurrency.sshImport are required integers greater than or equal to 1.'
+                    'Invalid queue settings payload: queueConcurrency analysis/rasterizer/glbPreprocessing/sshImport must be integers >= 1 and queueScopeLimits must define maxRunningPerTrajectory/maxRunningPerTeam integers >= 0.'
                 );
             }
 
             try {
-                deps.applyQueueConcurrency(request.queueConcurrency);
+                deps.applyQueueSettings(request.queueConcurrency, request.queueScopeLimits);
             } catch (error: unknown) {
                 return rejectRuntimeCommand(
                     error instanceof Error
                         ? error.message
-                        : 'Failed to apply queue concurrency'
+                        : 'Failed to apply queue settings'
                 );
             }
 
             return {
                 data: {
                     accepted: true,
-                    queueConcurrency: request.queueConcurrency
+                    queueConcurrency: request.queueConcurrency,
+                    queueScopeLimits: request.queueScopeLimits
                 }
             };
         }
