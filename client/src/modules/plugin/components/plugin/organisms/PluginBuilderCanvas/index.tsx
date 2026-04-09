@@ -30,7 +30,9 @@ const resolveThemeColors = () => ({
         [NodeType.PLUGIN]: getCSSVar('--accent-blue'),
         [NodeType.EXPOSURE]: getCSSVar('--accent-orange'),
         [NodeType.EXPORT]: getCSSVar('--accent-red'),
-        [NodeType.IF_STATEMENT]: getCSSVar('--accent-purple')
+        [NodeType.IF_STATEMENT]: getCSSVar('--accent-purple'),
+        [NodeType.SWITCH_STATEMENT]: getCSSVar('--accent-orange'),
+        [NodeType.SWITCH_CASE]: getCSSVar('--accent-blue')
     } as Record<string, string>,
     edgeStroke: getCSSVar('--color-border-strong'),
     canvasBg: getCSSVar('--color-bg'),

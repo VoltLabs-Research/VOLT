@@ -7,6 +7,7 @@ import { ForEachDataSchema } from './nodes/ForEachDataSchema';
 import { IfStatementDataSchema } from './nodes/IfStatementDataSchema';
 import { ModifierDataSchema } from './nodes/ModifierDataSchema';
 import { PluginNodeDataSchema } from './nodes/PluginNodeDataSchema';
+import { SwitchCaseDataSchema, SwitchStatementDataSchema } from './nodes/SwitchStatementDataSchema';
 
 import { Schema } from 'mongoose';
 
@@ -19,5 +20,7 @@ export const NodeDataSchema = new Schema({
     pluginNode: PluginNodeDataSchema,
     exposure: ExposureDataSchema,
     export: ExportDataSchema,
-    ifStatement: IfStatementDataSchema
+    ifStatement: IfStatementDataSchema,
+    switchStatement: SwitchStatementDataSchema,
+    switchCase: SwitchCaseDataSchema
 }, { _id: false, strict: false });

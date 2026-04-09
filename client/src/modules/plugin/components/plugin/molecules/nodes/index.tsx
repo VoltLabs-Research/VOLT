@@ -9,6 +9,8 @@ import PluginNode from './PluginNode';
 import ExposureNode from './ExposureNode';
 import ExportNode from './ExportNode';
 import IfStatementNode from './IfStatementNode';
+import SwitchStatementNode from './SwitchStatementNode';
+import SwitchCaseNode from './SwitchCaseNode';
 
 export const nodeTypes: NodeTypes = {
     [NodeType.MODIFIER]: ModifierNode,
@@ -19,5 +21,7 @@ export const nodeTypes: NodeTypes = {
     [NodeType.PLUGIN]: PluginNode,
     [NodeType.EXPOSURE]: ExposureNode,
     [NodeType.EXPORT]: ExportNode,
-    [NodeType.IF_STATEMENT]: IfStatementNode
+    [NodeType.IF_STATEMENT]: IfStatementNode,
+    [NodeType.SWITCH_STATEMENT]: SwitchStatementNode,
+    [NodeType.SWITCH_CASE]: SwitchCaseNode
 };

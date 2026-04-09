@@ -14,7 +14,11 @@ export const entrypointEditorSchema = z.object({
     binaryObjectPath: z.string().optional(),
     binaryFileName: z.string().optional(),
     binaryHash: z.string().optional(),
-    type: z.enum([EntrypointType.EXECUTABLE, EntrypointType.PYTHON_SCRIPT]).default(EntrypointType.EXECUTABLE),
+    type: z.enum([
+        EntrypointType.EXECUTABLE,
+        EntrypointType.PYTHON_SCRIPT,
+        EntrypointType.PACKAGED_EXECUTABLE
+    ]).default(EntrypointType.EXECUTABLE),
     arguments: z.string().default(''),
     requirementsFile: z.string().default(''),
     entrypointScript: z.string().default(''),

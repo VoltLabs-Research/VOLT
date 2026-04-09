@@ -5,11 +5,18 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
 import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import type { DebugTraceNode } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
+import type { INodeData } from '@/modules/plugin/api/entities/plugin/workflow';
 import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
+import {
+    createReactFlowHandleStyle,
+    getNodeHandleDefinitions,
+    resolveNodeHandlePlacement,
+    toReactFlowHandlePosition
+} from '@/modules/plugin/utilities/plugin/node-handles';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
-import { Handle, Position } from '@xyflow/react';
+import { Handle, useUpdateNodeInternals } from '@xyflow/react';
 import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Database, SkipForward, Terminal } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import type { ReactNode } from 'react';
 import './BaseNode.css';
@@ -163,6 +170,7 @@ const DebugExecutionTraceTree = ({
 
 const BaseNode = ({
     id,
+    data,
     selected,
     nodeType,
     nodeTitle,
@@ -170,6 +178,7 @@ const BaseNode = ({
     children
 }: BaseNodeProps) => {
     const config = NODE_CONFIGS[nodeType];
+    const updateNodeInternals = useUpdateNodeInternals();
     const debugState = usePluginDebugStore((s) => s.nodeStates[id]);
     const isDebugging = usePluginDebugStore((s) => s.isDebugging || s.totalDuration !== null);
     const inspectedNodeId = usePluginDebugStore((s) => s.inspectedNodeId);
@@ -177,6 +186,10 @@ const BaseNode = ({
 
     const [showLog, setShowLog] = useState(false);
     const [expandedTraceIds, setExpandedTraceIds] = useState<Set<string>>(new Set());
+    const handleDefinitions = useMemo(() => getNodeHandleDefinitions(nodeType), [nodeType]);
+    const connectorLayoutSignature = useMemo(() => {
+        return JSON.stringify((data as INodeData | undefined)?.connectorLayout ?? {});
+    }, [data]);
 
     const isExpanded = inspectedNodeId === id;
     const hasInspectableOutput = isDebugging && debugState &&
@@ -228,6 +241,10 @@ const BaseNode = ({
         });
     }, []);
 
+    useEffect(() => {
+        updateNodeInternals(id);
+    }, [connectorLayoutSignature, id, updateNodeInternals]);
+
     let durationLabel: string | null = null;
     if (isDebugging && debugState?.status === 'completed' && debugState.durationMs !== undefined) {
         if (debugState.durationMs < 1000) {
@@ -270,9 +287,20 @@ const BaseNode = ({
             )}
 
             <Container className={`p-relative b-soft radius-sm workflow-node glass-bg ${selected ? 'workflow-node--selected' : ''} ${debugClass}`}>
-                {config.inputs > 0 && (
-                    <Handle type='target' position={Position.Left} id='input' />
-                )}
+                {handleDefinitions.map((handleDefinition) => {
+                    const placement = resolveNodeHandlePlacement(data as INodeData | undefined, handleDefinition);
+
+                    return (
+                        <Handle
+                            key={handleDefinition.id}
+                            type={handleDefinition.type}
+                            position={toReactFlowHandlePosition(placement.side)}
+                            id={handleDefinition.id}
+                            className={handleDefinition.className}
+                            style={createReactFlowHandleStyle(placement)}
+                        />
+                    );
+                })}
 
                 <Container className='d-flex items-center gap-1'>
                     <span className='d-flex items-center content-center workflow-node-icon'>
@@ -289,10 +317,6 @@ const BaseNode = ({
                 </Container>
 
                 {children}
-
-                {!children && config.outputs !== 0 && (
-                    <Handle type='source' position={Position.Right} id='output' />
-                )}
             </Container>
 
             {hasInspectableOutput && (

@@ -227,8 +227,21 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
         const runtimePlugins = runtimePluginIds.length > 0
             ? await this.pluginRepo.findByIds(runtimePluginIds)
             : [];
+        const runtimeDependencyResolution = await this.pluginDependencyResolverService.collectTransitivePublishedDependenciesForPlugins(
+            runtimePlugins
+        );
+        if (runtimeDependencyResolution.errors.length > 0) {
+            return Result.fail(ApplicationError.badRequest(
+                ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
+                runtimeDependencyResolution.errors.join('; ')
+            ));
+        }
         const allDependencies = Array.from(new Map(
-            [...dependencyResolution.dependencies, ...runtimePlugins].map((candidate) => [candidate.id, candidate])
+            [
+                ...dependencyResolution.dependencies,
+                ...runtimePlugins,
+                ...runtimeDependencyResolution.dependencies
+            ].map((candidate) => [candidate.id, candidate])
         ).values());
 
         await this.eventBus.publish(new PluginExecutionRequestEvent({

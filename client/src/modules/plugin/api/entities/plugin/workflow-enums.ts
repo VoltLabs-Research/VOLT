@@ -7,7 +7,9 @@ export enum NodeType {
     PLUGIN = 'plugin-node',
     EXPOSURE = 'exposure',
     EXPORT = 'export',
-    IF_STATEMENT = 'if-statement'
+    IF_STATEMENT = 'if-statement',
+    SWITCH_STATEMENT = 'switch-statement',
+    SWITCH_CASE = 'switch-case'
 };
 
 export enum PluginStatus {
@@ -32,7 +34,13 @@ export enum ModifierContext {
 
 export enum EntrypointType {
     EXECUTABLE = 'executable',
-    PYTHON_SCRIPT = 'python-script'
+    PYTHON_SCRIPT = 'python-script',
+    PACKAGED_EXECUTABLE = 'packaged-executable'
+};
+
+export enum PluginNodeExecutionMode {
+    MANUAL = 'manual',
+    ARGUMENT_REFERENCE = 'argumentReference'
 };
 
 export enum Exporter {

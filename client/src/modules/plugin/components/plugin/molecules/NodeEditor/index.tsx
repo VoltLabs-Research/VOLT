@@ -15,6 +15,9 @@ import PluginNodeEditor from './editors/PluginNodeEditor';
 import ExposureEditor from './editors/ExposureEditor';
 import ExportEditor from './editors/ExportEditor';
 import IfStatementEditor from './editors/IfStatementEditor';
+import SwitchStatementEditor from './editors/SwitchStatementEditor';
+import SwitchCaseEditor from './editors/SwitchCaseEditor';
+import ConnectorLayoutEditor from './ConnectorLayoutEditor';
 
 
 interface NodeEditorProps {
@@ -30,7 +33,9 @@ const EDITOR_COMPONENTS: Partial<Record<NodeType, FC<{ node: Node }>>> = {
     [NodeType.PLUGIN]: PluginNodeEditor,
     [NodeType.EXPOSURE]: ExposureEditor,
     [NodeType.EXPORT]: ExportEditor,
-    [NodeType.IF_STATEMENT]: IfStatementEditor
+    [NodeType.IF_STATEMENT]: IfStatementEditor,
+    [NodeType.SWITCH_STATEMENT]: SwitchStatementEditor,
+    [NodeType.SWITCH_CASE]: SwitchCaseEditor
 };
 
 const NodeEditor = ({ node }: NodeEditorProps) => {
@@ -55,6 +60,10 @@ const NodeEditor = ({ node }: NodeEditorProps) => {
                         <Paragraph>No editor available for this node type.</Paragraph>
                     </Container>
                 )}
+            </Container>
+
+            <Container className='mt-1'>
+                <ConnectorLayoutEditor node={node} />
             </Container>
 
             <Container className='mt-1'>

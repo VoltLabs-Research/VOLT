@@ -1,7 +1,6 @@
 import useAnalysisFrameLog from '@/modules/canvas/hooks/use-analysis-frame-log';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import { Terminal, Zap } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import './AnalysisLogPanel.css';
@@ -37,16 +36,13 @@ const AnalysisLogPanel = ({
     const {
         isLoading,
         error,
-        segments,
-        status,
-        truncated
+        segments
     } = useAnalysisFrameLog({
         analysisId,
         timestep,
         active,
         live
     });
-    const displayStatus = activityStatus ?? status;
     const scrollRef = useRef<HTMLDivElement | null>(null);
     const [autoFollow, setAutoFollow] = useState(true);
 

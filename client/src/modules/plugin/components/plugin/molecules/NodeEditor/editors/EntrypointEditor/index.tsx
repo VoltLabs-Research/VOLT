@@ -22,6 +22,9 @@ const ENTRYPOINT_TYPE_OPTIONS = [{
 }, {
     value: EntrypointType.PYTHON_SCRIPT,
     title: 'Python Script'
+}, {
+    value: EntrypointType.PACKAGED_EXECUTABLE,
+    title: 'Packaged Executable'
 }];
 
 const useEntrypointEditorForm = createNodeEditorForm<EntrypointEditorFormValues, 'entrypoint'>({
@@ -50,15 +53,18 @@ const EntrypointEditor = ({ node }: EditorProps) => {
     const watchedBinary = form.watch('binary');
     const watchedEntrypointType = form.watch('type') ?? EntrypointType.EXECUTABLE;
     const watchedRequirementsFile = form.watch('requirementsFile') ?? '';
-    const watchedEntrypointScript = form.watch('entrypointScript') ?? '';
     const isPythonScript = watchedEntrypointType === EntrypointType.PYTHON_SCRIPT;
-    const isProjectMode = isPythonScript && watchedEntrypointScript.length > 0;
+    const isPackagedExecutable = watchedEntrypointType === EntrypointType.PACKAGED_EXECUTABLE;
     const binarySectionTitle = isPythonScript
-        ? (isProjectMode ? 'Project' : 'Script')
-        : 'Binary';
+        ? 'Project'
+        : isPackagedExecutable
+            ? 'Package'
+            : 'Binary';
     const uploadButtonLabel = isPythonScript
-        ? (isProjectMode ? 'Upload Project (ZIP)' : 'Upload Script')
-        : 'Upload Binary';
+        ? 'Upload Project (ZIP)'
+        : isPackagedExecutable
+            ? 'Upload Package (ZIP)'
+            : 'Upload Binary';
 
     useEffect(() => {
         if (!form.getValues('type')) {
@@ -167,14 +173,14 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                     control={form.control}
                     options={ENTRYPOINT_TYPE_OPTIONS}
                 />
-                {isPythonScript && (
+                {(isPythonScript || isPackagedExecutable) && (
                     <FormFieldRHF<EntrypointEditorFormValues>
                         variant='inline'
                         label='Entry Script'
                         fieldType='input'
                         name='entrypointScript'
                         control={form.control}
-                        placeholder='main.py'
+                        placeholder={isPackagedExecutable ? 'opendxa' : 'main.py'}
                     />
                 )}
                 <FormFieldRHF<EntrypointEditorFormValues>

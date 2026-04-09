@@ -1,6 +1,7 @@
 export enum EntrypointNodeType {
     Executable = 'executable',
-    PythonScript = 'python-script'
+    PythonScript = 'python-script',
+    PackagedExecutable = 'packaged-executable'
 };
 
 export interface EntrypointNodeData{
