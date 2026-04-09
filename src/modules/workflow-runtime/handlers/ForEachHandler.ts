@@ -16,7 +16,7 @@ export class WorkflowForEachHandler implements WorkflowNodeHandler {
         }
 
         const cleanRef = String(rawRef).replace(/^\{\{\s*|\s*\}\}$/g, '');
-        const items = this.registry.resolveReference(cleanRef, context);
+        const items = this.registry.resolveReference(cleanRef, context, node.id);
         if (!Array.isArray(items)) {
             const availableNodes = Array.from(context.outputs.keys()).join(', ');
             throw new Error(

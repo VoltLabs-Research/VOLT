@@ -7,13 +7,20 @@ import {
     parseInlineWorkflowArguments,
     readWorkflowEntrypointData,
     readWorkflowPluginNodeData,
-    resolveInlinePluginExecutionOrder,
+    readWorkflowPluginReferenceSelections,
     type InlineWorkflowDumpTarget,
     type WorkflowEntrypointData,
-    type WorkflowPluginNodeData
+    type WorkflowPluginNodeData,
+    type WorkflowPluginReferenceSelection
 } from './InlineWorkflowShared';
 import { WorkflowGraph, WorkflowNodeType, type WorkflowNode } from '../contracts';
-import { EntrypointType, type NestedPluginDefinition, type PluginReferenceExecutionRequest, type WorkflowNodeDefinition } from '@/shared/contracts';
+import {
+    EntrypointType,
+    type NestedPluginDefinition,
+    type PluginReferenceExecutionRequest,
+    type WorkflowDefinition,
+    type WorkflowNodeDefinition
+} from '@/shared/contracts';
 import { isRecord } from '@/shared/utils';
 import type {
     BinaryExecutorService,
@@ -61,6 +68,7 @@ type InlinePluginNodeLike = Pick<WorkflowNodeDefinition, 'id' | 'type' | 'data'>
 
 export interface ExecuteInlinePluginNodeInput extends InlineExecutionBaseInput {
     node: InlinePluginNodeLike;
+    workflow?: WorkflowDefinition;
     captureTrace?: boolean;
 }
 
@@ -72,6 +80,12 @@ export interface ExecuteInlinePluginReferenceInput extends InlineExecutionBaseIn
 interface NestedWorkflowExecutionResult {
     output: Record<string, unknown>;
     trace: InlineWorkflowTraceNode[];
+}
+
+interface ResolvedPluginExecution {
+    pluginId: string;
+    config: Record<string, unknown>;
+    selectedTimesteps?: number[];
 }
 
 export type InlineWorkflowTraceStatus = 'completed' | 'skipped' | 'error';
@@ -167,6 +181,72 @@ const toError = (error: unknown, fallbackMessage: string): Error => {
     return new Error(fallbackMessage);
 };
 
+const getWorkflowChildren = (
+    workflow: WorkflowGraph,
+    nodeId: string,
+    sourceHandle?: string
+): WorkflowNode[] => {
+    return workflow.edges
+        .filter((edge) => edge.source === nodeId && (typeof sourceHandle === 'undefined' || edge.sourceHandle === sourceHandle))
+        .map((edge) => workflow.nodes.find((candidate) => candidate.id === edge.target))
+        .filter((candidate): candidate is WorkflowNode => Boolean(candidate));
+};
+
+const resolveRuntimeRootNodeIds = (workflow: WorkflowGraph): string[] => {
+    const runtimeRootNode = workflow.nodes.find((node) => node.type === WorkflowNodeType.ForEach)
+        ?? workflow.nodes.find((node) => node.type === WorkflowNodeType.Context)
+        ?? workflow.nodes.find((node) => node.type === WorkflowNodeType.Arguments)
+        ?? workflow.nodes.find((node) => node.type === WorkflowNodeType.Modifier)
+        ?? null;
+
+    if (!runtimeRootNode) {
+        return [];
+    }
+
+    return getWorkflowChildren(workflow, runtimeRootNode.id).map((node) => node.id);
+};
+
+const matchesIfBranchHandle = (
+    edgeHandle: string | undefined,
+    selectedBranch: string
+): boolean => {
+    if (selectedBranch === 'true') {
+        return edgeHandle === 'output-true' || edgeHandle === 'true';
+    }
+
+    return edgeHandle === 'output-false' || edgeHandle === 'false';
+};
+
+const buildAggregatedPluginOutput = (
+    executions: Array<{ pluginId: string; output: Record<string, unknown>; }>
+): Record<string, unknown> => {
+    const allExposureItems = executions.flatMap((execution) => {
+        const executionResult = isRecord(execution.output.execution_result)
+            ? execution.output.execution_result
+            : undefined;
+        const exposures = executionResult && isRecord(executionResult.exposures)
+            ? executionResult.exposures
+            : undefined;
+        return Array.isArray(exposures?.items)
+            ? exposures.items
+            : [];
+    });
+
+    return {
+        pluginIds: executions.map((execution) => execution.pluginId),
+        executions: {
+            items: executions,
+            str_json: JSON.stringify(executions)
+        },
+        execution_result: {
+            exposures: {
+                items: allExposureItems,
+                str_json: JSON.stringify(allExposureItems)
+            }
+        }
+    };
+};
+
 export class InlineWorkflowRuntime {
     constructor(
         private readonly registry: WorkflowNodeRegistry,
@@ -177,19 +257,85 @@ export class InlineWorkflowRuntime {
     async executePluginNode(input: ExecuteInlinePluginNodeInput): Promise<InlineWorkflowExecutionResult> {
         let traceCounter = 0;
         const nextTraceId = (): string => `trace_${++traceCounter}`;
-
-        return this.executeNestedPluginWorkflow(
-            input,
-            readWorkflowPluginNodeData(input.node.data.pluginNode),
-            input.outputs,
-            input.outputDir,
-            createTraceContext(input.node.id, nextTraceId, input.captureTrace === true),
-            input.rootNodeId ?? input.node.id,
-            Array.isArray(input.executionPath) && input.executionPath.length > 0
-                ? [...input.executionPath]
-                : [input.node.id],
-            input.logSinkFactory
+        const pluginNodeData = readWorkflowPluginNodeData(input.node.data.pluginNode);
+        const executions = this.resolvePluginExecutionsForNode(
+            input.workflow,
+            pluginNodeData,
+            input.outputs
         );
+        if (!executions.length) {
+            return {
+                output: buildAggregatedPluginOutput([]),
+                trace: []
+            };
+        }
+
+        const executionPath = Array.isArray(input.executionPath) && input.executionPath.length > 0
+            ? [...input.executionPath]
+            : [input.node.id];
+        const aggregatedExecutions: Array<{ pluginId: string; output: Record<string, unknown>; }> = [];
+        const trace: InlineWorkflowTraceNode[] = [];
+
+        for (const executionTarget of executions) {
+            const startedAt = Date.now();
+            const targetTraceContext = createTraceContext(
+                executionTarget.pluginId,
+                nextTraceId,
+                input.captureTrace === true
+            );
+
+            try {
+                const nestedExecution = await this.executeNestedPluginWorkflow(
+                    input,
+                    executionTarget,
+                    input.outputs,
+                    input.outputDir,
+                    targetTraceContext,
+                    input.rootNodeId ?? input.node.id,
+                    executionPath,
+                    input.logSinkFactory
+                );
+                aggregatedExecutions.push({
+                    pluginId: executionTarget.pluginId,
+                    output: nestedExecution.output
+                });
+                appendTraceNode(trace, createTraceNode(targetTraceContext, {
+                    nodeId: executionTarget.pluginId,
+                    nodeType: input.node.type,
+                    label: executionTarget.pluginId,
+                    status: 'completed',
+                    durationMs: Date.now() - startedAt,
+                    output: nestedExecution.output,
+                    children: nestedExecution.trace
+                }));
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : `Inline plugin ${executionTarget.pluginId} failed`;
+                const childTrace = error instanceof InlineWorkflowTraceError
+                    ? error.trace
+                    : undefined;
+                appendTraceNode(trace, createTraceNode(targetTraceContext, {
+                    nodeId: executionTarget.pluginId,
+                    nodeType: input.node.type,
+                    label: executionTarget.pluginId,
+                    status: 'error',
+                    durationMs: Date.now() - startedAt,
+                    error: message,
+                    stack: error instanceof Error ? error.stack : undefined,
+                    children: childTrace
+                }));
+
+                if (input.captureTrace === true) {
+                    throw new InlineWorkflowTraceError(message, trace, { cause: error });
+                }
+
+                throw toError(error, message);
+            }
+        }
+
+        return {
+            output: buildAggregatedPluginOutput(aggregatedExecutions),
+            trace
+        };
     }
 
     async executePluginReference(input: ExecuteInlinePluginReferenceInput): Promise<InlineWorkflowExecutionResult> {
@@ -214,6 +360,73 @@ export class InlineWorkflowRuntime {
         );
     }
 
+    private resolvePluginExecutionsForNode(
+        workflow: WorkflowDefinition | undefined,
+        pluginNodeData: WorkflowPluginNodeData | undefined,
+        outputs: Map<string, Record<string, unknown>>
+    ): ResolvedPluginExecution[] {
+        if (!pluginNodeData) {
+            return [];
+        }
+
+        const selectedTimesteps = Array.isArray(pluginNodeData.selectedTimesteps)
+            ? pluginNodeData.selectedTimesteps.filter((value): value is number => typeof value === 'number')
+            : undefined;
+        if (pluginNodeData.executionMode === 'argumentReference') {
+            if (!workflow || !pluginNodeData.argumentReference) {
+                return [];
+            }
+
+            const argumentsNode = workflow.nodes.find((node) => node.type === WorkflowNodeType.Arguments);
+            if (!argumentsNode) {
+                return [];
+            }
+
+            const argumentsOutput = outputs.get(argumentsNode.id) ?? {};
+            const argumentValue = argumentsOutput[pluginNodeData.argumentReference];
+            const selections = readWorkflowPluginReferenceSelections(argumentValue);
+            if (!selections.length) {
+                return [];
+            }
+
+            const argumentsData = isRecord(argumentsNode.data.arguments)
+                ? argumentsNode.data.arguments
+                : {};
+            const argumentDefinitions = Array.isArray(argumentsData.arguments)
+                ? argumentsData.arguments
+                : [];
+            const selectedArgumentDefinition = argumentDefinitions.find((definition: Record<string, unknown>) => {
+                return definition?.argument === pluginNodeData.argumentReference;
+            });
+            const shouldUseSelectionConfig = selectedArgumentDefinition?.showPluginConfiguration === true;
+
+            return selections.map((selection) => ({
+                pluginId: selection.pluginId,
+                config: shouldUseSelectionConfig
+                    ? selection.config
+                    : isRecord(pluginNodeData.configByPluginId?.[selection.pluginId])
+                        ? pluginNodeData.configByPluginId?.[selection.pluginId] ?? {}
+                        : isRecord(pluginNodeData.config)
+                            ? pluginNodeData.config
+                            : {},
+                selectedTimesteps
+            }));
+        }
+
+        const pluginId = typeof pluginNodeData.pluginId === 'string'
+            ? pluginNodeData.pluginId.trim()
+            : '';
+        if (!pluginId) {
+            return [];
+        }
+
+        return [{
+            pluginId,
+            config: isRecord(pluginNodeData.config) ? pluginNodeData.config : {},
+            selectedTimesteps
+        }];
+    }
+
     private async executeNestedPluginWorkflow(
         input: InlineExecutionBaseInput,
         pluginNodeData: WorkflowPluginNodeData | undefined,
@@ -234,7 +447,7 @@ export class InlineWorkflowRuntime {
             throw new Error(`Nested plugin workflow not found for ${pluginId}`);
         }
 
-        const nestedOutputDir = `${parentOutputDir}_plugin_${pluginId}_${Date.now()}`;
+        const nestedOutputDir = parentOutputDir;
         await fs.mkdir(nestedOutputDir, { recursive: true });
         const nestedOutputs = restoreWorkflowOutputs(snapshotWorkflowOutputs(parentOutputs));
         const selectedTimesteps = Array.isArray(pluginNodeData?.selectedTimesteps)
@@ -272,22 +485,15 @@ export class InlineWorkflowRuntime {
             traceContext !== null
         );
         const trace: InlineWorkflowTraceNode[] = [];
-        const nestedPluginNodes = resolveInlinePluginExecutionOrder(nestedPlugin.workflow);
-        const nestedEntrypointNode = nestedPlugin.workflow.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint);
-        if (!nestedEntrypointNode) {
-            throw new Error(`Nested plugin ${pluginId} has no entrypoint`);
-        }
+        const planningNodeTypes = new Set<WorkflowNodeType>([
+            WorkflowNodeType.Modifier,
+            WorkflowNodeType.Arguments,
+            WorkflowNodeType.Context,
+            WorkflowNodeType.ForEach
+        ]);
 
         for (const node of nestedContext.workflow.topologicalSort()) {
-            if (node.id === nestedEntrypointNode.id) {
-                break;
-            }
-
-            if (node.type === WorkflowNodeType.Plugin) {
-                continue;
-            }
-
-            if (node.type === WorkflowNodeType.Exposure || node.type === WorkflowNodeType.Export) {
+            if (!planningNodeTypes.has(node.type)) {
                 continue;
             }
 
@@ -350,97 +556,28 @@ export class InlineWorkflowRuntime {
             }
         }
 
-        for (const pluginNode of nestedPluginNodes) {
-            const pluginNodeStartedAt = Date.now();
-            const childPluginNodeData = readWorkflowPluginNodeData(pluginNode.data.pluginNode);
-            const childPluginId = typeof childPluginNodeData?.pluginId === 'string'
-                ? childPluginNodeData.pluginId
-                : pluginNode.id;
+        const runtimeRootNodeIds = resolveRuntimeRootNodeIds(nestedContext.workflow);
+        const runtimeRootNodes = runtimeRootNodeIds.length > 0
+            ? runtimeRootNodeIds
+                .map((nodeId) => nestedContext.workflow.nodes.find((candidate) => candidate.id === nodeId))
+                .filter((candidate): candidate is WorkflowNode => Boolean(candidate))
+            : nestedContext.workflow.nodes.filter((node) => node.type === WorkflowNodeType.Entrypoint);
+        const visitedNodeIds = new Set<string>();
 
-            try {
-                const nestedOutput = await this.executeNestedPluginWorkflow(
-                    {
-                        ...input,
-                        outputs: nestedOutputs
-                    },
-                    childPluginNodeData,
-                    nestedOutputs,
-                    nestedOutputDir,
-                    createTraceContext(childPluginId, traceContext?.nextTraceId, traceContext !== null),
-                    rootNodeId,
-                    [...executionPath, pluginNode.id],
-                    logSinkFactory
-                );
-                nestedOutputs.set(pluginNode.id, nestedOutput.output);
-                appendTraceNode(trace, createTraceNode(workflowTraceContext, {
-                    nodeId: pluginNode.id,
-                    nodeType: pluginNode.type,
-                    status: 'completed',
-                    durationMs: Date.now() - pluginNodeStartedAt,
-                    output: nestedOutput.output,
-                    children: nestedOutput.trace
-                }));
-            } catch (error: unknown) {
-                const message = error instanceof Error ? error.message : `Nested plugin node ${pluginNode.id} failed`;
-                const children = error instanceof InlineWorkflowTraceError
-                    ? error.trace
-                    : undefined;
-                appendTraceNode(trace, createTraceNode(workflowTraceContext, {
-                    nodeId: pluginNode.id,
-                    nodeType: pluginNode.type,
-                    status: 'error',
-                    durationMs: Date.now() - pluginNodeStartedAt,
-                    error: message,
-                    stack: error instanceof Error ? error.stack : undefined,
-                    children
-                }));
-
-                if (workflowTraceContext) {
-                    throw new InlineWorkflowTraceError(message, trace, { cause: error });
-                }
-
-                throw toError(error, message);
-            }
-        }
-
-        const entrypointStartedAt = Date.now();
-        try {
-            const entrypointOutput = await this.executeNestedEntrypoint(
-                readWorkflowEntrypointData(nestedEntrypointNode.data.entrypoint),
-                nestedOutputs,
-                {
-                    analysisId: input.analysisId,
-                    pluginId
-                },
-                nestedOutputDir,
+        for (const runtimeRootNode of runtimeRootNodes) {
+            await this.executeNestedRuntimeNode({
+                workflow: nestedContext.workflow,
+                node: runtimeRootNode,
+                context: nestedContext,
+                input,
+                outputDir: nestedOutputDir,
                 rootNodeId,
-                nestedEntrypointNode.id,
-                [...executionPath, nestedEntrypointNode.id],
-                logSinkFactory
-            );
-            appendTraceNode(trace, createTraceNode(workflowTraceContext, {
-                nodeId: nestedEntrypointNode.id,
-                nodeType: nestedEntrypointNode.type,
-                status: 'completed',
-                durationMs: Date.now() - entrypointStartedAt,
-                output: entrypointOutput
-            }));
-        } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : `Nested entrypoint ${nestedEntrypointNode.id} failed`;
-            appendTraceNode(trace, createTraceNode(workflowTraceContext, {
-                nodeId: nestedEntrypointNode.id,
-                nodeType: nestedEntrypointNode.type,
-                status: 'error',
-                durationMs: Date.now() - entrypointStartedAt,
-                error: message,
-                stack: error instanceof Error ? error.stack : undefined
-            }));
-
-            if (workflowTraceContext) {
-                throw new InlineWorkflowTraceError(message, trace, { cause: error });
-            }
-
-            throw toError(error, message);
+                executionPath,
+                trace,
+                traceContext: workflowTraceContext,
+                logSinkFactory,
+                visitedNodeIds
+            });
         }
 
         const exposures = await collectInlineExposureArtifacts(nestedPlugin.workflow, nestedOutputDir);
@@ -489,6 +626,194 @@ export class InlineWorkflowRuntime {
         };
     }
 
+    private async executeNestedRuntimeNode(params: {
+        workflow: WorkflowGraph;
+        node: WorkflowNode;
+        context: ReturnType<typeof createWorkflowExecutionContext>;
+        input: InlineExecutionBaseInput;
+        outputDir: string;
+        rootNodeId: string;
+        executionPath: string[];
+        trace: InlineWorkflowTraceNode[];
+        traceContext: TraceRuntimeContext | null;
+        logSinkFactory?: InlineWorkflowLogSinkFactory;
+        visitedNodeIds: Set<string>;
+    }): Promise<void> {
+        if (params.visitedNodeIds.has(params.node.id)) {
+            return;
+        }
+
+        params.visitedNodeIds.add(params.node.id);
+
+        if (params.node.type === WorkflowNodeType.Exposure || params.node.type === WorkflowNodeType.Export) {
+            return;
+        }
+
+        const nodeStartedAt = Date.now();
+        const nodeExecutionPath = [...params.executionPath, params.node.id];
+
+        try {
+            if (params.node.type === WorkflowNodeType.Plugin) {
+                const execution = await this.executePluginNode({
+                    nestedPlugins: params.input.nestedPlugins,
+                    outputs: params.context.outputs,
+                    dumpTarget: params.input.dumpTarget,
+                    outputDir: params.outputDir,
+                    trajectoryId: params.input.trajectoryId,
+                    analysisId: params.input.analysisId,
+                    teamId: params.input.teamId,
+                    node: params.node,
+                    workflow: params.workflow.definition,
+                    captureTrace: params.traceContext !== null,
+                    rootNodeId: params.rootNodeId,
+                    executionPath: nodeExecutionPath,
+                    logSinkFactory: params.logSinkFactory
+                });
+                params.context.outputs.set(params.node.id, execution.output);
+                appendTraceNode(params.trace, createTraceNode(params.traceContext, {
+                    nodeId: params.node.id,
+                    nodeType: params.node.type,
+                    status: 'completed',
+                    durationMs: Date.now() - nodeStartedAt,
+                    output: execution.output,
+                    children: execution.trace
+                }));
+
+                for (const childNode of getWorkflowChildren(params.workflow, params.node.id)) {
+                    await this.executeNestedRuntimeNode({
+                        ...params,
+                        node: childNode,
+                        executionPath: nodeExecutionPath
+                    });
+                }
+                return;
+            }
+
+            if (params.node.type === WorkflowNodeType.Entrypoint) {
+                const entrypointOutput = await this.executeNestedEntrypoint(
+                    readWorkflowEntrypointData(params.node.data.entrypoint),
+                    params.context.outputs,
+                    {
+                        analysisId: params.input.analysisId,
+                        pluginId: params.context.pluginId
+                    },
+                    params.outputDir,
+                    params.rootNodeId,
+                    params.node.id,
+                    nodeExecutionPath,
+                    params.workflow,
+                    params.logSinkFactory
+                );
+                params.context.outputs.set(params.node.id, entrypointOutput);
+                appendTraceNode(params.trace, createTraceNode(params.traceContext, {
+                    nodeId: params.node.id,
+                    nodeType: params.node.type,
+                    status: 'completed',
+                    durationMs: Date.now() - nodeStartedAt,
+                    output: entrypointOutput
+                }));
+
+                for (const childNode of getWorkflowChildren(params.workflow, params.node.id)) {
+                    await this.executeNestedRuntimeNode({
+                        ...params,
+                        node: childNode,
+                        executionPath: nodeExecutionPath
+                    });
+                }
+                return;
+            }
+
+            if (!this.registry.has(params.node.type)) {
+                appendTraceNode(params.trace, createTraceNode(params.traceContext, {
+                    nodeId: params.node.id,
+                    nodeType: params.node.type,
+                    status: 'skipped',
+                    durationMs: Date.now() - nodeStartedAt,
+                    reason: `No handler registered for node type "${params.node.type}"`
+                }));
+                return;
+            }
+
+            const output = await this.registry.execute(params.node, params.context);
+            appendTraceNode(params.trace, createTraceNode(params.traceContext, {
+                nodeId: params.node.id,
+                nodeType: params.node.type,
+                status: 'completed',
+                durationMs: Date.now() - nodeStartedAt,
+                output
+            }));
+
+            if (params.node.type === WorkflowNodeType.IfStatement) {
+                const branch = output.branch === 'false' ? 'false' : 'true';
+                const childNodes = getWorkflowChildren(params.workflow, params.node.id)
+                    .filter((childNode) => {
+                        const edge = params.workflow.edges.find((candidate) => {
+                            return candidate.source === params.node.id && candidate.target === childNode.id;
+                        });
+                        return matchesIfBranchHandle(edge?.sourceHandle, branch);
+                    });
+
+                for (const childNode of childNodes) {
+                    await this.executeNestedRuntimeNode({
+                        ...params,
+                        node: childNode,
+                        executionPath: nodeExecutionPath
+                    });
+                }
+                return;
+            }
+
+            if (params.node.type === WorkflowNodeType.SwitchStatement) {
+                const matchedCaseId = typeof output.matchedCaseId === 'string' && output.matchedCaseId.length > 0
+                    ? output.matchedCaseId
+                    : null;
+                if (matchedCaseId) {
+                    const matchedCaseNode = params.workflow.nodes.find((candidate) => candidate.id === matchedCaseId);
+                    if (matchedCaseNode) {
+                        await this.executeNestedRuntimeNode({
+                            ...params,
+                            node: matchedCaseNode,
+                            executionPath: nodeExecutionPath
+                        });
+                    }
+                }
+
+                for (const childNode of getWorkflowChildren(params.workflow, params.node.id, 'continue')) {
+                    await this.executeNestedRuntimeNode({
+                        ...params,
+                        node: childNode,
+                        executionPath: nodeExecutionPath
+                    });
+                }
+                return;
+            }
+
+            for (const childNode of getWorkflowChildren(params.workflow, params.node.id)) {
+                await this.executeNestedRuntimeNode({
+                    ...params,
+                    node: childNode,
+                    executionPath: nodeExecutionPath
+                });
+            }
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : `Nested runtime node ${params.node.id} failed`;
+            appendTraceNode(params.trace, createTraceNode(params.traceContext, {
+                nodeId: params.node.id,
+                nodeType: params.node.type,
+                status: 'error',
+                durationMs: Date.now() - nodeStartedAt,
+                error: message,
+                stack: error instanceof Error ? error.stack : undefined
+            }));
+
+            if (params.traceContext) {
+                throw new InlineWorkflowTraceError(message, params.trace, { cause: error });
+            }
+
+            throw toError(error, message);
+        }
+    }
+
     private async executeNestedEntrypoint(
         entrypointData: WorkflowEntrypointData | undefined,
         outputs: Map<string, Record<string, unknown>>,
@@ -497,6 +822,7 @@ export class InlineWorkflowRuntime {
         rootNodeId: string,
         nodeId: string,
         executionPath: string[],
+        workflow: WorkflowGraph,
         logSinkFactory?: InlineWorkflowLogSinkFactory
     ): Promise<Record<string, unknown>> {
         const binaryObjectPath = typeof entrypointData?.binaryObjectPath === 'string'
@@ -507,6 +833,8 @@ export class InlineWorkflowRuntime {
             : '';
         const entrypointType = entrypointData?.type === EntrypointType.PythonScript
             ? EntrypointType.PythonScript
+            : entrypointData?.type === EntrypointType.PackagedExecutable
+                ? EntrypointType.PackagedExecutable
             : entrypointData?.type === EntrypointType.Executable
                 ? EntrypointType.Executable
                 : null;
@@ -528,7 +856,14 @@ export class InlineWorkflowRuntime {
                 ? entrypointData.entrypointScript
                 : undefined
         });
-        const resolvedArgs = resolveWorkflowTemplate(argumentsTemplate, outputs);
+        outputs.set(nodeId, {
+            ...(outputs.get(nodeId) ?? {}),
+            projectPath: executionRuntime.projectPath ?? ''
+        });
+        const resolvedArgs = resolveWorkflowTemplate(argumentsTemplate, outputs, {
+            workflow,
+            currentNodeId: nodeId
+        });
         const args = parseInlineWorkflowArguments(resolvedArgs);
         const logSink = logSinkFactory?.({
             rootNodeId,
@@ -558,6 +893,7 @@ export class InlineWorkflowRuntime {
             args: [...executionRuntime.argsPrefix, ...args],
             resolvedArguments: resolvedArgs,
             outputPath: outputDir,
+            projectPath: executionRuntime.projectPath ?? '',
             exitCode: result.code,
             stdout: result.stdout,
             stderr: result.stderr

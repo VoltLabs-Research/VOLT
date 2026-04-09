@@ -2,17 +2,14 @@ import { logger } from '@/core/logger';
 import { DAEMON_PATHS } from '@/core/paths';
 import { forceGC, isMemoryPressured } from '@/core/memory';
 import { ANALYSIS_QUEUE_NAME, QueueService } from '@/modules/platform/services';
-import { WorkflowNodeType } from '@/modules/workflow-runtime/contracts';
+import { WorkflowGraph, WorkflowNodeType, type WorkflowNode } from '@/modules/workflow-runtime/contracts';
 import { createWorkflowNodeRegistry } from '@/modules/workflow-runtime/factories';
+import { createWorkflowExecutionContext } from '@/modules/workflow-runtime/services/WorkflowExecutionContextFactory';
 import { InlineWorkflowRuntime } from '@/modules/workflow-runtime/services/InlineWorkflowRuntime';
 import {
-    createInlinePluginReferenceDedupeKey,
     createNestedExecutionResult,
-    isInlinePluginReferenceExecutionRequest,
     parseInlineWorkflowArguments,
     readNestedExposureItems,
-    resolveInlinePluginExecutionOrder,
-    setNestedValueAtPath,
     type InlineExposureArtifact,
     type InlineWorkflowDumpTarget
 } from '@/modules/workflow-runtime/services/InlineWorkflowShared';
@@ -31,11 +28,10 @@ import { pipeline } from 'node:stream/promises';
 import { DelayedError } from 'bullmq';
 import type { DaemonJobReporterService } from '@/modules/cloud-control/services';
 import type { ArtifactUploadBatch, ArtifactUploadQueueService, ResultProcessorService } from '@/modules/artifacts/services';
-import { ObjectBucketName } from '@/shared/contracts';
+import { EntrypointType, ObjectBucketName } from '@/shared/contracts';
 import type {
     AnalysisJobExecutionData,
     AnalysisQueueJobPayload,
-    PluginReferenceExecutionRequest,
     TrajectoryDumpDescriptor
 } from '@/shared/contracts';
 import type { AnalysisExecutionDataStore } from '@/modules/platform/services';
@@ -234,6 +230,43 @@ const createFrameMetadataByTimestep = (
     return new Map(frames.map((frame) => [frame.timestep, frame]));
 };
 
+const getWorkflowChildren = (
+    workflow: WorkflowGraph,
+    nodeId: string,
+    sourceHandle?: string
+): WorkflowNode[] => {
+    return workflow.edges
+        .filter((edge) => edge.source === nodeId && (typeof sourceHandle === 'undefined' || edge.sourceHandle === sourceHandle))
+        .map((edge) => workflow.nodes.find((candidate) => candidate.id === edge.target))
+        .filter((candidate): candidate is WorkflowNode => Boolean(candidate));
+};
+
+const resolveRuntimeRootNodes = (
+    workflow: WorkflowGraph
+): WorkflowNode[] => {
+    const runtimeRootNode = workflow.nodes.find((node) => node.type === WorkflowNodeType.ForEach)
+        ?? workflow.nodes.find((node) => node.type === WorkflowNodeType.Context)
+        ?? workflow.nodes.find((node) => node.type === WorkflowNodeType.Arguments)
+        ?? workflow.nodes.find((node) => node.type === WorkflowNodeType.Modifier)
+        ?? null;
+    if (!runtimeRootNode) {
+        return [];
+    }
+
+    return getWorkflowChildren(workflow, runtimeRootNode.id);
+};
+
+const matchesIfBranchHandle = (
+    edgeHandle: string | undefined,
+    selectedBranch: string
+): boolean => {
+    if (selectedBranch === 'true') {
+        return edgeHandle === 'output-true' || edgeHandle === 'true';
+    }
+
+    return edgeHandle === 'output-false' || edgeHandle === 'false';
+};
+
 const applyBatchContextDumpPaths = (
     contextOutput: Record<string, unknown>,
     dumpTargets: InlineWorkflowDumpTarget[],
@@ -427,13 +460,6 @@ export class AnalysisWorker {
                 logger.warn({ jobId: job.jobId, err }, 'Failed to report running status to server');
             });
 
-            const executionRuntime = await this.pluginBinaryCacheService.getExecutionRuntime({
-                binaryObjectPath: executionData.binaryObjectPath,
-                entrypointType: executionData.entrypointType,
-                requirementsFile: executionData.requirementsFile,
-                entrypointScript: executionData.entrypointScript
-            });
-
             const dumpOwnerClusterId = executionData.storageClusterId;
             if (!dumpOwnerClusterId) {
                 throw new Error(`Missing storageClusterId for analysis ${executionData.analysisId}`);
@@ -461,145 +487,22 @@ export class AnalysisWorker {
             } else {
                 outputs = this.buildOutputsMap(executionData, forEachItem, forEachIndex, dumpLocalPath!, outputDir);
             }
-
-            if (isBatchMode && batchDumpLocalPaths) {
-                await this.executeBatchInlinePluginNodes(job.jobId, executionData, outputs, batchDumpLocalPaths, outputDir);
-            } else {
-                await this.executeInlinePluginNodes(job.jobId, executionData, outputs, timestep!, dumpLocalPath!, outputDir);
-            }
-
-            const resolvedArgs = resolveWorkflowTemplate(executionData.arguments, outputs);
-            const args = parseInlineWorkflowArguments(resolvedArgs);
-
             await bullJob.updateProgress(10);
-            const binaryStartedAt = Date.now();
-            const binaryExecutionLease = acquireBinaryExecutionLease(args);
-            if (
-                typeof binaryExecutionLease.requestedThreads === 'number'
-                && typeof binaryExecutionLease.appliedThreads === 'number'
-                && binaryExecutionLease.appliedThreads !== binaryExecutionLease.requestedThreads
-            ) {
-                logger.info(
-                    {
-                        jobId: job.jobId,
-                        requestedThreads: binaryExecutionLease.requestedThreads,
-                        appliedThreads: binaryExecutionLease.appliedThreads,
-                        activeBinaryExecutions: binaryExecutionLease.activeBinaryExecutions
-                    },
-                    'Adjusted plugin binary thread count to fit concurrent cluster load'
-                );
-            }
-
-            const executionArgs = [...executionRuntime.argsPrefix, ...binaryExecutionLease.args];
-            const rootLogTimesteps = isBatchMode
-                ? this.createDumpExecutionTargets(executionData, batchDumpLocalPaths ?? []).map((dumpTarget) => dumpTarget.timestep)
-                : [timestep!];
-            const rootEntrypointNodeId = this.resolveEntrypointNodeId(executionData.workflow) ?? 'entrypoint';
-            const rootLogSink = this.createAnalysisLogSink(
-                job.jobId,
+            const dumpTargets = isBatchMode && batchDumpLocalPaths
+                ? this.createDumpExecutionTargets(executionData, batchDumpLocalPaths)
+                : this.createDumpExecutionTargets(executionData, [dumpLocalPath!], timestep!);
+            await this.executeRuntimeWorkflow({
+                jobId: job.jobId,
                 executionData,
-                rootLogTimesteps,
-                {
-                    nodeId: rootEntrypointNodeId,
-                    nodeType: WorkflowNodeType.Entrypoint,
-                    pluginId: executionData.pluginId,
-                    executionPath: [rootEntrypointNodeId]
-                }
-            );
-            logger.info(
-                {
-                    jobId: job.jobId,
-                    binary: path.basename(executionRuntime.artifactPath),
-                    args: executionArgs,
-                    outputDir,
-                    entrypointType: executionData.entrypointType ?? 'executable'
-                },
-                'Executing plugin binary'
-            );
-
-            let result: Awaited<ReturnType<BinaryExecutorService['executeProcess']>>;
-            try {
-                result = await this.binaryExecutorService.executeProcess({
-                    jobId: job.jobId,
-                    commandPath: executionRuntime.commandPath,
-                    args: executionArgs,
-                    cwd: outputDir,
-                    env: executionRuntime.env,
-                    timeoutMs: executionData.timeoutMs,
-                    logSink: rootLogSink
-                });
-            } finally {
-                binaryExecutionLease.release();
-            }
-            if (result.code !== 0) {
-                throw new Error(`Binary exited with code ${result.code}: ${result.stderr || result.stdout}`);
-            }
-
-            const outputFiles = await fs.readdir(outputDir).catch(() => []);
-
-            logger.info(
-                {
-                    jobId: job.jobId,
-                    exitCode: result.code,
-                    durationMs: Date.now() - binaryStartedAt,
-                    stdoutPreview: result.stdout.slice(0, 4000),
-                    stderrPreview: result.stderr.slice(0, 4000),
-                    outputFiles
-                },
-                'Binary execution completed'
-            );
-            logMemoryUsage('after-binary-execution', job.jobId);
+                outputs,
+                dumpTargets,
+                outputDir,
+                timestep: timestep!,
+                artifactUploadBatch,
+                isBatchMode
+            });
+            logMemoryUsage('after-runtime-execution', job.jobId);
             await bullJob.updateProgress(70);
-
-            for (const exposure of executionData.exposures) {
-                // Memory-aware scheduling between exposures: if heap is above
-                // 75 % after a previous exposure, force GC and wait before
-                // starting the next one to avoid compounding allocations.
-                if (isMemoryPressured()) {
-                    logger.warn(
-                        { jobId: job.jobId, exposure: exposure.name },
-                        'Heap pressure detected between exposures — forcing GC and yielding'
-                    );
-                    forceGC();
-                    // Yield to the event loop so V8 can finish sweeping before
-                    // the next heavy allocation.
-                    await new Promise((resolve) => setImmediate(resolve));
-                }
-
-                const exposureStartedAt = Date.now();
-                logger.info(
-                    {
-                        jobId: job.jobId,
-                        exposureName: exposure.name,
-                        exposureNodeId: exposure.nodeId,
-                        exposureResults: exposure.results,
-                        outputDir
-                    },
-                    'Starting exposure result processing'
-                );
-                await this.resultProcessorService.processExposureResult(
-                    executionData,
-                    exposure,
-                    outputDir,
-                    timestep!,
-                    job.teamId,
-                    artifactUploadBatch
-                );
-                logger.info(
-                    {
-                        jobId: job.jobId,
-                        exposureName: exposure.name,
-                        exposureNodeId: exposure.nodeId,
-                        durationMs: Date.now() - exposureStartedAt
-                    },
-                    'Completed exposure result processing'
-                );
-
-                // Always force GC after each exposure to reclaim decoded
-                // msgpack data, typed arrays, and intermediate objects before
-                // the next exposure starts.
-                forceGC();
-            }
 
             const { jobId: artifactUploadJobId, queuedUploads } = await artifactUploadBatch.enqueue();
             if (artifactUploadJobId) {
@@ -820,219 +723,470 @@ export class AnalysisWorker {
         return outputs;
     }
 
-    private async executeInlinePluginNodes(
-        jobId: string,
-        executionData: AnalysisJobExecutionData,
-        outputs: Map<string, Record<string, unknown>>,
-        timestep: number,
-        dumpLocalPath: string,
-        outputDir: string
-    ): Promise<void> {
-        const dumpTarget = this.createDumpExecutionTargets(executionData, [dumpLocalPath], timestep)[0];
-        if (!dumpTarget) {
+    private async executeRuntimeWorkflow(params: {
+        jobId: string;
+        executionData: AnalysisJobExecutionData;
+        outputs: Map<string, Record<string, unknown>>;
+        dumpTargets: InlineWorkflowDumpTarget[];
+        outputDir: string;
+        timestep: number;
+        artifactUploadBatch: ArtifactUploadBatch;
+        isBatchMode: boolean;
+    }): Promise<void> {
+        const workflow = new WorkflowGraph(params.executionData.workflow);
+        const runtimeContext = createWorkflowExecutionContext({
+            outputs: params.outputs,
+            userConfig: {},
+            runtimeArguments: {},
+            trajectoryId: params.executionData.trajectoryId,
+            trajectoryFrames: params.executionData.trajectoryFrames,
+            analysis: {
+                _id: params.executionData.analysisId,
+                pluginDisplayName: params.executionData.pluginId
+            },
+            analysisId: params.executionData.analysisId,
+            pluginId: params.executionData.pluginId,
+            teamId: params.executionData.teamId ?? '',
+            selectedTimestep: params.dumpTargets[0]?.timestep,
+            workflow,
+            nestedPlugins: params.executionData.nestedPlugins
+        });
+        const rootNodes = resolveRuntimeRootNodes(workflow).length > 0
+            ? resolveRuntimeRootNodes(workflow)
+            : workflow.nodes.filter((node) => node.type === WorkflowNodeType.Entrypoint);
+        const visitedNodeIds = new Set<string>();
+
+        for (const rootNode of rootNodes) {
+            await this.executeRuntimeNode({
+                ...params,
+                workflow,
+                runtimeContext,
+                node: rootNode,
+                visitedNodeIds,
+                executionPath: [rootNode.id]
+            });
+        }
+    }
+
+    private async executeRuntimeNode(params: {
+        jobId: string;
+        executionData: AnalysisJobExecutionData;
+        workflow: WorkflowGraph;
+        runtimeContext: ReturnType<typeof createWorkflowExecutionContext>;
+        outputs: Map<string, Record<string, unknown>>;
+        node: WorkflowNode;
+        dumpTargets: InlineWorkflowDumpTarget[];
+        outputDir: string;
+        timestep: number;
+        artifactUploadBatch: ArtifactUploadBatch;
+        isBatchMode: boolean;
+        visitedNodeIds: Set<string>;
+        executionPath: string[];
+    }): Promise<void> {
+        if (params.visitedNodeIds.has(params.node.id)) {
             return;
         }
 
-        await this.executeArgumentPluginReferences(jobId, executionData, outputs, [dumpTarget], outputDir);
+        params.visitedNodeIds.add(params.node.id);
 
-        const pluginNodes = resolveInlinePluginExecutionOrder(executionData.workflow);
-        if (!pluginNodes.length) {
+        if (params.node.type === WorkflowNodeType.Export) {
+            params.outputs.set(params.node.id, {
+                processed: false,
+                skipped: true,
+                reason: 'Export nodes are processed from their linked exposure'
+            });
             return;
         }
 
-        for (const pluginNode of pluginNodes) {
-            const execution = await this.inlineWorkflowRuntime.executePluginNode({
-                node: pluginNode,
-                nestedPlugins: executionData.nestedPlugins,
-                outputs,
-                dumpTarget,
-                outputDir,
-                trajectoryId: executionData.trajectoryId,
-                analysisId: executionData.analysisId,
-                teamId: executionData.teamId ?? '',
-                rootNodeId: pluginNode.id,
-                executionPath: [pluginNode.id],
-                logSinkFactory: (context) => this.createAnalysisLogSink(
-                    jobId,
-                    executionData,
-                    [dumpTarget.timestep],
+        if (params.node.type === WorkflowNodeType.Exposure) {
+            await this.executeExposureNodeForRuntime(params);
+            for (const childNode of getWorkflowChildren(params.workflow, params.node.id)) {
+                await this.executeRuntimeNode({
+                    ...params,
+                    node: childNode,
+                    executionPath: [...params.executionPath, childNode.id]
+                });
+            }
+            return;
+        }
+
+        if (params.node.type === WorkflowNodeType.Plugin) {
+            const pluginOutput = await this.executePluginNodeForRuntime(params);
+            params.outputs.set(params.node.id, pluginOutput);
+            for (const childNode of getWorkflowChildren(params.workflow, params.node.id)) {
+                await this.executeRuntimeNode({
+                    ...params,
+                    node: childNode,
+                    executionPath: [...params.executionPath, childNode.id]
+                });
+            }
+            return;
+        }
+
+        if (params.node.type === WorkflowNodeType.Entrypoint) {
+            const entrypointOutput = await this.executeEntrypointNodeForRuntime(params);
+            params.outputs.set(params.node.id, entrypointOutput);
+            for (const childNode of getWorkflowChildren(params.workflow, params.node.id)) {
+                await this.executeRuntimeNode({
+                    ...params,
+                    node: childNode,
+                    executionPath: [...params.executionPath, childNode.id]
+                });
+            }
+            return;
+        }
+
+        if (!this.workflowNodeRegistry.has(params.node.type)) {
+            return;
+        }
+
+        const output = await this.workflowNodeRegistry.execute(params.node, params.runtimeContext);
+        params.outputs.set(params.node.id, output);
+
+        if (params.node.type === WorkflowNodeType.IfStatement) {
+            const branch = output.branch === 'false' ? 'false' : 'true';
+            const childNodes = getWorkflowChildren(params.workflow, params.node.id)
+                .filter((childNode) => {
+                    const edge = params.workflow.edges.find((candidate) => {
+                        return candidate.source === params.node.id && candidate.target === childNode.id;
+                    });
+                    return matchesIfBranchHandle(edge?.sourceHandle, branch);
+                });
+
+            for (const childNode of childNodes) {
+                await this.executeRuntimeNode({
+                    ...params,
+                    node: childNode,
+                    executionPath: [...params.executionPath, childNode.id]
+                });
+            }
+            return;
+        }
+
+        if (params.node.type === WorkflowNodeType.SwitchStatement) {
+            const matchedCaseId = typeof output.matchedCaseId === 'string' && output.matchedCaseId.length > 0
+                ? output.matchedCaseId
+                : null;
+            if (matchedCaseId) {
+                const matchedCaseNode = params.workflow.nodes.find((candidate) => candidate.id === matchedCaseId);
+                if (matchedCaseNode) {
+                    await this.executeRuntimeNode({
+                        ...params,
+                        node: matchedCaseNode,
+                        executionPath: [...params.executionPath, matchedCaseNode.id]
+                    });
+                }
+            }
+
+            for (const childNode of getWorkflowChildren(params.workflow, params.node.id, 'continue')) {
+                await this.executeRuntimeNode({
+                    ...params,
+                    node: childNode,
+                    executionPath: [...params.executionPath, childNode.id]
+                });
+            }
+            return;
+        }
+
+        for (const childNode of getWorkflowChildren(params.workflow, params.node.id)) {
+            await this.executeRuntimeNode({
+                ...params,
+                node: childNode,
+                executionPath: [...params.executionPath, childNode.id]
+            });
+        }
+    }
+
+    private async executePluginNodeForRuntime(params: {
+        jobId: string;
+        executionData: AnalysisJobExecutionData;
+        node: WorkflowNode;
+        outputs: Map<string, Record<string, unknown>>;
+        dumpTargets: InlineWorkflowDumpTarget[];
+        outputDir: string;
+        isBatchMode: boolean;
+        executionPath: string[];
+    }): Promise<Record<string, unknown>> {
+        if (!params.dumpTargets.length) {
+            return createNestedExecutionResult([]);
+        }
+
+        if (params.isBatchMode && params.dumpTargets.length > 1) {
+            const perDumpOutputs = params.dumpTargets.map(() => {
+                const clonedOutputs = new Map<string, Record<string, unknown>>();
+                for (const [nodeId, nodeOutput] of params.outputs.entries()) {
+                    clonedOutputs.set(nodeId, { ...nodeOutput });
+                }
+                return clonedOutputs;
+            });
+            const aggregatedArtifacts: InlineExposureArtifact[] = [];
+            const artifactGroups = await runWithConcurrencyLimit(
+                params.dumpTargets,
+                resolveInlineNestedPluginConcurrency(params.dumpTargets.length),
+                async (dumpTarget, index) => {
+                    const execution = await this.inlineWorkflowRuntime.executePluginNode({
+                        node: params.node,
+                        workflow: params.executionData.workflow,
+                        nestedPlugins: params.executionData.nestedPlugins,
+                        outputs: perDumpOutputs[index],
+                        dumpTarget,
+                        outputDir: `${params.outputDir}_batch_${index}`,
+                        trajectoryId: params.executionData.trajectoryId,
+                        analysisId: params.executionData.analysisId,
+                        teamId: params.executionData.teamId ?? '',
+                        rootNodeId: params.node.id,
+                        executionPath: params.executionPath,
+                        logSinkFactory: (context) => this.createAnalysisLogSink(
+                            params.jobId,
+                            params.executionData,
+                            [dumpTarget.timestep],
+                            {
+                                nodeId: context.nodeId,
+                                nodeType: context.nodeType,
+                                pluginId: context.pluginId,
+                                executionPath: context.executionPath
+                            }
+                        )
+                    });
+
+                    return readNestedExposureItems(execution.output);
+                }
+            );
+
+            for (const artifacts of artifactGroups) {
+                aggregatedArtifacts.push(...artifacts);
+            }
+
+            return createNestedExecutionResult(aggregatedArtifacts);
+        }
+
+        const dumpTarget = params.dumpTargets[0];
+        const execution = await this.inlineWorkflowRuntime.executePluginNode({
+            node: params.node,
+            workflow: params.executionData.workflow,
+            nestedPlugins: params.executionData.nestedPlugins,
+            outputs: params.outputs,
+            dumpTarget,
+            outputDir: params.outputDir,
+            trajectoryId: params.executionData.trajectoryId,
+            analysisId: params.executionData.analysisId,
+            teamId: params.executionData.teamId ?? '',
+            rootNodeId: params.node.id,
+            executionPath: params.executionPath,
+            logSinkFactory: (context) => this.createAnalysisLogSink(
+                params.jobId,
+                params.executionData,
+                [dumpTarget.timestep],
+                {
+                    nodeId: context.nodeId,
+                    nodeType: context.nodeType,
+                    pluginId: context.pluginId,
+                    executionPath: context.executionPath
+                }
+            )
+        });
+
+        return execution.output;
+    }
+
+    private async executeEntrypointNodeForRuntime(params: {
+        jobId: string;
+        executionData: AnalysisJobExecutionData;
+        workflow: WorkflowGraph;
+        outputs: Map<string, Record<string, unknown>>;
+        node: WorkflowNode;
+        dumpTargets: InlineWorkflowDumpTarget[];
+        outputDir: string;
+        executionPath: string[];
+    }): Promise<Record<string, unknown>> {
+        const entrypointData = isRecord(params.node.data.entrypoint)
+            ? params.node.data.entrypoint
+            : {};
+        const binaryObjectPath = typeof entrypointData.binaryObjectPath === 'string'
+            ? entrypointData.binaryObjectPath
+            : params.executionData.binaryObjectPath;
+        const argumentsTemplate = typeof entrypointData.arguments === 'string'
+            ? entrypointData.arguments
+            : params.executionData.arguments;
+        const entrypointType = entrypointData.type === EntrypointType.PythonScript
+            ? EntrypointType.PythonScript
+            : entrypointData.type === EntrypointType.PackagedExecutable
+                ? EntrypointType.PackagedExecutable
+                : params.executionData.entrypointType ?? EntrypointType.Executable;
+        const requirementsFile = typeof entrypointData.requirementsFile === 'string'
+            ? entrypointData.requirementsFile
+            : params.executionData.requirementsFile;
+        const entrypointScript = typeof entrypointData.entrypointScript === 'string'
+            ? entrypointData.entrypointScript
+            : params.executionData.entrypointScript;
+        const timeoutMs = typeof entrypointData.timeout === 'number' && Number.isFinite(entrypointData.timeout)
+            ? entrypointData.timeout
+            : params.executionData.timeoutMs;
+        const executionRuntime = await this.pluginBinaryCacheService.getExecutionRuntime({
+            binaryObjectPath,
+            entrypointType,
+            requirementsFile,
+            entrypointScript
+        });
+
+        params.outputs.set(params.node.id, {
+            ...(params.outputs.get(params.node.id) ?? {}),
+            projectPath: executionRuntime.projectPath ?? ''
+        });
+        const resolvedArgs = resolveWorkflowTemplate(argumentsTemplate, params.outputs, {
+            workflow: params.workflow,
+            currentNodeId: params.node.id
+        });
+        const args = parseInlineWorkflowArguments(resolvedArgs);
+        const binaryExecutionLease = acquireBinaryExecutionLease(args);
+        if (
+            typeof binaryExecutionLease.requestedThreads === 'number'
+            && typeof binaryExecutionLease.appliedThreads === 'number'
+            && binaryExecutionLease.appliedThreads !== binaryExecutionLease.requestedThreads
+        ) {
+            logger.info(
+                {
+                    jobId: params.jobId,
+                    requestedThreads: binaryExecutionLease.requestedThreads,
+                    appliedThreads: binaryExecutionLease.appliedThreads,
+                    activeBinaryExecutions: binaryExecutionLease.activeBinaryExecutions
+                },
+                'Adjusted plugin binary thread count to fit concurrent cluster load'
+            );
+        }
+
+        const executionArgs = [...executionRuntime.argsPrefix, ...binaryExecutionLease.args];
+        logger.info(
+            {
+                jobId: params.jobId,
+                binary: path.basename(executionRuntime.artifactPath),
+                args: executionArgs,
+                outputDir: params.outputDir,
+                entrypointType
+            },
+            'Executing plugin binary'
+        );
+
+        const startedAt = Date.now();
+        let result: Awaited<ReturnType<BinaryExecutorService['executeProcess']>>;
+        try {
+            result = await this.binaryExecutorService.executeProcess({
+                jobId: params.jobId,
+                commandPath: executionRuntime.commandPath,
+                args: executionArgs,
+                cwd: params.outputDir,
+                env: executionRuntime.env,
+                timeoutMs,
+                logSink: this.createAnalysisLogSink(
+                    params.jobId,
+                    params.executionData,
+                    params.dumpTargets.map((dumpTarget) => dumpTarget.timestep),
                     {
-                        nodeId: context.nodeId,
-                        nodeType: context.nodeType,
-                        pluginId: context.pluginId,
-                        executionPath: context.executionPath
+                        nodeId: params.node.id,
+                        nodeType: params.node.type,
+                        pluginId: params.executionData.pluginId,
+                        executionPath: params.executionPath
                     }
                 )
             });
-            outputs.set(pluginNode.id, execution.output);
-        }
-    }
-
-    private async executeBatchInlinePluginNodes(
-        jobId: string,
-        executionData: AnalysisJobExecutionData,
-        outputs: Map<string, Record<string, unknown>>,
-        dumpLocalPaths: string[],
-        outputDir: string
-    ): Promise<void> {
-        const dumpTargets = this.createDumpExecutionTargets(executionData, dumpLocalPaths);
-        if (dumpTargets.length > 0) {
-            await this.executeArgumentPluginReferences(jobId, executionData, outputs, dumpTargets, outputDir);
+        } finally {
+            binaryExecutionLease.release();
         }
 
-        const pluginNodes = resolveInlinePluginExecutionOrder(executionData.workflow);
-        if (!pluginNodes.length) {
-            return;
+        if (result.code !== 0) {
+            throw new Error(`Binary exited with code ${result.code}: ${result.stderr || result.stdout}`);
         }
 
-        if (!dumpTargets.length) {
-            return;
-        }
+        const outputFiles = await fs.readdir(params.outputDir).catch(() => []);
+        logger.info(
+            {
+                jobId: params.jobId,
+                exitCode: result.code,
+                durationMs: Date.now() - startedAt,
+                stdoutPreview: result.stdout.slice(0, 4000),
+                stderrPreview: result.stderr.slice(0, 4000),
+                outputFiles
+            },
+            'Binary execution completed'
+        );
 
-        const perDumpOutputs = dumpTargets.map(() => {
-            const clonedOutputs = new Map<string, Record<string, unknown>>();
-            for (const [nodeId, nodeOutput] of outputs.entries()) {
-                clonedOutputs.set(nodeId, { ...nodeOutput });
-            }
-            return clonedOutputs;
-        });
-
-        for (const pluginNode of pluginNodes) {
-            const aggregatedArtifacts: InlineExposureArtifact[] = [];
-            const artifactGroups = await runWithConcurrencyLimit(
-                dumpTargets,
-                resolveInlineNestedPluginConcurrency(dumpTargets.length),
-                async (dumpTarget, index) => {
-                    const dumpOutputs = perDumpOutputs[index];
-
-                    const execution = await this.inlineWorkflowRuntime.executePluginNode({
-                        node: pluginNode,
-                        nestedPlugins: executionData.nestedPlugins,
-                        outputs: dumpOutputs,
-                        dumpTarget,
-                        outputDir: `${outputDir}_batch_${index}`,
-                        trajectoryId: executionData.trajectoryId,
-                        analysisId: executionData.analysisId,
-                        teamId: executionData.teamId ?? '',
-                        rootNodeId: pluginNode.id,
-                        executionPath: [pluginNode.id],
-                        logSinkFactory: (context) => this.createAnalysisLogSink(
-                            jobId,
-                            executionData,
-                            [dumpTarget.timestep],
-                            {
-                                nodeId: context.nodeId,
-                                nodeType: context.nodeType,
-                                pluginId: context.pluginId,
-                                executionPath: context.executionPath
-                            }
-                        )
-                    });
-
-                    dumpOutputs.set(pluginNode.id, execution.output);
-                    return readNestedExposureItems(execution.output);
-                }
-            );
-
-            for (const artifacts of artifactGroups) {
-                aggregatedArtifacts.push(...artifacts);
-            }
-
-            outputs.set(pluginNode.id, createNestedExecutionResult(aggregatedArtifacts));
-        }
-    }
-
-    private async executeArgumentPluginReferences(
-        jobId: string,
-        executionData: AnalysisJobExecutionData,
-        outputs: Map<string, Record<string, unknown>>,
-        dumpTargets: InlineWorkflowDumpTarget[],
-        outputDir: string
-    ): Promise<void> {
-        const requests = Array.isArray(executionData.pluginReferenceExecutions)
-            ? executionData.pluginReferenceExecutions.filter(isInlinePluginReferenceExecutionRequest)
-            : [];
-        if (!requests.length || !dumpTargets.length) {
-            return;
-        }
-
-        const argumentsNode = executionData.workflow.nodes.find((node) => node.type === WorkflowNodeType.Arguments);
-        if (!argumentsNode) {
-            return;
-        }
-
-        const dedupedRequests = new Map<string, PluginReferenceExecutionRequest>();
-        for (const request of requests) {
-            const dedupeKey = createInlinePluginReferenceDedupeKey(request);
-            if (!dedupedRequests.has(dedupeKey)) {
-                dedupedRequests.set(dedupeKey, request);
-            }
-        }
-
-        const dedupedResults = new Map<string, Record<string, unknown>>();
-
-        for (const [dedupeKey, request] of dedupedRequests.entries()) {
-            const aggregatedArtifacts: InlineExposureArtifact[] = [];
-            const artifactGroups = await runWithConcurrencyLimit(
-                dumpTargets,
-                resolveInlineNestedPluginConcurrency(dumpTargets.length),
-                async (dumpTarget, index) => {
-                    const execution = await this.inlineWorkflowRuntime.executePluginReference({
-                        request,
-                        nestedPlugins: executionData.nestedPlugins,
-                        outputs,
-                        dumpTarget,
-                        outputDir: `${outputDir}_plugin_reference_${index}`,
-                        trajectoryId: executionData.trajectoryId,
-                        analysisId: executionData.analysisId,
-                        teamId: executionData.teamId ?? '',
-                        rootNodeId: argumentsNode.id,
-                        executionPath: [argumentsNode.id, request.referencePath],
-                        logSinkFactory: (context) => this.createAnalysisLogSink(
-                            jobId,
-                            executionData,
-                            [dumpTarget.timestep],
-                            {
-                                nodeId: context.nodeId,
-                                nodeType: context.nodeType,
-                                pluginId: context.pluginId,
-                                executionPath: context.executionPath
-                            }
-                        )
-                    });
-
-                    return readNestedExposureItems(execution.output);
-                }
-            );
-
-            for (const artifacts of artifactGroups) {
-                aggregatedArtifacts.push(...artifacts);
-            }
-
-            dedupedResults.set(dedupeKey, createNestedExecutionResult(aggregatedArtifacts));
-        }
-
-        const argumentsOutput = { ...(outputs.get(argumentsNode.id) ?? {}) };
-        const executionResultsObject: Record<string, unknown> = {};
-
-        for (const request of requests) {
-            const dedupeKey = createInlinePluginReferenceDedupeKey(request);
-            const dedupedResult = dedupedResults.get(dedupeKey) ?? createNestedExecutionResult([]);
-            const executionResult = dedupedResult.execution_result;
-
-            executionResultsObject[request.referencePath] = executionResult;
-            setNestedValueAtPath(argumentsOutput, request.referencePath, {
-                pluginId: request.pluginId,
-                config: request.config,
-                execution_result: executionResult
-            });
-        }
-
-        argumentsOutput.pluginReferences = {
-            execution_results: executionResultsObject,
-            execution_results_str_json: JSON.stringify(executionResultsObject)
+        return {
+            binaryObjectPath,
+            commandPath: executionRuntime.commandPath,
+            artifactPath: executionRuntime.artifactPath,
+            args: executionArgs,
+            resolvedArguments: resolvedArgs,
+            outputPath: params.outputDir,
+            projectPath: executionRuntime.projectPath ?? '',
+            outputFiles,
+            exitCode: result.code,
+            stdout: result.stdout,
+            stderr: result.stderr
         };
-        outputs.set(argumentsNode.id, argumentsOutput);
+    }
+
+    private async executeExposureNodeForRuntime(params: {
+        jobId: string;
+        executionData: AnalysisJobExecutionData;
+        node: WorkflowNode;
+        outputs: Map<string, Record<string, unknown>>;
+        outputDir: string;
+        timestep: number;
+        artifactUploadBatch: ArtifactUploadBatch;
+    }): Promise<void> {
+        const exposure = params.executionData.exposures.find((candidate) => candidate.nodeId === params.node.id);
+        if (!exposure?.results) {
+            params.outputs.set(params.node.id, {
+                processed: false,
+                skipped: true,
+                reason: 'Exposure node has no configured results file'
+            });
+            return;
+        }
+
+        if (isMemoryPressured()) {
+            logger.warn(
+                { jobId: params.jobId, exposure: exposure.name },
+                'Heap pressure detected between exposures — forcing GC and yielding'
+            );
+            forceGC();
+            await new Promise((resolve) => setImmediate(resolve));
+        }
+
+        const startedAt = Date.now();
+        logger.info(
+            {
+                jobId: params.jobId,
+                exposureName: exposure.name,
+                exposureNodeId: exposure.nodeId,
+                exposureResults: exposure.results,
+                outputDir: params.outputDir
+            },
+            'Starting exposure result processing'
+        );
+        await this.resultProcessorService.processExposureResult(
+            params.executionData,
+            exposure,
+            params.outputDir,
+            params.timestep,
+            params.executionData.teamId ?? '',
+            params.artifactUploadBatch
+        );
+        logger.info(
+            {
+                jobId: params.jobId,
+                exposureName: exposure.name,
+                exposureNodeId: exposure.nodeId,
+                durationMs: Date.now() - startedAt
+            },
+            'Completed exposure result processing'
+        );
+        params.outputs.set(params.node.id, {
+            processed: true,
+            results: exposure.results,
+            outputFilePath: `${params.outputDir}_${exposure.results}`
+        });
+        forceGC();
     }
 
     private createDumpExecutionTargets(

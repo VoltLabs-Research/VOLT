@@ -9,6 +9,7 @@ interface ArgumentDefinition {
     value?: unknown;
     default?: unknown;
     listArguments?: ArgumentDefinition[];
+    multipleSelection?: boolean;
 };
 
 interface PluginReferencePlanningItem {
@@ -21,6 +22,36 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
+interface PluginReferenceSelectionValue {
+    pluginId: string;
+    config?: Record<string, unknown>;
+}
+
+const readPluginReferenceSelections = (
+    value: unknown
+): PluginReferenceSelectionValue[] => {
+    if (isRecord(value) && Array.isArray(value.selections)) {
+        return value.selections.filter((entry): entry is PluginReferenceSelectionValue => {
+            return isRecord(entry) && typeof entry.pluginId === 'string' && entry.pluginId.trim().length > 0;
+        });
+    }
+
+    if (Array.isArray(value)) {
+        return value.filter((entry): entry is PluginReferenceSelectionValue => {
+            return isRecord(entry) && typeof entry.pluginId === 'string' && entry.pluginId.trim().length > 0;
+        });
+    }
+
+    if (isRecord(value) && typeof value.pluginId === 'string' && value.pluginId.trim().length > 0) {
+        return [{
+            pluginId: value.pluginId,
+            config: isRecord(value.config) ? value.config : {}
+        }];
+    }
+
+    return [];
+};
+
 const collectPluginReferences = (
     definition: ArgumentDefinition,
     value: unknown,
@@ -28,15 +59,13 @@ const collectPluginReferences = (
     results: PluginReferencePlanningItem[]
 ): void => {
     if (definition.type === 'pluginReference') {
-        if (!isRecord(value) || typeof value.pluginId !== 'string' || !value.pluginId.trim()) {
-            return;
+        for (const selection of readPluginReferenceSelections(value)) {
+            results.push({
+                referencePath: currentPath,
+                pluginId: selection.pluginId.trim(),
+                config: isRecord(selection.config) ? selection.config : {}
+            });
         }
-
-        results.push({
-            referencePath: currentPath,
-            pluginId: value.pluginId.trim(),
-            config: isRecord(value.config) ? value.config : {}
-        });
         return;
     }
 
@@ -146,7 +175,7 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
             }
 
             if (typeof value === 'string' && value.includes('{{')) {
-                value = this.registry.resolveTemplate(value, context);
+                value = this.registry.resolveTemplate(value, context, node.id);
             }
 
             values[argumentKey] = value;
@@ -155,6 +184,18 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
                     if (String(value) === 'true') {
                         cliArgs.push(`--${argumentKey}`);
                     }
+                } else if (definition.type === 'select' && definition.multipleSelection) {
+                    const selectedValues = Array.isArray(value)
+                        ? value.filter((entry): entry is string => typeof entry === 'string')
+                        : typeof value === 'string' && value.trim().length > 0
+                            ? [value]
+                            : [];
+
+                    if (selectedValues.length > 0) {
+                        cliArgs.push(`--${argumentKey}`, selectedValues.join(','));
+                    }
+                } else if (definition.type === 'pluginReference') {
+                    continue;
                 } else {
                     const serializedValue = stringifyUnknown(value);
                     cliArgs.push(`--${argumentKey}`, serializedValue);

@@ -301,6 +301,8 @@ export class DebugEntrypointExecutor {
             binaryObjectPath,
             entrypointType: normalizedEntrypointData.type === EntrypointType.PythonScript
                 ? EntrypointType.PythonScript
+                : normalizedEntrypointData.type === EntrypointType.PackagedExecutable
+                    ? EntrypointType.PackagedExecutable
                 : normalizedEntrypointData.type === EntrypointType.Executable
                     ? EntrypointType.Executable
                     : undefined,
@@ -311,7 +313,14 @@ export class DebugEntrypointExecutor {
                 ? normalizedEntrypointData.entrypointScript
                 : undefined
         });
-        const resolvedArguments = resolveWorkflowTemplate(argumentsTemplate, context.outputs);
+        context.outputs.set(node.id, {
+            ...(context.outputs.get(node.id) ?? {}),
+            projectPath: executionRuntime.projectPath ?? ''
+        });
+        const resolvedArguments = resolveWorkflowTemplate(argumentsTemplate, context.outputs, {
+            workflow: context.workflow,
+            currentNodeId: node.id
+        });
         const args = parseArguments(resolvedArguments);
         const executionArgs = [...executionRuntime.argsPrefix, ...args];
         const jobId = `debug:${node.id}:${Date.now()}`;
@@ -350,6 +359,7 @@ export class DebugEntrypointExecutor {
                 resolvedArguments,
                 dumpPath: preparedEnvironment.dumpPath,
                 outputPath: preparedEnvironment.outputDir,
+                projectPath: executionRuntime.projectPath ?? '',
                 outputFiles,
                 exitCode: processResult.code,
                 stdout: processResult.stdout,

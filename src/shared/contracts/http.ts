@@ -26,7 +26,8 @@ export enum ContainerAction {
 
 export enum EntrypointType {
     Executable = 'executable',
-    PythonScript = 'python-script'
+    PythonScript = 'python-script',
+    PackagedExecutable = 'packaged-executable'
 };
 
 export enum OrchestrationAction {

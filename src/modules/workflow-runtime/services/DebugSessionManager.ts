@@ -77,14 +77,17 @@ interface DebugSession {
     context: WorkflowExecutionContext;
     allNodes: WorkflowNode[];
     executableNodes: WorkflowNode[];
-    currentIndex: number;
+    nodeById: Map<string, WorkflowNode>;
+    pendingNodeIds: string[];
+    scheduledNodeIds: Set<string>;
+    completedNodeIds: Set<string>;
+    nodeStatuses: Map<string, 'executed' | 'skipped' | 'error'>;
     lastActivity: number;
     startedAt: number;
     forEachNodeId: string | null;
     storageClusterId?: string;
     nestedPlugins: NestedPluginDefinition[];
     pluginReferenceExecutions: PluginReferenceExecutionRequest[];
-    runtimePreparationsApplied: boolean;
     preparedExecution: PreparedDebugExecutionEnvironment | null;
     exposureCache: Map<string, DebugExposureInspectionResult>;
     exposuresByNodeId: Map<string, AnalysisExposureDefinition>;
@@ -192,6 +195,28 @@ const readNestedTraceFromError = (error: unknown): DebugTraceNode[] | undefined 
         : undefined;
 };
 
+const getWorkflowChildren = (
+    workflow: WorkflowGraph,
+    nodeId: string,
+    sourceHandle?: string
+): WorkflowNode[] => {
+    return workflow.edges
+        .filter((edge) => edge.source === nodeId && (typeof sourceHandle === 'undefined' || edge.sourceHandle === sourceHandle))
+        .map((edge) => workflow.nodes.find((candidate) => candidate.id === edge.target))
+        .filter((candidate): candidate is WorkflowNode => Boolean(candidate));
+};
+
+const matchesIfBranchHandle = (
+    edgeHandle: string | undefined,
+    selectedBranch: string
+): boolean => {
+    if (selectedBranch === 'true') {
+        return edgeHandle === 'output-true' || edgeHandle === 'true';
+    }
+
+    return edgeHandle === 'output-false' || edgeHandle === 'false';
+};
+
 export class DebugSessionManager {
     private readonly sessions = new Map<string, DebugSession>();
     private sweepTimer: ReturnType<typeof setInterval> | null = null;
@@ -234,6 +259,10 @@ export class DebugSessionManager {
         const workflow = new WorkflowGraph(request.workflow);
         const allNodes = workflow.topologicalSort();
         const executableNodes = [...allNodes];
+        const nodeById = new Map(executableNodes.map((node) => [node.id, node]));
+        const rootNodeIds = executableNodes
+            .filter((node) => !workflow.edges.some((edge) => edge.target === node.id))
+            .map((node) => node.id);
 
         const stubAnalysis: DaemonAnalysisDocument = {
             _id: `debug_${sessionId}`,
@@ -267,14 +296,17 @@ export class DebugSessionManager {
             context,
             allNodes,
             executableNodes,
-            currentIndex: 0,
+            nodeById,
+            pendingNodeIds: [...rootNodeIds].reverse(),
+            scheduledNodeIds: new Set(rootNodeIds),
+            completedNodeIds: new Set(),
+            nodeStatuses: new Map(),
             lastActivity: Date.now(),
             startedAt: Date.now(),
             forEachNodeId: forEachNode?.id ?? null,
             storageClusterId: request.storageClusterId,
             nestedPlugins: request.nestedPlugins ?? [],
             pluginReferenceExecutions: request.pluginReferenceExecutions ?? [],
-            runtimePreparationsApplied: false,
             preparedExecution: null,
             exposureCache: new Map(),
             exposuresByNodeId,
@@ -304,19 +336,29 @@ export class DebugSessionManager {
 
         session.lastActivity = Date.now();
 
-        if (session.currentIndex >= session.executableNodes.length) {
+        const node = this.getNextPendingNode(session);
+        if (!node) {
+            this.destroySession(sessionId);
             return null;
         }
-
-        const node = session.executableNodes[session.currentIndex];
         const startTime = Date.now();
 
         try {
-            const result = await this.executeNode(session, node);
+            const skipReason = this.getNodeSkipReason(session, node);
+            const result = skipReason
+                ? {
+                    status: 'skipped',
+                    reason: skipReason
+                } satisfies NodeExecutionOutcome
+                : await this.executeNode(session, node);
             const durationMs = Date.now() - startTime;
 
-            session.currentIndex += 1;
-            if (session.currentIndex >= session.executableNodes.length) {
+            session.completedNodeIds.add(node.id);
+            session.nodeStatuses.set(node.id, result?.status === 'skipped' ? 'skipped' : 'executed');
+            const nextNodeIds = this.resolveNextNodeIds(session, node, result);
+            this.enqueueNodeIds(session, nextNodeIds);
+
+            if (!this.getNextPendingNode(session)) {
                 this.destroySession(sessionId);
             }
 
@@ -345,6 +387,8 @@ export class DebugSessionManager {
             const durationMs = Date.now() - startTime;
             const message = error instanceof Error ? error.message : 'Unknown error';
             const stack = error instanceof Error ? error.stack : undefined;
+            session.completedNodeIds.add(node.id);
+            session.nodeStatuses.set(node.id, 'error');
 
             return {
                 nodeId: node.id,
@@ -364,7 +408,7 @@ export class DebugSessionManager {
 
         while (true) {
             const session = this.sessions.get(sessionId);
-            if (!session || session.currentIndex >= session.executableNodes.length) {
+            if (!session || !this.hasMoreNodes(sessionId)) {
                 break;
             }
 
@@ -389,20 +433,24 @@ export class DebugSessionManager {
             return false;
         }
 
-        return session.currentIndex < session.executableNodes.length;
+        return this.getNextPendingNode(session) !== null;
     }
 
     getCurrentNodeInfo(sessionId: string): { nodeId: string; nodeType: string; index: number; total: number } | null {
         const session = this.sessions.get(sessionId);
-        if (!session || session.currentIndex >= session.executableNodes.length) {
+        if (!session) {
             return null;
         }
 
-        const node = session.executableNodes[session.currentIndex];
+        const node = this.getNextPendingNode(session);
+        if (!node) {
+            return null;
+        }
+
         return {
             nodeId: node.id,
             nodeType: node.type,
-            index: session.currentIndex,
+            index: session.completedNodeIds.size,
             total: session.executableNodes.length
         };
     }
@@ -463,6 +511,165 @@ export class DebugSessionManager {
         }
     }
 
+    private getNextPendingNode(session: DebugSession): WorkflowNode | null {
+        while (session.pendingNodeIds.length > 0) {
+            const nodeId = session.pendingNodeIds[session.pendingNodeIds.length - 1];
+            if (session.completedNodeIds.has(nodeId)) {
+                session.pendingNodeIds.pop();
+                continue;
+            }
+
+            return session.nodeById.get(nodeId) ?? null;
+        }
+
+        return null;
+    }
+
+    private dequeueCurrentNode(session: DebugSession): WorkflowNode | null {
+        while (session.pendingNodeIds.length > 0) {
+            const nodeId = session.pendingNodeIds.pop() as string;
+            if (session.completedNodeIds.has(nodeId)) {
+                continue;
+            }
+
+            return session.nodeById.get(nodeId) ?? null;
+        }
+
+        return null;
+    }
+
+    private enqueueNodeIds(session: DebugSession, nodeIds: string[]): void {
+        for (let index = nodeIds.length - 1; index >= 0; index -= 1) {
+            const nodeId = nodeIds[index];
+            if (!nodeId || session.completedNodeIds.has(nodeId) || session.scheduledNodeIds.has(nodeId)) {
+                continue;
+            }
+
+            session.pendingNodeIds.push(nodeId);
+            session.scheduledNodeIds.add(nodeId);
+        }
+    }
+
+    private getNodeSkipReason(session: DebugSession, node: WorkflowNode): string | undefined {
+        const parentEdges = session.context.workflow.edges.filter((edge) => edge.target === node.id);
+        if (parentEdges.length === 0) {
+            return undefined;
+        }
+
+        const parentEdge = parentEdges[0];
+        const parentNode = session.nodeById.get(parentEdge.source);
+        if (!parentNode) {
+            return undefined;
+        }
+
+        const parentStatus = session.nodeStatuses.get(parentNode.id);
+        if (!parentStatus) {
+            return `Parent node "${parentNode.id}" has not executed`;
+        }
+        if (parentStatus === 'error') {
+            return `Parent node "${parentNode.id}" failed`;
+        }
+        if (parentStatus === 'skipped') {
+            return `Parent node "${parentNode.id}" was skipped`;
+        }
+
+        const parentOutput = session.context.outputs.get(parentNode.id) ?? {};
+
+        if (parentNode.type === WorkflowNodeType.ForEach) {
+            const itemCount = typeof parentOutput.count === 'number'
+                ? parentOutput.count
+                : Array.isArray(parentOutput.items)
+                    ? parentOutput.items.length
+                    : 0;
+            if (itemCount <= 0) {
+                return `ForEach node "${parentNode.id}" produced no items`;
+            }
+        }
+
+        if (parentNode.type === WorkflowNodeType.IfStatement) {
+            const branch = parentOutput.branch === 'false' ? 'false' : 'true';
+            if (!matchesIfBranchHandle(parentEdge.sourceHandle, branch)) {
+                return `Node "${node.id}" is not on the selected "${branch}" branch`;
+            }
+        }
+
+        if (parentNode.type === WorkflowNodeType.SwitchStatement) {
+            const matchedCaseId = typeof parentOutput.matchedCaseId === 'string' && parentOutput.matchedCaseId.length > 0
+                ? parentOutput.matchedCaseId
+                : null;
+
+            if (parentEdge.sourceHandle === 'continue') {
+                return undefined;
+            }
+
+            if (parentEdge.sourceHandle === 'cases' && matchedCaseId === node.id) {
+                return undefined;
+            }
+
+            return matchedCaseId
+                ? `Switch statement "${parentNode.id}" selected case "${matchedCaseId}"`
+                : `Switch statement "${parentNode.id}" did not match this case`;
+        }
+
+        if (parentNode.type === WorkflowNodeType.SwitchCase) {
+            const switchEdge = session.context.workflow.edges.find((edge) => edge.target === parentNode.id);
+            const switchNode = switchEdge ? session.nodeById.get(switchEdge.source) : undefined;
+            const switchOutput = switchNode ? session.context.outputs.get(switchNode.id) ?? {} : {};
+            const matchedCaseId = typeof switchOutput.matchedCaseId === 'string' && switchOutput.matchedCaseId.length > 0
+                ? switchOutput.matchedCaseId
+                : null;
+
+            if (matchedCaseId !== parentNode.id) {
+                return `Switch case "${parentNode.id}" is not active`;
+            }
+        }
+
+        return undefined;
+    }
+
+    private resolveNextNodeIds(
+        session: DebugSession,
+        node: WorkflowNode,
+        result: NodeExecutionOutcome | null
+    ): string[] {
+        const workflow = session.context.workflow;
+
+        if (!result || result.status === 'skipped') {
+            return getWorkflowChildren(workflow, node.id).map((childNode) => childNode.id);
+        }
+
+        if (node.type === WorkflowNodeType.IfStatement) {
+            const branch = result.output?.branch === 'false' ? 'false' : 'true';
+            const selectedNodeIds = getWorkflowChildren(workflow, node.id)
+                .filter((childNode) => {
+                    const edge = workflow.edges.find((candidate) => {
+                        return candidate.source === node.id && candidate.target === childNode.id;
+                    });
+                    return matchesIfBranchHandle(edge?.sourceHandle, branch);
+                })
+                .map((childNode) => childNode.id);
+            const skippedNodeIds = getWorkflowChildren(workflow, node.id)
+                .map((childNode) => childNode.id)
+                .filter((childNodeId) => !selectedNodeIds.includes(childNodeId));
+
+            return [...selectedNodeIds, ...skippedNodeIds];
+        }
+
+        if (node.type === WorkflowNodeType.SwitchStatement) {
+            const matchedCaseId = typeof result.output?.matchedCaseId === 'string' && result.output.matchedCaseId.length > 0
+                ? result.output.matchedCaseId
+                : null;
+            const continueNodeIds = getWorkflowChildren(workflow, node.id, 'continue').map((childNode) => childNode.id);
+            const caseNodeIds = getWorkflowChildren(workflow, node.id, 'cases').map((childNode) => childNode.id);
+            const matchedNodeIds = matchedCaseId ? caseNodeIds.filter((childNodeId) => childNodeId === matchedCaseId) : [];
+            const unmatchedNodeIds = caseNodeIds.filter((childNodeId) => childNodeId !== matchedCaseId);
+
+            return [...matchedNodeIds, ...continueNodeIds, ...unmatchedNodeIds];
+        }
+
+        return getWorkflowChildren(workflow, node.id).map((childNode) => childNode.id);
+    }
+
     private async executeArgumentsNode(
         session: DebugSession,
         node: WorkflowNode
@@ -484,49 +691,12 @@ export class DebugSessionManager {
             };
         }
 
-        let output = orderedResult.output ?? session.context.outputs.get(node.id) ?? {};
-        let nestedTrace: DebugTraceNode[] | undefined;
-
-        if (session.pluginReferenceExecutions.length > 0) {
-            const preparedExecution = await this.ensurePreparedExecutionEnvironment(session);
-            const argumentReferenceExecution = await this.debugInlinePluginRuntime.executeArgumentPluginReferences({
-                workflow: session.context.workflow.definition,
-                nestedPlugins: session.nestedPlugins,
-                pluginReferenceExecutions: session.pluginReferenceExecutions,
-                outputs: session.context.outputs,
-                dumpTarget: toDebugDumpExecutionTarget(preparedExecution),
-                outputDir: preparedExecution.outputDir,
-                trajectoryId: session.context.trajectoryId,
-                analysisId: session.context.analysisId,
-                teamId: session.context.teamId,
-                trajectoryFrames: session.context.trajectoryFrames,
-                rootNodeId: node.id,
-                executionPath: [node.id],
-                logSinkFactory: (context) => this.createDebugLogSink(
-                    session.sessionId,
-                    node.id,
-                    {
-                        nodeId: context.nodeId,
-                        nodeType: context.nodeType,
-                        pluginId: context.pluginId,
-                        executionPath: context.executionPath
-                    }
-                )
-            });
-            if (argumentReferenceExecution.output) {
-                output = argumentReferenceExecution.output;
-            }
-            if (argumentReferenceExecution.trace.length > 0) {
-                nestedTrace = argumentReferenceExecution.trace;
-            }
-            session.runtimePreparationsApplied = true;
-        }
+        const output = orderedResult.output ?? session.context.outputs.get(node.id) ?? {};
 
         session.context.outputs.set(node.id, output);
         return {
             status: 'executed',
-            output,
-            nestedTrace
+            output
         };
     }
 
@@ -534,7 +704,7 @@ export class DebugSessionManager {
         session: DebugSession,
         node: WorkflowNode
     ): Promise<NodeExecutionOutcome> {
-        const preparedExecution = await this.ensureRuntimePreparations(session);
+        const preparedExecution = await this.ensurePreparedExecutionEnvironment(session);
         const execution = await this.debugInlinePluginRuntime.executePluginNode({
             node,
             workflow: session.context.workflow.definition,
@@ -572,7 +742,7 @@ export class DebugSessionManager {
         session: DebugSession,
         node: WorkflowNode
     ): Promise<NodeExecutionOutcome> {
-        const preparedExecution = await this.ensureRuntimePreparations(session);
+        const preparedExecution = await this.ensurePreparedExecutionEnvironment(session);
         const execution = await this.debugEntrypointExecutor.executePrepared(
             node,
             session.context,
@@ -738,28 +908,6 @@ export class DebugSessionManager {
             status: 'executed',
             output
         };
-    }
-
-    private async ensureRuntimePreparations(session: DebugSession): Promise<PreparedDebugExecutionEnvironment> {
-        const preparedExecution = await this.ensurePreparedExecutionEnvironment(session);
-
-        if (!session.runtimePreparationsApplied) {
-            await this.debugInlinePluginRuntime.executeArgumentPluginReferences({
-                workflow: session.context.workflow.definition,
-                nestedPlugins: session.nestedPlugins,
-                pluginReferenceExecutions: session.pluginReferenceExecutions,
-                outputs: session.context.outputs,
-                dumpTarget: toDebugDumpExecutionTarget(preparedExecution),
-                outputDir: preparedExecution.outputDir,
-                trajectoryId: session.context.trajectoryId,
-                analysisId: session.context.analysisId,
-                teamId: session.context.teamId,
-                trajectoryFrames: session.context.trajectoryFrames
-            });
-            session.runtimePreparationsApplied = true;
-        }
-
-        return preparedExecution;
     }
 
     private async ensurePreparedExecutionEnvironment(session: DebugSession): Promise<PreparedDebugExecutionEnvironment> {

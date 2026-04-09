@@ -17,6 +17,8 @@ const PYTHON_INSTALL_MARKER_FILENAME = '.requirements-installed';
 const PYTHON_PROJECT_DIRECTORY = 'project';
 const PYTHON_ZIP_EXTRACTED_MARKER = '.zip-extracted';
 const PYTHON_PROJECT_REQUIREMENTS_FILENAME = '.volt-requirements.txt';
+const PACKAGED_PROJECT_DIRECTORY = 'packaged-project';
+const PACKAGED_ZIP_EXTRACTED_MARKER = '.packaged-zip-extracted';
 const HASH_MARKER_FILENAME_SUFFIX = '.sha256';
 
 const buildCacheKey = (binaryObjectPath: string, expectedHash?: string): string => {
@@ -39,6 +41,20 @@ const buildPythonRuntimeKey = (binaryObjectPath: string, requirementsFile: strin
         .digest('hex');
 };
 
+const buildPackagedRuntimeKey = (
+    binaryObjectPath: string,
+    entrypointScript: string,
+    expectedHash?: string
+): string => {
+    return createHash('sha256')
+        .update(binaryObjectPath)
+        .update('\u0000')
+        .update(expectedHash ?? '')
+        .update('\u0000')
+        .update(entrypointScript)
+        .digest('hex');
+};
+
 const writeStreamToFile = async (stream: Readable, filePath: string): Promise<void> => {
     await pipeline(stream, createWriteStream(filePath));
 };
@@ -54,6 +70,7 @@ export interface PluginBinaryCacheService {
         commandPath: string;
         argsPrefix: string[];
         env?: NodeJS.ProcessEnv;
+        projectPath?: string;
     }>;
 };
 
@@ -103,6 +120,13 @@ const pythonRuntimePromises = new Map<string, Promise<{
     commandPath: string;
     argsPrefix: string[];
     env: NodeJS.ProcessEnv;
+    projectPath?: string;
+}>>();
+const packagedRuntimePromises = new Map<string, Promise<{
+    artifactPath: string;
+    commandPath: string;
+    argsPrefix: string[];
+    projectPath?: string;
 }>>();
 
 interface ResolvedPluginBinarySource {
@@ -221,6 +245,55 @@ const resolveExtractedPythonEntrypoint = async (
     const availableEntriesPreview = projectFiles.slice(0, 12).join(', ');
     throw new Error(
         `Python entrypoint "${entrypointScript}" was not found after extracting the project archive`
+        + (availableEntriesPreview ? `; sample extracted files: ${availableEntriesPreview}` : '')
+    );
+};
+
+const resolveExtractedPackagedEntrypoint = async (
+    projectDir: string,
+    entrypointScript: string
+): Promise<{ commandPath: string; projectRootDir: string; resolvedRelativePath: string; }> => {
+    const normalizedEntrypoint = normalizeProjectRelativePath(entrypointScript);
+
+    if (!normalizedEntrypoint) {
+        throw new Error('Packaged executable entrypointScript is empty');
+    }
+
+    const directCommandPath = path.join(projectDir, normalizedEntrypoint);
+    if (await pathExists(directCommandPath)) {
+        return {
+            commandPath: directCommandPath,
+            projectRootDir: path.dirname(directCommandPath),
+            resolvedRelativePath: normalizedEntrypoint
+        };
+    }
+
+    const projectFiles = (await collectProjectFiles(projectDir))
+        .map((filePath) => normalizeProjectRelativePath(filePath))
+        .sort((left, right) => left.length - right.length);
+    const suffixMatches = projectFiles.filter((filePath) => {
+        return filePath === normalizedEntrypoint
+            || filePath.endsWith(`/${normalizedEntrypoint}`);
+    });
+
+    if (suffixMatches.length === 1) {
+        const resolvedRelativePath = suffixMatches[0];
+        const rootPrefix = resolvedRelativePath === normalizedEntrypoint
+            ? path.dirname(resolvedRelativePath)
+            : path.posix.dirname(resolvedRelativePath);
+
+        return {
+            commandPath: path.join(projectDir, resolvedRelativePath),
+            projectRootDir: rootPrefix && rootPrefix !== '.'
+                ? path.join(projectDir, rootPrefix)
+                : projectDir,
+            resolvedRelativePath
+        };
+    }
+
+    const availableEntriesPreview = projectFiles.slice(0, 12).join(', ');
+    throw new Error(
+        `Packaged executable entrypoint "${entrypointScript}" was not found after extracting the project archive`
         + (availableEntriesPreview ? `; sample extracted files: ${availableEntriesPreview}` : '')
     );
 };
@@ -409,7 +482,8 @@ export const createPluginBinaryCacheService = (objectStore: ClusterObjectStore):
                 artifactPath,
                 commandPath: pythonPath,
                 argsPrefix: [scriptPath],
-                env: runtimeEnv
+                env: runtimeEnv,
+                projectPath: entrypointScript ? projectRootDir : undefined
             };
         })().finally(() => {
             pythonRuntimePromises.delete(runtimeKey);
@@ -419,11 +493,81 @@ export const createPluginBinaryCacheService = (objectStore: ClusterObjectStore):
         return nextPromise;
     };
 
+    const getPackagedExecutableRuntime = async (
+        binaryObjectPath: string,
+        entrypointScript: string
+    ) => {
+        const source = await resolvePluginBinarySource(binaryObjectPath);
+        const artifactPath = await getCachedBinaryPath(binaryObjectPath);
+        const runtimeKey = buildPackagedRuntimeKey(binaryObjectPath, entrypointScript, source.expectedHash);
+        const existingPromise = packagedRuntimePromises.get(runtimeKey);
+        if (existingPromise) {
+            return existingPromise;
+        }
+
+        const nextPromise = (async () => {
+            const runtimeDirectory = path.join(DAEMON_PATHS.pluginBinCache, runtimeKey);
+            const projectDir = path.join(runtimeDirectory, PACKAGED_PROJECT_DIRECTORY);
+            const extractMarkerPath = path.join(runtimeDirectory, PACKAGED_ZIP_EXTRACTED_MARKER);
+            const extractMarkerValue = source.expectedHash || artifactPath;
+
+            await fs.mkdir(runtimeDirectory, { recursive: true });
+
+            try {
+                const currentMarker = await fs.readFile(extractMarkerPath, 'utf-8');
+                if (currentMarker.trim() !== extractMarkerValue) {
+                    throw new Error('stale packaged project marker');
+                }
+            } catch {
+                await fs.rm(projectDir, { recursive: true, force: true });
+                await fs.mkdir(projectDir, { recursive: true });
+                await runCommand('unzip', ['-o', artifactPath, '-d', projectDir], runtimeDirectory);
+                await fs.writeFile(extractMarkerPath, extractMarkerValue, 'utf-8');
+                logger.info(`Packaged executable project extracted: ${artifactPath} -> ${projectDir}`);
+            }
+
+            const resolvedEntrypoint = await resolveExtractedPackagedEntrypoint(projectDir, entrypointScript);
+            await fs.chmod(resolvedEntrypoint.commandPath, 0o755).catch(() => {});
+            logger.info(
+                {
+                    artifactPath,
+                    entrypointScript,
+                    projectRootDir: resolvedEntrypoint.projectRootDir,
+                    resolvedRelativePath: resolvedEntrypoint.resolvedRelativePath,
+                    commandPath: resolvedEntrypoint.commandPath
+                },
+                'Resolved extracted packaged plugin entrypoint'
+            );
+
+            return {
+                artifactPath,
+                commandPath: resolvedEntrypoint.commandPath,
+                argsPrefix: [],
+                projectPath: resolvedEntrypoint.projectRootDir
+            };
+        })().finally(() => {
+            packagedRuntimePromises.delete(runtimeKey);
+        });
+
+        packagedRuntimePromises.set(runtimeKey, nextPromise);
+        return nextPromise;
+    };
+
     return {
         async getExecutionRuntime(input) {
             const entrypointType = input.entrypointType ?? EntrypointType.Executable;
             if (entrypointType === EntrypointType.PythonScript) {
                 return getPythonRuntime(input.binaryObjectPath, input.requirementsFile ?? '', input.entrypointScript);
+            }
+            if (entrypointType === EntrypointType.PackagedExecutable) {
+                const entrypointScript = typeof input.entrypointScript === 'string'
+                    ? input.entrypointScript.trim()
+                    : '';
+                if (!entrypointScript) {
+                    throw new Error('Packaged executable entrypointScript is required');
+                }
+
+                return getPackagedExecutableRuntime(input.binaryObjectPath, entrypointScript);
             }
 
             const artifactPath = await getCachedBinaryPath(input.binaryObjectPath);

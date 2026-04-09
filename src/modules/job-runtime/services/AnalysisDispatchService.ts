@@ -347,6 +347,8 @@ export class AnalysisDispatchService {
             binaryObjectPath: String(entrypointData.binaryObjectPath),
             entrypointType: entrypointData.type === EntrypointType.PythonScript
                 ? EntrypointType.PythonScript
+                : entrypointData.type === EntrypointType.PackagedExecutable
+                    ? EntrypointType.PackagedExecutable
                 : EntrypointType.Executable,
             arguments: String(entrypointData.arguments),
             timeoutMs: typeof entrypointData.timeout === 'number' && Number.isFinite(entrypointData.timeout)

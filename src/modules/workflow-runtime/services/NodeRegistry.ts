@@ -33,11 +33,17 @@ export class WorkflowNodeRegistry {
         return output;
     }
 
-    resolveReference(ref: string, context: WorkflowExecutionContext): unknown {
-        return resolveWorkflowOutputReference(ref, context.outputs);
+    resolveReference(ref: string, context: WorkflowExecutionContext, currentNodeId?: string): unknown {
+        return resolveWorkflowOutputReference(ref, context.outputs, {
+            workflow: context.workflow,
+            currentNodeId
+        });
     }
 
-    resolveTemplate(template: string, context: WorkflowExecutionContext): string {
-        return resolveWorkflowTemplate(template, context.outputs);
+    resolveTemplate(template: string, context: WorkflowExecutionContext, currentNodeId?: string): string {
+        return resolveWorkflowTemplate(template, context.outputs, {
+            workflow: context.workflow,
+            currentNodeId
+        });
     }
 };

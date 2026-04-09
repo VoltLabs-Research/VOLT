@@ -1,4 +1,12 @@
-import { WorkflowArgumentsHandler, WorkflowContextHandler, WorkflowForEachHandler, WorkflowIfStatementHandler, WorkflowModifierHandler } from '../handlers';
+import {
+    WorkflowArgumentsHandler,
+    WorkflowContextHandler,
+    WorkflowForEachHandler,
+    WorkflowIfStatementHandler,
+    WorkflowModifierHandler,
+    WorkflowSwitchCaseHandler,
+    WorkflowSwitchStatementHandler
+} from '../handlers';
 import { WorkflowNodeRegistry } from '../services';
 
 export const createWorkflowNodeRegistry = (): WorkflowNodeRegistry => {
@@ -9,6 +17,8 @@ export const createWorkflowNodeRegistry = (): WorkflowNodeRegistry => {
     workflowNodeRegistry.register(new WorkflowContextHandler());
     workflowNodeRegistry.register(new WorkflowForEachHandler(workflowNodeRegistry));
     workflowNodeRegistry.register(new WorkflowIfStatementHandler(workflowNodeRegistry));
+    workflowNodeRegistry.register(new WorkflowSwitchStatementHandler(workflowNodeRegistry));
+    workflowNodeRegistry.register(new WorkflowSwitchCaseHandler());
 
     return workflowNodeRegistry;
 };

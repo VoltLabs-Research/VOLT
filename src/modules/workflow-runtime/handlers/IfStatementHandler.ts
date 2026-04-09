@@ -19,8 +19,8 @@ export class WorkflowIfStatementHandler implements WorkflowNodeHandler {
         }
 
         const finalResult = conditions.reduce((acc: boolean, condition: any, index: number) => {
-            const left = this.resolveValue(condition.leftExpression, context);
-            const right = this.resolveValue(condition.rightExpression, context);
+            const left = this.resolveValue(condition.leftExpression, context, node.id);
+            const right = this.resolveValue(condition.rightExpression, context, node.id);
             const isMatch = condition.handler === 'is_equal_to'
                 ? left == right
                 : left != right;
@@ -38,12 +38,12 @@ export class WorkflowIfStatementHandler implements WorkflowNodeHandler {
         };
     }
 
-    private resolveValue(expression: string, context: any): unknown {
+    private resolveValue(expression: string, context: any, currentNodeId: string): unknown {
         if (!expression) {
             return '';
         }
 
-        const resolved = this.registry.resolveTemplate(expression, context);
+        const resolved = this.registry.resolveTemplate(expression, context, currentNodeId);
         if (resolved.toLowerCase() === 'true') {
             return true;
         }
