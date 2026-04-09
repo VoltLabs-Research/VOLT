@@ -6,7 +6,7 @@ import {
     type InlineWorkflowTraceNode
 } from './InlineWorkflowRuntime';
 import { type InlineWorkflowDumpTarget } from './InlineWorkflowShared';
-import type { WorkflowDefinition } from '@/shared/contracts';
+import type { DaemonAnalysisDocument, WorkflowDefinition } from '@/shared/contracts';
 import type { BinaryExecutorService } from '@/modules/job-runtime/services/BinaryExecutorService';
 import type { PluginBinaryCacheService } from '@/modules/job-runtime/services/PluginBinaryCacheService';
 import type { WorkflowNodeRegistry } from './NodeRegistry';
@@ -18,9 +18,10 @@ interface InlineExecutionBaseInput {
     dumpTarget: InlineWorkflowDumpTarget;
     outputDir: string;
     trajectoryId: string;
-    analysisId: string;
-    teamId: string;
     trajectoryFrames?: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
+    analysisId: string;
+    analysis?: DaemonAnalysisDocument;
+    teamId: string;
     rootNodeId?: string;
     executionPath?: string[];
     logSinkFactory?: InlineWorkflowLogSinkFactory;
@@ -62,7 +63,9 @@ export class DebugInlinePluginRuntime {
             dumpTarget: input.dumpTarget,
             outputDir: input.outputDir,
             trajectoryId: input.trajectoryId,
+            trajectoryFrames: input.trajectoryFrames,
             analysisId: input.analysisId,
+            analysis: input.analysis,
             teamId: input.teamId,
             node: input.node,
             workflow: input.workflow,

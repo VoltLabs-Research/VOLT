@@ -713,9 +713,10 @@ export class DebugSessionManager {
             dumpTarget: toDebugDumpExecutionTarget(preparedExecution),
             outputDir: preparedExecution.outputDir,
             trajectoryId: session.context.trajectoryId,
-            analysisId: session.context.analysisId,
-            teamId: session.context.teamId,
             trajectoryFrames: session.context.trajectoryFrames,
+            analysisId: session.context.analysisId,
+            analysis: session.context.analysis,
+            teamId: session.context.teamId,
             rootNodeId: node.id,
             executionPath: [node.id],
             logSinkFactory: (context) => this.createDebugLogSink(

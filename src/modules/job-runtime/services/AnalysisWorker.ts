@@ -932,7 +932,12 @@ export class AnalysisWorker {
                         dumpTarget,
                         outputDir: `${params.outputDir}_batch_${index}`,
                         trajectoryId: params.executionData.trajectoryId,
+                        trajectoryFrames: params.executionData.trajectoryFrames,
                         analysisId: params.executionData.analysisId,
+                        analysis: {
+                            _id: params.executionData.analysisId,
+                            pluginDisplayName: params.executionData.pluginId
+                        },
                         teamId: params.executionData.teamId ?? '',
                         rootNodeId: params.node.id,
                         executionPath: params.executionPath,
@@ -969,7 +974,12 @@ export class AnalysisWorker {
             dumpTarget,
             outputDir: params.outputDir,
             trajectoryId: params.executionData.trajectoryId,
+            trajectoryFrames: params.executionData.trajectoryFrames,
             analysisId: params.executionData.analysisId,
+            analysis: {
+                _id: params.executionData.analysisId,
+                pluginDisplayName: params.executionData.pluginId
+            },
             teamId: params.executionData.teamId ?? '',
             rootNodeId: params.node.id,
             executionPath: params.executionPath,

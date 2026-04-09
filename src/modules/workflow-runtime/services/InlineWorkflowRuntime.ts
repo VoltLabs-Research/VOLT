@@ -16,6 +16,7 @@ import {
 import { WorkflowGraph, WorkflowNodeType, type WorkflowNode } from '../contracts';
 import {
     EntrypointType,
+    type DaemonAnalysisDocument,
     type NestedPluginDefinition,
     type PluginReferenceExecutionRequest,
     type WorkflowDefinition,
@@ -57,7 +58,9 @@ interface InlineExecutionBaseInput {
     dumpTarget: InlineWorkflowDumpTarget;
     outputDir: string;
     trajectoryId: string;
+    trajectoryFrames?: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
     analysisId: string;
+    analysis?: DaemonAnalysisDocument;
     teamId: string;
     rootNodeId?: string;
     executionPath?: string[];
@@ -179,6 +182,34 @@ const toError = (error: unknown, fallbackMessage: string): Error => {
     }
 
     return new Error(fallbackMessage);
+};
+
+const createNestedContextOutput = (
+    contextOutput: Record<string, unknown>,
+    dumpTarget: InlineWorkflowDumpTarget,
+    outputDir: string
+): Record<string, unknown> => {
+    const localDumpDescriptor = {
+        timestep: dumpTarget.timestep,
+        natoms: dumpTarget.natoms,
+        simulationCell: dumpTarget.simulationCell,
+        path: dumpTarget.localPath,
+        originalPath: dumpTarget.originalPath
+    };
+    const trajectory = isRecord(contextOutput.trajectory)
+        ? { ...contextOutput.trajectory }
+        : {};
+
+    trajectory.frames = [localDumpDescriptor];
+
+    return {
+        ...contextOutput,
+        trajectory_dumps: [localDumpDescriptor],
+        count: 1,
+        trajectory,
+        allDumpLocalPaths: JSON.stringify([dumpTarget.localPath]),
+        outputPath: outputDir
+    };
 };
 
 const getWorkflowChildren = (
@@ -458,11 +489,13 @@ export class InlineWorkflowRuntime {
             userConfig: isRecord(pluginNodeData?.config) ? pluginNodeData.config : {},
             runtimeArguments: {},
             trajectoryId: input.trajectoryId,
-            trajectoryFrames: [{
-                timestep: input.dumpTarget.timestep,
-                natoms: input.dumpTarget.natoms,
-                simulationCell: input.dumpTarget.simulationCell
-            }],
+            trajectoryFrames: Array.isArray(input.trajectoryFrames) && input.trajectoryFrames.length > 0
+                ? input.trajectoryFrames
+                : [{
+                    timestep: input.dumpTarget.timestep,
+                    natoms: input.dumpTarget.natoms,
+                    simulationCell: input.dumpTarget.simulationCell
+                }],
             trajectoryDumpOverrides: [{
                 timestep: input.dumpTarget.timestep,
                 natoms: input.dumpTarget.natoms,
@@ -470,10 +503,11 @@ export class InlineWorkflowRuntime {
                 path: input.dumpTarget.localPath,
                 originalPath: input.dumpTarget.originalPath
             }],
-            analysis: { _id: input.analysisId, pluginDisplayName: pluginId },
+            analysis: input.analysis ?? { _id: input.analysisId, pluginDisplayName: pluginId },
             analysisId: input.analysisId,
             pluginId,
             teamId: input.teamId,
+            selectedFrameOnly: true,
             selectedTimestep: input.dumpTarget.timestep,
             selectedTimesteps,
             workflow: new WorkflowGraph(nestedPlugin.workflow),
@@ -510,7 +544,13 @@ export class InlineWorkflowRuntime {
                     continue;
                 }
 
-                const output = await this.registry.execute(node, nestedContext);
+                let output = await this.registry.execute(node, nestedContext);
+
+                if (node.type === WorkflowNodeType.Context) {
+                    output = createNestedContextOutput(output, input.dumpTarget, nestedOutputDir);
+                    nestedOutputs.set(node.id, output);
+                }
+
                 appendTraceNode(trace, createTraceNode(workflowTraceContext, {
                     nodeId: node.id,
                     nodeType: node.type,
@@ -660,7 +700,9 @@ export class InlineWorkflowRuntime {
                     dumpTarget: params.input.dumpTarget,
                     outputDir: params.outputDir,
                     trajectoryId: params.input.trajectoryId,
+                    trajectoryFrames: params.context.trajectoryFrames,
                     analysisId: params.input.analysisId,
+                    analysis: params.context.analysis,
                     teamId: params.input.teamId,
                     node: params.node,
                     workflow: params.workflow.definition,
