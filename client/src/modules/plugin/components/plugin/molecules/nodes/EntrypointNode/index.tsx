@@ -11,7 +11,9 @@ const EntrypointNode = (props: NodeProps) => {
     const hasBinary = !!entrypoint.binary;
     const entrypointLabel = entrypointType === EntrypointType.PYTHON_SCRIPT
         ? 'Python script'
-        : 'Executable';
+        : entrypointType === EntrypointType.PACKAGED_EXECUTABLE
+            ? 'Packaged executable'
+            : 'Executable';
     const binaryDisplay = hasBinary ? `${entrypointLabel}: ${entrypoint.binary || 'Binary attached'}` : undefined;
 
     return (

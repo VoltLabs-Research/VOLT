@@ -1,0 +1,12 @@
+.react-flow__handle.switch-statement-handle {
+    width: 10px !important;
+    height: 10px !important;
+}
+
+.react-flow__handle.switch-statement-handle.switch-statement-handle--cases {
+    background-color: var(--accent-orange) !important;
+}
+
+.react-flow__handle.switch-statement-handle.switch-statement-handle--continue {
+    background-color: var(--accent-blue) !important;
+}

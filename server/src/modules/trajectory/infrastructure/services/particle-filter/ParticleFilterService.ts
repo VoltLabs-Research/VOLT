@@ -192,10 +192,11 @@ export default class ParticleFilterService implements IParticleFilterService {
         exposureId?: string
     ): Promise<number[]> {
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
-        const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
-        const storageClusterId = trajectory
-            ? resolveTrajectoryStorageClusterId(trajectory.props)
-            : undefined;
+        const clusterContext = await resolveTrajectoryNativeClusterContext({
+            trajectoryId: String(trajectoryId),
+            trajectoryRepository: this.trajectoryRepository,
+            teamClusterSelectionService: this.teamClusterSelectionService
+        });
 
         if (exposureId && resolvedAnalysisId) {
             return this.atomProps.getModifierUniqueValues(

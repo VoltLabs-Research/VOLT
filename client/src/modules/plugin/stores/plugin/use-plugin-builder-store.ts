@@ -3,7 +3,7 @@ import { temporal } from 'zundo';
 import type { Node, Edge, Connection, NodeChange, EdgeChange, XYPosition } from '@xyflow/react';
 import { applyNodeChanges, applyEdgeChanges, addEdge } from '@xyflow/react';
 import type { IWorkflow, INodeData } from '@/modules/plugin/api/entities/plugin/workflow';
-import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { NodeType, PluginNodeExecutionMode } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import { NODE_CONFIGS, createNode } from '@/modules/plugin/utilities/plugin/node-registry';
 
 type ValidationResult = {
@@ -102,6 +102,41 @@ const hasNodeDataChanges = (currentData: INodeData, nextData: Partial<INodeData>
     }
 
     return nextEntries.some(([key, value]) => !Object.is(currentData[key], value));
+};
+
+const normalizePluginNodeDataForSerialization = (node: Node<INodeData>): INodeData => {
+    if (node.type !== NodeType.PLUGIN || typeof node.data !== 'object' || node.data === null) {
+        return node.data;
+    }
+
+    const pluginNode = typeof node.data.pluginNode === 'object' && node.data.pluginNode !== null
+        ? node.data.pluginNode as Record<string, unknown>
+        : null;
+    if (!pluginNode) {
+        return node.data;
+    }
+
+    const pluginId = typeof pluginNode.pluginId === 'string'
+        ? pluginNode.pluginId.trim()
+        : '';
+    const argumentReference = typeof pluginNode.argumentReference === 'string'
+        ? pluginNode.argumentReference.trim()
+        : '';
+    const executionMode = pluginNode.executionMode === PluginNodeExecutionMode.ARGUMENT_REFERENCE
+        ? PluginNodeExecutionMode.ARGUMENT_REFERENCE
+        : pluginNode.executionMode === PluginNodeExecutionMode.MANUAL
+            ? PluginNodeExecutionMode.MANUAL
+            : !pluginId && argumentReference
+                ? PluginNodeExecutionMode.ARGUMENT_REFERENCE
+                : PluginNodeExecutionMode.MANUAL;
+
+    return {
+        ...node.data,
+        pluginNode: {
+            ...pluginNode,
+            executionMode
+        }
+    };
 };
 
 const usePluginBuilderStore = create<PluginBuilderStore>()(
@@ -308,7 +343,7 @@ const usePluginBuilderStore = create<PluginBuilderStore>()(
                             x: n.position.x,
                             y: n.position.y
                         },
-                        data: n.data
+                        data: normalizePluginNodeDataForSerialization(n)
                     })),
                     edges: edges.map((e) => ({
                         id: e.id,

@@ -35,9 +35,17 @@ export const ArgumentDefinitionSchema = new Schema({
         type: Schema.Types.Mixed
     },
     options: [ArgumentOptionSchema],
+    multipleSelection: {
+        type: Boolean,
+        default: false
+    },
     pluginReferenceFilter: [{
         type: String
     }],
+    showPluginConfiguration: {
+        type: Boolean,
+        default: false
+    },
     min: {
         type: Number
     },

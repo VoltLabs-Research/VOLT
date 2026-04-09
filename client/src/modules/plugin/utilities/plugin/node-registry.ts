@@ -1,4 +1,12 @@
-import { Exporter, ModifierContext, NodeType, ExportType_ as ExportType, ArgumentType, EntrypointType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import {
+    Exporter,
+    ModifierContext,
+    NodeType,
+    ExportType_ as ExportType,
+    ArgumentType,
+    EntrypointType,
+    PluginNodeExecutionMode
+} from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import type { INodeData } from '@/modules/plugin/api/entities/plugin/workflow';
 import { v4 } from 'uuid';
 import type { Node } from '@xyflow/react';
@@ -132,7 +140,7 @@ export const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
         outputs: 1,
         allowedConnections: {
             from: [NodeType.ARGUMENTS],
-            to: [NodeType.FOREACH, NodeType.ENTRYPOINT, NodeType.PLUGIN]
+            to: [NodeType.FOREACH, NodeType.ENTRYPOINT, NodeType.PLUGIN, NodeType.IF_STATEMENT, NodeType.SWITCH_STATEMENT]
         },
         createDefaultData: () => ({
             context: {
@@ -149,7 +157,7 @@ export const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
         outputs: 1,
         allowedConnections: {
             from: [NodeType.CONTEXT],
-            to: [NodeType.ENTRYPOINT, NodeType.PLUGIN]
+            to: [NodeType.ENTRYPOINT, NodeType.PLUGIN, NodeType.IF_STATEMENT, NodeType.SWITCH_STATEMENT]
         },
         createDefaultData: () => ({
             forEach: {
@@ -166,7 +174,7 @@ export const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
         outputs: -1,
         allowedConnections: {
             from: [NodeType.CONTEXT, NodeType.FOREACH, NodeType.PLUGIN],
-            to: [NodeType.EXPOSURE, NodeType.IF_STATEMENT]
+            to: [NodeType.EXPOSURE, NodeType.IF_STATEMENT, NodeType.SWITCH_STATEMENT]
         },
         createDefaultData: () => ({
             entrypoint: {
@@ -186,15 +194,18 @@ export const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
         inputs: 1,
         outputs: -1,
         allowedConnections: {
-            from: [NodeType.FOREACH, NodeType.PLUGIN],
-            to: [NodeType.PLUGIN, NodeType.ENTRYPOINT]
+            from: [NodeType.FOREACH, NodeType.PLUGIN, NodeType.IF_STATEMENT, NodeType.SWITCH_CASE, NodeType.SWITCH_STATEMENT],
+            to: [NodeType.PLUGIN, NodeType.ENTRYPOINT, NodeType.IF_STATEMENT, NodeType.SWITCH_STATEMENT]
         },
         createDefaultData: () => ({
             pluginNode: {
+                executionMode: PluginNodeExecutionMode.MANUAL,
                 pluginId: '',
+                argumentReference: '',
                 selectedTeamClusterId: '',
                 selectedTimesteps: undefined,
-                config: {}
+                config: {},
+                configByPluginId: {}
             }
         })
     },
@@ -246,12 +257,47 @@ export const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
         inputs: 1,
         outputs: 2,
         allowedConnections: {
-            from: [NodeType.ENTRYPOINT, NodeType.FOREACH, NodeType.CONTEXT],
-            to: [NodeType.ENTRYPOINT, NodeType.EXPOSURE, NodeType.EXPORT]
+            from: [NodeType.ENTRYPOINT, NodeType.FOREACH, NodeType.CONTEXT, NodeType.PLUGIN, NodeType.SWITCH_CASE, NodeType.SWITCH_STATEMENT],
+            to: [NodeType.PLUGIN, NodeType.ENTRYPOINT, NodeType.EXPOSURE, NodeType.EXPORT, NodeType.SWITCH_STATEMENT]
         },
         createDefaultData: () => ({
             ifStatement: {
                 conditions: []
+            }
+        })
+    },
+    [NodeType.SWITCH_STATEMENT]: {
+        type: NodeType.SWITCH_STATEMENT,
+        label: 'Switch Statement',
+        icon: 'TbRouteSquare',
+        description: 'Branch by resolved expression',
+        inputs: 1,
+        outputs: -1,
+        allowedConnections: {
+            from: [NodeType.CONTEXT, NodeType.FOREACH, NodeType.PLUGIN, NodeType.ENTRYPOINT, NodeType.IF_STATEMENT, NodeType.SWITCH_CASE, NodeType.SWITCH_STATEMENT],
+            to: [NodeType.SWITCH_CASE, NodeType.PLUGIN, NodeType.ENTRYPOINT, NodeType.EXPOSURE, NodeType.EXPORT, NodeType.IF_STATEMENT, NodeType.SWITCH_STATEMENT]
+        },
+        createDefaultData: () => ({
+            switchStatement: {
+                expression: ''
+            }
+        })
+    },
+    [NodeType.SWITCH_CASE]: {
+        type: NodeType.SWITCH_CASE,
+        label: 'Switch Case',
+        icon: 'TbPoint',
+        description: 'Case branch for a switch statement',
+        inputs: 1,
+        outputs: -1,
+        allowedConnections: {
+            from: [NodeType.SWITCH_STATEMENT],
+            to: [NodeType.PLUGIN, NodeType.ENTRYPOINT, NodeType.EXPOSURE, NodeType.EXPORT, NodeType.IF_STATEMENT, NodeType.SWITCH_STATEMENT]
+        },
+        createDefaultData: () => ({
+            switchCase: {
+                value: '',
+                defaultCase: false
             }
         })
     }

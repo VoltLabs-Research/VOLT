@@ -25,6 +25,36 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
+interface PluginReferenceSelectionValue {
+    pluginId: string;
+    config?: Record<string, unknown>;
+}
+
+const readPluginReferenceSelections = (
+    value: unknown
+): PluginReferenceSelectionValue[] => {
+    if (isRecord(value) && Array.isArray(value.selections)) {
+        return value.selections.filter((entry): entry is PluginReferenceSelectionValue => {
+            return isRecord(entry) && typeof entry.pluginId === 'string' && entry.pluginId.trim().length > 0;
+        });
+    }
+
+    if (Array.isArray(value)) {
+        return value.filter((entry): entry is PluginReferenceSelectionValue => {
+            return isRecord(entry) && typeof entry.pluginId === 'string' && entry.pluginId.trim().length > 0;
+        });
+    }
+
+    if (isRecord(value) && typeof value.pluginId === 'string' && value.pluginId.trim().length > 0) {
+        return [{
+            pluginId: value.pluginId,
+            config: isRecord(value.config) ? value.config : {}
+        }];
+    }
+
+    return [];
+};
+
 const collectArgumentPluginReferenceExecutions = (
     definition: ArgumentDefinition,
     value: unknown,
@@ -32,15 +62,13 @@ const collectArgumentPluginReferenceExecutions = (
     results: PluginReferenceExecutionRequest[]
 ): void => {
     if (definition.type === ArgumentType.PluginReference) {
-        if (!isRecord(value) || typeof value.pluginId !== 'string' || !value.pluginId.trim()) {
-            return;
+        for (const selection of readPluginReferenceSelections(value)) {
+            results.push({
+                referencePath: currentPath,
+                pluginId: selection.pluginId.trim(),
+                config: isRecord(selection.config) ? selection.config : {}
+            });
         }
-
-        results.push({
-            referencePath: currentPath,
-            pluginId: value.pluginId.trim(),
-            config: isRecord(value.config) ? value.config : {}
-        });
         return;
     }
 
@@ -81,6 +109,28 @@ export class PluginDependencyResolverService {
         return {
             dependencies: Array.from(dependencies.values()),
             errors
+        };
+    }
+
+    async collectTransitivePublishedDependenciesForPlugins(
+        plugins: Plugin[]
+    ): Promise<PluginDependencyTraversalResult> {
+        const dependencies = new Map<string, Plugin>();
+        const errors = new Set<string>();
+
+        for (const plugin of plugins) {
+            const result = await this.collectTransitivePublishedDependencies(plugin);
+            for (const dependency of result.dependencies) {
+                dependencies.set(dependency.id, dependency);
+            }
+            for (const error of result.errors) {
+                errors.add(error);
+            }
+        }
+
+        return {
+            dependencies: Array.from(dependencies.values()),
+            errors: Array.from(errors)
         };
     }
 

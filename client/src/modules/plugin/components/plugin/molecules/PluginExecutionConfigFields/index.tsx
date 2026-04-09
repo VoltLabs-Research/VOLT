@@ -20,6 +20,7 @@ interface PluginExecutionConfigFieldsProps {
     autocompleteOptions?: FormFieldAutocompleteOption[];
     frameOptions?: SelectOption[];
     noClustersMessage?: string;
+    allowTemplateReferenceMode?: boolean;
 };
 
 const PluginExecutionConfigFields = ({
@@ -34,7 +35,8 @@ const PluginExecutionConfigFields = ({
     onSelectedTeamClusterIdChange,
     autocompleteOptions,
     frameOptions,
-    noClustersMessage = 'No team clusters available'
+    noClustersMessage = 'No team clusters available',
+    allowTemplateReferenceMode = false
 }: PluginExecutionConfigFieldsProps) => {
     const hasTeamClusterOptions = teamClusterOptions.length > 0;
 
@@ -65,6 +67,7 @@ const PluginExecutionConfigFields = ({
                     frameOptions={frameOptions}
                     emptyMessage='No arguments configured.'
                     autocompleteOptions={autocompleteOptions}
+                    allowTemplateReferenceMode={allowTemplateReferenceMode}
                 />
             )}
             {clusterField}

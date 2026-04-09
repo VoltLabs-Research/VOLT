@@ -7,6 +7,7 @@ import { PluginNodeData } from './nodes/PluginNode';
 import { ExposureNodeData } from './nodes/ExposureNode';
 import { ExportNodeData } from './nodes/ExportNode';
 import { IfStatementNodeData } from './nodes/IfStatementNode';
+import { SwitchCaseNodeData, SwitchStatementNodeData } from './nodes/SwitchStatementNode';
 
 export interface WorkflowNodeData{
     modifier?: ModifierNodeData;
@@ -18,4 +19,6 @@ export interface WorkflowNodeData{
     exposure?: ExposureNodeData;
     export?: ExportNodeData;
     ifStatement?: IfStatementNodeData;
+    switchStatement?: SwitchStatementNodeData;
+    switchCase?: SwitchCaseNodeData;
 };

@@ -3,6 +3,7 @@ import {
     createDefaultArgumentDefinition,
     isPluginReferenceArgumentType
 } from '@/modules/plugin/utilities/plugin/argument-values';
+import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { ARGUMENT_TYPE_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
 import Button from '@/shared/presentation/components/Button';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
@@ -10,9 +11,11 @@ import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import IconButton from '@/shared/presentation/components/IconButton';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import Select from '@/shared/presentation/components/Select';
 import { Plus, Trash2 } from 'lucide-react';
-import { useCallback, type ChangeEvent } from 'react';
+import { useCallback, useMemo, type ChangeEvent } from 'react';
 import type { IArgumentDefinition, IArgumentOption } from '@/modules/plugin/api/entities/plugin/workflow';
+import type { SelectOption } from '@/shared/presentation/components/Select';
 
 interface ArgumentDefinitionSectionProps {
     arguments: IArgumentDefinition[];
@@ -63,9 +66,16 @@ const ArgumentDefinitionSection = ({
     onUpdateArgument,
     level = 0
 }: ArgumentDefinitionSectionProps) => {
+    const { publishedPlugins } = usePluginSelectors();
     const handleArgumentChange = useCallback((index: number, nextArgument: IArgumentDefinition) => {
         onUpdateArgument(index, nextArgument);
     }, [onUpdateArgument]);
+    const allowedPluginOptions = useMemo<SelectOption[]>(() => {
+        return publishedPlugins.map((plugin) => ({
+            value: plugin._id,
+            title: plugin.modifier?.name?.trim() || plugin._id
+        }));
+    }, [publishedPlugins]);
 
     const handleAddOption = useCallback((argumentIndex: number) => {
         const currentArgument = argumentDefinitions[argumentIndex];
@@ -132,6 +142,10 @@ const ArgumentDefinitionSection = ({
                     delete nextArgument.options;
                 }
 
+                if (nextType !== ArgumentType.SELECT && !isPluginReferenceArgumentType(nextType)) {
+                    delete nextArgument.multipleSelection;
+                }
+
                 if (nextType !== ArgumentType.LIST) {
                     delete nextArgument.listArguments;
                     if (Array.isArray(nextArgument.default)) {
@@ -153,6 +167,7 @@ const ArgumentDefinitionSection = ({
 
                 if (!isPluginReferenceArgumentType(nextType)) {
                     delete nextArgument.pluginReferenceFilter;
+                    delete nextArgument.showPluginConfiguration;
                 }
 
                 if (nextType !== ArgumentType.NUMBER) {
@@ -169,6 +184,14 @@ const ArgumentDefinitionSection = ({
                 handleArgumentChange(argumentIndex, {
                     ...currentArgument,
                     [field]: nextValue === '' ? undefined : Number(nextValue)
+                });
+                return;
+            }
+
+            if (field === 'multipleSelection' || field === 'showPluginConfiguration') {
+                handleArgumentChange(argumentIndex, {
+                    ...currentArgument,
+                    [field]: nextValue === 'true'
                 });
                 return;
             }
@@ -284,6 +307,17 @@ const ArgumentDefinitionSection = ({
                         options={ARGUMENT_TYPE_SELECT_OPTIONS}
                     />
 
+                    {(argument.type === ArgumentType.SELECT || isPluginReferenceArgumentType(argument.type)) && (
+                        <FormFieldRHF
+                            variant='inline'
+                            label='Multiple selection'
+                            name={`multiple-selection-${level}-${index}`}
+                            fieldType='checkbox'
+                            value={Boolean(argument.multipleSelection)}
+                            onChange={createArgumentFieldHandler(index, 'multipleSelection')}
+                        />
+                    )}
+
                     {argument.type === ArgumentType.NUMBER && (
                         <>
                             <FormFieldRHF
@@ -378,27 +412,47 @@ const ArgumentDefinitionSection = ({
                     )}
 
                     {isPluginReferenceArgumentType(argument.type) && (
-                        <FormFieldRHF
-                            variant='inline'
-                            label='Allowed Plugin IDs'
-                            name={`plugin-reference-filter-${level}-${index}`}
-                            fieldType='input'
-                            value={(argument.pluginReferenceFilter ?? []).join(',')}
-                            onChange={(event) => {
-                                const pluginReferenceFilter = event.target.value
-                                    .split(',')
-                                    .map((value) => value.trim())
-                                    .filter(Boolean);
+                        <>
+                            <Container className='d-flex column gap-05'>
+                                <Paragraph className='font-size-085 font-bold'>Allowed Plugins</Paragraph>
+                                <Select
+                                    id={`plugin-reference-filter-${level}-${index}`}
+                                    options={allowedPluginOptions}
+                                    isMulti
+                                    selectedValues={argument.pluginReferenceFilter ?? []}
+                                    onMultiChange={(pluginReferenceFilter) => {
+                                        handleArgumentChange(index, {
+                                            ...argument,
+                                            pluginReferenceFilter: pluginReferenceFilter.length > 0
+                                                ? pluginReferenceFilter
+                                                : undefined
+                                        });
+                                    }}
+                                    hasSearch
+                                    placeholder='Select plugins'
+                                    renderTriggerLabel={(selectedCount) => {
+                                        if (selectedCount === 0) {
+                                            return 'Select plugins';
+                                        }
 
-                                handleArgumentChange(index, {
-                                    ...argument,
-                                    pluginReferenceFilter: pluginReferenceFilter.length > 0
-                                        ? pluginReferenceFilter
-                                        : undefined
-                                });
-                            }}
-                            placeholder='plugin-id-1,plugin-id-2'
-                        />
+                                        if (selectedCount === 1) {
+                                            const selectedPluginId = argument.pluginReferenceFilter?.[0];
+                                            return allowedPluginOptions.find((option) => option.value === selectedPluginId)?.title ?? '1 selected';
+                                        }
+
+                                        return `${selectedCount} selected`;
+                                    }}
+                                />
+                            </Container>
+                            <FormFieldRHF
+                                variant='inline'
+                                label='Show config for selected plugins'
+                                name={`plugin-reference-config-${level}-${index}`}
+                                fieldType='checkbox'
+                                value={Boolean(argument.showPluginConfiguration)}
+                                onChange={createArgumentFieldHandler(index, 'showPluginConfiguration')}
+                            />
+                        </>
                     )}
 
                     {argument.type !== ArgumentType.LIST && !isPluginReferenceArgumentType(argument.type) && (

@@ -9,7 +9,9 @@ export enum WorkflowNodeType {
     Plugin = 'plugin-node',
     Exposure = 'exposure',
     Export = 'export',
-    IfStatement = 'if-statement'
+    IfStatement = 'if-statement',
+    SwitchStatement = 'switch-statement',
+    SwitchCase = 'switch-case'
 };
 
 export interface WorkflowNode {

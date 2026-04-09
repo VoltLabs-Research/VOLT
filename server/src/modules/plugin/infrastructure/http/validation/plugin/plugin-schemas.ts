@@ -13,7 +13,9 @@ const workflowNodeSchema = z.object({
         'plugin-node',
         'exposure',
         'export',
-        'if-statement'
+        'if-statement',
+        'switch-statement',
+        'switch-case'
     ]),
     position: z.object({
         x: z.number(),
