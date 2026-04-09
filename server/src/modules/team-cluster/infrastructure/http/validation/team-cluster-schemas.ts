@@ -158,6 +158,11 @@ const requestUpdateSchema = z.object({
 }).strict();
 
 const queueConcurrencyValueSchema = z.number().int().min(1);
+const queueScopeLimitValueSchema = z.number().int().min(0);
+const queueScopeLimitSchema = z.object({
+    maxRunningPerTrajectory: queueScopeLimitValueSchema,
+    maxRunningPerTeam: queueScopeLimitValueSchema
+}).strict();
 
 const updateQueueConcurrencySchema = z.object({
     queueConcurrency: z.object({
@@ -165,6 +170,13 @@ const updateQueueConcurrencySchema = z.object({
         rasterizer: queueConcurrencyValueSchema,
         glbPreprocessing: queueConcurrencyValueSchema,
         sshImport: queueConcurrencyValueSchema
+    }).strict(),
+    queueScopeLimits: z.object({
+        analysisProcessing: queueScopeLimitSchema,
+        artifactUpload: queueScopeLimitSchema,
+        trajectoryGlbConversion: queueScopeLimitSchema,
+        cloudUpload: queueScopeLimitSchema,
+        trajectoryCompression: queueScopeLimitSchema
     }).strict()
 }).strict();
 

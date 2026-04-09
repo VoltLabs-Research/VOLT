@@ -26,6 +26,7 @@ import ParticleFilterService from '@modules/trajectory/infrastructure/services/p
 import TrajectoryNativeDaemonService from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
 import TeamMetricsQueryService from '@modules/trajectory/infrastructure/services/trajectory/TeamMetricsQueryService';
 import TrajectoryBackgroundProcessor from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryBackgroundProcessor';
+import TeamClusterQueueScopeLimitsService from '@modules/trajectory/infrastructure/services/trajectory/TeamClusterQueueScopeLimitsService';
 import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryDumpStorageService';
 import TrajectoryReader from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryReader';
 import TrajectoryUploadStagingService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryUploadStagingService';
@@ -49,6 +50,7 @@ export const registerTrajectoryDependencies = (): void => {
             [TRAJECTORY_TOKENS.SceneArtifactRepository, SceneArtifactRepository],
             [TRAJECTORY_TOKENS.CompressionProcessor, CompressionProcessor],
             [TRAJECTORY_TOKENS.CompressionQueueService, CompressionQueueService],
+            [TRAJECTORY_TOKENS.TeamClusterQueueScopeLimitsService, TeamClusterQueueScopeLimitsService],
             [TRAJECTORY_TOKENS.CloudUploadProcessor, CloudUploadProcessor],
             [TRAJECTORY_TOKENS.CloudUploadQueueService, CloudUploadQueueService],
             [TRAJECTORY_TOKENS.TrajectoryNativeDaemonService, TrajectoryNativeDaemonService],

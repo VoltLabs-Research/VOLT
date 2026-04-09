@@ -50,6 +50,19 @@ export interface TeamClusterQueueConcurrency {
     sshImport: number;
 };
 
+export interface TeamClusterQueueScopeLimit {
+    maxRunningPerTrajectory: number;
+    maxRunningPerTeam: number;
+};
+
+export interface TeamClusterQueueScopeLimits {
+    analysisProcessing: TeamClusterQueueScopeLimit;
+    artifactUpload: TeamClusterQueueScopeLimit;
+    trajectoryGlbConversion: TeamClusterQueueScopeLimit;
+    cloudUpload: TeamClusterQueueScopeLimit;
+    trajectoryCompression: TeamClusterQueueScopeLimit;
+};
+
 export interface TeamClusterRoleDraining {
     compute: boolean;
     storage: boolean;
@@ -81,6 +94,7 @@ export interface TeamCluster {
     lastDisconnectAt: Date | string | null;
     services: TeamClusterServices;
     queueConcurrency: TeamClusterQueueConcurrency;
+    queueScopeLimits: TeamClusterQueueScopeLimits;
     roleConfig: TeamClusterRuntimeRoleConfig;
     effectiveCapabilities: TeamClusterEffectiveCapabilities;
     activeTransfers?: ClusterTransferJob[];

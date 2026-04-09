@@ -22,6 +22,7 @@ import type { TeamCluster, TeamClusterCredentialServices } from '@/modules/clust
 import type { CreateTeamClusterTransferRequestOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/create-team-cluster-transfer-request';
 import type {
     TeamClusterQueueConcurrencyInputDTO,
+    TeamClusterQueueScopeLimitsInputDTO,
     UpdateTeamClusterQueueConcurrencyOutputDTO
 } from '@/modules/cluster/api/dtos/team-cluster/update-team-cluster-queue-concurrency';
 import type {
@@ -103,9 +104,9 @@ const UPDATE_CLUSTER_TOAST_OPTIONS: ClusterCreateToastOptions = {
 };
 
 const UPDATE_QUEUE_CONCURRENCY_TOAST_OPTIONS: ClusterCreateToastOptions = {
-    loading: { title: 'Saving queue concurrency...' },
-    success: { title: 'Queue concurrency saved' },
-    error: { title: 'Failed to save queue concurrency' }
+    loading: { title: 'Saving queue settings...' },
+    success: { title: 'Queue settings saved' },
+    error: { title: 'Failed to save queue settings' }
 };
 
 const UPDATE_CLUSTER_ROLE_TOAST_OPTIONS: ClusterCreateToastOptions = {
@@ -142,7 +143,8 @@ export interface ClusterManagementResult {
     ) => Promise<RequestClusterUpdateOutputDTO>;
     updateQueueConcurrency: (
         teamClusterId: string,
-        queueConcurrency: TeamClusterQueueConcurrencyInputDTO
+        queueConcurrency: TeamClusterQueueConcurrencyInputDTO,
+        queueScopeLimits: TeamClusterQueueScopeLimitsInputDTO
     ) => Promise<UpdateTeamClusterQueueConcurrencyOutputDTO>;
     updateRole: (
         teamClusterId: string,
@@ -287,7 +289,8 @@ const useClusterManagement = (): ClusterManagementResult => {
 
     const updateQueueConcurrency = async (
         teamClusterId: string,
-        queueConcurrency: TeamClusterQueueConcurrencyInputDTO
+        queueConcurrency: TeamClusterQueueConcurrencyInputDTO,
+        queueScopeLimits: TeamClusterQueueScopeLimitsInputDTO
     ) => {
         if (!selectedTeamId) {
             throw new Error('Missing selected team');
@@ -296,7 +299,8 @@ const useClusterManagement = (): ClusterManagementResult => {
         return showPromise(updateQueueConcurrencyMutation.mutateAsync({
             teamId: selectedTeamId,
             teamClusterId,
-            queueConcurrency
+            queueConcurrency,
+            queueScopeLimits
         }), UPDATE_QUEUE_CONCURRENCY_TOAST_OPTIONS);
     };
 
