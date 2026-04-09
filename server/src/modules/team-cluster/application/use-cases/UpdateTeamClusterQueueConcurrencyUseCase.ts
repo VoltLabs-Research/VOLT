@@ -44,7 +44,8 @@ export default class UpdateTeamClusterQueueConcurrencyUseCase
         }
 
         const updatedTeamCluster = await this.teamClusterRepository.updateById(teamCluster.id, {
-            queueConcurrency: input.queueConcurrency
+            queueConcurrency: input.queueConcurrency,
+            queueScopeLimits: input.queueScopeLimits
         });
 
         if (!updatedTeamCluster) {
@@ -58,6 +59,23 @@ export default class UpdateTeamClusterQueueConcurrencyUseCase
                 const queueConcurrencyPayload: TeamClusterDaemonQueueConcurrencyApplyPayload = {
                     queueConcurrency: {
                         ...updatedTeamCluster.props.queueConcurrency
+                    },
+                    queueScopeLimits: {
+                        analysisProcessing: {
+                            ...updatedTeamCluster.props.queueScopeLimits.analysisProcessing
+                        },
+                        artifactUpload: {
+                            ...updatedTeamCluster.props.queueScopeLimits.artifactUpload
+                        },
+                        trajectoryGlbConversion: {
+                            ...updatedTeamCluster.props.queueScopeLimits.trajectoryGlbConversion
+                        },
+                        cloudUpload: {
+                            ...updatedTeamCluster.props.queueScopeLimits.cloudUpload
+                        },
+                        trajectoryCompression: {
+                            ...updatedTeamCluster.props.queueScopeLimits.trajectoryCompression
+                        }
                     }
                 };
                 const queueConcurrencyCommandResult = await this.teamClusterDaemonClient.commandWithSemanticResult<{ accepted?: boolean; reason?: string; }>(
@@ -91,7 +109,7 @@ export default class UpdateTeamClusterQueueConcurrencyUseCase
         }
 
         return Result.ok({
-            message: 'Queue concurrency saved.',
+            message: 'Queue settings saved.',
             teamCluster: toTeamClusterDTO(updatedTeamCluster)
         });
     }

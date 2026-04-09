@@ -289,6 +289,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
                     data: {
                         contractVersion: TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION,
                         queueConcurrency: teamCluster.props.queueConcurrency,
+                        queueScopeLimits: teamCluster.props.queueScopeLimits,
                         roleConfig: teamCluster.props.roleConfig,
                         effectiveCapabilities: teamCluster.effectiveCapabilities
                     }

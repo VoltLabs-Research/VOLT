@@ -7,6 +7,7 @@ import { toTeamClusterDTO } from '@modules/team-cluster/application/dtos/TeamClu
 import TeamCluster, {
     createDefaultTeamClusterRoleConfig,
     DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
+    DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS,
     TeamClusterStatus
 } from '@modules/team-cluster/domain/entities/TeamCluster';
 import type { ITeamClusterCredentialsCipher } from '@modules/team-cluster/domain/port/ITeamClusterCredentialsCipher';
@@ -113,6 +114,7 @@ export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClus
                 }
             },
             queueConcurrency: DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
+            queueScopeLimits: DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS,
             roleConfig: createDefaultTeamClusterRoleConfig(),
             createdAt: new Date(),
             updatedAt: new Date()

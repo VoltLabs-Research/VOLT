@@ -7,9 +7,15 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import CloudUploadProcessor from '@modules/trajectory/infrastructure/services/trajectory/CloudUploadProcessor';
 import logger from '@shared/infrastructure/logger';
+import {
+    delayJobOnQueueScopeContention,
+    tryAcquireQueueScopeLease,
+    type QueueScopeLease
+} from './queue-scope-lease';
+import TeamClusterQueueScopeLimitsService from './TeamClusterQueueScopeLimitsService';
 
 import { injectable, inject } from 'tsyringe';
-import { Queue, Worker } from 'bullmq';
+import { DelayedError, Queue, Worker } from 'bullmq';
 import type { Job } from 'bullmq';
 import { v4 as uuid } from 'uuid';
 import IORedis from 'ioredis';
@@ -56,6 +62,9 @@ export default class CloudUploadQueueService {
         @inject(TRAJECTORY_TOKENS.CloudUploadProcessor)
         private readonly cloudUploadProcessor: CloudUploadProcessor,
 
+        @inject(TRAJECTORY_TOKENS.TeamClusterQueueScopeLimitsService)
+        private readonly teamClusterQueueScopeLimitsService: TeamClusterQueueScopeLimitsService,
+
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
 
@@ -97,29 +106,72 @@ export default class CloudUploadQueueService {
         this.worker = new Worker<CloudUploadJobData>(
             QUEUE_NAME,
             async (job) => {
-                const { jobId, teamId, trajectoryId, trajectoryName, timestep } = job.data;
+                let queueScopeLease: QueueScopeLease | null = null;
 
-                // Emit running status
-                await this.publishStatus(jobId, teamId, JobStatus.Running, {
-                    trajectoryId,
-                    trajectoryName,
-                    timestep
-                });
+                try {
+                    const { jobId, teamId, trajectoryName, timestep } = job.data;
+                    const trajectoryId = job.data.trajectoryId.trim();
+                    if (!trajectoryId) {
+                        throw new Error(`Missing trajectoryId for cloud upload job ${jobId}`);
+                    }
 
-                // Delegate to the existing CloudUploadProcessor
-                await this.cloudUploadProcessor.process({
-                    trajectoryId,
-                    teamId,
-                    teamClusterId: job.data.teamClusterId,
-                    trajectoryName,
-                    timestep,
-                    frameFilePath: job.data.frameFilePath,
-                    objectKey: job.data.objectKey,
-                    contentType: job.data.contentType,
-                    contentEncoding: job.data.contentEncoding
-                });
+                    const queueScopeLimits = await this.teamClusterQueueScopeLimitsService.getLimits(
+                        job.data.teamClusterId,
+                        'cloudUpload'
+                    );
+                    const { lease, blockingScope } = await tryAcquireQueueScopeLease(
+                        this.redis,
+                        QUEUE_NAME,
+                        [
+                            {
+                                scope: 'trajectory',
+                                scopeId: trajectoryId,
+                                limit: queueScopeLimits.maxRunningPerTrajectory
+                            },
+                            {
+                                scope: 'team',
+                                scopeId: teamId,
+                                limit: queueScopeLimits.maxRunningPerTeam
+                            }
+                        ]
+                    );
+                    queueScopeLease = lease;
+                    if (!queueScopeLease || blockingScope) {
+                        await delayJobOnQueueScopeContention(job, {
+                            queueName: QUEUE_NAME,
+                            jobId,
+                            scope: blockingScope ?? {
+                                scope: 'trajectory',
+                                scopeId: trajectoryId,
+                                limit: queueScopeLimits.maxRunningPerTrajectory
+                            }
+                        });
+                    }
 
-                return job.data;
+                    await this.publishStatus(jobId, teamId, JobStatus.Running, {
+                        trajectoryId,
+                        trajectoryName,
+                        timestep
+                    });
+
+                    await this.cloudUploadProcessor.process({
+                        trajectoryId,
+                        teamId,
+                        teamClusterId: job.data.teamClusterId,
+                        trajectoryName,
+                        timestep,
+                        frameFilePath: job.data.frameFilePath,
+                        objectKey: job.data.objectKey,
+                        contentType: job.data.contentType,
+                        contentEncoding: job.data.contentEncoding
+                    });
+
+                    return job.data;
+                } finally {
+                    if (queueScopeLease) {
+                        await queueScopeLease.release();
+                    }
+                }
             },
             {
                 connection,
@@ -150,6 +202,7 @@ export default class CloudUploadQueueService {
 
         this.worker.on('failed', async (job, error) => {
             if (!job) return;
+            if (error instanceof DelayedError) return;
 
             const { jobId, teamId, trajectoryId, trajectoryName, timestep } = job.data;
             const terminalFailure = this.isTerminalFailure(job);

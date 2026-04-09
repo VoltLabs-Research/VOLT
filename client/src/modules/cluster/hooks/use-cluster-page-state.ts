@@ -6,6 +6,7 @@ import type { RequestClusterUpdateOutputDTO } from '@/modules/cluster/api/dtos/t
 import type { TeamCluster, TeamClusterCredentialServices } from '@/modules/cluster/api/entities/team-cluster';
 import type {
     TeamClusterQueueConcurrencyInputDTO,
+    TeamClusterQueueScopeLimitsInputDTO,
     UpdateTeamClusterQueueConcurrencyOutputDTO
 } from '@/modules/cluster/api/dtos/team-cluster/update-team-cluster-queue-concurrency';
 import type { TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
@@ -20,7 +21,10 @@ export interface ClusterPageState {
     revealCredentials: (password: string) => Promise<void>;
     deleteCluster: (password: string) => Promise<DeleteTeamClusterOutputDTO>;
     requestUpdate: (targetVersion: string, isEdge: boolean, password: string) => Promise<RequestClusterUpdateOutputDTO>;
-    updateQueueConcurrency: (queueConcurrency: TeamClusterQueueConcurrencyInputDTO) => Promise<UpdateTeamClusterQueueConcurrencyOutputDTO>;
+    updateQueueConcurrency: (input: {
+        queueConcurrency: TeamClusterQueueConcurrencyInputDTO;
+        queueScopeLimits: TeamClusterQueueScopeLimitsInputDTO;
+    }) => Promise<UpdateTeamClusterQueueConcurrencyOutputDTO>;
     updateRole: (role: TeamClusterRole) => Promise<UpdateTeamClusterRoleOutputDTO>;
     createTransferRequest: (destinationClusterId: string) => Promise<CreateTeamClusterTransferRequestOutputDTO>;
     credentials: TeamClusterCredentialServices | null;
@@ -74,12 +78,19 @@ const useClusterPageState = (): ClusterPageState => {
         return management.requestUpdate(updateTarget._id, targetVersion, isEdge, password);
     };
 
-    const updateQueueConcurrency = async (queueConcurrency: TeamClusterQueueConcurrencyInputDTO) => {
+    const updateQueueConcurrency = async (input: {
+        queueConcurrency: TeamClusterQueueConcurrencyInputDTO;
+        queueScopeLimits: TeamClusterQueueScopeLimitsInputDTO;
+    }) => {
         if (!queueConcurrencyTarget) {
             throw new Error('Missing cluster queue concurrency target');
         }
 
-        return management.updateQueueConcurrency(queueConcurrencyTarget._id, queueConcurrency);
+        return management.updateQueueConcurrency(
+            queueConcurrencyTarget._id,
+            input.queueConcurrency,
+            input.queueScopeLimits
+        );
     };
 
     const updateRole = async (role: TeamClusterRole) => {

@@ -9,6 +9,7 @@ export const TRAJECTORY_TOKENS = {
     TrajectoryBackgroundProcessor: Symbol.for('TrajectoryBackgroundProcessor'),
     CompressionProcessor: Symbol.for('CompressionProcessor'),
     CompressionQueueService: Symbol.for('CompressionQueueService'),
+    TeamClusterQueueScopeLimitsService: Symbol.for('TeamClusterQueueScopeLimitsService'),
     CloudUploadProcessor: Symbol.for('CloudUploadProcessor'),
     TrajectoryNativeDaemonService: Symbol.for('TrajectoryNativeDaemonService'),
     AtomPropertiesService: Symbol.for('AtomPropertiesService'),
