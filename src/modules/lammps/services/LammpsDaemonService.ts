@@ -211,7 +211,7 @@ const buildHybridRuntimeImageTag = (lammpsContainerId: string): string => {
     return `volt/lammps-runtime:${lammpsContainerId}-hybrid`;
 };
 
-const runtimeModule = require('@voltstack/lammps-runtime') as RuntimeModuleShape;
+const runtimeModule = require('../vendor/lammps-runtime/index.cjs') as RuntimeModuleShape;
 
 const resolveRuntimeConstructor = (): new (options?: { docker?: Docker }) => RuntimeInstance => {
     const runtimeConstructor = runtimeModule.LammpsRuntime ?? runtimeModule.default;
@@ -222,7 +222,7 @@ const resolveRuntimeConstructor = (): new (options?: { docker?: Docker }) => Run
     return runtimeConstructor;
 };
 
-const LammpsRuntime = resolveRuntimeConstructor();
+const VendorLammpsRuntime = resolveRuntimeConstructor();
 
 const delay = async (ms: number): Promise<void> => {
     await new Promise<void>((resolve) => {
@@ -481,7 +481,7 @@ export class LammpsDaemonService {
 
     async provisionContainer(input: ProvisionLammpsContainerInput): Promise<ProvisionLammpsContainerResult> {
         try {
-            const runtime = new LammpsRuntime({
+            const runtime = new VendorLammpsRuntime({
                 docker: createHostAwareDockerClient()
             });
             const imageTag = buildHybridRuntimeImageTag(input.lammpsContainerId);
@@ -646,7 +646,7 @@ export class LammpsDaemonService {
         });
 
         try {
-            const runtime = new LammpsRuntime({
+            const runtime = new VendorLammpsRuntime({
                 docker: createHostAwareDockerClient()
             });
             const activeExecution: ActiveExecutionState = {

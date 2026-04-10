@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node scripts/start.js",
     "dev": "tsx src/index.ts",
-    "build": "rm -rf dist && tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
+    "build": "rm -rf dist && tsc -p tsconfig.json && mkdir -p dist/modules/lammps/vendor/lammps-runtime && cp src/modules/lammps/vendor/lammps-runtime/index.cjs dist/modules/lammps/vendor/lammps-runtime/index.cjs && tsc-alias -p tsconfig.json",
     "contracts:parity": "node ../tools/check-contract-parity.js",
     "test:object-gateway": "npx tsx --test src/modules/cloud-control/services/ObjectGatewayServer.test.ts src/shared/storage/TeamClusterDirectObjectStoreClient.test.ts src/modules/platform/services/MinioService.test.ts",
     "perf:baseline": "node -e \"console.log(JSON.stringify({ package: 'cluster-daemon', status: 'placeholder', capture: { payload: ['TODO: record bytes for a representative daemon REST response with x-trace-id', 'TODO: record bytes for a representative socket/job payload with metadata.traceId'], latency: ['TODO: record daemon job dispatch duration ms', 'TODO: record representative socket emit/ack duration ms'] }, compatibility: { httpHeader: 'x-trace-id', socketTraceField: 'traceId', logFields: ['traceId', 'spanName', 'transport', 'durationMs', 'status'] } }, null, 2))\"",
@@ -17,7 +17,6 @@
     "@voltstack/daemon-cluster-client": "^1.0.0",
     "@voltstack/headless-rasterizer": "^1.0.0",
     "@voltstack/lammps-io": "^1.0.0",
-    "@voltstack/lammps-runtime": "^1.0.0",
     "@voltstack/spatial-assembler": "^1.0.0",
     "bullmq": "^5.70.4",
     "chart.js": "^4.5.1",
