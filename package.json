@@ -17,6 +17,7 @@
     "@voltstack/daemon-cluster-client": "^1.0.0",
     "@voltstack/headless-rasterizer": "^1.0.0",
     "@voltstack/lammps-io": "^1.0.0",
+    "@voltstack/lammps-runtime": "^1.0.0",
     "@voltstack/spatial-assembler": "^1.0.0",
     "bullmq": "^5.70.4",
     "chart.js": "^4.5.1",
