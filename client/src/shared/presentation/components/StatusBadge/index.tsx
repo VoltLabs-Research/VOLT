@@ -50,8 +50,9 @@ const statusToVariant = (status: string): string => {
         case 'pending':
         case 'waiting-for-process':
         case 'analyzing':
-        case 'running':
             return 'warning';
+        case 'running':
+            return 'active';
         case 'failed':
         case 'error':
         case 'danger':
