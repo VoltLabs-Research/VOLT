@@ -39,6 +39,7 @@ import {
     createAnalysisHandlers,
     createDebugHandlers,
     createJobHandlers,
+    createLammpsHandlers,
     createTrajectoryHandlers,
     createPluginHandlers,
     createContainerHandlers,
@@ -46,6 +47,7 @@ import {
     createRemoteAccessHandlers,
     createRuntimeHandlers
 } from './handlers';
+import { LammpsDaemonService } from '@/modules/lammps/services/LammpsDaemonService';
 
 export interface CloudControlModule {
     reverseChannelSocketBridge: ReverseChannelSocketBridge;
@@ -94,6 +96,15 @@ export const createCloudControlModule = (deps: {
     );
 
     const handlers = [
+        ...createLammpsHandlers({
+            lammpsDaemonService: new LammpsDaemonService(
+                deps.dockerRuntimeService,
+                deps.objectStore,
+                deps.trajectoryParserService,
+                deps.glbExporterService,
+                voltCloudConnection
+            )
+        }),
         ...createAnalysisHandlers({
             analysisDispatchService: deps.analysisDispatchService,
             runtimeCapabilityGuard

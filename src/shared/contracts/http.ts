@@ -33,6 +33,8 @@ export enum EntrypointType {
 export enum OrchestrationAction {
     AnalysisStart = 'analysis-start',
     ContainerCreate = 'container-create',
+    LammpsContainerProvision = 'lammps-container-provision',
+    LammpsRun = 'lammps-run',
     TrajectoryPreprocess = 'trajectory-preprocess',
     NativeTrajectoryPreprocess = 'native-trajectory-preprocess',
     QueueDispatch = 'queue-dispatch',
