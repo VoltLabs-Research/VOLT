@@ -23,7 +23,7 @@ import { IoIosAdd } from 'react-icons/io';
 import { IoAnalytics, IoBookOutline, IoCubeOutline, IoKeyOutline, IoLockClosedOutline, IoPeopleOutline } from 'react-icons/io5';
 import { MdAutoAwesome, MdImportExport } from 'react-icons/md';
 import { RiHomeSmile2Fill } from 'react-icons/ri';
-import { TbCube3dSphere, TbFileTypePdf } from 'react-icons/tb';
+import { TbAtom2, TbCube3dSphere, TbFileTypePdf } from 'react-icons/tb';
 import { PiUserPlus, PiPaintBrushBold } from 'react-icons/pi';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { IconType } from 'react-icons';
@@ -206,6 +206,39 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
         icon: undefined,
         requiredPermissions: ['analysis:read']
     });
+    const canAccessLammps = canAccess({
+        label: '',
+        path: '',
+        icon: undefined,
+        requiredPermissions: ['lammps:read']
+    });
+
+    const lammpsSubItems = useMemo(() => [
+        {
+            label: 'Containers',
+            isSelected: pathname === '/dashboard/lammps/containers',
+            onClick: () => {
+                navigate('/dashboard/lammps/containers');
+                setSidebarOpen(false);
+            }
+        },
+        {
+            label: 'Scripts',
+            isSelected: pathname === '/dashboard/lammps/scripts' || pathname.startsWith('/dashboard/lammps/scripts/'),
+            onClick: () => {
+                navigate('/dashboard/lammps/scripts');
+                setSidebarOpen(false);
+            }
+        },
+        {
+            label: 'Exec History',
+            isSelected: pathname === '/dashboard/lammps/exec-history',
+            onClick: () => {
+                navigate('/dashboard/lammps/exec-history');
+                setSidebarOpen(false);
+            }
+        }
+    ], [navigate, pathname, setSidebarOpen]);
 
     const renderNavItem = (item: DashboardNavigationItem) => {
         const isAllowed = canAccess(item);
@@ -273,6 +306,21 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
                     isActive={pathname.includes('/analysis-configs') || isAnalysisPluginListingRoute}
                     subItems={analysisSubItems}
                     disabled={!canAccessAnalysis}
+                    onRequestSidebarExpand={onExpandSidebar}
+                />
+            </Tooltip>
+
+            <Tooltip
+                content='You do not have permission to view LAMMPS.'
+                placement='right'
+                disabled={canAccessLammps}
+            >
+                <SidebarExpandableSection
+                    label='Lammps'
+                    icon={TbAtom2}
+                    isActive={pathname.startsWith('/dashboard/lammps')}
+                    subItems={lammpsSubItems}
+                    disabled={!canAccessLammps}
                     onRequestSidebarExpand={onExpandSidebar}
                 />
             </Tooltip>

@@ -1,0 +1,95 @@
+.lammps-workspace__toolbar-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.lammps-workspace__toolbar-field {
+    min-width: 12rem;
+    max-width: 18rem;
+}
+
+.lammps-workspace__toolbar-field-label {
+    font-size: 0.72rem;
+    color: var(--color-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.lammps-workspace__left-stack {
+    min-width: 0;
+    border-right: 1px solid var(--color-border-primary, rgba(127, 127, 127, 0.2));
+}
+
+.lammps-workspace__dumps {
+    border-top: 1px solid var(--color-border-primary, rgba(127, 127, 127, 0.2));
+}
+
+.lammps-workspace__dump-list {
+    overflow-y: auto;
+}
+
+.lammps-workspace__dump-row {
+    min-width: 0;
+}
+
+.lammps-workspace__dump-row.is-disabled {
+    cursor: not-allowed;
+    opacity: 0.48;
+}
+
+.lammps-workspace__dump-row.is-disabled:hover,
+.lammps-workspace__dump-row.is-disabled:focus-visible {
+    background: transparent;
+    box-shadow: none;
+}
+
+.lammps-workspace__main-content {
+    background: linear-gradient(180deg, rgba(127, 127, 127, 0.02), rgba(127, 127, 127, 0.01));
+}
+
+.lammps-workspace__preview {
+    min-width: 0;
+    border-left: 1px solid var(--color-border-primary, rgba(127, 127, 127, 0.2));
+}
+
+.lammps-workspace__preview-stage {
+    font-size: 0.8rem;
+    color: var(--color-text-tertiary);
+}
+
+.lammps-workspace__preview-body {
+    display: flex;
+    min-height: 0;
+}
+
+.lammps-workspace__preview-body > .canvas-viewport {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+}
+
+.lammps-workspace__preview-scene {
+    width: 100%;
+    height: 100%;
+}
+
+.lammps-workspace__preview-loading-overlay {
+    background: color-mix(in srgb, var(--color-overlay) 42%, transparent);
+    backdrop-filter: blur(2px);
+    pointer-events: none;
+}
+
+@media (max-width: 980px) {
+    .lammps-workspace__toolbar-actions {
+        justify-content: flex-start;
+    }
+
+    .lammps-workspace__toolbar-field {
+        min-width: 100%;
+        max-width: 100%;
+    }
+
+    .lammps-workspace__dumps {
+        max-height: 14rem;
+    }
+}

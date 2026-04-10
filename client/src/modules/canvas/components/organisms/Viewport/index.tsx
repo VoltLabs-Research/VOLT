@@ -48,6 +48,7 @@ interface ViewportProps {
     hideGradient?: boolean;
     renderScene?: boolean;
     showSceneActions?: boolean;
+    showHeader?: boolean;
     headerActionsBeforePerformance?: ReactNode;
 };
 
@@ -71,6 +72,7 @@ const Viewport = ({
     hideGradient = false,
     renderScene = true,
     showSceneActions = true,
+    showHeader = true,
     headerActionsBeforePerformance
 }: ViewportProps) => {
     const teamId = useSelectedTeamId() ?? undefined;
@@ -183,69 +185,71 @@ const Viewport = ({
 
     return (
         <Container className="canvas-viewport d-flex column flex-1 overflow-hidden p-relative min-h-0">
-            <Container className="canvas-viewport-header d-flex items-center f-shrink-0">
-                {trajectory && (
-                    <EditableTrajectoryName
-                        trajectoryId={trajectory._id}
-                        name={trajectory.name}
-                        className="canvas-viewport-trajectory-name"
-                    />
-                )}
+            {showHeader && (
+                <Container className="canvas-viewport-header d-flex items-center f-shrink-0">
+                    {trajectory && (
+                        <EditableTrajectoryName
+                            trajectoryId={trajectory._id}
+                            name={trajectory.name}
+                            className="canvas-viewport-trajectory-name"
+                        />
+                    )}
 
-                <Container className="flex-1" />
+                    <Container className="flex-1" />
 
-                {headerActionsBeforePerformance}
+                    {headerActionsBeforePerformance}
 
-                {showSceneActions && (
-                    <>
-                        <RenderMenuPopover />
+                    {showSceneActions && (
+                        <>
+                            <RenderMenuPopover />
 
-                        <CameraMenuPopover />
+                            <CameraMenuPopover />
 
-                        <ScreenshotMenuPopover />
+                            <ScreenshotMenuPopover />
 
-                        <Popover
-                            id="viewport-performance"
-                            noPadding
-                            trigger={(
-                                <Button
-                                    variant="ghost"
-                                    intent="canvas"
-                                    shape="rounded"
-                                    size="sm"
-                                    className="font-size-05 canvas-btn-compact"
-                                    leftIcon={<span className="d-flex items-center content-center f-shrink-0"><Gauge size={12} /></span>}
-                                >
-                                    {getPerformancePresetLabel(performancePreset)}
-                                </Button>
-                            )}
-                        >
-                            {(close) => (
-                                <PopoverMenu>
-                                    {PERFORMANCE_PRESET_OPTIONS.map((preset) => (
-                                        <Button
-                                            key={preset.value}
-                                            variant={preset.value === performancePreset ? 'solid' : 'ghost'}
-                                            intent="canvas"
-                                            shape="rounded"
-                                            size="sm"
-                                            className="font-size-05"
-                                            block
-                                            align="start"
-                                            onClick={() => {
-                                                setPerformancePreset(preset.value);
-                                                close();
-                                            }}
-                                        >
-                                            {preset.title}
-                                        </Button>
-                                    ))}
-                                </PopoverMenu>
-                            )}
-                        </Popover>
-                    </>
-                )}
-            </Container>
+                            <Popover
+                                id="viewport-performance"
+                                noPadding
+                                trigger={(
+                                    <Button
+                                        variant="ghost"
+                                        intent="canvas"
+                                        shape="rounded"
+                                        size="sm"
+                                        className="font-size-05 canvas-btn-compact"
+                                        leftIcon={<span className="d-flex items-center content-center f-shrink-0"><Gauge size={12} /></span>}
+                                    >
+                                        {getPerformancePresetLabel(performancePreset)}
+                                    </Button>
+                                )}
+                            >
+                                {(close) => (
+                                    <PopoverMenu>
+                                        {PERFORMANCE_PRESET_OPTIONS.map((preset) => (
+                                            <Button
+                                                key={preset.value}
+                                                variant={preset.value === performancePreset ? 'solid' : 'ghost'}
+                                                intent="canvas"
+                                                shape="rounded"
+                                                size="sm"
+                                                className="font-size-05"
+                                                block
+                                                align="start"
+                                                onClick={() => {
+                                                    setPerformancePreset(preset.value);
+                                                    close();
+                                                }}
+                                            >
+                                                {preset.title}
+                                            </Button>
+                                        ))}
+                                    </PopoverMenu>
+                                )}
+                            </Popover>
+                        </>
+                    )}
+                </Container>
+            )}
 
             <Container className="canvas-viewport-body flex-1 p-relative min-h-0">
                 {!bodyContent && isLoading && (

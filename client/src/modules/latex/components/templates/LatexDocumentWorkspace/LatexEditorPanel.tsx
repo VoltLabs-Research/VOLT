@@ -37,7 +37,7 @@ interface LatexEditorPanelProps {
     onTabSelect: (tab: LatexWorkspaceTab) => void;
     onTabClose: (tab: LatexWorkspaceTab) => void;
     onTabReorder: (activeTab: LatexWorkspaceTab, overTab: LatexWorkspaceTab | null, position: 'before' | 'after' | 'end') => void;
-    onSplitDown: (tab?: LatexWorkspaceTab) => void;
+    onSplitDown?: (tab?: LatexWorkspaceTab) => void;
     onDuplicateTabToOtherGroup?: (tab: LatexWorkspaceTab) => void;
     onCloseGroup?: () => void;
 };
@@ -293,7 +293,7 @@ const LatexEditorPanel = ({
     const getTabMenuOptions = useCallback((tab: EditorTabItem): MenuOption[] => {
         const nextOptions: MenuOption[] = [];
 
-        if (!isSplitView) {
+        if (!isSplitView && onSplitDown) {
             nextOptions.push({
                 label: 'Split Down',
                 icon: PanelBottom,
@@ -452,7 +452,7 @@ const LatexEditorPanel = ({
 
     const headerActions = (
         <Container className='d-flex items-center gap-025'>
-            {!isSplitView && activeTabItem && (
+            {!isSplitView && activeTabItem && onSplitDown && (
                 <IconButton
                     variant='ghost'
                     size='sm'
