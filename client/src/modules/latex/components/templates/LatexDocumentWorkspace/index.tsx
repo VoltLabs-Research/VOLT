@@ -8,6 +8,7 @@ import EditableTag from '@/shared/presentation/components/EditableTag';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import Loader from '@/shared/presentation/components/Loader';
 import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
+import WorkspaceToolbar from '@/shared/presentation/components/WorkspaceToolbar';
 import '@/shared/presentation/styles/resize-handle.css';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
@@ -695,33 +696,37 @@ const LatexDocumentWorkspace = () => {
 
     return (
         <Container className='latex-workspace d-flex column'>
-            <Container className='latex-workspace__toolbar d-flex items-center content-between gap-1'>
-                <EditableTag
-                    as='span'
-                    className='latex-workspace__toolbar-title color-primary'
-                    onSave={handleRenameDocument}
-                    title='Double-click to rename'
-                >
-                    {latexDocument?.title ?? 'LaTeX Document'}
-                </EditableTag>
-                <Container className='d-flex items-center gap-075'>
-                    <ThemeToggleButton className='latex-workspace__theme-toggle' />
-                    {collaboratorAvatars.length > 0 && (
-                        <Container className='latex-workspace__collaborators d-flex items-center'>
-                            {collaboratorAvatars}
-                        </Container>
-                    )}
-                    {isDirty && <span className='latex-workspace__dirty-dot' title='Unsaved changes' />}
-                    <span className='latex-workspace__status-text color-muted' aria-live='polite'>
-                        {isSaving ? 'Saving…' : isDirty ? 'Unsaved changes' : 'Saved'}
-                    </span>
-                    {writeWithAIButton}
-                    {compileButton}
-                    {exportTexButton}
-                    {exportPdfButton}
-                    {exportZipButton}
-                </Container>
-            </Container>
+            <WorkspaceToolbar
+                title={(
+                    <EditableTag
+                        as='span'
+                        className='latex-workspace__toolbar-title color-primary'
+                        onSave={handleRenameDocument}
+                        title='Double-click to rename'
+                    >
+                        {latexDocument?.title ?? 'LaTeX Document'}
+                    </EditableTag>
+                )}
+                actions={(
+                    <>
+                        <ThemeToggleButton className='latex-workspace__theme-toggle' />
+                        {collaboratorAvatars.length > 0 && (
+                            <Container className='latex-workspace__collaborators d-flex items-center'>
+                                {collaboratorAvatars}
+                            </Container>
+                        )}
+                        {isDirty && <span className='latex-workspace__dirty-dot' title='Unsaved changes' />}
+                        <span className='latex-workspace__status-text color-muted' aria-live='polite'>
+                            {isSaving ? 'Saving…' : isDirty ? 'Unsaved changes' : 'Saved'}
+                        </span>
+                        {writeWithAIButton}
+                        {compileButton}
+                        {exportTexButton}
+                        {exportPdfButton}
+                        {exportZipButton}
+                    </>
+                )}
+            />
 
             <div className='latex-workspace__sr-only' aria-live='polite'>
                 {saveStatusMessage}

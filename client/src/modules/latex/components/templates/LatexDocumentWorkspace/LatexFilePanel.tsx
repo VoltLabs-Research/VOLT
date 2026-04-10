@@ -36,6 +36,7 @@ interface LatexFilePanelProps {
     documentId: string;
     files: LatexFileEntry[];
     assets: LatexAsset[];
+    folders?: string[];
     selectedAssetId: string | null;
     width: number;
     fileInputRef: RefObject<HTMLInputElement | null>;
@@ -51,6 +52,8 @@ interface LatexFilePanelProps {
     onDeleteAssetDirect: (input: { documentId: string; assetId: string }) => Promise<unknown>;
     onUpdateFileDirect: (input: { documentId: string; fileId: string; path?: string; name?: string; content?: string }) => Promise<unknown>;
     onUpdateAssetDirect: (input: { documentId: string; assetId: string; path: string }) => Promise<unknown>;
+    onMoveFolderDirect?: (sourceFolderPath: string, targetFolderPath: string) => Promise<unknown>;
+    onDeleteFolderDirect?: (folderPath: string) => Promise<unknown>;
     onRenameFile: (fileId: string, name: string) => Promise<void>;
     onRenameAsset: (asset: LatexAsset, name: string) => Promise<void>;
     onSetEntrypoint: (fileId: string) => Promise<void>;
@@ -132,6 +135,7 @@ const LatexFilePanel = ({
     documentId,
     files,
     assets,
+    folders = [],
     selectedAssetId,
     width,
     fileInputRef,
@@ -147,6 +151,8 @@ const LatexFilePanel = ({
     onDeleteAssetDirect,
     onUpdateFileDirect,
     onUpdateAssetDirect,
+    onMoveFolderDirect,
+    onDeleteFolderDirect,
     onRenameFile,
     onRenameAsset,
     onSetEntrypoint,
@@ -180,6 +186,7 @@ const LatexFilePanel = ({
     } = useFileTree({
         files,
         assets,
+        folderPaths: folders,
         onCreateFile,
         onCreateFolder,
         onRenameFile,
@@ -188,6 +195,8 @@ const LatexFilePanel = ({
         onDeleteAssetDirect,
         onUpdateFileDirect,
         onUpdateAssetDirect,
+        onMoveFolderDirect,
+        onDeleteFolderDirect,
         documentId
     });
     const sensors = useSensors(
