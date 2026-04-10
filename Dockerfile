@@ -1,5 +1,6 @@
 FROM tailscale/tailscale:stable AS tailscale-bin
 
+# Rebuild marker: keep image publish aligned with the vendored LAMMPS runtime bundle.
 FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /app
