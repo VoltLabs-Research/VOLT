@@ -105,12 +105,19 @@ const ensureFolder = (
  */
 export const buildFileTree = (
     files: LatexFileEntry[],
-    assets: LatexAsset[]
+    assets: LatexAsset[],
+    folderPaths: string[] = []
 ): FileTreeNode[] => {
     const visibleAssets = assets.filter((asset) => !isFolderPlaceholderAsset(asset));
     const folderMap = new Map<string, FileTreeNode>();
 
     // Ensure all required ancestor folders exist.
+    for (const folderPath of folderPaths) {
+        if (folderPath) {
+            ensureFolder(folderMap, folderPath);
+        }
+    }
+
     for (const file of files) {
         if (file.path) {
             ensureFolder(folderMap, file.path);

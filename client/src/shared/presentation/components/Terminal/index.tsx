@@ -27,7 +27,12 @@ interface TerminalProps {
     fontFamily?: string;
     className?: string;
     ariaLabel?: string;
+    value?: string;
 };
+
+type PendingTerminalOperation =
+    | { type: 'write'; data: string }
+    | { type: 'clear' };
 
 const getTerminalTheme = (): TerminalTheme => {
     const styles = getComputedStyle(document.documentElement);
@@ -51,18 +56,93 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
     fontSize = 14,
     fontFamily = 'Menlo, Monaco, "Courier New", monospace',
     className = '',
-    ariaLabel = 'Terminal'
+    ariaLabel = 'Terminal',
+    value
 }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const xtermRef = useRef<XTerm | null>(null);
     const fitAddonRef = useRef<FitAddon | null>(null);
     const onDataRef = useRef(onData);
     const onDataDisposableRef = useRef<IDisposable | null>(null);
+    const isReadyRef = useRef(false);
+    const lastRenderedValueRef = useRef('');
+    const pendingControlledValueRef = useRef<string | undefined>(value);
+    const pendingOperationsRef = useRef<PendingTerminalOperation[]>([]);
     const prefersReducedMotion = usePrefersReducedMotion();
+
+    const syncControlledValue = (nextValue: string) => {
+        const terminal = xtermRef.current;
+        if (!terminal || !isReadyRef.current) {
+            pendingControlledValueRef.current = nextValue;
+            return;
+        }
+
+        const previousValue = lastRenderedValueRef.current;
+        if (nextValue === previousValue) {
+            pendingControlledValueRef.current = nextValue;
+            return;
+        }
+
+        if (nextValue.startsWith(previousValue)) {
+            const delta = nextValue.slice(previousValue.length);
+            if (delta.length > 0) {
+                terminal.write(delta);
+            }
+        } else {
+            terminal.clear();
+            if (nextValue.length > 0) {
+                terminal.write(nextValue);
+            }
+        }
+
+        lastRenderedValueRef.current = nextValue;
+        pendingControlledValueRef.current = nextValue;
+    };
+
+    const flushPendingOutput = () => {
+        const terminal = xtermRef.current;
+        if (!terminal || !isReadyRef.current) {
+            return;
+        }
+
+        if (typeof pendingControlledValueRef.current === 'string') {
+            pendingOperationsRef.current = [];
+            syncControlledValue(pendingControlledValueRef.current);
+            return;
+        }
+
+        const operations = pendingOperationsRef.current;
+        pendingOperationsRef.current = [];
+
+        for (const operation of operations) {
+            if (operation.type === 'clear') {
+                terminal.clear();
+                lastRenderedValueRef.current = '';
+                continue;
+            }
+
+            if (operation.data.length === 0) {
+                continue;
+            }
+
+            terminal.write(operation.data);
+            lastRenderedValueRef.current = `${lastRenderedValueRef.current}${operation.data}`;
+        }
+    };
 
     useEffect(() => {
         onDataRef.current = onData;
     }, [onData]);
+
+    useEffect(() => {
+        pendingControlledValueRef.current = value;
+
+        if (typeof value !== 'string') {
+            return;
+        }
+
+        syncControlledValue(value);
+    }, [value]);
 
     useEffect(() => {
         onDataDisposableRef.current?.dispose();
@@ -81,38 +161,72 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
     }, [onData]);
 
     useImperativeHandle(ref, () => ({
-        write: (data: string) => xtermRef.current?.write(data),
-        clear: () => xtermRef.current?.clear(),
+        write: (data: string) => {
+            if (data.length === 0) {
+                return;
+            }
+
+            if (!xtermRef.current || !isReadyRef.current) {
+                pendingOperationsRef.current.push({ type: 'write', data });
+                return;
+            }
+
+            xtermRef.current.write(data);
+            lastRenderedValueRef.current = `${lastRenderedValueRef.current}${data}`;
+        },
+        clear: () => {
+            if (!xtermRef.current || !isReadyRef.current) {
+                pendingOperationsRef.current.push({ type: 'clear' });
+                lastRenderedValueRef.current = '';
+                return;
+            }
+
+            xtermRef.current.clear();
+            lastRenderedValueRef.current = '';
+        },
         focus: () => xtermRef.current?.focus(),
-        fit: () => fitAddonRef.current?.fit()
+        fit: () => {
+            if (!fitAddonRef.current || !isReadyRef.current) {
+                return;
+            }
+
+            fitAddonRef.current.fit();
+        }
     }));
 
     useEffect(() => {
         let term: XTerm | null = null;
         let fitAddon: FitAddon | null = null;
         let resizeObserver: ResizeObserver | null = null;
-        let animationFrameId: number | null = null;
+        let openFrameId: number | null = null;
+        let fitFrameId: number | null = null;
         let isDisposed = false;
         let disposeThemeSubscription: (() => void) | null = null;
 
         const fitTerminal = () => {
             if (!isDisposed && fitAddonRef.current) {
-                fitAddonRef.current.fit();
+                try {
+                    fitAddonRef.current.fit();
+                    isReadyRef.current = true;
+                    flushPendingOutput();
+                } catch {
+                    return;
+                }
             }
         };
 
         const scheduleFit = () => {
-            if (animationFrameId !== null) {
-                window.cancelAnimationFrame(animationFrameId);
+            if (fitFrameId !== null) {
+                window.cancelAnimationFrame(fitFrameId);
             }
 
-            animationFrameId = window.requestAnimationFrame(() => {
-                animationFrameId = null;
+            fitFrameId = window.requestAnimationFrame(() => {
+                fitFrameId = null;
                 fitTerminal();
             });
         };
 
-        animationFrameId = window.requestAnimationFrame(() => {
+        openFrameId = window.requestAnimationFrame(() => {
             if (isDisposed || !containerRef.current || xtermRef.current) return;
 
             const theme = getTerminalTheme();
@@ -128,7 +242,6 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
             fitAddon = new FitAddon();
             term.loadAddon(fitAddon);
             term.open(containerRef.current);
-            fitAddon.fit();
 
             xtermRef.current = term;
             fitAddonRef.current = fitAddon;
@@ -150,18 +263,23 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
             });
             resizeObserver.observe(containerRef.current);
 
-            if (document.visibilityState === 'visible') {
-                scheduleFit();
-            }
+            scheduleFit();
         });
 
         return () => {
             isDisposed = true;
+            isReadyRef.current = false;
             onDataDisposableRef.current?.dispose();
             onDataDisposableRef.current = null;
+            pendingOperationsRef.current = [];
+            lastRenderedValueRef.current = '';
 
-            if (animationFrameId !== null) {
-                window.cancelAnimationFrame(animationFrameId);
+            if (openFrameId !== null) {
+                window.cancelAnimationFrame(openFrameId);
+            }
+
+            if (fitFrameId !== null) {
+                window.cancelAnimationFrame(fitFrameId);
             }
 
             resizeObserver?.disconnect();

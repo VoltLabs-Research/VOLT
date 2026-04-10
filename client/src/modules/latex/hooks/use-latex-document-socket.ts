@@ -1,11 +1,5 @@
-import { create } from 'zustand';
-import useSocket from '@/modules/socket/core/hooks/use-socket';
-import { useEffect, useRef, useCallback } from 'react';
-import type { PresenceUser } from '@/modules/socket/trajectory/api/entities/presence-user';
-
-interface LatexPresenceState {
-    users: PresenceUser[];
-};
+import useCollaborativeDocumentSocket from '@/modules/socket/core/hooks/use-collaborative-document-socket';
+import { useCallback } from 'react';
 
 interface LatexContentUpdatedPayload {
     documentId: string;
@@ -23,17 +17,6 @@ interface UseLatexDocumentSocketProps {
     onRemoteContentUpdate?: (content: string, timestamp: number, fileId: string) => void;
 };
 
-/** Debounce interval before emitting a content update over the socket. */
-const CONTENT_DEBOUNCE_MS = 500;
-
-const usePresenceStore = create<LatexPresenceState>(() => ({
-    users: []
-}));
-
-const setPresenceUsers = (users: PresenceUser[]): void => {
-    usePresenceStore.setState({ users });
-};
-
 /**
  * Manages real-time collaboration for a LaTeX document:
  * joining/leaving the document room, broadcasting content changes,
@@ -45,96 +28,74 @@ const useLatexDocumentSocket = ({
     enabled = true,
     onRemoteContentUpdate
 }: UseLatexDocumentSocketProps) => {
-    const socketService = useSocket();
-    const isConnectedRef = useRef(socketService.isConnected());
-    const subscribedRef = useRef(false);
-    const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const users = usePresenceStore((state) => state.users);
-
-    const subscribeToDocument = useCallback((): void => {
-        if (!enabled || !documentId || !teamId || !isConnectedRef.current || subscribedRef.current) {
-            return;
+    const { collaborators, sendContentUpdate: scheduleContentUpdate } = useCollaborativeDocumentSocket<
+        { documentId: string; teamId: string },
+        { documentId: string },
+        LatexContentUpdatedPayload,
+        {
+            eventName: 'latex_update_content';
+            documentId: string;
+            teamId: string;
+            fileId: string;
+            content: string;
+            timestamp: number;
         }
-
-        subscribedRef.current = true;
-        socketService.emit('latex_open_document', { documentId, teamId }).catch(console.warn);
-    }, [enabled, documentId, teamId, socketService]);
-
-    useEffect(() => {
-        const unsubscribe = socketService.onConnectionChange((connected) => {
-            isConnectedRef.current = connected;
-            if (connected && enabled && documentId && teamId && !subscribedRef.current) {
-                subscribeToDocument();
+    >({
+        enabled: enabled && Boolean(documentId) && Boolean(teamId),
+        openEvent: 'latex_open_document',
+        closeEvent: 'latex_close_document',
+        contentUpdatedEvent: 'latex_content_updated',
+        presenceUpdatedEvent: 'latex_users_update',
+        buildOpenPayload: () => {
+            if (!documentId || !teamId) {
+                return null;
             }
-        });
-        return unsubscribe;
-    }, [enabled, documentId, teamId, socketService, subscribeToDocument]);
 
-    useEffect(() => {
-        if (!enabled || !documentId || !teamId) {
-            return;
+            return {
+                documentId,
+                teamId
+            };
+        },
+        buildClosePayload: () => {
+            if (!documentId) {
+                return null;
+            }
+
+            return { documentId };
+        },
+        matchesContentPayload: (payload): payload is LatexContentUpdatedPayload => {
+            if (!payload || typeof payload !== 'object') {
+                return false;
+            }
+
+            const value = payload as Partial<LatexContentUpdatedPayload>;
+            return value.documentId === documentId
+                && typeof value.fileId === 'string'
+                && typeof value.content === 'string'
+                && typeof value.timestamp === 'number';
+        },
+        onRemoteContentUpdate: (payload) => {
+            onRemoteContentUpdate?.(payload.content, payload.timestamp, payload.fileId);
         }
-
-        if (isConnectedRef.current) {
-            subscribeToDocument();
-        }
-
-        const unsubscribeContent = socketService.on<[LatexContentUpdatedPayload]>(
-            'latex_content_updated',
-            (payload) => {
-                if (!payload || payload.documentId !== documentId) {
-                    return;
-                }
-                onRemoteContentUpdate?.(payload.content, payload.timestamp, payload.fileId);
-            }
-        );
-
-        const unsubscribePresence = socketService.on(
-            'latex_users_update',
-            (users) => setPresenceUsers(users as PresenceUser[])
-        );
-
-        return (): void => {
-            subscribedRef.current = false;
-            unsubscribeContent();
-            unsubscribePresence();
-
-            if (debounceTimerRef.current) {
-                clearTimeout(debounceTimerRef.current);
-                debounceTimerRef.current = null;
-            }
-
-            if (isConnectedRef.current) {
-                socketService.emit('latex_close_document', { documentId }).catch(console.warn);
-            }
-
-            setPresenceUsers([]);
-        };
-    }, [documentId, teamId, enabled, subscribeToDocument, socketService, onRemoteContentUpdate]);
+    });
 
     const sendContentUpdate = useCallback((content: string, fileId: string): void => {
         if (!enabled || !documentId || !teamId) {
             return;
         }
 
-        if (debounceTimerRef.current) {
-            clearTimeout(debounceTimerRef.current);
-        }
-
-        debounceTimerRef.current = setTimeout(() => {
-            debounceTimerRef.current = null;
-            socketService.emit('latex_update_content', {
-                documentId,
-                teamId,
-                fileId,
-                content,
-                timestamp: Date.now()
-            }).catch(console.warn);
-        }, CONTENT_DEBOUNCE_MS);
-    }, [enabled, documentId, teamId, socketService]);
+        scheduleContentUpdate({
+            eventName: 'latex_update_content',
+            documentId,
+            teamId,
+            fileId,
+            content,
+            timestamp: Date.now()
+        });
+    }, [documentId, enabled, scheduleContentUpdate, teamId]);
 
     return {
-        collaborators: users,
+        collaborators,
         sendContentUpdate
     };
 };

@@ -354,6 +354,30 @@ export const protectedRoutes: RouteConfig[] = [
         requiredPermissions: ['latex:read']
     },
     {
+        path: '/dashboard/lammps/containers',
+        title: 'LAMMPS Containers',
+        loader: () => import('@/modules/lammps/components/templates/LammpsContainersListing'),
+        requiredPermissions: ['lammps:read']
+    },
+    {
+        path: '/dashboard/lammps/scripts',
+        title: 'LAMMPS Scripts',
+        loader: () => import('@/modules/lammps/components/templates/LammpsScriptsListing'),
+        requiredPermissions: ['lammps:read']
+    },
+    {
+        path: '/dashboard/lammps/scripts/:scriptId',
+        title: 'LAMMPS Workspace',
+        loader: () => import('@/modules/lammps/components/templates/LammpsScriptWorkspace'),
+        requiredPermissions: ['lammps:read']
+    },
+    {
+        path: '/dashboard/lammps/exec-history',
+        title: 'LAMMPS Execution History',
+        loader: () => import('@/modules/lammps/components/templates/LammpsExecHistoryListing'),
+        requiredPermissions: ['lammps:read']
+    },
+    {
         path: '/dashboard/notebooks',
         title: 'Notebooks',
         loader: () => import('@/modules/scripting/components/templates/NotebooksListing'),
