@@ -2,7 +2,8 @@ import CollapsibleSection from '@/shared/presentation/components/CollapsibleSect
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/molecules/NodeEditor/hooks/use-node-editor-form';
 import type { EditorProps } from '../types';
-import { MODIFIER_EDITOR_DEFAULT_VALUES, modifierEditorSchema, type ModifierEditorFormValues } from './schema';
+import { MODIFIER_EDITOR_DEFAULT_VALUES, modifierEditorSchema } from './schema';
+import type { ModifierEditorFormValues } from './schema';
 
 const useModifierEditorForm = createNodeEditorForm<ModifierEditorFormValues, 'modifier'>({
     schema: modifierEditorSchema,

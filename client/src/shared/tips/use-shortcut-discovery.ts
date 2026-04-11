@@ -5,7 +5,8 @@ import {
     CONTEXTUAL_TIP_RELEASE_BUFFER_MS,
     buildContextualTipOptions
 } from '@/shared/tips/tip-defaults';
-import { getContextualTipDefinition, type ContextualTipId } from '@/shared/tips/tip-registry';
+import { getContextualTipDefinition } from '@/shared/tips/tip-registry';
+import type { ContextualTipId } from '@/shared/tips/tip-registry';
 import { beginContextualTipDisplay, finalizeContextualTipDisplay, releaseContextualTipSlot } from '@/shared/tips/tip-storage';
 
 const useShortcutDiscovery = (tipId: ContextualTipId) => {

@@ -1,6 +1,7 @@
-import { createDefaultDesktopWindowState, type DesktopWindowState } from '@/shared/utils/desktop-contract';
+import { createDefaultDesktopWindowState } from '@/shared/utils/desktop-contract';
 import { isDesktopEnvironment } from '@/shared/utils/desktop-environment';
 import { useEffect, useState } from 'react';
+import type { DesktopWindowState } from '@/shared/utils/desktop-contract';
 
 export const useDesktopWindowState = () => {
     const [windowState, setWindowState] = useState<DesktopWindowState>(createDefaultDesktopWindowState);
@@ -21,7 +22,7 @@ export const useDesktopWindowState = () => {
             }
         };
 
-        void syncWindowState();
+        syncWindowState().catch(() => undefined);
 
         const unsubscribe = window.voltDesktop.windowControls.onStateChange((nextState) => {
             if (isMounted) {

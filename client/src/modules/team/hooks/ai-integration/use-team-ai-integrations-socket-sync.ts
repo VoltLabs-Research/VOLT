@@ -20,7 +20,7 @@ export default function useTeamAIIntegrationsSocketSync(teamId: string | null | 
             return;
         }
 
-        void invalidateTeamAIIntegrationsQuery(teamId);
+        invalidateTeamAIIntegrationsQuery(teamId).catch(() => undefined);
     }, [teamId]);
 
     useSocketEvent<TeamScopedPayload>(SOCKET_TEAM_AI_INTEGRATION_EVENTS.CREATED, handleSync, { enabled: !!teamId });

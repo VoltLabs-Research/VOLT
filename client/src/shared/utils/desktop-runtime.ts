@@ -76,34 +76,34 @@ const createTauriDesktopApi = (): VoltDesktopApi => {
 
                 const subscriptions = [
                     appWindow.onResized(() => {
-                        void emitWindowState();
+                        emitWindowState().catch(() => undefined);
                     }),
                     appWindow.onMoved(() => {
-                        void emitWindowState();
+                        emitWindowState().catch(() => undefined);
                     }),
                     appWindow.onScaleChanged(() => {
-                        void emitWindowState();
+                        emitWindowState().catch(() => undefined);
                     }),
                     appWindow.onFocusChanged(() => {
-                        void emitWindowState();
+                        emitWindowState().catch(() => undefined);
                     }),
                     appWindow.onCloseRequested(() => {
-                        void emitWindowState();
+                        emitWindowState().catch(() => undefined);
                     })
                 ];
 
-                void emitWindowState();
+                emitWindowState().catch(() => undefined);
 
                 return () => {
                     isActive = false;
 
-                    void Promise.allSettled(subscriptions).then((results) => {
+                    Promise.allSettled(subscriptions).then((results) => {
                         results.forEach((result) => {
                             if (result.status === 'fulfilled') {
                                 result.value();
                             }
                         });
-                    });
+                    }).catch(() => undefined);
                 };
             }
         }

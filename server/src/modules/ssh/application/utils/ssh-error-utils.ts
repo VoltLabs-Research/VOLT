@@ -1,4 +1,5 @@
-import { ErrorCodes, type ErrorCode } from '@core/constants/error-codes';
+import { ErrorCodes } from '@core/constants/error-codes';
+import type { ErrorCode } from '@core/constants/error-codes';
 import type { SafeSSHConnectionDTO } from '@modules/ssh/application/dtos/CreateSSHConnectionDTO';
 import type SSHConnection from '@modules/ssh/domain/entities/SSHConnection';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';

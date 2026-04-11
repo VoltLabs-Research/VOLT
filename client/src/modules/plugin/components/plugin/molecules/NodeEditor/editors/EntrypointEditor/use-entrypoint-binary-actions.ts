@@ -1,4 +1,5 @@
-import { useCallback, useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { sileo } from 'sileo';
 import { useDeleteBinaryMutation, useUploadBinaryMutation } from '@/modules/plugin/hooks/plugin/queries';

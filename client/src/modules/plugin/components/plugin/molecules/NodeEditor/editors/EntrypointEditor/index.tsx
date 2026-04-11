@@ -11,7 +11,8 @@ import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/ut
 import Editor from '@monaco-editor/react';
 import { useEffect, useMemo, useState } from 'react';
 import { TbUpload, TbFile, TbTrash, TbCheck } from 'react-icons/tb';
-import { ENTRYPOINT_EDITOR_DEFAULT_VALUES, entrypointEditorSchema, type EntrypointEditorFormValues } from './schema';
+import { ENTRYPOINT_EDITOR_DEFAULT_VALUES, entrypointEditorSchema } from './schema';
+import type { EntrypointEditorFormValues } from './schema';
 import useEntrypointBinaryActions from './use-entrypoint-binary-actions';
 import type { EditorProps } from '../types';
 import './EntrypointEditor.css';

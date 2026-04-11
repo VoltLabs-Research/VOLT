@@ -18,8 +18,6 @@ type AuthQueryKeyMap = Record<'currentUser' | 'passwordInfo', void>;
 
 export const KEYS = buildKeys<AuthQueryKeyMap>('auth');
 
-export const AUTH_QUERY_KEYS = KEYS;
-
 registerPreservedQueryKey(KEYS.currentUser()[0] as string);
 
 const currentUser = createQuery(KEYS.currentUser, () => service.getMe({}));

@@ -168,12 +168,17 @@ export const colorExtras = (
     </Container>
 );
 
+interface SelectFieldOption {
+    title: string;
+    value: string;
+};
+
 export const selectField = (
     key: string,
     value: string,
     onChange: (value: string) => void,
     placeholder: string,
-    options: { title: string; value: string }[]
+    options: SelectFieldOption[]
 ): ReactNode => (
     <Container className="d-flex column gap-025" key={key}>
         <Select
