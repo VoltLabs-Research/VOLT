@@ -34,3 +34,4 @@ dist-ssr
 *.tsbuildinfo
 
 reports/
+tools/local-stack/.generated/

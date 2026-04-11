@@ -78,31 +78,31 @@ export interface TeamClusterEffectiveCapabilitiesProps {
 };
 
 export const DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY: TeamClusterQueueConcurrencyProps = {
-    analysis: 5,
-    rasterizer: 3,
-    glbPreprocessing: 5,
-    sshImport: 1
+    analysis: 8,
+    rasterizer: 5,
+    glbPreprocessing: 8,
+    sshImport: 2
 };
 
 export const DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS: TeamClusterQueueScopeLimitsProps = {
     analysisProcessing: {
-        maxRunningPerTrajectory: 1,
+        maxRunningPerTrajectory: 4,
         maxRunningPerTeam: 0
     },
     artifactUpload: {
-        maxRunningPerTrajectory: 1,
+        maxRunningPerTrajectory: 4,
         maxRunningPerTeam: 0
     },
     trajectoryGlbConversion: {
-        maxRunningPerTrajectory: 1,
+        maxRunningPerTrajectory: 4,
         maxRunningPerTeam: 0
     },
     cloudUpload: {
-        maxRunningPerTrajectory: 1,
+        maxRunningPerTrajectory: 4,
         maxRunningPerTeam: 0
     },
     trajectoryCompression: {
-        maxRunningPerTrajectory: 1,
+        maxRunningPerTrajectory: 4,
         maxRunningPerTeam: 0
     }
 };

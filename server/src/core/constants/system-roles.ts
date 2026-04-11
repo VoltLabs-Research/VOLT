@@ -37,7 +37,6 @@ export const SystemRoles = Object.freeze({
             ...allActionsFor(Resource.PLUGIN),
             ...allActionsFor(Resource.SCRIPTING),
             ...allActionsFor(Resource.CONTAINER),
-            ...allActionsFor(Resource.LAMMPS),
             ...allActionsFor(Resource.DAILY_ACTIVITY),
             ...allActionsFor(Resource.SSH_CONNECTION),
             ...allActionsFor(Resource.TEAM_INVITATION),
@@ -59,7 +58,6 @@ export const SystemRoles = Object.freeze({
             `${Resource.PLUGIN}:${Action.CREATE}`,
             ...crudFor(Resource.SCRIPTING),
             ...crudFor(Resource.CONTAINER),
-            ...crudFor(Resource.LAMMPS),
             readOnlyFor(Resource.DAILY_ACTIVITY),
             ...crudFor(Resource.SSH_CONNECTION),
             readOnlyFor(Resource.SIMULATION_CELL),
@@ -79,7 +77,6 @@ export const SystemRoles = Object.freeze({
             readOnlyFor(Resource.PLUGIN),
             readOnlyFor(Resource.SCRIPTING),
             readOnlyFor(Resource.CONTAINER),
-            readOnlyFor(Resource.LAMMPS),
             readOnlyFor(Resource.DAILY_ACTIVITY),
             readOnlyFor(Resource.SIMULATION_CELL),
             readOnlyFor(Resource.WHITEBOARD)

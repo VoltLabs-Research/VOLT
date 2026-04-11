@@ -6,7 +6,7 @@ import type {
     TeamClusterServicesProps
 } from '@modules/team-cluster/domain/entities/TeamCluster';
 
-export const TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION = 2;
+export const TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION = 3;
 export const TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH = '/internal/team-cluster/object-store/v1';
 export const TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER = 'x-team-cluster-id';
 export const TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER = 'x-team-cluster-daemon-password';
@@ -47,27 +47,6 @@ export const TEAM_CLUSTER_DAEMON_COMMAND = Object.freeze({
         file: Object.freeze({
             read: 'container.file.read',
             write: 'container.file.write'
-        })
-    }),
-    lammps: Object.freeze({
-        container: Object.freeze({
-            provision: 'lammps.container.provision',
-            removeWorkspace: 'lammps.container.remove-workspace'
-        }),
-        filesystem: Object.freeze({
-            list: 'lammps.filesystem.list',
-            readFile: 'lammps.filesystem.read-file',
-            writeFile: 'lammps.filesystem.write-file',
-            writeFileBase64: 'lammps.filesystem.write-file-base64',
-            createFile: 'lammps.filesystem.create-file',
-            createDirectory: 'lammps.filesystem.create-directory',
-            move: 'lammps.filesystem.move',
-            deletePath: 'lammps.filesystem.delete-path'
-        }),
-        run: Object.freeze({
-            start: 'lammps.run.start',
-            stop: 'lammps.run.stop',
-            kill: 'lammps.run.kill'
         })
     }),
     jobs: Object.freeze({

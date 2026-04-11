@@ -2,8 +2,7 @@ export enum CatalogFolderKind {
     Trajectory = 'trajectory',
     Container = 'container',
     Whiteboard = 'whiteboard',
-    Latex = 'latex',
-    Lammps = 'lammps'
+    Latex = 'latex'
 }
 
 export interface CatalogFolderProps {

@@ -11,7 +11,7 @@ Or let Volt AI help you. Just ask. Volt AI understands the patterns in your anal
 
 Running out of storage or compute resources as your team grows? Not a problem. You can add as many clusters as you need. A cluster can be anything-from an old unused computer to high-performance servers.
 
-Inside Volt, you can run as many LAMMPS instances as you want, assigning resources according to your cluster’s capabilities. You can also spin up virtualized Linux environments using Docker containers for fully customizable workflows.
+Inside Volt, you can spin up virtualized Linux environments using Docker containers and assign resources according to your cluster’s capabilities for fully customizable workflows.
 
 Already have simulations stored on another server? You don’t need to upload them to a cloud provider. Volt allows you to import them directly via SSH, connecting seamlessly to your existing infrastructure.
 
@@ -33,3 +33,6 @@ You can also deploy Volt entirely within your own infrastructure. This works sim
 When using the cloud option, your clusters handle CPU-intensive tasks and large data storage, while metadata and collaboration features-such as trajectory metadata, teams, plugins, analyses, activity logs, and messaging, are stored in Volt Cloud.
 
 Because this cloud is a free service, it may be discontinued without notice if funding for the infrastructure becomes unavailable, which could result in the loss of stored metadata. For full control and permanence, self-hosting is recommended, but it can be a bit tedious if you're not familiar with it.
+
+### 3. Local Docker development stack
+For a repo-local development stack that boots Volt plus two development cluster daemons, see [tools/local-stack/README.md](./tools/local-stack/README.md).

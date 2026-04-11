@@ -2,7 +2,6 @@ export enum Resource {
     ANALYSIS = 'analysis',
     CONTAINER = 'container',
     DAILY_ACTIVITY = 'daily-activity',
-    LAMMPS = 'lammps',
     LATEX = 'latex',
     PLUGIN = 'plugin',
     SCRIPTING = 'scripting',
