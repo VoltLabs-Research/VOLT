@@ -6,7 +6,6 @@ import { protect } from '@shared/infrastructure/http/middleware/authentication';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import AIConversationHttpModule from '@modules/ai/infrastructure/http/routes/ai-conversation-routes';
 import LatexHttpModule from '@modules/latex/infrastructure/http/routes/latex-routes';
-import LammpsHttpModule from '@modules/lammps/infrastructure/http/routes/lammps-routes';
 import WhiteboardHttpModule from '@modules/whiteboards/infrastructure/http/routes/whiteboard-routes';
 import AnalysisHttpModule from '@modules/analysis/infrastructure/http/routes/analysis-routes';
 import AuthHttpModule from '@modules/auth/infrastructure/http/routes/auth-routes';
@@ -106,7 +105,6 @@ const HTTP_MODULES: HttpModule[] = [
     ParticleFilterHttpModule,
     AIConversationHttpModule,
     LatexHttpModule,
-    LammpsHttpModule,
     WhiteboardHttpModule
 ];
 

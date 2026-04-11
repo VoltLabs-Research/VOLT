@@ -1,5 +1,4 @@
 import { ContainerDeploymentProgressService } from '@modules/container/infrastructure/services/ContainerDeploymentProgressService';
-import { LammpsProgressProjectorService } from '@modules/lammps/services/LammpsProgressProjectorService';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { isObjectGatewayBinaryRelayEnabled } from '@modules/team-cluster/infrastructure/services/ObjectGatewayFeatureFlags';
@@ -226,10 +225,7 @@ export default class TeamClusterReverseChannelService {
         private readonly teamClusterBinaryRelayService: TeamClusterBinaryRelayService,
 
         @inject(ContainerDeploymentProgressService)
-        private readonly containerDeploymentProgressService: ContainerDeploymentProgressService,
-
-        @inject(LammpsProgressProjectorService)
-        private readonly lammpsProgressProjectorService: LammpsProgressProjectorService
+        private readonly containerDeploymentProgressService: ContainerDeploymentProgressService
     ) {
         this.startIdleSweep();
     }
@@ -636,7 +632,6 @@ export default class TeamClusterReverseChannelService {
         }
 
         if (payload.action !== 'container-create') {
-            await this.lammpsProgressProjectorService.handleRuntimeProgress(teamClusterId, payload);
             return;
         }
 

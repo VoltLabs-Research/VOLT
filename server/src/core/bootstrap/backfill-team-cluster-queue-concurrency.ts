@@ -5,6 +5,36 @@ import {
 import TeamClusterModel from '@modules/team-cluster/infrastructure/persistence/mongo/models/TeamClusterModel';
 import logger from '@shared/infrastructure/logger';
 
+const LEGACY_TEAM_CLUSTER_QUEUE_CONCURRENCY = {
+    analysis: 5,
+    rasterizer: 3,
+    glbPreprocessing: 5,
+    sshImport: 1
+};
+
+const LEGACY_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS = {
+    analysisProcessing: {
+        maxRunningPerTrajectory: 1,
+        maxRunningPerTeam: 0
+    },
+    artifactUpload: {
+        maxRunningPerTrajectory: 1,
+        maxRunningPerTeam: 0
+    },
+    trajectoryGlbConversion: {
+        maxRunningPerTrajectory: 1,
+        maxRunningPerTeam: 0
+    },
+    cloudUpload: {
+        maxRunningPerTrajectory: 1,
+        maxRunningPerTeam: 0
+    },
+    trajectoryCompression: {
+        maxRunningPerTrajectory: 1,
+        maxRunningPerTeam: 0
+    }
+};
+
 export const backfillTeamClusterQueueConcurrency = async (): Promise<void> => {
     const queueConcurrencyResult = await TeamClusterModel.updateMany({
         $or: [
@@ -12,7 +42,13 @@ export const backfillTeamClusterQueueConcurrency = async (): Promise<void> => {
             { 'queueConcurrency.analysis': { $exists: false } },
             { 'queueConcurrency.rasterizer': { $exists: false } },
             { 'queueConcurrency.glbPreprocessing': { $exists: false } },
-            { 'queueConcurrency.sshImport': { $exists: false } }
+            { 'queueConcurrency.sshImport': { $exists: false } },
+            {
+                'queueConcurrency.analysis': LEGACY_TEAM_CLUSTER_QUEUE_CONCURRENCY.analysis,
+                'queueConcurrency.rasterizer': LEGACY_TEAM_CLUSTER_QUEUE_CONCURRENCY.rasterizer,
+                'queueConcurrency.glbPreprocessing': LEGACY_TEAM_CLUSTER_QUEUE_CONCURRENCY.glbPreprocessing,
+                'queueConcurrency.sshImport': LEGACY_TEAM_CLUSTER_QUEUE_CONCURRENCY.sshImport
+            }
         ]
     }, {
         $set: {
@@ -27,7 +63,19 @@ export const backfillTeamClusterQueueConcurrency = async (): Promise<void> => {
             { 'queueScopeLimits.artifactUpload': { $exists: false } },
             { 'queueScopeLimits.trajectoryGlbConversion': { $exists: false } },
             { 'queueScopeLimits.cloudUpload': { $exists: false } },
-            { 'queueScopeLimits.trajectoryCompression': { $exists: false } }
+            { 'queueScopeLimits.trajectoryCompression': { $exists: false } },
+            {
+                'queueScopeLimits.analysisProcessing.maxRunningPerTrajectory': LEGACY_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.analysisProcessing.maxRunningPerTrajectory,
+                'queueScopeLimits.analysisProcessing.maxRunningPerTeam': LEGACY_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.analysisProcessing.maxRunningPerTeam,
+                'queueScopeLimits.artifactUpload.maxRunningPerTrajectory': LEGACY_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.artifactUpload.maxRunningPerTrajectory,
+                'queueScopeLimits.artifactUpload.maxRunningPerTeam': LEGACY_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.artifactUpload.maxRunningPerTeam,
+                'queueScopeLimits.trajectoryGlbConversion.maxRunningPerTrajectory': LEGACY_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.trajectoryGlbConversion.maxRunningPerTrajectory,
+                'queueScopeLimits.trajectoryGlbConversion.maxRunningPerTeam': LEGACY_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.trajectoryGlbConversion.maxRunningPerTeam,
+                'queueScopeLimits.cloudUpload.maxRunningPerTrajectory': LEGACY_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.cloudUpload.maxRunningPerTrajectory,
+                'queueScopeLimits.cloudUpload.maxRunningPerTeam': LEGACY_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.cloudUpload.maxRunningPerTeam,
+                'queueScopeLimits.trajectoryCompression.maxRunningPerTrajectory': LEGACY_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.trajectoryCompression.maxRunningPerTrajectory,
+                'queueScopeLimits.trajectoryCompression.maxRunningPerTeam': LEGACY_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.trajectoryCompression.maxRunningPerTeam
+            }
         ]
     }, {
         $set: {
