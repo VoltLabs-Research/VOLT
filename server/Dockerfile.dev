@@ -17,6 +17,12 @@ RUN apt-get update \
         libjpeg-dev \
         libgif-dev \
         librsvg2-dev \
+        latexmk \
+        texlive-latex-base \
+        texlive-latex-extra \
+        texlive-xetex \
+        texlive-luatex \
+        texlive-fonts-recommended \
     && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
