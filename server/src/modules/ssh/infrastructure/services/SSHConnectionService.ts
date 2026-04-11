@@ -8,7 +8,8 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { injectable, inject } from 'tsyringe';
 import logger from '@shared/infrastructure/logger';
-import { ErrorCodes, type ErrorCode } from '@core/constants/error-codes';
+import { ErrorCodes } from '@core/constants/error-codes';
+import type { ErrorCode } from '@core/constants/error-codes';
 import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
 import { ISSHCredentialsCipher } from '@modules/ssh/domain/port/ISSHCredentialsCipher';
 

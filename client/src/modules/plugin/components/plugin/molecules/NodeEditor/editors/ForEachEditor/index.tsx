@@ -3,7 +3,8 @@ import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/molecules/NodeEditor/hooks/use-node-editor-form';
 import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node-reference-autocomplete';
 import type { EditorProps } from '../types';
-import { FOR_EACH_EDITOR_DEFAULT_VALUES, forEachEditorSchema, type ForEachEditorFormValues } from './schema';
+import { FOR_EACH_EDITOR_DEFAULT_VALUES, forEachEditorSchema } from './schema';
+import type { ForEachEditorFormValues } from './schema';
 
 const useForEachEditorForm = createNodeEditorForm<ForEachEditorFormValues, 'forEach'>({
     schema: forEachEditorSchema,

@@ -8,7 +8,8 @@ import CodeEditor from '@/shared/presentation/components/CodeEditor';
 import type { IExportData } from '@/modules/plugin/api/entities/plugin/workflow';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import type { EditorProps } from '../types';
-import { EXPORT_EDITOR_DEFAULT_VALUES, exportEditorSchema, type ExportEditorFormValues } from './schema';
+import { EXPORT_EDITOR_DEFAULT_VALUES, exportEditorSchema } from './schema';
+import type { ExportEditorFormValues } from './schema';
 
 const EXPORTER_SELECT_OPTIONS = EXPORTER_OPTIONS.map(opt => ({
     value: opt.value,

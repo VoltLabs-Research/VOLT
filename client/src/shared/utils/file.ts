@@ -20,8 +20,13 @@ export const base64ToBlobUrl = (base64: string, fallbackMime?: string): string =
     return URL.createObjectURL(blob);
 };
 
+interface BuildFileFormDataEntry {
+    name: string;
+    file: File;
+};
+
 export const buildFileFormData = (
-    files: { name: string; file: File }[],
+    files: BuildFileFormDataEntry[],
     fields?: Record<string, string>
 ): FormData => {
     const formData = new FormData();

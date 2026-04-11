@@ -1,4 +1,5 @@
-import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureStatus, type TeamClusterServiceExposure } from '@modules/team-cluster/utilities/teamClusterSocket';
+import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureStatus } from '@modules/team-cluster/utilities/teamClusterSocket';
+import type { TeamClusterServiceExposure } from '@modules/team-cluster/utilities/teamClusterSocket';
 import { injectable } from 'tsyringe';
 import { EventEmitter } from 'node:events';
 

@@ -2,7 +2,8 @@ import crypto from 'node:crypto';
 
 import logger from '@shared/infrastructure/logger';
 import type IORedis from 'ioredis';
-import { DelayedError, type Job } from 'bullmq';
+import { DelayedError } from 'bullmq';
+import type { Job } from 'bullmq';
 
 const DEFAULT_LEASE_TTL_MS = 5 * 60 * 1000;
 const DEFAULT_HEARTBEAT_MS = 60 * 1000;

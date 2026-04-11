@@ -14,7 +14,8 @@ import { simulationCellSubscriberManifest } from '@modules/simulation-cell/infra
 import { sshSubscriberManifest } from '@modules/ssh/infrastructure/events/subscribers';
 import { teamSubscriberManifest } from '@modules/team/infrastructure/events/subscribers';
 import { trajectorySubscriberManifest } from '@modules/trajectory/infrastructure/events/subscribers';
-import { registerSubscribers, type SubscriberManifest } from '@shared/infrastructure/events/registerSubscribers';
+import { registerSubscribers } from '@shared/infrastructure/events/registerSubscribers';
+import type { SubscriberManifest } from '@shared/infrastructure/events/registerSubscribers';
 import logger from '@shared/infrastructure/logger';
 
 const SUBSCRIBER_MANIFESTS: SubscriberManifest[] = [

@@ -9,10 +9,12 @@ import {
 } from '@shared/infrastructure/utilities/relay-network';
 import { readNumberEnv } from '@shared/infrastructure/utilities/env';
 import { randomUUID } from 'node:crypto';
-import { createWebSocketStream, type WebSocket } from 'ws';
+import { createWebSocketStream } from 'ws';
+import type { WebSocket } from 'ws';
 import { inject, injectable } from 'tsyringe';
 import { BinaryRelayDuplex } from './BinaryRelayDuplex';
-import { BinaryRelaySessionRegistry, type BinaryRelaySessionRecord } from './BinaryRelaySessionRegistry';
+import { BinaryRelaySessionRegistry } from './BinaryRelaySessionRegistry';
+import type { BinaryRelaySessionRecord } from './BinaryRelaySessionRegistry';
 import { BinaryRelayTokenService } from './BinaryRelayTokenService';
 import type { Duplex } from 'node:stream';
 

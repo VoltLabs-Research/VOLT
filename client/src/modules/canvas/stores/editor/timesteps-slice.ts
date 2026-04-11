@@ -1,5 +1,7 @@
 import { preloadFractalSceneAsset } from '@/modules/fractal/api/service/preload-scene-asset';
+import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import { TRAJECTORY_QUERY_KEYS } from '@/modules/trajectory/hooks/trajectory/queries';
+import queryClient from '@/shared/infrastructure/query/query-client';
 
 import type { EditorStore } from './types';
 import type { TimestepData, TimestepState, TimestepStore, SceneObjectType } from '@/modules/fractal/stores/contracts/editor/scene-types';
@@ -74,10 +76,6 @@ export const createTimestepSlice: StateCreator<EditorStore, [], [], TimestepStor
         const { timestepData } = get();
         if (!timestepData.timesteps.length) return {};
 
-        const { useTeamStore } = await import('@/modules/team/stores/team/use-team-store');
-        const { useEditorStore } = await import('@/modules/canvas/stores/editor');
-        const { default: queryClient } = await import('@/shared/infrastructure/query/query-client');
-
         const teamId = useTeamStore.getState().selectedTeamId;
 
         const trajectoryQueries = queryClient.getQueriesData<{ _id?: string }>({
@@ -87,8 +85,7 @@ export const createTimestepSlice: StateCreator<EditorStore, [], [], TimestepStor
             ? trajectoryQueries[trajectoryQueries.length - 1]?.[1]?._id
             : undefined;
 
-        const editorState = useEditorStore.getState();
-        const activeScene = editorState.activeScene;
+        const activeScene = get().activeScene;
         const analysisId = getAnalysisIdFromScene(activeScene);
 
         if (!teamId || !trajectoryId) return {};

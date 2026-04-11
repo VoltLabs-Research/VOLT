@@ -2,7 +2,8 @@ import Workflow, { WorkflowProps } from '@modules/plugin/domain/entities/plugin/
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import { WorkflowEdge } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowEdge';
 import { WorkflowNode, WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
-import { ArgumentType, type ArgumentDefinition } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
+import { ArgumentType } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
+import type { ArgumentDefinition } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
 import { EntrypointNodeType } from '@modules/plugin/domain/entities/plugin/workflow/nodes/EntrypointNode';
 import { PluginNodeExecutionMode } from '@modules/plugin/domain/entities/plugin/workflow/nodes/PluginNode';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';

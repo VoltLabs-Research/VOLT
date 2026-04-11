@@ -16,7 +16,7 @@ interface MemberListItemProps {
     className?: string;
 };
 
-const MemberListItem = ({ user, role, action, onClick, className }: MemberListItemProps) => {
+export const MemberListItem = ({ user, role, action, onClick, className }: MemberListItemProps) => {
     const fullName = `${user.firstName} ${user.lastName}`;
     const content = (
         <>
@@ -57,4 +57,3 @@ const MemberListItem = ({ user, role, action, onClick, className }: MemberListIt
 };
 
 export default MemberListItem;
-export { MemberListItem };

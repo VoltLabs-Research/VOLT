@@ -1,11 +1,16 @@
 import Container from '@/shared/presentation/components/Container';
-
-import type { TimelineTickTone } from '../../../hooks/use-timeline-job-activity';
+import type { TimelineTickTone } from '@/modules/canvas/hooks/use-timeline-job-activity';
 import type { RefObject } from 'react';
+
+interface TimelineRulerTick {
+    frame: number;
+    major: boolean;
+    tone?: TimelineTickTone;
+};
 
 interface TimelineRulerProps {
     rulerRef: RefObject<HTMLDivElement | null>;
-    ticks: { frame: number; major: boolean; tone?: TimelineTickTone }[];
+    ticks: TimelineRulerTick[];
     playheadLeft: number;
     startFrame: number;
     endFrame: number;

@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef } from 'react';
 import { sileo } from 'sileo';
 import { CONTEXTUAL_TIP_RELEASE_BUFFER_MS } from '@/shared/tips/tip-defaults';
 import { buildContextualTipOptions } from '@/shared/tips/tip-defaults';
-import { getContextualTipDefinition, type ContextualTipId } from '@/shared/tips/tip-registry';
+import { getContextualTipDefinition } from '@/shared/tips/tip-registry';
+import type { ContextualTipId } from '@/shared/tips/tip-registry';
 import { beginContextualTipDisplay, finalizeContextualTipDisplay, releaseContextualTipSlot } from '@/shared/tips/tip-storage';
 
 interface UseTipOptions {

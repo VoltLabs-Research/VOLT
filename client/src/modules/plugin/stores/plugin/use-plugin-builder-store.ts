@@ -139,7 +139,7 @@ const normalizePluginNodeDataForSerialization = (node: Node<INodeData>): INodeDa
     };
 };
 
-const usePluginBuilderStore = create<PluginBuilderStore>()(
+export const usePluginBuilderStore = create<PluginBuilderStore>()(
     temporal<PluginBuilderStore, [], [], BuilderHistoryState>(
         (set, get) => {
             const _validate = () => {
@@ -420,5 +420,4 @@ const usePluginBuilderStore = create<PluginBuilderStore>()(
     )
 );
 
-export { usePluginBuilderStore };
 export default usePluginBuilderStore;
