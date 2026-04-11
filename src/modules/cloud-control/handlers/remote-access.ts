@@ -5,7 +5,6 @@ import { readRemoteExplorerRequest } from './payloadValidation';
 import { buildMinioDownloadResponse, buildMinioEntries, buildMinioNode } from './remote-access/minioRemoteAccess';
 import { buildMongoDownloadResponse, buildMongoEntries, buildMongoNode } from './remote-access/mongoRemoteAccess';
 import { buildRedisDownloadResponse, buildRedisEntries, buildRedisNode } from './remote-access/redisRemoteAccess';
-import { joinExplorerPathSegments } from './remote-access/shared';
 import type { ReverseChannelCommandHandler, ReverseChannelCommandResult } from '../services';
 
 interface RemoteAccessHandlersDependencies {
@@ -74,5 +73,3 @@ export const createRemoteAccessHandlers = (deps: RemoteAccessHandlersDependencie
         }
     }
 ];
-
-export { joinExplorerPathSegments };

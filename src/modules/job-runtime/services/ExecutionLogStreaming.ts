@@ -103,7 +103,7 @@ class BufferedExecutionLogSink implements ProcessExecutionLogSink {
 
         this.flushTimer = setTimeout(() => {
             this.flushTimer = null;
-            void this.enqueueFlush();
+            this.enqueueFlush();
         }, this.flushIntervalMs);
 
         if (this.flushTimer.unref) {
@@ -113,7 +113,7 @@ class BufferedExecutionLogSink implements ProcessExecutionLogSink {
 
     private scheduleImmediateFlush(): void {
         this.clearFlushTimer();
-        void this.enqueueFlush();
+        this.enqueueFlush();
     }
 
     private clearFlushTimer(): void {

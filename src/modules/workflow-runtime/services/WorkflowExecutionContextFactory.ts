@@ -1,5 +1,11 @@
 import { isRecord } from '@/shared/utils';
-import type { DaemonAnalysisDocument, NestedPluginDefinition, WorkflowDefinition } from '@/shared/contracts';
+import type {
+    DaemonAnalysisDocument,
+    NestedPluginDefinition,
+    TrajectoryDumpDescriptor,
+    TrajectoryFrame,
+    WorkflowDefinition
+} from '@/shared/contracts';
 import type { WorkflowExecutionContext } from '../contracts';
 import { WorkflowGraph } from '../contracts';
 
@@ -12,8 +18,8 @@ export interface WorkflowExecutionContextFactoryParams {
     userConfig: Record<string, unknown>;
     runtimeArguments: Record<string, unknown>;
     trajectoryId: string;
-    trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
-    trajectoryDumpOverrides?: Array<{ timestep: number; natoms: number; simulationCell: string; path: string; originalPath?: string; }>;
+    trajectoryFrames: TrajectoryFrame[];
+    trajectoryDumpOverrides?: TrajectoryDumpDescriptor[];
     analysis: DaemonAnalysisDocument;
     analysisId: string;
     generatedFiles?: string[];

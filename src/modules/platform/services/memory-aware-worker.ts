@@ -1,6 +1,7 @@
 import { logger } from '@/core/logger';
 import { isMemoryPressured } from '@/core/memory';
-import { DelayedError, type Job, type Worker } from 'bullmq';
+import { DelayedError } from 'bullmq';
+import type { Job, Worker } from 'bullmq';
 
 import type { QueueService } from './QueueService';
 

@@ -1,11 +1,12 @@
-import { ObjectBucketName, type AnalysisExposureDefinition, type AnalysisJobExecutionData } from '@/shared/contracts';
 import { logger } from '@/core/logger';
 import { NativeModuleLoader } from '@/modules/trajectory-native/services';
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 import type { BubbleDataPoint, ChartConfiguration, ChartDataset, ChartTypeRegistry, Point } from 'chart.js';
 import type { ReportArtifactInput } from '@/modules/cloud-control/services';
+import { ObjectBucketName } from '@/shared/contracts';
 import { isRecord, toRecord } from '@/shared/utils';
 import type { ArtifactUploadBatch } from './ArtifactUploadQueueService';
+import type { AnalysisExposureDefinition, AnalysisJobExecutionData } from '@/shared/contracts';
 import path from 'node:path';
 
 type ExporterName = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter' | 'ChartExporter';
@@ -17,6 +18,16 @@ interface PrimitiveAtom {
 
 interface AtomsGroupedByType {
     [typeName: string]: PrimitiveAtom[];
+};
+
+interface ExporterEntry {
+    exportData: Record<string, unknown>;
+    arrayIndex: number | undefined;
+};
+
+interface IndexedExporterEntry {
+    exportData: Record<string, unknown>;
+    arrayIndex: number;
 };
 
 interface MeshFacet {
@@ -1222,12 +1233,12 @@ export const createExportNodeProcessorService = (
     const resolveExporterEntries = (
         decodedPayload: Record<string, unknown>,
         exporter: ExporterName
-    ): { exportData: Record<string, unknown>; arrayIndex: number | undefined }[] => {
+    ): ExporterEntry[] => {
         const rawExport = decodedPayload['export'];
 
         if (Array.isArray(rawExport)) {
             // Array format: each element is an exporter object like { AtomisticExporter: { ... } }
-            const entries: { exportData: Record<string, unknown>; arrayIndex: number }[] = [];
+            const entries: IndexedExporterEntry[] = [];
             for (let i = 0; i < rawExport.length; i++) {
                 const element = rawExport[i];
                 if (!isRecord(element)) {

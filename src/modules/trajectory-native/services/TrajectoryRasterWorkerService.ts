@@ -1,12 +1,13 @@
 import { logger } from '@/core/logger';
 import { TRAJECTORY_RASTER_QUEUE_NAME } from '@/modules/platform/services';
-import { createMemoryAwareWorkerShell, delayJobWhenMemoryPressured, type MemoryAwareWorkerShell } from '@/modules/platform/services';
+import { createMemoryAwareWorkerShell, delayJobWhenMemoryPressured } from '@/modules/platform/services';
 import { ObjectBucketName } from '@/shared/contracts';
 import type { DaemonJobReporterService, RasterJobStatus } from '@/modules/cloud-control/services/DaemonJobReporterService';
-import type { QueueService } from '@/modules/platform/services';
+import type { MemoryAwareWorkerShell, QueueService } from '@/modules/platform/services';
 import type { RasterQueueJobPayload } from '@/shared/contracts';
 import { isRecord } from '@/shared/utilities/type-guards';
-import { DelayedError, type Job } from 'bullmq';
+import { DelayedError } from 'bullmq';
+import type { Job } from 'bullmq';
 import type { RasterizerService } from './RasterizerService';
 import type { TrajectoryAutoPreviewClaimStore } from './TrajectoryAutoPreviewClaimStore';
 
@@ -99,7 +100,7 @@ export class TrajectoryRasterWorkerService {
         let shouldReleaseAutoPreviewClaim = false;
 
         try {
-            void this.reportJobStatusBestEffort(job, 'running');
+            this.reportJobStatusBestEffort(job, 'running');
 
             await bullJob.updateProgress(10);
             await this.rasterizerService.rasterizePreview({
@@ -111,7 +112,7 @@ export class TrajectoryRasterWorkerService {
             });
             await bullJob.updateProgress(100);
 
-            void this.reportJobStatusBestEffort(job, 'completed');
+            this.reportJobStatusBestEffort(job, 'completed');
             shouldReleaseAutoPreviewClaim = true;
         } catch (error: unknown) {
             if (error instanceof DelayedError) {
@@ -119,7 +120,7 @@ export class TrajectoryRasterWorkerService {
             }
 
             const message = error instanceof Error ? error.message : String(error);
-            void this.reportJobStatusBestEffort(job, 'failed', message);
+            this.reportJobStatusBestEffort(job, 'failed', message);
             shouldReleaseAutoPreviewClaim = true;
 
             throw error instanceof Error ? error : new Error(message);

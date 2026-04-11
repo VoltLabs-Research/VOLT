@@ -1,9 +1,10 @@
 import { createWorkflowNodeRegistry } from './factories';
-import { DebugSessionManager, WorkflowEngine, type WorkflowNodeRegistry } from './services';
+import { DebugSessionManager, WorkflowEngine } from './services';
 import type { BinaryExecutorService } from '@/modules/job-runtime/services/BinaryExecutorService';
 import type { PluginBinaryCacheService } from '@/modules/job-runtime/services/PluginBinaryCacheService';
 import type { NativeModuleLoader } from '@/modules/trajectory-native/services';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
+import type { WorkflowNodeRegistry } from './services';
 
 export interface WorkflowRuntimeModule {
     workflowNodeRegistry: WorkflowNodeRegistry;

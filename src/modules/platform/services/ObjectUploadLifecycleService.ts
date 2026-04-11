@@ -1,6 +1,7 @@
 import { logger } from '@/core/logger';
-import { ObjectBucketName, OrchestrationAction, type RuntimeEventBroker } from '@/shared/contracts';
+import { ObjectBucketName, OrchestrationAction } from '@/shared/contracts';
 import { ProgressStageType } from '@voltstack/daemon-cluster-client';
+import type { RuntimeEventBroker } from '@/shared/contracts';
 import type { MinioService } from './MinioService';
 
 interface ObjectUploadProgressPayload {

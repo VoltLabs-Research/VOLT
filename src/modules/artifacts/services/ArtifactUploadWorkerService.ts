@@ -7,13 +7,15 @@ import type { DaemonJobReporterService } from '@/modules/cloud-control/services'
 import {
     ARTIFACT_UPLOAD_QUEUE_NAME,
     QueueService,
-    type QueueScopeLimitsRegistry,
     createMemoryAwareWorkerShell,
     delayJobOnQueueScopeContention,
-    tryAcquireQueueScopeLease,
-    type MemoryAwareWorkerShell,
-    type QueueScopeLease,
-    type RedisConnectionService
+    tryAcquireQueueScopeLease
+} from '@/modules/platform/services';
+import type {
+    MemoryAwareWorkerShell,
+    QueueScopeLease,
+    QueueScopeLimitsRegistry,
+    RedisConnectionService
 } from '@/modules/platform/services';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 import { readPositiveIntegerEnv } from '@/shared/utilities/runtime-capacity';
@@ -22,7 +24,8 @@ import {
     toCompressedGlbObjectKey,
     toCompressedMsgpackObjectKey
 } from '@/shared/utilities/storage-codec';
-import { DelayedError, type Job } from 'bullmq';
+import { DelayedError } from 'bullmq';
+import type { Job } from 'bullmq';
 
 import type { ArtifactUploadBatchJobPayload } from './ArtifactUploadQueueService';
 

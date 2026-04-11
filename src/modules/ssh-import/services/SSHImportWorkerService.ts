@@ -7,7 +7,7 @@ import type { DaemonJobReporterService, SshImportJobStatus } from '@/modules/clo
 import type { VoltCloudConnection } from '@/modules/cloud-control/services';
 import type { GlbExporterService } from '@/modules/trajectory-native/services';
 import { FileExtractorService } from './FileExtractorService';
-import { SSHConnectionService, type SSHConnectionConfig } from './SSHConnectionService';
+import { SSHConnectionService } from './SSHConnectionService';
 import { TrajectoryParserFactory } from './TrajectoryParserFactory';
 import { isMemoryPressured } from '@/core/memory';
 import { logger } from '@/core/logger';
@@ -19,8 +19,10 @@ import { pipeline } from 'node:stream/promises';
 import { compressFileWithZstd, toCompressedDumpObjectKey } from '@/shared/utilities/storage-codec';
 import path from 'node:path';
 import zlib from 'node:zlib';
-import { DelayedError, type Job, type Worker } from 'bullmq';
+import { DelayedError } from 'bullmq';
 import type { DaemonConfig } from '@/core/config';
+import type { SSHConnectionConfig } from './SSHConnectionService';
+import type { Job, Worker } from 'bullmq';
 
 interface SSHImportJobPayload extends Record<string, unknown> {
     jobId: string;

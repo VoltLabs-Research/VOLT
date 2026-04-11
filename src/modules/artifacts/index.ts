@@ -1,17 +1,16 @@
-import { createPluginListingRepository, type PluginListingRepository } from './repositories';
+import { createPluginListingRepository } from './repositories';
 import {
     ArtifactUploadWorkerService,
     createArtifactUploadQueueService,
     createExportNodeProcessorService,
-    type ArtifactUploadQueueService,
-    type ExportNodeProcessorService,
-    type ResultProcessorService,
     createResultProcessorService
 } from './services';
 import type { NativeModuleLoader } from '@/modules/trajectory-native/services';
 import type { DaemonArtifactReporterService, DaemonJobReporterService } from '@/modules/cloud-control/services';
 import type { QueueScopeLimitsRegistry, QueueService, RedisConnectionService } from '@/modules/platform/services';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
+import type { PluginListingRepository } from './repositories';
+import type { ArtifactUploadQueueService, ExportNodeProcessorService, ResultProcessorService } from './services';
 
 export interface ArtifactsModule {
     pluginListingRepository: PluginListingRepository;

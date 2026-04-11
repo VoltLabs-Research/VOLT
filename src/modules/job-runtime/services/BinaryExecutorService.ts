@@ -139,7 +139,7 @@ export const createBinaryExecutorService = (): BinaryExecutorService => ({
                     child.kill('SIGTERM');
 
                     forceKillTimeout = setTimeout(() => {
-                    child.kill('SIGKILL');
+                        child.kill('SIGKILL');
                     }, PROCESS_KILL_GRACE_PERIOD_MS);
                     if (forceKillTimeout.unref) {
                         forceKillTimeout.unref();
@@ -170,7 +170,7 @@ export const createBinaryExecutorService = (): BinaryExecutorService => ({
             });
 
             child.on('error', (error) => {
-                void (async () => {
+                (async () => {
                     clearInterval(heartbeat);
                     clearTimeout(executionTimeout);
                     if (forceKillTimeout) {
@@ -192,7 +192,7 @@ export const createBinaryExecutorService = (): BinaryExecutorService => ({
             });
 
             child.on('close', (code) => {
-                void (async () => {
+                (async () => {
                     clearInterval(heartbeat);
                     clearTimeout(executionTimeout);
                     if (forceKillTimeout) {

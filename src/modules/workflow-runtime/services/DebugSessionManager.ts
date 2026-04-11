@@ -1,8 +1,7 @@
 import { logger } from '@/core/logger';
-import { createExportNodeProcessorService, type ExportNodeProcessorService } from '@/modules/artifacts/services/ExportNodeProcessorService';
+import { createExportNodeProcessorService } from '@/modules/artifacts/services/ExportNodeProcessorService';
 import {
-    createDebugExecutionLogSink,
-    type ExecutionLogSegmentMetadata
+    createDebugExecutionLogSink
 } from '@/modules/job-runtime/services/ExecutionLogStreaming';
 import type {
     BinaryExecutorService,
@@ -17,24 +16,30 @@ import type {
     DaemonAnalysisDocument,
     NestedPluginDefinition,
     PluginReferenceExecutionRequest,
+    TrajectoryFrame,
     WorkflowDefinition
 } from '@/shared/contracts';
 import { createWorkflowExecutionContext, snapshotWorkflowOutputs } from './WorkflowExecutionContextFactory';
-import { DebugEntrypointExecutor, type PreparedDebugExecutionEnvironment } from './DebugEntrypointExecutor';
+import { DebugEntrypointExecutor } from './DebugEntrypointExecutor';
 import { createDebugArtifactBatch } from './DebugArtifactBatch';
-import { inspectDebugExposureResult, type DebugExposureInspectionResult } from './DebugExposureProcessor';
+import { inspectDebugExposureResult } from './DebugExposureProcessor';
 import {
     DebugInlinePluginRuntime,
-    DebugTraceError,
     type DebugDumpExecutionTarget,
     type DebugTraceNode
 } from './DebugInlinePluginRuntime';
+import { InlineWorkflowTraceError } from './InlineWorkflowRuntime';
 import { runOrderedWorkflowNodes } from './OrderedNodeRunner';
-import { WorkflowGraph, WorkflowNodeType, type WorkflowExecutionContext, type WorkflowNode } from '../contracts';
+import { WorkflowGraph, WorkflowNodeType } from '../contracts';
 import type { WorkflowNodeRegistry } from './NodeRegistry';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { DaemonJobReporterService } from '@/modules/cloud-control/services';
+import type { ExportNodeProcessorService } from '@/modules/artifacts/services/ExportNodeProcessorService';
+import type { ExecutionLogSegmentMetadata } from '@/modules/job-runtime/services/ExecutionLogStreaming';
+import type { PreparedDebugExecutionEnvironment } from './DebugEntrypointExecutor';
+import type { DebugExposureInspectionResult } from './DebugExposureProcessor';
+import type { WorkflowExecutionContext, WorkflowNode } from '../contracts';
 
 const SESSION_IDLE_TTL_MS = 5 * 60 * 1000;
 const SESSION_SWEEP_INTERVAL_MS = 30 * 1000;
@@ -44,7 +49,7 @@ export interface DebugSessionRequest {
     nestedPlugins?: NestedPluginDefinition[];
     pluginReferenceExecutions?: PluginReferenceExecutionRequest[];
     trajectoryId: string;
-    trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string }>;
+    trajectoryFrames: TrajectoryFrame[];
     pluginId: string;
     teamId: string;
     userConfig: Record<string, unknown>;
@@ -67,9 +72,14 @@ export interface DebugNodeResult {
 
 export interface DebugSessionInfo {
     sessionId: string;
-    executionOrder: Array<{ nodeId: string; type: string }>;
+    executionOrder: DebugExecutionOrderEntry[];
     forEachNodeId: string | null;
     totalIterations: number;
+};
+
+interface DebugExecutionOrderEntry {
+    nodeId: string;
+    type: string;
 };
 
 interface DebugSession {
@@ -190,7 +200,7 @@ interface NodeExecutionOutcome {
 }
 
 const readNestedTraceFromError = (error: unknown): DebugTraceNode[] | undefined => {
-    return error instanceof DebugTraceError
+    return error instanceof InlineWorkflowTraceError
         ? error.trace
         : undefined;
 };
@@ -462,7 +472,7 @@ export class DebugSessionManager {
         }
 
         this.sessions.delete(sessionId);
-        void this.cleanupSessionArtifacts(session).catch((error: unknown) => {
+        this.cleanupSessionArtifacts(session).catch((error: unknown) => {
             logger.warn(
                 {
                     err: error,

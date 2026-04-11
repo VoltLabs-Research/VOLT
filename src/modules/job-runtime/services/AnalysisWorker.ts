@@ -4,23 +4,22 @@ import { forceGC, isMemoryPressured } from '@/core/memory';
 import { ANALYSIS_QUEUE_NAME, QueueService } from '@/modules/platform/services';
 import {
     delayJobOnQueueScopeContention,
-    tryAcquireQueueScopeLease,
-    type QueueScopeLease,
-    type QueueScopeLimitsRegistry
+    tryAcquireQueueScopeLease
 } from '@/modules/platform/services';
-import { WorkflowGraph, WorkflowNodeType, type WorkflowNode } from '@/modules/workflow-runtime/contracts';
+import { WorkflowGraph, WorkflowNodeType } from '@/modules/workflow-runtime/contracts';
 import { createWorkflowNodeRegistry } from '@/modules/workflow-runtime/factories';
 import { createWorkflowExecutionContext } from '@/modules/workflow-runtime/services/WorkflowExecutionContextFactory';
 import { InlineWorkflowRuntime } from '@/modules/workflow-runtime/services/InlineWorkflowRuntime';
 import {
     createNestedExecutionResult,
     parseInlineWorkflowArguments,
-    readNestedExposureItems,
-    type InlineExposureArtifact,
-    type InlineWorkflowDumpTarget
+    readNestedExposureItems
 } from '@/modules/workflow-runtime/services/InlineWorkflowShared';
 import { resolveWorkflowTemplate } from '@/modules/workflow-runtime/services/WorkflowOutputResolution';
 import { inflateAnalysisExecutionData } from '@/shared/utilities/analysis-execution-data';
+import type { QueueScopeLease, QueueScopeLimitsRegistry } from '@/modules/platform/services';
+import type { WorkflowNode } from '@/modules/workflow-runtime/contracts';
+import type { InlineExposureArtifact, InlineWorkflowDumpTarget } from '@/modules/workflow-runtime/services/InlineWorkflowShared';
 import {
     getRecommendedBinaryThreads,
     getSafeAnalysisWorkerConcurrency
@@ -492,7 +491,7 @@ export class AnalysisWorker {
             });
 
             // Report running status to the Volt server for real-time client visibility
-            void this.daemonJobReporterService.reportAnalysisJobStatus({
+            this.daemonJobReporterService.reportAnalysisJobStatus({
                 jobId: job.jobId,
                 name: job.name,
                 analysisId: executionData.analysisId,

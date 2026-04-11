@@ -1,19 +1,22 @@
 import { ObjectBucketName } from '@/shared/contracts';
 import { DAEMON_PATHS } from '@/core/paths';
 import {
-    NativeModuleLoader,
-    type NativeColorModelRequest,
-    type NativeConditionFilterPreviewRequest,
-    type NativeFilterPreviewRequest,
-    type NativeFilterPreviewResponse,
-    type NativeParticleFilterModelRequest,
-    type NativeSimulationCell,
-    type NativeSurfaceAtomsPresetConfig
+    NativeModuleLoader
 } from './NativeModuleLoader';
 import type { TrajectoryParserService } from './TrajectoryParserService';
 import type { TrajectoryPluginParserService } from './TrajectoryPluginParserService';
 import { uploadBufferToObjectStore } from '@/shared/storage/uploadBufferToObjectStore';
-import { createScopedClusterObjectStore, type ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
+import { createScopedClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
+import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
+import type {
+    NativeColorModelRequest,
+    NativeConditionFilterPreviewRequest,
+    NativeFilterPreviewRequest,
+    NativeFilterPreviewResponse,
+    NativeParticleFilterModelRequest,
+    NativeSimulationCell,
+    NativeSurfaceAtomsPresetConfig
+} from './NativeModuleLoader';
 
 enum GradientType {
     Viridis = 0,

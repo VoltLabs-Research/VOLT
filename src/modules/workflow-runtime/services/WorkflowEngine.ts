@@ -3,7 +3,7 @@ import { isRecord } from '@/shared/utils';
 import { runOrderedWorkflowNodes } from './OrderedNodeRunner';
 import { createWorkflowExecutionContext, snapshotWorkflowOutputs } from './WorkflowExecutionContextFactory';
 import { WorkflowNodeRegistry } from './NodeRegistry';
-import { WorkflowGraph, WorkflowNodeType, type WorkflowExecutionContext } from '../contracts';
+import { WorkflowGraph, WorkflowNodeType } from '../contracts';
 import type {
     DaemonAnalysisDocument,
     NestedPluginDefinition,
@@ -11,6 +11,7 @@ import type {
     TrajectoryFrame,
     WorkflowDefinition
 } from '@/shared/contracts';
+import type { WorkflowExecutionContext } from '../contracts';
 
 export interface WorkflowPlanResult {
     items: Array<Record<string, unknown> | TrajectoryDumpDescriptor>;

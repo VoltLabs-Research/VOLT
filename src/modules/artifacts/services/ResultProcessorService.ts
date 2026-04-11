@@ -1,12 +1,13 @@
-import { AnalysisExposureDefinition, type AnalysisJobExecutionData } from '@/shared/contracts';
 import { logger } from '@/core/logger';
 import { forceGC } from '@/core/memory';
+import { AnalysisExposureDefinition } from '@/shared/contracts';
 import { isRecord } from '@/shared/utils';
 import type { PluginListingRepository } from '../repositories/PluginListingRepository';
 import type { ExportNodeProcessorService } from './ExportNodeProcessorService';
 import type { ArtifactUploadBatch } from './ArtifactUploadQueueService';
 import { getRecommendedResultProcessingConcurrency } from '@/shared/utilities/analysis-resource-policy';
 import { decodeMultiStream, mergeSelectiveChunk } from '@/shared/utilities/selective-msgpack';
+import type { AnalysisJobExecutionData } from '@/shared/contracts';
 import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import type { Readable } from 'node:stream';

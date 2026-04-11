@@ -1,7 +1,8 @@
 import crypto from 'node:crypto';
 
 import { logger } from '@/core/logger';
-import { DelayedError, type Job } from 'bullmq';
+import { DelayedError } from 'bullmq';
+import type { Job } from 'bullmq';
 
 import type { RedisConnectionService } from './RedisConnectionService';
 
@@ -15,11 +16,11 @@ export interface QueueScopeConstraint {
     scope: QueueScopeKind;
     scopeId: string;
     limit: number;
-}
+};
 
 export interface QueueScopeLease {
     release(): Promise<void>;
-}
+};
 
 interface AcquireQueueScopeLeaseOptions {
     ttlMs?: number;
@@ -100,7 +101,7 @@ export const tryAcquireQueueScopeLease = async (
 
         for (const [index, scopeKey] of acquiredKeys.entries()) {
             const constraint = applicableConstraints[index]!;
-            void redisConnectionService.renewExpiringSlot(scopeKey, token, ttlMs)
+            redisConnectionService.renewExpiringSlot(scopeKey, token, ttlMs)
                 .then((renewed) => {
                     if (!renewed) {
                         logger.warn(

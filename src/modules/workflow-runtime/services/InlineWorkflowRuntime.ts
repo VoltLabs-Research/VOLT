@@ -13,16 +13,18 @@ import {
     type WorkflowPluginNodeData,
     type WorkflowPluginReferenceSelection
 } from './InlineWorkflowShared';
-import { WorkflowGraph, WorkflowNodeType, type WorkflowNode } from '../contracts';
+import { WorkflowGraph, WorkflowNodeType } from '../contracts';
 import {
     EntrypointType,
     type DaemonAnalysisDocument,
     type NestedPluginDefinition,
     type PluginReferenceExecutionRequest,
+    type TrajectoryFrame,
     type WorkflowDefinition,
     type WorkflowNodeDefinition
 } from '@/shared/contracts';
 import { isRecord } from '@/shared/utils';
+import type { WorkflowNode } from '../contracts';
 import type {
     BinaryExecutorService,
     ProcessExecutionLogSink
@@ -58,7 +60,7 @@ interface InlineExecutionBaseInput {
     dumpTarget: InlineWorkflowDumpTarget;
     outputDir: string;
     trajectoryId: string;
-    trajectoryFrames?: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
+    trajectoryFrames?: AggregatedTrajectoryFrame[];
     analysisId: string;
     analysis?: DaemonAnalysisDocument;
     teamId: string;
@@ -68,6 +70,15 @@ interface InlineExecutionBaseInput {
 }
 
 type InlinePluginNodeLike = Pick<WorkflowNodeDefinition, 'id' | 'type' | 'data'>;
+
+export interface AggregatedTrajectoryFrame extends TrajectoryFrame {
+    originalPath?: string;
+};
+
+interface PluginExecutionOutput {
+    pluginId: string;
+    output: Record<string, unknown>;
+};
 
 export interface ExecuteInlinePluginNodeInput extends InlineExecutionBaseInput {
     node: InlinePluginNodeLike;
@@ -249,7 +260,7 @@ const matchesIfBranchHandle = (
 };
 
 const buildAggregatedPluginOutput = (
-    executions: Array<{ pluginId: string; output: Record<string, unknown>; }>
+    executions: PluginExecutionOutput[]
 ): Record<string, unknown> => {
     const allExposureItems = executions.flatMap((execution) => {
         const executionResult = isRecord(execution.output.execution_result)
@@ -304,7 +315,7 @@ export class InlineWorkflowRuntime {
         const executionPath = Array.isArray(input.executionPath) && input.executionPath.length > 0
             ? [...input.executionPath]
             : [input.node.id];
-        const aggregatedExecutions: Array<{ pluginId: string; output: Record<string, unknown>; }> = [];
+        const aggregatedExecutions: PluginExecutionOutput[] = [];
         const trace: InlineWorkflowTraceNode[] = [];
 
         for (const executionTarget of executions) {

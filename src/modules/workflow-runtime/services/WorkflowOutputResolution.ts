@@ -1,6 +1,7 @@
 import { logger } from '@/core/logger';
 import { isRecord, stringifyUnknown } from '@/shared/utils';
-import { WorkflowNodeType, type WorkflowGraph } from '../contracts';
+import { WorkflowNodeType } from '../contracts';
+import type { WorkflowGraph } from '../contracts';
 
 interface WorkflowReferenceResolutionOptions {
     workflow?: WorkflowGraph;

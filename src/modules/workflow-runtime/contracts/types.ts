@@ -1,4 +1,9 @@
-import type { DaemonAnalysisDocument, NestedPluginDefinition, WorkflowDefinition } from '@/shared/contracts';
+import type {
+    DaemonAnalysisDocument,
+    TrajectoryDumpDescriptor,
+    TrajectoryFrame,
+    WorkflowDefinition
+} from '@/shared/contracts';
 
 export enum WorkflowNodeType {
     Modifier = 'modifier',
@@ -36,8 +41,8 @@ export interface WorkflowExecutionContext {
     userConfig: Record<string, unknown>;
     runtimeArguments: Record<string, unknown>;
     trajectoryId: string;
-    trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
-    trajectoryDumpOverrides?: Array<{ timestep: number; natoms: number; simulationCell: string; path: string; originalPath?: string; }>;
+    trajectoryFrames: TrajectoryFrame[];
+    trajectoryDumpOverrides?: TrajectoryDumpDescriptor[];
     analysis: DaemonAnalysisDocument;
     analysisId: string;
     generatedFiles: string[];
@@ -80,7 +85,11 @@ export class WorkflowGraph {
         const queue = [nodeId];
 
         while (queue.length > 0) {
-            const currentId = queue.shift() as string;
+            const currentId = queue.shift();
+            if (!currentId) {
+                continue;
+            }
+
             if (visited.has(currentId)) {
                 continue;
             }
@@ -104,7 +113,11 @@ export class WorkflowGraph {
         const queue = [nodeId];
 
         while (queue.length > 0) {
-            const currentId = queue.shift() as string;
+            const currentId = queue.shift();
+            if (!currentId) {
+                continue;
+            }
+
             if (visited.has(currentId)) {
                 continue;
             }
@@ -134,7 +147,11 @@ export class WorkflowGraph {
         const queue = [...initialChildren];
 
         while (queue.length > 0) {
-            const nodeId = queue.shift() as string;
+            const nodeId = queue.shift();
+            if (!nodeId) {
+                continue;
+            }
+
             if (visited.has(nodeId)) {
                 continue;
             }
@@ -176,7 +193,11 @@ export class WorkflowGraph {
 
         const result: WorkflowNode[] = [];
         while (queue.length > 0) {
-            const nodeId = queue.shift() as string;
+            const nodeId = queue.shift();
+            if (!nodeId) {
+                continue;
+            }
+
             const node = nodeMap.get(nodeId);
             if (node) {
                 result.push(node);
@@ -193,4 +214,4 @@ export class WorkflowGraph {
 
         return result;
     }
-}
+};

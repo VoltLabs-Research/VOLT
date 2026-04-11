@@ -1,4 +1,5 @@
-import { Decoder, type DecoderOptions } from '@msgpack/msgpack';
+import { Decoder } from '@msgpack/msgpack';
+import type { DecoderOptions } from '@msgpack/msgpack';
 import { isRecord } from './type-guards';
 import mergeChunkedValue from './merge-chunked-value';
 

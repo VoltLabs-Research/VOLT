@@ -4,16 +4,19 @@ import {
     createMemoryAwareWorkerShell,
     delayJobOnQueueScopeContention,
     delayJobWhenMemoryPressured,
-    tryAcquireQueueScopeLease,
-    type MemoryAwareWorkerShell,
-    type QueueScopeLease,
-    type QueueScopeLimitsRegistry,
-    type RedisConnectionService
+    tryAcquireQueueScopeLease
 } from '@/modules/platform/services';
 import type { DaemonJobReporterService, GlbJobStatus } from '@/modules/cloud-control/services/DaemonJobReporterService';
-import type { QueueService } from '@/modules/platform/services';
+import type {
+    MemoryAwareWorkerShell,
+    QueueScopeLease,
+    QueueScopeLimitsRegistry,
+    QueueService,
+    RedisConnectionService
+} from '@/modules/platform/services';
 import type { GlbConversionQueueJobPayload } from '@/shared/contracts';
-import { DelayedError, type Job } from 'bullmq';
+import { DelayedError } from 'bullmq';
+import type { Job } from 'bullmq';
 import type { GlbExporterService } from './GlbExporterService';
 
 export class TrajectoryGlbWorkerService {
@@ -133,7 +136,7 @@ export class TrajectoryGlbWorkerService {
                 });
             }
 
-            void this.reportJobStatusBestEffort(job, 'running');
+            this.reportJobStatusBestEffort(job, 'running');
 
             await bullJob.updateProgress(10);
             await this.glbExporterService.preprocessTrajectory({
@@ -146,14 +149,14 @@ export class TrajectoryGlbWorkerService {
             });
             await bullJob.updateProgress(100);
 
-            void this.reportJobStatusBestEffort(job, 'completed');
+            this.reportJobStatusBestEffort(job, 'completed');
         } catch (error: unknown) {
             if (error instanceof DelayedError) {
                 return;
             }
 
             const message = error instanceof Error ? error.message : String(error);
-            void this.reportJobStatusBestEffort(job, 'failed', message);
+            this.reportJobStatusBestEffort(job, 'failed', message);
 
             throw error instanceof Error ? error : new Error(message);
         } finally {

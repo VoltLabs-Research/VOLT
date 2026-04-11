@@ -386,7 +386,7 @@ export class VoltCloudConnection {
             const queued = this.backgroundCommandQueue.shift() as QueuedServerCommand;
             this.backgroundCommandsInFlight += 1;
 
-            void this.sendServerCommand(queued.command, queued.payload)
+            this.sendServerCommand(queued.command, queued.payload)
                 .then((result) => {
                     queued.resolve(result);
                 })
@@ -451,7 +451,7 @@ export class VoltCloudConnection {
         }
 
         const runProbe = (): void => {
-            void this.probeCloudLatency();
+            this.probeCloudLatency();
         };
 
         runProbe();

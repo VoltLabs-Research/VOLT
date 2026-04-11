@@ -1,6 +1,7 @@
-import { EntrypointType, type PluginReferenceExecutionRequest, type WorkflowDefinition } from '@/shared/contracts';
+import { EntrypointType } from '@/shared/contracts';
 import { decodeCliArgumentsToken, isRecord } from '@/shared/utils';
 import { WorkflowNodeType } from '../contracts';
+import type { PluginReferenceExecutionRequest, WorkflowDefinition } from '@/shared/contracts';
 import fs from 'node:fs/promises';
 
 export interface InlineExposureArtifact {

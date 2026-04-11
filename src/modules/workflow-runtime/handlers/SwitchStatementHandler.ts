@@ -1,4 +1,4 @@
-import { stringifyUnknown } from '@/shared/utils';
+import { isRecord, stringifyUnknown } from '@/shared/utils';
 import type { WorkflowExecutionContext, WorkflowNode } from '../contracts';
 import { WorkflowNodeType } from '../contracts';
 import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '../services';
@@ -13,17 +13,30 @@ interface SwitchCaseNodeData {
 }
 
 const readSwitchStatementData = (node: WorkflowNode): SwitchStatementNodeData => {
-    const record = node.data.switchStatement;
-    return typeof record === 'object' && record !== null
-        ? record as SwitchStatementNodeData
-        : {};
+    if (!isRecord(node.data.switchStatement)) {
+        return {};
+    }
+
+    return {
+        expression: typeof node.data.switchStatement.expression === 'string'
+            ? node.data.switchStatement.expression
+            : undefined
+    };
 };
 
 const readSwitchCaseData = (node: WorkflowNode): SwitchCaseNodeData => {
-    const record = node.data.switchCase;
-    return typeof record === 'object' && record !== null
-        ? record as SwitchCaseNodeData
-        : {};
+    if (!isRecord(node.data.switchCase)) {
+        return {};
+    }
+
+    return {
+        value: typeof node.data.switchCase.value === 'string'
+            ? node.data.switchCase.value
+            : undefined,
+        defaultCase: typeof node.data.switchCase.defaultCase === 'boolean'
+            ? node.data.switchCase.defaultCase
+            : undefined
+    };
 };
 
 export class WorkflowSwitchStatementHandler implements WorkflowNodeHandler {
@@ -99,4 +112,4 @@ export class WorkflowSwitchCaseHandler implements WorkflowNodeHandler {
             defaultCase: Boolean(switchCaseData.defaultCase)
         };
     }
-}
+};

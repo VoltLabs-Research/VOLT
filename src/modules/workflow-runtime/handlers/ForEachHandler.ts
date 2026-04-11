@@ -1,5 +1,23 @@
-import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '../services';
+import { isRecord } from '@/shared/utils';
+import type { WorkflowExecutionContext, WorkflowNode } from '../contracts';
 import { WorkflowNodeType } from '../contracts';
+import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '../services';
+
+interface WorkflowForEachData {
+    iterableSource?: string;
+};
+
+const readForEachData = (node: WorkflowNode): WorkflowForEachData => {
+    if (!isRecord(node.data.forEach)) {
+        return {};
+    }
+
+    return {
+        iterableSource: typeof node.data.forEach.iterableSource === 'string'
+            ? node.data.forEach.iterableSource
+            : undefined
+    };
+};
 
 export class WorkflowForEachHandler implements WorkflowNodeHandler {
     readonly type = WorkflowNodeType.ForEach;
@@ -9,8 +27,8 @@ export class WorkflowForEachHandler implements WorkflowNodeHandler {
         private readonly registry: WorkflowNodeRegistry
     ) {}
 
-    async execute(node: any, context: any): Promise<Record<string, unknown>> {
-        const rawRef = node.data.forEach?.iterableSource;
+    async execute(node: WorkflowNode, context: WorkflowExecutionContext): Promise<Record<string, unknown>> {
+        const rawRef = readForEachData(node).iterableSource;
         if (!rawRef) {
             throw new Error('ForEach iterable source is required');
         }
@@ -31,4 +49,4 @@ export class WorkflowForEachHandler implements WorkflowNodeHandler {
             currentIndex: -1
         };
     }
-}
+};
