@@ -1,4 +1,4 @@
-export const TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION = 2;
+export const TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION = 3;
 
 export type TeamClusterRole = 'cluster' | 'storage-server' | 'compute-node';
 
@@ -42,23 +42,23 @@ export interface TeamClusterDaemonQueueScopeLimits {
 
 export const DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS: TeamClusterDaemonQueueScopeLimits = {
     analysisProcessing: {
-        maxRunningPerTrajectory: 1,
+        maxRunningPerTrajectory: 4,
         maxRunningPerTeam: 0
     },
     artifactUpload: {
-        maxRunningPerTrajectory: 1,
+        maxRunningPerTrajectory: 4,
         maxRunningPerTeam: 0
     },
     trajectoryGlbConversion: {
-        maxRunningPerTrajectory: 1,
+        maxRunningPerTrajectory: 4,
         maxRunningPerTeam: 0
     },
     cloudUpload: {
-        maxRunningPerTrajectory: 1,
+        maxRunningPerTrajectory: 4,
         maxRunningPerTeam: 0
     },
     trajectoryCompression: {
-        maxRunningPerTrajectory: 1,
+        maxRunningPerTrajectory: 4,
         maxRunningPerTeam: 0
     }
 };

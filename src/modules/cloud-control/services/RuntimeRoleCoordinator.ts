@@ -29,10 +29,10 @@ interface RuntimeRoleCoordinatorDependencies {
 }
 
 const DEFAULT_QUEUE_CONCURRENCY: TeamClusterDaemonQueueConcurrency = {
-    analysis: 1,
-    rasterizer: 1,
-    glbPreprocessing: 1,
-    sshImport: 1
+    analysis: 8,
+    rasterizer: 5,
+    glbPreprocessing: 8,
+    sshImport: 2
 };
 
 const cloneQueueConcurrency = (

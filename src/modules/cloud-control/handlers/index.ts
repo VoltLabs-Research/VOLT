@@ -2,7 +2,6 @@ export * from './analysis';
 export * from './container';
 export * from './debug';
 export * from './jobs';
-export * from './lammps';
 export * from './notebook';
 export * from './payloadValidation';
 export * from './plugin';
