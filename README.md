@@ -36,3 +36,25 @@ Because this cloud is a free service, it may be discontinued without notice if f
 
 ### 3. Local Docker development stack
 For a repo-local development stack that boots Volt plus two development cluster daemons, see [tools/local-stack/README.md](./tools/local-stack/README.md).
+
+### 4. Rebuilding the daemon against an installed cluster (local development)
+When iterating on `app/ClusterDaemon` locally, you can rebuild the daemon image from source and recreate only the `daemon` service for any installed cluster—without restarting MinIO, Redis, or MongoDB—using the script at `app/ClusterDaemon/scripts/rebuild-daemon.sh`:
+
+```sh
+# From the repository root
+bash app/ClusterDaemon/scripts/rebuild-daemon.sh <clusterId> [installRoot] [daemonSrcPath]
+
+# Example – rebuild daemon for a specific cluster using default install root
+bash app/ClusterDaemon/scripts/rebuild-daemon.sh 69b20648911ca488bbb759bb
+
+# Example – override install root and daemon source path
+bash app/ClusterDaemon/scripts/rebuild-daemon.sh 69b20648911ca488bbb759bb /opt/volt/team-clusters /path/to/ClusterDaemon
+```
+
+Or via npm from the `server/` directory:
+
+```sh
+cd server
+npm run daemon:local-rebuild -- <clusterId>
+```
+
