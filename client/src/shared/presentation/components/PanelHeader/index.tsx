@@ -12,9 +12,16 @@ export interface PanelHeaderProps {
     icon?: React.ReactNode;
     actions?: React.ReactNode;
     onClose?: () => void;
-    tabs?: { label: string; active: boolean; disabled?: boolean; onClick?: () => void }[];
+    tabs?: PanelHeaderTab[];
     variant?: 'default' | 'compact';
     className?: string;
+};
+
+interface PanelHeaderTab {
+    label: string;
+    active: boolean;
+    disabled?: boolean;
+    onClick?: () => void;
 };
 
 const PanelHeader: React.FC<PanelHeaderProps> = ({

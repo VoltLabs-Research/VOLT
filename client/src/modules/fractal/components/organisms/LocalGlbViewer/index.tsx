@@ -224,7 +224,7 @@ const LocalGlbViewer = ({ url, onContentTypeDetected }: LocalGlbViewerProps) => 
             }
         };
 
-        void load();
+        load().catch(() => undefined);
 
         return () => {
             cancelled = true;

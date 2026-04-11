@@ -13,9 +13,10 @@ import IconButton from '@/shared/presentation/components/IconButton';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Select from '@/shared/presentation/components/Select';
 import { Plus, Trash2 } from 'lucide-react';
-import { useCallback, useMemo, type ChangeEvent } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { IArgumentDefinition, IArgumentOption } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { ChangeEvent } from 'react';
 
 interface ArgumentDefinitionSectionProps {
     arguments: IArgumentDefinition[];

@@ -1,7 +1,8 @@
-import { useCallback, useMemo, type ChangeEvent } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { Node } from '@xyflow/react';
 import usePluginBuilderStore from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import type { INodeData } from '@/modules/plugin/api/entities/plugin/workflow';
+import type { ChangeEvent } from 'react';
 
 /**
  * Hook for managing array/collection data within node editors.

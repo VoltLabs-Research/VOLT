@@ -4,7 +4,8 @@ import { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository'
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import teamMapper from '@modules/team/infrastructure/persistence/mongo/mappers/team/TeamMapper';
 import TeamModel, { TeamDocument } from '@modules/team/infrastructure/persistence/mongo/models/team/TeamModel';
-import { toPersistedEntity, type PersistedEntityOutput } from '@shared/domain/persisted/to-persisted-entity';
+import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
+import type { PersistedEntityOutput } from '@shared/domain/persisted/to-persisted-entity';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import { injectable, inject } from 'tsyringe';
 

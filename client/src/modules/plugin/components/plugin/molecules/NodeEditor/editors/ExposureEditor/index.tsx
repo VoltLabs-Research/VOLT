@@ -2,7 +2,8 @@ import CollapsibleSection from '@/shared/presentation/components/CollapsibleSect
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/molecules/NodeEditor/hooks/use-node-editor-form';
 import type { EditorProps } from '../types';
-import { EXPOSURE_EDITOR_DEFAULT_VALUES, exposureEditorSchema, type ExposureEditorFormValues } from './schema';
+import { EXPOSURE_EDITOR_DEFAULT_VALUES, exposureEditorSchema } from './schema';
+import type { ExposureEditorFormValues } from './schema';
 
 const useExposureEditorForm = createNodeEditorForm<ExposureEditorFormValues, 'exposure'>({
     schema: exposureEditorSchema,

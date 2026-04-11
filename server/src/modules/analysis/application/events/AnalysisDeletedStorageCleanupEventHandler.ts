@@ -1,4 +1,5 @@
-import { getAnalysisStorageCleanupTargets, type AnalysisStorageCleanupTarget } from '@modules/analysis/utilities/storage-cleanup-prefixes';
+import { getAnalysisStorageCleanupTargets } from '@modules/analysis/utilities/storage-cleanup-prefixes';
+import type { AnalysisStorageCleanupTarget } from '@modules/analysis/utilities/storage-cleanup-prefixes';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
