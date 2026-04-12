@@ -10,26 +10,9 @@ export interface SceneArtifactParticleFilterPropertyCondition {
     value: number;
     exposureId?: string;
 };
-
-export interface SceneArtifactParticleFilterPresetCondition {
-    kind: 'preset';
-    preset: 'surface-atoms';
-    presetConfig: {
-        layers: number;
-        cutoffMode: 'auto' | 'manual';
-        cutoffRadius?: number;
-        coordinationDeficit: number;
-        anisotropyThreshold: number;
-        byType: boolean;
-    };
-};
-
-export type SceneArtifactParticleFilterCondition =
-    | SceneArtifactParticleFilterPropertyCondition
-    | SceneArtifactParticleFilterPresetCondition;
+export type SceneArtifactParticleFilterCondition = SceneArtifactParticleFilterPropertyCondition;
 
 export interface SceneArtifactParams {
-    mode?: 'conditions' | 'preset';
     property?: string;
     startValue?: number;
     endValue?: number;
@@ -40,15 +23,6 @@ export interface SceneArtifactParams {
     exposureId?: string;
     combinator?: 'AND' | 'OR';
     conditions?: SceneArtifactParticleFilterCondition[];
-    preset?: 'surface-atoms';
-    presetConfig?: {
-        layers: number;
-        cutoffMode: 'auto' | 'manual';
-        cutoffRadius?: number;
-        coordinationDeficit: number;
-        anisotropyThreshold: number;
-        byType: boolean;
-    };
 };
 
 export interface SceneArtifactTrajectory {

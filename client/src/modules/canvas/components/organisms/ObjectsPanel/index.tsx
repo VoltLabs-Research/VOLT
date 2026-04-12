@@ -61,10 +61,6 @@ const formatArtifactValue = (value: unknown): string => {
 };
 
 const formatParticleFilterConditionLabel = (condition: SceneArtifactParticleFilterCondition | SceneArtifact['params']): string => {
-    if ('preset' in condition && condition.preset === 'surface-atoms') {
-        return 'surface-atoms';
-    }
-
     if (typeof condition.property !== 'string' || typeof condition.operator !== 'string' || condition.value === undefined) {
         return '';
     }

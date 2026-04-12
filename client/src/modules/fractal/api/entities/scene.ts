@@ -19,51 +19,14 @@ export enum ParticleFilterSceneCombinator {
     Or = 'OR'
 };
 
-export enum ParticleFilterSceneConditionKind {
-    Property = 'property',
-    Preset = 'preset'
-};
-
 export interface ParticleFilterPropertySceneCondition {
-    kind: ParticleFilterSceneConditionKind.Property;
+    kind?: 'property';
     property: string;
     operator: string;
     value: number;
     exposureId?: string;
 };
-
-export enum ParticleFilterSceneMode {
-    Conditions = 'conditions',
-    Preset = 'preset'
-};
-
-export enum ParticleFilterScenePreset {
-    SurfaceAtoms = 'surface-atoms'
-};
-
-export enum SurfaceAtomsSceneCutoffMode {
-    Auto = 'auto',
-    Manual = 'manual'
-};
-
-export interface SurfaceAtomsScenePresetConfig {
-    layers: number;
-    cutoffMode: SurfaceAtomsSceneCutoffMode;
-    cutoffRadius?: number;
-    coordinationDeficit: number;
-    anisotropyThreshold: number;
-    byType: boolean;
-};
-
-export interface ParticleFilterPresetSceneCondition {
-    kind: ParticleFilterSceneConditionKind.Preset;
-    preset: ParticleFilterScenePreset.SurfaceAtoms;
-    presetConfig: SurfaceAtomsScenePresetConfig;
-};
-
-export type ParticleFilterSceneCondition =
-    | ParticleFilterPropertySceneCondition
-    | ParticleFilterPresetSceneCondition;
+export type ParticleFilterSceneCondition = ParticleFilterPropertySceneCondition;
 
 export interface SceneRenderMetadata {
     exporter?: string;
@@ -106,15 +69,12 @@ export type ParticleFilterScene = {
     sceneType: 'particle-filter';
     source: 'particle-filter';
     analysisId?: string;
-    mode?: ParticleFilterSceneMode;
     combinator?: ParticleFilterSceneCombinator;
     conditions?: ParticleFilterSceneCondition[];
     exposureId?: string;
     property?: string;
     operator?: string;
     value?: number;
-    preset?: ParticleFilterScenePreset;
-    presetConfig?: SurfaceAtomsScenePresetConfig;
     action?: string;
 };
 

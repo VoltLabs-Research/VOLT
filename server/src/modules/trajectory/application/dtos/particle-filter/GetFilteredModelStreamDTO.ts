@@ -1,9 +1,6 @@
 import type {
     ParticleFilterCombinator,
-    ParticleFilterConditionDTO,
-    ParticleFilterMode,
-    ParticleFilterPreset,
-    SurfaceAtomsPresetConfigDTO
+    ParticleFilterConditionDTO
 } from './PreviewParticleFilterDTO';
 
 import { Readable } from 'node:stream';
@@ -12,7 +9,6 @@ export interface GetFilteredModelStreamInputDTO {
     trajectoryId: string;
     timestep: string;
     analysisId?: string;
-    mode?: ParticleFilterMode;
     exposureId?: string;
     property?: string;
     operator?: string;
@@ -20,10 +16,8 @@ export interface GetFilteredModelStreamInputDTO {
     action?: string;
     combinator?: ParticleFilterCombinator;
     conditions?: ParticleFilterConditionDTO[];
-    preset?: ParticleFilterPreset;
-    presetConfig?: SurfaceAtomsPresetConfigDTO;
-};
+}
 
 export interface GetFilteredModelStreamOutputDTO {
     stream: Readable;
-};
+}
