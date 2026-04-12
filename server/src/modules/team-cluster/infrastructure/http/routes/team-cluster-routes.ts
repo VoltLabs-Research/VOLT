@@ -32,11 +32,6 @@ export default createHttpModule({
             teamClusterValidation.getResourceLimits,
             controllers.getResourceLimits.handle
         );
-        router.get(
-            '/:teamClusterId/available-updates',
-            teamClusterValidation.fetchAvailableVersions,
-            controllers.fetchAvailableVersions.handle
-        );
         router.post(
             '/:teamClusterId/credentials/reveal',
             RATE_LIMIT_POLICIES.passwordConfirmedClusterAction,
@@ -74,12 +69,6 @@ export default createHttpModule({
             RATE_LIMIT_POLICIES.passwordConfirmedClusterAction,
             teamClusterValidation.deleteById,
             controllers.deleteById.handle
-        );
-        router.post(
-            '/:teamClusterId/update-requests',
-            RATE_LIMIT_POLICIES.passwordConfirmedClusterAction,
-            teamClusterValidation.requestUpdate,
-            controllers.requestUpdate.handle
         );
     }
 });

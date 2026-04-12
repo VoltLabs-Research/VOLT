@@ -1,18 +1,14 @@
 import {
-    invalidateAvailableVersionsQuery,
     useTeamClustersQuery,
-    useRevealTeamClusterCredentialsMutation,
-    useRequestClusterUpdateMutation
+    useRevealTeamClusterCredentialsMutation
 } from '@/modules/cluster/hooks/team-cluster/queries';
 import { CLUSTER_CREDENTIALS_MODAL_ID } from '@/modules/cluster/components/organisms/ClusterCredentialsModal';
-import { UPDATE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/organisms/UpdateClusterModal';
 import { openModal } from '@/shared/presentation/components/Modal';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useCallback, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { TeamCluster, TeamClusterCredentialServices } from '@/modules/cluster/api/entities/team-cluster';
-import type { RequestClusterUpdateOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/request-cluster-update';
 
 interface SidebarClustersResult {
     clusters: TeamCluster[];
@@ -20,18 +16,13 @@ interface SidebarClustersResult {
     isOnClustersRoute: boolean;
     credentialsCluster: TeamCluster | null;
     credentials: TeamClusterCredentialServices | null;
-    updateTarget: TeamCluster | null;
     handleMonitor: (cluster: TeamCluster) => void;
     handleRevealCredentials: (cluster: TeamCluster) => void;
-    handleUpdateCluster: (cluster: TeamCluster) => void;
-    handleOpenTerminal: (cluster: TeamCluster) => void;
     handleExploreMongo: (cluster: TeamCluster) => void;
     handleExploreRedis: (cluster: TeamCluster) => void;
     handleExploreMinio: (cluster: TeamCluster) => void;
     revealCredentials: (password: string) => Promise<void>;
-    requestUpdate: (targetVersion: string, isEdge: boolean, password: string) => Promise<RequestClusterUpdateOutputDTO>;
     setCredentialsCluster: (cluster: TeamCluster | null) => void;
-    setUpdateTarget: (cluster: TeamCluster | null) => void;
 };
 
 /**
@@ -53,10 +44,8 @@ const useSidebarClusters = (setSidebarOpen: (open: boolean) => void): SidebarClu
 
     const [credentials, setCredentials] = useState<TeamClusterCredentialServices | null>(null);
     const [credentialsCluster, setCredentialsCluster] = useState<TeamCluster | null>(null);
-    const [updateTarget, setUpdateTarget] = useState<TeamCluster | null>(null);
 
     const revealCredentialsMutation = useRevealTeamClusterCredentialsMutation();
-    const updateMutation = useRequestClusterUpdateMutation();
 
     const navigateToCluster = useCallback((cluster: TeamCluster) => {
         navigate(`/dashboard/clusters/${cluster._id}`);
@@ -77,24 +66,6 @@ const useSidebarClusters = (setSidebarOpen: (open: boolean) => void): SidebarClu
         setCredentialsCluster(cluster);
         openModal(CLUSTER_CREDENTIALS_MODAL_ID);
     }, [isOnClustersRoute, navigateToCluster]);
-
-    const handleUpdateCluster = useCallback((cluster: TeamCluster) => {
-        if (isOnClustersRoute) {
-            navigateToCluster(cluster);
-            return;
-        }
-
-        setUpdateTarget(cluster);
-        if (selectedTeamId) {
-            invalidateAvailableVersionsQuery(selectedTeamId, cluster._id);
-        }
-        openModal(UPDATE_CLUSTER_MODAL_ID);
-    }, [isOnClustersRoute, navigateToCluster, selectedTeamId]);
-
-    const handleOpenTerminal = useCallback((cluster: TeamCluster) => {
-        navigate(`/dashboard/clusters/${cluster._id}/terminal`);
-        setSidebarOpen(false);
-    }, [navigate, setSidebarOpen]);
 
     const handleExploreMongo = useCallback((cluster: TeamCluster) => {
         navigate(`/dashboard/clusters/${cluster._id}/mongo`);
@@ -132,48 +103,22 @@ const useSidebarClusters = (setSidebarOpen: (open: boolean) => void): SidebarClu
         setCredentials(result.services);
     }, [credentialsCluster, selectedTeamId, revealCredentialsMutation]);
 
-    const requestUpdate = useCallback(async (targetVersion: string, isEdge: boolean, password: string) => {
-        if (!updateTarget || !selectedTeamId) {
-            throw new Error('Missing cluster update target');
-        }
-
-        return showPromise(
-            updateMutation.mutateAsync({
-                teamId: selectedTeamId,
-                teamClusterId: updateTarget._id,
-                targetVersion,
-                isEdge,
-                password
-            }),
-            {
-                loading: { title: 'Requesting cluster update...' },
-                success: { title: 'Update requested' },
-                error: { title: 'Failed to request cluster update' }
-            }
-        );
-    }, [updateTarget, selectedTeamId, updateMutation]);
-
     return {
         clusters,
         selectedTeamId,
         isOnClustersRoute,
         credentialsCluster,
         credentials,
-        updateTarget,
         handleMonitor,
         handleRevealCredentials,
-        handleUpdateCluster,
-        handleOpenTerminal,
         handleExploreMongo,
         handleExploreRedis,
         handleExploreMinio,
         revealCredentials,
-        requestUpdate,
         setCredentialsCluster: (cluster: TeamCluster | null) => {
             setCredentials(null);
             setCredentialsCluster(cluster);
-        },
-        setUpdateTarget
+        }
     };
 };
 

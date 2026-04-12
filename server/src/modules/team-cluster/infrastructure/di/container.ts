@@ -12,7 +12,6 @@ import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/se
 import TeamClusterDirectAccessTokenService from '@modules/team-cluster/infrastructure/services/TeamClusterDirectAccessTokenService';
 import TeamClusterRemoteAccessSessionService from '@modules/team-cluster/infrastructure/services/TeamClusterRemoteAccessSessionService';
 import RemoteExplorerDaemonGateway from '@modules/team-cluster/infrastructure/services/RemoteExplorerDaemonGateway';
-import TeamClusterRemoteTerminalService from '@modules/team-cluster/infrastructure/services/TeamClusterRemoteTerminalService';
 import TeamClusterBinaryRelayService from '@modules/team-cluster/infrastructure/services/TeamClusterBinaryRelayService';
 import TeamClusterBinaryRelayUpgradeService from '@modules/team-cluster/infrastructure/services/TeamClusterBinaryRelayUpgradeService';
 import TeamClusterReverseChannelService from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
@@ -24,7 +23,6 @@ import StoragePlacementService from '@modules/team-cluster/application/services/
 import ClusterTransferCoordinator from '@modules/team-cluster/application/services/ClusterTransferCoordinator';
 import CompleteTeamClusterDeletionUseCase from '@modules/team-cluster/application/use-cases/CompleteTeamClusterDeletionUseCase';
 import CreateTeamClusterRemoteAccessSessionUseCase from '@modules/team-cluster/application/use-cases/CreateTeamClusterRemoteAccessSessionUseCase';
-import FetchAvailableClusterVersionsUseCase from '@modules/team-cluster/application/use-cases/FetchAvailableClusterVersionsUseCase';
 import GetClusterResourceLimitsUseCase from '@modules/team-cluster/application/use-cases/GetClusterResourceLimitsUseCase';
 import ProcessDaemonJobCompletionUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonJobCompletionUseCase';
 import ProcessDaemonSceneArtifactUpsertUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonSceneArtifactUpsertUseCase';
@@ -57,7 +55,6 @@ export const registerTeamClusterDependencies = () => {
             [TEAM_CLUSTER_TOKENS.TeamClusterBinaryRelayUpgradeService, TeamClusterBinaryRelayUpgradeService],
             [TEAM_CLUSTER_TOKENS.TeamClusterRemoteAccessSessionService, TeamClusterRemoteAccessSessionService],
             [TEAM_CLUSTER_TOKENS.RemoteExplorerDaemonGateway, RemoteExplorerDaemonGateway],
-            [TEAM_CLUSTER_TOKENS.TeamClusterRemoteTerminalService, TeamClusterRemoteTerminalService],
             [TEAM_CLUSTER_TOKENS.TeamClusterTcpExposureRelayService, TeamClusterTcpExposureRelayService],
             [TEAM_CLUSTER_TOKENS.TeamClusterSocketModule, TeamClusterSocketModule],
             [TEAM_CLUSTER_TOKENS.DaemonAnalysisCompletionService, DaemonAnalysisCompletionService],
@@ -66,7 +63,6 @@ export const registerTeamClusterDependencies = () => {
             [TEAM_CLUSTER_TOKENS.ClusterTransferRunner, ClusterTransferRunner],
             CompleteTeamClusterDeletionUseCase,
             CreateTeamClusterRemoteAccessSessionUseCase,
-            FetchAvailableClusterVersionsUseCase,
             GetClusterResourceLimitsUseCase,
             GetTeamClusterRemoteExplorerNodeUseCase,
             ListTeamClusterRemoteExplorerEntriesUseCase,

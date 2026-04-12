@@ -15,10 +15,8 @@ interface IdleCallbackHandle {
 };
 
 const CpuDistribution = lazy(() => import('@/modules/cluster/components/molecules/CpuDistribution'));
-const DatabasePerformance = lazy(() => import('@/modules/cluster/components/molecules/DatabasePerformance'));
 const DiskOperations = lazy(() => import('@/modules/cluster/components/molecules/DiskOperations'));
 const ResourceUsage = lazy(() => import('@/modules/cluster/components/molecules/ResourceUsage'));
-const ResponseTimeChart = lazy(() => import('@/modules/cluster/components/molecules/ResponseTimeChart'));
 const NetworkChart = lazy(() => import('@/shared/presentation/components/NetworkChart'));
 
 const createIdleCallbackHandle = (onIdle: () => void, timeoutMs: number): IdleCallbackHandle => {
@@ -134,10 +132,8 @@ const ClusterMonitoringPage = () => {
                         {shouldRenderVisualizations && (
                             <Suspense fallback={renderDeferredVisualizationsFallback()}>
                                 <Container className='clusters-grid'>
-                                    <Container className='clusters-grid-main'>
-                                        <ResponseTimeChart history={vm.history} metrics={vm.metrics} />
-                                    </Container>
                                     <ResourceUsage metrics={vm.metrics} />
+                                    <CpuDistribution history={vm.history} metrics={vm.metrics} />
                                 </Container>
 
                                 <Container className='clusters-grid'>
@@ -149,11 +145,6 @@ const ClusterMonitoringPage = () => {
                                             title='Network Traffic'
                                             height={300} />
                                     </Container>
-                                    <CpuDistribution history={vm.history} metrics={vm.metrics} />
-                                </Container>
-
-                                <Container className='clusters-grid-equal'>
-                                    <DatabasePerformance history={vm.history} metrics={vm.metrics} />
                                     <DiskOperations history={vm.history} metrics={vm.metrics} />
                                 </Container>
                             </Suspense>

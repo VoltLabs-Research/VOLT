@@ -1,6 +1,5 @@
 export * from './CreateContainerDTO';
 export * from './CreateContainerFolderDTO';
-export * from './CreateContainerVncSessionDTO';
 export * from './DeleteContainerDTO';
 export * from './DeleteContainerFolderDTO';
 export * from './ContainerFolderDTO';

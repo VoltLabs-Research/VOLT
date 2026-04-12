@@ -9,7 +9,6 @@ import { initializeMinio } from './core/config/minio';
 import { initializeRedis } from './core/config/redis';
 import { registerAllSubscribers } from './core/events/registerAllSubscribers';
 import { SOCKET_TOKENS } from './modules/socket/infrastructure/di/SocketTokens';
-import { ContainerVncGatewayService } from './modules/container/infrastructure/services/ContainerVncGatewayService';
 import { ScriptingJupyterProxyService } from './modules/scripting/infrastructure/services/ScriptingJupyterProxyService';
 import { TEAM_CLUSTER_TOKENS } from './modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import ClusterTransferRunner from './modules/team-cluster/infrastructure/services/ClusterTransferRunner';
@@ -204,16 +203,7 @@ const startServer = async () => {
 
         const proxyService = container.resolve(ScriptingJupyterProxyService);
         if (!proxyService.isJupyterUpgradeRequest(request)) {
-            const vncGatewayService = container.resolve(ContainerVncGatewayService);
-            if (!vncGatewayService.isVncUpgradeRequest(request)) {
-                (socket as Duplex).destroy();
-                return;
-            }
-
-            vncGatewayService.handleUpgrade(request, socket as Duplex, head).catch((error: unknown) => {
-                logger.error(`@server: vnc upgrade failed: ${error instanceof Error ? error.message : String(error)}`);
-                vncGatewayService.handleUpgradeError(socket as Duplex, error);
-            });
+            (socket as Duplex).destroy();
             return;
         }
 

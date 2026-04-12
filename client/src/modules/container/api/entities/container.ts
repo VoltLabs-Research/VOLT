@@ -1,4 +1,3 @@
-import type { ContainerCapabilities } from './container-capabilities';
 import type { ContainerAccessiblePort } from './container-accessible-port';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type { User } from '@/modules/auth/api/entities/user';
@@ -23,6 +22,5 @@ export interface Container extends BaseEntity {
     network?: string;
     volume?: string;
     mountDockerSocket?: boolean;
-    capabilities?: ContainerCapabilities;
     accessiblePorts?: ContainerAccessiblePort[];
 };

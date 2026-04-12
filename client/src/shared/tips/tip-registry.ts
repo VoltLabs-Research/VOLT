@@ -157,15 +157,6 @@ export const CONTEXTUAL_TIPS = {
         duration: 6500,
         position: 'top-center'
     },
-    'cluster-terminal-context': {
-        surface: 'page',
-        dismissMode: 'manual',
-        title: 'You are on the cluster host',
-        description: 'This terminal connects to the selected cluster host directly, so commands here affect the remote environment.',
-        buttonLabel: 'Got it',
-        delay: 1200,
-        position: 'top-center'
-    },
     'whiteboard-collaboration': {
         surface: 'page',
         dismissMode: 'manual',
@@ -191,15 +182,6 @@ export const CONTEXTUAL_TIPS = {
         description: 'Drag the panel divider to adjust the spreadsheet area, or collapse it to focus on the conversation.',
         buttonLabel: 'Got it',
         delay: 1600,
-        position: 'top-center'
-    },
-    'container-remote-desktop': {
-        surface: 'page',
-        dismissMode: 'manual',
-        title: 'Stream your container desktop',
-        description: 'This panel connects via VNC to the container graphical environment in real time.',
-        buttonLabel: 'Got it',
-        delay: 1400,
         position: 'top-center'
     },
     'secret-keys-quick-create': {

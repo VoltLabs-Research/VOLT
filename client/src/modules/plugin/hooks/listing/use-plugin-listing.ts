@@ -3,12 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { RiDeleteBin6Line, RiEyeLine, RiTableLine } from 'react-icons/ri';
 import {
     fetchPluginListing,
-    useExportListingMutation,
     usePluginListingQuery
 } from './queries';
 import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { ExportType } from '@/shared/domain/export/types';
 import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
 import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
 import type { PluginSubListingParams } from './use-plugin-sub-listing';
@@ -43,7 +41,6 @@ interface UsePluginListingReturn {
     resolvedExposureName?: string;
     subListingNames: string[];
     fetchData: (params: { page: number; limit: number } & PluginListingContext) => Promise<PaginatedResponse<ListingRow>>;
-    exportData: (format: ExportType) => Promise<Blob>;
     openSubListing: (params: PluginSubListingParams) => void;
     getMenuOptions: (item: ListingRow, selectedItems: ListingRow[]) => MenuOption[];
 };
@@ -60,7 +57,6 @@ const usePluginListing = ({
     onDeleteRows
 }: UsePluginListingParams): UsePluginListingReturn => {
     const navigate = useNavigate();
-    const exportListingMutation = useExportListingMutation();
 
     const shouldShowTrajectory = showTrajectoryColumn ?? !trajectoryId;
 
@@ -139,17 +135,6 @@ const usePluginListing = ({
         };
     }, []);
 
-    const exportData = useCallback(async (format: ExportType): Promise<Blob> => {
-        return exportListingMutation.mutateAsync({
-            pluginId,
-            exposureName,
-            exposureId,
-            trajectoryId,
-            analysisId,
-            format
-        });
-    }, [exportListingMutation, pluginId, exposureName, exposureId, trajectoryId, analysisId]);
-
     const handleDelete = useCallback(async (rows: ListingRow[]) => {
         await onDeleteRows?.(rows);
     }, [onDeleteRows]);
@@ -207,7 +192,6 @@ const usePluginListing = ({
         resolvedExposureName,
         subListingNames,
         fetchData,
-        exportData,
         openSubListing,
         getMenuOptions
     };

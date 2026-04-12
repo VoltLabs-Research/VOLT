@@ -28,18 +28,14 @@ const renderName: NonNullable<ColumnConfig<ContainerListingRow>['render']> = (va
     const icon = isContainerFolderRow(row)
         ? <Folder size={16} />
         : <Box size={16} />;
-    const subtitle = isContainerFolderRow(row)
-        ? 'Folder'
-        : row.containerId.substring(0, 12);
 
     return (
         <Container className='d-flex items-center gap-075'>
             <Container className='d-flex flex-center color-secondary'>
                 {icon}
             </Container>
-            <Container className='d-flex column gap-025 overflow-hidden'>
+            <Container className='overflow-hidden'>
                 <span className='font-weight-6 color-secondary'>{String(value)}</span>
-                <span className='font-size-1 color-muted'>{subtitle}</span>
             </Container>
         </Container>
     );

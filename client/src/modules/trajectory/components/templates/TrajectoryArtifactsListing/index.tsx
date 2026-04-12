@@ -1,6 +1,5 @@
 import sceneArtifactService from '@/modules/trajectory/api/services/scene-artifacts';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCellPopover';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import { clusterColumn, dateColumn, enumColumn, populatedNameColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
 import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
@@ -21,21 +20,6 @@ const createEmptyResponse = (params: PaginationParams): PaginatedResponse<SceneA
     }
 });
 
-const renderAnalysisId: NonNullable<ColumnConfig<SceneArtifact>['render']> = (_value, artifact) => {
-    if (!artifact.analysis) {
-        return <span className='font-size-2 color-muted'>-</span>;
-    }
-
-    const analysis = typeof artifact.analysis === 'string' ? null : artifact.analysis as unknown as Record<string, unknown>;
-    const label = typeof artifact.analysis === 'string' ? artifact.analysis : artifact.analysis._id;
-
-    return (
-        <PopulatedCellPopover document={analysis} modelName='Analysis'>
-            <span>{label}</span>
-        </PopulatedCellPopover>
-    );
-};
-
 const COLUMNS: ColumnConfig<SceneArtifact>[] = [
     populatedNameColumn<SceneArtifact>('trajectory', 'Trajectory', { width: 180 }),
     {
@@ -55,13 +39,6 @@ const COLUMNS: ColumnConfig<SceneArtifact>[] = [
     },
     clusterColumn<SceneArtifact>(),
     populatedNameColumn<SceneArtifact>('plugin', 'Plugin'),
-    {
-        key: 'analysis',
-        title: 'Analysis ID',
-        sortable: false,
-        render: renderAnalysisId,
-        skeleton: { variant: 'text', width: 160 }
-    },
     enumColumn<SceneArtifact>('sourceType', 'Source', { sortable: true, width: 120 }),
     dateColumn<SceneArtifact>('updatedAt', 'Updated At', {
         width: 110,

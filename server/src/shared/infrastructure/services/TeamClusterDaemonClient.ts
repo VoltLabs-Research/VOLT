@@ -410,10 +410,6 @@ export default class TeamClusterDaemonClient {
         return this.teamClusterReverseChannelService.attachTerminal(teamClusterId, containerId);
     }
 
-    async attachHostTerminal(teamClusterId: string): Promise<ContainerTerminalAttachment> {
-        return this.teamClusterReverseChannelService.attachHostTerminal(teamClusterId);
-    }
-
     async attachWebSocket(
         teamClusterId: string,
         targetUrl: string,

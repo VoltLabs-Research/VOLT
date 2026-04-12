@@ -4,7 +4,6 @@ import {
     useCreateTeamClusterTransferRequestMutation,
     useCreateTeamClusterMutation,
     useDeleteTeamClusterMutation,
-    useRequestClusterUpdateMutation,
     useRevealTeamClusterCredentialsMutation,
     useTeamClustersQuery,
     useUpdateTeamClusterQueueConcurrencyMutation,
@@ -17,7 +16,6 @@ import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useMemo, useEffect } from 'react';
 import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
-import type { RequestClusterUpdateOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/request-cluster-update';
 import type { TeamCluster, TeamClusterCredentialServices } from '@/modules/cluster/api/entities/team-cluster';
 import type { CreateTeamClusterTransferRequestOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/create-team-cluster-transfer-request';
 import type {
@@ -66,11 +64,6 @@ const REVEAL_CREDENTIALS_TOAST_OPTIONS: ClusterCreateToastOptions = {
 };
 
 const REMOTE_ACCESS_TOAST_OPTIONS: Record<TeamClusterRemoteAccessTarget, ClusterCreateToastOptions> = {
-    'host-terminal': {
-        loading: { title: 'Opening terminal...' },
-        success: { title: 'Terminal ready' },
-        error: { title: 'Failed to open terminal' }
-    },
     'mongo-documents': {
         loading: { title: 'Opening Mongo explorer...' },
         success: { title: 'Mongo explorer ready' },
@@ -95,12 +88,6 @@ const DELETE_CLUSTER_TOAST_OPTIONS: DeleteClusterToastOptions = {
         description: result.message
     }),
     error: { title: 'Failed to delete cluster' }
-};
-
-const UPDATE_CLUSTER_TOAST_OPTIONS: ClusterCreateToastOptions = {
-    loading: { title: 'Requesting cluster update...' },
-    success: { title: 'Update requested' },
-    error: { title: 'Failed to request cluster update' }
 };
 
 const UPDATE_QUEUE_CONCURRENCY_TOAST_OPTIONS: ClusterCreateToastOptions = {
@@ -135,12 +122,6 @@ export interface ClusterManagementResult {
     createCluster: (name: string) => Promise<{ teamCluster: TeamCluster; enrollmentToken: string }>;
     revealCredentials: (teamClusterId: string, password: string) => Promise<TeamClusterCredentialServices>;
     deleteCluster: (teamClusterId: string, password: string) => Promise<DeleteTeamClusterOutputDTO>;
-    requestUpdate: (
-        teamClusterId: string,
-        targetVersion: string,
-        isEdge: boolean,
-        password: string
-    ) => Promise<RequestClusterUpdateOutputDTO>;
     updateQueueConcurrency: (
         teamClusterId: string,
         queueConcurrency: TeamClusterQueueConcurrencyInputDTO,
@@ -198,7 +179,6 @@ const useClusterManagement = (): ClusterManagementResult => {
     const createMutation = useCreateTeamClusterMutation();
     const revealCredentialsMutation = useRevealTeamClusterCredentialsMutation();
     const deleteMutation = useDeleteTeamClusterMutation();
-    const updateMutation = useRequestClusterUpdateMutation();
     const updateQueueConcurrencyMutation = useUpdateTeamClusterQueueConcurrencyMutation();
     const updateRoleMutation = useUpdateTeamClusterRoleMutation();
     const createTransferRequestMutation = useCreateTeamClusterTransferRequestMutation();
@@ -266,25 +246,6 @@ const useClusterManagement = (): ClusterManagementResult => {
             teamClusterId,
             password
         }), DELETE_CLUSTER_TOAST_OPTIONS);
-    };
-
-    const requestUpdate = async (
-        teamClusterId: string,
-        targetVersion: string,
-        isEdge: boolean,
-        password: string
-    ) => {
-        if (!selectedTeamId) {
-            throw new Error('Missing selected team');
-        }
-
-        return showPromise(updateMutation.mutateAsync({
-            teamId: selectedTeamId,
-            teamClusterId,
-            targetVersion,
-            isEdge,
-            password
-        }), UPDATE_CLUSTER_TOAST_OPTIONS);
     };
 
     const updateQueueConcurrency = async (
@@ -428,7 +389,6 @@ const useClusterManagement = (): ClusterManagementResult => {
         createCluster,
         revealCredentials,
         deleteCluster,
-        requestUpdate,
         updateQueueConcurrency,
         updateRole,
         createTransferRequest,

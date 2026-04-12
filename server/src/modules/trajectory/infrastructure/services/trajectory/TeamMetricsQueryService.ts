@@ -1,7 +1,5 @@
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { TeamMetricsSnapshot } from '@modules/trajectory/domain/contracts/trajectory';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { ITeamMetricsQueryService } from '@modules/trajectory/domain/port/trajectory/ITeamMetricsQueryService';
@@ -24,11 +22,6 @@ type TimeWindow = {
     monthStart: Date;
     prevMonthStart: Date;
     weeksAgo: Date;
-};
-
-type PluginExposureReference = {
-    exposureId: string;
-    exposureName: string;
 };
 
 const createTimeWindow = (): TimeWindow => {
@@ -93,10 +86,7 @@ export default class TeamMetricsQueryService implements ITeamMetricsQueryService
         private readonly trajectoryRepo: ITrajectoryRepository,
 
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepo: IAnalysisRepository,
-
-        @inject(PLUGIN_TOKENS.PluginRepository)
-        private readonly pluginRepo: IPluginRepository
+        private readonly analysisRepo: IAnalysisRepository
     ) {}
 
     async getTeamMetrics(teamId: string): Promise<TeamMetricsSnapshot> {
@@ -125,31 +115,12 @@ export default class TeamMetricsQueryService implements ITeamMetricsQueryService
             : [];
 
         const analysisBuckets = createBuckets();
-        const pluginTrajectoryMap = new Map<string, string>();
 
         for (const analysis of analyses) {
             if (analysis.props.createdAt) {
                 updateBuckets(analysisBuckets, analysis.props.createdAt, window);
             }
-
-            if (!analysis.props.plugin || !analysis.props.trajectory) {
-                continue;
-            }
-
-            const pluginId = String(analysis.props.plugin);
-            if (!pluginTrajectoryMap.has(pluginId)) {
-                pluginTrajectoryMap.set(pluginId, String(analysis.props.trajectory));
-            }
         }
-
-        const pluginIds = [...pluginTrajectoryMap.keys()];
-        const plugins = pluginIds.length > 0
-            ? (await this.pluginRepo.findAll({
-                filter: { _id: { $in: pluginIds } } as Record<string, unknown>,
-                page: 1,
-                limit: pluginIds.length
-            })).data
-            : [];
 
         const totals: Record<string, number> = {
             trajectories: trajectoryBuckets.total,
@@ -164,72 +135,10 @@ export default class TeamMetricsQueryService implements ITeamMetricsQueryService
             analysis: analysisBuckets.weekly
         };
         const labelsSet = new Set<string>();
-        const meta: NonNullable<TeamMetricsSnapshot['meta']> = {};
 
         for (const metrics of Object.values(series)) {
             for (const label of metrics.keys()) {
                 labelsSet.add(label);
-            }
-        }
-
-        const pluginExposures = this.collectPluginExposures(plugins);
-
-        for (const plugin of plugins) {
-            const trajectoryId = pluginTrajectoryMap.get(plugin._id);
-            if (!trajectoryId) {
-                continue;
-            }
-
-            const pluginName = plugin.props.modifier?.name || plugin._id;
-
-            for (const exposure of pluginExposures.get(plugin._id) ?? []) {
-                const listingBuckets = createBuckets();
-
-                totals[exposure.exposureName] = listingBuckets.total;
-                lastMonth[exposure.exposureName] = toMonthChange(listingBuckets.currMonth, listingBuckets.prevMonth);
-                series[exposure.exposureName] = listingBuckets.weekly;
-                meta[exposure.exposureName] = {
-                    displayName: exposure.exposureName,
-                    pluginName,
-                    target: {
-                        kind: 'plugin-exposure-listing',
-                        trajectoryId,
-                        pluginId: plugin._id,
-                        exposureId: exposure.exposureId
-                    }
-                };
-
-                for (const label of listingBuckets.weekly.keys()) {
-                    labelsSet.add(label);
-                }
-            }
-        }
-
-        if (Object.keys(meta).length === 0) {
-            const teamPlugins = await this.pluginRepo.findAll({
-                filter: { team: teamId } as Record<string, unknown>,
-                page: 1,
-                limit: 1
-            });
-
-            if (teamPlugins.data.length > 0) {
-                const plugin = teamPlugins.data[0];
-                const pluginName = plugin.props.modifier?.name || plugin._id;
-                const firstExposure = plugin.props.exposures?.[0];
-                const exposureName = firstExposure?.name || plugin._id;
-
-                totals[exposureName] = 0;
-                lastMonth[exposureName] = 0;
-                series[exposureName] = new Map();
-                meta[exposureName] = {
-                    displayName: exposureName,
-                    pluginName,
-                    target: {
-                        kind: 'plugins-dashboard',
-                        pluginId: plugin._id,
-                        exposureId: firstExposure?._id ? String(firstExposure._id) : undefined
-                    }
-                };
             }
         }
 
@@ -245,27 +154,7 @@ export default class TeamMetricsQueryService implements ITeamMetricsQueryService
         return {
             totals,
             lastMonth,
-            weekly,
-            meta
+            weekly
         };
-    }
-
-    private collectPluginExposures(plugins: Awaited<ReturnType<IPluginRepository['findAll']>>['data']): Map<string, PluginExposureReference[]> {
-        const pluginExposures = new Map<string, PluginExposureReference[]>();
-
-        for (const plugin of plugins) {
-            const exposures = (plugin.props.exposures ?? [])
-                .filter((exposure) => Boolean(exposure._id && exposure.name && exposure.hasListing))
-                .map((exposure) => ({
-                    exposureId: String(exposure._id),
-                    exposureName: String(exposure.name)
-                }));
-
-            if (exposures.length > 0) {
-                pluginExposures.set(plugin._id, exposures);
-            }
-        }
-
-        return pluginExposures;
     }
 };

@@ -2012,105 +2012,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /api/container-vnc/{teamId}/{containerId}/session:
-    post:
-      tags:
-        - Container VNC
-      summary: Create a VNC session
-      description: Create a new VNC session for a container. Requires container read permission.
-      operationId: createContainerVncSession
-      security:
-        - BearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/TeamId'
-        - name: containerId
-          in: path
-          required: true
-          description: The ID of the container
-          schema:
-            type: string
-            minLength: 1
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateVncSessionRequest'
-      responses:
-        '201':
-          description: VNC session created successfully
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/VncSession'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /api/container-vnc/connect-client.js:
-    get:
-      tags:
-        - Container VNC
-      summary: Get VNC connect client script
-      description: Retrieve the JavaScript client script used to establish VNC connections.
-      operationId: getVncConnectClientScript
-      responses:
-        '200':
-          description: VNC connect client JavaScript file
-          content:
-            application/javascript:
-              schema:
-                type: string
-  /api/container-vnc/{teamId}/{containerId}/connect:
-    get:
-      tags:
-        - Container VNC
-      summary: Get VNC connect page
-      description: Retrieve the HTML page used to establish a VNC connection to a container.
-      operationId: getVncConnectPage
-      parameters:
-        - $ref: '#/components/parameters/TeamId'
-        - name: containerId
-          in: path
-          required: true
-          description: The ID of the container
-          schema:
-            type: string
-            minLength: 1
-        - name: token
-          in: query
-          required: true
-          description: VNC session token
-          schema:
-            type: string
-            minLength: 1
-        - name: parentOrigin
-          in: query
-          required: true
-          description: HTTP(S) origin of the parent window for postMessage communication
-          schema:
-            type: string
-            format: uri
-      responses:
-        '200':
-          description: VNC connect page returned successfully
-          content:
-            text/html:
-              schema:
-                type: string
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
   /api/trajectories/{teamId}/samples:
     get:
       operationId: listSamples
@@ -8459,39 +8360,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /api/teams/{teamId}/clusters/{teamClusterId}/available-updates:
-    get:
-      operationId: fetchAvailableClusterVersions
-      tags:
-        - Team Clusters
-      summary: List available cluster updates
-      description: Returns available runtime versions for the cluster.
-      parameters:
-        - $ref: '#/components/parameters/TeamId'
-        - $ref: '#/components/parameters/TeamClusterId'
-      responses:
-        '200':
-          description: Available versions
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          versions:
-                            type: array
-                            items:
-                              $ref: '#/components/schemas/AvailableClusterVersion'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
   /api/teams/{teamId}/clusters/{teamClusterId}/credentials/reveal:
     post:
       operationId: revealTeamClusterCredentials
@@ -8740,47 +8608,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /api/teams/{teamId}/clusters/{teamClusterId}/update-requests:
-    post:
-      operationId: requestTeamClusterUpdate
-      tags:
-        - Team Clusters
-      summary: Request cluster update
-      description: Requests an update of the cluster runtime.
-      parameters:
-        - $ref: '#/components/parameters/TeamId'
-        - $ref: '#/components/parameters/TeamClusterId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RequestTeamClusterUpdateRequest'
-      responses:
-        '200':
-          description: Update requested
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          message:
-                            type: string
-                          teamCluster:
-                            $ref: '#/components/schemas/TeamCluster'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -9904,8 +9731,6 @@ components:
         useImageCmd:
           type: boolean
           description: Whether to use the default command from the image
-        capabilities:
-          $ref: '#/components/schemas/ContainerCapabilities'
       additionalProperties: false
     UpdateContainerRequest:
       type: object
@@ -9967,36 +9792,6 @@ components:
           maxLength: 255
           description: The new title of the folder
       additionalProperties: false
-    CreateVncSessionRequest:
-      type: object
-      required:
-        - password
-        - parentOrigin
-      properties:
-        password:
-          type: string
-          minLength: 1
-          description: The VNC password for the session
-        parentOrigin:
-          type: string
-          format: uri
-          description: HTTP(S) origin of the parent window
-        width:
-          type: integer
-          minimum: 1
-          maximum: 8192
-          description: Display width in pixels
-        height:
-          type: integer
-          minimum: 1
-          maximum: 4320
-          description: Display height in pixels
-        dpi:
-          type: integer
-          minimum: 1
-          maximum: 300
-          description: Display DPI
-      additionalProperties: false
     EnvironmentVariable:
       type: object
       required:
@@ -10026,13 +9821,6 @@ components:
           minimum: 1
           maximum: 65535
           description: The public (host) port. Omit or set to 0 for auto-assignment.
-      additionalProperties: false
-    ContainerCapabilities:
-      type: object
-      properties:
-        vnc:
-          type: boolean
-          description: Whether VNC capability is enabled
       additionalProperties: false
     Chat:
       type: object
@@ -10127,8 +9915,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PortMapping'
-        capabilities:
-          $ref: '#/components/schemas/ContainerCapabilities'
         createdAt:
           type: string
           format: date-time
@@ -10193,16 +9979,6 @@ components:
           type: integer
         networkTx:
           type: integer
-    VncSession:
-      type: object
-      description: A VNC session for a container
-      properties:
-        token:
-          type: string
-          description: Session token used to connect to the VNC session
-        connectUrl:
-          type: string
-          description: URL to open the VNC connect page
     Trajectory:
       type: object
       required:
@@ -12091,19 +11867,6 @@ components:
         updatedAt:
           type: string
           format: date-time
-    AvailableClusterVersion:
-      type: object
-      properties:
-        tag:
-          type: string
-        publishedAt:
-          type:
-            - string
-            - 'null'
-        isLatest:
-          type: boolean
-        isEdge:
-          type: boolean
     PasswordConfirmationRequest:
       type: object
       required:
@@ -12126,7 +11889,6 @@ components:
     TeamClusterRemoteAccessTarget:
       type: string
       enum:
-        - host-terminal
         - mongo-documents
         - redis-data
         - minio
@@ -12238,23 +12000,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TeamClusterMongoDocument'
-    RequestTeamClusterUpdateRequest:
-      type: object
-      required:
-        - targetVersion
-        - password
-      properties:
-        targetVersion:
-          type: string
-          minLength: 1
-          maxLength: 128
-        isEdge:
-          type: boolean
-          default: false
-        password:
-          type: string
-          minLength: 1
-      additionalProperties: false
     TeamClusterCredentialsResponse:
       type: object
       properties:

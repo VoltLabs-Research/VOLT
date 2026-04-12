@@ -13,31 +13,50 @@ interface SessionTokenInfo {
 
 const MOBILE_USER_AGENT_PATTERN = /Android|iPhone|iPad|iPod|Mobile/i;
 
-export const parseSessionUserAgent = (userAgent: string): SessionUserAgentInfo => {
+const normalizeSessionString = (value: string | null | undefined): string => {
+    if (typeof value !== 'string') {
+        return '';
+    }
+
+    return value.trim();
+};
+
+export const parseSessionUserAgent = (userAgent: string | null | undefined): SessionUserAgentInfo => {
+    const normalizedUserAgent = normalizeSessionString(userAgent);
     let browser = 'Unknown Browser';
     let os = 'Unknown OS';
 
-    if (userAgent.includes('Firefox/')) browser = 'Firefox';
-    else if (userAgent.includes('Edg/')) browser = 'Edge';
-    else if (userAgent.includes('OPR/') || userAgent.includes('Opera/')) browser = 'Opera';
-    else if (userAgent.includes('Chrome/') && userAgent.includes('Safari/')) browser = 'Chrome';
-    else if (userAgent.includes('Safari/') && !userAgent.includes('Chrome/')) browser = 'Safari';
+    if (normalizedUserAgent.includes('Firefox/')) browser = 'Firefox';
+    else if (normalizedUserAgent.includes('Edg/')) browser = 'Edge';
+    else if (normalizedUserAgent.includes('OPR/') || normalizedUserAgent.includes('Opera/')) browser = 'Opera';
+    else if (normalizedUserAgent.includes('Chrome/') && normalizedUserAgent.includes('Safari/')) browser = 'Chrome';
+    else if (normalizedUserAgent.includes('Safari/') && !normalizedUserAgent.includes('Chrome/')) browser = 'Safari';
 
-    if (userAgent.includes('Windows')) os = 'Windows';
-    else if (userAgent.includes('Mac OS X') || userAgent.includes('Macintosh')) os = 'macOS';
-    else if (userAgent.includes('Android')) os = 'Android';
-    else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) os = 'iOS';
-    else if (userAgent.includes('Linux')) os = 'Linux';
-    else if (userAgent.includes('CrOS')) os = 'ChromeOS';
+    if (normalizedUserAgent.includes('Windows')) os = 'Windows';
+    else if (normalizedUserAgent.includes('Mac OS X') || normalizedUserAgent.includes('Macintosh')) os = 'macOS';
+    else if (normalizedUserAgent.includes('Android')) os = 'Android';
+    else if (normalizedUserAgent.includes('iPhone') || normalizedUserAgent.includes('iPad')) os = 'iOS';
+    else if (normalizedUserAgent.includes('Linux')) os = 'Linux';
+    else if (normalizedUserAgent.includes('CrOS')) os = 'ChromeOS';
 
     return { browser, os };
 };
 
-export const isMobileUserAgent = MOBILE_USER_AGENT_PATTERN.test.bind(MOBILE_USER_AGENT_PATTERN);
+export const isMobileUserAgent = (userAgent: string | null | undefined): boolean => {
+    return MOBILE_USER_AGENT_PATTERN.test(normalizeSessionString(userAgent));
+};
 
-export const formatSessionRelativeTime = (dateValue: string): string => {
+export const formatSessionRelativeTime = (dateValue: string | null | undefined): string => {
+    if (!dateValue) {
+        return 'Unknown activity';
+    }
+
     const now = Date.now();
     const then = new Date(dateValue).getTime();
+    if (!Number.isFinite(then)) {
+        return 'Unknown activity';
+    }
+
     const diffMs = now - then;
     const diffSec = Math.floor(diffMs / 1000);
     const diffMin = Math.floor(diffSec / 60);
@@ -51,8 +70,8 @@ export const formatSessionRelativeTime = (dateValue: string): string => {
     return new Date(dateValue).toLocaleDateString();
 };
 
-export const getSessionTokenInfo = (token: string): SessionTokenInfo => {
-    const normalizedToken = token.trim();
+export const getSessionTokenInfo = (token: string | null | undefined): SessionTokenInfo => {
+    const normalizedToken = normalizeSessionString(token);
 
     if (normalizedToken.length <= 8) {
         return { shortValue: normalizedToken || 'Unavailable' };

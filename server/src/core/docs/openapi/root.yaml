@@ -218,12 +218,6 @@ paths:
     $ref: paths/containers/by-teamid__by-containerid__stats.yaml
   /api/containers/{teamId}/{containerId}/files/content:
     $ref: paths/containers/by-teamid__by-containerid__files__content.yaml
-  /api/container-vnc/{teamId}/{containerId}/session:
-    $ref: paths/container-vnc/by-teamid__by-containerid__session.yaml
-  /api/container-vnc/connect-client.js:
-    $ref: paths/container-vnc/connect-client-js.yaml
-  /api/container-vnc/{teamId}/{containerId}/connect:
-    $ref: paths/container-vnc/by-teamid__by-containerid__connect.yaml
   /api/trajectories/{teamId}/samples:
     $ref: paths/trajectories/by-teamid__samples.yaml
   /api/trajectories/{teamId}/samples/{filename}:
@@ -454,8 +448,6 @@ paths:
     $ref: paths/teams/by-teamid__clusters.yaml
   /api/teams/{teamId}/clusters/{teamClusterId}:
     $ref: paths/teams/by-teamid__clusters__by-teamclusterid.yaml
-  /api/teams/{teamId}/clusters/{teamClusterId}/available-updates:
-    $ref: paths/teams/by-teamid__clusters__by-teamclusterid__available-updates.yaml
   /api/teams/{teamId}/clusters/{teamClusterId}/credentials/reveal:
     $ref: paths/teams/by-teamid__clusters__by-teamclusterid__credentials__reveal.yaml
   /api/teams/{teamId}/clusters/{teamClusterId}/remote-access/sessions:
@@ -470,8 +462,6 @@ paths:
     $ref: paths/teams/by-teamid__clusters__by-teamclusterid__enrollment-token__regenerate.yaml
   /api/teams/{teamId}/clusters/{teamClusterId}/delete-requests:
     $ref: paths/teams/by-teamid__clusters__by-teamclusterid__delete-requests.yaml
-  /api/teams/{teamId}/clusters/{teamClusterId}/update-requests:
-    $ref: paths/teams/by-teamid__clusters__by-teamclusterid__update-requests.yaml
   /api/team-clusters/{teamClusterId}/healthcheck:
     $ref: paths/team-clusters/by-teamclusterid__healthcheck.yaml
   /api/team-clusters/{teamClusterId}/install-manifest:
@@ -606,14 +596,10 @@ components:
       $ref: components/schemas/containers.yaml#/CreateFolderRequest
     UpdateFolderRequest:
       $ref: components/schemas/containers.yaml#/UpdateFolderRequest
-    CreateVncSessionRequest:
-      $ref: components/schemas/container-vnc.yaml#/CreateVncSessionRequest
     EnvironmentVariable:
       $ref: components/schemas/containers.yaml#/EnvironmentVariable
     PortMapping:
       $ref: components/schemas/containers.yaml#/PortMapping
-    ContainerCapabilities:
-      $ref: components/schemas/containers.yaml#/ContainerCapabilities
     Chat:
       $ref: components/schemas/chats.yaml#/Chat
     ChatMessage:
@@ -630,8 +616,6 @@ components:
       $ref: components/schemas/containers.yaml#/ContainerProcess
     ContainerStats:
       $ref: components/schemas/containers.yaml#/ContainerStats
-    VncSession:
-      $ref: components/schemas/container-vnc.yaml#/VncSession
     Trajectory:
       $ref: components/schemas/trajectories.yaml#/Trajectory
     TrajectoryPreview:
@@ -822,8 +806,6 @@ components:
       $ref: components/schemas/teams.yaml#/TeamClusterCredentialServices
     TeamCluster:
       $ref: components/schemas/common.yaml#/TeamCluster
-    AvailableClusterVersion:
-      $ref: components/schemas/teams.yaml#/AvailableClusterVersion
     PasswordConfirmationRequest:
       $ref: components/schemas/teams.yaml#/PasswordConfirmationRequest
     CreateTeamClusterRequest:
@@ -842,8 +824,6 @@ components:
       $ref: components/schemas/teams.yaml#/TeamClusterMongoDocument
     TeamClusterRemoteExplorerNode:
       $ref: components/schemas/teams.yaml#/TeamClusterRemoteExplorerNode
-    RequestTeamClusterUpdateRequest:
-      $ref: components/schemas/teams.yaml#/RequestTeamClusterUpdateRequest
     TeamClusterCredentialsResponse:
       $ref: components/schemas/teams.yaml#/TeamClusterCredentialsResponse
     TeamClusterHealthcheckRequest:

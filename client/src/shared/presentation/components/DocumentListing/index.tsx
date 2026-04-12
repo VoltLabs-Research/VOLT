@@ -1,12 +1,8 @@
-import { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import { isAccessDeniedCode } from '@/shared/errors/core';
 import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
-import type { ExportType } from '@/shared/domain/export/types';
 import { getValueByPath } from '@/shared/utils/format';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import { showPromise } from '@/shared/presentation/hooks/toast';
 import type { SortConfig } from '@/shared/domain/sorting/types';
-import { triggerBrowserDownload } from '@/shared/utils/file';
 import { sortData } from '@/shared/utils/sort';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 import queryClient from '@/shared/infrastructure/query/query-client';
@@ -16,9 +12,6 @@ import AsyncMenuItemWrapper from '@/shared/presentation/components/AsyncMenuItem
 import DocumentListingGrid from '@/shared/presentation/components/DocumentListingGrid';
 import DocumentListingTable from '@/shared/presentation/components/DocumentListingTable';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Modal from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
@@ -26,15 +19,15 @@ import Title from '@/shared/presentation/components/Title';
 import useDocumentListingPagination from '@/shared/presentation/hooks/use-document-listing-pagination';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
+import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 
 import './DocumentListing.css';
 import { Skeleton } from '@mui/material';
 import { motion } from 'framer-motion';
 import { ExternalLink, Plus } from 'lucide-react';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import type { ChangeEvent } from 'react';
+import { RiFileCopyLine } from 'react-icons/ri';
 import { RxDotsHorizontal } from 'react-icons/rx';
-import { sileo } from 'sileo';
 import React from 'react';
 import type { CSSProperties } from 'react';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
@@ -49,30 +42,12 @@ export interface SocketInvalidationConfig {
     queryKeys: QueryKey[];
 };
 
-export enum DocumentListingTabAction {
-    View = 'view',
-    Export = 'export'
-};
-
 export interface DocumentListingTab {
     id: string;
     label: string;
-    action?: DocumentListingTabAction;
 };
 
 type ViewMode = 'table' | 'grid';
-
-export interface DocumentListingExportParams<TContext = Record<string, never>> {
-    format: ExportType;
-    context?: TContext;
-    search: string;
-    sort?: SortConfig | null;
-};
-
-interface DocumentListingExportConfig<TContext = Record<string, never>> {
-    onExport?: (params: DocumentListingExportParams<TContext>) => Promise<Blob | void>;
-    getFilename?: (format: ExportType) => string;
-};
 
 interface DocumentListingProps<T extends { _id: string }, TContext = Record<string, never>> {
     title: string | React.ReactNode;
@@ -107,37 +82,14 @@ interface DocumentListingProps<T extends { _id: string }, TContext = Record<stri
     tabs?: DocumentListingTab[];
     defaultTabId?: string;
     onTabChange?: (tabId: string) => void;
-    exportConfig?: DocumentListingExportConfig<TContext>;
     socketInvalidation?: SocketInvalidationConfig[];
     compact?: boolean;
-};
-
-interface ExportTypeOption {
-    title: string;
-    value: ExportType;
 };
 
 const DEFAULT_TABS: DocumentListingTab[] = [
     {
         id: 'list',
-        label: 'List',
-        action: DocumentListingTabAction.View
-    },
-    {
-        id: 'export',
-        label: 'Export',
-        action: DocumentListingTabAction.Export
-    }
-];
-
-const EXPORT_TYPE_OPTIONS: ExportTypeOption[] = [
-    {
-        title: 'JSON',
-        value: 'json'
-    },
-    {
-        title: 'CSV',
-        value: 'csv'
+        label: 'List'
     }
 ];
 
@@ -153,17 +105,12 @@ const VISUALLY_HIDDEN_STYLES: CSSProperties = {
     border: 0
 };
 
-const isExportType = (value: string): value is ExportType => {
-    return value === 'json' || value === 'csv';
-};
-
 const resolveInitialTabId = (tabs: DocumentListingTab[], preferredTabId?: string): string => {
     if (preferredTabId && tabs.some((tab) => tab.id === preferredTabId)) {
         return preferredTabId;
     }
 
-    const firstViewTab = tabs.find((tab) => tab.action !== DocumentListingTabAction.Export);
-    return firstViewTab?.id || tabs[0]?.id || 'list';
+    return tabs[0]?.id || 'list';
 };
 
 const sanitizePersistenceKey = (value: string): string => {
@@ -215,32 +162,20 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     tabs,
     defaultTabId,
     onTabChange,
-    exportConfig,
     socketInvalidation,
     compact = false
 }: DocumentListingProps<T, TContext>) => {
     const socketService = useSocket();
     const prefersReducedMotion = usePrefersReducedMotion();
     const { searchParams, updateSearchParams } = useSearchParamsState();
-    const canExport = Boolean(exportConfig?.onExport);
-    const resolvedTabs = useMemo(() => {
-        const availableTabs = tabs?.length ? tabs : DEFAULT_TABS;
-
-        if (canExport) {
-            return availableTabs;
-        }
-
-        return availableTabs.filter((tab) => tab.action !== DocumentListingTabAction.Export);
-    }, [canExport, tabs]);
+    const resolvedTabs = useMemo(() => tabs?.length ? tabs : DEFAULT_TABS, [tabs]);
     const persistenceKey = useMemo(() => resolvePersistenceKey(queryKey, title), [queryKey, title]);
     const tabParamKey = `${persistenceKey}-tab`;
     const sortKeyParamKey = `${persistenceKey}-sort`;
     const sortDirectionParamKey = `${persistenceKey}-dir`;
-    const exportTypeParamKey = `${persistenceKey}-export`;
     const persistedTabId = searchParams.get(tabParamKey) || undefined;
     const persistedSortKey = searchParams.get(sortKeyParamKey) || undefined;
     const persistedSortDirection = searchParams.get(sortDirectionParamKey);
-    const persistedExportType = searchParams.get(exportTypeParamKey);
     const initialTabId = useMemo(() => {
         return resolveInitialTabId(resolvedTabs, persistedTabId ?? defaultTabId);
     }, [defaultTabId, persistedTabId, resolvedTabs]);
@@ -255,37 +190,23 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         };
     });
     const [activeTabId, setActiveTabId] = useState(initialTabId);
-    const [lastContentTabId, setLastContentTabId] = useState(initialTabId);
-    const [selectedExportType, setSelectedExportType] = useState<ExportType>(() => {
-        const exportType = persistedExportType ?? '';
-        if (isExportType(exportType)) {
-            return exportType;
-        }
-
-        return 'json';
-    });
-    const [isExporting, setIsExporting] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setActiveTabId(initialTabId);
-        setLastContentTabId(initialTabId);
     }, [initialTabId]);
 
     useEffect(() => {
         const currentTab = searchParams.get(tabParamKey);
         const currentSortKey = searchParams.get(sortKeyParamKey);
         const currentSortDirection = searchParams.get(sortDirectionParamKey);
-        const currentExportType = searchParams.get(exportTypeParamKey);
         const shouldPersistTab = !hideTabs && resolvedTabs.length > 1;
         const nextTab = shouldPersistTab ? activeTabId : null;
-        const nextExportType = canExport ? selectedExportType : null;
 
         if (
             currentTab === nextTab
             && currentSortKey === (sortConfig?.key ?? null)
             && currentSortDirection === (sortConfig?.direction ?? null)
-            && currentExportType === nextExportType
         ) {
             return;
         }
@@ -293,10 +214,9 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         updateSearchParams({
             [tabParamKey]: nextTab,
             [sortKeyParamKey]: sortConfig?.key ?? null,
-            [sortDirectionParamKey]: sortConfig?.direction ?? null,
-            [exportTypeParamKey]: nextExportType
+            [sortDirectionParamKey]: sortConfig?.direction ?? null
         }, { replace: true });
-    }, [activeTabId, canExport, exportTypeParamKey, hideTabs, resolvedTabs.length, searchParams, selectedExportType, sortConfig, sortDirectionParamKey, sortKeyParamKey, tabParamKey, updateSearchParams]);
+    }, [activeTabId, hideTabs, resolvedTabs.length, searchParams, sortConfig, sortDirectionParamKey, sortKeyParamKey, tabParamKey, updateSearchParams]);
 
     const getColumnSortKey = useCallback((col: ColumnConfig<T>): string => {
         return String(col.key ?? col.path ?? '');
@@ -310,8 +230,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         error,
         errorCode,
         handleLoadMore,
-        refresh,
-        search
+        refresh
     } = useDocumentListingPagination<T, TContext>({
         queryKey,
         fetchData,
@@ -361,14 +280,27 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         };
     }, [socketService, socketInvalidation]);
 
-    const exportModalId = useMemo(() => `document-listing-export-${Math.random().toString(36).slice(2)}`, []);
-
     const wrappedGetMenuOptions = useCallback((item: T, selectedItems: T[]) => {
-        if (!getMenuOptions) {
-            return [];
+        const menuOptions = getMenuOptions ? getMenuOptions(item, selectedItems) : [];
+        const itemId = typeof item._id === 'string' ? item._id.trim() : '';
+
+        if (!itemId || menuOptions.some((option) => option.label === 'Copy Document ID')) {
+            return menuOptions;
         }
 
-        return getMenuOptions(item, selectedItems);
+        return [
+            ...menuOptions,
+            {
+                label: 'Copy Document ID',
+                icon: RiFileCopyLine,
+                onClick: async () => {
+                    await copyTextToClipboard(itemId, {
+                        successMessage: 'Document ID copied to clipboard',
+                        errorMessage: 'Failed to copy document ID'
+                    });
+                }
+            }
+        ];
     }, [getMenuOptions]);
 
     const sortedData = useMemo(() => {
@@ -483,10 +415,6 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         );
     }, [docLink]);
 
-    const resetToLastContentTab = useCallback(() => {
-        setActiveTabId(lastContentTabId);
-    }, [lastContentTabId]);
-
     const handleTabChange = useCallback((tabId: string) => {
         const targetTab = resolvedTabs.find((tab) => tab.id === tabId);
         if (!targetTab) {
@@ -494,62 +422,8 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         }
 
         setActiveTabId(targetTab.id);
-
-        if (targetTab.action === DocumentListingTabAction.Export) {
-            openModal(exportModalId);
-            return;
-        }
-
-        setLastContentTabId(targetTab.id);
         onTabChange?.(targetTab.id);
-    }, [exportModalId, onTabChange, resolvedTabs]);
-
-    const handleConfirmExport = useCallback(async () => {
-        const onExport = exportConfig?.onExport;
-        if (!onExport) {
-            sileo.error({ title: 'Export is not available for this module yet' });
-            resetToLastContentTab();
-            return;
-        }
-
-        setIsExporting(true);
-        try {
-            await showPromise(
-                (async () => {
-                    const result = await onExport({
-                        format: selectedExportType,
-                        context,
-                        search,
-                        sort: sortConfig
-                    });
-
-                    if (result instanceof Blob) {
-                        const filename = exportConfig.getFilename?.(selectedExportType)
-                            ?? `listing-export.${selectedExportType}`;
-                        triggerBrowserDownload(result, filename);
-                    }
-
-                    return result;
-                })(),
-                {
-                    loading: { title: 'Generating export...' },
-                    success: { title: 'Export generated successfully' },
-                    error: { title: 'Failed to export listing' }
-                }
-            );
-            closeModal(exportModalId);
-            resetToLastContentTab();
-        } finally {
-            setIsExporting(false);
-        }
-    }, [context, exportConfig, exportModalId, resetToLastContentTab, search, selectedExportType, sortConfig]);
-
-    const handleExportTypeChange = useCallback((event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { value } = event.target;
-        if (isExportType(value)) {
-            setSelectedExportType(value);
-        }
-    }, []);
+    }, [onTabChange, resolvedTabs]);
 
     const isAccessDenied = !!errorCode && isAccessDeniedCode(errorCode);
 
@@ -710,39 +584,6 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
             )}
 
             {renderContent()}
-
-            <Modal
-                id={exportModalId}
-                title='Export listing'
-                description='Choose a format to export all matching records with the current listing scope.'
-                footer={(
-                    <ModalFooterActions
-                        secondary={{
-                            label: 'Cancel',
-                            onClick: () => {
-                                closeModal(exportModalId);
-                                resetToLastContentTab();
-                            }
-                        }}
-                        primary={{
-                            label: 'Export',
-                            isLoading: isExporting,
-                            onClick: handleConfirmExport
-                        }}
-                    />
-                )}
-            >
-                <Container className='p-1-5'>
-                    <FormFieldRHF
-                        label='Format'
-                        fieldType='select'
-                        variant='inline'
-                        options={EXPORT_TYPE_OPTIONS}
-                        value={selectedExportType}
-                        onChange={handleExportTypeChange}
-                    />
-                </Container>
-            </Modal>
         </Container>
     );
 };

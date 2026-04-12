@@ -41,8 +41,6 @@ const getPortMappingFormItem = (item: PortMappingSourceItem): PortMappingFormIte
     };
 };
 
-const CONTAINER_USERNAME_ENV_KEY = 'CONTAINER_USERNAME';
-
 interface ValueChangeTarget {
     value: string | boolean;
 };
@@ -147,19 +145,6 @@ const getCustomFieldType = (customField: ContainerTemplateCustomField) => {
     return 'text';
 };
 
-const getCustomFieldInputProps = (customField: ContainerTemplateCustomField) => {
-    if (customField.env?.key !== CONTAINER_USERNAME_ENV_KEY) {
-        return undefined;
-    }
-
-    return {
-        autoComplete: 'username',
-        autoCapitalize: 'none',
-        spellCheck: false,
-        pattern: customField.pattern
-    };
-};
-
 const renderCustomFieldsSection = (
     customFields: ContainerTemplateCustomField[],
     customFieldValues: ContainerConfig['customFieldValues'],
@@ -193,8 +178,7 @@ const renderCustomFieldsSection = (
                     inputProps={{
                         autoComplete: customField.type === ContainerTemplateCustomFieldType.Password
                             ? 'new-password'
-                            : 'off',
-                        ...getCustomFieldInputProps(customField)
+                            : 'off'
                     }}
                     className='w-full'
                 />
@@ -205,8 +189,6 @@ const renderCustomFieldsSection = (
         );
     };
 
-    const hasContainerUsernameField = customFields.some((customField) => customField.env?.key === CONTAINER_USERNAME_ENV_KEY);
-
     return (
         <Container className='create-container-config-card full-width radius-md d-flex column gap-1 p-1-5'>
             <SettingsSectionHeader
@@ -214,9 +196,6 @@ const renderCustomFieldsSection = (
                 description='These options come from the selected template.'
                 className='create-container-config-section-header mb-1 pb-075'
             />
-            {hasContainerUsernameField && (
-                <Paragraph className='font-size-2 color-secondary'>The shared password will be used for the Linux user inside the container and for VNC remote desktop access.</Paragraph>
-            )}
             <Container className='d-flex column gap-1'>
                 {customFields.map(renderCustomField)}
             </Container>

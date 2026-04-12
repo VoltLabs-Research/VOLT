@@ -1,7 +1,6 @@
 import CompleteTeamClusterDeletionController from '@modules/team-cluster/infrastructure/http/controllers/CompleteTeamClusterDeletionController';
 import CreateTeamClusterTransferRequestController from '@modules/team-cluster/infrastructure/http/controllers/CreateTeamClusterTransferRequestController';
 import CreateTeamClusterController from '@modules/team-cluster/infrastructure/http/controllers/CreateTeamClusterController';
-import FetchAvailableClusterVersionsController from '@modules/team-cluster/infrastructure/http/controllers/FetchAvailableClusterVersionsController';
 import GenerateTeamClusterInstallManifestUseCase from '@modules/team-cluster/application/use-cases/GenerateTeamClusterInstallManifestUseCase';
 import ProcessTeamClusterHealthcheckUseCase from '@modules/team-cluster/application/use-cases/ProcessTeamClusterHealthcheckUseCase';
 import CreateTeamClusterRemoteAccessSessionController from '@modules/team-cluster/infrastructure/http/controllers/CreateTeamClusterRemoteAccessSessionController';
@@ -15,7 +14,6 @@ import ListTeamClustersByTeamIdController from '@modules/team-cluster/infrastruc
 import ListTeamClusterTransferJobsController from '@modules/team-cluster/infrastructure/http/controllers/ListTeamClusterTransferJobsController';
 import RecordTeamClusterHeartbeatController from '@modules/team-cluster/infrastructure/http/controllers/RecordTeamClusterHeartbeatController';
 import RegenerateTeamClusterEnrollmentTokenController from '@modules/team-cluster/infrastructure/http/controllers/RegenerateTeamClusterEnrollmentTokenController';
-import RequestTeamClusterUpdateController from '@modules/team-cluster/infrastructure/http/controllers/RequestTeamClusterUpdateController';
 import RevealTeamClusterCredentialsController from '@modules/team-cluster/infrastructure/http/controllers/RevealTeamClusterCredentialsController';
 import UpdateTeamClusterLifecycleController from '@modules/team-cluster/infrastructure/http/controllers/UpdateTeamClusterLifecycleController';
 import UpdateTeamClusterQueueConcurrencyController from '@modules/team-cluster/infrastructure/http/controllers/UpdateTeamClusterQueueConcurrencyController';
@@ -33,7 +31,6 @@ export default createControllerRegistry({
     createTransferRequest: CreateTeamClusterTransferRequestController,
     deleteById: DeleteTeamClusterByIdController,
     downloadRemoteExplorerObject: DownloadTeamClusterRemoteExplorerObjectController,
-    fetchAvailableVersions: FetchAvailableClusterVersionsController,
     generateInstallManifest: GenerateTeamClusterInstallManifestController,
     getById: GetTeamClusterByIdController,
     getResourceLimits: GetClusterResourceLimitsController,
@@ -44,7 +41,6 @@ export default createControllerRegistry({
     processHealthcheck: ProcessTeamClusterHealthcheckController,
     recordHeartbeat: RecordTeamClusterHeartbeatController,
     regenerateEnrollmentToken: RegenerateTeamClusterEnrollmentTokenController,
-    requestUpdate: RequestTeamClusterUpdateController,
     revealCredentials: RevealTeamClusterCredentialsController,
     updateLifecycle: UpdateTeamClusterLifecycleController,
     updateQueueConcurrency: UpdateTeamClusterQueueConcurrencyController,
