@@ -2,6 +2,7 @@ import {
     sceneArtifactsQuery,
     SCENE_ARTIFACTS_QUERY_KEYS
 } from '@/modules/trajectory/hooks/scene-artifacts/queries';
+import { toSceneObjectFromArtifact } from '@/modules/canvas/utilities/scene-identity';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { useEffect, useMemo } from 'react';
 import queryClient from '@/shared/infrastructure/query/query-client';
@@ -16,6 +17,10 @@ const isSceneArtifact = (item: unknown): item is SceneArtifact => {
     if (!item || typeof item !== 'object') return false;
     const candidate = item as Record<string, unknown>;
     return typeof candidate._id === 'string' && typeof candidate.sourceType === 'string';
+};
+
+const isSupportedParticleFilterArtifact = (artifact: SceneArtifact): boolean => {
+    return toSceneObjectFromArtifact(artifact)?.source === 'particle-filter';
 };
 
 const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
@@ -46,7 +51,9 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
 
     const particleFilterArtifacts = useMemo(() => {
         if (!particleFilterQuery.data) return [];
-        return particleFilterQuery.data.data.filter(isSceneArtifact);
+        return particleFilterQuery.data.data
+            .filter(isSceneArtifact)
+            .filter(isSupportedParticleFilterArtifact);
     }, [particleFilterQuery.data]);
 
     const isLoading = colorCodingQuery.isLoading || particleFilterQuery.isLoading;

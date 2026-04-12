@@ -7,48 +7,10 @@ export enum ParticleFilterCombinator {
     Or = 'OR'
 };
 
-export enum ParticleFilterMode {
-    Conditions = 'conditions',
-    Preset = 'preset'
-};
-
-export enum ParticleFilterConditionKind {
-    Property = 'property',
-    Preset = 'preset'
-};
-
-export enum ParticleFilterPreset {
-    SurfaceAtoms = 'surface-atoms'
-};
-
-export enum SurfaceAtomsCutoffMode {
-    Auto = 'auto',
-    Manual = 'manual'
-};
-
-export interface ParticleFilterPropertyCondition extends FilterExpression {
-    kind: ParticleFilterConditionKind.Property;
+export interface ParticleFilterCondition extends FilterExpression {
+    kind?: 'property';
     exposureId?: string;
-};
-
-export interface SurfaceAtomsPresetConfig {
-    layers: number;
-    cutoffMode: SurfaceAtomsCutoffMode;
-    cutoffRadius?: number;
-    coordinationDeficit: number;
-    anisotropyThreshold: number;
-    byType: boolean;
-};
-
-export interface ParticleFilterPresetCondition {
-    kind: ParticleFilterConditionKind.Preset;
-    preset: ParticleFilterPreset.SurfaceAtoms;
-    presetConfig: SurfaceAtomsPresetConfig;
-};
-
-export type ParticleFilterCondition =
-    | ParticleFilterPropertyCondition
-    | ParticleFilterPresetCondition;
+}
 
 export interface ParticleFilterRequest {
     combinator: ParticleFilterCombinator;

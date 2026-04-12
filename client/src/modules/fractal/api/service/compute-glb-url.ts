@@ -3,7 +3,8 @@ import type {
     SceneObjectType,
     PluginScene,
     ColorCodingScene,
-    ParticleFilterScene
+    ParticleFilterScene,
+    ParticleFilterSceneCondition
 } from '@/modules/fractal/api/entities/scene';
 
 export interface ComputeGlbUrlParams {
@@ -15,6 +16,12 @@ export interface ComputeGlbUrlParams {
 };
 
 const DEFAULT_ANALYSIS_ID = 'default';
+
+const isPropertyCondition = (condition: ParticleFilterSceneCondition) => {
+    return typeof condition?.property === 'string'
+        && typeof condition?.operator === 'string'
+        && condition?.value !== undefined;
+};
 
 const buildApiUrl = (path: string): string => {
     return buildBackendUrl(path);
@@ -64,10 +71,7 @@ const buildParticleFilterUrl = (
         exposureId,
         action,
         combinator,
-        conditions,
-        mode,
-        preset,
-        presetConfig
+        conditions
     } = scene;
     if (!action) return null;
 
@@ -77,17 +81,13 @@ const buildParticleFilterUrl = (
         action
     });
 
-    if (Array.isArray(conditions) && conditions.length > 0) {
-        params.set('combinator', combinator || 'AND');
-        params.set('conditions', JSON.stringify(conditions));
-    } else if (mode === 'preset') {
-        if (!preset || !presetConfig) {
-            return null;
-        }
+    const validConditions = Array.isArray(conditions)
+        ? conditions.filter(isPropertyCondition)
+        : [];
 
-        params.set('mode', mode);
-        params.set('preset', preset);
-        params.set('presetConfig', JSON.stringify(presetConfig));
+    if (validConditions.length > 0) {
+        params.set('combinator', combinator || 'AND');
+        params.set('conditions', JSON.stringify(validConditions));
     } else {
         if (!property || !operator || value === undefined) {
             return null;

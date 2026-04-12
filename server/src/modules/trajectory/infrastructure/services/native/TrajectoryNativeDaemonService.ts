@@ -4,15 +4,9 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { createZstdDecompressionStream } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
+import type { FrameMetadata } from '@modules/trajectory/domain/contracts/trajectory';
 
 import { Readable } from 'node:stream';
-
-import type { FrameMetadata } from '@modules/trajectory/domain/contracts/trajectory';
-import {
-    ParticleFilterConditionKind,
-    ParticleFilterPreset
-} from '@modules/trajectory/domain/port/particle-filter/IParticleFilterService';
-import type { SurfaceAtomsPresetConfig } from '@modules/trajectory/domain/port/particle-filter/IParticleFilterService';
 
 interface TrajectoryNativeRequest {
     teamClusterId: string;
@@ -42,23 +36,12 @@ interface TrajectoryNativeAtomsPageRequest extends TrajectoryNativeRequest {
 };
 
 interface TrajectoryNativeConditionFilterPreviewRequest extends TrajectoryNativeRequest, TrajectoryNativeModifierSource {
-    kind: ParticleFilterConditionKind.Property;
     property: string;
     operator: string;
     value: number;
     externalValues?: Float32Array;
 };
-
-interface TrajectoryNativePresetFilterPreviewRequest extends TrajectoryNativeRequest {
-    kind: ParticleFilterConditionKind.Preset;
-    preset: ParticleFilterPreset.SurfaceAtoms;
-    presetConfig: SurfaceAtomsPresetConfig;
-    simulationCell: FrameMetadata['simulationCell'];
-};
-
-type TrajectoryNativeFilterPreviewRequest =
-    | TrajectoryNativeConditionFilterPreviewRequest
-    | TrajectoryNativePresetFilterPreviewRequest;
+type TrajectoryNativeFilterPreviewRequest = TrajectoryNativeConditionFilterPreviewRequest;
 
 interface TrajectoryNativeColorModelRequest extends TrajectoryNativePropertyRequest, TrajectoryNativeModifierSource {
     objectKey: string;
@@ -155,26 +138,17 @@ export default class TrajectoryNativeDaemonService {
         const response = await this.teamClusterDaemonClient.command<TrajectoryNativeFilterPreviewResponse>(
             input.teamClusterId,
             TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.filterPreview,
-            input.kind === ParticleFilterConditionKind.Preset
-                ? {
-                    ...this.toBaseBody(input),
-                    kind: input.kind,
-                    preset: input.preset,
-                    presetConfig: input.presetConfig,
-                    simulationCell: input.simulationCell
-                }
-                : {
-                    ...this.toBaseBody(input),
-                    kind: input.kind,
-                    property: input.property,
-                    operator: input.operator,
-                    value: input.value,
-                    ...(input.analysisId ? { analysisId: input.analysisId } : {}),
-                    ...(input.exposureId ? { exposureId: input.exposureId } : {}),
-                    externalValuesBase64: input.externalValues
-                        ? Buffer.from(input.externalValues.buffer, input.externalValues.byteOffset, input.externalValues.byteLength).toString('base64')
-                        : undefined
-                }
+            {
+                ...this.toBaseBody(input),
+                property: input.property,
+                operator: input.operator,
+                value: input.value,
+                ...(input.analysisId ? { analysisId: input.analysisId } : {}),
+                ...(input.exposureId ? { exposureId: input.exposureId } : {}),
+                externalValuesBase64: input.externalValues
+                    ? Buffer.from(input.externalValues.buffer, input.externalValues.byteOffset, input.externalValues.byteLength).toString('base64')
+                    : undefined
+            }
         );
 
         return {
