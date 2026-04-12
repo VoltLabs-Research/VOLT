@@ -11,31 +11,20 @@ import {
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { DaemonConfig } from '@/core/config';
-import type { DockerRuntimeService, HostShellService } from '@/modules/platform/services';
+import type { DockerRuntimeService } from '@/modules/platform/services';
 import type { RuntimeLifecycleEventType } from '@voltstack/daemon-cluster-client';
 import type { ReverseChannelCommandHandler } from '../services';
 
 interface RuntimeHandlersDependencies {
     config: DaemonConfig;
     dockerRuntimeService: DockerRuntimeService;
-    hostShellService: HostShellService;
     emitLifecycle: (type: RuntimeLifecycleEventType, details?: string) => void;
-    /**
-     * Called after the update ack when async update work fails so the server
-     * can transition the cluster to `UpdateFailed`.
-     */
-    reportUpdateFailed: (details: string) => Promise<void>;
     reportDeleteFailed: (details: string) => Promise<void>;
     applyQueueSettings: (
         queueConcurrency: TeamClusterDaemonQueueConcurrency,
         queueScopeLimits: TeamClusterDaemonQueueScopeLimits
     ) => void;
     applyRoleConfig: (payload: TeamClusterDaemonRoleApplyPayload['roleConfig']) => Promise<TeamClusterDaemonRoleApplyResult>;
-};
-
-interface UpdatePayload {
-    targetImage: string;
-    targetVersion: string;
 };
 
 enum RuntimeEnvironmentKey {
@@ -62,15 +51,6 @@ const getInstallDirectory = (config: DaemonConfig): string | null => {
     }
 
     return path.join(config.installRoot, config.teamClusterId);
-};
-
-const readUpdatePayload = (payload: unknown): UpdatePayload => {
-    const record = readPayloadRecord(payload);
-
-    return {
-        targetImage: readString(record.targetImage, 'targetImage'),
-        targetVersion: readString(record.targetVersion, 'targetVersion')
-    };
 };
 
 const readQueueConcurrencyValue = (value: unknown, fieldName: string): number => {
@@ -233,44 +213,10 @@ const readRoleApplyPayload = (payload: unknown): TeamClusterDaemonRoleApplyPaylo
     };
 };
 
-/**
- * Replaces or appends a KEY=VALUE line in an .env file content string.
- */
-const setEnvValue = (content: string, key: string, value: string): string => {
-    const regex = new RegExp(`^${key}=.*$`, 'm');
-    if (regex.test(content)) {
-        return content.replace(regex, `${key}=${value}`);
-    }
-
-    const trailing = content.endsWith('\n') ? '' : '\n';
-    return `${content}${trailing}${key}=${value}\n`;
-};
-
-const reportDeferredUpdateFailure = (deps: RuntimeHandlersDependencies, details: string): void => {
-    deps.emitLifecycle('update-failed', details);
-    deps.reportUpdateFailed(details).catch(() => {});
-};
-
 const deferRuntimeCommand = (operation: () => Promise<void>): void => {
     setTimeout(() => {
         operation().catch(() => {});
     }, DEFERRED_RUNTIME_COMMAND_DELAY_MS);
-};
-
-const updateRuntimeManifest = async (installDirectory: string, payload: UpdatePayload): Promise<void> => {
-    const envFilePath = path.join(installDirectory, '.env');
-    let envContent = await fs.readFile(envFilePath, 'utf-8');
-
-    envContent = setEnvValue(envContent, RuntimeEnvironmentKey.InstallManifestVersion, payload.targetVersion);
-    envContent = setEnvValue(envContent, RuntimeEnvironmentKey.DaemonImage, payload.targetImage);
-
-    await fs.writeFile(envFilePath, envContent, 'utf-8');
-};
-
-const restartRuntime = async (deps: RuntimeHandlersDependencies, installDirectory: string): Promise<void> => {
-    await deps.hostShellService.exec(
-        `cd "${installDirectory}" && docker compose up -d --no-deps --pull never daemon`
-    );
 };
 
 const executeRuntimeUninstall = async (deps: RuntimeHandlersDependencies): Promise<void> => {
@@ -300,36 +246,6 @@ const executeRuntimeUninstall = async (deps: RuntimeHandlersDependencies): Promi
 
 const executeRuntimeRestart = async (): Promise<void> => {
     process.exit(0);
-};
-
-const executeRuntimeUpdate = async (deps: RuntimeHandlersDependencies, payload: UpdatePayload): Promise<void> => {
-    try {
-        await deps.dockerRuntimeService.forcePullImage(payload.targetImage);
-    } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        reportDeferredUpdateFailure(deps, `Image pull failed: ${message}`);
-        return;
-    }
-
-    const installDirectory = getInstallDirectory(deps.config);
-    if (!installDirectory) {
-        return;
-    }
-
-    try {
-        await updateRuntimeManifest(installDirectory, payload);
-    } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        reportDeferredUpdateFailure(deps, `Failed to update .env: ${message}`);
-        return;
-    }
-
-    try {
-        await restartRuntime(deps, installDirectory);
-    } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        reportDeferredUpdateFailure(deps, `Failed to apply runtime update: ${message}`);
-    }
 };
 
 export const createRuntimeHandlers = (deps: RuntimeHandlersDependencies): ReverseChannelCommandHandler[] => [
@@ -406,35 +322,6 @@ export const createRuntimeHandlers = (deps: RuntimeHandlersDependencies): Revers
         command: TEAM_CLUSTER_DAEMON_COMMAND.runtime.restart,
         execute: async () => {
             deferRuntimeCommand(executeRuntimeRestart);
-
-            return acceptRuntimeCommand();
-        }
-    },
-    {
-        command: 'runtime.update',
-        execute: async (payload) => {
-            const distributionMode = process.env.TEAM_CLUSTER_DAEMON_DISTRIBUTION_MODE?.trim().toLowerCase();
-            if (distributionMode === 'build') {
-                return rejectRuntimeCommand(
-                    'Update via runtime.update is only supported for image distribution mode. Build mode clusters must be updated manually.'
-                );
-            }
-
-            let request: UpdatePayload;
-
-            try {
-                request = readUpdatePayload(payload);
-            } catch {
-                return rejectRuntimeCommand('Invalid update payload: targetImage and targetVersion are required.');
-            }
-
-            deps.emitLifecycle('update-requested', `Updating daemon to ${request.targetVersion}`);
-
-            // Ack immediately - pull, .env write, and restart happen in deferred
-            // async work so the reverse-channel response is never blocked by the
-            // pull duration and cannot time out the 30-second server window.
-
-            deferRuntimeCommand(() => executeRuntimeUpdate(deps, request));
 
             return acceptRuntimeCommand();
         }

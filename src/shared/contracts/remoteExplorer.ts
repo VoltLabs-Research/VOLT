@@ -2,7 +2,6 @@
  * Enumerates the protected remote resources available from the cluster explorer.
  */
 export enum RemoteExplorerTarget {
-    HostTerminal = 'host-terminal',
     MongoDocuments = 'mongo-documents',
     RedisData = 'redis-data',
     Minio = 'minio'

@@ -129,7 +129,6 @@ export const readSessionAttachPayload = (
 
     if (
         typeof payload.terminalTarget !== 'undefined'
-        && payload.terminalTarget !== REVERSE_CHANNEL.TerminalTarget.Host
         && payload.terminalTarget !== REVERSE_CHANNEL.TerminalTarget.Container
     ) {
         return null;
@@ -138,9 +137,7 @@ export const readSessionAttachPayload = (
     return {
         sessionId,
         kind: payload.kind,
-        terminalTarget: payload.terminalTarget === REVERSE_CHANNEL.TerminalTarget.Host
-            ? REVERSE_CHANNEL.TerminalTarget.Host
-            : REVERSE_CHANNEL.TerminalTarget.Container,
+        terminalTarget: REVERSE_CHANNEL.TerminalTarget.Container,
         ...(typeof containerId === 'string' ? { containerId } : {})
     };
 };

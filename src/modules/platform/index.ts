@@ -5,7 +5,6 @@ import {
     connectMongo,
     disconnectMongo,
     DockerRuntimeService,
-    HostShellService,
     MinioService,
     QueueService,
     RedisConnectionService,
@@ -16,7 +15,6 @@ import { TrajectoryAutoPreviewClaimStore } from '@/modules/trajectory-native/ser
 export interface PlatformModule {
     eventBroker: RuntimeEventBroker;
     dockerRuntimeService: DockerRuntimeService;
-    hostShellService: HostShellService;
     minioService: MinioService;
     redisConnectionService: RedisConnectionService;
     analysisExecutionDataStore: AnalysisExecutionDataStore;
@@ -30,7 +28,6 @@ export interface PlatformModule {
 export const createPlatformModule = (config: DaemonConfig): PlatformModule => {
     const eventBroker = new RuntimeEventBroker();
     const dockerRuntimeService = new DockerRuntimeService(eventBroker);
-    const hostShellService = new HostShellService();
     const minioService = new MinioService(config);
     const redisConnectionService = new RedisConnectionService(config);
     const analysisExecutionDataStore = new AnalysisExecutionDataStore(config);
@@ -41,7 +38,6 @@ export const createPlatformModule = (config: DaemonConfig): PlatformModule => {
     return {
         eventBroker,
         dockerRuntimeService,
-        hostShellService,
         minioService,
         redisConnectionService,
         analysisExecutionDataStore,

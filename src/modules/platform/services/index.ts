@@ -1,6 +1,5 @@
 export * from './AnalysisExecutionDataStore';
 export * from './DockerRuntimeService';
-export * from './HostShellService';
 export * from './MinioService';
 export * from './MongoConnectionService';
 export * from './ObjectUploadLifecycleService';

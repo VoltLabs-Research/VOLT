@@ -3,7 +3,6 @@ import type { DaemonConfig } from '@/core/config';
 import type { RuntimeEventBroker } from '@/shared/services';
 import type {
     DockerRuntimeService,
-    HostShellService,
     MinioService,
     QueueConcurrencyCoordinator,
     QueueService,
@@ -61,7 +60,6 @@ export const createCloudControlModule = (deps: {
     metricsService: MetricsService;
     eventBroker: RuntimeEventBroker;
     dockerRuntimeService: DockerRuntimeService;
-    hostShellService: HostShellService;
     minioService: MinioService;
     objectStore: ClusterObjectStore;
     queueService: QueueService;
@@ -82,7 +80,6 @@ export const createCloudControlModule = (deps: {
     const objectGatewayTelemetryService = new ObjectGatewayTelemetryService();
     const reverseChannelSocketBridge = new ReverseChannelSocketBridge(
         deps.dockerRuntimeService,
-        deps.hostShellService,
         objectGatewayTelemetryService
     );
     const runtimeCapabilityGuard = new RuntimeCapabilityGuard(deps.runtimeRoleCoordinator);
@@ -126,7 +123,6 @@ export const createCloudControlModule = (deps: {
         ...createRuntimeHandlers({
             config: deps.config,
             dockerRuntimeService: deps.dockerRuntimeService,
-            hostShellService: deps.hostShellService,
             emitLifecycle: (type, details) => {
                 voltCloudConnection.emitLifecycleEvent(type, details);
             },
@@ -134,7 +130,6 @@ export const createCloudControlModule = (deps: {
                 deps.runtimeRoleCoordinator.applyQueueSettings(queueConcurrency, queueScopeLimits);
             },
             applyRoleConfig: (roleConfig) => deps.runtimeRoleCoordinator.applyRoleConfig(roleConfig),
-            reportUpdateFailed: (details) => voltCloudConnection.reportUpdateFailed(details),
             reportDeleteFailed: (details) => voltCloudConnection.reportDeleteFailed(details)
         })
     ];

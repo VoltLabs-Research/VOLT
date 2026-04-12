@@ -83,7 +83,6 @@ const createBootstrapContext = (): BootstrapContext => {
         metricsService: metrics.metricsService,
         eventBroker: platform.eventBroker,
         dockerRuntimeService: platform.dockerRuntimeService,
-        hostShellService: platform.hostShellService,
         minioService: platform.minioService,
         objectStore: clusterObjectStore,
         queueConcurrencyCoordinator,

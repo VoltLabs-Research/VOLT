@@ -25,8 +25,7 @@ export const REVERSE_CHANNEL = Object.freeze({
         WebSocket: 'websocket'
     }),
     TerminalTarget: Object.freeze({
-        Container: 'container',
-        Host: 'host'
+        Container: 'container'
     }),
     TunnelSessionStatus: Object.freeze({
         Opening: 'opening',

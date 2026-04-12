@@ -256,10 +256,6 @@ export class VoltCloudConnection {
         await this.sendLifecycleStatus(TeamClusterStatus.DeleteFailed, details);
     }
 
-    async reportUpdateFailed(details: string): Promise<void> {
-        await this.sendLifecycleStatus(TeamClusterStatus.UpdateFailed, details);
-    }
-
     async reportDeleting(details: string): Promise<void> {
         await this.sendLifecycleStatus(TeamClusterStatus.Deleting, details);
     }

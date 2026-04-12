@@ -1,5 +1,5 @@
 import { REVERSE_CHANNEL, TeamClusterServiceExposureAccessMode } from '@/shared/contracts';
-import { DockerRuntimeService, HostShellService } from '@/modules/platform/services';
+import { DockerRuntimeService } from '@/modules/platform/services';
 import { logger } from '@/core/logger';
 import { adaptReverseChannelHandler, isCommandPayloadRecord } from './reverseChannelCommandAdapter';
 import { TerminalSessionManager } from './TerminalSessionManager';
@@ -103,12 +103,10 @@ export class ReverseChannelSocketBridge {
 
     constructor(
         private readonly dockerRuntimeService?: DockerRuntimeService,
-        private readonly hostShellService?: HostShellService,
         private readonly objectGatewayTelemetryService?: ObjectGatewayTelemetryService
     ) {
         this.terminalSessionManager = new TerminalSessionManager({
             dockerRuntimeService: this.dockerRuntimeService,
-            hostShellService: this.hostShellService,
             coordinator: {
                 beginSessionTransition: this.beginSessionTransition.bind(this),
                 cleanupInteractiveSession: this.cleanupInteractiveSession.bind(this),
