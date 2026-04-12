@@ -9,15 +9,6 @@
     margin: 0 auto;
 }
 
-.dashboard-welcome {
-    grid-column: span 12;
-    padding: 0.25rem 0;
-}
-
-.dashboard-welcome-subtitle {
-    max-width: 480px;
-}
-
 .dashboard-bottom-row {
     grid-column: span 12;
     display: flex;

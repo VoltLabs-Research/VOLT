@@ -1,4 +1,3 @@
-import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import DashboardCard from '@/modules/dashboard/components/atoms/DashboardCard';
 import DashboardOverviewCard from '@/modules/dashboard/components/atoms/DashboardOverviewCard';
 import DashboardOverviewSkeleton from '@/modules/dashboard/components/atoms/DashboardOverviewSkeleton';
@@ -18,14 +17,12 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import { openModal } from '@/shared/presentation/components/Modal';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import Title from '@/shared/presentation/components/Title';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import './Dashboard.css';
 import { FlaskConical, FolderPlus } from 'lucide-react';
-import { useMemo } from 'react';
 import { HiOutlineServerStack } from 'react-icons/hi2';
 import type { DashboardCard as DashboardMetricsCard } from '@/modules/dashboard/api/entities/dashboard';
 import type { ReactNode } from 'react';
@@ -39,19 +36,10 @@ const getCardIcon = (key: string): ReactNode => {
     return CARD_ICONS[key];
 };
 
-const getGreeting = (): string => {
-    const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) return 'Good Morning';
-    if (hour >= 12 && hour < 17) return 'Good Afternoon';
-    if (hour >= 17 && hour < 21) return 'Good Evening';
-    return 'Good Night';
-};
-
 const DashboardPage = () => {
     usePageTitle('Dashboard');
 
     const selectedTeam = useSelectedTeam();
-    const user = useCurrentUser();
     const { canAccess } = useTeamPermissions();
     const canCreateTrajectoryFolders = canAccess(['trajectory:create']);
     const { loading, error, cards, accessDenied, accessDeniedMessage } = useDashboardMetrics(selectedTeam?._id);
@@ -60,19 +48,6 @@ const DashboardPage = () => {
     useTip('dashboard-drag-upload', {
         enabled: Boolean(selectedTeam)
     });
-
-    const firstName = useMemo(() => {
-        const name = user?.firstName || '';
-        return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
-    }, [user?.firstName]);
-
-    const today = useMemo(() => {
-        return new Date().toLocaleDateString(undefined, {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric'
-        });
-    }, []);
     const jobsEmptyState = (
         <EmptyState
             icon={<HiOutlineServerStack size={20} />}
@@ -121,15 +96,6 @@ const DashboardPage = () => {
     if (!selectedTeam) {
         return (
             <Container className='dashboard-bento'>
-                <Container className='dashboard-welcome'>
-                    <Title className='font-size-5 color-primary font-weight-6'>
-                        {getGreeting()}, {firstName}
-                    </Title>
-                    <Paragraph className='font-size-2 color-muted dashboard-welcome-subtitle' style={{ marginTop: '0.25rem' }}>
-                        {today}
-                    </Paragraph>
-                </Container>
-
                 <Container className='dashboard-bottom-row'>
                     <EmptyState
                         icon={<HiOutlineServerStack size={20} />}
@@ -144,15 +110,6 @@ const DashboardPage = () => {
 
     return (
         <Container className='dashboard-bento'>
-            <Container className='dashboard-welcome'>
-                <Title className='font-size-5 color-primary font-weight-6'>
-                    {getGreeting()}, {firstName}
-                </Title>
-                <Paragraph className='font-size-2 color-muted dashboard-welcome-subtitle' style={{ marginTop: '0.25rem' }}>
-                    {today} &middot; {selectedTeam.name}
-                </Paragraph>
-            </Container>
-
             {statCards}
 
             <Container className='dashboard-simulations-section'>
