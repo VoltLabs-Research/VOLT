@@ -104,7 +104,8 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
             teamCluster: teamClusterId
         });
 
-        const daemonPath = this.resolveDaemonJupyterPath(response.jupyter);
+        const jupyter = this.requireDaemonJupyterResponse(response);
+        const daemonPath = this.resolveDaemonJupyterPath(jupyter);
         const jupyterUrl = buildJupyterProxyUrl({
             teamId: input.teamId,
             runtimeNotebookId,
@@ -113,9 +114,9 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         return {
             notebookId: input.notebookId,
             jupyter: {
-                ...response.jupyter,
+                ...jupyter,
                 url: jupyterUrl,
-                containerStage: response.jupyter.containerStage
+                containerStage: jupyter.containerStage
             }
         };
     }
@@ -148,6 +149,14 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
 
     async resolveNotebookTemplateContent(context: DefaultNotebookTemplateContext): Promise<Record<string, unknown>> {
         return this.notebookService.resolveNotebookTemplateContent(context);
+    }
+
+    private requireDaemonJupyterResponse(response: DaemonNotebookSessionResponse): DaemonNotebookJupyterResponse {
+        if (response?.jupyter?.internalPath) {
+            return response.jupyter;
+        }
+
+        throw ApplicationError.internalServerError('Daemon returned an invalid Jupyter session response');
     }
 
     private resolveDaemonJupyterPath(jupyter: DaemonNotebookJupyterResponse): string {

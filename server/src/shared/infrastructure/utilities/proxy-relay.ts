@@ -14,6 +14,30 @@ interface WebSocketDuplexBridgeOptions {
 
 const isWebSocketOpen = (webSocket: WebSocket): boolean => webSocket.readyState === WebSocket.OPEN;
 
+const isSendableWebSocketCloseCode = (code: number): boolean => {
+    if (code === 1000) {
+        return true;
+    }
+
+    if (code >= 3000 && code <= 4999) {
+        return true;
+    }
+
+    return code >= 1001
+        && code <= 1014
+        && code !== 1004
+        && code !== 1005
+        && code !== 1006;
+};
+
+export const normalizeWebSocketCloseCode = (code?: number): number | undefined => {
+    if (typeof code !== 'number' || !Number.isInteger(code)) {
+        return undefined;
+    }
+
+    return isSendableWebSocketCloseCode(code) ? code : 1000;
+};
+
 const safeSendWebSocket = (webSocket: WebSocket, payload: Buffer | string, isBinary: boolean): void => {
     if (!isWebSocketOpen(webSocket)) {
         return;
@@ -30,7 +54,13 @@ const safeCloseWebSocket = (webSocket: WebSocket, code?: number, reason?: string
         return;
     }
 
-    webSocket.close(code, reason);
+    const normalizedCode = normalizeWebSocketCloseCode(code);
+    if (normalizedCode === undefined) {
+        webSocket.close();
+        return;
+    }
+
+    webSocket.close(normalizedCode, reason);
 };
 
 /** Converts `ws` raw payloads into a sendable buffer or string. */
@@ -70,7 +100,7 @@ export const bridgeWebSockets = (
         safeSendWebSocket(clientWebSocket, payload, isBinary);
     });
     upstreamWebSocket.on('close', (code, reason) => {
-        safeCloseWebSocket(clientWebSocket, code || 1000, reason.toString() || undefined);
+        safeCloseWebSocket(clientWebSocket, code, reason.toString() || undefined);
     });
     upstreamWebSocket.on('error', () => {
         safeCloseWebSocket(clientWebSocket, 1011, options.upstreamErrorMessage);
