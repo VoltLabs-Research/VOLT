@@ -1,4 +1,6 @@
 import EditableTrajectoryName from '../EditableTrajectoryName';
+import { JobStatus } from '@/modules/jobs/api/entities/job';
+import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
 import { useTriggerRasterizationMutation } from '@/modules/raster/hooks/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { trajectoryQuery } from '@/modules/trajectory/hooks/trajectory/queries';
@@ -18,9 +20,10 @@ import { sileo } from 'sileo';
 import { HiOutlineViewfinderCircle } from 'react-icons/hi2';
 import { PiDotsThreeVerticalBold } from 'react-icons/pi';
 import { RxTrash } from 'react-icons/rx';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { TrajectoryJobGroup } from '@/modules/jobs/api/entities/job';
 import './SimulationCardFooter.css';
 
 interface SimulationCardFooterProps {
@@ -67,6 +70,8 @@ interface RasterizeTrajectoryToastResult {
 interface RasterizationJobStatusCounts {
     pending: number;
 };
+
+const RASTER_QUEUE_TYPE = 'trajectory_rasterization';
 
 const DELETE_TRAJECTORY_TOAST: PromiseToastConfig<void> = {
     loading: { title: 'Deleting trajectory...' },
@@ -115,16 +120,30 @@ const RASTERIZE_TRAJECTORY_TOAST: PromiseToastConfig<RasterizeTrajectoryToastRes
     error: { title: 'Failed to rasterize trajectory' }
 };
 
-/** Counts raster jobs already pending for a trajectory in Jobs History state. */
-const getRasterizationJobStatusCounts = (pendingRasterKeys: Set<string>, trajectoryId: string): RasterizationJobStatusCounts => {
+const isPendingRasterJobStatus = (status: JobStatus): boolean => {
+    return status !== JobStatus.Completed && status !== JobStatus.Failed;
+};
+
+const getRasterizationJobStatusCounts = (
+    groups: TrajectoryJobGroup[],
+    trajectoryId: string
+): RasterizationJobStatusCounts => {
     let pending = 0;
 
-    for (const pendingKey of pendingRasterKeys) {
-        if (!pendingKey.startsWith(`${trajectoryId}:`)) {
+    for (const group of groups ?? []) {
+        if (group.trajectoryId !== trajectoryId) {
             continue;
         }
 
-        pending += 1;
+        for (const frameGroup of group.frameGroups) {
+            for (const job of frameGroup.jobs) {
+                if (job.queueType !== RASTER_QUEUE_TYPE || !isPendingRasterJobStatus(job.status)) {
+                    continue;
+                }
+
+                pending += 1;
+            }
+        }
     }
 
     return {
@@ -145,15 +164,17 @@ export default function SimulationCardFooter({
     const teamId = useSelectedTeamId();
     const deleteTrajectoryMutation = trajectoryQuery.useDeleteMutation();
     const triggerRasterizationMutation = useTriggerRasterizationMutation();
-    const pendingRasterKeys = useTeamJobsStore((state) => state.pendingRasterKeys);
-    const inFlightRasterTrajectoryIds = useTeamJobsStore((state) => state.inFlightRasterTrajectoryIds);
+    const { data: jobGroups = [] } = teamJobsGroups();
+    const requestedRasterTrajectoryIds = useTeamJobsStore((state) => state.requestedRasterTrajectoryIds);
     const [isDeleting, setIsDeleting] = useState(false);
     const updatedLabel = `Edited ${formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}`;
     const isRasterizing = triggerRasterizationMutation.isPending;
-    const rasterizationJobStatusCounts = getRasterizationJobStatusCounts(pendingRasterKeys, trajectoryId);
+    const rasterizationJobStatusCounts = useMemo(() => {
+        return getRasterizationJobStatusCounts(jobGroups, trajectoryId);
+    }, [jobGroups, trajectoryId]);
     const hasPendingRasterization = rasterizationJobStatusCounts.pending > 0;
-    const hasInFlightRasterizationRequest = inFlightRasterTrajectoryIds.has(trajectoryId);
-    const isRasterizeDisabled = !teamId || isRasterizing || isProcessing || hasPendingRasterization || hasInFlightRasterizationRequest;
+    const hasRequestedRasterization = requestedRasterTrajectoryIds.has(trajectoryId);
+    const isRasterizeDisabled = !teamId || isRasterizing || isProcessing || hasPendingRasterization || hasRequestedRasterization;
 
     const handleViewScene = useCallback(() => {
         navigate(`/canvas/${trajectoryId}`);
@@ -194,7 +215,7 @@ export default function SimulationCardFooter({
             return;
         }
 
-        if (hasPendingRasterization || hasInFlightRasterizationRequest) {
+        if (hasPendingRasterization || hasRequestedRasterization) {
             sileo.info({
                 title: 'Rasterization already in progress',
                 description: 'Wait for the current worker jobs to finish before queueing the same trajectory again.'
@@ -209,7 +230,7 @@ export default function SimulationCardFooter({
             }),
             RASTERIZE_TRAJECTORY_TOAST
         );
-    }, [hasInFlightRasterizationRequest, hasPendingRasterization, isProcessing, isRasterizing, teamId, trajectoryId, triggerRasterizationMutation]);
+    }, [hasPendingRasterization, hasRequestedRasterization, isProcessing, isRasterizing, teamId, trajectoryId, triggerRasterizationMutation]);
 
     const popoverItems: SimulationCardActionItem[] = [{
         onClick: handleViewScene,
