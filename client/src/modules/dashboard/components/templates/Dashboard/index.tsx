@@ -1,14 +1,10 @@
 import DashboardCard from '@/modules/dashboard/components/atoms/DashboardCard';
 import DashboardOverviewCard from '@/modules/dashboard/components/atoms/DashboardOverviewCard';
 import DashboardOverviewSkeleton from '@/modules/dashboard/components/atoms/DashboardOverviewSkeleton';
-import DashboardClusterHealth from '@/modules/dashboard/components/molecules/DashboardClusterHealth';
-import DashboardInAppActivity from '@/modules/dashboard/components/molecules/DashboardInAppActivity';
+import DashboardActivityCard from '@/modules/dashboard/components/molecules/DashboardActivityCard';
+import DashboardOperationsCard from '@/modules/dashboard/components/molecules/DashboardOperationsCard';
 import DashboardTeamPresence from '@/modules/dashboard/components/molecules/DashboardTeamPresence';
-import DashboardTeamTimeline from '@/modules/dashboard/components/molecules/DashboardTeamTimeline';
-import StatusCounts from '@/modules/canvas/components/molecules/StatusCounts';
-import useJobStatusCounts from '@/modules/canvas/hooks/use-job-status-counts';
 import useDashboardMetrics from '@/modules/dashboard/hooks/use-dashboard-metrics';
-import JobsHistoryViewer from '@/modules/jobs/components/organisms/JobsHistoryViewer';
 import { NEW_TRAJECTORY_FOLDER_MODAL_ID } from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
@@ -43,19 +39,10 @@ const DashboardPage = () => {
     const { canAccess } = useTeamPermissions();
     const canCreateTrajectoryFolders = canAccess(['trajectory:create']);
     const { loading, error, cards, accessDenied, accessDeniedMessage } = useDashboardMetrics(selectedTeam?._id);
-    const jobsStatusCounts = useJobStatusCounts();
 
     useTip('dashboard-drag-upload', {
         enabled: Boolean(selectedTeam)
     });
-    const jobsEmptyState = (
-        <EmptyState
-            icon={<HiOutlineServerStack size={20} />}
-            title='No jobs yet'
-            description='Start a simulation or analysis to see activity here.'
-            className='flex-1 dashboard-jobs-empty-state'
-        />
-    );
 
     let statCards = cards.map((card: DashboardMetricsCard, index: number) => (
         <DashboardOverviewCard
@@ -132,37 +119,11 @@ const DashboardPage = () => {
                 <SimulationGrid />
             </Container>
 
-            <Container className='dashboard-bottom-row'>
-                <DashboardClusterHealth />
-
-                <DashboardCard
-                    className='dashboard-jobs-card d-flex column flex-1 min-h-0'
-                    overflowHidden={true}
-                >
-                    <Container className='dashboard-jobs-card-header d-flex items-center content-between gap-1'>
-                        <Title className='font-size-2 color-primary font-weight-6'>
-                            Compute Jobs
-                        </Title>
-                        <StatusCounts
-                            queued={jobsStatusCounts.queued}
-                            running={jobsStatusCounts.running}
-                            completed={jobsStatusCounts.completed}
-                        />
-                    </Container>
-                    <Container className='dashboard-jobs-card-body d-flex column flex-1 min-h-0'>
-                        <JobsHistoryViewer
-                            variant='embedded'
-                            displayMode='full'
-                            hideAfterComplete={false}
-                            emptyState={jobsEmptyState}
-                        />
-                    </Container>
-                </DashboardCard>
+            <Container className='dashboard-insights-row'>
+                <DashboardOperationsCard />
+                <DashboardActivityCard />
+                <DashboardTeamPresence />
             </Container>
-
-            <DashboardTeamTimeline />
-            <DashboardInAppActivity />
-            <DashboardTeamPresence />
         </Container>
     );
 };

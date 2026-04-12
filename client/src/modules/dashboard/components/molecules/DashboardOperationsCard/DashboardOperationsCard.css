@@ -1,0 +1,141 @@
+.dashboard-operations-card {
+    flex: 1;
+    height: 100%;
+    padding: 1.5rem;
+    min-height: 0;
+}
+
+.dashboard-tabbed-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.dashboard-operations-panel {
+    flex: 1;
+    min-height: 0;
+}
+
+.dashboard-operations-cluster-list {
+    gap: 0.75rem;
+    padding-right: 0.25rem;
+}
+
+.dashboard-operations-cluster-item {
+    gap: 0.75rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.dashboard-operations-cluster-head {
+    min-width: 0;
+}
+
+.dashboard-operations-cluster-status {
+    flex-shrink: 0;
+    padding: 0.3rem 0.55rem;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+.dashboard-operations-cluster-status.is-success {
+    color: var(--status-success);
+}
+
+.dashboard-operations-cluster-status.is-warning {
+    color: var(--status-warning);
+}
+
+.dashboard-operations-cluster-status.is-danger {
+    color: var(--accent-red);
+}
+
+.dashboard-operations-cluster-status.is-inactive {
+    color: var(--color-text-muted);
+}
+
+.dashboard-operations-cluster-metrics-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+}
+
+.dashboard-operations-cluster-metric {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+}
+
+.dashboard-operations-cluster-metric-icon {
+    display: inline-flex;
+    align-items: center;
+    color: var(--color-text-muted);
+}
+
+.dashboard-operations-cluster-metric-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.dashboard-operations-cluster-footer {
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.dashboard-operations-cluster-footer-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+}
+
+.dashboard-operations-cluster-unavailable {
+    line-height: 1.4;
+}
+
+.dashboard-operations-panel .jobs-history-viewer-embedded {
+    padding: 0.75rem 0;
+}
+
+.dashboard-operations-panel .dashboard-operations-jobs-empty-state {
+    height: 100%;
+    min-height: 0;
+}
+
+@media screen and (max-width: 900px) {
+    .dashboard-operations-card {
+        width: 100%;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .dashboard-operations-card {
+        padding: 1rem;
+    }
+
+    .dashboard-tabbed-card-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .dashboard-operations-cluster-head {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .dashboard-operations-cluster-status {
+        align-self: flex-start;
+    }
+}
