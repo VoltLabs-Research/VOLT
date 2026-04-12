@@ -1,48 +1,9 @@
 import { preloadFractalSceneAsset } from '@/modules/fractal/api/service/preload-scene-asset';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
-import { TRAJECTORY_QUERY_KEYS } from '@/modules/trajectory/hooks/trajectory/queries';
-import queryClient from '@/shared/infrastructure/query/query-client';
 
 import type { EditorStore } from './types';
-import type { TimestepData, TimestepState, TimestepStore, SceneObjectType } from '@/modules/fractal/stores/contracts/editor/scene-types';
-import type { TimestepInfo, Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { TimestepStore, SceneObjectType } from '@/modules/fractal/stores/contracts/editor/scene-types';
 import type { StateCreator } from 'zustand';
-
-const initialTimestepData: TimestepData = {
-    timesteps: [],
-    minTimestep: 0,
-    maxTimestep: 0,
-    timestepCount: 0
-};
-
-const createInitialState = (): TimestepState => ({
-    timestepData: initialTimestepData,
-    isRenderOptionsLoading: false
-});
-
-const extractTimestepsWorker = (frames: TimestepInfo[], allowedTimesteps?: number[]): number[] => {
-    if (!frames || frames.length === 0) return [];
-
-    const allowedTimestepsSet = allowedTimesteps ? new Set(allowedTimesteps) : undefined;
-    const resolvedTimesteps = frames
-        .map((frame) => frame.timestep)
-        .filter((timestep) => {
-            if (allowedTimestepsSet) {
-                return allowedTimestepsSet.has(timestep);
-            }
-
-            return true;
-        });
-
-    return Array.from(new Set(resolvedTimesteps)).sort((a, b) => a - b);
-};
-
-const createTimestepData = (timesteps: number[]): TimestepData => ({
-    timesteps,
-    minTimestep: timesteps[0] || 0,
-    maxTimestep: timesteps[timesteps.length - 1] || 0,
-    timestepCount: timesteps.length,
-});
 
 const getAnalysisIdFromScene = (scene: SceneObjectType): string => {
     if ('analysisId' in scene && scene.analysisId) {
@@ -51,47 +12,21 @@ const getAnalysisIdFromScene = (scene: SceneObjectType): string => {
     return 'default';
 };
 
-export const createTimestepSlice: StateCreator<EditorStore, [], [], TimestepStore> = (set, get) => ({
-    ...createInitialState(),
-
-    async computeTimestepData(trajectory: Trajectory | null, _currentTimestep?: number, _cacheBuster?: number, allowedTimesteps?: number[]) {
-        if (!trajectory?.frames || trajectory.frames.length === 0) {
-            set({
-                timestepData: initialTimestepData,
-                isRenderOptionsLoading: false
-            });
-            return;
+export const createTimestepSlice: StateCreator<EditorStore, [], [], TimestepStore> = (_set, get) => ({
+    loadModels: async ({ trajectoryId, timesteps, onProgress, maxFramesToPreload, currentFrameIndex, signal }) => {
+        if (!timesteps.length) {
+            return {};
         }
 
-        const timesteps = extractTimestepsWorker(trajectory.frames, allowedTimesteps);
-        const timestepData = createTimestepData(timesteps);
-
-        set({
-            timestepData,
-            isRenderOptionsLoading: false
-        });
-    },
-
-    loadModels: async (_preloadBehavior, onProgress, maxFramesToPreload, currentFrameIndex, signal) => {
-        const { timestepData } = get();
-        if (!timestepData.timesteps.length) return {};
-
         const teamId = useTeamStore.getState().selectedTeamId;
-
-        const trajectoryQueries = queryClient.getQueriesData<{ _id?: string }>({
-            queryKey: TRAJECTORY_QUERY_KEYS.trajectory()
-        });
-        const trajectoryId = trajectoryQueries.length > 0
-            ? trajectoryQueries[trajectoryQueries.length - 1]?.[1]?._id
-            : undefined;
-
         const activeScene = get().activeScene;
         const analysisId = getAnalysisIdFromScene(activeScene);
 
-        if (!teamId || !trajectoryId) return {};
+        if (!teamId) {
+            return {};
+        }
 
-        const timesteps = timestepData.timesteps;
-        const startIndex = currentFrameIndex || 0;
+        const startIndex = currentFrameIndex ?? 0;
         const limit = maxFramesToPreload || timesteps.length;
         const endIndex = Math.min(startIndex + limit, timesteps.length);
 
@@ -138,9 +73,5 @@ export const createTimestepSlice: StateCreator<EditorStore, [], [], TimestepStor
 
         await Promise.all(promises);
         return {};
-    },
-
-    resetTimesteps() {
-        set(createInitialState());
     }
 });
