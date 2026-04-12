@@ -5,8 +5,7 @@ import ModalFooterActions from '@/shared/presentation/components/ModalFooterActi
 import Modal, { closeModal } from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
-import { useEffect, useMemo, useState } from 'react';
-import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
+import { useEffect, useState } from 'react';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type {
     TeamClusterQueueConcurrencyInputDTO,
@@ -143,17 +142,6 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
     }, [teamCluster]);
 
     const clusterName = teamCluster?.name ?? 'cluster';
-    const restartMessage = useMemo(() => {
-        if (!teamCluster) {
-            return 'Changes are saved in Volt and applied the next time the cluster runtime synchronizes.';
-        }
-
-        if (teamCluster.status === TeamClusterStatus.Connected) {
-            return 'Saving applies daemon-side worker concurrency and execution scope limits immediately on the connected cluster. Server-side scope limits apply to new jobs without restarting Volt.';
-        }
-
-        return 'The new queue settings are saved in Volt and applied when the cluster reconnects. Server-side scope limits start using the new values on subsequent jobs.';
-    }, [teamCluster]);
 
     const handleClose = () => {
         setValues(createInitialValues(teamCluster));
@@ -302,7 +290,6 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
             <Container className='d-flex column gap-1 p-1-5'>
                 <Container className='d-flex column gap-05'>
                     <Title className='font-size-2 font-weight-5 color-secondary'>Worker concurrency</Title>
-                    <Paragraph className='font-size-2 color-secondary'>{restartMessage}</Paragraph>
                 </Container>
                 <Container className='d-flex column gap-1'>
                     {QUEUE_FIELDS.map((field) => (
@@ -324,7 +311,6 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
                 </Container>
                 <Container className='d-flex column gap-05 mt-05'>
                     <Title className='font-size-2 font-weight-5 color-secondary'>Execution scope limits</Title>
-                    <Paragraph className='font-size-2 color-secondary'>Use `0` to disable a scope cap. These limits control simultaneous running jobs per queue, per trajectory, and per team.</Paragraph>
                 </Container>
                 <Container className='d-flex column gap-1'>
                     {QUEUE_SCOPE_FIELDS.map((field) => (

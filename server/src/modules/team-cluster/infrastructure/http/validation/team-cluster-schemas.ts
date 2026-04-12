@@ -20,7 +20,6 @@ const passwordConfirmationSchema = z.object({
 }).strict();
 
 const remoteAccessTargetSchema = z.union([
-    z.literal(TeamClusterRemoteAccessTargetDTO.HostTerminal),
     z.literal(TeamClusterRemoteAccessTargetDTO.MongoDocuments),
     z.literal(TeamClusterRemoteAccessTargetDTO.RedisData),
     z.literal(TeamClusterRemoteAccessTargetDTO.Minio)
@@ -151,12 +150,6 @@ const teamClusterInstallManifestSchema = z.object({
     })
 }).strict();
 
-const requestUpdateSchema = z.object({
-    targetVersion: requiredTextSchema.max(128),
-    isEdge: z.boolean().default(false),
-    password: requiredTextSchema
-}).strict();
-
 const queueConcurrencyValueSchema = z.number().int().min(1);
 const queueScopeLimitValueSchema = z.number().int().min(0);
 const queueScopeLimitSchema = z.object({
@@ -222,19 +215,12 @@ export const teamClusterValidation = createResourceValidation({
     getById: {
         params: teamClusterParamsSchema
     },
-    fetchAvailableVersions: {
-        params: teamClusterParamsSchema
-    },
     getResourceLimits: {
         params: teamClusterParamsSchema
     },
     deleteById: {
         params: teamClusterParamsSchema,
         body: passwordConfirmationSchema
-    },
-    requestUpdate: {
-        params: teamClusterParamsSchema,
-        body: requestUpdateSchema
     },
     updateQueueConcurrency: {
         params: teamClusterParamsSchema,

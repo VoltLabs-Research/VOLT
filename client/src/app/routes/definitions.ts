@@ -224,11 +224,6 @@ export const protectedRoutes: RouteConfig[] = [
         loader: () => import('@/modules/cluster/components/templates/ClusterMonitoringPage')
     },
     {
-        path: '/dashboard/clusters/:clusterId/terminal',
-        title: 'Cluster Terminal',
-        loader: () => import('@/modules/cluster/components/templates/ClusterTerminalPage')
-    },
-    {
         path: '/dashboard/clusters/:clusterId/mongo',
         title: 'Mongo Explorer',
         loader: () => import('@/modules/cluster/components/templates/ClusterRemoteExplorerPage')
@@ -287,11 +282,6 @@ export const protectedRoutes: RouteConfig[] = [
                 path: 'storage',
                 title: 'Container Storage',
                 loader: () => import('@/modules/container/components/templates/ContainerDetailsRoutes/container-storage-route')
-            },
-            {
-                path: 'remote-desktop',
-                title: 'Container Remote Desktop',
-                loader: () => import('@/modules/container/components/templates/ContainerDetailsRoutes/container-remote-desktop-route')
             }
         ]
     },

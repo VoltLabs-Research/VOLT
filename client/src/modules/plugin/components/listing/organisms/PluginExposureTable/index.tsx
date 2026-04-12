@@ -275,10 +275,6 @@ const FullPluginExposureTable = ({
                 enabled={listingHook.isEnabled}
                 columns={listingHook.columns}
                 getMenuOptions={listingHook.getMenuOptions}
-                exportConfig={{
-                    onExport: ({ format }) => listingHook.exportData(format),
-                    getFilename: (format) => `${pluginId}_${displayExposureName || 'listing'}.${format}`
-                }}
                 headerActions={headerActions}
             />
             <SubListingModal

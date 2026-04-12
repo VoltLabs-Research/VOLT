@@ -7,10 +7,9 @@ import ClusterCredentialsModal, { CLUSTER_CREDENTIALS_MODAL_ID } from '@/modules
 import ClusterInstallCommandModal, { CLUSTER_INSTALL_COMMAND_MODAL_ID } from '@/modules/cluster/components/organisms/ClusterInstallCommandModal';
 import ClustersEmptyState from '@/modules/cluster/components/organisms/ClustersEmptyState';
 import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/organisms/DeleteClusterModal';
-import UpdateClusterModal, { UPDATE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/organisms/UpdateClusterModal';
 import useClusterPageState from '@/modules/cluster/hooks/use-cluster-page-state';
 import useClustersListingPage from '@/modules/cluster/hooks/use-clusters-listing-page';
-import { invalidateAvailableVersionsQuery, useRegenerateTeamClusterEnrollmentTokenMutation, TEAM_CLUSTER_QUERY_KEYS } from '@/modules/cluster/hooks/team-cluster/queries';
+import { useRegenerateTeamClusterEnrollmentTokenMutation, TEAM_CLUSTER_QUERY_KEYS } from '@/modules/cluster/hooks/team-cluster/queries';
 import { formatClusterTimestamp } from '@/modules/cluster/utilities/format-cluster-timestamp';
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
 import {
@@ -35,7 +34,7 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Container from '@/shared/presentation/components/Container';
 import { openModal } from '@/shared/presentation/components/Modal';
-import { ArrowRightLeft, Database, FolderOpen, KeyRound, Monitor, RefreshCw, Settings2, Terminal, TerminalSquare, Trash2 } from 'lucide-react';
+import { ArrowRightLeft, Database, FolderOpen, KeyRound, Monitor, Settings2, TerminalSquare, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
@@ -96,14 +95,6 @@ const ClustersListing = () => {
         openModal(DELETE_CLUSTER_MODAL_ID);
     }, [state]);
 
-    const handleUpdateCluster = useCallback((cluster: TeamCluster) => {
-        state.setUpdateTarget(cluster);
-        if (vm.selectedTeamId) {
-            invalidateAvailableVersionsQuery(vm.selectedTeamId, cluster._id);
-        }
-        openModal(UPDATE_CLUSTER_MODAL_ID);
-    }, [state, vm.selectedTeamId]);
-
     const handleQueueConcurrency = useCallback((cluster: TeamCluster) => {
         state.setQueueConcurrencyTarget(cluster);
         openModal(CLUSTER_QUEUE_CONCURRENCY_MODAL_ID);
@@ -158,11 +149,8 @@ const ClustersListing = () => {
             sortable: true,
             width: 240,
             render: (_, row) => (
-                <Container className='d-flex column gap-025'>
-                    <Container className='d-flex items-center gap-05'>
-                        <Paragraph className='font-size-2 color-secondary'>{row.name}</Paragraph>
-                    </Container>
-                    <Paragraph className='font-size-1 color-muted font-family-mono'>{row.id}</Paragraph>
+                <Container className='d-flex items-center gap-05'>
+                    <Paragraph className='font-size-2 color-secondary'>{row.name}</Paragraph>
                 </Container>
             )
         },
@@ -353,17 +341,6 @@ const ClustersListing = () => {
             onClick: () => handleTransferData(row.teamCluster)
         },
         {
-            label: 'Update cluster',
-            icon: RefreshCw,
-            disabled: row.teamCluster.status !== TeamClusterStatus.Connected && row.teamCluster.status !== TeamClusterStatus.UpdateFailed,
-            onClick: () => handleUpdateCluster(row.teamCluster)
-        },
-        {
-            label: 'Open terminal',
-            icon: Terminal,
-            onClick: () => navigate(`/dashboard/clusters/${row.id}/terminal`)
-        },
-        {
             label: 'Explore Mongo Documents',
             icon: Database,
             onClick: () => navigate(`/dashboard/clusters/${row.id}/mongo`)
@@ -384,7 +361,7 @@ const ClustersListing = () => {
             destructive: true,
             onClick: () => handleDeleteCluster(row.teamCluster)
         }
-    ], [handleDeleteCluster, handleQueueConcurrency, handleRevealCredentials, handleRoleChange, handleShowInstallCommand, handleTransferData, handleUpdateCluster, navigate]);
+    ], [handleDeleteCluster, handleQueueConcurrency, handleRevealCredentials, handleRoleChange, handleShowInstallCommand, handleTransferData, navigate]);
 
     return (
         <>
@@ -397,12 +374,6 @@ const ClustersListing = () => {
                 teamCluster={state.deleteTarget}
                 onDelete={state.deleteCluster}
                 onClose={() => state.setDeleteTarget(null)}
-            />
-            <UpdateClusterModal
-                teamCluster={state.updateTarget}
-                teamId={state.selectedTeamId}
-                onUpdate={state.requestUpdate}
-                onClose={() => state.setUpdateTarget(null)}
             />
             <ClusterQueueConcurrencyModal
                 teamCluster={state.queueConcurrencyTarget}

@@ -2,7 +2,7 @@ import type { BaseEntity } from '@/shared/domain/entities/BaseEntity';
 
 export interface ActiveSession extends BaseEntity {
     user: string;
-    token: string;
+    token: string | null;
     userAgent: string;
     ip: string;
     isActive: boolean;

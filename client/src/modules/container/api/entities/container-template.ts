@@ -1,4 +1,3 @@
-import type { ContainerCapabilities } from './container-capabilities';
 import type { EnvVariable } from '@/modules/container/api/entities/env-variable';
 
 export interface ContainerTemplateCustomFieldValues {
@@ -38,6 +37,5 @@ export interface ContainerTemplate {
     defaultEnv?: EnvVariable[];
     defaultCmd?: string[];
     useImageCmd?: boolean;
-    capabilities?: ContainerCapabilities;
     customFields?: ContainerTemplateCustomField[];
 };

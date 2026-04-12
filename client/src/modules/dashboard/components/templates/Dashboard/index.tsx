@@ -4,9 +4,6 @@ import DashboardOverviewCard from '@/modules/dashboard/components/atoms/Dashboar
 import DashboardOverviewSkeleton from '@/modules/dashboard/components/atoms/DashboardOverviewSkeleton';
 import DashboardClusterHealth from '@/modules/dashboard/components/molecules/DashboardClusterHealth';
 import DashboardInAppActivity from '@/modules/dashboard/components/molecules/DashboardInAppActivity';
-import DashboardNotificationsFeed from '@/modules/dashboard/components/molecules/DashboardNotificationsFeed';
-import { DashboardQuickActions } from '@/modules/dashboard/components/molecules/DashboardQuickActions';
-import DashboardRecentAnalyses from '@/modules/dashboard/components/molecules/DashboardRecentAnalyses';
 import DashboardTeamPresence from '@/modules/dashboard/components/molecules/DashboardTeamPresence';
 import DashboardTeamTimeline from '@/modules/dashboard/components/molecules/DashboardTeamTimeline';
 import StatusCounts from '@/modules/canvas/components/molecules/StatusCounts';
@@ -27,16 +24,11 @@ import Title from '@/shared/presentation/components/Title';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import './Dashboard.css';
-import { FlaskConical, FolderPlus, Puzzle } from 'lucide-react';
-import { useMemo, useRef, useState } from 'react';
+import { FlaskConical, FolderPlus } from 'lucide-react';
+import { useMemo } from 'react';
 import { HiOutlineServerStack } from 'react-icons/hi2';
 import type { DashboardCard as DashboardMetricsCard } from '@/modules/dashboard/api/entities/dashboard';
-import type { FocusEventHandler, PointerEventHandler, ReactNode } from 'react';
-
-enum DashboardBottomPanel {
-    Jobs = 'jobs',
-    Analyses = 'analyses'
-};
+import type { ReactNode } from 'react';
 
 const CARD_ICONS: Record<string, ReactNode> = {
     trajectories: <HiOutlineServerStack size={16} />,
@@ -44,7 +36,7 @@ const CARD_ICONS: Record<string, ReactNode> = {
 };
 
 const getCardIcon = (key: string): ReactNode => {
-    return CARD_ICONS[key] || <Puzzle size={16} strokeWidth={1.8} />;
+    return CARD_ICONS[key];
 };
 
 const getGreeting = (): string => {
@@ -55,21 +47,6 @@ const getGreeting = (): string => {
     return 'Good Night';
 };
 
-const getSharedPanelStateClassName = (
-    activePanel: DashboardBottomPanel | null,
-    panel: DashboardBottomPanel
-): string => {
-    if (activePanel === null) {
-        return '';
-    }
-
-    if (activePanel === panel) {
-        return 'dashboard-shared-panel--expanded';
-    }
-
-    return 'dashboard-shared-panel--collapsed';
-};
-
 const DashboardPage = () => {
     usePageTitle('Dashboard');
 
@@ -78,9 +55,6 @@ const DashboardPage = () => {
     const { canAccess } = useTeamPermissions();
     const canCreateTrajectoryFolders = canAccess(['trajectory:create']);
     const { loading, error, cards, accessDenied, accessDeniedMessage } = useDashboardMetrics(selectedTeam?._id);
-    const sharedPanelsRef = useRef<HTMLDivElement | null>(null);
-    const [hoveredPanel, setHoveredPanel] = useState<DashboardBottomPanel | null>(null);
-    const [focusedPanel, setFocusedPanel] = useState<DashboardBottomPanel | null>(null);
     const jobsStatusCounts = useJobStatusCounts();
 
     useTip('dashboard-drag-upload', {
@@ -99,7 +73,6 @@ const DashboardPage = () => {
             day: 'numeric'
         });
     }, []);
-    const activePanel = focusedPanel ?? hoveredPanel;
     const jobsEmptyState = (
         <EmptyState
             icon={<HiOutlineServerStack size={20} />}
@@ -108,53 +81,6 @@ const DashboardPage = () => {
             className='flex-1 dashboard-jobs-empty-state'
         />
     );
-    const jobsPanelClassName = useMemo(() => {
-        return getSharedPanelStateClassName(activePanel, DashboardBottomPanel.Jobs);
-    }, [activePanel]);
-    const analysesPanelClassName = useMemo(() => {
-        return getSharedPanelStateClassName(activePanel, DashboardBottomPanel.Analyses);
-    }, [activePanel]);
-
-    const handleSharedPanelsPointerLeave: PointerEventHandler<HTMLDivElement> = (event) => {
-        if (event.pointerType !== 'mouse') {
-            return;
-        }
-
-        setHoveredPanel(null);
-    };
-
-    const handleJobsPanelPointerEnter: PointerEventHandler<HTMLDivElement> = (event) => {
-        if (event.pointerType !== 'mouse') {
-            return;
-        }
-
-        setHoveredPanel(DashboardBottomPanel.Jobs);
-    };
-
-    const handleAnalysesPanelPointerEnter: PointerEventHandler<HTMLDivElement> = (event) => {
-        if (event.pointerType !== 'mouse') {
-            return;
-        }
-
-        setHoveredPanel(DashboardBottomPanel.Analyses);
-    };
-
-    const handleJobsPanelFocusCapture: FocusEventHandler<HTMLDivElement> = () => {
-        setFocusedPanel(DashboardBottomPanel.Jobs);
-    };
-
-    const handleAnalysesPanelFocusCapture: FocusEventHandler<HTMLDivElement> = () => {
-        setFocusedPanel(DashboardBottomPanel.Analyses);
-    };
-
-    const handleSharedPanelsBlurCapture: FocusEventHandler<HTMLDivElement> = (event) => {
-        const nextTarget = event.relatedTarget;
-        if (nextTarget instanceof Node && sharedPanelsRef.current?.contains(nextTarget)) {
-            return;
-        }
-
-        setFocusedPanel(null);
-    };
 
     let statCards = cards.map((card: DashboardMetricsCard, index: number) => (
         <DashboardOverviewCard
@@ -187,7 +113,7 @@ const DashboardPage = () => {
             </DashboardCard>
         ];
     } else if (loading) {
-        statCards = [<DashboardOverviewSkeleton key='loading' count={3} />];
+        statCards = [<DashboardOverviewSkeleton key='loading' count={2} />];
     }
 
     // TOOD: Possible dead code? We have now this:
@@ -229,10 +155,6 @@ const DashboardPage = () => {
 
             {statCards}
 
-            {!loading && cards.length === 3 && (
-                <DashboardCard className='dashboard-stat-card' isRelative={true} overflowHidden={true} style={{ opacity: 0, pointerEvents: 'none' }} />
-            )}
-
             <Container className='dashboard-simulations-section'>
                 <Container className='dashboard-simulations-header d-flex items-center content-between gap-1'>
                     <Title className='font-size-4 color-primary font-weight-5'>Trajectories</Title>
@@ -256,54 +178,34 @@ const DashboardPage = () => {
             <Container className='dashboard-bottom-row'>
                 <DashboardClusterHealth />
 
-                <Container
-                    ref={sharedPanelsRef}
-                    className='dashboard-bottom-sidebar'
-                    onPointerLeave={handleSharedPanelsPointerLeave}
-                    onBlurCapture={handleSharedPanelsBlurCapture}
+                <DashboardCard
+                    className='dashboard-jobs-card d-flex column flex-1 min-h-0'
+                    overflowHidden={true}
                 >
-                    <DashboardCard
-                        className={`dashboard-jobs-card dashboard-shared-panel d-flex column flex-1 min-h-0 ${jobsPanelClassName}`.trim()}
-                        overflowHidden={true}
-                        onPointerEnter={handleJobsPanelPointerEnter}
-                        onFocusCapture={handleJobsPanelFocusCapture}
-                        tabIndex={0}
-                    >
-                        <Container className='dashboard-jobs-card-header d-flex items-center content-between gap-1'>
-                            <Title className='font-size-2 color-primary font-weight-6'>
-                                Compute Jobs
-                            </Title>
-                            <StatusCounts
-                                queued={jobsStatusCounts.queued}
-                                running={jobsStatusCounts.running}
-                                completed={jobsStatusCounts.completed}
-                            />
-                        </Container>
-                        <Container className='dashboard-jobs-card-body dashboard-shared-panel-body d-flex column flex-1 min-h-0'>
-                            <JobsHistoryViewer
-                                variant='embedded'
-                                displayMode='full'
-                                hideAfterComplete={false}
-                                emptyState={jobsEmptyState}
-                            />
-                        </Container>
-                    </DashboardCard>
-
-                    <DashboardRecentAnalyses
-                        className={`dashboard-shared-panel ${analysesPanelClassName}`.trim()}
-                        bodyClassName='dashboard-shared-panel-body'
-                        onPointerEnter={handleAnalysesPanelPointerEnter}
-                        onFocusCapture={handleAnalysesPanelFocusCapture}
-                        tabIndex={0}
-                    />
-                </Container>
+                    <Container className='dashboard-jobs-card-header d-flex items-center content-between gap-1'>
+                        <Title className='font-size-2 color-primary font-weight-6'>
+                            Compute Jobs
+                        </Title>
+                        <StatusCounts
+                            queued={jobsStatusCounts.queued}
+                            running={jobsStatusCounts.running}
+                            completed={jobsStatusCounts.completed}
+                        />
+                    </Container>
+                    <Container className='dashboard-jobs-card-body d-flex column flex-1 min-h-0'>
+                        <JobsHistoryViewer
+                            variant='embedded'
+                            displayMode='full'
+                            hideAfterComplete={false}
+                            emptyState={jobsEmptyState}
+                        />
+                    </Container>
+                </DashboardCard>
             </Container>
 
             <DashboardTeamTimeline />
             <DashboardInAppActivity />
-            <DashboardQuickActions />
             <DashboardTeamPresence />
-            <DashboardNotificationsFeed />
         </Container>
     );
 };

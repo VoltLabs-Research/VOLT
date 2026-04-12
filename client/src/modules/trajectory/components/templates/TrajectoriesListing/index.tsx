@@ -27,23 +27,13 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
         key: 'name',
         title: 'Name',
         sortable: true,
-        render: (value, row) => (
+        render: (value) => (
             <Container className='d-flex items-center gap-075'>
                 <Container className='d-flex flex-center color-secondary'>
                     <Folder size={16} />
                 </Container>
-                <Container className='d-flex column gap-025 overflow-hidden min-w-0'>
+                <Container className='overflow-hidden min-w-0'>
                     <span className='font-weight-6 color-secondary'>{String(value)}</span>
-                    <span
-                        className='font-size-1 color-muted d-block'
-                        title={isTrajectoryFolderRow(row) ? 'Folder' : row._id}
-                        style={isTrajectoryFolderRow(row) ? undefined : {
-                            whiteSpace: 'normal',
-                            overflowWrap: 'anywhere'
-                        }}
-                    >
-                        {isTrajectoryFolderRow(row) ? 'Folder' : row._id}
-                    </span>
                 </Container>
             </Container>
         ),

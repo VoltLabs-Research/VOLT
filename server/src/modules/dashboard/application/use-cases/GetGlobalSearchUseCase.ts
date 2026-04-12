@@ -198,7 +198,6 @@ implements IUseCase<GetGlobalSearchInputDTO, GetGlobalSearchOutputDTO> {
                 network: container.network,
                 volume: container.volume,
                 mountDockerSocket: container.mountDockerSocket,
-                capabilities: container.capabilities,
                 accessiblePorts: container.accessiblePorts,
                 createdAt: container.createdAt,
                 updatedAt: container.updatedAt

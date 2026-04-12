@@ -48,12 +48,7 @@ const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
                             <Container className='dashboard-stat-card-icon d-flex flex-center radius-md'>
                                 {icon}
                             </Container>
-                            <Container className='d-flex column gap-01'>
-                                <span className='font-size-2 font-weight-5'>{card.name}</span>
-                                {card.pluginName && (
-                                    <span className='font-size-1 color-muted'>{card.pluginName}</span>
-                                )}
-                            </Container>
+                            <span className='font-size-2 font-weight-5'>{card.name}</span>
                         </Container>
 
                         <Container className='d-flex items-end gap-075'>
@@ -89,12 +84,7 @@ const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
                             <Container className='dashboard-stat-card-icon d-flex flex-center radius-md'>
                                 {icon}
                             </Container>
-                            <Container className='d-flex column gap-01'>
-                                <span className='font-size-2 font-weight-5'>{card.name}</span>
-                                {card.pluginName && (
-                                    <span className='font-size-1 color-muted'>{card.pluginName}</span>
-                                )}
-                            </Container>
+                            <span className='font-size-2 font-weight-5'>{card.name}</span>
                         </Container>
 
                         <Container className='d-flex items-end gap-075'>

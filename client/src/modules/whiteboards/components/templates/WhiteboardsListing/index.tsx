@@ -39,11 +39,9 @@ const renderWhiteboardTitle: NonNullable<ColumnConfig<WhiteboardListingRow>['ren
         title = value;
     }
 
-    const shortId = row._id?.substring(0, 12) || '-';
     const icon = isWhiteboardFolder(row)
         ? <Folder size={16} />
         : <SquarePen size={16} />;
-    const subtitle = isWhiteboardFolder(row) ? 'Folder' : shortId;
     const hierarchyLabel = row.hierarchyTitle;
 
     return (
@@ -51,9 +49,8 @@ const renderWhiteboardTitle: NonNullable<ColumnConfig<WhiteboardListingRow>['ren
             <Container className='d-flex flex-center color-secondary'>
                 {icon}
             </Container>
-            <Container className='d-flex column gap-025 overflow-hidden'>
+            <Container className='overflow-hidden'>
                 <span className='whiteboards-listing-title font-weight-6 color-secondary' title={title}>{title}</span>
-                <span className='font-size-1 color-muted'>{subtitle}</span>
             </Container>
         </Container>
     );

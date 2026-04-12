@@ -1,9 +1,7 @@
-import { getTeamClusterStatusLabel } from '@/modules/cluster/utilities/team-cluster-status';
 import { formatNetworkSpeedWithUnit } from '@/modules/cluster/utilities/format-network';
-import { ClusterStatus } from '@/modules/cluster/api/entities/cluster-metrics';
 import './MetricsCards.css';
 import Container from '@/shared/presentation/components/Container';
-import { Server, Cpu, MemoryStick, Activity, TrendingUp, TrendingDown } from 'lucide-react';
+import { Cpu, MemoryStick, Activity, TrendingUp, TrendingDown } from 'lucide-react';
 import { Skeleton } from '@mui/material';
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
 
@@ -12,25 +10,13 @@ interface MetricsCardsProps {
 };
 
 interface MetricCardItem {
-    icon: typeof Server;
+    icon: typeof Cpu;
     title: string;
     value: string;
     unit?: string;
     trend: string;
     trendUp: boolean;
     subtitle: string;
-};
-
-const getStatusLabel = (status: ClusterStatus): string => {
-    if (status === ClusterStatus.Healthy) {
-        return 'Online';
-    }
-
-    if (status === ClusterStatus.Warning) {
-        return 'Warning';
-    }
-
-    return 'Critical';
 };
 
 const renderTrendIcon = (trendUp: boolean) => {
@@ -78,20 +64,7 @@ const MetricsCards = ({ metrics }: MetricsCardsProps) => {
     const networkFormatted = formatNetworkSpeedWithUnit(networkTotal);
     const outgoingFormatted = formatNetworkSpeedWithUnit(metrics.network.outgoing);
     const incomingFormatted = formatNetworkSpeedWithUnit(metrics.network.incoming);
-    const lifecycleStatusLabel = metrics.teamClusterStatus
-        ? getTeamClusterStatusLabel(metrics.teamClusterStatus)
-        : getStatusLabel(metrics.status);
-
     const cards: MetricCardItem[] = [
-        {
-            icon: Server,
-            title: 'Active Servers',
-            value: '1',
-            unit: 'Cluster',
-            trend: lifecycleStatusLabel,
-            trendUp: metrics.status === ClusterStatus.Healthy,
-            subtitle: metrics.status
-        },
         {
             icon: Cpu,
             title: 'CPU Load',

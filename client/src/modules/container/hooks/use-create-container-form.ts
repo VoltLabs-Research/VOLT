@@ -511,8 +511,7 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
                     env: mergeContainerEnvVariables(config.env, config.customFields, config.customFieldValues),
                     mountDockerSocket: config.mountDockerSocket,
                     useImageCmd: template?.useImageCmd,
-                    cmd: template?.defaultCmd,
-                    capabilities: template?.capabilities
+                    cmd: template?.defaultCmd
                 }).finally(() => {
                     setActiveCreateOperationId(null);
                 });

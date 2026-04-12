@@ -14,9 +14,7 @@ import UpdateTeamClusterLifecycleUseCase from '@modules/team-cluster/application
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterHeartbeatMonitor from '@modules/team-cluster/infrastructure/services/TeamClusterHeartbeatMonitor';
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
-import TeamClusterRemoteTerminalService from '@modules/team-cluster/infrastructure/services/TeamClusterRemoteTerminalService';
 import TeamClusterReverseChannelService from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
-import { SocketTeamClusterTerminalClient } from '@modules/team-cluster/socket/SocketTeamClusterTerminalClient';
 import { formatSocketValidationError } from '@modules/socket/utilities/socket-validation-error';
 import {
     getTeamClusterRoom,
@@ -46,16 +44,8 @@ interface SubscribeToTeamClusterSocketPayload {
     teamClusterIds: string[];
 };
 
-interface TeamClusterTerminalAttachPayload {
-    sessionId: string;
-};
-
 const subscribeToTeamClusterSocketPayloadSchema = z.object({
     teamClusterIds: z.array(z.string().trim().min(1))
-}).strict();
-
-const teamClusterTerminalAttachPayloadSchema = z.object({
-    sessionId: z.string().trim().min(1)
 }).strict();
 
 const daemonRegisterPayloadSchema = z.object({
@@ -76,9 +66,6 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
 
         @inject(TEAM_CLUSTER_TOKENS.TeamClusterLifecycleService)
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
-
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRemoteTerminalService)
-        private readonly teamClusterRemoteTerminalService: TeamClusterRemoteTerminalService,
 
         @inject(TEAM_CLUSTER_TOKENS.TeamClusterReverseChannelService)
         private readonly teamClusterReverseChannelService: TeamClusterReverseChannelService,
@@ -121,27 +108,6 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
     }
 
     onConnection(connection: ISocketConnection): void {
-        if (connection.nativeSocket) {
-            const terminalClient = new SocketTeamClusterTerminalClient(connection.nativeSocket);
-
-            connection.nativeSocket.on('team-cluster:terminal:attach', async (payload: TeamClusterTerminalAttachPayload) => {
-                const parsed = teamClusterTerminalAttachPayloadSchema.safeParse(payload);
-                if (!parsed.success) {
-                    terminalClient.emitError({
-                        code: ErrorCodes.VALIDATION_INVALID_INPUT,
-                        details: formatSocketValidationError(parsed.error)
-                    });
-                    return;
-                }
-
-                await this.teamClusterRemoteTerminalService.attach(terminalClient, {
-                    sessionId: parsed.data.sessionId,
-                    userId: connection.userId ?? '',
-                    teamIds: connection.user?.teams ?? []
-                });
-            });
-        }
-
         this.on<SubscribeToTeamClusterSocketPayload>(
             connection.id,
             TEAM_CLUSTER_SUBSCRIPTION_EVENT,

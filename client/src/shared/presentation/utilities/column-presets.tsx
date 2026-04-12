@@ -136,11 +136,22 @@ const resolvePopulatedName = (value: unknown): string | null => {
     }
 
     if (typeof value === 'string') {
-        return value;
+        return null;
     }
 
-    const populated = value as { _id: string; name?: string };
-    return populated.name || populated._id;
+    const populated = value as {
+        email?: string;
+        modifier?: { name?: string };
+        name?: string;
+        title?: string;
+    };
+
+    const resolvedName = populated.name?.trim()
+        || populated.title?.trim()
+        || populated.email?.trim()
+        || populated.modifier?.name?.trim();
+
+    return resolvedName || null;
 };
 
 export function clusterColumn<TRow = unknown>(

@@ -19,11 +19,6 @@ interface ClusterRemoteAccessToastOptions {
 };
 
 const REMOTE_ACCESS_TOAST_OPTIONS: Record<TeamClusterRemoteAccessTarget, ClusterRemoteAccessToastOptions> = {
-    [TeamClusterRemoteAccessTarget.HostTerminal]: {
-        loading: { title: 'Opening terminal...' },
-        success: { title: 'Terminal ready' },
-        error: { title: 'Failed to open terminal' }
-    },
     [TeamClusterRemoteAccessTarget.MongoDocuments]: {
         loading: { title: 'Opening Mongo explorer...' },
         success: { title: 'Mongo explorer ready' },

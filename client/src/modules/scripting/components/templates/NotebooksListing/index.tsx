@@ -6,7 +6,6 @@ import { getPrimaryTrajectory } from '@/modules/scripting/utilities/notebooks';
 import { clusterColumn, dateColumn, titleWithIconColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCellPopover';
 import DocumentListing, {
-    DocumentListingTabAction,
     type ColumnConfig,
     type DocumentListingTab
 } from '@/shared/presentation/components/DocumentListing';
@@ -21,8 +20,7 @@ import type {
 
 enum NotebooksListingTabId {
     List = 'list',
-    Trajectory = 'trajectory',
-    Export = 'export'
+    Trajectory = 'trajectory'
 };
 
 type NotebookDocument = ScriptingNotebook;
@@ -35,30 +33,24 @@ const NOTEBOOK_TABS: DocumentListingTab[] = [
     {
         id: NotebooksListingTabId.Trajectory,
         label: 'Trajectory Notebooks'
-    },
-    {
-        id: NotebooksListingTabId.Export,
-        label: 'Export',
-        action: DocumentListingTabAction.Export
     }
 ];
 
 const isNotebooksListingTabId = (value: string): value is NotebooksListingTabId => {
     return value === NotebooksListingTabId.List
-        || value === NotebooksListingTabId.Trajectory
-        || value === NotebooksListingTabId.Export;
+        || value === NotebooksListingTabId.Trajectory;
 };
 
 const getTrajectoryLabel = (trajectory: ScriptingNotebookTrajectory | string | null): string => {
     if (!trajectory) {
-        return 'General';
+        return '';
     }
 
     if (typeof trajectory === 'string') {
-        return trajectory;
+        return '';
     }
 
-    return trajectory.name || trajectory._id;
+    return trajectory.name?.trim() || '';
 };
 
 const renderTrajectoryDetails: NonNullable<ColumnConfig<NotebookDocument>['render']> = (_value, row) => {
@@ -156,7 +148,6 @@ const getEmptyButtonText = (scope: ScriptingNotebookScope): string => {
 const NotebooksListing = () => {
     const [activeTab, setActiveTab] = useState<NotebooksListingTabId>(NotebooksListingTabId.List);
     const {
-        exportNotebooks,
         fetchData,
         getMenuOptions,
         handleCreate,
@@ -177,7 +168,7 @@ const NotebooksListing = () => {
         : undefined;
 
     const handleTabChange = useCallback((tabId: string) => {
-        if (isNotebooksListingTabId(tabId) && tabId !== NotebooksListingTabId.Export) {
+        if (isNotebooksListingTabId(tabId)) {
             setActiveTab(tabId);
         }
     }, []);
@@ -207,10 +198,6 @@ const NotebooksListing = () => {
                 emptyMessage={getEmptyMessage(scope)}
                 emptyButtonText={getEmptyButtonText(scope)}
                 onEmptyButtonClick={handleEmptyStateAction}
-                exportConfig={{
-                    onExport: exportNotebooks,
-                    getFilename: (format) => `notebooks-${scope}.${format}`
-                }}
                 onTabChange={handleTabChange}
                 socketInvalidation={socketInvalidation}
             />

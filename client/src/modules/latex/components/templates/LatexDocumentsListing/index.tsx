@@ -35,20 +35,17 @@ const renderDocumentTitle: NonNullable<ColumnConfig<LatexListingRow>['render']> 
         title = value;
     }
 
-    const shortId = row._id?.substring(0, 12) || '-';
     const icon = isLatexFolder(row)
         ? <Folder size={16} />
         : <FileText size={16} />;
-    const subtitle = isLatexFolder(row) ? 'Folder' : shortId;
 
     return (
         <Container className='d-flex items-center gap-075'>
             <Container className='d-flex flex-center color-secondary'>
                 {icon}
             </Container>
-            <Container className='d-flex column gap-025 overflow-hidden'>
+            <Container className='overflow-hidden'>
                 <span className='font-weight-6 color-secondary'>{title}</span>
-                <span className='font-size-1 color-muted'>{subtitle}</span>
             </Container>
         </Container>
     );
