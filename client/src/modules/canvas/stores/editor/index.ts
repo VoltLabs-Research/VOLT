@@ -39,7 +39,6 @@ export const useEditorStore = create<EditorStore>()(
                     const state = get();
 
                     state.resetPlayback();
-                    state.resetTimesteps();
                     state.resetModel();
                     state.camera.reset();
                     state.lights.reset();

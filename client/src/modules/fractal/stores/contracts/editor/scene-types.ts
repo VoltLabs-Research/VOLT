@@ -1,4 +1,3 @@
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { ModelWorldBounds, ModelLoadingState } from '@/modules/fractal/api/entities/model';
 import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
@@ -94,47 +93,34 @@ export interface PlaybackState {
 };
 
 export interface PlaybackActions {
-    togglePlay: () => void;
+    togglePlay: (params: PlaybackTimelineParams) => void;
     setPlaySpeed: (speed: number) => void;
     setCurrentTimestep: (timestep: number) => void;
-    playNextFrame: () => void;
     stopPlayback: () => void;
     resetPlayback: () => void;
     setRangeStart: (value: number | undefined) => void;
     setRangeEnd: (value: number | undefined) => void;
-    getRangedTimesteps: () => number[];
 };
 
 export type PlaybackStore = PlaybackState & PlaybackActions;
 export type TimelineGLBMap = Record<number, string>;
 
-export interface TimestepData {
+export interface PlaybackTimelineParams {
+    trajectoryId?: string;
     timesteps: number[];
-    minTimestep: number;
-    maxTimestep: number;
-    timestepCount: number;
-};
-
-export interface TimestepState {
-    timestepData: TimestepData;
-    isRenderOptionsLoading: boolean;
 };
 
 export interface TimestepActions {
-    computeTimestepData: (
-        trajectory: Trajectory | null,
-        currentTimestep?: number,
-        cacheBuster?: number,
-        allowedTimesteps?: number[]
-    ) => void;
-    loadModels: (
-        preloadBehavior?: boolean,
-        onProgress?: (p: number, m?: { bps: number }) => void,
-        maxFramesToPreload?: number,
-        currentFrameIndex?: number,
-        signal?: AbortSignal
-    ) => Promise<TimelineGLBMap>;
-    resetTimesteps: () => void;
+    loadModels: (params: LoadTimelineModelsParams) => Promise<TimelineGLBMap>;
 };
 
-export type TimestepStore = TimestepState & TimestepActions;
+export interface LoadTimelineModelsParams {
+    trajectoryId: string;
+    timesteps: number[];
+    onProgress?: (p: number, m?: { bps: number }) => void;
+    maxFramesToPreload?: number;
+    currentFrameIndex?: number;
+    signal?: AbortSignal;
+};
+
+export type TimestepStore = TimestepActions;

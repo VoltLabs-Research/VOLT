@@ -7,6 +7,7 @@ import TimelineRuler from '../../molecules/TimelineRuler';
 import useTimelineJobActivity from '../../../hooks/use-timeline-job-activity';
 import useCanvasTimelineTabs from '@/modules/canvas/hooks/use-canvas-timeline-tabs';
 import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
+import { resolveRangedTimesteps } from '@/modules/canvas/utilities/timeline-range';
 import useTip from '@/shared/tips/use-tip';
 
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
@@ -26,6 +27,9 @@ import './Timeline.css';
 interface TimelineProps {
     sceneRef: React.RefObject<FractalSceneRef | null>;
     trajectory: Trajectory | null | undefined;
+    trajectoryId?: string;
+    currentTimestep: number | undefined;
+    availableTimesteps: number[];
     analysisId: string | undefined;
     onTabChange?: (tab: string) => void;
     onDownloadExposureListing?: (params: {
@@ -38,7 +42,16 @@ interface TimelineProps {
 };
 
 
-const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExposureListing }: TimelineProps) => {
+const Timeline = ({
+    sceneRef,
+    trajectory,
+    trajectoryId,
+    currentTimestep,
+    availableTimesteps,
+    analysisId,
+    onTabChange,
+    onDownloadExposureListing
+}: TimelineProps) => {
     useTip('canvas-timeline-scrub');
 
     const [activeTab, setActiveTab] = useState<string>('timeline');
@@ -126,22 +139,22 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
     }, [activeTab]);
 
     const {
-        timestepData, currentTimestep, setCurrentTimestep, playSpeed, setPlaySpeed,
-        rangeStart, rangeEnd, setRangeStart, setRangeEnd, getRangedTimesteps
+        setCurrentTimestep,
+        playSpeed,
+        setPlaySpeed,
+        rangeStart,
+        rangeEnd,
+        setRangeStart,
+        setRangeEnd
     } = useEditorStore(useShallow((state) => ({
-        timestepData: state.timestepData,
-        currentTimestep: state.currentTimestep,
         setCurrentTimestep: state.setCurrentTimestep,
         playSpeed: state.playSpeed,
         setPlaySpeed: state.setPlaySpeed,
         rangeStart: state.rangeStart,
         rangeEnd: state.rangeEnd,
         setRangeStart: state.setRangeStart,
-        setRangeEnd: state.setRangeEnd,
-        getRangedTimesteps: state.getRangedTimesteps
+        setRangeEnd: state.setRangeEnd
     })));
-
-    const availableTimesteps = timestepData.timesteps;
 
     useEffect(() => {
         if (!availableTimesteps.length) {
@@ -157,9 +170,11 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
         if (rangeEnd === undefined || !availableTimesteps.includes(rangeEnd)) {
             setRangeEnd(last);
         }
-    }, [availableTimesteps]);
+    }, [availableTimesteps, rangeStart, rangeEnd, setRangeStart, setRangeEnd]);
 
-    const rangedTimesteps = getRangedTimesteps();
+    const rangedTimesteps = useMemo(() => {
+        return resolveRangedTimesteps(availableTimesteps, rangeStart, rangeEnd);
+    }, [availableTimesteps, rangeStart, rangeEnd]);
     const safeCurrentIndex = rangedTimesteps.indexOf(currentTimestep!);
 
     const ticks = useMemo(() => {
@@ -424,6 +439,8 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
                 tabs={tabs}
+                trajectoryId={trajectoryId}
+                currentTimestep={currentTimestep}
                 startFrame={startFrame}
                 endFrame={endFrame}
                 availableTimesteps={availableTimesteps}

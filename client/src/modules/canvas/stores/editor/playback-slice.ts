@@ -1,5 +1,7 @@
+import { resolveRangedTimesteps } from '@/modules/canvas/utilities/timeline-range';
+
 import type { EditorStore } from './types';
-import type { PlaybackState, PlaybackStore } from '@/modules/fractal/stores/contracts/editor/scene-types';
+import type { PlaybackState, PlaybackStore, PlaybackTimelineParams } from '@/modules/fractal/stores/contracts/editor/scene-types';
 import type { StateCreator } from 'zustand';
 
 type PlaybackSliceSet = Parameters<StateCreator<EditorStore, [], [], PlaybackStore>>[0];
@@ -75,35 +77,39 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
         });
     },
 
-    togglePlay() {
+    togglePlay({ trajectoryId, timesteps }: PlaybackTimelineParams) {
         const { isPlaying, isPreloading, didPreload } = get();
         if (isPlaying || isPreloading) {
             get().stopPlayback();
         } else {
-            const rangedTimesteps = get().getRangedTimesteps();
+            const rangedTimesteps = resolveRangedTimesteps(timesteps, get().rangeStart, get().rangeEnd);
             if (!rangedTimesteps.length) return;
 
-            const { timesteps: allTimesteps } = get().timestepData;
             const playbackGeneration = advancePlaybackGeneration();
 
             (async () => {
                 let shouldMarkPreloadComplete = didPreload;
 
                 if (!didPreload) {
+                    if (!trajectoryId) {
+                        return;
+                    }
+
                     const preloadAbortController = new AbortController();
                     _preloadAbortController = preloadAbortController;
                     set({ isPreloading: true, preloadProgress: 0 });
 
                     try {
-                        const frameCount = allTimesteps.length;
+                        const frameCount = timesteps.length;
                         const maxFramesToPreload = frameCount > 100 ? 100 : undefined;
                         const currentFrameIndex = get().currentTimestep !== undefined
-                            ? allTimesteps.indexOf(get().currentTimestep!)
+                            ? timesteps.indexOf(get().currentTimestep!)
                             : 0;
 
-                        await get().loadModels(
-                            true,
-                            (progress: number, metrics?: { bps: number }) => {
+                        await get().loadModels({
+                            trajectoryId,
+                            timesteps,
+                            onProgress: (progress: number, metrics?: { bps: number }) => {
                                 if (_playbackGeneration !== playbackGeneration) {
                                     return;
                                 }
@@ -113,8 +119,8 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
                             },
                             maxFramesToPreload,
                             currentFrameIndex,
-                            preloadAbortController.signal
-                        );
+                            signal: preloadAbortController.signal
+                        });
                         shouldMarkPreloadComplete = true;
                     } catch (error) {
                         if (isAbortError(error)) {
@@ -143,7 +149,7 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
                 set({ isPlaying: true });
 
                 if (get().currentTimestep === undefined) {
-                    const rangedTs = get().getRangedTimesteps();
+                    const rangedTs = resolveRangedTimesteps(timesteps, get().rangeStart, get().rangeEnd);
                     if (rangedTs.length) {
                         updateCurrentTimestep(rangedTs[0], set, get);
                     }
@@ -181,7 +187,7 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
                         _lastFrameTime = timestamp;
 
                         const { currentTimestep } = get();
-                        const ts = get().getRangedTimesteps();
+                        const ts = resolveRangedTimesteps(timesteps, get().rangeStart, get().rangeEnd);
 
                         if (!ts.length) {
                             get().stopPlayback();
@@ -216,25 +222,6 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
 
     setCurrentTimestep(timestep: number) {
         updateCurrentTimestep(timestep, set, get);
-    },
-
-    playNextFrame() {
-        const { currentTimestep } = get();
-        const timesteps = get().getRangedTimesteps();
-
-        if (!timesteps.length || currentTimestep === undefined) {
-            get().stopPlayback();
-            return;
-        }
-
-        const currentIndex = timesteps.indexOf(currentTimestep);
-        if (currentIndex === -1) {
-            updateCurrentTimestep(timesteps[0], set, get);
-            return;
-        }
-
-        const nextIndex = (currentIndex + 1) % timesteps.length;
-        updateCurrentTimestep(timesteps[nextIndex], set, get);
     },
 
     /**
@@ -295,19 +282,6 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
         }
 
         set(updates);
-    },
-
-    /**
-     * Returns the subset of timesteps within the current range boundaries.
-     * If no range is set, returns all timesteps.
-     */
-    getRangedTimesteps() {
-        const { timestepData, rangeStart, rangeEnd } = get();
-        const ts = timestepData.timesteps;
-        if (!ts.length) return ts;
-        const start = rangeStart ?? ts[0];
-        const end = rangeEnd ?? ts[ts.length - 1];
-        return ts.filter((t) => t >= start && t <= end);
     },
 
     resetPlayback() {

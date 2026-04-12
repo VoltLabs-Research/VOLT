@@ -1,6 +1,7 @@
 import { useKeyboardShortcutsStore } from '../stores/use-keyboard-shortcuts-store';
 import { useScreenshotStore } from '../stores/use-screenshot-store';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { resolveRangedTimesteps } from '@/modules/canvas/utilities/timeline-range';
 import useCanvasUrlState from './use-canvas-url-state';
 
 import { useEffect, useRef } from 'react';
@@ -17,7 +18,17 @@ const normalizeKey = (key: string): string => {
     return keyMap[lower] ?? lower;
 };
 
-const useKeyboardShortcuts = () => {
+interface UseKeyboardShortcutsParams {
+    trajectoryId?: string;
+    currentTimestep: number | undefined;
+    availableTimesteps: number[];
+};
+
+const useKeyboardShortcuts = ({
+    trajectoryId,
+    currentTimestep,
+    availableTimesteps
+}: UseKeyboardShortcutsParams) => {
     const shortcuts = useKeyboardShortcutsStore((s) => s.shortcuts);
     const showPanel = useKeyboardShortcutsStore((s) => s.showPanel);
     const currentScope = useKeyboardShortcutsStore((s) => s.currentScope);
@@ -36,56 +47,83 @@ const useKeyboardShortcuts = () => {
     const lastTriggeredTimeoutRef = useRef<number | null>(null);
 
     useEffect(() => {
+        const getVisibleTimesteps = () => {
+            const { rangeStart, rangeEnd } = useEditorStore.getState();
+            return resolveRangedTimesteps(availableTimesteps, rangeStart, rangeEnd);
+        };
+
         actionsRef.current = {
             'play-pause': () => {
-                useEditorStore.getState().togglePlay();
+                useEditorStore.getState().togglePlay({ trajectoryId, timesteps: availableTimesteps });
             },
 
             'frame-prev': () => {
-                const { currentTimestep, timestepData, setCurrentTimestep } = useEditorStore.getState();
                 if (currentTimestep === undefined) return;
-                const idx = timestepData.timesteps.indexOf(currentTimestep);
+                const { setCurrentTimestep } = useEditorStore.getState();
+                const timesteps = getVisibleTimesteps();
+                const idx = timesteps.indexOf(currentTimestep);
+                if (idx === -1) {
+                    return;
+                }
+
                 if (idx > 0) {
-                    setCurrentTimestep(timestepData.timesteps[idx - 1]);
+                    setCurrentTimestep(timesteps[idx - 1]);
                 }
             },
 
             'frame-next': () => {
-                const { currentTimestep, timestepData, setCurrentTimestep } = useEditorStore.getState();
                 if (currentTimestep === undefined) return;
-                const idx = timestepData.timesteps.indexOf(currentTimestep);
-                if (idx < timestepData.timesteps.length - 1) {
-                    setCurrentTimestep(timestepData.timesteps[idx + 1]);
+                const { setCurrentTimestep } = useEditorStore.getState();
+                const timesteps = getVisibleTimesteps();
+                const idx = timesteps.indexOf(currentTimestep);
+                if (idx === -1) {
+                    return;
+                }
+
+                if (idx < timesteps.length - 1) {
+                    setCurrentTimestep(timesteps[idx + 1]);
                 }
             },
 
             'frame-prev-10': () => {
-                const { currentTimestep, timestepData, setCurrentTimestep } = useEditorStore.getState();
                 if (currentTimestep === undefined) return;
-                const idx = timestepData.timesteps.indexOf(currentTimestep);
+                const { setCurrentTimestep } = useEditorStore.getState();
+                const timesteps = getVisibleTimesteps();
+                const idx = timesteps.indexOf(currentTimestep);
+                if (idx === -1) {
+                    return;
+                }
+
                 const newIdx = Math.max(0, idx - 10);
-                setCurrentTimestep(timestepData.timesteps[newIdx]);
+                setCurrentTimestep(timesteps[newIdx]);
             },
 
             'frame-next-10': () => {
-                const { currentTimestep, timestepData, setCurrentTimestep } = useEditorStore.getState();
                 if (currentTimestep === undefined) return;
-                const idx = timestepData.timesteps.indexOf(currentTimestep);
-                const newIdx = Math.min(timestepData.timesteps.length - 1, idx + 10);
-                setCurrentTimestep(timestepData.timesteps[newIdx]);
+                const { setCurrentTimestep } = useEditorStore.getState();
+                const timesteps = getVisibleTimesteps();
+                const idx = timesteps.indexOf(currentTimestep);
+                if (idx === -1) {
+                    return;
+                }
+
+                const newIdx = Math.min(timesteps.length - 1, idx + 10);
+                setCurrentTimestep(timesteps[newIdx]);
             },
 
             'frame-first': () => {
-                const { timestepData, setCurrentTimestep } = useEditorStore.getState();
-                if (timestepData.timesteps.length > 0) {
-                    setCurrentTimestep(timestepData.timesteps[0]);
+                const { setCurrentTimestep } = useEditorStore.getState();
+                const timesteps = getVisibleTimesteps();
+                if (timesteps.length > 0) {
+                    setCurrentTimestep(timesteps[0]);
                 }
             },
 
             'frame-last': () => {
-                const { timestepData, setCurrentTimestep } = useEditorStore.getState();
-                if (timestepData.timesteps.length > 0) {
-                    setCurrentTimestep(timestepData.timesteps[timestepData.timesteps.length - 1]);
+                const { setCurrentTimestep } = useEditorStore.getState();
+                const timesteps = getVisibleTimesteps();
+                if (timesteps.length > 0) {
+                    setCurrentTimestep(timesteps[timesteps.length - 1]);
                 }
             },
 
@@ -146,6 +184,9 @@ const useKeyboardShortcuts = () => {
         showWidgets,
         showGrid,
         showGizmo,
+        trajectoryId,
+        currentTimestep,
+        availableTimesteps,
         updateSearchParams,
         setResultsPluginId
     ]);
