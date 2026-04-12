@@ -1,0 +1,37 @@
+.dashboard-tabbed-card-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.dashboard-tabbed-card-tab {
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    padding: 0.45rem 0.8rem;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.dashboard-tabbed-card-tab[data-active='true'] {
+    background: var(--color-surface-1);
+    color: var(--color-text-primary);
+    box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+@media screen and (max-width: 768px) {
+    .dashboard-tabbed-card-tabs {
+        width: 100%;
+    }
+
+    .dashboard-tabbed-card-tab {
+        flex: 1;
+    }
+}
