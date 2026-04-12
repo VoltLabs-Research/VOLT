@@ -6,7 +6,6 @@ import {
     Box,
     Folder,
     Layers,
-    Monitor,
     Play,
     RefreshCw,
     Square,
@@ -17,7 +16,6 @@ import Container from '@/shared/presentation/components/Container';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import Title from '@/shared/presentation/components/Title';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
-import { supportsRemoteDesktop } from '@/modules/container/utilities/supports-remote-desktop';
 import type { Container as ContainerEntity } from '@/modules/container/api/entities/container';
 import type { LucideIcon } from 'lucide-react';
 import { getPrimaryAccessiblePort } from '@/modules/container/utilities/get-primary-accessible-port';
@@ -59,12 +57,6 @@ const BASE_NAV_ITEMS: NavItem[] = [
     }
 ];
 
-const REMOTE_DESKTOP_NAV_ITEM: NavItem = {
-    path: 'remote-desktop',
-    label: 'Remote Desktop',
-    icon: Monitor
-};
-
 const ContainerSidebar = ({
     container,
     onBack,
@@ -76,14 +68,11 @@ const ContainerSidebar = ({
     const isRunning = container.status === 'running';
     const { canAccess } = useTeamPermissions();
     const canUpdate = canAccess(['container:update']);
-    const hasRemoteDesktop = supportsRemoteDesktop(container.capabilities);
     const { openPort, openingPort } = useOpenContainerPort();
     const primaryAccessiblePort = getPrimaryAccessiblePort(container.accessiblePorts);
 
     const basePath = `/dashboard/containers/${container._id}`;
-    const navItems = hasRemoteDesktop && isRunning
-        ? [...BASE_NAV_ITEMS, REMOTE_DESKTOP_NAV_ITEM]
-        : BASE_NAV_ITEMS;
+    const navItems = BASE_NAV_ITEMS;
     let actionButtons = null;
 
     if (canUpdate) {

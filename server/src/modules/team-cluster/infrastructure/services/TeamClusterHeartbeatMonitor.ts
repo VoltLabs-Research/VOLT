@@ -6,7 +6,6 @@ import { inject, injectable } from 'tsyringe';
 
 const TEAM_CLUSTER_HEARTBEAT_TIMEOUT_MS = readNumberEnv('TEAM_CLUSTER_HEARTBEAT_TIMEOUT_MS', 60_000);
 const TEAM_CLUSTER_HEARTBEAT_SWEEP_INTERVAL_MS = readNumberEnv('TEAM_CLUSTER_HEARTBEAT_SWEEP_INTERVAL_MS', 15_000);
-const TEAM_CLUSTER_UPDATE_TIMEOUT_MS = readNumberEnv('TEAM_CLUSTER_UPDATE_TIMEOUT_MS', 120_000);
 const TEAM_CLUSTER_DELETE_TIMEOUT_MS = readNumberEnv('TEAM_CLUSTER_DELETE_TIMEOUT_MS', 120_000);
 
 @injectable()
@@ -41,11 +40,9 @@ export default class TeamClusterHeartbeatMonitor {
 
     async runSweep(): Promise<void> {
         const heartbeatCutoff = new Date(Date.now() - TEAM_CLUSTER_HEARTBEAT_TIMEOUT_MS);
-        const updateCutoff = new Date(Date.now() - TEAM_CLUSTER_UPDATE_TIMEOUT_MS);
         const deleteCutoff = new Date(Date.now() - TEAM_CLUSTER_DELETE_TIMEOUT_MS);
         await this.teamClusterLifecycleService.markHeartbeatTimeouts(heartbeatCutoff);
         await this.teamClusterLifecycleService.finalizeDeletingClustersByEvidence(heartbeatCutoff);
         await this.teamClusterLifecycleService.markDeletingTimeouts(deleteCutoff);
-        await this.teamClusterLifecycleService.markUpdatingTimeouts(updateCutoff);
     }
 };

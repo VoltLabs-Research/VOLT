@@ -10,10 +10,6 @@ import type {
 import type { DownloadTeamClusterRemoteExplorerObjectInputDTO } from '@/modules/cluster/api/dtos/team-cluster/download-team-cluster-remote-explorer-object';
 import type { DeleteTeamClusterInputDTO, DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
 import type {
-    FetchAvailableClusterVersionsInputDTO,
-    FetchAvailableClusterVersionsOutputDTO
-} from '@/modules/cluster/api/dtos/team-cluster/fetch-available-cluster-versions';
-import type {
     GetTeamClusterRemoteExplorerNodeInputDTO,
     GetTeamClusterRemoteExplorerNodeOutputDTO
 } from '@/modules/cluster/api/dtos/team-cluster/get-team-cluster-remote-explorer-node';
@@ -30,10 +26,6 @@ import type {
     RegenerateTeamClusterEnrollmentTokenOutputDTO
 } from '@/modules/cluster/api/dtos/team-cluster/regenerate-team-cluster-enrollment-token';
 import type {
-    RequestClusterUpdateInputDTO,
-    RequestClusterUpdateOutputDTO
-} from '@/modules/cluster/api/dtos/team-cluster/request-cluster-update';
-import type {
     RevealTeamClusterCredentialsInputDTO,
     RevealTeamClusterCredentialsOutputDTO
 } from '@/modules/cluster/api/dtos/team-cluster/reveal-team-cluster-credentials';
@@ -48,10 +40,6 @@ import type {
 
 export default {
     deleteById: post<DeleteTeamClusterInputDTO, DeleteTeamClusterOutputDTO>('/:teamId/clusters/:teamClusterId/delete-requests'),
-    requestUpdate: post<RequestClusterUpdateInputDTO, RequestClusterUpdateOutputDTO>('/:teamId/clusters/:teamClusterId/update-requests'),
-    fetchAvailableVersions: get<FetchAvailableClusterVersionsInputDTO, FetchAvailableClusterVersionsOutputDTO>(
-        '/:teamId/clusters/:teamClusterId/available-updates'
-    ),
     createRemoteAccessSession: post<CreateTeamClusterRemoteAccessSessionInputDTO, CreateTeamClusterRemoteAccessSessionOutputDTO>(
         '/:teamId/clusters/:teamClusterId/remote-access/sessions'
     ),

@@ -569,19 +569,6 @@ TeamClusterCredentialServices:
       $ref: teams.yaml#/TeamClusterCredentialService
     daemon:
       $ref: teams.yaml#/TeamClusterDaemonCredentialService
-AvailableClusterVersion:
-  type: object
-  properties:
-    tag:
-      type: string
-    publishedAt:
-      type:
-      - string
-      - 'null'
-    isLatest:
-      type: boolean
-    isEdge:
-      type: boolean
 PasswordConfirmationRequest:
   type: object
   required:
@@ -604,7 +591,6 @@ CreateTeamClusterRequest:
 TeamClusterRemoteAccessTarget:
   type: string
   enum:
-  - host-terminal
   - mongo-documents
   - redis-data
   - minio
@@ -716,23 +702,6 @@ TeamClusterRemoteExplorerNode:
       type: array
       items:
         $ref: teams.yaml#/TeamClusterMongoDocument
-RequestTeamClusterUpdateRequest:
-  type: object
-  required:
-  - targetVersion
-  - password
-  properties:
-    targetVersion:
-      type: string
-      minLength: 1
-      maxLength: 128
-    isEdge:
-      type: boolean
-      default: false
-    password:
-      type: string
-      minLength: 1
-  additionalProperties: false
 TeamClusterCredentialsResponse:
   type: object
   properties:

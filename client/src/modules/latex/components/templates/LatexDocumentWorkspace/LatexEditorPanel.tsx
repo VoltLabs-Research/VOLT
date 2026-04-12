@@ -18,6 +18,7 @@ import type { LatexEditorGroupId, LatexFileEntry, LatexWorkspaceSelection, Latex
 import { getAssetDisplayName, isWorkspaceImageFile, isWorkspacePdfFile, isWorkspaceTextLikeFile } from '@/modules/latex/utilities/workspace';
 import LatexPdfViewer from './LatexPdfViewer';
 import type { MenuOption } from '@/shared/presentation/types/menu';
+import EmptyState from '@/shared/presentation/components/EmptyState';
 
 interface LatexEditorPanelProps {
     groupId: LatexEditorGroupId;
@@ -354,10 +355,7 @@ const LatexEditorPanel = ({
     }, [isMonacoReady]);
 
     const renderEmpty = () => (
-        <Container className='h-100 d-flex column justify-center items-center gap-1'>
-            <File size={28} className='color-muted' />
-            <Paragraph className='color-muted'>Open a file or asset to start working.</Paragraph>
-        </Container>
+        <EmptyState title='Welcome to LaTeX' description='Open a file or asset to start working.' icon={<File size={28} />} />
     );
 
     const renderBinaryAsset = () => {

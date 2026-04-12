@@ -1,14 +1,12 @@
 import { useDashboardMetricsQuery } from '@/modules/dashboard/hooks/queries';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { DashboardCard, DashboardMetrics } from '@/modules/dashboard/api/entities/dashboard';
 
 interface DashboardYDomain {
     min: number;
     max: number;
 };
-
-const ROTATION_INTERVAL_MS = 5000;
 
 const abbreviateNumber = (value: number): string => {
     if (value >= 1e9) return `${(value / 1e9).toFixed(1)}b`;
@@ -40,7 +38,6 @@ const buildCard = (
     defaultName: string,
     defaultUrl?: string
 ): DashboardCard => {
-    const meta = data.meta?.[key];
     let series: number[] = [];
     const weeklySeries = data.weekly[key];
     if (Array.isArray(weeklySeries) && weeklySeries.every((value) => typeof value === 'number')) {
@@ -51,9 +48,8 @@ const buildCard = (
 
     return {
         key,
-        name: meta?.displayName || defaultName,
-        listingUrl: meta?.listingUrl || defaultUrl,
-        pluginName: meta?.pluginName,
+        name: defaultName,
+        listingUrl: defaultUrl,
         count: abbreviateNumber(total),
         rawCount: total,
         lastMonthStatus: data.lastMonth[key] || 0,
@@ -69,7 +65,6 @@ const buildCard = (
  */
 export const useDashboardMetrics = (teamId?: string) => {
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
-    const [rotationIndex, setRotationIndex] = useState(0);
 
     const metricsQuery = useDashboardMetricsQuery(undefined, {
         enabled: !!teamId
@@ -81,35 +76,17 @@ export const useDashboardMetrics = (teamId?: string) => {
         }
     }, [metricsQuery.error, checkAccessDeniedError]);
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setRotationIndex((currentIndex) => currentIndex + 1);
-        }, ROTATION_INTERVAL_MS);
-        return () => clearInterval(interval);
-    }, []);
-
     const cards = useMemo((): DashboardCard[] => {
         if (!metricsQuery.data) {
             return [];
         }
 
         const data = metricsQuery.data;
-        const staticCards = [
+        return [
             buildCard(data, 'trajectories', 'Trajectories', '/dashboard/trajectories/list'),
             buildCard(data, 'analysis', 'Analyses', '/dashboard/analysis-configs/list')
         ];
-
-        const dynamicKeys = Object.keys(data.totals).filter(
-            (key) => key !== 'trajectories' && key !== 'analysis'
-        );
-
-        if (dynamicKeys.length > 0) {
-            const key = dynamicKeys[rotationIndex % dynamicKeys.length];
-            staticCards.push(buildCard(data, key, key));
-        }
-
-        return staticCards;
-    }, [metricsQuery.data, rotationIndex]);
+    }, [metricsQuery.data]);
 
     const errorMessage = metricsQuery.error instanceof Error ? metricsQuery.error.message : null;
 

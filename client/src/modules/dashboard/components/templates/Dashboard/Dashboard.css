@@ -27,66 +27,6 @@
     gap: 1rem;
 }
 
-.dashboard-bottom-sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    height: 100%;
-    flex: 1;
-    min-width: 0;
-}
-
-.dashboard-shared-panel {
-    flex: 1 1 0;
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-    min-height: 0;
-    transform: translateY(0) scale(1);
-    border-color: var(--color-border-soft);
-    box-shadow: 0 0 0 rgba(15, 23, 42, 0);
-    transform-origin: center;
-    transition:
-        flex 0.42s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
-        box-shadow 0.42s cubic-bezier(0.22, 1, 0.36, 1),
-        border-color 0.32s ease;
-}
-
-.dashboard-shared-panel--expanded {
-    flex: 1.25 1 0;
-    transform: translateY(-0.2rem) scale(1.01);
-    border-color: color-mix(in srgb, var(--color-border-soft) 45%, var(--accent-blue) 55%);
-    box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
-}
-
-.dashboard-shared-panel--collapsed {
-    flex: 0 0 4.9rem;
-    grid-template-rows: auto 0fr;
-    transform: translateY(0.18rem) scale(0.992);
-    box-shadow: 0 10px 18px rgba(15, 23, 42, 0.03);
-}
-
-.dashboard-shared-panel-body {
-    min-height: 0;
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-    filter: blur(0);
-    transition:
-        opacity 0.26s ease,
-        transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
-        filter 0.3s ease,
-        visibility 0.26s ease;
-}
-
-.dashboard-shared-panel--collapsed .dashboard-shared-panel-body {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transform: translateY(0.5rem);
-    filter: blur(3px);
-}
-
 .dashboard-jobs-card-header {
     padding: 1.25rem 1.25rem 0 1.25rem;
     flex-shrink: 0;
@@ -105,31 +45,13 @@
 }
 
 .dashboard-jobs-card {
+    flex: 1;
+    min-width: 0;
     padding-bottom: 1.25rem;
-    outline: none;
-    transition: padding-bottom 0.42s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .dashboard-jobs-card-body {
     min-height: 0;
-}
-
-.dashboard-jobs-card.dashboard-shared-panel--collapsed,
-.dashboard-recent-analyses.dashboard-shared-panel--collapsed {
-    padding-bottom: 0;
-}
-
-.dashboard-jobs-card.dashboard-shared-panel--collapsed .dashboard-jobs-card-header {
-    padding-bottom: 1.25rem;
-}
-
-.dashboard-jobs-card.dashboard-shared-panel--collapsed .dashboard-jobs-card-header > :last-child {
-    display: none;
-}
-
-.dashboard-shared-panel:focus-visible {
-    border-color: color-mix(in srgb, var(--color-border-soft) 30%, var(--accent-blue) 70%);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-blue) 16%, transparent);
 }
 
 .dashboard-jobs-card .jobs-history-viewer-embedded {
@@ -170,50 +92,13 @@
         flex-direction: column;
         height: auto;
     }
-
-    .dashboard-bottom-sidebar {
-        width: 100%;
-    }
-
-    .dashboard-shared-panel,
-    .dashboard-shared-panel--expanded,
-    .dashboard-shared-panel--collapsed {
-        display: flex;
-        flex-direction: column;
-        flex: 1 1 auto;
-        transform: none;
-        box-shadow: none;
-    }
-
-    .dashboard-shared-panel-body,
-    .dashboard-shared-panel--collapsed .dashboard-shared-panel-body {
-        opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
-        transform: none;
-        filter: none;
-    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .dashboard-shared-panel,
-    .dashboard-shared-panel-body,
     .dashboard-jobs-card,
-    .dashboard-jobs-card-header,
-    .dashboard-recent-analyses,
-    .dashboard-recent-analyses-header,
-    .dashboard-recent-analyses-view-all {
+    .dashboard-jobs-card-header {
         transition-duration: 0.01ms;
         transition-delay: 0ms;
-    }
-
-    .dashboard-shared-panel,
-    .dashboard-shared-panel--expanded,
-    .dashboard-shared-panel--collapsed,
-    .dashboard-shared-panel-body,
-    .dashboard-shared-panel--collapsed .dashboard-shared-panel-body {
-        transform: none;
-        filter: none;
     }
 }
 
@@ -221,10 +106,6 @@
     .dashboard-bento {
         gap: 0.75rem;
         padding: 0.75rem;
-    }
-
-    .dashboard-bottom-sidebar {
-        flex-direction: column;
     }
 
     .dashboard-simulations-header {

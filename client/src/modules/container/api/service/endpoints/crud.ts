@@ -23,7 +23,7 @@ const endpoints = {
     create: post<CreateContainerParams, Container>('/', {
         client: 'scoped',
         omit: ['teamId'],
-        body: ({ teamClusterId, folderId, operationId, name, image, memory, cpus, env, ports, cmd, mountDockerSocket, useImageCmd, capabilities }) => ({
+        body: ({ teamClusterId, folderId, operationId, name, image, memory, cpus, env, ports, cmd, mountDockerSocket, useImageCmd }) => ({
             teamClusterId,
             folderId,
             operationId,
@@ -35,8 +35,7 @@ const endpoints = {
             ports: normalizePorts(ports),
             cmd,
             mountDockerSocket,
-            useImageCmd,
-            capabilities
+            useImageCmd
         }),
         unwrap: { field: 'container' }
     }),

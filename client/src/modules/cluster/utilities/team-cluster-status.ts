@@ -53,7 +53,7 @@ export const getTeamClusterStatusDescription = (status: TeamClusterStatus): stri
         case TeamClusterStatus.Updating:
             return 'Volt has dispatched an update command and is waiting for the daemon to pull the new image and reconnect.';
         case TeamClusterStatus.UpdateFailed:
-            return 'The runtime reported that the update failed. The daemon may still be on the previous version. Use the "Update cluster" action to retry.';
+            return 'The runtime reported that the update failed. The daemon may still be on the previous version.';
         case TeamClusterStatus.Deleting:
             return 'Volt has requested uninstall and is waiting for runtime confirmation or disconnect evidence before removing the cluster.';
         case TeamClusterStatus.DeleteFailed:

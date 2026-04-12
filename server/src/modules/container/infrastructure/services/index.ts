@@ -3,7 +3,6 @@ export * from './ContainerAccessiblePortResolver';
 export * from './ContainerDeploymentProgressService';
 export * from './ContainerOwnershipService';
 export * from './ContainerPortProxyRelayService';
-export * from './ContainerVncGatewayService';
 export * from './DaemonContainerRuntimeService';
 export * from './DockerContainerService';
 export * from './TeamClusterSelectionService';

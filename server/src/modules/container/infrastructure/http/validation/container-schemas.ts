@@ -2,9 +2,6 @@ import { createPaginationQuerySchema } from '@shared/infrastructure/http/validat
 import { z } from 'zod/v4';
 
 const identifierSchema = z.string().min(1);
-const httpOriginSchema = z.string().url().refine((value) => /^https?:\/\//.test(value), {
-    message: 'Expected an HTTP(S) origin'
-});
 
 const paginationQuerySchema = createPaginationQuerySchema({
     maxLimit: 100,
@@ -50,10 +47,6 @@ const portMappingSchema = z.object({
     public: publicPortSchema
 }).strict();
 
-const containerCapabilitiesSchema = z.object({
-    vnc: z.boolean().optional()
-}).strict();
-
 const createContainerSchema = z.object({
     name: z.string().min(1),
     image: z.string().min(1),
@@ -66,8 +59,7 @@ const createContainerSchema = z.object({
     memory: z.number().positive().optional(),
     cpus: z.number().positive().optional(),
     mountDockerSocket: z.boolean().optional(),
-    useImageCmd: z.boolean().optional(),
-    capabilities: containerCapabilitiesSchema.optional()
+    useImageCmd: z.boolean().optional()
 }).strict();
 
 const updateContainerSchema = z.object({
@@ -89,34 +81,13 @@ const moveContainerSchema = z.object({
     folderId: identifierSchema.nullable()
 }).strict();
 
-const createContainerVncSessionSchema = z.object({
-    password: z.string().min(1),
-    parentOrigin: httpOriginSchema,
-    width: z.number().int().positive().max(8192).optional(),
-    height: z.number().int().positive().max(4320).optional(),
-    dpi: z.number().int().positive().max(300).optional()
-}).strict();
-
-const getContainerVncConnectPageQuerySchema = z.object({
-    token: z.string().min(1),
-    parentOrigin: httpOriginSchema
-}).strict();
-
 export const containerValidation = {
     create: {
         params: byTeamParamsSchema,
         body: createContainerSchema
     },
-    createVncSession: {
-        params: byContainerParamsSchema,
-        body: createContainerVncSessionSchema
-    },
     createPortProxySession: {
         params: byContainerPortParamsSchema
-    },
-    getVncConnectPage: {
-        params: byContainerParamsSchema,
-        query: getContainerVncConnectPageQuerySchema
     },
     update: {
         params: byContainerParamsSchema,

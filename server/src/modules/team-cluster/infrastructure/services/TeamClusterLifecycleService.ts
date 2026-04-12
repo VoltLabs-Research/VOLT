@@ -381,52 +381,6 @@ export default class TeamClusterLifecycleService {
         return toTeamClusterDTO(updatedTeamCluster);
     }
 
-    async markUpdating(teamClusterId: string): Promise<TeamClusterDTO> {
-        const teamCluster = await this.requireTeamClusterById(teamClusterId);
-        const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
-            status: TeamClusterStatus.Updating
-        }, {
-            preconditions: {
-                allowedCurrentStatuses: [teamCluster.props.status]
-            },
-            logContext: 'mark-updating'
-        });
-
-        return toTeamClusterDTO(updatedTeamCluster);
-    }
-
-    async markUpdatingTimeouts(cutoff: Date): Promise<number> {
-        const timedOutClusters = await this.teamClusterRepository.findUpdatingTimedOutClusters(cutoff);
-        let markedCount = 0;
-
-        for (const teamCluster of timedOutClusters) {
-            const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
-                status: TeamClusterStatus.UpdateFailed
-            }, {
-                preconditions: {
-                    allowedCurrentStatuses: [TeamClusterStatus.Updating],
-                    requireUpdatedBefore: cutoff
-                },
-                logContext: 'update-timeout'
-            });
-
-            if (updatedTeamCluster.props.status !== TeamClusterStatus.UpdateFailed
-                || updatedTeamCluster.props.updatedAt.getTime() <= teamCluster.props.updatedAt.getTime()) {
-                continue;
-            }
-
-            markedCount += 1;
-
-            logger.warn({
-                action: 'team-cluster.update-timeout',
-                teamClusterId: teamCluster.id,
-                teamId: teamCluster.props.team
-            }, 'Team cluster marked as update-failed after update timeout');
-        }
-
-        return markedCount;
-    }
-
     async completeDeletion(teamClusterId: string, daemonPassword: string): Promise<void> {
         const teamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
         await this.deleteTeamCluster(teamCluster);

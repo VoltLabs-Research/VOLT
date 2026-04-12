@@ -13,7 +13,7 @@ import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Title from '@/shared/presentation/components/Title';
 import { Skeleton } from '@mui/material';
 import { useMemo, useCallback } from 'react';
-import { Database, FolderOpen, KeyRound, MoreHorizontal, Terminal, Trash2 } from 'lucide-react';
+import { Database, FolderOpen, KeyRound, MoreHorizontal, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
@@ -174,11 +174,6 @@ const ServerTable = ({
             label: 'Reveal credentials',
             icon: KeyRound,
             onClick: () => onRevealCredentials(row.id)
-        },
-        {
-            label: 'Open terminal',
-            icon: Terminal,
-            onClick: () => onRemoteAccessAction(row.id, TeamClusterRemoteAccessTarget.HostTerminal)
         },
         {
             label: 'Explore Mongo Documents',

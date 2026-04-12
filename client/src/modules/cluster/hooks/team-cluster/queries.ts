@@ -7,19 +7,11 @@ import type {
     CreateTeamClusterTransferRequestInputDTO,
     CreateTeamClusterTransferRequestOutputDTO
 } from '@/modules/cluster/api/dtos/team-cluster/create-team-cluster-transfer-request';
-import type {
-    FetchAvailableClusterVersionsInputDTO,
-    FetchAvailableClusterVersionsOutputDTO
-} from '@/modules/cluster/api/dtos/team-cluster/fetch-available-cluster-versions';
 import type { ListTeamClustersInputDTO, ListTeamClustersOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/list-team-clusters';
 import type {
     ListTeamClusterTransferJobsInputDTO,
     ListTeamClusterTransferJobsOutputDTO
 } from '@/modules/cluster/api/dtos/team-cluster/list-team-cluster-transfer-jobs';
-import type {
-    RequestClusterUpdateInputDTO,
-    RequestClusterUpdateOutputDTO
-} from '@/modules/cluster/api/dtos/team-cluster/request-cluster-update';
 import type {
     RegenerateTeamClusterEnrollmentTokenInputDTO,
     RegenerateTeamClusterEnrollmentTokenOutputDTO
@@ -40,7 +32,6 @@ import type { TeamCluster, TeamClusterLifecycleEvent } from '@/modules/cluster/a
 
 interface TeamClusterQueryKeyMap {
     byTeam: string;
-    availableVersions: FetchAvailableClusterVersionsInputDTO;
     transferJobs: ListTeamClusterTransferJobsInputDTO;
 };
 
@@ -181,35 +172,10 @@ export const useDeleteTeamClusterMutation = (options?: MutationOptions<DeleteTea
     });
 };
 
-export const invalidateAvailableVersionsQuery = (teamId: string, teamClusterId: string) => {
-    return queryClient.invalidateQueries({
-        queryKey: TEAM_CLUSTER_QUERY_KEYS.availableVersions({ teamId, teamClusterId })
-    });
-};
-
-const availableVersionsQuery = createQuery(
-    TEAM_CLUSTER_QUERY_KEYS.availableVersions,
-    teamClusterService.fetchAvailableVersions
-);
-
 const transferJobsQuery = createQuery(
     TEAM_CLUSTER_QUERY_KEYS.transferJobs,
     teamClusterService.listTransferJobs
 );
-
-export const useAvailableClusterVersionsQuery = (
-    teamId: string,
-    teamClusterId: string,
-    options?: QueryOptions<FetchAvailableClusterVersionsOutputDTO>
-) => {
-    return availableVersionsQuery(
-        { teamId, teamClusterId },
-        {
-            staleTime: 0,
-            ...options
-        }
-    );
-};
 
 export const invalidateTeamClusterTransferJobsQuery = () => {
     return queryClient.invalidateQueries({
@@ -225,17 +191,6 @@ export const useTeamClusterTransferJobsQuery = (
         enabled: Boolean(params.teamId) && Boolean(params.teamClusterId),
         staleTime: 0,
         ...options
-    });
-};
-
-export const useRequestClusterUpdateMutation = (
-    options?: MutationOptions<RequestClusterUpdateOutputDTO, RequestClusterUpdateInputDTO>
-) => {
-    return createMutation<RequestClusterUpdateOutputDTO, RequestClusterUpdateInputDTO>(teamClusterService.requestUpdate)({
-        ...options,
-        onSuccess: withSuccess((data, variables) => {
-            upsertTeamClusterQueryData(variables.teamId, data.teamCluster);
-        }, options)
     });
 };
 

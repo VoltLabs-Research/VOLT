@@ -19,17 +19,6 @@ export interface RemoteExplorerPreflightContext {
     target: TeamClusterRemoteAccessTargetDTO;
 };
 
-export const validateExplorerTarget = (target: TeamClusterRemoteAccessTargetDTO): ApplicationError | null => {
-    if (target !== TeamClusterRemoteAccessTargetDTO.HostTerminal) {
-        return null;
-    }
-
-    return ApplicationError.badRequest(
-        'TeamCluster::RemoteExplorerUnsupportedTarget',
-        'The selected remote target does not support explorer navigation'
-    );
-};
-
 export const validateRemoteExplorerSession = (
     sessionService: TeamClusterRemoteAccessSessionService,
     input: ValidateRemoteExplorerSessionInput
@@ -54,11 +43,6 @@ export const preflightRemoteExplorerAccess = async (
     sessionService: TeamClusterRemoteAccessSessionService,
     input: ValidateRemoteExplorerSessionInput
 ): Promise<RemoteExplorerPreflightContext | ApplicationError> => {
-    const targetError = validateExplorerTarget(input.target);
-    if (targetError) {
-        return targetError;
-    }
-
     const teamCluster = await requireOwnedTeamCluster(repository, input);
     if (teamCluster instanceof ApplicationError) {
         return teamCluster;

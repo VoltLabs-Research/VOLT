@@ -12,8 +12,6 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import { getValueByPath } from '@/shared/utils/format';
-import { sortData } from '@/shared/utils/sort';
 import {
     JUPYTER_SESSION_PENDING_MESSAGE,
     JUPYTER_SESSION_TIMEOUT_MESSAGE,
@@ -22,7 +20,6 @@ import {
 } from '../utilities/jupyter-session';
 import {
     createEmptyNotebooksResponse,
-    createScriptingNotebooksExport,
     getDeleteConfirmationMessage,
     hasNotebookDeploymentConfiguration,
     getTrajectoryIds
@@ -33,7 +30,7 @@ import { FolderOpen, Pencil } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sileo } from 'sileo';
-import type { DocumentListingExportParams, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import type {
     ScriptingNotebook
 } from '@/modules/scripting/api/entities/scripting-notebook';
@@ -55,7 +52,6 @@ interface NotebookStartupWindowState {
 
 export const RENAME_SCRIPTING_NOTEBOOK_MODAL_ID = 'rename-scripting-notebook-modal';
 
-const EXPORT_PAGE_LIMIT = 500;
 const DEFAULT_NOTEBOOK_SCOPE = ScriptingNotebookScope.General;
 const NEW_TAB_BLOCKED_ERROR = 'Unable to open a new tab. Please allow pop-ups for this site.';
 
@@ -331,30 +327,6 @@ const useNotebooksListing = () => {
         await launchNotebookInNewTab(notebook);
     }, [launchNotebookInNewTab, navigate, openDeploymentModal, teamId, updateNotebook]);
 
-    const exportNotebooks = useCallback(async (
-        params: DocumentListingExportParams<NotebooksListingContext>
-    ): Promise<Blob> => {
-        const notebooks: ScriptingNotebook[] = [];
-        const scope = resolveScope(params.context?.scope);
-        let page = 1;
-        let hasMore = true;
-
-        while (hasMore) {
-            const response = await service.listNotebooks({
-                page,
-                limit: EXPORT_PAGE_LIMIT,
-                scope
-            });
-
-            notebooks.push(...(response.data || []));
-            hasMore = response.pagination.hasMore;
-            page += 1;
-        }
-
-        const sortedNotebooks = sortData(notebooks, params.sort || null, getValueByPath);
-        return createScriptingNotebooksExport(sortedNotebooks, params.format);
-    }, []);
-
     const { getMenuOptions } = useListingActions<ScriptingNotebook>({
         actions: {
             open: {
@@ -388,7 +360,6 @@ const useNotebooksListing = () => {
     });
 
     return {
-        exportNotebooks,
         fetchData,
         getMenuOptions,
         handleCreate,

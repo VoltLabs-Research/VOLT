@@ -10,7 +10,6 @@ import { UpdateContainerAITool } from '@modules/container/application/ai-tools/U
 import {
     CreateContainerUseCase,
     CreateContainerFolderUseCase,
-    CreateContainerVncSessionUseCase,
     DeleteContainerUseCase,
     DeleteContainerFolderUseCase,
     GetContainerByIdUseCase,
@@ -18,7 +17,6 @@ import {
     GetContainerFilesUseCase,
     GetContainerProcessesUseCase,
     GetContainerStatsUseCase,
-    GetContainerVncConnectPageUseCase,
     ListContainerFoldersUseCase,
     ListContainersUseCase,
     MoveContainerUseCase,
@@ -38,7 +36,6 @@ import {
     ContainerDeploymentProgressService,
     ContainerOwnershipService,
     ContainerPortProxyRelayService,
-    ContainerVncGatewayService,
     DaemonContainerRuntimeService,
     DockerContainerService,
     TeamClusterSelectionService,
@@ -67,7 +64,6 @@ export const registerContainerDependencies = (): void => {
     registerModuleDependencies({
         singletons: [
             ContainerDeploymentProgressService,
-            ContainerVncGatewayService,
             ContainerPortProxyRelayService,
             ContainerPortProxyAccessTokenService,
             [CONTAINER_TOKENS.ContainerSocketModule, ContainerSocketModule]
@@ -86,7 +82,6 @@ export const registerContainerDependencies = (): void => {
             TeamClusterSelectionService,
             CreateContainerUseCase,
             CreateContainerFolderUseCase,
-            CreateContainerVncSessionUseCase,
             UpdateContainerUseCase,
             UpdateContainerFolderUseCase,
             DeleteContainerUseCase,
@@ -94,7 +89,6 @@ export const registerContainerDependencies = (): void => {
             ListContainersUseCase,
             ListContainerFoldersUseCase,
             GetContainerStatsUseCase,
-            GetContainerVncConnectPageUseCase,
             GetContainerFilesUseCase,
             ReadContainerFileUseCase,
             GetContainerProcessesUseCase,

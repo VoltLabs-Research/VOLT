@@ -522,13 +522,6 @@ export default class TeamClusterReverseChannelService {
         });
     }
 
-    async attachHostTerminal(teamClusterId: string): Promise<ContainerTerminalAttachment> {
-        return this.attachTerminalSession(teamClusterId, 'Timed out waiting for daemon host terminal attachment', {
-            kind: TeamClusterDaemonSessionKind.Terminal,
-            terminalTarget: TeamClusterDaemonTerminalTarget.Host
-        });
-    }
-
     private async attachTerminalSession(
         teamClusterId: string,
         timeoutMessage: string,

@@ -2,7 +2,6 @@ import './SidebarNavigation.css';
 import { getDashboardNavigationItems } from '@/app/routes/metadata';
 import { DashboardNavigationIconKey, DashboardNavigationSection, RoutePermissionMode } from '@/app/routes/types';
 import ClusterCredentialsModal from '@/modules/cluster/components/organisms/ClusterCredentialsModal';
-import UpdateClusterModal from '@/modules/cluster/components/organisms/UpdateClusterModal';
 import useSidebarClusters from '@/modules/cluster/hooks/use-sidebar-clusters';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
@@ -171,14 +170,6 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
                     onClick: () => sidebarClusters.handleRevealCredentials(cluster)
                 },
                 {
-                    label: 'Update Cluster',
-                    onClick: () => sidebarClusters.handleUpdateCluster(cluster)
-                },
-                {
-                    label: 'Open Terminal',
-                    onClick: () => sidebarClusters.handleOpenTerminal(cluster)
-                },
-                {
                     label: 'Explore Mongo Documents',
                     onClick: () => sidebarClusters.handleExploreMongo(cluster)
                 },
@@ -312,19 +303,11 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
             )}
 
             {!sidebarClusters.isOnClustersRoute && (
-                <>
-                    <ClusterCredentialsModal
-                        teamCluster={sidebarClusters.credentialsCluster}
-                        credentials={sidebarClusters.credentials}
-                        onReveal={sidebarClusters.revealCredentials}
-                    />
-                    <UpdateClusterModal
-                        teamCluster={sidebarClusters.updateTarget}
-                        teamId={sidebarClusters.selectedTeamId}
-                        onUpdate={sidebarClusters.requestUpdate}
-                        onClose={() => sidebarClusters.setUpdateTarget(null)}
-                    />
-                </>
+                <ClusterCredentialsModal
+                    teamCluster={sidebarClusters.credentialsCluster}
+                    credentials={sidebarClusters.credentials}
+                    onReveal={sidebarClusters.revealCredentials}
+                />
             )}
         </nav>
     );

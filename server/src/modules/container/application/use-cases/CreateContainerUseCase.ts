@@ -1,6 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { CreateContainerInputDTO, CreateContainerOutputDTO } from '@modules/container/application/dtos/CreateContainerDTO';
-import type { ContainerCapabilities } from '@modules/container/domain/entities/ContainerCapabilities';
 import type { ContainerPortMapping, RuntimeContainerInfo } from '@modules/container/domain/port/IContainerService';
 import type { IContainerFolderRepository } from '@modules/container/domain/port/IContainerFolderRepository';
 import ContainerCreatedEvent from '@modules/container/domain/events/ContainerCreatedEvent';
@@ -17,9 +16,6 @@ import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 
-const VNC_PRIVATE_PORT = 5901;
-const VNC_PASSWORD_ENV_KEY = 'VNC_PW';
-const ROOT_CONTAINER_USER = 'root';
 const MB_PER_GB = 1024;
 
 @injectable()
@@ -64,51 +60,6 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
             cmd: options.cmd,
             user: options.user
         };
-    }
-
-    private resolveCapabilities(input: CreateContainerInputDTO): ContainerCapabilities | undefined {
-        if (!input.capabilities?.vnc) {
-            return undefined;
-        }
-
-        const exposesVncPort = (input.ports || []).some((port) => port.private === VNC_PRIVATE_PORT);
-        if (!exposesVncPort) {
-            throw ApplicationError.badRequest(
-                ErrorCodes.VALIDATION_INVALID_INPUT,
-                `VNC-capable containers must expose private port ${VNC_PRIVATE_PORT}`
-            );
-        }
-
-        this.validateVncPassword(input);
-
-        return {
-            vnc: true
-        };
-    }
-
-    private validateVncPassword(input: CreateContainerInputDTO): void {
-        const vncPasswordEntries = (input.env || []).filter((environmentVariable) => environmentVariable.key === VNC_PASSWORD_ENV_KEY);
-
-        if (vncPasswordEntries.length === 0) {
-            throw ApplicationError.badRequest(
-                ErrorCodes.VALIDATION_INVALID_INPUT,
-                `VNC-capable containers must define env var ${VNC_PASSWORD_ENV_KEY}`
-            );
-        }
-
-        if (vncPasswordEntries.length > 1) {
-            throw ApplicationError.badRequest(
-                ErrorCodes.VALIDATION_INVALID_INPUT,
-                `VNC-capable containers must define env var ${VNC_PASSWORD_ENV_KEY} only once`
-            );
-        }
-
-        if (!vncPasswordEntries[0].value.trim()) {
-            throw ApplicationError.badRequest(
-                ErrorCodes.VALIDATION_INVALID_INPUT,
-                `VNC-capable containers must define a non-empty ${VNC_PASSWORD_ENV_KEY} env var`
-            );
-        }
     }
 
     private resolveCanonicalPorts(
@@ -216,9 +167,6 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
 
         const memoryInMegabytes = memory || 512;
         const cpuCount = cpus || 1;
-        const capabilities = this.resolveCapabilities(input);
-        const containerUser = capabilities?.vnc ? ROOT_CONTAINER_USER : undefined;
-
         await this.validateClusterResourceLimits(teamClusterId, memoryInMegabytes, cpuCount);
 
         const sanitizedName = name.replace(/\s+/g, '-').toLowerCase();
@@ -241,8 +189,7 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
             cpus: cpuCount,
             binds,
             groupAdd,
-            cmd: containerCmd,
-            user: containerUser
+            cmd: containerCmd
         });
 
         const containerInfo = await this.containerRuntimeService.createContainer(teamClusterId, dockerConfig);
@@ -265,8 +212,7 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
             team: input.teamId,
             teamCluster: teamClusterId,
             mountDockerSocket: mountDockerSocket || false,
-            ...(internalIp ? { internalIp } : {}),
-            capabilities
+            ...(internalIp ? { internalIp } : {})
         });
 
         await this.eventBus.publish(new ContainerCreatedEvent({
