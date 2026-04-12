@@ -16,26 +16,26 @@ const KEYS = buildKeys<{
     metadata: GetRasterMetadataParams;
 }>(BASE_KEY);
 
-const markRasterizationRequestInFlight = (trajectoryId: string): void => {
-    const currentIds = useTeamJobsStore.getState().inFlightRasterTrajectoryIds;
+const markRasterizationRequestPending = (trajectoryId: string): void => {
+    const currentIds = useTeamJobsStore.getState().requestedRasterTrajectoryIds;
     if (currentIds.has(trajectoryId)) {
         throw new Error('Equivalent rasterization jobs are already queued or running for this trajectory');
     }
 
     const nextIds = new Set(currentIds);
     nextIds.add(trajectoryId);
-    useTeamJobsStore.getState().setInFlightRasterTrajectoryIds(nextIds);
+    useTeamJobsStore.getState().setRequestedRasterTrajectoryIds(nextIds);
 };
 
-const clearRasterizationRequestInFlight = (trajectoryId: string): void => {
-    const currentIds = useTeamJobsStore.getState().inFlightRasterTrajectoryIds;
+const clearRasterizationRequestPending = (trajectoryId: string): void => {
+    const currentIds = useTeamJobsStore.getState().requestedRasterTrajectoryIds;
     if (!currentIds.has(trajectoryId)) {
         return;
     }
 
     const nextIds = new Set(currentIds);
     nextIds.delete(trajectoryId);
-    useTeamJobsStore.getState().setInFlightRasterTrajectoryIds(nextIds);
+    useTeamJobsStore.getState().setRequestedRasterTrajectoryIds(nextIds);
 };
 
 export const rasterMetadataQuery = createQuery(KEYS.metadata, rasterService.getMetadata);
@@ -43,17 +43,17 @@ export const rasterMetadataQuery = createQuery(KEYS.metadata, rasterService.getM
 export const useTriggerRasterizationMutation = () => {
     return useMutation<TriggerRasterizationResponse, Error, TriggerRasterizationParams>({
         mutationFn: async (variables) => {
-            markRasterizationRequestInFlight(variables.trajectoryId);
+            markRasterizationRequestPending(variables.trajectoryId);
 
             try {
                 return await rasterService.triggerRasterization(variables);
             } catch (error) {
-                clearRasterizationRequestInFlight(variables.trajectoryId);
+                clearRasterizationRequestPending(variables.trajectoryId);
                 throw error;
             }
         },
         onSuccess: async (_data, variables) => {
-            clearRasterizationRequestInFlight(variables.trajectoryId);
+            clearRasterizationRequestPending(variables.trajectoryId);
 
             await Promise.all([
                 rasterMetadataQuery.invalidate({ trajectoryId: variables.trajectoryId }),
@@ -63,7 +63,7 @@ export const useTriggerRasterizationMutation = () => {
             ]);
         },
         onError: (_error, variables) => {
-            clearRasterizationRequestInFlight(variables.trajectoryId);
+            clearRasterizationRequestPending(variables.trajectoryId);
         }
     });
 };

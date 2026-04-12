@@ -40,11 +40,6 @@ const useClusterMetrics = (options: UseClusterMetricsOptions = {}) => {
             },
             onMetricsAll: (clusters) => {
                 setClusterMetricsQueryData(queryClient, clusters);
-
-                const state = useClusterStore.getState();
-                if (!state.selectedClusterId && clusters.length > 0) {
-                    state.setSelectedClusterId(resolveClusterMetricId(clusters[0]));
-                }
             },
             onMetricsHistory: ({ clusterId, history }) => {
                 setClusterHistoryQueryData(

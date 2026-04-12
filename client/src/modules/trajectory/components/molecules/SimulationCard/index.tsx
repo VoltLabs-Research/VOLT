@@ -1,6 +1,7 @@
 import { cn } from '@/shared/utils';
 import { getStageMessage, isProcessingStatus } from '@/modules/trajectory/api/entities/trajectory';
-import useTeamJobsStore from '@/modules/jobs/stores/use-team-jobs-store';
+import { JobStatus } from '@/modules/jobs/api/entities/job';
+import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
 import useTrajectoryPreview from '@/modules/trajectory/hooks/trajectory/use-trajectory-preview';
 import Container from '@/shared/presentation/components/Container';
 import SimulationCardFooter from '../../atoms/SimulationCardFooter';
@@ -8,6 +9,7 @@ import SimulationCardHeader from '../../atoms/SimulationCardHeader';
 import SimulationCardUsers from '../../atoms/SimulationCardUsers';
 import { PiAtomThin } from 'react-icons/pi';
 import { useNavigate } from 'react-router-dom';
+import { useMemo } from 'react';
 import type { KeyboardEvent, MouseEvent } from 'react';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import './SimulationCard.css';
@@ -16,6 +18,7 @@ const NON_NAVIGABLE_CARD_TARGET_SELECTOR = [
     '.footer-options-btn',
     '[data-popover-trigger^="simulation-card-popover-"]'
 ].join(', ');
+const RASTER_QUEUE_TYPE = 'trajectory_rasterization';
 
 const shouldSkipCardNavigation = (target: EventTarget | null): boolean => {
     if (!(target instanceof Element)) {
@@ -44,8 +47,26 @@ export default function SimulationCard({
 }: SimulationCardProps) {
     const navigate = useNavigate();
     const createdBy = typeof trajectory.createdBy === 'object' ? trajectory.createdBy : null;
-    const completedRasterTrajectoryIds = useTeamJobsStore((state) => state.completedRasterTrajectoryIds);
-    const hasRasterPreviewReadySignal = completedRasterTrajectoryIds.has(trajectory._id);
+    const { data: jobGroups = [] } = teamJobsGroups();
+    const hasRasterPreviewReadySignal = useMemo(() => {
+        for (const group of jobGroups) {
+            if (group.trajectoryId !== trajectory._id) {
+                continue;
+            }
+
+            for (const frameGroup of group.frameGroups) {
+                const hasCompletedRasterJob = frameGroup.jobs.some((job) => {
+                    return job.queueType === RASTER_QUEUE_TYPE && job.status === JobStatus.Completed;
+                });
+
+                if (hasCompletedRasterJob) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }, [jobGroups, trajectory._id]);
     const isProcessing = isProcessingStatus(trajectory.status);
     const hasPersistedPreview = trajectory.hasPreview === true;
 

@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
+import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
 import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { PLUGIN_DEBUG_SOCKET_EVENTS } from '@/modules/plugin/api/entities/plugin/plugin-constants';
@@ -89,11 +90,10 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
     const {
         sessionId,
         isDebugging,
-        selectedTrajectoryId,
-        selectedTimestep,
         setStarting,
         reset
     } = usePluginDebugStore();
+    const { selectedTrajectoryId, selectedTimestep } = useDebugTrajectorySelector();
 
     const { searchParams } = useSearchParamsState();
     const currentPluginId = searchParams.get('id');

@@ -1,5 +1,4 @@
 import service from '../api/service';
-import { patchTrajectoryDetailCaches } from '@/modules/trajectory/shared/cache';
 import { patchPaginatedPage, removeEntityFromList } from '@/shared/infrastructure/query/cache-utils';
 import { buildKeys, createInvalidatingMutation, createPaginatedQuery, createQuery } from '@/shared/infrastructure/query/create-paginated-query';
 import type { Analysis } from '../api/entities/analysis';
@@ -25,10 +24,6 @@ export const analysisQuery = createPaginatedQuery<Analysis, GetAnalysesParams>({
     },
     onRemove: (id) => {
         patchPaginatedPage<Analysis>(KEYS.byTrajectory(), (page) => removeEntityFromList(page, id));
-        patchTrajectoryDetailCaches((trajectory) => ({
-            ...trajectory,
-            analysis: (trajectory.analysis ?? []).filter((a) => a._id !== id)
-        }));
     }
 });
 

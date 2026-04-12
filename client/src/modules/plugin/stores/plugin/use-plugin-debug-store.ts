@@ -59,10 +59,6 @@ interface PluginDebugState {
     isPaused: boolean;
     isStarting: boolean;
 
-    // Selection
-    selectedTrajectoryId: string | null;
-    selectedTimestep: number | null;
-
     // Execution
     executionOrder: ExecutionOrderItem[];
     nodeStates: Record<string, DebugNodeState>;
@@ -102,8 +98,6 @@ interface PluginDebugActions {
     onSessionError: (error: string) => void;
 
     // User actions
-    setSelectedTrajectory: (trajectoryId: string | null) => void;
-    setSelectedTimestep: (timestep: number | null) => void;
     setInspectedNode: (nodeId: string | null) => void;
     setDebugConfigField: (key: string, value: unknown) => void;
     setDebugConfig: (config: Record<string, unknown>) => void;
@@ -118,8 +112,6 @@ const initialState: PluginDebugState = {
     isDebugging: false,
     isPaused: false,
     isStarting: false,
-    selectedTrajectoryId: null,
-    selectedTimestep: null,
     executionOrder: [],
     nodeStates: {},
     currentNodeId: null,
@@ -260,13 +252,6 @@ export const usePluginDebugStore = create<PluginDebugStore>((set) => ({
             totalDuration: state.totalDuration ?? (Object.keys(state.contextSnapshot).length > 0 ? -1 : null)
         };
     }),
-
-    setSelectedTrajectory: (trajectoryId) => set({
-        selectedTrajectoryId: trajectoryId,
-        selectedTimestep: null
-    }),
-
-    setSelectedTimestep: (timestep) => set({ selectedTimestep: timestep }),
 
     setInspectedNode: (nodeId) => set({ inspectedNodeId: nodeId }),
 
