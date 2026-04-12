@@ -106,7 +106,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         return findCachedAnalysisById({
             analysisId: analysisConfigId,
             trajectoryId,
-            fallbackAnalyses: [...analyses, ...(trajectory?.analysis ?? [])]
+            fallbackAnalyses: analyses.length > 0 ? analyses : (trajectory?.analysis ?? [])
         });
     }, [analyses, analysisConfigId, trajectory?.analysis, trajectoryId]);
     const resolvedAnalyses = useMemo(() => {
@@ -176,7 +176,6 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
         updateAnalysisStatusCaches({
             analysisId: String(update.analysisId),
-            trajectoryId,
             status: normalizedStatus,
             completedFrames: typeof update.completedFrames === 'number' ? update.completedFrames : undefined,
             totalFrames: typeof update.totalFrames === 'number' ? update.totalFrames : undefined
@@ -350,10 +349,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         if (analysis?._id) {
             setAnalysisId(analysis._id, { replace: true });
         } else {
-            setAnalysisId(undefined, {
-                replace: true,
-                preserveClearedSelection: true
-            });
+            setAnalysisId(undefined, { replace: true });
         }
     }, [currentTimestep, setActiveScene, setAnalysisId, setCurrentTimestep, trajectoryTimesteps]);
 

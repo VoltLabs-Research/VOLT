@@ -1,5 +1,4 @@
 import { analysisQuery, KEYS } from '../hooks/queries';
-import { patchTrajectoryDetailCaches } from '@/modules/trajectory/shared/cache';
 import { patchPaginatedPage } from '@/shared/infrastructure/query/cache-utils';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
@@ -8,7 +7,6 @@ import type { GetAnalysesByTrajectoryParams } from '../api/dtos/get-analyses-by-
 
 export interface PatchAnalysisStatusInput {
     analysisId: string;
-    trajectoryId?: string;
     status: Analysis['status'];
     completedFrames?: number;
     totalFrames?: number;
@@ -81,16 +79,6 @@ export const upsertAnalysisCaches = (analysis: Analysis): void => {
             });
         }
     });
-
-    patchTrajectoryDetailCaches((trajectory) => {
-        if (trajectory._id !== analysis.trajectory?._id) return trajectory;
-        const currentAnalyses = trajectory.analysis ?? [];
-        const existingIndex = currentAnalyses.findIndex((a) => a._id === analysis._id);
-        if (existingIndex === -1) return { ...trajectory, analysis: [analysis, ...currentAnalyses] };
-        const next = [...currentAnalyses];
-        next[existingIndex] = { ...next[existingIndex], ...analysis };
-        return { ...trajectory, analysis: next };
-    });
 };
 
 export const findCachedAnalysisById = ({ analysisId, trajectoryId, fallbackAnalyses = [] }: FindCachedAnalysisByIdInput): Analysis | undefined => {
@@ -141,6 +129,10 @@ export const updateAnalysisStatusCaches = (patch: PatchAnalysisStatusInput): voi
         };
     };
 
+    queryClient.setQueryData<Analysis>(KEYS.detail(patch.analysisId), (current) => {
+        return current ? patchEntity(current) : current;
+    });
+
     analysisQuery.cache.patchAllLists((current) => ({
         ...current,
         data: current.data.map(patchEntity)
@@ -150,28 +142,4 @@ export const updateAnalysisStatusCaches = (patch: PatchAnalysisStatusInput): voi
         ...page,
         data: page.data.map(patchEntity)
     }));
-
-    patchTrajectoryDetailCaches((trajectory) => {
-        if (!patch.trajectoryId || trajectory._id !== patch.trajectoryId) return trajectory;
-        let changed = false;
-        const nextAnalyses = (trajectory.analysis ?? []).map((a) => {
-            if (a._id !== patch.analysisId) return a;
-            changed = true;
-            return {
-                ...a,
-                status: patch.status,
-                completedFrames: patch.completedFrames ?? a.completedFrames,
-                totalFrames: patch.totalFrames ?? a.totalFrames
-            };
-        });
-
-        if (!changed) {
-            return trajectory;
-        }
-
-        return {
-            ...trajectory,
-            analysis: nextAnalyses
-        };
-    });
 };

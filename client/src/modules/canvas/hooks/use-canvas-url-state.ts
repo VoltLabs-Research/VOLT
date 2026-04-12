@@ -1,8 +1,6 @@
-import { CanvasAnalysisStatusEnum, normalizeCanvasAnalysisStatus } from '../utilities/analysis-status';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
-import { useCallback, useEffect, useMemo } from 'react';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
+import { useCallback, useMemo } from 'react';
 
 export enum CanvasWorkspace {
     Modeling = 'modeling',
@@ -12,41 +10,9 @@ export enum CanvasWorkspace {
 
 interface UpdateOptions {
     replace?: boolean;
-    preserveClearedSelection?: boolean;
-};
-
-interface CanvasUrlStateOptions {
-    trajectory?: Trajectory | null;
 };
 
 const CANVAS_WORKSPACES = new Set<string>(Object.values(CanvasWorkspace));
-const CLEARED_ANALYSIS_SELECTION = 'none';
-
-const getAnalysisSelectionParam = (analysisId?: string, options?: UpdateOptions): string | null => {
-    if (analysisId) {
-        return null;
-    }
-
-    if (options?.preserveClearedSelection) {
-        return CLEARED_ANALYSIS_SELECTION;
-    }
-
-    return null;
-};
-
-const getLatestCompletedAnalysisId = (trajectory?: Trajectory | null): string | undefined => {
-    const analyses = trajectory?.analysis ?? [];
-
-    for (let index = analyses.length - 1; index >= 0; index -= 1) {
-        const analysis = analyses[index];
-
-        if (analysis?._id && normalizeCanvasAnalysisStatus(analysis.status) === CanvasAnalysisStatusEnum.Completed) {
-            return analysis._id;
-        }
-    }
-
-    return undefined;
-};
 
 const resolveCanvasWorkspace = (workspace: string | null): CanvasWorkspace => {
     if (workspace === CanvasWorkspace.Raster) {
@@ -60,7 +26,7 @@ const resolveCanvasWorkspace = (workspace: string | null): CanvasWorkspace => {
     return CanvasWorkspace.Modeling;
 };
 
-const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
+const useCanvasUrlState = () => {
     const { searchParams, updateSearchParams } = useSearchParamsState();
     const {
         selectedIds: activeModifiers,
@@ -69,7 +35,6 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
     } = useSelectionParams({ paramName: 'modifiers' });
 
     const analysisId = searchParams.get('analysis') || undefined;
-    const hasExplicitAnalysisDeselection = searchParams.get('analysisSelection') === CLEARED_ANALYSIS_SELECTION;
     const resultsPluginId = searchParams.get('results') || undefined;
     const timelineExposureId = searchParams.get('timelineExposure') || undefined;
     const pluginParam = searchParams.get('plugin') || undefined;
@@ -86,10 +51,7 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
         : CanvasWorkspace.Modeling;
 
     const setAnalysisId = useCallback((id?: string, options?: UpdateOptions) => {
-        updateSearchParams({
-            analysis: id ?? null,
-            analysisSelection: getAnalysisSelectionParam(id, options)
-        }, options);
+        updateSearchParams({ analysis: id ?? null }, options);
     }, [updateSearchParams]);
 
     const setResultsPluginId = useCallback((pluginId?: string, options?: UpdateOptions) => {
@@ -141,17 +103,6 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
         const [pluginId, pluginModifierId] = pluginParam.split(':');
         return { pluginId, pluginModifierId };
     }, [pluginParam]);
-
-    const trajectory = options?.trajectory;
-
-    useEffect(() => {
-        if (analysisId || hasExplicitAnalysisDeselection) return;
-
-        const latestCompletedAnalysisId = getLatestCompletedAnalysisId(trajectory);
-        if (!latestCompletedAnalysisId) return;
-
-        setAnalysisId(latestCompletedAnalysisId, { replace: true });
-    }, [trajectory, analysisId, hasExplicitAnalysisDeselection, setAnalysisId]);
 
     return {
         searchParams,

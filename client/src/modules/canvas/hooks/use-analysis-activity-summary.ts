@@ -57,8 +57,7 @@ const useAnalysisActivitySummary = (trajectory?: Trajectory | null): AnalysisAct
     );
 
     return useMemo(() => {
-        const queriedAnalyses = (analysesQuery.data as { data?: Analysis[] } | undefined)?.data ?? [];
-        const analyses = queriedAnalyses.length > 0 ? queriedAnalyses : (trajectory?.analysis ?? []);
+        const analyses = (analysesQuery.data as { data?: Analysis[] } | undefined)?.data ?? trajectory?.analysis ?? [];
 
         if (!analyses.length) {
             return EMPTY_SUMMARY;

@@ -1,6 +1,8 @@
 import usePluginCatalog from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
+import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
+import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
 import { sceneArtifactsQuery } from '@/modules/trajectory/hooks/scene-artifacts/queries';
 import useAnalysisAtomPropertiesAvailability from '@/modules/trajectory/hooks/trajectory/use-analysis-atom-properties-availability';
@@ -29,11 +31,23 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
     const trajectoryId = trajectory?._id;
     const fallbackTimestep = trajectory?.frames[0]?.timestep;
     const atomPropertiesTimestep = currentTimestep ?? fallbackTimestep;
+    const analysesQuery = useAnalysesByTrajectoryQuery(
+        { trajectoryId: trajectoryId ?? '', page: 1, limit: 100 },
+        { enabled: !!trajectoryId && !!analysisId }
+    );
+    const analyses = analysesQuery.data?.data ?? trajectory?.analysis ?? [];
 
     const selectedAnalysis = useMemo(() => {
-        if (!analysisId || !trajectory?.analysis?.length) return undefined;
-        return trajectory.analysis.find((analysis) => analysis._id === analysisId);
-    }, [trajectory?.analysis, analysisId]);
+        if (!analysisId) {
+            return undefined;
+        }
+
+        return analyses.find((analysis) => analysis._id === analysisId) ?? findCachedAnalysisById({
+            analysisId,
+            trajectoryId,
+            fallbackAnalyses: analyses
+        });
+    }, [analyses, analysisId, trajectoryId]);
     const pluginId = selectedAnalysis?.plugin;
     const plugin = pluginId ? pluginsById[pluginId] : undefined;
 

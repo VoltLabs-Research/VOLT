@@ -47,7 +47,7 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
         return findCachedAnalysisById({
             analysisId,
             trajectoryId,
-            fallbackAnalyses: [...analyses, ...(trajectory?.analysis ?? [])]
+            fallbackAnalyses: analyses.length > 0 ? analyses : (trajectory?.analysis ?? [])
         });
     }, [analyses, analysisId, trajectory?.analysis, trajectoryId]);
     const selectedAnalysisTimesteps = useMemo(() => {

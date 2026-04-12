@@ -14,7 +14,7 @@ import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluste
 import { resolveSelectedClusterId } from '@/modules/cluster/utilities/resolve-selected-cluster-id';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { useMemo, useEffect } from 'react';
+import { useMemo } from 'react';
 import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
 import type { TeamCluster, TeamClusterCredentialServices } from '@/modules/cluster/api/entities/team-cluster';
 import type { CreateTeamClusterTransferRequestOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/create-team-cluster-transfer-request';
@@ -187,12 +187,6 @@ const useClusterManagement = (): ClusterManagementResult => {
     const resolvedSelectedClusterId = useMemo(() => {
         return resolveSelectedClusterId(selectedClusterId, clusters);
     }, [clusters, selectedClusterId]);
-
-    useEffect(() => {
-        if (selectedClusterId !== resolvedSelectedClusterId) {
-            setSelectedClusterId(resolvedSelectedClusterId);
-        }
-    }, [resolvedSelectedClusterId, selectedClusterId, setSelectedClusterId]);
 
     const selectedCluster = useMemo(() => {
         return clusters.find((cluster) => cluster._id === resolvedSelectedClusterId) ?? null;

@@ -1,4 +1,5 @@
 import { useKeyboardShortcutsStore } from '../../../stores/use-keyboard-shortcuts-store';
+import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { CanvasWorkspace } from '@/modules/canvas/hooks/use-canvas-url-state';
 import useAnalysisStatus from '../../../hooks/use-analysis-status';
@@ -107,7 +108,7 @@ const CanvasPage = () => {
         activeWorkspace,
         selectedNotebookId,
         setActiveWorkspace
-    } = useCanvasUrlState({ trajectory });
+    } = useCanvasUrlState();
     const localGlbUrl = useLocalGlbStore((s) => s.localGlbUrl);
     const clearLocalGlb = useLocalGlbStore((s) => s.clearLocalGlb);
     const forcedGlbUrl = isLocalGlbViewer ? localGlbUrl : null;
@@ -212,9 +213,14 @@ const CanvasPage = () => {
             return undefined;
         }
 
-        return statusMap.get(analysisId)?.status
-            ?? normalizeCanvasAnalysisStatus(trajectory?.analysis?.find((analysis) => analysis._id === analysisId)?.status);
-    }, [analysisId, statusMap, trajectory?.analysis]);
+        const selectedAnalysis = findCachedAnalysisById({
+            analysisId,
+            trajectoryId: trajectory?._id,
+            fallbackAnalyses: trajectory?.analysis ?? []
+        });
+
+        return statusMap.get(analysisId)?.status ?? normalizeCanvasAnalysisStatus(selectedAnalysis?.status);
+    }, [analysisId, statusMap, trajectory?._id, trajectory?.analysis]);
 
     const canDownloadAnalysisListing = Boolean(analysisId && selectedAnalysisStatus === CanvasAnalysisStatusEnum.Completed);
     const canDownloadTrajectoryAnalyses = Boolean(
