@@ -22,6 +22,7 @@ import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
 import { collectAllowedClientOrigins } from '@shared/infrastructure/utilities/client-origins';
 import {
+    normalizeWebSocketCloseCode,
     normalizeWebSocketPayload,
     writeUpgradeError
 } from '@shared/infrastructure/utilities/proxy-relay';
@@ -628,7 +629,13 @@ export class ScriptingJupyterProxyService {
                 return;
             }
 
-            webSocket.close(code || 1000, message || undefined);
+            const normalizedCloseCode = normalizeWebSocketCloseCode(code);
+            if (normalizedCloseCode === undefined) {
+                webSocket.close();
+                return;
+            }
+
+            webSocket.close(normalizedCloseCode, message || undefined);
         });
         upstreamWebSocket.on('error', (error) => {
             logger.warn({
