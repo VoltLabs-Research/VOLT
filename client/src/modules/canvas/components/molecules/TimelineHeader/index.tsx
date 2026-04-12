@@ -41,6 +41,8 @@ interface TimelineHeaderProps {
     activeTab: string;
     onTabChange: (tab: string) => void;
     tabs?: TimelineTabOption[];
+    trajectoryId?: string;
+    currentTimestep: number | undefined;
     startFrame: number | undefined;
     endFrame: number | undefined;
     availableTimesteps: number[];
@@ -86,6 +88,8 @@ const TimelineHeader = ({
     activeTab,
     onTabChange,
     tabs,
+    trajectoryId,
+    currentTimestep,
     startFrame,
     endFrame,
     availableTimesteps,
@@ -232,7 +236,11 @@ const TimelineHeader = ({
 
             <Container className="canvas-timeline-controls-region d-flex items-center content-center">
                 <Container className="canvas-timeline-controls-center d-flex items-center content-center">
-                    <TransportControls />
+                    <TransportControls
+                        trajectoryId={trajectoryId}
+                        currentTimestep={currentTimestep}
+                        availableTimesteps={availableTimesteps}
+                    />
                 </Container>
             </Container>
 

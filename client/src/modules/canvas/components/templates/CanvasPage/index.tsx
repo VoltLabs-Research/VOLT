@@ -69,7 +69,12 @@ const CanvasPage = () => {
     const isLocalGlbViewer = !rawTrajectoryId;
 
     useCanvasCleanup();
-    const { trajectory, currentTimestep, isLoading: trajectoryLoading } = useCanvasCoordinator({ trajectoryId });
+    const {
+        trajectory,
+        availableTimesteps,
+        currentTimestep,
+        isLoading: trajectoryLoading
+    } = useCanvasCoordinator({ trajectoryId });
     const { canvasUsers } = useCanvasPresence({ trajectoryId, enabled: !!trajectoryId });
     useTeamJobs();
 
@@ -77,7 +82,7 @@ const CanvasPage = () => {
         enabled: Boolean(trajectoryId) && !trajectoryLoading
     });
 
-    useKeyboardShortcuts();
+    useKeyboardShortcuts({ trajectoryId, availableTimesteps, currentTimestep });
     const setCurrentScope = useKeyboardShortcutsStore((s) => s.setCurrentScope);
 
     useEffect(() => {
@@ -147,7 +152,6 @@ const CanvasPage = () => {
     useEffect(() => {
         const editorState = useEditorStore.getState();
         editorState.resetPlayback();
-        editorState.resetTimesteps();
         editorState.resetModel();
     }, [trajectoryId, isLocalGlbViewer]);
 
@@ -405,6 +409,9 @@ const CanvasPage = () => {
                                 <Timeline
                                     sceneRef={sceneRef}
                                     trajectory={trajectory}
+                                    trajectoryId={trajectoryId}
+                                    currentTimestep={currentTimestep}
+                                    availableTimesteps={availableTimesteps}
                                     analysisId={analysisId}
                                     onTabChange={handleTimelineTabChange}
                                     onDownloadExposureListing={handleDownloadExposureListing}

@@ -1,4 +1,5 @@
 import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { resolveRangedTimesteps } from '@/modules/canvas/utilities/timeline-range';
 
 import { SkipBack, Rewind, Play, FastForward, SkipForward, Pause } from 'lucide-react';
 import { useMemo } from 'react';
@@ -8,22 +9,30 @@ import Container from '@/shared/presentation/components/Container';
 
 import './TransportControls.css';
 
-const TransportControls = () => {
+interface TransportControlsProps {
+    trajectoryId?: string;
+    currentTimestep: number | undefined;
+    availableTimesteps: number[];
+};
+
+const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }: TransportControlsProps) => {
     const {
-        currentTimestep,
         isPlaying,
         togglePlay,
         setCurrentTimestep,
-        getRangedTimesteps
+        rangeStart,
+        rangeEnd
     } = useEditorStore(useShallow((state) => ({
-        currentTimestep: state.currentTimestep,
         isPlaying: state.isPlaying,
         togglePlay: state.togglePlay,
         setCurrentTimestep: state.setCurrentTimestep,
-        getRangedTimesteps: state.getRangedTimesteps
+        rangeStart: state.rangeStart,
+        rangeEnd: state.rangeEnd
     })));
 
-    const timesteps = getRangedTimesteps();
+    const timesteps = useMemo(() => {
+        return resolveRangedTimesteps(availableTimesteps, rangeStart, rangeEnd);
+    }, [availableTimesteps, rangeStart, rangeEnd]);
     const currentIndex = currentTimestep !== undefined ? timesteps.indexOf(currentTimestep) : -1;
 
     const jumpToStart = () => {
@@ -48,13 +57,17 @@ const TransportControls = () => {
         setCurrentTimestep(timesteps[nextIndex]);
     };
 
+    const handleTogglePlay = () => {
+        togglePlay({ trajectoryId, timesteps: availableTimesteps });
+    };
+
     const buttons = useMemo(() => ([
         { Icon: SkipBack, label: 'Jump to start', onClick: jumpToStart },
         { Icon: Rewind, label: 'Previous frame', onClick: prevFrame },
-        { Icon: isPlaying ? Pause : Play, label: isPlaying ? 'Pause' : 'Play', onClick: togglePlay },
+        { Icon: isPlaying ? Pause : Play, label: isPlaying ? 'Pause' : 'Play', onClick: handleTogglePlay },
         { Icon: FastForward, label: 'Next frame', onClick: nextFrame },
         { Icon: SkipForward, label: 'Jump to end', onClick: jumpToEnd }
-    ]), [isPlaying, togglePlay, jumpToStart, prevFrame, nextFrame, jumpToEnd]);
+    ]), [isPlaying, handleTogglePlay, jumpToStart, prevFrame, nextFrame, jumpToEnd]);
 
     return (
         <Container className="canvas-transport-controls d-flex items-center">
