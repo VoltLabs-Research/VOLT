@@ -20,13 +20,11 @@ import type { ReverseChannelCommandHandler } from '../services';
 import type { RuntimeCapabilityGuard } from '../services';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 import {
-    readBoolean,
     readNumber,
     readOptionalNumber,
     readOptionalPayloadRecord,
     readOptionalString,
     readOptionalUnknownRecord,
-    readRecord,
     readString,
     readPluginPropertyNamesRequest,
     readPluginModifierAnalysisRequest,
@@ -149,102 +147,11 @@ const readNativeColorModelRequest = (payload: unknown): NativeColorModelRequest 
     return colorRequest;
 };
 
-const readNumberVector = (value: unknown, fieldName: string, length: number): number[] => {
-    if (!Array.isArray(value) || value.length !== length) {
-        throw new Error(`${fieldName} must be an array with ${length} item(s)`);
-    }
-
-    return value.map((entry, index) => readNumber(entry, `${fieldName}[${index}]`));
-};
-
-const readNativeSurfaceAtomsPresetConfig = (
-    value: unknown
-): Extract<NativeFilterPreviewRequest, { kind: 'preset' }>['presetConfig'] => {
-    const record = readRecord(value, 'presetConfig');
-    const cutoffMode = readString(record.cutoffMode, 'presetConfig.cutoffMode');
-    if (cutoffMode !== 'auto' && cutoffMode !== 'manual') {
-        throw new Error('presetConfig.cutoffMode is invalid');
-    }
-
-    const cutoffRadius = readOptionalNumber(record.cutoffRadius);
-
-    if (cutoffMode === 'manual' && cutoffRadius === undefined) {
-        throw new Error('presetConfig.cutoffRadius is required when cutoffMode is manual');
-    }
-
-    return {
-        layers: readNumber(record.layers, 'presetConfig.layers'),
-        cutoffMode,
-        ...(cutoffRadius === undefined ? {} : { cutoffRadius }),
-        coordinationDeficit: readNumber(record.coordinationDeficit, 'presetConfig.coordinationDeficit'),
-        anisotropyThreshold: readNumber(record.anisotropyThreshold, 'presetConfig.anisotropyThreshold'),
-        byType: readBoolean(record.byType, 'presetConfig.byType')
-    };
-};
-
-const readNativeSimulationCell = (
-    value: unknown
-): Extract<NativeFilterPreviewRequest, { kind: 'preset' }>['simulationCell'] => {
-    const record = readRecord(value, 'simulationCell');
-    const boundingBox = readRecord(record.boundingBox, 'simulationCell.boundingBox');
-    const geometry = readRecord(record.geometry, 'simulationCell.geometry');
-    const cellVectors = geometry.cell_vectors;
-    const periodicBoundaryConditions = readRecord(
-        geometry.periodic_boundary_conditions,
-        'simulationCell.geometry.periodic_boundary_conditions'
-    );
-
-    if (!Array.isArray(cellVectors) || cellVectors.length !== 3) {
-        throw new Error('simulationCell.geometry.cell_vectors must be an array with 3 item(s)');
-    }
-
-    return {
-        boundingBox: {
-            width: readNumber(boundingBox.width, 'simulationCell.boundingBox.width'),
-            height: readNumber(boundingBox.height, 'simulationCell.boundingBox.height'),
-            length: readNumber(boundingBox.length, 'simulationCell.boundingBox.length')
-        },
-        geometry: {
-            cell_vectors: [
-                readNumberVector(cellVectors[0], 'simulationCell.geometry.cell_vectors[0]', 3),
-                readNumberVector(cellVectors[1], 'simulationCell.geometry.cell_vectors[1]', 3),
-                readNumberVector(cellVectors[2], 'simulationCell.geometry.cell_vectors[2]', 3)
-            ],
-            cell_origin: readNumberVector(geometry.cell_origin, 'simulationCell.geometry.cell_origin', 3),
-            periodic_boundary_conditions: {
-                x: readBoolean(periodicBoundaryConditions.x, 'simulationCell.geometry.periodic_boundary_conditions.x'),
-                y: readBoolean(periodicBoundaryConditions.y, 'simulationCell.geometry.periodic_boundary_conditions.y'),
-                z: readBoolean(periodicBoundaryConditions.z, 'simulationCell.geometry.periodic_boundary_conditions.z')
-            }
-        }
-    };
-};
-
 const readNativeFilterPreviewRequest = (payload: unknown): NativeFilterPreviewRequest => {
     const request = readNativeTrajectoryRequest(payload);
     const record = readOptionalPayloadRecord(payload);
-    const kind = readOptionalString(record.kind);
-    const mode = readOptionalString(record.mode);
-    const resolvedKind = kind || (mode === 'preset' ? 'preset' : 'property');
-
-    if (resolvedKind === 'preset') {
-        const preset = readString(record.preset, 'preset');
-        if (preset !== 'surface-atoms') {
-            throw new Error('preset is invalid');
-        }
-
-        return {
-            ...request,
-            kind: 'preset',
-            preset: 'surface-atoms',
-            presetConfig: readNativeSurfaceAtomsPresetConfig(record.presetConfig),
-            simulationCell: readNativeSimulationCell(record.simulationCell)
-        };
-    }
-
-    const previewRequest: Extract<NativeFilterPreviewRequest, { kind: 'property' }> = {
+    const previewRequest: NativeFilterPreviewRequest = {
         ...request,
-        kind: 'property',
         property: readString(record.property, 'property'),
         operator: readString(record.operator, 'operator'),
         value: readNumber(record.value, 'value')

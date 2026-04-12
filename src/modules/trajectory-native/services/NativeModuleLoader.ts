@@ -96,32 +96,6 @@ export interface NativeAtomsPageRequest extends NativeTrajectoryRequest {
     limit: number;
 };
 
-export interface NativeSimulationCell {
-    boundingBox: {
-        width: number;
-        height: number;
-        length: number;
-    };
-    geometry: {
-        cell_vectors: number[][];
-        cell_origin: number[];
-        periodic_boundary_conditions: {
-            x: boolean;
-            y: boolean;
-            z: boolean;
-        };
-    };
-};
-
-export interface NativeSurfaceAtomsPresetConfig {
-    layers: number;
-    cutoffMode: 'auto' | 'manual';
-    cutoffRadius?: number;
-    coordinationDeficit: number;
-    anisotropyThreshold: number;
-    byType: boolean;
-};
-
 interface NativeModifierSourceRequest {
     analysisId?: string;
     exposureId?: string;
@@ -136,23 +110,12 @@ export interface NativeColorModelRequest extends NativePropertyStatsRequest, Nat
 };
 
 export interface NativeConditionFilterPreviewRequest extends NativeTrajectoryRequest, NativeModifierSourceRequest {
-    kind: 'property';
     property: string;
     operator: string;
     value: number;
     externalValuesBase64?: string;
 };
-
-export interface NativePresetFilterPreviewRequest extends NativeTrajectoryRequest {
-    kind: 'preset';
-    preset: 'surface-atoms';
-    presetConfig: NativeSurfaceAtomsPresetConfig;
-    simulationCell: NativeSimulationCell;
-};
-
-export type NativeFilterPreviewRequest =
-    | NativeConditionFilterPreviewRequest
-    | NativePresetFilterPreviewRequest;
+export type NativeFilterPreviewRequest = NativeConditionFilterPreviewRequest;
 
 export interface NativeParticleFilterModelRequest extends NativeTrajectoryRequest {
     objectKey: string;
