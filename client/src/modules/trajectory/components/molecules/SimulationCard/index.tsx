@@ -5,7 +5,6 @@ import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
 import useTrajectoryPreview from '@/modules/trajectory/hooks/trajectory/use-trajectory-preview';
 import Container from '@/shared/presentation/components/Container';
 import SimulationCardFooter from '../../atoms/SimulationCardFooter';
-import SimulationCardHeader from '../../atoms/SimulationCardHeader';
 import SimulationCardUsers from '../../atoms/SimulationCardUsers';
 import { PiAtomThin } from 'react-icons/pi';
 import { useNavigate } from 'react-router-dom';
@@ -31,7 +30,6 @@ const shouldSkipCardNavigation = (target: EventTarget | null): boolean => {
 interface SimulationCardProps {
     trajectory: Trajectory;
     isSelected: boolean;
-    onSelect: (_id: string) => void;
     onMoveToFolder?: (trajectory: Trajectory) => void;
     onDelete?: (_id: string) => void;
     disablePrimaryInteraction?: boolean;
@@ -40,13 +38,11 @@ interface SimulationCardProps {
 export default function SimulationCard({
     trajectory,
     isSelected,
-    onSelect: _onSelect,
     onMoveToFolder,
     onDelete,
     disablePrimaryInteraction = false
 }: SimulationCardProps) {
     const navigate = useNavigate();
-    const createdBy = typeof trajectory.createdBy === 'object' ? trajectory.createdBy : null;
     const { data: jobGroups = [] } = teamJobsGroups();
     const hasRasterPreviewReadySignal = useMemo(() => {
         for (const group of jobGroups) {
@@ -135,10 +131,6 @@ export default function SimulationCard({
                     </Container>
                 )}
             </Container>
-
-            <SimulationCardHeader
-                user={createdBy}
-            />
 
             <SimulationCardFooter
                 trajectoryId={trajectory._id}

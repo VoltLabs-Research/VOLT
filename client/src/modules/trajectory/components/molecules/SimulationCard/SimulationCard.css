@@ -21,18 +21,6 @@
     box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent), var(--shadow-elevated);
 }
 
-.simulation-card .simulation-card-header {
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s ease, visibility 0.2s ease;
-}
-
-.simulation-card:hover .simulation-card-header,
-.simulation-card:focus-visible .simulation-card-header {
-    opacity: 1;
-    visibility: visible;
-}
-
 .simulation-card.is-selected {
     background: color-mix(in srgb, var(--color-surface-1) 90%, var(--status-info-bg));
     border-color: var(--selected-indicator);

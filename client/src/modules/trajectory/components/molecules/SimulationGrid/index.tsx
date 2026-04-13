@@ -21,7 +21,7 @@ import type { TrajectoryListingRow } from '@/modules/trajectory/utilities/listin
 export type SimulationGridItem = TrajectoryListingRow;
 
 export default function SimulationGrid() {
-    const { selectedIds, isSelected, toggleSelection, clearSelection } = useSelectionParams();
+    const { selectedIds, isSelected, clearSelection } = useSelectionParams();
     const deleteSelectedTrajectories = useDeleteSelectedTrajectories();
     const { downloadAllSamples, isDownloading } = useDownloadSamples();
     const [hasDownloadedSamples, setHasDownloadedSamples] = useState(false);
@@ -84,11 +84,10 @@ export default function SimulationGrid() {
             <SimulationCard
                 trajectory={item}
                 isSelected={isSelected(item._id)}
-                onSelect={toggleSelection}
                 onMoveToFolder={handleMoveTrajectoryOpen}
             />
         );
-    }, [handleFolderOpen, handleMoveTrajectoryOpen, isSelected, toggleSelection]);
+    }, [handleFolderOpen, handleMoveTrajectoryOpen, isSelected]);
 
     const renderGridSkeleton = useCallback(() => (
         <SimulationSkeletonCard />

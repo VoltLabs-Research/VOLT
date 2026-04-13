@@ -311,7 +311,7 @@ const SessionSettings: FC = () => {
                     </>
                 }
             >
-                <Paragraph className="font-size-2 color-muted">
+                <Paragraph className="font-size-2 p-1-5 color-muted">
                     Are you sure you want to revoke {otherSessionsCount} other{' '}
                     {otherSessionsCount === 1 ? 'session' : 'sessions'}? This action cannot be undone.
                 </Paragraph>

@@ -1,7 +1,6 @@
 import type { ContextualTipId } from '@/shared/tips/tip-registry';
 
 const SEEN_CONTEXTUAL_TIPS_KEY = 'volt:seen-contextual-tips';
-const CONTEXTUAL_TIPS_DISABLED_KEY = 'volt:tips-disabled';
 
 export const MAX_CONTEXTUAL_TIPS_PER_SESSION = 3;
 
@@ -67,29 +66,6 @@ const persistSeenTips = (tips: Set<string>): void => {
     }
 };
 
-export const areContextualTipsEnabled = (): boolean => {
-    const storage = getLocalStorage();
-    if (!storage) {
-        return true;
-    }
-
-    return storage.getItem(CONTEXTUAL_TIPS_DISABLED_KEY) !== 'true';
-};
-
-export const setContextualTipsEnabled = (enabled: boolean): void => {
-    const storage = getLocalStorage();
-    if (!storage) {
-        return;
-    }
-
-    if (enabled) {
-        storage.removeItem(CONTEXTUAL_TIPS_DISABLED_KEY);
-        return;
-    }
-
-    storage.setItem(CONTEXTUAL_TIPS_DISABLED_KEY, 'true');
-};
-
 export const hasSeenContextualTip = (tipId: ContextualTipId): boolean => {
     return loadSeenTips().has(tipId);
 };
@@ -105,10 +81,6 @@ export const canShowMoreContextualTipsThisSession = (): boolean => {
 };
 
 export const beginContextualTipDisplay = (tipId: ContextualTipId): boolean => {
-    if (!areContextualTipsEnabled()) {
-        return false;
-    }
-
     if (hasSeenContextualTip(tipId)) {
         return false;
     }
