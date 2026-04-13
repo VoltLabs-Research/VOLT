@@ -28,6 +28,13 @@ export enum ArgumentType {
     PLUGIN_REFERENCE = 'pluginReference'
 };
 
+export enum ArgumentVisibilityOperator {
+    EQUALS = 'equals',
+    NOT_EQUALS = 'notEquals',
+    IN = 'in',
+    NOT_IN = 'notIn'
+};
+
 export enum ModifierContext {
     TRAJECTORY_DUMPS = 'trajectory_dumps'
 };

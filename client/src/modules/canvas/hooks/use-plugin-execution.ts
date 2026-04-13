@@ -1,5 +1,6 @@
 import { ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import { resolveArgumentRuntimeValue } from '@/modules/plugin/utilities/plugin/argument-values';
+import { getVisibleArguments } from '@/modules/plugin/utilities/plugin/argument-visibility';
 import { sileo } from 'sileo';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -112,17 +113,21 @@ const usePluginExecution = ({
                 getPluginArguments(option.pluginModifierId),
                 selectedTimesteps
             );
+            const visibleArgs = getVisibleArguments(args, userConfig);
             const config: Record<string, unknown> = {};
 
             if (!selectedTeamClusterId) {
                 throw new Error('Missing team cluster selection');
             }
 
-            args.forEach((arg) => {
+            visibleArgs.forEach((arg) => {
                 const override = userConfig[arg.argument];
-                let value = arg.value ?? arg.default;
-                if (override !== undefined) {
+                let value = arg.value;
+                if (value === undefined && override !== undefined) {
                     value = override;
+                }
+                if (value === undefined) {
+                    value = arg.default;
                 }
 
                 if (value !== undefined) {

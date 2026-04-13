@@ -4,6 +4,7 @@ import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-
 import usePluginDebugSocket from '@/modules/plugin/hooks/plugin/use-plugin-debug-socket';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
+import { isUserConfigurableArgument } from '@/modules/plugin/utilities/plugin/argument-values';
 import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
@@ -67,7 +68,7 @@ const DebugToolbar = () => {
             return false;
         }
 
-        return argumentDefinitions.some((argument) => argument.value === undefined);
+        return argumentDefinitions.some(isUserConfigurableArgument);
     }, [nodes]);
 
     const handleTrajectoryChange = useCallback((value: string) => {

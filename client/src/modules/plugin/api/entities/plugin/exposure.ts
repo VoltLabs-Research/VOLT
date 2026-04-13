@@ -1,4 +1,5 @@
 import type { ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import type { IArgumentVisibilityCondition } from '@/modules/plugin/api/entities/plugin/workflow';
 
 export interface IComputedArgumentOption {
     key: string;
@@ -38,6 +39,7 @@ export interface IComputedArgumentDefinition {
     min?: number;
     max?: number;
     step?: number;
+    visibleWhen?: IArgumentVisibilityCondition;
 };
 
 export interface IListingExposure {

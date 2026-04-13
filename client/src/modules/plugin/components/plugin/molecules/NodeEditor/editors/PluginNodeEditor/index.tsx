@@ -11,6 +11,7 @@ import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { usePluginTeamClustersQuery } from '@/modules/plugin/hooks/plugin/queries';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
+import { getUserConfigurableArguments } from '@/modules/plugin/utilities/plugin/argument-values';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import Container from '@/shared/presentation/components/Container';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
@@ -117,7 +118,7 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
             return [];
         }
 
-        return getPluginArguments(selectedPluginId).filter((argument) => argument.value === undefined);
+        return getUserConfigurableArguments(getPluginArguments(selectedPluginId));
     }, [getPluginArguments, selectedPluginId]);
 
     const referencedCandidatePluginIds = useMemo(() => {
@@ -135,7 +136,7 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
     const referencedPluginConfigDefinitions = useMemo(() => {
         return Object.fromEntries(referencedCandidatePluginIds.map((pluginId) => [
             pluginId,
-            getPluginArguments(pluginId).filter((argument) => argument.value === undefined)
+            getUserConfigurableArguments(getPluginArguments(pluginId))
         ]));
     }, [getPluginArguments, referencedCandidatePluginIds]);
 

@@ -1,4 +1,5 @@
 import { ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { getVisibleArguments, isArgumentVisible } from '@/modules/plugin/utilities/plugin/argument-visibility';
 import type {
     IArgumentDefinition,
     IPluginReferenceSelection,
@@ -70,6 +71,20 @@ export const createDefaultArgumentDefinition = (): IArgumentDefinition => {
     };
 };
 
+export const hasPresetArgumentValue = (definition: IArgumentDefinition): boolean => {
+    return definition.value !== undefined;
+};
+
+export const isUserConfigurableArgument = (definition: IArgumentDefinition): boolean => {
+    return !hasPresetArgumentValue(definition);
+};
+
+export const getUserConfigurableArguments = (
+    definitions: IArgumentDefinition[]
+): IArgumentDefinition[] => {
+    return definitions.filter(isUserConfigurableArgument);
+};
+
 export const getArgumentDefaultValue = (definition: IArgumentDefinition): unknown => {
     if (definition.default !== undefined) {
         return definition.default;
@@ -98,7 +113,7 @@ export const createDefaultListItem = (definitions?: IArgumentDefinition[]): Argu
     const nextItem: ArgumentObjectValue = {};
 
     for (const definition of definitions ?? []) {
-        nextItem[definition.argument] = getArgumentDefaultValue(definition);
+        nextItem[definition.argument] = definition.value ?? getArgumentDefaultValue(definition);
     }
 
     return nextItem;
@@ -244,7 +259,7 @@ export const resolveArgumentRuntimeValue = (
     definition: IArgumentDefinition,
     value: unknown
 ): unknown => {
-    const resolvedValue = value ?? definition.default;
+    const resolvedValue = value ?? definition.value ?? definition.default;
 
     if (definition.type === ArgumentType.BOOLEAN) {
         return readBooleanValue(resolvedValue);
@@ -271,9 +286,9 @@ export const resolveArgumentRuntimeValue = (
         const nestedDefinitions = definition.listArguments ?? [];
 
         return items.map((item) => {
-            const normalizedItem: ArgumentObjectValue = { ...item };
+            const normalizedItem: ArgumentObjectValue = {};
 
-            for (const nestedDefinition of nestedDefinitions) {
+            for (const nestedDefinition of getVisibleArguments(nestedDefinitions, item)) {
                 normalizedItem[nestedDefinition.argument] = resolveArgumentRuntimeValue(
                     nestedDefinition,
                     item[nestedDefinition.argument]
@@ -321,10 +336,21 @@ export const getSelectArgumentValue = (
 };
 
 export const collectDefaultArgumentValues = (definitions: IArgumentDefinition[]): Record<string, unknown> => {
+    return collectVisibleDefaultArgumentValues(definitions, {});
+};
+
+export const collectVisibleDefaultArgumentValues = (
+    definitions: IArgumentDefinition[],
+    currentValues: Record<string, unknown>
+): Record<string, unknown> => {
     const defaults: Record<string, unknown> = {};
 
     for (const definition of definitions) {
-        if (definition.default !== undefined) {
+        if (
+            definition.default !== undefined
+            && isUserConfigurableArgument(definition)
+            && isArgumentVisible(definition, definitions, currentValues)
+        ) {
             defaults[definition.argument] = definition.default;
         }
     }

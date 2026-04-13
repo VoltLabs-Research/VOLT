@@ -1,6 +1,7 @@
 import type {
     NodeType,
     ArgumentType,
+    ArgumentVisibilityOperator,
     ModifierContext,
     EntrypointType,
     Exporter,
@@ -58,6 +59,13 @@ export interface IArgumentOption {
     label: string;
 };
 
+export interface IArgumentVisibilityCondition {
+    argument: string;
+    operator: ArgumentVisibilityOperator;
+    value?: string | number | boolean;
+    values?: Array<string | number | boolean>;
+};
+
 export interface IArgumentDefinition {
     argument: string;
     type: ArgumentType;
@@ -72,6 +80,7 @@ export interface IArgumentDefinition {
     min?: number;
     max?: number;
     step?: number;
+    visibleWhen?: IArgumentVisibilityCondition;
 };
 
 export interface IPluginReferenceSelection {
