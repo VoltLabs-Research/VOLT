@@ -256,10 +256,7 @@ const PluginsListing = () => {
             render: (_, row) => {
                 const plugin = row as PluginListingRow;
                 return (
-                    <span
-                        className='plugin-name-link font-size-2 font-weight-5 cursor-pointer'
-                        onClick={() => navigate(`/plugins/builder?id=${plugin._id}`)}
-                    >
+                    <span className='plugin-name-link font-size-2 font-weight-5'>
                         {plugin.modifier!.name}
                     </span>
                 );
@@ -298,6 +295,10 @@ const PluginsListing = () => {
             fetchData={fetchData}
             defaultLimit={20}
             getMenuOptions={getMenuOptions}
+            onItemClick={(plugin) => {
+                navigate(`/plugins/builder?id=${plugin._id}`);
+                return true;
+            }}
             emptyMessage='No plugins found. Create your first plugin!'
             createNew={createNewConfig}
             headerActions={headerActions}

@@ -336,13 +336,14 @@ const useContainersListing = () => {
     }, [getContainerMenuOptions, getFolderMenuOptions]);
 
     const handleItemClick = useCallback((item: ContainerListingRow): boolean => {
-        if (!isContainerFolderRow(item)) {
-            return false;
+        if (isContainerFolderRow(item)) {
+            openFolder(item._id);
+            return true;
         }
 
-        openFolder(item._id);
+        navigate(`/dashboard/containers/${item._id}`);
         return true;
-    }, [openFolder]);
+    }, [navigate, openFolder]);
 
     const dragAndDrop = useMemo<DocumentListingDragAndDropConfig<ContainerListingRow> | undefined>(() => {
         if (!canMoveContainers) {

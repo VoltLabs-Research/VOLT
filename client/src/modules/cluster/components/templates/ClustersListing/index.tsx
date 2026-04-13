@@ -402,6 +402,10 @@ const ClustersListing = () => {
                 columns={columns}
                 fetchData={vm.fetchClusters}
                 getMenuOptions={getMenuOptions}
+                onItemClick={(row) => {
+                    navigate(`/dashboard/clusters/${row.id}`);
+                    return true;
+                }}
                 defaultLimit={20}
                 emptyMessage='No clusters found.'
                 emptyIcon={<ClustersEmptyState />}
