@@ -15,6 +15,7 @@ interface JobsHistoryProps {
     isConnected: boolean;
     isLoading: boolean;
     displayMode?: 'full' | 'children-only';
+    groupStatusPresentation?: 'badge' | 'trajectory-name';
 };
 
 const JobsHistory = ({
@@ -22,7 +23,8 @@ const JobsHistory = ({
     queueFilter,
     groups,
     isLoading,
-    displayMode = 'full'
+    displayMode = 'full',
+    groupStatusPresentation = 'badge'
 }: JobsHistoryProps) => {
 
     const filteredGroups = useMemo(() => {
@@ -56,6 +58,7 @@ const JobsHistory = ({
             <JobGroup
                 key={group.trajectoryId}
                 group={group}
+                statusPresentation={groupStatusPresentation}
             />
         );
     });

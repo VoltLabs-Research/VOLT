@@ -20,6 +20,7 @@ interface JobsHistoryViewerProps {
     displayMode?: 'full' | 'children-only';
     emptyState?: ReactNode;
     autoSelectAnalysis?: boolean;
+    groupStatusPresentation?: 'badge' | 'trajectory-name';
 };
 
 type DisplayMode = 'full' | 'children-only';
@@ -37,7 +38,8 @@ export const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
         variant = 'floating',
         displayMode,
         emptyState,
-        autoSelectAnalysis = true
+        autoSelectAnalysis = true,
+        groupStatusPresentation = 'badge'
     } = props;
     const prefersReducedMotion = usePrefersReducedMotion();
     const { groups, isConnected, isLoading } = useTeamJobs();
@@ -123,6 +125,7 @@ export const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
                     isConnected={isConnected}
                     isLoading={isLoading}
                     displayMode={resolvedDisplayMode}
+                    groupStatusPresentation={groupStatusPresentation}
                 />
             </div>
         );
@@ -148,6 +151,7 @@ export const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
                             isConnected={isConnected}
                             isLoading={isLoading}
                             displayMode={resolvedDisplayMode}
+                            groupStatusPresentation={groupStatusPresentation}
                         />
                     </div>
                 </div>
@@ -175,6 +179,7 @@ export const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
                                 isConnected={isConnected}
                                 isLoading={isLoading}
                                 displayMode={resolvedDisplayMode}
+                                groupStatusPresentation={groupStatusPresentation}
                             />
                         </div>
                     </div>
