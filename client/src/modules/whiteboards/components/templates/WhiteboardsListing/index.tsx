@@ -39,16 +39,15 @@ const renderWhiteboardTitle: NonNullable<ColumnConfig<WhiteboardListingRow>['ren
         title = value;
     }
 
-    const icon = isWhiteboardFolder(row)
-        ? <Folder size={16} />
-        : <SquarePen size={16} />;
     const hierarchyLabel = row.hierarchyTitle;
 
     return (
         <Container className='whiteboards-listing-title-cell d-flex items-center gap-075' aria-label={hierarchyLabel}>
-            <Container className='d-flex flex-center color-secondary'>
-                {icon}
-            </Container>
+            {isWhiteboardFolder(row) && (
+                <Container className='d-flex flex-center color-secondary'>
+                    <Folder size={16} />
+                </Container>
+            )}
             <Container className='overflow-hidden'>
                 <span className='whiteboards-listing-title font-weight-6 color-secondary' title={title}>{title}</span>
             </Container>

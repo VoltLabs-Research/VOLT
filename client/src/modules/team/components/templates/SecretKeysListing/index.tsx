@@ -156,6 +156,10 @@ export default function SecretKeysListing() {
         navigate('/dashboard/secret-keys/metrics');
     }, [navigate]);
 
+    const handleOpenSecretKey = useCallback((secretKeyId: string) => {
+        navigate(`/dashboard/secret-keys/${secretKeyId}`);
+    }, [navigate]);
+
     const getRowMenuOptions = useCallback((item: SecretKey, selectedKeys: SecretKey[]) => {
         const options = getMenuOptions(item, selectedKeys);
         if (item.isActive) {
@@ -176,6 +180,10 @@ export default function SecretKeysListing() {
                 fetchData={fetchData}
                 defaultLimit={20}
                 getMenuOptions={getRowMenuOptions}
+                onItemClick={(secretKey) => {
+                    handleOpenSecretKey(secretKey._id);
+                    return true;
+                }}
                 emptyTitle='No secret keys found'
                 emptyMessage='Create a secret key to authenticate your applications.'
                 emptyIcon={<PiKeyLight size={32} />}

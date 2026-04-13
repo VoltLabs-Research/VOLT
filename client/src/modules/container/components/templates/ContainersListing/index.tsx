@@ -18,22 +18,20 @@ import { openModal } from '@/shared/presentation/components/Modal';
 import { clusterColumn, dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import useTip from '@/shared/tips/use-tip';
 import { formatSize } from '@/shared/utils/format';
-import { Box, Folder, FolderPlus, Pencil, Trash2 } from 'lucide-react';
+import { Folder, FolderPlus, Pencil, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
 import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
 import { useOpenContainerPort } from '@/modules/container/hooks/use-open-container-port';
 import { getPrimaryAccessiblePort } from '@/modules/container/utilities/get-primary-accessible-port';
 
 const renderName: NonNullable<ColumnConfig<ContainerListingRow>['render']> = (value, row) => {
-    const icon = isContainerFolderRow(row)
-        ? <Folder size={16} />
-        : <Box size={16} />;
-
     return (
         <Container className='d-flex items-center gap-075'>
-            <Container className='d-flex flex-center color-secondary'>
-                {icon}
-            </Container>
+            {isContainerFolderRow(row) && (
+                <Container className='d-flex flex-center color-secondary'>
+                    <Folder size={16} />
+                </Container>
+            )}
             <Container className='overflow-hidden'>
                 <span className='font-weight-6 color-secondary'>{String(value)}</span>
             </Container>

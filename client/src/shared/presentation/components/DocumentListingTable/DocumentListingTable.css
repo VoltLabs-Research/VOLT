@@ -18,12 +18,45 @@
     background-color: var(--hover-bg);
 }
 
-.document-listing-table-row-container.is-draggable {
-    cursor: grab;
+.document-listing-cell-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
 }
 
-.document-listing-table-row-container.is-draggable:active {
+.document-listing-cell-content .document-listing-cell-value {
+    min-width: 0;
+    flex: 1;
+}
+
+.document-listing-row-drag-handle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-tertiary);
+    cursor: grab;
+    flex-shrink: 0;
+}
+
+.document-listing-row-drag-handle:hover {
+    background-color: var(--hover-bg);
+    color: var(--color-text-secondary);
+}
+
+.document-listing-row-drag-handle:active {
     cursor: grabbing;
+}
+
+.document-listing-row-drag-handle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
 }
 
 .document-listing-table-row-container.is-selected {
@@ -141,6 +174,11 @@
 .document-listing-table-container.is-compact .document-listing-cell {
     font-size: 0.75rem;
     color: var(--color-text-secondary);
+}
+
+.document-listing-table-container.is-compact .document-listing-row-drag-handle {
+    width: 1.125rem;
+    height: 1.125rem;
 }
 
 .document-listing-table-container.is-compact .document-listing-table-body-container {

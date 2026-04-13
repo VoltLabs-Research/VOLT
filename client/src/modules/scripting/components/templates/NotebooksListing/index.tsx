@@ -3,14 +3,13 @@ import RenameScriptingNotebookModal from '@/modules/scripting/components/molecul
 import useNotebooksListing from '@/modules/scripting/hooks/use-notebooks-listing';
 import { ScriptingNotebookScope } from '@/modules/scripting/api/entities/scripting-notebook-scope';
 import { getPrimaryTrajectory } from '@/modules/scripting/utilities/notebooks';
-import { clusterColumn, dateColumn, titleWithIconColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
+import { clusterColumn, dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCellPopover';
 import DocumentListing, {
     type ColumnConfig,
     type DocumentListingTab
 } from '@/shared/presentation/components/DocumentListing';
 import './NotebooksListing.css';
-import { BookOpen } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type { NotebooksListingContext } from '@/modules/scripting/hooks/use-notebooks-listing';
 import type {
@@ -63,7 +62,13 @@ const renderTrajectoryDetails: NonNullable<ColumnConfig<NotebookDocument>['rende
     );
 };
 
-const TITLE_COLUMN = titleWithIconColumn<NotebookDocument>('title', 'Title', <BookOpen size={16} />, (row) => row.title || 'Untitled Notebook');
+const TITLE_COLUMN: ColumnConfig<NotebookDocument> = {
+    key: 'title',
+    title: 'Title',
+    sortable: true,
+    render: (_value, row) => <span className='font-weight-6 color-secondary text-truncate'>{row.title || 'Untitled Notebook'}</span>,
+    skeleton: { variant: 'text', width: 180 }
+};
 
 const TRAJECTORY_COLUMN: ColumnConfig<NotebookDocument> = {
     key: 'trajectory',
