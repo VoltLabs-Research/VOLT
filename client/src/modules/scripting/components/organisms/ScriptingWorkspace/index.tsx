@@ -39,7 +39,7 @@ const renderWorkspaceState = ({
     >
         <Loader scale={0.6} isFixed={false} />
         <Container className='d-flex column items-center gap-05 scripting-workspace__content'>
-            <Title as='h2' className='font-size-3 font-weight-6 color-primary'>
+            <Title as='h2' className='font-size-3 font-weight-5 color-primary'>
                 {title}
             </Title>
             <Paragraph className='color-secondary scripting-workspace__description'>

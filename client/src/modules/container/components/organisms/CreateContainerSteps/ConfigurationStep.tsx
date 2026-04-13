@@ -61,16 +61,6 @@ interface ConfigurationStepProps {
     onNext: () => void;
 };
 
-interface ValidationMessage {
-    key: string;
-    label: string;
-};
-
-interface CustomFieldValidationMessage {
-    key: string;
-    label: string;
-};
-
 const PORT_FIELDS: FieldConfig[] = [
     {
         key: 'private',
@@ -117,24 +107,14 @@ const hasValueChangeTarget = (value: unknown): value is ValueChangeTarget => {
     return typeof value === 'object' && value !== null && 'value' in value;
 };
 
-const getCustomFieldValidationMessages = (
+const getCustomFieldValidationErrorCount = (
     customFields: ContainerTemplateCustomField[],
     customFieldValues: ContainerConfig['customFieldValues']
-): CustomFieldValidationMessage[] => {
-    return customFields.reduce<CustomFieldValidationMessage[]>((messages, customField) => {
+): number => {
+    return customFields.reduce((count, customField) => {
         const customFieldValue = customFieldValues[customField.id] ?? '';
-        const validationError = getCustomFieldValidationError(customField, customFieldValue);
-        if (!validationError) {
-            return messages;
-        }
-
-        messages.push({
-            key: customField.id,
-            label: validationError
-        });
-
-        return messages;
-    }, []);
+        return getCustomFieldValidationError(customField, customFieldValue) ? count + 1 : count;
+    }, 0);
 };
 
 const getCustomFieldType = (customField: ContainerTemplateCustomField) => {
@@ -223,44 +203,18 @@ const ConfigurationStep = ({
         key: item.key,
         value: item.value
     }));
-    const validationMessages: ValidationMessage[] = [];
     const teamFieldError = getTeamFieldError(selectedTeamId, teams);
     const teamOptions: SelectOption[] = teams.map((team) => ({
         value: team._id,
         title: team.name
     }));
-    const customFieldValidationMessages = getCustomFieldValidationMessages(config.customFields, config.customFieldValues);
-    if (!config.name.trim()) {
-        validationMessages.push({
-            key: 'name',
-            label: 'Add a container name'
-        });
-    }
-
-    if (teamFieldError) {
-        validationMessages.push({
-            key: 'team',
-            label: teamFieldError
-        });
-    }
-
-    if (!selectedTeamId || !selectedTeamClusterId) {
-        validationMessages.push({
-            key: 'cluster',
-            label: 'Select a cluster to continue.'
-        });
-    }
-
-    if (selectedTeamClusterId && !isLoadingResourceLimits && (!clusterResourceLimits?.maxCpus || !clusterResourceLimits?.maxMemoryMB)) {
-        validationMessages.push({
-            key: 'clusterMetrics',
-            label: 'Wait for cluster resource metrics before continuing.'
-        });
-    }
-
-    validationMessages.push(...customFieldValidationMessages);
-
-    const remainingItemsLabel = `${validationMessages.length} required item${validationMessages.length === 1 ? '' : 's'} remaining before review.`;
+    const requiredRemainingCount = [
+        !config.name.trim(),
+        Boolean(teamFieldError),
+        !selectedTeamId || !selectedTeamClusterId,
+        Boolean(selectedTeamClusterId && !isLoadingResourceLimits && (!clusterResourceLimits?.maxCpus || !clusterResourceLimits?.maxMemoryMB))
+    ].filter(Boolean).length + getCustomFieldValidationErrorCount(config.customFields, config.customFieldValues);
+    const remainingItemsLabel = `${requiredRemainingCount} required item${requiredRemainingCount === 1 ? '' : 's'} remaining before review.`;
 
     return (
         <Container className='create-container-step d-flex column gap-2'>
@@ -268,17 +222,6 @@ const ConfigurationStep = ({
                 <Title className='font-size-5 font-weight-6'>Configuration</Title>
                 <Paragraph className='font-size-3 color-secondary create-container-step-copy'>Fill in the required deployment details, then adjust optional settings only if needed.</Paragraph>
             </Container>
-
-            {validationMessages.length > 0 && (
-                <Container className='create-container-validation-notice d-flex column gap-05 radius-sm p-1' role='status' aria-live='polite'>
-                    <Title as='h3' className='font-size-2-5 font-weight-6'>Finish these before review</Title>
-                    <ul className='create-container-validation-list d-flex column gap-025'>
-                        {validationMessages.map((message) => (
-                            <li key={message.key} className='font-size-2 color-secondary'>{message.label}</li>
-                        ))}
-                    </ul>
-                </Container>
-            )}
 
             <Container className='create-container-config-grid gap-1-5 mt-1-5'>
                 <Container className='create-container-config-card full-width radius-md d-flex column gap-1 p-1-5'>
@@ -309,20 +252,6 @@ const ConfigurationStep = ({
                                 placeholder='Select a team'
                                 error={teamFieldError}
                                 disabled={teams.length === 0}
-                            />
-                            <FormFieldRHF
-                                fieldType='select'
-                                label='Cluster'
-                                name='teamCluster'
-                                value={selectedTeamClusterId || ''}
-                                onChange={(e) => onTeamClusterChange(e.target.value || null)}
-                                options={teamClusters.map((teamCluster) => ({
-                                    value: teamCluster._id,
-                                    title: teamCluster.name
-                                }))}
-                                placeholder='Select a cluster'
-                                error={!selectedTeamId || selectedTeamClusterId ? undefined : 'Select a cluster to continue.'}
-                                disabled={!selectedTeamId || teamClusters.length === 0}
                             />
                         </Container>
                     </Container>
