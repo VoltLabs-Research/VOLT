@@ -1,4 +1,5 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
+import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
@@ -37,6 +38,34 @@ interface ClusterQueueConcurrencyModalProps {
 
 const MIN_CONCURRENCY = 1;
 const MIN_SCOPE_LIMIT = 0;
+const RECOMMENDED_QUEUE_CONCURRENCY: TeamClusterQueueConcurrencyInputDTO = {
+    analysis: 8,
+    rasterizer: 5,
+    glbPreprocessing: 8,
+    sshImport: 2
+};
+const RECOMMENDED_QUEUE_SCOPE_LIMITS: TeamClusterQueueScopeLimitsInputDTO = {
+    analysisProcessing: {
+        maxRunningPerTrajectory: 4,
+        maxRunningPerTeam: 0
+    },
+    artifactUpload: {
+        maxRunningPerTrajectory: 4,
+        maxRunningPerTeam: 0
+    },
+    trajectoryGlbConversion: {
+        maxRunningPerTrajectory: 4,
+        maxRunningPerTeam: 0
+    },
+    cloudUpload: {
+        maxRunningPerTrajectory: 4,
+        maxRunningPerTeam: 0
+    },
+    trajectoryCompression: {
+        maxRunningPerTrajectory: 4,
+        maxRunningPerTeam: 0
+    }
+};
 
 const QUEUE_FIELDS: QueueFieldDefinition[] = [
     {
@@ -100,6 +129,15 @@ const createInitialValues = (teamCluster: TeamCluster | null): Record<keyof Team
     };
 };
 
+const createRecommendedValues = (): Record<keyof TeamClusterQueueConcurrencyInputDTO, string> => {
+    return {
+        analysis: String(RECOMMENDED_QUEUE_CONCURRENCY.analysis),
+        rasterizer: String(RECOMMENDED_QUEUE_CONCURRENCY.rasterizer),
+        glbPreprocessing: String(RECOMMENDED_QUEUE_CONCURRENCY.glbPreprocessing),
+        sshImport: String(RECOMMENDED_QUEUE_CONCURRENCY.sshImport)
+    };
+};
+
 const createInitialScopeValues = (
     teamCluster: TeamCluster | null
 ): Record<keyof TeamClusterQueueScopeLimitsInputDTO, Record<keyof TeamClusterQueueScopeLimitInputDTO, string>> => {
@@ -127,6 +165,34 @@ const createInitialScopeValues = (
     };
 };
 
+const createRecommendedScopeValues = (): Record<
+    keyof TeamClusterQueueScopeLimitsInputDTO,
+    Record<keyof TeamClusterQueueScopeLimitInputDTO, string>
+> => {
+    return {
+        analysisProcessing: {
+            maxRunningPerTrajectory: String(RECOMMENDED_QUEUE_SCOPE_LIMITS.analysisProcessing.maxRunningPerTrajectory),
+            maxRunningPerTeam: String(RECOMMENDED_QUEUE_SCOPE_LIMITS.analysisProcessing.maxRunningPerTeam)
+        },
+        artifactUpload: {
+            maxRunningPerTrajectory: String(RECOMMENDED_QUEUE_SCOPE_LIMITS.artifactUpload.maxRunningPerTrajectory),
+            maxRunningPerTeam: String(RECOMMENDED_QUEUE_SCOPE_LIMITS.artifactUpload.maxRunningPerTeam)
+        },
+        trajectoryGlbConversion: {
+            maxRunningPerTrajectory: String(RECOMMENDED_QUEUE_SCOPE_LIMITS.trajectoryGlbConversion.maxRunningPerTrajectory),
+            maxRunningPerTeam: String(RECOMMENDED_QUEUE_SCOPE_LIMITS.trajectoryGlbConversion.maxRunningPerTeam)
+        },
+        cloudUpload: {
+            maxRunningPerTrajectory: String(RECOMMENDED_QUEUE_SCOPE_LIMITS.cloudUpload.maxRunningPerTrajectory),
+            maxRunningPerTeam: String(RECOMMENDED_QUEUE_SCOPE_LIMITS.cloudUpload.maxRunningPerTeam)
+        },
+        trajectoryCompression: {
+            maxRunningPerTrajectory: String(RECOMMENDED_QUEUE_SCOPE_LIMITS.trajectoryCompression.maxRunningPerTrajectory),
+            maxRunningPerTeam: String(RECOMMENDED_QUEUE_SCOPE_LIMITS.trajectoryCompression.maxRunningPerTeam)
+        }
+    };
+};
+
 const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQueueConcurrencyModalProps) => {
     const [values, setValues] = useState<Record<keyof TeamClusterQueueConcurrencyInputDTO, string>>(createInitialValues(teamCluster));
     const [scopeValues, setScopeValues] = useState<
@@ -142,6 +208,12 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
     }, [teamCluster]);
 
     const clusterName = teamCluster?.name ?? 'cluster';
+
+    const handleApplyRecommended = () => {
+        setValues(createRecommendedValues());
+        setScopeValues(createRecommendedScopeValues());
+        setError(undefined);
+    };
 
     const handleClose = () => {
         setValues(createInitialValues(teamCluster));
@@ -290,6 +362,18 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
             <Container className='d-flex column gap-1 p-1-5'>
                 <Container className='d-flex column gap-05'>
                     <Title className='font-size-2 font-weight-5 color-secondary'>Worker concurrency</Title>
+                    <Container className='d-flex items-center gap-075 flex-wrap'>
+                        <Paragraph className='font-size-1 color-muted'>Use the recommended preset to auto-fill balanced high-throughput limits.</Paragraph>
+                        <Button
+                            variant='outline'
+                            intent='brand'
+                            size='sm'
+                            onClick={handleApplyRecommended}
+                            disabled={isSubmitting}
+                        >
+                            Apply recommended
+                        </Button>
+                    </Container>
                 </Container>
                 <Container className='d-flex column gap-1'>
                     {QUEUE_FIELDS.map((field) => (

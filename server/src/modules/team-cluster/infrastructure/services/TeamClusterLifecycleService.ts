@@ -258,7 +258,15 @@ export default class TeamClusterLifecycleService {
         }
 
         if (metrics) {
-            await this.systemMetricsRepository.save(this.toSystemMetrics(updatedTeamCluster.id, metrics));
+            void this.systemMetricsRepository.save(this.toSystemMetrics(updatedTeamCluster.id, metrics)).catch((error: unknown) => {
+                logger.warn(
+                    {
+                        err: error,
+                        teamClusterId: updatedTeamCluster.id
+                    },
+                    'Failed to persist system metrics snapshot after heartbeat acknowledgement'
+                );
+            });
         }
 
         return toTeamClusterDTO(updatedTeamCluster);
