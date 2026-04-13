@@ -6,14 +6,10 @@ import AvatarUpload from '@/modules/auth/components/organisms/AvatarUpload';
 import ProfileForm from '@/modules/auth/components/organisms/ProfileForm';
 import Container from '@/shared/presentation/components/Container';
 import DangerZone from '@/shared/presentation/components/DangerZone';
-import LiquidToggle from '@/shared/presentation/components/LiquidToggle';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSection from '@/shared/presentation/components/SettingsSection';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
-import useTip from '@/shared/tips/use-tip';
-import { areContextualTipsEnabled, setContextualTipsEnabled } from '@/shared/tips/tip-storage';
 import { Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type { ProfileForm as ProfileFormType } from '@/modules/auth/components/organisms/ProfileForm/validation-schema';
@@ -31,14 +27,11 @@ const DELETE_ACCOUNT_TOAST_OPTIONS = createPromiseToastOptions({
 });
 
 const GeneralSettings = () => {
-    useTip('general-settings-tips-toggle');
-
     const user = useCurrentUser();
     const signOut = useAuthStore((state) => state.signOut);
     const updateMe = useUpdateMeMutation();
     const deleteMe = useDeleteMeMutation();
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-    const [contextualTipsEnabled, setContextualTipsEnabledState] = useState<boolean>(() => areContextualTipsEnabled());
 
     const handleAvatarUpload = useCallback(async (file: File) => {
         setIsUploadingAvatar(true);
@@ -80,11 +73,6 @@ const GeneralSettings = () => {
         });
     }, [deleteMe, signOut]);
 
-    const handleContextualTipsToggle = useCallback((nextValue: boolean) => {
-        setContextualTipsEnabled(nextValue);
-        setContextualTipsEnabledState(nextValue);
-    }, []);
-
     return (
         <SettingsPage title="General Settings">
             <SettingsSection>
@@ -101,28 +89,6 @@ const GeneralSettings = () => {
                     <ProfileForm
                         initialValues={profileInitialValues}
                         onUpdate={handleProfileUpdate} />
-                </Container>
-            </SettingsSection>
-
-            <SettingsSection>
-                <SettingsSectionHeader
-                    title="Contextual Tips"
-                    description="Control lightweight guidance hints that appear while you learn new parts of the product." />
-
-                <Container className="d-flex items-center content-between gap-1">
-                    <Container className="d-flex column gap-025 flex-1">
-                        <Paragraph className="font-size-2 font-weight-5 color-primary">
-                            Show contextual tips
-                        </Paragraph>
-                        <Paragraph className="font-size-2 color-muted">
-                            Tips appear once, stay out of the way, and never block the page.
-                        </Paragraph>
-                    </Container>
-                    <LiquidToggle
-                        pressed={contextualTipsEnabled}
-                        onChange={handleContextualTipsToggle}
-                        aria-label="Show contextual tips"
-                    />
                 </Container>
             </SettingsSection>
 

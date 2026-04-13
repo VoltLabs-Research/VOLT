@@ -2,10 +2,6 @@
     margin-bottom: 0.5rem;
 }
 
-.job-group__row {
-    align-items: stretch;
-}
-
 .job-group-header {
     transition: background-color 0.2s ease;
 }
@@ -70,13 +66,6 @@
     border-radius: var(--radius-md);
 }
 
-.job-group-actions-button {
-    align-self: center;
-    flex-shrink: 0;
-    min-width: 2.75rem;
-    min-height: 2.75rem;
-}
-
 .frame-status-badge {
     font-size: 0.75rem;
     padding: 0.2rem 0.5rem;
@@ -105,8 +94,7 @@
 }
 
 .job-group-toggle:focus-visible,
-.frame-job-group-toggle:focus-visible,
-.job-group-actions-button:focus-visible {
+.frame-job-group-toggle:focus-visible {
     outline: none;
     box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent);
 }

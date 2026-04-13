@@ -292,15 +292,6 @@ export const CONTEXTUAL_TIPS = {
         delay: 1600,
         position: 'top-center'
     },
-    'general-settings-tips-toggle': {
-        surface: 'page',
-        dismissMode: 'manual',
-        title: 'Toggle contextual tips',
-        description: 'Enable or disable these onboarding tips from the general settings page at any time.',
-        buttonLabel: 'Got it',
-        delay: 1800,
-        position: 'top-center'
-    },
     'session-management': {
         surface: 'page',
         dismissMode: 'manual',
