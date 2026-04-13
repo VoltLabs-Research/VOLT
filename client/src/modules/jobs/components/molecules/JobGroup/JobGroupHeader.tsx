@@ -9,11 +9,12 @@ import { formatDistanceToNow } from 'date-fns';
 import { motion } from 'framer-motion';
 import { IoChevronForward } from 'react-icons/io5';
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
+import type { ButtonHTMLAttributes } from 'react';
 import type { TrajectoryJobGroup } from '@/modules/jobs/api/entities/job';
 
 const SESSION_COMPLETION_HIGHLIGHT_MS = 3500;
 
-interface JobGroupHeaderProps {
+interface JobGroupHeaderProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     group: TrajectoryJobGroup;
     statusClassName: string;
     isExpanded: boolean;
@@ -28,7 +29,8 @@ const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
     isExpanded,
     contentId,
     statusPresentation,
-    onToggle
+    onToggle,
+    ...buttonProps
 }, ref) => {
     const prefersReducedMotion = usePrefersReducedMotion();
     const statusLabel = getFrameGroupStatusLabel(group.overallStatus);
@@ -99,6 +101,7 @@ const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
             aria-expanded={isExpanded}
             aria-controls={contentId}
             aria-label={`${group.trajectoryName}. ${statusLabel}. ${summaryLabel}`}
+            {...buttonProps}
         >
             <Container className='d-flex w-max items-center content-between gap-05 p-1'>
                 <Container className='d-flex column gap-05'>
