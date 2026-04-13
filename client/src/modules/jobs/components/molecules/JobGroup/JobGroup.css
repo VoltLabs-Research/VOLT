@@ -33,6 +33,20 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    transition: color 140ms ease, text-shadow 180ms ease;
+}
+
+.job-group-name--queued {
+    color: var(--status-warning);
+}
+
+.job-group-name--running {
+    color: var(--accent-blue);
+}
+
+.job-group-name--completed {
+    color: var(--status-success);
+    text-shadow: 0 0 10px color-mix(in srgb, var(--status-success) 35%, transparent);
 }
 
 .job-group-children {
@@ -95,4 +109,10 @@
 .job-group-actions-button:focus-visible {
     outline: none;
     box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .job-group-name {
+        transition: none;
+    }
 }

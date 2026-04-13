@@ -237,6 +237,7 @@ const DashboardOperationsCard = () => {
                     variant='embedded'
                     displayMode='full'
                     hideAfterComplete={false}
+                    groupStatusPresentation='trajectory-name'
                     emptyState={jobsEmptyState}
                 />
             </Container>
