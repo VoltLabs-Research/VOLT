@@ -10,6 +10,14 @@ interface ArgumentDefinition {
     default?: unknown;
     listArguments?: ArgumentDefinition[];
     multipleSelection?: boolean;
+    visibleWhen?: ArgumentVisibilityCondition;
+};
+
+interface ArgumentVisibilityCondition {
+    argument?: string;
+    operator?: 'equals' | 'notEquals' | 'in' | 'notIn';
+    value?: string | number | boolean;
+    values?: Array<string | number | boolean>;
 };
 
 interface PluginReferencePlanningItem {
@@ -20,6 +28,106 @@ interface PluginReferencePlanningItem {
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
+};
+
+const isVisibilityComparableValue = (value: unknown): value is string | number | boolean => {
+    return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+};
+
+const normalizeVisibilityConditionValues = (
+    condition: ArgumentVisibilityCondition
+): Array<string | number | boolean> => {
+    if (Array.isArray(condition.values)) {
+        return condition.values.filter(isVisibilityComparableValue);
+    }
+
+    if (isVisibilityComparableValue(condition.value)) {
+        return [condition.value];
+    }
+
+    return [];
+};
+
+const resolveDefinitionValue = (
+    definitions: ArgumentDefinition[],
+    values: Record<string, unknown>,
+    argumentKey: string
+): unknown => {
+    const referencedDefinition = definitions.find((definition) => definition.argument === argumentKey);
+    if (!referencedDefinition) {
+        return values[argumentKey];
+    }
+
+    if (referencedDefinition.value !== undefined) {
+        return referencedDefinition.value;
+    }
+
+    if (values[argumentKey] !== undefined) {
+        return values[argumentKey];
+    }
+
+    return referencedDefinition.default;
+};
+
+const matchesVisibilityCondition = (
+    condition: ArgumentVisibilityCondition,
+    currentValue: unknown
+): boolean => {
+    const comparisonValues = normalizeVisibilityConditionValues(condition);
+
+    if (condition.operator === 'equals') {
+        return comparisonValues.length > 0 && currentValue === comparisonValues[0];
+    }
+
+    if (condition.operator === 'notEquals') {
+        return comparisonValues.length > 0 && currentValue !== comparisonValues[0];
+    }
+
+    if (condition.operator === 'in') {
+        if (Array.isArray(currentValue)) {
+            return currentValue.some((entry) => comparisonValues.includes(entry as string | number | boolean));
+        }
+
+        return comparisonValues.includes(currentValue as string | number | boolean);
+    }
+
+    if (condition.operator === 'notIn') {
+        if (Array.isArray(currentValue)) {
+            return currentValue.every((entry) => !comparisonValues.includes(entry as string | number | boolean));
+        }
+
+        return !comparisonValues.includes(currentValue as string | number | boolean);
+    }
+
+    return true;
+};
+
+const isArgumentVisible = (
+    definition: ArgumentDefinition,
+    definitions: ArgumentDefinition[],
+    values: Record<string, unknown>
+): boolean => {
+    if (!definition.visibleWhen?.argument) {
+        return true;
+    }
+
+    const currentValue = resolveDefinitionValue(definitions, values, definition.visibleWhen.argument);
+    return matchesVisibilityCondition(definition.visibleWhen, currentValue);
+};
+
+const resolveRuntimeArgumentValue = (
+    definition: ArgumentDefinition,
+    value: unknown
+): unknown => {
+    if (value !== undefined) {
+        return value;
+    }
+
+    if (definition.value !== undefined) {
+        return definition.value;
+    }
+
+    return definition.default;
 };
 
 interface PluginReferenceSelectionValue {
@@ -53,13 +161,21 @@ const readPluginReferenceSelections = (
 };
 
 const collectPluginReferences = (
+    definitions: ArgumentDefinition[],
     definition: ArgumentDefinition,
     value: unknown,
+    scopeValues: Record<string, unknown>,
     currentPath: string,
     results: PluginReferencePlanningItem[]
 ): void => {
+    if (!isArgumentVisible(definition, definitions, scopeValues)) {
+        return;
+    }
+
+    const resolvedValue = resolveRuntimeArgumentValue(definition, value);
+
     if (definition.type === 'pluginReference') {
-        for (const selection of readPluginReferenceSelections(value)) {
+        for (const selection of readPluginReferenceSelections(resolvedValue)) {
             results.push({
                 referencePath: currentPath,
                 pluginId: selection.pluginId.trim(),
@@ -69,9 +185,9 @@ const collectPluginReferences = (
         return;
     }
 
-    if (definition.type === 'list' && Array.isArray(value)) {
+    if (definition.type === 'list' && Array.isArray(resolvedValue)) {
         const nestedDefinitions = definition.listArguments ?? [];
-        value.forEach((entry, index) => {
+        resolvedValue.forEach((entry, index) => {
             if (!isRecord(entry)) {
                 return;
             }
@@ -82,8 +198,10 @@ const collectPluginReferences = (
                 }
 
                 collectPluginReferences(
+                    nestedDefinitions,
                     nestedDefinition,
                     entry[nestedDefinition.argument],
+                    entry,
                     `${currentPath}[${index}].${nestedDefinition.argument}`,
                     results
                 );
@@ -179,6 +297,15 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
             }
 
             values[argumentKey] = value;
+        }
+
+        for (const definition of definitions) {
+            const argumentKey = definition.argument;
+            if (!argumentKey || !isArgumentVisible(definition, definitions, values)) {
+                continue;
+            }
+
+            const value = values[argumentKey];
             if (value !== null && value !== undefined) {
                 if (definition.type === 'boolean') {
                     if (String(value) === 'true') {
@@ -206,12 +333,17 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
         const pluginReferences: PluginReferencePlanningItem[] = [];
         for (const definition of definitions) {
             const argumentKey = definition.argument;
-            if (!argumentKey) {
+            if (!argumentKey || !isArgumentVisible(definition, definitions, values)) {
                 continue;
             }
 
-            collectPluginReferences(definition, values[argumentKey], argumentKey, pluginReferences);
+            collectPluginReferences(definitions, definition, values[argumentKey], values, argumentKey, pluginReferences);
         }
+
+        const visibleValues = Object.fromEntries(definitions
+            .filter((definition) => definition.argument && isArgumentVisible(definition, definitions, values))
+            .map((definition) => [definition.argument as string, values[definition.argument as string]])
+        );
 
         return {
             as_str: encodeCliArgumentsToken(cliArgs),
@@ -220,7 +352,7 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
                 items: pluginReferences,
                 str_json: JSON.stringify(pluginReferences)
             },
-            ...values
+            ...visibleValues
         };
     }
 }
