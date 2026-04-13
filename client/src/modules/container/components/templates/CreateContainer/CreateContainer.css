@@ -46,15 +46,11 @@
     max-width: 46rem;
 }
 
-.create-container-step-gate,
+.create-container-image-preview,
 .create-container-validation-notice,
 .create-container-review-help {
     background: color-mix(in srgb, var(--color-surface-2) 70%, transparent);
     border: 1px solid var(--color-border-soft);
-}
-
-.create-container-step-gate {
-    margin-top: 0.5rem;
 }
 
 .create-container-validation-list {
@@ -218,11 +214,6 @@
 
     .create-container-step-actions > * {
         width: 100%;
-    }
-
-    .create-container-step-gate {
-        flex-direction: column;
-        align-items: stretch;
     }
 
     .create-container-review-item {

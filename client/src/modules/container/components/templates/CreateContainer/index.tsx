@@ -10,7 +10,6 @@ import { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Stepper from '@/shared/presentation/components/Stepper';
 import Title from '@/shared/presentation/components/Title';
-import { formatDistanceToNow } from 'date-fns';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -82,12 +81,13 @@ const CreateContainer = () => {
     const tempCustomImageError = trimmedCustomImage ? getCustomImageValidationError(trimmedCustomImage) : null;
 
     const confirmCustomImage = () => {
-        if (!trimmedCustomImage) {
+        if (!trimmedCustomImage || tempCustomImageError) {
             return;
         }
 
-        setCustomImage(trimmedCustomImage, () => goTo(StepKey.Config));
+        setCustomImage(trimmedCustomImage);
         closeModal(CUSTOM_IMAGE_MODAL_ID);
+        goTo(StepKey.Config);
     };
 
     const canNavigateTo = (key: StepKey): boolean => {
@@ -97,39 +97,23 @@ const CreateContainer = () => {
         return false;
     };
 
-    const handleImageStepContinue = () => {
-        if (!canProceedToConfig) {
-            return;
-        }
-
-        goTo(StepKey.Config);
-    };
-
     const steps = [
         {
             key: StepKey.Image,
             content: (
-                <Container className='d-flex column gap-2'>
-                        <ImageSelectionStep
-                            selectedTemplate={selectedTemplate}
-                            customImage={customImage}
-                            customImageError={customImageError}
-                            onTemplateSelect={handleTemplateSelect}
-                            onCustomImageClick={() => {
+                <ImageSelectionStep
+                    selectedTemplate={selectedTemplate}
+                    customImage={customImage}
+                    customImageError={customImageError}
+                    onTemplateSelect={(templateId) => {
+                        handleTemplateSelect(templateId);
+                        goTo(StepKey.Config);
+                    }}
+                    onCustomImageClick={() => {
                             setTempCustomImage(customImage);
                             openModal(CUSTOM_IMAGE_MODAL_ID);
                         }}
-                    />
-
-                    <Container className='create-container-step-gate d-flex items-center content-between gap-1 p-1 radius-sm'>
-                        <Paragraph className='font-size-2 color-secondary'>
-                            {canProceedToConfig
-                                ? 'Image selected. Continue when you are ready to configure the deployment.'
-                                : 'Select one template or confirm a custom image before continuing.'}
-                        </Paragraph>
-                        <Button variant='solid' intent='brand' onClick={handleImageStepContinue} disabled={!canProceedToConfig}>Continue to configuration</Button>
-                    </Container>
-                </Container>
+                />
             )
         },
         {
@@ -181,10 +165,6 @@ const CreateContainer = () => {
                 </Button>
                 <Container className='d-flex column gap-02'>
                     <Title className='font-size-5 font-weight-6'>Create New Container</Title>
-                    <Paragraph className='color-muted'>Deploy a new containerized application in seconds.</Paragraph>
-                    {draftLastSavedAt && (
-                        <Paragraph className='font-size-1 color-secondary'>Draft saved {formatDistanceToNow(new Date(draftLastSavedAt), { addSuffix: true })}.</Paragraph>
-                    )}
                 </Container>
             </Container>
 
