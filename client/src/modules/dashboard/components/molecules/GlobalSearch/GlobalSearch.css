@@ -15,6 +15,10 @@
     z-index: var(--z-floating);
 }
 
+.global-search-results .empty-state-container{
+    height: 200px;
+}
+
 .global-search-loading,
 .global-search-empty {
     text-align: center;
