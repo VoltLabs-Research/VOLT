@@ -16,6 +16,7 @@ import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamCl
 import type SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
+import { sanitizeVisibleArgumentConfig } from '@modules/plugin/utilities/plugin/argument-visibility';
 import Workflow, { type WorkflowProps } from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
 import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import type { PluginReferenceExecutionRequest } from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
@@ -210,6 +211,11 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                     return;
                 }
                 const runtimePlugin = createRuntimePlugin(plugin, workflow);
+                const runtimeArgumentsNode = runtimePlugin.props.workflow.props.nodes.find((node) => node.type === 'arguments');
+                const runtimeArguments = Array.isArray(runtimeArgumentsNode?.data.arguments?.arguments)
+                    ? runtimeArgumentsNode.data.arguments.arguments
+                    : [];
+                const sanitizedConfig = sanitizeVisibleArgumentConfig(runtimeArguments, payload.config ?? {});
 
                 // Load trajectory to get frames
                 const trajectory = await this.trajectoryRepository.findById(payload.trajectoryId);
@@ -223,7 +229,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                     ?? VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID;
                 const pluginReferenceExecutions = this.pluginDependencyResolverService.getArgumentPluginReferenceExecutions(
                     runtimePlugin,
-                    payload.config ?? {}
+                    sanitizedConfig
                 );
                 const dependencyResolution = await this.pluginDependencyResolverService.collectTransitivePublishedDependencies(runtimePlugin);
                 if (dependencyResolution.errors.length > 0) {
@@ -265,7 +271,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                         storageClusterId,
                         nestedPlugins,
                         pluginReferenceExecutions: pluginReferenceExecutions as PluginReferenceExecutionRequest[],
-                        config: payload.config ?? {},
+                        config: sanitizedConfig,
                         timestep: payload.timestep
                     }
                 );

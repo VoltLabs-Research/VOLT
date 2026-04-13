@@ -13,6 +13,22 @@ export interface ArgumentOption{
     label: string;
 };
 
+export const ArgumentVisibilityOperators = [
+    'equals',
+    'notEquals',
+    'in',
+    'notIn'
+] as const;
+
+export type ArgumentVisibilityOperator = (typeof ArgumentVisibilityOperators)[number];
+
+export interface ArgumentVisibilityCondition{
+    argument: string;
+    operator: ArgumentVisibilityOperator;
+    value?: string | number | boolean;
+    values?: Array<string | number | boolean>;
+};
+
 export interface ArgumentDefinition{
     argument: string;
     type: ArgumentType;
@@ -27,6 +43,7 @@ export interface ArgumentDefinition{
     min?: number;
     max?: number;
     step?: number;
+    visibleWhen?: ArgumentVisibilityCondition;
 };
 
 export interface ArgumentsNodeData{

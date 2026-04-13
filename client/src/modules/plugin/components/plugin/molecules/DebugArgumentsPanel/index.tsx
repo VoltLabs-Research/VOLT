@@ -3,7 +3,10 @@ import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/molecules
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
-import { collectDefaultArgumentValues } from '@/modules/plugin/utilities/plugin/argument-values';
+import {
+    collectVisibleDefaultArgumentValues,
+    getUserConfigurableArguments
+} from '@/modules/plugin/utilities/plugin/argument-values';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
 import IconButton from '@/shared/presentation/components/IconButton';
@@ -48,13 +51,13 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
         const argsDef = argsNodeData.arguments?.arguments;
         if (!argsDef) return [];
 
-        return argsDef.filter((arg) => arg.value === undefined);
+        return getUserConfigurableArguments(argsDef);
     }, [nodes]);
 
     useEffect(() => {
         if (configurableArgs.length === 0) return;
 
-        const defaultConfig = collectDefaultArgumentValues(configurableArgs);
+        const defaultConfig = collectVisibleDefaultArgumentValues(configurableArgs, debugConfig);
         const newConfig: Record<string, unknown> = { ...debugConfig };
         let hasChanges = false;
 

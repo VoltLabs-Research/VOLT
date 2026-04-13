@@ -1,6 +1,9 @@
 import { PluginStatus } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
-import { getPluginReferenceValue } from '@/modules/plugin/utilities/plugin/argument-values';
+import {
+    getPluginReferenceValue,
+    getUserConfigurableArguments
+} from '@/modules/plugin/utilities/plugin/argument-values';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/molecules/ArgumentFieldsRenderer';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import Container from '@/shared/presentation/components/Container';
@@ -67,7 +70,7 @@ const PluginConfigField = ({
     const selectionArguments = useMemo(() => {
         return Object.fromEntries(pluginReferenceValue.selections.map((selection) => [
             selection.pluginId,
-            getPluginArguments(selection.pluginId).filter((arg) => arg.value === undefined)
+            getUserConfigurableArguments(getPluginArguments(selection.pluginId))
         ]));
     }, [getPluginArguments, pluginReferenceValue.selections]);
 

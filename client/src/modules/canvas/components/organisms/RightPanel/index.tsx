@@ -8,6 +8,7 @@ import ModifiersSection from '../../molecules/ModifiersSection';
 import PluginExecutionConfigFields from '@/modules/plugin/components/plugin/molecules/PluginExecutionConfigFields';
 import { useExecutePluginMutation, usePluginTeamClustersQuery } from '@/modules/plugin/hooks/plugin/queries';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
+import { getUserConfigurableArguments } from '@/modules/plugin/utilities/plugin/argument-values';
 import { resolvePluginExecutionClusterId, supportsPluginExecutionCluster } from '@/modules/plugin/utilities/plugin-team-clusters';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { Wrench } from 'lucide-react';
@@ -184,7 +185,7 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
     const renderModifierConfig = useCallback((option: ModifierOption) => {
         let content: ReactNode = null;
         if(option.isPlugin && option.pluginModifierId){
-            const args = getPluginArguments(option.pluginModifierId).filter((a) => a.value === undefined);
+            const args = getUserConfigurableArguments(getPluginArguments(option.pluginModifierId));
             const selectedClusterId = getSelectedClusterId(option.pluginModifierId, option.plugin?.teamCluster);
             const frameOptions: SelectOption[] = availableTimesteps.map((timestep) => ({
                 value: String(timestep),
