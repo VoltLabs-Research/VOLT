@@ -9,6 +9,7 @@ import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRep
 import { IWorkflowValidatorService, WorkflowValidationMode } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import PluginExecutionRequestEvent from '@modules/plugin/domain/events/PluginExecutionRequestEvent';
 import PluginDisplayNameResolver from '@modules/plugin/utilities/plugin/PluginDisplayNameResolver';
+import { sanitizeVisibleArgumentConfig } from '@modules/plugin/utilities/plugin/argument-visibility';
 import { PluginDependencyResolverService } from '@modules/plugin/infrastructure/services/plugin/PluginDependencyResolverService';
 
 import { ErrorCodes } from '@core/constants/error-codes';
@@ -207,8 +208,10 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             plugin.props.workflow.props.nodes,
             SELECTED_TIMESTEPS_RUNTIME_ARGUMENT_KEY
         );
+        const argumentDefinitions = plugin.props.arguments ?? [];
+        const sanitizedUserConfig = sanitizeVisibleArgumentConfig(argumentDefinitions, input.config);
         const analysisConfig = createAnalysisConfig(
-            input.config,
+            sanitizedUserConfig,
             selectedTimesteps,
             !hasSelectedTimestepsCollision
         );

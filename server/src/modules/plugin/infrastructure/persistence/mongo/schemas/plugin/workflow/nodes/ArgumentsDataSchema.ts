@@ -1,4 +1,7 @@
-import { ArgumentType } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
+import {
+    ArgumentType,
+    ArgumentVisibilityOperators
+} from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
 
 import { ValidationCodes } from '@core/constants/validation-codes';
 import { Schema } from 'mongoose';
@@ -12,6 +15,24 @@ export const ArgumentOptionSchema = new Schema({
         type: String,
         required: [true, ValidationCodes.PLUGIN_ARGUMENT_OPT_LABEL_REQUIRED]
     }
+}, { _id: false });
+
+export const ArgumentVisibilityConditionSchema = new Schema({
+    argument: {
+        type: String,
+        required: [true, ValidationCodes.PLUGIN_ARGUMENT_DEF_ARGUMENT_REQUIRED]
+    },
+    operator: {
+        type: String,
+        enum: ArgumentVisibilityOperators,
+        required: [true, ValidationCodes.PLUGIN_ARGUMENT_DEF_TYPE_REQUIRED]
+    },
+    value: {
+        type: Schema.Types.Mixed
+    },
+    values: [{
+        type: Schema.Types.Mixed
+    }]
 }, { _id: false });
 
 export const ArgumentDefinitionSchema = new Schema({
@@ -54,6 +75,9 @@ export const ArgumentDefinitionSchema = new Schema({
     },
     step: {
         type: Number
+    },
+    visibleWhen: {
+        type: ArgumentVisibilityConditionSchema
     }
 }, { _id: false });
 

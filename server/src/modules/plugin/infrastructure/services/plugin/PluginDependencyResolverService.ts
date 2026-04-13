@@ -3,6 +3,7 @@ import { ArgumentType } from '@modules/plugin/domain/entities/plugin/workflow/no
 import type { ArgumentDefinition } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
+import { isArgumentVisible } from '@modules/plugin/utilities/plugin/argument-visibility';
 import { injectable, inject } from 'tsyringe';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 
@@ -24,6 +25,21 @@ interface PluginReferenceExecutionRequest {
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
+};
+
+const resolveArgumentExecutionValue = (
+    definition: ArgumentDefinition,
+    value: unknown
+): unknown => {
+    if (value !== undefined) {
+        return value;
+    }
+
+    if (definition.value !== undefined) {
+        return definition.value;
+    }
+
+    return definition.default;
 };
 
 interface PluginReferenceSelectionValue {
@@ -57,13 +73,21 @@ const readPluginReferenceSelections = (
 };
 
 const collectArgumentPluginReferenceExecutions = (
+    definitions: ArgumentDefinition[],
     definition: ArgumentDefinition,
     value: unknown,
+    scopeValues: Record<string, unknown>,
     currentPath: string,
     results: PluginReferenceExecutionRequest[]
 ): void => {
+    if (!isArgumentVisible(definition, definitions, scopeValues)) {
+        return;
+    }
+
+    const resolvedValue = resolveArgumentExecutionValue(definition, value);
+
     if (definition.type === ArgumentType.PluginReference) {
-        for (const selection of readPluginReferenceSelections(value)) {
+        for (const selection of readPluginReferenceSelections(resolvedValue)) {
             results.push({
                 referencePath: currentPath,
                 pluginId: selection.pluginId.trim(),
@@ -73,17 +97,19 @@ const collectArgumentPluginReferenceExecutions = (
         return;
     }
 
-    if (definition.type === ArgumentType.List && Array.isArray(value)) {
+    if (definition.type === ArgumentType.List && Array.isArray(resolvedValue)) {
         const nestedDefinitions = definition.listArguments ?? [];
-        value.forEach((entry, index) => {
+        resolvedValue.forEach((entry, index) => {
             if (!isRecord(entry)) {
                 return;
             }
 
             for (const nestedDefinition of nestedDefinitions) {
                 collectArgumentPluginReferenceExecutions(
+                    nestedDefinitions,
                     nestedDefinition,
                     entry[nestedDefinition.argument],
+                    entry,
                     `${currentPath}[${index}].${nestedDefinition.argument}`,
                     results
                 );
@@ -157,8 +183,10 @@ export class PluginDependencyResolverService {
 
         for (const definition of definitions) {
             collectArgumentPluginReferenceExecutions(
+                definitions,
                 definition,
                 config[definition.argument],
+                config,
                 definition.argument,
                 results
             );

@@ -4,6 +4,7 @@ import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
 import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
+import { sanitizeVisibleArgumentConfig } from '@/modules/plugin/utilities/plugin/argument-visibility';
 import { PLUGIN_DEBUG_SOCKET_EVENTS } from '@/modules/plugin/api/entities/plugin/plugin-constants';
 import { sileo } from 'sileo';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
@@ -197,12 +198,17 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
 
         const { debugConfig } = usePluginDebugStore.getState();
         const workflow = usePluginBuilderStore.getState().getWorkflow();
+        const argumentsNode = workflow.nodes.find((node) => node.type === 'arguments');
+        const argumentDefinitions = Array.isArray(argumentsNode?.data.arguments?.arguments)
+            ? argumentsNode.data.arguments.arguments
+            : [];
+        const sanitizedConfig = sanitizeVisibleArgumentConfig(argumentDefinitions, debugConfig);
         setStarting();
         void socket.emit<DebugStartPayload>(PLUGIN_DEBUG_SOCKET_EVENTS.START, {
             pluginId: currentPluginId,
             trajectoryId: selectedTrajectoryId,
             timestep: selectedTimestep,
-            config: debugConfig,
+            config: sanitizedConfig,
             workflow
         }).catch(() => undefined);
     }, [socket, currentPluginId, selectedTrajectoryId, selectedTimestep, setStarting]);

@@ -3,7 +3,10 @@ import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import { WorkflowEdge } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowEdge';
 import { WorkflowNode, WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import { ArgumentType } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
-import type { ArgumentDefinition } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
+import {
+    ArgumentVisibilityOperators,
+    type ArgumentDefinition
+} from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
 import { EntrypointNodeType } from '@modules/plugin/domain/entities/plugin/workflow/nodes/EntrypointNode';
 import { PluginNodeExecutionMode } from '@modules/plugin/domain/entities/plugin/workflow/nodes/PluginNode';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
@@ -90,6 +93,8 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
         } else {
             modifier = modifierNode;
         }
+
+        this.validateArgumentDefinitions(this.getArgumentsDefinitions(workflow), errors);
 
         if (!workflow.edges || !Array.isArray(workflow.edges)) {
             errors.push('Workflow must have edges array');
@@ -412,6 +417,51 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
         return Array.isArray(argumentsNode?.data.arguments?.arguments)
             ? argumentsNode.data.arguments.arguments as ArgumentDefinition[]
             : [];
+    }
+
+    private validateArgumentDefinitions(
+        definitions: ArgumentDefinition[],
+        errors: string[],
+        scope = 'arguments'
+    ): void {
+        for (const definition of definitions) {
+            const argumentKey = definition.argument?.trim() || '<unnamed>';
+            const argumentScope = `${scope}.${argumentKey}`;
+            const visibleWhen = definition.visibleWhen;
+
+            if (visibleWhen) {
+                const controllingArgument = visibleWhen.argument?.trim() || '';
+                if (!controllingArgument) {
+                    errors.push(`${argumentScope} visibleWhen.argument is required`);
+                } else if (controllingArgument === definition.argument) {
+                    errors.push(`${argumentScope} cannot depend on itself`);
+                } else if (!definitions.some((candidate) => candidate.argument === controllingArgument)) {
+                    errors.push(`${argumentScope} references unknown visibility argument "${controllingArgument}"`);
+                }
+
+                if (!ArgumentVisibilityOperators.includes(visibleWhen.operator)) {
+                    errors.push(`${argumentScope} uses unsupported visibility operator "${visibleWhen.operator}"`);
+                }
+
+                if (
+                    (visibleWhen.operator === 'equals' || visibleWhen.operator === 'notEquals')
+                    && typeof visibleWhen.value === 'undefined'
+                ) {
+                    errors.push(`${argumentScope} requires visibleWhen.value for operator "${visibleWhen.operator}"`);
+                }
+
+                if (
+                    (visibleWhen.operator === 'in' || visibleWhen.operator === 'notIn')
+                    && (!Array.isArray(visibleWhen.values) || visibleWhen.values.length === 0)
+                ) {
+                    errors.push(`${argumentScope} requires visibleWhen.values for operator "${visibleWhen.operator}"`);
+                }
+            }
+
+            if (definition.listArguments?.length) {
+                this.validateArgumentDefinitions(definition.listArguments, errors, argumentScope);
+            }
+        }
     }
 
     private hasAncestorOfType(nodeId: string, workflow: WorkflowProps, blockedTypes: Set<WorkflowNodeType>): boolean {

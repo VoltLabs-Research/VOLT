@@ -1,4 +1,7 @@
-import { ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import {
+    ArgumentType,
+    ArgumentVisibilityOperator
+} from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import {
     createDefaultArgumentDefinition,
     isPluginReferenceArgumentType
@@ -14,7 +17,11 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import Select from '@/shared/presentation/components/Select';
 import { Plus, Trash2 } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
-import type { IArgumentDefinition, IArgumentOption } from '@/modules/plugin/api/entities/plugin/workflow';
+import type {
+    IArgumentDefinition,
+    IArgumentOption,
+    IArgumentVisibilityCondition
+} from '@/modules/plugin/api/entities/plugin/workflow';
 import type { SelectOption } from '@/shared/presentation/components/Select';
 import type { ChangeEvent } from 'react';
 
@@ -31,33 +38,129 @@ const ARGUMENT_TYPE_SELECT_OPTIONS = ARGUMENT_TYPE_OPTIONS.map((option) => ({
     title: option.label
 }));
 
+const ARGUMENT_VISIBILITY_OPERATOR_OPTIONS = [{
+    value: ArgumentVisibilityOperator.EQUALS,
+    title: 'Equals'
+}, {
+    value: ArgumentVisibilityOperator.NOT_EQUALS,
+    title: 'Does not equal'
+}, {
+    value: ArgumentVisibilityOperator.IN,
+    title: 'Matches any of'
+}, {
+    value: ArgumentVisibilityOperator.NOT_IN,
+    title: 'Matches none of'
+}];
+
+const BOOLEAN_ARGUMENT_VALUE_OPTIONS: SelectOption[] = [{
+    value: '',
+    title: 'Unset'
+}, {
+    value: 'true',
+    title: 'true'
+}, {
+    value: 'false',
+    title: 'false'
+}];
+
+const isMultiValueVisibilityOperator = (
+    operator?: ArgumentVisibilityOperator
+): boolean => {
+    return operator === ArgumentVisibilityOperator.IN || operator === ArgumentVisibilityOperator.NOT_IN;
+};
+
 const getArgumentTitle = (argument: IArgumentDefinition, index: number): string => {
     return argument.label || argument.argument || `Argument ${index + 1}`;
 };
 
-const getDefaultValueInputValue = (argument: IArgumentDefinition): string => {
-    if (argument.default === undefined || argument.default === null) {
+const getArgumentFieldInputValue = (
+    argument: IArgumentDefinition,
+    field: 'default' | 'value'
+): string => {
+    const fieldValue = argument[field];
+    if (fieldValue === undefined || fieldValue === null) {
         return '';
     }
 
-    if (typeof argument.default === 'string') {
-        return argument.default;
+    if (typeof fieldValue === 'string') {
+        return fieldValue;
     }
 
-    if (typeof argument.default === 'number' || typeof argument.default === 'boolean') {
-        return String(argument.default);
+    if (typeof fieldValue === 'number' || typeof fieldValue === 'boolean') {
+        return String(fieldValue);
     }
 
     try {
-        return JSON.stringify(argument.default);
+        return JSON.stringify(fieldValue);
     } catch {
         return '';
     }
 };
 
+const parseScalarArgumentFieldValue = (
+    argument: IArgumentDefinition,
+    rawValue: string
+): unknown => {
+    if (rawValue === '') {
+        return undefined;
+    }
+
+    if (argument.type === ArgumentType.BOOLEAN) {
+        return rawValue === 'true';
+    }
+
+    if (argument.type === ArgumentType.NUMBER) {
+        return Number(rawValue);
+    }
+
+    return rawValue;
+};
+
 const getArgumentType = (value: string): ArgumentType => {
     const resolvedType = Object.values(ArgumentType).find((type) => type === value);
     return resolvedType ?? ArgumentType.STRING;
+};
+
+const getVisibilityOperator = (value: string): ArgumentVisibilityOperator => {
+    const resolvedOperator = Object.values(ArgumentVisibilityOperator).find((operator) => operator === value);
+    return resolvedOperator ?? ArgumentVisibilityOperator.EQUALS;
+};
+
+const normalizeVisibilityComparisonValue = (
+    rawValue: string,
+    referenceArgument?: IArgumentDefinition
+): string | number | boolean | undefined => {
+    const trimmedValue = rawValue.trim();
+    if (!trimmedValue.length) {
+        return undefined;
+    }
+
+    if (referenceArgument?.type === ArgumentType.NUMBER) {
+        const parsedValue = Number(trimmedValue);
+        return Number.isFinite(parsedValue) ? parsedValue : undefined;
+    }
+
+    if (referenceArgument?.type === ArgumentType.BOOLEAN) {
+        return trimmedValue === 'true';
+    }
+
+    return trimmedValue;
+};
+
+const getVisibilityValueInput = (condition?: IArgumentVisibilityCondition): string => {
+    if (!condition) {
+        return '';
+    }
+
+    if (isMultiValueVisibilityOperator(condition.operator)) {
+        return (condition.values ?? []).map(String).join(', ');
+    }
+
+    if (condition.value === undefined) {
+        return '';
+    }
+
+    return String(condition.value);
 };
 
 const ArgumentDefinitionSection = ({
@@ -152,6 +255,9 @@ const ArgumentDefinitionSection = ({
                     if (Array.isArray(nextArgument.default)) {
                         delete nextArgument.default;
                     }
+                    if (Array.isArray(nextArgument.value)) {
+                        delete nextArgument.value;
+                    }
                 }
 
                 if (nextType === ArgumentType.LIST && !nextArgument.listArguments) {
@@ -164,6 +270,7 @@ const ArgumentDefinitionSection = ({
                     delete nextArgument.max;
                     delete nextArgument.step;
                     delete nextArgument.listArguments;
+                    delete nextArgument.value;
                 }
 
                 if (!isPluginReferenceArgumentType(nextType)) {
@@ -197,18 +304,10 @@ const ArgumentDefinitionSection = ({
                 return;
             }
 
-            if (field === 'default') {
-                let parsedDefault: unknown = nextValue === '' ? undefined : nextValue;
-                if (currentArgument.type === ArgumentType.BOOLEAN) {
-                    parsedDefault = nextValue === 'true';
-                }
-                if (currentArgument.type === ArgumentType.NUMBER) {
-                    parsedDefault = nextValue === '' ? undefined : Number(nextValue);
-                }
-
+            if (field === 'default' || field === 'value') {
                 handleArgumentChange(argumentIndex, {
                     ...currentArgument,
-                    default: parsedDefault
+                    [field]: parseScalarArgumentFieldValue(currentArgument, nextValue)
                 });
                 return;
             }
@@ -229,6 +328,115 @@ const ArgumentDefinitionSection = ({
             handleOptionChange(argumentIndex, optionIndex, field, event.target.value);
         };
     }, [handleOptionChange]);
+
+    const handleVisibilityEnabledChange = useCallback((argumentIndex: number, enabled: boolean) => {
+        const currentArgument = argumentDefinitions[argumentIndex];
+        const nextArgument: IArgumentDefinition = {
+            ...currentArgument
+        };
+
+        if (!enabled) {
+            delete nextArgument.visibleWhen;
+            handleArgumentChange(argumentIndex, nextArgument);
+            return;
+        }
+
+        const fallbackReference = argumentDefinitions.find((candidate, index) => {
+            return index !== argumentIndex && candidate.argument.trim().length > 0;
+        });
+
+        nextArgument.visibleWhen = {
+            argument: fallbackReference?.argument ?? '',
+            operator: ArgumentVisibilityOperator.EQUALS
+        };
+
+        handleArgumentChange(argumentIndex, nextArgument);
+    }, [argumentDefinitions, handleArgumentChange]);
+
+    const handleVisibilityArgumentChange = useCallback((argumentIndex: number, value: string) => {
+        const currentArgument = argumentDefinitions[argumentIndex];
+        const currentVisibility = currentArgument.visibleWhen;
+        if (!currentVisibility) {
+            return;
+        }
+
+        handleArgumentChange(argumentIndex, {
+            ...currentArgument,
+            visibleWhen: {
+                ...currentVisibility,
+                argument: value
+            }
+        });
+    }, [argumentDefinitions, handleArgumentChange]);
+
+    const handleVisibilityOperatorChange = useCallback((argumentIndex: number, value: string) => {
+        const currentArgument = argumentDefinitions[argumentIndex];
+        const currentVisibility = currentArgument.visibleWhen;
+        if (!currentVisibility) {
+            return;
+        }
+
+        const nextOperator = getVisibilityOperator(value);
+        const nextVisibility: IArgumentVisibilityCondition = {
+            argument: currentVisibility.argument,
+            operator: nextOperator
+        };
+
+        if (isMultiValueVisibilityOperator(nextOperator)) {
+            if (Array.isArray(currentVisibility.values) && currentVisibility.values.length > 0) {
+                nextVisibility.values = currentVisibility.values;
+            } else if (currentVisibility.value !== undefined) {
+                nextVisibility.values = [currentVisibility.value];
+            }
+        } else if (currentVisibility.value !== undefined) {
+            nextVisibility.value = currentVisibility.value;
+        } else if (Array.isArray(currentVisibility.values) && currentVisibility.values.length > 0) {
+            nextVisibility.value = currentVisibility.values[0];
+        }
+
+        handleArgumentChange(argumentIndex, {
+            ...currentArgument,
+            visibleWhen: nextVisibility
+        });
+    }, [argumentDefinitions, handleArgumentChange]);
+
+    const handleVisibilityValueChange = useCallback((argumentIndex: number, rawValue: string) => {
+        const currentArgument = argumentDefinitions[argumentIndex];
+        const currentVisibility = currentArgument.visibleWhen;
+        if (!currentVisibility) {
+            return;
+        }
+
+        const referenceArgument = argumentDefinitions.find((candidate, index) => {
+            return index !== argumentIndex && candidate.argument === currentVisibility.argument;
+        });
+
+        const nextVisibility: IArgumentVisibilityCondition = {
+            argument: currentVisibility.argument,
+            operator: currentVisibility.operator
+        };
+
+        if (isMultiValueVisibilityOperator(currentVisibility.operator)) {
+            const values = rawValue
+                .split(',')
+                .map((entry) => normalizeVisibilityComparisonValue(entry, referenceArgument))
+                .filter((entry): entry is string | number | boolean => entry !== undefined);
+
+            if (values.length > 0) {
+                nextVisibility.values = values;
+            }
+        } else {
+            const value = normalizeVisibilityComparisonValue(rawValue, referenceArgument);
+            if (value !== undefined) {
+                nextVisibility.value = value;
+            }
+        }
+
+        handleArgumentChange(argumentIndex, {
+            ...currentArgument,
+            visibleWhen: nextVisibility
+        });
+    }, [argumentDefinitions, handleArgumentChange]);
 
     const handleNestedArgumentAdd = useCallback((argumentIndex: number) => {
         const currentArgument = argumentDefinitions[argumentIndex];
@@ -274,87 +482,149 @@ const ArgumentDefinitionSection = ({
     return (
         <Container className='d-flex column gap-05'>
             {argumentDefinitions.map((argument, index) => (
-                <CollapsibleSection
-                    key={`${level}-${index}`}
-                    title={getArgumentTitle(argument, index)}
-                    defaultExpanded={index === 0}
-                    onDelete={() => onRemoveArgument(index)}
-                >
-                    <FormFieldRHF
-                        variant='inline'
-                        label='Argument Key'
-                        name={`argument-${level}-${index}`}
-                        fieldType='input'
-                        value={argument.argument}
-                        onChange={createArgumentFieldHandler(index, 'argument')}
-                        placeholder='my_argument'
-                    />
-                    <FormFieldRHF
-                        variant='inline'
-                        label='Label'
-                        name={`label-${level}-${index}`}
-                        fieldType='input'
-                        value={argument.label}
-                        onChange={createArgumentFieldHandler(index, 'label')}
-                        placeholder='My Argument'
-                    />
-                    <FormFieldRHF
-                        variant='inline'
-                        label='Type'
-                        name={`type-${level}-${index}`}
-                        fieldType='select'
-                        value={argument.type}
-                        onChange={createArgumentFieldHandler(index, 'type')}
-                        options={ARGUMENT_TYPE_SELECT_OPTIONS}
-                    />
+                (() => {
+                    const visibilityCondition = argument.visibleWhen;
+                    const visibilityReferenceOptions = argumentDefinitions
+                        .filter((candidate, candidateIndex) => candidateIndex !== index && candidate.argument.trim().length > 0)
+                        .map((candidate) => ({
+                            value: candidate.argument,
+                            title: candidate.label?.trim() || candidate.argument
+                        }));
+                    const visibilityReferenceArgument = visibilityCondition?.argument
+                        ? argumentDefinitions.find((candidate, candidateIndex) => {
+                            return candidateIndex !== index && candidate.argument === visibilityCondition.argument;
+                        })
+                        : undefined;
 
-                    {(argument.type === ArgumentType.SELECT || isPluginReferenceArgumentType(argument.type)) && (
-                        <FormFieldRHF
-                            variant='inline'
-                            label='Multiple selection'
-                            name={`multiple-selection-${level}-${index}`}
-                            fieldType='checkbox'
-                            value={Boolean(argument.multipleSelection)}
-                            onChange={createArgumentFieldHandler(index, 'multipleSelection')}
-                        />
-                    )}
-
-                    {argument.type === ArgumentType.NUMBER && (
-                        <>
+                    return (
+                        <CollapsibleSection
+                            key={`${level}-${index}`}
+                            title={getArgumentTitle(argument, index)}
+                            defaultExpanded={index === 0}
+                            onDelete={() => onRemoveArgument(index)}
+                        >
                             <FormFieldRHF
                                 variant='inline'
-                                label='Min'
-                                name={`min-${level}-${index}`}
+                                label='Argument Key'
+                                name={`argument-${level}-${index}`}
                                 fieldType='input'
-                                value={argument.min ?? ''}
-                                onChange={createArgumentFieldHandler(index, 'min')}
-                                placeholder='0'
-                                inputProps={{ type: 'number' }}
+                                value={argument.argument}
+                                onChange={createArgumentFieldHandler(index, 'argument')}
+                                placeholder='my_argument'
                             />
                             <FormFieldRHF
                                 variant='inline'
-                                label='Max'
-                                name={`max-${level}-${index}`}
+                                label='Label'
+                                name={`label-${level}-${index}`}
                                 fieldType='input'
-                                value={argument.max ?? ''}
-                                onChange={createArgumentFieldHandler(index, 'max')}
-                                placeholder='100'
-                                inputProps={{ type: 'number' }}
+                                value={argument.label}
+                                onChange={createArgumentFieldHandler(index, 'label')}
+                                placeholder='My Argument'
                             />
                             <FormFieldRHF
                                 variant='inline'
-                                label='Step'
-                                name={`step-${level}-${index}`}
-                                fieldType='input'
-                                value={argument.step ?? ''}
-                                onChange={createArgumentFieldHandler(index, 'step')}
-                                placeholder='1'
-                                inputProps={{ type: 'number' }}
+                                label='Type'
+                                name={`type-${level}-${index}`}
+                                fieldType='select'
+                                value={argument.type}
+                                onChange={createArgumentFieldHandler(index, 'type')}
+                                options={ARGUMENT_TYPE_SELECT_OPTIONS}
                             />
-                        </>
-                    )}
+                            <FormFieldRHF
+                                variant='inline'
+                                label='Conditional visibility'
+                                name={`visibility-enabled-${level}-${index}`}
+                                fieldType='checkbox'
+                                value={Boolean(visibilityCondition)}
+                                onChange={(event) => {
+                                    handleVisibilityEnabledChange(index, event.target.value === 'true');
+                                }}
+                            />
+                            {visibilityCondition && (
+                                <>
+                                    <FormFieldRHF
+                                        variant='inline'
+                                        label='Depends on'
+                                        name={`visibility-argument-${level}-${index}`}
+                                        fieldType='select'
+                                        value={visibilityCondition.argument}
+                                        onChange={(event) => handleVisibilityArgumentChange(index, event.target.value)}
+                                        options={visibilityReferenceOptions}
+                                    />
+                                    <FormFieldRHF
+                                        variant='inline'
+                                        label='Operator'
+                                        name={`visibility-operator-${level}-${index}`}
+                                        fieldType='select'
+                                        value={visibilityCondition.operator}
+                                        onChange={(event) => handleVisibilityOperatorChange(index, event.target.value)}
+                                        options={ARGUMENT_VISIBILITY_OPERATOR_OPTIONS}
+                                    />
+                                    <FormFieldRHF
+                                        variant='inline'
+                                        label={isMultiValueVisibilityOperator(visibilityCondition.operator)
+                                            ? 'Values (comma separated)'
+                                            : 'Value'}
+                                        name={`visibility-value-${level}-${index}`}
+                                        fieldType='input'
+                                        value={getVisibilityValueInput(visibilityCondition)}
+                                        onChange={(event) => handleVisibilityValueChange(index, event.target.value)}
+                                        placeholder={visibilityReferenceArgument?.type === ArgumentType.BOOLEAN
+                                            ? 'true'
+                                            : isMultiValueVisibilityOperator(visibilityCondition.operator)
+                                                ? 'PTM, ACNA'
+                                                : 'PTM'}
+                                    />
+                                </>
+                            )}
 
-                    {argument.type === ArgumentType.SELECT && (
+                            {(argument.type === ArgumentType.SELECT || isPluginReferenceArgumentType(argument.type)) && (
+                                <FormFieldRHF
+                                    variant='inline'
+                                    label='Multiple selection'
+                                    name={`multiple-selection-${level}-${index}`}
+                                    fieldType='checkbox'
+                                    value={Boolean(argument.multipleSelection)}
+                                    onChange={createArgumentFieldHandler(index, 'multipleSelection')}
+                                />
+                            )}
+
+                            {argument.type === ArgumentType.NUMBER && (
+                                <>
+                                    <FormFieldRHF
+                                        variant='inline'
+                                        label='Min'
+                                        name={`min-${level}-${index}`}
+                                        fieldType='input'
+                                        value={argument.min ?? ''}
+                                        onChange={createArgumentFieldHandler(index, 'min')}
+                                        placeholder='0'
+                                        inputProps={{ type: 'number' }}
+                                    />
+                                    <FormFieldRHF
+                                        variant='inline'
+                                        label='Max'
+                                        name={`max-${level}-${index}`}
+                                        fieldType='input'
+                                        value={argument.max ?? ''}
+                                        onChange={createArgumentFieldHandler(index, 'max')}
+                                        placeholder='100'
+                                        inputProps={{ type: 'number' }}
+                                    />
+                                    <FormFieldRHF
+                                        variant='inline'
+                                        label='Step'
+                                        name={`step-${level}-${index}`}
+                                        fieldType='input'
+                                        value={argument.step ?? ''}
+                                        onChange={createArgumentFieldHandler(index, 'step')}
+                                        placeholder='1'
+                                        inputProps={{ type: 'number' }}
+                                    />
+                                </>
+                            )}
+
+                            {argument.type === ArgumentType.SELECT && (
                         <Container className='d-flex column gap-05 mt-05'>
                             <Paragraph className='font-size-085 font-bold'>Options</Paragraph>
                             {(argument.options ?? []).map((option, optionIndex) => (
@@ -397,9 +667,9 @@ const ArgumentDefinitionSection = ({
                                 Add Option
                             </Button>
                         </Container>
-                    )}
+                            )}
 
-                    {argument.type === ArgumentType.LIST && (
+                            {argument.type === ArgumentType.LIST && (
                         <Container className='d-flex column gap-05 mt-05'>
                             <Paragraph className='font-size-085 font-bold'>Nested Arguments</Paragraph>
                             <ArgumentDefinitionSection
@@ -410,9 +680,9 @@ const ArgumentDefinitionSection = ({
                                 level={level + 1}
                             />
                         </Container>
-                    )}
+                            )}
 
-                    {isPluginReferenceArgumentType(argument.type) && (
+                            {isPluginReferenceArgumentType(argument.type) && (
                         <>
                             <Container className='d-flex column gap-05'>
                                 <Paragraph className='font-size-085 font-bold'>Allowed Plugins</Paragraph>
@@ -454,20 +724,35 @@ const ArgumentDefinitionSection = ({
                                 onChange={createArgumentFieldHandler(index, 'showPluginConfiguration')}
                             />
                         </>
-                    )}
+                            )}
 
-                    {argument.type !== ArgumentType.LIST && !isPluginReferenceArgumentType(argument.type) && (
-                        <FormFieldRHF
-                            variant='inline'
-                            label='Default Value'
-                            name={`default-${level}-${index}`}
-                            fieldType='input'
-                            value={getDefaultValueInputValue(argument)}
-                            onChange={createArgumentFieldHandler(index, 'default')}
-                            placeholder='Default value'
-                        />
-                    )}
-                </CollapsibleSection>
+                            {argument.type !== ArgumentType.LIST && !isPluginReferenceArgumentType(argument.type) && (
+                                <>
+                                    <FormFieldRHF
+                                        variant='inline'
+                                        label='Value'
+                                        name={`value-${level}-${index}`}
+                                        fieldType={argument.type === ArgumentType.BOOLEAN ? 'select' : 'input'}
+                                        value={getArgumentFieldInputValue(argument, 'value')}
+                                        onChange={createArgumentFieldHandler(index, 'value')}
+                                        options={argument.type === ArgumentType.BOOLEAN ? BOOLEAN_ARGUMENT_VALUE_OPTIONS : undefined}
+                                        placeholder='Preset hidden value'
+                                    />
+                                    <FormFieldRHF
+                                        variant='inline'
+                                        label='Default Value'
+                                        name={`default-${level}-${index}`}
+                                        fieldType={argument.type === ArgumentType.BOOLEAN ? 'select' : 'input'}
+                                        value={getArgumentFieldInputValue(argument, 'default')}
+                                        onChange={createArgumentFieldHandler(index, 'default')}
+                                        options={argument.type === ArgumentType.BOOLEAN ? BOOLEAN_ARGUMENT_VALUE_OPTIONS : undefined}
+                                        placeholder='Default value'
+                                    />
+                                </>
+                            )}
+                        </CollapsibleSection>
+                    );
+                })()
             ))}
 
             <Container>

@@ -2,12 +2,14 @@ import { ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enum
 import {
     coerceArgumentInputValue,
     createDefaultListItem,
+    getUserConfigurableArguments,
     getArgumentDefaultValue,
     getListArgumentValue,
     getSelectArgumentValue,
     getPrimitiveArgumentFieldValue,
     isPluginReferenceArgumentType
 } from '@/modules/plugin/utilities/plugin/argument-values';
+import { getVisibleArguments } from '@/modules/plugin/utilities/plugin/argument-visibility';
 import PluginConfigField from '@/modules/plugin/components/plugin/molecules/PluginConfigField';
 import Button from '@/shared/presentation/components/Button';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
@@ -111,6 +113,12 @@ const ArgumentFieldsRenderer = ({
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
     const resolvedFrameOptions = useMemo(() => frameOptions ?? [], [frameOptions]);
+    const configurableArgumentDefinitions = useMemo(() => {
+        return getUserConfigurableArguments(argumentDefinitions);
+    }, [argumentDefinitions]);
+    const visibleArgumentDefinitions = useMemo(() => {
+        return getVisibleArguments(configurableArgumentDefinitions, values);
+    }, [configurableArgumentDefinitions, values]);
 
     const setSectionExpanded = useCallback((sectionKey: string, nextValue: boolean) => {
         setExpandedSections((previousState) => ({
@@ -326,7 +334,7 @@ const ArgumentFieldsRenderer = ({
         values
     ]);
 
-    if (!argumentDefinitions.length) {
+    if (!visibleArgumentDefinitions.length) {
         return (
             <Paragraph className='font-size-1 color-muted'>
                 {emptyMessage}
@@ -336,7 +344,7 @@ const ArgumentFieldsRenderer = ({
 
     return (
         <Container className='d-flex column gap-05'>
-            {argumentDefinitions.map(renderArgument)}
+            {visibleArgumentDefinitions.map(renderArgument)}
         </Container>
     );
 };
