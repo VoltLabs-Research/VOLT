@@ -32,10 +32,6 @@
     min-height: 0;
 }
 
-.editor-sidebar-wrapper[data-collapsed='true'] .editor-sidebar-container {
-    border-radius: var(--radius-lg);
-}
-
 .editor-sidebar-wrapper[data-collapsed='true'][data-collapsible='true'] {
     display: flex;
 }

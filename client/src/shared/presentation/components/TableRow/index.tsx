@@ -6,6 +6,7 @@ import { EditableType } from '@/shared/presentation/components/DocumentListingTa
 import { CSS } from '@dnd-kit/utilities';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { motion } from 'framer-motion';
+import { GripVertical } from 'lucide-react';
 import type { ColumnConfig, Identifiable } from '@/shared/presentation/components/DocumentListingTable';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import { formatUnknownValue } from '@/shared/utils/format';
@@ -23,7 +24,6 @@ interface TableRowProps<T extends Identifiable> {
     onContextMenu: (item: T) => void;
     useFlexDistribution: boolean;
     columnGap?: number;
-    dragIntentDistance?: number;
     draggableId?: string | null;
     droppableId?: string | null;
 };
@@ -40,7 +40,6 @@ const TableRow = <T extends Identifiable>({
     onContextMenu,
     useFlexDistribution,
     columnGap = 16,
-    dragIntentDistance: _dragIntentDistance = 6,
     draggableId = null,
     droppableId = null
 }: TableRowProps<T>) => {
@@ -75,6 +74,7 @@ const TableRow = <T extends Identifiable>({
         attributes,
         listeners,
         setNodeRef: setDraggableNodeRef,
+        setActivatorNodeRef,
         transform,
         isDragging
     } = useDraggable({
@@ -108,7 +108,7 @@ const TableRow = <T extends Identifiable>({
         'cursor-pointer',
         'w-max',
         isSelected ? 'is-selected' : '',
-        draggableId ? 'is-draggable' : '',
+        draggableId ? 'has-drag-handle' : '',
         droppableId ? 'is-droppable' : '',
         isDragging ? 'is-dragging' : '',
         isOver ? 'is-drag-over' : ''
@@ -116,6 +116,26 @@ const TableRow = <T extends Identifiable>({
 
     const dragListeners = draggableId ? listeners : undefined;
     const dragAttributes = draggableId ? attributes : undefined;
+
+    const renderDragHandle = () => {
+        if (!draggableId) {
+            return null;
+        }
+
+        return (
+            <button
+                type='button'
+                ref={setActivatorNodeRef}
+                className='document-listing-row-drag-handle'
+                aria-label='Drag row'
+                data-row-click-ignore='true'
+                {...dragAttributes}
+                {...dragListeners}
+            >
+                <GripVertical size={14} strokeWidth={1.8} aria-hidden='true' />
+            </button>
+        );
+    };
 
     const renderCellContent = (col: ColumnConfig<T>, cellValue: unknown) => {
         const formattedCellValue = formatUnknownValue(cellValue);
@@ -167,8 +187,6 @@ const TableRow = <T extends Identifiable>({
             style={rowStyle}
             className={rowClassName}
             transition={{ duration: 0.1 }}
-            {...dragAttributes}
-            {...dragListeners}
             onClick={(event) => {
                 if (isInteractiveTarget(event)) {
                     return;
@@ -213,9 +231,18 @@ const TableRow = <T extends Identifiable>({
                                 }
                         }
                     >
-                        <span className='document-listing-cell-value'>
-                            {renderCellContent(col, cellValue)}
-                        </span>
+                        {colIdx === 0 && draggableId ? (
+                            <span className='document-listing-cell-content'>
+                                {renderDragHandle()}
+                                <span className='document-listing-cell-value'>
+                                    {renderCellContent(col, cellValue)}
+                                </span>
+                            </span>
+                        ) : (
+                            <span className='document-listing-cell-value'>
+                                {renderCellContent(col, cellValue)}
+                            </span>
+                        )}
                     </Container>
                 );
             })}

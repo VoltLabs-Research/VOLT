@@ -120,6 +120,12 @@ export const protectedRoutes: RouteConfig[] = [
         requiredPermissions: ['team-secret-key:read']
     },
     {
+        path: '/dashboard/secret-keys/:secretKeyId',
+        title: 'Secret Key',
+        loader: () => import('@/modules/team/components/templates/SecretKeyUsage'),
+        requiredPermissions: ['team-secret-key:read']
+    },
+    {
         path: '/dashboard/secret-keys/:secretKeyId/usage',
         title: 'Secret Key Usage',
         loader: () => import('@/modules/team/components/templates/SecretKeyUsage'),

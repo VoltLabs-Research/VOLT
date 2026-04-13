@@ -212,7 +212,6 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
             <Sidebar
                 tags={SIDEBAR_TAGS}
                 activeTag='Palette'
-                className='primary-surface'
             >
                 <Sidebar.Header>
                     <Container className='d-flex items-center gap-075'>
