@@ -307,7 +307,6 @@ const DocumentListingTable = <T extends Identifiable>({
             onContextMenu={handleRowContextMenu}
             useFlexDistribution={useFlexDistribution}
             columnGap={resolvedGap}
-            dragIntentDistance={dragAndDrop?.activationDistance ?? 6}
             draggableId={draggableIdsByItemId.get(item._id) ?? null}
             droppableId={droppableIdsByItemId.get(item._id) ?? null}
         />

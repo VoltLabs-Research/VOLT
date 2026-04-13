@@ -17,7 +17,7 @@ import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import Title from '@/shared/presentation/components/Title';
 import useTip from '@/shared/tips/use-tip';
 import './LatexDocumentsListing.css';
-import { FileText, Folder, Pencil, Trash2, Upload } from 'lucide-react';
+import { Folder, Pencil, Trash2, Upload } from 'lucide-react';
 import { useMemo } from 'react';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import type { MenuOption } from '@/shared/presentation/components/DocumentListing';
@@ -35,15 +35,13 @@ const renderDocumentTitle: NonNullable<ColumnConfig<LatexListingRow>['render']> 
         title = value;
     }
 
-    const icon = isLatexFolder(row)
-        ? <Folder size={16} />
-        : <FileText size={16} />;
-
     return (
         <Container className='d-flex items-center gap-075'>
-            <Container className='d-flex flex-center color-secondary'>
-                {icon}
-            </Container>
+            {isLatexFolder(row) && (
+                <Container className='d-flex flex-center color-secondary'>
+                    <Folder size={16} />
+                </Container>
+            )}
             <Container className='overflow-hidden'>
                 <span className='font-weight-6 color-secondary'>{title}</span>
             </Container>
