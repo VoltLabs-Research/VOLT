@@ -82,6 +82,14 @@ const isSemanticPayload = (value: unknown): value is TeamClusterDaemonSemanticPa
     return isRecord(value);
 };
 
+const unwrapResponseEnvelopeData = (value: unknown): unknown => {
+    if (!isResponseEnvelope(value)) {
+        return value;
+    }
+
+    return value.data;
+};
+
 // TODO: THIS IS UGLY, VOLTSDK EXISTS FOR AVOID THIS
 
 const isDaemonErrorPayload = (value: unknown): value is DaemonErrorPayload => {
@@ -239,6 +247,15 @@ export default class TeamClusterDaemonClient {
 
             if (!response.ok || !isResponseEnvelope<T>(response.data)) {
                 this.throwDaemonError(command, response, 'Daemon command returned a failure response');
+            }
+
+            if (response.status >= 400) {
+                this.throwDaemonError(command, {
+                    ok: false,
+                    status: response.status,
+                    message: response.message,
+                    data: unwrapResponseEnvelopeData(response.data)
+                }, 'Daemon command returned an error status');
             }
 
             logger.info({

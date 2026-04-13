@@ -201,6 +201,7 @@ export default class ParticleFilterService implements IParticleFilterService {
 
         const result = await this.getCombinedFilterResult(
             computeClusterId,
+            storageClusterId,
             String(trajectoryId),
             resolvedAnalysisId || null,
             String(timestep),
@@ -254,6 +255,7 @@ export default class ParticleFilterService implements IParticleFilterService {
 
         const filterResult = await this.getCombinedFilterResult(
             computeClusterId,
+            storageClusterId,
             String(trajectoryId),
             resolvedAnalysisId || null,
             String(timestep),
@@ -335,7 +337,8 @@ export default class ParticleFilterService implements IParticleFilterService {
     }
 
     private async getRemoteFilterResult(
-        teamClusterId: string,
+        computeClusterId: string,
+        storageClusterId: string,
         trajectoryId: string,
         analysisId: string | null,
         timestep: string,
@@ -349,11 +352,11 @@ export default class ParticleFilterService implements IParticleFilterService {
         );
 
         return this.trajectoryNativeDaemonService.previewFilter({
-            teamClusterId,
+            teamClusterId: computeClusterId,
             trajectoryId,
             timestep: Number(timestep),
             objectKey: this.dumpStorage.getObjectName(trajectoryId, timestep),
-            ownerClusterId: teamClusterId,
+            ownerClusterId: storageClusterId,
             property: condition.property,
             operator: condition.operator,
             value: condition.value,
@@ -362,14 +365,22 @@ export default class ParticleFilterService implements IParticleFilterService {
     }
 
     private async getCombinedFilterResult(
-        teamClusterId: string,
+        computeClusterId: string,
+        storageClusterId: string,
         trajectoryId: string,
         analysisId: string | null,
         timestep: string,
         request: ParticleFilterRequest
     ): Promise<{ mask: Uint8Array; matchCount: number; totalAtoms: number; }> {
         const results = await Promise.all(request.conditions.map((condition) => {
-            return this.getRemoteFilterResult(teamClusterId, trajectoryId, analysisId, timestep, condition);
+            return this.getRemoteFilterResult(
+                computeClusterId,
+                storageClusterId,
+                trajectoryId,
+                analysisId,
+                timestep,
+                condition
+            );
         }));
 
         const firstResult = results[0];
