@@ -333,13 +333,14 @@ const useWhiteboardsListing = () => {
     }, [getFolderMenuOptions, getWhiteboardMenuOptions]);
 
     const handleItemClick = useCallback((item: WhiteboardListingRow): boolean => {
-        if (!isWhiteboardFolderRow(item)) {
-            return false;
+        if (isWhiteboardFolderRow(item)) {
+            openFolder(item._id);
+            return true;
         }
 
-        openFolder(item._id);
+        navigate(`/dashboard/whiteboard/${item._id}`);
         return true;
-    }, [openFolder]);
+    }, [navigate, openFolder]);
 
     const dragAndDrop = useMemo<WhiteboardsListingDragAndDropConfig | undefined>(() => {
         if (!canMoveWhiteboards) {

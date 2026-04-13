@@ -341,13 +341,14 @@ const useLatexDocumentsListing = () => {
     }, [getDocumentMenuOptions, getFolderMenuOptions]);
 
     const handleItemClick = useCallback((item: LatexListingRow): boolean => {
-        if (!isLatexFolderRow(item)) {
-            return false;
+        if (isLatexFolderRow(item)) {
+            openFolder(item._id);
+            return true;
         }
 
-        openFolder(item._id);
+        navigate(`/dashboard/latex/${item._id}`);
         return true;
-    }, [openFolder]);
+    }, [navigate, openFolder]);
 
     const dragAndDrop = useMemo<LatexDocumentsListingDragAndDropConfig | undefined>(() => {
         if (!canMoveDocuments) {

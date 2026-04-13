@@ -337,13 +337,14 @@ const useTrajectoriesListing = () => {
     }, [canDeleteTrajectories, getFolderMenuOptions, getTrajectoryMenuOptions, handleDeleteTrajectories]);
 
     const handleItemClick = useCallback((item: TrajectoryListingRow): boolean => {
-        if (!isTrajectoryFolderRow(item)) {
-            return false;
+        if (isTrajectoryFolderRow(item)) {
+            openFolder(item._id);
+            return true;
         }
 
-        openFolder(item._id);
+        navigate(`/canvas/${item._id}`);
         return true;
-    }, [openFolder]);
+    }, [navigate, openFolder]);
 
     const dragAndDrop = useMemo<DocumentListingDragAndDropConfig<TrajectoryListingRow> | undefined>(() => {
         if (!canMoveTrajectories) {
