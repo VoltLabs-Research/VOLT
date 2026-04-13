@@ -230,7 +230,7 @@ export class ArtifactUploadWorkerService {
             await this.cleanupBatchDirectory(payload.batchDirectory);
         } catch (error) {
             if (error instanceof DelayedError) {
-                return;
+                throw error;
             }
 
             const maxAttempts = typeof bullJob.opts.attempts === 'number' ? bullJob.opts.attempts : 1;

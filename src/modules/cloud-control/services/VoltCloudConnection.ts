@@ -73,6 +73,8 @@ interface QueuedEventMessage {
 export class VoltCloudConnection {
     private connectedToCloud = false;
     private lastCloudLatencyMs: number | null = null;
+    private heartbeatFailureCount = 0;
+    private lastHeartbeatFailureAt: string | null = null;
     private readonly backgroundCommandConcurrency = 2;
     private readonly backgroundCommandMaxQueueSize = 2048;
     private readonly backgroundCommandQueue: QueuedServerCommand[] = [];
@@ -135,6 +137,8 @@ export class VoltCloudConnection {
         this.client
             .onConnected(() => {
                 this.connectedToCloud = true;
+                this.heartbeatFailureCount = 0;
+                this.lastHeartbeatFailureAt = null;
                 this.controlPlaneMetricsDirty = true;
                 this.emitLifecycleEvent('cloud-socket-connected', 'Outbound cloud socket connected');
                 this.flushBufferedEventQueue();
@@ -142,15 +146,20 @@ export class VoltCloudConnection {
             })
             .onDisconnected((reason) => {
                 this.connectedToCloud = false;
+                this.heartbeatFailureCount = 0;
                 this.controlPlaneMetricsDirty = true;
                 this.emitLifecycleEvent('cloud-socket-disconnected', `Outbound cloud socket disconnected (${reason})`);
             })
             .onError((err: DaemonClientError) => {
                 if (err.message.includes('heartbeat')) {
-                    this.connectedToCloud = false;
+                    this.heartbeatFailureCount += 1;
+                    this.lastHeartbeatFailureAt = new Date().toISOString();
                     this.controlPlaneMetricsDirty = true;
                     this.emitLifecycleEvent('heartbeat-failed', err.message);
-                    logger.warn(`Heartbeat failed: ${err.message}`);
+                    logger.warn({
+                        heartbeatFailureCount: this.heartbeatFailureCount,
+                        socketReady: this.client.isReady()
+                    }, `Heartbeat failed: ${err.message}`);
                     return;
                 }
 
@@ -545,7 +554,9 @@ export class VoltCloudConnection {
                 ? Math.round((this.backgroundCommandTotalQueueWaitMs / this.backgroundCommandProcessedCount) * 100) / 100
                 : 0,
             maxBackgroundCommandQueueWaitMs: this.backgroundCommandMaxQueueWaitMs,
-            bufferedEventQueueLength: this.bufferedEventQueue.length
+            bufferedEventQueueLength: this.bufferedEventQueue.length,
+            heartbeatFailureCount: this.heartbeatFailureCount,
+            lastHeartbeatFailureAt: this.lastHeartbeatFailureAt
         }, 'Reverse-channel control-plane summary');
 
         this.controlPlaneMetricsDirty = false;

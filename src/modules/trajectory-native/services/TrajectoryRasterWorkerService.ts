@@ -116,7 +116,7 @@ export class TrajectoryRasterWorkerService {
             shouldReleaseAutoPreviewClaim = true;
         } catch (error: unknown) {
             if (error instanceof DelayedError) {
-                return;
+                throw error;
             }
 
             const message = error instanceof Error ? error.message : String(error);

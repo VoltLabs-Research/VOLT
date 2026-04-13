@@ -590,7 +590,7 @@ export class AnalysisWorker {
             await bullJob.updateProgress(100);
         } catch (error: unknown) {
             if (error instanceof DelayedError) {
-                return;
+                throw error;
             }
 
             const message = error instanceof Error ? error.message : String(error);
