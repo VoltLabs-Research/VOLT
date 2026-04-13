@@ -50,6 +50,8 @@ export const uploadBufferToObjectStore = async (input: UploadBufferToObjectStore
         return;
     }
 
+    await fsPromises.mkdir(input.tempDirectory, { recursive: true });
+
     const tmpPath = path.join(
         input.tempDirectory,
         `${input.tempFilePrefix}-${Date.now()}-${Math.random().toString(36).slice(2)}${input.tempFileSuffix ?? ''}`
