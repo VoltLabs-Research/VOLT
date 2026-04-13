@@ -51,7 +51,7 @@ const ImageSelectionStep = ({
             </Container>
 
             {customImage && (
-                <Container className='d-flex column gap-025 p-1 radius-sm create-container-step-gate'>
+                <Container className='d-flex column gap-025 p-1 radius-sm create-container-image-preview'>
                     <Paragraph className='font-size-2 color-secondary'>Custom image preview</Paragraph>
                     <Paragraph className='font-size-2 font-family-mono color-primary'>{customImage}</Paragraph>
                     <Paragraph className={`font-size-2 ${customImageError ? 'color-danger' : 'color-secondary'}`}>
