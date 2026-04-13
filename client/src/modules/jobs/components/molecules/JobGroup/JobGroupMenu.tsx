@@ -1,11 +1,13 @@
-import IconButton from '@/shared/presentation/components/IconButton';
 import Popover from '@/shared/presentation/components/Popover';
+import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import { CiRedo, CiStop1 } from 'react-icons/ci';
-import { RxDotsHorizontal, RxTrash } from 'react-icons/rx';
+import { RxTrash } from 'react-icons/rx';
+import type { ReactElement } from 'react';
 
 interface JobGroupMenuProps {
     trajectoryId: string;
+    trigger: ReactElement;
     loadingAction: string | null;
     onClearHistory: () => void;
     onRemoveRunningJobs: () => void;
@@ -14,6 +16,7 @@ interface JobGroupMenuProps {
 
 const JobGroupMenu = ({
     trajectoryId,
+    trigger,
     loadingAction,
     onClearHistory,
     onRemoveRunningJobs,
@@ -22,23 +25,14 @@ const JobGroupMenu = ({
     return (
         <Popover
             id={`job-group-menu-${trajectoryId}`}
-            trigger={(
-                <IconButton
-                    aria-label='Open job group actions'
-                    className='job-group-actions-button'
-                    variant='ghost'
-                    size='md'
-                >
-                    <RxDotsHorizontal />
-                </IconButton>
-            )}
-            triggerAction='click'
+            trigger={trigger}
+            triggerAction='contextmenu'
             role='menu'
             triggerAriaHaspopup='menu'
             ariaLabel='Job group actions'
         >
             {(close) => (
-                <>
+                <PopoverMenu label='Job group actions' onClose={close}>
                     <PopoverMenuItem
                         icon={<RxTrash />}
                         onClick={() => {
@@ -74,7 +68,7 @@ const JobGroupMenu = ({
                     >
                         Retry Failed Jobs
                     </PopoverMenuItem>
-                </>
+                </PopoverMenu>
             )}
         </Popover>
     );

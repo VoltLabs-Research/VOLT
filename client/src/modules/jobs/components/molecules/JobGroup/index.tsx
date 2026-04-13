@@ -47,23 +47,23 @@ const JobGroup = ({ group, defaultExpanded = false, statusPresentation = 'badge'
 
     return (
         <Container className='job-group' role='listitem'>
-            <Container className='job-group__row d-flex items-center gap-05'>
-                <JobGroupHeader
-                    group={group}
-                    statusClassName={statusClassName}
-                    isExpanded={isExpanded}
-                    contentId={contentId}
-                    statusPresentation={statusPresentation}
-                    onToggle={handleToggle}
-                />
-                <JobGroupMenu
-                    trajectoryId={group.trajectoryId}
-                    loadingAction={loadingAction}
-                    onClearHistory={handleClearHistory}
-                    onRemoveRunningJobs={handleRemoveRunningJobs}
-                    onRetryFailedJobs={handleRetryFailedJobs}
-                />
-            </Container>
+            <JobGroupMenu
+                trajectoryId={group.trajectoryId}
+                loadingAction={loadingAction}
+                onClearHistory={handleClearHistory}
+                onRemoveRunningJobs={handleRemoveRunningJobs}
+                onRetryFailedJobs={handleRetryFailedJobs}
+                trigger={(
+                    <JobGroupHeader
+                        group={group}
+                        statusClassName={statusClassName}
+                        isExpanded={isExpanded}
+                        contentId={contentId}
+                        statusPresentation={statusPresentation}
+                        onToggle={handleToggle}
+                    />
+                )}
+            />
 
             {prefersReducedMotion ? (
                 isExpanded ? <div id={contentId} className='job-group-children'>{content}</div> : null
