@@ -34,7 +34,7 @@ const useCanvasUrlState = () => {
         isSelected
     } = useSelectionParams({ paramName: 'modifiers' });
 
-    const analysisId = searchParams.get('analysis') || undefined;
+    const analysisId = searchParams.get('analysisId') || searchParams.get('analysis') || undefined;
     const resultsPluginId = searchParams.get('results') || undefined;
     const timelineExposureId = searchParams.get('timelineExposure') || undefined;
     const pluginParam = searchParams.get('plugin') || undefined;
@@ -51,7 +51,7 @@ const useCanvasUrlState = () => {
         : CanvasWorkspace.Modeling;
 
     const setAnalysisId = useCallback((id?: string, options?: UpdateOptions) => {
-        updateSearchParams({ analysis: id ?? null }, options);
+        updateSearchParams({ analysisId: id ?? null, analysis: null }, options);
     }, [updateSearchParams]);
 
     const setResultsPluginId = useCallback((pluginId?: string, options?: UpdateOptions) => {

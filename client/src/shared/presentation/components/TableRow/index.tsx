@@ -44,6 +44,29 @@ const TableRow = <T extends Identifiable>({
     draggableId = null,
     droppableId = null
 }: TableRowProps<T>) => {
+    const isInteractiveTarget = (event: MouseEvent<HTMLDivElement>): boolean => {
+        const target = event.target;
+        if (!(target instanceof Element)) {
+            return false;
+        }
+
+        return Boolean(target.closest(
+            'button, a, input, textarea, select, option, summary, [role="button"], [role="menuitem"], [data-row-click-ignore="true"]'
+        ));
+    };
+
+    const shouldRunPrimaryItemAction = (event: MouseEvent<HTMLDivElement>): boolean => {
+        if (event.defaultPrevented || isInteractiveTarget(event)) {
+            return false;
+        }
+
+        return event.button === 0
+            && !event.ctrlKey
+            && !event.metaKey
+            && !event.shiftKey
+            && !event.altKey;
+    };
+
     const menuOptions = getMenuOptions ? getMenuOptions(item, selectedItems) : [];
     const itemRecord = item as Record<string, unknown>;
     const getColumnKey = (col: ColumnConfig<T>): string => String(col.key ?? col.path ?? '');
@@ -147,7 +170,13 @@ const TableRow = <T extends Identifiable>({
             {...dragAttributes}
             {...dragListeners}
             onClick={(event) => {
-                const isHandled = onItemClick?.(item, event);
+                if (isInteractiveTarget(event)) {
+                    return;
+                }
+
+                const isHandled = shouldRunPrimaryItemAction(event)
+                    ? onItemClick?.(item, event)
+                    : false;
 
                 if (isHandled) {
                     return;

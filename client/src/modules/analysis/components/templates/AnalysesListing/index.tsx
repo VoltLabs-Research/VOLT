@@ -114,7 +114,7 @@ const AnalysesListing = () => {
             view: {
                 label: 'View Scene',
                 handler: ({ item: analysis }) => {
-                    navigate(`/canvas/${analysis.trajectory._id}?analysis=${encodeURIComponent(analysis._id)}`);
+                    navigate(`/canvas/${analysis.trajectory._id}?analysisId=${encodeURIComponent(analysis._id)}`);
                 },
                 requiredPermission: 'analysis:read'
             },
@@ -148,6 +148,10 @@ const AnalysesListing = () => {
             fetchData={fetchAnalysesData}
             defaultLimit={20}
             getMenuOptions={getMenuOptions}
+            onItemClick={(analysis) => {
+                navigate(`/canvas/${analysis.trajectory._id}?analysisId=${encodeURIComponent(analysis._id)}`);
+                return true;
+            }}
             emptyMessage='Run an analysis on a processed trajectory to review configuration, progress, and results here.'
             emptyTitle='No analyses yet'
             emptyIcon={<FlaskConical size={28} strokeWidth={1.6} />}
