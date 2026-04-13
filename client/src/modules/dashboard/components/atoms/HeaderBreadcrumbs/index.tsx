@@ -47,7 +47,7 @@ const HeaderBreadcrumbs = () => {
             const { path } = breadcrumb;
 
             return (
-                <Link to={path} className='breadcrumb-item breadcrumb-link color-secondary font-weight-5'>
+                <Link to={path} className='breadcrumb-item breadcrumb-link color-secondary'>
                     {breadcrumb.label}
                 </Link>
             );
@@ -55,7 +55,7 @@ const HeaderBreadcrumbs = () => {
 
         return (
             <span
-                className={`breadcrumb-item ${breadcrumb.isCurrent ? 'breadcrumb-current color-primary font-weight-5' : 'color-secondary'}`}
+                className={`breadcrumb-item ${breadcrumb.isCurrent ? 'breadcrumb-current' : ''}`}
                 aria-current={breadcrumb.isCurrent ? 'page' : undefined}
             >
                 {breadcrumb.label}
@@ -65,7 +65,7 @@ const HeaderBreadcrumbs = () => {
 
     return (
         <nav className='breadcrumb-nav d-flex items-center gap-05 font-size-2' aria-label='Dashboard breadcrumbs'>
-            <Link to='/dashboard' className='breadcrumb-item breadcrumb-link color-secondary font-weight-5'>
+            <Link to='/dashboard' className='breadcrumb-item breadcrumb-link color-secondary'>
                 Dashboard
             </Link>
 

@@ -246,7 +246,7 @@ export interface UseCreateContainerFormReturn {
     setSelectedTeamClusterId: (id: string | null) => void;
     updateConfig: <K extends keyof ContainerConfig>(key: K, value: ContainerConfig[K]) => void;
     handleTemplateSelect: (templateId: string) => void;
-    setCustomImage: (image: string, goToConfigFunction: () => void) => void;
+    setCustomImage: (image: string) => void;
     handleCreate: () => Promise<void>;
     getSelectedImage: () => string | undefined;
     getSelectedTemplate: () => ContainerTemplate | undefined;
@@ -421,7 +421,7 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
         }));
     }, []);
 
-    const setCustomImage = useCallback((image: string, goToConfigFunction: () => void) => {
+    const setCustomImage = useCallback((image: string) => {
         const trimmedImage = image.trim();
 
         if (!trimmedImage) {
@@ -444,7 +444,6 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
             customFieldValues: {},
             mountDockerSocket: false
         }));
-        goToConfigFunction();
     }, []);
 
     const getSelectedImage = useCallback(() => {
