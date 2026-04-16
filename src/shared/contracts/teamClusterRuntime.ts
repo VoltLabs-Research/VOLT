@@ -2,12 +2,12 @@ export const TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION = 3;
 
 export type TeamClusterRole = 'cluster' | 'storage-server' | 'compute-node';
 
-export interface TeamClusterRoleDrainState {
+interface TeamClusterRoleDrainState {
     compute: boolean;
     storage: boolean;
 }
 
-export interface TeamClusterRoleCapabilities {
+interface TeamClusterRoleCapabilities {
     canStore: boolean;
     canCompute: boolean;
 }
@@ -78,17 +78,11 @@ const TEAM_CLUSTER_ROLE_CAPABILITIES: Record<TeamClusterRole, TeamClusterRoleCap
     }
 };
 
-export const resolveTeamClusterRoleCapabilities = (
-    role: TeamClusterRole
-): TeamClusterRoleCapabilities => {
-    return { ...TEAM_CLUSTER_ROLE_CAPABILITIES[role] };
-};
-
 export const buildTeamClusterEffectiveCapabilities = (
     role: TeamClusterRole,
     draining: Partial<TeamClusterRoleDrainState> = {}
 ): TeamClusterEffectiveCapabilities => {
-    const capabilities = resolveTeamClusterRoleCapabilities(role);
+    const capabilities = { ...TEAM_CLUSTER_ROLE_CAPABILITIES[role] };
     const computeDraining = draining.compute === true;
     const storageDraining = draining.storage === true;
     const servesResidualStorageReads = capabilities.canStore || capabilities.canCompute || storageDraining;

@@ -1,3 +1,5 @@
+import { isRecord } from '../utilities/type-guards';
+
 interface HexStringSerializable {
     toHexString(): string;
 }
@@ -8,9 +10,7 @@ interface StringSerializable {
 
 const CLI_ARGUMENTS_TOKEN_PREFIX = '__volt_cli_args__:';
 
-export const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-};
+export { isRecord };
 
 export const toRecord = (value: unknown): Record<string, unknown> => {
     return isRecord(value) ? value : {};
@@ -26,14 +26,6 @@ const hasToString = (value: unknown): value is StringSerializable => {
 
 export const readString = (value: unknown): string => {
     return typeof value === 'string' ? value : '';
-};
-
-export const readStringArray = (value: unknown): string[] => {
-    if (!Array.isArray(value)) {
-        return [];
-    }
-
-    return value.filter((entry): entry is string => typeof entry === 'string');
 };
 
 export const encodeCliArgumentsToken = (argumentsArray: string[]): string => {
@@ -56,7 +48,9 @@ export const decodeCliArgumentsToken = (value: string): string[] | null => {
     try {
         const payload = Buffer.from(encodedPayload, 'base64url').toString('utf8');
         const parsedPayload = JSON.parse(payload);
-        const argumentsArray = readStringArray(parsedPayload);
+        const argumentsArray = Array.isArray(parsedPayload)
+            ? parsedPayload.filter((entry): entry is string => typeof entry === 'string')
+            : [];
 
         return argumentsArray.length === parsedPayload.length
             ? argumentsArray
@@ -64,56 +58,6 @@ export const decodeCliArgumentsToken = (value: string): string[] | null => {
     } catch {
         return null;
     }
-};
-
-export const readOptionalDate = (value: unknown): Date | undefined => {
-    if (value instanceof Date) {
-        return value;
-    }
-
-    if (typeof value === 'string' || typeof value === 'number') {
-        const date = new Date(value);
-        if (!Number.isNaN(date.getTime())) {
-            return date;
-        }
-    }
-
-    return undefined;
-};
-
-const readObjectIdProperty = (value: unknown, propertyName: string): string => {
-    if (!isRecord(value)) {
-        return '';
-    }
-
-    return readString(value[propertyName]);
-};
-
-export const readDocumentId = (value: unknown): string => {
-    if (typeof value === 'string') {
-        return value;
-    }
-
-    const oidValue = readObjectIdProperty(value, '$oid');
-    if (oidValue) {
-        return oidValue;
-    }
-
-    const idValue = readObjectIdProperty(value, 'id');
-    if (idValue) {
-        return idValue;
-    }
-
-    if (hasToHexString(value)) {
-        return value.toHexString();
-    }
-
-    if (hasToString(value)) {
-        const serializedValue = value.toString();
-        return serializedValue === '[object Object]' ? '' : serializedValue;
-    }
-
-    return '';
 };
 
 export const stringifyUnknown = (value: unknown): string => {

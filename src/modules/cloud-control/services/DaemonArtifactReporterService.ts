@@ -1,20 +1,17 @@
 import type { VoltCloudConnection } from './VoltCloudConnection';
 
-export type ArtifactSourceType = 'color-coding' | 'particle-filter' | 'plugin-exposure';
-export type ArtifactStatus = 'ready' | 'failed';
-
 export interface ReportArtifactInput {
     trajectory: string;
     storageClusterId: string;
     analysis?: string;
     plugin?: string;
-    sourceType: ArtifactSourceType;
+    sourceType: 'color-coding' | 'particle-filter' | 'plugin-exposure';
     timestep: number;
     objectName: string;
     storageBucket: string;
     params: Record<string, unknown>;
     displayName: string;
-    status: ArtifactStatus;
+    status: 'ready' | 'failed';
     metadata?: Record<string, unknown>;
 };
 

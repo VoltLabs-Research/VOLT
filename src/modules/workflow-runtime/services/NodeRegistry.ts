@@ -1,7 +1,7 @@
 import { resolveWorkflowOutputReference, resolveWorkflowTemplate } from './WorkflowOutputResolution';
 import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeType } from '../contracts';
 
-export interface NodeOutputSchema {
+interface NodeOutputSchema {
     properties: Record<string, unknown>;
 };
 

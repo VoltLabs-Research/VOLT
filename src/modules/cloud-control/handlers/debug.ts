@@ -1,91 +1,43 @@
 import type { DebugSessionManager } from '@/modules/workflow-runtime/services';
-import type { NestedPluginDefinition, PluginReferenceExecutionRequest } from '@/shared/contracts';
+import type {
+    NestedPluginDefinition,
+    TrajectoryFrame,
+    WorkflowDefinition
+} from '@/shared/contracts';
 import type { ReverseChannelCommandHandler } from '../services';
-import {
-    readRecord,
-    readOptionalNumber,
-    readOptionalRecord,
-    readOptionalString,
-    readPayloadRecord,
-    readString,
-    readTrajectoryFrames,
-    readWorkflowDefinition
-} from './payloadValidation';
 
 interface DebugHandlersDependencies {
     debugSessionManager: DebugSessionManager;
 }
 
-const readOptionalArray = <T>(
-    value: unknown,
-    fieldName: string,
-    readEntry: (entry: unknown) => T
-): T[] => {
-    if (typeof value === 'undefined') {
-        return [];
-    }
-
-    if (!Array.isArray(value)) {
-        throw new Error(`${fieldName} must be an array`);
-    }
-
-    return value.map(readEntry);
-};
-
-const readNestedPluginDefinition = (value: unknown): NestedPluginDefinition => {
-    const record = readRecord(value, 'nestedPlugins');
-
-    return {
-        pluginId: readString(record.pluginId, 'nestedPlugins.pluginId'),
-        workflow: readWorkflowDefinition(record.workflow)
-    };
-};
-
-const readPluginReferenceExecutionRequest = (value: unknown): PluginReferenceExecutionRequest => {
-    const record = readRecord(value, 'pluginReferenceExecutions');
-
-    return {
-        referencePath: readString(record.referencePath, 'pluginReferenceExecutions.referencePath'),
-        pluginId: readString(record.pluginId, 'pluginReferenceExecutions.pluginId'),
-        config: readRecord(record.config, 'pluginReferenceExecutions.config')
-    };
-};
+interface DebugStartPayload {
+    workflow: WorkflowDefinition;
+    trajectoryFrames: TrajectoryFrame[];
+    pluginId: string;
+    teamId: string;
+    trajectoryId: string;
+    config?: Record<string, unknown>;
+    timestep?: number;
+    storageClusterId?: string;
+    nestedPlugins?: NestedPluginDefinition[];
+}
 
 export const createDebugHandlers = (deps: DebugHandlersDependencies): ReverseChannelCommandHandler[] => [
     {
         command: 'debug.start',
         execute: async (payload) => {
-            const record = readPayloadRecord(payload);
-            const workflow = readWorkflowDefinition(record.workflow);
-            const trajectoryFrames = readTrajectoryFrames(record.trajectoryFrames);
-            const pluginId = readString(record.pluginId, 'pluginId');
-            const teamId = readString(record.teamId, 'teamId');
-            const trajectoryId = readString(record.trajectoryId, 'trajectoryId');
-            const userConfig = readOptionalRecord(record.config) ?? {};
-            const timestep = readOptionalNumber(record.timestep);
-            const storageClusterId = readOptionalString(record.storageClusterId, '');
-            const nestedPlugins = readOptionalArray(
-                record.nestedPlugins,
-                'nestedPlugins',
-                readNestedPluginDefinition
-            );
-            const pluginReferenceExecutions = readOptionalArray(
-                record.pluginReferenceExecutions,
-                'pluginReferenceExecutions',
-                readPluginReferenceExecutionRequest
-            );
+            const request = payload as DebugStartPayload;
 
             const sessionInfo = deps.debugSessionManager.createSession({
-                workflow,
-                nestedPlugins,
-                pluginReferenceExecutions,
-                trajectoryId,
-                trajectoryFrames,
-                pluginId,
-                teamId,
-                userConfig,
-                storageClusterId: storageClusterId || undefined,
-                timestep
+                workflow: request.workflow,
+                nestedPlugins: request.nestedPlugins ?? [],
+                trajectoryId: request.trajectoryId,
+                trajectoryFrames: request.trajectoryFrames,
+                pluginId: request.pluginId,
+                teamId: request.teamId,
+                userConfig: request.config ?? {},
+                storageClusterId: request.storageClusterId,
+                timestep: request.timestep
             });
 
             // Get the first node info so the server can emit node:started immediately
@@ -102,8 +54,7 @@ export const createDebugHandlers = (deps: DebugHandlersDependencies): ReverseCha
     {
         command: 'debug.step',
         execute: async (payload) => {
-            const record = readPayloadRecord(payload);
-            const sessionId = readString(record.sessionId, 'sessionId');
+            const { sessionId } = payload as { sessionId: string };
 
             const result = await deps.debugSessionManager.executeCurrentNode(sessionId);
             const nextNode = deps.debugSessionManager.getCurrentNodeInfo(sessionId);
@@ -121,8 +72,7 @@ export const createDebugHandlers = (deps: DebugHandlersDependencies): ReverseCha
     {
         command: 'debug.continue',
         execute: async (payload) => {
-            const record = readPayloadRecord(payload);
-            const sessionId = readString(record.sessionId, 'sessionId');
+            const { sessionId } = payload as { sessionId: string };
 
             const results = await deps.debugSessionManager.executeAllRemaining(sessionId);
 
@@ -136,8 +86,7 @@ export const createDebugHandlers = (deps: DebugHandlersDependencies): ReverseCha
     {
         command: 'debug.stop',
         execute: async (payload) => {
-            const record = readPayloadRecord(payload);
-            const sessionId = readString(record.sessionId, 'sessionId');
+            const { sessionId } = payload as { sessionId: string };
 
             deps.debugSessionManager.destroySession(sessionId);
 

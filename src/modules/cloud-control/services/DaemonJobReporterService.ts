@@ -1,13 +1,14 @@
 import type { VoltCloudConnection } from './VoltCloudConnection';
-import type { TeamClusterDaemonExecutionLogSegment } from '@/shared/contracts';
+import type {
+    TeamClusterDaemonExecutionLogSegment,
+    TeamClusterDaemonServerEventMessage
+} from '@/shared/contracts';
 
 export type RasterJobStatus = 'running' | 'completed' | 'failed';
 export type GlbJobStatus = 'running' | 'completed' | 'failed';
-export type AnalysisJobStatus = 'running' | 'completed' | 'failed';
 export type SshImportJobStatus = 'running' | 'completed' | 'failed';
-export type ArtifactUploadJobStatus = 'queued' | 'running' | 'completed' | 'failed';
 
-export interface ReportJobCompletionInput {
+interface ReportJobCompletionInput {
     jobId: string;
     name: string;
     analysisId: string;
@@ -17,7 +18,7 @@ export interface ReportJobCompletionInput {
     error?: string;
 };
 
-export interface ReportAnalysisJobStatusInput {
+interface ReportAnalysisJobStatusInput {
     jobId: string;
     name: string;
     analysisId: string;
@@ -25,11 +26,11 @@ export interface ReportAnalysisJobStatusInput {
     trajectoryId?: string;
     trajectoryName?: string;
     timestep?: number;
-    status: AnalysisJobStatus;
+    status: 'running' | 'completed' | 'failed';
     error?: string;
 };
 
-export interface ReportRasterJobStatusInput {
+interface ReportRasterJobStatusInput {
     jobId: string;
     teamId: string;
     trajectoryId: string;
@@ -39,7 +40,7 @@ export interface ReportRasterJobStatusInput {
     error?: string;
 };
 
-export interface ReportGlbJobStatusInput {
+interface ReportGlbJobStatusInput {
     jobId: string;
     teamId: string;
     trajectoryId: string;
@@ -49,7 +50,7 @@ export interface ReportGlbJobStatusInput {
     error?: string;
 };
 
-export interface ReportSshImportJobStatusInput {
+interface ReportSshImportJobStatusInput {
     jobId: string;
     teamId: string;
     trajectoryId: string;
@@ -58,18 +59,18 @@ export interface ReportSshImportJobStatusInput {
     error?: string;
 };
 
-export interface ReportArtifactUploadJobStatusInput {
+interface ReportArtifactUploadJobStatusInput {
     jobId: string;
     analysisId: string;
     teamId: string;
     trajectoryId: string;
     trajectoryName?: string;
     timestep?: number;
-    status: ArtifactUploadJobStatus;
+    status: 'queued' | 'running' | 'completed' | 'failed';
     error?: string;
 };
 
-export interface ReportAnalysisLogChunkInput {
+interface ReportAnalysisLogChunkInput {
     jobId: string;
     analysisId: string;
     teamId: string;
@@ -78,7 +79,7 @@ export interface ReportAnalysisLogChunkInput {
     segments: TeamClusterDaemonExecutionLogSegment[];
 };
 
-export interface ReportDebugLogChunkInput {
+interface ReportDebugLogChunkInput {
     sessionId: string;
     nodeId: string;
     segments: TeamClusterDaemonExecutionLogSegment[];
@@ -95,96 +96,76 @@ export interface DaemonJobReporterService {
     reportArtifactUploadJobStatus(input: ReportArtifactUploadJobStatusInput): Promise<void>;
 };
 
-export const createDaemonJobReporterService = (voltCloudConnection: VoltCloudConnection): DaemonJobReporterService => ({
-    async reportJobCompletion(input) {
+export const createDaemonJobReporterService = (voltCloudConnection: VoltCloudConnection): DaemonJobReporterService => {
+    const teamClusterId = voltCloudConnection.getTeamClusterId();
+    const daemonPassword = voltCloudConnection.getDaemonPassword();
+    const emitBufferedWithAuth = (type: TeamClusterDaemonServerEventMessage['type'], input: Record<string, unknown>, dedupeKey: string): void => {
         voltCloudConnection.emitBufferedMessage({
-            type: 'analysis-job-completion',
-            teamClusterId: voltCloudConnection.getTeamClusterId(),
-            daemonPassword: voltCloudConnection.getDaemonPassword(),
+            type,
+            teamClusterId,
+            daemonPassword,
             ...input
-        }, {
-            dedupeKey: `analysis.job-completion:${input.jobId}:${input.success ? 'completed' : 'failed'}:${input.timestep ?? 'none'}`
-        });
-    },
-
-    async reportAnalysisJobStatus(input) {
-        voltCloudConnection.emitBufferedMessage({
-            type: 'analysis-job-status',
-            teamClusterId: voltCloudConnection.getTeamClusterId(),
-            daemonPassword: voltCloudConnection.getDaemonPassword(),
-            ...input
-        }, {
-            dedupeKey: `analysis.job-status:${input.jobId}:${input.status}:${input.timestep ?? 'none'}`
-        });
-    },
-
-    async reportAnalysisLogChunk(input) {
-        if (!Array.isArray(input.segments) || input.segments.length === 0) {
-            return;
-        }
-
+        }, { dedupeKey });
+    };
+    const emitWithAuth = (type: TeamClusterDaemonServerEventMessage['type'], input: Record<string, unknown>): void => {
         voltCloudConnection.emitMessage({
-            type: 'analysis-log-chunk',
-            teamClusterId: voltCloudConnection.getTeamClusterId(),
-            daemonPassword: voltCloudConnection.getDaemonPassword(),
+            type,
+            teamClusterId,
+            daemonPassword,
             ...input
         });
-    },
+    };
+    const hasSegments = (segments: TeamClusterDaemonExecutionLogSegment[]): boolean => segments.length > 0;
 
-    async reportDebugLogChunk(input) {
-        if (!Array.isArray(input.segments) || input.segments.length === 0) {
-            return;
+    return {
+        async reportJobCompletion(input) {
+            emitBufferedWithAuth(
+                'analysis-job-completion',
+                input,
+                `analysis.job-completion:${input.jobId}:${input.success ? 'completed' : 'failed'}:${input.timestep ?? 'none'}`
+            );
+        },
+
+        async reportAnalysisJobStatus(input) {
+            emitBufferedWithAuth(
+                'analysis-job-status',
+                input,
+                `analysis.job-status:${input.jobId}:${input.status}:${input.timestep ?? 'none'}`
+            );
+        },
+
+        async reportAnalysisLogChunk(input) {
+            if (!hasSegments(input.segments)) return;
+            emitWithAuth('analysis-log-chunk', input);
+        },
+
+        async reportDebugLogChunk(input) {
+            if (!hasSegments(input.segments)) return;
+            emitWithAuth('debug-log-chunk', input);
+        },
+
+        async reportRasterJobStatus(input) {
+            emitBufferedWithAuth(
+                'trajectory-raster-job-status',
+                input,
+                `trajectory.raster-job-status:${input.jobId}:${input.status}:${input.timestep ?? 'none'}`
+            );
+        },
+
+        async reportGlbJobStatus(input) {
+            emitBufferedWithAuth(
+                'trajectory-glb-job-status',
+                input,
+                `trajectory.glb-job-status:${input.jobId}:${input.status}:${input.timestep ?? 'none'}`
+            );
+        },
+
+        async reportSshImportJobStatus(input) {
+            emitBufferedWithAuth('ssh-import-job-status', input, `ssh-import.job-status:${input.jobId}:${input.status}`);
+        },
+
+        async reportArtifactUploadJobStatus(input) {
+            emitBufferedWithAuth('artifact-upload-job-status', input, `artifact-upload.job-status:${input.jobId}:${input.status}`);
         }
-
-        voltCloudConnection.emitMessage({
-            type: 'debug-log-chunk',
-            teamClusterId: voltCloudConnection.getTeamClusterId(),
-            daemonPassword: voltCloudConnection.getDaemonPassword(),
-            ...input
-        });
-    },
-
-    async reportRasterJobStatus(input) {
-        voltCloudConnection.emitBufferedMessage({
-            type: 'trajectory-raster-job-status',
-            teamClusterId: voltCloudConnection.getTeamClusterId(),
-            daemonPassword: voltCloudConnection.getDaemonPassword(),
-            ...input
-        }, {
-            dedupeKey: `trajectory.raster-job-status:${input.jobId}:${input.status}:${input.timestep ?? 'none'}`
-        });
-    },
-
-    async reportGlbJobStatus(input) {
-        voltCloudConnection.emitBufferedMessage({
-            type: 'trajectory-glb-job-status',
-            teamClusterId: voltCloudConnection.getTeamClusterId(),
-            daemonPassword: voltCloudConnection.getDaemonPassword(),
-            ...input
-        }, {
-            dedupeKey: `trajectory.glb-job-status:${input.jobId}:${input.status}:${input.timestep ?? 'none'}`
-        });
-    },
-
-    async reportSshImportJobStatus(input) {
-        voltCloudConnection.emitBufferedMessage({
-            type: 'ssh-import-job-status',
-            teamClusterId: voltCloudConnection.getTeamClusterId(),
-            daemonPassword: voltCloudConnection.getDaemonPassword(),
-            ...input
-        }, {
-            dedupeKey: `ssh-import.job-status:${input.jobId}:${input.status}`
-        });
-    },
-
-    async reportArtifactUploadJobStatus(input) {
-        voltCloudConnection.emitBufferedMessage({
-            type: 'artifact-upload-job-status',
-            teamClusterId: voltCloudConnection.getTeamClusterId(),
-            daemonPassword: voltCloudConnection.getDaemonPassword(),
-            ...input
-        }, {
-            dedupeKey: `artifact-upload.job-status:${input.jobId}:${input.status}`
-        });
-    }
-});
+    };
+};

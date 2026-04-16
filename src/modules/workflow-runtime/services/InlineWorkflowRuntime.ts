@@ -1,8 +1,8 @@
-import { createWorkflowExecutionContext, restoreWorkflowOutputs, snapshotWorkflowOutputs } from './WorkflowExecutionContextFactory';
+import { createWorkflowExecutionContext, snapshotWorkflowOutputs } from './WorkflowExecutionContextFactory';
+import { collectInlineExposureArtifacts } from './InlineWorkflowExposureArtifacts';
 import { resolveWorkflowTemplate } from './WorkflowOutputResolution';
 import type { WorkflowNodeRegistry } from './NodeRegistry';
 import {
-    collectInlineExposureArtifacts,
     createNestedExecutionResult,
     parseInlineWorkflowArguments,
     readWorkflowEntrypointData,
@@ -10,20 +10,17 @@ import {
     readWorkflowPluginReferenceSelections,
     type InlineWorkflowDumpTarget,
     type WorkflowEntrypointData,
-    type WorkflowPluginNodeData,
-    type WorkflowPluginReferenceSelection
+    type WorkflowPluginNodeData
 } from './InlineWorkflowShared';
 import { WorkflowGraph, WorkflowNodeType } from '../contracts';
 import {
-    EntrypointType,
     type DaemonAnalysisDocument,
     type NestedPluginDefinition,
-    type PluginReferenceExecutionRequest,
     type TrajectoryFrame,
     type WorkflowDefinition,
     type WorkflowNodeDefinition
 } from '@/shared/contracts';
-import { isRecord } from '@/shared/utils';
+import { isRecord } from '@/shared/utilities/type-guards';
 import type { WorkflowNode } from '../contracts';
 import type {
     BinaryExecutorService,
@@ -42,7 +39,7 @@ interface TraceRuntimeContext {
     nextTraceId: () => string;
 }
 
-export interface InlineWorkflowProcessLogContext {
+interface InlineWorkflowProcessLogContext {
     rootNodeId: string;
     nodeId: string;
     nodeType: string;
@@ -86,11 +83,6 @@ export interface ExecuteInlinePluginNodeInput extends InlineExecutionBaseInput {
     captureTrace?: boolean;
 }
 
-export interface ExecuteInlinePluginReferenceInput extends InlineExecutionBaseInput {
-    request: PluginReferenceExecutionRequest;
-    captureTrace?: boolean;
-}
-
 interface NestedWorkflowExecutionResult {
     output: Record<string, unknown>;
     trace: InlineWorkflowTraceNode[];
@@ -102,7 +94,7 @@ interface ResolvedPluginExecution {
     selectedTimesteps?: number[];
 }
 
-export type InlineWorkflowTraceStatus = 'completed' | 'skipped' | 'error';
+type InlineWorkflowTraceStatus = 'completed' | 'skipped' | 'error';
 
 export interface InlineWorkflowTraceNode {
     traceId: string;
@@ -130,23 +122,10 @@ export class InlineWorkflowTraceError extends Error {
     }
 }
 
-export interface InlineWorkflowExecutionResult {
+interface InlineWorkflowExecutionResult {
     output: Record<string, unknown>;
     trace: InlineWorkflowTraceNode[];
 }
-
-export const cloneInlineWorkflowTraceNodes = (
-    trace: InlineWorkflowTraceNode[],
-    nextTraceId: () => string
-): InlineWorkflowTraceNode[] => {
-    return trace.map((node) => ({
-        ...node,
-        traceId: nextTraceId(),
-        children: Array.isArray(node.children)
-            ? cloneInlineWorkflowTraceNodes(node.children, nextTraceId)
-            : undefined
-    }));
-};
 
 const createTraceNode = (
     context: TraceRuntimeContext | null,
@@ -380,28 +359,6 @@ export class InlineWorkflowRuntime {
         };
     }
 
-    async executePluginReference(input: ExecuteInlinePluginReferenceInput): Promise<InlineWorkflowExecutionResult> {
-        let traceCounter = 0;
-        const nextTraceId = (): string => `trace_${++traceCounter}`;
-
-        return this.executeNestedPluginWorkflow(
-            input,
-            {
-                pluginId: input.request.pluginId,
-                config: input.request.config,
-                selectedTimesteps: [input.dumpTarget.timestep]
-            },
-            input.outputs,
-            input.outputDir,
-            createTraceContext(input.request.pluginId, nextTraceId, input.captureTrace === true),
-            input.rootNodeId ?? input.request.referencePath,
-            Array.isArray(input.executionPath) && input.executionPath.length > 0
-                ? [...input.executionPath]
-                : [input.request.referencePath],
-            input.logSinkFactory
-        );
-    }
-
     private resolvePluginExecutionsForNode(
         workflow: WorkflowDefinition | undefined,
         pluginNodeData: WorkflowPluginNodeData | undefined,
@@ -411,9 +368,7 @@ export class InlineWorkflowRuntime {
             return [];
         }
 
-        const selectedTimesteps = Array.isArray(pluginNodeData.selectedTimesteps)
-            ? pluginNodeData.selectedTimesteps.filter((value): value is number => typeof value === 'number')
-            : undefined;
+        const selectedTimesteps = pluginNodeData.selectedTimesteps;
         if (pluginNodeData.executionMode === 'argumentReference') {
             if (!workflow || !pluginNodeData.argumentReference) {
                 return [];
@@ -431,13 +386,9 @@ export class InlineWorkflowRuntime {
                 return [];
             }
 
-            const argumentsData = isRecord(argumentsNode.data.arguments)
-                ? argumentsNode.data.arguments
-                : {};
-            const argumentDefinitions = Array.isArray(argumentsData.arguments)
-                ? argumentsData.arguments
-                : [];
-            const selectedArgumentDefinition = argumentDefinitions.find((definition: Record<string, unknown>) => {
+            const selectedArgumentDefinition = (argumentsNode.data.arguments as {
+                arguments?: Array<{ argument?: string; showPluginConfiguration?: boolean }>;
+            } | undefined)?.arguments?.find((definition) => {
                 return definition?.argument === pluginNodeData.argumentReference;
             });
             const shouldUseSelectionConfig = selectedArgumentDefinition?.showPluginConfiguration === true;
@@ -446,11 +397,7 @@ export class InlineWorkflowRuntime {
                 pluginId: selection.pluginId,
                 config: shouldUseSelectionConfig
                     ? selection.config
-                    : isRecord(pluginNodeData.configByPluginId?.[selection.pluginId])
-                        ? pluginNodeData.configByPluginId?.[selection.pluginId] ?? {}
-                        : isRecord(pluginNodeData.config)
-                            ? pluginNodeData.config
-                            : {},
+                    : pluginNodeData.configByPluginId?.[selection.pluginId] ?? pluginNodeData.config ?? {},
                 selectedTimesteps
             }));
         }
@@ -464,7 +411,7 @@ export class InlineWorkflowRuntime {
 
         return [{
             pluginId,
-            config: isRecord(pluginNodeData.config) ? pluginNodeData.config : {},
+            config: pluginNodeData.config ?? {},
             selectedTimesteps
         }];
     }
@@ -491,13 +438,11 @@ export class InlineWorkflowRuntime {
 
         const nestedOutputDir = parentOutputDir;
         await fs.mkdir(nestedOutputDir, { recursive: true });
-        const nestedOutputs = restoreWorkflowOutputs(snapshotWorkflowOutputs(parentOutputs));
-        const selectedTimesteps = Array.isArray(pluginNodeData?.selectedTimesteps)
-            ? pluginNodeData.selectedTimesteps.filter((value): value is number => typeof value === 'number')
-            : [input.dumpTarget.timestep];
+        const nestedOutputs = new Map(Object.entries(snapshotWorkflowOutputs(parentOutputs)));
+        const selectedTimesteps = pluginNodeData?.selectedTimesteps ?? [input.dumpTarget.timestep];
         const nestedContext = createWorkflowExecutionContext({
             outputs: nestedOutputs,
-            userConfig: isRecord(pluginNodeData?.config) ? pluginNodeData.config : {},
+            userConfig: pluginNodeData?.config ?? {},
             runtimeArguments: {},
             trajectoryId: input.trajectoryId,
             trajectoryFrames: Array.isArray(input.trajectoryFrames) && input.trajectoryFrames.length > 0
@@ -878,19 +823,9 @@ export class InlineWorkflowRuntime {
         workflow: WorkflowGraph,
         logSinkFactory?: InlineWorkflowLogSinkFactory
     ): Promise<Record<string, unknown>> {
-        const binaryObjectPath = typeof entrypointData?.binaryObjectPath === 'string'
-            ? entrypointData.binaryObjectPath
-            : '';
-        const argumentsTemplate = typeof entrypointData?.arguments === 'string'
-            ? entrypointData.arguments
-            : '';
-        const entrypointType = entrypointData?.type === EntrypointType.PythonScript
-            ? EntrypointType.PythonScript
-            : entrypointData?.type === EntrypointType.PackagedExecutable
-                ? EntrypointType.PackagedExecutable
-            : entrypointData?.type === EntrypointType.Executable
-                ? EntrypointType.Executable
-                : null;
+        const binaryObjectPath = entrypointData?.binaryObjectPath ?? '';
+        const argumentsTemplate = entrypointData?.arguments ?? '';
+        const entrypointType = entrypointData?.type;
         if (!binaryObjectPath || !argumentsTemplate) {
             throw new Error(`Nested plugin ${context.pluginId} has invalid entrypoint configuration`);
         }
@@ -902,12 +837,8 @@ export class InlineWorkflowRuntime {
         const executionRuntime = await this.pluginBinaryCacheService.getExecutionRuntime({
             binaryObjectPath,
             entrypointType,
-            requirementsFile: typeof entrypointData?.requirementsFile === 'string'
-                ? entrypointData.requirementsFile
-                : undefined,
-            entrypointScript: typeof entrypointData?.entrypointScript === 'string' && entrypointData.entrypointScript.length > 0
-                ? entrypointData.entrypointScript
-                : undefined
+            requirementsFile: entrypointData?.requirementsFile,
+            entrypointScript: entrypointData?.entrypointScript || undefined
         });
         outputs.set(nodeId, {
             ...(outputs.get(nodeId) ?? {}),

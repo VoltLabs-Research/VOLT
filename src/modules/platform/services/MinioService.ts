@@ -4,14 +4,14 @@ import type { DaemonConfig } from '@/core/config';
 import type { Readable } from 'node:stream';
 import type { BucketItem } from 'minio';
 
-export interface PutObjectInput {
+interface PutObjectInput {
     bucket: string;
     objectKey: string;
     body: Buffer;
     metadata?: Record<string, string>;
 };
 
-export interface PutStreamInput {
+interface PutStreamInput {
     bucket: string;
     objectKey: string;
     stream: Readable;
@@ -19,21 +19,21 @@ export interface PutStreamInput {
     metadata?: Record<string, string>;
 };
 
-export interface ListObjectsPageInput {
+interface ListObjectsPageInput {
     bucket: string;
     prefix: string;
     cursor?: string;
     limit: number;
 };
 
-export interface ListObjectsPageEntry {
+interface ListObjectsPageEntry {
     key: string;
     contentLength?: number;
     etag?: string;
     lastModified?: Date;
 };
 
-export interface ListObjectsPageResult {
+interface ListObjectsPageResult {
     keys: string[];
     objects: ListObjectsPageEntry[];
     nextCursor?: string;

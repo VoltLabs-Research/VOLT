@@ -31,9 +31,7 @@ interface ExecutePluginNodeInput extends InlineExecutionBaseInput {
     node: ExecuteInlinePluginNodeInput['node'];
 }
 
-export type DebugTraceNodeStatus = InlineWorkflowTraceNode['status'];
 export type DebugTraceNode = InlineWorkflowTraceNode;
-export type DebugDumpExecutionTarget = InlineWorkflowDumpTarget;
 
 export interface DebugInlineExecutionResult {
     output: Record<string, unknown>;

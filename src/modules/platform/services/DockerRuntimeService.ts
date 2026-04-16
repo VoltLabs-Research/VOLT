@@ -28,7 +28,7 @@ interface DockerExecOptions {
     traceContext?: DaemonTraceContext;
 };
 
-export interface RuntimeContainerFileEntry {
+interface RuntimeContainerFileEntry {
     name: string;
     isDirectory: boolean;
     size: string;
@@ -43,7 +43,7 @@ export interface RuntimeTerminalAttachment {
     exec: RuntimeTerminalExec;
 };
 
-export interface RuntimeTerminalExec {
+interface RuntimeTerminalExec {
     resize(size: {
         rows: number;
         cols: number;
@@ -207,7 +207,7 @@ export class DockerRuntimeService {
         const normalizedDirectoryPath = this.normalizeContainerPath(directoryPath);
 
         try {
-            const output = await this.exec(containerId, [
+            const output = await this.execute(containerId, [
                 'find',
                 normalizedDirectoryPath,
                 '-mindepth', '1',
@@ -216,7 +216,7 @@ export class DockerRuntimeService {
             ], undefined, options);
             return this.parseFindListingOutput(output);
         } catch {
-            const output = await this.exec(containerId, ['sh', '-c', `target="$1"
+            const output = await this.execute(containerId, ['sh', '-c', `target="$1"
 if [ ! -d "$target" ]; then
   exit 1
 fi
@@ -241,7 +241,7 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
 
     async readContainerFile(containerId: string, filePath: string, options?: DockerExecOptions): Promise<string> {
         const normalizedPath = this.normalizeContainerPath(filePath);
-        return this.exec(containerId, ['sh', '-c', 'cat -- "$1"', '--', normalizedPath], undefined, options);
+        return this.execute(containerId, ['sh', '-c', 'cat -- "$1"', '--', normalizedPath], undefined, options);
     }
 
     async writeContainerFile(
@@ -251,8 +251,8 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
         options?: DockerExecOptions
     ): Promise<void> {
         const normalizedPath = this.normalizeContainerPath(filePath);
-        await this.exec(containerId, ['mkdir', '-p', '--', path.posix.dirname(normalizedPath)], undefined, options);
-        await this.exec(containerId, ['tee', '--', normalizedPath], content, options);
+        await this.execute(containerId, ['mkdir', '-p', '--', path.posix.dirname(normalizedPath)], undefined, options);
+        await this.execute(containerId, ['tee', '--', normalizedPath], content, options);
     }
 
     async attachTerminal(containerId: string): Promise<RuntimeTerminalAttachment> {
@@ -399,49 +399,6 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
         }
     }
 
-    async exec(containerId: string, command: string[], stdin?: string, options?: DockerExecOptions): Promise<string> {
-        return this.execute(containerId, command, stdin, options);
-    }
-
-    async execDetached(containerId: string, command: string[]): Promise<void> {
-        const container = this.docker.getContainer(containerId);
-        const dockerExec = await container.exec({
-            Cmd: command,
-            AttachStdout: false,
-            AttachStderr: false,
-            AttachStdin: false
-        });
-
-        await dockerExec.start({
-            Detach: true,
-            Tty: false
-        });
-    }
-
-    /**
-     * Unconditionally pulls an image from a registry, bypassing any local cache check.
-     * Use this for updates where a fresh copy is always required.
-     */
-    forcePullImage(imageName: string): Promise<void> {
-        return new Promise((resolve, reject) => {
-            this.docker.pull(imageName, (error: Error | null, stream?: Readable) => {
-                if (error || !stream) {
-                    reject(error ?? new Error(`Docker pull returned no stream for ${imageName}`));
-                    return;
-                }
-
-                this.docker.modem.followProgress(stream, (progressError) => {
-                    if (progressError) {
-                        reject(progressError);
-                        return;
-                    }
-
-                    resolve();
-                });
-            });
-        });
-    }
-
     private pullImage(imageName: string): Promise<void> {
         return new Promise((resolve, reject) => {
             this.docker.pull(imageName, (error: Error | null, stream?: Readable) => {
@@ -504,7 +461,7 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
 
     private normalizeContainerPath(targetPath: string): string {
         const normalizedPath = path.posix.normalize(targetPath || '/');
-        if (normalizedPath === '../../../infrastructure/docker' || normalizedPath.length === 0) {
+        if (normalizedPath === '../../../infrastructure/docker') {
             return '/';
         }
 

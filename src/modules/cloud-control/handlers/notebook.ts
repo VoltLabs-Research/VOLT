@@ -1,14 +1,7 @@
 import type { JupyterRuntimeService } from '@/modules/jupyter';
 import { TEAM_CLUSTER_DAEMON_COMMAND } from '@/shared/contracts/reverseChannel';
-import type { NotebookSessionSnapshot } from '@/shared/contracts';
+import type { CreateNotebookSessionRequest } from '@/shared/contracts';
 import type { ReverseChannelCommandHandler } from '../services';
-import {
-    readNumber,
-    readOptionalPayloadRecord,
-    readOptionalUnknownRecord,
-    readRecord,
-    readString
-} from './payloadValidation';
 
 interface NotebookHandlersDependencies {
     jupyterRuntimeService: JupyterRuntimeService;
@@ -21,55 +14,6 @@ interface NotebookIdentifierPayload {
 interface NotebookRuntimeTarget {
     tunnelTargetHost: string;
     tunnelTargetPort: number;
-};
-
-interface CreateNotebookSessionCommandPayload {
-    requestedBy: string;
-    publicBasePath: string;
-    notebook: NotebookSessionSnapshot;
-    containerResources: {
-        cpus: number;
-        memoryMB: number;
-    };
-};
-
-const readNotebookSessionSnapshot = (value: unknown): NotebookSessionSnapshot => {
-    const record = readRecord(value, 'notebook');
-    const snapshot: NotebookSessionSnapshot = {
-        _id: readString(record._id, 'notebook._id'),
-        teamId: readString(record.teamId, 'notebook.teamId'),
-        notebookPath: readString(record.notebookPath, 'notebook.notebookPath')
-    };
-    const content = readOptionalUnknownRecord(record.content, 'notebook.content');
-
-    if (content) {
-        snapshot.content = content;
-    }
-
-    return snapshot;
-};
-
-const readNotebookIdentifierPayload = (payload: unknown): NotebookIdentifierPayload => {
-    const record = readOptionalPayloadRecord(payload);
-
-    return {
-        notebookId: readString(record.notebookId, 'notebookId')
-    };
-};
-
-const readNotebookSessionRequestPayload = (payload: unknown): CreateNotebookSessionCommandPayload => {
-    const record = readOptionalPayloadRecord(payload);
-    const containerResourcesRecord = readRecord(record.containerResources, 'containerResources');
-
-    return {
-        requestedBy: readString(record.requestedBy, 'requestedBy'),
-        publicBasePath: readString(record.publicBasePath, 'publicBasePath'),
-        notebook: readNotebookSessionSnapshot(record.notebook),
-        containerResources: {
-            cpus: readNumber(containerResourcesRecord.cpus, 'containerResources.cpus'),
-            memoryMB: readNumber(containerResourcesRecord.memoryMB, 'containerResources.memoryMB')
-        }
-    };
 };
 
 const getReadinessGatedRuntimeTarget = async (
@@ -91,7 +35,7 @@ export const createNotebookHandlers = (deps: NotebookHandlersDependencies): Reve
     {
         command: TEAM_CLUSTER_DAEMON_COMMAND.notebook.delete,
         execute: async (payload) => {
-            const request = readNotebookIdentifierPayload(payload);
+            const request = payload as NotebookIdentifierPayload;
             return {
                 data: {
                     deleted: await deps.jupyterRuntimeService.deleteSession(request.notebookId)
@@ -102,7 +46,7 @@ export const createNotebookHandlers = (deps: NotebookHandlersDependencies): Reve
     {
         command: TEAM_CLUSTER_DAEMON_COMMAND.notebook.runtime.get,
         execute: async (payload) => {
-            const request = readNotebookIdentifierPayload(payload);
+            const request = payload as NotebookIdentifierPayload;
             const runtime = await getReadinessGatedRuntimeTarget(
                 deps.jupyterRuntimeService,
                 request.notebookId
@@ -118,7 +62,7 @@ export const createNotebookHandlers = (deps: NotebookHandlersDependencies): Reve
     {
         command: TEAM_CLUSTER_DAEMON_COMMAND.notebook.session.create,
         execute: async (payload) => {
-            const request = readNotebookSessionRequestPayload(payload);
+            const request = payload as CreateNotebookSessionRequest;
 
             return {
                 data: await deps.jupyterRuntimeService.ensureSession({

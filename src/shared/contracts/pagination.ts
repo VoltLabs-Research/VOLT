@@ -32,15 +32,3 @@ export const calculatePaginationOffset = (page: number, limit: number): number =
 export const calculateTotalPages = (total: number, limit: number): number => {
     return Math.max(1, Math.ceil(total / normalizePositiveInteger(limit)));
 };
-
-export const createPaginatedResult = <T>(data: T[], page: number, limit: number, total: number): PaginatedResult<T> => {
-    const normalized = normalizePagination(page, limit);
-
-    return {
-        data,
-        page: normalized.page,
-        limit: normalized.limit,
-        total,
-        totalPages: calculateTotalPages(total, normalized.limit)
-    };
-};

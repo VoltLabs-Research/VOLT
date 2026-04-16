@@ -2,6 +2,7 @@ import { createTrajectoryRasterQueueService } from '@/modules/trajectory-native/
 import { createTrajectoryGlbQueueService } from '@/modules/trajectory-native/services';
 import type {
     FilterEvaluatorService,
+    NativeAtomsPageRequest,
     GlbExporterService,
     NativeColorModelRequest,
     NativeFilterPreviewRequest,
@@ -13,24 +14,17 @@ import type {
     TrajectoryParserService,
     TrajectoryPluginParserService
 } from '@/modules/trajectory-native/services';
-import type { QueueService, RedisConnectionService } from '@/modules/platform/services';
-import type { EnqueuePreprocessingRequest, EnqueuePreprocessingFrameDescriptor, RasterizeTrajectoryRequest } from '@/shared/contracts';
+import type { QueueService } from '@/modules/platform/services';
+import type { EnqueuePreprocessingRequest, RasterizeTrajectoryRequest } from '@/shared/contracts';
 import { TEAM_CLUSTER_DAEMON_COMMAND } from '@/shared/contracts';
 import type { ReverseChannelCommandHandler } from '../services';
 import type { RuntimeCapabilityGuard } from '../services';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 import {
-    readNumber,
-    readOptionalNumber,
-    readOptionalPayloadRecord,
-    readOptionalString,
-    readOptionalUnknownRecord,
-    readString,
     readPluginPropertyNamesRequest,
     readPluginModifierAnalysisRequest,
     readPluginAtomIndexRequest,
     readPluginModifierValuesRequest,
-    readPluginModifierStatsRequest,
     readPluginModifierUniqueValuesRequest,
     readPluginAnalysisAllAtomsRequest
 } from './payloadValidation';
@@ -38,206 +32,12 @@ import {
 interface TrajectoryHandlersDependencies {
     objectStore: ClusterObjectStore;
     queueService: QueueService;
-    redisConnectionService: RedisConnectionService;
     trajectoryAutoPreviewClaimStore: TrajectoryAutoPreviewClaimStore;
     trajectoryParserService: TrajectoryParserService;
     trajectoryPluginParserService: TrajectoryPluginParserService;
     glbExporterService: GlbExporterService;
     filterEvaluatorService: FilterEvaluatorService;
     runtimeCapabilityGuard: RuntimeCapabilityGuard;
-};
-
-interface NativeParticleFilterAction {
-    action: 'delete' | 'highlight';
-};
-
-const readNativeTrajectoryRequest = (payload: unknown): NativeTrajectoryRequest => {
-    const record = readOptionalPayloadRecord(payload);
-    const request: NativeTrajectoryRequest = {
-        trajectoryId: readString(record.trajectoryId, 'trajectoryId'),
-        timestep: readNumber(record.timestep, 'timestep')
-    };
-    const teamId = readOptionalString(record.teamId);
-    const trajectoryName = readOptionalString(record.trajectoryName);
-    const ownerClusterId = readOptionalString(record.ownerClusterId);
-
-    if (typeof record.objectKey !== 'undefined') {
-        request.objectKey = readString(record.objectKey, 'objectKey');
-    }
-
-    if (ownerClusterId) {
-        request.ownerClusterId = ownerClusterId;
-    }
-
-    if (teamId) {
-        request.teamId = teamId;
-    }
-
-    if (trajectoryName) {
-        request.trajectoryName = trajectoryName;
-    }
-
-    return request;
-};
-
-const readNativePropertyStatsRequest = (payload: unknown): NativePropertyStatsRequest => {
-    const request = readNativeTrajectoryRequest(payload);
-    const record = readOptionalPayloadRecord(payload);
-
-    return {
-        ...request,
-        property: readString(record.property, 'property')
-    };
-};
-
-const readNativeUniqueValuesRequest = (payload: unknown): NativeUniqueValuesRequest => {
-    const request = readNativePropertyStatsRequest(payload);
-    const record = readOptionalPayloadRecord(payload);
-    const maxValues = readOptionalNumber(record.maxValues);
-
-    if (typeof maxValues === 'undefined') {
-        return request;
-    }
-
-    return {
-        ...request,
-        maxValues
-    };
-};
-
-const readNativeAtomsPageRequest = (payload: unknown) => {
-    const request = readNativeTrajectoryRequest(payload);
-    const record = readOptionalPayloadRecord(payload);
-    const analysisId = readOptionalString(record.analysisId);
-
-    return {
-        ...request,
-        page: readNumber(record.page, 'page'),
-        limit: readNumber(record.limit, 'limit'),
-        ...(analysisId ? { analysisId } : {})
-    };
-};
-
-const readNativeColorModelRequest = (payload: unknown): NativeColorModelRequest => {
-    const request = readNativePropertyStatsRequest(payload);
-    const record = readOptionalPayloadRecord(payload);
-    const colorRequest: NativeColorModelRequest = {
-        ...request,
-        objectKey: readString(record.objectKey, 'objectKey'),
-        startValue: readNumber(record.startValue, 'startValue'),
-        endValue: readNumber(record.endValue, 'endValue'),
-        gradient: readString(record.gradient, 'gradient')
-    };
-    const analysisId = readOptionalString(record.analysisId);
-    const exposureId = readOptionalString(record.exposureId);
-    const externalValuesBase64 = readOptionalString(record.externalValuesBase64);
-
-    if (analysisId) {
-        colorRequest.analysisId = analysisId;
-    }
-
-    if (exposureId) {
-        colorRequest.exposureId = exposureId;
-    }
-
-    if (externalValuesBase64) {
-        colorRequest.externalValuesBase64 = externalValuesBase64;
-    }
-
-    return colorRequest;
-};
-
-const readNativeFilterPreviewRequest = (payload: unknown): NativeFilterPreviewRequest => {
-    const request = readNativeTrajectoryRequest(payload);
-    const record = readOptionalPayloadRecord(payload);
-    const previewRequest: NativeFilterPreviewRequest = {
-        ...request,
-        property: readString(record.property, 'property'),
-        operator: readString(record.operator, 'operator'),
-        value: readNumber(record.value, 'value')
-    };
-    const analysisId = readOptionalString(record.analysisId);
-    const exposureId = readOptionalString(record.exposureId);
-    const externalValuesBase64 = readOptionalString(record.externalValuesBase64);
-
-    if (analysisId) {
-        previewRequest.analysisId = analysisId;
-    }
-
-    if (exposureId) {
-        previewRequest.exposureId = exposureId;
-    }
-
-    if (externalValuesBase64) {
-        previewRequest.externalValuesBase64 = externalValuesBase64;
-    }
-
-    return previewRequest;
-};
-
-const readParticleFilterAction = (value: unknown): NativeParticleFilterAction['action'] => {
-    const action = readString(value, 'action');
-    if (action !== 'delete' && action !== 'highlight') {
-        throw new Error('action is invalid');
-    }
-
-    return action;
-};
-
-const readNativeParticleFilterModelRequest = (payload: unknown): NativeParticleFilterModelRequest => {
-    const request = readNativeTrajectoryRequest(payload);
-    const record = readOptionalPayloadRecord(payload);
-
-    return {
-        ...request,
-        objectKey: readString(record.objectKey, 'objectKey'),
-        action: readParticleFilterAction(record.action),
-        maskBase64: readString(record.maskBase64, 'maskBase64')
-    };
-};
-
-const readRasterizeTrajectoryRequest = (payload: unknown): RasterizeTrajectoryRequest => {
-    const record = readOptionalPayloadRecord(payload);
-    const config = readOptionalUnknownRecord(record.config, 'config');
-    const storageClusterId = readOptionalString(record.storageClusterId);
-
-    return {
-        trajectoryId: readString(record.trajectoryId, 'trajectoryId'),
-        teamId: readString(record.teamId, 'teamId'),
-        trajectoryName: readOptionalString(record.trajectoryName),
-        ...(storageClusterId ? { storageClusterId } : {}),
-        ...(config ? { config } : {})
-    };
-};
-
-const readEnqueuePreprocessingFrameDescriptor = (value: unknown, index: number): EnqueuePreprocessingFrameDescriptor => {
-    const record = readOptionalPayloadRecord(value);
-    const ownerClusterId = readOptionalString(record.ownerClusterId);
-
-    return {
-        timestep: readNumber(record.timestep, `frames[${index}].timestep`),
-        objectKey: readString(record.objectKey, `frames[${index}].objectKey`),
-        ...(ownerClusterId ? { ownerClusterId } : {})
-    };
-};
-
-const readEnqueuePreprocessingRequest = (payload: unknown): EnqueuePreprocessingRequest => {
-    const record = readOptionalPayloadRecord(payload);
-    const storageClusterId = readOptionalString(record.storageClusterId);
-
-    if (!Array.isArray(record.frames) || record.frames.length === 0) {
-        throw new Error('frames must be a non-empty array');
-    }
-
-    return {
-        trajectoryId: readString(record.trajectoryId, 'trajectoryId'),
-        teamId: readString(record.teamId, 'teamId'),
-        trajectoryName: readOptionalString(record.trajectoryName),
-        ...(storageClusterId ? { storageClusterId } : {}),
-        frames: record.frames.map((frame: unknown, index: number) =>
-            readEnqueuePreprocessingFrameDescriptor(frame, index)
-        )
-    };
 };
 
 export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): ReverseChannelCommandHandler[] => {
@@ -260,7 +60,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                 );
                 return {
                     data: await trajectoryRasterQueueService.queueRasterizationJobs(
-                        readRasterizeTrajectoryRequest(payload)
+                        payload as RasterizeTrajectoryRequest
                     )
                 };
             }
@@ -273,7 +73,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                 );
                 return {
                     data: await trajectoryGlbQueueService.enqueueGlbConversionJobs(
-                        readEnqueuePreprocessingRequest(payload)
+                        payload as EnqueuePreprocessingRequest
                     )
                 };
             }
@@ -284,7 +84,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                 deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled(
                     TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.preprocess
                 );
-                await deps.glbExporterService.preprocessTrajectory(readNativeTrajectoryRequest(payload));
+                await deps.glbExporterService.preprocessTrajectory(payload as NativeTrajectoryRequest);
                 return { data: { glbExported: true } };
             }
         },
@@ -295,7 +95,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                     TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.metadata
                 );
                 return {
-                    data: await deps.trajectoryParserService.getTrajectoryMetadata(readNativeTrajectoryRequest(payload))
+                    data: await deps.trajectoryParserService.getTrajectoryMetadata(payload as NativeTrajectoryRequest)
                 };
             }
         },
@@ -306,7 +106,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                     TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.propertyStats
                 );
                 return {
-                    data: await deps.trajectoryParserService.getPropertyStats(readNativePropertyStatsRequest(payload))
+                    data: await deps.trajectoryParserService.getPropertyStats(payload as NativePropertyStatsRequest)
                 };
             }
         },
@@ -317,7 +117,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                     TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.uniqueValues
                 );
                 return {
-                    data: await deps.trajectoryParserService.getUniqueValues(readNativeUniqueValuesRequest(payload))
+                    data: await deps.trajectoryParserService.getUniqueValues(payload as NativeUniqueValuesRequest)
                 };
             }
         },
@@ -328,7 +128,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                     TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.atomIds
                 );
                 return {
-                    data: await deps.trajectoryParserService.getAtomIds(readNativeTrajectoryRequest(payload))
+                    data: await deps.trajectoryParserService.getAtomIds(payload as NativeTrajectoryRequest)
                 };
             }
         },
@@ -338,7 +138,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                 deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled(
                     TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.atoms
                 );
-                const request = readNativeAtomsPageRequest(payload);
+                const request = payload as NativeAtomsPageRequest & { analysisId?: string };
                 const nativeResult = await deps.trajectoryParserService.getAtomsPage(request);
 
                 if (!request.analysisId) {
@@ -379,7 +179,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                     TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.filterPreview
                 );
                 return {
-                    data: await deps.filterEvaluatorService.previewFilter(readNativeFilterPreviewRequest(payload))
+                    data: await deps.filterEvaluatorService.previewFilter(payload as NativeFilterPreviewRequest)
                 };
             }
         },
@@ -390,7 +190,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                     TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.colorModel
                 );
                 return {
-                    data: await deps.filterEvaluatorService.exportColoredModel(readNativeColorModelRequest(payload))
+                    data: await deps.filterEvaluatorService.exportColoredModel(payload as NativeColorModelRequest)
                 };
             }
         },
@@ -401,7 +201,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                     TEAM_CLUSTER_DAEMON_COMMAND.trajectory.native.particleFilterModel
                 );
                 return {
-                    data: await deps.filterEvaluatorService.exportParticleFilterModel(readNativeParticleFilterModelRequest(payload))
+                    data: await deps.filterEvaluatorService.exportParticleFilterModel(payload as NativeParticleFilterModelRequest)
                 };
             }
         },
@@ -446,7 +246,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
             execute: async (payload) => {
                 deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled('trajectory.plugin.modifier-stats');
                 return {
-                    data: await deps.trajectoryPluginParserService.getModifierStats(readPluginModifierStatsRequest(payload))
+                    data: await deps.trajectoryPluginParserService.getModifierStats(readPluginModifierValuesRequest(payload))
                 };
             }
         },

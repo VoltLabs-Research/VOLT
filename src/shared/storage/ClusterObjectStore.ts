@@ -37,14 +37,12 @@ export interface ClusterObjectReadOptions {
 
 export interface ClusterObjectStore {
     head(ownerClusterId: string, bucket: string, objectKey: string): Promise<ClusterObjectHeadResponse>;
-    exists(ownerClusterId: string, bucket: string, objectKey: string): Promise<boolean>;
     getStream(
         ownerClusterId: string,
         bucket: string,
         objectKey: string,
         options?: ClusterObjectReadOptions
     ): Promise<ClusterObjectStreamResponse>;
-    getBuffer(ownerClusterId: string, bucket: string, objectKey: string): Promise<Buffer>;
     putObject(input: {
         ownerClusterId: string;
         bucket: string;
@@ -66,21 +64,9 @@ export interface ClusterObjectStore {
         cursor?: string;
         limit?: number;
     }): Promise<{ keys: string[]; objects: ClusterObjectListEntry[]; nextCursor?: string; }>;
-    deleteByPrefix(ownerClusterId: string, bucket: string, prefix: string): Promise<number | undefined>;
-    removeObject(ownerClusterId: string, bucket: string, objectKey: string): Promise<void>;
 }
 
 const MINIO_METADATA_PREFIX = 'x-amz-meta-';
-
-const isObjectNotFoundError = (error: unknown): boolean => {
-    return typeof error === 'object'
-        && error !== null
-        && 'code' in error
-        && (
-            error.code === 'NotFound'
-            || error.code === 'NoSuchKey'
-        );
-};
 
 const normalizeMinioMetadata = (stat: MinioObjectStat): Record<string, string> => {
     const metadata: Record<string, string> = {};
@@ -207,19 +193,6 @@ export const createClusterObjectStore = (deps: {
             return deps.remoteClient.head(ownerClusterId, bucket, objectKey);
         },
 
-        async exists(ownerClusterId, bucket, objectKey) {
-            try {
-                await this.head(ownerClusterId, bucket, objectKey);
-                return true;
-            } catch (error) {
-                if (isObjectNotFoundError(error) || (typeof error === 'object' && error !== null && 'statusCode' in error && error.statusCode === 404)) {
-                    return false;
-                }
-
-                throw error;
-            }
-        },
-
         async getStream(ownerClusterId, bucket, objectKey, options) {
             if (isLocalOwner(ownerClusterId)) {
                 requireLocalReadCapability(deps.getRuntimeSnapshot(), ownerClusterId);
@@ -244,22 +217,6 @@ export const createClusterObjectStore = (deps: {
 
             markRemoteFetch(ownerClusterId, bucket, objectKey);
             return deps.remoteClient.getStream(ownerClusterId, bucket, objectKey, options);
-        },
-
-        async getBuffer(ownerClusterId, bucket, objectKey) {
-            if (isLocalOwner(ownerClusterId)) {
-                requireLocalReadCapability(deps.getRuntimeSnapshot(), ownerClusterId);
-                const stream = await deps.minioService.getObjectStream(bucket, objectKey);
-                const chunks: Buffer[] = [];
-                for await (const chunk of stream) {
-                    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-                }
-
-                return Buffer.concat(chunks);
-            }
-
-            markRemoteFetch(ownerClusterId, bucket, objectKey);
-            return deps.remoteClient.getBuffer(ownerClusterId, bucket, objectKey);
         },
 
         async putObject(input) {
@@ -353,43 +310,6 @@ export const createClusterObjectStore = (deps: {
             }
 
             return deps.remoteClient.list(ownerClusterId, request);
-        },
-
-        async deleteByPrefix(ownerClusterId, bucket, prefix) {
-            if (isLocalOwner(ownerClusterId)) {
-                requireLocalWriteCapability(deps.getRuntimeSnapshot(), ownerClusterId);
-                return deps.minioService.deleteByPrefix(bucket, prefix);
-            }
-
-            logger.info(
-                {
-                    action: 'artifact.write.remote',
-                    ownerClusterId,
-                    bucket,
-                    prefix
-                },
-                'Deleting remote owner prefix through Volt server proxy'
-            );
-            return deps.remoteClient.deleteByPrefix(ownerClusterId, bucket, prefix);
-        },
-
-        async removeObject(ownerClusterId, bucket, objectKey) {
-            if (isLocalOwner(ownerClusterId)) {
-                requireLocalWriteCapability(deps.getRuntimeSnapshot(), ownerClusterId);
-                await deps.minioService.removeObject(bucket, objectKey);
-                return;
-            }
-
-            logger.info(
-                {
-                    action: 'artifact.write.remote',
-                    ownerClusterId,
-                    bucket,
-                    objectKey
-                },
-                'Deleting remote owner object through Volt server proxy'
-            );
-            await deps.remoteClient.deleteObject(ownerClusterId, bucket, objectKey);
         }
     };
 };

@@ -1,14 +1,14 @@
 import type { WorkflowExecutionContext, WorkflowNode } from '../contracts';
 import type { WorkflowNodeRegistry } from './NodeRegistry';
 
-export interface OrderedNodeExecutionResult {
+interface OrderedNodeExecutionResult {
     node: WorkflowNode;
     status: 'executed' | 'skipped';
     output?: Record<string, unknown>;
     reason?: string;
 };
 
-export interface RunOrderedWorkflowNodesParams {
+interface RunOrderedWorkflowNodesParams {
     nodes: WorkflowNode[];
     context: WorkflowExecutionContext;
     registry: WorkflowNodeRegistry;

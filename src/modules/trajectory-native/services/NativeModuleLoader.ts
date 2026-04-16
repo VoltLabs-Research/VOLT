@@ -2,7 +2,7 @@ import { logger } from '@/core/logger';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
-export interface NativeBoxBounds {
+interface NativeBoxBounds {
     xlo: number;
     xhi: number;
     ylo: number;
@@ -11,7 +11,7 @@ export interface NativeBoxBounds {
     zhi: number;
 };
 
-export interface NativeTrajectoryMetadata {
+interface NativeTrajectoryMetadata {
     timestep: number;
     natoms: number;
     headers: string[];
@@ -22,7 +22,6 @@ export interface NativeDumpResult {
     positions: Float32Array;
     types: Uint16Array;
     ids?: Uint32Array;
-    /** Additional per-atom columns returned by the dump parser when requested and available. */
     properties?: Record<string, Float32Array>;
     metadata: NativeTrajectoryMetadata;
     min: [number, number, number];
@@ -40,7 +39,6 @@ export interface NativeDataResult {
 
 export interface ParseOptions {
     includeIds?: boolean;
-    /** Additional dump columns to materialize beyond the built-in id/type/x/y/z fields. */
     properties?: string[];
 };
 
@@ -109,7 +107,7 @@ export interface NativeColorModelRequest extends NativePropertyStatsRequest, Nat
     externalValuesBase64?: string;
 };
 
-export interface NativeConditionFilterPreviewRequest extends NativeTrajectoryRequest, NativeModifierSourceRequest {
+interface NativeConditionFilterPreviewRequest extends NativeTrajectoryRequest, NativeModifierSourceRequest {
     property: string;
     operator: string;
     value: number;
@@ -158,7 +156,7 @@ interface LammpsIoModule {
     statsParser: NativeStatsModule;
 };
 
-export interface NativeModuleOperationContext {
+interface NativeModuleOperationContext {
     filePath?: string;
     objectKey?: string;
     packageName?: string;
@@ -188,15 +186,15 @@ export const createNativeProcessingTempPath = (extension: string): string => {
     return path.join(NATIVE_PROCESSING_RUNTIME_DIR, `${randomUUID()}${extension}`);
 };
 
-export interface NativeDumpParserModule {
+interface NativeDumpParserModule {
     parseDump(filePath: string, options: ParseOptions): NativeDumpResult | undefined;
 };
 
-export interface NativeDataParserModule {
+interface NativeDataParserModule {
     parseData(filePath: string, options: NativeDataParseOptions): NativeDataResult | undefined;
 };
 
-export interface NativeStatsModule {
+interface NativeStatsModule {
     getStatsForProperty(filePath: string, propIdx: number): NativeStatsResult;
     getUniqueValuesForProperty(filePath: string, propIdx: number, maxValues?: number): number[];
 };
@@ -206,7 +204,7 @@ export interface NativeStatsResult {
     max: number;
 };
 
-export interface NativeMeshBounds {
+interface NativeMeshBounds {
     minX: number;
     minY: number;
     minZ: number;
@@ -215,7 +213,7 @@ export interface NativeMeshBounds {
     maxZ: number;
 };
 
-export interface NativeMeshMaterial {
+interface NativeMeshMaterial {
     baseColor: [number, number, number, number];
     metallic: number;
     roughness: number;
@@ -223,11 +221,11 @@ export interface NativeMeshMaterial {
     doubleSided?: boolean;
 };
 
-export interface NativeDataParseOptions {
+interface NativeDataParseOptions {
     includeIds?: boolean;
 };
 
-export interface NativeExporterModule {
+interface NativeExporterModule {
     generateGLBToFile(
         positions: Float32Array,
         types: Uint16Array,
@@ -269,7 +267,7 @@ export interface NativeExporterModule {
     ): Buffer;
 };
 
-export interface NativeRasterizerModule {
+interface NativeRasterizerModule {
     rasterize(
         glbPath: string,
         pngPath: string,
@@ -281,7 +279,7 @@ export interface NativeRasterizerModule {
     ): boolean;
 };
 
-export interface NativeRasterizerOptions {
+interface NativeRasterizerOptions {
     fov: number;
     distScale: number;
     zUp: boolean;

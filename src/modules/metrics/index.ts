@@ -1,6 +1,6 @@
 import { MetricsService } from './services';
 
-export interface MetricsModule {
+interface MetricsModule {
     metricsService: MetricsService;
 }
 

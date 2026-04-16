@@ -13,11 +13,6 @@ export const TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER = 'x-volt-object-sto
 export const TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER = 'x-team-cluster-direct-access-token';
 export const VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID = '__volt_server__';
 
-export enum TextEncoding {
-    Utf8 = 'utf8',
-    Base64 = 'base64'
-};
-
 export enum ContainerAction {
     Start = 'start',
     Stop = 'stop',
@@ -98,20 +93,6 @@ export interface CreateNotebookSessionResponse {
     };
 };
 
-export interface ObjectUploadRequest {
-    bucket: ObjectBucketName;
-    objectKey: string;
-    content: string;
-    encoding?: TextEncoding;
-    metadata?: Record<string, string>;
-};
-
-export interface ObjectDeleteRequest {
-    bucket: ObjectBucketName;
-    objectKey?: string;
-    prefix?: string;
-};
-
 export interface PluginSyncRequest {
     pluginId: string;
     objectKey: string;
@@ -119,21 +100,12 @@ export interface PluginSyncRequest {
     expectedHash?: string;
 };
 
-export interface ResolvedObjectRef {
+interface ResolvedObjectRef {
     ownerClusterId: string;
     bucket: string;
     objectKey: string;
     expectedHash?: string;
     sizeBytes?: number;
-}
-
-export interface ResolvedObjectWrite {
-    ownerClusterId: string;
-    bucket: string;
-    objectKey: string;
-    expectedHash?: string;
-    sizeBytes?: number;
-    contentType?: string;
 }
 
 export interface AnalysisQueueJobPayload extends Record<string, unknown> {
@@ -208,7 +180,7 @@ export interface DaemonAnalysisDocument {
     updatedAt?: string | Date;
 };
 
-export interface WorkflowEdgeDefinition {
+interface WorkflowEdgeDefinition {
     source: string;
     target: string;
     sourceHandle?: string;

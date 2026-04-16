@@ -1,12 +1,12 @@
 import { logger } from '@/core/logger';
 import { DaemonCommandError } from '@/modules/cloud-control/services/DaemonCommandError';
 import { ANALYSIS_QUEUE_NAME, QueueService } from '@/modules/platform/services';
+import { readWorkflowEntrypointData } from '@/modules/workflow-runtime/services/InlineWorkflowShared';
 import { createTraceLogContext, serializeDaemonTraceContext } from '@/shared/observability/daemonInstrumentation';
 import {
     compressSerializedAnalysisExecutionData,
     serializeAnalysisExecutionData
 } from '@/shared/utilities/analysis-execution-data';
-import { isRecord } from '@/shared/utils';
 import { WorkflowEngine } from '@/modules/workflow-runtime/services';
 import { EntrypointType, OrchestrationAction } from '@/shared/contracts';
 import { RuntimeEventBroker } from '@/shared/services';
@@ -31,29 +31,6 @@ type PlannedExecutionItem = Record<string, unknown> | TrajectoryDumpDescriptor;
 
 const measurePayloadBytes = (payload: Record<string, unknown>): number => {
     return Buffer.byteLength(JSON.stringify(payload));
-};
-
-const isTrajectoryDumpDescriptor = (value: unknown): value is TrajectoryDumpDescriptor => {
-    if (!isRecord(value)) {
-        return false;
-    }
-
-    return typeof value.path === 'string'
-        && typeof value.timestep === 'number'
-        && Number.isFinite(value.timestep)
-        && typeof value.natoms === 'number'
-        && Number.isFinite(value.natoms)
-        && typeof value.simulationCell === 'string'
-        && (typeof value.originalPath === 'undefined' || typeof value.originalPath === 'string');
-};
-
-const resolvePlannedDumpPath = (item: PlannedExecutionItem): string | undefined => {
-    const pathValue = Reflect.get(item, 'path');
-    if (typeof pathValue !== 'string' || pathValue.length === 0) {
-        return undefined;
-    }
-
-    return pathValue;
 };
 
 export class AnalysisDispatchService {
@@ -117,9 +94,7 @@ export class AnalysisDispatchService {
             ? this.buildBatchJob(input, plan.items)
             : this.buildJobs(input, plan.items);
 
-        const batchTrajectoryDumps = isBatchMode
-            ? (plan.batchTrajectoryDumps ?? plan.items.filter(isTrajectoryDumpDescriptor))
-            : undefined;
+        const batchTrajectoryDumps = isBatchMode ? plan.batchTrajectoryDumps : undefined;
         const allDumpUrls = batchTrajectoryDumps?.map((dump) => dump.path);
 
         const executionData: AnalysisJobExecutionData = {
@@ -255,8 +230,9 @@ export class AnalysisDispatchService {
                 );
             }
 
-            const inputFile = resolvePlannedDumpPath(item)
-                ?? `trajectory-${input.trajectoryId}/timestep-${String(timestep)}.dump.zst`;
+            const inputFile = typeof item.path === 'string' && item.path.length > 0
+                ? item.path
+                : `trajectory-${input.trajectoryId}/timestep-${String(timestep)}.dump.zst`;
 
             return {
                 jobId: `${input.analysisId}-${index}`,
@@ -316,13 +292,6 @@ export class AnalysisDispatchService {
             return timestepValue;
         }
 
-        if (typeof timestepValue === 'string' && timestepValue.trim().length > 0) {
-            const parsedTimestep = Number(timestepValue);
-            if (Number.isFinite(parsedTimestep)) {
-                return parsedTimestep;
-            }
-        }
-
         return undefined;
     }
 
@@ -335,7 +304,7 @@ export class AnalysisDispatchService {
         entrypointScript?: string;
     } {
         const entrypoint = workflow.nodes.find((node) => node.type === 'entrypoint');
-        const entrypointData = entrypoint?.data?.entrypoint as Record<string, unknown> | undefined;
+        const entrypointData = readWorkflowEntrypointData(entrypoint?.data?.entrypoint);
         if (!entrypointData?.binaryObjectPath || !entrypointData.arguments) {
             throw DaemonCommandError.badRequest(
                 'Analysis::Start::InvalidEntrypoint',
@@ -344,22 +313,12 @@ export class AnalysisDispatchService {
         }
 
         return {
-            binaryObjectPath: String(entrypointData.binaryObjectPath),
-            entrypointType: entrypointData.type === EntrypointType.PythonScript
-                ? EntrypointType.PythonScript
-                : entrypointData.type === EntrypointType.PackagedExecutable
-                    ? EntrypointType.PackagedExecutable
-                : EntrypointType.Executable,
-            arguments: String(entrypointData.arguments),
-            timeoutMs: typeof entrypointData.timeout === 'number' && Number.isFinite(entrypointData.timeout)
-                ? entrypointData.timeout
-                : undefined,
-            requirementsFile: typeof entrypointData.requirementsFile === 'string'
-                ? entrypointData.requirementsFile
-                : undefined,
-            entrypointScript: typeof entrypointData.entrypointScript === 'string' && entrypointData.entrypointScript.length > 0
-                ? entrypointData.entrypointScript
-                : undefined
+            binaryObjectPath: entrypointData.binaryObjectPath,
+            entrypointType: entrypointData.type ?? EntrypointType.Executable,
+            arguments: entrypointData.arguments,
+            timeoutMs: entrypointData.timeout,
+            requirementsFile: entrypointData.requirementsFile,
+            entrypointScript: entrypointData.entrypointScript || undefined
         };
     }
 
@@ -379,27 +338,27 @@ export class AnalysisDispatchService {
         return workflow.nodes
             .filter((node) => node.type === 'exposure')
             .map((node) => {
-                const exposureData = (node.data.exposure as Record<string, unknown>) || {};
+                const exposureData = node.data.exposure as {
+                    name?: string;
+                    results?: string;
+                    iterable?: string;
+                } | undefined;
                 const exportEdge = graphEdges.find((edge) => edge.source === node.id);
                 const exportNode = exportEdge
                     ? workflow.nodes.find((candidate) => candidate.id === exportEdge.target && candidate.type === 'export')
                     : undefined;
-                const exportData = exportNode?.data?.export as Record<string, unknown> | undefined;
+                const exportData = exportNode?.data?.export as {
+                    exporter: string;
+                    type: string;
+                    options?: Record<string, unknown>;
+                } | undefined;
 
                 return {
                     nodeId: node.id,
-                    name: String(exposureData.name || ''),
-                    results: String(exposureData.results || ''),
-                    iterable: typeof exposureData.iterable === 'string' ? exposureData.iterable : undefined,
+                    name: exposureData?.name || '',
+                    results: exposureData?.results || '',
+                    iterable: exposureData?.iterable,
                     export: exportData
-                        ? {
-                            exporter: String(exportData.exporter || ''),
-                            type: String(exportData.type || ''),
-                            options: typeof exportData.options === 'object' && exportData.options !== null
-                                ? exportData.options as Record<string, unknown>
-                                : undefined
-                        }
-                        : undefined
                 };
             });
     }

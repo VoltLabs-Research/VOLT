@@ -11,8 +11,3 @@ export enum TeamClusterStatus {
     Updating = 'updating',
     UpdateFailed = 'update-failed'
 };
-
-export interface ProcessTeamClusterHealthcheckOutputDTO {
-    teamCluster: Record<string, unknown>;
-    daemonPassword: string;
-};

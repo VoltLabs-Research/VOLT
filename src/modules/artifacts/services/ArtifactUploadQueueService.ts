@@ -6,7 +6,7 @@ import { DAEMON_PATHS } from '@/core/paths';
 import { ARTIFACT_UPLOAD_QUEUE_NAME, QueueService } from '@/modules/platform/services';
 import type { ReportArtifactInput } from '@/modules/cloud-control/services';
 
-export interface ArtifactUploadBatchJobItem extends Record<string, unknown> {
+interface ArtifactUploadBatchJobItem extends Record<string, unknown> {
     sourcePath: string;
     ownerClusterId: string;
     bucket: string;

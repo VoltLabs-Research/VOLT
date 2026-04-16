@@ -37,15 +37,17 @@ export interface UploadBufferToObjectStoreInput {
 };
 
 export const uploadBufferToObjectStore = async (input: UploadBufferToObjectStoreInput): Promise<void> => {
+    const metadata = {
+        'Content-Type': input.contentType,
+        ...(input.contentEncoding ? { 'Content-Encoding': input.contentEncoding } : {})
+    };
+
     if (!input.compressionCodec && input.buffer.length < STREAM_UPLOAD_THRESHOLD) {
         await input.objectStore.putObject({
             bucket: input.bucket,
             objectKey: input.objectKey,
             body: input.buffer,
-            metadata: {
-                'Content-Type': input.contentType,
-                ...(input.contentEncoding ? { 'Content-Encoding': input.contentEncoding } : {})
-            }
+            metadata
         });
         return;
     }
@@ -71,10 +73,7 @@ export const uploadBufferToObjectStore = async (input: UploadBufferToObjectStore
             objectKey: input.objectKey,
             stream: createReadStream(uploadPath),
             size: uploadStats.size,
-            metadata: {
-                'Content-Type': input.contentType,
-                ...(input.contentEncoding ? { 'Content-Encoding': input.contentEncoding } : {})
-            }
+            metadata
         });
     } finally {
         if (uploadPath !== tmpPath) {

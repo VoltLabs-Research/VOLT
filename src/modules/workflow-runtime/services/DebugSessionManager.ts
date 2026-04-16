@@ -15,7 +15,6 @@ import type {
     AnalysisJobExecutionData,
     DaemonAnalysisDocument,
     NestedPluginDefinition,
-    PluginReferenceExecutionRequest,
     TrajectoryFrame,
     WorkflowDefinition
 } from '@/shared/contracts';
@@ -25,7 +24,6 @@ import { createDebugArtifactBatch } from './DebugArtifactBatch';
 import { inspectDebugExposureResult } from './DebugExposureProcessor';
 import {
     DebugInlinePluginRuntime,
-    type DebugDumpExecutionTarget,
     type DebugTraceNode
 } from './DebugInlinePluginRuntime';
 import { InlineWorkflowTraceError } from './InlineWorkflowRuntime';
@@ -44,10 +42,9 @@ import type { WorkflowExecutionContext, WorkflowNode } from '../contracts';
 const SESSION_IDLE_TTL_MS = 5 * 60 * 1000;
 const SESSION_SWEEP_INTERVAL_MS = 30 * 1000;
 
-export interface DebugSessionRequest {
+interface DebugSessionRequest {
     workflow: WorkflowDefinition;
     nestedPlugins?: NestedPluginDefinition[];
-    pluginReferenceExecutions?: PluginReferenceExecutionRequest[];
     trajectoryId: string;
     trajectoryFrames: TrajectoryFrame[];
     pluginId: string;
@@ -57,7 +54,7 @@ export interface DebugSessionRequest {
     timestep?: number;
 };
 
-export interface DebugNodeResult {
+interface DebugNodeResult {
     nodeId: string;
     nodeType: string;
     status: 'completed' | 'skipped' | 'error';
@@ -70,22 +67,16 @@ export interface DebugNodeResult {
     contextSnapshot: Record<string, Record<string, unknown>>;
 };
 
-export interface DebugSessionInfo {
+interface DebugSessionInfo {
     sessionId: string;
-    executionOrder: DebugExecutionOrderEntry[];
+    executionOrder: Array<{ nodeId: string; type: string; }>;
     forEachNodeId: string | null;
     totalIterations: number;
-};
-
-interface DebugExecutionOrderEntry {
-    nodeId: string;
-    type: string;
 };
 
 interface DebugSession {
     sessionId: string;
     context: WorkflowExecutionContext;
-    allNodes: WorkflowNode[];
     executableNodes: WorkflowNode[];
     nodeById: Map<string, WorkflowNode>;
     pendingNodeIds: string[];
@@ -93,11 +84,9 @@ interface DebugSession {
     completedNodeIds: Set<string>;
     nodeStatuses: Map<string, 'executed' | 'skipped' | 'error'>;
     lastActivity: number;
-    startedAt: number;
     forEachNodeId: string | null;
     storageClusterId?: string;
     nestedPlugins: NestedPluginDefinition[];
-    pluginReferenceExecutions: PluginReferenceExecutionRequest[];
     preparedExecution: PreparedDebugExecutionEnvironment | null;
     exposureCache: Map<string, DebugExposureInspectionResult>;
     exposuresByNodeId: Map<string, AnalysisExposureDefinition>;
@@ -110,32 +99,6 @@ let sessionCounter = 0;
 
 const generateSessionId = (): string => {
     return `dbg_${Date.now()}_${++sessionCounter}`;
-};
-
-const isFiniteNumber = (value: unknown): value is number => {
-    return typeof value === 'number' && Number.isFinite(value);
-};
-
-const readExportDefinition = (value: unknown): AnalysisExposureDefinition['export'] | undefined => {
-    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-        return undefined;
-    }
-
-    const exportData = value as Record<string, unknown>;
-    const exporter = typeof exportData.exporter === 'string' ? exportData.exporter : '';
-    const type = typeof exportData.type === 'string' ? exportData.type : '';
-
-    if (!exporter || !type) {
-        return undefined;
-    }
-
-    return {
-        exporter,
-        type,
-        options: typeof exportData.options === 'object' && exportData.options !== null && !Array.isArray(exportData.options)
-            ? exportData.options as Record<string, unknown>
-            : undefined
-    };
 };
 
 const buildExposureMaps = (
@@ -153,9 +116,11 @@ const buildExposureMaps = (
             continue;
         }
 
-        const exposureData = typeof node.data.exposure === 'object' && node.data.exposure !== null
-            ? node.data.exposure as Record<string, unknown>
-            : {};
+        const exposureData = node.data.exposure as {
+            name?: string;
+            results?: string;
+            iterable?: string;
+        } | undefined;
         const exportEdge = workflow.edges.find((edge) => edge.source === node.id);
         const exportNode = exportEdge
             ? nodeById.get(exportEdge.target)
@@ -167,11 +132,11 @@ const buildExposureMaps = (
 
         exposuresByNodeId.set(node.id, {
             nodeId: node.id,
-            name: typeof exposureData.name === 'string' ? exposureData.name : node.id,
-            results: typeof exposureData.results === 'string' ? exposureData.results : '',
-            iterable: typeof exposureData.iterable === 'string' ? exposureData.iterable : undefined,
+            name: exposureData?.name || node.id,
+            results: exposureData?.results || '',
+            iterable: exposureData?.iterable,
             export: exportNode?.type === WorkflowNodeType.Export
-                ? readExportDefinition(exportNode.data.export)
+                ? exportNode.data.export as AnalysisExposureDefinition['export']
                 : undefined
         });
     }
@@ -182,28 +147,12 @@ const buildExposureMaps = (
     };
 };
 
-const toDebugDumpExecutionTarget = (
-    preparedExecution: PreparedDebugExecutionEnvironment
-): DebugDumpExecutionTarget => ({
-    localPath: preparedExecution.dumpPath,
-    originalPath: preparedExecution.selectedDump.originalPath ?? preparedExecution.selectedDump.path,
-    timestep: preparedExecution.selectedDump.timestep,
-    natoms: preparedExecution.selectedDump.natoms,
-    simulationCell: preparedExecution.selectedDump.simulationCell
-});
-
 interface NodeExecutionOutcome {
     status: 'executed' | 'skipped';
     output?: Record<string, unknown>;
     reason?: string;
     nestedTrace?: DebugTraceNode[];
 }
-
-const readNestedTraceFromError = (error: unknown): DebugTraceNode[] | undefined => {
-    return error instanceof InlineWorkflowTraceError
-        ? error.trace
-        : undefined;
-};
 
 const getWorkflowChildren = (
     workflow: WorkflowGraph,
@@ -267,8 +216,7 @@ export class DebugSessionManager {
     createSession(request: DebugSessionRequest): DebugSessionInfo {
         const sessionId = generateSessionId();
         const workflow = new WorkflowGraph(request.workflow);
-        const allNodes = workflow.topologicalSort();
-        const executableNodes = [...allNodes];
+        const executableNodes = workflow.topologicalSort();
         const nodeById = new Map(executableNodes.map((node) => [node.id, node]));
         const rootNodeIds = executableNodes
             .filter((node) => !workflow.edges.some((edge) => edge.target === node.id))
@@ -304,7 +252,6 @@ export class DebugSessionManager {
         const session: DebugSession = {
             sessionId,
             context,
-            allNodes,
             executableNodes,
             nodeById,
             pendingNodeIds: [...rootNodeIds].reverse(),
@@ -312,11 +259,9 @@ export class DebugSessionManager {
             completedNodeIds: new Set(),
             nodeStatuses: new Map(),
             lastActivity: Date.now(),
-            startedAt: Date.now(),
             forEachNodeId: forEachNode?.id ?? null,
             storageClusterId: request.storageClusterId,
             nestedPlugins: request.nestedPlugins ?? [],
-            pluginReferenceExecutions: request.pluginReferenceExecutions ?? [],
             preparedExecution: null,
             exposureCache: new Map(),
             exposuresByNodeId,
@@ -326,9 +271,6 @@ export class DebugSessionManager {
         };
 
         this.sessions.set(sessionId, session);
-        logger.info(
-            `@debug-session-manager: created session ${sessionId} with ${executableNodes.length} executable nodes (${allNodes.length} total)`
-        );
 
         return {
             sessionId,
@@ -406,7 +348,7 @@ export class DebugSessionManager {
                 status: 'error',
                 error: message,
                 stack,
-                nestedTrace: readNestedTraceFromError(error),
+                nestedTrace: error instanceof InlineWorkflowTraceError ? error.trace : undefined,
                 durationMs,
                 contextSnapshot: snapshotWorkflowOutputs(session.context.outputs)
             };
@@ -481,7 +423,6 @@ export class DebugSessionManager {
                 '@debug-session-manager: failed to cleanup debug session artifacts'
             );
         });
-        logger.info(`@debug-session-manager: destroyed session ${sessionId}`);
     }
 
     shutdown(): void {
@@ -500,8 +441,6 @@ export class DebugSessionManager {
         node: WorkflowNode
     ): Promise<NodeExecutionOutcome | null> {
         switch (node.type) {
-            case WorkflowNodeType.Arguments:
-                return this.executeArgumentsNode(session, node);
             case WorkflowNodeType.Plugin:
                 return this.executePluginNode(session, node);
             case WorkflowNodeType.Entrypoint:
@@ -510,13 +449,30 @@ export class DebugSessionManager {
                 return this.executeExposureNode(session, node);
             case WorkflowNodeType.Export:
                 return this.executeExportNode(session, node);
+            case WorkflowNodeType.Arguments:
             default: {
                 const [orderedResult] = await runOrderedWorkflowNodes({
                     nodes: [node],
                     context: session.context,
                     registry: this.registry
                 });
-                return orderedResult ?? null;
+                if (!orderedResult) {
+                    return null;
+                }
+
+                if (orderedResult.status === 'skipped') {
+                    return {
+                        status: 'skipped',
+                        reason: orderedResult.reason
+                    };
+                }
+
+                const output = orderedResult.output ?? session.context.outputs.get(node.id) ?? {};
+                session.context.outputs.set(node.id, output);
+                return {
+                    status: 'executed',
+                    output
+                };
             }
         }
     }
@@ -526,19 +482,6 @@ export class DebugSessionManager {
             const nodeId = session.pendingNodeIds[session.pendingNodeIds.length - 1];
             if (session.completedNodeIds.has(nodeId)) {
                 session.pendingNodeIds.pop();
-                continue;
-            }
-
-            return session.nodeById.get(nodeId) ?? null;
-        }
-
-        return null;
-    }
-
-    private dequeueCurrentNode(session: DebugSession): WorkflowNode | null {
-        while (session.pendingNodeIds.length > 0) {
-            const nodeId = session.pendingNodeIds.pop() as string;
-            if (session.completedNodeIds.has(nodeId)) {
                 continue;
             }
 
@@ -680,36 +623,6 @@ export class DebugSessionManager {
         return getWorkflowChildren(workflow, node.id).map((childNode) => childNode.id);
     }
 
-    private async executeArgumentsNode(
-        session: DebugSession,
-        node: WorkflowNode
-    ): Promise<NodeExecutionOutcome | null> {
-        const [orderedResult] = await runOrderedWorkflowNodes({
-            nodes: [node],
-            context: session.context,
-            registry: this.registry
-        });
-
-        if (!orderedResult) {
-            return null;
-        }
-
-        if (orderedResult.status === 'skipped') {
-            return {
-                status: 'skipped',
-                reason: orderedResult.reason
-            };
-        }
-
-        const output = orderedResult.output ?? session.context.outputs.get(node.id) ?? {};
-
-        session.context.outputs.set(node.id, output);
-        return {
-            status: 'executed',
-            output
-        };
-    }
-
     private async executePluginNode(
         session: DebugSession,
         node: WorkflowNode
@@ -720,7 +633,13 @@ export class DebugSessionManager {
             workflow: session.context.workflow.definition,
             nestedPlugins: session.nestedPlugins,
             outputs: session.context.outputs,
-            dumpTarget: toDebugDumpExecutionTarget(preparedExecution),
+            dumpTarget: {
+                localPath: preparedExecution.dumpPath,
+                originalPath: preparedExecution.selectedDump.originalPath ?? preparedExecution.selectedDump.path,
+                timestep: preparedExecution.selectedDump.timestep,
+                natoms: preparedExecution.selectedDump.natoms,
+                simulationCell: preparedExecution.selectedDump.simulationCell
+            },
             outputDir: preparedExecution.outputDir,
             trajectoryId: session.context.trajectoryId,
             trajectoryFrames: session.context.trajectoryFrames,
@@ -773,7 +692,7 @@ export class DebugSessionManager {
         session.context.outputs.set(node.id, execution.output);
 
         const exitCode = execution.output.exitCode;
-        if (isFiniteNumber(exitCode) && exitCode !== 0) {
+        if (typeof exitCode === 'number' && Number.isFinite(exitCode) && exitCode !== 0) {
             const stderr = typeof execution.output.stderr === 'string'
                 ? execution.output.stderr
                 : '';

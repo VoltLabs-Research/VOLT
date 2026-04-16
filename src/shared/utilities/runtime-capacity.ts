@@ -1,7 +1,5 @@
 import os from 'node:os';
 
-const BYTES_PER_MEGABYTE = 1024 * 1024;
-
 export const readPositiveIntegerEnv = (name: string): number | undefined => {
     const rawValue = process.env[name]?.trim();
     if (!rawValue) {
@@ -35,8 +33,4 @@ export const getEffectiveMemoryLimitBytes = (): number => {
     }
 
     return hostMemory;
-};
-
-export const getEffectiveMemoryLimitMegabytes = (): number => {
-    return Math.max(1, Math.floor(getEffectiveMemoryLimitBytes() / BYTES_PER_MEGABYTE));
 };

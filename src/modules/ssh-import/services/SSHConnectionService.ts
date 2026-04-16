@@ -15,7 +15,7 @@ export interface SSHConnectionConfig {
     password: string;
 };
 
-export interface SSHFileEntry {
+interface SSHFileEntry {
     name: string;
     path: string;
     isDirectory: boolean;
@@ -23,7 +23,7 @@ export interface SSHFileEntry {
     mtime: Date;
 };
 
-export interface DownloadProgress {
+interface DownloadProgress {
     totalBytes: number;
     downloadedBytes: number;
     currentFile: string;

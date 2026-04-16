@@ -1,4 +1,5 @@
 import type { RemoteExplorerMongoDocument } from '@/shared/contracts';
+import { isRecord } from '@/shared/utilities/type-guards';
 import { Readable } from 'node:stream';
 
 interface DownloadFilenameParts {
@@ -6,26 +7,18 @@ interface DownloadFilenameParts {
     encoded: string;
 };
 
-interface RecordValue {
-    [key: string]: unknown;
-};
-
-export interface ParsedMinioPath {
+interface ParsedMinioPath {
     bucket: string;
     objectKey: string;
 };
 
-export interface ParsedRedisKeyPath {
+interface ParsedRedisKeyPath {
     databaseId: number;
     key: string;
 };
 
 export const MAX_MONGO_DOCUMENTS = 100;
 export const MAX_OBJECT_PREVIEW_BYTES = 65_536;
-
-const isRecord = (value: unknown): value is RecordValue => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-};
 
 const buildDownloadFilenameParts = (filename: string): DownloadFilenameParts => {
     const normalizedFilename = filename

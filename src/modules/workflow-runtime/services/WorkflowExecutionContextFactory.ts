@@ -1,4 +1,4 @@
-import { isRecord } from '@/shared/utils';
+import { isRecord } from '@/shared/utilities/type-guards';
 import type {
     DaemonAnalysisDocument,
     NestedPluginDefinition,
@@ -9,11 +9,11 @@ import type {
 import type { WorkflowExecutionContext } from '../contracts';
 import { WorkflowGraph } from '../contracts';
 
-export interface WorkflowOutputsSnapshot {
+interface WorkflowOutputsSnapshot {
     [nodeId: string]: Record<string, unknown>;
 };
 
-export interface WorkflowExecutionContextFactoryParams {
+interface WorkflowExecutionContextFactoryParams {
     outputs?: Map<string, Record<string, unknown>>;
     userConfig: Record<string, unknown>;
     runtimeArguments: Record<string, unknown>;
@@ -59,20 +59,6 @@ export const snapshotWorkflowOutputs = (
     }
 
     return snapshot;
-};
-
-/** Restores workflow node outputs from a serializable snapshot. */
-export const restoreWorkflowOutputs = (
-    snapshot: WorkflowOutputsSnapshot
-): Map<string, Record<string, unknown>> => {
-    const outputs = new Map<string, Record<string, unknown>>();
-
-    for (const [nodeId, nodeOutput] of Object.entries(snapshot)) {
-        const clonedOutput = cloneWorkflowOutputValue(nodeOutput);
-        outputs.set(nodeId, isRecord(clonedOutput) ? clonedOutput : {});
-    }
-
-    return outputs;
 };
 
 /** Assembles the shared workflow execution context shape used across runtime entry points. */

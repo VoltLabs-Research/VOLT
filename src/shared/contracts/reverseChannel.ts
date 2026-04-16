@@ -34,12 +34,6 @@ export const REVERSE_CHANNEL = Object.freeze({
     })
 });
 
-export const TEAM_CLUSTER_DAEMON_EVENT = Object.freeze({
-    register: 'team-cluster-daemon:register',
-    registered: 'team-cluster-daemon:registered',
-    message: 'team-cluster-daemon:message'
-});
-
 export const TEAM_CLUSTER_DAEMON_COMMAND = Object.freeze({
     analysis: Object.freeze({
         start: 'analysis.start'
@@ -126,27 +120,13 @@ export const TEAM_CLUSTER_DAEMON_COMMAND = Object.freeze({
     })
 });
 
-export const TEAM_CLUSTER_REMOTE_EXPLORER_COMMAND = Object.freeze({
-    list: TEAM_CLUSTER_DAEMON_COMMAND.remoteExplorer.list,
-    node: TEAM_CLUSTER_DAEMON_COMMAND.remoteExplorer.node,
-    download: TEAM_CLUSTER_DAEMON_COMMAND.remoteExplorer.download,
-    List: TEAM_CLUSTER_DAEMON_COMMAND.remoteExplorer.list,
-    Node: TEAM_CLUSTER_DAEMON_COMMAND.remoteExplorer.node,
-    Download: TEAM_CLUSTER_DAEMON_COMMAND.remoteExplorer.download
-});
-
-export type TeamClusterDaemonResponseType = ValueOf<typeof REVERSE_CHANNEL.ResponseType>;
-export type TeamClusterDaemonSessionKind = ValueOf<typeof REVERSE_CHANNEL.SessionKind>;
-export type TeamClusterDaemonTerminalTarget = ValueOf<typeof REVERSE_CHANNEL.TerminalTarget>;
-export type TeamClusterTunnelSessionStatus = ValueOf<typeof REVERSE_CHANNEL.TunnelSessionStatus>;
+type TeamClusterDaemonResponseType = ValueOf<typeof REVERSE_CHANNEL.ResponseType>;
+type TeamClusterDaemonSessionKind = ValueOf<typeof REVERSE_CHANNEL.SessionKind>;
+type TeamClusterDaemonTerminalTarget = ValueOf<typeof REVERSE_CHANNEL.TerminalTarget>;
+type TeamClusterTunnelSessionStatus = ValueOf<typeof REVERSE_CHANNEL.TunnelSessionStatus>;
 
 export interface TeamClusterDaemonSocketHeaders {
     [key: string]: string;
-};
-
-export interface TeamClusterDaemonRegisterPayload {
-    teamClusterId: string;
-    daemonPassword: string;
 };
 
 export interface TeamClusterDaemonCommandMessage {
@@ -187,30 +167,15 @@ export interface TeamClusterDaemonPluginMongoExportPayload {
     limit?: number;
 }
 
-export interface TeamClusterDaemonPluginMongoExportResult {
-    rows: Record<string, unknown>[];
-    total: number;
-    hasMore: boolean;
-    nextSkip: number;
-}
-
 export interface TeamClusterDaemonPluginMongoImportPayload {
     analysisIds: string[];
     documentType: TeamClusterDaemonPluginMongoDocumentType;
     rows: Record<string, unknown>[];
 }
 
-export interface TeamClusterDaemonPluginMongoImportResult {
-    importedRows: number;
-}
-
 export interface TeamClusterDaemonPluginMongoPurgePayload {
     analysisIds: string[];
     documentType: TeamClusterDaemonPluginMongoDocumentType;
-}
-
-export interface TeamClusterDaemonPluginMongoPurgeResult {
-    deletedRows: number;
 }
 
 export type {
@@ -289,31 +254,12 @@ export interface TeamClusterDaemonSessionEndPayload {
     error?: string;
 };
 
-/**
- * Replaces the full exposure registry stored in volt/server for a connected team cluster.
- */
 export interface TeamClusterDaemonExposureSnapshotPayload {
     type: 'exposure-snapshot';
     exposures: TeamClusterServiceExposure[];
 };
 
-/**
- * Applies additive exposure changes without replacing the full registry.
- */
-export interface TeamClusterDaemonExposureUpsertPayload {
-    type: 'exposure-upsert';
-    exposures: TeamClusterServiceExposure[];
-};
-
-/**
- * Removes exposures that are no longer published by the daemon.
- */
-export interface TeamClusterDaemonExposureRemovePayload {
-    type: 'exposure-remove';
-    exposureIds: string[];
-};
-
-export interface TeamClusterDaemonTunnelOpenBasePayload {
+interface TeamClusterDaemonTunnelOpenBasePayload {
     type: 'tunnel-open';
     sessionId: string;
     accessMode: TeamClusterServiceExposureAccessMode;
@@ -336,16 +282,10 @@ export interface TeamClusterDaemonDirectTunnelOpenPayload extends TeamClusterDae
     targetPort: number;
 };
 
-/**
- * Opens a generic tunnel session against either a persistent exposure or a direct target.
- */
 export type TeamClusterDaemonTunnelOpenPayload =
     | TeamClusterDaemonExposureTunnelOpenPayload
     | TeamClusterDaemonDirectTunnelOpenPayload;
 
-/**
- * Acknowledges the final state of a tunnel session transition.
- */
 export interface TeamClusterDaemonTunnelStatePayload {
     type: 'tunnel-state';
     sessionId: string;
@@ -354,9 +294,6 @@ export interface TeamClusterDaemonTunnelStatePayload {
     error?: string;
 };
 
-/**
- * Carries raw tunnel bytes for HTTP, WebSocket or arbitrary TCP sessions.
- */
 export interface TeamClusterDaemonTunnelDataPayload {
     type: 'tunnel-data';
     sessionId: string;
@@ -364,9 +301,6 @@ export interface TeamClusterDaemonTunnelDataPayload {
     isBinary: boolean;
 };
 
-/**
- * Closes a generic tunnel session on either side of the reverse channel.
- */
 export interface TeamClusterDaemonTunnelClosePayload {
     type: 'tunnel-close';
     sessionId: string;
@@ -374,9 +308,6 @@ export interface TeamClusterDaemonTunnelClosePayload {
     message?: string;
 };
 
-/**
- * Keeps long-lived tunnel sessions observable without transferring business data.
- */
 export interface TeamClusterDaemonTunnelHeartbeatPayload {
     type: 'tunnel-heartbeat';
     sessionId: string;
@@ -548,8 +479,6 @@ export type TeamClusterDaemonMessage =
     | TeamClusterDaemonSessionDataPayload
     | TeamClusterDaemonSessionEndPayload
     | TeamClusterDaemonExposureSnapshotPayload
-    | TeamClusterDaemonExposureUpsertPayload
-    | TeamClusterDaemonExposureRemovePayload
     | TeamClusterDaemonTunnelOpenPayload
     | TeamClusterDaemonTunnelStatePayload
     | TeamClusterDaemonTunnelDataPayload

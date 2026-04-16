@@ -14,11 +14,9 @@ import { logger } from '@/core/logger';
 import crypto from 'node:crypto';
 import { promisify } from 'node:util';
 import fs from 'node:fs/promises';
-import { createReadStream, createWriteStream } from 'node:fs';
-import { pipeline } from 'node:stream/promises';
+import { createReadStream } from 'node:fs';
 import { compressFileWithZstd, toCompressedDumpObjectKey } from '@/shared/utilities/storage-codec';
 import path from 'node:path';
-import zlib from 'node:zlib';
 import { DelayedError } from 'bullmq';
 import type { DaemonConfig } from '@/core/config';
 import type { SSHConnectionConfig } from './SSHConnectionService';
@@ -36,13 +34,6 @@ interface SSHImportJobPayload extends Record<string, unknown> {
     encryptedPassword: string;
     trajectoryId: string;
     trajectoryName: string;
-};
-
-interface ImportedFrameRecord {
-    timestep: number;
-    natoms: number;
-    simulationCell: Record<string, unknown> | null;
-    size: number;
 };
 
 const scryptAsync = promisify(crypto.scrypt);
@@ -148,7 +139,12 @@ export class SSHImportWorkerService {
                 path.join(workdir, 'extracted')
             );
 
-            const frames: ImportedFrameRecord[] = [];
+            const frames: Array<{
+                timestep: number;
+                natoms: number;
+                simulationCell: Record<string, unknown> | null;
+                size: number;
+            }> = [];
             for (const file of extractedFiles) {
                 const metadata = await TrajectoryParserFactory.parseMetadata(file.path);
                 const objectKey = toCompressedDumpObjectKey(job.trajectoryId, metadata.timestep);

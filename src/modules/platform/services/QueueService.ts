@@ -9,7 +9,7 @@ import {
 import { RedisConnectionService } from './RedisConnectionService';
 import { Job, Queue, Worker } from 'bullmq';
 
-export interface QueueWorkerOptions {
+interface QueueWorkerOptions {
     concurrency?: number;
 };
 
@@ -59,8 +59,6 @@ export class QueueService {
     }
 
     async enqueue(queueName: string, payload: Record<string, unknown>, options: EnqueueOptions = {}): Promise<boolean> {
-        this.assertKnownQueue(queueName);
-
         const queue = this.getQueue(queueName);
         const jobId = typeof payload.jobId === 'string' ? payload.jobId : undefined;
         const startedAt = Date.now();
@@ -120,8 +118,6 @@ export class QueueService {
     }
 
     async enqueueBulk(queueName: string, payloads: Record<string, unknown>[]): Promise<void> {
-        this.assertKnownQueue(queueName);
-
         if (payloads.length === 0) {
             return;
         }
@@ -173,46 +169,23 @@ export class QueueService {
         );
     }
 
-    async getJobPayload(queueName: string, jobId: string): Promise<Record<string, unknown> | null> {
-        const queue = this.getQueue(queueName);
-        const job = await queue.getJob(jobId);
-        return job?.data || null;
-    }
-
-    async retryJob(queueName: string, jobId: string): Promise<boolean> {
-        const queue = this.getQueue(queueName);
-        const job = await queue.getJob(jobId);
+    async retryJobById(jobId: string): Promise<boolean> {
+        const job = await this.findJob(jobId);
         if (!job) {
             return false;
         }
 
         const state = await job.getState();
-        if (state === 'failed') {
-            await job.retry();
-            return true;
-        }
-
-        return false;
-    }
-
-    async retryJobById(jobId: string): Promise<boolean> {
-        const locatedJob = await this.findJob(jobId);
-        if (!locatedJob) {
-            return false;
-        }
-
-        const state = await locatedJob.job.getState();
         if (state !== 'failed') {
             return false;
         }
 
-        await locatedJob.job.retry();
+        await job.retry();
         return true;
     }
 
-    async removeJob(queueName: string, jobId: string): Promise<boolean> {
-        const queue = this.getQueue(queueName);
-        const job = await queue.getJob(jobId);
+    async removeJobById(jobId: string): Promise<boolean> {
+        const job = await this.findJob(jobId);
         if (!job) {
             return false;
         }
@@ -221,24 +194,11 @@ export class QueueService {
         return true;
     }
 
-    async removeJobById(jobId: string): Promise<boolean> {
-        const locatedJob = await this.findJob(jobId);
-        if (!locatedJob) {
-            return false;
-        }
-
-        await locatedJob.job.remove();
-        return true;
-    }
-
-    async findJob(jobId: string): Promise<{ queueName: string; job: Job<Record<string, unknown>>; } | null> {
+    async findJob(jobId: string): Promise<Job<Record<string, unknown>> | null> {
         for (const queueName of KNOWN_QUEUE_NAMES) {
             const job = await this.getQueue(queueName).getJob(jobId);
             if (job) {
-                return {
-                    queueName,
-                    job
-                };
+                return job;
             }
         }
 

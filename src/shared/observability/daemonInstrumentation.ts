@@ -1,4 +1,5 @@
 import { logger } from '@/core/logger';
+import { isRecord } from '@/shared/utilities/type-guards';
 
 export interface DaemonTraceContext {
     correlationId?: string;
@@ -9,7 +10,7 @@ export interface DaemonTraceContext {
     traceId?: string;
 };
 
-export interface TimeoutExecutionOptions {
+interface TimeoutExecutionOptions {
     onTimeout?: () => void | Promise<void>;
     operation: string;
     timeoutMs: number;
@@ -24,10 +25,6 @@ interface TraceSourceRecord extends Record<string, unknown> {
     source?: unknown;
     spanId?: unknown;
     traceId?: unknown;
-};
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
 const readTraceValue = (value: unknown): string | undefined => {

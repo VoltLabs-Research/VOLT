@@ -13,7 +13,7 @@ interface UploadedFile {
     buffer?: Buffer;
 };
 
-export interface ExtractedFile {
+interface ExtractedFile {
     path: string;
     originalname: string;
     size: number;

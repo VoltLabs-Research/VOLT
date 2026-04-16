@@ -1,7 +1,7 @@
 import { TeamClusterServiceExposureAccessMode } from '@/shared/contracts';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
-export interface TeamClusterDirectAccessTokenClaims {
+interface TeamClusterDirectAccessTokenClaims {
     requesterKind: 'daemon' | 'server';
     requesterId: string;
     ownerClusterId: string;

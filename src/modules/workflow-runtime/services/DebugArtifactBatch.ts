@@ -7,7 +7,7 @@ import type {
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-export interface DebugArtifactRecord {
+interface DebugArtifactRecord {
     path: string;
     bucket: string;
     objectKey: string;

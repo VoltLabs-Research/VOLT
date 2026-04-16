@@ -1,7 +1,7 @@
 import { logger } from '@/core/logger';
 import { forceGC } from '@/core/memory';
 import { AnalysisExposureDefinition } from '@/shared/contracts';
-import { isRecord } from '@/shared/utils';
+import { isRecord } from '@/shared/utilities/type-guards';
 import type { PluginListingRepository } from '../repositories/PluginListingRepository';
 import type { ExportNodeProcessorService } from './ExportNodeProcessorService';
 import type { ArtifactUploadBatch } from './ArtifactUploadQueueService';
@@ -21,20 +21,6 @@ const LISTING_KEYS = new Set(['main_listing']);
 const EXPORT_KEY_PREFIX = 'export';
 const EXPOSURE_RESULT_PROCESSING_CONCURRENCY = getRecommendedResultProcessingConcurrency();
 
-const logMemoryUsage = (context: string): void => {
-    const usage = process.memoryUsage();
-    logger.info(
-        {
-            context,
-            heapUsedMB: Math.round(usage.heapUsed / 1024 / 1024),
-            heapTotalMB: Math.round(usage.heapTotal / 1024 / 1024),
-            rssMB: Math.round(usage.rss / 1024 / 1024),
-            externalMB: Math.round(usage.external / 1024 / 1024)
-        },
-        'Memory usage'
-    );
-};
-
 const shouldIgnoreValue = (value: unknown): boolean => {
     return Array.isArray(value) && value.length >= 1 && Array.isArray(value[0]);
 };
@@ -51,14 +37,7 @@ const cleanListingRow = (value: Record<string, unknown>): Record<string, unknown
     return cleaned;
 };
 
-interface AsyncConcurrencyLimiter {
-    run<T>(
-        task: () => Promise<T>,
-        context?: Record<string, unknown>
-    ): Promise<T>;
-}
-
-const createAsyncConcurrencyLimiter = (concurrency: number): AsyncConcurrencyLimiter => {
+const createAsyncConcurrencyLimiter = (concurrency: number) => {
     let activeCount = 0;
     const waitQueue: Array<() => void> = [];
 
@@ -83,7 +62,7 @@ const createAsyncConcurrencyLimiter = (concurrency: number): AsyncConcurrencyLim
     };
 
     return {
-        async run(task, context = {}) {
+        async run<T>(task: () => Promise<T>, context: Record<string, unknown> = {}): Promise<T> {
             const waitMs = await acquire();
             if (waitMs >= 250) {
                 logger.info(
@@ -253,9 +232,7 @@ export const createResultProcessorService = (
             await exposureProcessingLimiter.run(
                 async () => {
                     // ── Single-pass decode: listing + export in one read ──────────
-                    logMemoryUsage('before-listing-decode');
                     let { listing: listingPayload, subListingNames, exportData: exportPayload } = await readPayload(outputFilePath);
-                    logMemoryUsage('after-listing-decode');
 
                     // ── Process listings ──────────────────────────────────────────
                     await precomputeListingRows(
@@ -278,7 +255,6 @@ export const createResultProcessorService = (
 
                     // ── Process exports (if needed) ──────────────────────────────
                     if (exposure.export && exportPayload) {
-                        logMemoryUsage('before-export-processing');
                         await exportNodeProcessorService.process({
                         executionData,
                         exposure,
@@ -287,7 +263,6 @@ export const createResultProcessorService = (
                         storageClusterId: storageOwnerClusterId,
                         artifactUploadBatch
                     });
-                        logMemoryUsage('after-export-processing');
                     }
 
                     // Release export data

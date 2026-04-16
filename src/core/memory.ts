@@ -63,18 +63,11 @@ export const isMemoryPressured = (): boolean => {
 };
 
 /**
- * Returns current heap usage as a fraction of the heap limit (0-1).
- */
-export const getHeapUsageRatio = (): number => {
-    return getHeapStats().ratio;
-};
-
-/**
  * Attempts a manual V8 garbage collection cycle.
  * Requires `--expose-gc` (injected by scripts/start.js).
  * Returns `true` if GC was triggered, `false` if unavailable or on cooldown.
  */
-export const tryForceGC = (): boolean => {
+const tryForceGC = (): boolean => {
     if (typeof global.gc !== 'function') {
         return false;
     }

@@ -5,7 +5,7 @@ import type { Job, Worker } from 'bullmq';
 
 import type { QueueService } from './QueueService';
 
-export interface MemoryAwareWorkerStartOptions<T extends Record<string, unknown>> {
+interface MemoryAwareWorkerStartOptions<T extends Record<string, unknown>> {
     concurrency?: number;
     onFailed?: (job: Job<T> | undefined, error: unknown) => Promise<void> | void;
 };

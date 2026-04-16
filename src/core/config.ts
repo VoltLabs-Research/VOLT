@@ -35,13 +35,6 @@ interface JupyterConfig {
     publicBasePath: string;
 };
 
-export interface QueueConcurrencyConfig {
-    analysis: number;
-    glbPreprocessing: number;
-    rasterizer: number;
-    sshImport: number;
-};
-
 export type DaemonRuntimeConfig = TeamClusterDaemonRuntimeConfig;
 
 export interface DaemonConfig {

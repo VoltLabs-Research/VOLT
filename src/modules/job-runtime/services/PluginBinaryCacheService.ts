@@ -6,7 +6,6 @@ import { createReadStream, createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
-import type { Readable } from 'node:stream';
 import { EntrypointType, ObjectBucketName, VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@/shared/contracts';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
@@ -55,10 +54,6 @@ const buildPackagedRuntimeKey = (
         .digest('hex');
 };
 
-const writeStreamToFile = async (stream: Readable, filePath: string): Promise<void> => {
-    await pipeline(stream, createWriteStream(filePath));
-};
-
 export interface PluginBinaryCacheService {
     getExecutionRuntime(input: {
         binaryObjectPath: string;
@@ -83,8 +78,7 @@ const writeFileIfChanged = async (filePath: string, content: string): Promise<vo
     await fs.writeFile(filePath, content, 'utf-8');
 };
 
-/** Cap stderr collection to prevent OOM from chatty subprocesses. */
-const MAX_STDERR_BYTES = 10 * 1024 * 1024; // 10 MB — matches BinaryExecutorService
+const MAX_STDERR_BYTES = 10 * 1024 * 1024;
 
 const runCommand = (commandPath: string, args: string[], cwd: string, env?: NodeJS.ProcessEnv): Promise<void> => {
     return new Promise((resolve, reject) => {
@@ -160,15 +154,6 @@ const computeFileHash = async (filePath: string): Promise<string> => {
     return hash.digest('hex');
 };
 
-const pathExists = async (targetPath: string): Promise<boolean> => {
-    try {
-        await fs.access(targetPath, fs.constants.F_OK);
-        return true;
-    } catch {
-        return false;
-    }
-};
-
 const normalizeProjectRelativePath = (value: string): string => {
     return path.posix.normalize(value.replace(/\\/g, '/'))
         .replace(/^(\.\/)+/, '')
@@ -213,12 +198,14 @@ const resolveExtractedPythonEntrypoint = async (
     }
 
     const directScriptPath = path.join(projectDir, normalizedEntrypoint);
-    if (await pathExists(directScriptPath)) {
+    try {
+        await fs.access(directScriptPath, fs.constants.F_OK);
         return {
             scriptPath: directScriptPath,
             projectRootDir: projectDir,
             resolvedRelativePath: normalizedEntrypoint
         };
+    } catch {
     }
 
     const projectFiles = (await collectProjectFiles(projectDir))
@@ -255,17 +242,15 @@ const resolveExtractedPackagedEntrypoint = async (
 ): Promise<{ commandPath: string; projectRootDir: string; resolvedRelativePath: string; }> => {
     const normalizedEntrypoint = normalizeProjectRelativePath(entrypointScript);
 
-    if (!normalizedEntrypoint) {
-        throw new Error('Packaged executable entrypointScript is empty');
-    }
-
     const directCommandPath = path.join(projectDir, normalizedEntrypoint);
-    if (await pathExists(directCommandPath)) {
+    try {
+        await fs.access(directCommandPath, fs.constants.F_OK);
         return {
             commandPath: directCommandPath,
             projectRootDir: path.dirname(directCommandPath),
             resolvedRelativePath: normalizedEntrypoint
         };
+    } catch {
     }
 
     const projectFiles = (await collectProjectFiles(projectDir))
@@ -353,7 +338,7 @@ export const createPluginBinaryCacheService = (objectStore: ClusterObjectStore):
         const response = await objectStore.getStream(source.ownerClusterId, PLUGINS_BUCKET, binaryObjectPath, {
             skipMetadata: true
         });
-        await writeStreamToFile(response.stream, localPath);
+        await pipeline(response.stream, createWriteStream(localPath));
         if (source.expectedHash) {
             const computedHash = await computeFileHash(localPath);
             if (computedHash !== source.expectedHash) {
@@ -412,10 +397,6 @@ export const createPluginBinaryCacheService = (objectStore: ClusterObjectStore):
 
             await fs.mkdir(runtimeDirectory, { recursive: true });
 
-            // When entrypointScript is provided, the artifact is a ZIP project.
-            // Extract it before installing requirements so that local package
-            // references (e.g. "." or "./mypackage") in requirements.txt resolve
-            // correctly against the extracted project tree.
             let scriptPath = artifactPath;
             let projectRootDir = runtimeDirectory;
             if (entrypointScript) {

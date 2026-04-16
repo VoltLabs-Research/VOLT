@@ -12,7 +12,7 @@ import {
 } from './services';
 import { TrajectoryAutoPreviewClaimStore } from '@/modules/trajectory-native/services/TrajectoryAutoPreviewClaimStore';
 
-export interface PlatformModule {
+interface PlatformModule {
     eventBroker: RuntimeEventBroker;
     dockerRuntimeService: DockerRuntimeService;
     minioService: MinioService;

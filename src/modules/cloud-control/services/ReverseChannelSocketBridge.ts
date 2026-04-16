@@ -15,8 +15,6 @@ import { OBJECT_GATEWAY_EXPOSURE } from './ObjectGatewayServer';
 import { BinaryRelaySocketBridge } from './BinaryRelaySocketBridge';
 import net from 'node:net';
 import type {
-    TeamClusterDaemonMessage,
-    TeamClusterDaemonSessionAttachPayload,
     TeamClusterDaemonSessionDataPayload,
     TeamClusterDaemonSessionEndPayload,
     TeamClusterDaemonSessionInputPayload,
@@ -38,7 +36,6 @@ import type {
 export type { ReverseChannelCommandHandler, ReverseChannelCommandResult } from './reverseChannelCommandAdapter';
 
 interface ReverseChannelTunnelState {
-    sessionId: string;
     transitionId: number;
     socket: net.Socket;
     isOpen: boolean;
@@ -55,8 +52,6 @@ interface SessionTransition {
     transitionId: number;
 };
 
-type NonCommandMessage = Exclude<TeamClusterDaemonMessage, { type: 'command' }>;
-
 type OutboundBridgeMessage =
     | TeamClusterDaemonSessionDataPayload
     | TeamClusterDaemonSessionEndPayload
@@ -64,25 +59,10 @@ type OutboundBridgeMessage =
     | TeamClusterDaemonTunnelDataPayload
     | TeamClusterDaemonTunnelClosePayload;
 
-/**
- * How long a session can remain idle (no data sent/received) before it is
- * automatically cleaned up. Prevents orphaned sessions from leaking memory.
- */
 const SESSION_IDLE_TTL_MS = 10 * 60 * 1000;
 
-/**
- * How often to sweep for idle sessions.
- */
 const SESSION_SWEEP_INTERVAL_MS = 60 * 1000;
 
-/**
- * Manages interactive session (terminal, WebSocket, tunnel) lifecycle for the
- * reverse channel. Command dispatch is delegated to the SDK's `ReverseChannelBridge`
- * via `ClusterDaemonClient`; this class registers its handlers and subscribes to
- * non-command inbound messages through `VoltCloudConnection`.
- *
- * Call `bindToClient(voltCloudConnection)` once after creating both objects.
- */
 export class ReverseChannelSocketBridge {
     private readonly tunnelStates = new Map<string, ReverseChannelTunnelState>();
     private readonly attachingSessionIds = new Map<string, number>();
@@ -92,11 +72,9 @@ export class ReverseChannelSocketBridge {
     private readonly binaryRelaySocketBridge: BinaryRelaySocketBridge;
     private nextSessionTransitionId = 0;
 
-    /** Tracks last activity timestamp per session for idle TTL. */
     private readonly sessionActivity = new Map<string, number>();
     private idleSweepTimer: ReturnType<typeof setInterval> | null = null;
 
-    /** Buffered handlers registered before `bindToClient` is called. */
     private readonly pendingHandlers: ReverseChannelCommandHandler[] = [];
     private voltCloudConnection: VoltCloudConnection | null = null;
     private exposureRegistryService?: DaemonExposureRegistryService;
@@ -112,7 +90,7 @@ export class ReverseChannelSocketBridge {
                 cleanupInteractiveSession: this.cleanupInteractiveSession.bind(this),
                 clearSessionActivityIfUntracked: this.clearSessionActivityIfUntracked.bind(this),
                 emitSessionData: this.emitMessage.bind(this),
-                emitSessionEnd: this.emitSessionEnd.bind(this),
+                emitSessionEnd: this.emitMessage.bind(this),
                 endSessionTransition: this.endSessionTransition.bind(this),
                 touchSession: this.touchSession.bind(this),
                 wasSessionTransitionCancelled: this.wasSessionTransitionCancelled.bind(this)
@@ -124,7 +102,7 @@ export class ReverseChannelSocketBridge {
                 cleanupInteractiveSession: this.cleanupInteractiveSession.bind(this),
                 clearSessionActivityIfUntracked: this.clearSessionActivityIfUntracked.bind(this),
                 emitSessionData: this.emitMessage.bind(this),
-                emitSessionEnd: this.emitSessionEnd.bind(this),
+                emitSessionEnd: this.emitMessage.bind(this),
                 endSessionTransition: this.endSessionTransition.bind(this),
                 touchSession: this.touchSession.bind(this)
             }
@@ -139,10 +117,6 @@ export class ReverseChannelSocketBridge {
         }, this.objectGatewayTelemetryService);
     }
 
-    /**
-     * Registers a command handler. If called before `bindToClient`, the handler
-     * is buffered and registered once `bindToClient` is invoked.
-     */
     registerHandler(handler: ReverseChannelCommandHandler): void {
         if (this.voltCloudConnection) {
             this.voltCloudConnection.client.registerHandler(
@@ -159,14 +133,6 @@ export class ReverseChannelSocketBridge {
         this.exposureRegistryService = exposureRegistryService;
     }
 
-    /**
-     * Connects this bridge to the SDK client via `VoltCloudConnection`.
-     *
-     * - Registers all buffered command handlers on the client's bridge.
-     * - Registers the `session.attach` command handler.
-     * - Subscribes to inbound non-command messages for session/tunnel management.
-     * - Subscribes to disconnect events for cleanup.
-     */
     bindToClient(voltCloudConnection: VoltCloudConnection): void {
         this.voltCloudConnection = voltCloudConnection;
 
@@ -194,9 +160,6 @@ export class ReverseChannelSocketBridge {
         this.startIdleSweep();
     }
 
-    /**
-     * Records activity for a session so the idle TTL resets.
-     */
     private touchSession(sessionId: string): void {
         this.sessionActivity.set(sessionId, Date.now());
     }
@@ -255,9 +218,6 @@ export class ReverseChannelSocketBridge {
         });
     }
 
-    /**
-     * Starts a periodic sweep that cleans up sessions idle beyond SESSION_IDLE_TTL_MS.
-     */
     private startIdleSweep(): void {
         if (this.idleSweepTimer) {
             return;
@@ -359,25 +319,17 @@ export class ReverseChannelSocketBridge {
         }
 
         if (isTerminalSessionAttachPayload(attachPayload)) {
-            return this.attachTerminal(attachPayload);
+            return this.terminalSessionManager.attachSession(attachPayload);
         }
 
         if (isWebSocketSessionAttachPayload(attachPayload)) {
-            return this.attachWebSocket(attachPayload);
+            return this.webSocketSessionManager.attachSession(attachPayload);
         }
 
         return {
             status: 400,
             data: { status: 'error', message: `Unsupported session kind: ${attachPayload.kind}` }
         };
-    }
-
-    private async attachTerminal(payload: TeamClusterDaemonSessionAttachPayload): Promise<CommandResult> {
-        return this.terminalSessionManager.attachSession(payload);
-    }
-
-    private async attachWebSocket(payload: TeamClusterDaemonSessionAttachPayload): Promise<CommandResult> {
-        return this.webSocketSessionManager.attachSession(payload);
     }
 
     private handleSessionInput(payload: TeamClusterDaemonSessionInputPayload): void {
@@ -539,7 +491,6 @@ export class ReverseChannelSocketBridge {
         tunnelSocket.setTimeout(SESSION_ATTACH_TIMEOUT_MS, onTimeout);
 
         this.tunnelStates.set(payload.sessionId, {
-            sessionId: payload.sessionId,
             transitionId: sessionTransition.transitionId,
             socket: tunnelSocket,
             isOpen: false,
@@ -587,10 +538,6 @@ export class ReverseChannelSocketBridge {
 
     private emitMessage(message: OutboundBridgeMessage): void {
         this.voltCloudConnection?.emitMessage(message);
-    }
-
-    private emitSessionEnd(payload: TeamClusterDaemonSessionEndPayload): void {
-        this.emitMessage(payload);
     }
 
     private emitTunnelState(payload: TeamClusterDaemonTunnelStatePayload): void {

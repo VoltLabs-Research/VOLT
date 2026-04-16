@@ -1,5 +1,4 @@
 import { logger } from '@/core/logger';
-import { isRecord } from '@/shared/utils';
 import { runOrderedWorkflowNodes } from './OrderedNodeRunner';
 import { createWorkflowExecutionContext, snapshotWorkflowOutputs } from './WorkflowExecutionContextFactory';
 import { WorkflowNodeRegistry } from './NodeRegistry';
@@ -13,7 +12,7 @@ import type {
 } from '@/shared/contracts';
 import type { WorkflowExecutionContext } from '../contracts';
 
-export interface WorkflowPlanResult {
+interface WorkflowPlanResult {
     items: Array<Record<string, unknown> | TrajectoryDumpDescriptor>;
     forEachNodeId: string;
     nodeOutputSnapshots: Record<string, Record<string, unknown>>;
@@ -22,7 +21,7 @@ export interface WorkflowPlanResult {
     contextNodeId?: string;
 };
 
-export interface WorkflowExecutionRequest {
+interface WorkflowExecutionRequest {
     workflow: WorkflowDefinition;
     nestedPlugins?: NestedPluginDefinition[];
     trajectoryId: string;
@@ -47,20 +46,6 @@ const buildRuntimeArguments = (request: WorkflowExecutionRequest): Record<string
     return {
         selectedTimesteps: request.options.selectedTimesteps.map((timestep) => ({ value: timestep }))
     };
-};
-
-const isTrajectoryDumpDescriptor = (value: unknown): value is TrajectoryDumpDescriptor => {
-    if (!isRecord(value)) {
-        return false;
-    }
-
-    return typeof value.path === 'string'
-        && typeof value.timestep === 'number'
-        && Number.isFinite(value.timestep)
-        && typeof value.natoms === 'number'
-        && Number.isFinite(value.natoms)
-        && typeof value.simulationCell === 'string'
-        && (typeof value.originalPath === 'undefined' || typeof value.originalPath === 'string');
 };
 
 export class WorkflowEngine {
@@ -93,7 +78,7 @@ export class WorkflowEngine {
             }
 
             if (result.node.type === WorkflowNodeType.ForEach && result.output?.items && Array.isArray(result.output.items)) {
-                const items = result.output.items.filter(isRecord);
+                const items = result.output.items as Record<string, unknown>[];
 
                 return {
                     items,
@@ -105,12 +90,9 @@ export class WorkflowEngine {
 
         // Batch mode: no ForEach node — pass authoritative dump descriptors as a single batch
         if (!hasForEachNode && contextNodeId) {
-            const contextOutput = context.outputs.get(contextNodeId);
-            const dumps = Array.isArray(contextOutput?.trajectory_dumps)
-                ? contextOutput.trajectory_dumps.filter(isTrajectoryDumpDescriptor)
-                : [];
+            const dumps = context.outputs.get(contextNodeId)?.trajectory_dumps as TrajectoryDumpDescriptor[] | undefined;
 
-            if (dumps.length === 0) {
+            if (!dumps?.length) {
                 return null;
             }
 

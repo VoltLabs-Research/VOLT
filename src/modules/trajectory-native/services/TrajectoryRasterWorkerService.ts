@@ -55,29 +55,21 @@ export class TrajectoryRasterWorkerService {
         logger.info({ concurrency }, 'TrajectoryRasterWorkerService concurrency updated');
     }
 
-    private async reportJobStatus(
-        job: RasterQueueJobPayload,
-        status: RasterJobStatus,
-        error?: string
-    ): Promise<void> {
-        await this.daemonJobReporterService.reportRasterJobStatus({
-            jobId: job.jobId,
-            teamId: job.teamId,
-            trajectoryId: job.trajectoryId,
-            trajectoryName: job.trajectoryName,
-            timestep: job.timestep,
-            status,
-            error
-        });
-    }
-
     private async reportJobStatusBestEffort(
         job: RasterQueueJobPayload,
         status: RasterJobStatus,
         error?: string
     ): Promise<void> {
         try {
-            await this.reportJobStatus(job, status, error);
+            await this.daemonJobReporterService.reportRasterJobStatus({
+                jobId: job.jobId,
+                teamId: job.teamId,
+                trajectoryId: job.trajectoryId,
+                trajectoryName: job.trajectoryName,
+                timestep: job.timestep,
+                status,
+                error
+            });
         } catch (reportError) {
             logger.error(
                 {

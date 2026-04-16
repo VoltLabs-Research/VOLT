@@ -10,9 +10,9 @@ const DEFAULT_LEASE_TTL_MS = 5 * 60 * 1000;
 const DEFAULT_HEARTBEAT_MS = 60 * 1000;
 const DEFAULT_CONTENTION_DELAY_MS = 5 * 1000;
 
-export type QueueScopeKind = 'trajectory' | 'team';
+type QueueScopeKind = 'trajectory' | 'team';
 
-export interface QueueScopeConstraint {
+interface QueueScopeConstraint {
     scope: QueueScopeKind;
     scopeId: string;
     limit: number;

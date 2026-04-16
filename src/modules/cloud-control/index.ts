@@ -46,7 +46,7 @@ import {
     createRuntimeHandlers
 } from './handlers';
 
-export interface CloudControlModule {
+interface CloudControlModule {
     reverseChannelSocketBridge: ReverseChannelSocketBridge;
     voltCloudConnection: VoltCloudConnection;
     daemonExposureRegistryService: DaemonExposureRegistryService;
@@ -100,7 +100,6 @@ export const createCloudControlModule = (deps: {
         ...createTrajectoryHandlers({
             objectStore: deps.objectStore,
             queueService: deps.queueService,
-            redisConnectionService: deps.redisConnectionService,
             trajectoryAutoPreviewClaimStore: deps.trajectoryAutoPreviewClaimStore,
             trajectoryParserService: deps.trajectoryParserService,
             trajectoryPluginParserService: deps.trajectoryPluginParserService,
@@ -110,7 +109,6 @@ export const createCloudControlModule = (deps: {
         }),
         ...createPluginHandlers({
             objectStore: deps.objectStore,
-            eventBroker: deps.eventBroker,
             pluginListingRepository: deps.pluginListingRepository,
             runtimeCapabilityGuard
         }),

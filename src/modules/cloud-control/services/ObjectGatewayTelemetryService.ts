@@ -18,24 +18,7 @@ interface ObjectGatewayOperationStats {
     firstByteSamples: number;
 }
 
-interface CompleteObjectGatewayRequestInput {
-    statusCode?: number;
-    bytesIn?: number;
-    bytesOut?: number;
-    error?: unknown;
-}
-
 const TELEMETRY_LOG_INTERVAL_MS = 60_000;
-
-const createEmptyStats = (): ObjectGatewayOperationStats => ({
-    count: 0,
-    errorCount: 0,
-    totalDurationMs: 0,
-    totalBytesIn: 0,
-    totalBytesOut: 0,
-    totalFirstByteLatencyMs: 0,
-    firstByteSamples: 0
-});
 
 class ObjectGatewayRequestTracker {
     private readonly startedAt = Date.now();
@@ -57,7 +40,12 @@ class ObjectGatewayRequestTracker {
         this.firstByteLatencyMs = Date.now() - this.startedAt;
     }
 
-    complete(input: CompleteObjectGatewayRequestInput = {}): void {
+    complete(input: {
+        statusCode?: number;
+        bytesIn?: number;
+        bytesOut?: number;
+        error?: unknown;
+    } = {}): void {
         if (this.completed) {
             return;
         }
@@ -108,12 +96,6 @@ export class ObjectGatewayTelemetryService {
         this.totalTunnelOpens += 1;
         this.totalTunnelOpenLatencyMs += durationMs;
         this.changedSinceLastSummary = true;
-
-        logger.info({
-            action: 'object-gateway.tunnel-open',
-            durationMs,
-            activeObjectTunnels: this.activeObjectTunnels
-        }, 'Opened daemon object gateway tunnel');
     }
 
     recordObjectTunnelClosed(): void {
@@ -152,17 +134,6 @@ export class ObjectGatewayTelemetryService {
         }
 
         this.changedSinceLastSummary = true;
-
-        logger.info({
-            action: 'object-gateway.server.request',
-            operation: input.operation,
-            statusCode: input.statusCode,
-            durationMs: input.durationMs,
-            firstByteLatencyMs: input.firstByteLatencyMs,
-            bytesIn: input.bytesIn ?? 0,
-            bytesOut: input.bytesOut ?? 0,
-            error: input.error instanceof Error ? input.error.message : undefined
-        }, 'Completed object gateway server request');
     }
 
     private getOperationStats(operation: ObjectGatewayOperationName): ObjectGatewayOperationStats {
@@ -171,7 +142,15 @@ export class ObjectGatewayTelemetryService {
             return existing;
         }
 
-        const next = createEmptyStats();
+        const next: ObjectGatewayOperationStats = {
+            count: 0,
+            errorCount: 0,
+            totalDurationMs: 0,
+            totalBytesIn: 0,
+            totalBytesOut: 0,
+            totalFirstByteLatencyMs: 0,
+            firstByteSamples: 0
+        };
         this.operationStats.set(operation, next);
         return next;
     }

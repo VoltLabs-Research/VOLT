@@ -74,10 +74,6 @@ export const compressSerializedAnalysisExecutionData = (serializedValue: string)
     return zlib.gzipSync(serializedValue).toString('base64');
 };
 
-export const compressAnalysisExecutionData = (executionData: AnalysisJobExecutionData): string => {
-    return compressSerializedAnalysisExecutionData(serializeAnalysisExecutionData(executionData));
-};
-
 export const inflateAnalysisExecutionData = (compressedValue: string): AnalysisJobExecutionData => {
     const compressedBuffer = Buffer.from(compressedValue, 'base64');
     const serializedValue = zlib.gunzipSync(compressedBuffer).toString('utf8');

@@ -1,5 +1,4 @@
 import {
-    type TeamClusterDaemonExposureSnapshotPayload,
     TeamClusterServiceExposureAccessMode,
     TeamClusterServiceExposureSourceKind,
     TeamClusterServiceExposureStatus,
@@ -134,10 +133,6 @@ export class DaemonExposureRegistryService {
         return this.exposures.get(exposureId) || null;
     }
 
-    listExposures(): TeamClusterServiceExposure[] {
-        return Array.from(this.exposures.values());
-    }
-
     upsertDaemonExposure(exposure: TeamClusterServiceExposure): void {
         this.daemonExposures.set(exposure.id, exposure);
         this.publishExposures(this.lastContainerExposures);
@@ -180,8 +175,7 @@ export class DaemonExposureRegistryService {
         const nextExposures = await this.buildExposures(containers);
         const previousSnapshotSignature = this.lastObservedSnapshotSignature;
         const mergedExposures = this.publishExposures(nextExposures);
-        const mergedSnapshotSignature = this.createSnapshotSignature(mergedExposures);
-        const changed = mergedSnapshotSignature !== previousSnapshotSignature;
+        const changed = this.lastObservedSnapshotSignature !== previousSnapshotSignature;
         const cloudConnectionRestored = this.voltCloudConnection.isConnectedToCloud() && !this.lastCloudConnectionState;
         const durationMs = Date.now() - startedAt;
 
@@ -293,12 +287,10 @@ export class DaemonExposureRegistryService {
             return;
         }
 
-        const payload: TeamClusterDaemonExposureSnapshotPayload = {
+        this.voltCloudConnection.emitMessage({
             type: 'exposure-snapshot',
             exposures
-        };
-
-        this.voltCloudConnection.emitMessage(payload);
+        });
         this.lastSentSnapshotSignature = snapshotSignature;
     }
 

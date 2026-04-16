@@ -1,4 +1,5 @@
 import { decodeMultiStream, mergeSelectiveChunk } from '@/shared/utilities/selective-msgpack';
+import { isRecord } from '@/shared/utilities/type-guards';
 import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import type { Readable } from 'node:stream';
@@ -12,10 +13,6 @@ interface DebugExposureInspectionResult {
 
 const LISTING_KEYS = new Set(['main_listing']);
 const EXPORT_KEY_PREFIX = 'export';
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-};
 
 const readPayload = async (filePath: string): Promise<{
     listing: Record<string, unknown> | null;

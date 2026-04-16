@@ -2,7 +2,7 @@ import { logger } from '@/core/logger';
 import { DAEMON_PATHS } from '@/core/paths';
 import { EntrypointType, ObjectBucketName, VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@/shared/contracts';
 import { createZstdDecompressionStream, stripZstdExtension } from '@/shared/utilities/storage-codec';
-import { decodeCliArgumentsToken, isRecord } from '@/shared/utils';
+import { isRecord } from '@/shared/utilities/type-guards';
 import type {
     BinaryExecutorService,
     ProcessExecutionLogSink
@@ -11,6 +11,7 @@ import type { PluginBinaryCacheService } from '@/modules/job-runtime/services/Pl
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 import type { WorkflowExecutionContext, WorkflowNode } from '../contracts';
 import { WorkflowNodeType } from '../contracts';
+import { parseInlineWorkflowArguments, readWorkflowEntrypointData } from './InlineWorkflowShared';
 import { resolveWorkflowTemplate } from './WorkflowOutputResolution';
 import { createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
@@ -25,16 +26,7 @@ interface DebugDumpDescriptor {
     originalPath?: string;
 };
 
-interface WorkflowEntrypointData {
-    binaryObjectPath?: string;
-    arguments?: string;
-    timeout?: number;
-    requirementsFile?: string;
-    entrypointScript?: string;
-    type?: string;
-};
-
-export interface DebugEntrypointExecutionResult {
+interface DebugEntrypointExecutionResult {
     output: Record<string, unknown>;
     dumpPath: string;
     outputDir: string;
@@ -44,6 +36,14 @@ export interface PreparedDebugExecutionEnvironment {
     selectedDump: DebugDumpDescriptor;
     dumpPath: string;
     outputDir: string;
+    outputSnapshot: DebugExecutionOutputSnapshot;
+}
+
+interface DebugExecutionOutputSnapshot {
+    contextNodeId?: string;
+    contextOutput?: Record<string, unknown>;
+    forEachNodeId?: string;
+    forEachOutput?: Record<string, unknown>;
 }
 
 const isDebugDumpDescriptor = (value: unknown): value is DebugDumpDescriptor => {
@@ -57,18 +57,39 @@ const isDebugDumpDescriptor = (value: unknown): value is DebugDumpDescriptor => 
         && (typeof value.originalPath === 'undefined' || typeof value.originalPath === 'string');
 };
 
-const parseArguments = (value: string): string[] => {
-    if (!value) {
-        return [];
+const snapshotDebugExecutionOutputs = (
+    context: WorkflowExecutionContext
+): DebugExecutionOutputSnapshot => {
+    const contextNode = context.workflow.nodes.find((entry) => entry.type === WorkflowNodeType.Context);
+    const forEachNode = context.workflow.nodes.find((entry) => entry.type === WorkflowNodeType.ForEach);
+
+    return {
+        contextNodeId: contextNode?.id,
+        contextOutput: contextNode ? context.outputs.get(contextNode.id) : undefined,
+        forEachNodeId: forEachNode?.id,
+        forEachOutput: forEachNode ? context.outputs.get(forEachNode.id) : undefined
+    };
+};
+
+const restoreDebugExecutionOutputs = (
+    context: WorkflowExecutionContext,
+    snapshot: DebugExecutionOutputSnapshot
+): void => {
+    if (snapshot.contextNodeId) {
+        if (snapshot.contextOutput) {
+            context.outputs.set(snapshot.contextNodeId, snapshot.contextOutput);
+        } else {
+            context.outputs.delete(snapshot.contextNodeId);
+        }
     }
 
-    const regex = /"([^"]*)"|'([^']*)'|(\S+)/g;
-    const tokens = [...value.matchAll(regex)].map((match) => match[1] ?? match[2] ?? match[3]);
-
-    return tokens.flatMap((token) => {
-        const encodedArguments = decodeCliArgumentsToken(token);
-        return encodedArguments ?? [token];
-    });
+    if (snapshot.forEachNodeId) {
+        if (snapshot.forEachOutput) {
+            context.outputs.set(snapshot.forEachNodeId, snapshot.forEachOutput);
+        } else {
+            context.outputs.delete(snapshot.forEachNodeId);
+        }
+    }
 };
 
 const normalizeObjectKey = (value: string): string => {
@@ -234,6 +255,7 @@ export class DebugEntrypointExecutor {
                 fs.rm(preparedEnvironment.outputDir, { recursive: true, force: true }).catch(() => {})
             ];
             await Promise.all(cleanupTasks);
+            restoreDebugExecutionOutputs(context, preparedEnvironment.outputSnapshot);
             throw error;
         }
     }
@@ -267,12 +289,14 @@ export class DebugEntrypointExecutor {
         const outputDir = path.join(DAEMON_PATHS.analysisOutput, `debug-${sessionId}-${Date.now()}`);
         await fs.mkdir(outputDir, { recursive: true });
 
+        const outputSnapshot = snapshotDebugExecutionOutputs(context);
         updateContextOutputsForDebugExecution(context, selectedDump, dumpPath, outputDir);
 
         return {
             selectedDump,
             dumpPath,
-            outputDir
+            outputDir,
+            outputSnapshot
         };
     }
 
@@ -282,9 +306,7 @@ export class DebugEntrypointExecutor {
         preparedEnvironment: PreparedDebugExecutionEnvironment,
         logSink?: ProcessExecutionLogSink
     ): Promise<DebugEntrypointExecutionResult> {
-        const entrypointData = isRecord(node.data.entrypoint)
-            ? node.data.entrypoint as WorkflowEntrypointData
-            : undefined;
+        const entrypointData = readWorkflowEntrypointData(node.data.entrypoint);
         const binaryObjectPath = typeof entrypointData?.binaryObjectPath === 'string'
             ? entrypointData.binaryObjectPath.trim()
             : '';
@@ -313,58 +335,68 @@ export class DebugEntrypointExecutor {
                 ? normalizedEntrypointData.entrypointScript
                 : undefined
         });
+        const previousNodeOutput = context.outputs.get(node.id);
         context.outputs.set(node.id, {
             ...(context.outputs.get(node.id) ?? {}),
             projectPath: executionRuntime.projectPath ?? ''
         });
-        const resolvedArguments = resolveWorkflowTemplate(argumentsTemplate, context.outputs, {
-            workflow: context.workflow,
-            currentNodeId: node.id
-        });
-        const args = parseArguments(resolvedArguments);
-        const executionArgs = [...executionRuntime.argsPrefix, ...args];
-        const jobId = `debug:${node.id}:${Date.now()}`;
+        try {
+            const resolvedArguments = resolveWorkflowTemplate(argumentsTemplate, context.outputs, {
+                workflow: context.workflow,
+                currentNodeId: node.id
+            });
+            const args = parseInlineWorkflowArguments(resolvedArguments);
+            const executionArgs = [...executionRuntime.argsPrefix, ...args];
+            const jobId = `debug:${node.id}:${Date.now()}`;
 
-        logger.info(
-            {
-                nodeId: node.id,
-                binaryObjectPath,
-                args: executionArgs,
-                outputDir: preparedEnvironment.outputDir
-            },
-            '@debug-entrypoint-executor: executing plugin entrypoint'
-        );
+            logger.info(
+                {
+                    nodeId: node.id,
+                    binaryObjectPath,
+                    args: executionArgs,
+                    outputDir: preparedEnvironment.outputDir
+                },
+                '@debug-entrypoint-executor: executing plugin entrypoint'
+            );
 
-        const processResult = await this.binaryExecutorService.executeProcess({
-            jobId,
-            commandPath: executionRuntime.commandPath,
-            args: executionArgs,
-            cwd: preparedEnvironment.outputDir,
-            env: executionRuntime.env,
-            timeoutMs: typeof normalizedEntrypointData.timeout === 'number' && Number.isFinite(normalizedEntrypointData.timeout)
-                ? normalizedEntrypointData.timeout
-                : undefined,
-            logSink
-        });
-        const outputFiles = await fs.readdir(preparedEnvironment.outputDir).catch(() => []);
-
-        return {
-            dumpPath: preparedEnvironment.dumpPath,
-            outputDir: preparedEnvironment.outputDir,
-            output: {
-                binaryObjectPath,
+            const processResult = await this.binaryExecutorService.executeProcess({
+                jobId,
                 commandPath: executionRuntime.commandPath,
-                artifactPath: executionRuntime.artifactPath,
                 args: executionArgs,
-                resolvedArguments,
+                cwd: preparedEnvironment.outputDir,
+                env: executionRuntime.env,
+                timeoutMs: typeof normalizedEntrypointData.timeout === 'number' && Number.isFinite(normalizedEntrypointData.timeout)
+                    ? normalizedEntrypointData.timeout
+                    : undefined,
+                logSink
+            });
+            const outputFiles = await fs.readdir(preparedEnvironment.outputDir).catch(() => []);
+
+            return {
                 dumpPath: preparedEnvironment.dumpPath,
-                outputPath: preparedEnvironment.outputDir,
-                projectPath: executionRuntime.projectPath ?? '',
-                outputFiles,
-                exitCode: processResult.code,
-                stdout: processResult.stdout,
-                stderr: processResult.stderr
+                outputDir: preparedEnvironment.outputDir,
+                output: {
+                    binaryObjectPath,
+                    commandPath: executionRuntime.commandPath,
+                    artifactPath: executionRuntime.artifactPath,
+                    args: executionArgs,
+                    resolvedArguments,
+                    dumpPath: preparedEnvironment.dumpPath,
+                    outputPath: preparedEnvironment.outputDir,
+                    projectPath: executionRuntime.projectPath ?? '',
+                    outputFiles,
+                    exitCode: processResult.code,
+                    stdout: processResult.stdout,
+                    stderr: processResult.stderr
+                }
+            };
+        } catch (error) {
+            if (previousNodeOutput) {
+                context.outputs.set(node.id, previousNodeOutput);
+            } else {
+                context.outputs.delete(node.id);
             }
-        };
+            throw error;
+        }
     }
 }

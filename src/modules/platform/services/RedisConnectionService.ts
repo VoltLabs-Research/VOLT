@@ -1,4 +1,4 @@
-import { isRecord } from '@/shared/utils';
+import { isRecord } from '@/shared/utilities/type-guards';
 import Redis from 'ioredis';
 import type { DaemonConfig } from '@/core/config';
 
@@ -9,7 +9,7 @@ interface RedisConnectionOptions {
     password?: string;
 };
 
-export interface TeamJobRecord {
+interface TeamJobRecord {
     jobId: string;
     teamId: string;
     queueType: string;
@@ -242,27 +242,6 @@ export class RedisConnectionService {
         await this.connect();
 
         return this.client.del(key);
-    }
-
-    async projectJobStatus(payload: TeamJobRecord): Promise<void> {
-        await this.connect();
-
-        const timestamp = typeof payload.timestamp === 'string'
-            ? payload.timestamp
-            : new Date().toISOString();
-        const updatedAt = typeof payload.updatedAt === 'string'
-            ? payload.updatedAt
-            : new Date().toISOString();
-        const statusKey = `${JOB_STATUS_KEY_PREFIX}${payload.jobId}`;
-        const pipeline = this.client.pipeline();
-
-        pipeline.set(statusKey, JSON.stringify({
-            ...payload,
-            timestamp,
-            updatedAt
-        }), 'EX', STATUS_TTL_SECONDS);
-        pipeline.sadd(`team:${payload.teamId}:jobs`, payload.jobId);
-        await pipeline.exec();
     }
 
     async projectJobStatuses(payloads: TeamJobRecord[]): Promise<void> {

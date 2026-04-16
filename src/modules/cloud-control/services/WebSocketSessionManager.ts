@@ -29,11 +29,9 @@ interface ReverseChannelCloseEvent {
 
 interface WebSocketSessionAttachResult {
     attached: true;
-    selectedProtocol?: string;
 };
 
 interface ReverseChannelWebSocketState {
-    sessionId: string;
     transitionId: number;
     socket: WebSocket;
     isOpen: boolean;
@@ -125,7 +123,7 @@ export class WebSocketSessionManager {
                     }
 
                     attachSettled = true;
-                    resolve(this.createSessionAttachSuccessResult(webSocket.protocol || undefined));
+                    resolve(this.createSessionAttachSuccessResult());
                 };
 
                 openTimeout = setTimeout(() => {
@@ -257,7 +255,6 @@ export class WebSocketSessionManager {
                 webSocket.addEventListener('close', onClose);
 
                 this.webSocketStates.set(payload.sessionId, {
-                    sessionId: payload.sessionId,
                     transitionId: sessionTransition.transitionId,
                     socket: webSocket,
                     isOpen: false,
@@ -365,10 +362,9 @@ export class WebSocketSessionManager {
         this.options.coordinator.clearSessionActivityIfUntracked(sessionId);
     }
 
-    private createSessionAttachSuccessResult(selectedProtocol?: string): CommandResult {
+    private createSessionAttachSuccessResult(): CommandResult {
         const data: WebSocketSessionAttachResult = {
-            attached: true,
-            ...(selectedProtocol ? { selectedProtocol } : {})
+            attached: true
         };
 
         return { status: 200, data: { status: 'success', data } };

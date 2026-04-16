@@ -46,25 +46,17 @@ const readRequestId = (
     return undefined;
 };
 
-export const createCommandLogContext = (
-    payload: Record<string, unknown> | undefined,
-    ctx: unknown
-): Record<string, string> => {
-    const handlerContext = isReverseChannelHandlerContext(ctx) ? ctx : undefined;
-    const requestId = readRequestId(handlerContext, payload);
-
-    return {
-        ...(requestId ? { requestId } : {}),
-        ...createTraceLogContext(extractDaemonTraceContext(payload))
-    };
-};
-
 /** Adapts daemon command handlers to the SDK bridge contract with shared logging. */
 export const adaptReverseChannelHandler = (handler: ReverseChannelCommandHandler): ReverseChannelHandler => {
     return {
         handle: async (payload, ctx): Promise<CommandResult> => {
             const commandPayload = isCommandPayloadRecord(payload) ? payload : undefined;
-            const commandLogContext = createCommandLogContext(commandPayload, ctx);
+            const handlerContext = isReverseChannelHandlerContext(ctx) ? ctx : undefined;
+            const requestId = readRequestId(handlerContext, commandPayload);
+            const commandLogContext = {
+                ...(requestId ? { requestId } : {}),
+                ...createTraceLogContext(extractDaemonTraceContext(commandPayload))
+            };
 
             try {
                 const result = await handler.execute(commandPayload);

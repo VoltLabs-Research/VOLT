@@ -31,37 +31,6 @@ import type { ArtifactUploadBatchJobPayload } from './ArtifactUploadQueueService
 
 const DEFAULT_ARTIFACT_UPLOAD_CONCURRENCY = readPositiveIntegerEnv('ARTIFACT_UPLOAD_CONCURRENCY') ?? 8;
 
-const prepareCompressedArtifactUpload = async (upload: ArtifactUploadBatchJobPayload['uploads'][number]) => {
-    if (upload.contentType === 'application/msgpack') {
-        const compressedPath = `${upload.sourcePath}.zst`;
-        await compressFileWithZstd(upload.sourcePath, compressedPath);
-        return {
-            sourcePath: compressedPath,
-            objectKey: toCompressedMsgpackObjectKey(upload.objectKey),
-            contentEncoding: 'zstd',
-            cleanupPath: compressedPath
-        };
-    }
-
-    if (upload.contentType === 'model/gltf-binary') {
-        const compressedPath = `${upload.sourcePath}.zst`;
-        await compressFileWithZstd(upload.sourcePath, compressedPath);
-        return {
-            sourcePath: compressedPath,
-            objectKey: toCompressedGlbObjectKey(upload.objectKey),
-            contentEncoding: 'zstd',
-            cleanupPath: compressedPath
-        };
-    }
-
-    return {
-        sourcePath: upload.sourcePath,
-        objectKey: upload.objectKey,
-        contentEncoding: upload.contentEncoding,
-        cleanupPath: undefined
-    };
-};
-
 export class ArtifactUploadWorkerService {
     private readonly workerShell: MemoryAwareWorkerShell<ArtifactUploadBatchJobPayload>;
 
@@ -180,7 +149,22 @@ export class ArtifactUploadWorkerService {
 
             for (let index = 0; index < payload.uploads.length; index += 1) {
                 const upload = payload.uploads[index]!;
-                const preparedUpload = await prepareCompressedArtifactUpload(upload);
+                const shouldCompress = upload.contentType === 'application/msgpack' || upload.contentType === 'model/gltf-binary';
+                const cleanupPath = shouldCompress ? `${upload.sourcePath}.zst` : undefined;
+                if (cleanupPath) {
+                    await compressFileWithZstd(upload.sourcePath, cleanupPath);
+                }
+
+                const preparedUpload = {
+                    sourcePath: cleanupPath ?? upload.sourcePath,
+                    objectKey: upload.contentType === 'application/msgpack'
+                        ? toCompressedMsgpackObjectKey(upload.objectKey)
+                        : upload.contentType === 'model/gltf-binary'
+                            ? toCompressedGlbObjectKey(upload.objectKey)
+                            : upload.objectKey,
+                    contentEncoding: cleanupPath ? 'zstd' : upload.contentEncoding,
+                    cleanupPath
+                };
 
                 try {
                     const fileStat = await fs.stat(preparedUpload.sourcePath);

@@ -15,7 +15,6 @@ import type {
     TeamClusterDaemonServerEventMessage
 } from '@/shared/contracts';
 import type {
-    RuntimeLifecycleEvent,
     RuntimeLifecycleEventType,
     TeamClusterDaemonMessage
 } from '@voltstack/daemon-cluster-client';
@@ -27,15 +26,8 @@ interface RuntimeLifecycleUpdateRequest {
     status: TeamClusterStatus;
     installedVersion?: string;
 };
-
-interface DeleteCompletionRequest {
-    teamClusterId: string;
-    daemonPassword: string;
-};
-
-type NonCommandMessage = Exclude<TeamClusterDaemonMessage, { type: 'command' }>;
 type OutboundMessage =
-    | NonCommandMessage
+    | Exclude<TeamClusterDaemonMessage, { type: 'command' }>
     | TeamClusterDaemonRuntimeProgressPayload
     | TeamClusterDaemonServerEventMessage;
 
@@ -61,15 +53,6 @@ interface QueuedEventMessage {
     dedupeKey?: string;
 }
 
-/**
- * Adapter that wraps `ClusterDaemonClient` to provide the lifecycle and
- * reporting API consumed by the rest of the daemon modules.
- *
- * Internal communication (enrollment, socket, heartbeat) is fully delegated to
- * `ClusterDaemonClient`. This class only adds daemon-specific concerns:
- * metrics collection for heartbeat payloads, lifecycle event emission to
- * `RuntimeEventBroker`, and the higher-level reporting helpers.
- */
 export class VoltCloudConnection {
     private connectedToCloud = false;
     private lastCloudLatencyMs: number | null = null;
@@ -208,10 +191,6 @@ export class VoltCloudConnection {
         return this.client.getDaemonPassword();
     }
 
-    /**
-     * Emits a fire-and-forget message on the control socket.
-     * Use this instead of the old `getControlSocket().emit(...)` pattern.
-     */
     emitMessage(message: OutboundMessage): void {
         try {
             this.client.emit(message);
@@ -262,31 +241,7 @@ export class VoltCloudConnection {
     }
 
     async reportDeleteFailed(details: string): Promise<void> {
-        await this.sendLifecycleStatus(TeamClusterStatus.DeleteFailed, details);
-    }
-
-    async reportDeleting(details: string): Promise<void> {
-        await this.sendLifecycleStatus(TeamClusterStatus.Deleting, details);
-    }
-
-    async reportDisconnected(details: string): Promise<void> {
-        await this.sendLifecycleStatus(TeamClusterStatus.Disconnected, details);
-    }
-
-    async reportDeleteCompleted(details: string): Promise<void> {
-        if (!this.client.isReady()) {
-            return;
-        }
-
-        try {
-            const request: DeleteCompletionRequest = {
-                teamClusterId: this.client.getTeamClusterId(),
-                daemonPassword: this.client.getDaemonPassword()
-            };
-            await this.sendServerCommand('runtime.delete-completed', request);
-        } catch (error: unknown) {
-            logger.warn({ err: error, details }, 'Failed to report completed team cluster deletion to VoltCloud');
-        }
+        await this.sendLifecycleStatus(TeamClusterStatus.DeleteFailed);
     }
 
     async sendServerCommand<T>(command: string, payload: object): Promise<T | undefined> {
@@ -352,10 +307,16 @@ export class VoltCloudConnection {
     }
 
     emitLifecycleEvent(type: RuntimeLifecycleEventType, details?: string): void {
-        this.eventBroker.emitLifecycle(this.createLifecycleEvent(type, details));
+        this.eventBroker.emitLifecycle({
+            type,
+            teamClusterId: this.client.getTeamClusterId(),
+            timestamp: new Date().toISOString(),
+            connectedToCloud: this.connectedToCloud,
+            details
+        });
     }
 
-    private async sendLifecycleStatus(status: TeamClusterStatus, details: string): Promise<void> {
+    private async sendLifecycleStatus(status: TeamClusterStatus): Promise<void> {
         const startedAt = Date.now();
 
         try {
@@ -371,16 +332,6 @@ export class VoltCloudConnection {
         } catch (error: unknown) {
             logger.warn({ err: error, status, durationMs: Date.now() - startedAt }, 'Failed to send lifecycle status to VoltCloud');
         }
-    }
-
-    private createLifecycleEvent(type: RuntimeLifecycleEventType, details?: string): RuntimeLifecycleEvent {
-        return {
-            type,
-            teamClusterId: this.client.getTeamClusterId(),
-            timestamp: new Date().toISOString(),
-            connectedToCloud: this.connectedToCloud,
-            details
-        };
     }
 
     private flushBackgroundCommandQueue(): void {

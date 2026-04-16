@@ -17,7 +17,7 @@ interface TerminalSessionAttachPayload extends TeamClusterDaemonSessionAttachPay
     terminalTarget: TeamClusterDaemonSessionAttachPayload['terminalTarget'];
 };
 
-export type ParsedSessionAttachPayload =
+type ParsedSessionAttachPayload =
     | TerminalSessionAttachPayload
     | WebSocketSessionAttachPayload
     | UnsupportedSessionAttachPayload;

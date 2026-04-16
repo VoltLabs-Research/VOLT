@@ -11,23 +11,9 @@ import path from 'node:path';
 
 type ExporterName = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter' | 'ChartExporter';
 
-interface PrimitiveAtom {
-    id: number;
-    pos: [number, number, number];
-};
-
-interface AtomsGroupedByType {
-    [typeName: string]: PrimitiveAtom[];
-};
-
 interface ExporterEntry {
     exportData: Record<string, unknown>;
     arrayIndex: number | undefined;
-};
-
-interface IndexedExporterEntry {
-    exportData: Record<string, unknown>;
-    arrayIndex: number;
 };
 
 interface MeshFacet {
@@ -50,7 +36,6 @@ interface ExportMaterial {
 };
 
 interface MeshExportOptions {
-    generateNormals?: boolean;
     enableDoubleSided?: boolean;
     smoothIterations?: number;
     material?: ExportMaterial;
@@ -86,7 +71,7 @@ interface ChartPoint {
     y: number;
 };
 
-export interface ExportExecutionInput {
+interface ExportExecutionInput {
     executionData: AnalysisJobExecutionData;
     exposure: AnalysisExposureDefinition;
     decodedPayload: Record<string, unknown>;
@@ -115,10 +100,6 @@ const toFiniteNumber = (value: unknown, fallback = 0): number => {
     return Number.isFinite(numericValue) ? numericValue : fallback;
 };
 
-const toStringMap = (value: unknown): Record<string, unknown> => {
-    return toRecord(value);
-};
-
 const buildObjectPath = (input: ExportExecutionInput, exporter: ExporterName, type: string, arrayIndex?: number): string => {
     const isChart = exporter === 'ChartExporter' || type === 'chart-png';
     const folder = isChart ? 'charts' : 'glb';
@@ -126,39 +107,6 @@ const buildObjectPath = (input: ExportExecutionInput, exporter: ExporterName, ty
     const suffix = arrayIndex != null ? `_${arrayIndex}` : '';
 
     return `trajectory-${input.executionData.trajectoryId}/analysis-${input.executionData.analysisId}/${folder}/${input.timestep}/${input.exposure.nodeId}${suffix}.${extension}`;
-};
-
-const normalizeAtomsByType = (value: Record<string, unknown>): AtomsGroupedByType => {
-    const result: AtomsGroupedByType = {};
-
-    for (const [typeName, atoms] of Object.entries(value)) {
-        if (!Array.isArray(atoms)) {
-            continue;
-        }
-
-        const normalized = atoms
-            .map((atom, index) => {
-                if (!isRecord(atom) || !Array.isArray(atom.pos) || atom.pos.length < 3) {
-                    return null;
-                }
-
-                return {
-                    id: toFiniteNumber(atom.id, index),
-                    pos: [
-                        toFiniteNumber(atom.pos[0]),
-                        toFiniteNumber(atom.pos[1]),
-                        toFiniteNumber(atom.pos[2])
-                    ] as [number, number, number]
-                };
-            })
-            .filter((atom): atom is PrimitiveAtom => atom !== null);
-
-        if (normalized.length > 0) {
-            result[typeName] = normalized;
-        }
-    }
-
-    return result;
 };
 
 const calculateDislocationType = (segment: Record<string, unknown>, tolerance: number = 1e-6): string => {
@@ -169,7 +117,6 @@ const calculateDislocationType = (segment: Record<string, unknown>, tolerance: n
 
     const [bx, by, bz] = (burgers.vector as number[]).map(Math.abs);
 
-    // 1/2<111>: all three components non-zero, nearly equal, magnitude ~0.5
     const halfComponents = [bx, by, bz].filter(x => x > tolerance);
     if (halfComponents.length === 3) {
         const maxC = Math.max(...halfComponents);
@@ -179,12 +126,10 @@ const calculateDislocationType = (segment: Record<string, unknown>, tolerance: n
         }
     }
 
-    // <100>: exactly one component non-zero
     if ([bx, by, bz].filter(x => x > tolerance).length === 1) {
         return '<100>';
     }
 
-    // <110>: two largest nearly equal, smallest ~0
     {
         const sorted = [bx, by, bz].sort((a, b) => b - a);
         if (Math.abs(sorted[0] - sorted[1]) < tolerance && sorted[2] < tolerance) {
@@ -192,7 +137,6 @@ const calculateDislocationType = (segment: Record<string, unknown>, tolerance: n
         }
     }
 
-    // <111>: all three nearly equal with magnitude >= 0.8
     {
         const maxC = Math.max(bx, by, bz);
         if (maxC >= tolerance) {
@@ -205,7 +149,6 @@ const calculateDislocationType = (segment: Record<string, unknown>, tolerance: n
         }
     }
 
-    // 1/6<112>: ratio pattern 2:1:1, small magnitude
     {
         const sorted = [bx, by, bz].sort((a, b) => b - a);
         if (sorted[0] >= tolerance && sorted[1] >= tolerance && sorted[2] >= tolerance) {
@@ -316,19 +259,8 @@ interface ProcessedDislocationGeometry {
     };
 };
 
-/**
- * Maximum number of dislocation vertices before the loop stops accepting
- * new segments.  Each vertex consumes ~24-40 bytes across the typed arrays
- * (positions + normals + optional colors + indices), so 5 M vertices ≈ 200 MB.
- */
 const MAX_DISLOCATION_VERTICES = 5_000_000;
 
-/**
- * Estimate the total vertex and index count produced by tube geometry for a
- * set of dislocation segments so we can pre-allocate TypedArrays instead of
- * accumulating into JS `number[]` arrays (which use ~16 bytes per element vs
- * 4 bytes in a Float32Array).
- */
 const estimateSegmentGeometry = (
     segments: unknown[],
     tubularSegments: number,
@@ -345,8 +277,6 @@ const estimateSegmentGeometry = (
         ).length;
         if (validPoints < minSegmentPoints) continue;
 
-        // Each edge (validPoints - 1) produces (tubularSegments + 1) * 2 vertices
-        // and tubularSegments * 6 indices
         const edges = validPoints - 1;
         totalVertices += edges * (tubularSegments + 1) * 2;
         totalIndices += edges * tubularSegments * 6;
@@ -366,10 +296,6 @@ const processDislocations = async (
     const segments = Array.isArray(data.segments) ? data.segments : [];
     const typeColors = { ...DISLOCATION_TYPE_COLORS, ...opts.typeColors };
 
-    // Pre-estimate geometry size to allocate TypedArrays up front.
-    // This avoids the old pattern of accumulating into JS number[] arrays
-    // (~16 bytes/element) and then copying to TypedArrays (~4 bytes/element),
-    // which caused 2x peak memory during the copy.
     const estimate = estimateSegmentGeometry(segments, opts.tubularSegments, opts.minSegmentPoints);
     if (estimate.vertexCount === 0) {
         return null;
@@ -380,8 +306,8 @@ const processDislocations = async (
     const indices = new Uint32Array(estimate.indexCount);
     const colors = opts.colorByType ? new Float32Array(estimate.vertexCount * 4) : undefined;
 
-    let vertexOffset = 0;    // current write position in positions/normals (vertex count)
-    let indexOffset = 0;     // current write position in indices array
+    let vertexOffset = 0;
+    let indexOffset = 0;
     let sinceLastYield = 0;
     let vertexBudgetExhausted = false;
 
@@ -401,8 +327,6 @@ const processDislocations = async (
 
         const type = calculateDislocationType(segment);
 
-        // Instead of building temporary number[] arrays via createLineGeometry,
-        // write directly into the pre-allocated TypedArrays.
         const geometry = createLineGeometry(normalizedPoints, opts.lineWidth, opts.tubularSegments);
         if (geometry.positions.length === 0) continue;
 
@@ -412,24 +336,20 @@ const processDislocations = async (
             break;
         }
 
-        // Copy positions into the typed array
         const posBase = vertexOffset * 3;
         for (let i = 0; i < geometry.positions.length; i++) {
             positions[posBase + i] = geometry.positions[i];
         }
 
-        // Copy normals
         for (let i = 0; i < geometry.normals.length; i++) {
             normals[posBase + i] = geometry.normals[i];
         }
 
-        // Copy indices (offset by current vertex base)
         for (let i = 0; i < geometry.indices.length; i++) {
             indices[indexOffset + i] = geometry.indices[i] + vertexOffset;
         }
         indexOffset += geometry.indices.length;
 
-        // Write per-vertex colors
         if (opts.colorByType && colors) {
             const color = typeColors[type] || typeColors['Other'];
             const colorBase = vertexOffset * 4;
@@ -462,7 +382,6 @@ const processDislocations = async (
         return null;
     }
 
-    // Trim typed arrays to actual size if estimate was larger than what we used
     const finalPositions = vertexOffset * 3 < positions.length ? positions.subarray(0, vertexOffset * 3) : positions;
     const finalNormals = vertexOffset * 3 < normals.length ? normals.subarray(0, vertexOffset * 3) : normals;
     const finalIndices = indexOffset < indices.length ? indices.subarray(0, indexOffset) : indices;
@@ -492,9 +411,6 @@ const processDislocations = async (
     };
 };
 
-/**
- * Convert HSL (all in 0..1 range) to RGB (0..1 range).
- */
 const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
     if (s === 0) return [l, l, l];
     const hue2rgb = (p: number, q: number, t: number): number => {
@@ -514,68 +430,46 @@ const hslToRgb = (h: number, s: number, l: number): [number, number, number] => 
     ];
 };
 
-/**
- * Extended discrete palette with 24 maximally perceptually distinct colors.
- * Hand-picked to remain distinguishable under common colour-vision deficiencies.
- */
 const EXTENDED_PALETTE: [number, number, number][] = [
-    [0.91, 0.30, 0.24],  //  0  Red
-    [0.20, 0.60, 0.86],  //  1  Blue
-    [0.18, 0.80, 0.44],  //  2  Green
-    [0.95, 0.77, 0.06],  //  3  Yellow
-    [0.61, 0.35, 0.71],  //  4  Purple
-    [1.00, 0.50, 0.00],  //  5  Orange
-    [0.00, 0.81, 0.82],  //  6  Cyan
-    [0.85, 0.20, 0.53],  //  7  Magenta/Rose
-    [0.55, 0.76, 0.22],  //  8  Lime
-    [0.36, 0.25, 0.60],  //  9  Indigo
-    [1.00, 0.62, 0.47],  // 10  Salmon
-    [0.00, 0.50, 0.50],  // 11  Teal
-    [0.80, 0.68, 0.00],  // 12  Dark Yellow / Gold
-    [0.44, 0.68, 0.28],  // 13  Olive Green
-    [0.69, 0.19, 0.38],  // 14  Crimson
-    [0.30, 0.75, 0.93],  // 15  Sky Blue
-    [0.90, 0.56, 0.67],  // 16  Pink
-    [0.50, 0.50, 0.00],  // 17  Olive
-    [0.00, 0.39, 0.74],  // 18  Cobalt
-    [0.75, 0.94, 0.27],  // 19  Yellow-Green
-    [0.58, 0.00, 0.83],  // 20  Violet
-    [0.94, 0.42, 0.31],  // 21  Burnt Orange
-    [0.27, 0.94, 0.94],  // 22  Aqua
-    [0.66, 0.47, 0.33],  // 23  Brown / Sienna
+    [0.91, 0.30, 0.24],
+    [0.20, 0.60, 0.86],
+    [0.18, 0.80, 0.44],
+    [0.95, 0.77, 0.06],
+    [0.61, 0.35, 0.71],
+    [1.00, 0.50, 0.00],
+    [0.00, 0.81, 0.82],
+    [0.85, 0.20, 0.53],
+    [0.55, 0.76, 0.22],
+    [0.36, 0.25, 0.60],
+    [1.00, 0.62, 0.47],
+    [0.00, 0.50, 0.50],
+    [0.80, 0.68, 0.00],
+    [0.44, 0.68, 0.28],
+    [0.69, 0.19, 0.38],
+    [0.30, 0.75, 0.93],
+    [0.90, 0.56, 0.67],
+    [0.50, 0.50, 0.00],
+    [0.00, 0.39, 0.74],
+    [0.75, 0.94, 0.27],
+    [0.58, 0.00, 0.83],
+    [0.94, 0.42, 0.31],
+    [0.27, 0.94, 0.94],
+    [0.66, 0.47, 0.33],
 ];
 
-/**
- * Return a colour for the given palette index.
- * Indices within `EXTENDED_PALETTE` get a hand-picked colour; beyond that we
- * generate colours algorithmically using golden-ratio hue spacing to guarantee
- * no two nearby indices share a hue.
- */
 const generateColor = (index: number): [number, number, number] => {
     if (index < EXTENDED_PALETTE.length) return EXTENDED_PALETTE[index];
 
     const GOLDEN_RATIO = 0.618033988749895;
     const hue = ((index - EXTENDED_PALETTE.length) * GOLDEN_RATIO) % 1.0;
-    // Vary saturation and lightness slightly so consecutive generated colours
-    // differ in more than just hue.
-    const saturation = 0.65 + (index % 3) * 0.1;   // 0.65 / 0.75 / 0.85
-    const lightness  = 0.45 + (index % 2) * 0.12;   // 0.45 / 0.57
+    const saturation = 0.65 + (index % 3) * 0.1;
+    const lightness  = 0.45 + (index % 2) * 0.12;
     return hslToRgb(hue, saturation, lightness);
 };
 
-/** Regex for cluster names emitted by MultiSOM / clustering nodes, e.g. "Cluster 7". */
 const CLUSTER_NAME_RE = /^Cluster\s+(\d+)$/i;
 
-const normalizeDiscreteTypeName = (typeName: string): string => {
-    return typeName
-        .trim()
-        .toLowerCase()
-        .replace(/[\s-]+/g, '_');
-};
-
 const colorForType = (typeName: string, typeIndex: number): [number, number, number] => {
-    // Preserve the historical Structure Identification palette so standalone
-    // structure-classification exports match the legacy Volt colouring.
     const predefined: Record<string, [number, number, number]> = {
         bcc: [102 / 255, 102 / 255, 1],
         fcc: [102 / 255, 1, 102 / 255],
@@ -594,76 +488,27 @@ const colorForType = (typeName: string, typeIndex: number): [number, number, num
         other: [242 / 255, 242 / 255, 242 / 255]
     };
 
-    const normalized = normalizeDiscreteTypeName(typeName);
+    const normalized = typeName.trim().toLowerCase().replace(/[\s-]+/g, '_');
     if (predefined[normalized]) {
         return predefined[normalized];
     }
 
-    // 2. Cluster-aware colouring: "Cluster N" → use N as palette index directly.
     const clusterMatch = CLUSTER_NAME_RE.exec(typeName);
     if (clusterMatch) {
         const clusterIndex = parseInt(clusterMatch[1], 10);
         return generateColor(clusterIndex);
     }
 
-    // 3. All other types: use the typeIndex through the extended palette / generator.
     return generateColor(typeIndex);
 };
 
-const buildPointCloudData = (atomsByType: AtomsGroupedByType): {
-    positions: Float32Array;
-    colors: Float32Array;
-    min: [number, number, number];
-    max: [number, number, number];
-} => {
-    const typeEntries = Object.entries(atomsByType);
-    const totalAtoms = typeEntries.reduce((count, [, atoms]) => count + atoms.length, 0);
-    if (totalAtoms === 0) {
-        throw new Error('No atom data available for export');
-    }
-
-    const positions = new Float32Array(totalAtoms * 3);
-    const colors = new Float32Array(totalAtoms * 3);
-    const min: [number, number, number] = [Infinity, Infinity, Infinity];
-    const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
-    let offset = 0;
-
-    typeEntries.forEach(([typeName, atoms], typeIndex) => {
-        const color = colorForType(typeName, typeIndex);
-        for (const atom of atoms) {
-            const base = offset * 3;
-            positions[base] = atom.pos[0];
-            positions[base + 1] = atom.pos[1];
-            positions[base + 2] = atom.pos[2];
-            colors[base] = color[0];
-            colors[base + 1] = color[1];
-            colors[base + 2] = color[2];
-            min[0] = Math.min(min[0], atom.pos[0]);
-            min[1] = Math.min(min[1], atom.pos[1]);
-            min[2] = Math.min(min[2], atom.pos[2]);
-            max[0] = Math.max(max[0], atom.pos[0]);
-            max[1] = Math.max(max[1], atom.pos[1]);
-            max[2] = Math.max(max[2], atom.pos[2]);
-            offset += 1;
-        }
-    });
-
-    return { positions, colors, min, max };
-};
-
-/**
- * Single-pass version: reads raw decoded payload directly into typed arrays,
- * skipping the intermediate PrimitiveAtom[] JS objects that normalizeAtomsByType creates.
- * For 4.5M atoms this saves ~1GB+ of JS heap overhead.
- */
 const buildPointCloudDataDirect = async (exportData: Record<string, unknown>): Promise<{
     positions: Float32Array;
     colors: Float32Array;
     min: [number, number, number];
     max: [number, number, number];
 } | null> => {
-    // First pass: count valid atoms to pre-allocate typed arrays
-    const entries: Array<[string, unknown[]]> = [];
+        const entries: Array<[string, unknown[]]> = [];
     let totalAtoms = 0;
     for (const [typeName, atoms] of Object.entries(exportData)) {
         if (!Array.isArray(atoms)) continue;
@@ -717,7 +562,6 @@ const buildPointCloudDataDirect = async (exportData: Record<string, unknown>): P
         return null;
     }
 
-    // Trim if some atoms were invalid and skipped
     if (offset < totalAtoms) {
         return {
             positions: positions.subarray(0, offset * 3),
@@ -821,16 +665,6 @@ const computeNormals = (positions: Float32Array, indices: Uint32Array): Float32A
     return normals;
 };
 
-const resolveMaterial = (material: ExportMaterial | undefined, doubleSided?: boolean): ExportMaterial & { doubleSided?: boolean } => {
-    return {
-        baseColor: material?.baseColor || [0.8, 0.8, 0.85, 1],
-        metallic: material?.metallic ?? 0.05,
-        roughness: material?.roughness ?? 0.9,
-        emissive: material?.emissive || [0, 0, 0],
-        doubleSided: doubleSided ?? true
-    };
-};
-
 const extractChartData = (decodedPayload: Record<string, unknown>, options: ChartExportOptions): ChartPoint[] => {
     const xAxis = getNestedValue(decodedPayload, options.xAxisKey);
     const yAxis = getNestedValue(decodedPayload, options.yAxisKey);
@@ -862,39 +696,12 @@ const extractChartData = (decodedPayload: Record<string, unknown>, options: Char
     return [];
 };
 
-const resolveChartType = (chartType: ChartExportOptions['chartType']): SupportedChartType => {
-    if (chartType === 'area') {
-        return 'line';
-    }
-
-    return chartType;
-};
-
 type SupportedChartType = 'line' | 'bar' | 'scatter';
 
 type SupportedChartDatasetValue = number | [number, number] | Point | BubbleDataPoint | null;
 const YIELD_INTERVAL = 50_000;
 
 const yieldToEventLoop = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
-
-const buildChartDataset = (
-    chartData: ChartPoint[],
-    chartType: SupportedChartType,
-    options: ChartExportOptions
-): ChartDataset<keyof ChartTypeRegistry, SupportedChartDatasetValue[]> => {
-    return {
-        label: options.title || 'Data',
-        data: chartType === 'scatter'
-            ? chartData.map((point) => ({ x: Number(point.x), y: point.y }))
-            : chartData.map((point) => point.y),
-        borderColor: options.lineColor || '#3b82f6',
-        backgroundColor: options.fillColor || 'rgba(59, 130, 246, 0.3)',
-        fill: options.chartType === 'area',
-        tension: 0.1,
-        pointRadius: chartType === 'scatter' ? 4 : 2,
-        borderWidth: 2
-    };
-};
 
 export interface ExportNodeProcessorService {
     process(input: ExportExecutionInput): Promise<void>;
@@ -964,7 +771,13 @@ export const createExportNodeProcessorService = (
         options: MeshExportOptions
     ): Promise<boolean> => {
         const mesh = normalizeMesh(exportData);
-        const material = resolveMaterial(options.material, options.enableDoubleSided);
+        const material = {
+            baseColor: options.material?.baseColor || [0.8, 0.8, 0.85, 1],
+            metallic: options.material?.metallic ?? 0.05,
+            roughness: options.material?.roughness ?? 0.9,
+            emissive: options.material?.emissive || [0, 0, 0],
+            doubleSided: options.enableDoubleSided ?? true
+        };
         const processed = processMesh(mesh, options.smoothIterations);
         if (!processed) {
             return false;
@@ -1013,11 +826,6 @@ export const createExportNodeProcessorService = (
     } | null => {
         if (mesh.vertices.length === 0 || mesh.facets.length === 0) {
             return null;
-        }
-
-        const vertexMap = new Map<number, [number, number, number]>();
-        for (const vertex of mesh.vertices) {
-            vertexMap.set(vertex.index, vertex.position);
         }
 
         const positions = new Float32Array(mesh.vertices.length * 3);
@@ -1152,13 +960,23 @@ export const createExportNodeProcessorService = (
             return false;
         }
 
-        const chartType = resolveChartType(options.chartType);
-        const dataset = buildChartDataset(chartData, chartType, options);
+        const chartType = options.chartType === 'area' ? 'line' : options.chartType;
         const chartConfiguration: ChartConfiguration<keyof ChartTypeRegistry, SupportedChartDatasetValue[], string> = {
             type: chartType,
             data: {
                 labels: chartType === 'scatter' ? undefined : chartData.map((point) => String(point.x)),
-                datasets: [dataset]
+                datasets: [{
+                    label: options.title || 'Data',
+                    data: chartType === 'scatter'
+                        ? chartData.map((point) => ({ x: Number(point.x), y: point.y }))
+                        : chartData.map((point) => point.y),
+                    borderColor: options.lineColor || '#3b82f6',
+                    backgroundColor: options.fillColor || 'rgba(59, 130, 246, 0.3)',
+                    fill: options.chartType === 'area',
+                    tension: 0.1,
+                    pointRadius: chartType === 'scatter' ? 4 : 2,
+                    borderWidth: 2
+                }]
             },
             options: {
                 responsive: false,
@@ -1222,14 +1040,6 @@ export const createExportNodeProcessorService = (
         return true;
     };
 
-    /**
-     * Resolve the list of exporter payloads from the decoded msgpack data.
-     * Supports two shapes:
-     *   • Single object:  { export: { AtomisticExporter: { ... } } }
-     *   • Array of objects: { export: [ { AtomisticExporter: { ... } }, ... ] }
-     *
-     * Returns an array of individual exporter objects so callers can iterate uniformly.
-     */
     const resolveExporterEntries = (
         decodedPayload: Record<string, unknown>,
         exporter: ExporterName
@@ -1237,8 +1047,7 @@ export const createExportNodeProcessorService = (
         const rawExport = decodedPayload['export'];
 
         if (Array.isArray(rawExport)) {
-            // Array format: each element is an exporter object like { AtomisticExporter: { ... } }
-            const entries: IndexedExporterEntry[] = [];
+            const entries: ExporterEntry[] = [];
             for (let i = 0; i < rawExport.length; i++) {
                 const element = rawExport[i];
                 if (!isRecord(element)) {
@@ -1255,7 +1064,6 @@ export const createExportNodeProcessorService = (
             return entries;
         }
 
-        // Single-object format (backward compatible): { AtomisticExporter: { ... } }
         if (isRecord(rawExport)) {
             const exporterData = rawExport[exporter];
             if (!isRecord(exporterData)) {
@@ -1318,9 +1126,8 @@ export const createExportNodeProcessorService = (
             }
 
             const exporter = exportConfig.exporter as ExporterName;
-            const options = toStringMap(exportConfig.options);
+            const options = toRecord(exportConfig.options);
 
-            // ChartExporter operates on the full decoded payload, not the export key — handle separately
             if (exporter === 'ChartExporter') {
                 const objectPath = buildObjectPath(input, exporter, exportConfig.type);
                 const exported = await exportChart(

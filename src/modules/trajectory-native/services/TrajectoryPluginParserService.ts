@@ -8,7 +8,7 @@ import { createZstdDecompressionStream } from '@/shared/utilities/storage-codec'
 type PerAtomRow = Record<string, unknown>;
 type PerAtomColumnarData = Record<string, unknown[]>;
 
-export interface PluginPropertyNamesRequest {
+interface PluginPropertyNamesRequest {
     trajectoryId: string;
     analysisId: string;
     exposureId: string;
@@ -16,7 +16,7 @@ export interface PluginPropertyNamesRequest {
     ownerClusterId: string;
 }
 
-export interface PluginModifierAnalysisRequest {
+interface PluginModifierAnalysisRequest {
     trajectoryId: string;
     analysisId: string;
     exposureId: string;
@@ -24,7 +24,7 @@ export interface PluginModifierAnalysisRequest {
     ownerClusterId: string;
 }
 
-export interface PluginAtomIndexRequest {
+interface PluginAtomIndexRequest {
     trajectoryId: string;
     analysisId: string;
     exposureId: string;
@@ -33,17 +33,15 @@ export interface PluginAtomIndexRequest {
     ownerClusterId: string;
 }
 
-export interface PluginModifierValuesRequest extends PluginModifierAnalysisRequest {
+interface PluginModifierValuesRequest extends PluginModifierAnalysisRequest {
     property: string;
 }
 
-export interface PluginModifierStatsRequest extends PluginModifierValuesRequest {}
-
-export interface PluginModifierUniqueValuesRequest extends PluginModifierValuesRequest {
+interface PluginModifierUniqueValuesRequest extends PluginModifierValuesRequest {
     maxValues?: number;
 }
 
-export interface PluginAnalysisAllAtomsRequest {
+interface PluginAnalysisAllAtomsRequest {
     trajectoryId: string;
     analysisId: string;
     timestep: number;
@@ -51,7 +49,7 @@ export interface PluginAnalysisAllAtomsRequest {
     ownerClusterId: string;
 }
 
-export interface PluginAnalysisAllAtomsResponse {
+interface PluginAnalysisAllAtomsResponse {
     propertyNames: string[];
     atoms: Record<string, unknown>[];
 };
@@ -120,7 +118,21 @@ export class TrajectoryPluginParserService {
 
             if (!decoded) return [];
 
-            return this.extractPerAtomPropertyNames(decoded['per-atom-properties']);
+            const rows = this.normalizePerAtomProperties(decoded['per-atom-properties']);
+            if (!rows?.length) {
+                return [];
+            }
+
+            const keys = new Set<string>();
+            for (const row of rows) {
+                for (const key of Object.keys(row)) {
+                    if (key !== 'id') {
+                        keys.add(key);
+                    }
+                }
+            }
+
+            return Array.from(keys);
         } catch {
             return [];
         }
@@ -134,7 +146,6 @@ export class TrajectoryPluginParserService {
             const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, key, { skipMetadata: true });
             const stream = createZstdDecompressionStream(response.stream).stream;
 
-            // Selective decode: only keep 'per-atom-properties' key
             let decoded: Record<string, unknown> | null = null;
             for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
                 decoded = mergeSelectiveChunk(decoded, message, (k) => k === 'per-atom-properties');
@@ -142,8 +153,7 @@ export class TrajectoryPluginParserService {
 
             if (!decoded) return null;
             return this.normalizePerAtomProperties(decoded['per-atom-properties']);
-        } catch (error) {
-            // Return null if object does not exist
+        } catch {
             return null;
         }
     }
@@ -154,10 +164,11 @@ export class TrajectoryPluginParserService {
         return this.toFloat32ByAtomId(data, request.property) || null;
     }
 
-    async getModifierStats(request: PluginModifierStatsRequest): Promise<{ min: number; max: number } | null> {
+    async getModifierStats(request: PluginModifierValuesRequest): Promise<{ min: number; max: number } | null> {
         const data = await this.getModifierAnalysisData(request);
         if (!data) return null;
-        return this.getMinMaxFromData(data, request.property) || null;
+        const arr = this.toFloat32ByAtomId(data, request.property);
+        return arr ? getMinMaxFromTypedArray(arr) || null : null;
     }
 
     async getModifierUniqueValues(request: PluginModifierUniqueValuesRequest): Promise<number[]> {
@@ -191,7 +202,6 @@ export class TrajectoryPluginParserService {
             for await (const message of decodeMultiStream(stream)) {
                 if (!isRecord(message)) continue;
 
-                // Only extract per-atom-properties from each chunk
                 const perAtomRaw = message['per-atom-properties'];
                 const perAtomData = this.normalizePerAtomProperties(perAtomRaw);
                 if (!perAtomData) continue;
@@ -200,7 +210,7 @@ export class TrajectoryPluginParserService {
                 for (const item of perAtomData) {
                     if (shouldBreak) break;
 
-                    const id = this.normalizeAtomId((item as Record<string, unknown>)?.id);
+                    const id = this.normalizeAtomId(item.id);
                     if (id === null) continue;
                     if (!targetIdsSet.has(id)) continue;
                     if (pluginIndex[id]) continue;
@@ -223,7 +233,7 @@ export class TrajectoryPluginParserService {
             }
 
             return matchedAtomCount > 0 ? pluginIndex : null;
-        } catch (error) {
+        } catch {
             return null;
         }
     }
@@ -246,21 +256,12 @@ export class TrajectoryPluginParserService {
         return keys;
     }
 
-    /**
-     * Fetches per-atom data for all exposures in a given analysis at a specific timestep,
-     * merging results into a single flat response with deduplicated property names.
-     *
-     * @param request - The trajectory, analysis, and timestep to query.
-     * @returns Merged property names and atom records across all exposures.
-     */
     async getAnalysisAllPerAtomData(request: PluginAnalysisAllAtomsRequest): Promise<PluginAnalysisAllAtomsResponse> {
         const { trajectoryId, analysisId, timestep, ownerClusterId } = request;
         const analysisPrefix = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/`;
 
         const allObjects = await this.listAllObjectKeys(ownerClusterId, ObjectBucketName.Plugins, analysisPrefix);
 
-        // Extract unique exposure IDs from object paths
-        // Path format: plugins/trajectory-{id}/analysis-{id}/{exposureId}/timestep-{ts}.msgpack.zst
         const exposureIds = new Set<string>();
         for (const objectKey of allObjects) {
             const relativePath = objectKey.slice(analysisPrefix.length);
@@ -277,43 +278,37 @@ export class TrajectoryPluginParserService {
         const exposureResults: ExposureData[] = [];
 
         for (const exposureId of exposureIds) {
-            try {
-                const data = await this.getModifierAnalysisData({
-                    trajectoryId,
-                    analysisId,
-                    exposureId,
-                    timestep,
-                    ownerClusterId
-                });
+            const data = await this.getModifierAnalysisData({
+                trajectoryId,
+                analysisId,
+                exposureId,
+                timestep,
+                ownerClusterId
+            });
 
-                if (!data || data.length === 0) continue;
+            if (!data || data.length === 0) continue;
 
-                // Extract property names from already-normalized rows (avoids double-normalization)
-                const keys = new Set<string>();
-                for (const row of data) {
-                    for (const key of Object.keys(row)) {
-                        if (key !== 'id') keys.add(key);
-                    }
+            const keys = new Set<string>();
+            for (const row of data) {
+                for (const key of Object.keys(row)) {
+                    if (key !== 'id') keys.add(key);
                 }
-
-                const propNames = Array.from(keys);
-                if (propNames.length === 0) continue;
-
-                exposureResults.push({
-                    exposureId,
-                    propertyNames: propNames,
-                    rows: data
-                });
-            } catch {
-                continue;
             }
+
+            const propNames = Array.from(keys);
+            if (propNames.length === 0) continue;
+
+            exposureResults.push({
+                exposureId,
+                propertyNames: propNames,
+                rows: data
+            });
         }
 
         if (exposureResults.length === 0) {
             return { propertyNames: [], atoms: [] };
         }
 
-        // Count property name occurrences across exposures for deduplication
         const propertyOccurrences = new Map<string, number>();
         for (const result of exposureResults) {
             for (const prop of result.propertyNames) {
@@ -321,8 +316,6 @@ export class TrajectoryPluginParserService {
             }
         }
 
-        // Build per-exposure property name mappings (source -> display)
-        // If a property name appears in multiple exposures, prefix with exposureId
         const exposureMappings = new Map<string, Map<string, string>>();
         const allDisplayNames: string[] = [];
 
@@ -339,7 +332,6 @@ export class TrajectoryPluginParserService {
             exposureMappings.set(result.exposureId, mapping);
         }
 
-        // Merge all per-atom rows by atom id
         const mergedAtoms = new Map<number, Record<string, unknown>>();
         const { atomIds } = request;
 
@@ -371,17 +363,6 @@ export class TrajectoryPluginParserService {
     }
 
     private toFloat32ByAtomId(data: unknown, property: string): Float32Array | undefined {
-        if (!data) return undefined;
-
-        const dataRecord = data as Record<string, unknown>;
-
-        if (dataRecord[property] instanceof Float32Array) return dataRecord[property] as Float32Array;
-        if (dataRecord[property] instanceof Float64Array) return new Float32Array(dataRecord[property] as Float64Array);
-
-        if (Array.isArray(dataRecord[property])) {
-            return new Float32Array(dataRecord[property] as number[]);
-        }
-
         if (!Array.isArray(data) || (data as unknown[]).length === 0) return undefined;
 
         const items = data as Array<Record<string, unknown>>;
@@ -434,48 +415,6 @@ export class TrajectoryPluginParserService {
         }
 
         return out;
-    }
-
-    private getMinMaxFromData(data: unknown, property: string): { min: number; max: number } | undefined {
-        const dataRecord = data as Record<string, unknown>;
-
-        if (dataRecord && (dataRecord[property] instanceof Float32Array || dataRecord[property] instanceof Float64Array)) {
-            const arr = dataRecord[property] instanceof Float32Array
-                ? dataRecord[property] as Float32Array
-                : new Float32Array(dataRecord[property] as Float64Array);
-            return getMinMaxFromTypedArray(arr);
-        }
-
-        if (dataRecord && Array.isArray(dataRecord[property])) {
-            const arr = new Float32Array(dataRecord[property] as number[]);
-            return getMinMaxFromTypedArray(arr);
-        }
-
-        if (Array.isArray(data)) {
-            const arr = this.toFloat32ByAtomId(data, property);
-            if (!arr) return undefined;
-            return getMinMaxFromTypedArray(arr);
-        }
-
-        return undefined;
-    }
-
-    private extractPerAtomPropertyNames(value: unknown): string[] {
-        const rows = this.normalizePerAtomProperties(value);
-        if (!rows || rows.length === 0) {
-            return [];
-        }
-
-        const keys = new Set<string>();
-        for (const row of rows) {
-            for (const key of Object.keys(row)) {
-                if (key !== 'id') {
-                    keys.add(key);
-                }
-            }
-        }
-
-        return Array.from(keys);
     }
 
     private normalizeAtomId(value: unknown): number | null {

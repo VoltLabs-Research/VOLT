@@ -118,7 +118,6 @@ export interface TrajectoryParserService {
     decodeFloat32Array(value: string): Float32Array;
     decodeUint8Array(value: string): Uint8Array;
     getModelObjectKey(trajectoryId: string, timestep: number): string;
-    getPreviewObjectKey(trajectoryId: string, timestep: number): string;
 };
 
 export const createTrajectoryParserService = (
@@ -271,7 +270,6 @@ export const createTrajectoryParserService = (
 
             return await action(tempDumpPath);
         } catch (error: unknown) {
-            // Provide a clear error message for missing S3 objects
             if (
                 error !== null &&
                 typeof error === 'object' &&
@@ -299,22 +297,6 @@ export const createTrajectoryParserService = (
             filePath
         });
         const parseStart = Date.now();
-
-        logger.info(
-            {
-                filePath,
-                includeIds: options.includeIds ?? false,
-                requestedProperties: options.properties ?? []
-            },
-            'Starting native trajectory parse'
-        );
-
-        logger.info(
-            {
-                filePath
-            },
-            'Invoking native dump parser'
-        );
         const dumpResult = nativeModuleLoader.getDumpParserModule().parseDump(filePath, {
             includeIds: options.includeIds,
             properties: options.properties
@@ -339,12 +321,6 @@ export const createTrajectoryParserService = (
                 filePath
             },
             'Native dump parser returned no result, falling back to native data parser'
-        );
-        logger.info(
-            {
-                filePath
-            },
-            'Invoking native data parser'
         );
         const dataResult = nativeModuleLoader.getDataParserModule().parseData(filePath, {
             includeIds: options.includeIds
@@ -431,9 +407,5 @@ export const createTrajectoryParserService = (
 
     getModelObjectKey(trajectoryId, timestep) {
         return `trajectory-${trajectoryId}/timestep-${timestep}.glb.zst`;
-    },
-
-    getPreviewObjectKey(trajectoryId, timestep) {
-        return `trajectory-${trajectoryId}/previews/timestep-${timestep}.png`;
     }
 });

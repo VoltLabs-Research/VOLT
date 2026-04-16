@@ -15,7 +15,7 @@ interface ObjectStoreErrorPayload {
     message?: unknown;
 }
 
-export interface DirectObjectStoreHeadResponse {
+interface DirectObjectStoreHeadResponse {
     contentLength?: number;
     contentType?: string;
     contentEncoding?: string;
@@ -24,18 +24,18 @@ export interface DirectObjectStoreHeadResponse {
     metadata: Record<string, string>;
 }
 
-export interface DirectObjectStoreStreamResponse extends DirectObjectStoreHeadResponse {
+interface DirectObjectStoreStreamResponse extends DirectObjectStoreHeadResponse {
     stream: NodeReadable;
 }
 
-export interface DirectObjectStoreListEntry {
+interface DirectObjectStoreListEntry {
     key: string;
     contentLength?: number;
     etag?: string;
     lastModified?: Date;
 }
 
-export interface DirectObjectStoreReadOptions {
+interface DirectObjectStoreReadOptions {
     skipMetadata?: boolean;
 }
 
@@ -43,10 +43,6 @@ interface ObjectStoreListResponse {
     keys?: unknown;
     objects?: unknown;
     nextCursor?: unknown;
-}
-
-interface ObjectStoreDeleteResponse {
-    deletedCount?: unknown;
 }
 
 interface RawHttpResponse {
@@ -72,45 +68,8 @@ class ObjectStoreProxyError extends Error {
     }
 }
 
-const readHeaderValue = (value: string | null): string | undefined => {
-    return value && value.length > 0
-        ? value
-        : undefined;
-};
-
-const encodePathComponent = (value: string): string => {
-    return encodeURIComponent(value);
-};
-
 const encodeObjectKeyPath = (objectKey: string): string => {
-    return objectKey.split('/').map(encodePathComponent).join('/');
-};
-
-const headersFromIncoming = (headers: http.IncomingHttpHeaders): Headers => {
-    const normalized = new Headers();
-
-    for (const [headerName, headerValue] of Object.entries(headers)) {
-        if (Array.isArray(headerValue)) {
-            for (const value of headerValue) {
-                normalized.append(headerName, value);
-            }
-            continue;
-        }
-
-        if (typeof headerValue === 'string') {
-            normalized.set(headerName, headerValue);
-        }
-    }
-
-    return normalized;
-};
-
-const headersToObject = (headers: Headers): Record<string, string> => {
-    const normalized: Record<string, string> = {};
-    headers.forEach((value, key) => {
-        normalized[key] = value;
-    });
-    return normalized;
+    return objectKey.split('/').map((segment) => encodeURIComponent(segment)).join('/');
 };
 
 const normalizeMetadataHeaders = (headers: Headers): Record<string, string> => {
@@ -128,51 +87,23 @@ const normalizeMetadataHeaders = (headers: Headers): Record<string, string> => {
 };
 
 const parseHeadResponse = (headers: Headers): DirectObjectStoreHeadResponse => {
-    const contentLength = readHeaderValue(headers.get('content-length'));
+    const contentLength = headers.get('content-length') || undefined;
+    const lastModified = headers.get('last-modified') || undefined;
 
     return {
         contentLength: typeof contentLength === 'string' && contentLength.length > 0
             ? Number(contentLength)
             : undefined,
-        contentType: readHeaderValue(headers.get('content-type')),
-        contentEncoding: readHeaderValue(headers.get('content-encoding')),
-        etag: readHeaderValue(headers.get('etag')),
-        lastModified: readHeaderValue(headers.get('last-modified'))
-            ? new Date(headers.get('last-modified')!)
+        contentType: headers.get('content-type') || undefined,
+        contentEncoding: headers.get('content-encoding') || undefined,
+        etag: headers.get('etag') || undefined,
+        lastModified: lastModified
+            ? new Date(lastModified)
             : undefined,
         metadata: normalizeMetadataHeaders(headers)
     };
 };
 
-const parseListEntry = (value: unknown): DirectObjectStoreListEntry | null => {
-    if (typeof value !== 'object' || value === null) {
-        return null;
-    }
-
-    const entry = value as Record<string, unknown>;
-    if (typeof entry.key !== 'string' || entry.key.length === 0) {
-        return null;
-    }
-
-    const lastModified = entry.lastModified instanceof Date
-        ? entry.lastModified
-        : typeof entry.lastModified === 'string' && entry.lastModified.length > 0
-            ? new Date(entry.lastModified)
-            : undefined;
-
-    return {
-        key: entry.key,
-        contentLength: typeof entry.contentLength === 'number'
-            ? entry.contentLength
-            : undefined,
-        etag: typeof entry.etag === 'string' && entry.etag.length > 0
-            ? entry.etag
-            : undefined,
-        lastModified: lastModified && !Number.isNaN(lastModified.getTime())
-            ? lastModified
-            : undefined
-    };
-};
 
 export class TeamClusterDirectObjectStoreClient {
     private readonly httpAgent = new http.Agent({
@@ -220,7 +151,29 @@ export class TeamClusterDirectObjectStoreClient {
             { method: 'GET' }
         );
         const objects = Array.isArray(response.objects)
-            ? response.objects.map(parseListEntry).filter((entry): entry is DirectObjectStoreListEntry => entry !== null)
+            ? response.objects.map((value): DirectObjectStoreListEntry | null => {
+                if (typeof value !== 'object' || value === null) {
+                    return null;
+                }
+
+                const entry = value as Record<string, unknown>;
+                if (typeof entry.key !== 'string' || entry.key.length === 0) {
+                    return null;
+                }
+
+                const lastModified = entry.lastModified instanceof Date
+                    ? entry.lastModified
+                    : typeof entry.lastModified === 'string' && entry.lastModified.length > 0
+                        ? new Date(entry.lastModified)
+                        : undefined;
+
+                return {
+                    key: entry.key,
+                    contentLength: typeof entry.contentLength === 'number' ? entry.contentLength : undefined,
+                    etag: typeof entry.etag === 'string' && entry.etag.length > 0 ? entry.etag : undefined,
+                    lastModified: lastModified && !Number.isNaN(lastModified.getTime()) ? lastModified : undefined
+                };
+            }).filter((entry): entry is DirectObjectStoreListEntry => entry !== null)
             : [];
         const keys = Array.isArray(response.keys)
             ? response.keys.filter((value): value is string => typeof value === 'string')
@@ -265,15 +218,6 @@ export class TeamClusterDirectObjectStoreClient {
         };
     }
 
-    async getBuffer(ownerClusterId: string, bucket: string, objectKey: string): Promise<Buffer> {
-        const response = await this.fetch(this.buildObjectPath(ownerClusterId, bucket, objectKey), {
-            method: 'GET',
-            headers: this.buildReadHeaders({ skipMetadata: true })
-        });
-
-        return this.readResponseBuffer(response.stream);
-    }
-
     async putBuffer(ownerClusterId: string, request: {
         bucket: string;
         objectKey: string;
@@ -310,26 +254,6 @@ export class TeamClusterDirectObjectStoreClient {
         }).then((response) => this.readResponseBuffer(response.stream));
     }
 
-    async deleteObject(ownerClusterId: string, bucket: string, objectKey: string): Promise<void> {
-        await this.fetch(this.buildObjectPath(ownerClusterId, bucket, objectKey), {
-            method: 'DELETE'
-        }).then((response) => this.readResponseBuffer(response.stream));
-    }
-
-    async deleteByPrefix(ownerClusterId: string, bucket: string, prefix: string): Promise<number | undefined> {
-        const query = new URLSearchParams();
-        query.set('prefix', prefix);
-
-        const response = await this.fetchJson<ObjectStoreDeleteResponse>(
-            this.buildCollectionPath(ownerClusterId, bucket, query),
-            { method: 'DELETE' }
-        );
-
-        return typeof response.deletedCount === 'number'
-            ? response.deletedCount
-            : undefined;
-    }
-
     private async fetchJson<T>(path: string, init?: RawRequestInit): Promise<T> {
         const response = await this.fetch(path, init);
         return JSON.parse((await this.readResponseBuffer(response.stream)).toString('utf8')) as T;
@@ -340,7 +264,7 @@ export class TeamClusterDirectObjectStoreClient {
         headers.set(TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER, this.config.teamClusterId);
         headers.set(TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER, this.config.daemonPassword);
 
-        const response = await this.performRawRequest(this.buildProxyUrl(path), {
+        const response = await this.performRawRequest(new URL(path, this.config.voltCloudUrl).toString(), {
             method: init?.method || 'GET',
             headers,
             body: init?.body
@@ -389,12 +313,23 @@ export class TeamClusterDirectObjectStoreClient {
                 port: targetUrl.port,
                 path: `${targetUrl.pathname}${targetUrl.search}`,
                 method: init.method,
-                headers: headersToObject(init.headers),
+                headers: Object.fromEntries(init.headers.entries()),
                 agent
             }, (response) => {
+                const responseHeaders = new Headers();
+                for (const [headerName, headerValue] of Object.entries(response.headers)) {
+                    if (Array.isArray(headerValue)) {
+                        for (const value of headerValue) {
+                            responseHeaders.append(headerName, value);
+                        }
+                    } else if (typeof headerValue === 'string') {
+                        responseHeaders.set(headerName, headerValue);
+                    }
+                }
+
                 resolve({
                     statusCode: response.statusCode || 0,
-                    headers: headersFromIncoming(response.headers),
+                    headers: responseHeaders,
                     stream: response
                 });
             });
@@ -428,12 +363,8 @@ export class TeamClusterDirectObjectStoreClient {
         return Buffer.concat(chunks);
     }
 
-    private buildProxyUrl(path: string): string {
-        return new URL(path, this.config.voltCloudUrl).toString();
-    }
-
     private buildCollectionPath(ownerClusterId: string, bucket: string, query?: URLSearchParams): string {
-        const basePath = `${TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH}/owners/${encodePathComponent(ownerClusterId)}/buckets/${encodePathComponent(bucket)}/objects`;
+        const basePath = `${TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH}/owners/${encodeURIComponent(ownerClusterId)}/buckets/${encodeURIComponent(bucket)}/objects`;
         const queryString = query?.toString();
         return queryString
             ? `${basePath}?${queryString}`

@@ -8,7 +8,6 @@ import {
 } from '@/shared/contracts';
 import { logger } from '@/core/logger';
 import http from 'node:http';
-import type { AddressInfo } from 'node:net';
 import type { DaemonConfig } from '@/core/config';
 import type { MinioService } from '@/modules/platform/services';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -47,14 +46,6 @@ class ObjectGatewayHttpError extends Error {
         Object.setPrototypeOf(this, ObjectGatewayHttpError.prototype);
     }
 }
-
-type ObjectGatewayOperationName =
-    | 'list'
-    | 'head'
-    | 'get'
-    | 'put'
-    | 'delete'
-    | 'delete-prefix';
 
 const isMinioNotFoundError = (error: unknown): boolean => {
     if (typeof error !== 'object' || error === null || !('code' in error)) {
@@ -102,18 +93,6 @@ const decodePathComponent = (value: string, fieldName: string): string => {
     }
 };
 
-/**
- * Internal object data-plane exposed over HTTP and reached exclusively through
- * reverse-channel tunnel sessions.
- *
- * API surface:
- * - `GET /internal/object-gateway/v1/buckets/:bucket/objects?prefix=&cursor=&limit=`
- * - `DELETE /internal/object-gateway/v1/buckets/:bucket/objects?prefix=...`
- * - `HEAD /internal/object-gateway/v1/buckets/:bucket/objects/*`
- * - `GET /internal/object-gateway/v1/buckets/:bucket/objects/*`
- * - `PUT /internal/object-gateway/v1/buckets/:bucket/objects/*`
- * - `DELETE /internal/object-gateway/v1/buckets/:bucket/objects/*`
- */
 export class ObjectGatewayServer {
     private server: http.Server | null = null;
     private bindHost: string | null = null;
@@ -167,12 +146,11 @@ export class ObjectGatewayServer {
             throw new Error('Object gateway server did not expose a TCP address');
         }
 
-        const tcpAddress = address as AddressInfo;
-        this.bindHost = tcpAddress.address;
-        this.bindPort = tcpAddress.port;
-        this.localTargetHost = isWildcardHost(tcpAddress.address)
+        this.bindHost = address.address;
+        this.bindPort = address.port;
+        this.localTargetHost = isWildcardHost(address.address)
             ? LOOPBACK_HOST
-            : tcpAddress.address;
+            : address.address;
 
         logger.info({
             action: 'object-gateway.started',
@@ -240,7 +218,17 @@ export class ObjectGatewayServer {
 
         const url = new URL(request.url, 'http://127.0.0.1');
         const resolvedRoute = this.resolveRoute(url.pathname);
-        const operation = this.resolveOperation(request, resolvedRoute.type);
+        const operation = resolvedRoute.type === 'collection'
+            ? request.method === 'GET'
+                ? 'list'
+                : 'delete-prefix'
+            : request.method === 'HEAD'
+                ? 'head'
+                : request.method === 'GET'
+                    ? 'get'
+                    : request.method === 'PUT'
+                        ? 'put'
+                        : 'delete';
         const tracker = this.telemetryService.beginRequest(operation);
 
         try {
@@ -254,38 +242,13 @@ export class ObjectGatewayServer {
             await this.handleObjectRequest(request, response, resolvedRoute.bucket, resolvedRoute.objectKey, tracker);
         } catch (error) {
             tracker.complete({
-                statusCode: this.resolveErrorStatusCode(error),
+                statusCode: error instanceof ObjectGatewayHttpError || error instanceof RuntimeCapabilityError
+                    ? error.statusCode
+                    : 500,
                 error
             });
             throw error;
         }
-    }
-
-    private resolveOperation(
-        request: IncomingMessage,
-        routeType: 'collection' | 'object'
-    ): ObjectGatewayOperationName {
-        if (routeType === 'collection') {
-            if (request.method === 'GET') {
-                return 'list';
-            }
-
-            return 'delete-prefix';
-        }
-
-        if (request.method === 'HEAD') {
-            return 'head';
-        }
-
-        if (request.method === 'GET') {
-            return 'get';
-        }
-
-        if (request.method === 'PUT') {
-            return 'put';
-        }
-
-        return 'delete';
     }
 
     private resolveRoute(pathname: string): { bucket: string; type: 'collection'; } | { bucket: string; type: 'object'; objectKey: string; } {
@@ -353,11 +316,7 @@ export class ObjectGatewayServer {
                 limit
             });
 
-            const bytesOut = this.writeJson(response, 200, {
-                keys: result.keys,
-                objects: result.objects,
-                nextCursor: result.nextCursor
-            });
+            const bytesOut = this.writeJson(response, 200, result);
             tracker.complete({
                 statusCode: 200,
                 bytesOut
@@ -601,18 +560,6 @@ export class ObjectGatewayServer {
         response.setHeader('content-length', String(body.length));
         response.end(body);
         return body.length;
-    }
-
-    private resolveErrorStatusCode(error: unknown): number {
-        if (error instanceof ObjectGatewayHttpError) {
-            return error.statusCode;
-        }
-
-        if (error instanceof RuntimeCapabilityError) {
-            return error.statusCode;
-        }
-
-        return 500;
     }
 
     private handleRequestFailure(

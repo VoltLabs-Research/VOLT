@@ -1,31 +1,19 @@
-/**
- * Describes a public access mode supported by a team cluster service exposure.
- */
 export enum TeamClusterServiceExposureAccessMode {
     Http = 'http',
     Tcp = 'tcp',
     WebSocket = 'websocket'
 };
 
-/**
- * Describes the operational state of an exposure registered by a team cluster daemon.
- */
 export enum TeamClusterServiceExposureStatus {
     Active = 'active',
     Unavailable = 'unavailable'
 };
 
-/**
- * Describes where a team cluster service exposure originates.
- */
 export enum TeamClusterServiceExposureSourceKind {
     Container = 'container',
     Daemon = 'daemon'
 };
 
-/**
- * Represents a single persistent service exposure published by a team cluster daemon.
- */
 export interface TeamClusterServiceExposure {
     id: string;
     teamClusterId: string;

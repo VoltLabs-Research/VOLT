@@ -30,14 +30,14 @@ export interface PluginSubListingFilter {
     limit: number;
 };
 
-export type PluginMongoDocumentType = 'listing' | 'sub-listing';
+type PluginMongoDocumentType = 'listing' | 'sub-listing';
 
-export interface BulkUpsertOperation {
+interface BulkUpsertOperation {
     filter: Record<string, unknown>;
     update: Record<string, unknown>;
 };
 
-export interface ListingPaginatedResult extends PaginatedResult<PluginListingRowDocument> {
+interface ListingPaginatedResult extends PaginatedResult<PluginListingRowDocument> {
     columns: string[];
     subListingNames: string[];
 };
@@ -245,15 +245,6 @@ const readSubListingNames = (documents: PluginListingRowDocument[]): string[] =>
     return [];
 };
 
-const buildPluginPayloadObjectKey = (
-    trajectoryId: string,
-    analysisId: string,
-    exposureId: string,
-    timestep: number
-): string => {
-    return `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack.zst`;
-};
-
 const appendRowsWithinPage = (
     pageRows: Record<string, unknown>[],
     rows: Record<string, unknown>[],
@@ -272,10 +263,6 @@ const appendRowsWithinPage = (
     }
 
     return nextTotal;
-};
-
-const normalizeMongoExportRows = (rows: Array<Record<string, unknown>>): Record<string, unknown>[] => {
-    return rows.map((row) => ({ ...row }));
 };
 
 const normalizeMongoImportRows = (
@@ -435,7 +422,7 @@ export class MongoPluginListingRepository implements PluginListingRepository {
             ]);
 
             return {
-                rows: normalizeMongoExportRows(rows),
+                rows,
                 total,
                 hasMore: skip + rows.length < total,
                 nextSkip: skip + rows.length
@@ -454,7 +441,7 @@ export class MongoPluginListingRepository implements PluginListingRepository {
         ]);
 
         return {
-            rows: normalizeMongoExportRows(rows),
+            rows,
             total,
             hasMore: skip + rows.length < total,
             nextSkip: skip + rows.length
@@ -600,13 +587,6 @@ export class MongoPluginListingRepository implements PluginListingRepository {
         offset: number,
         limit: number
     ): Promise<SubListingPageResult> {
-        if (!ownerClusterId) {
-            return {
-                rows: [],
-                total: 0
-            };
-        }
-
         const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, objectKey, {
             skipMetadata: true
         });

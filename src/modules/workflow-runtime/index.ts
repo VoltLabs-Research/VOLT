@@ -6,7 +6,7 @@ import type { NativeModuleLoader } from '@/modules/trajectory-native/services';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 import type { WorkflowNodeRegistry } from './services';
 
-export interface WorkflowRuntimeModule {
+interface WorkflowRuntimeModule {
     workflowNodeRegistry: WorkflowNodeRegistry;
     workflowEngine: WorkflowEngine;
     debugSessionManager: DebugSessionManager;

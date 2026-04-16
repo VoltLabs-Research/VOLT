@@ -56,29 +56,21 @@ export class TrajectoryGlbWorkerService {
         logger.info({ concurrency }, 'TrajectoryGlbWorkerService concurrency updated');
     }
 
-    private async reportJobStatus(
-        job: GlbConversionQueueJobPayload,
-        status: GlbJobStatus,
-        error?: string
-    ): Promise<void> {
-        await this.daemonJobReporterService.reportGlbJobStatus({
-            jobId: job.jobId,
-            teamId: job.teamId,
-            trajectoryId: job.trajectoryId,
-            trajectoryName: job.trajectoryName,
-            timestep: job.timestep,
-            status,
-            error
-        });
-    }
-
     private async reportJobStatusBestEffort(
         job: GlbConversionQueueJobPayload,
         status: GlbJobStatus,
         error?: string
     ): Promise<void> {
         try {
-            await this.reportJobStatus(job, status, error);
+            await this.daemonJobReporterService.reportGlbJobStatus({
+                jobId: job.jobId,
+                teamId: job.teamId,
+                trajectoryId: job.trajectoryId,
+                trajectoryName: job.trajectoryName,
+                timestep: job.timestep,
+                status,
+                error
+            });
         } catch (reportError) {
             logger.error(
                 {

@@ -1,9 +1,9 @@
 import { PassThrough, Readable } from 'node:stream';
 import { spawn } from 'node:child_process';
 
-export const DUMP_ZSTD_EXTENSION = '.dump.zst';
-export const GLB_ZSTD_EXTENSION = '.glb.zst';
-export const MSGPACK_ZSTD_EXTENSION = '.msgpack.zst';
+const DUMP_ZSTD_EXTENSION = '.dump.zst';
+const GLB_ZSTD_EXTENSION = '.glb.zst';
+const MSGPACK_ZSTD_EXTENSION = '.msgpack.zst';
 
 interface ZstdStreamResult {
     stream: Readable;

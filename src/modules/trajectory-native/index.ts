@@ -13,7 +13,7 @@ import {
 import type { QueueService, RedisConnectionService } from '@/modules/platform/services';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
-export interface TrajectoryNativeModule {
+interface TrajectoryNativeModule {
     nativeModuleLoader: NativeModuleLoader;
     trajectoryParserService: TrajectoryParserService;
     trajectoryPluginParserService: TrajectoryPluginParserService;

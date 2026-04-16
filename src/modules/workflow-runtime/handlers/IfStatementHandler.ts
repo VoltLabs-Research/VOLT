@@ -1,4 +1,4 @@
-import { isRecord } from '@/shared/utils';
+import { isRecord } from '@/shared/utilities/type-guards';
 import type { WorkflowExecutionContext, WorkflowNode } from '../contracts';
 import { WorkflowNodeType } from '../contracts';
 import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '../services';

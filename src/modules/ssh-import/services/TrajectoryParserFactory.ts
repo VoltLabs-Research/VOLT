@@ -1,7 +1,7 @@
 import { createReadStream } from 'node:fs';
 import { createInterface } from 'node:readline';
 
-export interface FrameMetadata {
+interface FrameMetadata {
     timestep: number;
     natoms: number;
     headers: string[];

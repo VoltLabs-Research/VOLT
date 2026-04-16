@@ -11,7 +11,7 @@ import type { QueueService } from '@/modules/platform/services';
 import type { DaemonJobReporterService } from '@/modules/cloud-control/services';
 import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 
-export interface JobRuntimeModule {
+interface JobRuntimeModule {
     analysisDispatchService: AnalysisDispatchService;
 }
 

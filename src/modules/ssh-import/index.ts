@@ -5,7 +5,7 @@ import type { GlbExporterService } from '@/modules/trajectory-native/services';
 import type { MinioService, QueueService } from '@/modules/platform/services';
 import { FileExtractorService, SSHConnectionService, SSHImportWorkerService } from './services';
 
-export interface SSHImportModule {
+interface SSHImportModule {
     sshImportWorkerService: SSHImportWorkerService;
 }
 

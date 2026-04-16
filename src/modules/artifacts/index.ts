@@ -12,7 +12,7 @@ import type { ClusterObjectStore } from '@/shared/storage/ClusterObjectStore';
 import type { PluginListingRepository } from './repositories';
 import type { ArtifactUploadQueueService, ExportNodeProcessorService, ResultProcessorService } from './services';
 
-export interface ArtifactsModule {
+interface ArtifactsModule {
     pluginListingRepository: PluginListingRepository;
     artifactUploadQueueService: ArtifactUploadQueueService;
     artifactUploadWorkerService: ArtifactUploadWorkerService;

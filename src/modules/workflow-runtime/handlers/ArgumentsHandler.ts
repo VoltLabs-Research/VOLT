@@ -1,16 +1,26 @@
 import type { WorkflowExecutionContext, WorkflowNode } from '../contracts';
 import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '../services';
 import { encodeCliArgumentsToken, stringifyUnknown } from '@/shared/utils';
+import { isRecord } from '@/shared/utilities/type-guards';
 import { WorkflowNodeType } from '../contracts';
+import { readWorkflowPluginReferenceSelections } from '../services/InlineWorkflowShared';
 
 interface ArgumentDefinition {
     argument?: string;
     type?: string;
     value?: unknown;
     default?: unknown;
+    optionsFromArguments?: ArgumentOptionSource[];
     listArguments?: ArgumentDefinition[];
+    listItemLabelArgument?: string;
     multipleSelection?: boolean;
     visibleWhen?: ArgumentVisibilityCondition;
+};
+
+interface ArgumentOptionSource {
+    argument?: string;
+    valueField?: string;
+    labelField?: string;
 };
 
 interface ArgumentVisibilityCondition {
@@ -26,12 +36,55 @@ interface PluginReferencePlanningItem {
     config: Record<string, unknown>;
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-};
-
 const isVisibilityComparableValue = (value: unknown): value is string | number | boolean => {
     return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+};
+
+const normalizeComparableValue = (
+    candidateValue: unknown,
+    referenceValue: string | number | boolean
+): string | number | boolean | unknown => {
+    if (typeof referenceValue === 'boolean') {
+        if (typeof candidateValue === 'string') {
+            const trimmedValue = candidateValue.trim().toLowerCase();
+            if (trimmedValue === 'true') {
+                return true;
+            }
+            if (trimmedValue === 'false') {
+                return false;
+            }
+        }
+
+        if (typeof candidateValue === 'number') {
+            if (candidateValue === 1) return true;
+            if (candidateValue === 0) return false;
+        }
+    }
+
+    if (typeof referenceValue === 'number' && typeof candidateValue === 'string') {
+        const trimmedValue = candidateValue.trim();
+        if (trimmedValue.length > 0) {
+            const parsedValue = Number(trimmedValue);
+            if (Number.isFinite(parsedValue)) {
+                return parsedValue;
+            }
+        }
+    }
+
+    if (typeof referenceValue === 'string') {
+        if (typeof candidateValue === 'number' || typeof candidateValue === 'boolean') {
+            return String(candidateValue);
+        }
+    }
+
+    return candidateValue;
+};
+
+const matchesComparisonValue = (
+    candidateValue: unknown,
+    comparisonValue: string | number | boolean
+): boolean => {
+    return normalizeComparableValue(candidateValue, comparisonValue) === comparisonValue;
 };
 
 const normalizeVisibilityConditionValues = (
@@ -76,27 +129,31 @@ const matchesVisibilityCondition = (
     const comparisonValues = normalizeVisibilityConditionValues(condition);
 
     if (condition.operator === 'equals') {
-        return comparisonValues.length > 0 && currentValue === comparisonValues[0];
+        return comparisonValues.length > 0 && matchesComparisonValue(currentValue, comparisonValues[0]);
     }
 
     if (condition.operator === 'notEquals') {
-        return comparisonValues.length > 0 && currentValue !== comparisonValues[0];
+        return comparisonValues.length > 0 && !matchesComparisonValue(currentValue, comparisonValues[0]);
     }
 
     if (condition.operator === 'in') {
         if (Array.isArray(currentValue)) {
-            return currentValue.some((entry) => comparisonValues.includes(entry as string | number | boolean));
+            return currentValue.some((entry) => comparisonValues.some((comparisonValue) => {
+                return matchesComparisonValue(entry, comparisonValue);
+            }));
         }
 
-        return comparisonValues.includes(currentValue as string | number | boolean);
+        return comparisonValues.some((comparisonValue) => matchesComparisonValue(currentValue, comparisonValue));
     }
 
     if (condition.operator === 'notIn') {
         if (Array.isArray(currentValue)) {
-            return currentValue.every((entry) => !comparisonValues.includes(entry as string | number | boolean));
+            return currentValue.every((entry) => comparisonValues.every((comparisonValue) => {
+                return !matchesComparisonValue(entry, comparisonValue);
+            }));
         }
 
-        return !comparisonValues.includes(currentValue as string | number | boolean);
+        return comparisonValues.every((comparisonValue) => !matchesComparisonValue(currentValue, comparisonValue));
     }
 
     return true;
@@ -130,36 +187,6 @@ const resolveRuntimeArgumentValue = (
     return definition.default;
 };
 
-interface PluginReferenceSelectionValue {
-    pluginId: string;
-    config?: Record<string, unknown>;
-}
-
-const readPluginReferenceSelections = (
-    value: unknown
-): PluginReferenceSelectionValue[] => {
-    if (isRecord(value) && Array.isArray(value.selections)) {
-        return value.selections.filter((entry): entry is PluginReferenceSelectionValue => {
-            return isRecord(entry) && typeof entry.pluginId === 'string' && entry.pluginId.trim().length > 0;
-        });
-    }
-
-    if (Array.isArray(value)) {
-        return value.filter((entry): entry is PluginReferenceSelectionValue => {
-            return isRecord(entry) && typeof entry.pluginId === 'string' && entry.pluginId.trim().length > 0;
-        });
-    }
-
-    if (isRecord(value) && typeof value.pluginId === 'string' && value.pluginId.trim().length > 0) {
-        return [{
-            pluginId: value.pluginId,
-            config: isRecord(value.config) ? value.config : {}
-        }];
-    }
-
-    return [];
-};
-
 const collectPluginReferences = (
     definitions: ArgumentDefinition[],
     definition: ArgumentDefinition,
@@ -175,11 +202,11 @@ const collectPluginReferences = (
     const resolvedValue = resolveRuntimeArgumentValue(definition, value);
 
     if (definition.type === 'pluginReference') {
-        for (const selection of readPluginReferenceSelections(resolvedValue)) {
+        for (const selection of readWorkflowPluginReferenceSelections(resolvedValue)) {
             results.push({
                 referencePath: currentPath,
                 pluginId: selection.pluginId.trim(),
-                config: isRecord(selection.config) ? selection.config : {}
+                config: selection.config
             });
         }
         return;
@@ -264,9 +291,7 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
 
     async execute(node: WorkflowNode, context: WorkflowExecutionContext): Promise<Record<string, unknown>> {
         const nodeData = node.data as ArgumentsNodePayload;
-        const persistedDefinitions = Array.isArray(nodeData.arguments?.arguments)
-            ? nodeData.arguments.arguments
-            : [];
+        const persistedDefinitions = nodeData.arguments?.arguments ?? [];
         const definitions = [
             ...persistedDefinitions,
             ...createRuntimeArgumentDefinitions(context, persistedDefinitions)

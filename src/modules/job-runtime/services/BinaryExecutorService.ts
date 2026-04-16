@@ -3,11 +3,10 @@ import { registerProcess, unregisterProcess } from './processTracker';
 import { spawn } from 'node:child_process';
 
 const MAX_OUTPUT_BYTES = 10 * 1024 * 1024;
-const PROCESS_HEARTBEAT_INTERVAL_MS = 30_000;
 const DEFAULT_PROCESS_EXECUTION_TIMEOUT_MS = 15 * 60 * 1000;
 const PROCESS_KILL_GRACE_PERIOD_MS = 5_000;
 
-export type ProcessExecutionLogStream = 'stdout' | 'stderr' | 'system';
+type ProcessExecutionLogStream = 'stdout' | 'stderr' | 'system';
 
 export interface ProcessExecutionLogChunk {
     stream: ProcessExecutionLogStream;
@@ -20,13 +19,13 @@ export interface ProcessExecutionLogSink {
     flush?(): Promise<void>;
 }
 
-export interface ProcessResult {
+interface ProcessResult {
     code: number;
     stdout: string;
     stderr: string;
 };
 
-export interface ProcessExecutionInput {
+interface ProcessExecutionInput {
     jobId: string;
     commandPath: string;
     args: string[];
@@ -108,21 +107,6 @@ export const createBinaryExecutorService = (): BinaryExecutorService => ({
                     );
                 }
             };
-            const heartbeat = setInterval(() => {
-                logger.info(
-                    {
-                        jobId,
-                        pid: child.pid,
-                        elapsedMs: Date.now() - startedAt,
-                        stdoutBytes,
-                        stderrBytes
-                    },
-                    'Plugin process still running'
-                );
-            }, PROCESS_HEARTBEAT_INTERVAL_MS);
-            if (heartbeat.unref) {
-                heartbeat.unref();
-            }
             let forceKillTimeout: NodeJS.Timeout | undefined;
             const executionTimeout = enforceTimeout
                 ? setTimeout(() => {
@@ -153,6 +137,13 @@ export const createBinaryExecutorService = (): BinaryExecutorService => ({
             if (executionTimeout?.unref) {
                 executionTimeout.unref();
             }
+            const cleanupProcess = (): void => {
+                clearTimeout(executionTimeout);
+                if (forceKillTimeout) {
+                    clearTimeout(forceKillTimeout);
+                }
+                unregisterProcess(jobId);
+            };
 
             child.stdout.on('data', (chunk: Buffer) => {
                 if (stdoutBytes < MAX_OUTPUT_BYTES) {
@@ -169,54 +160,40 @@ export const createBinaryExecutorService = (): BinaryExecutorService => ({
                 emitChunkToLogSink('stderr', chunk.toString('utf-8'));
             });
 
-            child.on('error', (error) => {
-                (async () => {
-                    clearInterval(heartbeat);
-                    clearTimeout(executionTimeout);
-                    if (forceKillTimeout) {
-                        clearTimeout(forceKillTimeout);
-                    }
-                    unregisterProcess(jobId);
-                    logger.error(
-                        {
-                            jobId,
-                            pid: child.pid,
-                            elapsedMs: Date.now() - startedAt,
-                            err: error
-                        },
-                        'Plugin process failed to spawn or crashed'
-                    );
-                    await flushLogSink();
-                    reject(new Error(`Failed to spawn process: ${error.message}`));
-                })();
+            child.on('error', async (error) => {
+                cleanupProcess();
+                logger.error(
+                    {
+                        jobId,
+                        pid: child.pid,
+                        elapsedMs: Date.now() - startedAt,
+                        err: error
+                    },
+                    'Plugin process failed to spawn or crashed'
+                );
+                await flushLogSink();
+                reject(new Error(`Failed to spawn process: ${error.message}`));
             });
 
-            child.on('close', (code) => {
-                (async () => {
-                    clearInterval(heartbeat);
-                    clearTimeout(executionTimeout);
-                    if (forceKillTimeout) {
-                        clearTimeout(forceKillTimeout);
-                    }
-                    unregisterProcess(jobId);
-                    logger.info(
-                        {
-                            jobId,
-                            pid: child.pid,
-                            elapsedMs: Date.now() - startedAt,
-                            code: code ?? 1,
-                            stdoutBytes,
-                            stderrBytes
-                        },
-                        'Plugin process closed'
-                    );
-                    await flushLogSink();
-                    resolve({
+            child.on('close', async (code) => {
+                cleanupProcess();
+                logger.info(
+                    {
+                        jobId,
+                        pid: child.pid,
+                        elapsedMs: Date.now() - startedAt,
                         code: code ?? 1,
-                        stdout: Buffer.concat(stdoutChunks).toString('utf-8'),
-                        stderr: `${Buffer.concat(stderrChunks).toString('utf-8')}${timedOut ? `\nProcess timed out after ${resolvedTimeoutMs}ms` : ''}`
-                    });
-                })();
+                        stdoutBytes,
+                        stderrBytes
+                    },
+                    'Plugin process closed'
+                );
+                await flushLogSink();
+                resolve({
+                    code: code ?? 1,
+                    stdout: Buffer.concat(stdoutChunks).toString('utf-8'),
+                    stderr: `${Buffer.concat(stderrChunks).toString('utf-8')}${timedOut ? `\nProcess timed out after ${resolvedTimeoutMs}ms` : ''}`
+                });
             });
         });
     }
