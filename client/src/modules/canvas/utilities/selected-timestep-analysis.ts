@@ -1,14 +1,11 @@
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import { isRecord } from '@/shared/utils/type-guards';
 
 export const ANALYSIS_EXECUTION_METADATA_KEY = '__voltExecution';
 
 interface AnalysisExecutionMetadata {
     selectedTimesteps?: number[];
-};
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null;
 };
 
 const isFiniteNumber = (value: unknown): value is number => {

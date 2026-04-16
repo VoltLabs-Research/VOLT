@@ -1,6 +1,6 @@
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { isRecord } from '@modules/team/utilities/isRecord';
 import TeamAIProviderCatalog from '@modules/team/infrastructure/services/ai-integration/TeamAIProviderCatalog';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import { inject, injectable } from 'tsyringe';
 import type { EnabledModel, TeamAIProvider } from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
 
