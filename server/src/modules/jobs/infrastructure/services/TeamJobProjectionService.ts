@@ -1,5 +1,6 @@
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import { inject, injectable } from 'tsyringe';
 import type IORedis from 'ioredis';
 import type { JobStatusChangedEventPayload } from '@modules/jobs/domain/events/JobStatusChangedEvent';
@@ -257,7 +258,7 @@ export default class TeamJobProjectionService {
 
         try {
             const parsedRecord: unknown = JSON.parse(record);
-            if (!this.isRecord(parsedRecord)) {
+            if (!isRecord(parsedRecord)) {
                 return null;
             }
 
@@ -299,10 +300,6 @@ export default class TeamJobProjectionService {
             parsedSnapshot,
             expiresAt: Date.now() + LOCAL_SNAPSHOT_CACHE_TTL_MS
         });
-    }
-
-    private isRecord(value: unknown): value is Record<string, unknown> {
-        return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
     }
 
     private resolveString(...candidates: unknown[]): string | undefined {

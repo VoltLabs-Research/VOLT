@@ -4,6 +4,7 @@ import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import type IORedis from 'ioredis';
 import { inject, injectable } from 'tsyringe';
 import type {
@@ -339,12 +340,12 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
 
         try {
             const parsedRecord: unknown = JSON.parse(record);
-            if (!this.isRecord(parsedRecord)) {
+            if (!isRecord(parsedRecord)) {
                 return { jobId };
             }
 
             const status = typeof parsedRecord.status === 'string' ? parsedRecord.status : undefined;
-            const metadata = this.isRecord(parsedRecord.metadata) ? parsedRecord.metadata : undefined;
+            const metadata = isRecord(parsedRecord.metadata) ? parsedRecord.metadata : undefined;
             const topLevelAnalysisId = parsedRecord.analysisId;
             const metadataAnalysisId = metadata?.analysisId;
 
@@ -362,10 +363,6 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
 
             return { jobId };
         }
-    }
-
-    private isRecord(value: unknown): value is Record<string, unknown> {
-        return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
     }
 
     private async removeProjectedJobs(teamId: string, cleanupTargets: LocalProjectedJobTarget[]): Promise<LocalMutationResult> {

@@ -1,3 +1,5 @@
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
+
 export interface PopulatedTeamMemberUser {
     _id: string;
     firstName?: string;
@@ -23,10 +25,6 @@ export interface TeamMemberProps {
     joinedAt: Date;
     createdAt: Date;
     updatedAt: Date;
-};
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null;
 };
 
 export const isPopulatedTeamMemberUser = (value: TeamMemberProps['user']): value is PopulatedTeamMemberUser => {

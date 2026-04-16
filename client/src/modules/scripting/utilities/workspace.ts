@@ -1,10 +1,7 @@
 import type { ScriptingNotebook } from '@/modules/scripting/api/entities/scripting-notebook';
+import { isRecord } from '@/shared/utils/type-guards';
 
 const JUPYTER_START_ERROR_MESSAGE = 'Failed to start Jupyter';
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null;
-};
 
 export const pickActiveNotebook = (notebooks: ScriptingNotebook[], notebookId?: string): ScriptingNotebook | undefined => {
     if (!notebookId) {

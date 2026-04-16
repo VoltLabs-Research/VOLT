@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { JsonView, darkStyles } from 'react-json-view-lite';
 import 'react-json-view-lite/dist/index.css';
+import { isRecord } from '@/shared/utils/type-guards';
 import './JsonTree.css';
 
 type JsonTreeData = Record<string, unknown> | unknown[];
@@ -15,10 +16,6 @@ interface TruncatedArray {
 interface JsonTreeProps {
     data: JsonTreeData;
     defaultExpanded?: boolean;
-};
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
 const isTruncatedArray = (value: unknown): value is TruncatedArray => {

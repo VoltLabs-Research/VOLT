@@ -5,12 +5,9 @@ import type {
     ScriptingNotebookPopulatedTrajectory,
     ScriptingNotebookPopulatedUser
 } from '@modules/scripting/application/dtos/ScriptingNotebookDTO';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 
 // TODO: DELETE THIS FILE 
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null;
-};
 
 const toRecordId = (value: unknown): string | null => {
     if (!isRecord(value) || value._id === undefined || value._id === null) {
