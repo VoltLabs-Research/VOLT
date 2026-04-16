@@ -1,4 +1,5 @@
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 
 const DAEMON_DISCONNECT_MESSAGES = [
     'Team cluster daemon connection was lost',
@@ -13,10 +14,6 @@ const RETRYABLE_ERROR_CODES = new Set([
     'EPIPE',
     'ETIMEDOUT'
 ]);
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-};
 
 const getErrorMessage = (error: unknown): string | undefined => {
     if (error instanceof Error) {

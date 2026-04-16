@@ -3,11 +3,11 @@ import {
     AIMessageRole
 } from '@/modules/ai/api/entities/ai-conversation';
 import {
-    isRecord,
     parseTableFromChildren,
     stringifyArtifactValue
 } from '@/modules/ai/utilities/message-content';
 import { resolveTabularPayload } from '@/modules/ai/utilities/message-artifacts';
+import { isRecord } from '@/shared/utils/type-guards';
 import AutoScrollList from '@/shared/presentation/components/AutoScrollList';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
@@ -15,7 +15,7 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import RecoveryState from '@/shared/presentation/components/RecoveryState';
 import { isToolUIPart } from 'ai';
 import { IoExpandOutline } from 'react-icons/io5';
-import { memo, useMemo, useRef } from 'react';
+import { memo, useMemo } from 'react';
 import remarkGfm from 'remark-gfm';
 import ReactMarkdown from 'react-markdown';
 import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
@@ -324,33 +324,6 @@ const VISUALLY_HIDDEN_STYLES: CSSProperties = {
     border: 0
 };
 
-/**
- * Compares AIMessageItem props to determine if re-rendering can be skipped.
- * During streaming only the last message changes — this prevents re-rendering
- * all historical messages on every chunk.
- */
-const areMessagePropsEqual = (prev: AIMessageItemProps, next: AIMessageItemProps): boolean => {
-    if (prev.message.id !== next.message.id) return false;
-    if (prev.messageIndex !== next.messageIndex) return false;
-    if (prev.totalMessages !== next.totalMessages) return false;
-    if (prev.message.preview.length !== next.message.preview.length) return false;
-    if (prev.message.reasoning.length !== next.message.reasoning.length) return false;
-    if (prev.message.segments.length !== next.message.segments.length) return false;
-    if (prev.activeTableArtifactId !== next.activeTableArtifactId) return false;
-    if (prev.onOpenTableArtifact !== next.onOpenTableArtifact) return false;
-    if (prev.addToolApprovalResponse !== next.addToolApprovalResponse) return false;
-
-    const prevTools = prev.message.toolInvocations;
-    const nextTools = next.message.toolInvocations;
-    if (prevTools.length !== nextTools.length) return false;
-
-    for (let i = 0; i < prevTools.length; i++) {
-        if (prevTools[i].state !== nextTools[i].state) return false;
-    }
-
-    return true;
-};
-
 const resolveImagePayload = (artifact: AIMessageArtifact): AIArtifactImagePayload | null => {
     if (!isRecord(artifact.payload)) {
         return null;
@@ -381,8 +354,6 @@ const AIMessageItem = memo(({
     activeTableArtifactId,
     addToolApprovalResponse
 }: AIMessageItemProps) => {
-    const tableCounterRef = useRef(0);
-
     const isUser = message.role === AIMessageRole.User;
     const messageLabel = isUser ? 'You' : 'Assistant';
     let bubbleVariant = 'is-assistant';
@@ -393,6 +364,8 @@ const AIMessageItem = memo(({
     const createMarkdownComponents = (messageId: string) => {
         if (!onOpenTableArtifact) return {};
 
+        let tableIndex = 0;
+
         return {
             table: ({ children, ...props }: MarkdownTableProps) => {
                 let parsed: ParsedMarkdownTable | null = null;
@@ -400,12 +373,14 @@ const AIMessageItem = memo(({
                     parsed = parseTableFromChildren(children);
                 }
 
+                const artifactId = `md-table:${messageId}:${tableIndex}`;
+                tableIndex += 1;
+
                 const handleOpen = () => {
                     if (!parsed) return;
 
-                    tableCounterRef.current += 1;
                     const syntheticArtifact: AIMessageArtifact = {
-                        id: `md-table:${messageId}:${tableCounterRef.current}`,
+                        id: artifactId,
                         messageId,
                         kind: AIMessageArtifactKind.Table,
                         title: 'Table',
@@ -704,7 +679,7 @@ const AIMessageItem = memo(({
             {showThinkingBubble && renderThinkingBubble()}
         </article>
     );
-}, areMessagePropsEqual);
+});
 
 const AIConversationThread = ({
     conversationId,

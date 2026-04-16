@@ -7,6 +7,7 @@ import type {
     NodeConnectorSide
 } from '@/modules/plugin/api/entities/plugin/workflow';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { isRecord } from '@/shared/utils/type-guards';
 import type { SelectOption } from '@/shared/presentation/components/Select';
 
 export interface NodeHandleDefinition {
@@ -133,10 +134,6 @@ export const CONNECTOR_SIDE_OPTIONS: SelectOption[] = [{
     value: 'bottom',
     title: 'Bottom'
 }];
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-};
 
 const isConnectorSide = (value: unknown): value is NodeConnectorSide => {
     return value === 'left' || value === 'right' || value === 'top' || value === 'bottom';

@@ -1,6 +1,6 @@
 import { AIMessageArtifactKind } from '@/modules/ai/api/entities/ai-conversation';
-import { isRecord } from '@/modules/ai/utilities/message-content';
 import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
+import { isRecord } from '@/shared/utils/type-guards';
 
 export interface AITabularArtifactPayload {
     columns: string[];

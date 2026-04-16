@@ -4,6 +4,7 @@ import type { ArgumentDefinition } from '@modules/plugin/domain/entities/plugin/
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { isArgumentVisible } from '@modules/plugin/utilities/plugin/argument-visibility';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import { injectable, inject } from 'tsyringe';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 
@@ -21,10 +22,6 @@ interface PluginReferenceExecutionRequest {
     referencePath: string;
     pluginId: string;
     config: Record<string, unknown>;
-};
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
 const resolveArgumentExecutionValue = (
@@ -203,13 +200,7 @@ export class PluginDependencyResolverService {
         dependencies: Map<string, Plugin>,
         errors: string[]
     ): Promise<void> {
-        const pluginNodeReferences = plugin.props.workflow.props.nodes
-            .filter((node) => node.type === WorkflowNodeType.Plugin)
-            .map((node) => ({
-                nodeId: node.id,
-                pluginId: node.data.pluginNode?.pluginId?.trim() ?? ''
-            }))
-            .filter((reference) => Boolean(reference.pluginId));
+        const pluginNodeReferences = this.getPluginNodeReferences(plugin);
 
         if (!pluginNodeReferences.length) {
             return;

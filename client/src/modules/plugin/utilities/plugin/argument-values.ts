@@ -5,13 +5,10 @@ import type {
     IPluginReferenceSelection,
     IPluginReferenceValue
 } from '@/modules/plugin/api/entities/plugin/workflow';
+import { isRecord } from '@/shared/utils/type-guards';
 
 interface ArgumentObjectValue {
     [key: string]: unknown;
-};
-
-const isRecord = (value: unknown): value is ArgumentObjectValue => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
 const isListItemArray = (value: unknown): value is ArgumentObjectValue[] => {

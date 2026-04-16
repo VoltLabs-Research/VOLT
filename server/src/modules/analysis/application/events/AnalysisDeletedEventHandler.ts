@@ -1,6 +1,7 @@
 import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
@@ -122,7 +123,7 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
     }
 
     private isProjectedJobStatusRecord(value: unknown): value is ProjectedJobStatusRecord {
-        if (!this.isRecord(value)) {
+        if (!isRecord(value)) {
             return false;
         }
 
@@ -130,11 +131,7 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
             return false;
         }
 
-        return typeof value.metadata === 'undefined' || this.isRecord(value.metadata);
-    }
-
-    private isRecord(value: unknown): value is Record<string, unknown> {
-        return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+        return typeof value.metadata === 'undefined' || isRecord(value.metadata);
     }
 
     private uniqueJobIds(jobIds: string[]): string[] {

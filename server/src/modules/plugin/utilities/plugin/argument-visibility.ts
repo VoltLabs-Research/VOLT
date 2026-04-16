@@ -3,13 +3,10 @@ import {
     type ArgumentDefinition,
     type ArgumentVisibilityCondition
 } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 
 type ArgumentValueMap = Record<string, unknown>;
 type VisibilityComparableValue = string | number | boolean;
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-};
 
 const isVisibilityComparableValue = (value: unknown): value is VisibilityComparableValue => {
     return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';

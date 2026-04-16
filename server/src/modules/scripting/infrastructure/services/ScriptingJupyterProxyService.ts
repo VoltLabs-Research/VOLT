@@ -20,6 +20,7 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import { collectAllowedClientOrigins } from '@shared/infrastructure/utilities/client-origins';
 import {
     normalizeWebSocketCloseCode,
@@ -105,10 +106,6 @@ const METHOD_ACTION_MAP: Record<string, Action> = {
     'PUT': Action.UPDATE,
     'PATCH': Action.UPDATE,
     'DELETE': Action.DELETE
-};
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
 const readCookies = (rawCookieHeader?: string): Record<string, string> => {

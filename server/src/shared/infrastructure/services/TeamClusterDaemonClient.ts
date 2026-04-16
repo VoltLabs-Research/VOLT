@@ -6,6 +6,7 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
 import { getHttpRequestContext } from '@shared/infrastructure/http/request-context';
 import logger from '@shared/infrastructure/logger';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import { inject, injectable } from 'tsyringe';
 import type { Readable } from 'node:stream';
 import type { TeamClusterTunnelOpenRequest } from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
@@ -14,7 +15,7 @@ import type { TeamClusterTunnelStream } from '@modules/team-cluster/utilities/Te
 import type { ContainerTerminalAttachment } from '@modules/container/domain/port/IContainerService';
 
 interface TeamClusterDaemonResponseEnvelope<T> {
-    status: string;
+    status: 'success';
     data: T;
     message?: string;
 };
@@ -70,12 +71,8 @@ interface DaemonDispatchLogContext {
     timeoutMs?: number;
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-};
-
 const isResponseEnvelope = <T>(value: unknown): value is TeamClusterDaemonResponseEnvelope<T> => {
-    return isRecord(value) && typeof value.status === 'string' && 'data' in value;
+    return isRecord(value) && value.status === 'success' && 'data' in value;
 };
 
 const isSemanticPayload = (value: unknown): value is TeamClusterDaemonSemanticPayload => {
@@ -117,6 +114,18 @@ const mapDaemonStatusToApplicationError = (
     if (status === 409) return ApplicationError.conflict(code, message);
     if (status >= 400 && status < 500) return new ApplicationError(code, message, status);
     return new ApplicationError(code, message, 500);
+};
+
+const readPayloadBytes = (payload?: Record<string, unknown>): number | undefined => {
+    if (!payload) {
+        return undefined;
+    }
+
+    try {
+        return Buffer.byteLength(JSON.stringify(payload), 'utf8');
+    } catch {
+        return undefined;
+    }
 };
 
 @injectable()
@@ -171,16 +180,13 @@ export default class TeamClusterDaemonClient {
         timeoutMs?: number
     ): DaemonDispatchLogContext {
         const requestContext = getHttpRequestContext();
-        const payloadBytes = payload
-            ? Buffer.byteLength(JSON.stringify(payload), 'utf8')
-            : undefined;
 
         return {
             traceId: requestContext?.traceId,
             teamClusterId,
             command,
             responseType,
-            payloadBytes,
+            payloadBytes: readPayloadBytes(payload),
             timeoutMs
         };
     }
@@ -245,8 +251,19 @@ export default class TeamClusterDaemonClient {
                 timeoutMs: resolvedOptions.timeoutMs
             });
 
-            if (!response.ok || !isResponseEnvelope<T>(response.data)) {
+            if (!response.ok) {
                 this.throwDaemonError(command, response, 'Daemon command returned a failure response');
+            }
+
+            const data = unwrapResponseEnvelopeData(response.data);
+
+            if (isDaemonErrorPayload(data)) {
+                this.throwDaemonError(command, {
+                    ok: false,
+                    status: response.status,
+                    message: response.message,
+                    data
+                }, 'Daemon command returned an error payload');
             }
 
             if (response.status >= 400) {
@@ -254,7 +271,7 @@ export default class TeamClusterDaemonClient {
                     ok: false,
                     status: response.status,
                     message: response.message,
-                    data: unwrapResponseEnvelopeData(response.data)
+                    data
                 }, 'Daemon command returned an error status');
             }
 
@@ -264,7 +281,7 @@ export default class TeamClusterDaemonClient {
                 durationMs: Date.now() - startedAt
             }, '@team-cluster-daemon: response');
 
-            return response.data.data;
+            return data as T;
         } catch (error) {
             logger.warn({
                 ...dispatchContext,

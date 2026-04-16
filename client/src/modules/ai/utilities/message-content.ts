@@ -1,5 +1,6 @@
 import { Children, isValidElement } from 'react';
 import type { ReactNode } from 'react';
+import { isRecord } from '@/shared/utils/type-guards';
 
 interface ElementWithChildrenProps {
     children?: ReactNode;
@@ -8,14 +9,6 @@ interface ElementWithChildrenProps {
 export interface ParsedMarkdownTable {
     columns: string[];
     rows: Record<string, unknown>[];
-};
-
-export const isRecord = (value: unknown): value is Record<string, unknown> => {
-    if (value === null || typeof value !== 'object') {
-        return false;
-    }
-
-    return !Array.isArray(value);
 };
 
 export const stringifyArtifactValue = (value: unknown): string => {

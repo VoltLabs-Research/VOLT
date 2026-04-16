@@ -1,4 +1,5 @@
 import { getModelListingRoute } from './populated-model-routes';
+import { isRecord } from '@/shared/utils/type-guards';
 import Popover from '@/shared/presentation/components/Popover';
 import Container from '@/shared/presentation/components/Container';
 import './PopulatedCellPopover.css';
@@ -22,10 +23,6 @@ interface FieldEntry {
 };
 
 const numberFormatter = new Intl.NumberFormat();
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null;
-};
 
 /** Fields excluded from auto-detection by default. */
 const EXCLUDED_FIELDS = new Set([
