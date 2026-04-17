@@ -25,6 +25,32 @@ interface InitialTrajectoryStats {
     totalSize: number;
 };
 
+const resolveTrajectoryName = (
+    requestedName: string | undefined,
+    files: CreateTrajectoryInputDTO['files']
+): string | null => {
+    const normalizedRequestedName = requestedName?.trim();
+    if (normalizedRequestedName) {
+        return normalizedRequestedName;
+    }
+
+    const [firstFile] = files;
+    if (!firstFile) {
+        return null;
+    }
+
+    const originalName = firstFile.originalname?.trim();
+    if (originalName) {
+        return path.basename(originalName);
+    }
+
+    if (firstFile.path) {
+        return path.basename(firstFile.path);
+    }
+
+    return null;
+};
+
 @injectable()
 export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajectoryInputDTO, CreateTrajectoryOutputDTO, ApplicationError> {
     constructor(
@@ -48,7 +74,15 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
     ){}
 
     async execute(input: CreateTrajectoryInputDTO): Promise<Result<CreateTrajectoryOutputDTO, ApplicationError>> {
-        const { name, teamId, userId, files } = input;
+        const { teamId, userId, files } = input;
+        const name = resolveTrajectoryName(input.name, files);
+
+        if (!name) {
+            return Result.fail(ApplicationError.badRequest(
+                ErrorCodes.VALIDATION_INVALID_INPUT,
+                'At least one uploaded trajectory file is required'
+            ));
+        }
 
         if (input.folderId) {
             const folder = await this.trajectoryFolderRepository.findByTeamAndFolderId(teamId, input.folderId);
