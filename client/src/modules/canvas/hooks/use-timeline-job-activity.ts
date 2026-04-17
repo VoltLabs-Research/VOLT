@@ -32,22 +32,7 @@ const resolveAnalysisId = (job: Job): string | undefined => {
 };
 
 const resolveTimestep = (job: Job): number | undefined => {
-    if (typeof job.timestep === 'number' && Number.isFinite(job.timestep)) {
-        return job.timestep;
-    }
-
-    if (typeof job.metadata?.timestep === 'number' && Number.isFinite(job.metadata.timestep)) {
-        return job.metadata.timestep;
-    }
-
-    if (typeof job.metadata?.timestep === 'string' && job.metadata.timestep.trim().length > 0) {
-        const parsedTimestep = Number(job.metadata.timestep);
-        if (Number.isFinite(parsedTimestep)) {
-            return parsedTimestep;
-        }
-    }
-
-    return undefined;
+    return job.timestep ?? job.metadata?.timestep;
 };
 
 const useTimelineJobActivity = (trajectoryId?: string) => {

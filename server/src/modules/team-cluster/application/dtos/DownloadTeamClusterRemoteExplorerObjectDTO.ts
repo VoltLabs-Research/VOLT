@@ -1,16 +1,10 @@
-import type { TeamUserScopedInputDTO } from '@modules/team/application/dtos/common';
-import type { TeamClusterRemoteAccessTargetDTO } from '@modules/team-cluster/application/dtos/TeamClusterRemoteAccessDTO';
 import type { Readable } from 'node:stream';
+import type { TeamClusterRemoteExplorerInputDTO } from './common';
 
 /**
  * Requests a downloadable stream for a selected remote explorer object.
  */
-export interface DownloadTeamClusterRemoteExplorerObjectInputDTO extends TeamUserScopedInputDTO {
-    teamClusterId: string;
-    sessionId: string;
-    target: TeamClusterRemoteAccessTargetDTO;
-    path: string;
-};
+export type DownloadTeamClusterRemoteExplorerObjectInputDTO = TeamClusterRemoteExplorerInputDTO;
 
 /**
  * Returns the download stream and response headers for the requested remote explorer object.

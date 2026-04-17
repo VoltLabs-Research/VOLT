@@ -13,7 +13,6 @@ import Tooltip from '@/shared/presentation/components/Tooltip';
 import TeamSelector from '@/modules/team/components/atoms/TeamSelector';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import { useMemo } from 'react';
 import { CiChat1 } from 'react-icons/ci';
 import { GoWorkflow } from 'react-icons/go';
@@ -24,7 +23,7 @@ import { MdAutoAwesome, MdImportExport } from 'react-icons/md';
 import { RiHomeSmile2Fill } from 'react-icons/ri';
 import { TbCube3dSphere, TbFileTypePdf } from 'react-icons/tb';
 import { PiUserPlus, PiPaintBrushBold } from 'react-icons/pi';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import type { IconType } from 'react-icons';
 import type { DashboardNavigationItem } from '@/app/routes/metadata';
 
@@ -53,7 +52,7 @@ const MAIN_NAVIGATION_ITEMS = getDashboardNavigationItems(DashboardNavigationSec
 const SECONDARY_NAVIGATION_ITEMS = getDashboardNavigationItems(DashboardNavigationSection.Secondary);
 
 const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar }: SidebarNavigationProps) => {
-    const { searchParams } = useSearchParamsState();
+    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { pathname } = useLocation();
     const { canAccess: canAccessPermissions } = useTeamPermissions();

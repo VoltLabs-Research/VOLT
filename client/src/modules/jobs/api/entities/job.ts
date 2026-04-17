@@ -1,7 +1,7 @@
 type JobMetadataPrimitive = boolean | number | string | null | undefined;
 
 export interface JobMetadata {
-    timestep?: number | string;
+    timestep?: number;
     [key: string]: JobMetadataPrimitive | JobMetadata;
 };
 

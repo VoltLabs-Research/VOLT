@@ -42,21 +42,22 @@ export default class MetricsCollector implements IMetricsService {
 
     async collect(): Promise<SystemMetrics> {
         const identity = resolveSystemMetricsIdentity();
-        const cpu = {
-            usage: this.cpuCollector.getUsage(),
-            cores: os.cpus().length,
-            loadAvg: os.loadavg(),
-            coresUsage: this.cpuCollector.getCoresUsage()
-        };
-
-        const memory = this.memoryCollector.collect();
-        const [disk, network, mongodb, responseTimes, diskOperations] = await Promise.all([
+        const [cpuMetrics, disk, network, mongodb, responseTimes, diskOperations] = await Promise.all([
+            this.cpuCollector.collect(),
             this.diskCollector.getUsage(),
             this.networkCollector.collect(),
             this.mongoCollector.collect(),
             this.healthPinger.collectAll(),
             this.diskCollector.getOperations()
         ]);
+        const cpu = {
+            usage: cpuMetrics.usage,
+            cores: os.cpus().length,
+            loadAvg: os.loadavg(),
+            coresUsage: cpuMetrics.coresUsage
+        };
+
+        const memory = this.memoryCollector.collect();
 
         const status = this.determineStatus(cpu.usage, memory.usagePercent, disk.usagePercent);
 

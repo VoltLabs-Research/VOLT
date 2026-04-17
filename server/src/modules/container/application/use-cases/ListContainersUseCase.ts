@@ -18,27 +18,12 @@ interface ListContainersFilter extends Record<string, unknown> {
 
 interface ContainerRuntimeDriftUpdate extends Partial<Pick<IContainerProps, 'status' | 'internalIp' | 'ports'>> {};
 
+interface PopulatedContainerTeamCluster {
+    _id: string;
+}
+
 const PLACEHOLDER_INTERNAL_IP = '0.0.0.0';
 const PLACEHOLDER_PUBLIC_PORT = 0;
-
-const getTeamClusterId = (teamCluster: unknown): string | null => {
-    if (!teamCluster) {
-        return null;
-    }
-
-    if (typeof teamCluster === 'string') {
-        return teamCluster;
-    }
-
-    if (typeof teamCluster === 'object' && teamCluster !== null && '_id' in teamCluster) {
-        const objectId = teamCluster._id;
-        if (typeof objectId === 'string') {
-            return objectId;
-        }
-    }
-
-    return null;
-};
 
 @injectable()
 export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, ListContainersOutputDTO> {
@@ -91,8 +76,11 @@ export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, L
     private async syncRuntimeStatus(containers: Container[]): Promise<void> {
         const runtimeIndex = new Map<string, RuntimeContainerSummary>();
         const teamClusterIds = Array.from(new Set(containers
-            .map((container) => getTeamClusterId(container.teamCluster))
-            .filter((teamClusterId): teamClusterId is string => typeof teamClusterId === 'string' && teamClusterId.length > 0)));
+            .map((container) => {
+                const teamCluster = container.teamCluster as string | PopulatedContainerTeamCluster | undefined;
+                return typeof teamCluster === 'string' ? teamCluster : teamCluster?._id;
+            })
+            .filter((teamClusterId): teamClusterId is string => Boolean(teamClusterId))));
 
         await Promise.all(teamClusterIds.map(async (teamClusterId) => {
             try {
@@ -105,7 +93,8 @@ export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, L
         }));
 
         await Promise.all(containers.map(async (container) => {
-            const teamClusterId = getTeamClusterId(container.teamCluster);
+            const teamCluster = container.teamCluster as string | PopulatedContainerTeamCluster | undefined;
+            const teamClusterId = typeof teamCluster === 'string' ? teamCluster : teamCluster?._id;
             if (!teamClusterId) {
                 return;
             }

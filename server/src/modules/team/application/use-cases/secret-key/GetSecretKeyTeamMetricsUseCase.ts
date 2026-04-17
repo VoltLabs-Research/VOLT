@@ -1,8 +1,6 @@
-import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { GetSecretKeyTeamMetricsInputDTO, GetSecretKeyTeamMetricsOutputDTO, getSecretKeyTeamMetricsInputSchema } from '@modules/team/application/dtos/secret-key/GetSecretKeyTeamMetricsDTO';
+import { GetSecretKeyTeamMetricsInputDTO, GetSecretKeyTeamMetricsOutputDTO } from '@modules/team/application/dtos/secret-key/GetSecretKeyTeamMetricsDTO';
 import SecretKeyUsageMetricsMapper from '@modules/team/infrastructure/services/secret-key/SecretKeyUsageMetricsMapper';
-import { resolveSecretKeyValidationErrorCode } from '@modules/team/application/use-cases/secret-key/resolve-secret-key-validation-error-code';
 import { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
 import { ISecretKeyUsageLogRepository } from '@modules/team/domain/port/secret-key/ISecretKeyUsageLogRepository';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -49,20 +47,7 @@ export default class GetSecretKeyTeamMetricsUseCase
     ) {}
 
     async execute(input: GetSecretKeyTeamMetricsInputDTO): Promise<Result<GetSecretKeyTeamMetricsOutputDTO, ApplicationError>> {
-        const parsed = getSecretKeyTeamMetricsInputSchema.safeParse(input);
-        if (!parsed.success) {
-            const firstError = parsed.error.issues[0];
-            return Result.fail(ApplicationError.badRequest(
-                resolveSecretKeyValidationErrorCode(firstError.message),
-                firstError.message
-            ));
-        }
-
-        const { teamId, days = 30 } = parsed.data;
-
-        if (!teamId) {
-            return Result.fail(ApplicationError.badRequest(ErrorCodes.TEAM_ID_REQUIRED, 'Team ID is required'));
-        }
+        const { teamId, days = 30 } = input;
 
         const metrics = this.metricsMapper.toTeamMetrics(
             await this.usageLogRepo.getTeamUsageAnalytics(teamId, days)

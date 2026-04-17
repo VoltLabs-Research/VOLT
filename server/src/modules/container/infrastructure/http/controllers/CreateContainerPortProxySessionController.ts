@@ -3,10 +3,5 @@ import { containerValidation } from '@modules/container/infrastructure/http/vali
 import { createController } from '@shared/infrastructure/http/controllers/createController';
 
 export default createController(CreateContainerPortProxySessionUseCase, {
-    validationSchema: containerValidation.createPortProxySession,
-    contextProviders: [
-        (request) => ({
-            userId: request.userId ?? ''
-        })
-    ]
+    validationSchema: containerValidation.createPortProxySession
 });

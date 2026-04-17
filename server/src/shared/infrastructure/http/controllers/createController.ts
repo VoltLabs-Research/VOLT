@@ -18,12 +18,9 @@ type ControllerSuccessHandler<TUseCase extends UseCaseInstance> = (
     value: UseCaseOutput<TUseCase>
 ) => void | Promise<void>;
 
-type ContextProvider = (req: AuthenticatedRequest) => Record<string, unknown>;
-
 interface ControllerOptions<TUseCase extends UseCaseInstance = UseCaseInstance> {
     statusCode?: HttpStatus;
     validationSchema?: ValidationSchemaInput;
-    contextProviders?: ContextProvider[];
     extendParams?: (
         req: AuthenticatedRequest,
         params: Record<string, unknown>
@@ -36,6 +33,19 @@ type DerivedControllerOptions<TUseCase extends UseCaseInstance = UseCaseInstance
     ControllerOptions<TUseCase>,
     'statusCode'
 >;
+
+const readUserAgent = (req: AuthenticatedRequest): string => {
+    const userAgent = req.headers['user-agent'];
+
+    return Array.isArray(userAgent) ? userAgent[0] ?? '' : userAgent ?? '';
+};
+
+const buildRequestValidationContext = (req: AuthenticatedRequest): Record<string, unknown> => {
+    return {
+        userId: req.userId,
+        token: req.token
+    };
+};
 
 interface StreamControllerOptions<TUseCase extends IUseCase<unknown, StreamableOutput, unknown>>
     extends DerivedControllerOptions<TUseCase> {
@@ -66,13 +76,11 @@ const getControllerOptions = <TUseCase extends UseCaseInstance>(
 const buildControllerParams = (
     req: AuthenticatedRequest,
     validationState: RequestValidationState,
-    contextProviders?: ContextProvider[],
     extendParams?: (
         req: AuthenticatedRequest,
         params: Record<string, unknown>
     ) => Record<string, unknown>
 ): Record<string, unknown> => {
-    const requestContext = buildRequestContext(req, contextProviders);
     const bodyPayload = asRecord(validationState.body ?? req.body) ?? {};
     const baseParams = {
         ...(asRecord(validationState.params ?? req.params) ?? {}),
@@ -80,12 +88,19 @@ const buildControllerParams = (
         ...(asRecord(validationState.request) ?? {}),
         ...bodyPayload,
         data: bodyPayload,
+        userId: req.userId,
         authenticatedUserId: req.userId,
+        token: req.token,
+        authType: req.authType,
+        secretKeyId: req.secretKeyId,
+        secretKeyTeamId: req.secretKeyTeamId,
+        secretKeyRoleId: req.secretKeyRoleId,
+        ip: req.ip || req.socket.remoteAddress || '',
+        userAgent: readUserAgent(req),
         traceId: req.requestContext?.traceId,
         requestContext: req.requestContext,
         file: req.file,
-        files: req.files,
-        ...requestContext
+        files: req.files
     };
 
     if (!extendParams) {
@@ -93,17 +108,6 @@ const buildControllerParams = (
     }
 
     return extendParams(req, baseParams);
-};
-
-const buildRequestContext = (
-    req: AuthenticatedRequest,
-    contextProviders?: ContextProvider[]
-): Record<string, unknown> => {
-    if (!contextProviders?.length) {
-        return {};
-    }
-
-    return Object.assign({}, ...contextProviders.map((provider) => provider(req)));
 };
 
 export const createController = <TUseCase extends UseCaseInstance>(
@@ -124,14 +128,13 @@ export const createController = <TUseCase extends UseCaseInstance>(
         }
 
         protected override getRequestValidationContext(req: AuthenticatedRequest): unknown {
-            return buildRequestContext(req, options.contextProviders);
+            return buildRequestValidationContext(req);
         }
 
         protected override getParams(req: AuthenticatedRequest): UseCaseInput<TUseCase> {
             return buildControllerParams(
                 req,
                 this.getValidatedRequestData(req),
-                options.contextProviders,
                 options.extendParams
             ) as UseCaseInput<TUseCase>;
         }
@@ -178,14 +181,13 @@ export const createPaginatedController = <
         }
 
         protected override getRequestValidationContext(req: AuthenticatedRequest): unknown {
-            return buildRequestContext(req, options.contextProviders);
+            return buildRequestValidationContext(req);
         }
 
         protected override getParams(req: AuthenticatedRequest): UseCaseInput<TUseCase> {
             return buildControllerParams(
                 req,
                 this.getValidatedRequestData(req),
-                options.contextProviders,
                 options.extendParams
             ) as UseCaseInput<TUseCase>;
         }
@@ -233,14 +235,13 @@ export const createStreamController = <
         }
 
         protected override getRequestValidationContext(req: AuthenticatedRequest): unknown {
-            return buildRequestContext(req, options.contextProviders);
+            return buildRequestValidationContext(req);
         }
 
         protected override getParams(req: AuthenticatedRequest): UseCaseInput<TUseCase> {
             return buildControllerParams(
                 req,
                 this.getValidatedRequestData(req),
-                options.contextProviders,
                 options.extendParams
             ) as UseCaseInput<TUseCase>;
         }

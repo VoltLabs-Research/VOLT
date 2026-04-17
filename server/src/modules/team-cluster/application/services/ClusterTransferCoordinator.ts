@@ -21,7 +21,7 @@ import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/Traject
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import {
-    TEAM_CLUSTER_DAEMON_COMMAND,
+    ChannelCommands,
     type TeamClusterDaemonPluginMongoDocumentType,
     type TeamClusterDaemonPluginMongoExportResult,
     type TeamClusterDaemonPluginMongoImportResult,
@@ -768,7 +768,7 @@ export default class ClusterTransferCoordinator {
             while (true) {
                 const batch = await this.teamClusterDaemonClient.command<TeamClusterDaemonPluginMongoExportResult>(
                     job.props.sourceClusterId,
-                    TEAM_CLUSTER_DAEMON_COMMAND.plugin.transfer.mongo.export,
+                    ChannelCommands.PluginTransferMongoExport,
                     {
                         analysisIds,
                         documentType,
@@ -784,7 +784,7 @@ export default class ClusterTransferCoordinator {
                 if (batch.rows.length > 0) {
                     await this.teamClusterDaemonClient.command<TeamClusterDaemonPluginMongoImportResult>(
                         job.props.destinationClusterId,
-                        TEAM_CLUSTER_DAEMON_COMMAND.plugin.transfer.mongo.import,
+                        ChannelCommands.PluginTransferMongoImport,
                         {
                             analysisIds,
                             documentType,
@@ -835,7 +835,7 @@ export default class ClusterTransferCoordinator {
         for (const documentType of MONGO_DOCUMENT_TYPES) {
             const result = await this.teamClusterDaemonClient.command<TeamClusterDaemonPluginMongoPurgeResult>(
                 sourceClusterId,
-                TEAM_CLUSTER_DAEMON_COMMAND.plugin.transfer.mongo.purge,
+                ChannelCommands.PluginTransferMongoPurge,
                 {
                     analysisIds,
                     documentType
@@ -1169,33 +1169,28 @@ export default class ClusterTransferCoordinator {
                 teamId: job.props.team,
                 status,
                 queueType: CLUSTER_TRANSFER_QUEUE_TYPE,
-                metadata: {
-                    jobId: job.id,
-                    status,
-                    queueType: CLUSTER_TRANSFER_QUEUE_TYPE,
-                    name: getTransferJobName(job.props.scopeType),
-                    message: getTransferJobMessage(job),
-                    trajectoryId: projectionContext.trajectoryId,
-                    trajectoryName: projectionContext.trajectoryName,
-                    analysisId: projectionContext.analysisId,
-                    source: 'projected',
-                    backingSource: 'local',
-                    cleanupScope: 'cluster-transfer',
-                    transferJobId: job.id,
-                    transferState: job.props.state,
-                    transferReason: job.props.reason,
-                    transferScopeType: job.props.scopeType,
-                    transferScopeId: job.props.scopeId,
-                    sourceClusterId: job.props.sourceClusterId,
-                    destinationClusterId: job.props.destinationClusterId,
-                    cleanupSource: job.props.cleanupSource,
-                    copiedObjects: job.props.stats.copiedObjects,
-                    copiedBytes: job.props.stats.copiedBytes,
-                    verifiedObjects: job.props.stats.verifiedObjects,
-                    verifiedBytes: job.props.stats.verifiedBytes,
-                    deletedObjects: job.props.stats.deletedObjects,
-                    ...(job.props.errorMessage ? { error: job.props.errorMessage } : {})
-                }
+                name: getTransferJobName(job.props.scopeType),
+                message: getTransferJobMessage(job),
+                trajectoryId: projectionContext.trajectoryId,
+                trajectoryName: projectionContext.trajectoryName,
+                analysisId: projectionContext.analysisId,
+                source: 'projected',
+                backingSource: 'local',
+                cleanupScope: 'cluster-transfer',
+                transferJobId: job.id,
+                transferState: job.props.state,
+                transferReason: job.props.reason,
+                transferScopeType: job.props.scopeType,
+                transferScopeId: job.props.scopeId,
+                sourceClusterId: job.props.sourceClusterId,
+                destinationClusterId: job.props.destinationClusterId,
+                cleanupSource: job.props.cleanupSource,
+                copiedObjects: job.props.stats.copiedObjects,
+                copiedBytes: job.props.stats.copiedBytes,
+                verifiedObjects: job.props.stats.verifiedObjects,
+                verifiedBytes: job.props.stats.verifiedBytes,
+                deletedObjects: job.props.stats.deletedObjects,
+                ...(job.props.errorMessage ? { error: job.props.errorMessage } : {})
             }));
         } catch (error) {
             logger.warn({

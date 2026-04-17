@@ -1,13 +1,14 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import TeamJobsService from '@modules/team/socket/team/TeamJobsService';
 import { Result } from '@shared/domain/port/Result';
 import { RetryFailedFramesInputDTO, RetryFailedFramesOutputDTO } from '@modules/analysis/application/dtos/RetryFailedFramesDTO';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import type { IAnalysisTeamJobsQueryService } from '@modules/analysis/domain/port/IAnalysisTeamJobsQueryService';
 import type { ITeamJobMaintenanceService } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
 
 @injectable()
@@ -16,8 +17,8 @@ export default class RetryFailedFramesUseCase implements IUseCase<RetryFailedFra
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
         private readonly analysisRepository: IAnalysisRepository,
 
-        @inject(ANALYSIS_TOKENS.AnalysisTeamJobsQueryService)
-        private readonly teamJobsQueryService: IAnalysisTeamJobsQueryService,
+        @inject(TEAM_TOKENS.TeamJobsService)
+        private readonly teamJobsService: TeamJobsService,
 
         @inject(JOBS_TOKENS.TeamJobMaintenanceService)
         private readonly teamJobMaintenanceService: ITeamJobMaintenanceService
@@ -26,29 +27,14 @@ export default class RetryFailedFramesUseCase implements IUseCase<RetryFailedFra
     async execute(input: RetryFailedFramesInputDTO): Promise<Result<RetryFailedFramesOutputDTO, ApplicationError>> {
         const { analysisId, teamId } = input;
 
-        if (!analysisId) {
-            return Result.fail(ApplicationError.badRequest(
-                ErrorCodes.ANALYSIS_NOT_FOUND,
-                'Analysis ID is required'
-            ));
-        }
-
-        if (!teamId) {
-            return Result.fail(ApplicationError.badRequest(
-                ErrorCodes.TEAM_ID_REQUIRED,
-                'Team ID is required'
-            ));
-        }
-
-        const teamJobs = await this.teamJobsQueryService.getFlatTeamJobs(teamId);
+        const teamJobs = await this.teamJobsService.getFlatTeamJobs(teamId);
         const failedTimesteps: number[] = [];
         const failedJobIds: string[] = [];
         let totalFrames = 0;
         let failedFrames = 0;
 
         for (const job of teamJobs) {
-            const jobAnalysisId = job.analysisId || job.metadata?.analysisId;
-            if (jobAnalysisId !== analysisId) {
+            if (job.analysisId !== analysisId) {
                 continue;
             }
 
@@ -59,7 +45,7 @@ export default class RetryFailedFramesUseCase implements IUseCase<RetryFailedFra
 
             failedFrames += 1;
             failedJobIds.push(job.jobId);
-            const timestep = job.timestep ?? job.metadata?.timestep;
+            const timestep = job.timestep;
             if (typeof timestep === 'number') {
                 failedTimesteps.push(timestep);
             }

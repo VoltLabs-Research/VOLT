@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { CreateSecretKeyInputDTO, CreateSecretKeyOutputDTO, createSecretKeyInputSchema } from '@modules/team/application/dtos/secret-key/CreateSecretKeyDTO';
+import { CreateSecretKeyInputDTO, CreateSecretKeyOutputDTO } from '@modules/team/application/dtos/secret-key/CreateSecretKeyDTO';
 import SecretKeyCreatedEvent from '@modules/team/domain/events/secret-key/SecretKeyCreatedEvent';
 import { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
 import { ITeamRoleRepository } from '@modules/team/domain/port/team-role/ITeamRoleRepository';
@@ -26,16 +26,7 @@ export default class CreateSecretKeyUseCase implements IUseCase<CreateSecretKeyI
     ) {}
 
     async execute(input: CreateSecretKeyInputDTO): Promise<Result<CreateSecretKeyOutputDTO, ApplicationError>> {
-        const parsed = createSecretKeyInputSchema.safeParse(input);
-        if (!parsed.success) {
-            const firstError = parsed.error.issues[0];
-            return Result.fail(ApplicationError.badRequest(
-                firstError.message,
-                firstError.message
-            ));
-        }
-
-        const { teamId, roleId, name, userId } = parsed.data;
+        const { teamId, roleId, name, userId } = input;
 
         const role = await this.teamRoleRepository.findById(roleId);
 
@@ -56,7 +47,7 @@ export default class CreateSecretKeyUseCase implements IUseCase<CreateSecretKeyI
         const created = await this.secretKeyRepository.create({
             team: teamId,
             role: roleId,
-            name: name.trim(),
+            name,
             keyPrefix,
             keyHash,
             createdBy: userId,

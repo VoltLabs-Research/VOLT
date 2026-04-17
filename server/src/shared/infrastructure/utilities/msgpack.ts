@@ -11,13 +11,7 @@ export async function* decodeMultiStream(
     options?: MsgpackDecoderOptions
 ): AsyncIterable<unknown> {
     const decoder = new Decoder<unknown>(options);
-    const byteSrc: ChunkStream = (async function* () {
-        for await (const chunk of src) {
-            yield chunk;
-        }
-    })();
-
-    for await (const value of decoder.decodeStream(byteSrc)) {
+    for await (const value of decoder.decodeStream(src as ChunkStream)) {
         yield value;
     }
 };
@@ -26,12 +20,5 @@ export async function* decodeMultiStreamFromFile(
     filePath: string,
     options?: MsgpackDecoderOptions
 ): AsyncIterable<unknown> {
-    const stream = createReadStream(filePath);
-    const src = (async function* (): AsyncIterable<ChunkLike> {
-        for await (const chunk of stream) {
-            yield chunk;
-        }
-    })();
-
-    yield* decodeMultiStream(src, options);
+    yield* decodeMultiStream(createReadStream(filePath) as AsyncIterable<ChunkLike>, options);
 }

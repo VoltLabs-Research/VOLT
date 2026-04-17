@@ -1,0 +1,113 @@
+{
+    "rules": [{
+        "id": "@ts/no-unknown-type"
+    }, {
+        "id": "@ts/no-any-type"
+    }, {
+        "id": "@ts/no-unnecessary-generics"
+    }, {
+        "id": "@ts/no-generic-pass-through"
+    }, {
+        "id": "@ts/prefer-exact-param-types"
+    }, {
+        "id": "@ts/no-union-for-future-proofing"
+    }, {
+        "id": "@ts/no-late-union-resolution" 
+    }, {
+        "id": "@ts/no-contract-repair-in-domain"
+    }, {
+        "id": "@ts/no-primitive-reader-helpers"
+    }, {
+        "id": "@ts/no-inline-reader-replacement"
+    }, {
+        "id": "@ts/no-internal-number-validation"
+    }, {
+        "id": "@ts/no-required-field-fallbacks"
+    }, {
+        "id": "@ts/no-optional-chain-on-required-fields"
+    }, {
+        "id": "@ts/no-defensive-normalization-internal"
+    }, {
+        "id": "@ts/no-trivial-forwarding-helper",
+        "parameters": {
+            "allowedNames": ["adapt", "toDto", "fromDto", "fromPersistence", "toPersistence"]
+        }
+    }, {
+        "id": "@ts/no-single-use-abstraction",
+        "parameters": {
+            "maximumStatements": 3
+        }  
+    }, {
+       "id": "@ts/no-fake-populated-helper" 
+    }, {
+        "id": "@ts/no-nested-ternary"
+    }, {
+        "id": "@ts/no-ceremony-object-reconstruction"
+    }, {
+        "id": "@ts/no-redundant-nullish-union"
+    }, {
+        "id": "@ts/no-normalizer-helper"
+    }, {
+        "id": "@ts/no-inline-object-type"
+    }, {
+        "id": "@ts/no-large-object-literal-return",
+        "parameters": {
+            "maximumPropertyCount": 8
+        }
+    }, {
+        "id": "@ts/conditionals-ambiguity",
+        "parameters": {
+            "maximumComparisons": 4
+        }  
+    }, {
+        "id": "@ts/no-large-import-list",
+        "parameters": {
+            "minimumSpecifierCount": 6
+        }  
+    }, {
+        "id": "@ts/no-barrel-imports" 
+    }, {
+        "id": "@ts/no-barrel-files"
+    }, {
+        "id": "@ts/max-import-lines",
+        "parameters": {
+            "maximumImportLines": 12
+        }
+    }, {
+        "id": "@ts/no-multi-responsibility-function",
+        "parameters": {
+            "minimumResponsibilityCount": 3
+        }
+    }, {
+        "id": "@ts/no-redundant-branching"
+    }, {
+        "id": "@ts/no-copy-paste-logic-variants" 
+    }, {
+        "id": "@ts/prefer-positive-branch"
+    }, {
+        "id": "@ts/no-useless-else-after-return"
+    }, {
+        "id": "@ts/no-magic-boolean-arguments"
+    }, {
+        "id": "@ts/no-anonymous-callback-sprawl",
+        "parameters": {
+            "maximumStatements": 8,
+            "maximumBranches": 2
+        }
+    }, {
+        "id": "@ts/no-noise-comments"  
+    }, {
+        "id": "@ts/no-inline-cast-chain"
+    }, {
+        "id": "@ts/no-record-string-unknown-default"
+    }, {
+        "id": "@ts/no-unnecessary-async" 
+    }, {
+        "id": "@ts/one-primary-responsibility",
+        "parameters": {
+            "maximumResponsibilityCategories": 2
+        } 
+    }, {
+        "id": "@ts/no-fake-ownership-module"
+    }]
+}

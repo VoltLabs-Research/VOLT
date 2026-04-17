@@ -1,9 +1,7 @@
 import type { Readable } from 'node:stream';
+import type { TeamScopedEntityIdInputDTO } from '@modules/team/application/dtos/common';
 
-export interface GetWhiteboardStateInputDTO {
-    teamId: string;
-    whiteboardId: string;
-};
+export type GetWhiteboardStateInputDTO = TeamScopedEntityIdInputDTO<'whiteboardId'>;
 
 export interface GetWhiteboardStateOutputDTO {
     stream: Readable;

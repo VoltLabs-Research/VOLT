@@ -5,10 +5,5 @@ import { containerValidation } from '@modules/container/infrastructure/http/vali
 
 export default createController(CreateContainerFolderUseCase, {
     statusCode: HttpStatus.Created,
-    validationSchema: containerValidation.createFolder,
-    contextProviders: [
-        (request) => ({
-            userId: request.userId ?? ''
-        })
-    ]
+    validationSchema: containerValidation.createFolder
 });

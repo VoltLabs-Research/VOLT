@@ -5,11 +5,10 @@ import {
     type TeamClusterServiceExposure
 } from '@modules/team-cluster/domain/contracts/TeamClusterServiceExposure';
 import {
-    TEAM_CLUSTER_DAEMON_COMMAND,
+    ChannelCommands,
     TEAM_CLUSTER_DAEMON_EVENT,
     TEAM_CLUSTER_EVENT,
-    TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION,
-    TEAM_CLUSTER_REMOTE_EXPLORER_COMMAND
+    TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION
 } from '@shared/infrastructure/contracts/team-cluster';
 
 export enum TeamClusterDaemonResponseType {
@@ -407,11 +406,10 @@ export type {
 };
 
 export {
-    TEAM_CLUSTER_DAEMON_COMMAND,
+    ChannelCommands,
     TEAM_CLUSTER_DAEMON_EVENT,
     TEAM_CLUSTER_EVENT,
-    TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION,
-    TEAM_CLUSTER_REMOTE_EXPLORER_COMMAND
+    TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION
 };
 
 export const TEAM_CLUSTER_LIFECYCLE_EVENT = TEAM_CLUSTER_EVENT.lifecycleUpdated;

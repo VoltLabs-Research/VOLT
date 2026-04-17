@@ -5,15 +5,15 @@ import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin
 import useLoadPlugin from '@/modules/plugin/hooks/plugin/use-load-plugin';
 import UserMenuPopover from '@/modules/auth/components/molecules/UserMenuPopover';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import Loader from '@/shared/presentation/components/Loader';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import Container from '@/shared/presentation/components/Container';
 import { useNavigate } from 'react-router';
+import { useSearchParams } from 'react-router-dom';
 
 const PluginBuilderPage = () => {
     const navigate = useNavigate();
-    const { searchParams } = useSearchParamsState();
+    const [searchParams] = useSearchParams();
     const pluginId = searchParams.get('id') ?? undefined;
 
     const clearWorkflow = usePluginBuilderStore((state) => state.clearWorkflow);

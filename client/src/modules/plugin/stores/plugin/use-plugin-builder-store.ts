@@ -104,41 +104,6 @@ const hasNodeDataChanges = (currentData: INodeData, nextData: Partial<INodeData>
     return nextEntries.some(([key, value]) => !Object.is(currentData[key], value));
 };
 
-const normalizePluginNodeDataForSerialization = (node: Node<INodeData>): INodeData => {
-    if (node.type !== NodeType.PLUGIN || typeof node.data !== 'object' || node.data === null) {
-        return node.data;
-    }
-
-    const pluginNode = typeof node.data.pluginNode === 'object' && node.data.pluginNode !== null
-        ? node.data.pluginNode as Record<string, unknown>
-        : null;
-    if (!pluginNode) {
-        return node.data;
-    }
-
-    const pluginId = typeof pluginNode.pluginId === 'string'
-        ? pluginNode.pluginId.trim()
-        : '';
-    const argumentReference = typeof pluginNode.argumentReference === 'string'
-        ? pluginNode.argumentReference.trim()
-        : '';
-    const executionMode = pluginNode.executionMode === PluginNodeExecutionMode.ARGUMENT_REFERENCE
-        ? PluginNodeExecutionMode.ARGUMENT_REFERENCE
-        : pluginNode.executionMode === PluginNodeExecutionMode.MANUAL
-            ? PluginNodeExecutionMode.MANUAL
-            : !pluginId && argumentReference
-                ? PluginNodeExecutionMode.ARGUMENT_REFERENCE
-                : PluginNodeExecutionMode.MANUAL;
-
-    return {
-        ...node.data,
-        pluginNode: {
-            ...pluginNode,
-            executionMode
-        }
-    };
-};
-
 export const usePluginBuilderStore = create<PluginBuilderStore>()(
     temporal<PluginBuilderStore, [], [], BuilderHistoryState>(
         (set, get) => {
@@ -336,15 +301,38 @@ export const usePluginBuilderStore = create<PluginBuilderStore>()(
                 const { nodes, edges } = get();
 
                 return {
-                    nodes: nodes.map((n) => ({
-                        id: n.id,
-                        type: n.type as NodeType,
-                        position: {
-                            x: n.position.x,
-                            y: n.position.y
-                        },
-                        data: normalizePluginNodeDataForSerialization(n)
-                    })),
+                    nodes: nodes.map((n) => {
+                        const pluginNode = n.type === NodeType.PLUGIN ? n.data.pluginNode : undefined;
+                        const pluginId = pluginNode?.pluginId?.trim() ?? '';
+                        const argumentReference = pluginNode?.argumentReference?.trim() ?? '';
+                        const executionMode = pluginNode?.executionMode === PluginNodeExecutionMode.ARGUMENT_REFERENCE
+                            ? PluginNodeExecutionMode.ARGUMENT_REFERENCE
+                            : pluginNode?.executionMode === PluginNodeExecutionMode.MANUAL
+                                ? PluginNodeExecutionMode.MANUAL
+                                : !pluginId && argumentReference
+                                    ? PluginNodeExecutionMode.ARGUMENT_REFERENCE
+                                    : PluginNodeExecutionMode.MANUAL;
+
+                        return {
+                            id: n.id,
+                            type: n.type as NodeType,
+                            position: {
+                                x: n.position.x,
+                                y: n.position.y
+                            },
+                            data: pluginNode
+                                ? {
+                                    ...n.data,
+                                    pluginNode: {
+                                        ...pluginNode,
+                                        pluginId,
+                                        argumentReference,
+                                        executionMode
+                                    }
+                                }
+                                : n.data
+                        };
+                    }),
                     edges: edges.map((e) => ({
                         id: e.id,
                         source: e.source,

@@ -539,21 +539,16 @@ export default class DaemonAnalysisCompletionService {
             teamId,
             status,
             queueType,
-            metadata: {
-                jobId,
-                name,
-                analysisId,
-                status,
-                queueType,
-                teamClusterId,
-                source: PROJECTED_JOB_SOURCE,
-                backingSource: PROJECTED_JOB_BACKING_SOURCE,
-                cleanupScope,
-                trajectoryId: trajectoryContext.trajectoryId,
-                trajectoryName: trajectoryContext.trajectoryName,
-                timestep: trajectoryContext.timestep,
-                error
-            }
+            name,
+            analysisId,
+            teamClusterId,
+            source: PROJECTED_JOB_SOURCE,
+            backingSource: PROJECTED_JOB_BACKING_SOURCE,
+            cleanupScope,
+            trajectoryId: trajectoryContext.trajectoryId,
+            trajectoryName: trajectoryContext.trajectoryName,
+            timestep: trajectoryContext.timestep,
+            error
         });
 
         await this.eventBus.publish(event);

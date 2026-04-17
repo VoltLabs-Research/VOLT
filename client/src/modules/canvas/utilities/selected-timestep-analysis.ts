@@ -1,11 +1,14 @@
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
-import { isRecord } from '@/shared/utils/type-guards';
 
 export const ANALYSIS_EXECUTION_METADATA_KEY = '__voltExecution';
 
 interface AnalysisExecutionMetadata {
     selectedTimesteps?: number[];
+};
+
+type AnalysisConfigWithExecutionMetadata = Analysis['config'] & {
+    [ANALYSIS_EXECUTION_METADATA_KEY]?: AnalysisExecutionMetadata;
 };
 
 const isFiniteNumber = (value: unknown): value is number => {
@@ -17,26 +20,6 @@ const sanitizeTimestepList = (timesteps: number[], availableTimesteps: number[])
     const filteredTimesteps = timesteps.filter((timestep) => availableTimestepsSet.has(timestep));
 
     return Array.from(new Set(filteredTimesteps)).sort((left, right) => left - right);
-};
-
-const readSelectedTimesteps = (value: unknown): number[] | undefined => {
-    if (!Array.isArray(value)) {
-        return undefined;
-    }
-
-    return value.filter(isFiniteNumber);
-};
-
-const readAnalysisExecutionMetadata = (config: Record<string, unknown>): AnalysisExecutionMetadata | undefined => {
-    const reservedMetadata = config[ANALYSIS_EXECUTION_METADATA_KEY];
-
-    if (isRecord(reservedMetadata)) {
-        return {
-            selectedTimesteps: readSelectedTimesteps(reservedMetadata.selectedTimesteps)
-        };
-    }
-
-    return undefined;
 };
 
 export const extractTrajectoryTimesteps = (trajectory?: Trajectory | null): number[] => {
@@ -108,6 +91,6 @@ export const getSelectedTimestepsForAnalysis = (
         return undefined;
     }
 
-    const metadata = readAnalysisExecutionMetadata(analysis.config);
-    return normalizeSelectedTimesteps(metadata?.selectedTimesteps, trajectoryTimesteps);
+    const selectedTimesteps = (analysis.config as AnalysisConfigWithExecutionMetadata)[ANALYSIS_EXECUTION_METADATA_KEY]?.selectedTimesteps;
+    return normalizeSelectedTimesteps(selectedTimesteps, trajectoryTimesteps);
 };

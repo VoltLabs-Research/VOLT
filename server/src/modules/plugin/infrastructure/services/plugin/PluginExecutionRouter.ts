@@ -2,7 +2,7 @@ import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import {
-    TEAM_CLUSTER_DAEMON_COMMAND,
+    ChannelCommands,
     VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID
 } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
@@ -337,7 +337,7 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
 
         const response = await this.teamClusterDaemonClient.command<DaemonAnalysisStartResponse>(
             input.teamClusterId,
-            TEAM_CLUSTER_DAEMON_COMMAND.analysis.start,
+            ChannelCommands.AnalysisStart,
             dispatchPayload
         );
 
@@ -370,7 +370,7 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
 
         const expectedHash = await this.readObjectSha256(objectKey);
 
-        const syncResponse = await this.teamClusterDaemonClient.command<DaemonPluginSyncResponse>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.plugin.sync, {
+        const syncResponse = await this.teamClusterDaemonClient.command<DaemonPluginSyncResponse>(teamClusterId, ChannelCommands.PluginSync, {
             pluginId: plugin.id,
             objectKey,
             ownerClusterId: VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID,
@@ -381,7 +381,7 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             return;
         }
 
-        const finalSyncResponse = await this.teamClusterDaemonClient.command<DaemonPluginSyncResponse>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.plugin.sync, {
+        const finalSyncResponse = await this.teamClusterDaemonClient.command<DaemonPluginSyncResponse>(teamClusterId, ChannelCommands.PluginSync, {
             pluginId: plugin.id,
             objectKey,
             ownerClusterId: VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID,

@@ -18,7 +18,7 @@ export interface ListAIConversationsInputDTO {
     userId: string;
     page?: number;
     limit?: number;
-    includeArchived?: boolean | string;
+    includeArchived?: boolean;
 };
 
 export interface ListAIConversationsOutputDTO extends PaginatedResult<AIConversationDTO> { }

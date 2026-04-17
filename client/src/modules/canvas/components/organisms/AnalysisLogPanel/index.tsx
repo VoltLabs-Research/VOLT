@@ -1,6 +1,7 @@
 import useAnalysisFrameLog from '@/modules/canvas/hooks/use-analysis-frame-log';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import { format, isValid } from 'date-fns';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import './AnalysisLogPanel.css';
@@ -15,15 +16,11 @@ interface AnalysisLogPanelProps {
 
 const formatOccurredAt = (value: string): string => {
     const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
+    if (!isValid(parsed)) {
         return value;
     }
 
-    return parsed.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    });
+    return format(parsed, 'HH:mm:ss');
 };
 
 const AnalysisLogPanel = ({

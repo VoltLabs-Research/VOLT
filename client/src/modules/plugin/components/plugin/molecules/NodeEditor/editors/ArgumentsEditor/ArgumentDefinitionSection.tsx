@@ -97,56 +97,6 @@ const getArgumentFieldInputValue = (
     }
 };
 
-const parseScalarArgumentFieldValue = (
-    argument: IArgumentDefinition,
-    rawValue: string
-): unknown => {
-    if (rawValue === '') {
-        return undefined;
-    }
-
-    if (argument.type === ArgumentType.BOOLEAN) {
-        return rawValue === 'true';
-    }
-
-    if (argument.type === ArgumentType.NUMBER) {
-        return Number(rawValue);
-    }
-
-    return rawValue;
-};
-
-const getArgumentType = (value: string): ArgumentType => {
-    const resolvedType = Object.values(ArgumentType).find((type) => type === value);
-    return resolvedType ?? ArgumentType.STRING;
-};
-
-const getVisibilityOperator = (value: string): ArgumentVisibilityOperator => {
-    const resolvedOperator = Object.values(ArgumentVisibilityOperator).find((operator) => operator === value);
-    return resolvedOperator ?? ArgumentVisibilityOperator.EQUALS;
-};
-
-const normalizeVisibilityComparisonValue = (
-    rawValue: string,
-    referenceArgument?: IArgumentDefinition
-): string | number | boolean | undefined => {
-    const trimmedValue = rawValue.trim();
-    if (!trimmedValue.length) {
-        return undefined;
-    }
-
-    if (referenceArgument?.type === ArgumentType.NUMBER) {
-        const parsedValue = Number(trimmedValue);
-        return Number.isFinite(parsedValue) ? parsedValue : undefined;
-    }
-
-    if (referenceArgument?.type === ArgumentType.BOOLEAN) {
-        return trimmedValue === 'true';
-    }
-
-    return trimmedValue;
-};
-
 const getVisibilityValueInput = (condition?: IArgumentVisibilityCondition): string => {
     if (!condition) {
         return '';
@@ -236,7 +186,7 @@ const ArgumentDefinitionSection = ({
             const currentArgument = argumentDefinitions[argumentIndex];
 
             if (field === 'type') {
-                const nextType = getArgumentType(nextValue);
+                const nextType = nextValue as ArgumentType;
                 const nextArgument: IArgumentDefinition = {
                     ...currentArgument,
                     type: nextType
@@ -305,9 +255,17 @@ const ArgumentDefinitionSection = ({
             }
 
             if (field === 'default' || field === 'value') {
+                const nextScalarValue = nextValue === ''
+                    ? undefined
+                    : currentArgument.type === ArgumentType.BOOLEAN
+                        ? nextValue === 'true'
+                        : currentArgument.type === ArgumentType.NUMBER
+                            ? Number(nextValue)
+                            : nextValue;
+
                 handleArgumentChange(argumentIndex, {
                     ...currentArgument,
-                    [field]: parseScalarArgumentFieldValue(currentArgument, nextValue)
+                    [field]: nextScalarValue
                 });
                 return;
             }
@@ -376,7 +334,7 @@ const ArgumentDefinitionSection = ({
             return;
         }
 
-        const nextOperator = getVisibilityOperator(value);
+        const nextOperator = value as ArgumentVisibilityOperator;
         const nextVisibility: IArgumentVisibilityCondition = {
             argument: currentVisibility.argument,
             operator: nextOperator
@@ -416,17 +374,35 @@ const ArgumentDefinitionSection = ({
             operator: currentVisibility.operator
         };
 
+        const parseVisibilityValue = (entry: string): string | number | boolean | undefined => {
+            const trimmedEntry = entry.trim();
+            if (!trimmedEntry) {
+                return undefined;
+            }
+
+            if (referenceArgument?.type === ArgumentType.NUMBER) {
+                const parsedEntry = Number(trimmedEntry);
+                return Number.isFinite(parsedEntry) ? parsedEntry : undefined;
+            }
+
+            if (referenceArgument?.type === ArgumentType.BOOLEAN) {
+                return trimmedEntry === 'true';
+            }
+
+            return trimmedEntry;
+        };
+
         if (isMultiValueVisibilityOperator(currentVisibility.operator)) {
             const values = rawValue
                 .split(',')
-                .map((entry) => normalizeVisibilityComparisonValue(entry, referenceArgument))
+                .map(parseVisibilityValue)
                 .filter((entry): entry is string | number | boolean => entry !== undefined);
 
             if (values.length > 0) {
                 nextVisibility.values = values;
             }
         } else {
-            const value = normalizeVisibilityComparisonValue(rawValue, referenceArgument);
+            const value = parseVisibilityValue(rawValue);
             if (value !== undefined) {
                 nextVisibility.value = value;
             }

@@ -7,7 +7,7 @@ import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/applica
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { normalizeTrajectoryWorkerFailure } from '@modules/trajectory/utilities/trajectory/trajectory-worker-failure';
-import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
@@ -630,7 +630,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         for (const batch of frameDescriptorBatches) {
             const response = await this.teamClusterDaemonClient.command<GlbPreprocessingEnqueueResult>(
                 computeClusterId,
-                TEAM_CLUSTER_DAEMON_COMMAND.trajectory.enqueuePreprocessing,
+                ChannelCommands.TrajectoryEnqueuePreprocessing,
                 {
                     trajectoryId: trajectory._id,
                     teamId,

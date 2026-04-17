@@ -1,5 +1,6 @@
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import type { TeamJobSnapshot, TeamJobStatus } from '@modules/jobs/infrastructure/projections/TeamJobSnapshot';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
@@ -27,46 +28,7 @@ const compareFrameTimesteps = (left: number, right: number): number => {
     return right - left;
 };
 
-type TeamJobStatus = JobStatus | 'retrying' | 'partial';
-type TeamJobSource = 'daemon' | 'projected' | 'merged';
-
-interface TeamJobMetadata {
-    trajectoryId?: string;
-    trajectoryName?: string;
-    timestep?: number | string;
-    analysisId?: string;
-    message?: string;
-    [key: string]: unknown;
-};
-
-interface TeamJobStatusRecord {
-    jobId: string;
-    name?: string;
-    teamId?: string;
-    queueType?: string;
-    status?: TeamJobStatus;
-    sessionId?: string;
-    message?: string;
-    metadata?: TeamJobMetadata;
-    timestamp?: string;
-    createdAt?: string;
-    updatedAt?: string;
-    analysisId?: string;
-    trajectoryId?: string;
-    trajectoryName?: string;
-    timestep?: number;
-    teamClusterId?: string;
-    source?: TeamJobSource;
-    revision?: number;
-};
-
-export interface TeamJobSummary extends TeamJobStatusRecord {
-    jobId: string;
-    queueType: string;
-    status: TeamJobStatus;
-    teamId: string;
-    [key: string]: unknown;
-};
+export type TeamJobSummary = TeamJobSnapshot;
 
 interface GroupedTeamJobSummary extends TeamJobSummary {
     trajectoryId: string;
@@ -128,8 +90,6 @@ export default class TeamJobsService {
         };
     }
 
-    invalidateInitialTeamJobs(_teamId?: string): void {}
-
     async getFlatTeamJobs(teamId: string): Promise<TeamJobSummary[]> {
         const projectedJobs = await this.getProjectedTeamJobs(teamId);
         const enrichedJobs = await this.enrichTrajectoryNames(projectedJobs);
@@ -155,17 +115,10 @@ export default class TeamJobsService {
                 continue;
             }
 
-            try {
-                const parsed = JSON.parse(record) as Record<string, unknown> | null;
-                if (this.isTeamJobSummary(parsed)) {
-                    jobs.push({
-                        ...parsed,
-                        source: 'projected'
-                    });
-                }
-            } catch (error) {
-                logger.warn({ err: error }, 'Failed to parse projected team job record');
-            }
+            jobs.push({
+                ...(JSON.parse(record) as TeamJobSummary),
+                source: 'projected'
+            });
         }
 
         if (staleJobIds.length > 0) {
@@ -181,13 +134,13 @@ export default class TeamJobsService {
         const trajectoryMap = new Map<string, GroupedTeamJobSummary[]>();
 
         for (const job of jobs) {
-            const trajectoryId = this.resolveTrajectoryId(job);
+            const trajectoryId = job.trajectoryId;
 
             if (!trajectoryId) {
                 continue;
             }
 
-            let trajectoryName = this.resolveTrajectoryName(job);
+            let trajectoryName = job.trajectoryName;
             if (typeof trajectoryName !== 'string' || trajectoryName.trim().length === 0) {
                 logger.warn({
                     action: 'team.jobs.missing-trajectory-name',
@@ -218,7 +171,7 @@ export default class TeamJobsService {
             const groupedJobs: GroupedTeamJobSummary[] = [];
 
             for (const job of trajectoryJobs) {
-                const timestep = this.resolveJobTimestep(job) ?? UNGROUPED_TIMESTEP;
+                const timestep = job.timestep ?? UNGROUPED_TIMESTEP;
 
                 if (!frameMap.has(timestep)) {
                     frameMap.set(timestep, []);
@@ -273,8 +226,8 @@ export default class TeamJobsService {
     private async enrichTrajectoryNames(jobs: TeamJobSummary[]): Promise<TeamJobSummary[]> {
         const missingTrajectoryIds = Array.from(new Set(
             jobs
-                .filter((job) => !this.resolveTrajectoryName(job))
-                .map((job) => this.resolveTrajectoryId(job))
+                .filter((job) => !job.trajectoryName)
+                .map((job) => job.trajectoryId)
                 .filter((trajectoryId): trajectoryId is string => typeof trajectoryId === 'string' && trajectoryId.length > 0)
         ));
 
@@ -307,74 +260,20 @@ export default class TeamJobsService {
         }
 
         return jobs.map((job) => {
-            if (this.resolveTrajectoryName(job)) {
+            if (job.trajectoryName || !job.trajectoryId) {
                 return job;
             }
 
-            const trajectoryId = this.resolveTrajectoryId(job);
-            if (!trajectoryId) {
-                return job;
-            }
-
-            const trajectoryName = trajectoryNames.get(trajectoryId);
+            const trajectoryName = trajectoryNames.get(job.trajectoryId);
             if (!trajectoryName) {
                 return job;
             }
 
             return {
                 ...job,
-                trajectoryId,
-                trajectoryName,
-                metadata: {
-                    ...job.metadata,
-                    trajectoryId,
-                    trajectoryName
-                }
+                trajectoryName
             };
         });
-    }
-
-    private resolveTrajectoryId(job: TeamJobSummary): string | undefined {
-        if (typeof job.trajectoryId === 'string') {
-            return job.trajectoryId;
-        }
-
-        if (typeof job.metadata?.trajectoryId === 'string') {
-            return job.metadata.trajectoryId;
-        }
-
-        return undefined;
-    }
-
-    private resolveTrajectoryName(job: TeamJobSummary): string | undefined {
-        if (typeof job.trajectoryName === 'string') {
-            return job.trajectoryName;
-        }
-
-        if (typeof job.metadata?.trajectoryName === 'string') {
-            return job.metadata.trajectoryName;
-        }
-
-        return undefined;
-    }
-
-    private resolveJobTimestep(job: TeamJobSummary): number | undefined {
-        if (typeof job.timestep === 'number' && Number.isFinite(job.timestep)) {
-            return job.timestep;
-        }
-
-        if (typeof job.metadata?.timestep === 'number' && Number.isFinite(job.metadata.timestep)) {
-            return job.metadata.timestep;
-        }
-
-        if (typeof job.metadata?.timestep === 'string' && job.metadata.timestep.trim().length > 0) {
-            const parsedTimestep = Number(job.metadata.timestep);
-            if (Number.isFinite(parsedTimestep)) {
-                return parsedTimestep;
-            }
-        }
-
-        return undefined;
     }
 
     private resolveLatestTimestamp(jobs: TeamJobSummary[]): string | undefined {
@@ -466,25 +365,6 @@ export default class TeamJobsService {
         if (allCompleted) return JobStatus.Completed;
         if (hasFailed && jobs.filter((job) => job.status === JobStatus.Completed).length === 0) return JobStatus.Failed;
         return 'partial';
-    }
-
-    private isTeamJobSummary(job: Record<string, unknown> | null): job is TeamJobSummary {
-        return Boolean(
-            job
-            && typeof job.jobId === 'string'
-            && typeof job.teamId === 'string'
-            && typeof job.queueType === 'string'
-            && this.isTeamJobStatus(job.status)
-        );
-    }
-
-    private isTeamJobStatus(status: unknown): status is TeamJobStatus {
-        return status === JobStatus.Queued
-            || status === JobStatus.Running
-            || status === JobStatus.Completed
-            || status === JobStatus.Failed
-            || status === 'retrying'
-            || status === 'partial';
     }
 
     private async getProjectedTeamJobsRevision(teamId: string): Promise<number> {

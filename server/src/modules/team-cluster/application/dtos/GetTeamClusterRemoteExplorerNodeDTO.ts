@@ -1,18 +1,13 @@
-import type { TeamUserScopedInputDTO } from '@modules/team/application/dtos/common';
 import type {
     TeamClusterRemoteAccessTargetDTO,
     TeamClusterRemoteExplorerNodeDTO
 } from '@modules/team-cluster/application/dtos/TeamClusterRemoteAccessDTO';
+import type { TeamClusterRemoteExplorerInputDTO } from './common';
 
 /**
  * Requests the rendered payload for a selected remote explorer node.
  */
-export interface GetTeamClusterRemoteExplorerNodeInputDTO extends TeamUserScopedInputDTO {
-    teamClusterId: string;
-    sessionId: string;
-    target: TeamClusterRemoteAccessTargetDTO;
-    path: string;
-};
+export type GetTeamClusterRemoteExplorerNodeInputDTO = TeamClusterRemoteExplorerInputDTO;
 
 /**
  * Returns the content payload associated with a selected remote explorer node.

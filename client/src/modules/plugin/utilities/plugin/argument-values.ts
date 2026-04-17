@@ -19,47 +19,6 @@ const isStringArray = (value: unknown): value is string[] => {
     return Array.isArray(value) && value.every((entry) => typeof entry === 'string');
 };
 
-const readBooleanValue = (value: unknown): boolean => {
-    if (typeof value === 'boolean') {
-        return value;
-    }
-
-    if (typeof value === 'string') {
-        return value === 'true';
-    }
-
-    return Boolean(value);
-};
-
-const readNumberFieldValue = (value: unknown): number | string => {
-    if (typeof value === 'number' && Number.isFinite(value)) {
-        return value;
-    }
-
-    if (typeof value === 'string') {
-        return value;
-    }
-
-    return '';
-};
-
-const readRuntimeNumberValue = (value: unknown): number | string => {
-    if (typeof value === 'number' && Number.isFinite(value)) {
-        return value;
-    }
-
-    if (typeof value === 'string') {
-        if (!value.trim().length) {
-            return '';
-        }
-
-        const parsed = Number(value);
-        return Number.isFinite(parsed) ? parsed : value;
-    }
-
-    return '';
-};
-
 export const createDefaultArgumentDefinition = (): IArgumentDefinition => {
     return {
         argument: '',
@@ -123,11 +82,15 @@ export const getPrimitiveArgumentFieldValue = (
     const resolvedValue = value ?? definition.default;
 
     if (definition.type === ArgumentType.BOOLEAN) {
-        return readBooleanValue(resolvedValue);
+        return typeof resolvedValue === 'string' ? resolvedValue === 'true' : Boolean(resolvedValue);
     }
 
     if (definition.type === ArgumentType.NUMBER) {
-        return readNumberFieldValue(resolvedValue);
+        if (typeof resolvedValue === 'number' && Number.isFinite(resolvedValue)) {
+            return resolvedValue;
+        }
+
+        return typeof resolvedValue === 'string' ? resolvedValue : '';
     }
 
     if (typeof resolvedValue === 'number' || typeof resolvedValue === 'boolean') {
@@ -169,55 +132,49 @@ const isPluginReferenceSelectionValue = (value: unknown): value is PluginReferen
     return isRecord(value) && typeof value.pluginId === 'string';
 };
 
-const normalizePluginReferenceSelection = (value: unknown): IPluginReferenceSelection | null => {
-    if (!isPluginReferenceSelectionValue(value)) {
-        return null;
-    }
-
-    const pluginId = value.pluginId.trim();
-    if (!pluginId) {
-        return null;
-    }
-
-    return {
-        pluginId,
-        config: isRecord(value.config) ? value.config : {}
-    };
-};
-
 const isPluginReferenceValue = (value: unknown): value is IPluginReferenceValue => {
     return isRecord(value) && Array.isArray(value.selections);
 };
 
-const normalizePluginReferenceSelections = (value: unknown): IPluginReferenceSelection[] => {
-    if (isPluginReferenceValue(value)) {
-        return value.selections
-            .map(normalizePluginReferenceSelection)
-            .filter((selection): selection is IPluginReferenceSelection => selection !== null);
-    }
+const toPluginReferenceSelections = (value: unknown): IPluginReferenceSelection[] => {
+    const rawSelections = isPluginReferenceValue(value)
+        ? value.selections
+        : Array.isArray(value)
+            ? value
+            : isPluginReferenceSelectionValue(value)
+                ? [value]
+                : [];
 
-    if (Array.isArray(value)) {
-        return value
-            .map(normalizePluginReferenceSelection)
-            .filter((selection): selection is IPluginReferenceSelection => selection !== null);
-    }
+    return rawSelections.flatMap((selection): IPluginReferenceSelection[] => {
+        if (!isPluginReferenceSelectionValue(selection)) {
+            return [];
+        }
 
-    const legacySelection = normalizePluginReferenceSelection(value);
-    return legacySelection ? [legacySelection] : [];
+        const pluginId = selection.pluginId.trim();
+        if (!pluginId) {
+            return [];
+        }
+
+        return [{
+            pluginId,
+            config: isRecord(selection.config) ? selection.config : {}
+        }];
+    });
 };
 
 export const getPluginReferenceValue = (
     definition: IArgumentDefinition,
     value: unknown
 ): IPluginReferenceValue => {
-    const resolvedSelections = normalizePluginReferenceSelections(value);
-    if (resolvedSelections.length > 0) {
+    const selections = toPluginReferenceSelections(value);
+
+    if (selections.length > 0) {
         return {
-            selections: resolvedSelections
+            selections
         };
     }
 
-    const defaultSelections = normalizePluginReferenceSelections(definition.default);
+    const defaultSelections = toPluginReferenceSelections(definition.default);
     if (defaultSelections.length > 0) {
         return {
             selections: defaultSelections
@@ -234,7 +191,7 @@ export const coerceArgumentInputValue = (
     value: unknown
 ): unknown => {
     if (definition.type === ArgumentType.BOOLEAN) {
-        return readBooleanValue(value);
+        return typeof value === 'string' ? value === 'true' : Boolean(value);
     }
 
     if (definition.type === ArgumentType.NUMBER) {
@@ -259,11 +216,24 @@ export const resolveArgumentRuntimeValue = (
     const resolvedValue = value ?? definition.value ?? definition.default;
 
     if (definition.type === ArgumentType.BOOLEAN) {
-        return readBooleanValue(resolvedValue);
+        return typeof resolvedValue === 'string' ? resolvedValue === 'true' : Boolean(resolvedValue);
     }
 
     if (definition.type === ArgumentType.NUMBER) {
-        return readRuntimeNumberValue(resolvedValue);
+        if (typeof resolvedValue === 'number' && Number.isFinite(resolvedValue)) {
+            return resolvedValue;
+        }
+
+        if (typeof resolvedValue === 'string') {
+            if (!resolvedValue.trim()) {
+                return '';
+            }
+
+            const parsedValue = Number(resolvedValue);
+            return Number.isFinite(parsedValue) ? parsedValue : resolvedValue;
+        }
+
+        return '';
     }
 
     if (definition.type === ArgumentType.SELECT && definition.multipleSelection) {

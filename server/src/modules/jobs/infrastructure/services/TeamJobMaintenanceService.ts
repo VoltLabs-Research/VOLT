@@ -1,10 +1,10 @@
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
+import TeamJobsService, { type TeamJobSummary } from '@modules/team/socket/team/TeamJobsService';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import type IORedis from 'ioredis';
 import { inject, injectable } from 'tsyringe';
 import type {
@@ -14,15 +14,10 @@ import type {
     RetryTeamFailedJobsResult,
     TeamClusterFailureDetail
 } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
-import type { TeamJobSummary } from '@modules/team/socket/team/TeamJobsService';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
-
-interface TeamJobsReader {
-    getFlatTeamJobs(teamId: string): Promise<TeamJobSummary[]>;
-};
 
 interface ClusterActionResponse {
     affectedJobs: number;
@@ -65,7 +60,7 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         private readonly eventBus: IEventBus,
 
         @inject(TEAM_TOKENS.TeamJobsService)
-        private readonly teamJobsService: TeamJobsReader
+        private readonly teamJobsService: TeamJobsService
     ) {}
 
     async clearHistory(teamId: string): Promise<ClearTeamJobsHistoryResult> {
@@ -87,7 +82,7 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         const { daemonJobs, localJobs } = this.partitionVisibleJobs(runningJobs);
         const localCleanupTargets = await this.collectLocalCleanupTargets(teamId, localJobs, 'running');
         const daemonResult = await this.callPerCluster(this.groupJobsByCluster(daemonJobs), (teamClusterId, jobIds) => {
-            return this.teamClusterDaemonClient.command<ClusterActionResponse>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.jobs.removeRunning, {
+            return this.teamClusterDaemonClient.command<ClusterActionResponse>(teamClusterId, ChannelCommands.JobsRemoveRunning, {
                 jobIds
             });
         }, {
@@ -123,8 +118,7 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
             return jobIds.includes(job.jobId);
         });
         const { daemonJobs } = this.partitionVisibleJobs(failedJobs);
-        const retryableDaemonJobs = daemonJobs.filter((job) => this.isRetryableDaemonJob(job));
-        const jobsByCluster = this.groupJobsByCluster(retryableDaemonJobs);
+        const jobsByCluster = this.groupJobsByCluster(daemonJobs);
         let retriedFrames = 0;
         let affectedClusters = 0;
         const clusterFailures: TeamClusterFailureDetail[] = [];
@@ -133,7 +127,7 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
             try {
                 const response = await this.teamClusterDaemonClient.command<ClusterActionResponse>(
                     teamClusterId,
-                    TEAM_CLUSTER_DAEMON_COMMAND.jobs.retry,
+                    ChannelCommands.JobsRetry,
                     {
                         jobIds: jobs.map((job) => job.jobId)
                     }
@@ -291,7 +285,7 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         for (const job of visibleLocalJobs) {
             cleanupTargets.set(job.jobId, {
                 jobId: job.jobId,
-                analysisId: this.resolveAnalysisId(job),
+                analysisId: job.analysisId,
                 status: job.status
             });
         }
@@ -338,31 +332,13 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
             return { jobId };
         }
 
-        try {
-            const parsedRecord: unknown = JSON.parse(record);
-            if (!isRecord(parsedRecord)) {
-                return { jobId };
-            }
+        const parsedRecord = JSON.parse(record) as TeamJobSummary;
 
-            const status = typeof parsedRecord.status === 'string' ? parsedRecord.status : undefined;
-            const metadata = isRecord(parsedRecord.metadata) ? parsedRecord.metadata : undefined;
-            const topLevelAnalysisId = parsedRecord.analysisId;
-            const metadataAnalysisId = metadata?.analysisId;
-
-            return {
-                jobId,
-                analysisId: typeof topLevelAnalysisId === 'string'
-                    ? topLevelAnalysisId
-                    : typeof metadataAnalysisId === 'string'
-                        ? metadataAnalysisId
-                        : undefined,
-                status
-            };
-        } catch (error) {
-            logger.warn(error, `[TeamJobMaintenanceService] Failed to parse projected job record ${jobId}`);
-
-            return { jobId };
-        }
+        return {
+            jobId,
+            analysisId: parsedRecord.analysisId,
+            status: parsedRecord.status
+        };
     }
 
     private async removeProjectedJobs(teamId: string, cleanupTargets: LocalProjectedJobTarget[]): Promise<LocalMutationResult> {
@@ -439,36 +415,11 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
     private isDaemonJob(job: TeamJobSummary): boolean {
         return typeof job.teamClusterId === 'string'
             && job.teamClusterId.length > 0
-            && this.getJobString(job, 'backingSource') === 'daemon';
-    }
-
-    private isRetryableDaemonJob(job: TeamJobSummary): boolean {
-        if (!this.isDaemonJob(job)) {
-            return false;
-        }
-
-        if (this.getJobBoolean(job, 'retriable') === false) {
-            return false;
-        }
-
-        if (this.getJobBoolean(job, 'daemonBacked') === false) {
-            return false;
-        }
-
-        if (this.getJobString(job, 'jobClassification') === 'synthetic') {
-            return false;
-        }
-
-        if (this.getJobString(job, 'backingSource') !== 'daemon') {
-            return false;
-        }
-
-        return true;
+            && job.backingSource === 'daemon';
     }
 
     private async resetRetriedDaemonJobState(job: TeamJobSummary): Promise<void> {
-        const analysisId = this.resolveAnalysisId(job);
-        const trajectoryId = this.resolveTrajectoryId(job);
+        const { analysisId, trajectoryId } = job;
         const pipeline = this.redis.pipeline();
 
         if (job.queueType === 'analysis_processing' && analysisId) {
@@ -488,27 +439,15 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
 
     private async publishRetriedDaemonJob(job: TeamJobSummary): Promise<void> {
         await this.eventBus.publish(new JobStatusChangedEvent({
+            ...job,
             jobId: job.jobId,
             teamId: job.teamId,
             status: 'retrying',
             queueType: job.queueType,
-            metadata: {
-                ...job.metadata,
-                jobId: job.jobId,
-                name: typeof job.name === 'string' ? job.name : this.getJobString(job, 'name'),
-                status: 'retrying',
-                queueType: job.queueType,
-                source: 'projected',
-                backingSource: 'daemon',
-                cleanupScope: this.getJobString(job, 'cleanupScope'),
-                teamClusterId: job.teamClusterId,
-                analysisId: this.resolveAnalysisId(job),
-                trajectoryId: this.resolveTrajectoryId(job),
-                trajectoryName: this.getJobString(job, 'trajectoryName'),
-                timestep: typeof job.timestep === 'number' ? job.timestep : undefined,
-                message: undefined,
-                error: undefined
-            }
+            source: 'projected',
+            backingSource: 'daemon',
+            message: undefined,
+            error: undefined
         }));
     }
 
@@ -555,63 +494,11 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
 
     private addAnalysisIds(analysisIds: Set<string>, teamJobs: TeamJobSummary[]): void {
         for (const job of teamJobs) {
-            const analysisId = this.resolveAnalysisId(job);
+            const analysisId = job.analysisId;
             if (analysisId) {
                 analysisIds.add(analysisId);
             }
         }
-    }
-
-    private resolveAnalysisId(job: TeamJobSummary): string | undefined {
-        if (typeof job.analysisId === 'string') {
-            return job.analysisId;
-        }
-
-        if (typeof job.metadata?.analysisId === 'string') {
-            return job.metadata.analysisId;
-        }
-
-        return undefined;
-    }
-
-    private resolveTrajectoryId(job: TeamJobSummary): string | undefined {
-        if (typeof job.trajectoryId === 'string') {
-            return job.trajectoryId;
-        }
-
-        if (typeof job.metadata?.trajectoryId === 'string') {
-            return job.metadata.trajectoryId;
-        }
-
-        return undefined;
-    }
-
-    private getJobString(job: TeamJobSummary, key: string): string | undefined {
-        const topLevelValue = job[key];
-        if (typeof topLevelValue === 'string') {
-            return topLevelValue;
-        }
-
-        const metadataValue = job.metadata?.[key];
-        if (typeof metadataValue === 'string') {
-            return metadataValue;
-        }
-
-        return undefined;
-    }
-
-    private getJobBoolean(job: TeamJobSummary, key: string): boolean | undefined {
-        const topLevelValue = job[key];
-        if (typeof topLevelValue === 'boolean') {
-            return topLevelValue;
-        }
-
-        const metadataValue = job.metadata?.[key];
-        if (typeof metadataValue === 'boolean') {
-            return metadataValue;
-        }
-
-        return undefined;
     }
 
     private jobStatusKey(jobId: string): string {

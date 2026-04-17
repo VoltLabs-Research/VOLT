@@ -1,6 +1,6 @@
 import { TeamClusterRemoteAccessTargetDTO } from '@modules/team-cluster/application/dtos/TeamClusterRemoteAccessDTO';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { TEAM_CLUSTER_REMOTE_EXPLORER_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { inject, injectable } from 'tsyringe';
 
@@ -28,7 +28,7 @@ export default class RemoteExplorerDaemonGateway {
     ): Promise<TeamClusterRemoteExplorerEntryDTO[]> {
         return this.teamClusterDaemonClient.command<TeamClusterRemoteExplorerEntryDTO[]>(
             request.teamClusterId,
-            TEAM_CLUSTER_REMOTE_EXPLORER_COMMAND.list,
+            ChannelCommands.RemoteExplorerList,
             this.createPayload(request)
         );
     }
@@ -38,7 +38,7 @@ export default class RemoteExplorerDaemonGateway {
     ): Promise<TeamClusterRemoteExplorerNodeDTO> {
         return this.teamClusterDaemonClient.command<TeamClusterRemoteExplorerNodeDTO>(
             request.teamClusterId,
-            TEAM_CLUSTER_REMOTE_EXPLORER_COMMAND.node,
+            ChannelCommands.RemoteExplorerNode,
             this.createPayload(request)
         );
     }
@@ -48,7 +48,7 @@ export default class RemoteExplorerDaemonGateway {
     ): Promise<TeamClusterReverseChannelStreamAttachment> {
         return this.teamClusterDaemonClient.commandResponseStream(
             request.teamClusterId,
-            TEAM_CLUSTER_REMOTE_EXPLORER_COMMAND.download,
+            ChannelCommands.RemoteExplorerDownload,
             this.createPayload(request)
         );
     }

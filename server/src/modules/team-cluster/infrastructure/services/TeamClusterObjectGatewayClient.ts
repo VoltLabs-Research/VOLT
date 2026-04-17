@@ -5,6 +5,7 @@ import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCreden
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 import type { Duplex, Readable as NodeReadable } from 'node:stream';
+import { buffer } from 'node:stream/consumers';
 import http from 'node:http';
 import {
     TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER,
@@ -346,7 +347,7 @@ export default class TeamClusterObjectGatewayClient {
         }, 'head');
 
         const head = parseHeadResponse(response.headers);
-        await this.readResponseBuffer(response.stream);
+        await buffer(response.stream);
 
         return head;
     }
@@ -392,7 +393,7 @@ export default class TeamClusterObjectGatewayClient {
             headers: this.buildReadHeaders({ skipMetadata: true })
         }, 'get');
 
-        return this.readResponseBuffer(response.stream);
+        return buffer(response.stream);
     }
 
     async putStream(teamClusterId: string, request: TeamClusterObjectGatewayPutStreamRequest): Promise<void> {
@@ -402,7 +403,7 @@ export default class TeamClusterObjectGatewayClient {
             path: this.buildObjectPath(request.bucket, request.objectKey),
             headers: this.buildUploadHeaders(request),
             body: request.stream
-        }, 'put').then((response) => this.readResponseBuffer(response.stream));
+        }, 'put').then((response) => buffer(response.stream));
     }
 
     async putBuffer(teamClusterId: string, request: TeamClusterObjectGatewayPutBufferRequest): Promise<void> {
@@ -412,7 +413,7 @@ export default class TeamClusterObjectGatewayClient {
             path: this.buildObjectPath(request.bucket, request.objectKey),
             headers: this.buildUploadHeaders(request),
             body: request.buffer
-        }, 'put').then((response) => this.readResponseBuffer(response.stream));
+        }, 'put').then((response) => buffer(response.stream));
     }
 
     async deleteObject(teamClusterId: string, bucket: string, objectKey: string): Promise<void> {
@@ -420,7 +421,7 @@ export default class TeamClusterObjectGatewayClient {
         await this.fetch(teamClusterId, {
             method: 'DELETE',
             path: this.buildObjectPath(bucket, objectKey)
-        }, 'delete').then((response) => this.readResponseBuffer(response.stream));
+        }, 'delete').then((response) => buffer(response.stream));
     }
 
     async deleteByPrefix(teamClusterId: string, bucket: string, prefix: string): Promise<number | undefined> {
@@ -444,7 +445,7 @@ export default class TeamClusterObjectGatewayClient {
         operation: ObjectGatewayOperationName
     ): Promise<T> {
         const response = await this.fetch(teamClusterId, options, operation);
-        return JSON.parse((await this.readResponseBuffer(response.stream)).toString('utf8')) as T;
+        return JSON.parse((await buffer(response.stream)).toString('utf8')) as T;
     }
 
     private async fetch(
@@ -465,7 +466,7 @@ export default class TeamClusterObjectGatewayClient {
                 return response;
             }
 
-            const payloadBuffer = await this.readResponseBuffer(response.stream);
+            const payloadBuffer = await buffer(response.stream);
             this.releaseHttpSession(session);
 
             let payload: ObjectGatewayJsonError | undefined;
@@ -765,16 +766,6 @@ export default class TeamClusterObjectGatewayClient {
 
     private buildSessionKey(teamClusterId: string): string {
         return `${teamClusterId}:${OBJECT_GATEWAY_EXPOSURE_ID}:${TeamClusterServiceExposureAccessMode.Http}`;
-    }
-
-    private async readResponseBuffer(stream: NodeReadable): Promise<Buffer> {
-        const chunks: Buffer[] = [];
-
-        for await (const chunk of stream) {
-            chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-        }
-
-        return Buffer.concat(chunks);
     }
 
     private buildCollectionPath(bucket: string): string {

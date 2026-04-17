@@ -28,29 +28,20 @@ interface MaybeScene {
     gradient?: string;
 };
 
-const normalizeString = (value: unknown): string => {
-    if (value === undefined || value === null) return '';
-    return String(value);
-};
-
-const normalizeNumber = (value: unknown): number => {
-    return Number(value);
-};
-
 const normalizeParticleFilterConditionSignature = (condition: MaybeParticleFilterCondition): Record<string, unknown> => {
     return {
         kind: 'property',
-        property: normalizeString(condition.property),
-        operator: normalizeString(condition.operator),
-        value: normalizeNumber(condition.value),
-        exposureId: normalizeString(condition.exposureId)
+        property: condition.property ?? '',
+        operator: condition.operator ?? '',
+        value: Number(condition.value),
+        exposureId: condition.exposureId ?? ''
     };
 };
 
 const normalizeParticleFilterSignature = (scene: MaybeScene): string => {
     if (Array.isArray(scene.conditions) && scene.conditions.length > 0) {
         return JSON.stringify({
-            combinator: normalizeString(scene.combinator || 'AND'),
+            combinator: scene.combinator ?? 'AND',
             conditions: scene.conditions.map(normalizeParticleFilterConditionSignature)
         });
     }
@@ -83,22 +74,22 @@ export const isSameScene = (left?: MaybeScene | null, right?: MaybeScene | null)
 
     const isParticleFilterScene = left.source === 'particle-filter' || right.source === 'particle-filter';
 
-    const sameBase = normalizeString(left.sceneType) === normalizeString(right.sceneType)
-        && normalizeString(left.source) === normalizeString(right.source)
-        && normalizeString(left.analysisId) === normalizeString(right.analysisId)
-        && (isParticleFilterScene || normalizeString(left.exposureId) === normalizeString(right.exposureId));
+    const sameBase = (left.sceneType ?? '') === (right.sceneType ?? '')
+        && (left.source ?? '') === (right.source ?? '')
+        && (left.analysisId ?? '') === (right.analysisId ?? '')
+        && (isParticleFilterScene || (left.exposureId ?? '') === (right.exposureId ?? ''));
 
     if (!sameBase) return false;
 
     if (left.source === 'color-coding' || right.source === 'color-coding') {
-        return normalizeString(left.property) === normalizeString(right.property)
-            && normalizeString(left.gradient) === normalizeString(right.gradient)
-            && normalizeNumber(left.startValue) === normalizeNumber(right.startValue)
-            && normalizeNumber(left.endValue) === normalizeNumber(right.endValue);
+        return (left.property ?? '') === (right.property ?? '')
+            && (left.gradient ?? '') === (right.gradient ?? '')
+            && Number(left.startValue) === Number(right.startValue)
+            && Number(left.endValue) === Number(right.endValue);
     }
 
     if (left.source === 'particle-filter' || right.source === 'particle-filter') {
-        return normalizeString(left.action || 'delete') === normalizeString(right.action || 'delete')
+        return (left.action ?? 'delete') === (right.action ?? 'delete')
             && normalizeParticleFilterSignature(left) === normalizeParticleFilterSignature(right);
     }
 

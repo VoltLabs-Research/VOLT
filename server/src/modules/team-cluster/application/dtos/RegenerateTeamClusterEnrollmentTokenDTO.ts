@@ -1,8 +1,6 @@
-import type { TeamUserScopedInputDTO } from '@modules/team/application/dtos/common';
+import type { TeamUserScopedClusterInputDTO } from './common';
 
-export interface RegenerateTeamClusterEnrollmentTokenInputDTO extends TeamUserScopedInputDTO {
-    teamClusterId: string;
-};
+export type RegenerateTeamClusterEnrollmentTokenInputDTO = TeamUserScopedClusterInputDTO;
 
 export interface RegenerateTeamClusterEnrollmentTokenOutputDTO {
     enrollmentToken: string;

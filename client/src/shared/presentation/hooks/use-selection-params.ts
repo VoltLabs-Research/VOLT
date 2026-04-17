@@ -1,5 +1,6 @@
-import useSearchParamsState from './use-search-params';
 import { useCallback, useMemo, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { applySearchParamUpdates } from './use-search-params';
 
 interface UseSelectionParamsOptions {
     paramName?: string;
@@ -19,7 +20,7 @@ const useSelectionParams = ({
     paramName = 'selected',
     multi = true
 }: UseSelectionParamsOptions = {}): UseSelectionParamsReturn => {
-    const { searchParams, updateSearchParams } = useSearchParamsState();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const getSelectedIds = useCallback(() => {
         const param = searchParams.get(paramName);
@@ -30,10 +31,10 @@ const useSelectionParams = ({
     const selectedIds = useMemo(() => getSelectedIds(), [getSelectedIds]);
 
     const updateSelection = useCallback((ids: string[]) => {
-        updateSearchParams({
+        setSearchParams((prev) => applySearchParamUpdates(prev, {
             [paramName]: ids.length === 0 ? null : (multi ? ids.join(',') : ids[0])
-        });
-    }, [updateSearchParams, paramName, multi]);
+        }));
+    }, [setSearchParams, paramName, multi]);
 
     const updateSelectionRef = useRef(updateSelection);
 

@@ -6,8 +6,8 @@ import { useDeleteBinaryMutation, useUploadBinaryMutation } from '@/modules/plug
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { isAccessDeniedError, reportError, ErrorSurface } from '@/shared/errors/core';
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { useSearchParams } from 'react-router-dom';
 import type { EntrypointEditorFormValues } from './schema';
 
 const UPLOAD_ACCESS_DENIED_MESSAGE = 'You do not have permission to upload binaries';
@@ -17,7 +17,7 @@ export const useEntrypointBinaryActions = (
     nodeId: string,
     form: UseFormReturn<EntrypointEditorFormValues>
 ) => {
-    const { searchParams } = useSearchParamsState();
+    const [searchParams] = useSearchParams();
     const currentPluginId = searchParams.get('id');
     const selectedTeamId = useSelectedTeamId();
     const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);

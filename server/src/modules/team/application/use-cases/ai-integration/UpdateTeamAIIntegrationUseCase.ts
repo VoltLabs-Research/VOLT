@@ -1,18 +1,17 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { UpdateTeamAIIntegrationInputDTO, UpdateTeamAIIntegrationOutputDTO } from '@modules/team/application/dtos/ai-integration/UpdateTeamAIIntegrationDTO';
-import TeamAIIntegrationInputService from '@modules/team/infrastructure/services/ai-integration/TeamAIIntegrationInputService';
-import TeamAIIntegrationSecretService from '@modules/team/infrastructure/services/ai-integration/TeamAIIntegrationSecretService';
-import TeamAIIntegrationSerializer from '@modules/team/infrastructure/services/ai-integration/TeamAIIntegrationSerializer';
-import TeamAIIntegration from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
 import TeamAIIntegrationUpdatedEvent from '@modules/team/domain/events/ai-integration/TeamAIIntegrationUpdatedEvent';
+import type { ITeamAIIntegrationSecretCipher } from '@modules/team/domain/port/ai-integration/ITeamAIIntegrationSecretCipher';
 import { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ai-integration/ITeamAIIntegrationRepository';
+import TeamAIProviderCatalog from '@modules/team/infrastructure/services/ai-integration/TeamAIProviderCatalog';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { injectable, inject } from 'tsyringe';
+import { toTeamAIIntegrationItemDTO } from './toTeamAIIntegrationItemDTO';
 
 @injectable()
 export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTeamAIIntegrationInputDTO, UpdateTeamAIIntegrationOutputDTO, ApplicationError> {
@@ -20,21 +19,18 @@ export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTe
         @inject(TEAM_TOKENS.TeamAIIntegrationRepository)
         private readonly integrationRepository: ITeamAIIntegrationRepository,
 
-        @inject(TEAM_TOKENS.TeamAIIntegrationInputService)
-        private readonly inputService: TeamAIIntegrationInputService,
+        @inject(TEAM_TOKENS.TeamAIProviderCatalog)
+        private readonly providerCatalog: TeamAIProviderCatalog,
 
-        @inject(TEAM_TOKENS.TeamAIIntegrationSecretService)
-        private readonly secretService: TeamAIIntegrationSecretService,
-
-        @inject(TEAM_TOKENS.TeamAIIntegrationSerializer)
-        private readonly integrationSerializer: TeamAIIntegrationSerializer,
+        @inject(TEAM_TOKENS.TeamAIIntegrationSecretCipher)
+        private readonly secretCipher: ITeamAIIntegrationSecretCipher,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}
 
     async execute(input: UpdateTeamAIIntegrationInputDTO): Promise<Result<UpdateTeamAIIntegrationOutputDTO, ApplicationError>> {
-        const provider = this.inputService.normalizeProvider(input.provider);
+        const provider = this.providerCatalog.normalize(input.provider);
         if (!provider) {
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.TEAM_AI_INTEGRATION_PROVIDER_UNSUPPORTED,
@@ -50,15 +46,12 @@ export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTe
             ));
         }
 
-        const encryptedApiKey = await this.secretService.resolveEncryptedApiKey(
-            input.apiKey,
-            existing.props.encryptedApiKey
-        );
+        const apiKey = input.apiKey?.trim();
+        const encryptedApiKey = apiKey
+            ? await this.secretCipher.encrypt(apiKey)
+            : existing.props.encryptedApiKey || await this.secretCipher.encrypt('ollama-local');
 
-        const defaultModel = this.inputService.resolveDefaultModel(
-            input.defaultModel,
-            existing.props.defaultModel
-        );
+        const defaultModel = input.defaultModel?.trim() || existing.props.defaultModel || null;
         if (!defaultModel) {
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.TEAM_AI_INTEGRATION_MODEL_UNSUPPORTED,
@@ -66,11 +59,12 @@ export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTe
             ));
         }
 
-        const metadata = this.inputService.resolveMetadata(input.metadata, existing.props.metadata);
-        const enabledModels = this.inputService.normalizeEnabledModels(
-            input.enabledModels,
-            existing.props.enabledModels || []
-        );
+        const metadata = input.metadata ?? existing.props.metadata;
+        const enabledModels = input.enabledModels
+            ? input.enabledModels
+                .map(({ id, name }) => ({ id: id.trim(), name: name.trim() }))
+                .filter(({ id, name }) => id.length > 0 && name.length > 0)
+            : existing.props.enabledModels || [];
 
         const persisted = await this.integrationRepository.updateById(existing._id, existing.buildUpdatePayload({
             encryptedApiKey,
@@ -96,7 +90,7 @@ export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTe
         }));
 
         return Result.ok({
-            integration: this.integrationSerializer.toDTO(persisted)
+            integration: toTeamAIIntegrationItemDTO(persisted, this.providerCatalog)
         });
     }
 };

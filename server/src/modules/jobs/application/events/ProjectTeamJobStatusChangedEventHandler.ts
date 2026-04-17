@@ -1,37 +1,11 @@
 import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
-import TeamJobProjectedEvent from '@modules/jobs/domain/events/TeamJobProjectedEvent';
 import TeamJobProjectionService from '@modules/jobs/infrastructure/services/TeamJobProjectionService';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
 import logger from '@shared/infrastructure/logger';
 import { injectable, inject } from 'tsyringe';
-import type { IEventBus } from '@shared/application/events/IEventBus';
-import type { JobStatusChangedMetadata, JobStatusChangedValue } from '@modules/jobs/domain/events/JobStatusChangedEvent';
 import type { TeamJobSnapshot } from '@modules/jobs/infrastructure/projections/TeamJobSnapshot';
-
-const isJobStatusChangedValue = (value: unknown): value is JobStatusChangedValue => {
-    return value === 'queued'
-        || value === 'running'
-        || value === 'completed'
-        || value === 'failed'
-        || value === 'retrying';
-};
-
-const toProjectedMetadata = (snapshot: TeamJobSnapshot): JobStatusChangedMetadata | undefined => {
-    if (!snapshot.metadata) {
-        return undefined;
-    }
-
-    const { status: rawStatus, ...restMetadata } = snapshot.metadata;
-    const status = isJobStatusChangedValue(snapshot.metadata.status)
-        ? snapshot.metadata.status
-        : undefined;
-
-    return {
-        ...restMetadata,
-        ...(status ? { status } : {})
-    };
-};
 
 @injectable()
 export default class ProjectTeamJobStatusChangedEventHandler implements IEventHandler<JobStatusChangedEvent> {
@@ -39,8 +13,8 @@ export default class ProjectTeamJobStatusChangedEventHandler implements IEventHa
         @inject(TeamJobProjectionService)
         private readonly teamJobProjectionService: TeamJobProjectionService,
 
-        @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus
+        @inject(SOCKET_TOKENS.SocketEmitter)
+        private readonly socketEmitter: ISocketEmitter
     ) {}
 
     async handle(event: JobStatusChangedEvent): Promise<void> {
@@ -55,29 +29,12 @@ export default class ProjectTeamJobStatusChangedEventHandler implements IEventHa
         }
 
         try {
-            await this.eventBus.publish(new TeamJobProjectedEvent({
-                jobId: snapshot.jobId,
-                teamId: snapshot.teamId,
-                queueType: snapshot.queueType,
-                status: snapshot.status,
-                metadata: toProjectedMetadata(snapshot),
-                timestamp: snapshot.timestamp,
-                createdAt: snapshot.createdAt,
-                updatedAt: snapshot.updatedAt,
-                name: snapshot.name,
-                message: snapshot.message,
-                analysisId: snapshot.analysisId,
-                trajectoryId: snapshot.trajectoryId,
-                trajectoryName: snapshot.trajectoryName,
-                timestep: snapshot.timestep,
-                teamClusterId: snapshot.teamClusterId,
-                source: snapshot.source,
-                backingSource: snapshot.backingSource,
-                cleanupScope: snapshot.cleanupScope,
-                revision: snapshot.revision
-            }));
+            await this.socketEmitter.emitToRoom(`team:${snapshot.teamId}`, 'team.job.updated', {
+                ...snapshot,
+                timestamp: snapshot.timestamp ?? new Date().toISOString()
+            });
         } catch (error) {
-            logger.warn(error, `[ProjectTeamJobStatusChangedEventHandler] Failed to publish projected team job event ${jobId}`);
+            logger.warn(error, `[ProjectTeamJobStatusChangedEventHandler] Failed to emit projected team job update ${jobId}`);
         }
     }
 }

@@ -1,7 +1,6 @@
-export interface UpdateWhiteboardInputDTO {
-    teamId: string;
-    userId: string;
-    whiteboardId: string;
+import type { TeamUserScopedEntityIdInputDTO } from '@modules/team/application/dtos/common';
+
+export type UpdateWhiteboardInputDTO = TeamUserScopedEntityIdInputDTO<'whiteboardId'> & {
     title?: string;
 };
 

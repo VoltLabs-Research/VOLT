@@ -11,10 +11,7 @@ export const TEAM_TOKENS = Object.freeze({
     TeamJobsSocketModule: Symbol.for('TeamJobsSocketModule'),
     TeamPresenceSocketModule: Symbol.for('TeamPresenceSocketModule'),
     TeamAIProviderCatalog: Symbol.for('TeamAIProviderCatalog'),
-    TeamAIIntegrationInputService: Symbol.for('TeamAIIntegrationInputService'),
     TeamAIIntegrationSecretCipher: Symbol.for('TeamAIIntegrationSecretCipher'),
-    TeamAIIntegrationSecretService: Symbol.for('TeamAIIntegrationSecretService'),
-    TeamAIIntegrationSerializer: Symbol.for('TeamAIIntegrationSerializer'),
     TeamMembershipService: Symbol.for('TeamMembershipService'),
     SecretKeyUsageMetricsMapper: Symbol.for('SecretKeyUsageMetricsMapper')
 });

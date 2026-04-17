@@ -1,8 +1,7 @@
 import type { LatexDocumentDTO } from './LatexDocumentDTO';
+import type { TeamUserScopedInputDTO } from '@modules/team/application/dtos/common';
 
-export interface ImportLatexDocumentInputDTO {
-    teamId: string;
-    userId: string;
+export type ImportLatexDocumentInputDTO = TeamUserScopedInputDTO & {
     file: Express.Multer.File;
     folderId?: string | null;
 };

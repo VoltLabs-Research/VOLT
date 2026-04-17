@@ -1,8 +1,6 @@
 import type { LatexAssetDTO } from './LatexAssetDTO';
+import type { TeamScopedEntityIdInputDTO } from '@modules/team/application/dtos/common';
 
-export interface ListLatexAssetsInputDTO {
-    teamId: string;
-    documentId: string;
-};
+export type ListLatexAssetsInputDTO = TeamScopedEntityIdInputDTO<'documentId'>;
 
 export type ListLatexAssetsOutputDTO = LatexAssetDTO[];

@@ -20,9 +20,9 @@ export default class ListAIConversationsUseCase implements IUseCase<ListAIConver
     ) {}
 
     async execute(input: ListAIConversationsInputDTO): Promise<Result<ListAIConversationsOutputDTO, ApplicationError>> {
-        const page = Math.max(1, Number(input.page || 1));
-        const limit = Math.max(1, Math.min(200, Number(input.limit || 50)));
-        const includeArchived = input.includeArchived === true || input.includeArchived === 'true';
+        const page = Math.max(1, input.page ?? 1);
+        const limit = Math.max(1, Math.min(200, input.limit ?? 50));
+        const includeArchived = input.includeArchived === true;
 
         const filter: ListAIConversationsFilter = {
             teamId: input.teamId,

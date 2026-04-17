@@ -30,7 +30,7 @@ import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import { AIProvider, AI_PROVIDERS } from '@modules/ai/domain/contracts/AIProviders';
 import AIToolService from '@modules/ai/infrastructure/services/AIToolService';
 import type { AIMessageToolCall, AIMessageToolResult } from '@modules/ai/domain/entities/AIMessage';
-import TeamAIIntegrationSecretService from '@modules/team/infrastructure/services/ai-integration/TeamAIIntegrationSecretService';
+import type { ITeamAIIntegrationSecretCipher } from '@modules/team/domain/port/ai-integration/ITeamAIIntegrationSecretCipher';
 import type { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ai-integration/ITeamAIIntegrationRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
@@ -133,8 +133,8 @@ export default class AISDKChatTransport implements IAIChatTransport {
         @inject(TEAM_TOKENS.TeamAIIntegrationRepository)
         private readonly integrationRepo: ITeamAIIntegrationRepository,
 
-        @inject(TEAM_TOKENS.TeamAIIntegrationSecretService)
-        private readonly secretService: TeamAIIntegrationSecretService
+        @inject(TEAM_TOKENS.TeamAIIntegrationSecretCipher)
+        private readonly secretCipher: ITeamAIIntegrationSecretCipher
     ) {}
 
     async generateReplyStream(input: GenerateAIChatReplyInput): Promise<AIChatReplyStream> {
@@ -311,7 +311,9 @@ export default class AISDKChatTransport implements IAIChatTransport {
                 );
             }
 
-            const apiKey = await this.secretService.decryptApiKey(integration.props.encryptedApiKey);
+            const apiKey = integration.props.encryptedApiKey
+                ? await this.secretCipher.decrypt(integration.props.encryptedApiKey)
+                : '';
             const model = requestedModel || integration.props.defaultModel;
             if (!model) {
                 throw ApplicationError.badRequest(
@@ -325,7 +327,9 @@ export default class AISDKChatTransport implements IAIChatTransport {
 
         const first = integrations[0];
         const provider = first.props.provider;
-        const apiKey = await this.secretService.decryptApiKey(first.props.encryptedApiKey);
+        const apiKey = first.props.encryptedApiKey
+            ? await this.secretCipher.decrypt(first.props.encryptedApiKey)
+            : '';
         const model = requestedModel || first.props.defaultModel;
         if (!model) {
             throw ApplicationError.badRequest(

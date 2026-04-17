@@ -2,7 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { z } from 'zod';
 import type { KeyUsageMetrics } from '@modules/team/domain/contracts/secret-key/SecretKeyUsageMetrics';
 
-export type GetSecretKeyUsageInputDTO = z.input<typeof getSecretKeyUsageInputSchema>;
+export type GetSecretKeyUsageInputDTO = z.output<typeof getSecretKeyUsageInputSchema>;
 
 export interface GetSecretKeyUsageOutputDTO extends KeyUsageMetrics {
     key: {
