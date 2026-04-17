@@ -688,14 +688,7 @@ PY
 
     start_stack() {
         local compose_project_name
-        compose_project_name="$(python3 - "$MANIFEST_FILE" <<'PY'
-import json
-import sys
-
-payload = json.load(open(sys.argv[1], 'r', encoding='utf-8'))
-print(payload['data']['manifest']['composeProjectName'])
-PY
-    )"
+        compose_project_name="$(tr -d '\r\n' < "$INSTALL_DIR/.compose-project-name")"
 
         log 'Starting Team Cluster stack'
         run_stack_shell "cd '$INSTALL_DIR' && if [ -d '$INSTALL_DIR/cluster-daemon' ]; then docker compose --project-name '$compose_project_name' --project-directory '$INSTALL_DIR' --file '$INSTALL_DIR/docker-compose.yml' up -d --build; else docker compose --project-name '$compose_project_name' --project-directory '$INSTALL_DIR' --file '$INSTALL_DIR/docker-compose.yml' up -d; fi"
@@ -704,14 +697,7 @@ PY
     wait_for_daemon_ready() {
         local compose_project_name container_name timeout_seconds started_at
 
-        compose_project_name="$(python3 - "$MANIFEST_FILE" <<'PY'
-import json
-import sys
-
-payload = json.load(open(sys.argv[1], 'r', encoding='utf-8'))
-print(payload['data']['manifest']['composeProjectName'])
-PY
-    )"
+        compose_project_name="$(tr -d '\r\n' < "$INSTALL_DIR/.compose-project-name")"
         container_name="${compose_project_name}-daemon-1"
         timeout_seconds='90'
         started_at="$(date +%s)"

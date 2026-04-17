@@ -1,5 +1,6 @@
-import { ObjectBucketName } from '@/shared/contracts';
-import type { TeamClusterDaemonRuntimeConfig } from '@/shared/contracts';
+import { ObjectBucketName } from '@/contracts';
+import type { TeamClusterDaemonRuntimeConfig } from '@/contracts';
+import { z } from 'zod';
 
 interface MinioConfig {
     endpoint: string;
@@ -64,55 +65,13 @@ const DEFAULT_HEARTBEAT_INTERVAL_MS = 10_000;
 const DEFAULT_METRICS_INTERVAL_MS = 3_000;
 const DEFAULT_JUPYTER_IMAGE = 'ghcr.io/voltlabs-research/volt-jupyter-scripting:main';
 
-const readRequiredString = (name: string): string => {
-    const value = process.env[name]?.trim();
-    if (!value) {
-        throw new Error(`${name} is required`);
-    }
-
-    return value;
-};
-
-const readOptionalString = (name: string): string | undefined => {
-    const value = process.env[name]?.trim();
-    return value ? value : undefined;
-};
-
-const readNumber = (name: string, fallback: number): number => {
-    const rawValue = process.env[name]?.trim();
-    if (!rawValue) {
-        return fallback;
-    }
-
-    const parsedValue = Number(rawValue);
-    if (!Number.isFinite(parsedValue)) {
-        throw new Error(`${name} must be a finite number`);
-    }
-
-    return parsedValue;
-};
-
-const readOptionalNumber = (name: string): number | undefined => {
-    const rawValue = process.env[name]?.trim();
-    if (!rawValue) {
+const trimText = (value: unknown): string | undefined => {
+    if (typeof value !== 'string') {
         return undefined;
     }
 
-    const parsedValue = Number(rawValue);
-    if (!Number.isFinite(parsedValue)) {
-        throw new Error(`${name} must be a finite number`);
-    }
-
-    return parsedValue;
-};
-
-const readBoolean = (name: string, fallback: boolean): boolean => {
-    const rawValue = process.env[name]?.trim().toLowerCase();
-    if (!rawValue) {
-        return fallback;
-    }
-
-    return rawValue === 'true' || rawValue === '1' || rawValue === 'yes';
+    const trimmedValue = value.trim();
+    return trimmedValue || undefined;
 };
 
 const normalizePath = (value: string): string => {
@@ -128,14 +87,40 @@ const normalizeCloudUrl = (value: string): string => {
     return value.replace(/\/+$/g, '');
 };
 
-const isValidPort = (value: number): boolean => {
-    return Number.isInteger(value) && value >= 1 && value <= 65535;
+const requiredStringEnv = z.preprocess((value) => trimText(value), z.string().min(1));
+const optionalStringEnv = z.preprocess((value) => trimText(value), z.string().min(1).optional());
+
+const stringEnv = (fallback: string, normalize: (value: string) => string = (value) => value) => {
+    return z.preprocess((value) => trimText(value) ?? fallback, z.string().transform(normalize));
 };
 
-const readJupyterHostPortRange = (): JupyterHostPortRange | undefined => {
-    const start = readOptionalNumber('JUPYTER_HOST_PORT_RANGE_START');
-    const end = readOptionalNumber('JUPYTER_HOST_PORT_RANGE_END');
+const numberEnv = (fallback: number) => {
+    return z.preprocess((value) => {
+        const text = trimText(value);
+        return text ? Number(text) : fallback;
+    }, z.number().finite());
+};
 
+const optionalNumberEnv = z.preprocess((value) => {
+    const text = trimText(value);
+    return text ? Number(text) : undefined;
+}, z.number().finite().optional());
+
+const booleanEnv = (fallback: boolean) => {
+    return z.preprocess((value) => {
+        const text = trimText(value);
+        return text
+            ? ['true', '1', 'yes'].includes(text.toLowerCase())
+            : fallback;
+    }, z.boolean());
+};
+
+const portSchema = z.number().int().min(1).max(65535);
+
+const resolveJupyterHostPortRange = (
+    start?: number,
+    end?: number
+): JupyterHostPortRange | undefined => {
     if (start === undefined && end === undefined) {
         return undefined;
     }
@@ -144,63 +129,107 @@ const readJupyterHostPortRange = (): JupyterHostPortRange | undefined => {
         throw new Error('JUPYTER_HOST_PORT_RANGE_START and JUPYTER_HOST_PORT_RANGE_END must be set together');
     }
 
-    if (!isValidPort(start) || !isValidPort(end)) {
-        throw new Error('JUPYTER host port range values must be integers between 1 and 65535');
-    }
+    const hostPortRange = {
+        start: portSchema.parse(start),
+        end: portSchema.parse(end)
+    };
 
-    if (start > end) {
+    if (hostPortRange.start > hostPortRange.end) {
         throw new Error('JUPYTER_HOST_PORT_RANGE_START must be less than or equal to JUPYTER_HOST_PORT_RANGE_END');
     }
 
-    return { start, end };
+    return hostPortRange;
 };
 
+const envSchema = z.object({
+    VOLT_CLOUD_URL: requiredStringEnv.transform(normalizeCloudUrl),
+    PORT: numberEnv(8080),
+    HOST: stringEnv('0.0.0.0'),
+    TEAM_ID: optionalStringEnv,
+    VOLT_TEAM_ID: optionalStringEnv,
+    TEAM_CLUSTER_OBJECT_GATEWAY_ENABLED: booleanEnv(true),
+    TEAM_CLUSTER_ID: requiredStringEnv,
+    TEAM_CLUSTER_DAEMON_PASSWORD: requiredStringEnv,
+    TEAM_CLUSTER_ENROLLMENT_TOKEN: optionalStringEnv,
+    VOLT_CLUSTER_INSTALL_MANIFEST_VERSION: stringEnv('1.0.0'),
+    TEAM_CLUSTER_HEALTHCHECK_PATH: optionalStringEnv,
+    VOLT_CLOUD_DAEMON_SOCKET_URL: optionalStringEnv,
+    TEAM_CLUSTER_HEARTBEAT_INTERVAL_MS: numberEnv(DEFAULT_HEARTBEAT_INTERVAL_MS),
+    TEAM_CLUSTER_METRICS_INTERVAL_MS: numberEnv(DEFAULT_METRICS_INTERVAL_MS),
+    COMPOSE_PROJECT_NAME: optionalStringEnv,
+    TEAM_CLUSTER_INSTALL_ROOT: optionalStringEnv,
+    MINIO_ENDPOINT: requiredStringEnv,
+    MINIO_ACCESS_KEY: requiredStringEnv,
+    MINIO_SECRET_KEY: requiredStringEnv,
+    MINIO_USE_SSL: booleanEnv(false),
+    MONGODB_URI: requiredStringEnv,
+    REDIS_HOST: requiredStringEnv,
+    REDIS_PORT: numberEnv(6379),
+    REDIS_USERNAME: optionalStringEnv,
+    REDIS_PASSWORD: optionalStringEnv,
+    JUPYTER_IMAGE: stringEnv(DEFAULT_JUPYTER_IMAGE),
+    JUPYTER_CONTAINER_MEMORY_MB: numberEnv(2048),
+    JUPYTER_CONTAINER_CPUS: numberEnv(2),
+    JUPYTER_EXEC_TIMEOUT_MS: numberEnv(45_000),
+    JUPYTER_NOTEBOOK_ROOT: stringEnv('/home/jovyan/work/volt-notebooks', normalizePath),
+    JUPYTER_PORT: numberEnv(8888),
+    JUPYTER_TOKEN: stringEnv('volt-scripting'),
+    JUPYTER_UI_PATH: stringEnv('/lab', normalizePath),
+    JUPYTER_FRAME_ANCESTORS: stringEnv('*'),
+    JUPYTER_START_TIMEOUT_MS: numberEnv(60_000),
+    JUPYTER_HOST_PORT_RANGE_START: optionalNumberEnv,
+    JUPYTER_HOST_PORT_RANGE_END: optionalNumberEnv,
+    JUPYTER_PUBLIC_BASE_PATH: stringEnv('/api/notebooks/proxy', normalizePath)
+});
+
 export const loadConfig = (): DaemonConfig => {
-    const voltCloudUrl = normalizeCloudUrl(readRequiredString('VOLT_CLOUD_URL'));
-    const host = process.env.HOST?.trim() || '0.0.0.0';
+    const env = envSchema.parse(process.env);
 
     return {
-        port: readNumber('PORT', 8080),
-        host,
-        teamId: readOptionalString('TEAM_ID') || readOptionalString('VOLT_TEAM_ID'),
-        objectGatewayEnabled: readBoolean('TEAM_CLUSTER_OBJECT_GATEWAY_ENABLED', true),
-        teamClusterId: readRequiredString('TEAM_CLUSTER_ID'),
-        daemonPassword: readRequiredString('TEAM_CLUSTER_DAEMON_PASSWORD'),
-        enrollmentToken: readOptionalString('TEAM_CLUSTER_ENROLLMENT_TOKEN'),
-        installedVersion: process.env.VOLT_CLUSTER_INSTALL_MANIFEST_VERSION?.trim() || '1.0.0',
-        voltCloudUrl,
-        healthcheckPath: readOptionalString('TEAM_CLUSTER_HEALTHCHECK_PATH'),
-        controlSocketUrl: readOptionalString('VOLT_CLOUD_DAEMON_SOCKET_URL'),
-        heartbeatIntervalMs: readNumber('TEAM_CLUSTER_HEARTBEAT_INTERVAL_MS', DEFAULT_HEARTBEAT_INTERVAL_MS),
-        metricsIntervalMs: readNumber('TEAM_CLUSTER_METRICS_INTERVAL_MS', DEFAULT_METRICS_INTERVAL_MS),
-        composeProjectName: readOptionalString('COMPOSE_PROJECT_NAME'),
-        installRoot: readOptionalString('TEAM_CLUSTER_INSTALL_ROOT'),
+        port: env.PORT,
+        host: env.HOST,
+        teamId: env.TEAM_ID ?? env.VOLT_TEAM_ID,
+        objectGatewayEnabled: env.TEAM_CLUSTER_OBJECT_GATEWAY_ENABLED,
+        teamClusterId: env.TEAM_CLUSTER_ID,
+        daemonPassword: env.TEAM_CLUSTER_DAEMON_PASSWORD,
+        enrollmentToken: env.TEAM_CLUSTER_ENROLLMENT_TOKEN,
+        installedVersion: env.VOLT_CLUSTER_INSTALL_MANIFEST_VERSION,
+        voltCloudUrl: env.VOLT_CLOUD_URL,
+        healthcheckPath: env.TEAM_CLUSTER_HEALTHCHECK_PATH,
+        controlSocketUrl: env.VOLT_CLOUD_DAEMON_SOCKET_URL,
+        heartbeatIntervalMs: env.TEAM_CLUSTER_HEARTBEAT_INTERVAL_MS,
+        metricsIntervalMs: env.TEAM_CLUSTER_METRICS_INTERVAL_MS,
+        composeProjectName: env.COMPOSE_PROJECT_NAME,
+        installRoot: env.TEAM_CLUSTER_INSTALL_ROOT,
         minio: {
-            endpoint: readRequiredString('MINIO_ENDPOINT'),
-            accessKey: readRequiredString('MINIO_ACCESS_KEY'),
-            secretKey: readRequiredString('MINIO_SECRET_KEY'),
-            useSSL: readBoolean('MINIO_USE_SSL', false)
+            endpoint: env.MINIO_ENDPOINT,
+            accessKey: env.MINIO_ACCESS_KEY,
+            secretKey: env.MINIO_SECRET_KEY,
+            useSSL: env.MINIO_USE_SSL
         },
-        mongodbUri: readRequiredString('MONGODB_URI'),
+        mongodbUri: env.MONGODB_URI,
         redis: {
-            host: readRequiredString('REDIS_HOST'),
-            port: readNumber('REDIS_PORT', 6379),
-            username: readOptionalString('REDIS_USERNAME'),
-            password: readOptionalString('REDIS_PASSWORD')
+            host: env.REDIS_HOST,
+            port: env.REDIS_PORT,
+            username: env.REDIS_USERNAME,
+            password: env.REDIS_PASSWORD
         },
         jupyter: {
-            image: process.env.JUPYTER_IMAGE?.trim() || DEFAULT_JUPYTER_IMAGE,
-            memoryInMegabytes: readNumber('JUPYTER_CONTAINER_MEMORY_MB', 2048),
-            cpus: readNumber('JUPYTER_CONTAINER_CPUS', 2),
-            execTimeoutMs: readNumber('JUPYTER_EXEC_TIMEOUT_MS', 45_000),
-            notebookRoot: normalizePath(process.env.JUPYTER_NOTEBOOK_ROOT?.trim() || '/home/jovyan/work/volt-notebooks'),
-            port: readNumber('JUPYTER_PORT', 8888),
-            token: process.env.JUPYTER_TOKEN?.trim() || 'volt-scripting',
-            uiPath: normalizePath(process.env.JUPYTER_UI_PATH?.trim() || '/lab'),
-            frameAncestors: process.env.JUPYTER_FRAME_ANCESTORS?.trim() || '*',
-            startTimeoutMs: readNumber('JUPYTER_START_TIMEOUT_MS', 60_000),
-            hostPortRange: readJupyterHostPortRange(),
-            publicBasePath: normalizePath(process.env.JUPYTER_PUBLIC_BASE_PATH?.trim() || '/api/notebooks/proxy')
+            image: env.JUPYTER_IMAGE,
+            memoryInMegabytes: env.JUPYTER_CONTAINER_MEMORY_MB,
+            cpus: env.JUPYTER_CONTAINER_CPUS,
+            execTimeoutMs: env.JUPYTER_EXEC_TIMEOUT_MS,
+            notebookRoot: env.JUPYTER_NOTEBOOK_ROOT,
+            port: env.JUPYTER_PORT,
+            token: env.JUPYTER_TOKEN,
+            uiPath: env.JUPYTER_UI_PATH,
+            frameAncestors: env.JUPYTER_FRAME_ANCESTORS,
+            startTimeoutMs: env.JUPYTER_START_TIMEOUT_MS,
+            hostPortRange: resolveJupyterHostPortRange(
+                env.JUPYTER_HOST_PORT_RANGE_START,
+                env.JUPYTER_HOST_PORT_RANGE_END
+            ),
+            publicBasePath: env.JUPYTER_PUBLIC_BASE_PATH
         },
         allowedBuckets: [
             ObjectBucketName.Dumps,

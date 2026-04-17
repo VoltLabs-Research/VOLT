@@ -1,4 +1,4 @@
-import { bootstrap } from '@/core/bootstrap';
+import { bootstrap } from '@/app/bootstrap';
 import { logger } from '@/core/logger';
 
 bootstrap().catch((error: unknown) => {

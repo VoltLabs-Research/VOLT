@@ -29,10 +29,6 @@
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "src/modules/cloud-control/services/ReverseChannelSocketBridge.ts",
-    "src/modules/cloud-control/services/TerminalSessionManager.ts",
-    "src/modules/cloud-control/services/WebSocketSessionManager.ts",
-    "src/modules/cloud-control/services/reverseChannelSessionAttach.ts"
+    "dist"
   ]
 }

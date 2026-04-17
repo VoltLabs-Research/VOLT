@@ -1,5 +1,5 @@
-import { logger } from './logger';
-import { getEffectiveMemoryLimitBytes } from '@/shared/utilities/runtime-capacity';
+import { logger } from '@/core/logger';
+import { getEffectiveMemoryLimitBytes } from '@/support/policies/runtime-capacity';
 import v8 from 'node:v8';
 
 /**
