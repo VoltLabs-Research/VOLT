@@ -1,5 +1,6 @@
-import useSearchParamsState from './use-search-params';
 import { useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { applySearchParamUpdates } from './use-search-params';
 
 interface UsePaginationParamsOptions {
     defaultPage?: number;
@@ -20,7 +21,7 @@ interface UsePaginationParamsReturn extends PaginationParams {
 
 const usePaginationParams = (options: UsePaginationParamsOptions = {}): UsePaginationParamsReturn => {
     const { defaultPage = 1, defaultLimit = 20 } = options;
-    const { searchParams, updateSearchParams } = useSearchParamsState();
+    const [searchParams, setSearchParams] = useSearchParams();
     
     const pageParam = searchParams.get('page');
     const limitParam = searchParams.get('limit');
@@ -34,12 +35,12 @@ const usePaginationParams = (options: UsePaginationParamsOptions = {}): UsePagin
     const search = searchParam === null ? '' : searchParam;
     
     const updateParams = useCallback((updates: Partial<PaginationParams>) => {
-        updateSearchParams({
+        setSearchParams((prev) => applySearchParamUpdates(prev, {
             ...(updates.page !== undefined ? { page: updates.page } : {}),
             ...(updates.limit !== undefined ? { limit: updates.limit } : {}),
             ...(updates.search !== undefined ? { search: updates.search === '' ? null : updates.search } : {})
-        });
-    }, [updateSearchParams]);
+        }));
+    }, [setSearchParams]);
     
     const setPage = useCallback((page: number) => {
         updateParams({ page });

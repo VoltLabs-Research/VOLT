@@ -4,48 +4,28 @@ import type { TeamClusterDTO } from '@modules/team-cluster/application/dtos/Team
 import type { SceneArtifactProps } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 import type { TrajectoryProps } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 
-const readClusterReferenceId = (value: unknown): string | undefined => {
-    if (typeof value === 'string' && value.length > 0) {
-        return value;
-    }
-
-    if (typeof value === 'object'
-        && value !== null
-        && '_id' in value
-        && typeof value._id === 'string'
-        && value._id.length > 0) {
-        return value._id;
-    }
-
-    return undefined;
-};
-
-export const resolveClusterReferenceId = (value: unknown): string | undefined => {
-    return readClusterReferenceId(value);
-};
-
 export const resolveTrajectoryStorageClusterId = (
     trajectory: Pick<TrajectoryProps, 'storageClusterId'>
 ): string | undefined => {
-    return readClusterReferenceId(trajectory.storageClusterId);
+    return trajectory.storageClusterId;
 };
 
 export const resolveAnalysisComputeClusterId = (
     analysis: Pick<AnalysisProps, 'computeClusterId'>
 ): string | undefined => {
-    return readClusterReferenceId(analysis.computeClusterId);
+    return analysis.computeClusterId;
 };
 
 export const resolveAnalysisStorageClusterId = (
     analysis: Pick<AnalysisProps, 'storageClusterId'>
 ): string | undefined => {
-    return readClusterReferenceId(analysis.storageClusterId);
+    return analysis.storageClusterId;
 };
 
 export const resolveSceneArtifactStorageClusterId = (
     sceneArtifact: Pick<SceneArtifactProps, 'storageClusterId'>
 ): string | undefined => {
-    return readClusterReferenceId(sceneArtifact.storageClusterId);
+    return sceneArtifact.storageClusterId;
 };
 
 export const isTeamClusterConnected = (teamCluster: TeamClusterDTO): boolean => {

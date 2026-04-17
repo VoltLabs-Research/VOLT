@@ -20,7 +20,6 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
-import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import { collectAllowedClientOrigins } from '@shared/infrastructure/utilities/client-origins';
 import {
     normalizeWebSocketCloseCode,
@@ -28,6 +27,8 @@ import {
     writeUpgradeError
 } from '@shared/infrastructure/utilities/proxy-relay';
 import { buildWebSocketProtocolList } from '@shared/infrastructure/utilities/websocket-protocols';
+import { parse as parseCookie } from 'cookie';
+import httpProxy from 'http-proxy';
 import { inject, injectable } from 'tsyringe';
 import { WebSocketServer, WebSocket } from 'ws';
 import http from 'node:http';
@@ -37,8 +38,8 @@ import type { TeamClusterReverseWebSocketStream } from '@modules/team-cluster/ut
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { TeamClusterDaemonNotebookRuntime } from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { Request, Response } from 'express';
-import type { IncomingHttpHeaders, IncomingMessage, RequestOptions } from 'node:http';
-import type { Duplex } from 'node:stream';
+import type { IncomingHttpHeaders, IncomingMessage } from 'node:http';
+import { Duplex, Readable } from 'node:stream';
 
 interface ProxyableRequest extends Request {
     rawBody?: Buffer;
@@ -113,24 +114,7 @@ const readCookies = (rawCookieHeader?: string): Record<string, string> => {
         return {};
     }
 
-    const cookies: Record<string, string> = {};
-    for (const entry of rawCookieHeader.split(';')) {
-        const [rawKey, ...rawValueParts] = entry.split('=');
-        const key = rawKey?.trim();
-        if (!key) {
-            continue;
-        }
-
-        const rawValue = rawValueParts.join('=').trim();
-
-        try {
-            cookies[key] = decodeURIComponent(rawValue);
-        } catch {
-            cookies[key] = rawValue;
-        }
-    }
-
-    return cookies;
+    return parseCookie(rawCookieHeader);
 };
 
 const buildFrameAncestorsDirective = (): string => {
@@ -205,7 +189,11 @@ export class ScriptingJupyterProxyService {
             this.persistAccessTokenCookie(req, res, context);
             const target = this.extractProxyTarget(req.originalUrl);
             httpProxySession = await this.acquireHttpProxySession(context, runtime);
+            const proxy = httpProxy.createProxyServer();
+            const requestBody = this.readProxyRequestBuffer(req);
+            const originalUrl = req.url;
             let releasedSession = false;
+
             const finalizeHttpProxySession = (destroySession = false): void => {
                 if (releasedSession || !httpProxySession) {
                     return;
@@ -214,30 +202,30 @@ export class ScriptingJupyterProxyService {
                 releasedSession = true;
                 this.releaseHttpProxySession(httpProxySession, destroySession);
             };
-            const upstreamRequest = http.request(this.buildUpstreamHttpRequestOptions(req, runtime, target, httpProxySession.agent), (upstreamResponse) => {
-                upstreamResponse.once('end', () => {
+            const cleanupProxy = (): void => {
+                proxy.removeAllListeners();
+                req.url = originalUrl;
+            };
+
+            proxy.once('proxyReq', (proxyRequest) => {
+                if (requestBody) {
+                    proxyRequest.setHeader('content-length', String(requestBody.length));
+                }
+            });
+            proxy.once('proxyRes', (proxyResponse) => {
+                this.prepareProxyResponse(req.originalUrl, res, proxyResponse.headers, context);
+                proxyResponse.once('end', () => {
                     finalizeHttpProxySession(false);
+                    cleanupProxy();
                 });
-                upstreamResponse.once('close', () => {
+                proxyResponse.once('close', () => {
                     finalizeHttpProxySession(!res.writableEnded);
+                    cleanupProxy();
                 });
-                this.prepareProxyResponse(req.originalUrl, res, upstreamResponse.headers, upstreamResponse.statusCode || 502, context);
-                upstreamResponse.on('error', (error: Error) => {
-                    finalizeHttpProxySession(true);
-                    res.destroy(error);
-                });
-                upstreamResponse.pipe(res);
             });
-
-            req.once('aborted', () => {
+            proxy.once('error', (error: Error) => {
                 finalizeHttpProxySession(true);
-            });
-            res.once('close', () => {
-                finalizeHttpProxySession(!res.writableEnded);
-            });
-
-            upstreamRequest.on('error', (error: Error) => {
-                finalizeHttpProxySession(true);
+                cleanupProxy();
                 const mappedError = this.mapNotebookProxyError(error);
                 if (!res.headersSent) {
                     this.applyProxyResponseSecurityHeaders(res);
@@ -248,7 +236,23 @@ export class ScriptingJupyterProxyService {
                 res.destroy(mappedError instanceof Error ? mappedError : error);
             });
 
-            this.writeProxyRequestBody(req, upstreamRequest);
+            req.once('aborted', () => {
+                finalizeHttpProxySession(true);
+                cleanupProxy();
+            });
+            res.once('close', () => {
+                finalizeHttpProxySession(!res.writableEnded);
+                cleanupProxy();
+            });
+
+            req.url = `${target.proxiedPath}${target.rawQuery}`;
+            proxy.web(req, res, {
+                target: `http://${runtime.tunnelTargetHost}:${runtime.tunnelTargetPort}`,
+                agent: httpProxySession.agent,
+                changeOrigin: true,
+                xfwd: true,
+                buffer: requestBody ? Readable.from(requestBody) : undefined
+            });
         } catch (error: unknown) {
             if (httpProxySession) {
                 this.releaseHttpProxySession(httpProxySession, true);
@@ -706,41 +710,24 @@ export class ScriptingJupyterProxyService {
         requestUrl: string,
         res: Response,
         headers: IncomingHttpHeaders,
-        status: number,
         context: AuthorizedProxyContext
     ): void {
         const upstreamContentSecurityPolicy = this.readHeaderValue(headers['content-security-policy']);
-        this.applyProxyResponseSecurityHeaders(res, upstreamContentSecurityPolicy);
-        res.status(status);
+        headers['content-security-policy'] = rewriteFrameAncestorsDirective(upstreamContentSecurityPolicy);
+        delete headers['x-frame-options'];
 
-        for (const [headerName, headerValue] of Object.entries(headers)) {
-            if (typeof headerValue === 'undefined') {
-                continue;
+        const location = this.readHeaderValue(headers.location);
+        if (location) {
+            headers.location = this.rewriteProxyLocation(location, requestUrl, context);
+        }
+
+        if (headers['set-cookie']) {
+            const mergedSetCookies = this.mergeSetCookieHeaders(res.getHeader('set-cookie'), headers['set-cookie']);
+            if (mergedSetCookies.length > 0) {
+                headers['set-cookie'] = mergedSetCookies;
+            } else {
+                delete headers['set-cookie'];
             }
-
-            const normalizedHeaderName = headerName.toLowerCase();
-            if (normalizedHeaderName === 'transfer-encoding') {
-                continue;
-            }
-
-            if (normalizedHeaderName === 'x-frame-options' || normalizedHeaderName === 'content-security-policy') {
-                continue;
-            }
-
-            if (normalizedHeaderName === 'location') {
-                res.setHeader(headerName, this.rewriteProxyLocation(this.readHeaderValue(headerValue) || '', requestUrl, context));
-                continue;
-            }
-
-            if (normalizedHeaderName === 'set-cookie') {
-                const mergedSetCookies = this.mergeSetCookieHeaders(res.getHeader('set-cookie'), headerValue);
-                if (mergedSetCookies.length > 0) {
-                    res.setHeader(headerName, mergedSetCookies);
-                }
-                continue;
-            }
-
-            res.setHeader(headerName, headerValue);
         }
     }
 
@@ -750,40 +737,28 @@ export class ScriptingJupyterProxyService {
         res.setHeader('Content-Security-Policy', rewriteFrameAncestorsDirective(upstreamContentSecurityPolicy));
     }
 
-    private readProxyRequestHeaders(headersInput: IncomingHttpHeaders): Record<string, string> {
-        const headers: Record<string, string> = {};
-
-        for (const [headerName, headerValue] of Object.entries(headersInput)) {
-            const normalizedHeaderName = headerName.toLowerCase();
-            if (!headerValue || normalizedHeaderName === 'host' || normalizedHeaderName === 'content-length') {
-                continue;
-            }
-
-            if (Array.isArray(headerValue)) {
-                headers[headerName] = headerValue.join(', ');
-                continue;
-            }
-
-            headers[headerName] = headerValue;
+    private readProxyRequestBuffer(req: ProxyableRequest): Buffer | undefined {
+        if (Buffer.isBuffer(req.rawBody) && req.rawBody.length > 0) {
+            return req.rawBody;
         }
 
-        return headers;
-    }
-
-    private readRequestBody(body: unknown): Record<string, unknown> | undefined {
-        if (!isRecord(body)) {
-            return undefined;
+        if (Buffer.isBuffer(req.body)) {
+            return req.body;
         }
 
-        return body;
-    }
-
-    private readRequestMethod(method: string): 'GET' | 'HEAD' | 'OPTIONS' | 'POST' | 'PATCH' | 'PUT' | 'DELETE' {
-        if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS' || method === 'POST' || method === 'PATCH' || method === 'PUT' || method === 'DELETE') {
-            return method;
+        if (typeof req.body === 'string') {
+            return Buffer.from(req.body);
         }
 
-        return 'GET';
+        if (typeof req.body === 'number' || typeof req.body === 'boolean') {
+            return Buffer.from(String(req.body));
+        }
+
+        if (req.body && typeof req.body === 'object') {
+            return Buffer.from(JSON.stringify(req.body));
+        }
+
+        return undefined;
     }
 
     private resolveAction(method: string): Action {
@@ -1038,84 +1013,6 @@ export class ScriptingJupyterProxyService {
         if (!session.tunnel.destroyed) {
             session.tunnel.destroy();
         }
-    }
-
-    private buildUpstreamHttpRequestOptions(
-        req: Request,
-        runtime: TeamClusterDaemonNotebookRuntime,
-        target: ProxyTarget,
-        agent: http.Agent
-    ): RequestOptions {
-        const headers = this.readProxyRequestHeaders(req.headers);
-        headers.host = `${runtime.tunnelTargetHost}:${runtime.tunnelTargetPort}`;
-
-        return {
-            protocol: 'http:',
-            hostname: runtime.tunnelTargetHost,
-            host: runtime.tunnelTargetHost,
-            port: runtime.tunnelTargetPort,
-            method: this.readRequestMethod(req.method),
-            path: `${target.proxiedPath}${target.rawQuery}`,
-            headers,
-            agent
-        };
-    }
-
-    private writeProxyRequestBody(req: ProxyableRequest, upstreamRequest: http.ClientRequest): void {
-        if (Buffer.isBuffer(req.rawBody) && req.rawBody.length > 0) {
-            upstreamRequest.end(req.rawBody);
-            return;
-        }
-
-        const body = this.readRequestBody(req.body);
-        if (body) {
-            upstreamRequest.end(JSON.stringify(body));
-            return;
-        }
-
-        if (Buffer.isBuffer(req.body)) {
-            upstreamRequest.end(req.body);
-            return;
-        }
-
-        if (typeof req.body === 'string') {
-            upstreamRequest.end(req.body);
-            return;
-        }
-
-        if (typeof req.body === 'number' || typeof req.body === 'boolean') {
-            upstreamRequest.end(String(req.body));
-            return;
-        }
-
-        if (typeof req.body !== 'undefined' && (req.readableEnded || req.complete)) {
-            upstreamRequest.end();
-            return;
-        }
-
-        req.pipe(upstreamRequest);
-    }
-
-    private readUpgradeRequestHeaders(
-        request: IncomingMessage,
-        runtime: TeamClusterDaemonNotebookRuntime
-    ): Record<string, string> {
-        const headers = this.readProxyRequestHeaders(request.headers);
-
-        for (const headerName of Object.keys(headers)) {
-            const normalizedHeaderName = headerName.toLowerCase();
-            if (
-                normalizedHeaderName === 'connection'
-                || normalizedHeaderName === 'upgrade'
-                || normalizedHeaderName.startsWith('sec-websocket-')
-            ) {
-                delete headers[headerName];
-            }
-        }
-
-        headers.host = `${runtime.tunnelTargetHost}:${runtime.tunnelTargetPort}`;
-
-        return headers;
     }
 
     private extractProxyTarget(

@@ -18,14 +18,6 @@ interface PopulatedTeamOwner {
     };
 };
 
-const isPopulatedTeamOwner = (value: unknown): value is PopulatedTeamOwner => {
-    return typeof value === 'object'
-        && value !== null
-        && 'props' in value
-        && typeof value.props === 'object'
-        && value.props !== null;
-};
-
 @injectable()
 export default class PreviewJoinTeamByInviteCodeUseCase implements IUseCase<PreviewJoinTeamByInviteCodeInputDTO, PreviewJoinTeamByInviteCodeOutputDTO, ApplicationError> {
     constructor(
@@ -51,7 +43,8 @@ export default class PreviewJoinTeamByInviteCodeUseCase implements IUseCase<Prev
             team: team._id,
             user: input.userId
         });
-        const ownerDetails = isPopulatedTeamOwner(team.props.owner) ? team.props.owner.props : null;
+        const owner = team.props.owner as string | PopulatedTeamOwner;
+        const ownerDetails = typeof owner === 'string' ? null : owner.props;
         const ownerFirstName = ownerDetails?.firstName?.trim() ?? '';
         const ownerLastName = ownerDetails?.lastName?.trim() ?? '';
         const ownerName = `${ownerFirstName} ${ownerLastName}`.trim() || 'Team owner';

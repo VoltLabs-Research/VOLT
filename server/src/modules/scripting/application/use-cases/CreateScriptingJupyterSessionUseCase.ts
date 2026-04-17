@@ -8,6 +8,7 @@ import { TeamClusterSelectionService } from '@modules/container/infrastructure/s
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import pRetry from 'p-retry';
 import { inject, injectable } from 'tsyringe';
 import type { IScriptingSessionLock } from '@modules/scripting/domain/port/IScriptingSessionLock';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
@@ -81,11 +82,7 @@ const selectExistingTrajectoryNotebook = (
     })[0] || null;
 };
 
-const sleep = async (delayMs: number): Promise<void> => {
-    await new Promise<void>((resolve) => {
-        setTimeout(resolve, delayMs);
-    });
-};
+class PendingNotebookNotFoundError extends Error {}
 
 @injectable()
 export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScriptingJupyterSessionInputDTO, CreateScriptingJupyterSessionOutputDTO, ApplicationError> {
@@ -324,19 +321,25 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             return '';
         }
 
-        for (let attempt = 0; attempt < LOCK_BUSY_WAIT_ATTEMPTS; attempt += 1) {
-            const notebooks = await this.scriptingNotebookRepository.findAllWithTrajectory(input.trajectoryId);
-            const existingNotebook = selectExistingTrajectoryNotebook(notebooks, input.teamId);
-            if (existingNotebook) {
+        try {
+            return await pRetry(async () => {
+                const notebooks = await this.scriptingNotebookRepository.findAllWithTrajectory(input.trajectoryId!);
+                const existingNotebook = selectExistingTrajectoryNotebook(notebooks, input.teamId);
+                if (!existingNotebook) {
+                    throw new PendingNotebookNotFoundError('Pending notebook not created yet');
+                }
+
                 return existingNotebook.id;
-            }
-
-            if (attempt < LOCK_BUSY_WAIT_ATTEMPTS - 1) {
-                await sleep(LOCK_BUSY_WAIT_DELAY_MS);
-            }
+            }, {
+                retries: LOCK_BUSY_WAIT_ATTEMPTS - 1,
+                factor: 1,
+                minTimeout: LOCK_BUSY_WAIT_DELAY_MS,
+                maxTimeout: LOCK_BUSY_WAIT_DELAY_MS,
+                shouldRetry: ({ error }) => error instanceof PendingNotebookNotFoundError
+            });
+        } catch {
+            return '';
         }
-
-        return '';
     }
 
     private mapError(error: unknown): Result<CreateScriptingJupyterSessionOutputDTO, ApplicationError> {

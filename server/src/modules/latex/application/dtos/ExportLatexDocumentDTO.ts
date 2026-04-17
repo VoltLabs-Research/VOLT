@@ -1,9 +1,7 @@
 import type { Readable } from 'node:stream';
+import type { TeamScopedEntityIdInputDTO } from '@modules/team/application/dtos/common';
 
-export interface ExportLatexDocumentInputDTO {
-    teamId: string;
-    documentId: string;
-};
+export type ExportLatexDocumentInputDTO = TeamScopedEntityIdInputDTO<'documentId'>;
 
 export interface ExportLatexDocumentOutputDTO {
     stream: Readable;

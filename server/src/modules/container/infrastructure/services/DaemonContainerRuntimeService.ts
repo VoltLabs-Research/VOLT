@@ -10,7 +10,7 @@ import type {
     ITeamClusterContainerRuntimeService,
     RuntimeContainerSummary
 } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
-import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { inject, injectable } from 'tsyringe';
@@ -43,11 +43,11 @@ export class DaemonContainerRuntimeService implements ITeamClusterContainerRunti
     ) {}
 
     async listContainers(teamClusterId: string): Promise<RuntimeContainerSummary[]> {
-        return this.teamClusterDaemonClient.command<RuntimeContainerSummary[]>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.container.list);
+        return this.teamClusterDaemonClient.command<RuntimeContainerSummary[]>(teamClusterId, ChannelCommands.ContainerList);
     }
 
     async createContainer(teamClusterId: string, config: CreateRuntimeContainerOptions): Promise<RuntimeContainerInfo> {
-        const container = await this.teamClusterDaemonClient.command<RuntimeContainerInfo>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.container.create, { ...config }, {
+        const container = await this.teamClusterDaemonClient.command<RuntimeContainerInfo>(teamClusterId, ChannelCommands.ContainerCreate, { ...config }, {
             timeoutMs: 5 * 60 * 1000
         });
         this.clearContainerCache(teamClusterId, container.Id);
@@ -55,7 +55,7 @@ export class DaemonContainerRuntimeService implements ITeamClusterContainerRunti
     }
 
     async getContainer(teamClusterId: string, containerId: string): Promise<RuntimeContainerInfo> {
-        return this.teamClusterDaemonClient.command<RuntimeContainerInfo>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.container.get, { containerId });
+        return this.teamClusterDaemonClient.command<RuntimeContainerInfo>(teamClusterId, ChannelCommands.ContainerGet, { containerId });
     }
 
     async startContainer(teamClusterId: string, containerId: string): Promise<RuntimeContainerInfo> {
@@ -71,7 +71,7 @@ export class DaemonContainerRuntimeService implements ITeamClusterContainerRunti
     }
 
     async removeContainer(teamClusterId: string, containerId: string): Promise<void> {
-        await this.teamClusterDaemonClient.command<{ deleted: boolean; }>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.container.delete, { containerId });
+        await this.teamClusterDaemonClient.command<{ deleted: boolean; }>(teamClusterId, ChannelCommands.ContainerDelete, { containerId });
         this.clearContainerCache(teamClusterId, containerId);
     }
 
@@ -89,7 +89,7 @@ export class DaemonContainerRuntimeService implements ITeamClusterContainerRunti
 
         const statsPromise = this.teamClusterDaemonClient.command<ContainerStats>(
             teamClusterId,
-            TEAM_CLUSTER_DAEMON_COMMAND.container.stats.get,
+            ChannelCommands.ContainerStats,
             { containerId }
         ).then((stats) => {
             this.statsCache.set(cacheKey, {
@@ -106,11 +106,11 @@ export class DaemonContainerRuntimeService implements ITeamClusterContainerRunti
     }
 
     async getFiles(teamClusterId: string, containerId: string, path: string): Promise<ContainerFileEntry[]> {
-        return this.teamClusterDaemonClient.command<ContainerFileEntry[]>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.container.files.list, { containerId, path });
+        return this.teamClusterDaemonClient.command<ContainerFileEntry[]>(teamClusterId, ChannelCommands.ContainerFilesList, { containerId, path });
     }
 
     async readFile(teamClusterId: string, containerId: string, path: string): Promise<string> {
-        const response = await this.teamClusterDaemonClient.command<ReadContainerFileResponse>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.container.file.read, { containerId, path });
+        const response = await this.teamClusterDaemonClient.command<ReadContainerFileResponse>(teamClusterId, ChannelCommands.ContainerFileRead, { containerId, path });
 
         return response.contents;
     }
@@ -133,7 +133,7 @@ export class DaemonContainerRuntimeService implements ITeamClusterContainerRunti
 
         const processesPromise = this.teamClusterDaemonClient.command<ContainerProcessInfo[]>(
             teamClusterId,
-            TEAM_CLUSTER_DAEMON_COMMAND.container.processes.list,
+            ChannelCommands.ContainerProcessesList,
             { containerId }
         ).then((processes) => {
             this.processesCache.set(cacheKey, {
@@ -152,7 +152,7 @@ export class DaemonContainerRuntimeService implements ITeamClusterContainerRunti
     private async applyContainerAction(teamClusterId: string, containerId: string, action: ContainerRuntimeAction): Promise<RuntimeContainerInfo> {
         const container = await this.teamClusterDaemonClient.command<RuntimeContainerInfo>(
             teamClusterId,
-            TEAM_CLUSTER_DAEMON_COMMAND.container.update,
+            ChannelCommands.ContainerUpdate,
             { containerId, action }
         );
         this.clearContainerCache(teamClusterId, containerId);

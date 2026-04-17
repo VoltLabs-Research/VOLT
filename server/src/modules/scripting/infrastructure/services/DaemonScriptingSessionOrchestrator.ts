@@ -3,7 +3,7 @@ import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/Scripting
 import { buildJupyterProxyBasePath, buildJupyterProxyUrl } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import { JupyterNotebookService } from '@modules/scripting/infrastructure/services/JupyterNotebookService';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import logger from '@shared/infrastructure/logger';
@@ -95,7 +95,7 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
 
         const response = await this.teamClusterDaemonClient.command<DaemonNotebookSessionResponse>(
             teamClusterId,
-            TEAM_CLUSTER_DAEMON_COMMAND.notebook.session.create,
+            ChannelCommands.NotebookSessionCreate,
             request,
             { timeoutMs: 600_000 }
         );
@@ -133,7 +133,7 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
             try {
                 await this.teamClusterDaemonClient.command(
                     notebookTeamClusterId,
-                    TEAM_CLUSTER_DAEMON_COMMAND.notebook.delete,
+                    ChannelCommands.NotebookDelete,
                     {
                         notebookId: notebook.props.runtimeNotebookId
                     }

@@ -1,6 +1,5 @@
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { CreateTeamRoleInputDTO, CreateTeamRoleOutputDTO } from '@modules/team/application/dtos/team-role/CreateTeamRoleDTO';
-import { createTeamRoleInputSchema } from '@modules/team/application/dtos/team-role/CreateTeamRoleDTO';
 import TeamRole from '@modules/team/domain/entities/team-role/TeamRole';
 import TeamRoleCreatedEvent from '@modules/team/domain/events/team-role/TeamRoleCreatedEvent';
 import { ITeamRoleRepository } from '@modules/team/domain/port/team-role/ITeamRoleRepository';
@@ -22,22 +21,13 @@ export default class CreateTeamRoleUseCase implements IUseCase<CreateTeamRoleInp
     ){}
 
     async execute(input: CreateTeamRoleInputDTO): Promise<Result<CreateTeamRoleOutputDTO, ApplicationError>> {
-        const parsed = createTeamRoleInputSchema.safeParse(input);
-        if (!parsed.success) {
-            const firstError = parsed.error.issues[0];
-            return Result.fail(ApplicationError.badRequest(
-                firstError.message,
-                firstError.message
-            ));
-        }
-
         const {
             teamId,
             name,
             permissions,
             isSystem,
             userId
-        } = parsed.data;
+        } = input;
 
         const newRole = await this.teamRoleRepository.create(TeamRole.create({
             teamId,

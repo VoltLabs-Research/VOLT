@@ -3,7 +3,7 @@ import { EntityOutputDTO } from '@modules/team/application/dtos/common';
 import { TeamRoleProps } from '@modules/team/domain/entities/team-role/TeamRole';
 import { z } from 'zod';
 
-export type CreateTeamRoleInputDTO = z.input<typeof createTeamRoleInputSchema>;
+export type CreateTeamRoleInputDTO = z.output<typeof createTeamRoleInputSchema>;
 
 export type CreateTeamRoleOutputDTO = EntityOutputDTO<TeamRoleProps>;
 

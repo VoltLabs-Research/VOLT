@@ -1,21 +1,10 @@
 import archiver from 'archiver';
 import { PassThrough } from 'node:stream';
+import { buffer } from 'node:stream/consumers';
 
 import type { TeamClusterInstallManifestFileDTO } from '@modules/team-cluster/application/dtos/GenerateTeamClusterInstallManifestDTO';
 
 const DAEMON_BUILD_CONTEXT_PREFIX = 'cluster-daemon/';
-
-const streamToBuffer = async (stream: PassThrough): Promise<Buffer> => {
-    const chunks: Buffer[] = [];
-
-    return new Promise((resolve, reject) => {
-        stream.on('data', (chunk: Buffer | string) => {
-            chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-        });
-        stream.once('end', () => resolve(Buffer.concat(chunks)));
-        stream.once('error', reject);
-    });
-};
 
 export const createTeamClusterDaemonBuildContextArchiveBase64 = async (
     files: TeamClusterInstallManifestFileDTO[]
@@ -41,6 +30,6 @@ export const createTeamClusterDaemonBuildContextArchiveBase64 = async (
 
     await archive.finalize();
 
-    const compressedArchive = await streamToBuffer(output);
+    const compressedArchive = await buffer(output);
     return compressedArchive.toString('base64');
 };

@@ -17,10 +17,10 @@ import Container from '@/shared/presentation/components/Container';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import { normalizeSelectedTimesteps } from '@/modules/canvas/utilities/selected-timestep-analysis';
 import { resolvePluginExecutionClusterId, supportsPluginExecutionCluster } from '@/modules/plugin/utilities/plugin-team-clusters';
 import { useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type {
     IArgumentDefinition,
     IPluginNodeData
@@ -40,7 +40,7 @@ const EXECUTION_MODE_OPTIONS = [{
 
 const PluginNodeEditor = ({ node }: EditorProps) => {
     const selectedTeamId = useSelectedTeamId();
-    const { searchParams } = useSearchParamsState();
+    const [searchParams] = useSearchParams();
     const currentPluginId = searchParams.get('id') ?? '';
     const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
     const nodes = usePluginBuilderStore((state) => state.nodes);

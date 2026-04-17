@@ -13,7 +13,7 @@ import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import {
-    TEAM_CLUSTER_DAEMON_COMMAND,
+    ChannelCommands,
     type TeamClusterDaemonRoleApplyPayload,
     type TeamClusterDaemonRoleApplyResult
 } from '@shared/infrastructure/contracts/team-cluster';
@@ -72,7 +72,7 @@ export default class UpdateTeamClusterRoleUseCase implements IUseCase<
                 };
                 const liveApplyResult = await this.teamClusterDaemonClient.commandWithSemanticResult<TeamClusterDaemonRoleApplyResult>(
                     updatedTeamCluster.id,
-                    TEAM_CLUSTER_DAEMON_COMMAND.runtime.role.apply,
+                    ChannelCommands.RuntimeRoleApply,
                     rolePayload,
                     {
                         timeoutClass: 'long-running-control-plane',

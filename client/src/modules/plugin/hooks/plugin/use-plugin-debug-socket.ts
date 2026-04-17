@@ -7,7 +7,7 @@ import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin
 import { sanitizeVisibleArgumentConfig } from '@/modules/plugin/utilities/plugin/argument-visibility';
 import { PLUGIN_DEBUG_SOCKET_EVENTS } from '@/modules/plugin/api/entities/plugin/plugin-constants';
 import { sileo } from 'sileo';
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
+import { useSearchParams } from 'react-router-dom';
 import type { IWorkflow } from '@/modules/plugin/api/entities/plugin/workflow';
 import type {
     DebugExecutionLogSegment,
@@ -96,7 +96,7 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
     } = usePluginDebugStore();
     const { selectedTrajectoryId, selectedTimestep } = useDebugTrajectorySelector();
 
-    const { searchParams } = useSearchParamsState();
+    const [searchParams] = useSearchParams();
     const currentPluginId = searchParams.get('id');
 
     const isCurrentSessionEvent = useCallback((eventSessionId?: string): boolean => {

@@ -4,6 +4,7 @@ import { Client } from 'minio';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import type { Readable } from 'node:stream';
+import { buffer } from 'node:stream/consumers';
 import { pipeline } from 'node:stream/promises';
 import { injectable } from 'tsyringe';
 import type { FileMetadata, IStorageService, UploadSource } from '@shared/domain/port/IStorageService';
@@ -57,11 +58,7 @@ export default class MinioStorageService implements IStorageService {
 
     async getBuffer(bucket: string, objectName: string): Promise<Buffer> {
         const stream = await this.client.getObject(bucket, objectName);
-        const chunks: Buffer[] = [];
-        for await (const chunk of stream) {
-            chunks.push(chunk);
-        }
-        return Buffer.concat(chunks);
+        return buffer(stream);
     }
 
     async exists(bucket: string, objectName: string): Promise<boolean> {

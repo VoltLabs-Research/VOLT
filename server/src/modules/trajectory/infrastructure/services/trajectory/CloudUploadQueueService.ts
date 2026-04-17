@@ -447,7 +447,7 @@ export default class CloudUploadQueueService {
         jobId: string,
         teamId: string,
         status: JobStatusChangedValue,
-        metadata: Record<string, unknown>
+        details: Record<string, unknown>
     ): Promise<void> {
         await this.eventBus.publish(
             new JobStatusChangedEvent({
@@ -455,7 +455,7 @@ export default class CloudUploadQueueService {
                 teamId,
                 status,
                 queueType: QUEUE_TYPE,
-                metadata
+                ...details
             })
         );
     }

@@ -29,8 +29,8 @@ export default class ListAIConversationMessagesUseCase implements IUseCase<ListA
     ) {}
 
     async execute(input: ListAIConversationMessagesInputDTO): Promise<Result<ListAIConversationMessagesOutputDTO, ApplicationError>> {
-        const page = Math.max(1, Number(input.page || 1));
-        const limit = Math.max(1, Math.min(200, Number(input.limit || 50)));
+        const page = Math.max(1, input.page ?? 1);
+        const limit = Math.max(1, Math.min(200, input.limit ?? 50));
 
         const conversation = await this.conversationRepository.findOne({
             _id: input.conversationId,

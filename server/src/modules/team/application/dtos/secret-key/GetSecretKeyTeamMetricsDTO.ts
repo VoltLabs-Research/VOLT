@@ -2,7 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { z } from 'zod';
 import type { TeamUsageMetrics } from '@modules/team/domain/contracts/secret-key/SecretKeyUsageMetrics';
 
-export type GetSecretKeyTeamMetricsInputDTO = z.input<typeof getSecretKeyTeamMetricsInputSchema>;
+export type GetSecretKeyTeamMetricsInputDTO = z.output<typeof getSecretKeyTeamMetricsInputSchema>;
 
 export type GetSecretKeyTeamMetricsOutputDTO = Omit<TeamUsageMetrics, 'perKey'> & {
     totalKeys: number;

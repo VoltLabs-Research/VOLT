@@ -3,7 +3,7 @@ import TeamClusterReverseChannelService from '@modules/team-cluster/infrastructu
 import { TeamClusterDaemonResponseType, TeamClusterServiceExposureAccessMode } from '@modules/team-cluster/utilities/teamClusterSocket';
 import { TeamClusterReverseWebSocketStream } from '@modules/team-cluster/utilities/teamClusterReverseWebSocket';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { getHttpRequestContext } from '@shared/infrastructure/http/request-context';
 import logger from '@shared/infrastructure/logger';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
@@ -320,7 +320,7 @@ export default class TeamClusterDaemonClient {
         teamClusterId: string,
         notebookId: string
     ): Promise<TeamClusterDaemonNotebookRuntimeLookupResponse> {
-        return this.command<TeamClusterDaemonNotebookRuntimeLookupResponse>(teamClusterId, TEAM_CLUSTER_DAEMON_COMMAND.notebook.runtime.get, {
+        return this.command<TeamClusterDaemonNotebookRuntimeLookupResponse>(teamClusterId, ChannelCommands.NotebookRuntimeGet, {
             notebookId
         });
     }

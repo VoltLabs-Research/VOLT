@@ -22,8 +22,7 @@ export default class JobStatusChangedEventHandler implements IEventHandler<JobSt
     ){}
 
     async handle(event: JobStatusChangedEvent): Promise<void> {
-        const { status, metadata, queueType, teamId } = event.payload;
-        const trajectoryId = metadata?.trajectoryId as string | undefined;
+        const { status, queueType, teamId, trajectoryId } = event.payload;
 
         if (!trajectoryId) return;
         if (queueType === RASTER_QUEUE_TYPE) return;

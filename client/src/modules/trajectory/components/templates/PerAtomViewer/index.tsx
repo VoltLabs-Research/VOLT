@@ -7,9 +7,9 @@ import Container from '@/shared/presentation/components/Container';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Select from '@/shared/presentation/components/Select';
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
+import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-params';
 import { useCallback, useEffect, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import AtomTypeBadge from '../../atoms/AtomTypeBadge';
 import type { AtomData } from '@/modules/trajectory/api/dtos/trajectory';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
@@ -71,7 +71,7 @@ const parseTimestepParam = (value: string | null): number | undefined => {
 
 export default function PerAtomViewer() {
     const { trajectoryId } = useParams();
-    const { searchParams, updateSearchParams } = useSearchParamsState();
+    const [searchParams, setSearchParams] = useSearchParams();
     const analysisId = searchParams.get('analysisId') ?? undefined;
     const requestedTimestep = parseTimestepParam(searchParams.get('timestep'));
 
@@ -92,8 +92,8 @@ export default function PerAtomViewer() {
             return;
         }
 
-        updateSearchParams({ timestep }, { replace: true });
-    }, [searchParams, timestep, updateSearchParams]);
+        setSearchParams((prev) => applySearchParamUpdates(prev, { timestep }), { replace: true });
+    }, [searchParams, setSearchParams, timestep]);
 
     const firstPageAtomsQuery = trajectoryAtomsQuery(
         {
@@ -123,8 +123,8 @@ export default function PerAtomViewer() {
             return;
         }
 
-        updateSearchParams({ timestep: nextTimestep });
-    }, [updateSearchParams]);
+        setSearchParams((prev) => applySearchParamUpdates(prev, { timestep: nextTimestep }));
+    }, [setSearchParams]);
 
     const fetchData = async (params: PerAtomViewerFetchParams): Promise<PaginatedResponse<AtomListingRow>> => {
         const result = await getAtoms({

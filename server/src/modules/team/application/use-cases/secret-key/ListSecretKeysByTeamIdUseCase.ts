@@ -14,8 +14,8 @@ export default class ListSecretKeysByTeamIdUseCase implements IUseCase<ListSecre
     ) {}
 
     async execute(input: ListSecretKeysByTeamIdInputDTO): Promise<Result<ListSecretKeysByTeamIdOutputDTO>> {
-        const page = Math.max(1, Number(input.page || 1));
-        const limit = Math.max(1, Math.min(200, Number(input.limit || 50)));
+        const page = Math.max(1, input.page ?? 1);
+        const limit = Math.max(1, Math.min(200, input.limit ?? 50));
 
         const result = await this.secretKeyRepository.findAll({
             filter: {

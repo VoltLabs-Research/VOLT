@@ -1,15 +1,13 @@
-import type { TeamUserScopedInputDTO } from '@modules/team/application/dtos/common';
 import type {
     TeamClusterRemoteAccessSessionDTO,
     TeamClusterRemoteAccessTargetDTO
 } from '@modules/team-cluster/application/dtos/TeamClusterRemoteAccessDTO';
+import type { PasswordConfirmedTeamClusterInputDTO } from './common';
 
 /**
  * Requests a password-confirmed remote access session for a cluster resource.
  */
-export interface CreateTeamClusterRemoteAccessSessionInputDTO extends TeamUserScopedInputDTO {
-    teamClusterId: string;
-    password: string;
+export type CreateTeamClusterRemoteAccessSessionInputDTO = PasswordConfirmedTeamClusterInputDTO & {
     target: TeamClusterRemoteAccessTargetDTO;
 };
 

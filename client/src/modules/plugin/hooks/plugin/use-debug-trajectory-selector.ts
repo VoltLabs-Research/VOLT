@@ -1,7 +1,8 @@
 import { debugTrajectoriesQuery } from '@/modules/trajectory/hooks/trajectory/queries';
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
+import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-params';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { useCallback, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 const DEBUG_TRAJECTORY_PARAM = 'debugTrajectory';
 const DEBUG_TIMESTEP_PARAM = 'debugTimestep';
@@ -16,7 +17,7 @@ const readSelectedTimestep = (value: string | null): number | null => {
 };
 
 const useDebugTrajectorySelector = () => {
-    const { searchParams, updateSearchParams } = useSearchParamsState();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
     const trajectoryQuery = debugTrajectoriesQuery(undefined, {
         meta: { checkAccessDeniedError }
@@ -29,6 +30,9 @@ const useDebugTrajectorySelector = () => {
     }, [selectedTimestepParam]);
     const trajectories = trajectoryQuery.data ?? [];
     const isLoading = trajectoryQuery.isLoading;
+    const updateSearchParams = useCallback((updates: Record<string, string | number | boolean | null | undefined>, replace = false) => {
+        setSearchParams((prev) => applySearchParamUpdates(prev, updates), { replace });
+    }, [setSearchParams]);
 
     const error = useMemo(() => {
         if (!trajectoryQuery.error) return null;
@@ -65,7 +69,7 @@ const useDebugTrajectorySelector = () => {
             updateSearchParams({
                 [DEBUG_TRAJECTORY_PARAM]: null,
                 [DEBUG_TIMESTEP_PARAM]: null
-            }, { replace: true });
+            }, true);
         }
     }, [selectedTrajectory, selectedTrajectoryId, updateSearchParams]);
 
@@ -75,13 +79,13 @@ const useDebugTrajectorySelector = () => {
         }
 
         if (selectedTimestep === null) {
-            updateSearchParams({ [DEBUG_TIMESTEP_PARAM]: null }, { replace: true });
+            updateSearchParams({ [DEBUG_TIMESTEP_PARAM]: null }, true);
             return;
         }
 
         const hasSelectedFrame = frames.some((frame) => frame.timestep === selectedTimestep);
         if (!hasSelectedFrame) {
-            updateSearchParams({ [DEBUG_TIMESTEP_PARAM]: null }, { replace: true });
+            updateSearchParams({ [DEBUG_TIMESTEP_PARAM]: null }, true);
         }
     }, [frames, selectedTimestep, selectedTimestepParam, updateSearchParams]);
 

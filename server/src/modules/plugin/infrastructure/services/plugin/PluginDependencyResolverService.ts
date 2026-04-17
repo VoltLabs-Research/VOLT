@@ -44,29 +44,19 @@ interface PluginReferenceSelectionValue {
     config?: Record<string, unknown>;
 }
 
+interface PluginReferenceValue {
+    selections?: PluginReferenceSelectionValue[];
+}
+
 const readPluginReferenceSelections = (
     value: unknown
 ): PluginReferenceSelectionValue[] => {
-    if (isRecord(value) && Array.isArray(value.selections)) {
-        return value.selections.filter((entry): entry is PluginReferenceSelectionValue => {
-            return isRecord(entry) && typeof entry.pluginId === 'string' && entry.pluginId.trim().length > 0;
-        });
-    }
-
-    if (Array.isArray(value)) {
-        return value.filter((entry): entry is PluginReferenceSelectionValue => {
-            return isRecord(entry) && typeof entry.pluginId === 'string' && entry.pluginId.trim().length > 0;
-        });
-    }
-
-    if (isRecord(value) && typeof value.pluginId === 'string' && value.pluginId.trim().length > 0) {
-        return [{
-            pluginId: value.pluginId,
-            config: isRecord(value.config) ? value.config : {}
-        }];
-    }
-
-    return [];
+    return ((value as PluginReferenceValue | undefined)?.selections ?? [])
+        .filter((entry) => entry.pluginId.trim().length > 0)
+        .map((entry) => ({
+            pluginId: entry.pluginId.trim(),
+            config: entry.config ?? {}
+        }));
 };
 
 const collectArgumentPluginReferenceExecutions = (
@@ -87,8 +77,8 @@ const collectArgumentPluginReferenceExecutions = (
         for (const selection of readPluginReferenceSelections(resolvedValue)) {
             results.push({
                 referencePath: currentPath,
-                pluginId: selection.pluginId.trim(),
-                config: isRecord(selection.config) ? selection.config : {}
+                pluginId: selection.pluginId,
+                config: selection.config ?? {}
             });
         }
         return;

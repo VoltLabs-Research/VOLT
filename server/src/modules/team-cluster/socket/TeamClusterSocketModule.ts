@@ -18,7 +18,7 @@ import TeamClusterReverseChannelService from '@modules/team-cluster/infrastructu
 import { formatSocketValidationError } from '@modules/socket/utilities/socket-validation-error';
 import {
     getTeamClusterRoom,
-    TEAM_CLUSTER_DAEMON_COMMAND,
+    ChannelCommands,
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
     TEAM_CLUSTER_DAEMON_REGISTERED_EVENT,
     TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
@@ -219,7 +219,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
     }
 
     private async handleDaemonServerCommand(socketId: string, payload: TeamClusterDaemonCommandMessage): Promise<void> {
-        if (payload.command === TEAM_CLUSTER_DAEMON_COMMAND.runtime.config.get) {
+        if (payload.command === ChannelCommands.RuntimeConfigGet) {
             const teamClusterId = this.teamClusterReverseChannelService.getRegisteredTeamClusterId(socketId);
 
             if (!teamClusterId) {

@@ -1,12 +1,12 @@
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import type { TeamScopedInputDTO } from '@modules/team/application/dtos/common';
 import type { LatexDocumentDTO } from './LatexDocumentDTO';
 
-export interface ListLatexDocumentsInputDTO {
-    teamId: string;
-    page?: number | string;
-    limit?: number | string;
+export type ListLatexDocumentsInputDTO = TeamScopedInputDTO & {
+    page?: number;
+    limit?: number;
     search?: string;
     folderId?: string;
 };
 
-export interface ListLatexDocumentsOutputDTO extends PaginatedResult<LatexDocumentDTO> {};
+export type ListLatexDocumentsOutputDTO = PaginatedResult<LatexDocumentDTO>;

@@ -3,27 +3,24 @@ import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
 
 export type JobStatusChangedValue = JobStatus | 'retrying';
 
-export interface JobStatusChangedMetadata {
-    name?: string;
-    jobId?: string;
-    analysisId?: string;
-    status?: JobStatusChangedValue;
-    queueType?: string;
-    trajectoryId?: string;
-    trajectoryName?: string;
-    timestep?: number;
-    message?: string;
-    error?: string;
-    [key: string]: unknown;
-};
-
 export interface JobStatusChangedEventPayload {
     jobId: string;
     teamId: string;
     status: JobStatusChangedValue;
     queueType: string;
-    metadata?: JobStatusChangedMetadata;
-};
+    name?: string;
+    analysisId?: string;
+    trajectoryId?: string;
+    trajectoryName?: string;
+    timestep?: number;
+    message?: string;
+    error?: string;
+    teamClusterId?: string;
+    source?: string;
+    backingSource?: string;
+    cleanupScope?: string;
+    [key: string]: unknown;
+}
 
 export default class JobStatusChangedEvent extends BaseDomainEvent<JobStatusChangedEventPayload> {
     constructor(payload: JobStatusChangedEventPayload) {

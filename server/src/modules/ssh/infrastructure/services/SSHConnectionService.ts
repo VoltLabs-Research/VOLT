@@ -12,6 +12,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import type { ErrorCode } from '@core/constants/error-codes';
 import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
 import { ISSHCredentialsCipher } from '@modules/ssh/domain/port/ISSHCredentialsCipher';
+import pRetry from 'p-retry';
 
 interface CachedConnection {
     client: Client;
@@ -264,37 +265,60 @@ export default class SSHConnectionService implements ISSHConnectionService {
 
     private async executeWithRetry<T>(
         connection: SSHConnection,
-        operation: (sftp: SFTPWrapper) => Promise<T>,
-        attempt = 1
+        operation: (sftp: SFTPWrapper) => Promise<T>
     ): Promise<T> {
         try {
-            const { sftp } = await this.getConnection(connection);
-            return await operation(sftp);
+            return await pRetry(async () => {
+                const { sftp } = await this.getConnection(connection);
+                return operation(sftp);
+            }, {
+                retries: this.MAX_RETRIES,
+                factor: 1,
+                minTimeout: 500,
+                maxTimeout: 500 * this.MAX_RETRIES,
+                onFailedAttempt: ({ error, attemptNumber }) => {
+                    logger.warn(`[SSHConnectionService] Attempt ${attemptNumber} failed for ${connection._id}: ${error.message}`);
+
+                    if (this.shouldRetrySSHOperation(error)) {
+                        this.closeConnection(connection._id);
+                    }
+                },
+                shouldRetry: ({ error }) => {
+                    if (error instanceof SSHServiceError) {
+                        return false;
+                    }
+
+                    if (this.isAuthenticationError(error)) {
+                        throw this.normalizeServiceError(error, 'SSH authentication failed');
+                    }
+
+                    return this.shouldRetrySSHOperation(error);
+                }
+            });
         } catch (error: unknown) {
-            const sshError = error as Record<string, unknown>;
-            const errorMessage = sshError.message as string | undefined;
-            logger.warn(`[SSHConnectionService] Attempt ${attempt} failed for ${connection._id}: ${errorMessage}`);
-
-            if (error instanceof SSHServiceError) {
-                throw error;
-            }
-
-            if (errorMessage?.includes('All configured authentication methods failed')
-                || sshError.level === 'client-authentication') {
-                throw this.normalizeServiceError(error, 'SSH authentication failed');
-            }
-
-            const shouldRetry = attempt <= this.MAX_RETRIES &&
-                (sshError.code === 'ECONNRESET' || errorMessage?.includes('No SFTP') || !sshError.code);
-
-            if (!shouldRetry) {
-                throw this.normalizeServiceError(error, 'SSH operation failed');
-            }
-
-            this.closeConnection(connection._id);
-            await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
-            return this.executeWithRetry(connection, operation, attempt + 1);
+            throw this.normalizeServiceError(error, 'SSH operation failed');
         }
+    }
+
+    private isAuthenticationError(error: unknown): boolean {
+        if (!(error instanceof Error)) {
+            return false;
+        }
+
+        const sshError = error as Error & { level?: string };
+        return error.message.includes('All configured authentication methods failed')
+            || sshError.level === 'client-authentication';
+    }
+
+    private shouldRetrySSHOperation(error: unknown): boolean {
+        if (!(error instanceof Error)) {
+            return true;
+        }
+
+        const sshError = error as Error & { code?: unknown };
+        return sshError.code === 'ECONNRESET'
+            || error.message.includes('No SFTP')
+            || !sshError.code;
     }
 
     private async getConnection(connection: SSHConnection): Promise<SSH2Connection> {

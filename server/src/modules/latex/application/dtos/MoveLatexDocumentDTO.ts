@@ -1,6 +1,6 @@
-export interface MoveLatexDocumentInputDTO {
-    teamId: string;
-    documentId: string;
+import type { TeamScopedEntityIdInputDTO } from '@modules/team/application/dtos/common';
+
+export type MoveLatexDocumentInputDTO = TeamScopedEntityIdInputDTO<'documentId'> & {
     folderId: string | null;
 };
 

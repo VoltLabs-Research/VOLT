@@ -1,5 +1,6 @@
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import { useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-params';
 
 export const FOLDER_ID_SEARCH_PARAM = 'folderId';
 
@@ -11,23 +12,23 @@ interface UseFolderSearchParamReturn {
 };
 
 const useFolderSearchParam = (): UseFolderSearchParamReturn => {
-    const { searchParams, updateSearchParams } = useSearchParamsState();
+    const [searchParams, setSearchParams] = useSearchParams();
     const rawFolderId = searchParams.get(FOLDER_ID_SEARCH_PARAM);
     const currentFolderId = rawFolderId === 'root' ? null : rawFolderId;
 
     const openFolder = useCallback((folderId: string) => {
-        updateSearchParams({
+        setSearchParams((prev) => applySearchParamUpdates(prev, {
             [FOLDER_ID_SEARCH_PARAM]: folderId,
             page: 1
-        });
-    }, [updateSearchParams]);
+        }));
+    }, [setSearchParams]);
 
     const goToRoot = useCallback(() => {
-        updateSearchParams({
+        setSearchParams((prev) => applySearchParamUpdates(prev, {
             [FOLDER_ID_SEARCH_PARAM]: null,
             page: 1
-        });
-    }, [updateSearchParams]);
+        }));
+    }, [setSearchParams]);
 
     return {
         currentFolderId,

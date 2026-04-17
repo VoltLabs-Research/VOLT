@@ -1,6 +1,6 @@
 import { toScriptingNotebookDTO } from '@modules/scripting/application/utilities/to-scripting-notebook-dto';
 import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
-import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -104,7 +104,7 @@ export class UpdateScriptingNotebookUseCase implements IUseCase<UpdateScriptingN
                     try {
                         await this.teamClusterDaemonClient.command(
                             teamClusterId,
-                            TEAM_CLUSTER_DAEMON_COMMAND.notebook.delete,
+                            ChannelCommands.NotebookDelete,
                             { notebookId: runtimeNotebookId }
                         );
                     } catch {

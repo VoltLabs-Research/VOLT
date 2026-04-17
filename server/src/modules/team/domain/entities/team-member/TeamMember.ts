@@ -1,5 +1,3 @@
-import { isRecord } from '@shared/infrastructure/utilities/type-guards';
-
 export interface PopulatedTeamMemberUser {
     _id: string;
     firstName?: string;
@@ -28,11 +26,11 @@ export interface TeamMemberProps {
 };
 
 export const isPopulatedTeamMemberUser = (value: TeamMemberProps['user']): value is PopulatedTeamMemberUser => {
-    return isRecord(value) && '_id' in value;
+    return typeof value !== 'string';
 };
 
 export const isPopulatedTeamMemberRole = (value: TeamMemberProps['role']): value is PopulatedTeamMemberRole => {
-    return isRecord(value) && '_id' in value;
+    return typeof value !== 'string';
 };
 
 export const getTeamMemberUserId = (value: TeamMemberProps['user']): string => {
@@ -40,7 +38,7 @@ export const getTeamMemberUserId = (value: TeamMemberProps['user']): string => {
         return value;
     }
 
-    return value._id.toString();
+    return value._id;
 };
 
 export const getTeamMemberRoleId = (value: TeamMemberProps['role']): string => {
@@ -48,7 +46,7 @@ export const getTeamMemberRoleId = (value: TeamMemberProps['role']): string => {
         return value;
     }
 
-    return value._id.toString();
+    return value._id;
 };
 
 export const getTeamMemberRolePermissions = (value: TeamMemberProps['role']): string[] => {
@@ -67,17 +65,5 @@ export default class TeamMember {
 
     public get id(): string {
         return this._id;
-    }
-
-    public getUserId(): string {
-        return getTeamMemberUserId(this.props.user);
-    }
-
-    public getRoleId(): string {
-        return getTeamMemberRoleId(this.props.role);
-    }
-
-    public getRolePermissions(): string[] {
-        return getTeamMemberRolePermissions(this.props.role);
     }
 };

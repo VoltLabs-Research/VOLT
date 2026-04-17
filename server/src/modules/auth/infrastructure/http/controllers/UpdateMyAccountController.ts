@@ -3,10 +3,5 @@ import { authValidation } from '@modules/auth/infrastructure/http/validation/aut
 import UpdateAccountUseCase from '@modules/auth/application/use-cases/UpdateAccountUseCase';
 
 export default createController(UpdateAccountUseCase, {
-    validationSchema: authValidation.updateAccount,
-    contextProviders: [
-        (request) => ({
-            userId: request.userId ?? ''
-        })
-    ]
+    validationSchema: authValidation.updateAccount
 });

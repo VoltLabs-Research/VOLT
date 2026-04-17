@@ -31,19 +31,6 @@ const createColumn = ({ key, label, sortable = true }: ColumnFactoryInput): Colu
     };
 };
 
-const readNonEmptyString = (value: unknown): string | undefined => {
-    if (typeof value !== 'string') {
-        return undefined;
-    }
-
-    const trimmed = value.trim();
-    return trimmed.length > 0 ? trimmed : undefined;
-};
-
-const readFiniteNumber = (value: unknown): number | undefined => {
-    return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
-};
-
 const buildDynamicColumns = (rows: DaemonListingRow[], daemonColumns?: string[]): ColumnDef[] => {
     const columns = daemonColumns?.length
         ? daemonColumns.map((column) => createColumn({ key: column, label: column }))
@@ -56,7 +43,7 @@ const resolveAnalysisIds = (rows: DaemonListingRow[], fallbackAnalysisId?: strin
     const ids = new Set<string>();
 
     for (const row of rows) {
-        const analysisId = readNonEmptyString(row.analysis) || fallbackAnalysisId;
+        const analysisId = row.analysis?.trim() || fallbackAnalysisId;
         if (analysisId) {
             ids.add(analysisId);
         }
@@ -90,9 +77,9 @@ const resolveTrajectoryIds = (rows: DaemonListingRow[], analyses: Map<string, An
     const ids = new Set<string>();
 
     for (const row of rows) {
-        const analysisId = readNonEmptyString(row.analysis);
+        const analysisId = row.analysis?.trim();
         const analysis = analysisId ? analyses.get(analysisId) : undefined;
-        const trajectoryId = readNonEmptyString(row.trajectory) || analysis?.props.trajectory;
+        const trajectoryId = row.trajectory?.trim() || analysis?.props.trajectory;
 
         if (trajectoryId) {
             ids.add(trajectoryId);
@@ -108,7 +95,7 @@ const loadTrajectoryNames = async (
 ): Promise<Map<string, string>> => {
     const trajectoryEntries = await Promise.all(trajectoryIds.map(async (trajectoryId) => {
         const trajectory = await trajectoryRepository.findById(trajectoryId);
-        const trajectoryName = readNonEmptyString(trajectory?.props.name);
+        const trajectoryName = trajectory?.props.name?.trim();
 
         return trajectoryName ? [trajectoryId, trajectoryName] as const : null;
     }));
@@ -162,17 +149,17 @@ export const enrichDaemonListingRows = async ({
     const trajectoryIds = resolveTrajectoryIds(
         rows.map((row) => ({
             ...row,
-            analysis: readNonEmptyString(row.analysis) || fallbackAnalysisId || row.analysis
+            analysis: row.analysis?.trim() || fallbackAnalysisId || row.analysis
         })),
         analyses
     );
     const trajectoryNames = await loadTrajectoryNames(trajectoryIds, trajectoryRepository);
 
     return rows.map((row) => {
-        const analysisId = readNonEmptyString(row.analysis) || fallbackAnalysisId || '';
+        const analysisId = row.analysis?.trim() || fallbackAnalysisId || '';
         const analysis = analysisId ? analyses.get(analysisId) : undefined;
-        const trajectoryId = readNonEmptyString(row.trajectory) || analysis?.props.trajectory || '';
-        const trajectoryName = readNonEmptyString(row.trajectoryName)
+        const trajectoryId = row.trajectory?.trim() || analysis?.props.trajectory || '';
+        const trajectoryName = row.trajectoryName?.trim()
             || trajectoryNames.get(trajectoryId)
             || '';
 
@@ -181,7 +168,7 @@ export const enrichDaemonListingRows = async ({
             analysis: analysisId,
             trajectory: trajectoryId,
             trajectoryName,
-            timestep: readFiniteNumber(row.timestep) ?? 0
+            timestep: row.timestep ?? 0
         };
     });
 };

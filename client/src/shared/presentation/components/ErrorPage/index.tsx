@@ -2,6 +2,7 @@ import { SOURCE_LABELS } from '@/shared/utils';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import './ErrorPage.css';
+import { format, isValid } from 'date-fns';
 import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -15,6 +16,7 @@ const ErrorPage = () => {
     const stack = params.get('stack');
     const timestamp = params.get('t');
     const description = message || 'An unexpected error occurred. Please try again.';
+    const errorTimestamp = timestamp ? new Date(Number(timestamp)) : null;
 
     return (
         <main className='error-page d-flex items-center content-center w-max'>
@@ -41,9 +43,9 @@ const ErrorPage = () => {
                             <span className='error-page-source'>
                                 {SOURCE_LABELS[source] ?? source}
                             </span>
-                            {timestamp && (
+                            {errorTimestamp && isValid(errorTimestamp) && (
                                 <span className='error-page-timestamp'>
-                                    {new Date(Number(timestamp)).toLocaleTimeString()}
+                                    {format(errorTimestamp, 'p')}
                                 </span>
                             )}
                         </Container>
