@@ -7,6 +7,7 @@ import type { RuntimeContainerSummary } from '@modules/container/domain/port/ITe
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
+import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 import type { ITeamClusterContainerRuntimeService } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
 import { ContainerAccessiblePortResolver } from '@modules/container/infrastructure/services/ContainerAccessiblePortResolver';
@@ -59,7 +60,7 @@ export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, L
             ]
         });
 
-        await this.syncRuntimeStatus(result.data);
+        this.scheduleRuntimeStatusSync(result.data);
 
         result.data.forEach((container) => {
             container.accessiblePorts = this.accessiblePortResolver.resolve(
@@ -71,6 +72,22 @@ export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, L
         });
 
         return Result.ok(result);
+    }
+
+    private scheduleRuntimeStatusSync(containers: Container[]): void {
+        const containersSnapshot = containers.map((container) => ({
+            ...container,
+            env: [...container.env],
+            ports: container.ports.map((port) => ({ ...port })),
+            accessiblePorts: container.accessiblePorts?.map((port) => ({ ...port }))
+        })) as Container[];
+
+        void this.syncRuntimeStatus(containersSnapshot).catch((error: unknown) => {
+            logger.warn({
+                err: error,
+                containerCount: containers.length
+            }, 'Background container runtime sync failed');
+        });
     }
 
     private async syncRuntimeStatus(containers: Container[]): Promise<void> {
