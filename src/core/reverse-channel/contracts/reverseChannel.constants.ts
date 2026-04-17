@@ -1,5 +1,10 @@
 type ValueOf<T> = T[keyof T];
 
+export type TeamClusterDaemonResponseType = ValueOf<typeof REVERSE_CHANNEL.ResponseType>;
+export type TeamClusterDaemonSessionKind = ValueOf<typeof REVERSE_CHANNEL.SessionKind>;
+export type TeamClusterDaemonTerminalTarget = ValueOf<typeof REVERSE_CHANNEL.TerminalTarget>;
+export type TeamClusterTunnelSessionStatus = ValueOf<typeof REVERSE_CHANNEL.TunnelSessionStatus>;
+
 export const REVERSE_CHANNEL = Object.freeze({
     ResponseType: Object.freeze({
         Json: 'json',
@@ -72,8 +77,3 @@ export const ChannelCommands = Object.freeze({
     TrajectoryNativeColorModel: 'trajectory.native.color-model',
     TrajectoryNativeParticleFilterModel: 'trajectory.native.particle-filter-model'
 });
-
-export type TeamClusterDaemonResponseType = ValueOf<typeof REVERSE_CHANNEL.ResponseType>;
-export type TeamClusterDaemonSessionKind = ValueOf<typeof REVERSE_CHANNEL.SessionKind>;
-export type TeamClusterDaemonTerminalTarget = ValueOf<typeof REVERSE_CHANNEL.TerminalTarget>;
-export type TeamClusterTunnelSessionStatus = ValueOf<typeof REVERSE_CHANNEL.TunnelSessionStatus>;

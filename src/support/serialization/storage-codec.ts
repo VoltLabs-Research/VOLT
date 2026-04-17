@@ -1,16 +1,43 @@
 import { PassThrough, Readable } from 'node:stream';
 import { spawn } from 'node:child_process';
 
-const DUMP_ZSTD_EXTENSION = '.dump.zst';
-const GLB_ZSTD_EXTENSION = '.glb.zst';
-const MSGPACK_ZSTD_EXTENSION = '.msgpack.zst';
-
 interface ZstdStreamResult {
     stream: Readable;
     completion: Promise<void>;
 }
 
-const createZstdStream = (args: string[], input?: Readable): ZstdStreamResult => {
+const DUMP_ZSTD_EXTENSION = '.dump.zst';
+const GLB_ZSTD_EXTENSION = '.glb.zst';
+const MSGPACK_ZSTD_EXTENSION = '.msgpack.zst';
+const ZSTD_NOT_INSTALLED_MESSAGE = 'zstd binary is not installed in the runtime image';
+
+const rejectSpawnError = (reject: (error: Error) => void) => {
+    return (error: NodeJS.ErrnoException): void => {
+        if (error.code === 'ENOENT') {
+            reject(new Error(ZSTD_NOT_INSTALLED_MESSAGE));
+            return;
+        }
+
+        reject(error);
+    };
+};
+
+const resolveZstdExit = (
+    resolve: () => void,
+    reject: (error: Error) => void,
+    stderr: string
+) => {
+    return (code: number | null): void => {
+        if (code === 0) {
+            resolve();
+            return;
+        }
+
+        reject(new Error(stderr || `zstd exited with code ${code}`));
+    };
+};
+
+const createZstdStream = (args: string[], input: Readable | null = null): ZstdStreamResult => {
     const child = spawn('zstd', args, {
         stdio: ['pipe', 'pipe', 'pipe']
     });
@@ -32,22 +59,8 @@ const createZstdStream = (args: string[], input?: Readable): ZstdStreamResult =>
     child.stdout.pipe(output);
 
     const completion = new Promise<void>((resolve, reject) => {
-        child.once('error', (error) => {
-            if ('code' in error && error.code === 'ENOENT') {
-                reject(new Error('zstd binary is not installed in the runtime image'));
-                return;
-            }
-
-            reject(error);
-        });
-        child.once('close', (code) => {
-            if (code === 0) {
-                resolve();
-                return;
-            }
-
-            reject(new Error(stderr.trim() || `zstd exited with code ${code ?? 'unknown'}`));
-        });
+        child.once('error', rejectSpawnError(reject));
+        child.once('close', resolveZstdExit(resolve, reject, stderr));
     });
 
     completion.catch((error) => {
@@ -84,31 +97,9 @@ export const compressFileWithZstd = async (sourcePath: string, outputPath: strin
     });
 
     await new Promise<void>((resolve, reject) => {
-        child.once('error', (error) => {
-            if ('code' in error && error.code === 'ENOENT') {
-                reject(new Error('zstd binary is not installed in the runtime image'));
-                return;
-            }
-
-            reject(error);
-        });
-        child.once('close', (code) => {
-            if (code === 0) {
-                resolve();
-                return;
-            }
-
-            reject(new Error(stderr.trim() || `zstd exited with code ${code ?? 'unknown'}`));
-        });
+        child.once('error', rejectSpawnError(reject));
+        child.once('close', resolveZstdExit(resolve, reject, stderr));
     });
-};
-
-export const toCompressedGlbObjectKey = (objectKey: string): string => {
-    return objectKey.endsWith(GLB_ZSTD_EXTENSION) ? objectKey : `${objectKey}.zst`;
-};
-
-export const toCompressedMsgpackObjectKey = (objectKey: string): string => {
-    return objectKey.endsWith(MSGPACK_ZSTD_EXTENSION) ? objectKey : `${objectKey}.zst`;
 };
 
 export const toCompressedDumpObjectKey = (trajectoryId: string, timestep: string | number): string => {
@@ -116,7 +107,3 @@ export const toCompressedDumpObjectKey = (trajectoryId: string, timestep: string
 };
 
 export const isZstdObjectKey = (objectKey: string): boolean => objectKey.endsWith('.zst');
-
-export const stripZstdExtension = (objectKey: string): string => {
-    return isZstdObjectKey(objectKey) ? objectKey.slice(0, -4) : objectKey;
-};

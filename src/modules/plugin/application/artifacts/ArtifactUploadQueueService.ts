@@ -1,13 +1,22 @@
-import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { dir as createTempDir } from 'tmp-promise';
 
 import { DAEMON_PATHS } from '@/core/paths';
 import { ARTIFACT_UPLOAD_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import { QueueService } from '@/core/queues/application/QueueService';
-import type { TeamClusterDaemonSceneArtifactUpsertBatchItem as ReportArtifactInput } from '@/contracts';
+import type { SceneArtifactUpsertBatchItem as ReportArtifactInput } from '@/modules/plugin/application/events/SceneArtifactUpsertBatchItem';
 
-interface ArtifactUploadBatchJobItem extends Record<string, unknown> {
+interface ArtifactUploadBatchContext {
+    analysisId: string;
+    analysisJobId: string;
+    teamId: string;
+    trajectoryId: string;
+    trajectoryName?: string;
+    timestep?: number;
+}
+
+interface ArtifactUploadBatchJobItem {
     sourcePath: string;
     ownerClusterId: string;
     bucket: string;
@@ -18,7 +27,7 @@ interface ArtifactUploadBatchJobItem extends Record<string, unknown> {
     reportArtifact?: ReportArtifactInput;
 }
 
-export interface ArtifactUploadBatchJobPayload extends Record<string, unknown> {
+export interface ArtifactUploadBatchJobPayload {
     jobId: string;
     analysisId: string;
     teamId: string;
@@ -61,23 +70,16 @@ export interface ArtifactUploadBatch {
 }
 
 export interface ArtifactUploadQueueService {
-    createBatch(context: {
-        analysisId: string;
-        analysisJobId: string;
-        teamId: string;
-        trajectoryId: string;
-        trajectoryName?: string;
-        timestep?: number;
-    }): ArtifactUploadBatch;
+    createBatch(context: ArtifactUploadBatchContext): ArtifactUploadBatch;
 }
 
 const sanitizeFileName = (value: string): string => {
-    const normalized = value.trim().replace(/[^a-zA-Z0-9._-]+/g, '-');
-    return normalized.length > 0 ? normalized : 'artifact';
+    const sanitized = value.replace(/[^a-zA-Z0-9._-]+/g, '-');
+    return sanitized.length > 0 ? sanitized : 'artifact';
 };
 
 const resolveFileName = (input: ArtifactUploadStageInputBase, fallbackName: string): string => {
-    if (typeof input.fileName === 'string' && input.fileName.trim().length > 0) {
+    if (input.fileName) {
         return sanitizeFileName(input.fileName);
     }
 
@@ -89,54 +91,40 @@ const resolveFileName = (input: ArtifactUploadStageInputBase, fallbackName: stri
     return sanitizeFileName(fallbackName);
 };
 
-const stageExistingFile = async (sourcePath: string, stagedPath: string): Promise<void> => {
-    try {
-        await fs.link(sourcePath, stagedPath);
-        return;
-    } catch (error) {
-        const nodeError = error as NodeJS.ErrnoException;
-        if (nodeError?.code !== 'EXDEV' && nodeError?.code !== 'EPERM' && nodeError?.code !== 'EEXIST') {
-            throw error;
-        }
-    }
-
-    await fs.copyFile(sourcePath, stagedPath);
-};
-
 export const createArtifactUploadQueueService = (
     queueService: QueueService
 ): ArtifactUploadQueueService => ({
     createBatch(context) {
-        const batchDirectory = path.join(
-            DAEMON_PATHS.artifactUploads,
-            `${sanitizeFileName(context.analysisId)}-${sanitizeFileName(context.analysisJobId)}-${Date.now()}-${crypto.randomUUID()}`
-        );
         const uploads: ArtifactUploadBatchJobItem[] = [];
         let nextSequence = 0;
         let enqueued = false;
-        let directoryPrepared = false;
+        let batchDirectory: string | null = null;
+        let batchDirectoryCleanup: (() => Promise<void>) | null = null;
 
-        const ensureBatchDirectory = async (): Promise<void> => {
-            if (directoryPrepared) {
-                return;
+        const ensureBatchDirectory = async (): Promise<string> => {
+            if (batchDirectory) {
+                return batchDirectory;
             }
 
-            await fs.mkdir(batchDirectory, { recursive: true });
-            directoryPrepared = true;
-        };
-
-        const assertMutable = (): void => {
-            if (enqueued) {
-                throw new Error(`Artifact upload batch for analysis ${context.analysisId} has already been enqueued`);
-            }
+            await fs.mkdir(DAEMON_PATHS.artifactUploads, { recursive: true });
+            const tempDirectory = await createTempDir({
+                tmpdir: DAEMON_PATHS.artifactUploads,
+                prefix: `${sanitizeFileName(context.analysisId)}-${sanitizeFileName(context.analysisJobId)}-`,
+                unsafeCleanup: true
+            });
+            batchDirectory = tempDirectory.path;
+            batchDirectoryCleanup = tempDirectory.cleanup;
+            return batchDirectory;
         };
 
         const stageUpload = async (input: ArtifactUploadStageInputBase, writer: (stagedPath: string) => Promise<void>): Promise<void> => {
-            assertMutable();
-            await ensureBatchDirectory();
+            if (enqueued) {
+                throw new Error(`Artifact upload batch for analysis ${context.analysisId} has already been enqueued`);
+            }
 
+            const batchDirectoryPath = await ensureBatchDirectory();
             const fileName = resolveFileName(input, `artifact-${nextSequence}`);
-            const stagedPath = path.join(batchDirectory, `${String(nextSequence).padStart(4, '0')}-${fileName}`);
+            const stagedPath = path.join(batchDirectoryPath, `${`${nextSequence}`.padStart(4, '0')}-${fileName}`);
             nextSequence += 1;
 
             await writer(stagedPath);
@@ -155,7 +143,19 @@ export const createArtifactUploadQueueService = (
 
         return {
             async stageFileUpload(input) {
-                await stageUpload(input, (stagedPath) => stageExistingFile(input.sourcePath, stagedPath));
+                await stageUpload(input, async (stagedPath) => {
+                    try {
+                        await fs.link(input.sourcePath, stagedPath);
+                        return;
+                    } catch (error) {
+                        const nodeError = error as NodeJS.ErrnoException;
+                        if (nodeError.code !== 'EXDEV' && nodeError.code !== 'EPERM' && nodeError.code !== 'EEXIST') {
+                            throw error;
+                        }
+                    }
+
+                    await fs.copyFile(input.sourcePath, stagedPath);
+                });
             },
 
             async stageBufferUpload(input) {
@@ -163,7 +163,9 @@ export const createArtifactUploadQueueService = (
             },
 
             async enqueue() {
-                assertMutable();
+                if (enqueued) {
+                    throw new Error(`Artifact upload batch for analysis ${context.analysisId} has already been enqueued`);
+                }
 
                 if (uploads.length === 0) {
                     await this.cleanup();
@@ -180,7 +182,7 @@ export const createArtifactUploadQueueService = (
                     trajectoryId: context.trajectoryId,
                     trajectoryName: context.trajectoryName,
                     timestep: context.timestep,
-                    batchDirectory,
+                    batchDirectory: batchDirectory as string,
                     uploads
                 };
 
@@ -207,12 +209,13 @@ export const createArtifactUploadQueueService = (
                     return;
                 }
 
-                if (!directoryPrepared) {
+                if (!batchDirectoryCleanup) {
                     return;
                 }
 
-                await fs.rm(batchDirectory, { recursive: true, force: true }).catch(() => {});
-                directoryPrepared = false;
+                await batchDirectoryCleanup().catch(() => {});
+                batchDirectory = null;
+                batchDirectoryCleanup = null;
                 uploads.length = 0;
                 enqueued = true;
             }

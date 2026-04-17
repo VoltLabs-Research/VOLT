@@ -36,17 +36,9 @@ interface TerminalSessionManagerCoordinator {
 };
 
 export class TerminalSessionManager {
-    private readonly terminalStates = new Map<string, ReverseChannelTerminalState>();
+    readonly terminalStates = new Map<string, ReverseChannelTerminalState>();
 
     constructor(private readonly options: TerminalSessionManagerOptions) {}
-
-    hasSession(sessionId: string): boolean {
-        return this.terminalStates.has(sessionId);
-    }
-
-    getSessionIds(): string[] {
-        return Array.from(this.terminalStates.keys());
-    }
 
     async attachSession(payload: TeamClusterDaemonSessionAttachPayload): Promise<CommandResult> {
         if (!this.options.dockerRuntimeService) {
@@ -148,8 +140,14 @@ export class TerminalSessionManager {
             });
             this.options.coordinator.touchSession(payload.sessionId);
 
-            return this.createSessionAttachSuccessResult();
-        } catch (error: unknown) {
+            return {
+                status: 200,
+                data: {
+                    status: 'success',
+                    data: { attached: true }
+                }
+            };
+        } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to attach terminal';
             this.options.coordinator.emitSessionEnd({
                 type: 'session-end',
@@ -209,10 +207,6 @@ export class TerminalSessionManager {
         terminalState.attachment.stream.destroy();
         this.terminalStates.delete(sessionId);
         this.options.coordinator.clearSessionActivityIfUntracked(sessionId);
-    }
-
-    private createSessionAttachSuccessResult(): CommandResult {
-        return { status: 200, data: { status: 'success', data: { attached: true } } };
     }
 
     private createSessionAttachFailureResult(status: number, message: string): CommandResult {

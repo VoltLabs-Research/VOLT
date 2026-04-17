@@ -1,5 +1,6 @@
 import { logger } from '@/core/logger';
 import { DaemonCommandError } from '@/core/reverse-channel/application/DaemonCommandError';
+import { OrchestrationAction, EntrypointType } from '@/core/runtime/contracts/http.runtime';
 import { ANALYSIS_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import { QueueService } from '@/core/queues/application/QueueService';
 import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
@@ -7,22 +8,54 @@ import { createTraceLogContext, serializeDaemonTraceContext } from '@/core/obser
 import { compressSerializedAnalysisExecutionData, serializeAnalysisExecutionData } from '@/support/policies/analysis-execution-data';
 import { collectWorkflowExposureDefinitions } from '@/modules/analysis/application/workflow/ExposureExportLinking';
 import { WorkflowEngine } from '@/modules/analysis/application/workflow/WorkflowEngine';
-import { EntrypointType, OrchestrationAction } from '@/contracts';
 import { RuntimeEventBroker } from '@/core/reverse-channel/application/RuntimeEventBroker';
-import { ProgressStageType } from '@voltstack/daemon-cluster-client';
-import type { AnalysisExecutionDataStore } from '@/modules/analysis/infrastructure/storage/AnalysisExecutionDataStore';
-import type { AnalysisExecutionDataReference, AnalysisJobExecutionData, AnalysisQueueJobPayload, AnalysisStartRequest, AnalysisStartResponse, QueuedJobNotification, TrajectoryDumpDescriptor } from '@/contracts';
-import type { DaemonTraceContext } from '@/core/observability/infrastructure/daemonInstrumentation';
+
+type AnalysisExecutionDataReference = import('@/modules/analysis/contracts/http.analysis').AnalysisExecutionDataReference;
+type AnalysisJobExecutionData = import('@/modules/analysis/contracts/http.analysis').AnalysisJobExecutionData;
+type AnalysisQueueJobPayload = import('@/modules/analysis/contracts/http.analysis').AnalysisQueueJobPayload;
+type AnalysisStartRequest = import('@/modules/analysis/contracts/http.analysis').AnalysisStartRequest;
+type AnalysisStartResponse = import('@/modules/analysis/contracts/http.analysis').AnalysisStartResponse;
+type QueuedJobNotification = import('@/modules/analysis/contracts/http.analysis').QueuedJobNotification;
+type AnalysisExecutionDataStore = import('@/modules/analysis/infrastructure/storage/AnalysisExecutionDataStore').AnalysisExecutionDataStore;
+type DaemonTraceContext = import('@/core/observability/infrastructure/daemonInstrumentation').DaemonTraceContext;
+type RuntimeProgressStage = import('@/core/runtime/events/RuntimeProgressEvent').RuntimeProgressEventData['stage'];
+type AnalysisConfig = AnalysisStartRequest['config'];
+type SerializedTraceContext = NonNullable<AnalysisJobExecutionData['traceContext']>;
+
+interface PlannedExecutionItem {
+    timestep?: number;
+    path?: string;
+    frame?: number;
+}
+
+interface AnalysisJobMetadata {
+    trajectoryId: string;
+    analysisId: string;
+    name: string;
+    config: AnalysisConfig;
+    plugin: string;
+    totalItems: number;
+    traceContext?: SerializedTraceContext;
+    batchMode?: true;
+    inputFile?: string;
+    timestep?: number;
+    itemIndex?: number;
+    forEachItem?: PlannedExecutionItem;
+    forEachIndex?: number;
+}
+
+interface StoredExecutionDataResult {
+    executionDataCompressed?: string;
+    executionDataReference?: AnalysisExecutionDataReference;
+}
 
 interface AnalysisStartRequestWithTrace extends AnalysisStartRequest {
     traceContext?: DaemonTraceContext;
 };
 
-type PlannedExecutionItem = Record<string, unknown> | TrajectoryDumpDescriptor;
-
-const measurePayloadBytes = (payload: Record<string, unknown>): number => {
-    return Buffer.byteLength(JSON.stringify(payload));
-};
+function createProgressStage(stage: RuntimeProgressStage): RuntimeProgressStage {
+    return stage;
+}
 
 export class AnalysisDispatchService {
     constructor(
@@ -35,10 +68,19 @@ export class AnalysisDispatchService {
     async startAnalysis(input: AnalysisStartRequestWithTrace): Promise<AnalysisStartResponse> {
         const startedAt = Date.now();
         const serializedTraceContext = serializeDaemonTraceContext(input.traceContext);
+        const workflow = input.workflow;
+        const entrypoint = workflow.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint)?.data.entrypoint;
+
+        if (!entrypoint?.binaryObjectPath || !entrypoint.arguments) {
+            throw DaemonCommandError.badRequest(
+                'Analysis::Start::InvalidEntrypoint',
+                'Daemon workflow entrypoint is invalid'
+            );
+        }
 
         this.eventBroker.emitProgress({
             action: OrchestrationAction.AnalysisStart,
-            stage: ProgressStageType.Accepted,
+            stage: createProgressStage('accepted'),
             timestamp: new Date().toISOString(),
             payload: {
                 analysisId: input.analysisId,
@@ -81,26 +123,128 @@ export class AnalysisDispatchService {
         );
 
         const isBatchMode = plan.batchMode === true;
-        const jobs = isBatchMode
-            ? this.buildBatchJob(input, plan.items)
-            : this.buildJobs(input, plan.items);
-        const executionData = this.buildExecutionData(input, plan, serializedTraceContext, isBatchMode);
+        const plannedItems = plan.items as PlannedExecutionItem[];
+        const queuedAt = new Date().toISOString();
+        const jobs: AnalysisQueueJobPayload[] = isBatchMode
+            ? [{
+                jobId: `${input.analysisId}-batch-0`,
+                name: input.pluginDisplayName,
+                teamId: input.teamId,
+                status: 'queued',
+                queueType: ANALYSIS_QUEUE_NAME,
+                metadata: {
+                    trajectoryId: input.trajectoryId,
+                    analysisId: input.analysisId,
+                    name: input.pluginDisplayName,
+                    config: input.config,
+                    plugin: input.pluginId,
+                    totalItems: plannedItems.length,
+                    batchMode: true,
+                    traceContext: serializedTraceContext
+                } satisfies AnalysisJobMetadata,
+                createdAt: queuedAt,
+                updatedAt: queuedAt
+            }]
+            : plannedItems.map((item, index) => {
+                const timestep = item.timestep ?? item.frame;
+                if (typeof timestep !== 'number') {
+                    throw DaemonCommandError.unprocessableEntity(
+                        'Analysis::Start::MissingTimestep',
+                        `Missing timestep for analysis job ${input.analysisId}-${index}`
+                    );
+                }
 
-        const queuePayloadBytesBefore = measurePayloadBytes({
+                return {
+                    jobId: `${input.analysisId}-${index}`,
+                    name: input.pluginDisplayName,
+                    teamId: input.teamId,
+                    timestep,
+                    status: 'queued',
+                    queueType: ANALYSIS_QUEUE_NAME,
+                    metadata: {
+                        trajectoryId: input.trajectoryId,
+                        analysisId: input.analysisId,
+                        name: input.pluginDisplayName,
+                        config: input.config,
+                        inputFile: item.path ?? `trajectory-${input.trajectoryId}/timestep-${String(timestep)}.dump.zst`,
+                        timestep,
+                        plugin: input.pluginId,
+                        totalItems: plannedItems.length,
+                        itemIndex: index,
+                        forEachItem: item,
+                        forEachIndex: index,
+                        traceContext: serializedTraceContext
+                    } satisfies AnalysisJobMetadata,
+                    createdAt: queuedAt,
+                    updatedAt: queuedAt
+                };
+            });
+        const executionData: AnalysisJobExecutionData = {
+            binaryObjectPath: entrypoint.binaryObjectPath,
+            entrypointType: entrypoint.type ?? EntrypointType.Executable,
+            arguments: entrypoint.arguments,
+            timeoutMs: entrypoint.timeout,
+            requirementsFile: entrypoint.requirementsFile,
+            entrypointScript: entrypoint.entrypointScript,
+            pluginId: input.pluginId,
+            trajectoryId: input.trajectoryId,
+            analysisId: input.analysisId,
+            teamId: input.teamId,
+            trajectoryFrames: input.trajectoryFrames,
+            computeClusterId: input.teamClusterId,
+            storageClusterId: input.analysis.storageClusterId,
+            exposures: collectWorkflowExposureDefinitions(workflow),
+            forEachNodeId: plan.forEachNodeId,
+            nodeOutputSnapshots: plan.nodeOutputSnapshots,
+            workflow,
+            nestedPlugins: input.nestedPlugins,
+            pluginReferenceExecutions: input.pluginReferenceExecutions,
+            ...(serializedTraceContext ? { traceContext: serializedTraceContext } : {}),
+            ...(isBatchMode ? {
+                batchMode: true,
+                batchTrajectoryDumps: plan.batchTrajectoryDumps,
+                allDumpUrls: plan.batchTrajectoryDumps?.map((dump) => dump.path),
+                contextNodeId: plan.contextNodeId
+            } : {})
+        };
+
+        const queuePayloadBytesBefore = Buffer.byteLength(JSON.stringify({
             ...jobs[0],
             executionData
-        });
-        const {
-            executionDataCompressed,
-            executionDataReference
-        } = await this.storeExecutionDataReference(input, executionData);
+        }));
+        let storedExecutionData: StoredExecutionDataResult = {};
+
+        try {
+            const serializedExecutionData = serializeAnalysisExecutionData(executionData);
+            const executionDataCompressed = compressSerializedAnalysisExecutionData(serializedExecutionData);
+            const executionDataReference = await this.analysisExecutionDataStore.store(executionData, {
+                serializedPayload: serializedExecutionData,
+                compressedPayload: executionDataCompressed
+            });
+
+            storedExecutionData = {
+                executionDataCompressed,
+                executionDataReference
+            };
+        } catch (error) {
+            logger.warn(
+                {
+                    analysisId: input.analysisId,
+                    err: error,
+                    ...createTraceLogContext(input.traceContext)
+                },
+                'Failed to store shared analysis execution data reference; falling back to inline payloads'
+            );
+        }
+
+        const { executionDataCompressed, executionDataReference } = storedExecutionData;
 
         const queuePayloadBytesAfter = executionDataReference
-            ? measurePayloadBytes({
+            ? Buffer.byteLength(JSON.stringify({
                 ...jobs[0],
                 executionDataCompressed,
                 executionDataReference
-            })
+            }))
             : queuePayloadBytesBefore;
 
         logger.info(
@@ -115,18 +259,22 @@ export class AnalysisDispatchService {
             'Prepared daemon analysis queue payload optimization'
         );
 
-        const queuedPayloads = this.buildQueuedPayloads(
-            jobs,
-            executionData,
-            executionDataReference,
-            executionDataCompressed
-        );
+        const queuedPayloads = jobs.map((job) => executionDataReference
+            ? {
+                ...job,
+                executionDataCompressed,
+                executionDataReference
+            }
+            : {
+                ...job,
+                executionData
+            });
 
         await this.queueService.enqueueBulk(ANALYSIS_QUEUE_NAME, queuedPayloads);
 
         this.eventBroker.emitProgress({
             action: OrchestrationAction.AnalysisStart,
-            stage: ProgressStageType.Queued,
+            stage: createProgressStage('queued'),
             timestamp: new Date().toISOString(),
             payload: {
                 analysisId: input.analysisId,
@@ -148,224 +296,16 @@ export class AnalysisDispatchService {
         return {
             queued: true,
             totalJobs: jobs.length,
-            jobs: this.buildQueuedJobNotifications(input, jobs)
-        };
-    }
-
-    private buildJobs(input: AnalysisStartRequestWithTrace, items: PlannedExecutionItem[]): AnalysisQueueJobPayload[] {
-        const serializedTraceContext = serializeDaemonTraceContext(input.traceContext);
-
-        return items.map((item, index) => {
-            const timestep = this.resolveTimestep(item);
-            if (typeof timestep === 'undefined') {
-                throw DaemonCommandError.unprocessableEntity(
-                    'Analysis::Start::MissingTimestep',
-                    `Missing timestep for analysis job ${input.analysisId}-${index}`
-                );
-            }
-
-            const inputFile = typeof item.path === 'string' && item.path.length > 0
-                ? item.path
-                : `trajectory-${input.trajectoryId}/timestep-${String(timestep)}.dump.zst`;
-
-            return {
-                jobId: `${input.analysisId}-${index}`,
-                name: input.pluginDisplayName,
-                teamId: input.teamId,
-                timestep,
-                status: 'queued',
-                queueType: ANALYSIS_QUEUE_NAME,
-                metadata: {
-                    trajectoryId: input.trajectoryId,
-                    analysisId: input.analysisId,
-                    name: input.pluginDisplayName,
-                    config: input.config,
-                    inputFile,
-                    timestep,
-                    plugin: input.pluginId,
-                    totalItems: items.length,
-                    itemIndex: index,
-                    forEachItem: item,
-                    forEachIndex: index,
-                    traceContext: serializedTraceContext
-                },
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            };
-        });
-    }
-
-    private buildBatchJob(input: AnalysisStartRequestWithTrace, items: PlannedExecutionItem[]): AnalysisQueueJobPayload[] {
-        const serializedTraceContext = serializeDaemonTraceContext(input.traceContext);
-
-        return [{
-            jobId: `${input.analysisId}-batch-0`,
-            name: input.pluginDisplayName,
-            teamId: input.teamId,
-            status: 'queued',
-            queueType: ANALYSIS_QUEUE_NAME,
-            metadata: {
+            jobs: jobs.map((job): QueuedJobNotification => ({
+                jobId: job.jobId,
+                name: job.name,
+                teamId: job.teamId,
+                timestep: job.timestep,
                 trajectoryId: input.trajectoryId,
+                trajectoryName: input.trajectoryName,
                 analysisId: input.analysisId,
-                name: input.pluginDisplayName,
-                config: input.config,
-                plugin: input.pluginId,
-                totalItems: items.length,
-                batchMode: true,
-                traceContext: serializedTraceContext
-            },
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        }];
-    }
-
-    private buildExecutionData(
-        input: AnalysisStartRequestWithTrace,
-        plan: NonNullable<Awaited<ReturnType<WorkflowEngine['planExecutionStrategy']>>>,
-        serializedTraceContext: Record<string, string> | undefined,
-        isBatchMode: boolean
-    ): AnalysisJobExecutionData {
-        const batchTrajectoryDumps = isBatchMode ? plan.batchTrajectoryDumps : undefined;
-
-        return {
-            ...this.resolveEntrypoint(input.workflow),
-            pluginId: input.pluginId,
-            trajectoryId: input.trajectoryId,
-            analysisId: input.analysisId,
-            teamId: input.teamId,
-            trajectoryFrames: input.trajectoryFrames,
-            computeClusterId: input.teamClusterId,
-            storageClusterId: input.analysis.storageClusterId,
-            exposures: this.collectExposures(input.workflow),
-            forEachNodeId: plan.forEachNodeId,
-            nodeOutputSnapshots: plan.nodeOutputSnapshots,
-            workflow: input.workflow,
-            nestedPlugins: input.nestedPlugins,
-            pluginReferenceExecutions: input.pluginReferenceExecutions,
-            ...(serializedTraceContext ? { traceContext: serializedTraceContext } : {}),
-            ...(isBatchMode ? {
-                batchMode: true,
-                batchTrajectoryDumps,
-                allDumpUrls: batchTrajectoryDumps?.map((dump) => dump.path),
-                contextNodeId: plan.contextNodeId
-            } : {})
+                queueType: ANALYSIS_QUEUE_NAME
+            }))
         };
-    }
-
-    private async storeExecutionDataReference(
-        input: AnalysisStartRequestWithTrace,
-        executionData: AnalysisJobExecutionData
-    ): Promise<{
-        executionDataCompressed?: string;
-        executionDataReference?: AnalysisExecutionDataReference;
-    }> {
-        try {
-            const serializedExecutionData = serializeAnalysisExecutionData(executionData);
-            const executionDataCompressed = compressSerializedAnalysisExecutionData(serializedExecutionData);
-            const executionDataReference = await this.analysisExecutionDataStore.store(executionData, {
-                serializedPayload: serializedExecutionData,
-                compressedPayload: executionDataCompressed
-            });
-
-            return {
-                executionDataCompressed,
-                executionDataReference
-            };
-        } catch (error: unknown) {
-            logger.warn(
-                {
-                    analysisId: input.analysisId,
-                    err: error,
-                    ...createTraceLogContext(input.traceContext)
-                },
-                'Failed to store shared analysis execution data reference; falling back to inline payloads'
-            );
-
-            return {};
-        }
-    }
-
-    private buildQueuedPayloads(
-        jobs: AnalysisQueueJobPayload[],
-        executionData: AnalysisJobExecutionData,
-        executionDataReference?: AnalysisExecutionDataReference,
-        executionDataCompressed?: string
-    ): AnalysisQueueJobPayload[] {
-        return jobs.map((job) => executionDataReference
-            ? {
-                ...job,
-                executionDataCompressed,
-                executionDataReference
-            }
-            : {
-                ...job,
-                executionData
-            });
-    }
-
-    private buildQueuedJobNotifications(
-        input: AnalysisStartRequestWithTrace,
-        jobs: AnalysisQueueJobPayload[]
-    ): QueuedJobNotification[] {
-        return jobs.map((job) => ({
-            jobId: job.jobId,
-            name: job.name,
-            teamId: job.teamId,
-            timestep: job.timestep,
-            trajectoryId: input.trajectoryId,
-            trajectoryName: input.trajectoryName,
-            analysisId: input.analysisId,
-            queueType: ANALYSIS_QUEUE_NAME
-        }));
-    }
-
-    private resolveTimestep(item: PlannedExecutionItem): number | undefined {
-        const timestepValue = Reflect.get(item, 'timestep') ?? Reflect.get(item, 'frame');
-        if (typeof timestepValue === 'number' && Number.isFinite(timestepValue)) {
-            return timestepValue;
-        }
-
-        return undefined;
-    }
-
-    private resolveEntrypoint(workflow: AnalysisStartRequest['workflow']): {
-        binaryObjectPath: string;
-        entrypointType: EntrypointType;
-        arguments: string;
-        timeoutMs?: number;
-        requirementsFile?: string;
-        entrypointScript?: string;
-    } {
-        const entrypoint = workflow.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint);
-        const entrypointData = entrypoint?.data.entrypoint;
-        if (!entrypointData?.binaryObjectPath || !entrypointData.arguments) {
-            throw DaemonCommandError.badRequest(
-                'Analysis::Start::InvalidEntrypoint',
-                'Daemon workflow entrypoint is invalid'
-            );
-        }
-
-        return {
-            binaryObjectPath: entrypointData.binaryObjectPath,
-            entrypointType: entrypointData.type ?? EntrypointType.Executable,
-            arguments: entrypointData.arguments,
-            timeoutMs: entrypointData.timeout,
-            requirementsFile: entrypointData.requirementsFile,
-            entrypointScript: entrypointData.entrypointScript || undefined
-        };
-    }
-
-    private collectExposures(workflow: AnalysisStartRequest['workflow']): Array<{
-        nodeId: string;
-        name: string;
-        results: string;
-        iterable?: string;
-        export?: {
-            exporter: string;
-            type: string;
-            options?: Record<string, unknown>;
-        };
-    }> {
-        return collectWorkflowExposureDefinitions(workflow);
     }
 }

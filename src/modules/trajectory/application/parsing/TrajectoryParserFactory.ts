@@ -1,38 +1,39 @@
 import { createReadStream } from 'node:fs';
 import { createInterface } from 'node:readline';
+import type { ParsedTrajectory } from '@/core/runtime/infrastructure/native/NativeModuleLoader';
 
 interface FrameMetadata {
     timestep: number;
     natoms: number;
     headers: string[];
-    simulationCell: Record<string, unknown>;
+    simulationCell: ParsedTrajectory['metadata']['simulationCell'];
+}
+
+type SimulationCell = FrameMetadata['simulationCell'];
+type SimulationCellGeometry = SimulationCell['geometry'];
+
+const createSimulationCell = (periodicBoundaryConditions: SimulationCellGeometry['periodic_boundary_conditions']): SimulationCell => {
+    return {
+        boundingBox: {
+            width: 0,
+            height: 0,
+            length: 0
+        },
+        geometry: {
+            cell_vectors: [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+            cell_origin: [0, 0, 0],
+            periodic_boundary_conditions: periodicBoundaryConditions
+        }
+    };
 };
 
-class LammpsDumpParser {
-    canParse(headerLines: string[]): boolean {
-        return headerLines.some((line) => line.includes('ITEM: TIMESTEP'));
-    }
-
-    parseMetadataOnly(headerLines: string[]): FrameMetadata {
+const parseDumpMetadataOnly = (headerLines: string[]): FrameMetadata => {
         let timestep = 0;
         let natoms = 0;
         let headers: string[] = [];
-        const simulationCell: Record<string, unknown> = {
-            boundingBox: {
-                width: 0,
-                height: 0,
-                length: 0
-            },
-            geometry: {
-                cell_vectors: [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
-                cell_origin: [0, 0, 0],
-                periodic_boundary_conditions: {
-                    x: false,
-                    y: false,
-                    z: false
-                }
-            }
-        };
+        const simulationCell = createSimulationCell({ x: false, y: false, z: false });
+        const geometry = simulationCell.geometry;
+        const boundingBox = simulationCell.boundingBox;
 
         for (let index = 0; index < headerLines.length; index += 1) {
             const line = headerLines[index].trim();
@@ -51,17 +52,6 @@ class LammpsDumpParser {
                     x: parts.length > pbcStartIndex ? parts[pbcStartIndex].startsWith('p') : true,
                     y: parts.length > pbcStartIndex + 1 ? parts[pbcStartIndex + 1].startsWith('p') : true,
                     z: parts.length > pbcStartIndex + 2 ? parts[pbcStartIndex + 2].startsWith('p') : true
-                };
-
-                const geometry = simulationCell.geometry as {
-                    cell_vectors: number[][];
-                    cell_origin: number[];
-                    periodic_boundary_conditions: { x: boolean; y: boolean; z: boolean; };
-                };
-                const boundingBox = simulationCell.boundingBox as {
-                    width: number;
-                    height: number;
-                    length: number;
                 };
 
                 geometry.periodic_boundary_conditions = periodicBoundaryConditions;
@@ -125,37 +115,15 @@ class LammpsDumpParser {
             headers,
             simulationCell
         };
-    }
 };
 
-class LammpsDataParser {
-    canParse(headerLines: string[]): boolean {
-        const content = headerLines.join('\n');
-        const hasAtomsDef = /^\s*\d+\s+atoms/m.test(content);
-        const hasBounds = /(xlo\s+xhi|ylo\s+yhi|zlo\s+zhi)/m.test(content);
-        return hasAtomsDef && hasBounds;
-    }
-
-    parseMetadataOnly(headerLines: string[]): FrameMetadata {
+const parseDataMetadataOnly = (headerLines: string[]): FrameMetadata => {
         let timestep = 0;
         let natoms = 0;
         const headers: string[] = [];
-        const simulationCell: Record<string, unknown> = {
-            boundingBox: {
-                width: 0,
-                height: 0,
-                length: 0
-            },
-            geometry: {
-                cell_vectors: [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
-                cell_origin: [0, 0, 0],
-                periodic_boundary_conditions: {
-                    x: true,
-                    y: true,
-                    z: true
-                }
-            }
-        };
+        const simulationCell = createSimulationCell({ x: true, y: true, z: true });
+        const geometry = simulationCell.geometry;
+        const boundingBox = simulationCell.boundingBox;
 
         const content = headerLines.join('\n');
         const timestepMatch = content.match(/timestep\s*=\s*(\d+)/i);
@@ -181,15 +149,6 @@ class LammpsDataParser {
             const yhiBound = Number(yMatch[2]);
             const zloBound = Number(zMatch[1]);
             const zhiBound = Number(zMatch[2]);
-            const geometry = simulationCell.geometry as {
-                cell_vectors: number[][];
-                cell_origin: number[];
-            };
-            const boundingBox = simulationCell.boundingBox as {
-                width: number;
-                height: number;
-                length: number;
-            };
 
             if (tiltMatch) {
                 const xy = Number(tiltMatch[1]);
@@ -235,51 +194,44 @@ class LammpsDataParser {
             headers,
             simulationCell
         };
-    }
-};
-
-const peekFileHeader = async (filePath: string, maxLines = 200): Promise<string[]> => {
-    return new Promise((resolve, reject) => {
-        const lines: string[] = [];
-        const stream = createReadStream(filePath, {
-            encoding: 'utf8',
-            highWaterMark: 8 * 1024
-        });
-
-        const rl = createInterface({
-            input: stream,
-            crlfDelay: Infinity
-        });
-
-        rl.on('line', (line) => {
-            lines.push(line);
-            if (lines.length >= maxLines) {
-                rl.close();
-                stream.destroy();
-            }
-        });
-
-        rl.on('close', () => resolve(lines));
-        rl.on('error', reject);
-        stream.on('error', reject);
-    });
 };
 
 export class TrajectoryParserFactory {
-    private static readonly dumpParser = new LammpsDumpParser();
-    private static readonly dataParser = new LammpsDataParser();
-
     static async parseMetadata(filePath: string): Promise<FrameMetadata> {
-        const headerLines = await peekFileHeader(filePath, 200);
+        const headerLines = await new Promise<string[]>((resolve, reject) => {
+            const lines: string[] = [];
+            const stream = createReadStream(filePath, {
+                encoding: 'utf8',
+                highWaterMark: 8 * 1024
+            });
 
-        if (this.dumpParser.canParse(headerLines)) {
-            return this.dumpParser.parseMetadataOnly(headerLines);
+            const rl = createInterface({
+                input: stream,
+                crlfDelay: Infinity
+            });
+
+            rl.on('line', (line) => {
+                lines.push(line);
+                if (lines.length >= 200) {
+                    rl.close();
+                    stream.destroy();
+                }
+            });
+
+            rl.on('close', () => resolve(lines));
+            rl.on('error', reject);
+            stream.on('error', reject);
+        });
+
+        if (headerLines.some((line) => line.includes('ITEM: TIMESTEP'))) {
+            return parseDumpMetadataOnly(headerLines);
         }
 
-        if (this.dataParser.canParse(headerLines)) {
-            return this.dataParser.parseMetadataOnly(headerLines);
+        const content = headerLines.join('\n');
+        if (/^\s*\d+\s+atoms/m.test(content) && /(xlo\s+xhi|ylo\s+yhi|zlo\s+zhi)/m.test(content)) {
+            return parseDataMetadataOnly(headerLines);
         }
 
         throw new Error('Unsupported trajectory format');
     }
-};
+}

@@ -1,11 +1,15 @@
-import type { TeamClusterDaemonRuntimeProgressPayload, TeamClusterDaemonServerEventMessage } from '@/contracts';
+import type { ExposureSnapshotMessage, RuntimeProgressMessage, TeamClusterDaemonServerEventMessage } from '@/contracts';
 import type { TeamClusterDaemonMessage } from '@voltstack/daemon-cluster-client';
 
-type NonCommandMessage = Exclude<TeamClusterDaemonMessage, { type: 'command' }>;
+interface TeamClusterDaemonCommandEnvelope {
+    type: 'command';
+}
+
+type NonCommandMessage = Exclude<TeamClusterDaemonMessage, TeamClusterDaemonCommandEnvelope>;
 
 declare module '@voltstack/daemon-cluster-client' {
     interface ClusterDaemonClient {
-        emit(message: NonCommandMessage | TeamClusterDaemonRuntimeProgressPayload | TeamClusterDaemonServerEventMessage): void;
+        emit(message: NonCommandMessage | ExposureSnapshotMessage | RuntimeProgressMessage | TeamClusterDaemonServerEventMessage): void;
     }
 }
 

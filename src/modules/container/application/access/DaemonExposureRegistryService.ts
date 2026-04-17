@@ -1,18 +1,35 @@
-import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureSourceKind, TeamClusterServiceExposureStatus, type TeamClusterServiceExposure } from '@/contracts';
+import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureSourceKind, TeamClusterServiceExposureStatus } from '@/contracts';
+import type { TeamClusterServiceExposure } from '@/contracts';
 import type { DaemonConfig } from '@/core/config';
+import type { IEventBus } from '@/core/events/IEventBus';
 import { logger } from '@/core/logger';
 import { isIP } from 'node:net';
-import type { ContainerInfo } from 'dockerode';
+import type Dockerode from 'dockerode';
 import type { DockerRuntimeService } from '@/core/runtime/infrastructure/DockerRuntimeService';
+import { ExposureSnapshotUpdatedEvent } from '@/modules/container/application/events/ExposureSnapshotUpdatedEvent';
 import type { VoltCloudConnection } from '@/modules/container/infrastructure/connection/VoltCloudConnection';
+
+type ContainerInfo = Dockerode.ContainerInfo;
+type ContainerInspection = Awaited<ReturnType<DockerRuntimeService['getContainer']>>;
+
+interface ContainerExposureContext {
+    container: ContainerInfo;
+    containerName: string;
+    httpPorts: Set<number>;
+    labels: Record<string, string>;
+    publishedPorts: number[];
+    status: TeamClusterServiceExposureStatus;
+    targetHost: string;
+    teamClusterId: string;
+    teamId: string;
+    websocketPorts: Set<number>;
+}
 
 const EXPOSURE_SYNC_INTERVAL_MS = 5_000;
 const HTTP_PORT_LABEL = 'volt.exposure.http.ports';
 const WEBSOCKET_PORT_LABEL = 'volt.exposure.websocket.ports';
 const TEAM_ID_LABEL = 'volt.team.id';
 const TEAM_CLUSTER_ID_LABEL = 'volt.team-cluster.id';
-
-type ContainerInspection = Awaited<ReturnType<DockerRuntimeService['getContainer']>>;
 
 const readPortSet = (value: string | undefined): Set<number> => {
     if (!value) {
@@ -21,59 +38,57 @@ const readPortSet = (value: string | undefined): Set<number> => {
 
     const ports = value
         .split(',')
-        .map((entry) => Number(entry.trim()))
-        .filter((entry) => Number.isInteger(entry) && entry > 0);
+        .map(Number)
+        .filter((entry) => entry > 0);
 
     return new Set(ports);
 };
 
-const readInspectionContainerName = (container: ContainerInfo, inspection: ContainerInspection): string => {
-    const candidate = inspection.Name || container.Names?.[0] || container.Image || container.Id;
-    return candidate.replace(/^\/+/, '');
-};
-
 const readInspectionInternalIp = (inspection: ContainerInspection): string | null => {
-    const networks = Object.values(inspection.NetworkSettings.Networks || {});
+    const networks = Object.values(inspection.NetworkSettings.Networks);
     let ipv6Address: string | null = null;
 
     for (const network of networks) {
-        const ipv4Address = network?.IPAddress?.trim();
-        if (ipv4Address && isIP(ipv4Address) !== 0) {
-            return ipv4Address;
+        if (isIP(network.IPAddress) !== 0) {
+            return network.IPAddress;
         }
 
-        const candidateIpv6Address = network?.GlobalIPv6Address?.trim();
-        if (!ipv6Address && candidateIpv6Address && isIP(candidateIpv6Address) !== 0) {
-            ipv6Address = candidateIpv6Address;
+        if (!ipv6Address && isIP(network.GlobalIPv6Address) !== 0) {
+            ipv6Address = network.GlobalIPv6Address;
         }
     }
 
-    const fallbackIpv4Address = inspection.NetworkSettings.IPAddress?.trim();
-    if (fallbackIpv4Address && isIP(fallbackIpv4Address) !== 0) {
-        return fallbackIpv4Address;
+    if (isIP(inspection.NetworkSettings.IPAddress) !== 0) {
+        return inspection.NetworkSettings.IPAddress;
     }
 
     if (ipv6Address) {
         return ipv6Address;
     }
 
-    const fallbackIpv6Address = inspection.NetworkSettings.GlobalIPv6Address?.trim();
-    if (fallbackIpv6Address && isIP(fallbackIpv6Address) !== 0) {
-        return fallbackIpv6Address;
+    if (isIP(inspection.NetworkSettings.GlobalIPv6Address) !== 0) {
+        return inspection.NetworkSettings.GlobalIPv6Address;
     }
 
     return null;
 };
 
 const readPublishedTcpPorts = (inspection: ContainerInspection): number[] => {
-    const publishedPorts = inspection.NetworkSettings.Ports || {};
+    const publishedPorts = inspection.NetworkSettings.Ports;
     const containerPorts: number[] = [];
 
     for (const [portDefinition, bindings] of Object.entries(publishedPorts)) {
         const [rawPort, protocol] = portDefinition.split('/');
-        const containerPort = Number(rawPort);
+        if (protocol !== 'tcp') {
+            continue;
+        }
 
-        if (protocol !== 'tcp' || !Number.isInteger(containerPort) || containerPort <= 0 || !bindings || bindings.length === 0) {
+        if (!bindings || bindings.length === 0) {
+            continue;
+        }
+
+        const containerPort = Number(rawPort);
+        if (containerPort <= 0) {
             continue;
         }
 
@@ -97,7 +112,8 @@ export class DaemonExposureRegistryService {
     constructor(
         private readonly config: DaemonConfig,
         private readonly dockerRuntimeService: DockerRuntimeService,
-        private readonly voltCloudConnection: VoltCloudConnection
+        private readonly voltCloudConnection: VoltCloudConnection,
+        private readonly eventBus: IEventBus
     ) {}
 
     start(): void {
@@ -125,7 +141,8 @@ export class DaemonExposureRegistryService {
     }
 
     getExposure(exposureId: string): TeamClusterServiceExposure | null {
-        return this.exposures.get(exposureId) || null;
+        const exposure = this.exposures.get(exposureId);
+        return exposure === undefined ? null : exposure;
     }
 
     upsertDaemonExposure(exposure: TeamClusterServiceExposure): void {
@@ -141,7 +158,7 @@ export class DaemonExposureRegistryService {
         this.publishExposures(this.lastContainerExposures);
     }
 
-    async sync(): Promise<void> {
+    sync(): Promise<void> {
         if (this.inFlightSync) {
             logger.debug(
                 {
@@ -164,10 +181,18 @@ export class DaemonExposureRegistryService {
     }
 
     private async runSync(startedAt: number): Promise<void> {
-        const containers = await this.dockerRuntimeService.listContainers(true, {
+        const includeStoppedContainers = true;
+        const containers = await this.dockerRuntimeService.listContainers(includeStoppedContainers, {
             label: ['volt.managed=true']
         });
-        const nextExposures = await this.buildExposures(containers);
+        const exposureContexts = await Promise.all(containers.map((container) => this.readContainerExposureContext(container)));
+        const nextExposures = exposureContexts.flatMap((context) => {
+            if (!context) {
+                return [];
+            }
+
+            return context.publishedPorts.map((containerPort) => this.createContainerExposure(context, containerPort));
+        });
         const previousSnapshotSignature = this.lastObservedSnapshotSignature;
         const mergedExposures = this.publishExposures(nextExposures);
         const changed = this.lastObservedSnapshotSignature !== previousSnapshotSignature;
@@ -206,7 +231,13 @@ export class DaemonExposureRegistryService {
             ...containerExposures,
             ...this.daemonExposures.values()
         ];
-        const snapshotSignature = this.createSnapshotSignature(mergedExposures);
+        const snapshotSignature = JSON.stringify([
+            ...mergedExposures
+        ].sort((left, right) => left.id.localeCompare(right.id)).map((exposure) => ({
+            ...exposure,
+            accessModes: [...exposure.accessModes].sort(),
+            labels: Object.fromEntries(Object.entries(exposure.labels).sort((left, right) => left[0].localeCompare(right[0])))
+        })));
 
         this.exposures = new Map(mergedExposures.map((exposure) => [exposure.id, exposure]));
         this.lastObservedSnapshotSignature = snapshotSignature;
@@ -215,58 +246,64 @@ export class DaemonExposureRegistryService {
         return mergedExposures;
     }
 
-    private async buildExposures(containers: ContainerInfo[]): Promise<TeamClusterServiceExposure[]> {
-        const exposureGroups = await Promise.all(containers.map(async (container) => {
-            try {
-                const inspection = await this.dockerRuntimeService.getContainer(container.Id);
-                const labels = inspection.Config.Labels || container.Labels || {};
-                const teamId = labels[TEAM_ID_LABEL];
-                const teamClusterId = labels[TEAM_CLUSTER_ID_LABEL];
+    private async readContainerExposureContext(container: ContainerInfo): Promise<ContainerExposureContext | null> {
+        try {
+            const inspection = await this.dockerRuntimeService.getContainer(container.Id);
+            const labels = inspection.Config.Labels;
+            const teamId = labels[TEAM_ID_LABEL];
+            const teamClusterId = labels[TEAM_CLUSTER_ID_LABEL];
 
-                if (!teamId || !teamClusterId || teamClusterId !== this.config.teamClusterId) {
-                    return [];
-                }
-
-                const httpPorts = readPortSet(labels[HTTP_PORT_LABEL]);
-                const websocketPorts = readPortSet(labels[WEBSOCKET_PORT_LABEL]);
-                const containerName = readInspectionContainerName(container, inspection);
-                const targetHost = readInspectionInternalIp(inspection) || containerName;
-                const publishedPorts = readPublishedTcpPorts(inspection);
-                const status = inspection.State.Running
-                    ? TeamClusterServiceExposureStatus.Active
-                    : TeamClusterServiceExposureStatus.Unavailable;
-
-                return publishedPorts.map((containerPort) => {
-                    const accessModes = [TeamClusterServiceExposureAccessMode.Tcp];
-                    if (httpPorts.has(containerPort)) {
-                        accessModes.push(TeamClusterServiceExposureAccessMode.Http);
-                    }
-                    if (websocketPorts.has(containerPort)) {
-                        accessModes.push(TeamClusterServiceExposureAccessMode.WebSocket);
-                    }
-
-                    return {
-                        id: `${container.Id}:${containerPort}`,
-                        teamClusterId,
-                        teamId,
-                        sourceKind: TeamClusterServiceExposureSourceKind.Container,
-                        containerId: container.Id,
-                        containerName,
-                        exposureName: `${containerName}:${containerPort}`,
-                        accessModes,
-                        targetHost,
-                        targetPort: containerPort,
-                        containerPort,
-                        status,
-                        labels
-                    };
-                });
-            } catch {
-                return [];
+            if (!teamId || !teamClusterId || teamClusterId !== this.config.teamClusterId) {
+                return null;
             }
-        }));
 
-        return exposureGroups.flat();
+            const containerName = (inspection.Name || container.Names[0] || container.Image || container.Id).replace(/^\/+/, '');
+
+            return {
+                container,
+                containerName,
+                httpPorts: readPortSet(labels[HTTP_PORT_LABEL]),
+                labels,
+                publishedPorts: readPublishedTcpPorts(inspection),
+                status: inspection.State.Running
+                    ? TeamClusterServiceExposureStatus.Active
+                    : TeamClusterServiceExposureStatus.Unavailable,
+                targetHost: readInspectionInternalIp(inspection) || containerName,
+                teamClusterId,
+                teamId,
+                websocketPorts: readPortSet(labels[WEBSOCKET_PORT_LABEL])
+            };
+        } catch {
+            return null;
+        }
+    }
+
+    private createContainerExposure(context: ContainerExposureContext, containerPort: number): TeamClusterServiceExposure {
+        const accessModes = [TeamClusterServiceExposureAccessMode.Tcp];
+        if (context.httpPorts.has(containerPort)) {
+            accessModes.push(TeamClusterServiceExposureAccessMode.Http);
+        }
+        if (context.websocketPorts.has(containerPort)) {
+            accessModes.push(TeamClusterServiceExposureAccessMode.WebSocket);
+        }
+
+        const exposure: TeamClusterServiceExposure = {
+            id: `${context.container.Id}:${containerPort}`,
+            teamClusterId: context.teamClusterId,
+            teamId: context.teamId,
+            sourceKind: TeamClusterServiceExposureSourceKind.Container,
+            containerId: context.container.Id,
+            containerName: context.containerName,
+            exposureName: `${context.containerName}:${containerPort}`,
+            accessModes,
+            targetHost: context.targetHost,
+            targetPort: containerPort,
+            containerPort,
+            status: context.status,
+            labels: context.labels
+        };
+
+        return exposure;
     }
 
     private emitSnapshot(exposures: TeamClusterServiceExposure[], snapshotSignature: string): void {
@@ -282,22 +319,9 @@ export class DaemonExposureRegistryService {
             return;
         }
 
-        this.voltCloudConnection.emitMessage({
-            type: 'exposure-snapshot',
-            exposures
+        this.eventBus.publish(new ExposureSnapshotUpdatedEvent({ exposures })).catch((error) => {
+            logger.warn({ err: error }, 'Failed to publish exposure snapshot event');
         });
         this.lastSentSnapshotSignature = snapshotSignature;
-    }
-
-    private createSnapshotSignature(exposures: TeamClusterServiceExposure[]): string {
-        const normalizedExposures = [...exposures]
-            .sort((left, right) => left.id.localeCompare(right.id))
-            .map((exposure) => ({
-                ...exposure,
-                accessModes: [...exposure.accessModes].sort(),
-                labels: Object.fromEntries(Object.entries(exposure.labels).sort((left, right) => left[0].localeCompare(right[0])))
-            }));
-
-        return JSON.stringify(normalizedExposures);
     }
 };

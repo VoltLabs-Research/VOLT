@@ -1,106 +1,26 @@
 import { logger } from '@/core/logger';
-import { ObjectBucketName } from '@/contracts';
-import type {
-    AnalysisExposureDefinition,
-    TeamClusterDaemonSceneArtifactUpsertBatchItem as ReportArtifactInput
-} from '@/contracts';
+import type { SceneArtifactUpsertBatchItem as ReportArtifactInput } from '@/modules/plugin/application/events/SceneArtifactUpsertBatchItem';
+import type { ExportExecutionInput, ExporterEntry, ExporterName } from '@/modules/plugin/application/exports/ExportNodeProcessor.types';
 import { isRecord } from '@/support/type-guards/isRecord';
-import type { ArtifactUploadBatch } from '@/modules/plugin/application/artifacts/ArtifactUploadQueueService';
 
-export type ExporterName = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter' | 'ChartExporter';
-
-export interface ExporterEntry {
-    exportData: Record<string, unknown>;
-    arrayIndex: number | undefined;
-}
-
-export interface MeshFacet {
-    vertices: [number, number, number];
-}
-
-export interface MeshInput {
-    vertices: Array<{
-        index: number;
-        position: [number, number, number];
-    }>;
-    facets: MeshFacet[];
-}
-
-export interface ExportMaterial {
-    baseColor: [number, number, number, number];
-    metallic: number;
-    roughness: number;
-    emissive: [number, number, number];
-}
-
-export interface MeshExportOptions {
-    enableDoubleSided?: boolean;
-    smoothIterations?: number;
-    material?: ExportMaterial;
-}
-
-export interface DislocationExportOptions {
-    lineWidth?: number;
-    tubularSegments?: number;
-    minSegmentPoints?: number;
-    material?: ExportMaterial;
-    colorByType?: boolean;
-    typeColors?: Record<string, [number, number, number, number]>;
-}
-
-export interface ChartExportOptions {
-    xAxisKey: string;
-    yAxisKey: string;
-    chartType: 'line' | 'bar' | 'scatter' | 'area';
-    title?: string;
-    xAxisLabel?: string;
-    yAxisLabel?: string;
-    width?: number;
-    height?: number;
-    backgroundColor?: string;
-    lineColor?: string;
-    fillColor?: string;
-    showLegend?: boolean;
-    showGrid?: boolean;
-}
-
-export interface ExportExecutionData {
-    analysisId: string;
-    trajectoryId: string;
-    pluginId: string;
-    storageClusterId?: string;
-}
-
-export interface ExportExecutionInput {
-    executionData: ExportExecutionData;
-    exposure: AnalysisExposureDefinition;
-    decodedPayload: Record<string, unknown>;
-    timestep: number;
-    storageClusterId: string;
-    artifactUploadBatch: ArtifactUploadBatch;
-}
+type ExportValue = boolean | null | number | string;
 
 export const YIELD_INTERVAL = 50_000;
 
 export const yieldToEventLoop = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
 
-export const getNestedValue = (data: unknown, key: string): unknown => {
+export const getNestedValue = (data: object, key: string): ExportValue | object | object[] | undefined => {
     if (!key) {
         return data;
     }
 
-    return key.split('.').reduce<unknown>((current, segment) => {
+    return key.split('.').reduce<ExportValue | object | object[] | undefined>((current, segment) => {
         if (!isRecord(current)) {
             return undefined;
         }
 
-        return current[segment];
+        return current[segment] as ExportValue | object | object[] | undefined;
     }, data);
-};
-
-export const toFiniteNumber = (value: unknown, fallback = 0): number => {
-    const numericValue = typeof value === 'number' ? value : Number(value);
-    return Number.isFinite(numericValue) ? numericValue : fallback;
 };
 
 export const buildObjectPath = (
@@ -138,9 +58,13 @@ export const logSkippedEmptyExport = (
 };
 
 export const resolveExporterEntries = (
-    decodedPayload: Record<string, unknown>,
+    decodedPayload: object,
     exporter: ExporterName
 ): ExporterEntry[] => {
+    if (!isRecord(decodedPayload)) {
+        return [];
+    }
+
     const rawExport = decodedPayload.export;
 
     if (Array.isArray(rawExport)) {
@@ -218,6 +142,3 @@ export const buildArtifactReportInput = (
 export const isChartExporter = (exporter: ExporterName, type: string): boolean => {
     return exporter === 'ChartExporter' || type === 'chart-png';
 };
-
-export { isRecord };
-export { ObjectBucketName };

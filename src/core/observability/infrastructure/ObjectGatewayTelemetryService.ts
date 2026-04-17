@@ -18,50 +18,25 @@ interface ObjectGatewayOperationStats {
     firstByteSamples: number;
 }
 
-const TELEMETRY_LOG_INTERVAL_MS = 60_000;
-
-class ObjectGatewayRequestTracker {
-    private readonly startedAt = Date.now();
-    private firstByteLatencyMs: number | undefined;
-    private completed = false;
-
-    constructor(
-        private readonly telemetry: ObjectGatewayTelemetryService,
-        private readonly operation: ObjectGatewayOperationName
-    ) {
-        this.telemetry.onRequestStarted();
-    }
-
-    markFirstByte(): void {
-        if (typeof this.firstByteLatencyMs === 'number') {
-            return;
-        }
-
-        this.firstByteLatencyMs = Date.now() - this.startedAt;
-    }
-
-    complete(input: {
-        statusCode?: number;
-        bytesIn?: number;
-        bytesOut?: number;
-        error?: unknown;
-    } = {}): void {
-        if (this.completed) {
-            return;
-        }
-
-        this.completed = true;
-        this.telemetry.onRequestCompleted({
-            operation: this.operation,
-            durationMs: Date.now() - this.startedAt,
-            firstByteLatencyMs: this.firstByteLatencyMs,
-            statusCode: input.statusCode,
-            bytesIn: input.bytesIn,
-            bytesOut: input.bytesOut,
-            error: input.error
-        });
-    }
+interface ObjectGatewayRequestCompletionInput {
+    statusCode?: number;
+    bytesIn?: number;
+    bytesOut?: number;
+    hasError?: boolean;
 }
+
+interface ObjectGatewayRequestSummary extends ObjectGatewayRequestCompletionInput {
+    operation: ObjectGatewayOperationName;
+    durationMs: number;
+    firstByteLatencyMs?: number;
+}
+
+interface ObjectGatewayRequestTracker {
+    markFirstByte(): void;
+    complete(input?: ObjectGatewayRequestCompletionInput): void;
+}
+
+const TELEMETRY_LOG_INTERVAL_MS = 60_000;
 
 export class ObjectGatewayTelemetryService {
     private readonly operationStats = new Map<ObjectGatewayOperationName, ObjectGatewayOperationStats>();
@@ -83,12 +58,38 @@ export class ObjectGatewayTelemetryService {
     }
 
     beginRequest(operation: ObjectGatewayOperationName): ObjectGatewayRequestTracker {
-        return new ObjectGatewayRequestTracker(this, operation);
-    }
+        const startedAt = Date.now();
+        let firstByteLatencyMs: number | undefined;
+        let completed = false;
 
-    onRequestStarted(): void {
         this.activeRequests += 1;
         this.changedSinceLastSummary = true;
+
+        return {
+            markFirstByte: () => {
+                if (firstByteLatencyMs !== undefined) {
+                    return;
+                }
+
+                firstByteLatencyMs = Date.now() - startedAt;
+            },
+            complete: (input: ObjectGatewayRequestCompletionInput = {}) => {
+                if (completed) {
+                    return;
+                }
+
+                completed = true;
+                this.onRequestCompleted({
+                    operation,
+                    durationMs: Date.now() - startedAt,
+                    firstByteLatencyMs,
+                    statusCode: input.statusCode,
+                    bytesIn: input.bytesIn,
+                    bytesOut: input.bytesOut,
+                    hasError: input.hasError
+                });
+            }
+        };
     }
 
     recordObjectTunnelOpened(durationMs: number): void {
@@ -98,21 +99,14 @@ export class ObjectGatewayTelemetryService {
         this.changedSinceLastSummary = true;
     }
 
-    recordObjectTunnelClosed(): void {
+    readonly recordObjectTunnelClosed = (): void => {
         this.activeObjectTunnels = Math.max(0, this.activeObjectTunnels - 1);
         this.changedSinceLastSummary = true;
-    }
+    };
 
-    onRequestCompleted(input: {
-        operation: ObjectGatewayOperationName;
-        durationMs: number;
-        firstByteLatencyMs?: number;
-        statusCode?: number;
-        bytesIn?: number;
-        bytesOut?: number;
-        error?: unknown;
-    }): void {
+    onRequestCompleted(input: ObjectGatewayRequestSummary): void {
         this.activeRequests = Math.max(0, this.activeRequests - 1);
+        const { statusCode } = input;
 
         const stats = this.getOperationStats(input.operation);
         stats.count += 1;
@@ -120,17 +114,17 @@ export class ObjectGatewayTelemetryService {
         stats.totalBytesIn += input.bytesIn ?? 0;
         stats.totalBytesOut += input.bytesOut ?? 0;
 
-        if (typeof input.firstByteLatencyMs === 'number') {
+        if (input.firstByteLatencyMs !== undefined) {
             stats.totalFirstByteLatencyMs += input.firstByteLatencyMs;
             stats.firstByteSamples += 1;
         }
 
-        if (input.error || (typeof input.statusCode === 'number' && input.statusCode >= 400)) {
+        if (input.hasError || (statusCode !== undefined && statusCode >= 400)) {
             stats.errorCount += 1;
         }
 
-        if (typeof input.statusCode === 'number') {
-            this.statusCounts.set(input.statusCode, (this.statusCounts.get(input.statusCode) ?? 0) + 1);
+        if (statusCode !== undefined) {
+            this.statusCounts.set(statusCode, (this.statusCounts.get(statusCode) ?? 0) + 1);
         }
 
         this.changedSinceLastSummary = true;

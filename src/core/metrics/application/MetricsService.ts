@@ -1,29 +1,34 @@
-import os from 'node:os';
-import si from 'systeminformation';
-import type { MetricsSnapshot } from '@/contracts';
+import { TTLCache } from '@isaacs/ttlcache';
+import type { MetricsSnapshot } from '@/core/metrics/contracts/metrics';
+import * as os from 'node:os';
+import si from 'systeminformation'
 
 interface CloudMetricsSnapshot {
     cloudLatencyMs: number | null;
     connectedToCloud: boolean;
-};
+}
 
 interface DiskUsageSnapshot {
     totalBytes: number;
     freeBytes: number;
     usedBytes: number;
     usagePercent: number;
-};
+}
 
 const BYTES_PER_MB = 1024 * 1024;
 const DISK_USAGE_CACHE_TTL_MS = 10_000;
+const DISK_USAGE_CACHE_KEY = 'root';
 
 export class MetricsService {
-    private cachedDiskUsage: {
-        expiresAt: number;
-        value: DiskUsageSnapshot;
-    } | null = null;
+    private readonly cachedDiskUsage = new TTLCache<string, DiskUsageSnapshot>({
+        ttl: DISK_USAGE_CACHE_TTL_MS,
+        max: 1,
+        checkAgeOnGet: true
+    });
 
-    async collectSnapshot(cloudMetrics?: CloudMetricsSnapshot): Promise<MetricsSnapshot> {
+    async collectSnapshot(
+        cloudMetrics: CloudMetricsSnapshot = { cloudLatencyMs: null, connectedToCloud: false }
+    ): Promise<MetricsSnapshot> {
         const [currentLoad, memoryData, disk, fsStats, disksIO, networkStats] = await Promise.all([
             si.currentLoad(),
             si.mem(),
@@ -33,24 +38,7 @@ export class MetricsService {
             si.networkStats()
         ]);
 
-        return {
-            timestamp: new Date().toISOString(),
-            hostname: os.hostname(),
-            uptimeSeconds: os.uptime(),
-            cpuUsagePercent: Math.round(currentLoad.currentLoad),
-            cpuLoadAverage: os.loadavg(),
-            cpuPerCoreUsagePercent: currentLoad.cpus.map((cpu) => Math.round(cpu.load)),
-            memory: this.collectMemory(memoryData),
-            disk,
-            diskOperations: this.collectDiskOperations(fsStats, disksIO),
-            network: this.collectNetwork(networkStats),
-            cloudLatencyMs: cloudMetrics?.cloudLatencyMs ?? null,
-            connectedToCloud: cloudMetrics?.connectedToCloud ?? false
-        };
-    }
-
-    private collectMemory(memoryData: Awaited<ReturnType<typeof si.mem>>) {
-        return {
+        const memory = {
             totalBytes: memoryData.total,
             freeBytes: memoryData.free,
             usedBytes: memoryData.used,
@@ -58,12 +46,35 @@ export class MetricsService {
                 ? Math.round((memoryData.used / memoryData.total) * 100)
                 : 0
         };
+        const diskOperations = {
+            readMegabytesPerSecond: Math.round((((fsStats.rx_sec ?? 0) / BYTES_PER_MB) * 100)) / 100,
+            writeMegabytesPerSecond: Math.round((((fsStats.wx_sec ?? 0) / BYTES_PER_MB) * 100)) / 100,
+            readIOPS: Math.round(disksIO.rIO_sec ?? 0),
+            writeIOPS: Math.round(disksIO.wIO_sec ?? 0),
+            totalIOPS: Math.round(disksIO.rIO_sec ?? 0) + Math.round(disksIO.wIO_sec ?? 0)
+        };
+        const snapshot: MetricsSnapshot = {
+            timestamp: new Date().toISOString(),
+            hostname: os.hostname(),
+            uptimeSeconds: os.uptime(),
+            cpuUsagePercent: Math.round(currentLoad.currentLoad),
+            cpuLoadAverage: os.loadavg(),
+            cpuPerCoreUsagePercent: currentLoad.cpus.map((cpu) => Math.round(cpu.load)),
+            memory,
+            disk,
+            diskOperations,
+            network: this.collectNetwork(networkStats),
+            cloudLatencyMs: cloudMetrics.cloudLatencyMs,
+            connectedToCloud: cloudMetrics.connectedToCloud
+        };
+
+        return snapshot;
     }
 
     private async collectDiskUsage(): Promise<DiskUsageSnapshot> {
-        const cachedDiskUsage = this.cachedDiskUsage;
-        if (cachedDiskUsage && cachedDiskUsage.expiresAt > Date.now()) {
-            return cachedDiskUsage.value;
+        const cachedDiskUsage = this.cachedDiskUsage.get(DISK_USAGE_CACHE_KEY);
+        if (cachedDiskUsage) {
+            return cachedDiskUsage;
         }
 
         const fileSystems = await si.fsSize();
@@ -82,28 +93,9 @@ export class MetricsService {
                 usagePercent: 0
             };
 
-        this.cachedDiskUsage = {
-            expiresAt: Date.now() + DISK_USAGE_CACHE_TTL_MS,
-            value: snapshot
-        };
+        this.cachedDiskUsage.set(DISK_USAGE_CACHE_KEY, snapshot);
 
         return snapshot;
-    }
-
-    private collectDiskOperations(
-        fsStats: Awaited<ReturnType<typeof si.fsStats>>,
-        disksIO: Awaited<ReturnType<typeof si.disksIO>>
-    ) {
-        const readIOPS = Math.round(disksIO.rIO_sec ?? 0);
-        const writeIOPS = Math.round(disksIO.wIO_sec ?? 0);
-
-        return {
-            readMegabytesPerSecond: Math.round((((fsStats.rx_sec ?? 0) / BYTES_PER_MB) * 100)) / 100,
-            writeMegabytesPerSecond: Math.round((((fsStats.wx_sec ?? 0) / BYTES_PER_MB) * 100)) / 100,
-            readIOPS,
-            writeIOPS,
-            totalIOPS: readIOPS + writeIOPS
-        };
     }
 
     private collectNetwork(networkStats: Awaited<ReturnType<typeof si.networkStats>>) {
@@ -121,4 +113,4 @@ export class MetricsService {
             sentBytes
         };
     }
-};
+}

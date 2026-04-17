@@ -4,44 +4,14 @@ import type { QueueService } from '@/core/queues/application/QueueService';
 import type { EnqueuePreprocessingRequest, EnqueuePreprocessingResponse, EnqueuePreprocessingFrameDescriptor, GlbConversionQueueJobPayload } from '@/contracts';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
 
+export interface TrajectoryGlbQueueService {
+    enqueueGlbConversionJobs(input: EnqueuePreprocessingRequest): Promise<EnqueuePreprocessingResponse>;
+};
+
 interface EnqueueGlbJobsResult {
     queuedJobs: number;
     duplicateJobs: number;
     skippedJobs: number;
-};
-
-const buildGlbJobId = (trajectoryId: string, timestep: number): string => {
-    return `trajectory-glb:${trajectoryId}:${timestep}`;
-};
-
-const buildGlbJobPayload = (
-    input: EnqueuePreprocessingRequest,
-    frame: EnqueuePreprocessingFrameDescriptor
-): GlbConversionQueueJobPayload => {
-    const timestamp = new Date().toISOString();
-
-    return {
-        jobId: buildGlbJobId(input.trajectoryId, frame.timestep),
-        teamId: input.teamId,
-        trajectoryId: input.trajectoryId,
-        trajectoryName: input.trajectoryName,
-        timestep: frame.timestep,
-        objectKey: frame.objectKey,
-        ownerClusterId: frame.ownerClusterId || input.storageClusterId,
-        status: 'queued',
-        queueType: TRAJECTORY_GLB_QUEUE_NAME,
-        metadata: {
-            trajectoryId: input.trajectoryId,
-            trajectoryName: input.trajectoryName,
-            timestep: frame.timestep
-        },
-        createdAt: timestamp,
-        updatedAt: timestamp
-    };
-};
-
-export interface TrajectoryGlbQueueService {
-    enqueueGlbConversionJobs(input: EnqueuePreprocessingRequest): Promise<EnqueuePreprocessingResponse>;
 };
 
 export const createTrajectoryGlbQueueService = (
@@ -72,10 +42,25 @@ export const createTrajectoryGlbQueueService = (
                 continue;
             }
 
-            const job = buildGlbJobPayload(input, {
-                ...frame,
-                ownerClusterId
-            });
+            const timestamp = new Date().toISOString();
+            const job: GlbConversionQueueJobPayload = {
+                jobId: `trajectory-glb:${input.trajectoryId}:${frame.timestep}`,
+                teamId: input.teamId,
+                trajectoryId: input.trajectoryId,
+                trajectoryName: input.trajectoryName,
+                timestep: frame.timestep,
+                objectKey: frame.objectKey,
+                ownerClusterId,
+                status: 'queued',
+                queueType: TRAJECTORY_GLB_QUEUE_NAME,
+                metadata: {
+                    trajectoryId: input.trajectoryId,
+                    trajectoryName: input.trajectoryName,
+                    timestep: frame.timestep
+                },
+                createdAt: timestamp,
+                updatedAt: timestamp
+            };
             jobsToEnqueue.push(job);
         }
 

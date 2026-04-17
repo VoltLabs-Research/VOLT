@@ -1,12 +1,28 @@
-import type { Readable } from 'node:stream';
 import { decodeMultiStream, mergeSelectiveChunk } from '@/support/serialization/selective-msgpack';
 import { isRecord } from '@/support/type-guards/isRecord';
 import { ObjectBucketName } from '@/contracts';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
 import { createZstdDecompressionStream } from '@/support/serialization/storage-codec';
 
-type PerAtomRow = Record<string, unknown>;
-type PerAtomColumnarData = Record<string, unknown[]>;
+type AtomScalar = string | number | boolean | null;
+type AtomVector = AtomScalar[];
+type AtomPropertyValue = AtomScalar | AtomVector;
+type AtomId = string | number;
+type PluginDecodedValue = AtomPropertyValue | PerAtomProperties | null | undefined;
+
+interface AtomProperties {
+    id?: AtomId;
+    [key: string]: AtomPropertyValue | undefined;
+}
+
+type PerAtomRow = AtomProperties;
+type PerAtomColumnarData = Record<string, AtomPropertyValue[]>;
+type PerAtomProperties = PerAtomRow[] | PerAtomColumnarData;
+interface PluginDecodedPayload {
+    'per-atom-properties'?: PerAtomProperties | null;
+    [key: string]: PluginDecodedValue;
+}
+type ModifierStats = { min: number; max: number };
 
 interface PluginPropertyNamesRequest {
     trajectoryId: string;
@@ -51,20 +67,20 @@ interface PluginAnalysisAllAtomsRequest {
 
 interface PluginAnalysisAllAtomsResponse {
     propertyNames: string[];
-    atoms: Record<string, unknown>[];
-};
+    atoms: AtomProperties[];
+}
 
 interface PluginAtomIndex {
-    [atomId: number]: Record<string, unknown>;
-};
+    [atomId: number]: AtomProperties;
+}
 
 interface ExposureData {
     exposureId: string;
     propertyNames: string[];
-    rows: Record<string, unknown>[];
-};
+    rows: AtomProperties[];
+}
 
-function getMinMaxFromTypedArray(arr: Float32Array | Float64Array | Int32Array | Uint32Array): { min: number; max: number } | undefined {
+function getMinMaxFromTypedArray(arr: Float32Array | Float64Array | Int32Array | Uint32Array): ModifierStats | undefined {
     if (arr.length === 0) return undefined;
     let min = Infinity;
     let max = -Infinity;
@@ -91,8 +107,8 @@ export class TrajectoryPluginParserService {
         const { trajectoryId, analysisId, exposureId, timestep, ownerClusterId } = request;
         let objectName: string | null = null;
 
-        if (typeof timestep === 'number') {
-            objectName = this.getPluginMsgpackKey(trajectoryId, analysisId, exposureId, String(timestep));
+        if (timestep !== undefined) {
+            objectName = this.getPluginMsgpackKey(trajectoryId, analysisId, exposureId, timestep);
         } else {
             const prefix = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/`;
             const objects = await this.listAllObjectKeys(ownerClusterId, ObjectBucketName.Plugins, prefix);
@@ -111,15 +127,15 @@ export class TrajectoryPluginParserService {
             const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, objectName, { skipMetadata: true });
             const stream = createZstdDecompressionStream(response.stream).stream;
 
-            let decoded: Record<string, unknown> | null = null;
+            let decoded: PluginDecodedPayload | null = null;
             for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
-                decoded = mergeSelectiveChunk(decoded, message, (key) => key === 'per-atom-properties');
+                decoded = mergeSelectiveChunk(decoded, message, (key) => key === 'per-atom-properties') as PluginDecodedPayload;
             }
 
             if (!decoded) return [];
 
             const rows = this.normalizePerAtomProperties(decoded['per-atom-properties']);
-            if (!rows?.length) {
+            if (!rows || rows.length === 0) {
                 return [];
             }
 
@@ -138,17 +154,17 @@ export class TrajectoryPluginParserService {
         }
     }
 
-    async getModifierAnalysisData(request: PluginModifierAnalysisRequest): Promise<Record<string, unknown>[] | null> {
+    async getModifierAnalysisData(request: PluginModifierAnalysisRequest): Promise<AtomProperties[] | null> {
         const { trajectoryId, analysisId, exposureId, timestep, ownerClusterId } = request;
-        const key = this.getPluginMsgpackKey(trajectoryId, analysisId, exposureId, String(timestep));
+        const key = this.getPluginMsgpackKey(trajectoryId, analysisId, exposureId, timestep);
         
         try {
             const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, key, { skipMetadata: true });
             const stream = createZstdDecompressionStream(response.stream).stream;
 
-            let decoded: Record<string, unknown> | null = null;
+            let decoded: PluginDecodedPayload | null = null;
             for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
-                decoded = mergeSelectiveChunk(decoded, message, (k) => k === 'per-atom-properties');
+                decoded = mergeSelectiveChunk(decoded, message, (k) => k === 'per-atom-properties') as PluginDecodedPayload;
             }
 
             if (!decoded) return null;
@@ -161,14 +177,18 @@ export class TrajectoryPluginParserService {
     async getModifierValues(request: PluginModifierValuesRequest): Promise<Float32Array | null> {
         const data = await this.getModifierAnalysisData(request);
         if (!data) return null;
-        return this.toFloat32ByAtomId(data, request.property) || null;
+        const values = this.toFloat32ByAtomId(data, request.property);
+        return values === undefined ? null : values;
     }
 
-    async getModifierStats(request: PluginModifierValuesRequest): Promise<{ min: number; max: number } | null> {
+    async getModifierStats(request: PluginModifierValuesRequest): Promise<ModifierStats | null> {
         const data = await this.getModifierAnalysisData(request);
         if (!data) return null;
         const arr = this.toFloat32ByAtomId(data, request.property);
-        return arr ? getMinMaxFromTypedArray(arr) || null : null;
+        if (!arr) return null;
+
+        const stats = getMinMaxFromTypedArray(arr);
+        return stats === undefined ? null : stats;
     }
 
     async getModifierUniqueValues(request: PluginModifierUniqueValuesRequest): Promise<number[]> {
@@ -191,18 +211,18 @@ export class TrajectoryPluginParserService {
 
         if (targetIdsSet.size === 0) return null;
 
-        const key = this.getPluginMsgpackKey(trajectoryId, analysisId, exposureId, String(timestep));
+        const key = this.getPluginMsgpackKey(trajectoryId, analysisId, exposureId, timestep);
         
         try {
             const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, key, { skipMetadata: true });
             const pluginIndex: PluginAtomIndex = {};
             let matchedAtomCount = 0;
-            const stream = createZstdDecompressionStream(response.stream).stream as unknown as AsyncIterable<Uint8Array>;
+            const stream = createZstdDecompressionStream(response.stream).stream;
 
-            for await (const message of decodeMultiStream(stream)) {
+            for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
                 if (!isRecord(message)) continue;
 
-                const perAtomRaw = message['per-atom-properties'];
+                const perAtomRaw = (message as PluginDecodedPayload)['per-atom-properties'];
                 const perAtomData = this.normalizePerAtomProperties(perAtomRaw);
                 if (!perAtomData) continue;
 
@@ -215,7 +235,7 @@ export class TrajectoryPluginParserService {
                     if (!targetIdsSet.has(id)) continue;
                     if (pluginIndex[id]) continue;
 
-                    pluginIndex[id] = item as Record<string, unknown>;
+                    pluginIndex[id] = item;
                     matchedAtomCount += 1;
 
                     if (matchedAtomCount >= targetIdsSet.size) {
@@ -224,10 +244,7 @@ export class TrajectoryPluginParserService {
                 }
 
                 if (shouldBreak) {
-                    const readableStream = response.stream as unknown as Readable & { destroy?: () => void };
-                    if (typeof readableStream.destroy === 'function') {
-                        readableStream.destroy();
-                    }
+                    response.stream.destroy();
                     return pluginIndex;
                 }
             }
@@ -312,7 +329,8 @@ export class TrajectoryPluginParserService {
         const propertyOccurrences = new Map<string, number>();
         for (const result of exposureResults) {
             for (const prop of result.propertyNames) {
-                propertyOccurrences.set(prop, (propertyOccurrences.get(prop) || 0) + 1);
+                const occurrences = propertyOccurrences.get(prop);
+                propertyOccurrences.set(prop, occurrences === undefined ? 1 : occurrences + 1);
             }
         }
 
@@ -322,7 +340,7 @@ export class TrajectoryPluginParserService {
         for (const result of exposureResults) {
             const mapping = new Map<string, string>();
             for (const prop of result.propertyNames) {
-                const occurrences = propertyOccurrences.get(prop) || 1;
+                const occurrences = propertyOccurrences.get(prop)!;
                 const displayName = occurrences > 1
                     ? `${result.exposureId}: ${prop}`
                     : prop;
@@ -332,7 +350,7 @@ export class TrajectoryPluginParserService {
             exposureMappings.set(result.exposureId, mapping);
         }
 
-        const mergedAtoms = new Map<number, Record<string, unknown>>();
+        const mergedAtoms = new Map<number, AtomProperties>();
         const { atomIds } = request;
 
         for (const result of exposureResults) {
@@ -341,7 +359,10 @@ export class TrajectoryPluginParserService {
                 const atomId = this.normalizeAtomId(row.id);
                 if (atomId === null) continue;
                 if (atomIds && !atomIds.has(atomId)) continue;
-                const existing = mergedAtoms.get(atomId) ?? { id: atomId };
+                let existing = mergedAtoms.get(atomId);
+                if (!existing) {
+                    existing = { id: atomId };
+                }
 
                 for (const [source, display] of mapping.entries()) {
                     if (row[source] !== undefined) {
@@ -358,17 +379,16 @@ export class TrajectoryPluginParserService {
         return { propertyNames: allDisplayNames, atoms };
     }
 
-    private getPluginMsgpackKey(trajectoryId: string, analysisId: string, exposureId: string, timestep: string): string {
+    private getPluginMsgpackKey(trajectoryId: string, analysisId: string, exposureId: string, timestep: number): string {
         return `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack.zst`;
     }
 
-    private toFloat32ByAtomId(data: unknown, property: string): Float32Array | undefined {
-        if (!Array.isArray(data) || (data as unknown[]).length === 0) return undefined;
+    private toFloat32ByAtomId(items: AtomProperties[], property: string): Float32Array | undefined {
+        if (items.length === 0) return undefined;
 
-        const items = data as Array<Record<string, unknown>>;
         let maxId = 0;
         for (let i = 0; i < items.length; i++) {
-            const id = this.normalizeAtomId(items[i]?.id);
+            const id = this.normalizeAtomId(items[i].id);
             if (id !== null && id > maxId) maxId = id;
         }
         if (maxId <= 0) return undefined;
@@ -376,64 +396,31 @@ export class TrajectoryPluginParserService {
         const out = new Float32Array(maxId + 1);
         out.fill(Number.NaN);
 
-        const first = items[0];
-        const isVector = Array.isArray(first?.[property]);
-
-        if (!isVector) {
-            for (let i = 0; i < items.length; i++) {
-                const item = items[i];
-                const id = this.normalizeAtomId(item?.id);
-                if (id === null) continue;
-                const value = Number(item?.[property]);
-                if (Number.isFinite(value)) {
-                    out[id] = value;
-                }
-            }
-            return out;
-        }
-
         for (let i = 0; i < items.length; i++) {
             const item = items[i];
-            const id = this.normalizeAtomId(item?.id);
+            const id = this.normalizeAtomId(item.id);
             if (id === null) continue;
-
-            const vec = item?.[property] as number[] | undefined;
-            if (!Array.isArray(vec) || vec.length === 0) continue;
-
-            let sum = 0;
-            for (let k = 0; k < vec.length; k++) {
-                const v = Number(vec[k]);
-                if (!Number.isFinite(v)) {
-                    sum = Number.NaN;
-                    break;
-                }
-                sum += v * v;
-            }
-            if (Number.isFinite(sum)) {
-                out[id] = Math.sqrt(sum);
+            const value = Number(item[property]);
+            if (Number.isFinite(value)) {
+                out[id] = value;
             }
         }
 
         return out;
     }
 
-    private normalizeAtomId(value: unknown): number | null {
-        const parsed = typeof value === 'string'
-            ? Number(value.trim())
-            : typeof value === 'number'
-                ? value
-                : Number.NaN;
-
-        if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 0) {
+    private normalizeAtomId(value: AtomId | undefined): number | null {
+        const parsed = Number(value);
+        if (!Number.isInteger(parsed) || parsed < 0) {
             return null;
         }
 
         return parsed;
     }
 
-    private normalizePerAtomProperties(value: unknown): PerAtomRow[] | null {
+    private normalizePerAtomProperties(value: PerAtomProperties | null | undefined): PerAtomRow[] | null {
         if (Array.isArray(value)) {
-            return value.map((item) => this.flattenPerAtomRow(item as PerAtomRow));
+            return value.map((item) => this.flattenPerAtomRow(item));
         }
 
         if (!this.isColumnarPerAtomData(value)) {
@@ -445,7 +432,7 @@ export class TrajectoryPluginParserService {
             return [];
         }
 
-        const rowCount = entries[0]?.[1]?.length ?? 0;
+        const rowCount = entries[0][1].length;
         const rows: PerAtomRow[] = Array.from({ length: rowCount }, () => ({}));
 
         for (const [key, column] of entries) {
@@ -474,12 +461,12 @@ export class TrajectoryPluginParserService {
         return flattened;
     }
 
-    private isColumnarPerAtomData(value: unknown): value is PerAtomColumnarData {
+    private isColumnarPerAtomData(value: PerAtomProperties | null | undefined): value is PerAtomColumnarData {
         if (!value || Array.isArray(value) || typeof value !== 'object') {
             return false;
         }
 
-        const entries = Object.entries(value as Record<string, unknown>);
+        const entries = Object.entries(value);
         if (entries.length === 0) {
             return false;
         }

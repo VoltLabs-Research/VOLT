@@ -1,24 +1,20 @@
-import { calculatePaginationOffset, ObjectBucketName, normalizePagination } from '@/contracts';
+import { normalizePagination, calculatePaginationOffset } from '@/contracts/pagination';
 import { logger } from '@/core/logger';
-import { createNativeProcessingTempPath, NATIVE_PROCESSING_RUNTIME_DIR, NativeModuleOperation } from '@/core/runtime/infrastructure/native/NativeModuleLoader';
+import { NativeModuleOperation, withNativeProcessingTempDir } from '@/core/runtime/infrastructure/native/NativeModuleLoader';
 import { createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
+import { ObjectBucketName } from '@/core/storage/contracts/http.objectStore';
 import { createZstdDecompressionStream, toCompressedDumpObjectKey } from '@/support/serialization/storage-codec';
-import type { NativeAtomPageEntry, NativeAtomsPageRequest, NativeAtomsPageResponse, NativeDataResult, NativeDumpResult, NativeModuleLoader, NativePropertyStatsRequest, NativeStatsResult, NativeTrajectoryRequest, NativeUniqueValuesRequest, ParseOptions, ParsedTrajectory } from '@/core/runtime/infrastructure/native/NativeModuleLoader';
+import type { NativeAtomPageEntry, NativeAtomsPageRequest, NativeAtomsPageResponse } from '@/core/runtime/infrastructure/native/NativeModuleLoader';
+import type { NativeDataResult, NativeDumpResult, NativeModuleLoader } from '@/core/runtime/infrastructure/native/NativeModuleLoader';
+import type { NativePropertyStatsRequest, NativeStatsResult, NativeTrajectoryRequest, NativeUniqueValuesRequest } from '@/core/runtime/infrastructure/native/NativeModuleLoader';
+import type { ParseOptions, ParsedTrajectory } from '@/core/runtime/infrastructure/native/NativeModuleLoader';
 
-const getDumpObjectKey = (trajectoryId: string, timestep: number): string => {
-    return toCompressedDumpObjectKey(trajectoryId, timestep);
-};
-
-const extractAxisValues = (positions: Float32Array, axis: number): Float32Array => {
-    const values = new Float32Array(positions.length / 3);
-    for (let index = 0; index < values.length; index++) {
-        values[index] = positions[index * 3 + axis];
-    }
-
-    return values;
+interface ObjectStoreError extends Error {
+    code?: 'NoSuchKey' | 'NotFound';
 };
 
 const toParsedDumpResult = (result: NativeDumpResult): ParsedTrajectory => {
@@ -107,21 +103,21 @@ export const createTrajectoryParserService = (
     objectStore: ClusterObjectStore,
     nativeModuleLoader: NativeModuleLoader
 ): TrajectoryParserService => ({
-    async getTrajectoryMetadata(input) {
-        return this.withDumpFile(input, async (dumpPath) => {
-            return this.parseTrajectory(dumpPath, {
+    getTrajectoryMetadata(input) {
+        return this.withDumpFile(input, (dumpPath) => {
+            return Promise.resolve(this.parseTrajectory(dumpPath, {
                 properties: []
-            }).metadata;
+            }).metadata);
         });
     },
 
-    async getPropertyStats(input) {
+    getPropertyStats(input) {
         nativeModuleLoader.traceOperation(NativeModuleOperation.PropertyStats, {
             objectKey: input.objectKey,
             timestep: input.timestep,
             trajectoryId: input.trajectoryId
         });
-        return this.withDumpFile(input, async (dumpPath) => {
+        return this.withDumpFile(input, (dumpPath) => {
             const parsed = this.parseTrajectory(dumpPath, {
                 properties: []
             });
@@ -130,41 +126,42 @@ export const createTrajectoryParserService = (
                 throw new Error(`Property '${input.property}' not found in trajectory dump`);
             }
 
-            return nativeModuleLoader.getStatsModule().getStatsForProperty(dumpPath, propertyIndex);
+            return Promise.resolve(nativeModuleLoader.getStatsModule().getStatsForProperty(dumpPath, propertyIndex));
         });
     },
 
-    async getUniqueValues(input) {
+    getUniqueValues(input) {
         nativeModuleLoader.traceOperation(NativeModuleOperation.UniqueValues, {
             objectKey: input.objectKey,
             timestep: input.timestep,
             trajectoryId: input.trajectoryId
         });
-        return this.withDumpFile(input, async (dumpPath) => {
+        return this.withDumpFile(input, (dumpPath) => {
             const parsed = this.parseTrajectory(dumpPath, {
                 properties: []
             });
             const propertyIndex = parsed.metadata.headers.indexOf(input.property.toLowerCase());
             if (propertyIndex === -1) {
-                return [];
+                return Promise.resolve([]);
             }
 
-            return nativeModuleLoader.getStatsModule().getUniqueValuesForProperty(dumpPath, propertyIndex, input.maxValues);
+            return Promise.resolve(nativeModuleLoader.getStatsModule().getUniqueValuesForProperty(dumpPath, propertyIndex, input.maxValues));
         });
     },
 
-    async getAtomsPage(input) {
-        return this.withDumpFile(input, async (dumpPath) => {
+    getAtomsPage(input) {
+        return this.withDumpFile(input, (dumpPath) => {
             const parsed = this.parseTrajectory(dumpPath, {
                 includeIds: true,
                 properties: ['*']
             });
-            const totalAtoms = parsed.ids?.length || parsed.positions.length / 3;
+            const totalAtoms = parsed.ids ? parsed.ids.length : parsed.positions.length / 3;
             const pagination = normalizePagination(input.page, input.limit);
             const startIndex = calculatePaginationOffset(pagination.page, pagination.limit);
             const endIndex = Math.min(totalAtoms, startIndex + pagination.limit);
             const atoms = [];
-            const nativeProperties = parsed.properties ? Object.keys(parsed.properties) : [];
+            const properties = parsed.properties;
+            const nativeProperties = properties ? Object.keys(properties) : [];
 
             for (let index = startIndex; index < endIndex; index++) {
                 const atom: NativeAtomPageEntry = {
@@ -176,23 +173,23 @@ export const createTrajectoryParserService = (
                 };
 
                 for (const propName of nativeProperties) {
-                    const values = parsed.properties![propName];
+                    const values = properties![propName];
                     atom[propName] = Number(values[index]);
                 }
 
                 atoms.push(atom);
             }
 
-            return {
+            return Promise.resolve({
                 atoms,
                 totalAtoms,
                 nativeProperties
-            };
+            });
         });
     },
 
-    async getAtomIds(input) {
-        return this.withDumpFile(input, async (dumpPath) => {
+    getAtomIds(input) {
+        return this.withDumpFile(input, (dumpPath) => {
             const parsed = this.parseTrajectory(dumpPath, {
                 includeIds: true,
                 properties: []
@@ -202,77 +199,68 @@ export const createTrajectoryParserService = (
                 throw new Error('Trajectory atom ids are required for atom-id lookup');
             }
 
-            return Array.from(parsed.ids, (id) => Number(id));
+            return Promise.resolve(Array.from(parsed.ids, (id) => Number(id)));
         });
     },
 
     async withDumpFile<T>(input: NativeTrajectoryRequest, action: (dumpPath: string) => Promise<T>): Promise<T> {
-        await fs.mkdir(NATIVE_PROCESSING_RUNTIME_DIR, {
-            recursive: true
-        });
+        return withNativeProcessingTempDir('trajectory-dump', async (tempDirectory) => {
+            const tempDumpPath = path.join(tempDirectory, 'input.dump');
+            const objectKey = input.objectKey || toCompressedDumpObjectKey(input.trajectoryId, input.timestep);
+            const ownerClusterId = input.ownerClusterId;
+            const startTime = Date.now();
 
-        const tempDumpPath = createNativeProcessingTempPath('.dump');
-        const objectKey = input.objectKey || getDumpObjectKey(input.trajectoryId, input.timestep);
-        const ownerClusterId = input.ownerClusterId;
-        const startTime = Date.now();
-
-        if (!ownerClusterId) {
-            throw new Error(`Missing dump owner cluster for trajectory ${input.trajectoryId} timestep ${input.timestep}`);
-        }
-
-        logger.info(
-            {
-                objectKey,
-                tempDumpPath,
-                timestep: input.timestep,
-                trajectoryId: input.trajectoryId
-            },
-            'Preparing local dump file for native trajectory processing'
-        );
-
-        try {
-            const response = await objectStore.getStream(ownerClusterId, ObjectBucketName.Dumps, objectKey, {
-                skipMetadata: true
-            });
-            const decompressed = createZstdDecompressionStream(response.stream);
-            await pipeline(decompressed.stream, createWriteStream(tempDumpPath));
-            await decompressed.completion;
-            const dumpStats = await fs.stat(tempDumpPath);
+            if (!ownerClusterId) {
+                throw new Error(`Missing dump owner cluster for trajectory ${input.trajectoryId} timestep ${input.timestep}`);
+            }
 
             logger.info(
                 {
-                    durationMs: Date.now() - startTime,
                     objectKey,
-                    sizeBytes: dumpStats.size,
                     tempDumpPath,
                     timestep: input.timestep,
                     trajectoryId: input.trajectoryId
                 },
-                'Local dump file ready for native trajectory processing'
+                'Preparing local dump file for native trajectory processing'
             );
 
-            return await action(tempDumpPath);
-        } catch (error: unknown) {
-            if (
-                error !== null &&
-                typeof error === 'object' &&
-                'code' in error &&
-                ((error as Record<string, unknown>).code === 'NoSuchKey' ||
-                 (error as Record<string, unknown>).code === 'NotFound')
-            ) {
-                const dumpNotFoundError = new Error(
-                    `Dump object not found in S3: bucket=${ObjectBucketName.Dumps}, ` +
-                    `key=${objectKey}, trajectoryId=${input.trajectoryId}, timestep=${input.timestep}. ` +
-                    `The dump file may not have been uploaded successfully.`
-                );
-                dumpNotFoundError.name = 'DumpNotFoundError';
-                throw dumpNotFoundError;
-            }
+            try {
+                const response = await objectStore.getStream(ownerClusterId, ObjectBucketName.Dumps, objectKey, {
+                    skipMetadata: true
+                });
+                const decompressed = createZstdDecompressionStream(response.stream);
+                await pipeline(decompressed.stream, createWriteStream(tempDumpPath));
+                await decompressed.completion;
+                const dumpStats = await fs.stat(tempDumpPath);
 
-            throw error;
-        } finally {
-            await fs.unlink(tempDumpPath).catch(() => {});
-        }
+                logger.info(
+                    {
+                        durationMs: Date.now() - startTime,
+                        objectKey,
+                        sizeBytes: dumpStats.size,
+                        tempDumpPath,
+                        timestep: input.timestep,
+                        trajectoryId: input.trajectoryId
+                    },
+                    'Local dump file ready for native trajectory processing'
+                );
+
+                return await action(tempDumpPath);
+            } catch (error) {
+                const { code } = error as ObjectStoreError;
+                if (code === 'NoSuchKey' || code === 'NotFound') {
+                    const dumpNotFoundError = new Error(
+                        `Dump object not found in S3: bucket=${ObjectBucketName.Dumps}, ` +
+                        `key=${objectKey}, trajectoryId=${input.trajectoryId}, timestep=${input.timestep}. ` +
+                        `The dump file may not have been uploaded successfully.`
+                    );
+                    dumpNotFoundError.name = 'DumpNotFoundError';
+                    throw dumpNotFoundError;
+                }
+
+                throw error;
+            }
+        });
     },
 
     parseTrajectory(filePath, options = {}) {
@@ -334,33 +322,35 @@ export const createTrajectoryParserService = (
 
     getPropertyValues(parsed, property) {
         const lowerProperty = property.toLowerCase();
+        const axisIndex = ({
+            x: 0,
+            y: 1,
+            z: 2
+        } as const)[lowerProperty as 'x' | 'y' | 'z'];
 
         if (lowerProperty === 'type') {
             return new Float32Array(parsed.types);
         }
 
-        if (lowerProperty === 'x') {
-            return extractAxisValues(parsed.positions, 0);
-        }
-
-        if (lowerProperty === 'y') {
-            return extractAxisValues(parsed.positions, 1);
-        }
-
-        if (lowerProperty === 'z') {
-            return extractAxisValues(parsed.positions, 2);
-        }
-
-        if (lowerProperty === 'id' && parsed.ids) {
-            const values = new Float32Array(parsed.ids.length);
-            for (let index = 0; index < parsed.ids.length; index++) {
-                values[index] = parsed.ids[index];
+        if (axisIndex !== undefined) {
+            const values = new Float32Array(parsed.positions.length / 3);
+            for (let index = 0; index < values.length; index++) {
+                values[index] = parsed.positions[index * 3 + axisIndex];
             }
 
             return values;
         }
 
-        return parsed.properties?.[property] || parsed.properties?.[lowerProperty] || new Float32Array(0);
+        if (lowerProperty === 'id' && parsed.ids) {
+            return Float32Array.from(parsed.ids);
+        }
+
+        const properties = parsed.properties;
+        if (!properties) {
+            return new Float32Array(0);
+        }
+
+        return properties[property] ?? properties[lowerProperty] ?? new Float32Array(0);
     },
 
     remapExternalValues(parsed, externalValues) {
@@ -369,11 +359,8 @@ export const createTrajectoryParserService = (
         }
 
         const values = new Float32Array(parsed.ids.length);
-        values.fill(Number.NaN);
         for (let index = 0; index < parsed.ids.length; index++) {
-            const atomId = parsed.ids[index];
-            const externalValue = externalValues[atomId];
-            values[index] = Number.isFinite(externalValue) ? externalValue : Number.NaN;
+            values[index] = externalValues[parsed.ids[index]];
         }
 
         return values;

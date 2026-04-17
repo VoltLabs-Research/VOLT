@@ -1,20 +1,20 @@
+import zlib from 'node:zlib';
 import type { AnalysisStartRequest, AnalysisStartTransportRequest } from '@/contracts';
 import { ChannelCommands } from '@/contracts';
-import type { AnalysisDispatchService } from '@/modules/analysis/application/dispatch/AnalysisDispatchService';
 import { extractDaemonTraceContext } from '@/core/observability/infrastructure/daemonInstrumentation';
-import type { ReverseChannelCommandHandler } from '@/core/reverse-channel/contracts/commandHandler';
 import type { DaemonTraceContext } from '@/core/observability/infrastructure/daemonInstrumentation';
+import type { ReverseChannelCommandHandler } from '@/core/reverse-channel/contracts/commandHandler';
 import type { RuntimeCapabilityGuard } from '@/core/runtime/application/RuntimeCapabilityGuard';
-import zlib from 'node:zlib';
+import type { AnalysisDispatchService } from '@/modules/analysis/application/dispatch/AnalysisDispatchService';
 
 interface AnalysisHandlersDependencies {
     analysisDispatchService: AnalysisDispatchService;
     runtimeCapabilityGuard: RuntimeCapabilityGuard;
-};
+}
 
 interface AnalysisStartRequestWithTrace extends AnalysisStartRequest {
     traceContext?: DaemonTraceContext;
-};
+}
 
 interface AnalysisStartTransportPayload extends AnalysisStartTransportRequest {
     traceContext?: DaemonTraceContext;
@@ -53,9 +53,7 @@ export const createAnalysisHandlers = (deps: AnalysisHandlersDependencies): Reve
     {
         command: ChannelCommands.AnalysisStart,
         execute: async (payload) => {
-            deps.runtimeCapabilityGuard.ensureAcceptsComputeJobs(
-                ChannelCommands.AnalysisStart
-            );
+            deps.runtimeCapabilityGuard.ensureAcceptsComputeJobs(ChannelCommands.AnalysisStart);
             const request = readAnalysisStartRequest(payload);
             return { data: await deps.analysisDispatchService.startAnalysis(request) };
         }

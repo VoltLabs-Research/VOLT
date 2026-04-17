@@ -1,33 +1,14 @@
-import { DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS, type TeamClusterDaemonQueueScopeLimits } from '@/contracts';
-
-const cloneQueueScopeLimits = (
-    queueScopeLimits: TeamClusterDaemonQueueScopeLimits
-): TeamClusterDaemonQueueScopeLimits => ({
-    analysisProcessing: {
-        ...queueScopeLimits.analysisProcessing
-    },
-    artifactUpload: {
-        ...queueScopeLimits.artifactUpload
-    },
-    trajectoryGlbConversion: {
-        ...queueScopeLimits.trajectoryGlbConversion
-    },
-    cloudUpload: {
-        ...queueScopeLimits.cloudUpload
-    },
-    trajectoryCompression: {
-        ...queueScopeLimits.trajectoryCompression
-    }
-});
+import { DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS } from '@/core/runtime/contracts/teamClusterRuntime';
+import type { TeamClusterDaemonQueueScopeLimits } from '@/core/runtime/contracts/teamClusterRuntime';
 
 export class QueueScopeLimitsRegistry {
-    private queueScopeLimits = cloneQueueScopeLimits(DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS);
+    private queueScopeLimits: TeamClusterDaemonQueueScopeLimits = DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS;
 
-    apply(queueScopeLimits: TeamClusterDaemonQueueScopeLimits): void {
-        this.queueScopeLimits = cloneQueueScopeLimits(queueScopeLimits);
-    }
+    readonly apply = (queueScopeLimits: TeamClusterDaemonQueueScopeLimits): void => {
+        this.queueScopeLimits = queueScopeLimits;
+    };
 
-    getSnapshot(): TeamClusterDaemonQueueScopeLimits {
-        return cloneQueueScopeLimits(this.queueScopeLimits);
-    }
+    readonly getSnapshot = (): TeamClusterDaemonQueueScopeLimits => {
+        return this.queueScopeLimits;
+    };
 }

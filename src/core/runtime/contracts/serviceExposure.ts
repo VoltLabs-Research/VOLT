@@ -1,19 +1,3 @@
-export enum TeamClusterServiceExposureAccessMode {
-    Http = 'http',
-    Tcp = 'tcp',
-    WebSocket = 'websocket'
-};
-
-export enum TeamClusterServiceExposureStatus {
-    Active = 'active',
-    Unavailable = 'unavailable'
-};
-
-export enum TeamClusterServiceExposureSourceKind {
-    Container = 'container',
-    Daemon = 'daemon'
-};
-
 export interface TeamClusterServiceExposure {
     id: string;
     teamClusterId: string;
@@ -28,4 +12,20 @@ export interface TeamClusterServiceExposure {
     containerId?: string;
     containerName?: string;
     containerPort?: number;
+};
+
+export enum TeamClusterServiceExposureAccessMode {
+    Http = 'http',
+    Tcp = 'tcp',
+    WebSocket = 'websocket'
+};
+
+export enum TeamClusterServiceExposureStatus {
+    Active = 'active',
+    Unavailable = 'unavailable'
+};
+
+export enum TeamClusterServiceExposureSourceKind {
+    Container = 'container',
+    Daemon = 'daemon'
 };

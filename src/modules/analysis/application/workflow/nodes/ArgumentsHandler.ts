@@ -1,14 +1,15 @@
 import type { WorkflowArgumentDefinition, WorkflowArgumentVisibilityCondition } from '@/contracts';
-import type { WorkflowExecutionContext, WorkflowNode } from '@/modules/analysis/contracts/workflow.types';
+import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput } from '@/modules/analysis/contracts/workflow.types';
 import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '@/modules/analysis/application/workflow';
+import type { WorkflowPluginReferenceValueWithSelections } from '@/modules/analysis/application/workflow/InlineWorkflowShared';
+import { resolveWorkflowExpressionValue, shouldResolveWorkflowExpression } from '@/modules/analysis/application/workflow/WorkflowExpressionResolution';
 import { encodeCliArgumentsToken, stringifyUnknown } from '@/support/serialization/serialization';
 import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
-import { readWorkflowPluginReferenceSelections } from '@/modules/analysis/application/workflow/InlineWorkflowShared';
 
 interface PluginReferencePlanningItem {
     referencePath: string;
     pluginId: string;
-    config: Record<string, unknown>;
+    config: WorkflowNodeOutput;
 };
 
 const getVisibilityConditionValues = (
@@ -17,30 +18,9 @@ const getVisibilityConditionValues = (
     return condition.values ?? (condition.value === undefined ? [] : [condition.value]);
 };
 
-const resolveDefinitionValue = (
-    definitions: WorkflowArgumentDefinition[],
-    values: Record<string, unknown>,
-    argumentKey: string
-): unknown => {
-    const referencedDefinition = definitions.find((definition) => definition.argument === argumentKey);
-    if (!referencedDefinition) {
-        return values[argumentKey];
-    }
-
-    if (referencedDefinition.value !== undefined) {
-        return referencedDefinition.value;
-    }
-
-    if (values[argumentKey] !== undefined) {
-        return values[argumentKey];
-    }
-
-    return referencedDefinition.default;
-};
-
 const matchesVisibilityCondition = (
     condition: WorkflowArgumentVisibilityCondition,
-    currentValue: unknown
+    currentValue: WorkflowNodeOutput[string]
 ): boolean => {
     const comparisonValues = getVisibilityConditionValues(condition);
 
@@ -74,36 +54,27 @@ const matchesVisibilityCondition = (
 const isArgumentVisible = (
     definition: WorkflowArgumentDefinition,
     definitions: WorkflowArgumentDefinition[],
-    values: Record<string, unknown>
+    values: WorkflowNodeOutput
 ): boolean => {
     if (!definition.visibleWhen?.argument) {
         return true;
     }
 
-    const currentValue = resolveDefinitionValue(definitions, values, definition.visibleWhen.argument);
-    return matchesVisibilityCondition(definition.visibleWhen, currentValue);
-};
+    const referencedDefinition = definitions.find((candidate) => candidate.argument === definition.visibleWhen?.argument);
+    const currentValue = referencedDefinition?.value !== undefined
+        ? referencedDefinition.value
+        : values[definition.visibleWhen.argument] !== undefined
+            ? values[definition.visibleWhen.argument]
+            : referencedDefinition?.default;
 
-const resolveRuntimeArgumentValue = (
-    definition: WorkflowArgumentDefinition,
-    value: unknown
-): unknown => {
-    if (value !== undefined) {
-        return value;
-    }
-
-    if (definition.value !== undefined) {
-        return definition.value;
-    }
-
-    return definition.default;
+    return matchesVisibilityCondition(definition.visibleWhen, currentValue as WorkflowNodeOutput[string]);
 };
 
 const collectPluginReferences = (
     definitions: WorkflowArgumentDefinition[],
     definition: WorkflowArgumentDefinition,
-    value: unknown,
-    scopeValues: Record<string, unknown>,
+    value: WorkflowNodeOutput[string],
+    scopeValues: WorkflowNodeOutput,
     currentPath: string,
     results: PluginReferencePlanningItem[]
 ): void => {
@@ -111,14 +82,14 @@ const collectPluginReferences = (
         return;
     }
 
-    const resolvedValue = resolveRuntimeArgumentValue(definition, value);
+    const resolvedValue = value !== undefined ? value : definition.value !== undefined ? definition.value : definition.default;
 
     if (definition.type === 'pluginReference') {
-        for (const selection of readWorkflowPluginReferenceSelections(resolvedValue)) {
+        for (const selection of (resolvedValue as WorkflowPluginReferenceValueWithSelections).selections) {
             results.push({
                 referencePath: currentPath,
                 pluginId: selection.pluginId,
-                config: selection.config ?? {}
+                config: selection.config
             });
         }
         return;
@@ -127,7 +98,7 @@ const collectPluginReferences = (
     if (definition.type === 'list' && Array.isArray(resolvedValue)) {
         const nestedDefinitions = definition.listArguments ?? [];
         resolvedValue.forEach((entry, index) => {
-            const item = entry as Record<string, unknown>;
+            const item = entry as WorkflowNodeOutput;
 
             for (const nestedDefinition of nestedDefinitions) {
                 if (!nestedDefinition.argument) {
@@ -186,18 +157,16 @@ const createRuntimeArgumentDefinitions = (
 export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
     readonly type = WorkflowNodeType.Arguments;
 
-    constructor(
-        private readonly registry: WorkflowNodeRegistry
-    ) {}
+    constructor(private readonly registry: WorkflowNodeRegistry) {}
 
-    async execute(node: WorkflowNode, context: WorkflowExecutionContext): Promise<Record<string, unknown>> {
+    async execute(node: WorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowNodeOutput> {
         const persistedDefinitions = node.data.arguments?.arguments ?? [];
         const definitions = [
             ...persistedDefinitions,
             ...createRuntimeArgumentDefinitions(context, persistedDefinitions)
         ];
 
-        const values: Record<string, unknown> = {};
+        const values: WorkflowNodeOutput = {};
         const cliArgs: string[] = [];
 
         for (const definition of definitions) {
@@ -217,11 +186,16 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
                 value = definition.default;
             }
 
-            if (typeof value === 'string' && value.includes('{{')) {
-                value = this.registry.resolveTemplate(value, context, node.id);
+            if (shouldResolveWorkflowExpression(value)) {
+                value = await resolveWorkflowExpressionValue(
+                    value,
+                    this.registry,
+                    context,
+                    node.id
+                );
             }
 
-            values[argumentKey] = value;
+            values[argumentKey] = value as WorkflowNodeOutput[string];
         }
 
         for (const definition of definitions) {
@@ -233,15 +207,11 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
             const value = values[argumentKey];
             if (value !== null && value !== undefined) {
                 if (definition.type === 'boolean') {
-                    if (String(value) === 'true') {
+                    if (value === true || value === 'true') {
                         cliArgs.push(`--${argumentKey}`);
                     }
                 } else if (definition.type === 'select' && definition.multipleSelection) {
-                    const selectedValues = Array.isArray(value)
-                        ? value.filter((entry): entry is string => typeof entry === 'string')
-                        : typeof value === 'string' && value.trim().length > 0
-                            ? [value]
-                            : [];
+                    const selectedValues = Array.isArray(value) ? value : value ? [value] : [];
 
                     if (selectedValues.length > 0) {
                         cliArgs.push(`--${argumentKey}`, selectedValues.join(','));

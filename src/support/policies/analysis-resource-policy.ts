@@ -10,9 +10,7 @@ const getCpuBudget = (): number => {
 };
 
 export const getSafeAnalysisWorkerConcurrency = (requestedConcurrency: number): number => {
-    const sanitizedRequestedConcurrency = Number.isFinite(requestedConcurrency) && requestedConcurrency >= 1
-        ? Math.floor(requestedConcurrency)
-        : 1;
+    const sanitizedRequestedConcurrency = Math.max(1, Math.floor(requestedConcurrency));
     const hardCap = LOCAL_ANALYSIS_CONCURRENCY_CAP
         ? Math.max(1, LOCAL_ANALYSIS_CONCURRENCY_CAP)
         : Number.POSITIVE_INFINITY;
@@ -24,9 +22,7 @@ export const getRecommendedBinaryThreads = (
     requestedThreads: number,
     activeBinaryExecutions: number
 ): number => {
-    const sanitizedRequestedThreads = Number.isFinite(requestedThreads) && requestedThreads >= 1
-        ? Math.floor(requestedThreads)
-        : 1;
+    const sanitizedRequestedThreads = Math.max(1, Math.floor(requestedThreads));
     const fairShareThreads = Math.max(
         1,
         Math.floor(getCpuBudget() / Math.max(1, activeBinaryExecutions))

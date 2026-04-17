@@ -1,18 +1,28 @@
+import Bottleneck from 'bottleneck';
+
 import { logger } from '@/core/logger';
 import { forceGC } from '@/core/memory';
-import { AnalysisExposureDefinition } from '@/contracts';
+import { ObjectBucketName } from '@/core/storage/contracts/http.objectStore';
 import { isRecord } from '@/support/type-guards/isRecord';
-import type { PluginListingRepository } from '@/modules/plugin/infrastructure/repositories/PluginListingRepository';
+import type { PluginListingRepository } from '@/modules/plugin/infrastructure/repositories/PluginListingRepository.contract';
 import type { ExportNodeProcessorService } from '@/modules/plugin/application/exports/ExportNodeProcessorService';
 import type { ArtifactUploadBatch } from '@/modules/plugin/application/artifacts/ArtifactUploadQueueService';
 import { getRecommendedResultProcessingConcurrency } from '@/support/policies/analysis-resource-policy';
 import { decodeMultiStream, mergeSelectiveChunk } from '@/support/serialization/selective-msgpack';
-import type { AnalysisJobExecutionData } from '@/contracts';
+import type { AnalysisExposureDefinition, AnalysisJobExecutionData } from '@/modules/analysis/contracts/http.analysis';
+import type { ResultProcessorService } from '@/modules/plugin/application/exports/ResultProcessorService.contract';
 import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
-import type { Readable } from 'node:stream';
 
-const PLUGINS_BUCKET = 'volt-plugins';
+interface PayloadRecord {
+    [key: string]: unknown;
+}
+
+interface PayloadReadResult {
+    listing: PayloadRecord | null;
+    subListingNames: string[];
+    exportData: PayloadRecord | null;
+}
 
 /** Keys to keep during listing-only decode pass. */
 const LISTING_KEYS = new Set(['main_listing']);
@@ -21,105 +31,12 @@ const LISTING_KEYS = new Set(['main_listing']);
 const EXPORT_KEY_PREFIX = 'export';
 const EXPOSURE_RESULT_PROCESSING_CONCURRENCY = getRecommendedResultProcessingConcurrency();
 
-const shouldIgnoreValue = (value: unknown): boolean => {
-    return Array.isArray(value) && value.length >= 1 && Array.isArray(value[0]);
-};
-
-const cleanListingRow = (value: Record<string, unknown>): Record<string, unknown> => {
-    const cleaned: Record<string, unknown> = {};
-
-    for (const [key, entryValue] of Object.entries(value)) {
-        if (!shouldIgnoreValue(entryValue)) {
-            cleaned[key] = entryValue;
-        }
-    }
-
-    return cleaned;
-};
-
-const createAsyncConcurrencyLimiter = (concurrency: number) => {
-    let activeCount = 0;
-    const waitQueue: Array<() => void> = [];
-
-    const acquire = async (): Promise<number> => {
-        const queuedAt = Date.now();
-        if (activeCount >= concurrency) {
-            await new Promise<void>((resolve) => {
-                waitQueue.push(resolve);
-            });
-        }
-
-        activeCount += 1;
-        return Date.now() - queuedAt;
-    };
-
-    const release = (): void => {
-        activeCount = Math.max(0, activeCount - 1);
-        const next = waitQueue.shift();
-        if (next) {
-            next();
-        }
-    };
-
-    return {
-        async run<T>(task: () => Promise<T>, context: Record<string, unknown> = {}): Promise<T> {
-            const waitMs = await acquire();
-            if (waitMs >= 250) {
-                logger.info(
-                    {
-                        ...context,
-                        waitMs,
-                        activeCount,
-                        pending: waitQueue.length,
-                        concurrency
-                    },
-                    'Exposure result processing waited for capacity'
-                );
-            }
-
-            try {
-                return await task();
-            } finally {
-                release();
-            }
-        }
-    };
-};
-
-/**
- * Single-pass decode — reads the msgpack file ONCE, extracting both listing
- * keys (`main_listing`, `sub_listings`) and export keys (`export`/`export.*`)
- * in a single streaming pass.
- *
- * Previous implementation decoded the same file twice (once for listings, once
- * for exports), each time fully materializing every key before filtering.
- * This caused ~2x memory amplification since `@msgpack/msgpack`'s
- * `Decoder.decodeStream` materializes each top-level message as a complete JS
- * object before yielding — so "selective" filtering only discards keys *after*
- * they've already been allocated on the V8 heap.
- *
- * With a single pass we still pay the per-message materialization cost, but
- * only once instead of twice.  The returned `listing` and `exportData` are the
- * *only* surviving references; everything else from each decoded message is
- * eligible for GC as soon as the loop iteration completes.
- */
-async function readPayload(filePath: string): Promise<{
-    listing: Record<string, unknown> | null;
-    subListingNames: string[];
-    exportData: Record<string, unknown> | null;
-}> {
-    const stream = createReadStream(filePath) as unknown as Readable;
-    const asyncIterable = (async function* () {
-        for await (const chunk of stream) {
-            yield chunk as Uint8Array | Buffer;
-        }
-    })();
-
-    let listing: Record<string, unknown> | null = null;
-    let exportData: Record<string, unknown> | null = null;
+async function readPayload(filePath: string): Promise<PayloadReadResult> {
+    let listing: PayloadRecord | null = null;
+    let exportData: PayloadRecord | null = null;
     const subListingNames = new Set<string>();
 
-    for await (const message of decodeMultiStream(asyncIterable)) {
+    for await (const message of decodeMultiStream(createReadStream(filePath))) {
         listing = mergeSelectiveChunk(listing, message, (key) => LISTING_KEYS.has(key));
         exportData = mergeSelectiveChunk(exportData, message, (key) => key === EXPORT_KEY_PREFIX || key.startsWith(`${EXPORT_KEY_PREFIX}.`));
 
@@ -148,17 +65,6 @@ async function readPayload(filePath: string): Promise<{
     };
 }
 
-export interface ResultProcessorService {
-    processExposureResult(
-        executionData: AnalysisJobExecutionData,
-        exposure: AnalysisExposureDefinition,
-        outputDir: string,
-        timestep: number,
-        teamId: string,
-        artifactUploadBatch: ArtifactUploadBatch
-    ): Promise<void>;
-}
-
 export const createResultProcessorService = (
     pluginListingRepository: PluginListingRepository,
     exportNodeProcessorService: ExportNodeProcessorService
@@ -170,9 +76,9 @@ export const createResultProcessorService = (
         'Configured exposure result processing concurrency'
     );
 
-    const exposureProcessingLimiter = createAsyncConcurrencyLimiter(
-        EXPOSURE_RESULT_PROCESSING_CONCURRENCY
-    );
+    const exposureProcessingLimiter = new Bottleneck({
+        maxConcurrent: EXPOSURE_RESULT_PROCESSING_CONCURRENCY
+    });
 
     return {
         async processExposureResult(
@@ -221,7 +127,7 @@ export const createResultProcessorService = (
             await artifactUploadBatch.stageFileUpload({
                 sourcePath: outputFilePath,
                 ownerClusterId: storageOwnerClusterId,
-                bucket: PLUGINS_BUCKET,
+                bucket: ObjectBucketName.Plugins,
                 objectKey: storageKey,
                 contentType: 'application/msgpack',
                 fileName: `${exposure.nodeId}-timestep-${timestep}.msgpack.zst`
@@ -229,12 +135,27 @@ export const createResultProcessorService = (
 
             logger.info({ storageKey }, 'Queued exposure .msgpack upload');
 
-            await exposureProcessingLimiter.run(
-                async () => {
-                    // ── Single-pass decode: listing + export in one read ──────────
+            const queuedAt = Date.now();
+            await exposureProcessingLimiter.schedule(async () => {
+                const waitMs = Date.now() - queuedAt;
+                if (waitMs >= 250) {
+                    const counts = exposureProcessingLimiter.counts();
+                    logger.info(
+                        {
+                            analysisId: executionData.analysisId,
+                            exposure: exposure.name,
+                            timestep,
+                            waitMs,
+                            activeCount: counts.RUNNING + counts.EXECUTING,
+                            pending: counts.QUEUED,
+                            concurrency: EXPOSURE_RESULT_PROCESSING_CONCURRENCY
+                        },
+                        'Exposure result processing waited for capacity'
+                    );
+                }
+
                     let { listing: listingPayload, subListingNames, exportData: exportPayload } = await readPayload(outputFilePath);
 
-                    // ── Process listings ──────────────────────────────────────────
                     await precomputeListingRows(
                         pluginListingRepository,
                         executionData,
@@ -253,7 +174,6 @@ export const createResultProcessorService = (
                     subListingNames = [];
                     forceGC();
 
-                    // ── Process exports (if needed) ──────────────────────────────
                     if (exposure.export && exportPayload) {
                         await exportNodeProcessorService.process({
                         executionData,
@@ -268,13 +188,7 @@ export const createResultProcessorService = (
                     // Release export data
                     exportPayload = null;
                     forceGC();
-                },
-                {
-                    analysisId: executionData.analysisId,
-                    exposure: exposure.name,
-                    timestep
-                }
-            );
+            });
 
             logger.info(
                 {
@@ -294,7 +208,7 @@ async function precomputeListingRows(
     pluginListingRepository: PluginListingRepository,
     executionData: AnalysisJobExecutionData,
     exposure: AnalysisExposureDefinition,
-    decoded: Record<string, unknown> | null,
+    decoded: PayloadRecord | null,
     subListingNames: string[],
     objectKey: string,
     payloadOwnerClusterId: string,
@@ -312,7 +226,14 @@ async function precomputeListingRows(
         return;
     }
 
-    const cleanedMainListing = cleanListingRow(mainListing);
+    const cleanedMainListing: PayloadRecord = {};
+    for (const [key, entryValue] of Object.entries(mainListing)) {
+        if (Array.isArray(entryValue) && entryValue.length >= 1 && Array.isArray(entryValue[0])) {
+            continue;
+        }
+
+        cleanedMainListing[key] = entryValue;
+    }
     if (Object.keys(cleanedMainListing).length === 0) {
         logger.warn({ objectKey }, 'main_listing only contained filtered values, skipping persistence');
         return;

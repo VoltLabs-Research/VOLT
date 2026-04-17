@@ -1,8 +1,9 @@
-import { RemoteExplorerContentType, RemoteExplorerEntryType, RemoteExplorerNodeType, type RemoteExplorerEntry, type RemoteExplorerMongoDocument, type RemoteExplorerNode } from '@/contracts';
+import { RemoteExplorerContentType, RemoteExplorerEntryType, RemoteExplorerNodeType } from '@/contracts';
 import type { ReverseChannelCommandResult } from '@/core/reverse-channel/contracts/commandHandler';
 import { MAX_MONGO_DOCUMENTS, buildAttachmentContentDisposition, normalizeExplorerPath, toMongoDocument, toWebReadableStream } from '@/modules/container/infrastructure/remote-access/shared';
-import mongoose from 'mongoose';
+import type { RemoteExplorerEntry, RemoteExplorerMongoDocument, RemoteExplorerNode } from '@/contracts';
 import { Readable } from 'node:stream';
+import mongoose from 'mongoose';
 
 const readDatabase = () => {
     const database = mongoose.connection.db;
@@ -32,28 +33,6 @@ const collectMongoDocuments = async (collectionName: string): Promise<RemoteExpl
     }
 
     return documents;
-};
-
-const createMongoDocumentsJsonStream = (collectionName: string): Readable => {
-    const cursor = createMongoCursor(collectionName);
-
-    return Readable.from((async function* () {
-        let isFirst = true;
-
-        try {
-            yield Buffer.from('[', 'utf8');
-
-            for await (const document of cursor) {
-                const serializedDocument = JSON.stringify(toMongoDocument(document));
-                yield Buffer.from(isFirst ? serializedDocument : `,${serializedDocument}`, 'utf8');
-                isFirst = false;
-            }
-
-            yield Buffer.from(']', 'utf8');
-        } finally {
-            await cursor.close().catch(() => undefined);
-        }
-    })());
 };
 
 export const buildMongoEntries = async (): Promise<RemoteExplorerEntry[]> => {
@@ -95,11 +74,13 @@ export const buildMongoNode = async (path: string): Promise<RemoteExplorerNode> 
     };
 };
 
-export const buildMongoDownloadResponse = async (path: string): Promise<ReverseChannelCommandResult> => {
+export const buildMongoDownloadResponse = (path: string): ReverseChannelCommandResult => {
     const collectionName = normalizeExplorerPath(path);
     if (!collectionName) {
         throw new Error('Mongo download requires a collection name');
     }
+
+    const cursor = createMongoCursor(collectionName);
 
     return {
         status: 200,
@@ -107,6 +88,22 @@ export const buildMongoDownloadResponse = async (path: string): Promise<ReverseC
             'content-type': 'application/json',
             'content-disposition': buildAttachmentContentDisposition(`${collectionName}.json`)
         },
-        stream: toWebReadableStream(createMongoDocumentsJsonStream(collectionName))
+        stream: toWebReadableStream(Readable.from((async function* () {
+            let isFirst = true;
+
+            try {
+                yield Buffer.from('[', 'utf8');
+
+                for await (const document of cursor) {
+                    const serializedDocument = JSON.stringify(toMongoDocument(document));
+                    yield Buffer.from(isFirst ? serializedDocument : `,${serializedDocument}`, 'utf8');
+                    isFirst = false;
+                }
+
+                yield Buffer.from(']', 'utf8');
+            } finally {
+                await cursor.close().catch(() => undefined);
+            }
+        })()))
     };
 };

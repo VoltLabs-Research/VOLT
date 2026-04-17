@@ -1,12 +1,24 @@
 import type { EntrypointType } from '@/core/runtime/contracts/http.runtime';
 import type { NestedPluginDefinition, PluginReferenceExecutionRequest, TrajectoryDumpDescriptor, TrajectoryFrame, WorkflowDefinition } from '@/modules/analysis/contracts/http.workflow';
 
+interface AnalysisValueMap {
+    [key: string]: AnalysisValue;
+}
+
+type AnalysisValue =
+    | AnalysisValueMap
+    | AnalysisValue[]
+    | boolean
+    | null
+    | number
+    | string
+
 export interface PluginSyncRequest {
     pluginId: string;
     objectKey: string;
     ownerClusterId?: string;
     expectedHash?: string;
-};
+}
 
 interface ResolvedObjectRef {
     ownerClusterId: string;
@@ -16,17 +28,23 @@ interface ResolvedObjectRef {
     sizeBytes?: number;
 }
 
+interface AnalysisExposureExportDefinition {
+    exporter: string;
+    type: string;
+    options?: AnalysisValueMap;
+}
+
+interface AnalysisNodeOutputSnapshots {
+    [nodeId: string]: AnalysisValueMap;
+}
+
 export interface AnalysisExposureDefinition {
     nodeId: string;
     name: string;
     results: string;
     iterable?: string;
-    export?: {
-        exporter: string;
-        type: string;
-        options?: Record<string, unknown>;
-    };
-};
+    export?: AnalysisExposureExportDefinition;
+}
 
 export interface DaemonAnalysisDocument {
     _id: string;
@@ -34,7 +52,7 @@ export interface DaemonAnalysisDocument {
     pluginDisplayName: string;
     computeClusterId?: string;
     storageClusterId?: string;
-    config?: Record<string, unknown>;
+    config?: AnalysisValueMap;
     trajectory?: string;
     createdBy?: string;
     totalFrames?: number;
@@ -45,13 +63,13 @@ export interface DaemonAnalysisDocument {
     status?: string;
     createdAt?: string | Date;
     updatedAt?: string | Date;
-};
+}
 
 export interface AnalysisExecutionDataReference {
     key: string;
     storedAt: string;
     ttlSeconds: number;
-};
+}
 
 export interface AnalysisJobExecutionData {
     binaryObjectPath: string;
@@ -70,7 +88,7 @@ export interface AnalysisJobExecutionData {
     pluginBinaryRef?: ResolvedObjectRef;
     exposures: AnalysisExposureDefinition[];
     forEachNodeId?: string;
-    nodeOutputSnapshots: Record<string, Record<string, unknown>>;
+    nodeOutputSnapshots: AnalysisNodeOutputSnapshots;
     workflow: WorkflowDefinition;
     nestedPlugins: NestedPluginDefinition[];
     pluginReferenceExecutions?: PluginReferenceExecutionRequest[];
@@ -79,9 +97,9 @@ export interface AnalysisJobExecutionData {
     batchMode?: boolean;
     contextNodeId?: string;
     traceContext?: Record<string, string>;
-};
+}
 
-export interface AnalysisQueueJobPayload extends Record<string, unknown> {
+export interface AnalysisQueueJobPayload {
     jobId: string;
     teamId: string;
     timestep?: number;
@@ -90,7 +108,7 @@ export interface AnalysisQueueJobPayload extends Record<string, unknown> {
     queueType: string;
     name: string;
     maxRetries?: number;
-    metadata?: Record<string, unknown>;
+    metadata?: AnalysisValueMap;
     completedAt?: string;
     error?: string;
     startTime?: string;
@@ -102,9 +120,9 @@ export interface AnalysisQueueJobPayload extends Record<string, unknown> {
     executionDataReference?: AnalysisExecutionDataReference;
     createdAt: string;
     updatedAt: string;
-};
+}
 
-interface TrajectoryQueueJobPayload extends Record<string, unknown> {
+interface TrajectoryQueueJobPayload {
     jobId: string;
     teamId: string;
     trajectoryId: string;
@@ -112,18 +130,18 @@ interface TrajectoryQueueJobPayload extends Record<string, unknown> {
     timestep: number;
     status: string;
     queueType: string;
-    metadata?: Record<string, unknown>;
+    metadata?: AnalysisValueMap;
     error?: string;
     createdAt: string;
     updatedAt: string;
-};
+}
 
 interface TrajectoryQueueRequest {
     trajectoryId: string;
     teamId: string;
     trajectoryName?: string;
     storageClusterId?: string;
-};
+}
 
 export interface AnalysisStartTransportRequest {
     analysis: DaemonAnalysisDocument;
@@ -142,34 +160,34 @@ export interface AnalysisStartTransportRequest {
     nestedPluginsCompressed?: string;
     pluginReferenceExecutions?: PluginReferenceExecutionRequest[];
     pluginReferenceExecutionsCompressed?: string;
-    config: Record<string, unknown>;
+    config: AnalysisValueMap;
     selectedFrameOnly?: boolean;
     selectedTimesteps?: number[];
     timestep?: number;
-};
+}
 
 export interface AnalysisStartRequest extends AnalysisStartTransportRequest {
     trajectoryFrames: TrajectoryFrame[];
     workflow: WorkflowDefinition;
     nestedPlugins: NestedPluginDefinition[];
-};
+}
 
 export interface RetryJobsRequest {
     jobIds: string[];
-};
+}
 
 export interface RemoveRunningJobsRequest {
     jobIds: string[];
-};
+}
 
 export interface ClearJobsHistoryRequest {
     teamId: string;
     jobIds: string[];
-};
+}
 
 export interface JobsActionResponse {
     affectedJobs: number;
-};
+}
 
 export interface QueuedJobNotification {
     jobId: string;
@@ -180,50 +198,50 @@ export interface QueuedJobNotification {
     trajectoryName?: string;
     analysisId?: string;
     queueType: string;
-};
+}
 
 interface TrajectoryQueueResponse {
     queuedJobs: number;
     duplicateJobs: number;
     skippedJobs: number;
     jobs?: QueuedJobNotification[];
-};
+}
 
 export interface RasterQueueJobPayload extends TrajectoryQueueJobPayload {
     modelObjectKey: string;
     modelOwnerClusterId?: string;
     outputObjectKey: string;
     outputOwnerClusterId?: string;
-};
+}
 
 export interface RasterizeTrajectoryRequest extends TrajectoryQueueRequest {
-    config?: Record<string, unknown>;
-};
+    config?: AnalysisValueMap;
+}
 
 export interface RasterizeTrajectoryResponse extends TrajectoryQueueResponse {
     alreadyRasterizedJobs: number;
     jobs: QueuedJobNotification[];
-};
+}
 
 export interface GlbConversionQueueJobPayload extends TrajectoryQueueJobPayload {
     objectKey: string;
     ownerClusterId?: string;
-};
+}
 
 export interface EnqueuePreprocessingFrameDescriptor {
     timestep: number;
     objectKey: string;
     ownerClusterId?: string;
-};
+}
 
 export interface EnqueuePreprocessingRequest extends TrajectoryQueueRequest {
     frames: EnqueuePreprocessingFrameDescriptor[];
-};
+}
 
-export interface EnqueuePreprocessingResponse extends TrajectoryQueueResponse {};
+export interface EnqueuePreprocessingResponse extends TrajectoryQueueResponse {}
 
 export interface AnalysisStartResponse {
     queued: boolean;
     totalJobs: number;
     jobs: QueuedJobNotification[];
-};
+}

@@ -1,12 +1,12 @@
+import { WorkflowArgumentsHandler } from '@/modules/analysis/application/workflow/nodes/ArgumentsHandler';
+import { WorkflowContextHandler } from '@/modules/analysis/application/workflow/nodes/ContextHandler';
+import { WorkflowForEachHandler } from '@/modules/analysis/application/workflow/nodes/ForEachHandler';
+import { WorkflowIfStatementHandler } from '@/modules/analysis/application/workflow/nodes/IfStatementHandler';
+import { WorkflowModifierHandler } from '@/modules/analysis/application/workflow/nodes/ModifierHandler';
 import {
-    WorkflowArgumentsHandler,
-    WorkflowContextHandler,
-    WorkflowForEachHandler,
-    WorkflowIfStatementHandler,
-    WorkflowModifierHandler,
     WorkflowSwitchCaseHandler,
     WorkflowSwitchStatementHandler
-} from '@/modules/analysis/application/workflow/nodes';
+} from '@/modules/analysis/application/workflow/nodes/SwitchStatementHandler';
 import { WorkflowNodeRegistry } from '@/modules/analysis/application/workflow';
 
 export const createWorkflowNodeRegistry = (): WorkflowNodeRegistry => {

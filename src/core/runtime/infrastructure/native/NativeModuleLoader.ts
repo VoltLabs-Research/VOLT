@@ -1,6 +1,7 @@
 import { logger } from '@/core/logger';
-import { randomUUID } from 'node:crypto';
+import fs from 'node:fs/promises';
 import path from 'node:path';
+import { withDir } from 'tmp-promise';
 
 interface NativeBoxBounds {
     xlo: number;
@@ -9,15 +10,13 @@ interface NativeBoxBounds {
     yhi: number;
     zlo: number;
     zhi: number;
-};
-
+}
 interface NativeTrajectoryMetadata {
     timestep: number;
     natoms: number;
     headers: string[];
     boxBounds?: NativeBoxBounds;
-};
-
+}
 export interface NativeDumpResult {
     positions: Float32Array;
     types: Uint16Array;
@@ -26,8 +25,7 @@ export interface NativeDumpResult {
     metadata: NativeTrajectoryMetadata;
     min: [number, number, number];
     max: [number, number, number];
-};
-
+}
 export interface NativeDataResult {
     positions: Float32Array;
     types: Uint16Array;
@@ -35,43 +33,45 @@ export interface NativeDataResult {
     metadata: NativeTrajectoryMetadata;
     min: [number, number, number];
     max: [number, number, number];
-};
-
+}
 export interface ParseOptions {
     includeIds?: boolean;
     properties?: string[];
-};
-
+}
+interface NativeSimulationCellBoundingBox {
+    width: number;
+    height: number;
+    length: number;
+}
+interface NativeSimulationCellBoundaryConditions {
+    x: boolean;
+    y: boolean;
+    z: boolean;
+}
+interface NativeSimulationCellGeometry {
+    cell_vectors: number[][];
+    cell_origin: number[];
+    periodic_boundary_conditions: NativeSimulationCellBoundaryConditions;
+}
+interface NativeSimulationCell {
+    boundingBox: NativeSimulationCellBoundingBox;
+    geometry: NativeSimulationCellGeometry;
+}
+interface ParsedTrajectoryMetadata {
+    timestep: number;
+    natoms: number;
+    headers: string[];
+    simulationCell: NativeSimulationCell;
+}
 export interface ParsedTrajectory {
-    metadata: {
-        timestep: number;
-        natoms: number;
-        headers: string[];
-        simulationCell: {
-            boundingBox: {
-                width: number;
-                height: number;
-                length: number;
-            };
-            geometry: {
-                cell_vectors: number[][];
-                cell_origin: number[];
-                periodic_boundary_conditions: {
-                    x: boolean;
-                    y: boolean;
-                    z: boolean;
-                };
-            };
-        };
-    };
+    metadata: ParsedTrajectoryMetadata;
     positions: Float32Array;
     types: Uint16Array;
     ids?: Uint32Array;
     properties?: Record<string, Float32Array>;
     min: [number, number, number];
     max: [number, number, number];
-};
-
+}
 export interface NativeTrajectoryRequest {
     trajectoryId: string;
     timestep: number;
@@ -79,54 +79,45 @@ export interface NativeTrajectoryRequest {
     ownerClusterId?: string;
     teamId?: string;
     trajectoryName?: string;
-};
-
+}
 export interface NativePropertyStatsRequest extends NativeTrajectoryRequest {
     property: string;
-};
-
+}
 export interface NativeUniqueValuesRequest extends NativePropertyStatsRequest {
     maxValues?: number;
-};
-
+}
 export interface NativeAtomsPageRequest extends NativeTrajectoryRequest {
     page: number;
     limit: number;
-};
-
+}
 interface NativeModifierSourceRequest {
     analysisId?: string;
     exposureId?: string;
-};
-
+}
 export interface NativeColorModelRequest extends NativePropertyStatsRequest, NativeModifierSourceRequest {
     objectKey: string;
     startValue: number;
     endValue: number;
     gradient: string;
     externalValuesBase64?: string;
-};
-
+}
 interface NativeConditionFilterPreviewRequest extends NativeTrajectoryRequest, NativeModifierSourceRequest {
     property: string;
     operator: string;
     value: number;
     externalValuesBase64?: string;
-};
-export type NativeFilterPreviewRequest = NativeConditionFilterPreviewRequest;
-
+}
+export type NativeFilterPreviewRequest = NativeConditionFilterPreviewRequest
 export interface NativeParticleFilterModelRequest extends NativeTrajectoryRequest {
     objectKey: string;
     action: 'delete' | 'highlight';
     maskBase64: string;
-};
-
+}
 export interface NativeAtomsPageResponse {
     atoms: NativeAtomPageEntry[];
     totalAtoms: number;
     nativeProperties: string[];
-};
-
+}
 export interface NativeAtomPageEntry {
     id: number;
     type: number;
@@ -134,28 +125,24 @@ export interface NativeAtomPageEntry {
     y: number;
     z: number;
     [property: string]: number;
-};
-
+}
 export interface NativeFilterPreviewResponse {
     maskBase64: string;
     matchCount: number;
     totalAtoms: number;
-};
-
+}
 export interface RasterizePreviewInput {
     inputBucket: string;
     inputObjectKey: string;
     inputOwnerClusterId?: string;
     outputObjectKey: string;
     outputOwnerClusterId?: string;
-};
-
+}
 interface LammpsIoModule {
     dataParser: NativeDataParserModule;
     dumpParser: NativeDumpParserModule;
     statsParser: NativeStatsModule;
-};
-
+}
 interface NativeModuleOperationContext {
     filePath?: string;
     objectKey?: string;
@@ -164,46 +151,21 @@ interface NativeModuleOperationContext {
     tempGlbPath?: string;
     timestep?: number;
     trajectoryId?: string;
-};
-
-export enum NativeModuleOperation {
-    ExportGlb = 'export-glb',
-    ParseTrajectory = 'parse-trajectory',
-    PropertyStats = 'property-stats',
-    RasterizeGlb = 'rasterize-glb',
-    UniqueValues = 'unique-values'
-};
-
-enum NativePackageName {
-    HeadlessRasterizer = '@voltstack/headless-rasterizer',
-    LammpsIo = '@voltstack/lammps-io',
-    SpatialAssembler = '@voltstack/spatial-assembler'
 }
-
-export const NATIVE_PROCESSING_RUNTIME_DIR = path.join(process.cwd(), '.runtime', 'native-processing');
-
-export const createNativeProcessingTempPath = (extension: string): string => {
-    return path.join(NATIVE_PROCESSING_RUNTIME_DIR, `${randomUUID()}${extension}`);
-};
-
 interface NativeDumpParserModule {
     parseDump(filePath: string, options: ParseOptions): NativeDumpResult | undefined;
-};
-
+}
 interface NativeDataParserModule {
     parseData(filePath: string, options: NativeDataParseOptions): NativeDataResult | undefined;
-};
-
+}
 interface NativeStatsModule {
     getStatsForProperty(filePath: string, propIdx: number): NativeStatsResult;
     getUniqueValuesForProperty(filePath: string, propIdx: number, maxValues?: number): number[];
-};
-
+}
 export interface NativeStatsResult {
     min: number;
     max: number;
-};
-
+}
 interface NativeMeshBounds {
     minX: number;
     minY: number;
@@ -211,20 +173,17 @@ interface NativeMeshBounds {
     maxX: number;
     maxY: number;
     maxZ: number;
-};
-
+}
 interface NativeMeshMaterial {
     baseColor: [number, number, number, number];
     metallic: number;
     roughness: number;
     emissive: [number, number, number];
     doubleSided?: boolean;
-};
-
+}
 interface NativeDataParseOptions {
     includeIds?: boolean;
-};
-
+}
 interface NativeExporterModule {
     generateGLBToFile(
         positions: Float32Array,
@@ -265,8 +224,7 @@ interface NativeExporterModule {
         bounds: NativeMeshBounds,
         material: NativeMeshMaterial
     ): Buffer;
-};
-
+}
 interface NativeRasterizerModule {
     rasterize(
         glbPath: string,
@@ -277,12 +235,45 @@ interface NativeRasterizerModule {
         elevation: number,
         options: NativeRasterizerOptions
     ): boolean;
-};
-
+}
 interface NativeRasterizerOptions {
     fov: number;
     distScale: number;
     zUp: boolean;
+}
+
+export enum NativeModuleOperation {
+    ExportGlb = 'export-glb',
+    ParseTrajectory = 'parse-trajectory',
+    PropertyStats = 'property-stats',
+    RasterizeGlb = 'rasterize-glb',
+    UniqueValues = 'unique-values'
+};
+
+enum NativePackageName {
+    HeadlessRasterizer = '@voltstack/headless-rasterizer',
+    LammpsIo = '@voltstack/lammps-io',
+    SpatialAssembler = '@voltstack/spatial-assembler'
+}
+
+export const NATIVE_PROCESSING_RUNTIME_DIR = path.join(process.cwd(), '.runtime', 'native-processing');
+
+export const withNativeProcessingTempDir = async <T>(
+    prefix: string,
+    action: (directoryPath: string) => Promise<T>
+): Promise<T> => {
+    await fs.mkdir(NATIVE_PROCESSING_RUNTIME_DIR, {
+        recursive: true
+    });
+
+    return withDir(
+        ({ path: directoryPath }) => action(directoryPath),
+        {
+            tmpdir: NATIVE_PROCESSING_RUNTIME_DIR,
+            prefix: `${prefix}-`,
+            unsafeCleanup: true
+        }
+    );
 };
 
 export class NativeModuleLoader {
@@ -294,7 +285,9 @@ export class NativeModuleLoader {
     private hasLoggedEnvironment = false;
 
     getDumpParserModule(): NativeDumpParserModule {
-        const module = this.getLammpsIoModule().dumpParser;
+        const lammpsIoModule = this.getLammpsIoModule();
+        const dumpParser = lammpsIoModule.dumpParser;
+        const module = dumpParser;
         if (!module) {
             throw new Error('Native dump parser module is not available');
         }
@@ -303,7 +296,9 @@ export class NativeModuleLoader {
     }
 
     getDataParserModule(): NativeDataParserModule {
-        const module = this.getLammpsIoModule().dataParser;
+        const lammpsIoModule = this.getLammpsIoModule();
+        const dataParser = lammpsIoModule.dataParser;
+        const module = dataParser;
         if (!module) {
             throw new Error('Native data parser module is not available');
         }
@@ -312,7 +307,9 @@ export class NativeModuleLoader {
     }
 
     getStatsModule(): NativeStatsModule {
-        const module = this.getLammpsIoModule().statsParser;
+        const lammpsIoModule = this.getLammpsIoModule();
+        const statsParser = lammpsIoModule.statsParser;
+        const module = statsParser;
         if (!module) {
             throw new Error('Native stats module is not available');
         }
@@ -400,7 +397,10 @@ export class NativeModuleLoader {
         );
     }
 
-    private loadPackage<T>(packageName: NativePackageName): T {
+    private loadPackage(packageName: NativePackageName.LammpsIo): LammpsIoModule;
+    private loadPackage(packageName: NativePackageName.SpatialAssembler): NativeExporterModule;
+    private loadPackage(packageName: NativePackageName.HeadlessRasterizer): NativeRasterizerModule;
+    private loadPackage(packageName: NativePackageName): LammpsIoModule | NativeExporterModule | NativeRasterizerModule {
         this.logEnvironmentOnce();
 
         const startTime = Date.now();
@@ -435,7 +435,7 @@ export class NativeModuleLoader {
             }
 
             return loadedPackage;
-        } catch (error: unknown) {
+        } catch (error) {
             logger.error(
                 {
                     durationMs: Date.now() - startTime,

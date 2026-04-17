@@ -1,36 +1,42 @@
-import type { DaemonAnalysisDocument, TrajectoryDumpDescriptor, TrajectoryFrame, WorkflowEdgeDefinition, WorkflowDefinition } from '@/contracts';
-import type { WorkflowNodeData } from '@/contracts';
+import { Graph as GraphlibGraph, alg as graphlibAlgorithms, type Edge as GraphlibEdge } from '@dagrejs/graphlib';
 
-export enum WorkflowNodeType {
-    Modifier = 'modifier',
-    Arguments = 'arguments',
-    Context = 'context',
-    ForEach = 'forEach',
-    Entrypoint = 'entrypoint',
-    Plugin = 'plugin-node',
-    Exposure = 'exposure',
-    Export = 'export',
-    IfStatement = 'if-statement',
-    SwitchStatement = 'switch-statement',
-    SwitchCase = 'switch-case'
+import type { DaemonAnalysisDocument, TrajectoryDumpDescriptor, TrajectoryFrame } from './http.analysis';
+import type { WorkflowDefinition, WorkflowEdgeDefinition, WorkflowNodeData } from './http.workflow';
+
+export interface WorkflowNodePosition {
+    x: number;
+    y: number;
 }
 
 export interface WorkflowNode {
     id: string;
     type: WorkflowNodeType;
-    position: {
-        x: number;
-        y: number;
-    };
+    position: WorkflowNodePosition;
     data: WorkflowNodeData;
 }
 
-export type WorkflowEdge = WorkflowEdgeDefinition;
+export type WorkflowEdge = WorkflowEdgeDefinition
+
+export type WorkflowValue =
+    | boolean
+    | null
+    | number
+    | object
+    | string
+    | undefined
+
+export interface WorkflowValueMap {
+    [key: string]: WorkflowValue;
+}
+
+export type WorkflowNodeOutput = WorkflowValueMap
+
+export type WorkflowOutputs = Map<string, WorkflowNodeOutput>
 
 export interface WorkflowExecutionContext {
-    outputs: Map<string, Record<string, unknown>>;
-    userConfig: Record<string, unknown>;
-    runtimeArguments: Record<string, unknown>;
+    outputs: WorkflowOutputs;
+    userConfig: WorkflowValueMap;
+    runtimeArguments: WorkflowValueMap;
     trajectoryId: string;
     trajectoryFrames: TrajectoryFrame[];
     trajectoryDumpOverrides?: TrajectoryDumpDescriptor[];
@@ -46,6 +52,20 @@ export interface WorkflowExecutionContext {
     nestedWorkflows: Map<string, WorkflowDefinition>;
 }
 
+export enum WorkflowNodeType {
+    Modifier = 'modifier',
+    Arguments = 'arguments',
+    Context = 'context',
+    ForEach = 'forEach',
+    Entrypoint = 'entrypoint',
+    Plugin = 'plugin-node',
+    Exposure = 'exposure',
+    Export = 'export',
+    IfStatement = 'if-statement',
+    SwitchStatement = 'switch-statement',
+    SwitchCase = 'switch-case'
+}
+
 export const matchesIfBranchHandle = (
     edgeHandle: string | undefined,
     selectedBranch: string
@@ -58,7 +78,26 @@ export const matchesIfBranchHandle = (
 };
 
 export class WorkflowGraph {
-    constructor(public readonly definition: WorkflowDefinition) {}
+    private readonly graph: GraphlibGraph<undefined, WorkflowNode, WorkflowEdge>;
+
+    constructor(public readonly definition: WorkflowDefinition) {
+        this.graph = new GraphlibGraph({
+            directed: true,
+            multigraph: true
+        });
+
+        for (const node of this.nodes) {
+            this.graph.setNode(node.id, node);
+        }
+
+        for (const [index, edge] of this.edges.entries()) {
+            if (!this.graph.hasNode(edge.source) || !this.graph.hasNode(edge.target)) {
+                continue;
+            }
+
+            this.graph.setEdge(edge.source, edge.target, edge, `edge:${index}`);
+        }
+    }
 
     get nodes(): WorkflowNode[] {
         return this.definition.nodes as WorkflowNode[];
@@ -68,41 +107,46 @@ export class WorkflowGraph {
         return this.definition.edges as WorkflowEdge[];
     }
 
-    getChildren(nodeId: string, sourceHandle?: string): WorkflowNode[] {
-        return this.edges
-            .filter((edge) => edge.source === nodeId && (typeof sourceHandle === 'undefined' || edge.sourceHandle === sourceHandle))
-            .map((edge) => this.nodes.find((candidate) => candidate.id === edge.target))
-            .filter((candidate): candidate is WorkflowNode => Boolean(candidate));
+    getNode(nodeId: string): WorkflowNode | null {
+        return this.graph.hasNode(nodeId)
+            ? this.graph.node(nodeId) ?? null
+            : null;
     }
 
-    findRuntimeRootNode(): WorkflowNode | null {
-        return this.nodes.find((node) => node.type === WorkflowNodeType.ForEach)
-            ?? this.nodes.find((node) => node.type === WorkflowNodeType.Context)
-            ?? this.nodes.find((node) => node.type === WorkflowNodeType.Arguments)
-            ?? this.nodes.find((node) => node.type === WorkflowNodeType.Modifier)
-            ?? null;
+    getParentEdges(nodeId: string): WorkflowEdge[] {
+        return this.toWorkflowEdges(this.graph.inEdges(nodeId));
+    }
+
+    getChildEdges(nodeId: string, sourceHandle?: string): WorkflowEdge[] {
+        return this.toWorkflowEdges(this.graph.outEdges(nodeId))
+            .filter((edge) => sourceHandle === undefined || edge.sourceHandle === sourceHandle);
+    }
+
+    getChildren(nodeId: string, sourceHandle?: string): WorkflowNode[] {
+        return this.getChildEdges(nodeId, sourceHandle)
+            .map((edge) => this.getNode(edge.target))
+            .filter((node): node is WorkflowNode => node !== null);
     }
 
     getRuntimeRootNodes(): WorkflowNode[] {
-        const runtimeRootNode = this.findRuntimeRootNode();
-        if (!runtimeRootNode) {
-            return [];
+        for (const type of [WorkflowNodeType.ForEach, WorkflowNodeType.Context, WorkflowNodeType.Arguments, WorkflowNodeType.Modifier]) {
+            const runtimeRootNode = this.nodes.find((node) => node.type === type);
+
+            if (runtimeRootNode) {
+                return this.getChildren(runtimeRootNode.id);
+            }
         }
 
-        return this.getChildren(runtimeRootNode.id);
-    }
-
-    getRuntimeRootNodeIds(): string[] {
-        return this.getRuntimeRootNodes().map((node) => node.id);
+        return [];
     }
 
     findParentByType(nodeId: string, type: WorkflowNodeType): WorkflowNode | null {
-        const parentEdge = this.edges.find((edge) => edge.target === nodeId);
+        const parentEdge = this.getParentEdges(nodeId)[0];
         if (!parentEdge) {
             return null;
         }
 
-        const parentNode = this.nodes.find((node) => node.id === parentEdge.source) || null;
+        const parentNode = this.getNode(parentEdge.source);
         if (parentNode?.type === type) {
             return parentNode;
         }
@@ -125,13 +169,12 @@ export class WorkflowGraph {
             }
             visited.add(currentId);
 
-            const parentEdges = this.edges.filter((edge) => edge.target === currentId);
-            for (const edge of parentEdges) {
-                const parentNode = this.nodes.find((node) => node.id === edge.source) || null;
+            for (const parentNodeId of this.graph.predecessors(currentId) ?? []) {
+                const parentNode = this.getNode(parentNodeId);
                 if (parentNode?.type === type) {
                     return parentNode;
                 }
-                queue.push(edge.source);
+                queue.push(parentNodeId);
             }
         }
 
@@ -153,13 +196,17 @@ export class WorkflowGraph {
             }
             visited.add(currentId);
 
-            for (const childNode of this.getChildren(currentId)) {
-                if (childNode?.type === type) {
+            for (const childNodeId of this.graph.successors(currentId) ?? []) {
+                const childNode = this.getNode(childNodeId);
+                if (!childNode) {
+                    continue;
+                }
+
+                if (childNode.type === type) {
                     return childNode;
                 }
-                if (childNode) {
-                    queue.push(childNode.id);
-                }
+
+                queue.push(childNode.id);
             }
         }
 
@@ -192,50 +239,18 @@ export class WorkflowGraph {
     }
 
     topologicalSort(): WorkflowNode[] {
-        const nodeMap = new Map(this.nodes.map((node) => [node.id, node]));
-        const inDegree = new Map<string, number>();
-        const adjacency = new Map<string, string[]>();
+        return graphlibAlgorithms.topsort(this.graph)
+            .map((nodeId) => this.getNode(nodeId))
+            .filter((node): node is WorkflowNode => node !== null);
+    }
 
-        for (const node of this.nodes) {
-            inDegree.set(node.id, 0);
-            adjacency.set(node.id, []);
+    private toWorkflowEdges(edges: readonly GraphlibEdge[] | void): WorkflowEdge[] {
+        if (!edges) {
+            return [];
         }
 
-        for (const edge of this.edges) {
-            const neighbors = adjacency.get(edge.source) || [];
-            neighbors.push(edge.target);
-            adjacency.set(edge.source, neighbors);
-            inDegree.set(edge.target, (inDegree.get(edge.target) || 0) + 1);
-        }
-
-        const queue: string[] = [];
-        for (const [id, degree] of inDegree.entries()) {
-            if (degree === 0) {
-                queue.push(id);
-            }
-        }
-
-        const result: WorkflowNode[] = [];
-        while (queue.length > 0) {
-            const nodeId = queue.shift();
-            if (!nodeId) {
-                continue;
-            }
-
-            const node = nodeMap.get(nodeId);
-            if (node) {
-                result.push(node);
-            }
-
-            for (const neighbor of adjacency.get(nodeId) || []) {
-                const newDegree = (inDegree.get(neighbor) || 0) - 1;
-                inDegree.set(neighbor, newDegree);
-                if (newDegree === 0) {
-                    queue.push(neighbor);
-                }
-            }
-        }
-
-        return result;
+        return edges
+            .map((edge) => this.graph.edge(edge))
+            .filter((workflowEdge): workflowEdge is WorkflowEdge => workflowEdge !== undefined);
     }
 };

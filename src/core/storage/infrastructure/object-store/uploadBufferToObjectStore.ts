@@ -1,27 +1,29 @@
 import { createReadStream } from 'node:fs';
-import fsPromises from 'node:fs/promises';
-import path from 'node:path';
 import type { Readable } from 'node:stream';
 import { compressFileWithZstd } from '@/support/serialization/storage-codec';
+import fsPromises from 'node:fs/promises';
+import { tmpName } from 'tmp-promise';
+
+interface PutObjectInput {
+    bucket: string;
+    objectKey: string;
+    body: Buffer;
+    metadata?: Record<string, string>;
+}
 
 interface ObjectStoreClient {
-    putObject(input: {
-        bucket: string;
-        objectKey: string;
-        body: Buffer;
-        metadata?: Record<string, string>;
-    }): Promise<void>;
+    putObject(input: PutObjectInput): Promise<void>;
 
-    putObjectStream(input: {
-        bucket: string;
-        objectKey: string;
-        stream: Readable;
-        size: number;
-        metadata?: Record<string, string>;
-    }): Promise<void>;
-};
+    putObjectStream(input: PutObjectStreamInput): Promise<void>;
+}
 
-const STREAM_UPLOAD_THRESHOLD = 10 * 1024 * 1024;
+interface PutObjectStreamInput {
+    bucket: string;
+    objectKey: string;
+    stream: Readable;
+    size: number;
+    metadata?: Record<string, string>;
+}
 
 export interface UploadBufferToObjectStoreInput {
     objectStore: ObjectStoreClient;
@@ -31,10 +33,12 @@ export interface UploadBufferToObjectStoreInput {
     contentType: string;
     tempDirectory: string;
     tempFilePrefix: string;
-    tempFileSuffix?: string;
+    tempFileSuffix: string;
     contentEncoding?: string;
     compressionCodec?: 'zstd';
 };
+
+const STREAM_UPLOAD_THRESHOLD = 10 * 1024 * 1024;
 
 export const uploadBufferToObjectStore = async (input: UploadBufferToObjectStoreInput): Promise<void> => {
     const metadata = {
@@ -53,11 +57,11 @@ export const uploadBufferToObjectStore = async (input: UploadBufferToObjectStore
     }
 
     await fsPromises.mkdir(input.tempDirectory, { recursive: true });
-
-    const tmpPath = path.join(
-        input.tempDirectory,
-        `${input.tempFilePrefix}-${Date.now()}-${Math.random().toString(36).slice(2)}${input.tempFileSuffix ?? ''}`
-    );
+    const tmpPath = await tmpName({
+        tmpdir: input.tempDirectory,
+        prefix: `${input.tempFilePrefix}-`,
+        postfix: input.tempFileSuffix
+    });
     const uploadPath = input.compressionCodec === 'zstd'
         ? `${tmpPath}.zst`
         : tmpPath;

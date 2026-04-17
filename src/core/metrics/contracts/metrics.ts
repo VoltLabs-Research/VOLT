@@ -3,14 +3,14 @@ interface MemorySnapshot {
     freeBytes: number;
     usedBytes: number;
     usagePercent: number;
-};
+}
 
 interface DiskUsageSnapshot {
     totalBytes: number;
     freeBytes: number;
     usedBytes: number;
     usagePercent: number;
-};
+}
 
 interface DiskOperationsSnapshot {
     readMegabytesPerSecond: number;
@@ -18,7 +18,7 @@ interface DiskOperationsSnapshot {
     readIOPS: number;
     writeIOPS: number;
     totalIOPS: number;
-};
+}
 
 interface NetworkSnapshot {
     incomingKilobytesPerSecond: number;
@@ -26,7 +26,7 @@ interface NetworkSnapshot {
     totalKilobytesPerSecond: number;
     receivedBytes: number;
     sentBytes: number;
-};
+}
 
 export interface MetricsSnapshot {
     timestamp: string;
@@ -41,4 +41,4 @@ export interface MetricsSnapshot {
     network: NetworkSnapshot;
     cloudLatencyMs: number | null;
     connectedToCloud: boolean;
-};
+}

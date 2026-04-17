@@ -1,48 +1,33 @@
+import { TTLCache } from '@isaacs/ttlcache';
 import { logger } from '@/core/logger';
-import { createExportNodeProcessorService } from '@/modules/plugin/application/exports/ExportNodeProcessorService';
 import { createDebugExecutionLogSink } from '@/core/runtime/infrastructure/ExecutionLogStreaming';
-import type { BinaryExecutorService, ProcessExecutionLogSink } from '@/core/runtime/infrastructure/BinaryExecutorService';
-import type { PluginBinaryCacheService } from '@/modules/plugin/application/binaries/PluginBinaryCacheService';
-import type { NativeModuleLoader } from '@/core/runtime/infrastructure/native/NativeModuleLoader';
-import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
-import type { AnalysisExposureDefinition, DaemonAnalysisDocument, NestedPluginDefinition, TrajectoryFrame, WorkflowDefinition } from '@/contracts';
+import { VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@/core/storage/contracts/http.objectStore';
 import { buildWorkflowExposureMaps } from '@/modules/analysis/application/workflow/ExposureExportLinking';
 import { createWorkflowExecutionContext, snapshotWorkflowOutputs } from '@/modules/analysis/application/workflow/WorkflowExecutionContextFactory';
-import { DebugEntrypointExecutor } from '@/modules/analysis/application/workflow/debug/DebugEntrypointExecutor';
 import { createDebugArtifactBatch } from '@/modules/analysis/application/workflow/debug/DebugArtifactBatch';
 import { inspectDebugExposureResult } from '@/modules/analysis/application/workflow/debug/DebugExposureProcessor';
-import { InlineWorkflowRuntime, InlineWorkflowTraceError, type InlineWorkflowTraceNode } from '@/modules/analysis/application/workflow/InlineWorkflowRuntime';
-import { readWorkflowIfBranch, resolveWorkflowRuntimeChildNodeIds } from '@/modules/analysis/application/workflow/WorkflowRuntimeScheduling';
+import { InlineWorkflowRuntime, InlineWorkflowTraceError } from '@/modules/analysis/application/workflow/InlineWorkflowRuntime';
+import { resolveWorkflowParentEdgeState, resolveWorkflowRuntimeChildNodeIds } from '@/modules/analysis/application/workflow/WorkflowRuntimeScheduling';
 import { runOrderedWorkflowNodes } from '@/modules/analysis/application/workflow/OrderedNodeRunner';
-import { matchesIfBranchHandle, WorkflowGraph, WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
-import type { WorkflowNodeRegistry } from '@/modules/analysis/application/workflow/NodeRegistry';
-import fs from 'node:fs/promises';
+import { WorkflowGraph, WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
+import fg from 'fast-glob';
 import path from 'node:path';
-import type { ExportNodeProcessorService } from '@/modules/plugin/application/exports/ExportNodeProcessorService';
-import type { ExecutionLogSegmentMetadata } from '@/core/runtime/infrastructure/ExecutionLogStreaming';
-import type { PreparedDebugExecutionEnvironment } from '@/modules/analysis/application/workflow/debug/DebugEntrypointExecutor';
-import type { DebugExposureInspectionResult } from '@/modules/analysis/application/workflow/debug/DebugExposureProcessor';
-import type { WorkflowExecutionContext, WorkflowNode } from '@/modules/analysis/contracts/workflow.types';
+import fs from 'node:fs/promises';
 
 interface DebugExecutionLogReporter {
-    reportDebugLogChunk(input: {
-        sessionId: string;
-        nodeId: string;
-        segments: import('@/contracts').TeamClusterDaemonExecutionLogSegment[];
-    }): Promise<void>;
+    reportDebugLogChunk(
+        input: import('@/modules/analysis/application/events/DebugLogChunkReportedEvent').DebugLogChunkReportedEventData
+    ): Promise<void>;
 }
 
-const SESSION_IDLE_TTL_MS = 5 * 60 * 1000;
-const SESSION_SWEEP_INTERVAL_MS = 30 * 1000;
-
 interface DebugSessionRequest {
-    workflow: WorkflowDefinition;
-    nestedPlugins?: NestedPluginDefinition[];
+    workflow: import('@/modules/analysis/contracts/http.workflow').WorkflowDefinition;
+    nestedPlugins: import('@/modules/analysis/contracts/http.workflow').NestedPluginDefinition[];
     trajectoryId: string;
-    trajectoryFrames: TrajectoryFrame[];
+    trajectoryFrames: import('@/modules/analysis/contracts/http.workflow').TrajectoryFrame[];
     pluginId: string;
     teamId: string;
-    userConfig: Record<string, unknown>;
+    userConfig: import('@/core/reverse-channel/contracts/commandHandler').ReverseChannelCommandPayloadView;
     storageClusterId?: string;
     timestep?: number;
 };
@@ -51,104 +36,105 @@ interface DebugNodeResult {
     nodeId: string;
     nodeType: string;
     status: 'completed' | 'skipped' | 'error';
-    output?: Record<string, unknown>;
+    output?: import('@/modules/analysis/contracts/workflow.types').WorkflowNodeOutput;
     error?: string;
     stack?: string;
     reason?: string;
-    nestedTrace?: InlineWorkflowTraceNode[];
+    nestedTrace?: import('@/modules/analysis/application/workflow/InlineWorkflowRuntime').InlineWorkflowTraceNode[];
     durationMs: number;
-    contextSnapshot: Record<string, Record<string, unknown>>;
+    contextSnapshot: ReturnType<typeof snapshotWorkflowOutputs>;
 };
 
 interface DebugSessionInfo {
     sessionId: string;
-    executionOrder: Array<{ nodeId: string; type: string; }>;
+    executionOrder: DebugExecutionOrderItem[];
     forEachNodeId: string | null;
     totalIterations: number;
 };
 
+interface DebugExecutionOrderItem {
+    nodeId: string;
+    type: string;
+}
+
 interface DebugSession {
     sessionId: string;
-    context: WorkflowExecutionContext;
-    executableNodes: WorkflowNode[];
-    nodeById: Map<string, WorkflowNode>;
+    context: import('@/modules/analysis/contracts/workflow.types').WorkflowExecutionContext;
+    executableNodes: import('@/modules/analysis/contracts/workflow.types').WorkflowNode[];
+    nodeById: Map<string, import('@/modules/analysis/contracts/workflow.types').WorkflowNode>;
     pendingNodeIds: string[];
     scheduledNodeIds: Set<string>;
     completedNodeIds: Set<string>;
     nodeStatuses: Map<string, 'executed' | 'skipped' | 'error'>;
-    lastActivity: number;
     forEachNodeId: string | null;
-    storageClusterId?: string;
-    nestedPlugins: NestedPluginDefinition[];
-    preparedExecution: PreparedDebugExecutionEnvironment | null;
-    exposureCache: Map<string, DebugExposureInspectionResult>;
-    exposuresByNodeId: Map<string, AnalysisExposureDefinition>;
+    storageClusterId: string;
+    nestedPlugins: import('@/modules/analysis/contracts/http.workflow').NestedPluginDefinition[];
+    preparedExecution: import('@/modules/analysis/application/workflow/debug/DebugEntrypointExecutor').PreparedDebugExecutionEnvironment | null;
+    exposureCache: Map<string, import('@/modules/analysis/application/workflow/debug/DebugExposureProcessor').DebugExposureInspectionResult>;
+    exposuresByNodeId: Map<string, import('@/modules/analysis/contracts/http.analysis').AnalysisExposureDefinition>;
     exportNodeToExposureNodeId: Map<string, string>;
     cleanupPaths: string[];
     cleanupDirectories: string[];
 }
 
-let sessionCounter = 0;
-
-const generateSessionId = (): string => {
-    return `dbg_${Date.now()}_${++sessionCounter}`;
-};
-
-const buildExposureMaps = (
-    workflow: WorkflowDefinition
-): {
-    exposuresByNodeId: Map<string, AnalysisExposureDefinition>;
-    exportNodeToExposureNodeId: Map<string, string>;
-} => {
-    return buildWorkflowExposureMaps(workflow);
-};
-
-interface NodeExecutionOutcome {
-    status: 'executed' | 'skipped';
-    output?: Record<string, unknown>;
-    reason?: string;
-    nestedTrace?: InlineWorkflowTraceNode[];
+interface ExecutedNodeExecutionOutcome {
+    status: 'executed';
+    output: import('@/modules/analysis/contracts/workflow.types').WorkflowNodeOutput;
+    nestedTrace?: import('@/modules/analysis/application/workflow/InlineWorkflowRuntime').InlineWorkflowTraceNode[];
 }
 
+interface SkippedNodeExecutionOutcome {
+    status: 'skipped';
+    reason: string;
+    nestedTrace?: import('@/modules/analysis/application/workflow/InlineWorkflowRuntime').InlineWorkflowTraceNode[];
+}
+
+type NodeExecutionOutcome = ExecutedNodeExecutionOutcome | SkippedNodeExecutionOutcome;
+
+interface CurrentDebugNodeInfo {
+    nodeId: string;
+    nodeType: string;
+    index: number;
+    total: number;
+}
+
+const SESSION_IDLE_TTL_MS = 5 * 60 * 1000;
+
+let sessionCounter = 0;
+
 export class DebugSessionManager {
-    private readonly sessions = new Map<string, DebugSession>();
-    private sweepTimer: ReturnType<typeof setInterval> | null = null;
-    private readonly debugEntrypointExecutor: DebugEntrypointExecutor;
-    private readonly inlineWorkflowRuntime: InlineWorkflowRuntime;
-    private readonly exportNodeProcessorService: ExportNodeProcessorService;
+    private readonly sessions = new TTLCache<string, DebugSession>({
+        ttl: SESSION_IDLE_TTL_MS,
+        updateAgeOnGet: true,
+        checkAgeOnGet: true,
+        checkAgeOnHas: true,
+        dispose: (session, sessionId, reason) => {
+            if (reason === 'stale') {
+                logger.warn(`@debug-session-manager: session ${sessionId} expired (idle TTL)`);
+            }
+
+            void this.cleanupSessionArtifacts(session).catch((error) => {
+                logger.warn(
+                    {
+                        err: error,
+                        sessionId
+                    },
+                    '@debug-session-manager: failed to cleanup debug session artifacts'
+                );
+            });
+        }
+    });
     private executionLogReporter: DebugExecutionLogReporter | null = null;
 
     constructor(
-        private readonly registry: WorkflowNodeRegistry,
-        deps: {
-            objectStore: ClusterObjectStore;
-            pluginBinaryCacheService: PluginBinaryCacheService;
-            binaryExecutorService: BinaryExecutorService;
-            nativeModuleLoader: NativeModuleLoader;
-        }
-    ) {
-        this.debugEntrypointExecutor = new DebugEntrypointExecutor(
-            deps.objectStore,
-            deps.pluginBinaryCacheService,
-            deps.binaryExecutorService
-        );
-        this.inlineWorkflowRuntime = new InlineWorkflowRuntime(
-            registry,
-            deps.pluginBinaryCacheService,
-            deps.binaryExecutorService
-        );
-        this.exportNodeProcessorService = createExportNodeProcessorService(deps.nativeModuleLoader);
-        this.startIdleSweep();
-    }
-
-    setExecutionLogReporter(
-        reporter: DebugExecutionLogReporter
-    ): void {
-        this.executionLogReporter = reporter;
-    }
+        private readonly workflowNodeRegistry: import('@/modules/analysis/application/workflow/NodeRegistry').WorkflowNodeRegistry,
+        private readonly debugEntrypointExecutor: import('@/modules/analysis/application/workflow/debug/DebugEntrypointExecutor').DebugEntrypointExecutor,
+        private readonly inlineWorkflowRuntime: InlineWorkflowRuntime,
+        private readonly exportNodeProcessorService: import('@/modules/plugin/application/exports/ExportNodeProcessorService').ExportNodeProcessorService
+    ) {}
 
     createSession(request: DebugSessionRequest): DebugSessionInfo {
-        const sessionId = generateSessionId();
+        const sessionId = `dbg_${Date.now()}_${++sessionCounter}`;
         const workflow = new WorkflowGraph(request.workflow);
         const executableNodes = workflow.topologicalSort();
         const nodeById = new Map(executableNodes.map((node) => [node.id, node]));
@@ -156,11 +142,13 @@ export class DebugSessionManager {
             .filter((node) => !workflow.edges.some((edge) => edge.target === node.id))
             .map((node) => node.id);
 
-        const stubAnalysis: DaemonAnalysisDocument = {
+        const stubAnalysis: import('@/modules/analysis/contracts/http.analysis').DaemonAnalysisDocument = {
             _id: `debug_${sessionId}`,
             pluginDisplayName: 'Debug Session'
         };
 
+        const selectedTimestep = request.timestep;
+        const hasSelectedTimestep = selectedTimestep !== undefined;
         const context = createWorkflowExecutionContext({
             userConfig: request.userConfig,
             runtimeArguments: {},
@@ -170,18 +158,21 @@ export class DebugSessionManager {
             analysisId: `debug_${sessionId}`,
             pluginId: request.pluginId,
             teamId: request.teamId,
-            selectedFrameOnly: typeof request.timestep === 'number',
-            selectedTimesteps: typeof request.timestep === 'number' ? [request.timestep] : undefined,
-            selectedTimestep: request.timestep,
+            selectedFrameOnly: hasSelectedTimestep,
+            selectedTimesteps: hasSelectedTimestep ? [selectedTimestep] : undefined,
+            selectedTimestep,
             workflow,
-            nestedPlugins: request.nestedPlugins ?? []
+            nestedPlugins: request.nestedPlugins
         });
 
-        const { exposuresByNodeId, exportNodeToExposureNodeId } = buildExposureMaps(request.workflow);
+        const { exposuresByNodeId, exportNodeToExposureNodeId } = buildWorkflowExposureMaps(request.workflow);
         const forEachNode = executableNodes.find((node) => node.type === WorkflowNodeType.ForEach);
-        const totalIterations = forEachNode
-            ? (typeof request.timestep === 'number' ? 1 : request.trajectoryFrames.length)
-            : 0;
+        let totalIterations = 0;
+        if (forEachNode) {
+            totalIterations = hasSelectedTimestep
+                ? 1
+                : request.trajectoryFrames.length;
+        }
 
         const session: DebugSession = {
             sessionId,
@@ -192,10 +183,9 @@ export class DebugSessionManager {
             scheduledNodeIds: new Set(rootNodeIds),
             completedNodeIds: new Set(),
             nodeStatuses: new Map(),
-            lastActivity: Date.now(),
-            forEachNodeId: forEachNode?.id ?? null,
-            storageClusterId: request.storageClusterId,
-            nestedPlugins: request.nestedPlugins ?? [],
+            forEachNodeId: forEachNode ? forEachNode.id : null,
+            storageClusterId: request.storageClusterId ?? VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID,
+            nestedPlugins: request.nestedPlugins,
             preparedExecution: null,
             exposureCache: new Map(),
             exposuresByNodeId,
@@ -220,8 +210,6 @@ export class DebugSessionManager {
             throw new Error(`Debug session ${sessionId} not found`);
         }
 
-        session.lastActivity = Date.now();
-
         const node = this.getNextPendingNode(session);
         if (!node) {
             return null;
@@ -239,7 +227,7 @@ export class DebugSessionManager {
             const durationMs = Date.now() - startTime;
 
             session.completedNodeIds.add(node.id);
-            session.nodeStatuses.set(node.id, result?.status === 'skipped' ? 'skipped' : 'executed');
+            session.nodeStatuses.set(node.id, result && result.status === 'skipped' ? 'skipped' : 'executed');
             const nextNodeIds = this.resolveNextNodeIds(session, node, result);
             this.enqueueNodeIds(session, nextNodeIds);
 
@@ -264,7 +252,7 @@ export class DebugSessionManager {
                 durationMs,
                 contextSnapshot: snapshotWorkflowOutputs(session.context.outputs)
             };
-        } catch (error: unknown) {
+        } catch (error) {
             const durationMs = Date.now() - startTime;
             const message = error instanceof Error ? error.message : 'Unknown error';
             const stack = error instanceof Error ? error.stack : undefined;
@@ -288,12 +276,7 @@ export class DebugSessionManager {
     async executeAllRemaining(sessionId: string): Promise<DebugNodeResult[]> {
         const results: DebugNodeResult[] = [];
 
-        while (true) {
-            const session = this.sessions.get(sessionId);
-            if (!session || !this.hasMoreNodes(sessionId)) {
-                break;
-            }
-
+        while (this.sessions.has(sessionId)) {
             const result = await this.executeCurrentNode(sessionId);
             if (!result) {
                 break;
@@ -318,7 +301,7 @@ export class DebugSessionManager {
         return this.getNextPendingNode(session) !== null;
     }
 
-    getCurrentNodeInfo(sessionId: string): { nodeId: string; nodeType: string; index: number; total: number } | null {
+    getCurrentNodeInfo(sessionId: string): CurrentDebugNodeInfo | null {
         const session = this.sessions.get(sessionId);
         if (!session) {
             return null;
@@ -338,29 +321,10 @@ export class DebugSessionManager {
     }
 
     destroySession(sessionId: string): void {
-        const session = this.sessions.get(sessionId);
-        if (!session) {
-            return;
-        }
-
         this.sessions.delete(sessionId);
-        this.cleanupSessionArtifacts(session).catch((error: unknown) => {
-            logger.warn(
-                {
-                    err: error,
-                    sessionId
-                },
-                '@debug-session-manager: failed to cleanup debug session artifacts'
-            );
-        });
     }
 
     shutdown(): void {
-        if (this.sweepTimer) {
-            clearInterval(this.sweepTimer);
-            this.sweepTimer = null;
-        }
-
         for (const sessionId of Array.from(this.sessions.keys())) {
             this.destroySession(sessionId);
         }
@@ -384,7 +348,7 @@ export class DebugSessionManager {
                 const [orderedResult] = await runOrderedWorkflowNodes({
                     nodes: [node],
                     context: session.context,
-                    registry: this.registry
+                    registry: this.workflowNodeRegistry
                 });
                 if (!orderedResult) {
                     return null;
@@ -393,11 +357,11 @@ export class DebugSessionManager {
                 if (orderedResult.status === 'skipped') {
                     return {
                         status: 'skipped',
-                        reason: orderedResult.reason
+                        reason: orderedResult.reason!
                     };
                 }
 
-                const output = orderedResult.output ?? session.context.outputs.get(node.id) ?? {};
+                const output = orderedResult.output!;
                 session.context.outputs.set(node.id, output);
                 return {
                     status: 'executed',
@@ -415,7 +379,7 @@ export class DebugSessionManager {
                 continue;
             }
 
-            return session.nodeById.get(nodeId) ?? null;
+            return session.nodeById.get(nodeId)!;
         }
 
         return null;
@@ -428,7 +392,20 @@ export class DebugSessionManager {
                 continue;
             }
 
-            if (!this.isNodeReadyToSchedule(session, nodeId)) {
+            const nodeStateCache = new Map<string, WorkflowRuntimeNodeState>();
+            const resolvingNodeIds = new Set<string>();
+            const isReady = session.context.workflow.edges
+                .filter((edge) => edge.target === nodeId)
+                .every((edge) => resolveWorkflowParentEdgeState({
+                    workflow: session.context.workflow,
+                    outputs: session.context.outputs,
+                    getNodeExecutionStatus: (currentNodeId) => this.getWorkflowExecutionStatus(session, currentNodeId),
+                    edge,
+                    targetNodeId: nodeId,
+                    nodeStateCache,
+                    resolvingNodeIds
+                }).resolved);
+            if (!isReady) {
                 continue;
             }
 
@@ -437,26 +414,27 @@ export class DebugSessionManager {
         }
     }
 
-    private isNodeReadyToSchedule(session: DebugSession, nodeId: string): boolean {
-        const nodeStateCache = new Map<string, 'active' | 'inactive' | 'unresolved' | 'failed'>();
-
-        return session.context.workflow.edges
-            .filter((edge) => edge.target === nodeId)
-            .every((edge) => this.getParentEdgeState(session, nodeId, edge, nodeStateCache).resolved);
-    }
-
     private getNodeSkipReason(session: DebugSession, node: WorkflowNode): string | undefined {
         const parentEdges = session.context.workflow.edges.filter((edge) => edge.target === node.id);
         if (parentEdges.length === 0) {
             return undefined;
         }
 
-        const nodeStateCache = new Map<string, 'active' | 'inactive' | 'unresolved' | 'failed'>();
+        const nodeStateCache = new Map<string, WorkflowRuntimeNodeState>();
+        const resolvingNodeIds = new Set<string>();
         let hasActiveParent = false;
         let inactiveReason: string | undefined;
 
         for (const parentEdge of parentEdges) {
-            const parentState = this.getParentEdgeState(session, node.id, parentEdge, nodeStateCache);
+            const parentState = resolveWorkflowParentEdgeState({
+                workflow: session.context.workflow,
+                outputs: session.context.outputs,
+                getNodeExecutionStatus: (currentNodeId) => this.getWorkflowExecutionStatus(session, currentNodeId),
+                edge: parentEdge,
+                targetNodeId: node.id,
+                nodeStateCache,
+                resolvingNodeIds
+            });
             if (!parentState.resolved) {
                 return parentState.reason;
             }
@@ -476,232 +454,6 @@ export class DebugSessionManager {
         return hasActiveParent ? undefined : inactiveReason;
     }
 
-    private getParentEdgeState(
-        session: DebugSession,
-        nodeId: string,
-        parentEdge: WorkflowGraph['edges'][number],
-        nodeStateCache: Map<string, 'active' | 'inactive' | 'unresolved' | 'failed'>
-    ): {
-        resolved: boolean;
-        active: boolean;
-        reason?: string;
-    } {
-        const parentNode = session.nodeById.get(parentEdge.source);
-        if (!parentNode) {
-            return {
-                resolved: true,
-                active: false
-            };
-        }
-
-        const parentState = this.getRuntimeNodeState(session, parentNode.id, nodeStateCache);
-        if (parentState === 'unresolved') {
-            return {
-                resolved: false,
-                active: false,
-                reason: `Parent node "${parentNode.id}" has not executed`
-            };
-        }
-
-        if (parentState === 'inactive') {
-            return {
-                resolved: true,
-                active: false
-            };
-        }
-
-        if (parentState === 'failed') {
-            const parentStatus = session.nodeStatuses.get(parentNode.id);
-            return {
-                resolved: true,
-                active: true,
-                reason: parentStatus === 'error'
-                    ? `Parent node "${parentNode.id}" failed`
-                    : `Parent node "${parentNode.id}" was skipped`
-            };
-        }
-
-        const parentOutput = session.context.outputs.get(parentNode.id) ?? {};
-
-        if (parentNode.type === WorkflowNodeType.ForEach) {
-            const itemCount = typeof parentOutput.count === 'number'
-                ? parentOutput.count
-                : Array.isArray(parentOutput.items)
-                    ? parentOutput.items.length
-                    : 0;
-            if (itemCount <= 0) {
-                return {
-                    resolved: true,
-                    active: false,
-                    reason: `ForEach node "${parentNode.id}" produced no items`
-                };
-            }
-
-            return {
-                resolved: true,
-                active: true
-            };
-        }
-
-        if (parentNode.type === WorkflowNodeType.IfStatement) {
-            const branch = readWorkflowIfBranch(parentOutput, parentNode.id);
-            if (!matchesIfBranchHandle(parentEdge.sourceHandle, branch)) {
-                return {
-                    resolved: true,
-                    active: false,
-                    reason: `Node "${nodeId}" is not on the selected "${branch}" branch`
-                };
-            }
-
-            return {
-                resolved: true,
-                active: true
-            };
-        }
-
-        if (parentNode.type === WorkflowNodeType.SwitchStatement) {
-            const matchedCaseId = typeof parentOutput.matchedCaseId === 'string' && parentOutput.matchedCaseId.length > 0
-                ? parentOutput.matchedCaseId
-                : null;
-
-            if (parentEdge.sourceHandle === 'continue') {
-                return {
-                    resolved: true,
-                    active: true
-                };
-            }
-
-            if (parentEdge.sourceHandle === 'cases' && matchedCaseId === nodeId) {
-                return {
-                    resolved: true,
-                    active: true
-                };
-            }
-
-            return {
-                resolved: true,
-                active: false,
-                reason: matchedCaseId
-                    ? `Switch statement "${parentNode.id}" selected case "${matchedCaseId}"`
-                    : `Switch statement "${parentNode.id}" did not match this case`
-            };
-        }
-
-        if (parentNode.type === WorkflowNodeType.SwitchCase) {
-            const switchEdge = session.context.workflow.edges.find((edge) => edge.target === parentNode.id);
-            const switchNode = switchEdge ? session.nodeById.get(switchEdge.source) : undefined;
-            const switchStatus = switchNode ? session.nodeStatuses.get(switchNode.id) : undefined;
-
-            if (switchNode && !switchStatus) {
-                return {
-                    resolved: false,
-                    active: false,
-                    reason: `Parent node "${switchNode.id}" has not executed`
-                };
-            }
-
-            if (switchStatus === 'error') {
-                return {
-                    resolved: true,
-                    active: true,
-                    reason: `Parent node "${switchNode?.id ?? parentNode.id}" failed`
-                };
-            }
-
-            if (switchStatus === 'skipped') {
-                return {
-                    resolved: true,
-                    active: true,
-                    reason: `Parent node "${switchNode?.id ?? parentNode.id}" was skipped`
-                };
-            }
-
-            const switchOutput = switchNode ? session.context.outputs.get(switchNode.id) ?? {} : {};
-            const matchedCaseId = typeof switchOutput.matchedCaseId === 'string' && switchOutput.matchedCaseId.length > 0
-                ? switchOutput.matchedCaseId
-                : null;
-
-            if (matchedCaseId !== parentNode.id) {
-                return {
-                    resolved: true,
-                    active: false,
-                    reason: `Switch case "${parentNode.id}" is not active`
-                };
-            }
-
-            return {
-                resolved: true,
-                active: true
-            };
-        }
-
-        return {
-            resolved: true,
-            active: true
-        };
-    }
-
-    private getRuntimeNodeState(
-        session: DebugSession,
-        nodeId: string,
-        nodeStateCache: Map<string, 'active' | 'inactive' | 'unresolved' | 'failed'>
-    ): 'active' | 'inactive' | 'unresolved' | 'failed' {
-        const cachedState = nodeStateCache.get(nodeId);
-        if (cachedState) {
-            return cachedState;
-        }
-
-        const workflow = session.context.workflow;
-        const parentEdges = workflow.edges.filter((edge) => edge.target === nodeId);
-        const nodeStatus = session.nodeStatuses.get(nodeId);
-
-        if (parentEdges.length === 0) {
-            const rootState = nodeStatus === 'executed'
-                ? 'active'
-                : nodeStatus === 'error' || nodeStatus === 'skipped'
-                    ? 'failed'
-                    : 'unresolved';
-            nodeStateCache.set(nodeId, rootState);
-            return rootState;
-        }
-
-        let hasActiveParent = false;
-        let hasUnresolvedParent = false;
-        let hasFailedParent = false;
-
-        for (const parentEdge of parentEdges) {
-            const parentState = this.getParentEdgeState(session, nodeId, parentEdge, nodeStateCache);
-            if (!parentState.resolved) {
-                hasUnresolvedParent = true;
-                continue;
-            }
-
-            if (parentState.active) {
-                if (parentState.reason) {
-                    hasFailedParent = true;
-                    continue;
-                }
-
-                hasActiveParent = true;
-            }
-        }
-
-        const resolvedState = hasActiveParent
-            ? (nodeStatus === 'executed'
-                ? 'active'
-                : nodeStatus === 'error' || nodeStatus === 'skipped'
-                    ? 'failed'
-                    : 'unresolved')
-            : hasUnresolvedParent
-                ? 'unresolved'
-                : hasFailedParent
-                    ? 'failed'
-                    : 'inactive';
-        nodeStateCache.set(nodeId, resolvedState);
-
-        return resolvedState;
-    }
-
     private resolveNextNodeIds(
         session: DebugSession,
         node: WorkflowNode,
@@ -713,27 +465,37 @@ export class DebugSessionManager {
             return workflow.getChildren(node.id).map((childNode) => childNode.id);
         }
 
-        if (node.type === WorkflowNodeType.IfStatement) {
+        if (node.type === WorkflowNodeType.IfStatement || node.type === WorkflowNodeType.SwitchStatement) {
             const { activeNodeIds, inactiveNodeIds } = resolveWorkflowRuntimeChildNodeIds(
                 workflow,
                 node,
-                result.output ?? {}
-            );
-
-            return [...activeNodeIds, ...inactiveNodeIds];
-        }
-
-        if (node.type === WorkflowNodeType.SwitchStatement) {
-            const { activeNodeIds, inactiveNodeIds } = resolveWorkflowRuntimeChildNodeIds(
-                workflow,
-                node,
-                result.output ?? {}
+                result.output!
             );
 
             return [...activeNodeIds, ...inactiveNodeIds];
         }
 
         return workflow.getChildren(node.id).map((childNode) => childNode.id);
+    }
+
+    private getWorkflowExecutionStatus(
+        session: DebugSession,
+        nodeId: string
+    ): WorkflowExecutionStatus {
+        const status = session.nodeStatuses.get(nodeId);
+        if (status === 'executed') {
+            return 'executed';
+        }
+
+        if (status === 'error') {
+            return 'failed';
+        }
+
+        if (status === 'skipped') {
+            return 'skipped';
+        }
+
+        return 'pending';
     }
 
     private async executePluginNode(
@@ -830,7 +592,7 @@ export class DebugSessionManager {
         );
         session.exposureCache.set(node.id, inspection);
 
-        const output: Record<string, unknown> = {
+        const output: WorkflowNodeOutput = {
             outputFilePath: inspection.outputFilePath,
             listingRowCount: inspection.listingRowCount,
             subListingNames: inspection.subListingNames,
@@ -905,18 +667,19 @@ export class DebugSessionManager {
 
         const exportDirectory = `${preparedExecution.outputDir}_debug_export_${node.id}_${Date.now()}`;
         const artifactBatch = createDebugArtifactBatch(exportDirectory);
+        const storageClusterId = session.storageClusterId;
 
         await this.exportNodeProcessorService.process({
             executionData: {
                 analysisId: session.context.analysisId,
                 trajectoryId: session.context.trajectoryId,
                 pluginId: session.context.pluginId,
-                storageClusterId: session.storageClusterId ?? 'debug-storage-cluster'
+                storageClusterId
             },
             exposure,
             decodedPayload: inspection.exportPayload,
             timestep: session.context.selectedTimestep ?? preparedExecution.selectedDump.timestep,
-            storageClusterId: session.storageClusterId ?? 'debug-storage-cluster',
+            storageClusterId,
             artifactUploadBatch: artifactBatch
         });
 
@@ -927,7 +690,7 @@ export class DebugSessionManager {
             contentType: artifact.contentType,
             fileName: artifact.fileName
         }));
-        const output: Record<string, unknown> = {
+        const output: WorkflowNodeOutput = {
             artifacts,
             exporter: exposure.export.exporter,
             exportType: exposure.export.type,
@@ -958,19 +721,6 @@ export class DebugSessionManager {
         return preparedExecution;
     }
 
-    private startIdleSweep(): void {
-        this.sweepTimer = setInterval(() => {
-            const now = Date.now();
-            for (const [sessionId, session] of this.sessions) {
-                if (now - session.lastActivity > SESSION_IDLE_TTL_MS) {
-                    logger.warn(`@debug-session-manager: session ${sessionId} expired (idle TTL)`);
-                    this.destroySession(sessionId);
-                }
-            }
-        }, SESSION_SWEEP_INTERVAL_MS);
-        this.sweepTimer.unref();
-    }
-
     private async cleanupSessionArtifacts(session: DebugSession): Promise<void> {
         const cleanupDirectorySet = new Set(session.cleanupDirectories);
         const cleanupTasks = [
@@ -981,10 +731,14 @@ export class DebugSessionManager {
                 try {
                     const parentDir = path.dirname(directoryPath);
                     const baseName = path.basename(directoryPath);
-                    const entries = await fs.readdir(parentDir);
-                    await Promise.all(entries
-                        .filter((entry) => entry.startsWith(`${baseName}_`))
-                        .map((entry) => fs.rm(path.join(parentDir, entry), {
+                    const siblingPaths = await fg(`${fg.escapePath(baseName)}_*`, {
+                        cwd: parentDir,
+                        absolute: true,
+                        onlyFiles: false,
+                        dot: true,
+                        unique: true
+                    });
+                    await Promise.all(siblingPaths.map((siblingPath) => fs.rm(siblingPath, {
                             recursive: true,
                             force: true
                         }).catch(() => {})));

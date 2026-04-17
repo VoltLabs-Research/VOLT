@@ -1,21 +1,12 @@
 import { MinioService } from '@/core/storage/infrastructure/minio/MinioService';
-import { RemoteExplorerContentType, RemoteExplorerEntryType, RemoteExplorerNodeType, type RemoteExplorerEntry, type RemoteExplorerNode } from '@/contracts';
+import { RemoteExplorerContentType, RemoteExplorerEntryType, RemoteExplorerNodeType } from '@/contracts';
 import type { ReverseChannelCommandResult } from '@/core/reverse-channel/contracts/commandHandler';
-import { MAX_OBJECT_PREVIEW_BYTES, buildAttachmentContentDisposition, joinExplorerPathSegments, normalizeExplorerPath, parseMinioPath, splitExplorerPathSegments, toWebReadableStream } from '@/modules/container/infrastructure/remote-access/shared';
+import type { RemoteExplorerEntry, RemoteExplorerNode } from '@/contracts';
+import { MAX_OBJECT_PREVIEW_BYTES, buildAttachmentContentDisposition, joinExplorerPathSegments, normalizeExplorerPath } from '@/modules/container/infrastructure/remote-access/shared';
+import { parseMinioPath, splitExplorerPathSegments, toWebReadableStream } from '@/modules/container/infrastructure/remote-access/shared';
 
 interface MinioLikeError {
     code?: string;
-};
-
-const isAllowedMinioBucket = (minioService: MinioService, bucket: string): boolean => {
-    return minioService.listBuckets().includes(bucket);
-};
-
-const isMinioNotFoundError = (error: unknown): error is MinioLikeError => {
-    return typeof error === 'object'
-        && error !== null
-        && 'code' in error
-        && (error.code === 'NotFound' || error.code === 'NoSuchKey');
 };
 
 export const buildMinioEntries = async (
@@ -36,7 +27,7 @@ export const buildMinioEntries = async (
     }
 
     const parsedPath = parseMinioPath(normalizedPath);
-    if (!parsedPath || !isAllowedMinioBucket(minioService, parsedPath.bucket)) {
+    if (!parsedPath || !minioService.listBuckets().includes(parsedPath.bucket)) {
         return [];
     }
 
@@ -95,13 +86,24 @@ export const buildMinioNode = async (
 ): Promise<RemoteExplorerNode> => {
     const normalizedPath = normalizeExplorerPath(path);
     const parsedPath = parseMinioPath(normalizedPath);
-    const bucket = parsedPath?.bucket ?? '';
-    const objectKey = parsedPath?.objectKey ?? '';
 
-    if (!bucket || !objectKey || !isAllowedMinioBucket(minioService, bucket)) {
+    if (!parsedPath) {
         return {
             path,
-            title: bucket || 'MinIO',
+            title: 'MinIO',
+            type: RemoteExplorerNodeType.Object,
+            contentType: RemoteExplorerContentType.Empty,
+            textContent: null,
+            mongoDocuments: []
+        };
+    }
+
+    const { bucket, objectKey } = parsedPath;
+
+    if (!objectKey || !minioService.listBuckets().includes(bucket)) {
+        return {
+            path,
+            title: bucket,
             type: RemoteExplorerNodeType.Object,
             contentType: RemoteExplorerContentType.Empty,
             textContent: null,
@@ -122,11 +124,6 @@ export const buildMinioNode = async (
             stream.removeListener('end', handleEnd);
             stream.removeListener('error', handleError);
             stream.removeListener('close', handleClose);
-        };
-
-        const cleanupReadListeners = (): void => {
-            stream.removeListener('data', handleData);
-            stream.removeListener('end', handleEnd);
         };
 
         const handleClose = (): void => {
@@ -180,7 +177,8 @@ export const buildMinioNode = async (
 
             isSettled = true;
             isDestroying = true;
-            cleanupReadListeners();
+            stream.removeListener('data', handleData);
+            stream.removeListener('end', handleEnd);
             stream.once('close', handleClose);
             stream.pause();
             stream.destroy();
@@ -208,10 +206,14 @@ export const buildMinioDownloadResponse = async (
 ): Promise<ReverseChannelCommandResult> => {
     const normalizedPath = normalizeExplorerPath(path);
     const parsedPath = parseMinioPath(normalizedPath);
-    const bucket = parsedPath?.bucket ?? '';
-    const objectKey = parsedPath?.objectKey ?? '';
 
-    if (!bucket || !objectKey || !isAllowedMinioBucket(minioService, bucket)) {
+    if (!parsedPath) {
+        throw new Error('MinIO download requires a bucket and object key');
+    }
+
+    const { bucket, objectKey } = parsedPath;
+
+    if (!objectKey || !minioService.listBuckets().includes(bucket)) {
         throw new Error('MinIO download requires a bucket and object key');
     }
 
@@ -222,7 +224,8 @@ export const buildMinioDownloadResponse = async (
         stat = await minioService.statObject(bucket, objectKey);
         nodeStream = await minioService.getObjectStream(bucket, objectKey);
     } catch (error) {
-        if (isMinioNotFoundError(error)) {
+        const code = (error as MinioLikeError).code;
+        if (code === 'NotFound' || code === 'NoSuchKey') {
             throw Object.assign(new Error(`Object not found: ${bucket}/${objectKey}`), {
                 statusCode: 404
             });
@@ -231,7 +234,7 @@ export const buildMinioDownloadResponse = async (
         throw error;
     }
 
-    const filename = objectKey.split('/').pop() ?? objectKey;
+    const filename = objectKey.slice(objectKey.lastIndexOf('/') + 1);
     const contentType = typeof stat.metaData['content-type'] === 'string'
         ? stat.metaData['content-type']
         : 'application/octet-stream';
@@ -240,7 +243,7 @@ export const buildMinioDownloadResponse = async (
         status: 200,
         headers: {
             'content-type': contentType,
-            'content-length': String(stat.size),
+            'content-length': `${stat.size}`,
             'content-disposition': buildAttachmentContentDisposition(filename)
         },
         stream: toWebReadableStream(nodeStream)

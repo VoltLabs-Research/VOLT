@@ -1,9 +1,12 @@
 import { createWriteStream } from 'node:fs';
+import { pipeline } from 'node:stream/promises';
 import { logger } from '@/core/logger';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { pipeline } from 'node:stream/promises';
+import { tmpName } from 'tmp-promise';
 import unzipper from 'unzipper';
+
+type CentralDirectory = Awaited<ReturnType<typeof unzipper.Open.file>>;
 
 interface UploadedFile {
     path?: string;
@@ -20,16 +23,7 @@ interface ExtractedFile {
     mimetype?: string;
 };
 
-const isJunkEntry = (entryPath: string): boolean => {
-    const basename = path.basename(entryPath);
-    return (
-        basename.startsWith('.') ||
-        basename === '__MACOSX' ||
-        entryPath.includes('__MACOSX/') ||
-        basename === '.DS_Store' ||
-        basename === 'Thumbs.db'
-    );
-};
+const JUNK_ENTRY_BASENAMES = new Set(['__MACOSX', '.DS_Store', 'Thumbs.db']);
 
 export class FileExtractorService {
     async extractFiles(files: UploadedFile[], workingDir: string): Promise<ExtractedFile[]> {
@@ -42,7 +36,12 @@ export class FileExtractorService {
                 let zipPath = file.path;
                 let tempZipCreated = false;
                 if (!zipPath && file.buffer) {
-                    zipPath = path.join(workingDir, `upload_${Date.now()}_${Math.random().toString(36).slice(2)}.zip`);
+                    await fs.mkdir(workingDir, { recursive: true });
+                    zipPath = await tmpName({
+                        tmpdir: workingDir,
+                        prefix: 'upload-',
+                        postfix: '.zip'
+                    });
                     await fs.writeFile(zipPath, file.buffer);
                     tempZipCreated = true;
                 }
@@ -61,7 +60,12 @@ export class FileExtractorService {
             }
 
             if (!file.path && file.buffer) {
-                const tempPath = path.join(workingDir, file.originalname || `upload_${Date.now()}`);
+                await fs.mkdir(workingDir, { recursive: true });
+                const tempPath = await tmpName({
+                    tmpdir: workingDir,
+                    prefix: 'upload-',
+                    postfix: file.originalname ? path.extname(file.originalname) : ''
+                });
                 await fs.writeFile(tempPath, file.buffer);
                 file.path = tempPath;
             }
@@ -82,7 +86,7 @@ export class FileExtractorService {
     }
 
     private async extractZipViaOpenFile(zipPath: string, outputDir: string): Promise<ExtractedFile[]> {
-        const directory = await unzipper.Open.file(zipPath);
+        const directory = await unzipper.Open.file(zipPath) as CentralDirectory;
         const resolvedBase = path.resolve(outputDir);
         const extractedFiles: ExtractedFile[] = [];
 
@@ -92,7 +96,8 @@ export class FileExtractorService {
         );
 
         for (const entry of directory.files) {
-            if (entry.type === 'Directory' || isJunkEntry(entry.path)) {
+            const basename = path.basename(entry.path);
+            if (entry.type === 'Directory' || basename.startsWith('.') || JUNK_ENTRY_BASENAMES.has(basename) || entry.path.includes('__MACOSX/')) {
                 continue;
             }
 
@@ -122,15 +127,5 @@ export class FileExtractorService {
         }
 
         return extractedFiles;
-    }
-
-    async getFilesRecursive(dir: string): Promise<string[]> {
-        const dirents = await fs.readdir(dir, { withFileTypes: true });
-        const files = await Promise.all(dirents.map((dirent) => {
-            const resolvedPath = path.resolve(dir, dirent.name);
-            return dirent.isDirectory() ? this.getFilesRecursive(resolvedPath) : resolvedPath;
-        }));
-
-        return Array.prototype.concat(...files) as string[];
     }
 };

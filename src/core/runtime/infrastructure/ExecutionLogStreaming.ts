@@ -1,27 +1,28 @@
 import { logger } from '@/core/logger';
+import type { ExecutionLogSegment } from '@/modules/analysis/application/events/ExecutionLogSegment';
 import type { ProcessExecutionLogChunk, ProcessExecutionLogSink } from '@/core/runtime/infrastructure/BinaryExecutorService';
-import type { TeamClusterDaemonExecutionLogSegment } from '@/contracts';
-
-const DEFAULT_FLUSH_INTERVAL_MS = 250;
-const DEFAULT_MAX_BUFFERED_BYTES = 8 * 1024;
 
 interface AnalysisExecutionLogReporter {
-    reportAnalysisLogChunk(input: {
-        jobId: string;
-        analysisId: string;
-        teamId: string;
-        trajectoryId: string;
-        timestep: number;
-        segments: TeamClusterDaemonExecutionLogSegment[];
-    }): Promise<void>;
+    reportAnalysisLogChunk(input: AnalysisExecutionLogChunkReport): Promise<void>;
 }
 
 interface DebugExecutionLogReporter {
-    reportDebugLogChunk(input: {
-        sessionId: string;
-        nodeId: string;
-        segments: TeamClusterDaemonExecutionLogSegment[];
-    }): Promise<void>;
+    reportDebugLogChunk(input: DebugExecutionLogChunkReport): Promise<void>;
+}
+
+interface AnalysisExecutionLogChunkReport {
+    jobId: string;
+    analysisId: string;
+    teamId: string;
+    trajectoryId: string;
+    timestep: number;
+    segments: ExecutionLogSegment[];
+}
+
+interface DebugExecutionLogChunkReport {
+    sessionId: string;
+    nodeId: string;
+    segments: ExecutionLogSegment[];
 }
 
 export interface ExecutionLogSegmentMetadata {
@@ -33,7 +34,7 @@ export interface ExecutionLogSegmentMetadata {
 }
 
 interface BufferedExecutionLogSinkOptions {
-    flushSegments: (segments: TeamClusterDaemonExecutionLogSegment[]) => Promise<void>;
+    flushSegments: (segments: ExecutionLogSegment[]) => Promise<void>;
     metadata?: ExecutionLogSegmentMetadata;
     flushIntervalMs?: number;
     maxBufferedBytes?: number;
@@ -60,102 +61,42 @@ interface DebugExecutionLogSinkOptions {
     maxBufferedBytes?: number;
 }
 
-class BufferedExecutionLogSink implements ProcessExecutionLogSink {
-    private readonly flushIntervalMs: number;
-    private readonly maxBufferedBytes: number;
-    private readonly metadata?: ExecutionLogSegmentMetadata;
-    private readonly flushSegments: BufferedExecutionLogSinkOptions['flushSegments'];
-    private buffer: TeamClusterDaemonExecutionLogSegment[] = [];
-    private bufferedBytes = 0;
-    private flushTimer: NodeJS.Timeout | null = null;
-    private flushQueue: Promise<void> = Promise.resolve();
+const DEFAULT_FLUSH_INTERVAL_MS = 250;
+const DEFAULT_MAX_BUFFERED_BYTES = 8 * 1024;
 
-    constructor(options: BufferedExecutionLogSinkOptions) {
-        this.flushSegments = options.flushSegments;
-        this.metadata = options.metadata;
-        this.flushIntervalMs = options.flushIntervalMs ?? DEFAULT_FLUSH_INTERVAL_MS;
-        this.maxBufferedBytes = options.maxBufferedBytes ?? DEFAULT_MAX_BUFFERED_BYTES;
-    }
+const createBufferedExecutionLogSink = (
+    options: BufferedExecutionLogSinkOptions
+): ProcessExecutionLogSink => {
+    const flushSegments = options.flushSegments;
+    const metadata = options.metadata;
+    const flushIntervalMs = options.flushIntervalMs ?? DEFAULT_FLUSH_INTERVAL_MS;
+    const maxBufferedBytes = options.maxBufferedBytes ?? DEFAULT_MAX_BUFFERED_BYTES;
+    let buffer: ExecutionLogSegment[] = [];
+    let bufferedBytes = 0;
+    let flushTimer: NodeJS.Timeout | null = null;
+    let flushQueue: Promise<void> = Promise.resolve();
 
-    handleChunk(chunk: ProcessExecutionLogChunk): void {
-        if (!chunk.text) {
+    const enqueueFlush = async (): Promise<void> => {
+        if (flushTimer) {
+            clearTimeout(flushTimer);
+            flushTimer = null;
+        }
+
+        if (buffer.length === 0) {
+            await flushQueue;
             return;
         }
 
-        const segment: TeamClusterDaemonExecutionLogSegment = {
-            stream: chunk.stream,
-            text: chunk.text,
-            occurredAt: chunk.occurredAt,
-            ...(this.metadata?.nodeId ? { nodeId: this.metadata.nodeId } : {}),
-            ...(this.metadata?.nodeType ? { nodeType: this.metadata.nodeType } : {}),
-            ...(this.metadata?.nodeLabel ? { nodeLabel: this.metadata.nodeLabel } : {}),
-            ...(this.metadata?.pluginId ? { pluginId: this.metadata.pluginId } : {}),
-            ...(Array.isArray(this.metadata?.executionPath) && this.metadata.executionPath.length > 0
-                ? { executionPath: [...this.metadata.executionPath] }
-                : {})
-        };
+        const segments = buffer;
+        buffer = [];
+        bufferedBytes = 0;
 
-        this.buffer.push(segment);
-        this.bufferedBytes += Buffer.byteLength(segment.text, 'utf8');
-
-        if (this.bufferedBytes >= this.maxBufferedBytes) {
-            this.scheduleImmediateFlush();
-            return;
-        }
-
-        this.scheduleDeferredFlush();
-    }
-
-    async flush(): Promise<void> {
-        this.clearFlushTimer();
-        await this.enqueueFlush();
-    }
-
-    private scheduleDeferredFlush(): void {
-        if (this.flushTimer) {
-            return;
-        }
-
-        this.flushTimer = setTimeout(() => {
-            this.flushTimer = null;
-            this.enqueueFlush();
-        }, this.flushIntervalMs);
-
-        if (this.flushTimer.unref) {
-            this.flushTimer.unref();
-        }
-    }
-
-    private scheduleImmediateFlush(): void {
-        this.clearFlushTimer();
-        this.enqueueFlush();
-    }
-
-    private clearFlushTimer(): void {
-        if (!this.flushTimer) {
-            return;
-        }
-
-        clearTimeout(this.flushTimer);
-        this.flushTimer = null;
-    }
-
-    private async enqueueFlush(): Promise<void> {
-        if (this.buffer.length === 0) {
-            await this.flushQueue;
-            return;
-        }
-
-        const segments = this.buffer;
-        this.buffer = [];
-        this.bufferedBytes = 0;
-
-        this.flushQueue = this.flushQueue
+        flushQueue = flushQueue
             .catch(() => undefined)
             .then(async () => {
                 try {
-                    await this.flushSegments(segments);
-                } catch (error: unknown) {
+                    await flushSegments(segments);
+                } catch (error) {
                     logger.warn(
                         {
                             err: error,
@@ -166,22 +107,59 @@ class BufferedExecutionLogSink implements ProcessExecutionLogSink {
                 }
             });
 
-        await this.flushQueue;
-    }
-}
+        await flushQueue;
+    };
 
-const normalizeTimesteps = (timesteps: number[]): number[] => {
-    return Array.from(new Set(
-        timesteps.filter((value): value is number => typeof value === 'number' && Number.isFinite(value))
-    ));
+    return {
+        handleChunk(chunk: ProcessExecutionLogChunk): void {
+        if (!chunk.text) {
+            return;
+        }
+
+        const segment: ExecutionLogSegment = {
+            stream: chunk.stream,
+            text: chunk.text,
+            occurredAt: chunk.occurredAt,
+            ...(metadata?.nodeId ? { nodeId: metadata.nodeId } : {}),
+            ...(metadata?.nodeType ? { nodeType: metadata.nodeType } : {}),
+            ...(metadata?.nodeLabel ? { nodeLabel: metadata.nodeLabel } : {}),
+            ...(metadata?.pluginId ? { pluginId: metadata.pluginId } : {}),
+            ...(metadata?.executionPath?.length
+                ? { executionPath: [...metadata.executionPath] }
+                : {})
+        };
+
+        buffer.push(segment);
+        bufferedBytes += Buffer.byteLength(segment.text, 'utf8');
+
+        if (bufferedBytes >= maxBufferedBytes) {
+            enqueueFlush();
+            return;
+        }
+
+        if (flushTimer) {
+            return;
+        }
+
+        flushTimer = setTimeout(() => {
+            flushTimer = null;
+            enqueueFlush();
+        }, flushIntervalMs);
+
+        if (flushTimer.unref) {
+            flushTimer.unref();
+        }
+        },
+        flush: enqueueFlush
+    };
 };
 
 export const createAnalysisExecutionLogSink = (
     options: AnalysisExecutionLogSinkOptions
 ): ProcessExecutionLogSink => {
-    const timesteps = normalizeTimesteps(options.timesteps);
+    const timesteps = [...new Set(options.timesteps)];
 
-    return new BufferedExecutionLogSink({
+    return createBufferedExecutionLogSink({
         metadata: options.metadata,
         flushIntervalMs: options.flushIntervalMs,
         maxBufferedBytes: options.maxBufferedBytes,
@@ -205,18 +183,16 @@ export const createAnalysisExecutionLogSink = (
 export const createDebugExecutionLogSink = (
     options: DebugExecutionLogSinkOptions
 ): ProcessExecutionLogSink => {
-    return new BufferedExecutionLogSink({
-        metadata: options.metadata,
-        flushIntervalMs: options.flushIntervalMs,
-        maxBufferedBytes: options.maxBufferedBytes,
-        flushSegments: async (segments) => {
-            if (segments.length === 0) {
-                return;
-            }
+    const { reporter, sessionId, nodeId, metadata, flushIntervalMs, maxBufferedBytes } = options;
 
-            await options.reporter.reportDebugLogChunk({
-                sessionId: options.sessionId,
-                nodeId: options.nodeId,
+    return createBufferedExecutionLogSink({
+        metadata,
+        flushIntervalMs,
+        maxBufferedBytes,
+        flushSegments: async (segments) => {
+            await reporter.reportDebugLogChunk({
+                sessionId,
+                nodeId,
                 segments
             });
         }

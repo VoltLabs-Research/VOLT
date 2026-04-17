@@ -1,15 +1,15 @@
 import type { DaemonAnalysisDocument, NestedPluginDefinition, TrajectoryDumpDescriptor, TrajectoryFrame, WorkflowDefinition } from '@/contracts';
-import type { WorkflowExecutionContext } from '@/modules/analysis/contracts/workflow.types';
+import type { WorkflowExecutionContext, WorkflowNodeOutput, WorkflowValueMap } from '@/modules/analysis/contracts/workflow.types';
 import { WorkflowGraph } from '@/modules/analysis/contracts/workflow.types';
 
 interface WorkflowOutputsSnapshot {
-    [nodeId: string]: Record<string, unknown>;
+    [nodeId: string]: WorkflowNodeOutput;
 };
 
 interface WorkflowExecutionContextFactoryParams {
-    outputs?: Map<string, Record<string, unknown>>;
-    userConfig: Record<string, unknown>;
-    runtimeArguments: Record<string, unknown>;
+    outputs?: Map<string, WorkflowNodeOutput>;
+    userConfig: WorkflowValueMap;
+    runtimeArguments: WorkflowValueMap;
     trajectoryId: string;
     trajectoryFrames: TrajectoryFrame[];
     trajectoryDumpOverrides?: TrajectoryDumpDescriptor[];
@@ -28,7 +28,7 @@ interface WorkflowExecutionContextFactoryParams {
 
 /** Creates a serializable snapshot from workflow node outputs. */
 export const snapshotWorkflowOutputs = (
-    outputs: Map<string, Record<string, unknown>>
+    outputs: Map<string, WorkflowNodeOutput>
 ): WorkflowOutputsSnapshot => {
     const snapshot: WorkflowOutputsSnapshot = {};
 
@@ -41,26 +41,46 @@ export const snapshotWorkflowOutputs = (
 
 /** Assembles the shared workflow execution context shape used across runtime entry points. */
 export const createWorkflowExecutionContext = (
-    params: WorkflowExecutionContextFactoryParams
-): WorkflowExecutionContext => {
-    return {
-        outputs: params.outputs ?? new Map(),
-        userConfig: params.userConfig,
-        runtimeArguments: params.runtimeArguments,
-        trajectoryId: params.trajectoryId,
-        trajectoryFrames: params.trajectoryFrames,
-        trajectoryDumpOverrides: params.trajectoryDumpOverrides,
-        analysis: params.analysis,
-        analysisId: params.analysisId,
-        generatedFiles: params.generatedFiles ?? [],
-        pluginId: params.pluginId,
-        teamId: params.teamId,
-        selectedFrameOnly: params.selectedFrameOnly,
-        selectedTimesteps: params.selectedTimesteps,
-        selectedTimestep: params.selectedTimestep,
-        workflow: params.workflow,
-        nestedWorkflows: params.nestedWorkflows ?? new Map(
-            (params.nestedPlugins ?? []).map((nestedPlugin) => [nestedPlugin.pluginId, nestedPlugin.workflow])
+    {
+        outputs = new Map<string, WorkflowNodeOutput>(),
+        userConfig,
+        runtimeArguments,
+        trajectoryId,
+        trajectoryFrames,
+        trajectoryDumpOverrides,
+        analysis,
+        analysisId,
+        generatedFiles = [],
+        pluginId,
+        teamId,
+        selectedFrameOnly,
+        selectedTimesteps,
+        selectedTimestep,
+        workflow,
+        nestedPlugins = [],
+        nestedWorkflows = new Map(
+            nestedPlugins.map((nestedPlugin) => [nestedPlugin.pluginId, nestedPlugin.workflow])
         )
+    }: WorkflowExecutionContextFactoryParams
+): WorkflowExecutionContext => {
+    const context: WorkflowExecutionContext = {
+        outputs,
+        userConfig,
+        runtimeArguments,
+        trajectoryId,
+        trajectoryFrames,
+        trajectoryDumpOverrides,
+        analysis,
+        analysisId,
+        generatedFiles,
+        pluginId,
+        teamId,
+        selectedFrameOnly,
+        selectedTimesteps,
+        selectedTimestep,
+        workflow,
+        nestedWorkflows
     };
+
+    return context;
 };

@@ -12,7 +12,7 @@ export class TrajectoryAutoPreviewClaimStore {
     ) {
     }
 
-    async claimRasterization(trajectoryId: string): Promise<boolean> {
+    claimRasterization(trajectoryId: string): Promise<boolean> {
         return this.redisConnectionService.setKeyIfAbsent(
             buildAutoPreviewRasterKey(trajectoryId),
             new Date().toISOString(),

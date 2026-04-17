@@ -9,7 +9,7 @@ interface PutObjectInput {
     objectKey: string;
     body: Buffer;
     metadata?: Record<string, string>;
-};
+}
 
 interface PutStreamInput {
     bucket: string;
@@ -17,31 +17,44 @@ interface PutStreamInput {
     stream: Readable;
     size: number;
     metadata?: Record<string, string>;
-};
+}
 
 interface ListObjectsPageInput {
     bucket: string;
     prefix: string;
     cursor?: string;
     limit: number;
-};
+}
 
 interface ListObjectsPageEntry {
     key: string;
     contentLength?: number;
     etag?: string;
     lastModified?: Date;
-};
+}
 
 interface ListObjectsPageResult {
     keys: string[];
     objects: ListObjectsPageEntry[];
     nextCursor?: string;
-};
+}
+
+interface ListedMinioObjectShape {
+    name: string;
+}
+
+type ListedMinioObject = Extract<BucketItem, ListedMinioObjectShape>;
 
 export class MinioService {
     private readonly client: Client;
     private static readonly SAFE_LIST_PAGE_SIZE = 200;
+    readonly ensureBuckets: () => Promise<void>;
+    readonly listBuckets: () => string[];
+    readonly getObjectStream: (bucket: string, objectKey: string) => Promise<Readable>;
+    readonly statObject: (bucket: string, objectKey: string) => ReturnType<Client['statObject']>;
+    readonly putObject: (input: PutObjectInput) => Promise<void>;
+    readonly putObjectStream: (input: PutStreamInput) => Promise<void>;
+    readonly removeObject: (bucket: string, objectKey: string) => Promise<void>;
 
     constructor(
         private readonly config: DaemonConfig
@@ -54,50 +67,39 @@ export class MinioService {
             accessKey: config.minio.accessKey,
             secretKey: config.minio.secretKey
         });
-    }
 
-    async ensureBuckets(): Promise<void> {
-        for (const bucket of this.config.allowedBuckets) {
-            const exists = await this.client.bucketExists(bucket);
-            if (!exists) {
-                await this.client.makeBucket(bucket);
-                logger.info(`Created MinIO bucket: ${bucket}`);
+        this.listBuckets = () => [...this.config.allowedBuckets];
+        this.ensureBuckets = async () => {
+            for (const bucket of this.listBuckets()) {
+                const exists = await this.client.bucketExists(bucket);
+                if (!exists) {
+                    await this.client.makeBucket(bucket);
+                    logger.info(`Created MinIO bucket: ${bucket}`);
+                }
             }
-        }
-    }
-
-    listBuckets(): string[] {
-        return [...this.config.allowedBuckets];
-    }
-
-    getObjectStream(bucket: string, objectKey: string): Promise<Readable> {
-        return this.client.getObject(bucket, objectKey);
-    }
-
-    statObject(bucket: string, objectKey: string) {
-        return this.client.statObject(bucket, objectKey);
-    }
-
-    async putObject(input: PutObjectInput): Promise<void> {
-        await this.client.putObject(input.bucket, input.objectKey, input.body, input.body.length, input.metadata);
-    }
-
-    async putObjectStream(input: PutStreamInput): Promise<void> {
-        await this.client.putObject(input.bucket, input.objectKey, input.stream, input.size, input.metadata);
+        };
+        this.getObjectStream = (bucket, objectKey) => this.client.getObject(bucket, objectKey);
+        this.statObject = (bucket, objectKey) => this.client.statObject(bucket, objectKey);
+        this.putObject = async (input) => {
+            await this.client.putObject(input.bucket, input.objectKey, input.body, input.body.length, input.metadata);
+        };
+        this.putObjectStream = async (input) => {
+            await this.client.putObject(input.bucket, input.objectKey, input.stream, input.size, input.metadata);
+        };
+        this.removeObject = async (bucket, objectKey) => {
+            await this.client.removeObject(bucket, objectKey);
+        };
     }
 
     async listObjects(bucket: string, prefix: string, maxKeys?: number): Promise<string[]> {
-        const requestedMaxKeys = typeof maxKeys === 'number' && Number.isInteger(maxKeys) && maxKeys > 0
-            ? maxKeys
-            : undefined;
         const keys: string[] = [];
         let continuationToken = '';
 
         do {
-            const remainingKeys = requestedMaxKeys
-                ? Math.max(0, requestedMaxKeys - keys.length)
-                : MinioService.SAFE_LIST_PAGE_SIZE;
-            if (requestedMaxKeys && remainingKeys === 0) {
+            const remainingKeys = maxKeys === undefined
+                ? MinioService.SAFE_LIST_PAGE_SIZE
+                : Math.max(0, maxKeys - keys.length);
+            if (maxKeys !== undefined && remainingKeys === 0) {
                 break;
             }
 
@@ -117,7 +119,7 @@ export class MinioService {
                 }
 
                 keys.push(listedObject.key);
-                if (requestedMaxKeys && keys.length >= requestedMaxKeys) {
+                if (maxKeys !== undefined && keys.length >= maxKeys) {
                     return keys;
                 }
             }
@@ -131,13 +133,14 @@ export class MinioService {
     }
 
     async listObjectsPage(input: ListObjectsPageInput): Promise<ListObjectsPageResult> {
-        const requestedLimit = Number.isInteger(input.limit) && input.limit > 0
-            ? input.limit
-            : 100;
+        const requestedLimit = input.limit;
         const maxKeys = requestedLimit + 1;
         const collectedObjects: ListObjectsPageEntry[] = [];
         let continuationToken = '';
-        let startAfter = input.cursor ?? '';
+        let startAfter = input.cursor;
+        if (startAfter === undefined) {
+            startAfter = '';
+        }
 
         while (collectedObjects.length < maxKeys) {
             const result = await this.client.listObjectsV2Query(
@@ -161,7 +164,7 @@ export class MinioService {
                     return {
                         keys: objects.map((object) => object.key),
                         objects,
-                        nextCursor: objects[requestedLimit - 1]?.key
+                        nextCursor: objects[requestedLimit - 1].key
                     };
                 }
             }
@@ -224,35 +227,16 @@ export class MinioService {
         return deletedCount;
     }
 
-    async removeObject(bucket: string, objectKey: string): Promise<void> {
-        await this.client.removeObject(bucket, objectKey);
-    }
-
     private readListItem(item: BucketItem): ListObjectsPageEntry | null {
-        if (!('name' in item) || typeof item.name !== 'string') {
+        if (item.name === undefined) {
             return null;
         }
 
-        const lastModifiedValue: unknown = 'lastModified' in item
-            ? (item as Record<string, unknown>).lastModified
-            : undefined;
-        const lastModified = lastModifiedValue instanceof Date
-            ? lastModifiedValue
-            : typeof lastModifiedValue === 'string' && lastModifiedValue.length > 0
-                ? new Date(lastModifiedValue)
-                : undefined;
-
         return {
             key: item.name,
-            contentLength: typeof item.size === 'number'
-                ? item.size
-                : undefined,
-            etag: typeof item.etag === 'string' && item.etag.length > 0
-                ? item.etag
-                : undefined,
-            lastModified: lastModified && !Number.isNaN(lastModified.getTime())
-                ? lastModified
-                : undefined
+            contentLength: item.size,
+            etag: item.etag,
+            lastModified: item.lastModified
         };
     }
 };

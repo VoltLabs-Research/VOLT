@@ -1,38 +1,50 @@
-import { stringifyUnknown } from '@/support/serialization/serialization';
 import type { WorkflowExecutionContext, WorkflowNode } from '@/modules/analysis/contracts/workflow.types';
+import type { WorkflowSwitchCaseData, WorkflowSwitchStatementData } from '@/modules/analysis/contracts/http.workflow';
+import { resolveWorkflowComparableString } from '@/modules/analysis/application/workflow/WorkflowExpressionResolution';
+import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '@/modules/analysis/application/workflow/NodeRegistry';
 import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
-import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '@/modules/analysis/application/workflow';
+
+interface SwitchStatementOutput {
+    expression?: string;
+    resolvedValue: string;
+    matchedCaseId?: string;
+    matchedValue?: string;
+}
+
+interface SwitchCaseOutput {
+    value?: string;
+    defaultCase: boolean;
+}
 
 export class WorkflowSwitchStatementHandler implements WorkflowNodeHandler {
     readonly type = WorkflowNodeType.SwitchStatement;
 
-    constructor(
-        private readonly registry: WorkflowNodeRegistry
-    ) {}
+    constructor(private readonly registry: WorkflowNodeRegistry) {}
 
-    async execute(node: WorkflowNode, context: WorkflowExecutionContext): Promise<Record<string, unknown>> {
-        const expression = node.data.switchStatement?.expression ?? '';
-        const resolvedValue = expression.includes('{{')
-            ? this.registry.resolveTemplate(expression, context, node.id)
-            : expression;
-        const normalizedResolvedValue = stringifyUnknown(resolvedValue);
-        const caseNodes = context.workflow.edges
-            .filter((edge) => edge.source === node.id && edge.sourceHandle === 'cases')
-            .map((edge) => context.workflow.nodes.find((candidate) => candidate.id === edge.target))
-            .filter((candidate): candidate is WorkflowNode => candidate?.type === WorkflowNodeType.SwitchCase);
+    async execute(node: WorkflowNode, context: WorkflowExecutionContext): Promise<SwitchStatementOutput> {
+        const switchStatement = node.data.switchStatement as WorkflowSwitchStatementData | undefined;
+        const expression = switchStatement?.expression;
+        const normalizedResolvedValue = await resolveWorkflowComparableString(
+            expression,
+            this.registry,
+            context,
+            node.id
+        );
+        const caseNodes = context.workflow.getChildren(node.id, 'cases')
+            .filter((candidate): candidate is WorkflowNode => candidate.type === WorkflowNodeType.SwitchCase);
 
-        let matchedCaseId: string | null = null;
-        let matchedValue: string | null = null;
-        let defaultCaseId: string | null = null;
+        let matchedCaseId: string | undefined;
+        let matchedValue: string | undefined;
+        let defaultCaseId: string | undefined;
 
         for (const caseNode of caseNodes) {
-            const caseData = caseNode.data.switchCase;
-            if (caseData?.defaultCase) {
+            const caseData = caseNode.data.switchCase as WorkflowSwitchCaseData | undefined;
+            if (caseData?.defaultCase === true) {
                 defaultCaseId = caseNode.id;
                 continue;
             }
 
-            const caseValue = caseData?.value ?? '';
+            const caseValue = caseData?.value;
             if (caseValue === normalizedResolvedValue) {
                 matchedCaseId = caseNode.id;
                 matchedValue = caseValue;
@@ -43,7 +55,9 @@ export class WorkflowSwitchStatementHandler implements WorkflowNodeHandler {
         if (!matchedCaseId && defaultCaseId) {
             matchedCaseId = defaultCaseId;
             const defaultCaseNode = caseNodes.find((candidate) => candidate.id === defaultCaseId);
-            matchedValue = defaultCaseNode?.data.switchCase?.value ?? null;
+            if (defaultCaseNode) {
+                matchedValue = (defaultCaseNode.data.switchCase as WorkflowSwitchCaseData).value;
+            }
         }
 
         return {
@@ -58,12 +72,14 @@ export class WorkflowSwitchStatementHandler implements WorkflowNodeHandler {
 export class WorkflowSwitchCaseHandler implements WorkflowNodeHandler {
     readonly type = WorkflowNodeType.SwitchCase;
 
-    async execute(node: WorkflowNode): Promise<Record<string, unknown>> {
-        const switchCaseData = node.data.switchCase;
+    execute(node: WorkflowNode): Promise<SwitchCaseOutput> {
+        const switchCaseData = node.data.switchCase as WorkflowSwitchCaseData;
+        const value = switchCaseData.value;
+        const defaultCase = switchCaseData.defaultCase === true;
 
-        return {
-            value: switchCaseData?.value ?? '',
-            defaultCase: switchCaseData?.defaultCase === true
-        };
+        return Promise.resolve({
+            value,
+            defaultCase
+        });
     }
 };

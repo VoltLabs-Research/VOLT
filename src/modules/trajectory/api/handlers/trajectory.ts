@@ -1,17 +1,17 @@
-import { createTrajectoryRasterQueueService } from '@/modules/trajectory/application/raster/TrajectoryRasterQueueService';
-import { createTrajectoryGlbQueueService } from '@/modules/trajectory/application/glb/TrajectoryGlbQueueService';
-import type { FilterEvaluatorService } from '@/modules/trajectory/domain/services/FilterEvaluatorService';
-import type { NativeAtomsPageRequest, NativeColorModelRequest, NativeFilterPreviewRequest, NativeParticleFilterModelRequest, NativePropertyStatsRequest, NativeTrajectoryRequest, NativeUniqueValuesRequest } from '@/core/runtime/infrastructure/native/NativeModuleLoader';
-import type { GlbExporterService } from '@/modules/trajectory/application/glb/GlbExporterService';
-import type { TrajectoryAutoPreviewClaimStore } from '@/modules/trajectory/infrastructure/storage/TrajectoryAutoPreviewClaimStore';
-import type { TrajectoryParserService } from '@/modules/trajectory/application/parsing/TrajectoryParserService';
-import type { TrajectoryPluginParserService } from '@/modules/trajectory/application/parsing/TrajectoryPluginParserService';
-import type { QueueService } from '@/core/queues/application/QueueService';
 import type { EnqueuePreprocessingRequest, RasterizeTrajectoryRequest } from '@/contracts';
 import { ChannelCommands } from '@/contracts';
 import type { ReverseChannelCommandHandler } from '@/core/reverse-channel/contracts/commandHandler';
+import type { NativeAtomsPageRequest, NativeColorModelRequest, NativeFilterPreviewRequest, NativeParticleFilterModelRequest, NativePropertyStatsRequest, NativeTrajectoryRequest, NativeUniqueValuesRequest } from '@/core/runtime/infrastructure/native/NativeModuleLoader';
 import type { RuntimeCapabilityGuard } from '@/core/runtime/application/RuntimeCapabilityGuard';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
+import { createTrajectoryGlbQueueService } from '@/modules/trajectory/application/glb/TrajectoryGlbQueueService';
+import type { GlbExporterService } from '@/modules/trajectory/application/glb/GlbExporterService';
+import type { TrajectoryParserService } from '@/modules/trajectory/application/parsing/TrajectoryParserService';
+import type { TrajectoryPluginParserService } from '@/modules/trajectory/application/parsing/TrajectoryPluginParserService';
+import { createTrajectoryRasterQueueService } from '@/modules/trajectory/application/raster/TrajectoryRasterQueueService';
+import type { FilterEvaluatorService } from '@/modules/trajectory/domain/services/FilterEvaluatorService';
+import type { QueueService } from '@/core/queues/application/QueueService';
+import type { TrajectoryAutoPreviewClaimStore } from '@/modules/trajectory/infrastructure/storage/TrajectoryAutoPreviewClaimStore';
 
 interface TrajectoryHandlersDependencies {
     objectStore: ClusterObjectStore;
@@ -22,7 +22,7 @@ interface TrajectoryHandlersDependencies {
     glbExporterService: GlbExporterService;
     filterEvaluatorService: FilterEvaluatorService;
     runtimeCapabilityGuard: RuntimeCapabilityGuard;
-};
+}
 
 export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): ReverseChannelCommandHandler[] => {
     const trajectoryRasterQueueService = createTrajectoryRasterQueueService(
@@ -39,13 +39,9 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
         {
             command: ChannelCommands.TrajectoryRasterize,
             execute: async (payload) => {
-                deps.runtimeCapabilityGuard.ensureAcceptsComputeJobs(
-                    ChannelCommands.TrajectoryRasterize
-                );
+                deps.runtimeCapabilityGuard.ensureAcceptsComputeJobs(ChannelCommands.TrajectoryRasterize);
                 return {
-                    data: await trajectoryRasterQueueService.queueRasterizationJobs(
-                        payload as unknown as RasterizeTrajectoryRequest
-                    )
+                    data: await trajectoryRasterQueueService.queueRasterizationJobs(payload as RasterizeTrajectoryRequest)
                 };
             }
         },
@@ -56,9 +52,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                     ChannelCommands.TrajectoryEnqueuePreprocessing
                 );
                 return {
-                    data: await trajectoryGlbQueueService.enqueueGlbConversionJobs(
-                        payload as unknown as EnqueuePreprocessingRequest
-                    )
+                    data: await trajectoryGlbQueueService.enqueueGlbConversionJobs(payload as EnqueuePreprocessingRequest)
                 };
             }
         },
@@ -68,18 +62,16 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                 deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled(
                     ChannelCommands.TrajectoryNativePreprocess
                 );
-                await deps.glbExporterService.preprocessTrajectory(payload as unknown as NativeTrajectoryRequest);
+                await deps.glbExporterService.preprocessTrajectory(payload as NativeTrajectoryRequest);
                 return { data: { glbExported: true } };
             }
         },
         {
             command: ChannelCommands.TrajectoryNativeMetadata,
             execute: async (payload) => {
-                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled(
-                    ChannelCommands.TrajectoryNativeMetadata
-                );
+                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled(ChannelCommands.TrajectoryNativeMetadata);
                 return {
-                    data: await deps.trajectoryParserService.getTrajectoryMetadata(payload as unknown as NativeTrajectoryRequest)
+                    data: await deps.trajectoryParserService.getTrajectoryMetadata(payload as NativeTrajectoryRequest)
                 };
             }
         },
@@ -90,7 +82,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                     ChannelCommands.TrajectoryNativePropertyStats
                 );
                 return {
-                    data: await deps.trajectoryParserService.getPropertyStats(payload as unknown as NativePropertyStatsRequest)
+                    data: await deps.trajectoryParserService.getPropertyStats(payload as NativePropertyStatsRequest)
                 };
             }
         },
@@ -101,28 +93,24 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                     ChannelCommands.TrajectoryNativeUniqueValues
                 );
                 return {
-                    data: await deps.trajectoryParserService.getUniqueValues(payload as unknown as NativeUniqueValuesRequest)
+                    data: await deps.trajectoryParserService.getUniqueValues(payload as NativeUniqueValuesRequest)
                 };
             }
         },
         {
             command: ChannelCommands.TrajectoryNativeAtomIds,
             execute: async (payload) => {
-                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled(
-                    ChannelCommands.TrajectoryNativeAtomIds
-                );
+                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled(ChannelCommands.TrajectoryNativeAtomIds);
                 return {
-                    data: await deps.trajectoryParserService.getAtomIds(payload as unknown as NativeTrajectoryRequest)
+                    data: await deps.trajectoryParserService.getAtomIds(payload as NativeTrajectoryRequest)
                 };
             }
         },
         {
             command: ChannelCommands.TrajectoryNativeAtoms,
             execute: async (payload) => {
-                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled(
-                    ChannelCommands.TrajectoryNativeAtoms
-                );
-                const request = payload as unknown as NativeAtomsPageRequest & { analysisId?: string };
+                deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled(ChannelCommands.TrajectoryNativeAtoms);
+                const request = payload as NativeAtomsPageRequest & { analysisId?: string };
                 const nativeResult = await deps.trajectoryParserService.getAtomsPage(request);
 
                 if (!request.analysisId) {
@@ -130,7 +118,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                 }
 
                 const pageAtomIds = new Set<number>(
-                    nativeResult.atoms.map((a: Record<string, unknown>) => Number(a.id))
+                    nativeResult.atoms.map((atom: Record<string, unknown>) => Number(atom.id))
                 );
                 const ownerClusterId = request.ownerClusterId;
                 if (!ownerClusterId) {
@@ -163,7 +151,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                     ChannelCommands.TrajectoryNativeFilterPreview
                 );
                 return {
-                    data: await deps.filterEvaluatorService.previewFilter(payload as unknown as NativeFilterPreviewRequest)
+                    data: await deps.filterEvaluatorService.previewFilter(payload as NativeFilterPreviewRequest)
                 };
             }
         },
@@ -174,7 +162,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                     ChannelCommands.TrajectoryNativeColorModel
                 );
                 return {
-                    data: await deps.filterEvaluatorService.exportColoredModel(payload as unknown as NativeColorModelRequest)
+                    data: await deps.filterEvaluatorService.exportColoredModel(payload as NativeColorModelRequest)
                 };
             }
         },
@@ -185,7 +173,9 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                     ChannelCommands.TrajectoryNativeParticleFilterModel
                 );
                 return {
-                    data: await deps.filterEvaluatorService.exportParticleFilterModel(payload as unknown as NativeParticleFilterModelRequest)
+                    data: await deps.filterEvaluatorService.exportParticleFilterModel(
+                        payload as NativeParticleFilterModelRequest
+                    )
                 };
             }
         },
@@ -195,7 +185,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                 deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled('trajectory.plugin.property-names');
                 return {
                     data: await deps.trajectoryPluginParserService.discoverPerAtomPropertyNames(
-                        payload as unknown as Parameters<TrajectoryPluginParserService['discoverPerAtomPropertyNames']>[0]
+                        payload as Parameters<TrajectoryPluginParserService['discoverPerAtomPropertyNames']>[0]
                     )
                 };
             }
@@ -206,7 +196,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                 deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled('trajectory.plugin.modifier-analysis');
                 return {
                     data: await deps.trajectoryPluginParserService.getModifierAnalysisData(
-                        payload as unknown as Parameters<TrajectoryPluginParserService['getModifierAnalysisData']>[0]
+                        payload as Parameters<TrajectoryPluginParserService['getModifierAnalysisData']>[0]
                     )
                 };
             }
@@ -217,7 +207,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                 deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled('trajectory.plugin.atom-index');
                 return {
                     data: await deps.trajectoryPluginParserService.buildPluginIndexForAtomIds(
-                        payload as unknown as Parameters<TrajectoryPluginParserService['buildPluginIndexForAtomIds']>[0]
+                        payload as Parameters<TrajectoryPluginParserService['buildPluginIndexForAtomIds']>[0]
                     )
                 };
             }
@@ -228,7 +218,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                 deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled('trajectory.plugin.modifier-values');
                 return {
                     data: await deps.trajectoryPluginParserService.getModifierValues(
-                        payload as unknown as Parameters<TrajectoryPluginParserService['getModifierValues']>[0]
+                        payload as Parameters<TrajectoryPluginParserService['getModifierValues']>[0]
                     )
                 };
             }
@@ -239,7 +229,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                 deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled('trajectory.plugin.modifier-stats');
                 return {
                     data: await deps.trajectoryPluginParserService.getModifierStats(
-                        payload as unknown as Parameters<TrajectoryPluginParserService['getModifierStats']>[0]
+                        payload as Parameters<TrajectoryPluginParserService['getModifierStats']>[0]
                     )
                 };
             }
@@ -250,7 +240,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                 deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled('trajectory.plugin.modifier-unique-values');
                 return {
                     data: await deps.trajectoryPluginParserService.getModifierUniqueValues(
-                        payload as unknown as Parameters<TrajectoryPluginParserService['getModifierUniqueValues']>[0]
+                        payload as Parameters<TrajectoryPluginParserService['getModifierUniqueValues']>[0]
                     )
                 };
             }
@@ -261,7 +251,7 @@ export const createTrajectoryHandlers = (deps: TrajectoryHandlersDependencies): 
                 deps.runtimeCapabilityGuard.ensureTrajectoryNativeEnabled('trajectory.plugin.analysis-all-atoms');
                 return {
                     data: await deps.trajectoryPluginParserService.getAnalysisAllPerAtomData(
-                        payload as unknown as Parameters<TrajectoryPluginParserService['getAnalysisAllPerAtomData']>[0]
+                        payload as Parameters<TrajectoryPluginParserService['getAnalysisAllPerAtomData']>[0]
                     )
                 };
             }

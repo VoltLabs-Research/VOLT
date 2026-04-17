@@ -1,4 +1,6 @@
-import type { DaemonConfig } from '@/core/config';
+import { asValue, createContainer } from 'awilix';
+import { InMemoryCommandBus } from '@/core/commands/InMemoryCommandBus';
+import { InMemoryEventBus } from '@/core/events/InMemoryEventBus';
 import { RuntimeEventBroker } from '@/core/reverse-channel/application/RuntimeEventBroker';
 import { connectMongo, disconnectMongo } from '@/core/storage/infrastructure/mongo/MongoConnectionService';
 import { DockerRuntimeService } from '@/core/runtime/infrastructure/DockerRuntimeService';
@@ -9,21 +11,15 @@ import { AnalysisExecutionDataStore } from '@/modules/analysis/infrastructure/st
 import { RedisExplorerReadService } from '@/modules/container/infrastructure/remote-access/RedisExplorerReadService';
 import { TrajectoryAutoPreviewClaimStore } from '@/modules/trajectory/infrastructure/storage/TrajectoryAutoPreviewClaimStore';
 
-export interface DaemonInfrastructure {
-    eventBroker: RuntimeEventBroker;
-    dockerRuntimeService: DockerRuntimeService;
-    minioService: MinioService;
-    redisConnectionService: RedisConnectionService;
-    analysisExecutionDataStore: AnalysisExecutionDataStore;
-    redisExplorerReadService: RedisExplorerReadService;
-    trajectoryAutoPreviewClaimStore: TrajectoryAutoPreviewClaimStore;
-    queueService: QueueService;
-    connect(): Promise<void>;
-    disconnect(): Promise<void>;
-}
+type BootstrapContainer = ReturnType<typeof createContainer>;
 
-export const createDaemonInfrastructure = (config: DaemonConfig): DaemonInfrastructure => {
-    const eventBroker = new RuntimeEventBroker();
+export const registerInfrastructure = (
+    container: BootstrapContainer,
+    config: import('@/core/config').DaemonConfig
+): void => {
+    const commandBus = new InMemoryCommandBus();
+    const eventBus = new InMemoryEventBus();
+    const eventBroker = new RuntimeEventBroker(eventBus);
     const dockerRuntimeService = new DockerRuntimeService(eventBroker);
     const minioService = new MinioService(config);
     const redisConnectionService = new RedisConnectionService(config);
@@ -32,31 +28,45 @@ export const createDaemonInfrastructure = (config: DaemonConfig): DaemonInfrastr
     const trajectoryAutoPreviewClaimStore = new TrajectoryAutoPreviewClaimStore(redisConnectionService);
     const queueService = new QueueService(redisConnectionService);
 
-    return {
-        eventBroker,
-        dockerRuntimeService,
-        minioService,
-        redisConnectionService,
-        analysisExecutionDataStore,
-        redisExplorerReadService,
-        trajectoryAutoPreviewClaimStore,
-        queueService,
-        async connect() {
-            await Promise.all([
-                analysisExecutionDataStore.connect(),
-                redisConnectionService.connect(),
-                redisExplorerReadService.connect(),
-                connectMongo(config.mongodbUri),
-                minioService.ensureBuckets()
-            ]);
-        },
-        async disconnect() {
-            await Promise.all([
-                analysisExecutionDataStore.disconnect(),
-                disconnectMongo(),
-                redisConnectionService.disconnect(),
-                redisExplorerReadService.disconnect()
-            ]);
-        }
-    };
+    container.register({
+        commandBus: asValue(commandBus),
+        eventBus: asValue(eventBus),
+        eventBroker: asValue(eventBroker),
+        dockerRuntimeService: asValue(dockerRuntimeService),
+        minioService: asValue(minioService),
+        redisConnectionService: asValue(redisConnectionService),
+        analysisExecutionDataStore: asValue(analysisExecutionDataStore),
+        redisExplorerReadService: asValue(redisExplorerReadService),
+        trajectoryAutoPreviewClaimStore: asValue(trajectoryAutoPreviewClaimStore),
+        queueService: asValue(queueService)
+    });
+};
+
+export const connectDaemonInfrastructure = async (
+    config: import('@/core/config').DaemonConfig,
+    analysisExecutionDataStore: AnalysisExecutionDataStore,
+    redisConnectionService: RedisConnectionService,
+    redisExplorerReadService: RedisExplorerReadService,
+    minioService: MinioService
+): Promise<void> => {
+    await Promise.all([
+        analysisExecutionDataStore.connect(),
+        redisConnectionService.connect(),
+        redisExplorerReadService.connect(),
+        connectMongo(config.mongodbUri),
+        minioService.ensureBuckets()
+    ]);
+};
+
+export const disconnectDaemonInfrastructure = async (
+    analysisExecutionDataStore: AnalysisExecutionDataStore,
+    redisConnectionService: RedisConnectionService,
+    redisExplorerReadService: RedisExplorerReadService
+): Promise<void> => {
+    await Promise.all([
+        analysisExecutionDataStore.disconnect(),
+        disconnectMongo(),
+        redisConnectionService.disconnect(),
+        redisExplorerReadService.disconnect()
+    ]);
 };

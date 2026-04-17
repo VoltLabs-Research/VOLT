@@ -1,32 +1,41 @@
 import { logger } from '@/core/logger';
-import { ContainerAction } from '@/contracts';
-import { OrchestrationAction } from '@/contracts';
+import { ContainerAction } from '@/modules/container/contracts/http.container';
+import { OrchestrationAction } from '@/core/runtime/contracts/http.runtime';
+import { createTraceLogContext, withTimeout } from '@/core/observability/infrastructure/daemonInstrumentation';
+import type { DaemonTraceContext } from '@/core/observability/infrastructure/daemonInstrumentation';
+import type { RuntimeEventBroker } from '@/core/reverse-channel/application/RuntimeEventBroker';
+import type { CreateContainerRequest } from '@/modules/container/contracts/http.container';
+import { Writable } from 'node:stream';
 import Docker from 'dockerode';
 import net from 'node:net';
 import path from 'node:path';
-import { Writable } from 'node:stream';
-import type { ContainerEnvironmentVariable, ContainerPortMapping, CreateContainerRequest } from '@/contracts';
-import { createTraceLogContext, withTimeout } from '@/core/observability/infrastructure/daemonInstrumentation';
-import type { ContainerInfo } from 'dockerode';
-import type { Duplex, Readable } from 'node:stream';
-import { ProgressStageType } from '@voltstack/daemon-cluster-client';
-import type { RuntimeEventBroker } from '@/core/reverse-channel/application/RuntimeEventBroker';
-import type { DaemonTraceContext } from '@/core/observability/infrastructure/daemonInstrumentation';
 
 interface DockerContainerFilter {
     label?: string[];
-};
-
-interface DockerApiError {
-    statusCode?: number;
-    message?: string;
-};
+}
 
 interface DockerExecOptions {
     operationName?: string;
     timeoutMs?: number;
     traceContext?: DaemonTraceContext;
-};
+}
+
+interface DockerTopProcessesResult {
+    Processes: string[][];
+}
+
+interface DockerImagePullProgressEvent {
+    status: string;
+    id?: string;
+    progress?: string;
+}
+
+interface DockerContainerCreateProgressPayload {
+    image: string;
+    step: string;
+    containerName?: string;
+    containerId?: string;
+}
 
 interface RuntimeContainerFileEntry {
     name: string;
@@ -36,48 +45,36 @@ interface RuntimeContainerFileEntry {
     owner: string;
     group: string;
     date: string;
-};
+}
 
 export interface RuntimeTerminalAttachment {
-    stream: Duplex;
+    stream: NodeJS.ReadWriteStream;
     exec: RuntimeTerminalExec;
-};
+}
+
+interface RuntimeTerminalSize {
+    rows: number;
+    cols: number;
+}
 
 interface RuntimeTerminalExec {
-    resize(size: {
-        rows: number;
-        cols: number;
-    }): Promise<void>;
-};
-
-const MAX_EXEC_BUFFER_SIZE = 10 * 1024 * 1024;
-const DEFAULT_DOCKER_EXEC_TIMEOUT_MS = 120_000;
-
-const toEnvPairs = (environmentVariables: ContainerEnvironmentVariable[] = []): string[] => {
-    return environmentVariables.map((entry) => `${entry.key}=${entry.value}`);
-};
-
-const toExposedPorts = (ports: ContainerPortMapping[] = []): Record<string, Record<string, never>> => {
-    const exposedPorts: Record<string, Record<string, never>> = {};
-    for (const port of ports) {
-        exposedPorts[`${port.private}/tcp`] = {};
-    }
-
-    return exposedPorts;
-};
+    resize(size: RuntimeTerminalSize): Promise<void>;
+}
 
 interface HostPortBinding {
     HostPort: string;
-};
+}
 
-const toPortBindings = (ports: ContainerPortMapping[] = []): Record<string, HostPortBinding[]> => {
-    const portBindings: Record<string, HostPortBinding[]> = {};
-    for (const port of ports) {
-        portBindings[`${port.private}/tcp`] = [{ HostPort: typeof port.public === 'number' && port.public > 0 ? String(port.public) : '' }];
-    }
+enum ProgressStageType {
+    Accepted = 'accepted',
+    Queued = 'queued',
+    Running = 'running',
+    Completed = 'completed',
+    Failed = 'failed'
+}
 
-    return portBindings;
-};
+const MAX_EXEC_BUFFER_SIZE = 10 * 1024 * 1024;
+const DEFAULT_DOCKER_EXEC_TIMEOUT_MS = 120_000;
 
 export class DockerRuntimeService {
     private readonly docker: Docker;
@@ -89,7 +86,7 @@ export class DockerRuntimeService {
         });
     }
 
-    async listContainers(all: boolean = true, filters?: DockerContainerFilter): Promise<ContainerInfo[]> {
+    readonly listContainers = (all: boolean = true, filters?: DockerContainerFilter): Promise<Docker.ContainerInfo[]> => {
         if (!filters) {
             return this.docker.listContainers({ all });
         }
@@ -98,9 +95,26 @@ export class DockerRuntimeService {
             all,
             filters: JSON.stringify(filters)
         });
-    }
+    };
 
     async createContainer(input: CreateContainerRequest): Promise<Docker.ContainerInspectInfo> {
+        const env: string[] = [];
+        if (input.env) {
+            for (const entry of input.env) {
+                env.push(`${entry.key}=${entry.value}`);
+            }
+        }
+
+        const exposedPorts: Record<string, Record<string, never>> = {};
+        const portBindings: Record<string, HostPortBinding[]> = {};
+        if (input.ports) {
+            for (const port of input.ports) {
+                const portKey = `${port.private}/tcp`;
+                exposedPorts[portKey] = {};
+                portBindings[portKey] = [{ HostPort: port.public && port.public > 0 ? `${port.public}` : '' }];
+            }
+        }
+
         this.emitContainerCreateProgress(input, ProgressStageType.Accepted, {
             image: input.image,
             containerName: input.name,
@@ -125,18 +139,18 @@ export class DockerRuntimeService {
             Image: input.image,
             name: input.name,
             User: input.user,
-            Env: toEnvPairs(input.env),
+            Env: env,
             Cmd: input.cmd,
             Labels: {
                 'volt.managed': 'true',
                 ...input.labels
             },
-            ExposedPorts: toExposedPorts(input.ports),
+            ExposedPorts: exposedPorts,
             HostConfig: {
                 Memory: input.memoryInMegabytes * 1024 * 1024,
                 NanoCpus: Math.round(input.cpus * 1_000_000_000),
                 Binds: input.binds,
-                PortBindings: toPortBindings(input.ports),
+                PortBindings: portBindings,
                 ...(input.networkMode ? { NetworkMode: input.networkMode } : {})
             }
         });
@@ -161,13 +175,13 @@ export class DockerRuntimeService {
         return inspectedContainer;
     }
 
-    async getContainer(containerId: string): Promise<Docker.ContainerInspectInfo> {
+    readonly getContainer = (containerId: string): Promise<Docker.ContainerInspectInfo> => {
         return this.docker.getContainer(containerId).inspect();
-    }
+    };
 
-    async startContainer(containerId: string): Promise<void> {
+    readonly startContainer = async (containerId: string): Promise<void> => {
         await this.docker.getContainer(containerId).start();
-    }
+    };
 
     async applyContainerAction(containerId: string, action: ContainerAction): Promise<Docker.ContainerInspectInfo> {
         const container = this.docker.getContainer(containerId);
@@ -186,24 +200,24 @@ export class DockerRuntimeService {
         return container.inspect();
     }
 
-    async deleteContainer(containerId: string): Promise<void> {
+    readonly deleteContainer = async (containerId: string): Promise<void> => {
         await this.docker.getContainer(containerId).remove({ force: true, v: true });
-    }
+    };
 
-    async getContainerStats(containerId: string): Promise<Docker.ContainerStats> {
+    readonly getContainerStats = (containerId: string): Promise<Docker.ContainerStats> => {
         return this.docker.getContainer(containerId).stats({ stream: false });
-    }
+    };
 
-    async getContainerProcesses(containerId: string): Promise<unknown[]> {
-        const result = await this.docker.getContainer(containerId).top({ ps_args: '-o pid,comm,nlwp,user,rss,pcpu,args' });
-        return Array.isArray(result.Processes) ? result.Processes : [];
-    }
+    readonly getContainerProcesses = async (containerId: string): Promise<string[][]> => {
+        const result = await this.docker.getContainer(containerId).top({ ps_args: '-o pid,comm,nlwp,user,rss,pcpu,args' }) as DockerTopProcessesResult;
+        return result.Processes;
+    };
 
-    async getContainerFiles(
+    readonly getContainerFiles = async (
         containerId: string,
         directoryPath: string,
         options?: DockerExecOptions
-    ): Promise<RuntimeContainerFileEntry[]> {
+    ): Promise<RuntimeContainerFileEntry[]> => {
         const normalizedDirectoryPath = this.normalizeContainerPath(directoryPath);
 
         try {
@@ -237,23 +251,23 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
  done`, '--', normalizedDirectoryPath], undefined, options);
             return this.parseFindListingOutput(output);
         }
-    }
+    };
 
-    async readContainerFile(containerId: string, filePath: string, options?: DockerExecOptions): Promise<string> {
+    readonly readContainerFile = (containerId: string, filePath: string, options?: DockerExecOptions): Promise<string> => {
         const normalizedPath = this.normalizeContainerPath(filePath);
         return this.execute(containerId, ['sh', '-c', 'cat -- "$1"', '--', normalizedPath], undefined, options);
-    }
+    };
 
-    async writeContainerFile(
+    readonly writeContainerFile = async (
         containerId: string,
         filePath: string,
         content: string,
         options?: DockerExecOptions
-    ): Promise<void> {
+    ): Promise<void> => {
         const normalizedPath = this.normalizeContainerPath(filePath);
         await this.execute(containerId, ['mkdir', '-p', '--', path.posix.dirname(normalizedPath)], undefined, options);
         await this.execute(containerId, ['tee', '--', normalizedPath], content, options);
-    }
+    };
 
     async attachTerminal(containerId: string): Promise<RuntimeTerminalAttachment> {
         const container = this.docker.getContainer(containerId);
@@ -297,11 +311,8 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
             await this.docker.getContainer(containerInfo.Id).remove({ force: true, v: true });
         }
 
-        const volumeList = Array.isArray(volumes.Volumes) ? volumes.Volumes : [];
-        for (const volumeInfo of volumeList) {
-            if (volumeInfo.Name) {
-                await this.docker.getVolume(volumeInfo.Name).remove({ force: true });
-            }
+        for (const volumeInfo of volumes.Volumes) {
+            await this.docker.getVolume(volumeInfo.Name).remove({ force: true });
         }
 
         for (const networkInfo of networks) {
@@ -309,32 +320,38 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
         }
     }
 
-    async findAvailableHostPort(start: number, end: number): Promise<number | null> {
+    readonly findAvailableHostPort = async (start: number, end: number): Promise<number | null> => {
         for (let port = start; port <= end; port += 1) {
-            const available = await this.isHostPortAvailable(port);
+            const available = await new Promise<boolean>((resolve) => {
+                const server = net.createServer();
+                server.unref();
+                server.on('error', () => resolve(false));
+                server.listen(port, '0.0.0.0', () => {
+                    server.close(() => resolve(true));
+                });
+            });
             if (available) {
                 return port;
             }
         }
 
         return null;
-    }
+    };
 
-    async getPublishedPort(containerId: string, privatePort: number): Promise<number | null> {
+    readonly getPublishedPort = async (containerId: string, privatePort: number): Promise<number | null> => {
         try {
             const container = await this.getContainer(containerId);
             const bindingKey = `${privatePort}/tcp`;
-            const bindings = container?.NetworkSettings?.Ports?.[bindingKey];
-            if (!Array.isArray(bindings) || bindings.length === 0) {
+            const bindings = container.NetworkSettings.Ports[bindingKey];
+            if (bindings.length === 0) {
                 return null;
             }
 
-            const hostPort = Number(bindings[0]?.HostPort);
-            return Number.isFinite(hostPort) ? hostPort : null;
+            return Number(bindings[0].HostPort);
         } catch {
             return null;
         }
-    }
+    };
 
     async ensureImage(imageName: string): Promise<void> {
         const startedAt = Date.now();
@@ -353,7 +370,7 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
                 durationMs: Date.now() - startedAt
             }, 'Docker image already available locally');
             return;
-        } catch (error: unknown) {
+        } catch (error) {
             logger.info({
                 err: error,
                 imageName,
@@ -380,14 +397,56 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
         });
 
         try {
-            await this.pullImage(imageName);
+            const stream = await new Promise<NodeJS.ReadableStream>((resolve, reject) => {
+                this.docker.pull(imageName, (error: Error | null, output?: NodeJS.ReadableStream) => {
+                    if (error) {
+                        reject(error);
+                        return;
+                    }
+
+                    if (!output) {
+                        reject(new Error(`Docker pull returned no stream for ${imageName}`));
+                        return;
+                    }
+
+                    resolve(output);
+                });
+            });
+
+            let lastStatus = '';
+            await new Promise<void>((resolve, reject) => {
+                this.docker.modem.followProgress(stream, (error) => {
+                    if (error) {
+                        reject(error);
+                        return;
+                    }
+
+                    resolve();
+                }, (event: DockerImagePullProgressEvent) => {
+                    const status = event.status;
+                    if (!status || status === lastStatus) {
+                        return;
+                    }
+
+                    lastStatus = status;
+                    logger.info(
+                        {
+                            imageName,
+                            status,
+                            id: event.id,
+                            progress: event.progress
+                        },
+                        'Docker image pull progress'
+                    );
+                });
+            });
             logger.info({
                 imageName,
                 provisioningAction: 'pull',
                 success: true,
                 durationMs: Date.now() - pullStartedAt
             }, 'Docker image pull completed');
-        } catch (error: unknown) {
+        } catch (error) {
             logger.error({
                 err: error,
                 imageName,
@@ -399,39 +458,10 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
         }
     }
 
-    private pullImage(imageName: string): Promise<void> {
-        return new Promise((resolve, reject) => {
-            this.docker.pull(imageName, (error: Error | null, stream?: Readable) => {
-                if (error || !stream) {
-                    reject(error);
-                    return;
-                }
-
-                let lastStatus = '';
-                this.docker.modem.followProgress(stream, (progressError) => {
-                    if (progressError) {
-                        reject(progressError);
-                        return;
-                    }
-
-                    resolve();
-                }, (event) => {
-                    const status = typeof event?.status === 'string' ? event.status : '';
-                    if (!status || status === lastStatus) {
-                        return;
-                    }
-
-                    lastStatus = status;
-                    logger.info({ imageName, status, id: event?.id, progress: event?.progress }, 'Docker image pull progress');
-                });
-            });
-        });
-    }
-
     private emitContainerCreateProgress(
         input: CreateContainerRequest,
         stage: ProgressStageType,
-        payload: Record<string, unknown>
+        payload: DockerContainerCreateProgressPayload
     ): void {
         if (!this.eventBroker || !input.operationId) {
             return;
@@ -448,19 +478,12 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
         });
     }
 
-    private async isHostPortAvailable(port: number): Promise<boolean> {
-        return new Promise((resolve) => {
-            const server = net.createServer();
-            server.unref();
-            server.on('error', () => resolve(false));
-            server.listen(port, '0.0.0.0', () => {
-                server.close(() => resolve(true));
-            });
-        });
-    }
-
     private normalizeContainerPath(targetPath: string): string {
-        const normalizedPath = path.posix.normalize(targetPath || '/');
+        if (targetPath === '') {
+            return '/';
+        }
+
+        const normalizedPath = path.posix.normalize(targetPath);
         if (normalizedPath === '../../../infrastructure/docker') {
             return '/';
         }
@@ -494,105 +517,100 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
         return files;
     }
 
+    private readonly runExec = async (containerId: string, command: string[], stdin: string | undefined, hasStdin: boolean): Promise<string> => {
+        try {
+            const container = this.docker.getContainer(containerId);
+            const dockerExec = await container.exec({
+                Cmd: command,
+                AttachStdin: hasStdin,
+                AttachStdout: true,
+                AttachStderr: true
+            });
+            const stream = await dockerExec.start({ hijack: true, stdin: hasStdin });
+            let output = '';
+            let totalBytes = 0;
+            let truncated = false;
+
+            const sink = new Writable({
+                write: (chunk, _encoding, callback) => {
+                    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+
+                    if (!truncated) {
+                        if (totalBytes + buffer.length > MAX_EXEC_BUFFER_SIZE) {
+                            output += buffer.slice(0, MAX_EXEC_BUFFER_SIZE - totalBytes).toString('utf8');
+                            output += '\n... [TRUNCATED] ...';
+                            truncated = true;
+                        } else {
+                            output += buffer.toString('utf8');
+                        }
+
+                        totalBytes += buffer.length;
+                    }
+
+                    callback();
+                }
+            });
+
+            this.docker.modem.demuxStream(stream, sink, sink);
+
+            if (stdin !== undefined) {
+                stream.write(stdin);
+                stream.end();
+            }
+
+            await new Promise<void>((resolve, reject) => {
+                stream.once('end', resolve);
+                stream.once('error', reject);
+            });
+
+            const inspection = await dockerExec.inspect();
+            if (inspection.ExitCode && inspection.ExitCode !== 0) {
+                throw new Error(output || `Command failed with exit code ${inspection.ExitCode}`);
+            }
+
+            return output;
+        } catch (error) {
+            if (error instanceof Error) {
+                throw error;
+            }
+
+            throw new Error('Docker exec failed');
+        }
+    };
+
     private execute(
         containerId: string,
         command: string[],
         stdin?: string,
-        options?: DockerExecOptions
+        options: DockerExecOptions = {}
     ): Promise<string> {
         const startedAt = Date.now();
-        const operationName = options?.operationName ?? 'docker-exec';
-        const timeoutMs = options?.timeoutMs ?? DEFAULT_DOCKER_EXEC_TIMEOUT_MS;
+        const {
+            operationName = 'docker-exec',
+            timeoutMs = DEFAULT_DOCKER_EXEC_TIMEOUT_MS,
+            traceContext
+        } = options;
+        const hasStdin = stdin !== undefined;
 
         logger.info(
             {
                 command,
                 containerId,
-                stdinBytes: typeof stdin === 'string' ? Buffer.byteLength(stdin) : 0,
+                stdinBytes: stdin === undefined ? 0 : Buffer.byteLength(stdin),
                 timeoutMs,
-                ...createTraceLogContext(options?.traceContext)
+                ...createTraceLogContext(traceContext)
             },
             'Starting Docker exec operation'
         );
 
-        return withTimeout(() => new Promise<string>(async (resolve, reject) => {
-            try {
-                const container = this.docker.getContainer(containerId);
-                const dockerExec = await container.exec({
-                    Cmd: command,
-                    AttachStdin: typeof stdin === 'string',
-                    AttachStdout: true,
-                    AttachStderr: true
-                });
-                const stream = await dockerExec.start({ hijack: true, stdin: typeof stdin === 'string' });
-                let output = '';
-                let totalBytes = 0;
-                let truncated = false;
-
-                const safeWrite = (chunk: Buffer) => {
-                    if (truncated) {
-                        return;
-                    }
-
-                    if (totalBytes + chunk.length > MAX_EXEC_BUFFER_SIZE) {
-                        output += chunk.slice(0, MAX_EXEC_BUFFER_SIZE - totalBytes).toString('utf8');
-                        output += '\n... [TRUNCATED] ...';
-                        truncated = true;
-                    } else {
-                        output += chunk.toString('utf8');
-                    }
-
-                    totalBytes += chunk.length;
-                };
-
-                const stdoutSink = new Writable({
-                    write(chunk, _encoding, callback) {
-                        const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-                        safeWrite(buffer);
-                        callback();
-                    }
-                });
-                const stderrSink = new Writable({
-                    write(chunk, _encoding, callback) {
-                        const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-                        safeWrite(buffer);
-                        callback();
-                    }
-                });
-
-                this.docker.modem.demuxStream(stream, stdoutSink, stderrSink);
-
-                if (typeof stdin === 'string') {
-                    stream.write(stdin);
-                    stream.end();
-                }
-
-                stream.on('end', async () => {
-                    try {
-                        const inspection = await dockerExec.inspect();
-                        if (typeof inspection.ExitCode === 'number' && inspection.ExitCode !== 0) {
-                            reject(new Error(output.trim() || `Command failed with exit code ${inspection.ExitCode}`));
-                            return;
-                        }
-
-                        resolve(output);
-                    } catch (error: unknown) {
-                        reject(error);
-                    }
-                });
-                stream.on('error', (error: Error) => reject(error));
-            } catch (error: unknown) {
-                const dockerError = this.getDockerError(error);
-                reject(new Error(dockerError.message || 'Docker exec failed'));
-            }
-        }), {
+        return withTimeout(() => this.runExec(containerId, command, stdin, hasStdin), {
             operation: operationName,
             timeoutMs,
             payload: {
-                command,
+                command: command.join(' '),
                 containerId
             },
-            traceContext: options?.traceContext
+            traceContext
         }).then((output) => {
             logger.info(
                 {
@@ -601,12 +619,12 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
                     durationMs: Date.now() - startedAt,
                     outputBytes: Buffer.byteLength(output),
                     timeoutMs,
-                    ...createTraceLogContext(options?.traceContext)
+                    ...createTraceLogContext(traceContext)
                 },
                 'Docker exec operation completed'
             );
             return output;
-        }).catch((error: unknown) => {
+        }).catch((error: Error) => {
             logger.warn(
                 {
                     command,
@@ -614,30 +632,11 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
                     durationMs: Date.now() - startedAt,
                     err: error,
                     timeoutMs,
-                    ...createTraceLogContext(options?.traceContext)
+                    ...createTraceLogContext(traceContext)
                 },
                 'Docker exec operation failed'
             );
             throw error;
         });
-    }
-
-    private getDockerError(error: unknown): DockerApiError {
-        if (typeof error !== 'object' || error === null) {
-            return {};
-        }
-
-        const dockerError: DockerApiError = {};
-        const statusCode = Reflect.get(error, 'statusCode');
-        const message = Reflect.get(error, 'message');
-        if (typeof statusCode === 'number') {
-            dockerError.statusCode = statusCode;
-        }
-
-        if (typeof message === 'string') {
-            dockerError.message = message;
-        }
-
-        return dockerError;
     }
 };

@@ -1,12 +1,13 @@
 import { logger } from '@/core/logger';
 import { SESSION_ATTACH_TIMEOUT_MS } from '@/core/reverse-channel/contracts/reverseChannelSessionConstants';
-import { BinaryRelayConnector } from '@/modules/container/infrastructure/relay/BinaryRelayConnector';
-import { createWebSocketStream, WebSocket } from 'ws';
-import net from 'node:net';
+import WebSocket, { createWebSocketStream } from 'ws';
 import type { Duplex } from 'node:stream';
+import type { ClientRequest, IncomingMessage } from 'node:http';
 import type { ObjectGatewayTelemetryService } from '@/core/observability/infrastructure/ObjectGatewayTelemetryService';
 import { REVERSE_CHANNEL } from '@/core/reverse-channel/contracts/reverseChannel.constants';
 import type { TeamClusterDaemonBinaryRelayDescriptor, TeamClusterDaemonTunnelClosePayload, TeamClusterDaemonTunnelStatePayload } from '@/core/reverse-channel/contracts/reverseChannel.socket';
+import net from 'node:net';
+import { createActor, createMachine, type ActorRefFrom } from 'xstate';
 
 interface SessionTransition {
     sessionId: string;
@@ -31,13 +32,57 @@ interface OpenBinaryRelayTunnelInput {
     isObjectGatewayTunnel: boolean;
 }
 
+interface CleanupSessionOptions {
+    emitTunnelClose: boolean;
+}
+
+const binaryRelayTunnelMachine = createMachine({
+    types: {} as {
+        context: {
+            transitionId: number;
+        };
+        events:
+            | { type: 'OPENED' }
+            | { type: 'FAILED' }
+            | { type: 'CLOSED' };
+        input: {
+            transitionId: number;
+        };
+    },
+    id: 'binary-relay-tunnel',
+    initial: 'opening',
+    context: ({ input }) => ({
+        transitionId: input.transitionId
+    }),
+    states: {
+        opening: {
+            on: {
+                OPENED: 'open',
+                FAILED: 'closed',
+                CLOSED: 'closed'
+            }
+        },
+        open: {
+            on: {
+                FAILED: 'closed',
+                CLOSED: 'closed'
+            }
+        },
+        closed: {
+            type: 'final'
+        }
+    }
+});
+
+type BinaryRelayTunnelActor = ActorRefFrom<typeof binaryRelayTunnelMachine>;
+
 interface BinaryRelayTunnelState {
     sessionId: string;
     transition: SessionTransition;
+    actor: BinaryRelayTunnelActor;
     targetSocket: net.Socket;
     relaySocket: WebSocket | null;
     relayStream: Duplex | null;
-    isOpen: boolean;
     isObjectGatewayTunnel: boolean;
     tunnelOpenStartedAt: number;
     onTargetConnect: () => void;
@@ -46,33 +91,31 @@ interface BinaryRelayTunnelState {
     onTargetClose: () => void;
     onTargetTimeout: () => void;
     onRelayOpen: () => void;
-    onRelayData: (chunk: Buffer | string) => void;
+    onRelayData: (chunk: Buffer) => void;
     onRelayError: (error: Error) => void;
     onRelayClose: (code: number, reason: Buffer) => void;
-    onRelayUnexpectedResponse: (_request: unknown, response: { statusCode?: number; statusMessage?: string; resume: () => void; }) => void;
+    onRelayUnexpectedResponse: (_request: ClientRequest, response: IncomingMessage) => void;
 }
 
 export class BinaryRelaySocketBridge {
-    private readonly sessions = new Map<string, BinaryRelayTunnelState>();
-    private readonly relayConnector = new BinaryRelayConnector();
+    readonly sessions = new Map<string, BinaryRelayTunnelState>();
 
     constructor(
         private readonly coordinator: BinaryRelaySocketBridgeCoordinator,
         private readonly objectGatewayTelemetryService?: ObjectGatewayTelemetryService
     ) {}
 
-    hasSession(sessionId: string): boolean {
-        return this.sessions.has(sessionId);
-    }
-
-    getSessionIds(): string[] {
-        return Array.from(this.sessions.keys());
-    }
-
     openTunnel(input: OpenBinaryRelayTunnelInput): void {
         this.cleanupSession(input.sessionId, {
             emitTunnelClose: false
         });
+
+        const tunnelActor = createActor(binaryRelayTunnelMachine, {
+            input: {
+                transitionId: input.transition.transitionId
+            }
+        });
+        tunnelActor.start();
 
         const targetSocket = net.createConnection({
             host: input.targetHost,
@@ -81,6 +124,8 @@ export class BinaryRelaySocketBridge {
         targetSocket.setNoDelay(true);
 
         const failOpening = (error: Error): void => {
+            const state = this.sessions.get(input.sessionId);
+            state?.actor.send({ type: 'FAILED' });
             this.coordinator.endSessionTransition(input.transition);
             this.coordinator.emitTunnelState({
                 type: 'tunnel-state',
@@ -103,7 +148,24 @@ export class BinaryRelaySocketBridge {
 
             let relaySocket: WebSocket;
             try {
-                relaySocket = this.relayConnector.connect(input.relay);
+                if (input.relay.relayProtocolVersion !== 1) {
+                    throw new Error(`Unsupported binary relay protocol version: ${input.relay.relayProtocolVersion}`);
+                }
+
+                logger.info({
+                    action: 'binary-relay.connector.connect',
+                    relaySessionId: input.relay.relaySessionId,
+                    relayUrl: input.relay.relayUrl
+                }, 'Connecting daemon binary relay session');
+
+                relaySocket = new WebSocket(input.relay.relayUrl, {
+                    perMessageDeflate: false,
+                    headers: {
+                        'x-team-cluster-relay-session-id': input.relay.relaySessionId,
+                        'x-team-cluster-relay-token': input.relay.relayToken,
+                        'x-team-cluster-relay-protocol-version': `${input.relay.relayProtocolVersion}`
+                    }
+                });
             } catch (error) {
                 failOpening(error instanceof Error ? error : new Error('Failed to create binary relay websocket'));
                 return;
@@ -132,7 +194,7 @@ export class BinaryRelaySocketBridge {
                 return;
             }
 
-            if (!state.isOpen) {
+            if (!this.isTunnelOpen(state)) {
                 failOpening(error);
                 return;
             }
@@ -152,7 +214,7 @@ export class BinaryRelaySocketBridge {
                 return;
             }
 
-            if (!state.isOpen) {
+            if (!this.isTunnelOpen(state)) {
                 failOpening(new Error('Binary relay target socket closed before relay attachment completed'));
                 return;
             }
@@ -190,7 +252,7 @@ export class BinaryRelaySocketBridge {
             state.targetSocket.setTimeout(0);
             state.targetSocket.pipe(relayStream);
             relayStream.pipe(state.targetSocket);
-            state.isOpen = true;
+            state.actor.send({ type: 'OPENED' });
 
             this.coordinator.endSessionTransition(input.transition);
             if (state.isObjectGatewayTunnel) {
@@ -204,7 +266,7 @@ export class BinaryRelaySocketBridge {
             });
         };
 
-        const onRelayData = (_chunk: Buffer | string): void => {
+        const onRelayData = (_chunk: Buffer): void => {
             this.coordinator.touchSession(input.sessionId);
         };
 
@@ -214,7 +276,7 @@ export class BinaryRelaySocketBridge {
                 return;
             }
 
-            if (!state.isOpen) {
+            if (!this.isTunnelOpen(state)) {
                 failOpening(error);
                 return;
             }
@@ -234,7 +296,7 @@ export class BinaryRelaySocketBridge {
                 return;
             }
 
-            if (!state.isOpen) {
+            if (!this.isTunnelOpen(state)) {
                 failOpening(new Error('Binary relay websocket closed before attachment completed'));
                 return;
             }
@@ -244,7 +306,7 @@ export class BinaryRelaySocketBridge {
             });
         };
 
-        const onRelayUnexpectedResponse = (_request: unknown, response: { statusCode?: number; statusMessage?: string; resume: () => void; }): void => {
+        const onRelayUnexpectedResponse = (_request: ClientRequest, response: IncomingMessage): void => {
             response.resume();
             failOpening(new Error(
                 response.statusMessage
@@ -255,10 +317,10 @@ export class BinaryRelaySocketBridge {
         const state: BinaryRelayTunnelState = {
             sessionId: input.sessionId,
             transition: input.transition,
+            actor: tunnelActor,
             targetSocket,
             relaySocket: null,
             relayStream: null,
-            isOpen: false,
             isObjectGatewayTunnel: input.isObjectGatewayTunnel,
             tunnelOpenStartedAt: Date.now(),
             onTargetConnect,
@@ -283,14 +345,14 @@ export class BinaryRelaySocketBridge {
         targetSocket.setTimeout(SESSION_ATTACH_TIMEOUT_MS, onTargetTimeout);
     }
 
-    cleanupSession(sessionId: string, options: { emitTunnelClose: boolean; }): void {
+    cleanupSession(sessionId: string, options: CleanupSessionOptions): void {
         const state = this.sessions.get(sessionId);
         if (!state) {
             this.coordinator.clearSessionActivityIfUntracked(sessionId);
             return;
         }
 
-        if (!state.isOpen) {
+        if (!this.isTunnelOpen(state)) {
             this.coordinator.endSessionTransition(state.transition);
         }
 
@@ -320,10 +382,12 @@ export class BinaryRelaySocketBridge {
             state.relaySocket.close();
         }
 
-        if (state.isObjectGatewayTunnel && state.isOpen) {
+        if (state.isObjectGatewayTunnel && this.isTunnelOpen(state)) {
             this.objectGatewayTelemetryService?.recordObjectTunnelClosed();
         }
 
+        state.actor.send({ type: 'CLOSED' });
+        state.actor.stop();
         this.sessions.delete(sessionId);
         this.coordinator.clearSessionActivityIfUntracked(sessionId);
 
@@ -333,5 +397,9 @@ export class BinaryRelaySocketBridge {
                 sessionId
             });
         }
+    }
+
+    private isTunnelOpen(state: BinaryRelayTunnelState): boolean {
+        return state.actor.getSnapshot().matches('open');
     }
 }

@@ -4,16 +4,17 @@ import { createWorkflowExecutionContext, snapshotWorkflowOutputs } from '@/modul
 import { WorkflowNodeRegistry } from '@/modules/analysis/application/workflow/NodeRegistry';
 import { WorkflowGraph, WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
 import type { DaemonAnalysisDocument, NestedPluginDefinition, TrajectoryDumpDescriptor, TrajectoryFrame, WorkflowDefinition } from '@/contracts';
-import type { WorkflowExecutionContext } from '@/modules/analysis/contracts/workflow.types';
+import type { WorkflowNodeOutput } from '@/modules/analysis/contracts/workflow.types';
 
-interface WorkflowPlanResult {
-    items: Array<Record<string, unknown> | TrajectoryDumpDescriptor>;
-    forEachNodeId: string;
-    nodeOutputSnapshots: Record<string, Record<string, unknown>>;
-    batchMode?: boolean;
-    batchTrajectoryDumps?: TrajectoryDumpDescriptor[];
-    contextNodeId?: string;
-};
+interface WorkflowExecutionOptions {
+    selectedFrameOnly?: boolean;
+    selectedTimesteps?: number[];
+    timestep?: number;
+}
+
+interface WorkflowRuntimeArgumentSelection extends WorkflowNodeOutput {
+    value: number;
+}
 
 interface WorkflowExecutionRequest {
     workflow: WorkflowDefinition;
@@ -23,22 +24,74 @@ interface WorkflowExecutionRequest {
     analysis: DaemonAnalysisDocument;
     analysisId: string;
     pluginId: string;
-    userConfig: Record<string, unknown>;
+    userConfig: WorkflowNodeOutput;
     teamId: string;
-    options?: {
-        selectedFrameOnly?: boolean;
-        selectedTimesteps?: number[];
-        timestep?: number;
-    };
+    options?: WorkflowExecutionOptions;
+}
+
+interface WorkflowForEachPlanOutput extends WorkflowNodeOutput {
+    items: WorkflowNodeOutput[];
+}
+
+interface WorkflowContextPlanOutput extends WorkflowNodeOutput {
+    trajectory_dumps: TrajectoryDumpDescriptor[];
+}
+
+interface WorkflowPlanResult {
+    items: Array<WorkflowNodeOutput | TrajectoryDumpDescriptor>;
+    forEachNodeId: string;
+    nodeOutputSnapshots: Record<string, WorkflowNodeOutput>;
+    batchMode?: boolean;
+    batchTrajectoryDumps?: TrajectoryDumpDescriptor[];
+    contextNodeId?: string;
 };
 
-const buildRuntimeArguments = (request: WorkflowExecutionRequest): Record<string, unknown> => {
+const createRuntimeArguments = (request: WorkflowExecutionRequest): WorkflowNodeOutput => {
     if (!request.options?.selectedTimesteps?.length) {
         return {};
     }
 
     return {
-        selectedTimesteps: request.options.selectedTimesteps.map((timestep) => ({ value: timestep }))
+        selectedTimesteps: request.options.selectedTimesteps.map(
+            (timestep): WorkflowRuntimeArgumentSelection => ({ value: timestep })
+        )
+    };
+};
+
+const createPlanningContext = (request: WorkflowExecutionRequest) => {
+    return createWorkflowExecutionContext({
+        userConfig: request.userConfig,
+        runtimeArguments: createRuntimeArguments(request),
+        trajectoryId: request.trajectoryId,
+        trajectoryFrames: request.trajectoryFrames,
+        analysis: request.analysis,
+        analysisId: request.analysisId,
+        pluginId: request.pluginId,
+        teamId: request.teamId,
+        selectedFrameOnly: request.options?.selectedFrameOnly,
+        selectedTimesteps: request.options?.selectedTimesteps,
+        selectedTimestep: request.options?.timestep,
+        workflow: new WorkflowGraph(request.workflow),
+        nestedPlugins: request.nestedPlugins
+    });
+};
+
+const createBatchPlan = (
+    context: ReturnType<typeof createWorkflowExecutionContext>,
+    contextNodeId: string
+): WorkflowPlanResult | null => {
+    const dumps = (context.outputs.get(contextNodeId) as WorkflowContextPlanOutput | undefined)?.trajectory_dumps;
+    if (!dumps?.length) {
+        return null;
+    }
+
+    return {
+        items: dumps,
+        forEachNodeId: '',
+        nodeOutputSnapshots: snapshotWorkflowOutputs(context.outputs),
+        batchMode: true,
+        batchTrajectoryDumps: dumps,
+        contextNodeId
     };
 };
 
@@ -48,7 +101,7 @@ export class WorkflowEngine {
     ) {}
 
     async planExecutionStrategy(request: WorkflowExecutionRequest): Promise<WorkflowPlanResult | null> {
-        const context = this.createExecutionContext(request);
+        const context = createPlanningContext(request);
         const executionOrder = context.workflow.topologicalSort();
         const hasForEachNode = executionOrder.some((node) => node.type === WorkflowNodeType.ForEach);
 
@@ -71,8 +124,8 @@ export class WorkflowEngine {
                 contextNodeId = result.node.id;
             }
 
-            if (result.node.type === WorkflowNodeType.ForEach && result.output?.items && Array.isArray(result.output.items)) {
-                const items = result.output.items as Record<string, unknown>[];
+            if (result.node.type === WorkflowNodeType.ForEach) {
+                const items = (result.output as WorkflowForEachPlanOutput).items;
 
                 return {
                     items,
@@ -82,42 +135,10 @@ export class WorkflowEngine {
             }
         }
 
-        // Batch mode: no ForEach node — pass authoritative dump descriptors as a single batch
         if (!hasForEachNode && contextNodeId) {
-            const dumps = context.outputs.get(contextNodeId)?.trajectory_dumps as TrajectoryDumpDescriptor[] | undefined;
-
-            if (!dumps?.length) {
-                return null;
-            }
-
-            return {
-                items: dumps,
-                forEachNodeId: '',
-                nodeOutputSnapshots: snapshotWorkflowOutputs(context.outputs),
-                batchMode: true,
-                batchTrajectoryDumps: dumps,
-                contextNodeId
-            };
+            return createBatchPlan(context, contextNodeId);
         }
 
         return null;
-    }
-
-    private createExecutionContext(request: WorkflowExecutionRequest): WorkflowExecutionContext {
-        return createWorkflowExecutionContext({
-            userConfig: request.userConfig,
-            runtimeArguments: buildRuntimeArguments(request),
-            trajectoryId: request.trajectoryId,
-            trajectoryFrames: request.trajectoryFrames,
-            analysis: request.analysis,
-            analysisId: request.analysisId,
-            pluginId: request.pluginId,
-            teamId: request.teamId,
-            selectedFrameOnly: request.options?.selectedFrameOnly,
-            selectedTimesteps: request.options?.selectedTimesteps,
-            selectedTimestep: request.options?.timestep,
-            workflow: new WorkflowGraph(request.workflow),
-            nestedPlugins: request.nestedPlugins
-        });
     }
 };

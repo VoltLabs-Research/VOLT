@@ -1,4 +1,3 @@
-import type { ArtifactUploadBatch, ArtifactUploadBatchEnqueueResult, ArtifactUploadStageBufferInput, ArtifactUploadStageFileInput } from '@/modules/plugin/application/artifacts/ArtifactUploadQueueService';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -10,65 +9,83 @@ interface DebugArtifactRecord {
     fileName: string;
 }
 
-export interface DebugArtifactBatch extends ArtifactUploadBatch {
+interface DebugArtifactStageInputBase {
+    bucket: string;
+    objectKey: string;
+    contentType?: string;
+    fileName?: string;
+}
+
+interface DebugArtifactStageFileInput extends DebugArtifactStageInputBase {
+    sourcePath: string;
+}
+
+interface DebugArtifactStageBufferInput extends DebugArtifactStageInputBase {
+    buffer: Buffer;
+}
+
+interface DebugArtifactBatchEnqueueResult {
+    queuedUploads: number;
+}
+
+export interface DebugArtifactBatch {
+    stageFileUpload(input: DebugArtifactStageFileInput): Promise<void>;
+    stageBufferUpload(input: DebugArtifactStageBufferInput): Promise<void>;
+    enqueue(): Promise<DebugArtifactBatchEnqueueResult>;
+    cleanup(): Promise<void>;
     getArtifacts(): DebugArtifactRecord[];
 }
 
-const sanitizeFileName = (value: string): string => {
-    const normalized = value.trim().replace(/[^a-zA-Z0-9._-]+/g, '-');
+const normalizeFileName = (fileName: string): string => {
+    const normalized = fileName.replace(/[^a-zA-Z0-9._-]+/g, '-');
     return normalized.length > 0 ? normalized : 'artifact';
-};
-
-const resolveFileName = (
-    input: Pick<ArtifactUploadStageFileInput, 'fileName' | 'objectKey'>
-): string => {
-    if (typeof input.fileName === 'string' && input.fileName.trim().length > 0) {
-        return sanitizeFileName(input.fileName);
-    }
-
-    const objectBaseName = path.basename(input.objectKey);
-    if (objectBaseName.length > 0) {
-        return sanitizeFileName(objectBaseName);
-    }
-
-    return 'artifact';
 };
 
 export const createDebugArtifactBatch = (baseDirectory: string): DebugArtifactBatch => {
     const artifacts: DebugArtifactRecord[] = [];
     let sequence = 0;
 
-    const stage = async (
-        input: Pick<ArtifactUploadStageFileInput, 'bucket' | 'contentType' | 'fileName' | 'objectKey'>,
-        writer: (targetPath: string) => Promise<void>
-    ): Promise<void> => {
-        await fs.mkdir(baseDirectory, { recursive: true });
-        const fileName = resolveFileName(input);
-        const stagedPath = path.join(baseDirectory, `${String(sequence).padStart(4, '0')}-${fileName}`);
+    const createStagedPath = (fileName: string): string => {
+        const stagedPath = path.join(baseDirectory, `${`${sequence}`.padStart(4, '0')}-${fileName}`);
         sequence += 1;
-        await writer(stagedPath);
-        artifacts.push({
-            path: stagedPath,
-            bucket: input.bucket,
-            objectKey: input.objectKey,
-            contentType: input.contentType,
-            fileName
-        });
+        return stagedPath;
     };
 
     return {
-        async stageFileUpload(input: ArtifactUploadStageFileInput): Promise<void> {
-            await stage(input, (targetPath) => fs.copyFile(input.sourcePath, targetPath));
+        async stageFileUpload(input: DebugArtifactStageFileInput): Promise<void> {
+            await fs.mkdir(baseDirectory, { recursive: true });
+            const sourceFileName = input.fileName ?? path.basename(input.objectKey);
+            const fileName = normalizeFileName(sourceFileName);
+            const stagedPath = createStagedPath(fileName);
+            await fs.copyFile(input.sourcePath, stagedPath);
+            artifacts.push({
+                path: stagedPath,
+                bucket: input.bucket,
+                objectKey: input.objectKey,
+                contentType: input.contentType,
+                fileName
+            });
         },
 
-        async stageBufferUpload(input: ArtifactUploadStageBufferInput): Promise<void> {
-            await stage(input, (targetPath) => fs.writeFile(targetPath, input.buffer));
+        async stageBufferUpload(input: DebugArtifactStageBufferInput): Promise<void> {
+            await fs.mkdir(baseDirectory, { recursive: true });
+            const sourceFileName = input.fileName ?? path.basename(input.objectKey);
+            const fileName = normalizeFileName(sourceFileName);
+            const stagedPath = createStagedPath(fileName);
+            await fs.writeFile(stagedPath, input.buffer);
+            artifacts.push({
+                path: stagedPath,
+                bucket: input.bucket,
+                objectKey: input.objectKey,
+                contentType: input.contentType,
+                fileName
+            });
         },
 
-        async enqueue(): Promise<ArtifactUploadBatchEnqueueResult> {
-            return {
+        enqueue(): Promise<DebugArtifactBatchEnqueueResult> {
+            return Promise.resolve({
                 queuedUploads: artifacts.length
-            };
+            });
         },
 
         async cleanup(): Promise<void> {

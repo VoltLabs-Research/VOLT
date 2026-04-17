@@ -1,12 +1,5 @@
-import type { WorkflowExecutionContext, WorkflowNode } from '@/modules/analysis/contracts/workflow.types';
+import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput } from '@/modules/analysis/contracts/workflow.types';
 import type { WorkflowNodeRegistry } from '@/modules/analysis/application/workflow/NodeRegistry';
-
-interface OrderedNodeExecutionResult {
-    node: WorkflowNode;
-    status: 'executed' | 'skipped';
-    output?: Record<string, unknown>;
-    reason?: string;
-};
 
 interface RunOrderedWorkflowNodesParams {
     nodes: WorkflowNode[];
@@ -14,6 +7,13 @@ interface RunOrderedWorkflowNodesParams {
     registry: WorkflowNodeRegistry;
     shouldSkipNode?: (node: WorkflowNode) => string | undefined;
     stopAfterNode?: (result: OrderedNodeExecutionResult) => boolean;
+}
+
+interface OrderedNodeExecutionResult {
+    node: WorkflowNode;
+    status: 'executed' | 'skipped';
+    output?: WorkflowNodeOutput;
+    reason?: string;
 };
 
 export const runOrderedWorkflowNodes = async (

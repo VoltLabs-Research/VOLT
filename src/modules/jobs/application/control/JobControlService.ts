@@ -1,21 +1,20 @@
 import type { QueueService } from '@/core/queues/application/QueueService';
-import type { JobsActionResponse, RetryJobsRequest, RemoveRunningJobsRequest, ClearJobsHistoryRequest } from '@/contracts';
 import { stopProcess } from '@/core/runtime/infrastructure/processTracker';
+import type {
+    ClearJobsHistoryRequest,
+    JobsActionResponse,
+    RemoveRunningJobsRequest,
+    RetryJobsRequest
+} from '@/modules/analysis/contracts/http.analysis';
 
-export interface JobControlService {
-    retryJobs(input: RetryJobsRequest): Promise<JobsActionResponse>;
-    removeRunningJobs(input: RemoveRunningJobsRequest): Promise<JobsActionResponse>;
-    clearJobsHistory(input: ClearJobsHistoryRequest): Promise<JobsActionResponse>;
-}
+export class JobControlService {
+    constructor(private readonly queueService: QueueService) {}
 
-export const createJobControlService = (
-    queueService: QueueService
-): JobControlService => ({
-    async retryJobs(input) {
+    retryJobs = async (input: RetryJobsRequest): Promise<JobsActionResponse> => {
         let affectedJobs = 0;
 
         for (const jobId of input.jobIds) {
-            const retried = await queueService.retryJobById(jobId);
+            const retried = await this.queueService.retryJobById(jobId);
             if (!retried) {
                 continue;
             }
@@ -23,14 +22,14 @@ export const createJobControlService = (
         }
 
         return { affectedJobs };
-    },
+    };
 
-    async removeRunningJobs(input) {
+    removeRunningJobs = async (input: RemoveRunningJobsRequest): Promise<JobsActionResponse> => {
         let affectedJobs = 0;
 
         for (const jobId of input.jobIds) {
             const stopped = stopProcess(jobId);
-            const removed = await queueService.removeJobById(jobId).catch(() => false);
+            const removed = await this.queueService.removeJobById(jobId).catch(() => false);
 
             if (!stopped && !removed) {
                 continue;
@@ -40,9 +39,13 @@ export const createJobControlService = (
         }
 
         return { affectedJobs };
-    },
+    };
 
-    async clearJobsHistory(input) {
+    clearJobsHistory = (_input: ClearJobsHistoryRequest): Promise<JobsActionResponse> => {
         return { affectedJobs: 0 };
-    }
-});
+    };
+}
+
+export const createJobControlService = (queueService: QueueService): JobControlService => {
+    return new JobControlService(queueService);
+};

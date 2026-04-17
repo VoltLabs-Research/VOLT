@@ -5,36 +5,32 @@ import { logger } from '@/core/logger';
 import { ARTIFACT_UPLOAD_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import { QueueService } from '@/core/queues/application/QueueService';
 import { createMemoryAwareWorkerShell } from '@/core/queues/infrastructure/memory-aware-worker';
-import { delayJobOnQueueScopeContention, tryAcquireQueueScopeLease } from '@/core/queues/contracts/queue-scope-lease';
+import { delayJobOnQueueScopeContention, tryAcquireQueueScopeLease } from '@/core/queues/infrastructure/queue-scope-lease';
+import { DelayedError } from 'bullmq';
 import type { MemoryAwareWorkerShell } from '@/core/queues/infrastructure/memory-aware-worker';
-import type { QueueScopeLease } from '@/core/queues/contracts/queue-scope-lease';
+import type { QueueScopeLease } from '@/core/queues/infrastructure/queue-scope-lease';
 import type { QueueScopeLimitsRegistry } from '@/core/queues/application/QueueScopeLimitsRegistry';
 import type { RedisConnectionService } from '@/core/storage/infrastructure/redis/RedisConnectionService';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
+import type { SceneArtifactUpsertBatchItem as ReportArtifactInput } from '@/modules/plugin/application/events/SceneArtifactUpsertBatchItem';
 import { readPositiveIntegerEnv } from '@/support/policies/runtime-capacity';
-import { compressFileWithZstd, toCompressedGlbObjectKey, toCompressedMsgpackObjectKey } from '@/support/serialization/storage-codec';
-import { DelayedError } from 'bullmq';
+import { compressFileWithZstd } from '@/support/serialization/storage-codec';
 import type { Job } from 'bullmq';
 
 import type { ArtifactUploadBatchJobPayload } from '@/modules/plugin/application/artifacts/ArtifactUploadQueueService';
-import type { TeamClusterDaemonSceneArtifactUpsertBatchItem as ReportArtifactInput } from '@/contracts';
+import type { ArtifactUploadCompletedEventData } from '@/modules/plugin/domain/events/artifact-upload/ArtifactUploadCompletedEvent';
+import type { ArtifactUploadFailedEventData } from '@/modules/plugin/domain/events/artifact-upload/ArtifactUploadFailedEvent';
+import type { ArtifactUploadStartedEventData } from '@/modules/plugin/domain/events/artifact-upload/ArtifactUploadStartedEvent';
 
 interface ArtifactUploadReporter {
+    flushPendingArtifacts(): Promise<void>;
     reportArtifact(input: ReportArtifactInput): Promise<void>;
-    flushPendingArtifacts(): void;
 }
 
 interface ArtifactUploadStatusReporter {
-    reportArtifactUploadJobStatus(input: {
-        jobId: string;
-        analysisId: string;
-        teamId: string;
-        trajectoryId: string;
-        trajectoryName?: string;
-        timestep?: number;
-        status: 'queued' | 'running' | 'completed' | 'failed';
-        error?: string;
-    }): Promise<void>;
+    reportArtifactUploadCompleted(input: ArtifactUploadCompletedEventData): Promise<void>;
+    reportArtifactUploadFailed(input: ArtifactUploadFailedEventData): Promise<void>;
+    reportArtifactUploadStarted(input: ArtifactUploadStartedEventData): Promise<void>;
 }
 
 const DEFAULT_ARTIFACT_UPLOAD_CONCURRENCY = readPositiveIntegerEnv('ARTIFACT_UPLOAD_CONCURRENCY') ?? 8;
@@ -100,7 +96,7 @@ export class ArtifactUploadWorkerService {
         let queueScopeLease: QueueScopeLease | null = null;
 
         try {
-            const trajectoryId = payload.trajectoryId.trim();
+            const trajectoryId = payload.trajectoryId;
             if (!trajectoryId) {
                 throw new Error(`Missing trajectoryId for artifact upload job ${payload.jobId}`);
             }
@@ -123,11 +119,17 @@ export class ArtifactUploadWorkerService {
                 ]
             );
             queueScopeLease = lease;
-            if (!queueScopeLease || blockingScope) {
+            if (blockingScope) {
                 await delayJobOnQueueScopeContention(bullJob, {
                     queueName: ARTIFACT_UPLOAD_QUEUE_NAME,
                     jobId: payload.jobId,
-                    scope: blockingScope ?? {
+                    scope: blockingScope
+                });
+            } else if (!queueScopeLease) {
+                await delayJobOnQueueScopeContention(bullJob, {
+                    queueName: ARTIFACT_UPLOAD_QUEUE_NAME,
+                    jobId: payload.jobId,
+                    scope: {
                         scope: 'trajectory',
                         scopeId: trajectoryId,
                         limit: queueScopeLimits.artifactUpload.maxRunningPerTrajectory
@@ -135,14 +137,13 @@ export class ArtifactUploadWorkerService {
                 });
             }
 
-            await this.daemonJobReporterService.reportArtifactUploadJobStatus({
+            await this.daemonJobReporterService.reportArtifactUploadStarted({
                 jobId: payload.jobId,
                 analysisId: payload.analysisId,
                 teamId: payload.teamId,
                 trajectoryId: payload.trajectoryId,
                 trajectoryName: payload.trajectoryName,
-                timestep: payload.timestep,
-                status: 'running'
+                timestep: payload.timestep
             });
 
             logger.info(
@@ -163,13 +164,18 @@ export class ArtifactUploadWorkerService {
                     await compressFileWithZstd(upload.sourcePath, cleanupPath);
                 }
 
+                let objectKey = upload.objectKey;
+                if (upload.contentType === 'application/msgpack' && !objectKey.endsWith('.msgpack.zst')) {
+                    objectKey = `${objectKey}.zst`;
+                }
+
+                if (upload.contentType === 'model/gltf-binary' && !objectKey.endsWith('.glb.zst')) {
+                    objectKey = `${objectKey}.zst`;
+                }
+
                 const preparedUpload = {
                     sourcePath: cleanupPath ?? upload.sourcePath,
-                    objectKey: upload.contentType === 'application/msgpack'
-                        ? toCompressedMsgpackObjectKey(upload.objectKey)
-                        : upload.contentType === 'model/gltf-binary'
-                            ? toCompressedGlbObjectKey(upload.objectKey)
-                            : upload.objectKey,
+                    objectKey,
                     contentEncoding: cleanupPath ? 'zstd' : upload.contentEncoding,
                     cleanupPath
                 };
@@ -186,7 +192,7 @@ export class ArtifactUploadWorkerService {
                         metadata: {
                             ...(upload.contentType ? { 'Content-Type': upload.contentType } : {}),
                             ...(preparedUpload.contentEncoding ? { 'Content-Encoding': preparedUpload.contentEncoding } : {}),
-                            ...(upload.metadata ?? {})
+                            ...upload.metadata
                         }
                     });
 
@@ -195,7 +201,7 @@ export class ArtifactUploadWorkerService {
                             ...upload.reportArtifact,
                             objectName: preparedUpload.objectKey,
                             metadata: {
-                                ...(upload.reportArtifact.metadata ?? {}),
+                                ...upload.reportArtifact.metadata,
                                 compressionCodec: preparedUpload.contentEncoding === 'zstd' ? 'zstd' : undefined
                             }
                         });
@@ -209,15 +215,14 @@ export class ArtifactUploadWorkerService {
                 await bullJob.updateProgress(Math.round(((index + 1) / Math.max(1, payload.uploads.length)) * 100));
             }
 
-            this.daemonArtifactReporterService.flushPendingArtifacts();
-            await this.daemonJobReporterService.reportArtifactUploadJobStatus({
+            await this.daemonArtifactReporterService.flushPendingArtifacts();
+            await this.daemonJobReporterService.reportArtifactUploadCompleted({
                 jobId: payload.jobId,
                 analysisId: payload.analysisId,
                 teamId: payload.teamId,
                 trajectoryId: payload.trajectoryId,
                 trajectoryName: payload.trajectoryName,
-                timestep: payload.timestep,
-                status: 'completed'
+                timestep: payload.timestep
             });
             await this.cleanupBatchDirectory(payload.batchDirectory);
         } catch (error) {
@@ -229,15 +234,14 @@ export class ArtifactUploadWorkerService {
             const willExhaustAttempts = bullJob.attemptsMade + 1 >= maxAttempts;
 
             if (willExhaustAttempts) {
-                this.daemonArtifactReporterService.flushPendingArtifacts();
-                await this.daemonJobReporterService.reportArtifactUploadJobStatus({
+                await this.daemonArtifactReporterService.flushPendingArtifacts();
+                await this.daemonJobReporterService.reportArtifactUploadFailed({
                     jobId: payload.jobId,
                     analysisId: payload.analysisId,
                     teamId: payload.teamId,
                     trajectoryId: payload.trajectoryId,
                     trajectoryName: payload.trajectoryName,
                     timestep: payload.timestep,
-                    status: 'failed',
                     error: error instanceof Error ? error.message : String(error)
                 }).catch(() => {});
 

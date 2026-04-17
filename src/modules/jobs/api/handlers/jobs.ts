@@ -1,25 +1,31 @@
-import { createJobControlService } from '@/modules/jobs/application/control/JobControlService';
+import type {
+    AnalysisJobExecutionData,
+    AnalysisQueueJobPayload,
+    ClearJobsHistoryRequest,
+    RemoveRunningJobsRequest,
+    RetryJobsRequest
+} from '@/contracts';
 import { ANALYSIS_QUEUE_NAME, SSH_IMPORT_QUEUE_NAME, TRAJECTORY_GLB_QUEUE_NAME, TRAJECTORY_RASTER_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import { ChannelCommands } from '@/core/reverse-channel/contracts/reverseChannel.constants';
-import { inflateAnalysisExecutionData } from '@/support/policies/analysis-execution-data';
-import type { AnalysisQueueJobPayload, AnalysisJobExecutionData, ClearJobsHistoryRequest, RemoveRunningJobsRequest, RetryJobsRequest } from '@/contracts';
+import type { ReverseChannelCommandHandler } from '@/core/reverse-channel/contracts/commandHandler';
 import type { QueueService } from '@/core/queues/application/QueueService';
 import type { RedisConnectionService } from '@/core/storage/infrastructure/redis/RedisConnectionService';
-import type { ReverseChannelCommandHandler } from '@/core/reverse-channel/contracts/commandHandler';
+import { createJobControlService } from '@/modules/jobs/application/control/JobControlService';
+import { inflateAnalysisExecutionData } from '@/support/policies/analysis-execution-data';
 
 interface JobHandlersDependencies {
     queueService: QueueService;
     redisConnectionService: RedisConnectionService;
-};
+}
 
 interface QueueDispatchRequest {
     queueName: string;
     payload: Record<string, unknown>;
-};
+}
 
 interface JobsListRequest {
     teamId: string;
-};
+}
 
 const DISPATCHABLE_QUEUE_NAMES = new Set<string>([
     ANALYSIS_QUEUE_NAME,
@@ -61,7 +67,7 @@ export const createJobHandlers = (deps: JobHandlersDependencies): ReverseChannel
         {
             command: ChannelCommands.QueueDispatch,
             execute: async (payload) => {
-                const request = payload as unknown as QueueDispatchRequest;
+                const request = payload as QueueDispatchRequest;
                 if (!DISPATCHABLE_QUEUE_NAMES.has(request.queueName)) {
                     throw new Error(`Unsupported queue dispatch target: ${request.queueName}`);
                 }
@@ -75,8 +81,9 @@ export const createJobHandlers = (deps: JobHandlersDependencies): ReverseChannel
         {
             command: ChannelCommands.JobsList,
             execute: async (payload) => {
-                const request = payload as unknown as JobsListRequest;
+                const request = payload as JobsListRequest;
                 const jobs = await deps.redisConnectionService.getTeamJobs(request.teamId);
+
                 return {
                     data: {
                         data: jobs
@@ -87,19 +94,19 @@ export const createJobHandlers = (deps: JobHandlersDependencies): ReverseChannel
         {
             command: ChannelCommands.JobsRetry,
             execute: async (payload) => ({
-                data: await jobControlService.retryJobs(payload as unknown as RetryJobsRequest)
+                data: await jobControlService.retryJobs(payload as RetryJobsRequest)
             })
         },
         {
             command: ChannelCommands.JobsRemoveRunning,
             execute: async (payload) => ({
-                data: await jobControlService.removeRunningJobs(payload as unknown as RemoveRunningJobsRequest)
+                data: await jobControlService.removeRunningJobs(payload as RemoveRunningJobsRequest)
             })
         },
         {
             command: ChannelCommands.JobsClearHistory,
             execute: async (payload) => ({
-                data: await jobControlService.clearJobsHistory(payload as unknown as ClearJobsHistoryRequest)
+                data: await jobControlService.clearJobsHistory(payload as ClearJobsHistoryRequest)
             })
         }
     ];

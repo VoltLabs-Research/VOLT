@@ -8,30 +8,17 @@ import type { RasterQueueJobPayload } from '@/contracts';
 import { isRecord } from '@/support/type-guards/isRecord';
 import { DelayedError } from 'bullmq';
 import type { Job } from 'bullmq';
+import type { RasterCompletedEventData } from '@/modules/trajectory/domain/events/raster/RasterCompletedEvent';
+import type { RasterFailedEventData } from '@/modules/trajectory/domain/events/raster/RasterFailedEvent';
+import type { RasterStartedEventData } from '@/modules/trajectory/domain/events/raster/RasterStartedEvent';
 import type { RasterizerService } from '@/modules/trajectory/application/raster/RasterizerService';
 import type { TrajectoryAutoPreviewClaimStore } from '@/modules/trajectory/infrastructure/storage/TrajectoryAutoPreviewClaimStore';
 
-type RasterJobStatus = 'running' | 'completed' | 'failed';
-
 interface RasterJobStatusReporter {
-    reportRasterJobStatus(input: {
-        jobId: string;
-        teamId: string;
-        trajectoryId: string;
-        trajectoryName?: string;
-        timestep?: number;
-        status: RasterJobStatus;
-        error?: string;
-    }): Promise<void>;
+    reportRasterCompleted(input: RasterCompletedEventData): Promise<void>;
+    reportRasterFailed(input: RasterFailedEventData): Promise<void>;
+    reportRasterStarted(input: RasterStartedEventData): Promise<void>;
 }
-
-const isAutoPreviewRasterJob = (job: RasterQueueJobPayload): boolean => {
-    if (!isRecord(job.metadata)) {
-        return false;
-    }
-
-    return job.metadata.autoPreview === true;
-};
 
 export class TrajectoryRasterWorkerService {
     private readonly workerShell: MemoryAwareWorkerShell<RasterQueueJobPayload>;
@@ -53,7 +40,7 @@ export class TrajectoryRasterWorkerService {
 
     start(concurrency?: number): void {
         this.workerShell.start(
-            async (jobPayload, job) => this.processJob(jobPayload, job),
+            (jobPayload, job) => this.processJob(jobPayload, job),
             {
                 concurrency
             }
@@ -71,17 +58,35 @@ export class TrajectoryRasterWorkerService {
 
     private async reportJobStatusBestEffort(
         job: RasterQueueJobPayload,
-        status: RasterJobStatus,
+        status: 'running' | 'completed' | 'failed',
         error?: string
     ): Promise<void> {
         try {
-            await this.daemonJobReporterService.reportRasterJobStatus({
+            const payload = {
                 jobId: job.jobId,
                 teamId: job.teamId,
                 trajectoryId: job.trajectoryId,
                 trajectoryName: job.trajectoryName,
                 timestep: job.timestep,
-                status,
+                ...(error ? { error } : {})
+            };
+
+            if (status === 'running') {
+                await this.daemonJobReporterService.reportRasterStarted(payload);
+                return;
+            }
+
+            if (status === 'completed') {
+                await this.daemonJobReporterService.reportRasterCompleted(payload);
+                return;
+            }
+
+            if (!error) {
+                throw new Error(`Missing failed raster job error for ${job.jobId}`);
+            }
+
+            await this.daemonJobReporterService.reportRasterFailed({
+                ...payload,
                 error
             });
         } catch (reportError) {
@@ -120,18 +125,21 @@ export class TrajectoryRasterWorkerService {
 
             this.reportJobStatusBestEffort(job, 'completed');
             shouldReleaseAutoPreviewClaim = true;
-        } catch (error: unknown) {
+        } catch (error) {
             if (error instanceof DelayedError) {
                 throw error;
             }
 
-            const message = error instanceof Error ? error.message : String(error);
-            this.reportJobStatusBestEffort(job, 'failed', message);
+            if (!(error instanceof Error)) {
+                throw error;
+            }
+
+            this.reportJobStatusBestEffort(job, 'failed', error.message);
             shouldReleaseAutoPreviewClaim = true;
 
-            throw error instanceof Error ? error : new Error(message);
+            throw error;
         } finally {
-            if (!shouldReleaseAutoPreviewClaim || !isAutoPreviewRasterJob(job)) {
+            if (!shouldReleaseAutoPreviewClaim || !isRecord(job.metadata) || job.metadata.autoPreview !== true) {
                 return;
             }
 

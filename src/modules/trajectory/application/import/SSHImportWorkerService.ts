@@ -16,11 +16,15 @@ import { createReadStream } from 'node:fs';
 import { compressFileWithZstd, toCompressedDumpObjectKey } from '@/support/serialization/storage-codec';
 import path from 'node:path';
 import { DelayedError } from 'bullmq';
+import { dir as createTempDir } from 'tmp-promise';
 import type { DaemonConfig } from '@/core/config';
 import type { SSHConnectionConfig } from '@/modules/trajectory/infrastructure/ssh/SSHConnectionService';
-import type { Job, Worker } from 'bullmq';
+import type { SshImportCompletedEventData } from '@/modules/trajectory/domain/events/ssh-import/SshImportCompletedEvent';
+import type { SshImportFailedEventData } from '@/modules/trajectory/domain/events/ssh-import/SshImportFailedEvent';
+import type { SshImportStartedEventData } from '@/modules/trajectory/domain/events/ssh-import/SshImportStartedEvent';
+import type { Worker } from 'bullmq';
 
-interface SSHImportJobPayload extends Record<string, unknown> {
+interface SSHImportJobPayload {
     jobId: string;
     teamId: string;
     sshConnectionId: string;
@@ -32,31 +36,57 @@ interface SSHImportJobPayload extends Record<string, unknown> {
     encryptedPassword: string;
     trajectoryId: string;
     trajectoryName: string;
-};
+}
+
+type TrajectoryFrameMetadata = Awaited<ReturnType<typeof TrajectoryParserFactory.parseMetadata>>;
+
+interface CompletedTrajectoryImportPayload {
+    teamClusterId: string;
+    daemonPassword: string;
+    trajectoryId: string;
+    trajectoryName: string;
+    teamId: string;
+    userId: string;
+    success: true;
+    frames: Array<{
+        timestep: number;
+        natoms: number;
+        simulationCell: TrajectoryFrameMetadata['simulationCell'];
+        size: number;
+    }>;
+}
+
+interface FailedTrajectoryImportPayload {
+    teamClusterId: string;
+    daemonPassword: string;
+    trajectoryId: string;
+    trajectoryName: string;
+    teamId: string;
+    userId: string;
+    success: false;
+    failureCode: 'SSH::Import::Error';
+    failureDetails: string;
+}
+
+type TrajectoryImportPayload = CompletedTrajectoryImportPayload | FailedTrajectoryImportPayload;
 
 interface TrajectoryImportCompletionClient {
     sendBackgroundServerCommand(
         command: string,
         payload: object,
         options?: { dedupeKey?: string }
-    ): Promise<unknown>;
-    sendServerCommand(command: string, payload: object): Promise<unknown>;
+    ): Promise<object | undefined>;
+    sendServerCommand(command: string, payload: object): Promise<object | undefined>;
 }
 
-type SshImportJobStatus = 'running' | 'completed' | 'failed';
-
 interface SshImportStatusReporter {
-    reportSshImportJobStatus(input: {
-        jobId: string;
-        teamId: string;
-        trajectoryId: string;
-        trajectoryName?: string;
-        status: SshImportJobStatus;
-        error?: string;
-    }): Promise<void>;
+    reportSshImportCompleted(input: SshImportCompletedEventData): Promise<void>;
+    reportSshImportFailed(input: SshImportFailedEventData): Promise<void>;
+    reportSshImportStarted(input: SshImportStartedEventData): Promise<void>;
 }
 
 const scryptAsync = promisify(crypto.scrypt);
+const sanitizeTempPrefix = (value: string): string => value.replace(/[^a-zA-Z0-9._-]+/g, '-');
 
 export class SSHImportWorkerService {
     private worker: Worker<SSHImportJobPayload> | null = null;
@@ -120,17 +150,22 @@ export class SSHImportWorkerService {
     }
 
     private async processJob(job: SSHImportJobPayload): Promise<void> {
-        const workdir = path.join(DAEMON_PATHS.sshImport, `${job.trajectoryId}-${Date.now()}`);
         const jobId = job.jobId;
+        await fs.mkdir(DAEMON_PATHS.sshImport, { recursive: true });
+        const workdirHandle = await createTempDir({
+            tmpdir: DAEMON_PATHS.sshImport,
+            prefix: `${sanitizeTempPrefix(job.trajectoryId)}-`,
+            unsafeCleanup: true
+        });
+        const workdir = workdirHandle.path;
 
         try {
-            await fs.mkdir(workdir, { recursive: true });
             await this.reportJobStatusBestEffort(job, 'running');
 
             const password = await this.decryptPassword(job.encryptedPassword);
             const connection: SSHConnectionConfig = {
                 host: job.host,
-                port: job.port || 22,
+                port: job.port ?? 22,
                 username: job.username,
                 password
             };
@@ -159,12 +194,7 @@ export class SSHImportWorkerService {
                 path.join(workdir, 'extracted')
             );
 
-            const frames: Array<{
-                timestep: number;
-                natoms: number;
-                simulationCell: Record<string, unknown> | null;
-                size: number;
-            }> = [];
+            const frames: CompletedTrajectoryImportPayload['frames'] = [];
             for (const file of extractedFiles) {
                 const metadata = await TrajectoryParserFactory.parseMetadata(file.path);
                 const objectKey = toCompressedDumpObjectKey(job.trajectoryId, metadata.timestep);
@@ -233,15 +263,23 @@ export class SSHImportWorkerService {
                 success: true,
                 frames
             }).catch((reportError) => {
-                logger.error({ err: reportError, jobId, trajectoryId: job.trajectoryId }, 'Failed to report successful SSH import completion');
+                logger.error({
+                    err: reportError,
+                    jobId,
+                    trajectoryId: job.trajectoryId
+                }, 'Failed to report successful SSH import completion');
                 return false;
             });
 
             if (wasReported === false) {
                 await this.reportJobStatusBestEffort(job, 'completed');
             }
-        } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : String(error);
+        } catch (error) {
+            if (!(error instanceof Error)) {
+                throw error;
+            }
+
+            const message = error.message;
             logger.error({ err: error, trajectoryId: job.trajectoryId }, 'SSH import failed');
 
             const wasReported = await this.reportTrajectoryImport({
@@ -255,7 +293,11 @@ export class SSHImportWorkerService {
                 failureCode: 'SSH::Import::Error',
                 failureDetails: message
             }).catch((reportError) => {
-                logger.error({ err: reportError, jobId, trajectoryId: job.trajectoryId }, 'Failed to report failed SSH import completion');
+                logger.error({
+                    err: reportError,
+                    jobId,
+                    trajectoryId: job.trajectoryId
+                }, 'Failed to report failed SSH import completion');
                 return false;
             });
 
@@ -263,24 +305,42 @@ export class SSHImportWorkerService {
                 await this.reportJobStatusBestEffort(job, 'failed', message);
             }
 
-            throw error instanceof Error ? error : new Error(message);
+            throw error;
         } finally {
-            await fs.rm(workdir, { recursive: true, force: true }).catch(() => {});
+            await workdirHandle.cleanup().catch(() => {});
         }
     }
 
     private async reportJobStatusBestEffort(
         job: SSHImportJobPayload,
-        status: SshImportJobStatus,
+        status: 'running' | 'completed' | 'failed',
         error?: string
     ): Promise<void> {
         try {
-            await this.daemonJobReporterService.reportSshImportJobStatus({
+            const payload = {
                 jobId: job.jobId,
                 teamId: job.teamId,
                 trajectoryId: job.trajectoryId,
                 trajectoryName: job.trajectoryName,
-                status,
+                ...(error ? { error } : {})
+            };
+
+            if (status === 'running') {
+                await this.daemonJobReporterService.reportSshImportStarted(payload);
+                return;
+            }
+
+            if (status === 'completed') {
+                await this.daemonJobReporterService.reportSshImportCompleted(payload);
+                return;
+            }
+
+            if (!error) {
+                throw new Error(`Missing failed SSH import error for ${job.jobId}`);
+            }
+
+            await this.daemonJobReporterService.reportSshImportFailed({
+                ...payload,
                 error
             });
         } catch (reportError) {
@@ -315,16 +375,16 @@ export class SSHImportWorkerService {
         return decrypted;
     }
 
-    private async reportTrajectoryImport(payload: Record<string, unknown>): Promise<boolean> {
+    private async reportTrajectoryImport(payload: TrajectoryImportPayload): Promise<boolean> {
         const queuedResult = await this.voltCloudConnection.sendBackgroundServerCommand('trajectory.import-complete', payload, {
-            dedupeKey: `trajectory.import:${String(payload.trajectoryId)}:${payload.success === true ? 'completed' : 'failed'}`
+            dedupeKey: `trajectory.import:${payload.trajectoryId}:${payload.success ? 'completed' : 'failed'}`
         });
 
-        if (typeof queuedResult !== 'undefined') {
+        if (queuedResult !== undefined) {
             return true;
         }
 
         const directResult = await this.voltCloudConnection.sendServerCommand('trajectory.import-complete', payload);
-        return typeof directResult !== 'undefined';
+        return directResult !== undefined;
     }
 };

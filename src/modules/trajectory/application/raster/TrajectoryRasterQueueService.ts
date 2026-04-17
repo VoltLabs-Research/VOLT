@@ -14,6 +14,25 @@ interface ParsedRasterModel {
     model?: string;
 };
 
+interface RasterJobMetadata {
+    trajectoryId: string;
+    trajectoryName?: string;
+    timestep: number;
+    analysisId?: string;
+    model?: string;
+    autoPreview: boolean;
+}
+
+type RasterQueueJob = RasterQueueJobPayload & {
+    metadata: RasterJobMetadata;
+};
+
+interface ObjectNotFoundError extends Error {
+    code?: 'NoSuchKey' | 'NotFound';
+    status?: number;
+    statusCode?: number;
+}
+
 interface QueueRasterizationJobsResult {
     queuedJobs: number;
     duplicateJobs: number;
@@ -30,19 +49,6 @@ export interface TrajectoryRasterQueueService {
     queueRasterizationJobs(input: RasterizeTrajectoryRequest): Promise<RasterizeTrajectoryResponse>;
 };
 
-const buildRasterJobId = (
-    trajectoryId: string,
-    timestep: number,
-    analysisId?: string,
-    model?: string
-): string => {
-    if (analysisId && model) {
-        return `trajectory-raster_${trajectoryId}_${analysisId}_${timestep}_${model}`;
-    }
-
-    return `trajectory-raster_${trajectoryId}_${timestep}`;
-};
-
 const createQueueRasterizationJobsResult = (): QueueRasterizationJobsResult => {
     return {
         queuedJobs: 0,
@@ -50,14 +56,6 @@ const createQueueRasterizationJobsResult = (): QueueRasterizationJobsResult => {
         skippedJobs: 0,
         alreadyRasterizedJobs: 0,
         jobs: []
-    };
-};
-
-const createParsedRasterModel = (trajectoryId: string, timestep: number): ParsedRasterModel => {
-    return {
-        modelObjectKey: `trajectory-${trajectoryId}/timestep-${timestep}.glb.zst`,
-        outputObjectKey: `trajectory-${trajectoryId}/previews/timestep-${timestep}.png`,
-        timestep
     };
 };
 
@@ -81,17 +79,6 @@ const STAT_CONCURRENCY = 10;
 
 const ANALYSIS_MODEL_PATTERN = /^trajectory-[^/]+\/analysis-([^/]+)\/glb\/(\d+)\/([^/]+)\.glb\.zst$/;
 
-const isObjectNotFoundError = (error: unknown): boolean => {
-    if (!isRecord(error)) {
-        return false;
-    }
-
-    return error.code === 'NotFound'
-        || error.code === 'NoSuchKey'
-        || error.statusCode === 404
-        || error.status === 404;
-};
-
 const getExistingOutputKeys = async (
     objectStore: ClusterObjectStore,
     ownerClusterId: string,
@@ -107,7 +94,13 @@ const getExistingOutputKeys = async (
                     await objectStore.head(ownerClusterId, ObjectBucketName.Rasterizer, rasterModel.outputObjectKey);
                     return rasterModel.outputObjectKey;
                 } catch (error) {
-                    if (isObjectNotFoundError(error)) {
+                    const objectStoreError = error as ObjectNotFoundError;
+                    if (
+                        objectStoreError.code === 'NotFound'
+                        || objectStoreError.code === 'NoSuchKey'
+                        || objectStoreError.statusCode === 404
+                        || objectStoreError.status === 404
+                    ) {
                         return null;
                     }
 
@@ -132,10 +125,7 @@ const parseTrajectoryModel = (trajectoryId: string, objectKey: string): ParsedRa
         return null;
     }
 
-    const timestep = Number(match[1]);
-    if (!Number.isFinite(timestep)) {
-        return null;
-    }
+    const timestep = Number.parseInt(match[1], 10);
 
     return {
         modelObjectKey: objectKey,
@@ -151,12 +141,8 @@ const parseAnalysisModel = (trajectoryId: string, objectKey: string): ParsedRast
     }
 
     const analysisId = match[1];
-    const timestep = Number(match[2]);
+    const timestep = Number.parseInt(match[2], 10);
     const nodeId = match[3];
-
-    if (!Number.isFinite(timestep)) {
-        return null;
-    }
 
     return {
         modelObjectKey: objectKey,
@@ -171,11 +157,13 @@ const buildRasterJobPayload = (
     input: RasterizeTrajectoryRequest,
     rasterModel: ParsedRasterModel,
     autoPreview = false
-): RasterQueueJobPayload => {
+): RasterQueueJob => {
     const timestamp = new Date().toISOString();
 
     return {
-        jobId: buildRasterJobId(input.trajectoryId, rasterModel.timestep, rasterModel.analysisId, rasterModel.model),
+        jobId: rasterModel.analysisId && rasterModel.model
+            ? `trajectory-raster_${input.trajectoryId}_${rasterModel.analysisId}_${rasterModel.timestep}_${rasterModel.model}`
+            : `trajectory-raster_${input.trajectoryId}_${rasterModel.timestep}`,
         teamId: input.teamId,
         trajectoryId: input.trajectoryId,
         trajectoryName: input.trajectoryName,
@@ -199,14 +187,14 @@ const buildRasterJobPayload = (
     };
 };
 
-const toQueuedJobNotification = (job: RasterQueueJobPayload): QueuedJobNotification => ({
+const toQueuedJobNotification = (job: RasterQueueJob): QueuedJobNotification => ({
     jobId: job.jobId,
     name: 'Rasterize trajectory preview',
     teamId: job.teamId,
     timestep: job.timestep,
     trajectoryId: job.trajectoryId,
     trajectoryName: job.trajectoryName,
-    analysisId: typeof job.metadata?.analysisId === 'string' ? job.metadata.analysisId : undefined,
+    analysisId: job.metadata.analysisId,
     queueType: TRAJECTORY_RASTER_QUEUE_NAME
 });
 
@@ -227,7 +215,11 @@ const queueAutoPreviewRasterizationJob = async (
 
     const job = buildRasterJobPayload(
         input,
-        createParsedRasterModel(input.trajectoryId, config.timestep),
+        {
+            modelObjectKey: `trajectory-${input.trajectoryId}/timestep-${config.timestep}.glb.zst`,
+            outputObjectKey: `trajectory-${input.trajectoryId}/previews/timestep-${config.timestep}.png`,
+            timestep: config.timestep
+        },
         true
     );
     let wasEnqueued = false;

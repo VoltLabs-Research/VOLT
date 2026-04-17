@@ -1,22 +1,30 @@
 import { logger } from '@/core/logger';
 import { ANALYSIS_QUEUE_NAME, ARTIFACT_UPLOAD_QUEUE_NAME, SSH_IMPORT_QUEUE_NAME, TRAJECTORY_GLB_QUEUE_NAME, TRAJECTORY_RASTER_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import { RedisConnectionService } from '@/core/storage/infrastructure/redis/RedisConnectionService';
-import { Job, Queue, Worker } from 'bullmq';
+import { Queue, Worker, type Job, type JobState } from 'bullmq';
 
-interface QueueWorkerOptions {
+export interface QueuePayload {
+    jobId?: string;
+}
+
+type QueueWorkerOptions = {
     concurrency?: number;
 };
 
-interface EnqueueOptions {
+type QueueBackoffOptions = {
+    type: 'fixed' | 'exponential';
+    delay: number;
+};
+
+type EnqueueOptions = {
     preserveExistingJob?: boolean;
     attempts?: number;
     removeOnComplete?: number | boolean;
     removeOnFail?: number | boolean;
-    backoff?: {
-        type: 'fixed' | 'exponential';
-        delay: number;
-    };
+    backoff?: QueueBackoffOptions;
 };
+
+type PreservedJobState = Extract<JobState, 'active' | 'waiting' | 'delayed' | 'prioritized' | 'waiting-children'>;
 
 const KNOWN_QUEUE_NAMES = [
     ANALYSIS_QUEUE_NAME,
@@ -26,35 +34,35 @@ const KNOWN_QUEUE_NAMES = [
     TRAJECTORY_GLB_QUEUE_NAME
 ] as const;
 
+const PRESERVED_JOB_STATES = new Set<PreservedJobState>([
+    'active',
+    'waiting',
+    'delayed',
+    'prioritized',
+    'waiting-children'
+]);
+
 const KNOWN_QUEUE_NAME_SET = new Set<string>(KNOWN_QUEUE_NAMES);
 
-const isActiveQueueState = (state: string): boolean => {
-    return state === 'active'
-        || state === 'waiting'
-        || state === 'delayed'
-        || state === 'prioritized'
-        || state === 'waiting-children';
-};
-
 export class QueueService {
-    private readonly queues = new Map<string, Queue<Record<string, unknown>>>();
+    private readonly queues = new Map<string, Queue<QueuePayload>>();
 
     constructor(
         private readonly redisConnectionService: RedisConnectionService
     ) {
     }
 
-    async close(): Promise<void> {
+    close = async (): Promise<void> => {
         for (const queue of this.queues.values()) {
             await queue.close();
         }
 
         this.queues.clear();
-    }
+    };
 
-    async enqueue(queueName: string, payload: Record<string, unknown>, options: EnqueueOptions = {}): Promise<boolean> {
+    async enqueue<T extends QueuePayload>(queueName: string, payload: T, options: EnqueueOptions = {}): Promise<boolean> {
         const queue = this.getQueue(queueName);
-        const jobId = typeof payload.jobId === 'string' ? payload.jobId : undefined;
+        const jobId = payload.jobId;
         const startedAt = Date.now();
         const payloadBytes = this.measurePayloadBytes(payload);
         let preservedExistingJob = false;
@@ -65,7 +73,7 @@ export class QueueService {
                 preservedExistingJob = true;
                 const existingState = await existingJob.getState();
 
-                if (isActiveQueueState(existingState)) {
+                if (existingState !== 'unknown' && PRESERVED_JOB_STATES.has(existingState)) {
                     logger.info(
                         {
                             durationMs: Date.now() - startedAt,
@@ -84,9 +92,7 @@ export class QueueService {
             }
         }
 
-        const attempts = Number.isFinite(options.attempts) && (options.attempts ?? 0) >= 1
-            ? Math.floor(options.attempts!)
-            : 1;
+        const attempts = options.attempts ?? 1;
 
         await queue.add(queueName, payload, {
             jobId,
@@ -101,7 +107,7 @@ export class QueueService {
                 durationMs: Date.now() - startedAt,
                 jobId,
                 payloadBytes,
-                preserveExistingJob: options.preserveExistingJob ?? false,
+                preserveExistingJob: options.preserveExistingJob === true,
                 queueName,
                 replacedExistingJob: preservedExistingJob
             },
@@ -111,7 +117,7 @@ export class QueueService {
         return true;
     }
 
-    async enqueueBulk(queueName: string, payloads: Record<string, unknown>[]): Promise<void> {
+    async enqueueBulk<T extends QueuePayload>(queueName: string, payloads: T[]): Promise<void> {
         if (payloads.length === 0) {
             return;
         }
@@ -123,7 +129,7 @@ export class QueueService {
             name: queueName,
             data: payload,
             opts: {
-                jobId: typeof payload.jobId === 'string' ? payload.jobId : undefined,
+                jobId: payload.jobId,
                 attempts: 1,
                 removeOnComplete: 1000,
                 removeOnFail: 1000
@@ -141,16 +147,18 @@ export class QueueService {
         );
     }
 
-    createWorker<T extends Record<string, unknown>>(
+    createWorker = <T extends QueuePayload>(
         queueName: string,
         processor: (payload: T, job: Job<T>) => Promise<void>,
         options: QueueWorkerOptions = {}
-    ): Worker<T> {
-        this.assertKnownQueue(queueName);
+    ): Worker<T> => {
+        if (!KNOWN_QUEUE_NAME_SET.has(queueName)) {
+            throw new Error(`Unsupported queue: ${queueName}`);
+        }
 
         return new Worker<T>(
             queueName,
-            async (job) => processor(job.data, job),
+            (job) => processor(job.data, job),
             {
                 connection: this.redisConnectionService.getConnectionOptions(),
                 concurrency: options.concurrency ?? 1,
@@ -161,7 +169,7 @@ export class QueueService {
                 stalledInterval: 300_000
             }
         );
-    }
+    };
 
     async retryJobById(jobId: string): Promise<boolean> {
         const job = await this.findJob(jobId);
@@ -188,7 +196,7 @@ export class QueueService {
         return true;
     }
 
-    async findJob(jobId: string): Promise<Job<Record<string, unknown>> | null> {
+    async findJob(jobId: string): Promise<Job<QueuePayload> | null> {
         for (const queueName of KNOWN_QUEUE_NAMES) {
             const job = await this.getQueue(queueName).getJob(jobId);
             if (job) {
@@ -199,28 +207,24 @@ export class QueueService {
         return null;
     }
 
-    private getQueue(queueName: string): Queue<Record<string, unknown>> {
-        this.assertKnownQueue(queueName);
+    private getQueue(queueName: string): Queue<QueuePayload> {
+        if (!KNOWN_QUEUE_NAME_SET.has(queueName)) {
+            throw new Error(`Unsupported queue: ${queueName}`);
+        }
 
         const existingQueue = this.queues.get(queueName);
         if (existingQueue) {
             return existingQueue;
         }
 
-        const queue = new Queue<Record<string, unknown>>(queueName, {
+        const queue = new Queue<QueuePayload>(queueName, {
             connection: this.redisConnectionService.getConnectionOptions()
         });
         this.queues.set(queueName, queue);
         return queue;
     }
 
-    private assertKnownQueue(queueName: string): void {
-        if (!KNOWN_QUEUE_NAME_SET.has(queueName)) {
-            throw new Error(`Unsupported queue: ${queueName}`);
-        }
-    }
-
-    private measurePayloadBytes(payload: Record<string, unknown>): number {
+    private measurePayloadBytes(payload: object): number {
         try {
             return Buffer.byteLength(JSON.stringify(payload));
         } catch {

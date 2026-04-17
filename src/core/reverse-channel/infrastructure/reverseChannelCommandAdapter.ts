@@ -1,61 +1,46 @@
 import { createTraceLogContext, extractDaemonTraceContext } from '@/core/observability/infrastructure/daemonInstrumentation';
 import { logger } from '@/core/logger';
-import type { ReverseChannelCommandHandler, ReverseChannelCommandResult } from '@/core/reverse-channel/contracts/commandHandler';
-import type { CommandResult, ReverseChannelHandler } from '@voltstack/daemon-cluster-client';
+import { CommandError } from '@/core/commands/CommandError';
+import type {
+    ReverseChannelCommandExecutor,
+    ReverseChannelCommandPayload,
+    ReverseChannelCommandResult,
+    ReverseChannelCommandPayloadView
+} from '@/core/reverse-channel/contracts/commandHandler';
+import { EmptyFilterResultError } from '@/modules/trajectory/domain/services/FilterEvaluatorService';
 
-interface ReverseChannelHandlerContext extends Record<string, unknown> {
-    requestId?: unknown;
-};
+interface CommandResult extends ReverseChannelCommandResult {}
 
-interface StatusCodeError {
-    code?: unknown;
-    message: string;
-    statusCode: number;
+interface HandlerContext {
+    command: string;
+    requestId: string;
 }
 
-const isStatusCodeError = (error: unknown): error is StatusCodeError => {
-    return typeof error === 'object'
-        && error !== null
-        && typeof (error as { message?: unknown }).message === 'string'
-        && typeof (error as { statusCode?: unknown }).statusCode === 'number';
-};
-
-const isEmptyFilterResultError = (error: unknown): error is { code: string; message: string } => {
-    return typeof error === 'object'
-        && error !== null
-        && (error as { code?: unknown }).code === 'EMPTY_FILTER_RESULT'
-        && typeof (error as { message?: unknown }).message === 'string';
-};
-
-const readRequestId = (
-    ctx: ReverseChannelHandlerContext | undefined,
-    payload: Record<string, unknown> | undefined
-): string | undefined => {
-    if (typeof ctx?.requestId === 'string' && ctx.requestId.trim().length > 0) {
-        return ctx.requestId.trim();
-    }
-
-    if (typeof payload?.requestId === 'string' && payload.requestId.trim().length > 0) {
-        return payload.requestId.trim();
-    }
-
-    return undefined;
-};
+interface ReverseChannelHandler {
+    handle(
+        payload: ReverseChannelCommandPayload | undefined,
+        context: HandlerContext
+    ): Promise<CommandResult> | CommandResult;
+}
 
 /** Adapts daemon command handlers to the SDK bridge contract with shared logging. */
-export const adaptReverseChannelHandler = (handler: ReverseChannelCommandHandler): ReverseChannelHandler => {
+export const adaptReverseChannelHandler = (
+    commandName: string,
+    execute: ReverseChannelCommandExecutor
+): ReverseChannelHandler => {
     return {
         handle: async (payload, ctx): Promise<CommandResult> => {
-            const commandPayload = payload as Record<string, unknown> | undefined;
-            const handlerContext = ctx as unknown as ReverseChannelHandlerContext | undefined;
-            const requestId = readRequestId(handlerContext, commandPayload);
+            const commandPayload = payload as ReverseChannelCommandPayload | undefined;
+            const commandPayloadView = payload as ReverseChannelCommandPayloadView | undefined;
+            const handlerContext = ctx as HandlerContext | undefined;
+            const requestId = handlerContext?.requestId ?? commandPayloadView?.requestId;
             const commandLogContext = {
                 ...(requestId ? { requestId } : {}),
-                ...createTraceLogContext(extractDaemonTraceContext(commandPayload))
+                ...createTraceLogContext(extractDaemonTraceContext(commandPayloadView))
             };
 
             try {
-                const result = await handler.execute(commandPayload);
+                const result = await execute(commandPayload);
                 return {
                     status: result.status,
                     data: result.data,
@@ -63,11 +48,11 @@ export const adaptReverseChannelHandler = (handler: ReverseChannelCommandHandler
                     headers: result.headers,
                     stream: result.stream
                 };
-            } catch (error: unknown) {
-                if (isEmptyFilterResultError(error)) {
+            } catch (error) {
+                if (error instanceof EmptyFilterResultError) {
                     logger.warn(
                         {
-                            command: handler.command,
+                            command: commandName,
                             code: error.code,
                             message: error.message,
                             ...commandLogContext
@@ -84,11 +69,11 @@ export const adaptReverseChannelHandler = (handler: ReverseChannelCommandHandler
                     };
                 }
 
-                if (isStatusCodeError(error)) {
+                if (error instanceof CommandError) {
                     logger.warn(
                         {
-                            command: handler.command,
-                            code: typeof error.code === 'string' ? error.code : 'DAEMON_COMMAND_REJECTED',
+                            command: commandName,
+                            code: error.code,
                             message: error.message,
                             ...commandLogContext
                         },
@@ -98,20 +83,21 @@ export const adaptReverseChannelHandler = (handler: ReverseChannelCommandHandler
                         status: error.statusCode,
                         data: {
                             status: 'error',
-                            code: typeof error.code === 'string' ? error.code : 'DAEMON_COMMAND_REJECTED',
+                            code: error.code,
                             message: error.message
                         }
                     };
                 }
 
-                const message = error instanceof Error ? error.message : 'An unexpected error occurred';
-                const stack = error instanceof Error ? error.stack : undefined;
+                const unhandledError = error instanceof Error
+                    ? error
+                    : new Error('An unexpected error occurred');
                 logger.error(
                     {
-                        command: handler.command,
+                        command: commandName,
                         code: 'INTERNAL_ERROR',
-                        message,
-                        stack,
+                        message: unhandledError.message,
+                        stack: unhandledError.stack,
                         ...commandLogContext
                     },
                     'Daemon command failed with unhandled exception'
@@ -121,7 +107,7 @@ export const adaptReverseChannelHandler = (handler: ReverseChannelCommandHandler
                     data: {
                         status: 'error',
                         code: 'INTERNAL_ERROR',
-                        message
+                        message: unhandledError.message
                     }
                 };
             }

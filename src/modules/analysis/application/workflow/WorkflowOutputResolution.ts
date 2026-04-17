@@ -2,12 +2,14 @@ import { logger } from '@/core/logger';
 import { stringifyUnknown } from '@/support/serialization/serialization';
 import { isRecord } from '@/support/type-guards/isRecord';
 import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
-import type { WorkflowGraph } from '@/modules/analysis/contracts/workflow.types';
+import type { WorkflowGraph, WorkflowNodeOutput, WorkflowValue } from '@/modules/analysis/contracts/workflow.types';
 
 interface WorkflowReferenceResolutionOptions {
     workflow?: WorkflowGraph;
     currentNodeId?: string;
 }
+
+type WorkflowOutputs = Map<string, WorkflowNodeOutput>;
 
 const WORKFLOW_REFERENCE_ALIASES: Record<string, WorkflowNodeType[]> = {
     modifier: [WorkflowNodeType.Modifier],
@@ -23,46 +25,18 @@ const WORKFLOW_REFERENCE_ALIASES: Record<string, WorkflowNodeType[]> = {
     case: [WorkflowNodeType.SwitchCase]
 };
 
-const tokenizeReferencePath = (value: string): string[] => {
-    return value
-        .replace(/\[(\d+)\]/g, '.$1')
-        .split('.')
-        .filter(Boolean);
-};
-
-const getValueAtPath = (
-    value: unknown,
-    pathSegments: string[]
-): unknown => {
-    return pathSegments.reduce<unknown>((currentValue, segment) => {
-        if (Array.isArray(currentValue)) {
-            const index = Number(segment);
-            return Number.isInteger(index)
-                ? currentValue[index]
-                : undefined;
-        }
-
-        if (!isRecord(currentValue)) {
-            return undefined;
-        }
-
-        return currentValue[segment];
-    }, value);
-};
-
 const resolveAliasNodeId = (
     alias: string,
     workflow: WorkflowGraph,
     currentNodeId?: string
 ): string | null => {
-    const normalizedAlias = alias.trim().toLowerCase();
-    const targetTypes = WORKFLOW_REFERENCE_ALIASES[normalizedAlias];
-    if (!targetTypes?.length) {
+    const targetTypes = WORKFLOW_REFERENCE_ALIASES[alias.toLowerCase()];
+    if (!targetTypes) {
         return null;
     }
 
     if (currentNodeId) {
-        const currentNode = workflow.nodes.find((node) => node.id === currentNodeId);
+        const currentNode = workflow.getNode(currentNodeId);
         if (currentNode && targetTypes.includes(currentNode.type)) {
             return currentNode.id;
         }
@@ -82,15 +56,24 @@ const resolveAliasNodeId = (
         return candidates[0].id;
     }
 
-    return candidates[0]?.id ?? null;
+    if (candidates.length === 0) {
+        return null;
+    }
+
+    return candidates[0].id;
 };
 
 export const resolveWorkflowOutputReference = (
     ref: string,
-    outputs: Map<string, Record<string, unknown>>,
+    outputs: WorkflowOutputs,
     options: WorkflowReferenceResolutionOptions = {}
-): unknown => {
-    const parts = tokenizeReferencePath(ref);
+): WorkflowValue => {
+    const parts = ref
+        .trim()
+        .replace(/\[(\d+)\]/g, '.$1')
+        .split('.')
+        .map((part) => part.trim())
+        .filter(Boolean);
     const requestedNodeId = parts[0];
     const propertyPath = parts.slice(1);
     const nodeId = outputs.has(requestedNodeId)
@@ -109,16 +92,31 @@ export const resolveWorkflowOutputReference = (
         return nodeOutput;
     }
 
-    return getValueAtPath(nodeOutput, propertyPath);
+    let value: WorkflowValue = nodeOutput;
+
+    for (const segment of propertyPath) {
+        if (Array.isArray(value)) {
+            value = value[Number(segment)];
+            continue;
+        }
+
+        if (!isRecord(value)) {
+            return undefined;
+        }
+
+        value = value[segment];
+    }
+
+    return value;
 };
 
 export const resolveWorkflowTemplate = (
     template: string,
-    outputs: Map<string, Record<string, unknown>>,
+    outputs: WorkflowOutputs,
     options: WorkflowReferenceResolutionOptions = {}
 ): string => {
     return template.replace(/\{\{\s*([^}]+)\s*\}\}/g, (_, ref: string) => {
-        const value = resolveWorkflowOutputReference(ref.trim(), outputs, options);
+        const value = resolveWorkflowOutputReference(ref, outputs, options);
         return value !== undefined ? stringifyUnknown(value) : '';
     });
 };

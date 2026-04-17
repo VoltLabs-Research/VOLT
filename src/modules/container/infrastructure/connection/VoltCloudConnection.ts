@@ -1,8 +1,13 @@
+import Bottleneck from 'bottleneck';
+
 import { logger } from '@/core/logger';
-import { OrchestrationAction } from '@/contracts';
-import { ChannelCommands } from '@/contracts';
 import { MetricsService } from '@/core/metrics/application/MetricsService';
 import { RuntimeEventBroker } from '@/core/reverse-channel/application/RuntimeEventBroker';
+import type { TeamClusterDaemonServerEventMessage } from '@/core/reverse-channel/contracts/messages/server-event';
+import type { ExposureSnapshotMessage } from '@/core/reverse-channel/contracts/messages/exposure-snapshot';
+import type { RuntimeProgressMessage } from '@/core/reverse-channel/contracts/messages/runtime-progress';
+import { ChannelCommands } from '@/core/reverse-channel/contracts/reverseChannel.constants';
+import { OrchestrationAction } from '@/core/runtime/contracts/http.runtime';
 import http from 'node:http';
 import https from 'node:https';
 import {
@@ -10,7 +15,6 @@ import {
     DaemonClientError
 } from '@voltstack/daemon-cluster-client';
 import type { DaemonConfig, DaemonRuntimeConfig } from '@/core/config';
-import type { TeamClusterDaemonRuntimeProgressPayload, TeamClusterDaemonServerEventMessage } from '@/contracts';
 import type { RuntimeLifecycleEventType, TeamClusterDaemonMessage } from '@voltstack/daemon-cluster-client';
 import { TeamClusterStatus } from '@/modules/container/contracts/voltCloudTypes';
 
@@ -21,9 +25,12 @@ interface RuntimeLifecycleUpdateRequest {
     installedVersion?: string;
 };
 type OutboundMessage =
-    | Exclude<TeamClusterDaemonMessage, { type: 'command' }>
-    | TeamClusterDaemonRuntimeProgressPayload
+    | CommandlessTeamClusterDaemonMessage
+    | ExposureSnapshotMessage
+    | RuntimeProgressMessage
     | TeamClusterDaemonServerEventMessage;
+
+type CommandlessTeamClusterDaemonMessage = Exclude<TeamClusterDaemonMessage, { type: 'command' }>;
 
 interface BackgroundServerCommandOptions {
     dedupeKey?: string;
@@ -31,15 +38,6 @@ interface BackgroundServerCommandOptions {
 
 interface BufferedEventOptions {
     dedupeKey?: string;
-}
-
-interface QueuedServerCommand {
-    command: string;
-    payload: object;
-    dedupeKey?: string;
-    enqueuedAt: number;
-    resolve: (value: unknown) => void;
-    reject: (error: unknown) => void;
 }
 
 interface QueuedEventMessage {
@@ -54,9 +52,8 @@ export class VoltCloudConnection {
     private lastHeartbeatFailureAt: string | null = null;
     private readonly backgroundCommandConcurrency = 2;
     private readonly backgroundCommandMaxQueueSize = 2048;
-    private readonly backgroundCommandQueue: QueuedServerCommand[] = [];
+    private readonly backgroundCommandLimiter: Bottleneck;
     private readonly backgroundCommandDedupeKeys = new Set<string>();
-    private backgroundCommandsInFlight = 0;
     private readonly bufferedEventMaxQueueSize = 8192;
     private readonly bufferedEventQueue: QueuedEventMessage[] = [];
     private readonly bufferedEventDedupeKeys = new Set<string>();
@@ -76,6 +73,12 @@ export class VoltCloudConnection {
         private readonly eventBroker: RuntimeEventBroker,
         private readonly getRuntimeConfigSnapshot?: () => DaemonRuntimeConfig | null
     ) {
+        const enrollmentEnabled = Boolean(
+            config.healthcheckPath
+            && config.enrollmentToken
+            && !config.daemonPassword.trim()
+        );
+
         this.client = new ClusterDaemonClient({
             serverUrl: config.voltCloudUrl,
             controlSocketUrl: config.controlSocketUrl ?? config.voltCloudUrl,
@@ -86,7 +89,10 @@ export class VoltCloudConnection {
                 installedVersion: config.installedVersion
             },
             enrollment: config.healthcheckPath
-                ? { url: `${config.voltCloudUrl}${config.healthcheckPath}` }
+                ? {
+                    enabled: enrollmentEnabled,
+                    url: `${config.voltCloudUrl}${config.healthcheckPath}`
+                }
                 : { enabled: false, url: '' },
             heartbeat: {
                 interval: config.heartbeatIntervalMs,
@@ -94,7 +100,7 @@ export class VoltCloudConnection {
                     teamClusterId: this.client.getTeamClusterId(),
                     daemonPassword: this.client.getDaemonPassword(),
                     installedVersion: config.installedVersion,
-                    runtime: this.getRuntimeConfigSnapshot?.() ?? undefined,
+                    runtime: this.getRuntimeConfigSnapshot?.(),
                     metrics: await this.metricsService.collectSnapshot({
                         cloudLatencyMs: this.lastCloudLatencyMs,
                         connectedToCloud: this.connectedToCloud
@@ -111,6 +117,16 @@ export class VoltCloudConnection {
             commandTimeout: 30_000
         });
 
+        this.backgroundCommandLimiter = new Bottleneck({
+            maxConcurrent: this.backgroundCommandConcurrency,
+            highWater: this.backgroundCommandMaxQueueSize,
+            strategy: Bottleneck.strategy.OVERFLOW,
+            rejectOnDrop: true
+        });
+        this.backgroundCommandLimiter.on('error', (error) => {
+            logger.warn({ err: error as Error }, 'Background server command limiter error');
+        });
+
         this.client
             .onConnected(() => {
                 this.connectedToCloud = true;
@@ -118,7 +134,23 @@ export class VoltCloudConnection {
                 this.lastHeartbeatFailureAt = null;
                 this.controlPlaneMetricsDirty = true;
                 this.emitLifecycleEvent('cloud-socket-connected', 'Outbound cloud socket connected');
-                this.flushBufferedEventQueue();
+                if (this.client.isReady()) {
+                    while (this.bufferedEventQueue.length > 0) {
+                        const queued = this.bufferedEventQueue[0] as QueuedEventMessage;
+
+                        try {
+                            this.client.emit(queued.message);
+                            this.bufferedEventQueue.shift();
+
+                            if (queued.dedupeKey) {
+                                this.bufferedEventDedupeKeys.delete(queued.dedupeKey);
+                            }
+                        } catch (err) {
+                            logger.warn({ err: err as Error, type: queued.message.type }, 'Failed to flush buffered daemon event');
+                            break;
+                        }
+                    }
+                }
                 logger.info('Connected to VoltCloud');
             })
             .onDisconnected((reason) => {
@@ -142,22 +174,6 @@ export class VoltCloudConnection {
 
                 logger.error({ err }, 'VoltCloudConnection error');
             });
-
-        this.eventBroker.onProgress((event) => {
-            if (event.action !== OrchestrationAction.ContainerCreate) {
-                return;
-            }
-
-            const payload: TeamClusterDaemonRuntimeProgressPayload = {
-                type: 'runtime-progress',
-                action: event.action,
-                stage: event.stage,
-                timestamp: event.timestamp,
-                payload: event.payload
-            };
-
-            this.emitMessage(payload);
-        });
     }
 
     async start(): Promise<void> {
@@ -168,8 +184,19 @@ export class VoltCloudConnection {
     }
 
     stop(): void {
-        this.stopCloudLatencyProbe();
-        this.stopControlPlaneSummaryTimer();
+        if (this.cloudLatencyProbeTimer) {
+            clearInterval(this.cloudLatencyProbeTimer);
+            this.cloudLatencyProbeTimer = null;
+        }
+
+        if (this.controlPlaneSummaryTimer) {
+            clearInterval(this.controlPlaneSummaryTimer);
+            this.controlPlaneSummaryTimer = null;
+        }
+
+        void this.backgroundCommandLimiter.stop({
+            dropWaitingJobs: true
+        }).catch(() => undefined);
         this.client.disconnect();
     }
 
@@ -188,15 +215,13 @@ export class VoltCloudConnection {
     emitMessage(message: OutboundMessage): void {
         try {
             this.client.emit(message);
-        } catch (err: unknown) {
-            logger.warn({ err }, 'Failed to emit message to VoltCloud');
+        } catch (err) {
+            logger.warn({ err: err as Error }, 'Failed to emit message to VoltCloud');
         }
     }
 
     emitBufferedMessage(message: TeamClusterDaemonServerEventMessage, options: BufferedEventOptions = {}): void {
-        const dedupeKey = typeof options.dedupeKey === 'string' && options.dedupeKey.trim().length > 0
-            ? options.dedupeKey.trim()
-            : undefined;
+        const dedupeKey = options.dedupeKey;
 
         if (dedupeKey && this.bufferedEventDedupeKeys.has(dedupeKey)) {
             logger.debug({ type: message.type, dedupeKey }, 'Skipped duplicate buffered daemon event');
@@ -207,8 +232,8 @@ export class VoltCloudConnection {
             try {
                 this.client.emit(message);
                 return;
-            } catch (err: unknown) {
-                logger.warn({ err, type: message.type }, 'Failed to emit daemon event immediately; buffering');
+            } catch (err) {
+                logger.warn({ err: err as Error, type: message.type }, 'Failed to emit daemon event immediately; buffering');
             }
         }
 
@@ -234,57 +259,111 @@ export class VoltCloudConnection {
         });
     }
 
-    async reportDeleteFailed(details: string): Promise<void> {
-        await this.sendLifecycleStatus(TeamClusterStatus.DeleteFailed);
+    async reportDeleteFailed(_details?: string): Promise<void> {
+        const startedAt = Date.now();
+
+        try {
+            await this.client.sendCommand('runtime.lifecycle', {
+                teamClusterId: this.client.getTeamClusterId(),
+                daemonPassword: this.client.getDaemonPassword(),
+                status: TeamClusterStatus.DeleteFailed,
+                installedVersion: this.config.installedVersion
+            } satisfies RuntimeLifecycleUpdateRequest);
+            logger.info({ status: TeamClusterStatus.DeleteFailed, durationMs: Date.now() - startedAt }, 'Reported daemon lifecycle status to VoltCloud');
+        } catch (error) {
+            logger.warn(
+                {
+                    err: error as Error,
+                    status: TeamClusterStatus.DeleteFailed,
+                    durationMs: Date.now() - startedAt
+                },
+                'Failed to send lifecycle status to VoltCloud'
+            );
+        }
     }
 
-    async sendServerCommand<T>(command: string, payload: object): Promise<T | undefined> {
-        return this.client.sendCommand<T>(command, payload);
+    sendServerCommand<TResponse = object>(command: string, payload: object): Promise<TResponse | undefined> {
+        return this.client.sendCommand<TResponse>(command, payload);
     }
 
-    async sendBackgroundServerCommand<T>(
+    sendBackgroundServerCommand(
         command: string,
         payload: object,
         options: BackgroundServerCommandOptions = {}
-    ): Promise<T | undefined> {
-        const dedupeKey = typeof options.dedupeKey === 'string' && options.dedupeKey.trim().length > 0
-            ? options.dedupeKey.trim()
-            : undefined;
+    ): Promise<object | undefined> {
+        const dedupeKey = options.dedupeKey;
 
         if (dedupeKey && this.backgroundCommandDedupeKeys.has(dedupeKey)) {
             logger.debug({ command, dedupeKey }, 'Skipped duplicate background server command');
-            return undefined;
+            return Promise.resolve(undefined);
         }
 
-        if (this.backgroundCommandQueue.length >= this.backgroundCommandMaxQueueSize) {
+        if (this.getBackgroundCommandQueueLength() >= this.backgroundCommandMaxQueueSize) {
             this.backgroundCommandDroppedCount += 1;
             this.controlPlaneMetricsDirty = true;
             logger.warn(
                 {
                     command,
                     dedupeKey,
-                    queueLength: this.backgroundCommandQueue.length
+                    queueLength: this.getBackgroundCommandQueueLength()
                 },
                 'Background server command queue is full; dropping command'
             );
-            return undefined;
+            return Promise.resolve(undefined);
         }
 
-        return new Promise<T | undefined>((resolve, reject) => {
-            if (dedupeKey) {
-                this.backgroundCommandDedupeKeys.add(dedupeKey);
+        const enqueuedAt = Date.now();
+        if (dedupeKey) {
+            this.backgroundCommandDedupeKeys.add(dedupeKey);
+        }
+
+        return this.backgroundCommandLimiter.schedule(async () => {
+            const queueWaitMs = Date.now() - enqueuedAt;
+            if (queueWaitMs >= 5_000) {
+                logger.warn(
+                    {
+                        command,
+                        dedupeKey,
+                        queueWaitMs,
+                        inFlight: this.getBackgroundCommandsInFlight(),
+                        pending: this.getBackgroundCommandQueueLength()
+                    },
+                    'Background server command experienced queue delay'
+                );
             }
 
-            this.backgroundCommandQueue.push({
-                command,
-                payload,
-                dedupeKey,
-                enqueuedAt: Date.now(),
-                resolve: (value) => resolve(value as T | undefined),
-                reject
-            });
+            try {
+                return await this.client.sendCommand<object>(command, payload);
+            } finally {
+                if (dedupeKey) {
+                    this.backgroundCommandDedupeKeys.delete(dedupeKey);
+                }
 
-            this.flushBackgroundCommandQueue();
+                this.backgroundCommandProcessedCount += 1;
+                this.backgroundCommandTotalQueueWaitMs += queueWaitMs;
+                this.backgroundCommandMaxQueueWaitMs = Math.max(this.backgroundCommandMaxQueueWaitMs, queueWaitMs);
+                this.controlPlaneMetricsDirty = true;
+            }
+        }).catch((error) => {
+            if (dedupeKey) {
+                this.backgroundCommandDedupeKeys.delete(dedupeKey);
+            }
+
+            if (this.isBackgroundCommandDropError(error)) {
+                this.backgroundCommandDroppedCount += 1;
+                this.controlPlaneMetricsDirty = true;
+                logger.warn(
+                    {
+                        command,
+                        dedupeKey,
+                        queueLength: this.getBackgroundCommandQueueLength()
+                    },
+                    'Background server command queue is full; dropping command'
+                );
+                return undefined;
+            }
+
+            throw error;
         });
     }
 
@@ -310,89 +389,18 @@ export class VoltCloudConnection {
         });
     }
 
-    private async sendLifecycleStatus(status: TeamClusterStatus): Promise<void> {
-        const startedAt = Date.now();
-
-        try {
-            const requestBody: RuntimeLifecycleUpdateRequest = {
-                teamClusterId: this.client.getTeamClusterId(),
-                daemonPassword: this.client.getDaemonPassword(),
-                status,
-                installedVersion: this.config.installedVersion
-            };
-
-            await this.sendServerCommand('runtime.lifecycle', requestBody);
-            logger.info({ status, durationMs: Date.now() - startedAt }, 'Reported daemon lifecycle status to VoltCloud');
-        } catch (error: unknown) {
-            logger.warn({ err: error, status, durationMs: Date.now() - startedAt }, 'Failed to send lifecycle status to VoltCloud');
-        }
+    private getBackgroundCommandQueueLength(): number {
+        return this.backgroundCommandLimiter.counts().QUEUED;
     }
 
-    private flushBackgroundCommandQueue(): void {
-        while (
-            this.backgroundCommandsInFlight < this.backgroundCommandConcurrency
-            && this.backgroundCommandQueue.length > 0
-        ) {
-            const queued = this.backgroundCommandQueue.shift() as QueuedServerCommand;
-            this.backgroundCommandsInFlight += 1;
-
-            this.sendServerCommand(queued.command, queued.payload)
-                .then((result) => {
-                    queued.resolve(result);
-                })
-                .catch((error) => {
-                    queued.reject(error);
-                })
-                .finally(() => {
-                    this.backgroundCommandsInFlight = Math.max(0, this.backgroundCommandsInFlight - 1);
-
-                    if (queued.dedupeKey) {
-                        this.backgroundCommandDedupeKeys.delete(queued.dedupeKey);
-                    }
-
-                    const queueWaitMs = Date.now() - queued.enqueuedAt;
-                    this.backgroundCommandProcessedCount += 1;
-                    this.backgroundCommandTotalQueueWaitMs += queueWaitMs;
-                    this.backgroundCommandMaxQueueWaitMs = Math.max(this.backgroundCommandMaxQueueWaitMs, queueWaitMs);
-                    this.controlPlaneMetricsDirty = true;
-                    if (queueWaitMs >= 5_000) {
-                        logger.warn(
-                            {
-                                command: queued.command,
-                                dedupeKey: queued.dedupeKey,
-                                queueWaitMs,
-                                inFlight: this.backgroundCommandsInFlight,
-                                pending: this.backgroundCommandQueue.length
-                            },
-                            'Background server command experienced queue delay'
-                        );
-                    }
-
-                    this.flushBackgroundCommandQueue();
-                });
-        }
+    private getBackgroundCommandsInFlight(): number {
+        const counts = this.backgroundCommandLimiter.counts();
+        return counts.RUNNING + counts.EXECUTING;
     }
 
-    private flushBufferedEventQueue(): void {
-        if (!this.connectedToCloud || !this.client.isReady()) {
-            return;
-        }
-
-        while (this.bufferedEventQueue.length > 0) {
-            const queued = this.bufferedEventQueue[0] as QueuedEventMessage;
-
-            try {
-                this.client.emit(queued.message);
-                this.bufferedEventQueue.shift();
-
-                if (queued.dedupeKey) {
-                    this.bufferedEventDedupeKeys.delete(queued.dedupeKey);
-                }
-            } catch (err: unknown) {
-                logger.warn({ err, type: queued.message.type }, 'Failed to flush buffered daemon event');
-                break;
-            }
-        }
+    private isBackgroundCommandDropError(error: unknown): boolean {
+        return error instanceof Error
+            && error.message.toLowerCase().includes('drop');
     }
 
     private startCloudLatencyProbe(): void {
@@ -406,18 +414,7 @@ export class VoltCloudConnection {
 
         runProbe();
         this.cloudLatencyProbeTimer = setInterval(runProbe, this.config.metricsIntervalMs);
-        if (typeof this.cloudLatencyProbeTimer.unref === 'function') {
-            this.cloudLatencyProbeTimer.unref();
-        }
-    }
-
-    private stopCloudLatencyProbe(): void {
-        if (!this.cloudLatencyProbeTimer) {
-            return;
-        }
-
-        clearInterval(this.cloudLatencyProbeTimer);
-        this.cloudLatencyProbeTimer = null;
+        this.cloudLatencyProbeTimer.unref();
     }
 
     private async probeCloudLatency(): Promise<void> {
@@ -433,7 +430,7 @@ export class VoltCloudConnection {
                 protocol: targetUrl.protocol,
                 hostname: targetUrl.hostname,
                 port: targetUrl.port ? Number(targetUrl.port) : undefined,
-                path: `${targetUrl.pathname || '/'}${targetUrl.search || ''}`,
+                path: `${targetUrl.pathname}${targetUrl.search}`,
                 timeout: 5_000
             }, (response) => {
                 response.resume();
@@ -465,45 +462,30 @@ export class VoltCloudConnection {
         }
 
         this.controlPlaneSummaryTimer = setInterval(() => {
-            this.flushControlPlaneSummary();
+            if (!this.controlPlaneMetricsDirty) {
+                return;
+            }
+
+            logger.info({
+                action: 'reverse-channel.control-plane.summary',
+                connectedToCloud: this.connectedToCloud,
+                lastCloudLatencyMs: this.lastCloudLatencyMs,
+                backgroundCommandQueueLength: this.getBackgroundCommandQueueLength(),
+                backgroundCommandsInFlight: this.getBackgroundCommandsInFlight(),
+                backgroundCommandProcessedCount: this.backgroundCommandProcessedCount,
+                backgroundCommandDroppedCount: this.backgroundCommandDroppedCount,
+                avgBackgroundCommandQueueWaitMs: this.backgroundCommandProcessedCount > 0
+                    ? Math.round((this.backgroundCommandTotalQueueWaitMs / this.backgroundCommandProcessedCount) * 100) / 100
+                    : 0,
+                maxBackgroundCommandQueueWaitMs: this.backgroundCommandMaxQueueWaitMs,
+                bufferedEventQueueLength: this.bufferedEventQueue.length,
+                heartbeatFailureCount: this.heartbeatFailureCount,
+                lastHeartbeatFailureAt: this.lastHeartbeatFailureAt
+            }, 'Reverse-channel control-plane summary');
+
+            this.controlPlaneMetricsDirty = false;
         }, 60_000);
 
-        if (typeof this.controlPlaneSummaryTimer.unref === 'function') {
-            this.controlPlaneSummaryTimer.unref();
-        }
-    }
-
-    private stopControlPlaneSummaryTimer(): void {
-        if (!this.controlPlaneSummaryTimer) {
-            return;
-        }
-
-        clearInterval(this.controlPlaneSummaryTimer);
-        this.controlPlaneSummaryTimer = null;
-    }
-
-    private flushControlPlaneSummary(): void {
-        if (!this.controlPlaneMetricsDirty) {
-            return;
-        }
-
-        logger.info({
-            action: 'reverse-channel.control-plane.summary',
-            connectedToCloud: this.connectedToCloud,
-            lastCloudLatencyMs: this.lastCloudLatencyMs,
-            backgroundCommandQueueLength: this.backgroundCommandQueue.length,
-            backgroundCommandsInFlight: this.backgroundCommandsInFlight,
-            backgroundCommandProcessedCount: this.backgroundCommandProcessedCount,
-            backgroundCommandDroppedCount: this.backgroundCommandDroppedCount,
-            avgBackgroundCommandQueueWaitMs: this.backgroundCommandProcessedCount > 0
-                ? Math.round((this.backgroundCommandTotalQueueWaitMs / this.backgroundCommandProcessedCount) * 100) / 100
-                : 0,
-            maxBackgroundCommandQueueWaitMs: this.backgroundCommandMaxQueueWaitMs,
-            bufferedEventQueueLength: this.bufferedEventQueue.length,
-            heartbeatFailureCount: this.heartbeatFailureCount,
-            lastHeartbeatFailureAt: this.lastHeartbeatFailureAt
-        }, 'Reverse-channel control-plane summary');
-
-        this.controlPlaneMetricsDirty = false;
+        this.controlPlaneSummaryTimer.unref();
     }
 };

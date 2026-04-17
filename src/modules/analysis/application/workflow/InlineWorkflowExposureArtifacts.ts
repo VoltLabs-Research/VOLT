@@ -1,7 +1,7 @@
 import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
-import fs from 'node:fs/promises';
 import type { WorkflowDefinition, WorkflowExposureData } from '@/contracts';
 import type { InlineExposureArtifact } from '@/modules/analysis/application/workflow/InlineWorkflowShared';
+import fs from 'node:fs/promises';
 
 export const collectInlineExposureArtifacts = async (
     workflow: WorkflowDefinition,
@@ -14,8 +14,8 @@ export const collectInlineExposureArtifacts = async (
             continue;
         }
 
-        const exposureData = node.data.exposure;
-        const results = exposureData?.results || '';
+        const exposureData = node.data.exposure as WorkflowExposureData;
+        const results = exposureData.results;
         if (!results) {
             continue;
         }
@@ -26,7 +26,7 @@ export const collectInlineExposureArtifacts = async (
             await fs.access(filePath);
             artifacts.push({
                 exposureId: node.id,
-                name: exposureData?.name || node.id,
+                name: exposureData.name || node.id,
                 results,
                 filePath
             });

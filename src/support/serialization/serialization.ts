@@ -1,22 +1,13 @@
-import { isRecord } from '@/support/type-guards/isRecord';
+import { z } from 'zod';
 
-interface HexStringSerializable {
-    toHexString(): string;
+interface SerializableObject {
+    [key: string]: SerializableValue | undefined;
 }
 
-interface StringSerializable {
-    toString(): string;
-}
+type SerializableValue = bigint | boolean | Date | Function | null | number | SerializableObject | SerializableValue[] | string | symbol | undefined;
 
 const CLI_ARGUMENTS_TOKEN_PREFIX = '__volt_cli_args__:';
-
-const hasToHexString = (value: unknown): value is HexStringSerializable => {
-    return isRecord(value) && typeof value.toHexString === 'function';
-};
-
-const hasToString = (value: unknown): value is StringSerializable => {
-    return isRecord(value) && typeof value.toString === 'function';
-};
+const CLI_ARGUMENTS_TOKEN_SCHEMA = z.string().array();
 
 export const encodeCliArgumentsToken = (argumentsArray: string[]): string => {
     const payload = JSON.stringify(argumentsArray);
@@ -37,26 +28,19 @@ export const decodeCliArgumentsToken = (value: string): string[] | null => {
 
     try {
         const payload = Buffer.from(encodedPayload, 'base64url').toString('utf8');
-        const parsedPayload = JSON.parse(payload);
-        const argumentsArray = Array.isArray(parsedPayload)
-            ? parsedPayload.filter((entry): entry is string => typeof entry === 'string')
-            : [];
-
-        return argumentsArray.length === parsedPayload.length
-            ? argumentsArray
-            : null;
+        return CLI_ARGUMENTS_TOKEN_SCHEMA.parse(JSON.parse(payload));
     } catch {
         return null;
     }
 };
 
-export const stringifyUnknown = (value: unknown): string => {
+export const stringifyUnknown = (value: SerializableValue): string => {
     if (typeof value === 'string') {
         return value;
     }
 
     if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
-        return String(value);
+        return `${value}`;
     }
 
     if (value instanceof Date) {
@@ -67,26 +51,22 @@ export const stringifyUnknown = (value: unknown): string => {
         return 'null';
     }
 
-    if (Array.isArray(value) || isRecord(value)) {
-        try {
-            return JSON.stringify(value);
-        } catch {
-            return '';
-        }
-    }
-
-    if (hasToHexString(value)) {
-        return value.toHexString();
-    }
-
-    if (hasToString(value)) {
-        const serializedValue = value.toString();
-        return serializedValue === '[object Object]' ? '' : serializedValue;
-    }
-
     if (typeof value === 'undefined') {
         return '';
     }
 
-    return String(value);
+    if (typeof value === 'symbol' || typeof value === 'function') {
+        return value.toString();
+    }
+
+    try {
+        const serializedValue = JSON.stringify(value);
+        if (serializedValue === undefined) {
+            return '';
+        }
+
+        return serializedValue;
+    } catch {
+        return '';
+    }
 };

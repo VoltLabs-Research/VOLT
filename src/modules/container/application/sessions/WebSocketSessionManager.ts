@@ -2,6 +2,10 @@ import { BASE64_SESSION_CHUNK_PATTERN, SESSION_ATTACH_TIMEOUT_MS, WEBSOCKET_BUFF
 import { WebSocket } from 'ws';
 import type { TeamClusterDaemonSessionAttachPayload, TeamClusterDaemonSessionDataPayload, TeamClusterDaemonSessionEndPayload, TeamClusterDaemonSessionInputPayload } from '@/contracts';
 import type { CommandResult } from '@voltstack/daemon-cluster-client';
+import { assign, createActor, createMachine, type ActorRefFrom } from 'xstate';
+
+type WebSocketMessageData = string | ArrayBuffer | Blob | ArrayBufferView | Buffer[];
+type PendingWebSocketMessage = Buffer | string;
 
 interface WebSocketMessageResult {
     data: Buffer;
@@ -9,7 +13,7 @@ interface WebSocketMessageResult {
 };
 
 interface ReverseChannelMessageEvent {
-    data: unknown;
+    data: WebSocketMessageData;
 };
 
 interface ReverseChannelCloseEvent {
@@ -17,17 +21,75 @@ interface ReverseChannelCloseEvent {
     reason: string;
 };
 
-interface WebSocketSessionAttachResult {
-    attached: true;
-};
+const webSocketSessionMachine = createMachine({
+    types: {} as {
+        context: {
+            pendingMessageBytes: number;
+            transitionId: number;
+        };
+        events:
+            | { type: 'OPENED' }
+            | { type: 'FAILED' }
+            | { type: 'CLOSED' }
+            | { type: 'ENQUEUE_PENDING'; size: number }
+            | { type: 'DEQUEUE_PENDING'; size: number };
+        input: {
+            transitionId: number;
+        };
+    },
+    id: 'reverse-channel-websocket-session',
+    initial: 'connecting',
+    context: ({ input }) => ({
+        pendingMessageBytes: 0,
+        transitionId: input.transitionId
+    }),
+    states: {
+        connecting: {
+            on: {
+                OPENED: 'open',
+                FAILED: 'closed',
+                CLOSED: 'closed',
+                ENQUEUE_PENDING: {
+                    actions: assign({
+                        pendingMessageBytes: ({ context, event }) => context.pendingMessageBytes + event.size
+                    })
+                },
+                DEQUEUE_PENDING: {
+                    actions: assign({
+                        pendingMessageBytes: ({ context, event }) => Math.max(0, context.pendingMessageBytes - event.size)
+                    })
+                }
+            }
+        },
+        open: {
+            on: {
+                FAILED: 'closed',
+                CLOSED: 'closed',
+                ENQUEUE_PENDING: {
+                    actions: assign({
+                        pendingMessageBytes: ({ context, event }) => context.pendingMessageBytes + event.size
+                    })
+                },
+                DEQUEUE_PENDING: {
+                    actions: assign({
+                        pendingMessageBytes: ({ context, event }) => Math.max(0, context.pendingMessageBytes - event.size)
+                    })
+                }
+            }
+        },
+        closed: {
+            type: 'final'
+        }
+    }
+});
+
+type WebSocketSessionActor = ActorRefFrom<typeof webSocketSessionMachine>;
 
 interface ReverseChannelWebSocketState {
-    transitionId: number;
+    actor: WebSocketSessionActor;
     socket: WebSocket;
-    isOpen: boolean;
     openTimeout: ReturnType<typeof setTimeout> | null;
-    pendingMessages: Array<Buffer | string>;
-    pendingMessageBytes: number;
+    pendingMessages: PendingWebSocketMessage[];
     onOpen: () => void;
     onMessage: (event: ReverseChannelMessageEvent) => void;
     onError: () => void;
@@ -54,7 +116,7 @@ interface WebSocketSessionManagerCoordinator {
 };
 
 export class WebSocketSessionManager {
-    private readonly webSocketStates = new Map<string, ReverseChannelWebSocketState>();
+    readonly webSocketStates = new Map<string, ReverseChannelWebSocketState>();
 
     constructor(private readonly options: WebSocketSessionManagerOptions) {}
 
@@ -92,7 +154,13 @@ export class WebSocketSessionManager {
             const webSocket = payload.protocols && payload.protocols.length > 0
                 ? new WebSocket(payload.targetUrl, payload.protocols)
                 : new WebSocket(payload.targetUrl);
-            const pendingMessages: Array<Buffer | string> = [];
+            const pendingMessages: PendingWebSocketMessage[] = [];
+            const sessionActor = createActor(webSocketSessionMachine, {
+                input: {
+                    transitionId: sessionTransition.transitionId
+                }
+            });
+            sessionActor.start();
 
             return await new Promise<CommandResult>((resolve) => {
                 let openTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -107,13 +175,13 @@ export class WebSocketSessionManager {
                     resolve(this.createSessionAttachFailureResult(status, message));
                 };
 
-                const resolveAttachSuccess = (): void => {
-                    if (attachSettled) {
+                const clearOpenTimeout = (): void => {
+                    if (!openTimeout) {
                         return;
                     }
 
-                    attachSettled = true;
-                    resolve(this.createSessionAttachSuccessResult());
+                    clearTimeout(openTimeout);
+                    openTimeout = null;
                 };
 
                 openTimeout = setTimeout(() => {
@@ -126,64 +194,70 @@ export class WebSocketSessionManager {
                     resolveAttachFailure(504, 'Reverse channel websocket attach timed out');
                 }, SESSION_ATTACH_TIMEOUT_MS);
 
-                if (openTimeout.unref) {
-                    openTimeout.unref();
-                }
+                openTimeout.unref();
 
                 this.options.coordinator.cleanupInteractiveSession(payload.sessionId);
-
-                const flushPendingMessages = (): void => {
-                    const webSocketState = this.webSocketStates.get(payload.sessionId);
-                    if (!webSocketState) {
-                        return;
-                    }
-
-                    while (webSocketState.pendingMessages.length > 0 && webSocket.readyState === WebSocket.OPEN) {
-                        const nextMessage = webSocketState.pendingMessages.shift();
-
-                        if (typeof nextMessage === 'undefined') {
-                            return;
-                        }
-
-                        const messageBytes = this.getWebSocketMessageSize(nextMessage);
-                        const canSendMessage = this.ensureWebSocketWithinBufferCap(
-                            payload.sessionId,
-                            webSocket,
-                            messageBytes
-                        );
-
-                        if (!canSendMessage) {
-                            return;
-                        }
-
-                        webSocketState.pendingMessageBytes -= messageBytes;
-                        webSocket.send(nextMessage);
-                    }
-                };
 
                 const onOpen = () => {
                     const webSocketState = this.webSocketStates.get(payload.sessionId);
                     if (webSocketState) {
-                        webSocketState.isOpen = true;
                         webSocketState.openTimeout = null;
+                        webSocketState.actor.send({ type: 'OPENED' });
                     }
 
-                    if (openTimeout) {
-                        clearTimeout(openTimeout);
-                        openTimeout = null;
-                    }
+                    clearOpenTimeout();
                     this.options.coordinator.endSessionTransition(sessionTransition);
                     this.options.coordinator.touchSession(payload.sessionId);
-                    flushPendingMessages();
-                    resolveAttachSuccess();
+
+                    if (webSocketState) {
+                        while (webSocketState.pendingMessages.length > 0 && webSocket.readyState === WebSocket.OPEN) {
+                            const nextMessage = webSocketState.pendingMessages.shift();
+
+                            if (nextMessage === undefined) {
+                                return;
+                            }
+
+                            const messageBytes = this.getWebSocketMessageSize(nextMessage);
+                            if (!this.ensureWebSocketWithinBufferCap(payload.sessionId, webSocket, messageBytes)) {
+                                return;
+                            }
+
+                            webSocketState.actor.send({
+                                type: 'DEQUEUE_PENDING',
+                                size: messageBytes
+                            });
+                            webSocket.send(nextMessage);
+                        }
+                    }
+
+                    if (attachSettled) {
+                        return;
+                    }
+
+                    attachSettled = true;
+                    resolve({
+                        status: 200,
+                        data: {
+                            status: 'success',
+                            data: { attached: true }
+                        }
+                    });
                 };
 
                 const onMessage = (event: ReverseChannelMessageEvent) => {
-                    this.handleWebSocketMessage(payload.sessionId, event).catch((error: unknown) => {
+                    this.options.coordinator.touchSession(payload.sessionId);
+                    this.readWebSocketMessage(event.data).then((message) => {
+                        this.options.coordinator.emitSessionData({
+                            type: 'session-data',
+                            sessionId: payload.sessionId,
+                            chunkBase64: message.data.toString('base64'),
+                            isBinary: message.isBinary
+                        });
+                    }).catch((error: Error) => {
                         this.options.coordinator.emitSessionEnd({
                             type: 'session-end',
                             sessionId: payload.sessionId,
-                            error: error instanceof Error ? error.message : 'Failed to proxy websocket message'
+                            error: error.message
                         });
                         this.cleanupSession(payload.sessionId);
                     });
@@ -191,15 +265,13 @@ export class WebSocketSessionManager {
 
                 const onError = () => {
                     const webSocketState = this.webSocketStates.get(payload.sessionId);
-                    const isOpen = webSocketState?.isOpen === true;
+                    const isOpen = webSocketState ? this.isSessionOpen(webSocketState) : false;
                     if (webSocketState) {
                         webSocketState.openTimeout = null;
+                        webSocketState.actor.send({ type: 'FAILED' });
                     }
 
-                    if (openTimeout) {
-                        clearTimeout(openTimeout);
-                        openTimeout = null;
-                    }
+                    clearOpenTimeout();
                     this.options.coordinator.endSessionTransition(sessionTransition);
                     this.options.coordinator.emitSessionEnd({
                         type: 'session-end',
@@ -215,26 +287,29 @@ export class WebSocketSessionManager {
 
                 const onClose = (event: ReverseChannelCloseEvent) => {
                     const webSocketState = this.webSocketStates.get(payload.sessionId);
-                    const isOpen = webSocketState?.isOpen === true;
+                    const isOpen = webSocketState ? this.isSessionOpen(webSocketState) : false;
                     if (webSocketState) {
                         webSocketState.openTimeout = null;
+                        webSocketState.actor.send({ type: 'CLOSED' });
                     }
 
-                    if (openTimeout) {
-                        clearTimeout(openTimeout);
-                        openTimeout = null;
-                    }
+                    clearOpenTimeout();
                     this.options.coordinator.endSessionTransition(sessionTransition);
                     this.options.coordinator.emitSessionEnd({
                         type: 'session-end',
                         sessionId: payload.sessionId,
                         code: event.code,
-                        message: event.reason || undefined
+                        message: event.reason === '' ? undefined : event.reason
                     });
                     this.cleanupSession(payload.sessionId);
 
                     if (!isOpen) {
-                        resolveAttachFailure(502, event.reason || 'Reverse channel websocket closed before opening');
+                        resolveAttachFailure(
+                            502,
+                            event.reason === ''
+                                ? 'Reverse channel websocket closed before opening'
+                                : event.reason
+                        );
                     }
                 };
 
@@ -245,12 +320,10 @@ export class WebSocketSessionManager {
                 webSocket.addEventListener('close', onClose);
 
                 this.webSocketStates.set(payload.sessionId, {
-                    transitionId: sessionTransition.transitionId,
+                    actor: sessionActor,
                     socket: webSocket,
-                    isOpen: false,
                     openTimeout,
                     pendingMessages,
-                    pendingMessageBytes: 0,
                     onOpen,
                     onMessage,
                     onError,
@@ -258,9 +331,9 @@ export class WebSocketSessionManager {
                 });
                 this.options.coordinator.touchSession(payload.sessionId);
             });
-        } catch (error: unknown) {
+        } catch (error) {
             this.options.coordinator.endSessionTransition(sessionTransition);
-            const message = error instanceof Error ? error.message : 'Failed to attach websocket';
+            const message = (error as Error).message;
             this.options.coordinator.emitSessionEnd({
                 type: 'session-end',
                 sessionId: payload.sessionId,
@@ -324,15 +397,14 @@ export class WebSocketSessionManager {
             return;
         }
 
-        if (!webSocketState.isOpen) {
+        if (!this.isSessionOpen(webSocketState)) {
             this.options.coordinator.endSessionTransition({
                 sessionId,
-                transitionId: webSocketState.transitionId
+                transitionId: webSocketState.actor.getSnapshot().context.transitionId
             });
         }
 
         webSocketState.pendingMessages.length = 0;
-        webSocketState.pendingMessageBytes = 0;
         if (webSocketState.openTimeout) {
             clearTimeout(webSocketState.openTimeout);
         }
@@ -348,16 +420,10 @@ export class WebSocketSessionManager {
             webSocketState.socket.close();
         }
 
+        webSocketState.actor.send({ type: 'CLOSED' });
+        webSocketState.actor.stop();
         this.webSocketStates.delete(sessionId);
         this.options.coordinator.clearSessionActivityIfUntracked(sessionId);
-    }
-
-    private createSessionAttachSuccessResult(): CommandResult {
-        const data: WebSocketSessionAttachResult = {
-            attached: true
-        };
-
-        return { status: 200, data: { status: 'success', data } };
     }
 
     private createSessionAttachFailureResult(status: number, message: string): CommandResult {
@@ -370,20 +436,13 @@ export class WebSocketSessionManager {
         };
     }
 
-    private async handleWebSocketMessage(sessionId: string, event: ReverseChannelMessageEvent): Promise<void> {
-        this.options.coordinator.touchSession(sessionId);
-        const message = await this.readWebSocketMessage(event.data);
-        this.options.coordinator.emitSessionData({
-            type: 'session-data',
-            sessionId,
-            chunkBase64: message.data.toString('base64'),
-            isBinary: message.isBinary
-        });
-    }
-
-    private async readWebSocketMessage(data: unknown): Promise<WebSocketMessageResult> {
+    private async readWebSocketMessage(data: WebSocketMessageData): Promise<WebSocketMessageResult> {
         if (typeof data === 'string') {
             return { data: Buffer.from(data, 'utf8'), isBinary: false };
+        }
+
+        if (Array.isArray(data)) {
+            return { data: Buffer.concat(data), isBinary: true };
         }
 
         if (data instanceof ArrayBuffer) {
@@ -404,7 +463,7 @@ export class WebSocketSessionManager {
         throw new Error('Unsupported websocket message payload');
     }
 
-    private getWebSocketMessageSize(message: Buffer | string): number {
+    private getWebSocketMessageSize(message: PendingWebSocketMessage): number {
         if (typeof message === 'string') {
             return Buffer.byteLength(message, 'utf8');
         }
@@ -412,14 +471,14 @@ export class WebSocketSessionManager {
         return message.byteLength;
     }
 
-    private enqueuePendingWebSocketMessage(sessionId: string, message: Buffer | string): void {
+    private enqueuePendingWebSocketMessage(sessionId: string, message: PendingWebSocketMessage): void {
         const webSocketState = this.webSocketStates.get(sessionId);
         if (!webSocketState) {
             return;
         }
 
         const messageBytes = this.getWebSocketMessageSize(message);
-        const nextPendingMessageBytes = webSocketState.pendingMessageBytes + messageBytes;
+        const nextPendingMessageBytes = webSocketState.actor.getSnapshot().context.pendingMessageBytes + messageBytes;
 
         if (nextPendingMessageBytes > WEBSOCKET_PENDING_MESSAGE_BYTES_CAP) {
             this.endSessionWithError(
@@ -430,7 +489,10 @@ export class WebSocketSessionManager {
         }
 
         webSocketState.pendingMessages.push(message);
-        webSocketState.pendingMessageBytes = nextPendingMessageBytes;
+        webSocketState.actor.send({
+            type: 'ENQUEUE_PENDING',
+            size: messageBytes
+        });
     }
 
     private ensureWebSocketWithinBufferCap(sessionId: string, socket: WebSocket, messageBytes: number): boolean {
@@ -461,5 +523,9 @@ export class WebSocketSessionManager {
             error
         });
         this.cleanupSession(sessionId);
+    }
+
+    private isSessionOpen(webSocketState: ReverseChannelWebSocketState): boolean {
+        return webSocketState.actor.getSnapshot().matches('open');
     }
 }

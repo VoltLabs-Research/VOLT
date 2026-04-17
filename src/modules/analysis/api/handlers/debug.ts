@@ -1,6 +1,6 @@
-import type { DebugSessionManager } from '@/modules/analysis/application/workflow/debug/DebugSessionManager';
 import type { NestedPluginDefinition, TrajectoryFrame, WorkflowDefinition } from '@/contracts';
 import type { ReverseChannelCommandHandler } from '@/core/reverse-channel/contracts/commandHandler';
+import type { DebugSessionManager } from '@/modules/analysis/application/workflow/debug/DebugSessionManager';
 
 interface DebugHandlersDependencies {
     debugSessionManager: DebugSessionManager;
@@ -22,7 +22,7 @@ export const createDebugHandlers = (deps: DebugHandlersDependencies): ReverseCha
     {
         command: 'debug.start',
         execute: async (payload) => {
-            const request = payload as unknown as DebugStartPayload;
+            const request = payload as DebugStartPayload;
 
             const sessionInfo = deps.debugSessionManager.createSession({
                 workflow: request.workflow,
@@ -35,8 +35,6 @@ export const createDebugHandlers = (deps: DebugHandlersDependencies): ReverseCha
                 storageClusterId: request.storageClusterId,
                 timestep: request.timestep
             });
-
-            // Get the first node info so the server can emit node:started immediately
             const firstNode = deps.debugSessionManager.getCurrentNodeInfo(sessionInfo.sessionId);
 
             return {
@@ -50,8 +48,7 @@ export const createDebugHandlers = (deps: DebugHandlersDependencies): ReverseCha
     {
         command: 'debug.step',
         execute: async (payload) => {
-            const { sessionId } = payload as unknown as { sessionId: string };
-
+            const { sessionId } = payload as { sessionId: string };
             const result = await deps.debugSessionManager.executeCurrentNode(sessionId);
             const nextNode = deps.debugSessionManager.getCurrentNodeInfo(sessionId);
             const hasMore = deps.debugSessionManager.hasMoreNodes(sessionId);
@@ -68,8 +65,7 @@ export const createDebugHandlers = (deps: DebugHandlersDependencies): ReverseCha
     {
         command: 'debug.continue',
         execute: async (payload) => {
-            const { sessionId } = payload as unknown as { sessionId: string };
-
+            const { sessionId } = payload as { sessionId: string };
             const results = await deps.debugSessionManager.executeAllRemaining(sessionId);
 
             return {
@@ -82,8 +78,7 @@ export const createDebugHandlers = (deps: DebugHandlersDependencies): ReverseCha
     {
         command: 'debug.stop',
         execute: async (payload) => {
-            const { sessionId } = payload as unknown as { sessionId: string };
-
+            const { sessionId } = payload as { sessionId: string };
             deps.debugSessionManager.destroySession(sessionId);
 
             return {

@@ -1,6 +1,8 @@
-import { isRecord } from '@/support/type-guards/isRecord';
-import Redis from 'ioredis';
+import { z } from 'zod';
 import type { DaemonConfig } from '@/core/config';
+import Redis from 'ioredis';
+
+type TeamJobRecord = z.infer<typeof teamJobRecordSchema>;
 
 interface RedisConnectionOptions {
     host: string;
@@ -9,15 +11,14 @@ interface RedisConnectionOptions {
     password?: string;
 };
 
-interface TeamJobRecord {
-    jobId: string;
-    teamId: string;
-    queueType: string;
-    status: string;
-    timestamp?: string;
-    updatedAt?: string;
-    [key: string]: unknown;
-};
+const teamJobRecordSchema = z.object({
+    jobId: z.string(),
+    teamId: z.string(),
+    queueType: z.string(),
+    status: z.string(),
+    timestamp: z.string().optional(),
+    updatedAt: z.string().optional()
+});
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const STATUS_TTL_SECONDS = 86_400;
@@ -64,45 +65,6 @@ end
 return removed
 `;
 
-const countDeletedJobStatusKeys = (
-    responses: Array<[Error | null, unknown]> | null,
-    deleteCommandCount: number
-): number => {
-    if (!responses) {
-        return 0;
-    }
-
-    let deletedKeys = 0;
-
-    for (const [index, [error, result]] of responses.entries()) {
-        if (error) {
-            throw error;
-        }
-
-        if (index < deleteCommandCount && typeof result === 'number') {
-            deletedKeys += result;
-        }
-    }
-
-    return deletedKeys;
-};
-
-const getDistinctJobIds = (jobIds: string[]): string[] => {
-    return Array.from(new Set(jobIds));
-};
-
-
-const isTeamJobRecord = (value: unknown): value is TeamJobRecord => {
-    if (!isRecord(value)) {
-        return false;
-    }
-
-    return typeof value.jobId === 'string'
-        && typeof value.teamId === 'string'
-        && typeof value.queueType === 'string'
-        && typeof value.status === 'string';
-};
-
 export class RedisConnectionService {
     private readonly client: Redis;
     private readonly connectionOptions: RedisConnectionOptions;
@@ -117,15 +79,13 @@ export class RedisConnectionService {
             password: config.redis.password
         };
         this.client = new Redis({
-            ...this.connectionOptions,
+            ...this.getConnectionOptions(),
             maxRetriesPerRequest: null,
             lazyConnect: true
         });
     }
 
-    getConnectionOptions(): RedisConnectionOptions {
-        return this.connectionOptions;
-    }
+    readonly getConnectionOptions = (): RedisConnectionOptions => this.connectionOptions;
 
     async connect(): Promise<void> {
         if (this.client.status === 'ready') {
@@ -135,57 +95,23 @@ export class RedisConnectionService {
         await this.client.connect();
     }
 
-    async disconnect(): Promise<void> {
+    readonly disconnect = async (): Promise<void> => {
         if (this.client.status === 'end') {
             return;
         }
 
         await this.client.quit();
-    }
+    };
 
-    async setKeyIfAbsent(key: string, value: string, ttlSeconds?: number): Promise<boolean> {
+    readonly setKeyIfAbsent = async (key: string, value: string, ttlSeconds?: number): Promise<boolean> => {
         await this.connect();
 
-        const result = typeof ttlSeconds === 'number'
-            ? await this.client.set(key, value, 'EX', ttlSeconds, 'NX')
-            : await this.client.set(key, value, 'NX');
+        const result = ttlSeconds === undefined
+            ? await this.client.set(key, value, 'NX')
+            : await this.client.set(key, value, 'EX', ttlSeconds, 'NX');
 
         return result === 'OK';
-    }
-
-    async setExpiringKeyIfAbsent(key: string, value: string, ttlMs: number): Promise<boolean> {
-        await this.connect();
-
-        const result = await this.client.set(key, value, 'PX', ttlMs, 'NX');
-        return result === 'OK';
-    }
-
-    async renewExpiringKeyIfValueMatches(key: string, expectedValue: string, ttlMs: number): Promise<boolean> {
-        await this.connect();
-
-        const result = await this.client.eval(
-            RENEW_EXPIRING_KEY_SCRIPT,
-            1,
-            key,
-            expectedValue,
-            String(ttlMs)
-        );
-
-        return result === 1;
-    }
-
-    async deleteKeyIfValueMatches(key: string, expectedValue: string): Promise<boolean> {
-        await this.connect();
-
-        const result = await this.client.eval(
-            DELETE_KEY_IF_VALUE_MATCHES_SCRIPT,
-            1,
-            key,
-            expectedValue
-        );
-
-        return result === 1;
-    }
+    };
 
     async tryAcquireExpiringSlot(key: string, token: string, limit: number, ttlMs: number): Promise<boolean> {
         await this.connect();
@@ -196,11 +122,11 @@ export class RedisConnectionService {
             ACQUIRE_EXPIRING_SLOT_SCRIPT,
             1,
             key,
-            String(now),
-            String(expiresAt),
-            String(limit),
+            now.toString(),
+            expiresAt.toString(),
+            limit.toString(),
             token,
-            String(ttlMs)
+            ttlMs.toString()
         );
 
         return result === 1;
@@ -215,16 +141,16 @@ export class RedisConnectionService {
             RENEW_EXPIRING_SLOT_SCRIPT,
             1,
             key,
-            String(now),
-            String(expiresAt),
+            now.toString(),
+            expiresAt.toString(),
             token,
-            String(ttlMs)
+            ttlMs.toString()
         );
 
         return result === 1;
     }
 
-    async releaseExpiringSlot(key: string, token: string, ttlMs: number): Promise<boolean> {
+    readonly releaseExpiringSlot = async (key: string, token: string, ttlMs: number): Promise<boolean> => {
         await this.connect();
 
         const result = await this.client.eval(
@@ -232,17 +158,17 @@ export class RedisConnectionService {
             1,
             key,
             token,
-            String(ttlMs)
+            ttlMs.toString()
         );
 
         return result === 1;
-    }
+    };
 
-    async deleteKey(key: string): Promise<number> {
+    readonly deleteKey = async (key: string): Promise<number> => {
         await this.connect();
 
         return this.client.del(key);
-    }
+    };
 
     async projectJobStatuses(payloads: TeamJobRecord[]): Promise<void> {
         if (payloads.length === 0) {
@@ -254,19 +180,13 @@ export class RedisConnectionService {
         const pipeline = this.client.pipeline();
 
         for (const payload of payloads) {
-            const timestamp = typeof payload.timestamp === 'string'
-                ? payload.timestamp
-                : new Date().toISOString();
-            const updatedAt = typeof payload.updatedAt === 'string'
-                ? payload.updatedAt
-                : new Date().toISOString();
+            const now = new Date().toISOString();
             const statusKey = `${JOB_STATUS_KEY_PREFIX}${payload.jobId}`;
 
-            pipeline.set(statusKey, JSON.stringify({
-                ...payload,
-                timestamp,
-                updatedAt
-            }), 'EX', STATUS_TTL_SECONDS);
+            payload.timestamp ??= now;
+            payload.updatedAt ??= now;
+
+            pipeline.set(statusKey, JSON.stringify(payload), 'EX', STATUS_TTL_SECONDS);
             pipeline.sadd(`team:${payload.teamId}:jobs`, payload.jobId);
         }
 
@@ -292,10 +212,8 @@ export class RedisConnectionService {
             }
 
             try {
-                const parsedRecord: unknown = JSON.parse(record);
-                if (isTeamJobRecord(parsedRecord)) {
-                    jobs.push(parsedRecord);
-                }
+                const parsedRecord = teamJobRecordSchema.safeParse(JSON.parse(record));
+                if (parsedRecord.success) jobs.push(parsedRecord.data);
             } catch {
                 continue;
             }
@@ -308,30 +226,12 @@ export class RedisConnectionService {
         return jobs;
     }
 
-    async getJobRecord(jobId: string): Promise<TeamJobRecord | null> {
-        const record = await this.client.get(`${JOB_STATUS_KEY_PREFIX}${jobId}`);
-        if (!record) {
-            return null;
-        }
-
-        try {
-            const parsedRecord: unknown = JSON.parse(record);
-            if (!isTeamJobRecord(parsedRecord)) {
-                return null;
-            }
-
-            return parsedRecord;
-        } catch {
-            return null;
-        }
-    }
-
     async removeJobs(teamId: string, jobIds: string[]): Promise<number> {
         if (jobIds.length === 0) {
             return 0;
         }
 
-        const distinctJobIds = getDistinctJobIds(jobIds);
+        const distinctJobIds = Array.from(new Set(jobIds));
         const pipeline = this.client.pipeline();
 
         for (const jobId of distinctJobIds) {
@@ -339,18 +239,21 @@ export class RedisConnectionService {
         }
         pipeline.srem(`team:${teamId}:jobs`, ...distinctJobIds);
 
-        const responses = await pipeline.exec();
+        const responses = await pipeline.exec() as [Error | null, number][];
 
-        return countDeletedJobStatusKeys(responses, distinctJobIds.length);
-    }
+        let deletedKeys = 0;
 
-    async clearTeamJobs(teamId: string): Promise<number> {
-        const jobIds = await this.client.smembers(`team:${teamId}:jobs`);
-        if (jobIds.length === 0) {
-            return 0;
+        for (const [index, [error, result]] of responses.entries()) {
+            if (error) {
+                throw error;
+            }
+
+            if (index < distinctJobIds.length) {
+                deletedKeys += result;
+            }
         }
 
-        return this.removeJobs(teamId, jobIds);
+        return deletedKeys;
     }
 
 };

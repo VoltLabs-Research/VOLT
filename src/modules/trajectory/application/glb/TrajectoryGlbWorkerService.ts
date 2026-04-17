@@ -1,29 +1,24 @@
 import { logger } from '@/core/logger';
 import { TRAJECTORY_GLB_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import { createMemoryAwareWorkerShell, delayJobWhenMemoryPressured } from '@/core/queues/infrastructure/memory-aware-worker';
-import { delayJobOnQueueScopeContention, tryAcquireQueueScopeLease } from '@/core/queues/contracts/queue-scope-lease';
+import { delayJobOnQueueScopeContention, tryAcquireQueueScopeLease } from '@/core/queues/infrastructure/queue-scope-lease';
 import type { MemoryAwareWorkerShell } from '@/core/queues/infrastructure/memory-aware-worker';
-import type { QueueScopeLease } from '@/core/queues/contracts/queue-scope-lease';
+import type { QueueScopeLease } from '@/core/queues/infrastructure/queue-scope-lease';
 import type { QueueScopeLimitsRegistry } from '@/core/queues/application/QueueScopeLimitsRegistry';
 import type { QueueService } from '@/core/queues/application/QueueService';
 import type { RedisConnectionService } from '@/core/storage/infrastructure/redis/RedisConnectionService';
 import type { GlbConversionQueueJobPayload } from '@/contracts';
 import { DelayedError } from 'bullmq';
 import type { Job } from 'bullmq';
+import type { GlbCompletedEventData } from '@/modules/trajectory/domain/events/glb/GlbCompletedEvent';
+import type { GlbFailedEventData } from '@/modules/trajectory/domain/events/glb/GlbFailedEvent';
+import type { GlbStartedEventData } from '@/modules/trajectory/domain/events/glb/GlbStartedEvent';
 import type { GlbExporterService } from '@/modules/trajectory/application/glb/GlbExporterService';
 
-type GlbJobStatus = 'running' | 'completed' | 'failed';
-
 interface GlbJobStatusReporter {
-    reportGlbJobStatus(input: {
-        jobId: string;
-        teamId: string;
-        trajectoryId: string;
-        trajectoryName?: string;
-        timestep?: number;
-        status: GlbJobStatus;
-        error?: string;
-    }): Promise<void>;
+    reportGlbCompleted(input: GlbCompletedEventData): Promise<void>;
+    reportGlbFailed(input: GlbFailedEventData): Promise<void>;
+    reportGlbStarted(input: GlbStartedEventData): Promise<void>;
 }
 
 export class TrajectoryGlbWorkerService {
@@ -47,7 +42,7 @@ export class TrajectoryGlbWorkerService {
 
     start(concurrency?: number): void {
         this.workerShell.start(
-            async (jobPayload, job) => this.processJob(jobPayload, job),
+            (jobPayload, job) => this.processJob(jobPayload, job),
             {
                 concurrency
             }
@@ -65,17 +60,35 @@ export class TrajectoryGlbWorkerService {
 
     private async reportJobStatusBestEffort(
         job: GlbConversionQueueJobPayload,
-        status: GlbJobStatus,
+        status: 'running' | 'completed' | 'failed',
         error?: string
     ): Promise<void> {
         try {
-            await this.daemonJobReporterService.reportGlbJobStatus({
+            const payload = {
                 jobId: job.jobId,
                 teamId: job.teamId,
                 trajectoryId: job.trajectoryId,
                 trajectoryName: job.trajectoryName,
                 timestep: job.timestep,
-                status,
+                ...(error ? { error } : {})
+            };
+
+            if (status === 'running') {
+                await this.daemonJobReporterService.reportGlbStarted(payload);
+                return;
+            }
+
+            if (status === 'completed') {
+                await this.daemonJobReporterService.reportGlbCompleted(payload);
+                return;
+            }
+
+            if (!error) {
+                throw new Error(`Missing failed GLB job error for ${job.jobId}`);
+            }
+
+            await this.daemonJobReporterService.reportGlbFailed({
+                ...payload,
                 error
             });
         } catch (reportError) {
@@ -100,10 +113,7 @@ export class TrajectoryGlbWorkerService {
         let queueScopeLease: QueueScopeLease | null = null;
 
         try {
-            const trajectoryId = job.trajectoryId.trim();
-            if (!trajectoryId) {
-                throw new Error(`Missing trajectoryId for GLB conversion job ${job.jobId}`);
-            }
+            const trajectoryId = job.trajectoryId;
 
             const queueScopeLimits = this.queueScopeLimitsRegistry.getSnapshot();
             const { lease, blockingScope } = await tryAcquireQueueScopeLease(
@@ -123,11 +133,19 @@ export class TrajectoryGlbWorkerService {
                 ]
             );
             queueScopeLease = lease;
-            if (!queueScopeLease || blockingScope) {
+            if (blockingScope) {
                 await delayJobOnQueueScopeContention(bullJob, {
                     queueName: TRAJECTORY_GLB_QUEUE_NAME,
                     jobId: job.jobId,
-                    scope: blockingScope ?? {
+                    scope: blockingScope
+                });
+            }
+
+            if (!queueScopeLease) {
+                await delayJobOnQueueScopeContention(bullJob, {
+                    queueName: TRAJECTORY_GLB_QUEUE_NAME,
+                    jobId: job.jobId,
+                    scope: {
                         scope: 'trajectory',
                         scopeId: trajectoryId,
                         limit: queueScopeLimits.trajectoryGlbConversion.maxRunningPerTrajectory
@@ -149,15 +167,18 @@ export class TrajectoryGlbWorkerService {
             await bullJob.updateProgress(100);
 
             this.reportJobStatusBestEffort(job, 'completed');
-        } catch (error: unknown) {
+        } catch (error) {
             if (error instanceof DelayedError) {
                 throw error;
             }
 
-            const message = error instanceof Error ? error.message : String(error);
-            this.reportJobStatusBestEffort(job, 'failed', message);
+            if (!(error instanceof Error)) {
+                throw error;
+            }
 
-            throw error instanceof Error ? error : new Error(message);
+            this.reportJobStatusBestEffort(job, 'failed', error.message);
+
+            throw error;
         } finally {
             if (queueScopeLease) {
                 await queueScopeLease.release();

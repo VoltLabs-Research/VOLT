@@ -2,15 +2,36 @@ import { logger } from '@/core/logger';
 import { getEffectiveMemoryLimitBytes } from '@/support/policies/runtime-capacity';
 import v8 from 'node:v8';
 
+interface HeapStats {
+    heapUsed: number;
+    heapLimit: number;
+    ratio: number;
+    rss: number;
+    rssLimit: number;
+    rssRatio: number;
+}
+
 /**
  * Heap memory pressure thresholds (percentage of heap limit).
  * Warnings are emitted at each threshold via structured logging.
  * When `gc` is true the monitor will attempt a manual GC cycle at that level.
  */
 const THRESHOLDS = [
-    { pct: 0.50, label: 'heap-50%', gc: false },
-    { pct: 0.70, label: 'heap-70%', gc: true },
-    { pct: 0.85, label: 'heap-85%', gc: true }
+    {
+        pct: 0.50,
+        label: 'heap-50%',
+        gc: false
+    },
+    {
+        pct: 0.70,
+        label: 'heap-70%',
+        gc: true
+    },
+    {
+        pct: 0.85,
+        label: 'heap-85%',
+        gc: true
+    }
 ] as const;
 
 /** Above this fraction of the heap limit, new heavy work should be delayed. */
@@ -28,14 +49,7 @@ let lastTriggeredIndex = -1;
 let lastGcTimestamp = 0;
 let rssPressureTriggered = false;
 
-const getHeapStats = (): {
-    heapUsed: number;
-    heapLimit: number;
-    ratio: number;
-    rss: number;
-    rssLimit: number;
-    rssRatio: number;
-} => {
+const getHeapStats = (): HeapStats => {
     const stats = v8.getHeapStatistics();
     const usage = process.memoryUsage();
     const rssLimit = getEffectiveMemoryLimitBytes();
@@ -68,7 +82,8 @@ export const isMemoryPressured = (): boolean => {
  * Returns `true` if GC was triggered, `false` if unavailable or on cooldown.
  */
 const tryForceGC = (): boolean => {
-    if (typeof global.gc !== 'function') {
+    const gc = global.gc;
+    if (!gc) {
         return false;
     }
 
@@ -78,7 +93,7 @@ const tryForceGC = (): boolean => {
     }
 
     lastGcTimestamp = now;
-    global.gc();
+    gc();
     return true;
 };
 
@@ -91,12 +106,13 @@ const tryForceGC = (): boolean => {
  * Returns `true` if GC was triggered, `false` if `--expose-gc` is unavailable.
  */
 export const forceGC = (): boolean => {
-    if (typeof global.gc !== 'function') {
+    const gc = global.gc;
+    if (!gc) {
         return false;
     }
 
     lastGcTimestamp = Date.now();
-    global.gc();
+    gc();
     return true;
 };
 
@@ -198,7 +214,7 @@ export const startMemoryMonitor = (): void => {
     if (monitorTimer) return;
 
     const { heapLimit, rssLimit } = getHeapStats();
-    const gcAvailable = typeof global.gc === 'function';
+    const gcAvailable = global.gc !== undefined;
     logger.info(
         {
             heapLimitMB: Math.round(heapLimit / 1024 / 1024),
@@ -216,8 +232,8 @@ export const startMemoryMonitor = (): void => {
  * Stops the periodic heap monitor.
  */
 export const stopMemoryMonitor = (): void => {
-    if (monitorTimer) {
-        clearInterval(monitorTimer);
-        monitorTimer = null;
-    }
+    if (!monitorTimer) return;
+
+    clearInterval(monitorTimer);
+    monitorTimer = null;
 };

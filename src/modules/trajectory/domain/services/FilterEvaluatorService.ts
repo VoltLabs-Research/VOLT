@@ -8,6 +8,32 @@ import { createScopedClusterObjectStore } from '@/core/storage/application/Clust
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
 import type { NativeColorModelRequest, NativeFilterPreviewRequest, NativeFilterPreviewResponse, NativeParticleFilterModelRequest } from '@/core/runtime/infrastructure/native/NativeModuleLoader';
 
+interface FilterMatchResult {
+    mask: Uint8Array;
+    matchCount: number;
+}
+
+interface FilteredAtoms {
+    positions: Float32Array;
+    types: Uint16Array;
+    count: number;
+}
+
+interface ColoredModelExportResult {
+    objectKey: string;
+}
+
+interface ParticleFilterModelExportResult {
+    objectKey: string;
+    atomsResult: number;
+}
+
+export interface FilterEvaluatorService {
+    previewFilter(input: NativeFilterPreviewRequest): Promise<NativeFilterPreviewResponse>;
+    exportColoredModel(input: NativeColorModelRequest): Promise<ColoredModelExportResult>;
+    exportParticleFilterModel(input: NativeParticleFilterModelRequest): Promise<ParticleFilterModelExportResult>;
+};
+
 enum GradientType {
     Viridis = 0,
     Plasma = 1,
@@ -34,16 +60,12 @@ const resolveGradientType = (gradientName: string): GradientType => {
     return GradientType.Viridis;
 };
 
-const evaluateFilter = (values: Float32Array, operator: string, compareValue: number): { mask: Uint8Array; matchCount: number; } => {
+const evaluateFilter = (values: Float32Array, operator: string, compareValue: number): FilterMatchResult => {
     const mask = new Uint8Array(values.length);
     let matchCount = 0;
 
     for (let index = 0; index < values.length; index++) {
         const value = values[index];
-
-        if (!Number.isFinite(value)) {
-            continue;
-        }
 
         let matches = false;
 
@@ -73,11 +95,7 @@ const evaluateFilter = (values: Float32Array, operator: string, compareValue: nu
     };
 };
 
-const filterByMask = (positions: Float32Array, types: Uint16Array, mask: Uint8Array): {
-    positions: Float32Array;
-    types: Uint16Array;
-    count: number;
-} => {
+const filterByMask = (positions: Float32Array, types: Uint16Array, mask: Uint8Array): FilteredAtoms => {
     let count = 0;
     for (let index = 0; index < mask.length; index++) {
         if (mask[index]) {
@@ -158,12 +176,6 @@ const resolveModifierValues = async (
     }
 
     return values;
-};
-
-export interface FilterEvaluatorService {
-    previewFilter(input: NativeFilterPreviewRequest): Promise<NativeFilterPreviewResponse>;
-    exportColoredModel(input: NativeColorModelRequest): Promise<{ objectKey: string; }>;
-    exportParticleFilterModel(input: NativeParticleFilterModelRequest): Promise<{ objectKey: string; atomsResult: number; }>;
 };
 
 export const createFilterEvaluatorService = (

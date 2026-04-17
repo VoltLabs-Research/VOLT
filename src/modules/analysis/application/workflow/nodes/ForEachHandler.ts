@@ -1,15 +1,20 @@
-import type { WorkflowExecutionContext, WorkflowNode } from '@/modules/analysis/contracts/workflow.types';
+import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput } from '@/modules/analysis/contracts/workflow.types';
 import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
 import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '@/modules/analysis/application/workflow';
+
+interface WorkflowForEachOutput {
+    items: WorkflowNodeOutput[];
+    count: number;
+    currentValue: null;
+    currentIndex: number;
+}
 
 export class WorkflowForEachHandler implements WorkflowNodeHandler {
     readonly type = WorkflowNodeType.ForEach;
 
-    constructor(
-        private readonly registry: WorkflowNodeRegistry
-    ) {}
+    constructor(private readonly registry: WorkflowNodeRegistry) {}
 
-    async execute(node: WorkflowNode, context: WorkflowExecutionContext): Promise<Record<string, unknown>> {
+    execute(node: WorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowForEachOutput> {
         const rawRef = node.data.forEach?.iterableSource;
         if (!rawRef) {
             throw new Error('ForEach iterable source is required');
@@ -24,11 +29,11 @@ export class WorkflowForEachHandler implements WorkflowNodeHandler {
             );
         }
 
-        return {
-            items,
+        return Promise.resolve({
+            items: items as WorkflowNodeOutput[],
             count: items.length,
             currentValue: null,
             currentIndex: -1
-        };
+        });
     }
 };

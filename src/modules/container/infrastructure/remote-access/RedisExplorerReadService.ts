@@ -1,26 +1,14 @@
-import Redis from 'ioredis';
 import type { DaemonConfig } from '@/core/config';
-
-interface RedisConnectionOptions {
-    host: string;
-    port: number;
-    username?: string;
-    password?: string;
-};
+import Redis, { type RedisOptions } from 'ioredis';
 
 interface RedisExplorerDatabaseSummary {
     databaseId: number;
     keyCount: number;
 };
 
-interface RedisExplorerValue {
-    type: string;
-    value: unknown;
-};
-
 export class RedisExplorerReadService {
     private readonly client: Redis;
-    private readonly connectionOptions: RedisConnectionOptions;
+    readonly connectionOptions: RedisOptions;
 
     constructor(
         config: DaemonConfig
@@ -74,71 +62,4 @@ export class RedisExplorerReadService {
         }));
     }
 
-    async listKeys(databaseId: number, limit = 200): Promise<string[]> {
-        const client = new Redis({
-            ...this.connectionOptions,
-            db: databaseId,
-            lazyConnect: true
-        });
-
-        try {
-            await client.connect();
-            let cursor = '0';
-            const keys: string[] = [];
-
-            do {
-                const [nextCursor, nextKeys] = await client.scan(cursor, 'COUNT', 100);
-                cursor = nextCursor;
-                keys.push(...nextKeys);
-            } while (cursor !== '0' && keys.length < limit);
-
-            return keys.slice(0, limit);
-        } finally {
-            await client.quit();
-        }
-    }
-
-    async getValue(databaseId: number, key: string): Promise<RedisExplorerValue> {
-        const client = new Redis({
-            ...this.connectionOptions,
-            db: databaseId,
-            lazyConnect: true
-        });
-
-        try {
-            await client.connect();
-            const type = await client.type(key);
-
-            if (type === 'string') {
-                return { type, value: await client.get(key) };
-            }
-
-            if (type === 'hash') {
-                return { type, value: await client.hgetall(key) };
-            }
-
-            if (type === 'list') {
-                return { type, value: await client.lrange(key, 0, 99) };
-            }
-
-            if (type === 'set') {
-                return { type, value: await client.smembers(key) };
-            }
-
-            if (type === 'zset') {
-                return { type, value: await client.zrange(key, 0, 99, 'WITHSCORES') };
-            }
-
-            if (type === 'stream') {
-                return { type, value: await client.xrange(key, '-', '+', 'COUNT', 100) };
-            }
-
-            return {
-                type,
-                value: null
-            };
-        } finally {
-            await client.quit();
-        }
-    }
 };

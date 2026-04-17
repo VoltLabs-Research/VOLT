@@ -18,6 +18,12 @@
     ],
     "baseUrl": "./src",
     "paths": {
+      "@/contracts": [
+        "support/contracts/index"
+      ],
+      "@/contracts/*": [
+        "support/contracts/*"
+      ],
       "@/*": [
         "*"
       ]

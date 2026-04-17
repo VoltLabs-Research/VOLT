@@ -1,20 +1,20 @@
-import type { JupyterRuntimeService } from '@/modules/notebook/application/runtime/JupyterRuntimeService';
-import { ChannelCommands } from '@/core/reverse-channel/contracts/reverseChannel.constants';
 import type { CreateNotebookSessionRequest } from '@/contracts';
+import { ChannelCommands } from '@/core/reverse-channel/contracts/reverseChannel.constants';
 import type { ReverseChannelCommandHandler } from '@/core/reverse-channel/contracts/commandHandler';
+import type { JupyterRuntimeService } from '@/modules/notebook/application/runtime/JupyterRuntimeService';
 
 interface NotebookHandlersDependencies {
     jupyterRuntimeService: JupyterRuntimeService;
-};
+}
 
 interface NotebookIdentifierPayload {
     notebookId: string;
-};
+}
 
 interface NotebookRuntimeTarget {
     tunnelTargetHost: string;
     tunnelTargetPort: number;
-};
+}
 
 const getReadinessGatedRuntimeTarget = async (
     jupyterRuntimeService: JupyterRuntimeService,
@@ -35,7 +35,7 @@ export const createNotebookHandlers = (deps: NotebookHandlersDependencies): Reve
     {
         command: ChannelCommands.NotebookDelete,
         execute: async (payload) => {
-            const request = payload as unknown as NotebookIdentifierPayload;
+            const request = payload as NotebookIdentifierPayload;
             return {
                 data: {
                     deleted: await deps.jupyterRuntimeService.deleteSession(request.notebookId)
@@ -46,7 +46,7 @@ export const createNotebookHandlers = (deps: NotebookHandlersDependencies): Reve
     {
         command: ChannelCommands.NotebookRuntimeGet,
         execute: async (payload) => {
-            const request = payload as unknown as NotebookIdentifierPayload;
+            const request = payload as NotebookIdentifierPayload;
             const runtime = await getReadinessGatedRuntimeTarget(
                 deps.jupyterRuntimeService,
                 request.notebookId
@@ -62,7 +62,7 @@ export const createNotebookHandlers = (deps: NotebookHandlersDependencies): Reve
     {
         command: ChannelCommands.NotebookSessionCreate,
         execute: async (payload) => {
-            const request = payload as unknown as CreateNotebookSessionRequest;
+            const request = payload as CreateNotebookSessionRequest;
 
             return {
                 data: await deps.jupyterRuntimeService.ensureSession({

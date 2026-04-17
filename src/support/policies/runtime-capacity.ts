@@ -1,17 +1,16 @@
 import os from 'node:os';
 
 export const readPositiveIntegerEnv = (name: string): number | undefined => {
-    const rawValue = process.env[name]?.trim();
-    if (!rawValue) {
+    const rawValue = process.env[name];
+    if (rawValue === undefined || rawValue === '') {
         return undefined;
     }
 
-    const parsedValue = Number.parseInt(rawValue, 10);
-    if (!Number.isFinite(parsedValue) || parsedValue < 1) {
+    if (!/^[1-9]\d*$/.test(rawValue)) {
         return undefined;
     }
 
-    return parsedValue;
+    return Number.parseInt(rawValue, 10);
 };
 
 export const getAvailableCpuCount = (): number => {
@@ -24,11 +23,9 @@ export const getAvailableCpuCount = (): number => {
 
 export const getEffectiveMemoryLimitBytes = (): number => {
     const hostMemory = os.totalmem();
-    const constrainedMemory = typeof process.constrainedMemory === 'function'
-        ? process.constrainedMemory()
-        : 0;
+    const constrainedMemory = process.constrainedMemory();
 
-    if (Number.isFinite(constrainedMemory) && constrainedMemory > 0) {
+    if (constrainedMemory > 0) {
         return Math.min(hostMemory, constrainedMemory);
     }
 

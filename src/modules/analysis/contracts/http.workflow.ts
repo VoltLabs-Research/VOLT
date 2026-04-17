@@ -1,36 +1,53 @@
 import type { EntrypointType } from '@/core/runtime/contracts/http.runtime';
 
+interface WorkflowNodePosition {
+    x: number;
+    y: number;
+}
+
+interface WorkflowValueMap {
+    [key: string]: WorkflowValue;
+}
+
+type WorkflowValue =
+    | WorkflowValueMap
+    | WorkflowValue[]
+    | boolean
+    | null
+    | number
+    | string
+
 export interface WorkflowEdgeDefinition {
     source: string;
     target: string;
     sourceHandle?: string;
     targetHandle?: string;
-};
+}
 
 export interface WorkflowArgumentOption {
     key: string;
     label: string;
-};
+}
 
 export interface WorkflowArgumentOptionSource {
     argument?: string;
     valueField?: string;
     labelField?: string;
-};
+}
 
 export interface WorkflowArgumentVisibilityCondition {
     argument?: string;
     operator?: 'equals' | 'notEquals' | 'in' | 'notIn';
     value?: string | number | boolean;
     values?: Array<string | number | boolean>;
-};
+}
 
 export interface WorkflowArgumentDefinition {
     argument?: string;
     type?: string;
     label?: string;
-    default?: unknown;
-    value?: unknown;
+    default?: WorkflowValue;
+    value?: WorkflowValue;
     options?: WorkflowArgumentOption[];
     optionsFromArguments?: WorkflowArgumentOptionSource[];
     listArguments?: WorkflowArgumentDefinition[];
@@ -42,65 +59,69 @@ export interface WorkflowArgumentDefinition {
     max?: number;
     step?: number;
     visibleWhen?: WorkflowArgumentVisibilityCondition;
-};
+}
 
 export interface WorkflowArgumentsData {
     arguments?: WorkflowArgumentDefinition[];
-};
+}
 
 export interface WorkflowForEachData {
     iterableSource?: string;
-};
+}
 
 export interface WorkflowIfCondition {
     leftExpression?: string;
     rightExpression?: string;
     handler?: string;
     type?: string;
-};
+}
 
 export interface WorkflowIfStatementData {
     conditions?: WorkflowIfCondition[];
-};
+}
 
 export interface WorkflowSwitchStatementData {
     expression?: string;
-};
+}
 
 export interface WorkflowSwitchCaseData {
     value?: string;
     defaultCase?: boolean;
-};
+}
 
 export interface WorkflowExposureData {
     name?: string;
     results?: string;
     iterable?: string;
-};
+}
 
 export interface WorkflowExportData {
     exporter: string;
     type: string;
-    options?: Record<string, unknown>;
-};
+    options?: WorkflowValueMap;
+}
 
 export interface WorkflowPluginReferenceSelection {
     pluginId: string;
-    config?: Record<string, unknown>;
-};
+    config?: WorkflowValueMap;
+}
 
 export interface WorkflowPluginReferenceValue {
     selections?: WorkflowPluginReferenceSelection[];
-};
+}
+
+interface WorkflowPluginConfigById {
+    [pluginId: string]: WorkflowValueMap;
+}
 
 export interface WorkflowPluginNodeData {
     executionMode?: string;
     pluginId?: string;
     argumentReference?: string;
-    config?: Record<string, unknown>;
-    configByPluginId?: Record<string, Record<string, unknown>>;
+    config?: WorkflowValueMap;
+    configByPluginId?: WorkflowPluginConfigById;
     selectedTimesteps?: number[];
-};
+}
 
 export interface WorkflowEntrypointData {
     arguments?: string;
@@ -109,10 +130,10 @@ export interface WorkflowEntrypointData {
     requirementsFile?: string;
     timeout?: number;
     type?: EntrypointType;
-};
+}
 
 export interface WorkflowNodeData {
-    modifier?: Record<string, unknown>;
+    modifier?: WorkflowValueMap;
     arguments?: WorkflowArgumentsData;
     forEach?: WorkflowForEachData;
     entrypoint?: WorkflowEntrypointData;
@@ -122,7 +143,7 @@ export interface WorkflowNodeData {
     ifStatement?: WorkflowIfStatementData;
     switchStatement?: WorkflowSwitchStatementData;
     switchCase?: WorkflowSwitchCaseData;
-};
+}
 
 export type WorkflowNodeDefinitionType =
     | 'modifier'
@@ -140,36 +161,33 @@ export type WorkflowNodeDefinitionType =
 export interface WorkflowNodeDefinition {
     id: string;
     type: WorkflowNodeDefinitionType;
-    position: {
-        x: number;
-        y: number;
-    };
+    position: WorkflowNodePosition;
     data: WorkflowNodeData;
-};
+}
 
 export interface WorkflowDefinition {
     nodes: WorkflowNodeDefinition[];
     edges: WorkflowEdgeDefinition[];
-};
+}
 
 export interface NestedPluginDefinition {
     pluginId: string;
     workflow: WorkflowDefinition;
-};
+}
 
 export interface PluginReferenceExecutionRequest {
     referencePath: string;
     pluginId: string;
-    config: Record<string, unknown>;
-};
+    config: WorkflowValueMap;
+}
 
 export interface TrajectoryFrame {
     timestep: number;
     natoms: number;
     simulationCell: string;
-};
+}
 
 export interface TrajectoryDumpDescriptor extends TrajectoryFrame {
     path: string;
     originalPath?: string;
-};
+}

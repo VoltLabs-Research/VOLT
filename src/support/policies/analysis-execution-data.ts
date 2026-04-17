@@ -1,6 +1,6 @@
-import zlib from 'node:zlib';
 import { z } from 'zod';
 import type { AnalysisJobExecutionData } from '@/contracts';
+import zlib from 'node:zlib';
 
 const nonEmptyString = z.string().min(1);
 const finiteNumber = z.number().finite();
@@ -46,9 +46,7 @@ const analysisJobExecutionDataSchema = z.object({
     traceContext: z.record(z.string(), z.unknown()).optional()
 });
 
-export const serializeAnalysisExecutionData = (executionData: AnalysisJobExecutionData): string => {
-    return JSON.stringify(executionData);
-};
+export const serializeAnalysisExecutionData: (executionData: AnalysisJobExecutionData) => string = JSON.stringify;
 
 const parseSerializedAnalysisExecutionData = (serializedValue: string): AnalysisJobExecutionData => {
     return analysisJobExecutionDataSchema.parse(JSON.parse(serializedValue)) as AnalysisJobExecutionData;

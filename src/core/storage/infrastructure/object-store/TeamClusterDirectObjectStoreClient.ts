@@ -1,6 +1,13 @@
-import { TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER, TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER, TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX, TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH, TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER } from '@/contracts';
+import {
+    TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER,
+    TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER,
+    TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
+    TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH,
+    TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
+} from '@/core/storage/contracts/http.objectStore';
 import type { DaemonConfig } from '@/core/config';
-import { Readable, type Readable as NodeReadable } from 'node:stream';
+import { Readable } from 'node:stream';
+import type { Readable as NodeReadable } from 'node:stream';
 import type { ReadableStream as WebReadableStream } from 'node:stream/web';
 import { z } from 'zod';
 
@@ -28,54 +35,82 @@ interface DirectObjectStoreReadOptions {
     skipMetadata?: boolean;
 }
 
-class ObjectStoreProxyError extends Error {
-    constructor(
-        public readonly statusCode: number,
-        public readonly code: string,
-        message: string
-    ) {
-        super(message);
-        this.name = 'ObjectStoreProxyError';
-    }
+interface DirectObjectStoreListRequest {
+    bucket: string;
+    prefix?: string;
+    cursor?: string;
+    limit?: number;
+}
+
+interface DirectObjectStoreListResponse {
+    keys: string[];
+    objects: DirectObjectStoreListEntry[];
+    nextCursor?: string;
+}
+
+interface DirectObjectStorePutBufferRequest {
+    bucket: string;
+    objectKey: string;
+    buffer: Buffer;
+    contentType?: string;
+    contentEncoding?: string;
+    metadata?: Record<string, string>;
+}
+
+interface DirectObjectStorePutStreamRequest {
+    bucket: string;
+    objectKey: string;
+    stream: NodeReadable;
+    contentLength: number;
+    contentType?: string;
+    contentEncoding?: string;
+    metadata?: Record<string, string>;
+}
+
+interface DirectObjectStoreRequestInit {
+    method: string;
+    headers?: HeadersInit;
+    body?: Buffer | NodeReadable;
+}
+
+interface DirectObjectStoreFetchInit extends RequestInit {
+    duplex?: 'half';
 }
 
 const directObjectStoreListEntrySchema = z.object({
     key: z.string().min(1),
     contentLength: z.number().finite().optional(),
     etag: z.string().optional(),
-    lastModified: z.union([z.string(), z.date()]).optional().transform((value) => {
-        if (!value) {
-            return undefined;
-        }
-
-        const parsedDate = value instanceof Date
-            ? value
-            : new Date(value);
-
-        if (Number.isNaN(parsedDate.getTime())) {
-            throw new Error('Object store list response contains an invalid lastModified value');
-        }
-
-        return parsedDate;
-    })
+    lastModified: z.coerce.date().optional()
 });
 
 const directObjectStoreListResponseSchema = z.object({
-    keys: z.array(z.string().min(1)).optional(),
-    objects: z.array(directObjectStoreListEntrySchema).optional(),
+    keys: z.array(z.string().min(1)).default([]),
+    objects: z.array(directObjectStoreListEntrySchema).default([]),
     nextCursor: z.string().optional()
+}).transform(({ objects, keys, nextCursor }) => {
+    const resolvedKeys = keys.length > 0 ? keys : objects.map((object) => object.key);
+
+    return {
+        keys: resolvedKeys,
+        objects: objects.length > 0
+            ? objects
+            : resolvedKeys.map((key) => ({ key })),
+        nextCursor
+    };
 });
 
 const objectStoreErrorPayloadSchema = z.object({
-    code: z.string().optional(),
-    message: z.string().optional()
+    code: z.string(),
+    message: z.string()
 });
 
-const encodeObjectKeyPath = (objectKey: string): string => {
-    return objectKey.split('/').map((segment) => encodeURIComponent(segment)).join('/');
-};
-
-const normalizeMetadataHeaders = (headers: Headers): Record<string, string> => {
+const parseHeadResponse = (headers: Headers): DirectObjectStoreHeadResponse => {
+    const contentLengthHeader = headers.get('content-length');
+    const contentType = headers.get('content-type');
+    const contentEncoding = headers.get('content-encoding');
+    const etag = headers.get('etag');
+    const lastModified = headers.get('last-modified');
     const metadata: Record<string, string> = {};
 
     headers.forEach((headerValue, headerName) => {
@@ -86,32 +121,32 @@ const normalizeMetadataHeaders = (headers: Headers): Record<string, string> => {
         metadata[headerName.slice(TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX.length)] = headerValue;
     });
 
-    return metadata;
-};
+    const response: DirectObjectStoreHeadResponse = { metadata };
 
-const parseHeaderNumber = (value: string | null): number | undefined => {
-    if (!value) {
-        return undefined;
+    if (contentLengthHeader) {
+        response.contentLength = Number(contentLengthHeader);
     }
 
-    const parsedValue = Number(value);
-    return Number.isFinite(parsedValue)
-        ? parsedValue
-        : undefined;
+    if (contentType !== null) {
+        response.contentType = contentType;
+    }
+
+    if (contentEncoding !== null) {
+        response.contentEncoding = contentEncoding;
+    }
+
+    if (etag !== null) {
+        response.etag = etag;
+    }
+
+    if (lastModified) {
+        response.lastModified = new Date(lastModified);
+    }
+
+    return response;
 };
 
-const parseHeadResponse = (headers: Headers): DirectObjectStoreHeadResponse => {
-    const lastModified = headers.get('last-modified');
-
-    return {
-        contentLength: parseHeaderNumber(headers.get('content-length')),
-        contentType: headers.get('content-type') || undefined,
-        contentEncoding: headers.get('content-encoding') || undefined,
-        etag: headers.get('etag') || undefined,
-        lastModified: lastModified ? new Date(lastModified) : undefined,
-        metadata: normalizeMetadataHeaders(headers)
-    };
-};
+const GET_REQUEST_INIT: DirectObjectStoreRequestInit = { method: 'GET' };
 
 export class TeamClusterDirectObjectStoreClient {
     constructor(
@@ -120,13 +155,8 @@ export class TeamClusterDirectObjectStoreClient {
 
     async list(
         ownerClusterId: string,
-        request: {
-            bucket: string;
-            prefix?: string;
-            cursor?: string;
-            limit?: number;
-        }
-    ): Promise<{ keys: string[]; objects: DirectObjectStoreListEntry[]; nextCursor?: string; }> {
+        request: DirectObjectStoreListRequest
+    ): Promise<DirectObjectStoreListResponse> {
         const query = new URLSearchParams();
         if (request.prefix) {
             query.set('prefix', request.prefix);
@@ -136,34 +166,23 @@ export class TeamClusterDirectObjectStoreClient {
             query.set('cursor', request.cursor);
         }
 
-        if (typeof request.limit === 'number' && Number.isFinite(request.limit)) {
-            query.set('limit', String(request.limit));
+        if (request.limit !== undefined) {
+            query.set('limit', request.limit.toString());
         }
 
-        const response = await this.fetchJson(
+        return directObjectStoreListResponseSchema.parse(await (await this.fetch(
             this.buildCollectionPath(ownerClusterId, request.bucket, query),
-            directObjectStoreListResponseSchema,
             { method: 'GET' }
-        );
-        const objects = response.objects ?? [];
-        const keys = response.keys ?? objects.map((object) => object.key);
-
-        return {
-            keys,
-            objects: objects.length > 0
-                ? objects
-                : keys.map((key) => ({ key })),
-            nextCursor: response.nextCursor
-        };
+        )).json());
     }
 
-    async head(ownerClusterId: string, bucket: string, objectKey: string): Promise<DirectObjectStoreHeadResponse> {
+    readonly head = async (ownerClusterId: string, bucket: string, objectKey: string): Promise<DirectObjectStoreHeadResponse> => {
         const response = await this.fetch(this.buildObjectPath(ownerClusterId, bucket, objectKey), {
             method: 'HEAD'
         });
 
         return parseHeadResponse(response.headers);
-    }
+    };
 
     async getStream(
         ownerClusterId: string,
@@ -171,9 +190,13 @@ export class TeamClusterDirectObjectStoreClient {
         objectKey: string,
         options?: DirectObjectStoreReadOptions
     ): Promise<DirectObjectStoreStreamResponse> {
+        const headers = options && options.skipMetadata
+            ? { [TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER]: '1' }
+            : undefined;
+
         const response = await this.fetch(this.buildObjectPath(ownerClusterId, bucket, objectKey), {
             method: 'GET',
-            headers: this.buildReadHeaders(options)
+            headers
         });
 
         if (!response.body) {
@@ -182,34 +205,19 @@ export class TeamClusterDirectObjectStoreClient {
 
         return {
             ...parseHeadResponse(response.headers),
-            stream: Readable.fromWeb(response.body as unknown as WebReadableStream<any>)
+            stream: Readable.fromWeb(response.body as WebReadableStream)
         };
     }
 
-    async putBuffer(ownerClusterId: string, request: {
-        bucket: string;
-        objectKey: string;
-        buffer: Buffer;
-        contentType?: string;
-        contentEncoding?: string;
-        metadata?: Record<string, string>;
-    }): Promise<void> {
+    readonly putBuffer = async (ownerClusterId: string, request: DirectObjectStorePutBufferRequest): Promise<void> => {
         await this.fetch(this.buildObjectPath(ownerClusterId, request.bucket, request.objectKey), {
             method: 'PUT',
             headers: this.buildUploadHeaders(request.buffer.length, request.contentType, request.contentEncoding, request.metadata),
             body: request.buffer
         });
-    }
+    };
 
-    async putStream(ownerClusterId: string, request: {
-        bucket: string;
-        objectKey: string;
-        stream: NodeReadable;
-        contentLength: number;
-        contentType?: string;
-        contentEncoding?: string;
-        metadata?: Record<string, string>;
-    }): Promise<void> {
+    readonly putStream = async (ownerClusterId: string, request: DirectObjectStorePutStreamRequest): Promise<void> => {
         await this.fetch(this.buildObjectPath(ownerClusterId, request.bucket, request.objectKey), {
             method: 'PUT',
             headers: this.buildUploadHeaders(
@@ -220,60 +228,47 @@ export class TeamClusterDirectObjectStoreClient {
             ),
             body: request.stream
         });
-    }
-
-    private async fetchJson<TSchema extends z.ZodTypeAny>(
-        path: string,
-        schema: TSchema,
-        init?: {
-            method?: string;
-            headers?: HeadersInit;
-            body?: Buffer | NodeReadable;
-        }
-    ): Promise<z.infer<TSchema>> {
-        const response = await this.fetch(path, init);
-        return schema.parse(await response.json());
-    }
+    };
 
     private async fetch(
         path: string,
-        init?: {
-            method?: string;
-            headers?: HeadersInit;
-            body?: Buffer | NodeReadable;
-        }
+        init: DirectObjectStoreRequestInit = GET_REQUEST_INIT
     ): Promise<Response> {
-        const headers = new Headers(init?.headers);
+        const headers = new Headers(init.headers);
         headers.set(TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER, this.config.teamClusterId);
         headers.set(TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER, this.config.daemonPassword);
 
-        const response = await fetch(new URL(path, this.config.voltCloudUrl), {
-            method: init?.method || 'GET',
+        const requestInit: DirectObjectStoreFetchInit = {
+            method: init.method,
             headers,
-            body: init?.body,
-            duplex: init?.body && !Buffer.isBuffer(init.body)
-                ? 'half'
-                : undefined
-        } as RequestInit & { duplex?: 'half'; });
+            body: init.body as BodyInit | undefined
+        };
+
+        if (init.body && !Buffer.isBuffer(init.body)) {
+            requestInit.duplex = 'half';
+        }
+
+        const response = await fetch(new URL(path, this.config.voltCloudUrl), requestInit);
 
         if (response.ok) {
             return response;
         }
 
         const payloadText = await response.text();
-        const payload = (() => {
-            try {
-                return objectStoreErrorPayloadSchema.parse(JSON.parse(payloadText));
-            } catch {
-                return null;
-            }
-        })();
+        const parsedPayload = objectStoreErrorPayloadSchema.safeParse(JSON.parse(payloadText));
 
-        throw new ObjectStoreProxyError(
-            response.status,
-            payload?.code || 'TeamCluster::ObjectStoreProxyRequestFailed',
-            payload?.message || `Object store proxy request failed with status ${response.status}`
-        );
+        if (parsedPayload.success) {
+            throw Object.assign(new Error(parsedPayload.data.message), {
+                name: 'ObjectStoreProxyError',
+                statusCode: response.status,
+                code: parsedPayload.data.code
+            });
+        }
+
+        throw Object.assign(new Error(`Object store proxy request failed with status ${response.status}`), {
+            name: 'ObjectStoreProxyError',
+            statusCode: response.status
+        });
     }
 
     private buildCollectionPath(ownerClusterId: string, bucket: string, query?: URLSearchParams): string {
@@ -285,7 +280,8 @@ export class TeamClusterDirectObjectStoreClient {
     }
 
     private buildObjectPath(ownerClusterId: string, bucket: string, objectKey: string): string {
-        return `${this.buildCollectionPath(ownerClusterId, bucket)}/${encodeObjectKeyPath(objectKey)}`;
+        const encodedObjectKey = objectKey.split('/').map((segment) => encodeURIComponent(segment)).join('/');
+        return `${this.buildCollectionPath(ownerClusterId, bucket)}/${encodedObjectKey}`;
     }
 
     private buildUploadHeaders(
@@ -295,7 +291,7 @@ export class TeamClusterDirectObjectStoreClient {
         metadata?: Record<string, string>
     ): Record<string, string> {
         const headers: Record<string, string> = {
-            'content-length': String(contentLength)
+            'content-length': contentLength.toString()
         };
 
         if (contentType) {
@@ -306,20 +302,12 @@ export class TeamClusterDirectObjectStoreClient {
             headers['content-encoding'] = contentEncoding;
         }
 
-        for (const [key, value] of Object.entries(metadata ?? {})) {
-            headers[`${TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX}${key.toLowerCase()}`] = value;
+        if (metadata) {
+            for (const [key, value] of Object.entries(metadata)) {
+                headers[`${TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX}${key.toLowerCase()}`] = value;
+            }
         }
 
         return headers;
-    }
-
-    private buildReadHeaders(options?: DirectObjectStoreReadOptions): Record<string, string> | undefined {
-        if (!options?.skipMetadata) {
-            return undefined;
-        }
-
-        return {
-            [TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER]: '1'
-        };
     }
 }

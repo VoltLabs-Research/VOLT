@@ -1,8 +1,15 @@
 import { TeamClusterServiceExposureAccessMode } from '@/contracts';
-import jwt from 'jsonwebtoken';
-import type { JwtPayload, Secret } from 'jsonwebtoken';
+import type { KeyObject } from 'node:crypto';
+import verify from 'jsonwebtoken/verify.js';
 
-interface TeamClusterDirectAccessTokenClaims extends JwtPayload {
+interface PassphraseSecret {
+    key: string | Buffer;
+    passphrase: string;
+}
+
+type Secret = string | Buffer | KeyObject | PassphraseSecret;
+
+interface TeamClusterDirectAccessTokenClaims {
     requesterKind: 'daemon' | 'server';
     requesterId: string;
     ownerClusterId: string;
@@ -10,8 +17,8 @@ interface TeamClusterDirectAccessTokenClaims extends JwtPayload {
     exposureId: string;
     exposureName: string;
     accessMode: TeamClusterServiceExposureAccessMode;
-    iat: number;
-    exp: number;
+    iat?: number;
+    exp?: number;
 }
 
 export const verifyTeamClusterDirectAccessToken = (
@@ -19,7 +26,7 @@ export const verifyTeamClusterDirectAccessToken = (
     token: string
 ): TeamClusterDirectAccessTokenClaims | null => {
     try {
-        return jwt.verify(token, secret as Secret) as TeamClusterDirectAccessTokenClaims;
+        return verify(token, secret as Secret) as TeamClusterDirectAccessTokenClaims;
     } catch {
         return null;
     }

@@ -1,3 +1,44 @@
+export type RemoteExplorerMongoValue =
+    | boolean
+    | null
+    | number
+    | string
+    | RemoteExplorerMongoValue[]
+    | RemoteExplorerMongoValueObject;
+
+export interface RemoteExplorerMongoValueObject {
+    [key: string]: RemoteExplorerMongoValue;
+}
+
+export interface RemoteExplorerEntry {
+    id: string;
+    name: string;
+    path: string;
+    type: RemoteExplorerEntryType;
+    size: number | null;
+    updatedAt: string | null;
+    description: string | null;
+};
+
+export interface RemoteExplorerMongoDocument {
+    id: string;
+    value: RemoteExplorerMongoValueObject;
+};
+
+export interface RemoteExplorerNode {
+    path: string;
+    title: string;
+    type: RemoteExplorerNodeType;
+    contentType: RemoteExplorerContentType;
+    textContent: string | null;
+    mongoDocuments: RemoteExplorerMongoDocument[];
+};
+
+export interface RemoteExplorerRequest {
+    target: RemoteExplorerTarget;
+    path: string;
+};
+
 /**
  * Enumerates the protected remote resources available from the cluster explorer.
  */
@@ -35,45 +76,4 @@ export enum RemoteExplorerContentType {
     Empty = 'empty',
     Text = 'text',
     MongoDocuments = 'mongo-documents'
-};
-
-/**
- * Represents a navigable item rendered inside the shared remote explorer UI.
- */
-export interface RemoteExplorerEntry {
-    id: string;
-    name: string;
-    path: string;
-    type: RemoteExplorerEntryType;
-    size: number | null;
-    updatedAt: string | null;
-    description: string | null;
-};
-
-/**
- * Represents a MongoDB document rendered by the dedicated collection viewer.
- */
-export interface RemoteExplorerMongoDocument {
-    id: string;
-    value: Record<string, unknown>;
-};
-
-/**
- * Represents the content payload shown when the explorer opens a concrete resource node.
- */
-export interface RemoteExplorerNode {
-    path: string;
-    title: string;
-    type: RemoteExplorerNodeType;
-    contentType: RemoteExplorerContentType;
-    textContent: string | null;
-    mongoDocuments: RemoteExplorerMongoDocument[];
-};
-
-/**
- * Represents the reverse-channel payload used to query a remote explorer target.
- */
-export interface RemoteExplorerRequest {
-    target: RemoteExplorerTarget;
-    path: string;
 };

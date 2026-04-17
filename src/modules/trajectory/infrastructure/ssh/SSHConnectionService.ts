@@ -1,12 +1,15 @@
-import { Client, SFTPWrapper } from 'ssh2';
+import SftpClient from 'ssh2-sftp-client';
+
 import { logger } from '@/core/logger';
 import { withTimeout } from '@/core/observability/infrastructure/daemonInstrumentation';
-import { createWriteStream } from 'node:fs';
-import { pipeline } from 'node:stream/promises';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
 const SSH_OPERATION_TIMEOUT_MS = 30_000;
+
+type SftpClientInstance = InstanceType<typeof SftpClient>;
+type SftpRemoteFileInfo = Awaited<ReturnType<SftpClientInstance['list']>>[number];
+type SftpRemoteFileStats = Awaited<ReturnType<SftpClientInstance['stat']>>;
 
 export interface SSHConnectionConfig {
     host: string;
@@ -30,42 +33,62 @@ interface DownloadProgress {
     percent: number;
 };
 
+const toRemoteModifiedAt = (value: number): Date => {
+    return new Date(value >= 1_000_000_000_000 ? value : value * 1000);
+};
+
+const toSSHFileEntry = (
+    parentPath: string,
+    entry: Pick<SftpRemoteFileInfo, 'modifyTime' | 'name' | 'size' | 'type'>
+): SSHFileEntry => {
+    return {
+        name: entry.name,
+        path: path.posix.join(parentPath, entry.name),
+        isDirectory: entry.type === 'd',
+        size: entry.size,
+        mtime: toRemoteModifiedAt(entry.modifyTime)
+    };
+};
+
+const toSSHFileStatEntry = (
+    remotePath: string,
+    stats: Pick<SftpRemoteFileStats, 'isDirectory' | 'modifyTime' | 'size'>
+): SSHFileEntry => {
+    return {
+        name: path.posix.basename(remotePath),
+        path: remotePath,
+        isDirectory: stats.isDirectory,
+        size: stats.size,
+        mtime: toRemoteModifiedAt(stats.modifyTime)
+    };
+};
+
 export class SSHConnectionService {
     private readonly progressThrottleMs = 150;
     private readonly streamHighWaterMark = 1024 * 1024;
 
     async getFileStats(connection: SSHConnectionConfig, remotePath: string): Promise<SSHFileEntry | null> {
-        return this.execute('ssh-stat', connection, (sftp) => {
-            return new Promise((resolve) => {
-                sftp.stat(remotePath, (error, stats) => {
-                    if (error) {
-                        resolve(null);
-                        return;
-                    }
-
-                    resolve({
-                        name: path.posix.basename(remotePath),
-                        path: remotePath,
-                        isDirectory: stats.isDirectory(),
-                        size: stats.size,
-                        mtime: new Date(stats.mtime * 1000)
-                    });
-                });
-            });
+        return this.execute('ssh-stat', connection, async (client) => {
+            try {
+                const stats = await client.stat(remotePath);
+                return toSSHFileStatEntry(remotePath, stats);
+            } catch {
+                return null;
+            }
         });
     }
 
     async downloadFile(connection: SSHConnectionConfig, remotePath: string, localPath: string): Promise<void> {
-        await this.execute('ssh-download-file', connection, async (sftp) => {
+        await this.execute('ssh-download-file', connection, async (client) => {
             await fs.mkdir(path.dirname(localPath), { recursive: true });
-
-            const readStream = sftp.createReadStream(remotePath, {
-                highWaterMark: this.streamHighWaterMark
+            await client.get(remotePath, localPath, {
+                readStreamOptions: {
+                    highWaterMark: this.streamHighWaterMark
+                },
+                writeStreamOptions: {
+                    highWaterMark: this.streamHighWaterMark
+                }
             });
-            const writeStream = createWriteStream(localPath, {
-                highWaterMark: this.streamHighWaterMark
-            });
-            await pipeline(readStream, writeStream);
         });
     }
 
@@ -80,75 +103,51 @@ export class SSHConnectionService {
         }
 
         await fs.mkdir(localPath, { recursive: true });
-        const files: string[] = [];
-        const totalBytes = onProgress
-            ? await this.getRemoteDirectorySize(connection, remotePath)
-            : 0;
-        let downloadedBytes = 0;
-        let lastProgressEmitAt = 0;
 
-        const emitProgress = (currentFile: string) => {
-            if (!onProgress) {
-                return;
-            }
+        return this.execute('ssh-download-directory', connection, async (client) => {
+            const files: string[] = [];
+            const totalBytes = onProgress
+                ? await this.getRemoteDirectorySize(client, remotePath)
+                : 0;
+            let downloadedBytes = 0;
+            let lastProgressEmitAt = 0;
 
-            const now = Date.now();
-            if ((now - lastProgressEmitAt) < this.progressThrottleMs) {
-                return;
-            }
+            const emitProgress = (currentFile: string): void => {
+                if (!onProgress) {
+                    return;
+                }
 
-            lastProgressEmitAt = now;
-            onProgress({
-                totalBytes,
-                downloadedBytes,
-                currentFile,
-                percent: totalBytes > 0
-                    ? Math.min(100, Math.round((downloadedBytes / totalBytes) * 100))
-                    : 0
-            });
-        };
+                const now = Date.now();
+                if ((now - lastProgressEmitAt) < this.progressThrottleMs) {
+                    return;
+                }
 
-        await this.execute('ssh-download-directory', connection, async (sftp) => {
+                lastProgressEmitAt = now;
+                onProgress({
+                    totalBytes,
+                    downloadedBytes,
+                    currentFile,
+                    percent: totalBytes > 0
+                        ? Math.min(100, Math.round((downloadedBytes / totalBytes) * 100))
+                        : 0
+                });
+            };
+
             const downloadRecursive = async (remoteDir: string, localDir: string): Promise<void> => {
                 await fs.mkdir(localDir, { recursive: true });
 
-                const entries = await new Promise<SSHFileEntry[]>((resolve, reject) => {
-                    sftp.readdir(remoteDir, (error, list) => {
-                        if (error) {
-                            reject(error);
-                            return;
-                        }
-
-                        resolve(list.map((item) => ({
-                            name: item.filename,
-                            path: path.posix.join(remoteDir, item.filename),
-                            isDirectory: item.attrs.isDirectory(),
-                            size: item.attrs.size,
-                            mtime: new Date(item.attrs.mtime * 1000)
-                        })));
-                    });
-                });
-
-                for (const entry of entries) {
+                for (const entry of await this.listDirectory(client, remoteDir)) {
                     const localEntryPath = path.join(localDir, entry.name);
+
                     if (entry.isDirectory) {
-                        await fs.mkdir(localEntryPath, { recursive: true });
                         await downloadRecursive(entry.path, localEntryPath);
                         continue;
                     }
 
                     await fs.mkdir(path.dirname(localEntryPath), { recursive: true });
-                    await new Promise<void>((resolve, reject) => {
-                        sftp.fastGet(entry.path, localEntryPath, (error) => {
-                            if (error) {
-                                reject(error);
-                                return;
-                            }
-
-                            resolve();
-                        });
+                    await client.fastGet(entry.path, localEntryPath, {
+                        concurrency: 1
                     });
-
                     downloadedBytes += entry.size;
                     files.push(localEntryPath);
                     emitProgress(entry.name);
@@ -156,94 +155,65 @@ export class SSHConnectionService {
             };
 
             await downloadRecursive(remotePath, localPath);
+
+            if (onProgress) {
+                onProgress({
+                    totalBytes,
+                    downloadedBytes,
+                    currentFile: 'done',
+                    percent: totalBytes > 0 ? 100 : 0
+                });
+            }
+
+            return files;
         });
-
-        if (onProgress) {
-            onProgress({
-                totalBytes,
-                downloadedBytes,
-                currentFile: 'done',
-                percent: totalBytes > 0 ? 100 : 0
-            });
-        }
-
-        return files;
     }
 
-    private async getRemoteDirectorySize(connection: SSHConnectionConfig, remotePath: string): Promise<number> {
-        const client = new Client();
+    private async listDirectory(client: SftpClientInstance, remoteDir: string): Promise<SSHFileEntry[]> {
+        const entries = await client.list(remoteDir);
+        return entries.map((entry) => toSSHFileEntry(remoteDir, entry));
+    }
 
-        try {
-            return await withTimeout(async () => new Promise<number>((resolve) => {
-                client.on('ready', () => {
-                    const command = `du -sb -- ${this.shQuote(remotePath)}`;
-                    client.exec(command, (error, stream) => {
-                        if (error) {
-                            resolve(0);
-                            return;
-                        }
+    private async getRemoteDirectorySize(client: SftpClientInstance, remotePath: string): Promise<number> {
+        let totalBytes = 0;
 
-                        let output = '';
-                        stream.on('data', (data: Buffer) => {
-                            output += data.toString();
-                        });
-                        stream.on('close', () => {
-                            const match = output.match(/^(\d+)/);
-                            resolve(match ? Number.parseInt(match[1], 10) : 0);
-                        });
-                        stream.on('error', () => resolve(0));
-                    });
-                });
+        for (const entry of await this.listDirectory(client, remotePath)) {
+            if (entry.isDirectory) {
+                totalBytes += await this.getRemoteDirectorySize(client, entry.path);
+                continue;
+            }
 
-                client.on('error', () => resolve(0));
-                client.connect(connection);
-            }), {
-                onTimeout: () => {
-                    client.end();
-                },
-                operation: 'ssh-directory-size',
-                timeoutMs: SSH_OPERATION_TIMEOUT_MS
-            });
-        } finally {
-            client.end();
+            totalBytes += entry.size;
         }
+
+        return totalBytes;
     }
 
     private async execute<T>(
         operationName: string,
         connection: SSHConnectionConfig,
-        operation: (sftp: SFTPWrapper) => Promise<T>
+        operation: (client: SftpClientInstance) => Promise<T>
     ): Promise<T> {
-        const client = new Client();
+        const client = new SftpClient(`cluster-daemon:${operationName}`);
         const startedAt = Date.now();
 
         try {
-            logger.info({ host: connection.host, operationName, port: connection.port, username: connection.username }, 'Opening SSH connection');
-            const sftp = await withTimeout(async () => new Promise<SFTPWrapper>((resolve, reject) => {
-                client.on('ready', () => {
-                    client.sftp((error, nextSftp) => {
-                        if (error) {
-                            reject(error);
-                            return;
-                        }
-
-                        resolve(nextSftp);
-                    });
-                });
-
-                client.on('error', reject);
-                client.connect(connection);
-            }), {
-                onTimeout: () => {
-                    client.end();
+            logger.info(
+                {
+                    host: connection.host,
+                    operationName,
+                    port: connection.port,
+                    username: connection.username
                 },
-                operation: operationName,
-                timeoutMs: SSH_OPERATION_TIMEOUT_MS
-            });
+                'Opening SSH connection'
+            );
 
-            const result = await withTimeout(() => operation(sftp), {
+            const result = await withTimeout(async () => {
+                await client.connect(connection);
+                return operation(client);
+            }, {
                 onTimeout: () => {
-                    client.end();
+                    client.end().catch(() => undefined);
                 },
                 operation: operationName,
                 timeoutMs: SSH_OPERATION_TIMEOUT_MS
@@ -259,8 +229,9 @@ export class SSHConnectionService {
                 },
                 'SSH operation completed'
             );
+
             return result;
-        } catch (error: unknown) {
+        } catch (error) {
             logger.warn(
                 {
                     durationMs: Date.now() - startedAt,
@@ -274,11 +245,7 @@ export class SSHConnectionService {
             );
             throw error;
         } finally {
-            client.end();
+            await client.end().catch(() => undefined);
         }
-    }
-
-    private shQuote(value: string): string {
-        return `'${value.replace(/'/g, `'\"'\"'`)}'`;
     }
 };

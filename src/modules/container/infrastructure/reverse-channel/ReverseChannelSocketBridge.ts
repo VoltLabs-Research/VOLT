@@ -1,17 +1,26 @@
-import { REVERSE_CHANNEL, TeamClusterServiceExposureAccessMode } from '@/contracts';
+import { TTLCache } from '@isaacs/ttlcache';
 import { DockerRuntimeService } from '@/core/runtime/infrastructure/DockerRuntimeService';
 import { logger } from '@/core/logger';
+import { REVERSE_CHANNEL } from '@/core/reverse-channel/contracts/reverseChannel.constants';
+import type {
+    TeamClusterDaemonSessionDataPayload,
+    TeamClusterDaemonSessionEndPayload,
+    TeamClusterDaemonTunnelClosePayload,
+    TeamClusterDaemonTunnelDataPayload,
+    TeamClusterDaemonTunnelOpenPayload as LocalTeamClusterDaemonTunnelOpenPayload,
+    TeamClusterDaemonTunnelStatePayload
+} from '@/core/reverse-channel/contracts/reverseChannel.socket';
 import { adaptReverseChannelHandler } from '@/core/reverse-channel/infrastructure/reverseChannelCommandAdapter';
-import type { ReverseChannelCommandHandler } from '@/core/reverse-channel/contracts/commandHandler';
+import type { ReverseChannelCommandExecutor } from '@/core/reverse-channel/contracts/commandHandler';
+import { BASE64_SESSION_CHUNK_PATTERN, SESSION_ATTACH_TIMEOUT_MS } from '@/core/reverse-channel/contracts/reverseChannelSessionConstants';
+import { readTunnelOpenPayload } from '@/core/reverse-channel/infrastructure/reverseChannelTunnelOpen';
+import { TeamClusterServiceExposureAccessMode } from '@/core/runtime/contracts/serviceExposure';
 import { TerminalSessionManager } from '@/modules/container/application/sessions/TerminalSessionManager';
 import { WebSocketSessionManager } from '@/modules/container/application/sessions/WebSocketSessionManager';
 import { isTerminalSessionAttachPayload, isWebSocketSessionAttachPayload, readSessionAttachPayload } from '@/core/reverse-channel/infrastructure/reverseChannelSessionAttach';
-import { BASE64_SESSION_CHUNK_PATTERN, SESSION_ATTACH_TIMEOUT_MS } from '@/core/reverse-channel/contracts/reverseChannelSessionConstants';
-import { readTunnelOpenPayload } from '@/core/reverse-channel/infrastructure/reverseChannelTunnelOpen';
 import { OBJECT_GATEWAY_EXPOSURE } from '@/core/storage/infrastructure/gateway/ObjectGatewayServer';
 import { BinaryRelaySocketBridge } from '@/modules/container/infrastructure/relay/BinaryRelaySocketBridge';
 import net from 'node:net';
-import type { TeamClusterDaemonSessionDataPayload, TeamClusterDaemonSessionEndPayload, TeamClusterDaemonSessionInputPayload, TeamClusterDaemonSessionResizePayload, TeamClusterDaemonTunnelClosePayload, TeamClusterDaemonTunnelDataPayload, TeamClusterDaemonTunnelOpenPayload as LocalTeamClusterDaemonTunnelOpenPayload, TeamClusterDaemonTunnelStatePayload } from '@/contracts';
 import type { DaemonExposureRegistryService } from '@/modules/container/application/access/DaemonExposureRegistryService';
 import type { ObjectGatewayTelemetryService } from '@/core/observability/infrastructure/ObjectGatewayTelemetryService';
 import type { VoltCloudConnection } from '@/modules/container/infrastructure/connection/VoltCloudConnection';
@@ -34,6 +43,11 @@ interface SessionTransition {
     transitionId: number;
 };
 
+interface RegisteredReverseChannelCommand {
+    commandName: string;
+    execute: ReverseChannelCommandExecutor;
+}
+
 type OutboundBridgeMessage =
     | TeamClusterDaemonSessionDataPayload
     | TeamClusterDaemonSessionEndPayload
@@ -42,8 +56,6 @@ type OutboundBridgeMessage =
     | TeamClusterDaemonTunnelClosePayload;
 
 const SESSION_IDLE_TTL_MS = 10 * 60 * 1000;
-
-const SESSION_SWEEP_INTERVAL_MS = 60 * 1000;
 
 export class ReverseChannelSocketBridge {
     private readonly tunnelStates = new Map<string, ReverseChannelTunnelState>();
@@ -54,16 +66,28 @@ export class ReverseChannelSocketBridge {
     private readonly binaryRelaySocketBridge: BinaryRelaySocketBridge;
     private nextSessionTransitionId = 0;
 
-    private readonly sessionActivity = new Map<string, number>();
-    private idleSweepTimer: ReturnType<typeof setInterval> | null = null;
+    private readonly sessionActivity = new TTLCache<string, true>({
+        ttl: SESSION_IDLE_TTL_MS,
+        updateAgeOnGet: true,
+        checkAgeOnGet: true,
+        checkAgeOnHas: true,
+        dispose: (_value, sessionId, reason) => {
+            if (reason !== 'stale') {
+                return;
+            }
 
-    private readonly pendingHandlers: ReverseChannelCommandHandler[] = [];
+            logger.warn({ sessionId }, 'Session idle TTL expired — cleaning up');
+            this.cleanupInteractiveSession(sessionId);
+        }
+    });
+
+    private readonly pendingCommands: RegisteredReverseChannelCommand[] = [];
     private voltCloudConnection: VoltCloudConnection | null = null;
-    private exposureRegistryService?: DaemonExposureRegistryService;
 
     constructor(
         private readonly dockerRuntimeService?: DockerRuntimeService,
-        private readonly objectGatewayTelemetryService?: ObjectGatewayTelemetryService
+        private readonly objectGatewayTelemetryService?: ObjectGatewayTelemetryService,
+        private readonly daemonExposureRegistryService?: DaemonExposureRegistryService
     ) {
         this.terminalSessionManager = new TerminalSessionManager({
             dockerRuntimeService: this.dockerRuntimeService,
@@ -75,7 +99,7 @@ export class ReverseChannelSocketBridge {
                 emitSessionEnd: this.emitMessage.bind(this),
                 endSessionTransition: this.endSessionTransition.bind(this),
                 touchSession: this.touchSession.bind(this),
-                wasSessionTransitionCancelled: this.wasSessionTransitionCancelled.bind(this)
+                wasSessionTransitionCancelled: (transition) => this.cancelledSessionTransitions.has(transition.transitionId)
             }
         });
         this.webSocketSessionManager = new WebSocketSessionManager({
@@ -95,41 +119,31 @@ export class ReverseChannelSocketBridge {
             touchSession: this.touchSession.bind(this),
             clearSessionActivityIfUntracked: this.clearSessionActivityIfUntracked.bind(this),
             endSessionTransition: this.endSessionTransition.bind(this),
-            wasSessionTransitionCancelled: this.wasSessionTransitionCancelled.bind(this)
+            wasSessionTransitionCancelled: (transition) => this.cancelledSessionTransitions.has(transition.transitionId)
         }, this.objectGatewayTelemetryService);
     }
 
-    registerHandler(handler: ReverseChannelCommandHandler): void {
+    registerCommand(commandName: string, execute: ReverseChannelCommandExecutor): void {
         if (this.voltCloudConnection) {
             this.voltCloudConnection.client.registerHandler(
-                handler.command,
-                adaptReverseChannelHandler(handler)
+                commandName,
+                adaptReverseChannelHandler(commandName, execute)
             );
             return;
         }
 
-        this.pendingHandlers.push(handler);
-    }
-
-    setExposureRegistryService(exposureRegistryService: DaemonExposureRegistryService): void {
-        this.exposureRegistryService = exposureRegistryService;
+        this.pendingCommands.push({ commandName, execute });
     }
 
     bindToClient(voltCloudConnection: VoltCloudConnection): void {
         this.voltCloudConnection = voltCloudConnection;
 
-        for (const handler of this.pendingHandlers) {
+        for (const command of this.pendingCommands) {
             voltCloudConnection.client.registerHandler(
-                handler.command,
-                adaptReverseChannelHandler(handler)
+                command.commandName,
+                adaptReverseChannelHandler(command.commandName, command.execute)
             );
         }
-
-        voltCloudConnection.client.registerHandler('session.attach', {
-            handle: async (payload, _ctx) => {
-                return this.handleSessionAttach(payload as Record<string, unknown> | undefined);
-            }
-        });
 
         voltCloudConnection.client
             .onMessage((message) => {
@@ -138,12 +152,10 @@ export class ReverseChannelSocketBridge {
             .onDisconnected(() => {
                 this.cleanup();
             });
-
-        this.startIdleSweep();
     }
 
     private touchSession(sessionId: string): void {
-        this.sessionActivity.set(sessionId, Date.now());
+        this.sessionActivity.set(sessionId, true);
     }
 
     private beginSessionTransition(sessionId: string): SessionTransition | null {
@@ -171,24 +183,19 @@ export class ReverseChannelSocketBridge {
 
     private cancelSessionTransition(sessionId: string): void {
         const transitionId = this.attachingSessionIds.get(sessionId);
-        if (typeof transitionId === 'number') {
-            this.cancelledSessionTransitions.add(transitionId);
+        if (transitionId === undefined) {
+            return;
         }
-    }
 
-    private wasSessionTransitionCancelled(transition: SessionTransition): boolean {
-        return this.cancelledSessionTransitions.has(transition.transitionId);
+        this.cancelledSessionTransitions.add(transitionId);
     }
 
     private clearSessionActivityIfUntracked(sessionId: string): void {
-        if (
-            !this.terminalSessionManager.hasSession(sessionId)
-            && !this.webSocketSessionManager.hasSession(sessionId)
-            && !this.tunnelStates.has(sessionId)
-            && !this.binaryRelaySocketBridge.hasSession(sessionId)
-        ) {
-            this.sessionActivity.delete(sessionId);
-        }
+        if (this.terminalSessionManager.terminalStates.has(sessionId)) return;
+        if (this.webSocketSessionManager.webSocketStates.has(sessionId)) return;
+        if (this.tunnelStates.has(sessionId)) return;
+        if (this.binaryRelaySocketBridge.sessions.has(sessionId)) return;
+        this.sessionActivity.delete(sessionId);
     }
 
     private cleanupInteractiveSession(sessionId: string): void {
@@ -200,33 +207,16 @@ export class ReverseChannelSocketBridge {
         });
     }
 
-    private startIdleSweep(): void {
-        if (this.idleSweepTimer) {
-            return;
-        }
-
-        this.idleSweepTimer = setInterval(() => {
-            const now = Date.now();
-            for (const [sessionId, lastActive] of this.sessionActivity) {
-                if (now - lastActive > SESSION_IDLE_TTL_MS) {
-                    logger.warn({ sessionId }, 'Session idle TTL expired — cleaning up');
-                    this.cleanupInteractiveSession(sessionId);
-                }
-            }
-        }, SESSION_SWEEP_INTERVAL_MS);
-        this.idleSweepTimer.unref();
-    }
-
     cleanup(): void {
         for (const sessionId of this.attachingSessionIds.keys()) {
             this.cancelSessionTransition(sessionId);
         }
 
-        for (const sessionId of this.terminalSessionManager.getSessionIds()) {
+        for (const sessionId of this.terminalSessionManager.terminalStates.keys()) {
             this.cleanupInteractiveSession(sessionId);
         }
 
-        for (const sessionId of this.webSocketSessionManager.getSessionIds()) {
+        for (const sessionId of this.webSocketSessionManager.webSocketStates.keys()) {
             this.cleanupInteractiveSession(sessionId);
         }
 
@@ -234,31 +224,33 @@ export class ReverseChannelSocketBridge {
             this.cleanupInteractiveSession(sessionId);
         }
 
-        for (const sessionId of this.binaryRelaySocketBridge.getSessionIds()) {
+        for (const sessionId of this.binaryRelaySocketBridge.sessions.keys()) {
             this.cleanupInteractiveSession(sessionId);
         }
 
         this.sessionActivity.clear();
-
-        if (this.idleSweepTimer) {
-            clearInterval(this.idleSweepTimer);
-            this.idleSweepTimer = null;
-        }
     }
 
     private routeInboundMessage(message: InboundTeamClusterDaemonMessage): void {
         if (message.type === 'session-input') {
-            this.handleSessionInput(message);
+            if (this.terminalSessionManager.handleInput(message)) {
+                return;
+            }
+
+            if (!this.webSocketSessionManager.handleInput(message)) {
+                this.sessionActivity.delete(message.sessionId);
+            }
             return;
         }
 
         if (message.type === 'session-resize') {
-            this.handleSessionResize(message);
+            this.terminalSessionManager.handleResize(message);
             return;
         }
 
         if (message.type === 'session-detach') {
-            this.handleSessionDetach(message);
+            this.cancelSessionTransition(message.sessionId);
+            this.cleanupInteractiveSession(message.sessionId);
             return;
         }
 
@@ -274,13 +266,11 @@ export class ReverseChannelSocketBridge {
         }
 
         if (message.type === 'tunnel-close') {
-            this.handleTunnelClose(message);
+            this.cleanupTunnelSession(message.sessionId);
         }
     }
 
-    private async handleSessionAttach(
-        payload: Record<string, unknown> | undefined
-    ): Promise<CommandResult> {
+    attachSession(payload: object | undefined): Promise<CommandResult> {
         const attachPayload = readSessionAttachPayload(payload);
 
         if (isTerminalSessionAttachPayload(attachPayload)) {
@@ -291,29 +281,10 @@ export class ReverseChannelSocketBridge {
             return this.webSocketSessionManager.attachSession(attachPayload);
         }
 
-        return {
+        return Promise.resolve({
             status: 400,
             data: { status: 'error', message: `Unsupported session kind: ${attachPayload.kind}` }
-        };
-    }
-
-    private handleSessionInput(payload: TeamClusterDaemonSessionInputPayload): void {
-        if (this.terminalSessionManager.handleInput(payload)) {
-            return;
-        }
-
-        if (!this.webSocketSessionManager.handleInput(payload)) {
-            this.sessionActivity.delete(payload.sessionId);
-        }
-    }
-
-    private handleSessionResize(payload: TeamClusterDaemonSessionResizePayload): void {
-        this.terminalSessionManager.handleResize(payload);
-    }
-
-    private handleSessionDetach(payload: { sessionId: string }): void {
-        this.cancelSessionTransition(payload.sessionId);
-        this.cleanupInteractiveSession(payload.sessionId);
+        });
     }
 
     private handleTunnelOpen(payload: LocalTeamClusterDaemonTunnelOpenPayload): void {
@@ -340,7 +311,7 @@ export class ReverseChannelSocketBridge {
             targetHost = payload.targetHost;
             targetPort = payload.targetPort;
         } else {
-            const exposure = this.exposureRegistryService?.getExposure(payload.exposureId);
+            const exposure = this.daemonExposureRegistryService?.getExposure(payload.exposureId);
 
             if (!exposure) {
                 this.endSessionTransition(sessionTransition);
@@ -495,10 +466,6 @@ export class ReverseChannelSocketBridge {
 
         this.touchSession(payload.sessionId);
         tunnelState.socket.write(Buffer.from(payload.chunkBase64, 'base64'));
-    }
-
-    private handleTunnelClose(payload: TeamClusterDaemonTunnelClosePayload): void {
-        this.cleanupTunnelSession(payload.sessionId);
     }
 
     private emitMessage(message: OutboundBridgeMessage): void {

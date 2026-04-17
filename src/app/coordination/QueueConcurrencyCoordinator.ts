@@ -1,9 +1,9 @@
 import { logger } from '@/core/logger';
+import type { TeamClusterDaemonQueueConcurrency } from '@/core/runtime/contracts/teamClusterRuntime';
 import type { AnalysisWorker } from '@/modules/analysis/application/execution/AnalysisWorker';
 import type { SSHImportWorkerService } from '@/modules/trajectory/application/import/SSHImportWorkerService';
 import type { TrajectoryGlbWorkerService } from '@/modules/trajectory/application/glb/TrajectoryGlbWorkerService';
 import type { TrajectoryRasterWorkerService } from '@/modules/trajectory/application/raster/TrajectoryRasterWorkerService';
-import type { TeamClusterDaemonQueueConcurrency } from '@/contracts';
 
 interface QueueConcurrencyCoordinatorDependencies {
     analysisWorker: AnalysisWorker;
@@ -13,17 +13,9 @@ interface QueueConcurrencyCoordinatorDependencies {
 }
 
 export class QueueConcurrencyCoordinator {
-    private dependencies: QueueConcurrencyCoordinatorDependencies | null = null;
-
-    bind(dependencies: QueueConcurrencyCoordinatorDependencies): void {
-        this.dependencies = dependencies;
-    }
+    constructor(private readonly dependencies: QueueConcurrencyCoordinatorDependencies) {}
 
     apply(queueConcurrency: TeamClusterDaemonQueueConcurrency): void {
-        if (!this.dependencies) {
-            throw new Error('QueueConcurrencyCoordinator dependencies are not bound');
-        }
-
         this.dependencies.analysisWorker.setConcurrency(queueConcurrency.analysis);
         this.dependencies.trajectoryRasterWorkerService.setConcurrency(queueConcurrency.rasterizer);
         this.dependencies.trajectoryGlbWorkerService.setConcurrency(queueConcurrency.glbPreprocessing);

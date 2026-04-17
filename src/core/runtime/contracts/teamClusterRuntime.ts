@@ -1,5 +1,3 @@
-export const TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION = 3;
-
 export type TeamClusterRole = 'cluster' | 'storage-server' | 'compute-node';
 
 interface TeamClusterRoleDrainState {
@@ -38,6 +36,37 @@ export interface TeamClusterDaemonQueueScopeLimits {
     trajectoryGlbConversion: TeamClusterQueueScopeLimit;
     cloudUpload: TeamClusterQueueScopeLimit;
     trajectoryCompression: TeamClusterQueueScopeLimit;
+}
+
+export interface TeamClusterDaemonRoleApplyPayload {
+    [key: string]: string | number | boolean | null | TeamClusterRuntimeRoleConfig | undefined;
+    roleConfig: TeamClusterRuntimeRoleConfig;
+}
+
+export interface TeamClusterDaemonRoleApplyResult {
+    accepted: boolean;
+    roleConfig: TeamClusterRuntimeRoleConfig;
+    effectiveCapabilities: TeamClusterEffectiveCapabilities;
+}
+
+export interface TeamClusterDaemonQueueConcurrency {
+    analysis: number;
+    rasterizer: number;
+    glbPreprocessing: number;
+    sshImport: number;
+}
+
+export interface TeamClusterDaemonQueueConcurrencyApplyPayload {
+    queueConcurrency: TeamClusterDaemonQueueConcurrency;
+    queueScopeLimits: TeamClusterDaemonQueueScopeLimits;
+}
+
+export interface TeamClusterDaemonRuntimeConfig {
+    contractVersion: number;
+    queueConcurrency: TeamClusterDaemonQueueConcurrency;
+    queueScopeLimits: TeamClusterDaemonQueueScopeLimits;
+    roleConfig: TeamClusterRuntimeRoleConfig;
+    effectiveCapabilities: TeamClusterEffectiveCapabilities;
 }
 
 export const DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS: TeamClusterDaemonQueueScopeLimits = {
@@ -112,13 +141,4 @@ export const createDefaultTeamClusterRuntimeRoleConfig = (
     };
 };
 
-export interface TeamClusterDaemonRoleApplyPayload {
-    [key: string]: unknown;
-    roleConfig: TeamClusterRuntimeRoleConfig;
-}
-
-export interface TeamClusterDaemonRoleApplyResult {
-    accepted: boolean;
-    roleConfig: TeamClusterRuntimeRoleConfig;
-    effectiveCapabilities: TeamClusterEffectiveCapabilities;
-}
+export const TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION = 3;

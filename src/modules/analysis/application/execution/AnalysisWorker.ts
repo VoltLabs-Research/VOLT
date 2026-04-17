@@ -1,80 +1,133 @@
-import { logger } from '@/core/logger';
-import { DAEMON_PATHS } from '@/core/paths';
-import { forceGC, isMemoryPressured } from '@/core/memory';
-import { ANALYSIS_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
-import { QueueService } from '@/core/queues/application/QueueService';
-import { delayJobOnQueueScopeContention, tryAcquireQueueScopeLease } from '@/core/queues/contracts/queue-scope-lease';
-import { WorkflowGraph, WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
-import { createWorkflowNodeRegistry } from '@/modules/analysis/application/workflow/createWorkflowNodeRegistry';
-import { createWorkflowExecutionContext } from '@/modules/analysis/application/workflow/WorkflowExecutionContextFactory';
-import { InlineWorkflowRuntime } from '@/modules/analysis/application/workflow/InlineWorkflowRuntime';
-import { createNestedExecutionResult, readNestedExposureItems } from '@/modules/analysis/application/workflow/InlineWorkflowShared';
-import { executeWorkflowEntrypoint } from '@/modules/analysis/application/workflow/WorkflowEntrypointExecution';
-import { isWorkflowRuntimeNodeReady, resolveWorkflowRuntimeChildNodeIds } from '@/modules/analysis/application/workflow/WorkflowRuntimeScheduling';
-import { inflateAnalysisExecutionData } from '@/support/policies/analysis-execution-data';
-import type { QueueScopeLease } from '@/core/queues/contracts/queue-scope-lease';
-import type { QueueScopeLimitsRegistry } from '@/core/queues/application/QueueScopeLimitsRegistry';
-import type { WorkflowNode } from '@/modules/analysis/contracts/workflow.types';
-import type { InlineExposureArtifact, InlineWorkflowDumpTarget } from '@/modules/analysis/application/workflow/InlineWorkflowShared';
-import { getRecommendedBinaryThreads, getSafeAnalysisWorkerConcurrency } from '@/support/policies/analysis-resource-policy';
-import { isRecord } from '@/support/type-guards/isRecord';
-import { createWriteStream } from 'node:fs';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { createZstdDecompressionStream } from '@/support/serialization/storage-codec';
-import { pipeline } from 'node:stream/promises';
-import { DelayedError } from 'bullmq';
-import type { ArtifactUploadBatch, ArtifactUploadQueueService } from '@/modules/plugin/application/artifacts/ArtifactUploadQueueService';
-import type { ResultProcessorService } from '@/modules/plugin/application/exports/ResultProcessorService';
-import { EntrypointType, ObjectBucketName } from '@/contracts';
-import type { AnalysisJobExecutionData, AnalysisQueueJobPayload } from '@/contracts';
-import type { AnalysisExecutionDataStore } from '@/modules/analysis/infrastructure/storage/AnalysisExecutionDataStore';
-import type { RedisConnectionService } from '@/core/storage/infrastructure/redis/RedisConnectionService';
-import type { Job as BullMQJob, Worker } from 'bullmq';
-import { createAnalysisExecutionLogSink, type ExecutionLogSegmentMetadata } from '@/core/runtime/infrastructure/ExecutionLogStreaming';
-import type { BinaryExecutorService, ProcessExecutionLogSink } from '@/core/runtime/infrastructure/BinaryExecutorService';
-import type { PluginBinaryCacheService } from '@/modules/plugin/application/binaries/PluginBinaryCacheService';
-import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
+import Bottleneck from 'bottleneck';
+
+import { QueueService } from '@/core/queues/application/QueueService'; import type { QueueScopeLimitsRegistry } from '@/core/queues/application/QueueScopeLimitsRegistry'; import type { QueueScopeLease } from '@/core/queues/infrastructure/queue-scope-lease'; import { delayJobOnQueueScopeContention, tryAcquireQueueScopeLease } from '@/core/queues/infrastructure/queue-scope-lease';
+import { ANALYSIS_QUEUE_NAME } from '@/core/queues/contracts/queue-names'; import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore'; import { ObjectBucketName } from '@/core/storage/contracts/http.objectStore'; import type { RedisConnectionService } from '@/core/storage/infrastructure/redis/RedisConnectionService';
+import type { BinaryExecutorService, ProcessExecutionLogSink } from '@/core/runtime/infrastructure/BinaryExecutorService'; import { createAnalysisExecutionLogSink } from '@/core/runtime/infrastructure/ExecutionLogStreaming'; import type { ExecutionLogSegmentMetadata } from '@/core/runtime/infrastructure/ExecutionLogStreaming'; import { EntrypointType } from '@/core/runtime/contracts/http.runtime';
+import { logger } from '@/core/logger'; import { forceGC, isMemoryPressured } from '@/core/memory'; import { DAEMON_PATHS } from '@/core/paths'; import type { AnalysisLogChunkReportedEventData } from '@/modules/analysis/application/events/AnalysisLogChunkReportedEvent';
+import type { ExecutionLogSegment } from '@/modules/analysis/application/events/ExecutionLogSegment'; import { createWorkflowExecutionContext } from '@/modules/analysis/application/workflow/WorkflowExecutionContextFactory'; import { executeWorkflowEntrypoint } from '@/modules/analysis/application/workflow/WorkflowEntrypointExecution';
+import { createNestedExecutionResult } from '@/modules/analysis/application/workflow/InlineWorkflowShared'; import type { InlineExposureArtifact, InlineWorkflowDumpTarget, WorkflowExecutionResultOutput } from '@/modules/analysis/application/workflow/InlineWorkflowShared'; import { InlineWorkflowRuntime } from '@/modules/analysis/application/workflow/InlineWorkflowRuntime';
+import { createWorkflowNodeRegistry } from '@/modules/analysis/application/workflow/createWorkflowNodeRegistry'; import { isWorkflowRuntimeNodeReady, resolveWorkflowRuntimeChildNodeIds } from '@/modules/analysis/application/workflow/WorkflowRuntimeScheduling'; import type { AnalysisExecutionDataReference, AnalysisJobExecutionData, AnalysisQueueJobPayload } from '@/modules/analysis/contracts/http.analysis';
+import type { WorkflowNode, WorkflowNodeOutput } from '@/modules/analysis/contracts/workflow.types'; import { WorkflowGraph, WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types'; import type { AnalysisCompletedEventData } from '@/modules/analysis/domain/events/AnalysisCompletedEvent';
+import type { AnalysisFailedEventData } from '@/modules/analysis/domain/events/AnalysisFailedEvent'; import type { BaseAnalysisEventData } from '@/modules/analysis/domain/events/shared/BaseAnalysisEventData'; import type { AnalysisExecutionDataStore } from '@/modules/analysis/infrastructure/storage/AnalysisExecutionDataStore';
+import type { PluginBinaryCacheService } from '@/modules/plugin/application/binaries/PluginBinaryCacheService'; import type { ArtifactUploadBatch, ArtifactUploadQueueService } from '@/modules/plugin/application/artifacts/ArtifactUploadQueueService'; import type { ResultProcessorService } from '@/modules/plugin/application/exports/ResultProcessorService.contract';
+import type { ArtifactUploadFailedEventData } from '@/modules/plugin/domain/events/artifact-upload/ArtifactUploadFailedEvent'; import type { ArtifactUploadQueuedEventData } from '@/modules/plugin/domain/events/artifact-upload/ArtifactUploadQueuedEvent'; import type { ArtifactUploadStartedEventData } from '@/modules/plugin/domain/events/artifact-upload/ArtifactUploadStartedEvent';
+import { getRecommendedBinaryThreads, getSafeAnalysisWorkerConcurrency } from '@/support/policies/analysis-resource-policy'; import { inflateAnalysisExecutionData } from '@/support/policies/analysis-execution-data'; import { createZstdDecompressionStream } from '@/support/serialization/storage-codec';
+import { dir as createTempDir } from 'tmp-promise';
+import { createWriteStream } from 'node:fs'; import { pipeline } from 'node:stream/promises'; import { DelayedError, type Job as BullMQJob, type Worker } from 'bullmq'; import fg from 'fast-glob'; import fs from 'node:fs/promises'; import path from 'node:path';
+
+type AnalysisOutput = WorkflowNodeOutput;
+
+interface AnalysisJobMetadata {
+    [key: string]: AnalysisOutput | number | string | undefined;
+    analysisId?: string;
+    trajectoryId?: string;
+    trajectoryName?: string;
+    timestep?: number;
+    inputFile?: string;
+    forEachItem?: AnalysisOutput;
+    forEachIndex?: number;
+}
 
 interface AnalysisJobStatusReporter {
-    reportAnalysisLogChunk(input: {
-        jobId: string;
-        analysisId: string;
-        teamId: string;
-        trajectoryId: string;
-        timestep: number;
-        segments: import('@/contracts').TeamClusterDaemonExecutionLogSegment[];
-    }): Promise<void>;
-    reportAnalysisJobStatus(input: {
-        jobId: string;
-        name: string;
-        analysisId: string;
-        teamId: string;
-        trajectoryId?: string;
-        trajectoryName?: string;
-        timestep?: number;
-        status: 'running' | 'completed' | 'failed';
-        error?: string;
-    }): Promise<void>;
-    reportArtifactUploadJobStatus(input: {
-        jobId: string;
-        analysisId: string;
-        teamId: string;
-        trajectoryId: string;
-        trajectoryName?: string;
-        timestep?: number;
-        status: 'queued' | 'running' | 'completed' | 'failed';
-        error?: string;
-    }): Promise<void>;
-    reportJobCompletion(input: {
-        jobId: string;
-        name: string;
-        analysisId: string;
-        teamId: string;
-        timestep?: number;
-        success: boolean;
-        error?: string;
-    }): Promise<void>;
+    reportAnalysisCompleted(input: AnalysisCompletedEventData): Promise<void>;
+    reportAnalysisFailed(input: AnalysisFailedEventData): Promise<void>;
+    reportAnalysisLogChunk(input: AnalysisLogChunkReportedEventData): Promise<void>;
+    reportAnalysisStarted(input: BaseAnalysisEventData): Promise<void>;
+    reportArtifactUploadFailed(input: ArtifactUploadFailedEventData): Promise<void>;
+    reportArtifactUploadQueued(input: ArtifactUploadQueuedEventData): Promise<void>;
+    reportArtifactUploadStarted(input: ArtifactUploadStartedEventData): Promise<void>;
+}
+
+interface ResolvedAnalysisJobExecutionData extends AnalysisJobExecutionData {
+    teamId: string;
+}
+
+interface AnalysisWorkerJobPayload extends AnalysisQueueJobPayload {
+    jobId: string;
+    teamId: string;
+    name: string;
+    timestep?: number;
+    executionData?: AnalysisJobExecutionData;
+    executionDataCompressed?: string;
+    executionDataReference?: AnalysisExecutionDataReference;
+    metadata?: AnalysisJobMetadata;
+}
+
+interface PrepareLocalExecutionInput {
+    executionData: ResolvedAnalysisJobExecutionData;
+    inputFile?: string;
+    forEachItem?: AnalysisOutput;
+    forEachIndex: number;
+    timestep: number | undefined;
+    isBatchMode: boolean;
+}
+
+type JobCompletionStatus = 'completed' | 'failed';
+
+interface ExecuteRuntimeWorkflowParams {
+    jobId: string;
+    executionData: ResolvedAnalysisJobExecutionData;
+    outputs: Map<string, AnalysisOutput>;
+    dumpTargets: InlineWorkflowDumpTarget[];
+    outputDir: string;
+    timestep: number;
+    artifactUploadBatch: ArtifactUploadBatch;
+    isBatchMode: boolean;
+}
+
+interface ExecuteRuntimeNodeParams extends ExecuteRuntimeWorkflowParams {
+    workflow: WorkflowGraph;
+    runtimeContext: ReturnType<typeof createWorkflowExecutionContext>;
+    node: WorkflowNode;
+    visitedNodeIds: Set<string>;
+    executionPath: string[];
+}
+
+interface ExecutePluginNodeParams {
+    jobId: string;
+    executionData: ResolvedAnalysisJobExecutionData;
+    node: WorkflowNode;
+    outputs: Map<string, AnalysisOutput>;
+    dumpTargets: InlineWorkflowDumpTarget[];
+    outputDir: string;
+    isBatchMode: boolean;
+    executionPath: string[];
+}
+
+interface ExecuteEntrypointNodeParams {
+    jobId: string;
+    executionData: ResolvedAnalysisJobExecutionData;
+    workflow: WorkflowGraph;
+    outputs: Map<string, AnalysisOutput>;
+    node: WorkflowNode;
+    dumpTargets: InlineWorkflowDumpTarget[];
+    outputDir: string;
+    executionPath: string[];
+}
+
+interface ExecuteExposureNodeParams {
+    jobId: string;
+    executionData: ResolvedAnalysisJobExecutionData;
+    node: WorkflowNode;
+    outputs: Map<string, AnalysisOutput>;
+    outputDir: string;
+    timestep: number;
+    artifactUploadBatch: ArtifactUploadBatch;
+}
+
+interface BinaryExecutionLease {
+    args: string[];
+    requestedThreads?: number;
+    appliedThreads?: number;
+    activeBinaryExecutions: number;
+    release: () => void;
+}
+
+interface PreparedAnalysisRuntime {
+    outputDir: string;
+    outputs: Map<string, AnalysisOutput>;
+    dumpTargets: InlineWorkflowDumpTarget[];
+    dumpLocalPaths: string[];
 }
 
 const DUMPS_BUCKET = ObjectBucketName.Dumps;
@@ -91,48 +144,20 @@ const runWithConcurrencyLimit = async <TItem, TResult>(
         return [];
     }
 
-    const workerCount = Math.max(1, Math.min(concurrency, items.length));
-    const results = new Array<TResult>(items.length);
-    let nextIndex = 0;
+    const limiter = new Bottleneck({
+        maxConcurrent: Math.max(1, Math.min(concurrency, items.length))
+    });
 
-    await Promise.all(Array.from({ length: workerCount }, async () => {
-        while (true) {
-            const currentIndex = nextIndex;
-            nextIndex += 1;
-
-            if (currentIndex >= items.length) {
-                return;
-            }
-
-            results[currentIndex] = await task(items[currentIndex], currentIndex);
-        }
-    }));
-
-    return results;
-};
-
-const findThreadsArgumentIndex = (args: string[]): number => {
-    for (let index = 0; index < args.length - 1; index += 1) {
-        if (args[index] !== '--threads') {
-            continue;
-        }
-
-        const parsedThreads = Number.parseInt(args[index + 1] ?? '', 10);
-        if (Number.isFinite(parsedThreads) && parsedThreads >= 1) {
-            return index;
-        }
+    try {
+        return await Promise.all(items.map((item, index) => {
+            return limiter.schedule(() => task(item, index));
+        }));
+    } finally {
+        await limiter.stop({
+            dropWaitingJobs: false
+        });
     }
-
-    return -1;
 };
-
-interface BinaryExecutionLease {
-    args: string[];
-    requestedThreads?: number;
-    appliedThreads?: number;
-    activeBinaryExecutions: number;
-    release: () => void;
-}
 
 const acquireBinaryExecutionLease = (args: string[]): BinaryExecutionLease => {
     activeBinaryExecutions += 1;
@@ -141,7 +166,7 @@ const acquireBinaryExecutionLease = (args: string[]): BinaryExecutionLease => {
         activeBinaryExecutions = Math.max(0, activeBinaryExecutions - 1);
     };
 
-    const threadsArgumentIndex = findThreadsArgumentIndex(args);
+    const threadsArgumentIndex = args.findIndex((arg, index) => arg === '--threads' && index < args.length - 1);
     if (threadsArgumentIndex === -1) {
         return {
             args: [...args],
@@ -150,8 +175,8 @@ const acquireBinaryExecutionLease = (args: string[]): BinaryExecutionLease => {
         };
     }
 
-    const requestedThreads = Number.parseInt(args[threadsArgumentIndex + 1] ?? '', 10);
-    if (!Number.isFinite(requestedThreads) || requestedThreads < 1) {
+    const requestedThreads = Number.parseInt(args[threadsArgumentIndex + 1], 10);
+    if (Number.isNaN(requestedThreads) || requestedThreads < 1) {
         return {
             args: [...args],
             activeBinaryExecutions: currentActiveExecutions,
@@ -171,7 +196,7 @@ const acquireBinaryExecutionLease = (args: string[]): BinaryExecutionLease => {
     }
 
     const adjustedArgs = [...args];
-    adjustedArgs[threadsArgumentIndex + 1] = String(appliedThreads);
+    adjustedArgs[threadsArgumentIndex + 1] = appliedThreads.toString();
 
     return {
         args: adjustedArgs,
@@ -181,37 +206,6 @@ const acquireBinaryExecutionLease = (args: string[]): BinaryExecutionLease => {
         release
     };
 };
-const applyBatchContextDumpPaths = (
-    contextOutput: Record<string, unknown>,
-    dumpTargets: InlineWorkflowDumpTarget[],
-    outputDir: string
-): Record<string, unknown> => {
-    const dumpPaths = dumpTargets.map((dumpTarget) => ({
-        timestep: dumpTarget.timestep,
-        natoms: dumpTarget.natoms,
-        simulationCell: dumpTarget.simulationCell,
-        path: dumpTarget.localPath,
-        originalPath: dumpTarget.originalPath
-    }));
-
-    return {
-        ...contextOutput,
-        trajectory_dumps: dumpPaths,
-        trajectory: {
-            ...(isRecord(contextOutput.trajectory) ? contextOutput.trajectory : {}),
-            frames: dumpPaths
-        },
-        allDumpLocalPaths: JSON.stringify(dumpTargets.map((dumpTarget) => dumpTarget.localPath)),
-        outputPath: outputDir
-    };
-};
-
-interface PreparedAnalysisRuntime {
-    outputDir: string;
-    outputs: Map<string, Record<string, unknown>>;
-    dumpTargets: InlineWorkflowDumpTarget[];
-    dumpLocalPaths: string[];
-}
 
 export class AnalysisWorker {
     private running = false;
@@ -240,12 +234,11 @@ export class AnalysisWorker {
 
     private createAnalysisLogSink(
         jobId: string,
-        executionData: AnalysisJobExecutionData,
+        executionData: ResolvedAnalysisJobExecutionData,
         timesteps: number[],
         metadata: ExecutionLogSegmentMetadata
     ): ProcessExecutionLogSink | undefined {
-        const teamId = executionData.teamId ?? '';
-        const trajectoryId = executionData.trajectoryId;
+        const { teamId, trajectoryId } = executionData;
         if (!teamId || !trajectoryId) {
             return undefined;
         }
@@ -271,7 +264,7 @@ export class AnalysisWorker {
         this.running = true;
         this.worker = this.queueService.createWorker<AnalysisQueueJobPayload>(
             ANALYSIS_QUEUE_NAME,
-            async (jobPayload, job) => this.processJob(jobPayload, job),
+            (jobPayload, job) => this.processJob(jobPayload as AnalysisWorkerJobPayload, job),
             { concurrency: effectiveConcurrency }
         );
 
@@ -320,7 +313,7 @@ export class AnalysisWorker {
         );
     }
 
-    private async processJob(job: AnalysisQueueJobPayload, bullJob: BullMQJob<AnalysisQueueJobPayload>): Promise<void> {
+    private async processJob(job: AnalysisWorkerJobPayload, bullJob: BullMQJob<AnalysisQueueJobPayload>): Promise<void> {
         if (isMemoryPressured()) {
             const delayMs = 30_000;
             logger.warn(
@@ -331,10 +324,9 @@ export class AnalysisWorker {
             throw new DelayedError();
         }
 
-        const metadata = (job.metadata ?? {}) as Record<string, unknown>;
-        const forEachItem = (metadata.forEachItem ?? {}) as Record<string, unknown>;
-        const forEachIndex = typeof metadata.forEachIndex === 'number' ? metadata.forEachIndex : 0;
-        let executionData: AnalysisJobExecutionData | null = null;
+        const metadata: AnalysisJobMetadata = job.metadata ?? {};
+        const forEachIndex = metadata?.forEachIndex ?? 0;
+        let executionData: ResolvedAnalysisJobExecutionData | null = null;
         let isBatchMode = false;
         let timestep: number | undefined;
         let runtime: PreparedAnalysisRuntime | null = null;
@@ -346,22 +338,43 @@ export class AnalysisWorker {
             queueScopeLease = await this.acquireQueueScopeLease(job, bullJob, executionData);
 
             isBatchMode = executionData.batchMode === true;
-            timestep = isBatchMode ? undefined : this.resolveJobTimestep(job, metadata);
+            timestep = isBatchMode ? undefined : (job.timestep ?? metadata?.timestep);
 
-            if (!isBatchMode && typeof timestep === 'undefined') {
+            if (!isBatchMode && timestep === undefined) {
                 throw new Error(`Missing timestep for analysis job ${job.jobId}`);
             }
 
-            artifactUploadBatch = this.createArtifactUploadBatch(job, executionData, metadata, timestep);
-            this.reportRunningStatus(job, executionData, metadata, timestep);
+            artifactUploadBatch = this.artifactUploadQueueService.createBatch({
+                analysisId: executionData.analysisId,
+                analysisJobId: job.jobId,
+                teamId: job.teamId,
+                trajectoryId: executionData.trajectoryId,
+                trajectoryName: metadata?.trajectoryName,
+                timestep
+            });
+            this.daemonJobReporterService.reportAnalysisStarted({
+                jobId: job.jobId,
+                name: job.name,
+                analysisId: executionData.analysisId,
+                teamId: job.teamId,
+                trajectoryId: metadata?.trajectoryId,
+                trajectoryName: metadata?.trajectoryName,
+                timestep
+            }).catch((err) => {
+                logger.warn({ jobId: job.jobId, err }, 'Failed to report running status to server');
+            });
             runtime = await this.prepareLocalExecution({
                 executionData,
-                metadata,
-                forEachItem,
+                inputFile: metadata?.inputFile,
+                forEachItem: metadata?.forEachItem,
                 forEachIndex,
                 timestep,
                 isBatchMode
             });
+            const firstDumpTarget = runtime.dumpTargets[0];
+            if (!firstDumpTarget) {
+                throw new Error(`Missing dump target for analysis job ${job.jobId}`);
+            }
 
             await bullJob.updateProgress(10);
             await this.executeRuntimeWorkflow({
@@ -370,7 +383,7 @@ export class AnalysisWorker {
                 outputs: runtime.outputs,
                 dumpTargets: runtime.dumpTargets,
                 outputDir: runtime.outputDir,
-                timestep: runtime.dumpTargets[0]?.timestep ?? 0,
+                timestep: firstDumpTarget.timestep,
                 artifactUploadBatch,
                 isBatchMode
             });
@@ -378,29 +391,41 @@ export class AnalysisWorker {
 
             const { jobId: artifactUploadJobId } = await artifactUploadBatch.enqueue();
             if (artifactUploadJobId) {
-                await this.reportQueuedArtifactUpload(artifactUploadJobId, job, executionData, metadata, timestep);
+                await this.daemonJobReporterService.reportArtifactUploadQueued({
+                    jobId: artifactUploadJobId,
+                    analysisId: executionData.analysisId,
+                    teamId: job.teamId,
+                    trajectoryId: executionData.trajectoryId,
+                    trajectoryName: metadata?.trajectoryName,
+                    timestep
+                }).catch((err) => {
+                    logger.warn({ err, jobId: artifactUploadJobId }, 'Failed to report queued artifact upload status');
+                });
             }
 
             await bullJob.updateProgress(95);
 
-            await this.reportJobCompletion(job, executionData.analysisId, timestep, true);
+            await this.reportJobCompletion(job, executionData.analysisId, timestep, 'completed');
 
             await bullJob.updateProgress(100);
-        } catch (error: unknown) {
+        } catch (error) {
             if (error instanceof DelayedError) {
                 throw error;
             }
 
-            const message = error instanceof Error ? error.message : String(error);
+            const message = error instanceof Error ? error.message : `${error}`;
             logger.error({ jobId: job.jobId, err: error }, `Job failed: ${message}`);
-            const analysisId = executionData?.analysisId
-                ?? (typeof metadata.analysisId === 'string' ? metadata.analysisId : 'unknown-analysis');
+            const analysisId = executionData
+                ? executionData.analysisId
+                : metadata.analysisId;
 
-            await this.reportJobCompletion(job, analysisId, timestep, false, message).catch(() => {});
+            if (analysisId) {
+                await this.reportJobCompletion(job, analysisId, timestep, 'failed', message).catch(() => {});
+            }
 
             throw error instanceof Error ? error : new Error(message);
         } finally {
-            const dumpPathsToClean = runtime?.dumpLocalPaths ?? [];
+            const dumpPathsToClean = runtime ? runtime.dumpLocalPaths : [];
 
             if (dumpPathsToClean.length > 0) {
                 const cleanupTask = runtime?.outputDir
@@ -425,11 +450,11 @@ export class AnalysisWorker {
     }
 
     private async acquireQueueScopeLease(
-        job: AnalysisQueueJobPayload,
+        job: AnalysisWorkerJobPayload,
         bullJob: BullMQJob<AnalysisQueueJobPayload>,
-        executionData: AnalysisJobExecutionData
+        executionData: ResolvedAnalysisJobExecutionData
     ): Promise<QueueScopeLease> {
-        const trajectoryId = executionData.trajectoryId.trim();
+        const { trajectoryId } = executionData;
         if (!trajectoryId) {
             throw new Error(`Missing trajectoryId for analysis ${executionData.analysisId}`);
         }
@@ -447,7 +472,7 @@ export class AnalysisWorker {
                 trajectoryScope,
                 {
                     scope: 'team',
-                    scopeId: executionData.teamId ?? '',
+                    scopeId: executionData.teamId,
                     limit: queueScopeLimits.analysisProcessing.maxRunningPerTeam
                 }
             ]
@@ -466,66 +491,7 @@ export class AnalysisWorker {
         throw new DelayedError();
     }
 
-    private createArtifactUploadBatch(
-        job: AnalysisQueueJobPayload,
-        executionData: AnalysisJobExecutionData,
-        metadata: Record<string, unknown>,
-        timestep: number | undefined
-    ): ArtifactUploadBatch {
-        return this.artifactUploadQueueService.createBatch({
-            analysisId: executionData.analysisId,
-            analysisJobId: job.jobId,
-            teamId: job.teamId,
-            trajectoryId: executionData.trajectoryId,
-            trajectoryName: typeof metadata.trajectoryName === 'string' ? metadata.trajectoryName : undefined,
-            timestep
-        });
-    }
-
-    private reportRunningStatus(
-        job: AnalysisQueueJobPayload,
-        executionData: AnalysisJobExecutionData,
-        metadata: Record<string, unknown>,
-        timestep: number | undefined
-    ): void {
-        this.daemonJobReporterService.reportAnalysisJobStatus({
-            jobId: job.jobId,
-            name: job.name,
-            analysisId: executionData.analysisId,
-            teamId: job.teamId,
-            trajectoryId: typeof metadata.trajectoryId === 'string' ? metadata.trajectoryId : undefined,
-            trajectoryName: typeof metadata.trajectoryName === 'string' ? metadata.trajectoryName : undefined,
-            timestep,
-            status: 'running'
-        }).catch((err) => {
-            logger.warn({ jobId: job.jobId, err }, 'Failed to report running status to server');
-        });
-    }
-
-    private async executeReadyRuntimeChild(
-        params: Parameters<AnalysisWorker['executeRuntimeNode']>[0],
-        childNode: WorkflowNode,
-        executionPath: string[]
-    ): Promise<void> {
-        if (!isWorkflowRuntimeNodeReady(params.workflow, childNode.id, params.outputs, params.visitedNodeIds)) {
-            return;
-        }
-
-        await this.executeRuntimeNode({
-            ...params,
-            node: childNode,
-            executionPath
-        });
-    }
-
-    private async prepareLocalExecution(input: {
-        executionData: AnalysisJobExecutionData;
-        metadata: Record<string, unknown>;
-        forEachItem: Record<string, unknown>;
-        forEachIndex: number;
-        timestep: number | undefined;
-        isBatchMode: boolean;
-    }): Promise<PreparedAnalysisRuntime> {
+    private async prepareLocalExecution(input: PrepareLocalExecutionInput): Promise<PreparedAnalysisRuntime> {
         const dumpOwnerClusterId = input.executionData.storageClusterId;
         if (!dumpOwnerClusterId) {
             throw new Error(`Missing storageClusterId for analysis ${input.executionData.analysisId}`);
@@ -540,17 +506,19 @@ export class AnalysisWorker {
                     dumpLocalPaths.push(await this.downloadDump(dumpUrl, dumpOwnerClusterId));
                 }
             } else {
-                dumpLocalPaths.push(await this.downloadDump(
-                    typeof input.metadata.inputFile === 'string' ? input.metadata.inputFile : '',
-                    dumpOwnerClusterId
-                ));
+                if (!input.inputFile) {
+                    throw new Error(`Missing inputFile for analysis ${input.executionData.analysisId}`);
+                }
+
+                dumpLocalPaths.push(await this.downloadDump(input.inputFile, dumpOwnerClusterId));
             }
 
-            outputDir = path.join(
-                DAEMON_PATHS.analysisOutput,
-                `${input.executionData.analysisId}-${input.forEachIndex}-${Date.now()}`
-            );
-            await fs.mkdir(outputDir, { recursive: true });
+            await fs.mkdir(DAEMON_PATHS.analysisOutput, { recursive: true });
+            outputDir = (await createTempDir({
+                tmpdir: DAEMON_PATHS.analysisOutput,
+                prefix: `${input.executionData.analysisId}-${input.forEachIndex}-`,
+                unsafeCleanup: true
+            })).path;
 
             const outputs = input.isBatchMode
                 ? this.buildBatchOutputsMap(input.executionData, dumpLocalPaths, outputDir)
@@ -558,7 +526,7 @@ export class AnalysisWorker {
                     input.executionData,
                     input.forEachItem,
                     input.forEachIndex,
-                    dumpLocalPaths[0],
+                    dumpLocalPaths[0]!,
                     outputDir
                 );
             const dumpTargets = input.isBatchMode
@@ -583,67 +551,42 @@ export class AnalysisWorker {
         }
     }
 
-    private async reportQueuedArtifactUpload(
-        artifactUploadJobId: string,
-        job: AnalysisQueueJobPayload,
-        executionData: AnalysisJobExecutionData,
-        metadata: Record<string, unknown>,
-        timestep: number | undefined
-    ): Promise<void> {
-        await this.daemonJobReporterService.reportArtifactUploadJobStatus({
-            jobId: artifactUploadJobId,
-            analysisId: executionData.analysisId,
-            teamId: job.teamId,
-            trajectoryId: executionData.trajectoryId,
-            trajectoryName: typeof metadata.trajectoryName === 'string' ? metadata.trajectoryName : undefined,
-            timestep,
-            status: 'queued'
-        }).catch((err) => {
-            logger.warn({ err, jobId: artifactUploadJobId }, 'Failed to report queued artifact upload status');
-        });
-    }
-
     private async reportJobCompletion(
-        job: AnalysisQueueJobPayload,
+        job: AnalysisWorkerJobPayload,
         analysisId: string,
         timestep: number | undefined,
-        success: boolean,
+        status: JobCompletionStatus,
         error?: string
     ): Promise<void> {
-        await this.daemonJobReporterService.reportJobCompletion({
+        const payload = {
             jobId: job.jobId,
             name: job.name,
             analysisId,
             teamId: job.teamId,
-            timestep,
-            success,
-            error
+            timestep
+        };
+
+        if (status === 'completed') {
+            await this.daemonJobReporterService.reportAnalysisCompleted(payload);
+            return;
+        }
+
+        await this.daemonJobReporterService.reportAnalysisFailed({
+            ...payload,
+            error: this.resolveJobFailureReason(error)
         });
     }
 
-    private resolveJobTimestep(
-        job: AnalysisQueueJobPayload,
-        metadata: Record<string, unknown>
-    ): number | undefined {
-        if (typeof job.timestep === 'number' && Number.isFinite(job.timestep)) {
-            return job.timestep;
-        }
+    private async resolveExecutionData(job: AnalysisWorkerJobPayload): Promise<ResolvedAnalysisJobExecutionData> {
+        let executionData: AnalysisJobExecutionData | null = null;
 
-        if (typeof metadata.timestep === 'number' && Number.isFinite(metadata.timestep)) {
-            return metadata.timestep;
-        }
-
-        return undefined;
-    }
-
-    private async resolveExecutionData(job: AnalysisQueueJobPayload): Promise<AnalysisJobExecutionData> {
         if (job.executionDataReference) {
             const referencedExecutionData = await this.analysisExecutionDataStore.get(job.executionDataReference);
             if (referencedExecutionData) {
-                return referencedExecutionData;
+                executionData = referencedExecutionData;
             }
 
-            if (typeof job.executionDataCompressed === 'string' && job.executionDataCompressed.length > 0) {
+            if (!executionData && job.executionDataCompressed && job.executionDataCompressed.length > 0) {
                 try {
                     const parsedExecutionData = inflateAnalysisExecutionData(job.executionDataCompressed);
 
@@ -655,8 +598,8 @@ export class AnalysisWorker {
                         },
                         'Falling back to compressed analysis execution data after reference resolution miss'
                     );
-                    return parsedExecutionData;
-                } catch (error: unknown) {
+                    executionData = parsedExecutionData;
+                } catch (error) {
                     logger.warn(
                         {
                             err: error,
@@ -668,7 +611,7 @@ export class AnalysisWorker {
                 }
             }
 
-            if (job.executionData) {
+            if (!executionData && job.executionData) {
                 logger.warn(
                     {
                         jobId: job.jobId,
@@ -676,76 +619,122 @@ export class AnalysisWorker {
                     },
                     'Falling back to inline analysis execution data after reference resolution miss'
                 );
-                return job.executionData;
+                executionData = job.executionData;
             }
         }
 
-        if (job.executionData) {
-            return job.executionData;
+        if (!executionData && job.executionData) {
+            executionData = job.executionData;
         }
 
-        throw new Error(`Missing analysis execution data for job ${job.jobId}`);
+        if (!executionData) {
+            throw new Error(`Missing analysis execution data for job ${job.jobId}`);
+        }
+
+        return {
+            ...executionData,
+            teamId: executionData.teamId ?? job.teamId
+        };
     }
 
     private buildOutputsMap(
-        executionData: AnalysisJobExecutionData,
-        forEachItem: Record<string, unknown>,
+        executionData: ResolvedAnalysisJobExecutionData,
+        forEachItem: AnalysisOutput | undefined,
         forEachIndex: number,
         dumpLocalPath: string,
         outputDir: string
-    ): Map<string, Record<string, unknown>> {
-        const outputs = new Map<string, Record<string, unknown>>();
+    ): Map<string, AnalysisOutput> {
+        const outputs = new Map<string, AnalysisOutput>();
 
         for (const [nodeId, nodeOutput] of Object.entries(executionData.nodeOutputSnapshots)) {
-            outputs.set(nodeId, { ...nodeOutput });
+            outputs.set(nodeId, { ...nodeOutput } as AnalysisOutput);
         }
 
         if (executionData.forEachNodeId) {
-            const forEachOutput = outputs.get(executionData.forEachNodeId) || {};
-            forEachOutput.currentValue = {
-                ...forEachItem,
-                path: dumpLocalPath
-            };
-            forEachOutput.currentIndex = forEachIndex;
-            forEachOutput.outputPath = outputDir;
-            outputs.set(executionData.forEachNodeId, forEachOutput);
+            const currentValue = forEachItem
+                ? {
+                    ...forEachItem,
+                    path: dumpLocalPath
+                }
+                : { path: dumpLocalPath };
+            const previousForEachOutput = outputs.get(executionData.forEachNodeId);
+
+            outputs.set(executionData.forEachNodeId, previousForEachOutput
+                ? {
+                    ...previousForEachOutput,
+                    currentValue,
+                    currentIndex: forEachIndex,
+                    outputPath: outputDir
+                }
+                : {
+                    currentValue,
+                    currentIndex: forEachIndex,
+                    outputPath: outputDir
+                });
         }
 
         return outputs;
     }
 
     private buildBatchOutputsMap(
-        executionData: AnalysisJobExecutionData,
+        executionData: ResolvedAnalysisJobExecutionData,
         allDumpLocalPaths: string[],
         outputDir: string
-    ): Map<string, Record<string, unknown>> {
-        const outputs = new Map<string, Record<string, unknown>>();
+    ): Map<string, AnalysisOutput> {
+        const outputs = new Map<string, AnalysisOutput>();
         const dumpTargets = this.createDumpExecutionTargets(executionData, allDumpLocalPaths);
 
         for (const [nodeId, nodeOutput] of Object.entries(executionData.nodeOutputSnapshots)) {
-            outputs.set(nodeId, { ...nodeOutput });
+            outputs.set(nodeId, { ...nodeOutput } as AnalysisOutput);
         }
 
         const contextNodeId = executionData.contextNodeId;
         if (contextNodeId) {
-            const contextOutput = outputs.get(contextNodeId) || {};
-            outputs.set(contextNodeId, applyBatchContextDumpPaths(contextOutput, dumpTargets, outputDir));
+            const contextOutput = outputs.get(contextNodeId);
+            const trajectoryDumps = dumpTargets.map((dumpTarget) => this.createTrajectoryDumpOutput(dumpTarget));
+            const nextContextOutput = this.createBatchContextOutput(contextOutput, trajectoryDumps, dumpTargets, outputDir);
+
+            outputs.set(contextNodeId, contextOutput
+                ? {
+                    ...contextOutput,
+                    ...nextContextOutput
+                }
+                : nextContextOutput);
         }
 
         return outputs;
     }
 
-    private async executeRuntimeWorkflow(params: {
-        jobId: string;
-        executionData: AnalysisJobExecutionData;
-        outputs: Map<string, Record<string, unknown>>;
-        dumpTargets: InlineWorkflowDumpTarget[];
-        outputDir: string;
-        timestep: number;
-        artifactUploadBatch: ArtifactUploadBatch;
-        isBatchMode: boolean;
-    }): Promise<void> {
+    private createTrajectoryDumpOutput(dumpTarget: InlineWorkflowDumpTarget): AnalysisOutput {
+        return {
+            timestep: dumpTarget.timestep,
+            natoms: dumpTarget.natoms,
+            simulationCell: dumpTarget.simulationCell,
+            path: dumpTarget.localPath,
+            originalPath: dumpTarget.originalPath
+        };
+    }
+
+    private createBatchContextOutput(
+        contextOutput: AnalysisOutput | undefined,
+        trajectoryDumps: AnalysisOutput[],
+        dumpTargets: InlineWorkflowDumpTarget[],
+        outputDir: string
+    ): AnalysisOutput {
+        return {
+            trajectory_dumps: trajectoryDumps,
+            trajectory: Object.assign({}, contextOutput?.trajectory, { frames: trajectoryDumps }),
+            allDumpLocalPaths: JSON.stringify(dumpTargets.map((dumpTarget) => dumpTarget.localPath)),
+            outputPath: outputDir
+        };
+    }
+
+    private async executeRuntimeWorkflow(params: ExecuteRuntimeWorkflowParams): Promise<void> {
         const workflow = new WorkflowGraph(params.executionData.workflow);
+        const firstDumpTarget = params.dumpTargets[0];
+        if (!firstDumpTarget) {
+            throw new Error(`Missing dump target for analysis ${params.executionData.analysisId}`);
+        }
         const runtimeContext = createWorkflowExecutionContext({
             outputs: params.outputs,
             userConfig: {},
@@ -758,8 +747,8 @@ export class AnalysisWorker {
             },
             analysisId: params.executionData.analysisId,
             pluginId: params.executionData.pluginId,
-            teamId: params.executionData.teamId ?? '',
-            selectedTimestep: params.dumpTargets[0]?.timestep,
+            teamId: params.executionData.teamId,
+            selectedTimestep: firstDumpTarget.timestep,
             workflow,
             nestedPlugins: params.executionData.nestedPlugins
         });
@@ -781,21 +770,7 @@ export class AnalysisWorker {
         }
     }
 
-    private async executeRuntimeNode(params: {
-        jobId: string;
-        executionData: AnalysisJobExecutionData;
-        workflow: WorkflowGraph;
-        runtimeContext: ReturnType<typeof createWorkflowExecutionContext>;
-        outputs: Map<string, Record<string, unknown>>;
-        node: WorkflowNode;
-        dumpTargets: InlineWorkflowDumpTarget[];
-        outputDir: string;
-        timestep: number;
-        artifactUploadBatch: ArtifactUploadBatch;
-        isBatchMode: boolean;
-        visitedNodeIds: Set<string>;
-        executionPath: string[];
-    }): Promise<void> {
+    private async executeRuntimeNode(params: ExecuteRuntimeNodeParams): Promise<void> {
         if (params.visitedNodeIds.has(params.node.id)) {
             return;
         }
@@ -814,7 +789,15 @@ export class AnalysisWorker {
         if (params.node.type === WorkflowNodeType.Exposure) {
             await this.executeExposureNodeForRuntime(params);
             for (const childNode of params.workflow.getChildren(params.node.id)) {
-                await this.executeReadyRuntimeChild(params, childNode, [...params.executionPath, childNode.id]);
+                if (!isWorkflowRuntimeNodeReady(params.workflow, childNode.id, params.outputs, params.visitedNodeIds)) {
+                    continue;
+                }
+
+                await this.executeRuntimeNode({
+                    ...params,
+                    node: childNode,
+                    executionPath: [...params.executionPath, childNode.id]
+                });
             }
             return;
         }
@@ -823,7 +806,15 @@ export class AnalysisWorker {
             const pluginOutput = await this.executePluginNodeForRuntime(params);
             params.outputs.set(params.node.id, pluginOutput);
             for (const childNode of params.workflow.getChildren(params.node.id)) {
-                await this.executeReadyRuntimeChild(params, childNode, [...params.executionPath, childNode.id]);
+                if (!isWorkflowRuntimeNodeReady(params.workflow, childNode.id, params.outputs, params.visitedNodeIds)) {
+                    continue;
+                }
+
+                await this.executeRuntimeNode({
+                    ...params,
+                    node: childNode,
+                    executionPath: [...params.executionPath, childNode.id]
+                });
             }
             return;
         }
@@ -832,7 +823,15 @@ export class AnalysisWorker {
             const entrypointOutput = await this.executeEntrypointNodeForRuntime(params);
             params.outputs.set(params.node.id, entrypointOutput);
             for (const childNode of params.workflow.getChildren(params.node.id)) {
-                await this.executeReadyRuntimeChild(params, childNode, [...params.executionPath, childNode.id]);
+                if (!isWorkflowRuntimeNodeReady(params.workflow, childNode.id, params.outputs, params.visitedNodeIds)) {
+                    continue;
+                }
+
+                await this.executeRuntimeNode({
+                    ...params,
+                    node: childNode,
+                    executionPath: [...params.executionPath, childNode.id]
+                });
             }
             return;
         }
@@ -841,53 +840,70 @@ export class AnalysisWorker {
             return;
         }
 
-        const output = await this.workflowNodeRegistry.execute(params.node, params.runtimeContext);
+        const output = await this.workflowNodeRegistry.execute(params.node, params.runtimeContext) as AnalysisOutput;
         params.outputs.set(params.node.id, output);
 
         if (params.node.type === WorkflowNodeType.IfStatement) {
-            const childNodes = resolveWorkflowRuntimeChildNodeIds(params.workflow, params.node, output).activeNodeIds
-                .map((childNodeId) => params.workflow.nodes.find((candidate) => candidate.id === childNodeId))
-                .filter((childNode): childNode is WorkflowNode => Boolean(childNode));
+            const childNodes = resolveWorkflowRuntimeChildNodeIds(params.workflow, params.node, output).activeNodeIds.flatMap((childNodeId) => {
+                const childNode = params.workflow.nodes.find((candidate) => candidate.id === childNodeId);
+                return childNode ? [childNode] : [];
+            });
 
             for (const childNode of childNodes) {
-                await this.executeReadyRuntimeChild(params, childNode, [...params.executionPath, childNode.id]);
+                if (!isWorkflowRuntimeNodeReady(params.workflow, childNode.id, params.outputs, params.visitedNodeIds)) {
+                    continue;
+                }
+
+                await this.executeRuntimeNode({
+                    ...params,
+                    node: childNode,
+                    executionPath: [...params.executionPath, childNode.id]
+                });
             }
             return;
         }
 
         if (params.node.type === WorkflowNodeType.SwitchStatement) {
-            const childNodes = resolveWorkflowRuntimeChildNodeIds(params.workflow, params.node, output).activeNodeIds
-                .map((childNodeId) => params.workflow.nodes.find((candidate) => candidate.id === childNodeId))
-                .filter((childNode): childNode is WorkflowNode => Boolean(childNode));
+            const childNodes = resolveWorkflowRuntimeChildNodeIds(params.workflow, params.node, output).activeNodeIds.flatMap((childNodeId) => {
+                const childNode = params.workflow.nodes.find((candidate) => candidate.id === childNodeId);
+                return childNode ? [childNode] : [];
+            });
 
             for (const childNode of childNodes) {
-                await this.executeReadyRuntimeChild(params, childNode, [...params.executionPath, childNode.id]);
+                if (!isWorkflowRuntimeNodeReady(params.workflow, childNode.id, params.outputs, params.visitedNodeIds)) {
+                    continue;
+                }
+
+                await this.executeRuntimeNode({
+                    ...params,
+                    node: childNode,
+                    executionPath: [...params.executionPath, childNode.id]
+                });
             }
             return;
         }
 
         for (const childNode of params.workflow.getChildren(params.node.id)) {
-            await this.executeReadyRuntimeChild(params, childNode, [...params.executionPath, childNode.id]);
+            if (!isWorkflowRuntimeNodeReady(params.workflow, childNode.id, params.outputs, params.visitedNodeIds)) {
+                continue;
+            }
+
+            await this.executeRuntimeNode({
+                ...params,
+                node: childNode,
+                executionPath: [...params.executionPath, childNode.id]
+            });
         }
     }
 
-    private async executePluginNodeForRuntime(params: {
-        jobId: string;
-        executionData: AnalysisJobExecutionData;
-        node: WorkflowNode;
-        outputs: Map<string, Record<string, unknown>>;
-        dumpTargets: InlineWorkflowDumpTarget[];
-        outputDir: string;
-        isBatchMode: boolean;
-        executionPath: string[];
-    }): Promise<Record<string, unknown>> {
+    private async executePluginNodeForRuntime(params: ExecutePluginNodeParams): Promise<AnalysisOutput> {
         if (!params.dumpTargets.length) {
             return createNestedExecutionResult([]);
         }
 
         if (params.isBatchMode && params.dumpTargets.length > 1) {
             const perDumpOutputs = params.dumpTargets.map(() => {
-                const clonedOutputs = new Map<string, Record<string, unknown>>();
+                const clonedOutputs = new Map<string, AnalysisOutput>();
                 for (const [nodeId, nodeOutput] of params.outputs.entries()) {
                     clonedOutputs.set(nodeId, { ...nodeOutput });
                 }
@@ -912,7 +928,7 @@ export class AnalysisWorker {
                             _id: params.executionData.analysisId,
                             pluginDisplayName: params.executionData.pluginId
                         },
-                        teamId: params.executionData.teamId ?? '',
+                        teamId: params.executionData.teamId,
                         rootNodeId: params.node.id,
                         executionPath: params.executionPath,
                         logSinkFactory: (context) => this.createAnalysisLogSink(
@@ -928,7 +944,7 @@ export class AnalysisWorker {
                         )
                     });
 
-                    return readNestedExposureItems(execution.output);
+                    return (execution.output as WorkflowExecutionResultOutput).execution_result.exposures.items;
                 }
             );
 
@@ -954,7 +970,7 @@ export class AnalysisWorker {
                 _id: params.executionData.analysisId,
                 pluginDisplayName: params.executionData.pluginId
             },
-            teamId: params.executionData.teamId ?? '',
+            teamId: params.executionData.teamId,
             rootNodeId: params.node.id,
             executionPath: params.executionPath,
             logSinkFactory: (context) => this.createAnalysisLogSink(
@@ -973,20 +989,11 @@ export class AnalysisWorker {
         return execution.output;
     }
 
-    private async executeEntrypointNodeForRuntime(params: {
-        jobId: string;
-        executionData: AnalysisJobExecutionData;
-        workflow: WorkflowGraph;
-        outputs: Map<string, Record<string, unknown>>;
-        node: WorkflowNode;
-        dumpTargets: InlineWorkflowDumpTarget[];
-        outputDir: string;
-        executionPath: string[];
-    }): Promise<Record<string, unknown>> {
+    private executeEntrypointNodeForRuntime(params: ExecuteEntrypointNodeParams): Promise<AnalysisOutput> {
         const entrypointData = params.node.data.entrypoint;
-        const binaryObjectPath = entrypointData?.binaryObjectPath || params.executionData.binaryObjectPath;
-        const argumentsTemplate = entrypointData?.arguments || params.executionData.arguments;
-        const entrypointType = entrypointData?.type || params.executionData.entrypointType || EntrypointType.Executable;
+        const binaryObjectPath = entrypointData?.binaryObjectPath ?? params.executionData.binaryObjectPath;
+        const argumentsTemplate = entrypointData?.arguments ?? params.executionData.arguments;
+        const entrypointType = entrypointData?.type ?? params.executionData.entrypointType ?? EntrypointType.Executable;
         const timeoutMs = entrypointData?.timeout ?? params.executionData.timeoutMs;
 
         return executeWorkflowEntrypoint({
@@ -1029,15 +1036,7 @@ export class AnalysisWorker {
         });
     }
 
-    private async executeExposureNodeForRuntime(params: {
-        jobId: string;
-        executionData: AnalysisJobExecutionData;
-        node: WorkflowNode;
-        outputs: Map<string, Record<string, unknown>>;
-        outputDir: string;
-        timestep: number;
-        artifactUploadBatch: ArtifactUploadBatch;
-    }): Promise<void> {
+    private async executeExposureNodeForRuntime(params: ExecuteExposureNodeParams): Promise<void> {
         const exposure = params.executionData.exposures.find((candidate) => candidate.nodeId === params.node.id);
         if (!exposure?.results) {
             params.outputs.set(params.node.id, {
@@ -1062,7 +1061,7 @@ export class AnalysisWorker {
             exposure,
             params.outputDir,
             params.timestep,
-            params.executionData.teamId ?? '',
+            params.executionData.teamId,
             params.artifactUploadBatch
         );
         params.outputs.set(params.node.id, {
@@ -1074,33 +1073,81 @@ export class AnalysisWorker {
     }
 
     private createDumpExecutionTargets(
-        executionData: AnalysisJobExecutionData,
+        executionData: ResolvedAnalysisJobExecutionData,
         dumpLocalPaths: string[],
         fallbackTimestep?: number
     ): InlineWorkflowDumpTarget[] {
-        const batchTrajectoryDumps = executionData.batchTrajectoryDumps ?? [];
-        const batchDumpMetadataByPath = new Map(
-            batchTrajectoryDumps.map((dump) => [dump.path, dump])
-        );
+        const batchTrajectoryDumps = executionData.batchTrajectoryDumps;
+        const allDumpUrls = executionData.allDumpUrls;
+        const batchDumpMetadataByPath = new Map<string, NonNullable<typeof batchTrajectoryDumps>[number]>();
+        if (batchTrajectoryDumps) {
+            for (const dump of batchTrajectoryDumps) {
+                batchDumpMetadataByPath.set(dump.path, dump);
+            }
+        }
         const frameMetadataByTimestep = new Map(
             executionData.trajectoryFrames.map((frame) => [frame.timestep, frame])
         );
 
-        return dumpLocalPaths.map((localPath, index) => {
-            const batchDumpMetadata = batchTrajectoryDumps[index]
-                ?? batchDumpMetadataByPath.get(executionData.allDumpUrls?.[index] ?? '');
-            const originalPath = batchDumpMetadata?.originalPath ?? batchDumpMetadata?.path ?? executionData.allDumpUrls?.[index];
-            const timestep = batchDumpMetadata?.timestep ?? fallbackTimestep ?? 0;
-            const frameMetadata = frameMetadataByTimestep.get(timestep);
+        const dumpTargets: InlineWorkflowDumpTarget[] = [];
 
-            return {
+        for (const [index, localPath] of dumpLocalPaths.entries()) {
+            let batchDumpMetadata = batchTrajectoryDumps?.[index];
+            if (!batchDumpMetadata && allDumpUrls) {
+                const dumpUrl = allDumpUrls[index];
+                if (dumpUrl) {
+                    batchDumpMetadata = batchDumpMetadataByPath.get(dumpUrl);
+                }
+            }
+
+            let timestep = 0;
+            if (batchDumpMetadata?.timestep !== undefined) {
+                timestep = batchDumpMetadata.timestep;
+            } else if (fallbackTimestep !== undefined) {
+                timestep = fallbackTimestep;
+            }
+
+            const frameMetadata = frameMetadataByTimestep.get(timestep);
+            let originalPath = batchDumpMetadata?.originalPath;
+            if (!originalPath) {
+                originalPath = batchDumpMetadata?.path;
+            }
+            if (!originalPath && allDumpUrls) {
+                originalPath = allDumpUrls[index];
+            }
+
+            let natoms = 0;
+            if (batchDumpMetadata?.natoms !== undefined) {
+                natoms = batchDumpMetadata.natoms;
+            } else if (frameMetadata?.natoms !== undefined) {
+                natoms = frameMetadata.natoms;
+            }
+
+            let simulationCell = '';
+            if (batchDumpMetadata?.simulationCell !== undefined) {
+                simulationCell = batchDumpMetadata.simulationCell;
+            } else if (frameMetadata?.simulationCell !== undefined) {
+                simulationCell = frameMetadata.simulationCell;
+            }
+
+            dumpTargets.push({
                 localPath,
                 originalPath,
                 timestep,
-                natoms: batchDumpMetadata?.natoms ?? frameMetadata?.natoms ?? 0,
-                simulationCell: batchDumpMetadata?.simulationCell ?? frameMetadata?.simulationCell ?? ''
-            };
-        });
+                natoms,
+                simulationCell
+            });
+        }
+
+        return dumpTargets;
+    }
+
+    private resolveJobFailureReason(error: string | undefined): string {
+        if (error !== undefined) {
+            return error;
+        }
+
+        throw new Error('Missing failure reason for failed analysis job');
     }
 
     private async downloadDump(objectKey: string, ownerClusterId?: string): Promise<string> {
@@ -1121,13 +1168,12 @@ export class AnalysisWorker {
         const localPath = path.join(DAEMON_PATHS.analysisDumps, `${localFileName}-${Date.now()}`);
         await fs.mkdir(path.dirname(localPath), { recursive: true });
 
-        const resolvedOwnerClusterId = ownerClusterId || '';
-        if (!resolvedOwnerClusterId) {
+        if (!ownerClusterId) {
             throw new Error(`No storage owner cluster available for dump ${normalizedObjectKey}`);
         }
 
         const response = await this.objectStore.getStream(
-            resolvedOwnerClusterId,
+            ownerClusterId,
             DUMPS_BUCKET,
             normalizedObjectKey,
             {
@@ -1149,11 +1195,15 @@ export class AnalysisWorker {
         try {
             const parentDir = path.dirname(outputDir);
             const baseName = path.basename(outputDir);
-            const entries = await fs.readdir(parentDir);
-            for (const entry of entries) {
-                if (entry.startsWith(`${baseName}_`)) {
-                    tasks.push(fs.rm(path.join(parentDir, entry), { recursive: true, force: true }).catch(() => {}));
-                }
+            const siblingPaths = await fg(`${fg.escapePath(baseName)}_*`, {
+                cwd: parentDir,
+                absolute: true,
+                onlyFiles: false,
+                dot: true,
+                unique: true
+            });
+            for (const siblingPath of siblingPaths) {
+                tasks.push(fs.rm(siblingPath, { recursive: true, force: true }).catch(() => {}));
             }
         } catch {
         }

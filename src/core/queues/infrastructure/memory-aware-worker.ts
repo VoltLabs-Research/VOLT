@@ -1,43 +1,71 @@
 import { logger } from '@/core/logger';
 import { isMemoryPressured } from '@/core/memory';
 import { DelayedError } from 'bullmq';
-import type { Job, Worker } from 'bullmq';
 
-import type { QueueService } from '@/core/queues/application/QueueService';
+interface MemoryAwareWorkerPayload {
+    jobId?: string;
+}
 
-interface MemoryAwareWorkerStartOptions<T extends Record<string, unknown>> {
-    concurrency?: number;
-    onFailed?: (job: Job<T> | undefined, error: unknown) => Promise<void> | void;
-};
+interface MemoryAwareWorkerJob<T extends MemoryAwareWorkerPayload> {
+    data: T;
+    token?: string;
+    moveToDelayed(timestamp: number, token?: string): Promise<void>;
+}
 
-export interface MemoryAwareWorkerShell<T extends Record<string, unknown>> {
-    start: (
-        processJob: (jobPayload: T, job: Job<T>) => Promise<void>,
-        options?: MemoryAwareWorkerStartOptions<T>
-    ) => Worker<T>;
-    setConcurrency: (concurrency: number) => void;
-    stop: () => Promise<void>;
-};
+interface MemoryAwareWorker<T extends MemoryAwareWorkerPayload> {
+    concurrency: number;
+    close(): Promise<void>;
+    on(
+        event: 'failed',
+        listener: (job: MemoryAwareWorkerJob<T> | undefined, error: Error) => Promise<void> | void
+    ): void;
+}
 
-interface MemoryAwareWorkerShellConfig {
-    queueService: QueueService;
+interface MemoryAwareWorkerQueueService {
+    createWorker<T extends MemoryAwareWorkerPayload>(
+        queueName: string,
+        processJob: (jobPayload: T, job: MemoryAwareWorkerJob<T>) => Promise<void>,
+        options: MemoryAwareWorkerCreateWorkerOptions
+    ): MemoryAwareWorker<T>;
+}
+
+interface MemoryAwareWorkerCreateWorkerOptions {
+    concurrency: number;
+}
+
+interface MemoryAwareWorkerConfig {
+    queueService: MemoryAwareWorkerQueueService;
     queueName: string;
     startedMessage: string;
     stoppedMessage: string;
     failedMessage: string;
-};
+}
 
-interface MemoryPressureDelayOptions {
+interface MemoryAwareWorkerDelayOptions {
     jobId: string;
     delayMs?: number;
     message: string;
-    logContext?: Record<string, unknown>;
-};
+    logContext?: Record<string, boolean | null | number | string>;
+}
 
-export const createMemoryAwareWorkerShell = <T extends Record<string, unknown>>(
-    config: MemoryAwareWorkerShellConfig
+interface MemoryAwareWorkerShellOptions<T extends MemoryAwareWorkerPayload> {
+    concurrency?: number;
+    onFailed?: (job: MemoryAwareWorkerJob<T> | undefined, error: Error) => Promise<void> | void;
+}
+
+export interface MemoryAwareWorkerShell<T extends MemoryAwareWorkerPayload> {
+    start: (
+        processJob: (jobPayload: T, job: MemoryAwareWorkerJob<T>) => Promise<void>,
+        options?: MemoryAwareWorkerShellOptions<T>
+    ) => MemoryAwareWorker<T>;
+    setConcurrency: (concurrency: number) => void;
+    stop: () => Promise<void>;
+}
+
+export const createMemoryAwareWorkerShell = <T extends MemoryAwareWorkerPayload>(
+    config: MemoryAwareWorkerConfig
 ): MemoryAwareWorkerShell<T> => {
-    let worker: Worker<T> | null = null;
+    let worker: MemoryAwareWorker<T> | null = null;
 
     return {
         start(processJob, options = {}) {
@@ -47,7 +75,7 @@ export const createMemoryAwareWorkerShell = <T extends Record<string, unknown>>(
 
             worker = config.queueService.createWorker<T>(
                 config.queueName,
-                async (jobPayload, job) => processJob(jobPayload, job),
+                (jobPayload, job) => processJob(jobPayload, job),
                 {
                     concurrency: options.concurrency ?? 2
                 }
@@ -60,7 +88,7 @@ export const createMemoryAwareWorkerShell = <T extends Record<string, unknown>>(
 
                 logger.error(
                     {
-                        jobId: job?.data?.jobId,
+                        jobId: job ? job.data.jobId : undefined,
                         err: error
                     },
                     config.failedMessage
@@ -71,7 +99,7 @@ export const createMemoryAwareWorkerShell = <T extends Record<string, unknown>>(
             return worker;
         },
 
-        setConcurrency(concurrency) {
+        setConcurrency: (concurrency) => {
             if (!worker) {
                 throw new Error(`Worker for queue ${config.queueName} has not started`);
             }
@@ -91,9 +119,9 @@ export const createMemoryAwareWorkerShell = <T extends Record<string, unknown>>(
     };
 };
 
-export const delayJobWhenMemoryPressured = async <T extends Record<string, unknown>>(
-    bullJob: Job<T>,
-    options: MemoryPressureDelayOptions
+export const delayJobWhenMemoryPressured = async <T extends MemoryAwareWorkerPayload>(
+    bullJob: MemoryAwareWorkerJob<T>,
+    options: MemoryAwareWorkerDelayOptions
 ): Promise<void> => {
     if (!isMemoryPressured()) {
         return;

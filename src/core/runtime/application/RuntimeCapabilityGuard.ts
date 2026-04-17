@@ -1,9 +1,11 @@
-import type { TeamClusterEffectiveCapabilities } from '@/contracts';
+import type { TeamClusterEffectiveCapabilities } from '@/core/runtime/contracts/teamClusterRuntime';
+
+interface RuntimeCapabilitySnapshot {
+    effectiveCapabilities: TeamClusterEffectiveCapabilities;
+}
 
 interface RuntimeCapabilitySnapshotProvider {
-    getSnapshot(): {
-        effectiveCapabilities: TeamClusterEffectiveCapabilities;
-    };
+    getSnapshot(): RuntimeCapabilitySnapshot;
 }
 
 export class RuntimeCapabilityError extends Error {
@@ -22,60 +24,63 @@ export class RuntimeCapabilityGuard {
         private readonly runtimeSnapshotProvider: RuntimeCapabilitySnapshotProvider
     ) {}
 
-    ensureAcceptsComputeJobs(command: string): void {
-        this.ensureCapability(
-            command,
-            (capabilities) => capabilities.acceptsComputeJobs,
-            'RUNTIME_COMPUTE_DISABLED',
-            'Compute capability is disabled or draining'
-        );
-    }
-
-    ensureAcceptsStorageWrites(command: string): void {
-        this.ensureCapability(
-            command,
-            (capabilities) => capabilities.acceptsStorageWrites,
-            'RUNTIME_STORAGE_WRITE_DISABLED',
-            'Storage writes are disabled or draining'
-        );
-    }
-
-    ensureServesStorageReads(command: string): void {
-        this.ensureCapability(
-            command,
-            (capabilities) => capabilities.servesStorageReads,
-            'RUNTIME_STORAGE_READ_DISABLED',
-            'Storage reads are disabled for the current effective role'
-        );
-    }
-
-    ensureAcceptsPluginWarmup(command: string): void {
-        this.ensureCapability(
-            command,
-            (capabilities) => capabilities.acceptsComputeJobs,
-            'RUNTIME_PLUGIN_WARMUP_DISABLED',
-            'Plugin warmup is disabled because compute capability is not accepting work'
-        );
-    }
-
-    ensureTrajectoryNativeEnabled(command: string): void {
-        this.ensureAcceptsComputeJobs(command);
-    }
-
-    private ensureCapability(
-        command: string,
-        predicate: (capabilities: TeamClusterEffectiveCapabilities) => boolean,
-        code: string,
-        message: string
-    ): void {
+    readonly ensureAcceptsComputeJobs = (command: string): void => {
         const snapshot = this.runtimeSnapshotProvider.getSnapshot();
-        if (predicate(snapshot.effectiveCapabilities)) {
+        if (snapshot.effectiveCapabilities.acceptsComputeJobs) {
             return;
         }
 
         throw new RuntimeCapabilityError(
-            code,
-            `Command "${command}" rejected: ${message}`
+            'RUNTIME_COMPUTE_DISABLED',
+            `Command "${command}" rejected: Compute capability is disabled or draining`
         );
-    }
+    };
+
+    readonly ensureAcceptsStorageWrites = (command: string): void => {
+        const snapshot = this.runtimeSnapshotProvider.getSnapshot();
+        if (snapshot.effectiveCapabilities.acceptsStorageWrites) {
+            return;
+        }
+
+        throw new RuntimeCapabilityError(
+            'RUNTIME_STORAGE_WRITE_DISABLED',
+            `Command "${command}" rejected: Storage writes are disabled or draining`
+        );
+    };
+
+    readonly ensureServesStorageReads = (command: string): void => {
+        const snapshot = this.runtimeSnapshotProvider.getSnapshot();
+        if (snapshot.effectiveCapabilities.servesStorageReads) {
+            return;
+        }
+
+        throw new RuntimeCapabilityError(
+            'RUNTIME_STORAGE_READ_DISABLED',
+            `Command "${command}" rejected: Storage reads are disabled for the current effective role`
+        );
+    };
+
+    readonly ensureAcceptsPluginWarmup = (command: string): void => {
+        const snapshot = this.runtimeSnapshotProvider.getSnapshot();
+        if (snapshot.effectiveCapabilities.acceptsComputeJobs) {
+            return;
+        }
+
+        throw new RuntimeCapabilityError(
+            'RUNTIME_PLUGIN_WARMUP_DISABLED',
+            `Command "${command}" rejected: Plugin warmup is disabled because compute capability is not accepting work`
+        );
+    };
+
+    readonly ensureTrajectoryNativeEnabled = (command: string): void => {
+        const snapshot = this.runtimeSnapshotProvider.getSnapshot();
+        if (snapshot.effectiveCapabilities.acceptsComputeJobs) {
+            return;
+        }
+
+        throw new RuntimeCapabilityError(
+            'RUNTIME_COMPUTE_DISABLED',
+            `Command "${command}" rejected: Compute capability is disabled or draining`
+        );
+    };
 }

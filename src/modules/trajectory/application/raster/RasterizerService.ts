@@ -1,8 +1,9 @@
 import { ObjectBucketName } from '@/contracts';
 import { logger } from '@/core/logger';
-import { createNativeProcessingTempPath, NATIVE_PROCESSING_RUNTIME_DIR, NativeModuleOperation } from '@/core/runtime/infrastructure/native/NativeModuleLoader';
+import { NativeModuleOperation, withNativeProcessingTempDir } from '@/core/runtime/infrastructure/native/NativeModuleLoader';
 import { createReadStream, createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import type { NativeModuleLoader, RasterizePreviewInput } from '@/core/runtime/infrastructure/native/NativeModuleLoader';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
@@ -21,14 +22,9 @@ export const createRasterizerService = (
     nativeModuleLoader: NativeModuleLoader
 ): RasterizerService => ({
     async rasterizePreview(input) {
-        await fs.mkdir(NATIVE_PROCESSING_RUNTIME_DIR, {
-            recursive: true
-        });
-
-        const tempGlbPath = createNativeProcessingTempPath('.glb');
-        const tempPngPath = `${tempGlbPath}.png`;
-
-        try {
+        await withNativeProcessingTempDir('trajectory-rasterize', async (tempDirectory) => {
+            const tempGlbPath = path.join(tempDirectory, 'input.glb');
+            const tempPngPath = path.join(tempDirectory, 'output.png');
             const inputOwnerClusterId = input.inputOwnerClusterId;
             const outputOwnerClusterId = input.outputOwnerClusterId;
             if (!inputOwnerClusterId || !outputOwnerClusterId) {
@@ -61,12 +57,7 @@ export const createRasterizerService = (
                     'Cache-Control': 'public, max-age=86400'
                 }
             });
-        } finally {
-            await Promise.all([
-                fs.unlink(tempGlbPath).catch(() => {}),
-                fs.unlink(tempPngPath).catch(() => {})
-            ]);
-        }
+        });
     },
 
     async rasterizeLocalGlb(tempGlbPath, tempPngPath) {

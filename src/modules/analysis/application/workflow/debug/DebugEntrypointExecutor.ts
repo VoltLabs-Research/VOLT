@@ -1,214 +1,60 @@
 import { logger } from '@/core/logger';
 import { DAEMON_PATHS } from '@/core/paths';
-import { ObjectBucketName, VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@/contracts';
-import { createZstdDecompressionStream, stripZstdExtension } from '@/support/serialization/storage-codec';
-import type { BinaryExecutorService, ProcessExecutionLogSink } from '@/core/runtime/infrastructure/BinaryExecutorService';
+import { ObjectBucketName, VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@/core/storage/contracts/http.objectStore';
+import { createZstdDecompressionStream } from '@/support/serialization/storage-codec';
 import type { PluginBinaryCacheService } from '@/modules/plugin/application/binaries/PluginBinaryCacheService';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
-import type { WorkflowExecutionContext, WorkflowNode } from '@/modules/analysis/contracts/workflow.types';
-import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
 import { executeWorkflowEntrypoint } from '@/modules/analysis/application/workflow/WorkflowEntrypointExecution';
+import { applyLocalizedWorkflowDumpSelection, resolveWorkflowSelectedDump } from '@/modules/analysis/application/workflow/WorkflowTrajectoryState';
 import { createWriteStream } from 'node:fs';
-import fs from 'node:fs/promises';
-import path from 'node:path';
+import { mkdir } from 'node:fs/promises';
+import { basename, dirname, join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
+import { dir as createTempDir } from 'tmp-promise';
 
-interface DebugDumpDescriptor {
+type BinaryExecutorService = import('@/core/runtime/infrastructure/BinaryExecutorService').BinaryExecutorService;
+type ProcessExecutionLogSink = import('@/core/runtime/infrastructure/BinaryExecutorService').ProcessExecutionLogSink;
+type WorkflowExecutionContext = import('@/modules/analysis/contracts/workflow.types').WorkflowExecutionContext;
+type WorkflowNode = import('@/modules/analysis/contracts/workflow.types').WorkflowNode;
+
+interface DebugEntrypointExecutionResult {
+    output: Awaited<ReturnType<typeof executeWorkflowEntrypoint>>;
+    dumpPath: string;
+    outputDir: string;
+}
+
+interface PreparedDebugExecutionDump {
+    path: string;
+    originalPath?: string;
     timestep: number;
     natoms: number;
     simulationCell: string;
-    path: string;
-    originalPath?: string;
-};
-
-interface DebugEntrypointExecutionResult {
-    output: Record<string, unknown>;
-    dumpPath: string;
-    outputDir: string;
-}
-
-interface SelectedDebugDump {
-    dump: DebugDumpDescriptor;
-    index: number;
 }
 
 export interface PreparedDebugExecutionEnvironment {
-    selectedDump: DebugDumpDescriptor;
+    selectedDump: PreparedDebugExecutionDump;
     selectedDumpIndex: number;
     dumpPath: string;
     outputDir: string;
-    outputSnapshot: DebugExecutionOutputSnapshot;
 }
-
-interface DebugExecutionOutputSnapshot {
-    contextNodeId?: string;
-    contextOutput?: Record<string, unknown>;
-    forEachNodeId?: string;
-    forEachOutput?: Record<string, unknown>;
-}
-
-const snapshotDebugExecutionOutputs = (
-    context: WorkflowExecutionContext
-): DebugExecutionOutputSnapshot => {
-    const contextNode = context.workflow.nodes.find((entry) => entry.type === WorkflowNodeType.Context);
-    const forEachNode = context.workflow.nodes.find((entry) => entry.type === WorkflowNodeType.ForEach);
-
-    return {
-        contextNodeId: contextNode?.id,
-        contextOutput: contextNode ? context.outputs.get(contextNode.id) : undefined,
-        forEachNodeId: forEachNode?.id,
-        forEachOutput: forEachNode ? context.outputs.get(forEachNode.id) : undefined
-    };
-};
-
-const restoreDebugExecutionOutputs = (
-    context: WorkflowExecutionContext,
-    snapshot: DebugExecutionOutputSnapshot
-): void => {
-    if (snapshot.contextNodeId) {
-        if (snapshot.contextOutput) {
-            context.outputs.set(snapshot.contextNodeId, snapshot.contextOutput);
-        } else {
-            context.outputs.delete(snapshot.contextNodeId);
-        }
-    }
-
-    if (snapshot.forEachNodeId) {
-        if (snapshot.forEachOutput) {
-            context.outputs.set(snapshot.forEachNodeId, snapshot.forEachOutput);
-        } else {
-            context.outputs.delete(snapshot.forEachNodeId);
-        }
-    }
-};
-
-const normalizeObjectKey = (value: string): string => {
-    return value.startsWith('/')
-        ? value.slice(1)
-        : value;
-};
-
-const resolveSelectedDumpDescriptor = (
-    context: WorkflowExecutionContext
-): SelectedDebugDump | null => {
-    const selectedTimestep = typeof context.selectedTimestep === 'number'
-        ? context.selectedTimestep
-        : undefined;
-    const forEachNode = context.workflow.nodes.find((node) => node.type === WorkflowNodeType.ForEach);
-
-    if (forEachNode) {
-        const forEachOutput = context.outputs.get(forEachNode.id);
-        const items = (forEachOutput?.items as DebugDumpDescriptor[] | undefined) ?? [];
-
-        if (selectedTimestep !== undefined) {
-            const selectedIndex = items.findIndex((item) => item.timestep === selectedTimestep);
-            if (selectedIndex !== -1) {
-                return {
-                    dump: items[selectedIndex],
-                    index: selectedIndex
-                };
-            }
-
-            throw new Error(`Selected timestep ${selectedTimestep} is not available for debug execution`);
-        }
-
-        if (items.length > 0) {
-            return {
-                dump: items[0],
-                index: 0
-            };
-        }
-    }
-
-    const contextNode = context.workflow.nodes.find((node) => node.type === WorkflowNodeType.Context);
-    if (!contextNode) {
-        return null;
-    }
-
-    const contextOutput = context.outputs.get(contextNode.id);
-    const dumps = (contextOutput?.trajectory_dumps as DebugDumpDescriptor[] | undefined) ?? [];
-
-    if (selectedTimestep !== undefined) {
-        const selectedIndex = dumps.findIndex((dump) => dump.timestep === selectedTimestep);
-        if (selectedIndex !== -1) {
-            return {
-                dump: dumps[selectedIndex],
-                index: selectedIndex
-            };
-        }
-
-        throw new Error(`Selected timestep ${selectedTimestep} is not available for debug execution`);
-    }
-
-    return dumps[0]
-        ? {
-            dump: dumps[0],
-            index: 0
-        }
-        : null;
-};
-
-const updateContextOutputsForDebugExecution = (
-    context: WorkflowExecutionContext,
-    selectedDump: DebugDumpDescriptor,
-    selectedDumpIndex: number,
-    dumpPath: string,
-    outputDir: string
-): void => {
-    const localDumpDescriptor: DebugDumpDescriptor = {
-        ...selectedDump,
-        path: dumpPath,
-        originalPath: selectedDump.originalPath ?? selectedDump.path
-    };
-
-    const contextNode = context.workflow.nodes.find((node) => node.type === WorkflowNodeType.Context);
-    if (contextNode) {
-        const currentContextOutput = context.outputs.get(contextNode.id) ?? {};
-        const trajectory = {
-            ...(currentContextOutput.trajectory as Record<string, unknown> | undefined)
-        };
-
-        trajectory.frames = [localDumpDescriptor];
-
-        context.outputs.set(contextNode.id, {
-            ...currentContextOutput,
-            trajectory_dumps: [localDumpDescriptor],
-            count: 1,
-            trajectory,
-            allDumpLocalPaths: JSON.stringify([dumpPath]),
-            outputPath: outputDir
-        });
-    }
-
-    const forEachNode = context.workflow.nodes.find((node) => node.type === WorkflowNodeType.ForEach);
-    if (!forEachNode) {
-        return;
-    }
-
-    const currentForEachOutput = context.outputs.get(forEachNode.id) ?? {};
-    context.outputs.set(forEachNode.id, {
-        ...currentForEachOutput,
-        currentValue: localDumpDescriptor,
-        currentIndex: selectedDumpIndex,
-        outputPath: outputDir
-    });
-};
 
 const downloadDumpForDebugExecution = async (
     objectStore: ClusterObjectStore,
     objectKey: string,
     ownerClusterId: string
 ): Promise<string> => {
-    const normalizedObjectKey = normalizeObjectKey(objectKey);
+    const normalizedObjectKey = objectKey.startsWith('/')
+        ? objectKey.slice(1)
+        : objectKey;
     if (!normalizedObjectKey.endsWith('.dump.zst')) {
         throw new Error(`Invalid dump object key received: ${objectKey}`);
     }
 
-    const fileName = path.basename(normalizedObjectKey);
-    const localFileName = path.basename(stripZstdExtension(fileName));
-    const localPath = path.join(DAEMON_PATHS.analysisDumps, `${localFileName}-${Date.now()}`);
+    const fileName = basename(normalizedObjectKey);
+    const localFileName = fileName.endsWith('.zst') ? fileName.slice(0, -4) : fileName;
+    const localPath = join(DAEMON_PATHS.analysisDumps, `${localFileName}-${Date.now()}`);
 
-    await fs.mkdir(path.dirname(localPath), { recursive: true });
+    await mkdir(dirname(localPath), { recursive: true });
 
     const response = await objectStore.getStream(
         ownerClusterId,
@@ -240,31 +86,6 @@ export class DebugEntrypointExecutor {
         private readonly binaryExecutorService: BinaryExecutorService
     ) {}
 
-    async execute(
-        sessionId: string,
-        node: WorkflowNode,
-        context: WorkflowExecutionContext,
-        storageClusterId?: string
-    ): Promise<DebugEntrypointExecutionResult> {
-        const preparedEnvironment = await this.prepareExecutionEnvironment(
-            sessionId,
-            context,
-            storageClusterId
-        );
-
-        try {
-            return await this.executePrepared(node, context, preparedEnvironment);
-        } catch (error) {
-            const cleanupTasks: Array<Promise<unknown>> = [
-                fs.rm(preparedEnvironment.dumpPath, { force: true }).catch(() => {}),
-                fs.rm(preparedEnvironment.outputDir, { recursive: true, force: true }).catch(() => {})
-            ];
-            await Promise.all(cleanupTasks);
-            restoreDebugExecutionOutputs(context, preparedEnvironment.outputSnapshot);
-            throw error;
-        }
-    }
-
     async prepareExecutionEnvironment(
         sessionId: string,
         context: WorkflowExecutionContext,
@@ -281,7 +102,7 @@ export class DebugEntrypointExecutor {
             );
         }
 
-        const selectedDump = resolveSelectedDumpDescriptor(context);
+        const selectedDump = resolveWorkflowSelectedDump(context);
         if (!selectedDump) {
             throw new Error('No selected trajectory dump is available for debug execution');
         }
@@ -291,18 +112,20 @@ export class DebugEntrypointExecutor {
             selectedDump.dump.path,
             resolvedStorageClusterId
         );
-        const outputDir = path.join(DAEMON_PATHS.analysisOutput, `debug-${sessionId}-${Date.now()}`);
-        await fs.mkdir(outputDir, { recursive: true });
+        await mkdir(DAEMON_PATHS.analysisOutput, { recursive: true });
+        const outputDir = (await createTempDir({
+            tmpdir: DAEMON_PATHS.analysisOutput,
+            prefix: `debug-${sessionId}-`,
+            unsafeCleanup: true
+        })).path;
 
-        const outputSnapshot = snapshotDebugExecutionOutputs(context);
-        updateContextOutputsForDebugExecution(context, selectedDump.dump, selectedDump.index, dumpPath, outputDir);
+        applyLocalizedWorkflowDumpSelection(context, selectedDump, dumpPath, outputDir);
 
         return {
             selectedDump: selectedDump.dump,
             selectedDumpIndex: selectedDump.index,
             dumpPath,
-            outputDir,
-            outputSnapshot
+            outputDir
         };
     }
 
@@ -313,12 +136,11 @@ export class DebugEntrypointExecutor {
         logSink?: ProcessExecutionLogSink
     ): Promise<DebugEntrypointExecutionResult> {
         const entrypointData = node.data.entrypoint;
-        const binaryObjectPath = entrypointData?.binaryObjectPath?.trim() ?? '';
-        const argumentsTemplate = entrypointData?.arguments ?? '';
-
-        if (!binaryObjectPath || !argumentsTemplate) {
+        if (!entrypointData) {
             throw new Error(`Entrypoint ${node.id} is missing runtime configuration`);
         }
+
+        const { binaryObjectPath, arguments: argumentsTemplate } = entrypointData;
 
         logger.info(
             {
@@ -351,7 +173,7 @@ export class DebugEntrypointExecutor {
                 logSink,
                 restoreOutputOnError: true,
                 includeOutputFiles: true,
-                nonZeroExitMessage: (result) => `Entrypoint exited with code ${result.code}: ${result.stderr || result.stdout || 'Unknown error'}`,
+                nonZeroExitMessage: (result) => `Entrypoint exited with code ${result.code}: ${result.stderr || result.stdout}`,
                 extraOutput: {
                     dumpPath: preparedEnvironment.dumpPath
                 }

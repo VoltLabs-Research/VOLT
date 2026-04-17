@@ -1,4 +1,5 @@
 import type { WorkflowPluginReferenceSelection, WorkflowPluginReferenceValue } from '@/contracts';
+import type { WorkflowNodeOutput } from '@/modules/analysis/contracts/workflow.types';
 import { decodeCliArgumentsToken } from '@/support/serialization/serialization';
 
 export interface InlineExposureArtifact {
@@ -8,12 +9,17 @@ export interface InlineExposureArtifact {
     filePath: string;
 }
 
-interface WorkflowExecutionResultOutput {
-    execution_result?: {
-        exposures?: {
-            items?: InlineExposureArtifact[];
-        };
-    };
+interface WorkflowExecutionResultExposures {
+    items: InlineExposureArtifact[];
+    str_json: string;
+}
+
+interface WorkflowExecutionResultData {
+    exposures: WorkflowExecutionResultExposures;
+}
+
+export interface WorkflowExecutionResultOutput extends WorkflowNodeOutput {
+    execution_result: WorkflowExecutionResultData;
 }
 
 export interface InlineWorkflowDumpTarget {
@@ -22,6 +28,14 @@ export interface InlineWorkflowDumpTarget {
     timestep: number;
     natoms: number;
     simulationCell: string;
+}
+
+export interface WorkflowPluginReferenceSelectionWithConfig extends WorkflowPluginReferenceSelection {
+    config: WorkflowNodeOutput;
+}
+
+export interface WorkflowPluginReferenceValueWithSelections extends WorkflowPluginReferenceValue {
+    selections: WorkflowPluginReferenceSelectionWithConfig[];
 }
 
 export const parseInlineWorkflowArguments = (value: string): string[] => {
@@ -34,11 +48,15 @@ export const parseInlineWorkflowArguments = (value: string): string[] => {
 
     return tokens.flatMap((token) => {
         const encodedArguments = decodeCliArgumentsToken(token);
-        return encodedArguments ?? [token];
+        if (encodedArguments !== null) {
+            return encodedArguments;
+        }
+
+        return [token];
     });
 };
 
-export const createNestedExecutionResult = (items: InlineExposureArtifact[]): Record<string, unknown> => ({
+export const createNestedExecutionResult = (items: InlineExposureArtifact[]): WorkflowExecutionResultOutput => ({
     execution_result: {
         exposures: {
             items,
@@ -46,18 +64,3 @@ export const createNestedExecutionResult = (items: InlineExposureArtifact[]): Re
         }
     }
 });
-
-export const readWorkflowPluginReferenceSelections = (
-    value: unknown
-): WorkflowPluginReferenceSelection[] => {
-    return ((value as WorkflowPluginReferenceValue | undefined)?.selections ?? [])
-        .filter((selection) => selection.pluginId.trim().length > 0)
-        .map((selection) => ({
-            pluginId: selection.pluginId.trim(),
-            config: selection.config ?? {}
-        }));
-};
-
-export const readNestedExposureItems = (output: Record<string, unknown>): InlineExposureArtifact[] => {
-    return (output as WorkflowExecutionResultOutput).execution_result?.exposures?.items ?? [];
-};

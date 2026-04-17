@@ -1,24 +1,22 @@
-import { DaemonSocketEvent } from '@voltstack/daemon-cluster-client';
-import { EventEmitter } from 'node:events';
-import type { RuntimeLifecycleEvent, RuntimeProgressEvent } from '@voltstack/daemon-cluster-client';
-
-type RuntimeProgressListener = (event: RuntimeProgressEvent) => void;
+import type { IEventBus } from '@/core/events/IEventBus';
+import type { RuntimeLifecycleEventData } from '@/core/runtime/events/RuntimeLifecycleEvent';
+import type { RuntimeProgressEventData } from '@/core/runtime/events/RuntimeProgressEvent';
+import { logger } from '@/core/logger';
+import { RuntimeLifecycleEvent } from '@/core/runtime/events/RuntimeLifecycleEvent';
+import { RuntimeProgressEvent } from '@/core/runtime/events/RuntimeProgressEvent';
 
 export class RuntimeEventBroker {
-    private readonly emitter = new EventEmitter();
+    constructor(private readonly eventBus: IEventBus) {}
 
-    emitLifecycle(event: RuntimeLifecycleEvent): void {
-        this.emitter.emit(DaemonSocketEvent.RuntimeLifecycle, event);
+    emitLifecycle(event: RuntimeLifecycleEventData): void {
+        this.eventBus.publish(new RuntimeLifecycleEvent(event)).catch((error) => {
+            logger.warn({ err: error, eventName: RuntimeLifecycleEvent.eventName }, 'Failed to publish runtime event');
+        });
     }
 
-    emitProgress(event: RuntimeProgressEvent): void {
-        this.emitter.emit(DaemonSocketEvent.RuntimeProgress, event);
+    emitProgress(event: RuntimeProgressEventData): void {
+        this.eventBus.publish(new RuntimeProgressEvent(event)).catch((error) => {
+            logger.warn({ err: error, eventName: RuntimeProgressEvent.eventName }, 'Failed to publish runtime event');
+        });
     }
-
-    onProgress(listener: RuntimeProgressListener): () => void {
-        this.emitter.on(DaemonSocketEvent.RuntimeProgress, listener);
-        return () => {
-            this.emitter.off(DaemonSocketEvent.RuntimeProgress, listener);
-        };
-    }
-};
+}
