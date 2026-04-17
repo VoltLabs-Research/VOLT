@@ -9,9 +9,9 @@ import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import {
     getClusterGlbStream,
-    getLocalGlbStream,
-    resolveTrajectoryGlbObjectName
+    getLocalGlbStream
 } from '@modules/trajectory/utilities/storage/glb-stream-resolution';
+import { buildTrajectoryGlbObjectName } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 
 import { injectable, inject } from 'tsyringe';
 
@@ -42,17 +42,12 @@ export default class GetTrajectoryGLBUseCase implements IUseCase<GetTrajectoryGL
             }
 
             const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+            const objectName = buildTrajectoryGlbObjectName(trajectoryId, timestep);
 
             if (storageClusterId) {
-                const objectName = await resolveTrajectoryGlbObjectName(trajectoryId, timestep, (candidate) => {
-                    return this.objectGatewayClient.exists(storageClusterId, SYS_BUCKETS.MODELS, candidate);
-                });
                 return Result.ok(await getClusterGlbStream(this.objectGatewayClient, storageClusterId, objectName));
             }
 
-            const objectName = await resolveTrajectoryGlbObjectName(trajectoryId, timestep, (candidate) => {
-                return this.storageService.exists(SYS_BUCKETS.MODELS, candidate);
-            });
             return Result.ok(await getLocalGlbStream(this.storageService, objectName));
         } catch {
             return Result.fail(new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'GLB model not found', 404));

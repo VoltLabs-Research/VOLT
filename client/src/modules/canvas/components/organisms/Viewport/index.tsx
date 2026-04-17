@@ -52,6 +52,30 @@ interface ViewportProps {
     headerActionsBeforePerformance?: ReactNode;
 };
 
+type CanvasTrajectory = Trajectory & {
+    teamId?: string;
+};
+
+const resolveTrajectoryTeamId = (trajectory: CanvasTrajectory | null | undefined): string | undefined => {
+    if (!trajectory) {
+        return undefined;
+    }
+
+    if (typeof trajectory.teamId === 'string' && trajectory.teamId.length > 0) {
+        return trajectory.teamId;
+    }
+
+    if (!trajectory.team) {
+        return undefined;
+    }
+
+    if (typeof trajectory.team === 'string') {
+        return trajectory.team;
+    }
+
+    return trajectory.team._id;
+};
+
 const TIMESTEP_VIEWER_DEFAULTS = {
     scale: 1,
     rotation: { x: 0, y: 0, z: 0 },
@@ -75,7 +99,10 @@ const Viewport = ({
     showHeader = true,
     headerActionsBeforePerformance
 }: ViewportProps) => {
-    const teamId = useSelectedTeamId() ?? undefined;
+    const selectedTeamId = useSelectedTeamId() ?? undefined;
+    const teamId = useMemo(() => {
+        return resolveTrajectoryTeamId(trajectory) ?? selectedTeamId;
+    }, [selectedTeamId, trajectory]);
     const screenshotRequest = useScreenshotStore((s) => s.pendingRequest);
     const {
         activeScenes,
