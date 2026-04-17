@@ -3,7 +3,7 @@ import { TeamClusterSelectionService } from '@modules/container/infrastructure/s
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import logger from '@shared/infrastructure/logger';
@@ -84,7 +84,7 @@ export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
         try {
             const response = await this.teamClusterDaemonClient.command<RasterJobEnqueueResult>(
                 computeClusterId,
-                TEAM_CLUSTER_DAEMON_COMMAND.trajectory.rasterize,
+                ChannelCommands.TrajectoryRasterize,
                 payload
             );
 

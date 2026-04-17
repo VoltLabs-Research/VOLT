@@ -1,9 +1,7 @@
 import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
+import type { TeamScopedEntityIdInputDTO } from '@modules/team/application/dtos/common';
 
-export interface GetWhiteboardInputDTO {
-    teamId: string;
-    whiteboardId: string;
-};
+export type GetWhiteboardInputDTO = TeamScopedEntityIdInputDTO<'whiteboardId'>;
 
 export interface GetWhiteboardOutputDTO {
     _id: string;

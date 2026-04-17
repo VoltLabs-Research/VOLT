@@ -227,19 +227,14 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
             teamId: trajectory.props.team,
             status,
             queueType: 'ssh_import',
-            metadata: {
-                jobId: `ssh-import:${trajectory.id}`,
-                name: 'Import trajectory from SSH',
-                status,
-                queueType: 'ssh_import',
-                source: 'projected',
-                backingSource: 'daemon',
-                cleanupScope: 'ssh-import',
-                teamClusterId: input.teamClusterId,
-                trajectoryId: trajectory.id,
-                trajectoryName: trajectory.props.name,
-                error
-            }
+            name: 'Import trajectory from SSH',
+            source: 'projected',
+            backingSource: 'daemon',
+            cleanupScope: 'ssh-import',
+            teamClusterId: input.teamClusterId,
+            trajectoryId: trajectory.id,
+            trajectoryName: trajectory.props.name,
+            error
         }));
     }
 }

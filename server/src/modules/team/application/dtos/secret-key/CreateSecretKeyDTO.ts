@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { z } from 'zod';
 
-export type CreateSecretKeyInputDTO = z.input<typeof createSecretKeyInputSchema>;
+export type CreateSecretKeyInputDTO = z.output<typeof createSecretKeyInputSchema>;
 
 export interface CreateSecretKeyOutputDTO {
     secretKeyId: string;

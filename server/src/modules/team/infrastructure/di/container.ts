@@ -2,9 +2,6 @@ import { TEAM_TOKENS } from './TeamTokens';
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import SecretKeyUsageMetricsMapper from '@modules/team/infrastructure/services/secret-key/SecretKeyUsageMetricsMapper';
-import TeamAIIntegrationInputService from '@modules/team/infrastructure/services/ai-integration/TeamAIIntegrationInputService';
-import TeamAIIntegrationSecretService from '@modules/team/infrastructure/services/ai-integration/TeamAIIntegrationSecretService';
-import TeamAIIntegrationSerializer from '@modules/team/infrastructure/services/ai-integration/TeamAIIntegrationSerializer';
 import TeamAIProviderCatalog from '@modules/team/infrastructure/services/ai-integration/TeamAIProviderCatalog';
 import TeamMembershipService from '@modules/team/infrastructure/services/team/TeamMembershipService';
 import TeamPresenceService from '@modules/team/infrastructure/services/team-member/TeamPresenceService';
@@ -69,10 +66,7 @@ export const registerTeamDependencies = () => {
             [TEAM_TOKENS.TeamJobsSocketModule, TeamJobsSocketModule],
             [TEAM_TOKENS.TeamPresenceSocketModule, TeamPresenceSocketModule],
             [TEAM_TOKENS.TeamAIProviderCatalog, TeamAIProviderCatalog],
-            [TEAM_TOKENS.TeamAIIntegrationInputService, TeamAIIntegrationInputService],
             [TEAM_TOKENS.TeamAIIntegrationSecretCipher, TeamAIIntegrationSecretCipher],
-            [TEAM_TOKENS.TeamAIIntegrationSecretService, TeamAIIntegrationSecretService],
-            [TEAM_TOKENS.TeamAIIntegrationSerializer, TeamAIIntegrationSerializer],
             [TEAM_TOKENS.SecretKeyUsageMetricsMapper, SecretKeyUsageMetricsMapper],
             [TEAM_TOKENS.TeamMembershipService, TeamMembershipService]
         ],

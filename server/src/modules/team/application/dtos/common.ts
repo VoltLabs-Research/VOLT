@@ -25,6 +25,8 @@ export type EntityIdInputDTO<TKey extends string> = {
 
 export type TeamScopedEntityIdInputDTO<TKey extends string> = TeamScopedInputDTO & EntityIdInputDTO<TKey>;
 
+export type TeamUserScopedEntityIdInputDTO<TKey extends string> = TeamUserScopedInputDTO & EntityIdInputDTO<TKey>;
+
 export type UserScopedEntityIdInputDTO<TKey extends string> = UserScopedInputDTO & EntityIdInputDTO<TKey>;
 
 export type PersistedEntityDTO<TProps> = PersistedEntityOutput<TProps>;

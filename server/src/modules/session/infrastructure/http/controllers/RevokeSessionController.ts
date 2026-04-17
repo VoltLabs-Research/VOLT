@@ -2,10 +2,8 @@ import { sessionValidation } from '@modules/session/infrastructure/http/validati
 import { createController } from '@shared/infrastructure/http/controllers/createController';
 import RevokeSessionUseCase from '@modules/session/application/use-cases/RevokeSessionUseCase';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import { getSessionRequestContext } from '@modules/session/infrastructure/http/helpers/getSessionRequestContext';
 
 export default createController(RevokeSessionUseCase, {
     statusCode: HttpStatus.NoContent,
-    validationSchema: sessionValidation.revokeById,
-    contextProviders: [getSessionRequestContext]
+    validationSchema: sessionValidation.revokeById
 });

@@ -1,6 +1,6 @@
-export interface UploadWhiteboardAssetInputDTO {
-    teamId: string;
-    whiteboardId: string;
+import type { TeamScopedEntityIdInputDTO } from '@modules/team/application/dtos/common';
+
+export type UploadWhiteboardAssetInputDTO = TeamScopedEntityIdInputDTO<'whiteboardId'> & {
     buffer: Buffer;
     mimetype: string;
     originalname: string;

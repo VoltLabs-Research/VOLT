@@ -3,11 +3,6 @@ export interface NetworkMetricSnapshot {
     timestamp: number;
 }
 
-export interface CpuTimeSnapshot {
-    idle: number;
-    total: number;
-}
-
 export interface DiskIOSnapshot {
     reads: number;
     writes: number;

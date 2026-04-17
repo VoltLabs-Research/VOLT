@@ -3,7 +3,6 @@ import { ExportNodeData } from '@modules/plugin/domain/entities/plugin/workflow/
 import { ModifierNodeData } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ModifierNode';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import Workflow from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
-import { asRecord } from '@shared/infrastructure/utilities/type-guards';
 
 interface ComputedExposure {
     _id: string;
@@ -36,19 +35,6 @@ export interface PluginProjection {
     listingExposures: ListingExposuresData | null;
 };
 
-const toExposureData = (value: unknown): Record<string, unknown> => {
-    return asRecord(value) || {};
-};
-
-const toExportData = (value: unknown): ExportNodeData | null => {
-    const record = asRecord(value);
-    if (!record) {
-        return null;
-    }
-
-    return record as unknown as ExportNodeData;
-};
-
 export default class WorkflowProjectionService {
     static project(workflow: Workflow, pluginId: string): PluginProjection {
         const nodes = workflow.props.nodes;
@@ -60,20 +46,18 @@ export default class WorkflowProjectionService {
 
         const exposures: ComputedExposure[] = exposureNodes.map((exposureNode) => {
             const exportNode = workflow.findDescendantByType(exposureNode.id, WorkflowNodeType.Export);
-
-            const exposureData = toExposureData(exposureNode.data.exposure);
-            const { _id: _, id: __, ...cleanedExposureData } = exposureData;
-
-            const exportData = toExportData(exportNode?.data.export);
+            const exposure = exposureNode.data.exposure;
 
             return {
                 _id: exposureNode.id,
-                export: exportData,
-                ...cleanedExposureData,
-                name: typeof cleanedExposureData.name === 'string' ? cleanedExposureData.name : '',
-                results: typeof cleanedExposureData.results === 'string' ? cleanedExposureData.results : '',
-                canvas: Boolean(exposureData.canvas),
-                raster: Boolean(exposureData.raster),
+                export: exportNode?.data.export ?? null,
+                name: exposure?.name ?? '',
+                icon: exposure?.icon,
+                results: exposure?.results ?? '',
+                iterable: exposure?.iterable,
+                iterableChunkSize: exposure?.iterableChunkSize,
+                canvas: exposure?.canvas === true,
+                raster: exposure?.raster === true,
                 hasListing: true
             };
         });

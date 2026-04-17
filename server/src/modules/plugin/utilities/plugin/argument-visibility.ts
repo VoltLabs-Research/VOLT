@@ -3,25 +3,12 @@ import {
     type ArgumentDefinition,
     type ArgumentVisibilityCondition
 } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
-import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 
 type ArgumentValueMap = Record<string, unknown>;
 type VisibilityComparableValue = string | number | boolean;
 
-const isVisibilityComparableValue = (value: unknown): value is VisibilityComparableValue => {
-    return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
-};
-
-const normalizeConditionValues = (condition: ArgumentVisibilityCondition): VisibilityComparableValue[] => {
-    if (Array.isArray(condition.values)) {
-        return condition.values.filter(isVisibilityComparableValue);
-    }
-
-    if (isVisibilityComparableValue(condition.value)) {
-        return [condition.value];
-    }
-
-    return [];
+const getConditionValues = (condition: ArgumentVisibilityCondition): VisibilityComparableValue[] => {
+    return condition.values ?? (condition.value === undefined ? [] : [condition.value]);
 };
 
 const resolveComparisonSourceValue = (
@@ -49,7 +36,7 @@ const matchesVisibilityCondition = (
     condition: ArgumentVisibilityCondition,
     currentValue: unknown
 ): boolean => {
-    const comparisonValues = normalizeConditionValues(condition);
+    const comparisonValues = getConditionValues(condition);
 
     if (condition.operator === 'equals') {
         return comparisonValues.length > 0 && currentValue === comparisonValues[0];
@@ -96,20 +83,6 @@ export const isArgumentVisible = (
     return matchesVisibilityCondition(definition.visibleWhen, currentValue);
 };
 
-const sanitizeListValue = (
-    definition: ArgumentDefinition,
-    value: unknown
-): unknown => {
-    if (definition.type !== ArgumentType.List || !Array.isArray(value)) {
-        return value;
-    }
-
-    const nestedDefinitions = definition.listArguments ?? [];
-    return value
-        .filter(isRecord)
-        .map((entry) => sanitizeVisibleArgumentConfig(nestedDefinitions, entry));
-};
-
 export const sanitizeVisibleArgumentConfig = (
     definitions: ArgumentDefinition[],
     values: ArgumentValueMap
@@ -126,7 +99,14 @@ export const sanitizeVisibleArgumentConfig = (
             continue;
         }
 
-        sanitizedValues[definition.argument] = sanitizeListValue(definition, value);
+        if (definition.type === ArgumentType.List && Array.isArray(value)) {
+            sanitizedValues[definition.argument] = value.map((entry) => {
+                return sanitizeVisibleArgumentConfig(definition.listArguments ?? [], entry as ArgumentValueMap);
+            });
+            continue;
+        }
+
+        sanitizedValues[definition.argument] = value;
     }
 
     return sanitizedValues;

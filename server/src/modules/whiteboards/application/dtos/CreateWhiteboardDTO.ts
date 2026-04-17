@@ -1,6 +1,6 @@
-export interface CreateWhiteboardInputDTO {
-    teamId: string;
-    userId: string;
+import type { TeamUserScopedInputDTO } from '@modules/team/application/dtos/common';
+
+export type CreateWhiteboardInputDTO = TeamUserScopedInputDTO & {
     title: string;
     folderId?: string | null;
 };

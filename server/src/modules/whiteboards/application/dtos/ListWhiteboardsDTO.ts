@@ -1,10 +1,10 @@
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
+import type {
+    PaginatedTeamScopedInputDTO,
+    TeamScopedPaginatedOutputDTO,
+} from '@modules/team/application/dtos/common';
 
-export interface ListWhiteboardsInputDTO {
-    teamId: string;
-    page?: number;
-    limit?: number;
+export type ListWhiteboardsInputDTO = PaginatedTeamScopedInputDTO & {
     folderId?: string;
 };
 
@@ -19,4 +19,4 @@ export interface WhiteboardListItem {
     updatedAt: Date;
 };
 
-export type ListWhiteboardsOutputDTO = PaginatedResult<WhiteboardListItem>;
+export type ListWhiteboardsOutputDTO = TeamScopedPaginatedOutputDTO<WhiteboardListItem>;

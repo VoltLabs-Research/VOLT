@@ -6,8 +6,8 @@ export interface ListScriptingNotebooksInputDTO {
     teamId: string;
     trajectoryId?: string;
     scope?: ScriptingNotebookScope;
-    page?: number | string;
-    limit?: number | string;
+    page?: number;
+    limit?: number;
 };
 
 export interface ListScriptingNotebooksOutputDTO extends PaginatedResult<ScriptingNotebookDTO> {};

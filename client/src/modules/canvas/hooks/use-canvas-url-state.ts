@@ -1,6 +1,7 @@
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
+import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-params';
 import { useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 export enum CanvasWorkspace {
     Modeling = 'modeling',
@@ -27,7 +28,7 @@ const resolveCanvasWorkspace = (workspace: string | null): CanvasWorkspace => {
 };
 
 const useCanvasUrlState = () => {
-    const { searchParams, updateSearchParams } = useSearchParamsState();
+    const [searchParams, setSearchParams] = useSearchParams();
     const {
         selectedIds: activeModifiers,
         toggleSelection,
@@ -49,6 +50,12 @@ const useCanvasUrlState = () => {
     const activeWorkspace = CANVAS_WORKSPACES.has(requestedWorkspace ?? '')
         ? resolveCanvasWorkspace(requestedWorkspace)
         : CanvasWorkspace.Modeling;
+
+    const updateSearchParams = useCallback((updates: Record<string, string | number | boolean | null | undefined>, options?: UpdateOptions) => {
+        setSearchParams((prev) => applySearchParamUpdates(prev, updates), {
+            replace: options?.replace ?? false
+        });
+    }, [setSearchParams]);
 
     const setAnalysisId = useCallback((id?: string, options?: UpdateOptions) => {
         updateSearchParams({ analysisId: id ?? null, analysis: null }, options);

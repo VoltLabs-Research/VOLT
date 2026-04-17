@@ -6,7 +6,7 @@ import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { FileEntryType } from '@/modules/ssh/api/entities/ssh-connection';
 import Container from '@/shared/presentation/components/Container';
 import { formatSize } from '@/shared/utils/format';
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
+import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-params';
 import SSHBreadcrumbs from '@/modules/ssh/components/atoms/SSHBreadcrumbs';
 import SSHExplorerHeaderLeft from '@/modules/ssh/components/atoms/SSHExplorerHeaderLeft';
 import SSHExplorerHeaderRight from '@/modules/ssh/components/atoms/SSHExplorerHeaderRight';
@@ -17,7 +17,7 @@ import useTip from '@/shared/tips/use-tip';
 import { formatDistanceToNow } from 'date-fns';
 import { LuFile, LuFolder } from 'react-icons/lu';
 import { useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { sileo } from 'sileo';
 import type { SSHFileEntry } from '@/modules/ssh/api/entities/ssh-connection';
 
@@ -32,7 +32,7 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
     const navigate = useNavigate();
     const connectionId = propConnectionId || params.connectionId;
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
-    const { searchParams, updateSearchParams } = useSearchParamsState();
+    const [searchParams, setSearchParams] = useSearchParams();
     const selectedEntryPath = searchParams.get('selected') || null;
     const explorerStorageKey = connectionId ? `volt:ssh-explorer:${connectionId}` : null;
 
@@ -132,8 +132,10 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
             return;
         }
 
-        updateSearchParams({ selected: explorer.selectedPath ?? null }, { replace: true });
-    }, [explorer.selectedPath, searchParams, updateSearchParams]);
+        setSearchParams((prev) => applySearchParamUpdates(prev, {
+            selected: explorer.selectedPath ?? null
+        }), { replace: true });
+    }, [explorer.selectedPath, searchParams, setSearchParams]);
 
     const handleEntryClick = (entry: SSHFileEntry) => {
         if (entry.type === FileEntryType.Dir) {

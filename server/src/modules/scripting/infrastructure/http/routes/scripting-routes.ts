@@ -1,6 +1,6 @@
 import { Resource } from '@core/constants/resources';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
 import { buildJupyterProxyUrl, clearJupyterProxyAccessCookie, setJupyterProxyAccessCookie } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
@@ -236,7 +236,7 @@ const handleDeleteScriptingSession = async (
             try {
                 await teamClusterDaemonClient.command(
                     teamClusterId,
-                    TEAM_CLUSTER_DAEMON_COMMAND.notebook.delete,
+                    ChannelCommands.NotebookDelete,
                     { notebookId: runtimeNotebookId }
                 );
             } catch {

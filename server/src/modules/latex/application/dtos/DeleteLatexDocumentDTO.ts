@@ -1,6 +1,6 @@
-export interface DeleteLatexDocumentInputDTO {
-    documentId: string;
-    teamId: string;
+import type { TeamScopedEntityIdInputDTO } from '@modules/team/application/dtos/common';
+
+export type DeleteLatexDocumentInputDTO = TeamScopedEntityIdInputDTO<'documentId'> & {
     userId?: string;
 };
 

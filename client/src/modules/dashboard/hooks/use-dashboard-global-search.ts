@@ -12,6 +12,7 @@ import {
     useFloating,
     useInteractions
 } from '@floating-ui/react';
+import { format, isValid } from 'date-fns';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GlobalSearchOutputDTO, GlobalSearchSectionKey } from '@/modules/dashboard/api/dtos/global-search';
@@ -45,11 +46,11 @@ const ensureArray = <T>(value: T[] | undefined | null): T[] => {
 const formatSearchDate = (value: string): string => {
     const date = new Date(value);
 
-    if (Number.isNaN(date.getTime())) {
+    if (!isValid(date)) {
         return '';
     }
 
-    return date.toLocaleDateString();
+    return format(date, 'P');
 };
 
 const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSection[] => {

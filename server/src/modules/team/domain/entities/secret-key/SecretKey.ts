@@ -2,7 +2,6 @@ export interface PopulatedRole {
     _id: string;
     name: string;
     permissions?: string[];
-    toString?: () => string;
 };
 
 export interface PopulatedUser {
@@ -10,7 +9,6 @@ export interface PopulatedUser {
     firstName?: string;
     lastName?: string;
     email?: string;
-    toString?: () => string;
 };
 
 export interface SecretKeyProps {
@@ -27,11 +25,7 @@ export interface SecretKeyProps {
 };
 
 export const isPopulatedSecretKeyRole = (value: SecretKeyProps['role']): value is PopulatedRole => {
-    return typeof value === 'object' && value !== null && '_id' in value;
-};
-
-export const isPopulatedSecretKeyUser = (value: SecretKeyProps['createdBy']): value is PopulatedUser => {
-    return typeof value === 'object' && value !== null && '_id' in value;
+    return typeof value !== 'string';
 };
 
 export default class SecretKey {
@@ -46,7 +40,7 @@ export default class SecretKey {
 
     public getRoleId(): string {
         if (isPopulatedSecretKeyRole(this.props.role)) {
-            return this.props.role._id.toString?.() ?? this.props.role._id;
+            return this.props.role._id;
         }
 
         return this.props.role;
@@ -61,8 +55,8 @@ export default class SecretKey {
     }
 
     public getCreatedById(): string {
-        if (isPopulatedSecretKeyUser(this.props.createdBy)) {
-            return this.props.createdBy._id.toString?.() ?? this.props.createdBy._id;
+        if (typeof this.props.createdBy !== 'string') {
+            return this.props.createdBy._id;
         }
 
         return this.props.createdBy;

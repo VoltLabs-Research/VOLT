@@ -18,7 +18,7 @@ import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import Title from '@/shared/presentation/components/Title';
 import useDocumentListingPagination from '@/shared/presentation/hooks/use-document-listing-pagination';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
+import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-params';
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 
 import './DocumentListing.css';
@@ -30,6 +30,7 @@ import { RiFileCopyLine } from 'react-icons/ri';
 import { RxDotsHorizontal } from 'react-icons/rx';
 import React from 'react';
 import type { CSSProperties } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { QueryKey } from '@tanstack/react-query';
@@ -167,7 +168,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
 }: DocumentListingProps<T, TContext>) => {
     const socketService = useSocket();
     const prefersReducedMotion = usePrefersReducedMotion();
-    const { searchParams, updateSearchParams } = useSearchParamsState();
+    const [searchParams, setSearchParams] = useSearchParams();
     const resolvedTabs = useMemo(() => tabs?.length ? tabs : DEFAULT_TABS, [tabs]);
     const persistenceKey = useMemo(() => resolvePersistenceKey(queryKey, title), [queryKey, title]);
     const tabParamKey = `${persistenceKey}-tab`;
@@ -211,12 +212,12 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
             return;
         }
 
-        updateSearchParams({
+        setSearchParams((prev) => applySearchParamUpdates(prev, {
             [tabParamKey]: nextTab,
             [sortKeyParamKey]: sortConfig?.key ?? null,
             [sortDirectionParamKey]: sortConfig?.direction ?? null
-        }, { replace: true });
-    }, [activeTabId, hideTabs, resolvedTabs.length, searchParams, sortConfig, sortDirectionParamKey, sortKeyParamKey, tabParamKey, updateSearchParams]);
+        }), { replace: true });
+    }, [activeTabId, hideTabs, resolvedTabs.length, searchParams, setSearchParams, sortConfig, sortDirectionParamKey, sortKeyParamKey, tabParamKey]);
 
     const getColumnSortKey = useCallback((col: ColumnConfig<T>): string => {
         return String(col.key ?? col.path ?? '');

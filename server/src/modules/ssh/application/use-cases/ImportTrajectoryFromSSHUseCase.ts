@@ -4,7 +4,7 @@ import TeamCluster, { TeamClusterStatus } from '@modules/team-cluster/domain/ent
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryCreatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryCreatedEvent';
-import { TEAM_CLUSTER_DAEMON_COMMAND } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
@@ -102,7 +102,7 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
                 createdAt: new Date()
             });
 
-            await this.teamClusterDaemonClient.command(connectedTeamCluster.id, TEAM_CLUSTER_DAEMON_COMMAND.queue.dispatch, {
+            await this.teamClusterDaemonClient.command(connectedTeamCluster.id, ChannelCommands.QueueDispatch, {
                 queueName: 'ssh_import',
                 payload: {
                     jobId,

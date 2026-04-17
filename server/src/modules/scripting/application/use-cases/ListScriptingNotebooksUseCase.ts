@@ -20,8 +20,8 @@ export class ListScriptingNotebooksUseCase implements IUseCase<ListScriptingNote
     ) {}
 
     async execute(input: ListScriptingNotebooksInputDTO): Promise<Result<ListScriptingNotebooksOutputDTO, ApplicationError>> {
-        const page = Math.max(1, Number(input.page || 1));
-        const limit = Math.max(1, Math.min(500, Number(input.limit || 500)));
+        const page = Math.max(1, input.page ?? 1);
+        const limit = Math.max(1, Math.min(500, input.limit ?? 500));
         const filter: Record<string, unknown> = { team: input.teamId };
 
         if (input.trajectoryId) {

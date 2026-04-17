@@ -1,4 +1,4 @@
-import { LeaveTeamInputDTO } from '../../dtos/team/LeaveTeamDTO';
+import type { TeamUserScopedInputDTO } from '@modules/team/application/dtos/common';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import TeamMembershipService from '@modules/team/infrastructure/services/team/TeamMembershipService';
@@ -10,7 +10,7 @@ import { Result } from '@shared/domain/port/Result';
 import { injectable, inject } from 'tsyringe';
 
 @injectable()
-export default class LeaveTeamUseCase implements IUseCase<LeaveTeamInputDTO, null, ApplicationError> {
+export default class LeaveTeamUseCase implements IUseCase<TeamUserScopedInputDTO, null, ApplicationError> {
     constructor(
         @inject(TEAM_TOKENS.TeamRepository)
         private readonly teamRepository: ITeamRepository,
@@ -22,7 +22,7 @@ export default class LeaveTeamUseCase implements IUseCase<LeaveTeamInputDTO, nul
         private readonly teamMembershipService: TeamMembershipService
     ){}
 
-    async execute(input: LeaveTeamInputDTO): Promise<Result<null, ApplicationError>> {
+    async execute(input: TeamUserScopedInputDTO): Promise<Result<null, ApplicationError>> {
         const { teamId, userId } = input;
 
         const team = await this.teamRepository.findById(teamId);

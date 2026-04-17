@@ -33,22 +33,7 @@ const compareFrameTimesteps = (left: number, right: number): number => {
 };
 
 const resolveJobTimestep = (job: Job): number | undefined => {
-    if (typeof job.timestep === 'number') {
-        return job.timestep;
-    }
-
-    if (typeof job.metadata?.timestep === 'number') {
-        return job.metadata.timestep;
-    }
-
-    if (typeof job.metadata?.timestep === 'string' && job.metadata.timestep.trim().length > 0) {
-        const parsedTimestep = Number(job.metadata.timestep);
-        if (Number.isFinite(parsedTimestep)) {
-            return parsedTimestep;
-        }
-    }
-
-    return undefined;
+    return job.timestep ?? job.metadata?.timestep;
 };
 
 const normalizeJobTimestep = (job: Job, timestep: number): Job => {

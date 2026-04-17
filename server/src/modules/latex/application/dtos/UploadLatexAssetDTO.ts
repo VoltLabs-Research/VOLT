@@ -1,9 +1,7 @@
 import type { LatexAssetDTO } from './LatexAssetDTO';
+import type { TeamUserScopedEntityIdInputDTO } from '@modules/team/application/dtos/common';
 
-export interface UploadLatexAssetInputDTO {
-    teamId: string;
-    documentId: string;
-    userId: string;
+export type UploadLatexAssetInputDTO = TeamUserScopedEntityIdInputDTO<'documentId'> & {
     /** Optional relative path prefix applied to all uploaded files (e.g. `images/`). */
     path?: string;
     files: Express.Multer.File[];

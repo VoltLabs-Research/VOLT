@@ -2,27 +2,14 @@ import type {
     IArgumentDefinition,
     IArgumentVisibilityCondition
 } from '@/modules/plugin/api/entities/plugin/workflow';
-import { isRecord } from '@/shared/utils/type-guards';
 
 type ArgumentValueMap = Record<string, unknown>;
 type VisibilityComparableValue = string | number | boolean;
 
-const isVisibilityComparableValue = (value: unknown): value is VisibilityComparableValue => {
-    return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
-};
-
-const normalizeConditionValues = (
+const getConditionValues = (
     condition: IArgumentVisibilityCondition
 ): VisibilityComparableValue[] => {
-    if (Array.isArray(condition.values)) {
-        return condition.values.filter(isVisibilityComparableValue);
-    }
-
-    if (isVisibilityComparableValue(condition.value)) {
-        return [condition.value];
-    }
-
-    return [];
+    return condition.values ?? (condition.value === undefined ? [] : [condition.value]);
 };
 
 const resolveComparisonSourceValue = (
@@ -50,7 +37,7 @@ const matchesVisibilityCondition = (
     condition: IArgumentVisibilityCondition,
     currentValue: unknown
 ): boolean => {
-    const comparisonValues = normalizeConditionValues(condition);
+    const comparisonValues = getConditionValues(condition);
 
     if (condition.operator === 'equals') {
         return comparisonValues.length > 0 && currentValue === comparisonValues[0];
@@ -122,8 +109,7 @@ export const sanitizeVisibleArgumentConfig = (
 
         if (definition.type === 'list' && Array.isArray(value)) {
             sanitizedValues[definition.argument] = value
-                .filter(isRecord)
-                .map((entry) => sanitizeVisibleArgumentConfig(definition.listArguments ?? [], entry));
+                .map((entry) => sanitizeVisibleArgumentConfig(definition.listArguments ?? [], entry as ArgumentValueMap));
             continue;
         }
 

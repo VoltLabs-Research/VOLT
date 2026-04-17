@@ -1,8 +1,7 @@
 import type { LatexDocumentDTO } from './LatexDocumentDTO';
+import type { TeamUserScopedInputDTO } from '@modules/team/application/dtos/common';
 
-export interface CreateLatexDocumentInputDTO {
-    teamId: string;
-    userId: string;
+export type CreateLatexDocumentInputDTO = TeamUserScopedInputDTO & {
     title: string;
     folderId?: string | null;
 };

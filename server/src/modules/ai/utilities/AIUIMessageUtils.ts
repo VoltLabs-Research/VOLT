@@ -1,7 +1,6 @@
 import type { AIConversationMessage } from '@modules/ai/domain/contracts/AIConversationMessage';
 import { AIConversationMessageRole } from '@modules/ai/domain/contracts/AIConversationMessage';
 import { injectable } from 'tsyringe';
-import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 
 type AITextPart = {
     type: 'text';
@@ -10,44 +9,17 @@ type AITextPart = {
 
 @injectable()
 export default class AIUIMessageUtils {
-    private isSupportedRole(role: unknown): role is AIConversationMessageRole {
-        return role === AIConversationMessageRole.User
-            || role === AIConversationMessageRole.Assistant
-            || role === AIConversationMessageRole.System;
-    }
-
-    private isValidUIMessage(message: unknown): message is AIConversationMessage {
-        if (!isRecord(message)) {
-            return false;
-        }
-
-        return (
-            typeof message.id === 'string'
-            && this.isSupportedRole(message.role)
-            && Array.isArray(message.parts)
-        );
-    }
-
     private isTextPart(part: unknown): part is AITextPart {
-        if (!isRecord(part)) {
-            return false;
-        }
-
-        return part.type === 'text' && typeof part.text === 'string';
+        return typeof part === 'object'
+            && part !== null
+            && 'type' in part
+            && 'text' in part
+            && part.type === 'text'
+            && typeof part.text === 'string';
     }
 
-    normalizeUIMessages(messages: unknown): AIConversationMessage[] | null {
-        if (!Array.isArray(messages) || messages.length === 0) {
-            return null;
-        }
-
-        const normalized = messages.filter((message): message is AIConversationMessage => this.isValidUIMessage(message));
-
-        if (normalized.length > 0) {
-            return normalized;
-        }
-
-        return null;
+    normalizeUIMessages(messages?: AIConversationMessage[]): AIConversationMessage[] | null {
+        return messages?.length ? messages : null;
     }
 
     extractLastUserMessageText(messages: AIConversationMessage[]): string {

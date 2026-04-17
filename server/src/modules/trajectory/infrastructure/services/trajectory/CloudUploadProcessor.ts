@@ -4,6 +4,7 @@ import { isRetryableTeamClusterTransportError } from '@modules/team-cluster/infr
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { WorkerFailureError, createWorkerFailureEnvelope } from '@shared/infrastructure/workers/WorkerFailureEnvelope';
 import logger from '@shared/infrastructure/logger';
+import pRetry from 'p-retry';
 import { injectable, inject } from 'tsyringe';
 import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
@@ -33,20 +34,9 @@ interface TeamClusterObjectStoreClient {
     }): Promise<void>;
 }
 
-interface RetryOptions {
-    maxAttempts: number;
-    baseDelayMs: number;
-}
-
-const RETRY_OPTIONS: RetryOptions = {
+const RETRY_OPTIONS = {
     maxAttempts: 3,
     baseDelayMs: 500
-};
-
-const wait = async (delayMs: number): Promise<void> => {
-    await new Promise((resolve) => {
-        setTimeout(resolve, delayMs);
-    });
 };
 
 @injectable()
@@ -98,41 +88,35 @@ export default class CloudUploadProcessor {
         commandName: string,
         operation: () => Promise<void>
     ): Promise<void> {
-        let lastError: unknown;
-
-        for (let attempt = 1; attempt <= RETRY_OPTIONS.maxAttempts; attempt += 1) {
-            try {
-                await operation();
-                return;
-            } catch (error) {
-                lastError = error;
-
-                if (!isRetryableTeamClusterTransportError(error)) {
-                    throw error;
+        try {
+            await pRetry(operation, {
+                retries: RETRY_OPTIONS.maxAttempts - 1,
+                factor: 1,
+                minTimeout: RETRY_OPTIONS.baseDelayMs,
+                maxTimeout: RETRY_OPTIONS.baseDelayMs * RETRY_OPTIONS.maxAttempts,
+                shouldRetry: ({ error }) => isRetryableTeamClusterTransportError(error),
+                onFailedAttempt: ({ attemptNumber }) => {
+                    logger.warn({
+                        attempt: attemptNumber,
+                        commandName,
+                        maxAttempts: RETRY_OPTIONS.maxAttempts,
+                        teamClusterId: task.teamClusterId,
+                        timestep: task.timestep,
+                        trajectoryId: task.trajectoryId
+                    }, `@cloud-upload-processor: transient daemon transport failure during ${commandName}`);
                 }
-
-                logger.warn({
-                    attempt,
-                    commandName,
-                    maxAttempts: RETRY_OPTIONS.maxAttempts,
-                    teamClusterId: task.teamClusterId,
-                    timestep: task.timestep,
-                    trajectoryId: task.trajectoryId
-                }, `@cloud-upload-processor: transient daemon transport failure during ${commandName}`);
-
-                if (attempt === RETRY_OPTIONS.maxAttempts) {
-                    break;
-                }
-
-                await wait(RETRY_OPTIONS.baseDelayMs * attempt);
+            });
+        } catch (error) {
+            if (!isRetryableTeamClusterTransportError(error)) {
+                throw error;
             }
-        }
 
-        throw new WorkerFailureError(createWorkerFailureEnvelope({
-            code: ErrorCodes.TRAJECTORY_DAEMON_TRANSPORT_FAILED,
-            details: lastError instanceof Error
-                ? lastError.message
-                : 'Trajectory daemon transport retries exhausted'
-        }));
+            throw new WorkerFailureError(createWorkerFailureEnvelope({
+                code: ErrorCodes.TRAJECTORY_DAEMON_TRANSPORT_FAILED,
+                details: error instanceof Error
+                    ? error.message
+                    : 'Trajectory daemon transport retries exhausted'
+            }));
+        }
     }
 }

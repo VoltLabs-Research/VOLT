@@ -25,99 +25,56 @@ export const TEAM_CLUSTER_DAEMON_EVENT = Object.freeze({
     message: 'team-cluster-daemon:message'
 });
 
-export const TEAM_CLUSTER_DAEMON_COMMAND = Object.freeze({
-    analysis: Object.freeze({
-        start: 'analysis.start'
-    }),
-    container: Object.freeze({
-        list: 'container.list',
-        create: 'container.create',
-        get: 'container.get',
-        update: 'container.update',
-        delete: 'container.delete',
-        stats: Object.freeze({
-            get: 'container.stats.get'
-        }),
-        processes: Object.freeze({
-            list: 'container.processes.list'
-        }),
-        files: Object.freeze({
-            list: 'container.files.list'
-        }),
-        file: Object.freeze({
-            read: 'container.file.read',
-            write: 'container.file.write'
-        })
-    }),
-    jobs: Object.freeze({
-        list: 'jobs.list',
-        retry: 'jobs.retry',
-        removeRunning: 'jobs.remove-running',
-        clearHistory: 'jobs.clear-history'
-    }),
-    notebook: Object.freeze({
-        delete: 'notebook.delete',
-        runtime: Object.freeze({
-            get: 'notebook.runtime.get'
-        }),
-        session: Object.freeze({
-            create: 'notebook.session.create'
-        })
-    }),
-    plugin: Object.freeze({
-        sync: 'plugin.sync',
-        transfer: Object.freeze({
-            mongo: Object.freeze({
-                export: 'plugin.transfer.mongo.export',
-                import: 'plugin.transfer.mongo.import',
-                purge: 'plugin.transfer.mongo.purge'
-            })
-        })
-    }),
-    runtime: Object.freeze({
-        config: Object.freeze({
-            get: 'runtime.config.get'
-        }),
-        role: Object.freeze({
-            apply: 'runtime.role.apply'
-        }),
-        queueConcurrency: Object.freeze({
-            apply: 'runtime.queue-concurrency.apply'
-        }),
-        restart: 'runtime.restart'
-    }),
-    queue: Object.freeze({
-        dispatch: 'queue.dispatch'
-    }),
-    remoteExplorer: Object.freeze({
-        list: 'remote.explorer.list',
-        node: 'remote.explorer.node',
-        download: 'remote.explorer.download'
-    }),
-    trajectory: Object.freeze({
-        rasterize: 'trajectory.rasterize',
-        enqueuePreprocessing: 'trajectory.enqueue-preprocessing',
-        native: Object.freeze({
-            preprocess: 'trajectory.native.preprocess',
-            metadata: 'trajectory.native.metadata',
-            propertyStats: 'trajectory.native.property-stats',
-            uniqueValues: 'trajectory.native.unique-values',
-            atomIds: 'trajectory.native.atom-ids',
-            atoms: 'trajectory.native.atoms',
-            filterPreview: 'trajectory.native.filter-preview',
-            colorModel: 'trajectory.native.color-model',
-            particleFilterModel: 'trajectory.native.particle-filter-model'
-        })
-    })
-});
+export const ChannelCommands = Object.freeze({
+    AnalysisStart: 'analysis.start',
 
-export const TEAM_CLUSTER_REMOTE_EXPLORER_COMMAND = Object.freeze({
-    list: TEAM_CLUSTER_DAEMON_COMMAND.remoteExplorer.list,
-    node: TEAM_CLUSTER_DAEMON_COMMAND.remoteExplorer.node,
-    download: TEAM_CLUSTER_DAEMON_COMMAND.remoteExplorer.download,
-    List: TEAM_CLUSTER_DAEMON_COMMAND.remoteExplorer.list,
-    Node: TEAM_CLUSTER_DAEMON_COMMAND.remoteExplorer.node,
-    Download: TEAM_CLUSTER_DAEMON_COMMAND.remoteExplorer.download
+    ContainerList: 'container.list',
+    ContainerCreate: 'container.create',
+    ContainerGet: 'container.get',
+    ContainerUpdate: 'container.update',
+    ContainerDelete: 'container.delete',
+    ContainerStats: 'container.stats.get',
+    ContainerProcessesList: 'container.processes.list',
+    ContainerFilesList: 'container.files.list',
+    ContainerFileRead: 'container.file.read',
+    ContainerFileWrite: 'container.file.write',
+
+    JobsList: 'jobs.list',
+    JobsRetry: 'jobs.retry',
+    JobsRemoveRunning: 'jobs.remove-running',
+    JobsClearHistory: 'jobs.clear-history',
+
+    NotebookDelete: 'notebook.delete',
+    NotebookRuntimeGet: 'notebook.runtime.get',
+    NotebookSessionCreate: 'notebook.session.create',
+
+    PluginSync: 'plugin.sync',
+    PluginTransferMongoExport: 'plugin.transfer.mongo.export',
+    PluginTransferMongoImport: 'plugin.transfer.mongo.import',
+    PluginTransferMongoPurge: 'plugin.transfer.mongo.purge',
+
+    RuntimeConfigGet: 'runtime.config.get',
+    RuntimeRoleApply: 'runtime.role.apply',
+    RuntimeQueueConcurrencyApply: 'runtime.queue-concurrency.apply',
+    RuntimeRestart: 'runtime.restart',
+
+    QueueDispatch: 'queue.dispatch',
+
+    RemoteExplorerList: 'remote.explorer.list',
+    RemoteExplorerNode: 'remote.explorer.node',
+    RemoteExplorerDownload: 'remote.explorer.download',
+
+    TrajectoryRasterize: 'trajectory.rasterize',
+    TrajectoryEnqueuePreprocessing: 'trajectory.enqueue-preprocessing',
+    TrajectoryNativePreprocess: 'trajectory.native.preprocess',
+    TrajectoryNativeMetadata: 'trajectory.native.metadata',
+    TrajectoryNativePropertyStats: 'trajectory.native.property-stats',
+    TrajectoryNativeUniqueValues: 'trajectory.native.unique-values',
+    TrajectoryNativeAtomIds: 'trajectory.native.atom-ids',
+    TrajectoryNativeAtoms: 'trajectory.native.atoms',
+    TrajectoryNativeFilterPreview: 'trajectory.native.filter-preview',
+    TrajectoryNativeColorModel: 'trajectory.native.color-model',
+    TrajectoryNativeParticleFilterModel: 'trajectory.native.particle-filter-model'
 });
 
 export interface ResolvedTeamClusterDaemonConnection {

@@ -1,10 +1,7 @@
-import type { TeamUserScopedInputDTO } from '@modules/team/application/dtos/common';
 import type { TeamClusterDTO } from '@modules/team-cluster/application/dtos/TeamClusterDTO';
+import type { PasswordConfirmedTeamClusterInputDTO } from './common';
 
-export interface DeleteTeamClusterByIdInputDTO extends TeamUserScopedInputDTO {
-    teamClusterId: string;
-    password: string;
-};
+export type DeleteTeamClusterByIdInputDTO = PasswordConfirmedTeamClusterInputDTO;
 
 export interface DeleteTeamClusterByIdOutputDTO {
     success: boolean;

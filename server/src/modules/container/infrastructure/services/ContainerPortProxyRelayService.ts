@@ -12,24 +12,19 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { LocalRelayPortAllocator } from '@shared/infrastructure/services/LocalRelayPortAllocator';
-import {
-    bridgeWebSockets,
-    writeUpgradeError
-} from '@shared/infrastructure/utilities/proxy-relay';
-import { buildWebSocketProtocolList } from '@shared/infrastructure/utilities/websocket-protocols';
+import { writeUpgradeError } from '@shared/infrastructure/utilities/proxy-relay';
 import {
     readRelayHostValue,
     readRelayPortRangeValue,
     resolveRelayAdvertisedHost
 } from '@shared/infrastructure/utilities/relay-network';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import { parse as parseCookie, serialize as serializeCookie } from 'cookie';
+import httpProxy from 'http-proxy';
 import { inject, injectable } from 'tsyringe';
 import { randomBytes } from 'node:crypto';
 import http from 'node:http';
-import { WebSocket, WebSocketServer } from 'ws';
 import type {
-    ClientRequest,
-    IncomingHttpHeaders,
     IncomingMessage,
     RequestOptions,
     ServerResponse
@@ -69,29 +64,13 @@ const DEFAULT_RELAY_BIND_HOST = '127.0.0.1';
 const DEFAULT_RELAY_PORT_START = 24000;
 const DEFAULT_RELAY_PORT_END = 24999;
 const PROXY_URL_ORIGIN = 'http://volt.local';
-const UPSTREAM_URL_ORIGIN = 'http://upstream.local';
 
 const readCookies = (rawCookieHeader?: string): Record<string, string> => {
     if (!rawCookieHeader) {
         return {};
     }
 
-    const cookies: Record<string, string> = {};
-    for (const entry of rawCookieHeader.split(';')) {
-        const [rawKey, ...rawValueParts] = entry.split('=');
-        const key = rawKey?.trim();
-        if (!key) {
-            continue;
-        }
-
-        try {
-            cookies[key] = decodeURIComponent(rawValueParts.join('=').trim());
-        } catch {
-            continue;
-        }
-    }
-
-    return cookies;
+    return parseCookie(rawCookieHeader);
 };
 
 const readNumberEnv = (name: string, fallback: number): number => {
@@ -121,9 +100,6 @@ export class ContainerPortProxyRelayService {
         portStart: this.portStart,
         portEnd: this.portEnd,
         exhaustedMessage: 'No available container app relay ports'
-    });
-    private readonly webSocketServer = new WebSocketServer({
-        noServer: true
     });
 
     constructor(
@@ -209,29 +185,33 @@ export class ContainerPortProxyRelayService {
     ): Promise<void> {
         const session = this.requireAuthorizedSession(sessionId, req.url || '/', this.readHeaderValue(req.headers.cookie));
         this.persistAccessTokenCookie(req, res, session);
+
         const target = this.extractProxyTarget(req.url || '/');
         const tunnel = await this.teamClusterDaemonClient.openTunnel(session.teamClusterId, {
             targetHost: session.internalIp,
             targetPort: session.privatePort,
             accessMode: TeamClusterServiceExposureAccessMode.Http
         });
-        const upstreamAgent = this.createSingleUseTunnelHttpAgent(tunnel);
-        const destroyUpstreamAgent = (): void => {
-            upstreamAgent.destroy();
+        const agent = this.createSingleUseTunnelHttpAgent(tunnel);
+        const proxy = httpProxy.createProxyServer();
+        const originalUrl = req.url;
+
+        const cleanup = (): void => {
+            agent.destroy();
+            proxy.removeAllListeners();
         };
 
-        const upstreamRequest = http.request(this.buildUpstreamHttpRequestOptions(req, session, target, upstreamAgent), (upstreamResponse) => {
-            upstreamResponse.once('close', destroyUpstreamAgent);
-            this.prepareProxyResponse(res, upstreamResponse.headers, upstreamResponse.statusCode || 502, session);
-            upstreamResponse.on('error', (error: Error) => {
-                res.destroy(error);
-            });
-            upstreamResponse.pipe(res);
+        proxy.once('proxyRes', (proxyResponse) => {
+            const location = proxyResponse.headers.location;
+            if (typeof location === 'string') {
+                proxyResponse.headers.location = this.rewriteLocationHeader(location, session);
+            }
+
+            proxyResponse.once('close', cleanup);
         });
 
-        res.once('close', destroyUpstreamAgent);
-        upstreamRequest.on('error', (error: Error) => {
-            destroyUpstreamAgent();
+        proxy.once('error', (error) => {
+            cleanup();
             if (!res.headersSent) {
                 this.writeHttpError(res, error);
                 return;
@@ -240,7 +220,15 @@ export class ContainerPortProxyRelayService {
             res.destroy(error);
         });
 
-        req.pipe(upstreamRequest);
+        res.once('close', cleanup);
+        req.url = `${target.proxiedPath}${target.rawQuery}`;
+        proxy.web(req, res, {
+            target: `http://${session.internalIp}:${session.privatePort}`,
+            agent,
+            changeOrigin: true,
+            xfwd: true
+        });
+        req.url = originalUrl;
     }
 
     private async handleUpgrade(sessionId: string, request: IncomingMessage, socket: Duplex, head: Buffer): Promise<void> {
@@ -251,76 +239,31 @@ export class ContainerPortProxyRelayService {
             targetPort: session.privatePort,
             accessMode: TeamClusterServiceExposureAccessMode.WebSocket
         });
-        const upstreamWebSocketUrl = `ws://${session.internalIp}:${session.privatePort}${target.proxiedPath}${target.rawQuery}`;
-        const requestedProtocols = buildWebSocketProtocolList(request.headers['sec-websocket-protocol']);
-        const upstreamWebSocketOptions = {
-            createConnection: () => tunnel,
-            headers: this.readUpgradeRequestHeaders(request, session)
-        };
-        const upstreamWebSocket = requestedProtocols
-            ? new WebSocket(upstreamWebSocketUrl, requestedProtocols, upstreamWebSocketOptions)
-            : new WebSocket(upstreamWebSocketUrl, upstreamWebSocketOptions);
+        const agent = this.createSingleUseTunnelHttpAgent(tunnel);
+        const proxy = httpProxy.createProxyServer({
+            ws: true
+        });
+        const originalUrl = request.url;
 
-        const cleanupPendingUpgrade = (): void => {
-            upstreamWebSocket.off('open', onUpstreamReady);
-            upstreamWebSocket.off('close', onUpstreamCloseBeforeReady);
-            upstreamWebSocket.off('error', onUpstreamErrorBeforeReady);
-            upstreamWebSocket.off('unexpected-response', onUpstreamUnexpectedResponse);
-            socket.off('close', onClientSocketCloseBeforeReady);
+        const cleanup = (): void => {
+            agent.destroy();
+            proxy.removeAllListeners();
         };
 
-        const onUpstreamReady = (): void => {
-            cleanupPendingUpgrade();
-            const negotiatedProtocol = upstreamWebSocket.protocol;
-            const webSocketServer = negotiatedProtocol
-                ? new WebSocketServer({
-                    noServer: true,
-                    handleProtocols: () => negotiatedProtocol
-                })
-                : this.webSocketServer;
-
-            webSocketServer.handleUpgrade(request, socket, head, (webSocket) => {
-                this.bindWebSocketProxy(webSocket, upstreamWebSocket);
-            });
-        };
-
-        const onUpstreamCloseBeforeReady = (): void => {
-            cleanupPendingUpgrade();
-            writeUpgradeError(socket, 502, 'Upstream WebSocket connection failed');
-        };
-
-        const onUpstreamErrorBeforeReady = (error: Error): void => {
-            cleanupPendingUpgrade();
+        proxy.once('error', (error) => {
+            cleanup();
             writeUpgradeError(socket, 502, error.message || 'Upstream WebSocket connection failed');
-        };
+        });
 
-        const onUpstreamUnexpectedResponse = (_upstreamRequest: ClientRequest, upstreamResponse: IncomingMessage): void => {
-            cleanupPendingUpgrade();
-            upstreamResponse.resume();
-            writeUpgradeError(
-                socket,
-                upstreamResponse.statusCode || 502,
-                upstreamResponse.statusMessage || 'Upstream WebSocket connection failed'
-            );
-        };
-
-        const onClientSocketCloseBeforeReady = (): void => {
-            cleanupPendingUpgrade();
-            if (upstreamWebSocket.readyState === WebSocket.CONNECTING || upstreamWebSocket.readyState === WebSocket.OPEN) {
-                upstreamWebSocket.close();
-            }
-        };
-
-        if (upstreamWebSocket.readyState === WebSocket.OPEN) {
-            onUpstreamReady();
-            return;
-        }
-
-        upstreamWebSocket.once('open', onUpstreamReady);
-        upstreamWebSocket.once('close', onUpstreamCloseBeforeReady);
-        upstreamWebSocket.once('error', onUpstreamErrorBeforeReady);
-        upstreamWebSocket.once('unexpected-response', onUpstreamUnexpectedResponse);
-        socket.once('close', onClientSocketCloseBeforeReady);
+        socket.once('close', cleanup);
+        request.url = `${target.proxiedPath}${target.rawQuery}`;
+        proxy.ws(request, socket, head, {
+            target: `ws://${session.internalIp}:${session.privatePort}`,
+            agent,
+            changeOrigin: true,
+            xfwd: true
+        });
+        request.url = originalUrl;
     }
 
     private requireAuthorizedSession(
@@ -372,115 +315,12 @@ export class ContainerPortProxyRelayService {
             return;
         }
 
-        const cookieSegments = [
-            `${CONTAINER_PORT_PROXY_ACCESS_TOKEN_COOKIE_NAME}=${encodeURIComponent(accessToken)}`,
-            'Path=/',
-            'HttpOnly',
-            'SameSite=Lax',
-            `Max-Age=${Math.max(1, Math.floor((session.expiresAt - Date.now()) / 1000))}`
-        ];
-
-        res.setHeader('set-cookie', cookieSegments.join('; '));
-    }
-
-    private bindWebSocketProxy(webSocket: WebSocket, upstreamWebSocket: WebSocket): void {
-        bridgeWebSockets(webSocket, upstreamWebSocket, {
-            upstreamErrorMessage: 'Remote container websocket failed'
-        });
-    }
-
-    private prepareProxyResponse(
-        res: ServerResponse<IncomingMessage>,
-        headers: IncomingHttpHeaders,
-        status: number,
-        session: ContainerPortProxyRelaySession
-    ): void {
-        res.statusCode = status;
-
-        for (const [headerName, headerValue] of Object.entries(headers)) {
-            if (typeof headerValue === 'undefined') {
-                continue;
-            }
-
-            const normalizedHeaderName = headerName.toLowerCase();
-            if (normalizedHeaderName === 'transfer-encoding' || normalizedHeaderName === 'connection') {
-                continue;
-            }
-
-            if (normalizedHeaderName === 'location') {
-                res.setHeader(headerName, this.rewriteLocationHeader(this.readHeaderValue(headerValue) || '', session));
-                continue;
-            }
-
-            res.setHeader(headerName, headerValue);
-        }
-    }
-
-    private buildUpstreamHttpRequestOptions(
-        req: IncomingMessage,
-        session: ContainerPortProxyRelaySession,
-        target: ProxyTarget,
-        agent: http.Agent
-    ): RequestOptions {
-        const headers = this.readProxyRequestHeaders(req.headers);
-        headers.host = `${session.internalIp}:${session.privatePort}`;
-        headers['x-forwarded-host'] = this.readHeaderValue(req.headers.host) || '';
-        headers['x-forwarded-proto'] = this.publicProtocol;
-
-        return {
-            protocol: 'http:',
-            hostname: session.internalIp,
-            host: session.internalIp,
-            port: session.privatePort,
-            method: req.method,
-            path: `${target.proxiedPath}${target.rawQuery}`,
-            headers,
-            agent
-        };
-    }
-
-    private readUpgradeRequestHeaders(
-        request: IncomingMessage,
-        session: ContainerPortProxyRelaySession
-    ): Record<string, string> {
-        const headers = this.readProxyRequestHeaders(request.headers);
-
-        for (const headerName of Object.keys(headers)) {
-            const normalizedHeaderName = headerName.toLowerCase();
-            if (
-                normalizedHeaderName === 'connection'
-                || normalizedHeaderName === 'upgrade'
-                || normalizedHeaderName.startsWith('sec-websocket-')
-            ) {
-                delete headers[headerName];
-            }
-        }
-
-        headers.host = `${session.internalIp}:${session.privatePort}`;
-        headers['x-forwarded-host'] = this.readHeaderValue(request.headers.host) || '';
-        headers['x-forwarded-proto'] = this.publicProtocol;
-
-        return headers;
-    }
-
-    private readProxyRequestHeaders(headersInput: IncomingHttpHeaders): Record<string, string> {
-        const headers: Record<string, string> = {};
-
-        for (const [headerName, headerValue] of Object.entries(headersInput)) {
-            const normalizedHeaderName = headerName.toLowerCase();
-            if (!headerValue || normalizedHeaderName === 'host') {
-                continue;
-            }
-
-            if (Array.isArray(headerValue)) {
-                headers[headerName] = headerValue.join(', ');
-                continue;
-            }
-
-            headers[headerName] = headerValue;
-        }
-
-        return headers;
+        res.setHeader('set-cookie', serializeCookie(CONTAINER_PORT_PROXY_ACCESS_TOKEN_COOKIE_NAME, accessToken, {
+            path: '/',
+            httpOnly: true,
+            sameSite: 'lax',
+            maxAge: Math.max(1, Math.floor((session.expiresAt - Date.now()) / 1000))
+        }));
     }
 
     private createSingleUseTunnelHttpAgent(tunnel: Duplex): http.Agent {

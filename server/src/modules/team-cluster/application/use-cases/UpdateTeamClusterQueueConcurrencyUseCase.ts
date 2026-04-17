@@ -11,7 +11,7 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import {
-    TEAM_CLUSTER_DAEMON_COMMAND,
+    ChannelCommands,
     type TeamClusterDaemonQueueConcurrencyApplyPayload
 } from '@shared/infrastructure/contracts/team-cluster';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
@@ -80,7 +80,7 @@ export default class UpdateTeamClusterQueueConcurrencyUseCase
                 };
                 const queueConcurrencyCommandResult = await this.teamClusterDaemonClient.commandWithSemanticResult<{ accepted?: boolean; reason?: string; }>(
                     updatedTeamCluster.id,
-                    TEAM_CLUSTER_DAEMON_COMMAND.runtime.queueConcurrency.apply,
+                    ChannelCommands.RuntimeQueueConcurrencyApply,
                     queueConcurrencyPayload,
                     {
                         timeoutClass: 'long-running-control-plane',

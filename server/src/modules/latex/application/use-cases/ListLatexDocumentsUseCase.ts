@@ -15,10 +15,8 @@ export class ListLatexDocumentsUseCase implements IUseCase<ListLatexDocumentsInp
     ) {}
 
     async execute(input: ListLatexDocumentsInputDTO): Promise<Result<ListLatexDocumentsOutputDTO, ApplicationError>> {
-        const parsedPage = Number(input.page);
-        const parsedLimit = Number(input.limit);
-        const page = Number.isFinite(parsedPage) ? Math.max(1, parsedPage) : 1;
-        const limit = Number.isFinite(parsedLimit) ? Math.max(1, Math.min(500, parsedLimit)) : 500;
+        const page = Math.max(1, input.page ?? 1);
+        const limit = Math.max(1, Math.min(500, input.limit ?? 500));
 
         let folderId: string | null | 'all';
         if (!input.folderId) {

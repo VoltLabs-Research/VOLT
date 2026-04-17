@@ -1,7 +1,5 @@
-import type { DeleteCatalogFolderInputDTO } from '@shared/application/catalog/catalog-folder-dto';
+import type { TeamUserScopedEntityIdInputDTO } from '@modules/team/application/dtos/common';
 
-export interface DeleteWhiteboardFolderInputDTO extends DeleteCatalogFolderInputDTO {
-    userId: string;
-};
+export type DeleteWhiteboardFolderInputDTO = TeamUserScopedEntityIdInputDTO<'folderId'>;
 
 export type DeleteWhiteboardFolderOutputDTO = null;

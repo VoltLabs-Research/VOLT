@@ -39,7 +39,6 @@ export default class TeamJobsSocketModule extends BaseSocketModule {
 
     async onShutdown(): Promise<void> {
         this.unsubscribeFromTeamSubscription?.();
-        this.teamJobsService.invalidateInitialTeamJobs();
     }
 
     onConnection(connection: ISocketConnection): void {

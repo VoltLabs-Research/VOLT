@@ -1,13 +1,14 @@
 import usePluginBuilderStore from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { useSavePluginMutation } from './queries';
 import { isAccessDeniedError, reportError, ErrorSurface } from '@/shared/errors/core';
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
+import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-params';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
 
 const useSaveWorkflow = () => {
-    const { searchParams, updateSearchParams } = useSearchParamsState();
+    const [searchParams, setSearchParams] = useSearchParams();
     const getWorkflow = usePluginBuilderStore((state) => state.getWorkflow);
     const setSaving = usePluginBuilderStore((state) => state.setSaving);
     const setSaveError = usePluginBuilderStore((state) => state.setSaveError);
@@ -36,7 +37,7 @@ const useSaveWorkflow = () => {
             );
 
             if (!currentPluginId) {
-                updateSearchParams({ id: plugin._id }, { replace: true });
+                setSearchParams((prev) => applySearchParamUpdates(prev, { id: plugin._id }), { replace: true });
             }
 
             return plugin;
@@ -58,7 +59,7 @@ const useSaveWorkflow = () => {
         setSaving,
         setSaveError,
         searchParams,
-        updateSearchParams
+        setSearchParams
     ]);
 
     return saveWorkflow;

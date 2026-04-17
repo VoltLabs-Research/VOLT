@@ -1,4 +1,5 @@
-import type { PaginatedResult, PaginationOptions } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedTeamScopedInputDTO, TeamScopedEntityIdInputDTO, TeamUserScopedInputDTO } from '@modules/team/application/dtos/common';
+import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 
 export interface CatalogFolderDTO {
     _id: string;
@@ -8,32 +9,21 @@ export interface CatalogFolderDTO {
     updatedAt: Date;
 };
 
-export interface CreateCatalogFolderInputDTO {
-    teamId: string;
-    userId: string;
+export type CreateCatalogFolderInputDTO = TeamUserScopedInputDTO & {
     title: string;
     parentId?: string | null;
 };
 
-export interface GetCatalogFolderInputDTO {
-    teamId: string;
-    folderId: string;
-};
+export type GetCatalogFolderInputDTO = TeamScopedEntityIdInputDTO<'folderId'>;
 
-export interface UpdateCatalogFolderInputDTO {
-    teamId: string;
-    folderId: string;
+export type UpdateCatalogFolderInputDTO = TeamScopedEntityIdInputDTO<'folderId'> & {
     title: string;
 };
 
-export interface DeleteCatalogFolderInputDTO {
-    teamId: string;
-    folderId: string;
-};
+export type DeleteCatalogFolderInputDTO = TeamScopedEntityIdInputDTO<'folderId'>;
 
-export interface ListCatalogFoldersInputDTO extends Partial<PaginationOptions> {
-    teamId: string;
+export type ListCatalogFoldersInputDTO = PaginatedTeamScopedInputDTO & {
     parentId?: string | null;
 };
 
-export interface ListCatalogFoldersOutputDTO extends PaginatedResult<CatalogFolderDTO> {};
+export type ListCatalogFoldersOutputDTO = PaginatedResult<CatalogFolderDTO>;

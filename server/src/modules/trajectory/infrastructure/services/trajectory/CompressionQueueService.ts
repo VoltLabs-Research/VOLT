@@ -341,14 +341,14 @@ export default class CompressionQueueService {
         jobId: string,
         teamId: string,
         status: JobStatusChangedValue,
-        metadata: Record<string, unknown>
+        details: Record<string, unknown>
     ): Promise<void> {
         await this.eventBus.publish(new JobStatusChangedEvent({
             jobId,
             teamId,
             status,
             queueType: QUEUE_TYPE,
-            metadata
+            ...details
         }));
     }
 }
