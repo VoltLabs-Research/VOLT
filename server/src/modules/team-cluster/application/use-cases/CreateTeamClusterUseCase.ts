@@ -135,12 +135,7 @@ export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClus
             return Result.fail(ApplicationError.internalServerError('Failed to create team cluster'));
         }
 
-        logger.info({
-            action: 'team-cluster.create',
-            teamClusterId: createdTeamCluster._id,
-            teamId: input.teamId,
-            userId: input.userId
-        }, 'Team cluster created');
+        logger.info(`Team cluster created teamClusterId=${createdTeamCluster._id} teamId=${input.teamId} userId=${input.userId}`);
 
         return Result.ok({
             teamCluster: toTeamClusterDTO(createdTeamCluster),

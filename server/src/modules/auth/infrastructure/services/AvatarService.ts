@@ -50,11 +50,7 @@ export default class AvatarService implements IAvatarService {
             });
             return this.storageService.getPublicURL(SYS_BUCKETS.AVATARS, fileName);
         } catch (error) {
-            logger.error({
-                err: error,
-                operation: 'generate-default-avatar',
-                id
-            } satisfies LoggerErrorContext, 'AvatarService::Default::Error generating avatar');
+            logger.error(`AvatarService::Default::Error generating avatar`);
             throw error;
         }
     }
@@ -75,11 +71,7 @@ export default class AvatarService implements IAvatarService {
             });
             return this.storageService.getPublicURL(SYS_BUCKETS.AVATARS, fileName);
         } catch (error) {
-            logger.error({
-                err: error,
-                operation: 'upload-custom-avatar',
-                id
-            } satisfies LoggerErrorContext, 'AvatarService::Custom::Error uploading avatar');
+            logger.error(`AvatarService::Custom::Error uploading avatar`);
             throw error;
         }
     }

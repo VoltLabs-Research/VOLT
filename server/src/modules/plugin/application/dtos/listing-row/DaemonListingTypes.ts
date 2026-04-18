@@ -87,7 +87,7 @@ export const mapDaemonRow = (row: DaemonListingRow): ListingRowData => {
         analysisId: String(row.analysis || ''),
         trajectoryId: String(row.trajectory || ''),
         exposureId: row.exposureId || '',
-        trajectoryName: row.trajectoryName || '',
+        trajectoryName: row.trajectoryName as string,
         ...rowFields
     };
 };

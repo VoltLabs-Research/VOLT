@@ -22,21 +22,9 @@ export default class FirstTeamClusterConnectedEventHandler implements IEventHand
                 PluginStatus.Published
             );
 
-            logger.info({
-                action: 'plugin.default-bootstrap.first-team-cluster-connected',
-                failedPlugins: result.failedPlugins.length,
-                importedCount: result.importedCount,
-                teamClusterId,
-                teamId,
-                totalFound: result.totalFound
-            }, 'Processed default plugin bootstrap after the first team cluster connected');
+            logger.info(`Processed default plugin bootstrap after the first team cluster connected failedPlugins=${result.failedPlugins.length} importedCount=${result.importedCount} teamClusterId=${teamClusterId} teamId=${teamId}`);
         } catch (error: unknown) {
-            logger.error({
-                action: 'plugin.default-bootstrap.first-team-cluster-connected.failed',
-                error,
-                teamClusterId,
-                teamId
-            }, 'Failed to import default plugins after the first team cluster connected');
+            logger.error(`Failed to import default plugins after the first team cluster connected teamClusterId=${teamClusterId} teamId=${teamId}`);
         }
     }
 };

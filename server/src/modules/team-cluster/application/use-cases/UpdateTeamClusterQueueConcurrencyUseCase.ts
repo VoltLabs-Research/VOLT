@@ -89,22 +89,10 @@ export default class UpdateTeamClusterQueueConcurrencyUseCase
                 );
 
                 if (!queueConcurrencyCommandResult.accepted) {
-                    logger.warn({
-                        action: 'team-cluster.queue-concurrency.apply-rejected',
-                        teamClusterId: updatedTeamCluster.id,
-                        teamId: input.teamId,
-                        reason: queueConcurrencyCommandResult.reason,
-                        queueConcurrency: queueConcurrencyPayload.queueConcurrency
-                    }, 'Persisted team cluster queue concurrency but the daemon rejected the live apply request');
+                    logger.warn(`Persisted team cluster queue concurrency but the daemon rejected the live apply request teamClusterId=${updatedTeamCluster.id} teamId=${input.teamId} reason=${queueConcurrencyCommandResult.reason} queueConcurrency=${queueConcurrencyPayload.queueConcurrency}`);
                 }
             } catch (error: unknown) {
-                logger.warn({
-                    action: 'team-cluster.queue-concurrency.apply-failed',
-                    teamClusterId: updatedTeamCluster.id,
-                    teamId: input.teamId,
-                    queueConcurrency: updatedTeamCluster.props.queueConcurrency,
-                    err: error
-                }, 'Persisted team cluster queue concurrency but failed to request live daemon apply');
+                logger.warn(`Persisted team cluster queue concurrency but failed to request live daemon apply teamClusterId=${updatedTeamCluster.id} teamId=${input.teamId} queueConcurrency=${updatedTeamCluster.props.queueConcurrency}`);
             }
         }
 

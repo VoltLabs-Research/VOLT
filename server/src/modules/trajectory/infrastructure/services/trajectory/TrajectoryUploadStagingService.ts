@@ -32,11 +32,6 @@ export default class TrajectoryUploadStagingService implements ITrajectoryUpload
             });
         }
 
-        logger.info(
-            { trajectoryId, fileCount: stagedFiles.length, incomingDir },
-            '@trajectory-upload-staging: uploads adopted into trajectory workspace'
-        );
-
         return stagedFiles;
     }
 

@@ -61,13 +61,7 @@ export default class CreateTeamClusterRemoteAccessSessionUseCase implements IUse
             target: input.target
         });
 
-        logger.info({
-            action: 'team-cluster.remote-access.session-created',
-            teamClusterId: input.teamClusterId,
-            teamId: input.teamId,
-            userId: input.userId,
-            target: input.target
-        }, 'Created team cluster remote access session');
+        logger.info(`Created team cluster remote access session teamClusterId=${input.teamClusterId} teamId=${input.teamId} userId=${input.userId} target=${input.target}`);
 
         return Result.ok({
             session

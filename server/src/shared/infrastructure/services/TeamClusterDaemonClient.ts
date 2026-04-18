@@ -220,10 +220,7 @@ export default class TeamClusterDaemonClient {
             ? response.data.message
             : (response.message || `Daemon command "${command}" failed with status ${response.status}`);
 
-        logger.warn(
-            { command, status: response.status, code: errorCode, message: errorMessage },
-            logLabel
-        );
+        logger.warn(`logLabel command=${command} status=${response.status} code=${errorCode} message=${errorMessage}`);
 
         throw mapDaemonStatusToApplicationError(response.status, errorCode, errorMessage);
     }
@@ -275,19 +272,11 @@ export default class TeamClusterDaemonClient {
                 }, 'Daemon command returned an error status');
             }
 
-            logger.info({
-                ...dispatchContext,
-                status: response.status,
-                durationMs: Date.now() - startedAt
-            }, '@team-cluster-daemon: response');
+            logger.info(`@team-cluster-daemon: response status=${response.status} durationMs=${Date.now() - startedAt}`);
 
             return data as T;
         } catch (error) {
-            logger.warn({
-                ...dispatchContext,
-                durationMs: Date.now() - startedAt,
-                err: error
-            }, '@team-cluster-daemon: failed');
+            logger.warn(`@team-cluster-daemon: failed durationMs=${Date.now() - startedAt}`);
             throw error;
         }
     }
@@ -342,18 +331,11 @@ export default class TeamClusterDaemonClient {
             payload: payloadWithMetadata,
             responseType: TeamClusterDaemonResponseType.Stream
         }).then((stream) => {
-            logger.info({
-                ...dispatchContext,
-                durationMs: Date.now() - startedAt
-            }, '@team-cluster-daemon: stream-ready');
+            logger.info(`@team-cluster-daemon: stream-ready durationMs=${Date.now() - startedAt}`);
 
             return stream;
         }).catch((error: unknown) => {
-            logger.warn({
-                ...dispatchContext,
-                durationMs: Date.now() - startedAt,
-                err: error
-            }, '@team-cluster-daemon: stream-failed');
+            logger.warn(`@team-cluster-daemon: stream-failed durationMs=${Date.now() - startedAt}`);
             throw error;
         });
     }
@@ -379,19 +361,11 @@ export default class TeamClusterDaemonClient {
             payload: payloadWithMetadata,
             responseType: TeamClusterDaemonResponseType.Stream
         }).then((attachment) => {
-            logger.info({
-                ...dispatchContext,
-                durationMs: Date.now() - startedAt,
-                status: attachment.status
-            }, '@team-cluster-daemon: response-stream-ready');
+            logger.info(`@team-cluster-daemon: response-stream-ready durationMs=${Date.now() - startedAt} status=${attachment.status}`);
 
             return attachment;
         }).catch((error: unknown) => {
-            logger.warn({
-                ...dispatchContext,
-                durationMs: Date.now() - startedAt,
-                err: error
-            }, '@team-cluster-daemon: response-stream-failed');
+            logger.warn(`@team-cluster-daemon: response-stream-failed durationMs=${Date.now() - startedAt}`);
             throw error;
         });
     }
@@ -423,19 +397,11 @@ export default class TeamClusterDaemonClient {
                 throw ApplicationError.internalServerError('Daemon buffer response body is empty');
             }
 
-            logger.info({
-                ...dispatchContext,
-                status: response.status,
-                durationMs: Date.now() - startedAt
-            }, '@team-cluster-daemon: buffer-response');
+            logger.info(`@team-cluster-daemon: buffer-response status=${response.status} durationMs=${Date.now() - startedAt}`);
 
             return Buffer.from(response.bodyBase64, 'base64');
         } catch (error) {
-            logger.warn({
-                ...dispatchContext,
-                durationMs: Date.now() - startedAt,
-                err: error
-            }, '@team-cluster-daemon: buffer-failed');
+            logger.warn(`@team-cluster-daemon: buffer-failed durationMs=${Date.now() - startedAt}`);
             throw error;
         }
     }

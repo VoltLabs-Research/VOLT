@@ -132,7 +132,7 @@ export class ContainerPortProxyRelayService {
 
         const cleanupTimer = setTimeout(() => {
             this.closeSession(sessionId).catch((error: unknown) => {
-                logger.error({ err: error, sessionId }, 'Failed to close expired container port proxy session');
+                logger.error(`Failed to close expired container port proxy session sessionId=${sessionId}`);
             });
         }, this.sessionTtlMs);
         cleanupTimer.unref();
@@ -162,15 +162,7 @@ export class ContainerPortProxyRelayService {
             createAccessToken: this.accessTokenService.create.bind(this.accessTokenService)
         });
 
-        logger.info({
-            action: 'container.port-proxy.session.created',
-            sessionId,
-            relayPort,
-            teamId: input.teamId,
-            containerId: input.containerId,
-            privatePort: input.privatePort,
-            expiresAt: new Date(expiresAt).toISOString()
-        }, 'Created container port proxy relay session');
+        logger.info(`Created container port proxy relay session sessionId=${sessionId} relayPort=${relayPort} teamId=${input.teamId} containerId=${input.containerId}`);
 
         return {
             url,
@@ -278,7 +270,7 @@ export class ContainerPortProxyRelayService {
 
         if (Date.now() >= session.expiresAt) {
             this.closeSession(session.sessionId).catch((error: unknown) => {
-                logger.error({ err: error, sessionId: session.sessionId }, 'Failed to close expired container port proxy session');
+                logger.error(`Failed to close expired container port proxy session sessionId=${session.sessionId}`);
             });
             throw ApplicationError.unauthorized(ErrorCodes.AUTHENTICATION_UNAUTHORIZED, 'Container proxy session expired');
         }
@@ -393,14 +385,7 @@ export class ContainerPortProxyRelayService {
         await this.portAllocator.close(session.server);
         this.portAllocator.releasePort(session.relayPort);
 
-        logger.info({
-            action: 'container.port-proxy.session.closed',
-            sessionId,
-            relayPort: session.relayPort,
-            teamId: session.teamId,
-            containerId: session.containerId,
-            privatePort: session.privatePort
-        }, 'Closed container port proxy relay session');
+        logger.info(`Closed container port proxy relay session sessionId=${sessionId} relayPort=${session.relayPort} teamId=${session.teamId} containerId=${session.containerId}`);
     }
 
     private readHeaderValue(value: string | string[] | undefined): string | undefined {

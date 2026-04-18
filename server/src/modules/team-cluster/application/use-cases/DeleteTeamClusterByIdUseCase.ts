@@ -86,13 +86,7 @@ export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeam
                     }
                 );
             } catch (error: unknown) {
-                logger.warn({
-                    action: 'team-cluster.delete.remote-request-failed',
-                    teamClusterId: input.teamClusterId,
-                    teamId: input.teamId,
-                    userId: input.userId,
-                    err: error
-                }, 'Failed to request remote team cluster uninstall');
+                logger.warn(`Failed to request remote team cluster uninstall teamClusterId=${input.teamClusterId} teamId=${input.teamId} userId=${input.userId}`);
 
                 return Result.fail(ApplicationError.conflict(
                     'TeamCluster::RemoteUninstallRequestFailed',
@@ -106,13 +100,7 @@ export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeam
                     || uninstallCommandResult.data?.message
                     || 'The daemon rejected the uninstall request.';
 
-                logger.warn({
-                    action: 'team-cluster.delete.remote-request-rejected',
-                    teamClusterId: input.teamClusterId,
-                    teamId: input.teamId,
-                    userId: input.userId,
-                    reason: rejectionReason
-                }, 'Cluster daemon rejected runtime.uninstall command');
+                logger.warn(`Cluster daemon rejected runtime.uninstall command teamClusterId=${input.teamClusterId} teamId=${input.teamId} userId=${input.userId} reason=${rejectionReason}`);
 
                 return Result.fail(ApplicationError.conflict(
                     'TeamCluster::RemoteUninstallRejected',
@@ -122,12 +110,7 @@ export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeam
 
             const updatedTeamCluster = await this.teamClusterLifecycleService.markDeleting(input.teamClusterId);
 
-            logger.info({
-                action: 'team-cluster.delete.remote-requested',
-                teamClusterId: input.teamClusterId,
-                teamId: input.teamId,
-                userId: input.userId
-            }, 'Team cluster uninstall requested from daemon');
+            logger.info(`Team cluster uninstall requested from daemon teamClusterId=${input.teamClusterId} teamId=${input.teamId} userId=${input.userId}`);
 
             return Result.ok({
                 success: true,
@@ -149,13 +132,7 @@ export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeam
 
         await this.teamClusterLifecycleService.deleteTeamCluster(teamCluster);
 
-        logger.info({
-            action: 'team-cluster.delete.control-plane-only',
-            teamClusterId: input.teamClusterId,
-            teamId: input.teamId,
-            userId: input.userId,
-            manualUninstallRequired
-        }, 'Team cluster deleted without remote uninstall confirmation');
+        logger.info(`Team cluster deleted without remote uninstall confirmation teamClusterId=${input.teamClusterId} teamId=${input.teamId} userId=${input.userId} manualUninstallRequired=${manualUninstallRequired}`);
 
         return Result.ok({
             success: true,

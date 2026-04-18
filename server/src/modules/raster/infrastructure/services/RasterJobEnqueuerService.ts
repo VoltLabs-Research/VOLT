@@ -20,7 +20,6 @@ import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamCl
 interface RasterizeTrajectoryCommandPayload extends Record<string, unknown> {
     trajectoryId: string;
     teamId: string;
-    trajectoryName?: string;
     storageClusterId?: string;
     config?: RasterTriggerConfig;
 };
@@ -73,10 +72,6 @@ export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
             storageClusterId
         };
 
-        if (trajectory.props.name) {
-            payload.trajectoryName = trajectory.props.name;
-        }
-
         if (config) {
             payload.config = config;
         }
@@ -90,7 +85,10 @@ export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
 
             if (response.jobs?.length) {
                 await this.daemonAnalysisCompletionService.handleQueuedJobs(
-                    response.jobs,
+                    response.jobs.map((job) => ({
+                        ...job,
+                        trajectoryName: trajectory.props.name
+                    })),
                     'raster',
                     computeClusterId
                 ).catch((projectionError) => {

@@ -160,10 +160,7 @@ export class BinaryRelaySessionRegistry {
                     continue;
                 }
 
-                logger.warn({
-                    relaySessionId: session.relaySessionId,
-                    sessionId: session.sessionId
-                }, '[BinaryRelay] Attached session idle TTL expired');
+                logger.warn(`[BinaryRelay] Attached session idle TTL expired relaySessionId=${session.relaySessionId} sessionId=${session.sessionId}`);
                 this.closeSession(session.relaySessionId, new Error('Binary relay session idle TTL expired'));
                 continue;
             }
@@ -172,11 +169,7 @@ export class BinaryRelaySessionRegistry {
                 continue;
             }
 
-            logger.warn({
-                relaySessionId: session.relaySessionId,
-                sessionId: session.sessionId,
-                state: session.state
-            }, '[BinaryRelay] Pending session TTL expired');
+            logger.warn(`[BinaryRelay] Pending session TTL expired relaySessionId=${session.relaySessionId} sessionId=${session.sessionId} state=${session.state}`);
             this.closeSession(session.relaySessionId, new Error('Binary relay session timed out before attachment'));
         }
     }

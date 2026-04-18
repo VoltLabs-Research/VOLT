@@ -104,7 +104,7 @@ export default class TempStorageLifecycleService implements ITempStorageLifecycl
 
         this.cleanupTimer = setInterval(() => {
             this.runCleanupCycle().catch((error: unknown) => {
-                logger.warn({ err: error }, '@temp-storage-lifecycle-service: periodic cleanup failed');
+                logger.warn(`@temp-storage-lifecycle-service: periodic cleanup failed`);
             });
         }, TEMP_STORAGE_CLEANUP_INTERVAL_MS);
         this.cleanupTimer.unref();
@@ -135,11 +135,7 @@ export default class TempStorageLifecycleService implements ITempStorageLifecycl
             try {
                 await policy.execute(entryPath);
             } catch (error: unknown) {
-                logger.warn({
-                    entryName: entry.name,
-                    err: error,
-                    policy: policy.name
-                }, '@temp-storage-lifecycle-service: cleanup policy failed');
+                logger.warn(`@temp-storage-lifecycle-service: cleanup policy failed entryName=${entry.name} policy=${policy.name}`);
             }
         }
     }
@@ -268,7 +264,7 @@ export default class TempStorageLifecycleService implements ITempStorageLifecycl
     private async safeLstat(targetPath: string): Promise<Awaited<ReturnType<typeof fs.lstat>> | null> {
         try {
             if (!this.isWithinTempRoot(targetPath)) {
-                logger.warn({ targetPath }, '@temp-storage-lifecycle-service: refusing to inspect path outside temp root');
+                logger.warn(`@temp-storage-lifecycle-service: refusing to inspect path outside temp root targetPath=${targetPath}`);
                 return null;
             }
 
@@ -296,7 +292,7 @@ export default class TempStorageLifecycleService implements ITempStorageLifecycl
 
     private async deleteManagedPath(targetPath: string, recursive: boolean): Promise<boolean> {
         if (!this.isWithinTempRoot(targetPath)) {
-            logger.warn({ targetPath }, '@temp-storage-lifecycle-service: refusing to delete path outside temp root');
+            logger.warn(`@temp-storage-lifecycle-service: refusing to delete path outside temp root targetPath=${targetPath}`);
             return false;
         }
 
@@ -306,7 +302,7 @@ export default class TempStorageLifecycleService implements ITempStorageLifecycl
                 force: true
             });
         } catch (error: unknown) {
-            logger.warn({ err: error, targetPath }, '@temp-storage-lifecycle-service: failed to delete temp path');
+            logger.warn(`@temp-storage-lifecycle-service: failed to delete temp path targetPath=${targetPath}`);
             return false;
         }
     }

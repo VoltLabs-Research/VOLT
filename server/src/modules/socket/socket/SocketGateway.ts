@@ -142,11 +142,7 @@ export default class SocketGateway{
     private handleConnection(socket: Socket): void{
         const socketData = this.getSocketConnectionData(socket);
 
-        logger.info({
-            socketId: socket.id,
-            traceId: socketData.traceId,
-            userId: socketData.auth?.user?._id
-        }, '@socket-gateway - connected');
+        logger.info(`@socket-gateway - connected socketId=${socket.id} traceId=${socketData.traceId} userId=${socketData.auth?.user?._id}`);
 
         socket.data = socketData;
 
@@ -167,10 +163,7 @@ export default class SocketGateway{
             this.getSocketEmitterRuntime().unregisterConnection(socket.id);
             this.getSocketRoomManagerRuntime().unregisterConnection(socket.id);
             this.getSocketEventRegistryRuntime().unregisterConnection(socket.id);
-            logger.info({
-                socketId: socket.id,
-                traceId: socketData.traceId
-            }, '@socket-gateway - disconnected');
+            logger.info(`@socket-gateway - disconnected socketId=${socket.id} traceId=${socketData.traceId}`);
         });
     }
 
@@ -201,9 +194,7 @@ export default class SocketGateway{
                     }),
                     new Promise<void>((resolve) => {
                         closeTimeout = setTimeout(() => {
-                            logger.warn({
-                                timeoutMs: SOCKET_GATEWAY_CLOSE_TIMEOUT_MS
-                            }, '@socket-gateway - socket shutdown timed out, continuing');
+                            logger.warn(`@socket-gateway - socket shutdown timed out, continuing timeoutMs=${SOCKET_GATEWAY_CLOSE_TIMEOUT_MS}`);
                             resolve();
                         }, SOCKET_GATEWAY_CLOSE_TIMEOUT_MS);
 
@@ -266,44 +257,23 @@ export default class SocketGateway{
 
             if(auth.state === 'guest'){
                 socket.user = null;
-                logger.info({
-                    outcome: 'guest',
-                    socketId: socket.id,
-                    traceId: socketData.traceId,
-                    durationMs: socketData.authDurationMs
-                }, '@socket-auth');
+                logger.info(`@socket-auth outcome=${'guest'} socketId=${socket.id} traceId=${socketData.traceId} durationMs=${socketData.authDurationMs}`);
                 return next();
             }
 
             if(auth.state === 'rejected' || !auth.user){
                 socket.user = null;
-                logger.warn({
-                    outcome: 'rejected',
-                    reason: auth.reason,
-                    socketId: socket.id,
-                    traceId: socketData.traceId,
-                    durationMs: socketData.authDurationMs
-                }, '@socket-auth');
+                logger.warn(`@socket-auth outcome=${'rejected'} reason=${auth.reason} socketId=${socket.id} traceId=${socketData.traceId}`);
                 return next(this.createSocketAuthenticationError(auth));
             }
 
             socket.user = auth.user;
 
-            logger.info({
-                outcome: 'authenticated',
-                socketId: socket.id,
-                userId: auth.user._id,
-                traceId: socketData.traceId,
-                durationMs: socketData.authDurationMs
-            }, '@socket-auth');
+            logger.info(`@socket-auth outcome=${'authenticated'} socketId=${socket.id} userId=${auth.user._id} traceId=${socketData.traceId}`);
             next();
         }catch(error){
             socket.user = null;
-            logger.error({
-                err: error,
-                socketId: socket.id,
-                traceId: this.getSocketConnectionData(socket).traceId
-            }, '@socket-auth');
+            logger.error(`@socket-auth socketId=${socket.id} traceId=${this.getSocketConnectionData(socket).traceId}`);
             next(this.createSocketAuthenticationError({
                 state: 'rejected',
                 reason: 'invalid_token'

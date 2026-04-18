@@ -69,10 +69,6 @@ export default class TrajectoryPresenceSocketModule extends BaseSocketModule {
                 }
 
                 await this.broadcastPresence(room, 'trajectory.presence.update', this.toPresenceUser);
-
-                logger.info(
-                    `@trajectory-presence - user ${conn.user?._id} left ${room}`
-                );
             }
         );
     }

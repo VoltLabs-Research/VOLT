@@ -61,7 +61,7 @@ export default class TeamClusterTcpExposureRelayService {
         this.started = true;
         this.exposureRegistryService.onChanged(this.handleRegistryChanged);
         this.reconcileBindings().catch((error: unknown) => {
-            logger.error({ err: error }, '[TcpExposureRelay] Failed to reconcile bindings on start');
+            logger.error(`[TcpExposureRelay] Failed to reconcile bindings on start`);
         });
     }
 
@@ -114,7 +114,7 @@ export default class TeamClusterTcpExposureRelayService {
 
     private readonly handleRegistryChanged = (): void => {
         this.reconcileBindings().catch((error: unknown) => {
-            logger.error({ err: error }, '[TcpExposureRelay] Failed to reconcile bindings');
+            logger.error(`[TcpExposureRelay] Failed to reconcile bindings`);
         });
     };
 
@@ -144,7 +144,7 @@ export default class TeamClusterTcpExposureRelayService {
         const publicPort = this.portAllocator.reservePort();
         const server = net.createServer((socket) => {
             this.handleIncomingConnection(exposure.teamClusterId, exposure.id, socket).catch((error: unknown) => {
-                logger.error({ err: error, exposureId: exposure.id }, '[TcpExposureRelay] Failed to open tunnel for incoming socket');
+                logger.error(`[TcpExposureRelay] Failed to open tunnel for incoming socket exposureId=${exposure.id}`);
                 socket.destroy();
             });
         });
@@ -164,23 +164,14 @@ export default class TeamClusterTcpExposureRelayService {
             publicPort,
             server
         });
-        logger.info({
-            exposureId: currentExposure.id,
-            publicPort,
-            teamClusterId: currentExposure.teamClusterId,
-            bindHost: this.bindHost,
-            advertisedHost: this.advertisedHost
-        }, '[TcpExposureRelay] Bound local VNC relay port');
+        logger.info(`[TcpExposureRelay] Bound local VNC relay port exposureId=${currentExposure.id} publicPort=${publicPort} teamClusterId=${currentExposure.teamClusterId} bindHost=${this.bindHost}`);
 
         return publicPort;
     }
 
     private async releaseBinding(binding: PublicExposureBinding): Promise<void> {
         await this.portAllocator.close(binding.server);
-        logger.info(
-            { exposureId: binding.exposureId, publicPort: binding.publicPort },
-            '[TcpExposureRelay] Released local relay port'
-        );
+        logger.info(`[TcpExposureRelay] Released local relay port exposureId=${binding.exposureId} publicPort=${binding.publicPort}`);
         this.portAllocator.releasePort(binding.publicPort);
         this.bindingsByExposureKey.delete(this.buildExposureKey(binding.teamClusterId, binding.exposureId));
     }

@@ -142,10 +142,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
             async (trajectoryId, teamId, teamClusterId, _trajectoryName, failedCount, successfulTimesteps) => {
                 const trajectory = await this.trajectoryRepo.findById(trajectoryId);
                 if (!trajectory) {
-                    logger.warn(
-                        { trajectoryId },
-                        '@trajectory-background-processor: drain callback — trajectory not found, skipping GLB enqueue'
-                    );
+                    logger.warn(`@trajectory-background-processor: drain callback — trajectory not found, skipping GLB enqueue trajectoryId=${trajectoryId}`);
                     return;
                 }
 
@@ -160,16 +157,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
                 const frames = allFrames.filter((f) => successfulTimestepSet.has(f.timestep));
 
                 if (failedCount > 0) {
-                    logger.warn(
-                        {
-                            trajectoryId,
-                            failedCount,
-                            totalFrames: allFrames.length,
-                            successfulFrames: frames.length,
-                            droppedFrames: allFrames.length - frames.length
-                        },
-                        '@trajectory-background-processor: upload failures detected, marking trajectory as failed'
-                    );
+                    logger.warn(`@trajectory-background-processor: upload failures detected, marking trajectory as failed trajectoryId=${trajectoryId} failedCount=${failedCount} totalFrames=${allFrames.length} successfulFrames=${frames.length}`);
 
                     await this.updateStatus(
                         trajectoryId,
@@ -185,10 +173,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
                 }
 
                 if (frames.length === 0) {
-                    logger.warn(
-                        { trajectoryId, failedCount },
-                        '@trajectory-background-processor: drain callback — no successfully uploaded frames, skipping GLB enqueue'
-                    );
+                    logger.warn(`@trajectory-background-processor: drain callback — no successfully uploaded frames, skipping GLB enqueue trajectoryId=${trajectoryId} failedCount=${failedCount}`);
 
                     await this.updateStatus(
                         trajectoryId,
@@ -278,11 +263,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
                 error,
                 `@trajectory-background-processor: processing failed for ${trajectoryId} with ${failureCode}`
             );
-            logger.warn({
-                failureCode,
-                failureDetails,
-                trajectoryId
-            }, '@trajectory-background-processor: marking trajectory as failed');
+            logger.warn(`@trajectory-background-processor: marking trajectory as failed failureCode=${failureCode} trajectoryId=${trajectoryId}`);
             await this.updateStatus(
                 trajectoryId,
                 teamId,
@@ -510,10 +491,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
     ): Promise<void> {
         const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
         if (!storageClusterId) {
-            logger.warn(
-                { trajectoryId: trajectory._id },
-                '@trajectory-background-processor: skipping compression — no storageClusterId'
-            );
+            logger.warn(`@trajectory-background-processor: skipping compression — no storageClusterId trajectoryId=${trajectory._id}`);
             return;
         }
 
@@ -573,10 +551,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
             contentEncoding: job.contentEncoding
         })));
 
-        logger.info(
-            { frameCount: jobs.length, trajectoryId: jobs[0]?.trajectoryId },
-            '@trajectory-background-processor: all cloud upload jobs enqueued'
-        );
+        logger.info(`@trajectory-background-processor: all cloud upload jobs enqueued frameCount=${jobs.length} trajectoryId=${jobs[0]?.trajectoryId}`);
     }
 
     /**
@@ -594,10 +569,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
     ): Promise<void> {
         const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
         if (!storageClusterId) {
-            logger.warn(
-                { trajectoryId: trajectory._id },
-                '@trajectory-background-processor: skipping GLB enqueue — no storageClusterId'
-            );
+            logger.warn(`@trajectory-background-processor: skipping GLB enqueue — no storageClusterId trajectoryId=${trajectory._id}`);
             return;
         }
 
@@ -614,16 +586,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         }));
         const frameDescriptorBatches = chunkItems(frameDescriptors, GLB_ENQUEUE_BATCH_SIZE);
 
-        logger.info(
-            {
-                frameCount: frameDescriptors.length,
-                batchCount: frameDescriptorBatches.length,
-                trajectoryId: trajectory._id,
-                computeClusterId,
-                storageClusterId
-            },
-            '@trajectory-background-processor: sending trajectory.enqueue-preprocessing to daemon'
-        );
+        logger.info(`@trajectory-background-processor: sending trajectory.enqueue-preprocessing to daemon frameCount=${frameDescriptors.length} batchCount=${frameDescriptorBatches.length} trajectoryId=${trajectory._id} computeClusterId=${computeClusterId}`);
 
         await this.initializeGlbSession(trajectory._id, frameDescriptors.length);
 
@@ -634,7 +597,6 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
                 {
                     trajectoryId: trajectory._id,
                     teamId,
-                    trajectoryName: trajectory.props.name,
                     storageClusterId,
                     frames: batch
                 },
@@ -660,14 +622,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
             });
         }
 
-        logger.info(
-            {
-                frameCount: frameDescriptors.length,
-                batchCount: frameDescriptorBatches.length,
-                trajectoryId: trajectory._id
-            },
-            '@trajectory-background-processor: GLB preprocessing enqueued and session initialized'
-        );
+        logger.info(`@trajectory-background-processor: GLB preprocessing enqueued and session initialized frameCount=${frameDescriptors.length} batchCount=${frameDescriptorBatches.length} trajectoryId=${trajectory._id}`);
     }
 
     /**
@@ -691,10 +646,6 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         }
 
         await pipeline.exec();
-
-        logger.info(
-            `@trajectory-background-processor: initialized GLB session for trajectory ${trajectoryId} with ${totalJobs} jobs`
-        );
     }
 
     private buildQueuedGlbJobs(

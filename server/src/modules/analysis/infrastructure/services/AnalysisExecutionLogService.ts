@@ -468,7 +468,7 @@ export default class AnalysisExecutionLogService {
                         segment: JSON.parse(serializedSegment) as AnalysisExecutionLogSegment
                     };
                 } catch (error: unknown) {
-                    logger.warn({ err: error, cursor }, 'Failed to parse analysis log segment from Redis stream');
+                    logger.warn(`Failed to parse analysis log segment from Redis stream cursor=${cursor}`);
                     return null;
                 }
             })

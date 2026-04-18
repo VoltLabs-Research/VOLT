@@ -1,11 +1,9 @@
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { TeamJobSnapshot, TeamJobStatus } from '@modules/jobs/infrastructure/projections/TeamJobSnapshot';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 import IORedis from 'ioredis';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const SAFE_FALLBACK_GROUP_TIMESTAMP = '1970-01-01T00:00:00.000Z';
@@ -60,10 +58,7 @@ export interface TeamJobsInitialPayload {
 export default class TeamJobsService {
     constructor(
         @inject(SHARED_TOKENS.RedisClient)
-        private readonly redis: IORedis,
-
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepository: ITrajectoryRepository
+        private readonly redis: IORedis
     ) { }
 
     async getTeamJobs(teamId: string): Promise<TrajectoryJobGroup[]> {
@@ -91,10 +86,7 @@ export default class TeamJobsService {
     }
 
     async getFlatTeamJobs(teamId: string): Promise<TeamJobSummary[]> {
-        const projectedJobs = await this.getProjectedTeamJobs(teamId);
-        const enrichedJobs = await this.enrichTrajectoryNames(projectedJobs);
-
-        return enrichedJobs.sort((left, right) => this.compareJobsForDisplay(left, right));
+        return (await this.getProjectedTeamJobs(teamId)).sort((left, right) => this.compareJobsForDisplay(left, right));
     }
 
     private async getProjectedTeamJobs(teamId: string): Promise<TeamJobSummary[]> {
@@ -123,7 +115,7 @@ export default class TeamJobsService {
 
         if (staleJobIds.length > 0) {
             this.redis.srem(this.projectedTeamJobsKey(teamId), ...staleJobIds).catch((error) => {
-                logger.warn({ err: error, staleJobCount: staleJobIds.length, teamId }, 'Failed to prune stale projected team jobs');
+                logger.warn(`Failed to prune stale projected team jobs staleJobCount=${staleJobIds.length} teamId=${teamId}`);
             });
         }
 
@@ -139,19 +131,7 @@ export default class TeamJobsService {
             if (!trajectoryId) {
                 continue;
             }
-
-            let trajectoryName = job.trajectoryName;
-            if (typeof trajectoryName !== 'string' || trajectoryName.trim().length === 0) {
-                logger.warn({
-                    action: 'team.jobs.missing-trajectory-name',
-                    jobId: job.jobId,
-                    teamId: job.teamId,
-                    trajectoryId,
-                    teamClusterId: job.teamClusterId,
-                    source: job.source
-                }, 'Missing trajectory name for team job; using trajectory id as fallback');
-                trajectoryName = trajectoryId;
-            }
+            const trajectoryName = job.trajectoryName as string;
 
             if (!trajectoryMap.has(trajectoryId)) {
                 trajectoryMap.set(trajectoryId, []);
@@ -221,59 +201,6 @@ export default class TeamJobsService {
         ) || left.trajectoryId.localeCompare(right.trajectoryId));
 
         return groups;
-    }
-
-    private async enrichTrajectoryNames(jobs: TeamJobSummary[]): Promise<TeamJobSummary[]> {
-        const missingTrajectoryIds = Array.from(new Set(
-            jobs
-                .filter((job) => !job.trajectoryName)
-                .map((job) => job.trajectoryId)
-                .filter((trajectoryId): trajectoryId is string => typeof trajectoryId === 'string' && trajectoryId.length > 0)
-        ));
-
-        if (missingTrajectoryIds.length === 0) {
-            return jobs;
-        }
-
-        const trajectoryNames = new Map<string, string>();
-        logger.debug({
-            action: 'team.jobs.trajectory-name-batch-enrichment',
-            trajectoryCount: missingTrajectoryIds.length,
-            jobCount: jobs.length
-        }, 'Batch enriching missing trajectory names for team jobs');
-
-        const trajectories = await this.trajectoryRepository.findAll({
-            filter: {
-                _id: {
-                    $in: missingTrajectoryIds
-                }
-            },
-            page: 1,
-            limit: missingTrajectoryIds.length,
-            select: ['name']
-        });
-
-        for (const trajectory of trajectories.data) {
-            if (trajectory.props.name) {
-                trajectoryNames.set(trajectory.id, trajectory.props.name);
-            }
-        }
-
-        return jobs.map((job) => {
-            if (job.trajectoryName || !job.trajectoryId) {
-                return job;
-            }
-
-            const trajectoryName = trajectoryNames.get(job.trajectoryId);
-            if (!trajectoryName) {
-                return job;
-            }
-
-            return {
-                ...job,
-                trajectoryName
-            };
-        });
     }
 
     private resolveLatestTimestamp(jobs: TeamJobSummary[]): string | undefined {
