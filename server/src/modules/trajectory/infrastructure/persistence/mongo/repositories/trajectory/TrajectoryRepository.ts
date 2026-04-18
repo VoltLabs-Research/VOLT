@@ -43,7 +43,7 @@ export default class TrajectoryRepository
                     storageClusterId: result.storageClusterId?.toString()
                 }),
                 userId: 'system',
-                trajectoryName: result.name || 'Unknown Trajectory'
+                trajectoryName: result.name
             }));
         }
 

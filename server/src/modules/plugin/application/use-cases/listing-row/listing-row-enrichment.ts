@@ -159,9 +159,7 @@ export const enrichDaemonListingRows = async ({
         const analysisId = row.analysis?.trim() || fallbackAnalysisId || '';
         const analysis = analysisId ? analyses.get(analysisId) : undefined;
         const trajectoryId = row.trajectory?.trim() || analysis?.props.trajectory || '';
-        const trajectoryName = row.trajectoryName?.trim()
-            || trajectoryNames.get(trajectoryId)
-            || '';
+        const trajectoryName = trajectoryNames.get(trajectoryId) || '';
 
         return {
             ...row,

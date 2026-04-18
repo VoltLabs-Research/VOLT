@@ -38,7 +38,6 @@ interface DaemonAnalysisJob {
     teamId: string;
     timestep: number;
     trajectoryId: string;
-    trajectoryName?: string;
     analysisId: string;
     queueType: string;
 };
@@ -74,12 +73,11 @@ interface DaemonAnalysisPayload {
     finishedAt?: Date;
     team: string;
     status: string;
-    trajectoryName: string;
     createdAt?: Date;
     updatedAt?: Date;
 };
 
-const serializeAnalysis = (analysis: Analysis, trajectoryName: string): DaemonAnalysisPayload => {
+const serializeAnalysis = (analysis: Analysis): DaemonAnalysisPayload => {
     return {
         _id: analysis.id,
         plugin: analysis.props.plugin,
@@ -95,7 +93,6 @@ const serializeAnalysis = (analysis: Analysis, trajectoryName: string): DaemonAn
         finishedAt: analysis.props.finishedAt,
         team: analysis.props.team,
         status: analysis.props.status,
-        trajectoryName,
         createdAt: analysis.props.createdAt,
         updatedAt: analysis.props.updatedAt
     };
@@ -122,7 +119,6 @@ interface PluginDispatchPayload extends Record<string, unknown> {
     teamId: string;
     teamClusterId: string;
     trajectoryId: string;
-    trajectoryName: string;
     trajectoryFrames?: TrajectoryFramePayload[];
     trajectoryFramesCompressed?: string;
     workflow?: WorkflowSerializable;
@@ -270,14 +266,13 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
         const encodedNestedPlugins = encodeDispatchSection(nestedPlugins);
         const encodedPluginReferenceExecutions = encodeDispatchSection(pluginReferenceExecutions);
         const dispatchPayload: PluginDispatchPayload = {
-            analysis: serializeAnalysis(input.analysis, input.trajectoryName),
+            analysis: serializeAnalysis(input.analysis),
             analysisId: input.analysisId,
             pluginId: input.plugin.id,
             pluginDisplayName: input.pluginDisplayName,
             teamId: input.teamId,
             teamClusterId: input.teamClusterId,
             trajectoryId: input.trajectoryId,
-            trajectoryName: input.trajectoryName,
             ...(encodedTrajectoryFrames.rawValue
                 ? { trajectoryFrames: encodedTrajectoryFrames.rawValue }
                 : { trajectoryFramesCompressed: encodedTrajectoryFrames.compressedValue }),
@@ -313,26 +308,9 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             || cleanupSummary.duplicateNestedPluginCount > 0
             || cleanupSummary.duplicatePluginReferenceExecutionCount > 0
         ) {
-            logger.info({
-                action: 'plugin.analysis.dispatch.cleaned',
-                analysisId: input.analysisId,
-                teamClusterId: input.teamClusterId,
-                pluginId: input.plugin.id,
-                payloadCompressionSavingsBytes,
-                ...cleanupSummary
-            }, '@plugin-execution-router: deduped analysis dispatch payload');
+            logger.info(`@plugin-execution-router: deduped analysis dispatch payload analysisId=${input.analysisId} teamClusterId=${input.teamClusterId} pluginId=${input.plugin.id} payloadCompressionSavingsBytes=${payloadCompressionSavingsBytes}`);
         } else {
-            logger.debug({
-                action: 'plugin.analysis.dispatch.payload-size',
-                analysisId: input.analysisId,
-                teamClusterId: input.teamClusterId,
-                pluginId: input.plugin.id,
-                payloadBytes: cleanupSummary.payloadBytes,
-                payloadCompressionSavingsBytes,
-                uniquePluginSyncCount: cleanupSummary.uniquePluginSyncCount,
-                nestedPluginCount: nestedPlugins.length,
-                pluginReferenceExecutionCount: pluginReferenceExecutions.length
-            }, '@plugin-execution-router: prepared analysis dispatch payload');
+            logger.debug(`@plugin-execution-router: prepared analysis dispatch payload analysisId=${input.analysisId} teamClusterId=${input.teamClusterId} pluginId=${input.plugin.id} payloadBytes=${cleanupSummary.payloadBytes}`);
         }
 
         const response = await this.teamClusterDaemonClient.command<DaemonAnalysisStartResponse>(
@@ -349,7 +327,10 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
 
         if (response.jobs?.length > 0) {
             await this.daemonAnalysisCompletionService.handleJobsQueued(
-                response.jobs,
+                response.jobs.map((job) => ({
+                    ...job,
+                    trajectoryName: input.trajectoryName
+                })),
                 input.teamId,
                 input.teamClusterId
             ).catch((error) => {

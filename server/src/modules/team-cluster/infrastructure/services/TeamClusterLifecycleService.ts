@@ -259,13 +259,7 @@ export default class TeamClusterLifecycleService {
 
         if (metrics) {
             void this.systemMetricsRepository.save(this.toSystemMetrics(updatedTeamCluster.id, metrics)).catch((error: unknown) => {
-                logger.warn(
-                    {
-                        err: error,
-                        teamClusterId: updatedTeamCluster.id
-                    },
-                    'Failed to persist system metrics snapshot after heartbeat acknowledgement'
-                );
+                logger.warn(`Failed to persist system metrics snapshot after heartbeat acknowledgement teamClusterId=${updatedTeamCluster.id}`);
             });
         }
 
@@ -420,12 +414,7 @@ export default class TeamClusterLifecycleService {
 
             markedCount += 1;
 
-            logger.warn({
-                action: 'team-cluster.heartbeat-timeout',
-                teamClusterId: teamCluster.id,
-                teamId: teamCluster.props.team,
-                lastHeartbeatAt: teamCluster.props.lastHeartbeatAt
-            }, 'Team cluster marked as disconnected after heartbeat timeout');
+            logger.warn(`Team cluster marked as disconnected after heartbeat timeout teamClusterId=${teamCluster.id} teamId=${teamCluster.props.team} lastHeartbeatAt=${teamCluster.props.lastHeartbeatAt}`);
         }
 
         return markedCount;
@@ -448,12 +437,7 @@ export default class TeamClusterLifecycleService {
             await this.deleteTeamCluster(currentTeamCluster);
             deletedCount += 1;
 
-            logger.info({
-                action: 'team-cluster.delete.completed-from-heartbeat-timeout',
-                teamClusterId: teamCluster.id,
-                teamId: teamCluster.props.team,
-                lastHeartbeatAt: teamCluster.props.lastHeartbeatAt
-            }, 'Team cluster deletion completed after runtime disconnect evidence');
+            logger.info(`Team cluster deletion completed after runtime disconnect evidence teamClusterId=${teamCluster.id} teamId=${teamCluster.props.team} lastHeartbeatAt=${teamCluster.props.lastHeartbeatAt}`);
         }
 
         return deletedCount;
@@ -484,11 +468,7 @@ export default class TeamClusterLifecycleService {
 
             markedCount += 1;
 
-            logger.warn({
-                action: 'team-cluster.delete-timeout',
-                teamClusterId: teamCluster.id,
-                teamId: teamCluster.props.team
-            }, 'Team cluster marked as delete-failed after delete timeout');
+            logger.warn(`Team cluster marked as delete-failed after delete timeout teamClusterId=${teamCluster.id} teamId=${teamCluster.props.team}`);
         }
 
         return markedCount;
@@ -522,14 +502,7 @@ export default class TeamClusterLifecycleService {
         options: PersistLifecycleUpdateOptions = {}
     ): Promise<TeamCluster> {
         if (!this.isTransitionAllowed(teamCluster.props.status, update.status)) {
-            logger.info({
-                action: 'team-cluster.lifecycle-transition-ignored',
-                teamClusterId: teamCluster.id,
-                teamId: teamCluster.props.team,
-                fromStatus: teamCluster.props.status,
-                toStatus: update.status,
-                context: options.logContext
-            }, 'Ignored illegal team cluster lifecycle transition');
+            logger.info(`Ignored illegal team cluster lifecycle transition teamClusterId=${teamCluster.id} teamId=${teamCluster.props.team} fromStatus=${teamCluster.props.status} toStatus=${update.status}`);
 
             return teamCluster;
         }
@@ -553,15 +526,7 @@ export default class TeamClusterLifecycleService {
                 throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
             }
 
-            logger.info({
-                action: 'team-cluster.lifecycle-transition-stale',
-                teamClusterId: teamCluster.id,
-                teamId: teamCluster.props.team,
-                attemptedFromStatus: teamCluster.props.status,
-                attemptedToStatus: update.status,
-                currentStatus: latestTeamCluster.props.status,
-                context: options.logContext
-            }, 'Ignored stale team cluster lifecycle update');
+            logger.info(`Ignored stale team cluster lifecycle update teamClusterId=${teamCluster.id} teamId=${teamCluster.props.team} attemptedFromStatus=${teamCluster.props.status} attemptedToStatus=${update.status}`);
 
             return latestTeamCluster;
         }

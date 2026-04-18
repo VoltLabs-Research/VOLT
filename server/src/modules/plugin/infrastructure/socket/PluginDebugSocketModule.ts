@@ -304,7 +304,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                 logger.info(`@plugin-debug-socket: session ${response.sessionId} created for plugin ${payload.pluginId}`);
             } catch (error: unknown) {
                 const message = error instanceof Error ? error.message : 'Failed to start debug session';
-                logger.error({ err: error }, '@plugin-debug-socket: debug:start failed');
+                logger.error(`@plugin-debug-socket: debug:start failed`);
                 this.emitToSocket(conn.id, 'debug:session:error', { error: message });
             }
         });
@@ -347,7 +347,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                 }
             } catch (error: unknown) {
                 const message = error instanceof Error ? error.message : 'Step execution failed';
-                logger.error({ err: error }, '@plugin-debug-socket: debug:step failed');
+                logger.error(`@plugin-debug-socket: debug:step failed`);
                 this.pluginDebugSessionRegistry.unregisterSession(payload.sessionId);
                 this.emitToSocket(conn.id, 'debug:session:error', {
                     sessionId: payload.sessionId,
@@ -389,7 +389,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                 }
             } catch (error: unknown) {
                 const message = error instanceof Error ? error.message : 'Continue execution failed';
-                logger.error({ err: error }, '@plugin-debug-socket: debug:continue failed');
+                logger.error(`@plugin-debug-socket: debug:continue failed`);
                 this.pluginDebugSessionRegistry.unregisterSession(payload.sessionId);
                 this.emitToSocket(conn.id, 'debug:session:error', {
                     sessionId: payload.sessionId,

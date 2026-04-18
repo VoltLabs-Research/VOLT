@@ -158,7 +158,7 @@ export default class TeamJobProjectionService {
                 error: error ?? previousSnapshot?.error,
                 analysisId: analysisId ?? previousSnapshot?.analysisId,
                 trajectoryId: trajectoryId ?? previousSnapshot?.trajectoryId,
-                trajectoryName: trajectoryName ?? previousSnapshot?.trajectoryName,
+                trajectoryName,
                 timestep: timestep ?? previousSnapshot?.timestep,
                 teamClusterId: teamClusterId ?? previousSnapshot?.teamClusterId,
                 source: source ?? previousSnapshot?.source ?? PROJECTED_JOB_SOURCE,

@@ -88,22 +88,10 @@ export default class UpdateTeamClusterRoleUseCase implements IUseCase<
 
                     this.teamClusterLifecycleService.publishTeamClusterUpdate(updatedTeamCluster);
                 } else {
-                    logger.warn({
-                        action: 'team-cluster.role.apply-rejected',
-                        teamClusterId: updatedTeamCluster.id,
-                        teamId: input.teamId,
-                        role: input.role,
-                        reason: liveApplyResult.reason
-                    }, 'Persisted desired role but the daemon rejected the live apply request');
+                    logger.warn(`Persisted desired role but the daemon rejected the live apply request teamClusterId=${updatedTeamCluster.id} teamId=${input.teamId} role=${input.role} reason=${liveApplyResult.reason}`);
                 }
             } catch (error: unknown) {
-                logger.warn({
-                    action: 'team-cluster.role.apply-failed',
-                    teamClusterId: updatedTeamCluster.id,
-                    teamId: input.teamId,
-                    role: input.role,
-                    err: error
-                }, 'Persisted desired role but failed to request live daemon role apply');
+                logger.warn(`Persisted desired role but failed to request live daemon role apply teamClusterId=${updatedTeamCluster.id} teamId=${input.teamId} role=${input.role}`);
             }
         }
 

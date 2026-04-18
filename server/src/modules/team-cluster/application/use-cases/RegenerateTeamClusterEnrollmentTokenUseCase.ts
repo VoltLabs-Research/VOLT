@@ -51,12 +51,7 @@ export default class RegenerateTeamClusterEnrollmentTokenUseCase
             enrollmentTokenHash
         });
 
-        logger.info({
-            action: 'team-cluster.enrollment-token.regenerated',
-            teamClusterId: input.teamClusterId,
-            teamId: input.teamId,
-            userId: input.userId
-        }, 'Team cluster enrollment token regenerated');
+        logger.info(`Team cluster enrollment token regenerated teamClusterId=${input.teamClusterId} teamId=${input.teamId} userId=${input.userId}`);
 
         return Result.ok({
             enrollmentToken

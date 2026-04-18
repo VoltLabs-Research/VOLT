@@ -254,18 +254,6 @@ export const delayJobOnQueueScopeContention = async <T extends object>(
 ): Promise<void> => {
     const delayMs = options.delayMs ?? DEFAULT_CONTENTION_DELAY_MS;
 
-    logger.info(
-        {
-            delayMs,
-            jobId: options.jobId,
-            queueName: options.queueName,
-            scope: options.scope.scope,
-            scopeId: options.scope.scopeId,
-            limit: options.scope.limit
-        },
-        '@queue-scope: delaying job because the configured scope limit is currently saturated'
-    );
-
     await bullJob.moveToDelayed(Date.now() + delayMs, bullJob.token);
     throw new DelayedError();
 };

@@ -120,12 +120,7 @@ export default class RevealTeamClusterCredentialsUseCase implements IUseCase<Rev
             }
         };
 
-        logger.info({
-            action: 'team-cluster.credentials-reveal',
-            teamClusterId: input.teamClusterId,
-            teamId: input.teamId,
-            userId: input.userId
-        }, 'Team cluster credentials revealed');
+        logger.info(`Team cluster credentials revealed teamClusterId=${input.teamClusterId} teamId=${input.teamId} userId=${input.userId}`);
 
         return Result.ok({
             teamClusterId: input.teamClusterId,

@@ -21,6 +21,10 @@ interface TeamJobsEventPayload {
     groups: TrajectoryJobGroup[];
 };
 
+interface UseTeamJobsOptions {
+    subscribe?: boolean;
+};
+
 const TEAM_JOBS_INITIAL_LOAD_TIMEOUT_MS = 5000;
 const RASTER_QUEUE_TYPE = 'trajectory_rasterization';
 
@@ -28,7 +32,7 @@ const isTerminalJobStatus = (status: JobStatus): boolean => {
     return status === JobStatus.Completed || status === JobStatus.Failed;
 };
 
-const useTeamJobs = () => {
+const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
     const queryClient = useQueryClient();
     const currentTeamId = useSelectedTeamId();
     const socketService = useSocket();
@@ -175,6 +179,10 @@ const useTeamJobs = () => {
     }, [clearJobsLoadingTimeout, queryClient, reset]);
 
     useEffect(() => {
+        if (!subscribe) {
+            return;
+        }
+
         const unsubscribeFromConnectionChanges = socketService.onConnectionChange(handleConnect);
         const unsubscribeFromInitialJobs = socketService.on(SOCKET_TEAM_EVENTS.JOBS_INITIAL, handleInitialJobsEvent);
         const unsubscribeFromJobUpdates = socketService.on(SOCKET_TEAM_EVENTS.JOB_UPDATED, handleJobUpdateEvent);
@@ -193,9 +201,13 @@ const useTeamJobs = () => {
             clearJobsLoadingTimeout();
             clearTeamJobs();
         };
-    }, [clearJobsLoadingTimeout, clearTeamJobs, handleConnect, handleInitialJobsEvent, handleJobUpdateEvent, setLoading, socketService]);
+    }, [clearJobsLoadingTimeout, clearTeamJobs, handleConnect, handleInitialJobsEvent, handleJobUpdateEvent, setLoading, socketService, subscribe]);
 
     useEffect(() => {
+        if (!subscribe) {
+            return;
+        }
+
         if (currentTeamId) {
             subscribeToTeam(currentTeamId, previousTeamIdRef.current);
             previousTeamIdRef.current = currentTeamId;
@@ -203,7 +215,7 @@ const useTeamJobs = () => {
         }
 
         clearTeamJobs();
-    }, [clearTeamJobs, currentTeamId, subscribeToTeam]);
+    }, [clearTeamJobs, currentTeamId, subscribeToTeam, subscribe]);
 
     return {
         groups,

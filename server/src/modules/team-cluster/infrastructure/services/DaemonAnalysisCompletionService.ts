@@ -44,7 +44,6 @@ interface DaemonJobCompletionInput {
     analysisId: string;
     teamId: string;
     trajectoryId?: string;
-    trajectoryName?: string;
     timestep?: number;
     success: boolean;
     error?: string;
@@ -55,7 +54,6 @@ interface DaemonRasterJobStatusInput {
     jobId: string;
     teamId: string;
     trajectoryId: string;
-    trajectoryName?: string;
     timestep?: number;
     status: JobStatus;
     error?: string;
@@ -66,7 +64,6 @@ interface DaemonGlbJobStatusInput {
     jobId: string;
     teamId: string;
     trajectoryId: string;
-    trajectoryName?: string;
     timestep?: number;
     status: JobStatus;
     error?: string;
@@ -79,7 +76,6 @@ interface DaemonAnalysisJobStatusInput {
     analysisId: string;
     teamId: string;
     trajectoryId?: string;
-    trajectoryName?: string;
     timestep?: number;
     status: JobStatus;
     error?: string;
@@ -90,7 +86,6 @@ interface DaemonSshImportJobStatusInput {
     jobId: string;
     teamId: string;
     trajectoryId: string;
-    trajectoryName?: string;
     status: JobStatus;
     error?: string;
 };
@@ -101,7 +96,6 @@ interface DaemonArtifactUploadJobStatusInput {
     analysisId: string;
     teamId: string;
     trajectoryId: string;
-    trajectoryName?: string;
     timestep?: number;
     status: JobStatus;
     error?: string;
@@ -197,17 +191,6 @@ export default class DaemonAnalysisCompletionService {
 
         await pipeline.exec();
 
-        logger.info(
-            {
-                analysisId,
-                failedJobs,
-                preSettledJobs: terminalReceiptKeys.length,
-                remainingJobs,
-                totalJobs
-            },
-            '[DaemonAnalysisCompletion] Initialized session for analysis'
-        );
-
         if (remainingJobs === 0) {
             await this.finalizeAnalysis(analysisId, teamId, failedJobs);
         }
@@ -254,10 +237,6 @@ export default class DaemonAnalysisCompletionService {
                 trajectoryContext
             });
         }
-
-        logger.info(
-            `[DaemonAnalysisCompletion] Published ${jobs.length} queued jobs for team ${teamId}`
-        );
     }
 
     async handleQueuedJobs(
@@ -503,20 +482,18 @@ export default class DaemonAnalysisCompletionService {
     }
 
     async handleArtifactUploadJobStatus(input: DaemonArtifactUploadJobStatusInput): Promise<void> {
+        const resolved = await this.resolveTrajectoryOwnership(input);
+
         await this.publishJobStatusChanged({
             jobId: input.jobId,
-            teamId: input.teamId,
+            teamId: resolved.teamId,
             teamClusterId: input.teamClusterId,
             status: input.status,
             queueType: ARTIFACT_UPLOAD_QUEUE_TYPE,
             cleanupScope: ARTIFACT_UPLOAD_PROJECTED_JOB_CLEANUP_SCOPE,
             name: 'Artifact Upload',
             analysisId: input.analysisId,
-            trajectoryContext: {
-                trajectoryId: input.trajectoryId,
-                trajectoryName: input.trajectoryName,
-                timestep: input.timestep
-            },
+            trajectoryContext: resolved.trajectoryContext,
             error: input.error
         });
     }
@@ -565,7 +542,7 @@ export default class DaemonAnalysisCompletionService {
     private async resolveAnalysisOwnership(
         input: Pick<
             DaemonJobCompletionInput,
-            'teamClusterId' | 'analysisId' | 'teamId' | 'trajectoryId' | 'trajectoryName' | 'timestep'
+            'teamClusterId' | 'analysisId' | 'teamId' | 'trajectoryId' | 'timestep'
         >
     ): Promise<ResolvedAnalysisOwnership> {
         const analysis = await this.analysisRepo.findById(input.analysisId);
@@ -607,13 +584,6 @@ export default class DaemonAnalysisCompletionService {
             );
         }
 
-        if (input.trajectoryName && input.trajectoryName !== trajectory.props.name) {
-            throw ApplicationError.badRequest(
-                'TEAM_CLUSTER_DAEMON_TRAJECTORY_NAME_MISMATCH',
-                'Payload trajectory name does not match persisted trajectory ownership'
-            );
-        }
-
         return {
             analysis,
             trajectory,
@@ -629,7 +599,7 @@ export default class DaemonAnalysisCompletionService {
     private async resolveTrajectoryOwnership(
         input: Pick<
             DaemonRasterJobStatusInput,
-            'teamClusterId' | 'trajectoryId' | 'teamId' | 'trajectoryName' | 'timestep'
+            'teamClusterId' | 'trajectoryId' | 'teamId' | 'timestep'
         >
     ): Promise<ResolvedTrajectoryOwnership> {
         const trajectory = await this.trajectoryRepo.findById(input.trajectoryId);
@@ -641,13 +611,6 @@ export default class DaemonAnalysisCompletionService {
             throw ApplicationError.forbidden(
                 'TEAM_CLUSTER_DAEMON_TRAJECTORY_TEAM_MISMATCH',
                 'Trajectory does not belong to the provided team'
-            );
-        }
-
-        if (input.trajectoryName && input.trajectoryName !== trajectory.props.name) {
-            throw ApplicationError.badRequest(
-                'TEAM_CLUSTER_DAEMON_TRAJECTORY_NAME_MISMATCH',
-                'Payload trajectory name does not match persisted trajectory ownership'
             );
         }
 
@@ -839,10 +802,6 @@ export default class DaemonAnalysisCompletionService {
 
             return;
         }
-
-        logger.info(
-            `[DaemonAnalysisCompletion] GLB session for trajectory ${trajectoryId} completed successfully`
-        );
 
         await this.trajectoryRepo.updateById(trajectoryId, {
             status: TrajectoryStatus.Completed

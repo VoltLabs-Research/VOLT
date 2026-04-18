@@ -106,14 +106,7 @@ export class TerminalService implements ITerminalService {
             this.clientSessions.set(client, context.containerId);
             this.clientContexts.set(client, context);
 
-            logger.info({
-                event: 'container_terminal_open',
-                containerId: context.containerId,
-                teamId: context.teamId,
-                userId: context.userId,
-                socketId: client.id,
-                activeConnections: session.activeConnections
-            }, '@container-terminal');
+            logger.info(`@container-terminal containerId=${context.containerId} teamId=${context.teamId} userId=${context.userId} socketId=${client.id}`);
 
             if (session.history.length > 0) {
                 const combined = Buffer.concat(session.history).toString('utf8');
@@ -167,14 +160,7 @@ export class TerminalService implements ITerminalService {
 
         session.activeConnections--;
 
-        logger.info({
-            event: 'container_terminal_close',
-            containerId,
-            teamId: context?.teamId,
-            userId: context?.userId,
-            socketId: client.id,
-            activeConnections: Math.max(session.activeConnections, 0)
-        }, '@container-terminal');
+        logger.info(`@container-terminal containerId=${containerId} teamId=${context?.teamId} userId=${context?.userId} socketId=${client.id}`);
 
         if (session.activeConnections <= 0) {
             session.activeConnections = 0;

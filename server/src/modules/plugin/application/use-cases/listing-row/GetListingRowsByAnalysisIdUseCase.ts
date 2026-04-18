@@ -26,7 +26,7 @@ const mapDaemonListingRow = (row: DaemonListingRow): ListingRowByAnalysisData =>
         exposureId: row.exposureId || '',
         exposureName: row.exposureName || '',
         trajectory: String(row.trajectory || ''),
-        trajectoryName: row.trajectoryName || '',
+        trajectoryName: row.trajectoryName as string,
         timestep: row.timestep ?? 0,
         row: (row.row && typeof row.row === 'object') ? row.row : {}
     };

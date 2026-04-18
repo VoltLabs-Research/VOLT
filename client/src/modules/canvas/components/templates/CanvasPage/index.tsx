@@ -12,7 +12,6 @@ import { useLocalGlbStore } from '@/modules/canvas/stores/use-local-glb-store';
 import useDownloadPluginListing from '../../../hooks/use-download-plugin-listing';
 import useKeyboardShortcuts from '../../../hooks/use-keyboard-shortcuts';
 import useResizable from '../../../hooks/use-resizable';
-import useTeamJobs from '@/modules/jobs/hooks/use-team-jobs';
 import useDownloadTrajectoryAnalyses from '@/modules/trajectory/hooks/trajectory/use-download-trajectory-analyses';
 import useDownloadTrajectory from '@/modules/trajectory/hooks/trajectory/use-download-trajectory';
 import CanvasPresence from '../../atoms/CanvasPresence';
@@ -77,8 +76,6 @@ const CanvasPage = () => {
         isLoading: trajectoryLoading
     } = useCanvasCoordinator({ trajectoryId });
     const { canvasUsers } = useCanvasPresence({ trajectoryId, enabled: !!trajectoryId });
-    useTeamJobs();
-
     useTip('canvas-shortcuts', {
         enabled: Boolean(trajectoryId) && !trajectoryLoading
     });

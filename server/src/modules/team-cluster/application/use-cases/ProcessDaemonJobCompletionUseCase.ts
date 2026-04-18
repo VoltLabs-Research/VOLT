@@ -19,7 +19,6 @@ interface DaemonAnalysisJobCompletionPayload {
     analysisId: string;
     teamId: string;
     trajectoryId?: string;
-    trajectoryName?: string;
     timestep?: number;
     success: boolean;
     error?: string;
@@ -30,7 +29,6 @@ interface DaemonRasterJobStatusPayload {
     jobId: string;
     teamId: string;
     trajectoryId: string;
-    trajectoryName?: string;
     timestep?: number;
     status: RasterJobStatus;
     error?: string;
@@ -41,7 +39,6 @@ interface DaemonGlbJobStatusPayload {
     jobId: string;
     teamId: string;
     trajectoryId: string;
-    trajectoryName?: string;
     timestep?: number;
     status: GlbJobStatus;
     error?: string;
@@ -54,7 +51,6 @@ interface DaemonAnalysisJobStatusPayload {
     analysisId: string;
     teamId: string;
     trajectoryId?: string;
-    trajectoryName?: string;
     timestep?: number;
     status: JobStatus;
     error?: string;
@@ -65,7 +61,6 @@ interface DaemonSshImportJobStatusPayload {
     jobId: string;
     teamId: string;
     trajectoryId: string;
-    trajectoryName?: string;
     status: SshImportJobStatus;
     error?: string;
 };
@@ -76,7 +71,6 @@ interface DaemonArtifactUploadJobStatusPayload {
     analysisId: string;
     teamId: string;
     trajectoryId: string;
-    trajectoryName?: string;
     timestep?: number;
     status: ArtifactUploadJobStatus;
     error?: string;
@@ -99,7 +93,6 @@ interface ProcessDaemonAnalysisJobCompletionInputDTO {
     analysisId: string;
     teamId: string;
     trajectoryId?: string;
-    trajectoryName?: string;
     timestep?: number;
     success: boolean;
     error?: string;
@@ -113,7 +106,6 @@ interface ProcessDaemonAnalysisJobStatusInputDTO {
     analysisId: string;
     teamId: string;
     trajectoryId?: string;
-    trajectoryName?: string;
     timestep?: number;
     status: JobStatus;
     error?: string;
@@ -125,7 +117,6 @@ interface ProcessDaemonRasterJobStatusInputDTO {
     jobId: string;
     teamId: string;
     trajectoryId: string;
-    trajectoryName?: string;
     timestep?: number;
     status: JobStatus;
     error?: string;
@@ -141,7 +132,6 @@ interface ProcessDaemonGlbJobStatusInputDTO {
     jobId: string;
     teamId: string;
     trajectoryId: string;
-    trajectoryName?: string;
     timestep?: number;
     status: JobStatus;
     error?: string;
@@ -157,7 +147,6 @@ interface ProcessDaemonSshImportJobStatusInputDTO {
     jobId: string;
     teamId: string;
     trajectoryId: string;
-    trajectoryName?: string;
     status: JobStatus;
     error?: string;
 };
@@ -173,7 +162,6 @@ interface ProcessDaemonArtifactUploadJobStatusInputDTO {
     analysisId: string;
     teamId: string;
     trajectoryId: string;
-    trajectoryName?: string;
     timestep?: number;
     status: JobStatus;
     error?: string;
@@ -226,7 +214,6 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
                     analysisId: input.analysisId,
                     teamId: input.teamId,
                     trajectoryId: input.trajectoryId,
-                    trajectoryName: input.trajectoryName,
                     timestep: input.timestep,
                     status: input.status,
                     error: input.error
@@ -243,7 +230,6 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
                     analysisId: input.analysisId,
                     teamId: input.teamId,
                     trajectoryId: input.trajectoryId,
-                    trajectoryName: input.trajectoryName,
                     timestep: input.timestep,
                     success: input.success,
                     error: input.error
@@ -258,7 +244,6 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
                     jobId: input.jobId,
                     teamId: input.teamId,
                     trajectoryId: input.trajectoryId,
-                    trajectoryName: input.trajectoryName,
                     timestep: input.timestep,
                     status: input.status,
                     error: input.error
@@ -273,7 +258,6 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
                     jobId: input.jobId,
                     teamId: input.teamId,
                     trajectoryId: input.trajectoryId,
-                    trajectoryName: input.trajectoryName,
                     status: input.status,
                     error: input.error
                 });
@@ -288,7 +272,6 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
                     analysisId: input.analysisId,
                     teamId: input.teamId,
                     trajectoryId: input.trajectoryId,
-                    trajectoryName: input.trajectoryName,
                     timestep: input.timestep,
                     status: input.status,
                     error: input.error
@@ -303,7 +286,6 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
                     jobId: input.jobId,
                     teamId: input.teamId,
                     trajectoryId: input.trajectoryId,
-                    trajectoryName: input.trajectoryName,
                     timestep: input.timestep,
                     status: input.status,
                     error: input.error

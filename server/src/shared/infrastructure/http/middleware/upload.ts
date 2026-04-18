@@ -68,7 +68,7 @@ const createUploadErrorResponse = (response: Response, error: unknown): void => 
         return;
     }
 
-    logger.error({ err: error }, '[Upload] Non-multer error during file upload');
+    logger.error(`[Upload] Non-multer error during file upload`);
 
     BaseResponse.error(
         response,

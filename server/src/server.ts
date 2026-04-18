@@ -71,10 +71,7 @@ const closeHttpServer = async (): Promise<void> => {
 
     await new Promise<void>((resolve, reject) => {
         const forceCloseTimer = setTimeout(() => {
-            logger.warn({
-                openConnections: activeConnections.size,
-                gracePeriodMs: SERVER_SHUTDOWN_GRACE_PERIOD
-            }, '@server: force closing open HTTP connections during shutdown');
+            logger.warn(`@server: force closing open HTTP connections during shutdown openConnections=${activeConnections.size} gracePeriodMs=${SERVER_SHUTDOWN_GRACE_PERIOD}`);
 
             server.closeAllConnections?.();
             destroyTrackedConnections();
@@ -106,10 +103,7 @@ const shutdown = async () => {
 
     try {
         const forceExitTimer = setTimeout(() => {
-            logger.error({
-                openConnections: activeConnections.size,
-                timeoutMs: SERVER_SHUTDOWN_FORCE_EXIT_TIMEOUT
-            }, '@server: forced shutdown timeout reached');
+            logger.error(`@server: forced shutdown timeout reached openConnections=${activeConnections.size} timeoutMs=${SERVER_SHUTDOWN_FORCE_EXIT_TIMEOUT}`);
             destroyTrackedConnections();
             process.exit(1);
         }, SERVER_SHUTDOWN_FORCE_EXIT_TIMEOUT);

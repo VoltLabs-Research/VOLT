@@ -30,7 +30,6 @@ export interface ProcessDaemonTrajectoryImportInputDTO {
     teamClusterId: string;
     daemonPassword: string;
     trajectoryId: string;
-    trajectoryName: string;
     teamId: string;
     userId: string;
     success: boolean;

@@ -255,11 +255,6 @@ export default class CloudUploadQueueService {
         this.worker.on('error', (error) => {
             logger.error(error, '@cloud-upload-queue: worker error');
         });
-
-        logger.info(
-            { concurrency },
-            `@cloud-upload-queue: started queue="${QUEUE_NAME}" with concurrency=${concurrency}`
-        );
     }
 
     /**
@@ -353,11 +348,6 @@ export default class CloudUploadQueueService {
         pipeline.del(this.failedKey(trajectoryId));
         pipeline.del(this.successfulTimestepsKey(trajectoryId));
         await pipeline.exec();
-
-        logger.info(
-            { trajectoryId, totalJobs },
-            '@cloud-upload-queue: initialized upload session'
-        );
     }
 
     private async incrementFailed(trajectoryId: string): Promise<void> {
@@ -382,15 +372,6 @@ export default class CloudUploadQueueService {
         const failedStr = await this.redis.get(this.failedKey(jobData.trajectoryId));
         const failedCount = failedStr ? parseInt(failedStr, 10) : 0;
         const successfulTimesteps = await this.getSuccessfulTimesteps(jobData.trajectoryId);
-
-        logger.info(
-            {
-                trajectoryId: jobData.trajectoryId,
-                failedCount,
-                successfulTimesteps: successfulTimesteps.length
-            },
-            '@cloud-upload-queue: upload session drained'
-        );
 
         // Cleanup session keys
         await this.redis.del(

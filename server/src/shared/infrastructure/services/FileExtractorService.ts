@@ -135,11 +135,6 @@ export default class FileExtractorService implements IFileExtractorService {
         const directory = await unzipper.Open.file(zipPath);
         const limit = pLimit(ZIP_EXTRACTION_CONCURRENCY);
 
-        logger.info(
-            { zipPath, entryCount: directory.files.length },
-            '@file-extractor: opened ZIP via central directory'
-        );
-
         // Pre-collect the unique parent directories so concurrent entries
         // don't race on mkdir for the same path.
         const dirsToCreate = new Set<string>();
@@ -190,11 +185,6 @@ export default class FileExtractorService implements IFileExtractorService {
 
         const results = await Promise.all(tasks);
         const extracted = results.filter((r): r is ExtractedFile => r !== null);
-
-        logger.info(
-            { zipPath, extractedCount: extracted.length },
-            '@file-extractor: ZIP extraction complete'
-        );
 
         return extracted;
     }

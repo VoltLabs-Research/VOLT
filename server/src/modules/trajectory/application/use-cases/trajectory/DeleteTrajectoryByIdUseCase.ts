@@ -54,7 +54,7 @@ export default class DeleteTrajectoryByIdUseCase implements IUseCase<DeleteTraje
             teamId: input.teamId ?? trajectory.props.team ?? '',
             storageClusterId: resolveTrajectoryStorageClusterId(trajectory.props),
             userId: input.userId ?? '',
-            trajectoryName: trajectory.props.name ?? ''
+            trajectoryName: trajectory.props.name
         }));
 
         return Result.ok({ success: true });

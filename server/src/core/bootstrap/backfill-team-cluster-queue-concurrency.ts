@@ -84,16 +84,10 @@ export const backfillTeamClusterQueueConcurrency = async (): Promise<void> => {
     });
 
     if (queueConcurrencyResult.modifiedCount > 0) {
-        logger.info({
-            action: 'team-cluster.queue-concurrency.backfill',
-            modifiedCount: queueConcurrencyResult.modifiedCount
-        }, 'Backfilled team cluster queue concurrency');
+        logger.info(`Backfilled team cluster queue concurrency modifiedCount=${queueConcurrencyResult.modifiedCount}`);
     }
 
     if (queueScopeLimitsResult.modifiedCount > 0) {
-        logger.info({
-            action: 'team-cluster.queue-scope-limits.backfill',
-            modifiedCount: queueScopeLimitsResult.modifiedCount
-        }, 'Backfilled team cluster queue scope limits');
+        logger.info(`Backfilled team cluster queue scope limits modifiedCount=${queueScopeLimitsResult.modifiedCount}`);
     }
 };

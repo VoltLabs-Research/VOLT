@@ -299,11 +299,7 @@ export class ScriptingJupyterProxyService {
             const statusCode = mappedError instanceof ApplicationError ? mappedError.statusCode : 500;
             const message = mappedError instanceof Error ? mappedError.message : 'WebSocket upgrade failed';
 
-            logger.warn({
-                requestUrl,
-                statusCode,
-                error: mappedError instanceof Error ? mappedError.message : String(mappedError)
-            }, 'Rejected Jupyter websocket upgrade');
+            logger.warn(`Rejected Jupyter websocket upgrade requestUrl=${requestUrl} statusCode=${statusCode}`);
 
             writeUpgradeError(socket, statusCode, message);
         }
@@ -324,11 +320,7 @@ export class ScriptingJupyterProxyService {
             requestedProtocols
         );
         const negotiatedProtocol = upstreamWebSocket.protocol || requestedProtocols?.[0];
-        logger.info({
-            ...logContext,
-            upstreamMode: 'reverse-websocket',
-            negotiatedProtocol
-        }, 'Attached reverse-channel Jupyter websocket session');
+        logger.info(`Attached reverse-channel Jupyter websocket session upstreamMode=${'reverse-websocket'} negotiatedProtocol=${negotiatedProtocol}`);
         let upgradeSettled = false;
 
         const cleanupPendingUpgrade = (): void => {
@@ -352,12 +344,7 @@ export class ScriptingJupyterProxyService {
                 return;
             }
 
-            logger.warn({
-                ...logContext,
-                statusCode,
-                upstreamError: error?.message,
-                upstreamMode: 'reverse-websocket'
-            }, 'Jupyter websocket upgrade failed before client handshake');
+            logger.warn(`Jupyter websocket upgrade failed before client handshake statusCode=${statusCode} upstreamError=${error?.message} upstreamMode=${'reverse-websocket'}`);
 
             upstreamWebSocket.destroy();
             writeUpgradeError(socket, statusCode, message);
@@ -385,11 +372,7 @@ export class ScriptingJupyterProxyService {
                 return;
             }
 
-            logger.info({
-                ...logContext,
-                upstreamMode: 'reverse-websocket',
-                negotiatedProtocol
-            }, 'Completed client Jupyter websocket upgrade');
+            logger.info(`Completed client Jupyter websocket upgrade upstreamMode=${'reverse-websocket'} negotiatedProtocol=${negotiatedProtocol}`);
             this.bindReverseChannelWebSocketProxy(webSocket, upstreamWebSocket, logContext);
         }, negotiatedProtocol);
     }
@@ -470,13 +453,7 @@ export class ScriptingJupyterProxyService {
             return cachedContext;
         }
 
-        logger.debug({
-            action: 'scripting.jupyter-proxy.auth-context.cache-miss',
-            teamId: match.teamId,
-            runtimeNotebookId: match.runtimeNotebookId,
-            userId: verifiedToken.userId,
-            permissionAction: action
-        }, 'Resolving Jupyter proxy authorization context');
+        logger.debug(`Resolving Jupyter proxy authorization context teamId=${match.teamId} runtimeNotebookId=${match.runtimeNotebookId} userId=${verifiedToken.userId} permissionAction=${action}`);
 
         pruneExpiredCacheEntries(this.authorizedProxyContextCache);
 
@@ -567,20 +544,12 @@ export class ScriptingJupyterProxyService {
         }
 
         if (cachedEntry.contextValue) {
-            logger.debug({
-                action: 'scripting.jupyter-proxy.auth-context.cache-hit',
-                cacheKey,
-                source: 'value'
-            }, 'Serving cached Jupyter proxy authorization context');
+            logger.debug(`Serving cached Jupyter proxy authorization context cacheKey=${cacheKey} source=${'value'}`);
             return cachedEntry.contextValue;
         }
 
         if (cachedEntry.contextPromise) {
-            logger.debug({
-                action: 'scripting.jupyter-proxy.auth-context.cache-hit',
-                cacheKey,
-                source: 'in-flight'
-            }, 'Joining in-flight Jupyter proxy authorization context resolution');
+            logger.debug(`Joining in-flight Jupyter proxy authorization context resolution cacheKey=${cacheKey} source=${'in-flight'}`);
             return cachedEntry.contextPromise;
         }
 
@@ -619,12 +588,7 @@ export class ScriptingJupyterProxyService {
             });
         });
         upstreamWebSocket.on('end', ({ code, message }) => {
-            logger.info({
-                ...logContext,
-                upstreamMode: 'reverse-websocket',
-                closeCode: code,
-                closeMessage: message
-            }, 'Reverse-channel Jupyter websocket ended');
+            logger.info(`Reverse-channel Jupyter websocket ended upstreamMode=${'reverse-websocket'} closeCode=${code} closeMessage=${message}`);
 
             if (webSocket.readyState === WebSocket.CLOSING || webSocket.readyState === WebSocket.CLOSED) {
                 return;
@@ -639,11 +603,7 @@ export class ScriptingJupyterProxyService {
             webSocket.close(normalizedCloseCode, message || undefined);
         });
         upstreamWebSocket.on('error', (error) => {
-            logger.warn({
-                ...logContext,
-                upstreamMode: 'reverse-websocket',
-                upstreamError: error.message
-            }, 'Reverse-channel Jupyter websocket failed');
+            logger.warn(`Reverse-channel Jupyter websocket failed upstreamMode=${'reverse-websocket'} upstreamError=${error.message}`);
 
             if (webSocket.readyState === WebSocket.CLOSING || webSocket.readyState === WebSocket.CLOSED) {
                 return;
@@ -774,11 +734,7 @@ export class ScriptingJupyterProxyService {
             return cachedRuntime;
         }
 
-        logger.info({
-            action: 'scripting.jupyter-proxy.runtime.cache-miss',
-            teamClusterId: context.teamClusterId,
-            runtimeNotebookId: context.runtimeNotebookId
-        }, 'Resolving Jupyter notebook runtime');
+        logger.info(`Resolving Jupyter notebook runtime teamClusterId=${context.teamClusterId} runtimeNotebookId=${context.runtimeNotebookId}`);
 
         pruneExpiredCacheEntries(this.notebookRuntimeCache);
 
@@ -829,20 +785,12 @@ export class ScriptingJupyterProxyService {
         }
 
         if (cachedEntry.runtimeValue) {
-            logger.debug({
-                action: 'scripting.jupyter-proxy.runtime.cache-hit',
-                cacheKey,
-                source: 'value'
-            }, 'Serving cached Jupyter notebook runtime');
+            logger.debug(`Serving cached Jupyter notebook runtime cacheKey=${cacheKey} source=${'value'}`);
             return cachedEntry.runtimeValue;
         }
 
         if (cachedEntry.runtimePromise) {
-            logger.debug({
-                action: 'scripting.jupyter-proxy.runtime.cache-hit',
-                cacheKey,
-                source: 'in-flight'
-            }, 'Joining in-flight Jupyter notebook runtime lookup');
+            logger.debug(`Joining in-flight Jupyter notebook runtime lookup cacheKey=${cacheKey} source=${'in-flight'}`);
             return cachedEntry.runtimePromise;
         }
 
@@ -881,11 +829,7 @@ export class ScriptingJupyterProxyService {
         if (reusableSession) {
             reusableSession.inUse = true;
             reusableSession.expiresAt = Date.now() + HTTP_PROXY_SESSION_TTL_MS;
-            logger.debug({
-                action: 'scripting.jupyter-proxy.http-session.cache-hit',
-                runtimeNotebookId: context.runtimeNotebookId,
-                teamClusterId: context.teamClusterId
-            }, 'Reusing Jupyter proxy HTTP session');
+            logger.debug(`Reusing Jupyter proxy HTTP session runtimeNotebookId=${context.runtimeNotebookId} teamClusterId=${context.teamClusterId}`);
             return reusableSession;
         }
 
@@ -894,24 +838,14 @@ export class ScriptingJupyterProxyService {
         const session = this.createHttpProxySession(sessionKey, context, tunnel, !storeSession);
 
         if (!storeSession) {
-            logger.info({
-                action: 'scripting.jupyter-proxy.http-session.ephemeral',
-                runtimeNotebookId: context.runtimeNotebookId,
-                teamClusterId: context.teamClusterId,
-                activeSessions: existingSessions.length
-            }, 'Created ephemeral Jupyter proxy HTTP session because the pooled cap is in use');
+            logger.info(`Created ephemeral Jupyter proxy HTTP session because the pooled cap is in use runtimeNotebookId=${context.runtimeNotebookId} teamClusterId=${context.teamClusterId} activeSessions=${existingSessions.length}`);
             return session;
         }
 
         const nextSessions = [...existingSessions, session];
 
         this.httpProxySessions.set(sessionKey, nextSessions);
-        logger.info({
-            action: 'scripting.jupyter-proxy.http-session.created',
-            runtimeNotebookId: context.runtimeNotebookId,
-            teamClusterId: context.teamClusterId,
-            activeSessions: nextSessions.length
-        }, 'Created Jupyter proxy HTTP session');
+        logger.info(`Created Jupyter proxy HTTP session runtimeNotebookId=${context.runtimeNotebookId} teamClusterId=${context.teamClusterId} activeSessions=${nextSessions.length}`);
 
         return session;
     }
