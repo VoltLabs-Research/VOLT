@@ -1,5 +1,5 @@
 import { logger } from '@/core/logger';
-import type { DaemonConfig, DaemonRuntimeConfig } from '@/core/config';
+import type { DaemonConfig } from '@/core/config';
 import type { Readable } from 'node:stream';
 
 interface ClusterObjectHeadResponse {
@@ -122,7 +122,6 @@ interface ClusterObjectStoreDeps {
     config: DaemonConfig;
     minioService: LocalClusterObjectStoreGateway;
     remoteClient: RemoteClusterObjectStoreGateway;
-    getRuntimeSnapshot: () => DaemonRuntimeConfig;
 }
 
 interface ScopedClusterObjectStore {
@@ -159,11 +158,8 @@ class DefaultClusterObjectStore implements ClusterObjectStore {
         objectKey: string
     ): Promise<ClusterObjectHeadResponse> => {
         if (this.isLocalOwner(ownerClusterId)) {
-            requireLocalReadCapability(this.deps.getRuntimeSnapshot(), ownerClusterId);
             return toHeadResponse(await this.deps.minioService.statObject(bucket, objectKey));
         }
-
-        this.markRemoteFetch(ownerClusterId, bucket, objectKey);
         return this.deps.remoteClient.head(ownerClusterId, bucket, objectKey);
     };
 
@@ -174,7 +170,6 @@ class DefaultClusterObjectStore implements ClusterObjectStore {
         options?: ClusterObjectReadOptions
     ): Promise<ClusterObjectStreamResponse> => {
         if (this.isLocalOwner(ownerClusterId)) {
-            requireLocalReadCapability(this.deps.getRuntimeSnapshot(), ownerClusterId);
             if (options?.skipMetadata) {
                 const stream = await this.deps.minioService.getObjectStream(bucket, objectKey);
                 return {
@@ -193,8 +188,6 @@ class DefaultClusterObjectStore implements ClusterObjectStore {
                 stream
             };
         }
-
-        this.markRemoteFetch(ownerClusterId, bucket, objectKey);
         return this.deps.remoteClient.getStream(ownerClusterId, bucket, objectKey, options);
     };
 
@@ -202,7 +195,6 @@ class DefaultClusterObjectStore implements ClusterObjectStore {
         const metadata = splitObjectMetadata(input.metadata);
 
         if (this.isLocalOwner(input.ownerClusterId)) {
-            requireLocalWriteCapability(this.deps.getRuntimeSnapshot(), input.ownerClusterId);
             await this.deps.minioService.putObject({
                 bucket: input.bucket,
                 objectKey: input.objectKey,
@@ -211,16 +203,6 @@ class DefaultClusterObjectStore implements ClusterObjectStore {
             });
             return;
         }
-
-        logger.info(
-            {
-                action: 'artifact.write.remote',
-                ownerClusterId: input.ownerClusterId,
-                bucket: input.bucket,
-                objectKey: input.objectKey
-            },
-            'Writing object to remote owner cluster through Volt server proxy'
-        );
 
         await this.deps.remoteClient.putBuffer(input.ownerClusterId, {
             bucket: input.bucket,
@@ -236,7 +218,6 @@ class DefaultClusterObjectStore implements ClusterObjectStore {
         const metadata = splitObjectMetadata(input.metadata);
 
         if (this.isLocalOwner(input.ownerClusterId)) {
-            requireLocalWriteCapability(this.deps.getRuntimeSnapshot(), input.ownerClusterId);
             await this.deps.minioService.putObjectStream({
                 bucket: input.bucket,
                 objectKey: input.objectKey,
@@ -246,17 +227,6 @@ class DefaultClusterObjectStore implements ClusterObjectStore {
             });
             return;
         }
-
-        logger.info(
-            {
-                action: 'artifact.write.remote',
-                ownerClusterId: input.ownerClusterId,
-                bucket: input.bucket,
-                objectKey: input.objectKey,
-                size: input.size
-            },
-            'Streaming object to remote owner cluster through Volt server proxy'
-        );
 
         await this.deps.remoteClient.putStream(input.ownerClusterId, {
             bucket: input.bucket,
@@ -274,7 +244,6 @@ class DefaultClusterObjectStore implements ClusterObjectStore {
         request: ClusterObjectListRequest
     ): Promise<ClusterObjectListResponse> => {
         if (this.isLocalOwner(ownerClusterId)) {
-            requireLocalReadCapability(this.deps.getRuntimeSnapshot(), ownerClusterId);
             return this.deps.minioService.listObjectsPage({
                 bucket: request.bucket,
                 prefix: request.prefix,
@@ -288,18 +257,6 @@ class DefaultClusterObjectStore implements ClusterObjectStore {
 
     private isLocalOwner(ownerClusterId: string): boolean {
         return ownerClusterId === this.deps.config.teamClusterId;
-    }
-
-    private markRemoteFetch(ownerClusterId: string, bucket: string, objectKey: string): void {
-        logger.info(
-            {
-                action: 'artifact.resolve.owner-fetch',
-                ownerClusterId,
-                bucket,
-                objectKey
-            },
-            'Resolved remote owner object through Volt server proxy'
-        );
     }
 }
 
@@ -324,28 +281,6 @@ const toHeadResponse = (stat: LocalClusterObjectStat): ClusterObjectHeadResponse
         lastModified: stat.lastModified,
         metadata
     };
-};
-
-const requireLocalReadCapability = (
-    runtimeConfig: DaemonRuntimeConfig,
-    ownerClusterId: string
-): void => {
-    if (runtimeConfig.effectiveCapabilities.servesStorageReads) {
-        return;
-    }
-
-    throw new Error(`Cluster ${ownerClusterId} is not allowed to serve authoritative storage reads locally`);
-};
-
-const requireLocalWriteCapability = (
-    runtimeConfig: DaemonRuntimeConfig,
-    ownerClusterId: string
-): void => {
-    if (runtimeConfig.effectiveCapabilities.acceptsStorageWrites) {
-        return;
-    }
-
-    throw new Error(`Cluster ${ownerClusterId} is not allowed to accept authoritative storage writes locally`);
 };
 
 const splitObjectMetadata = (metadata?: Record<string, string>): SplitObjectMetadataResult => {

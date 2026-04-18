@@ -1,15 +1,30 @@
 import { TTLCache } from '@isaacs/ttlcache';
 import { logger } from '@/core/logger';
-import { createDebugExecutionLogSink } from '@/core/runtime/infrastructure/ExecutionLogStreaming';
-import { VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@/core/storage/contracts/http.objectStore';
-import { buildWorkflowExposureMaps } from '@/modules/analysis/application/workflow/ExposureExportLinking';
-import { createWorkflowExecutionContext, snapshotWorkflowOutputs } from '@/modules/analysis/application/workflow/WorkflowExecutionContextFactory';
-import { createDebugArtifactBatch } from '@/modules/analysis/application/workflow/debug/DebugArtifactBatch';
-import { inspectDebugExposureResult } from '@/modules/analysis/application/workflow/debug/DebugExposureProcessor';
-import { InlineWorkflowRuntime, InlineWorkflowTraceError } from '@/modules/analysis/application/workflow/InlineWorkflowRuntime';
-import { resolveWorkflowParentEdgeState, resolveWorkflowRuntimeChildNodeIds } from '@/modules/analysis/application/workflow/WorkflowRuntimeScheduling';
-import { runOrderedWorkflowNodes } from '@/modules/analysis/application/workflow/OrderedNodeRunner';
+import type { BinaryExecutorService, ProcessExecutionLogSink } from '@/core/runtime/infrastructure/binary-executor-service';
+import type { ExecutionLogSegmentMetadata } from '@/core/runtime/contracts/execution-log';
+import {
+    createDebugExecutionLogSink
+} from '@/core/runtime/infrastructure/execution-log-streaming';
+import { VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@/core/storage/contracts/http-object-store';
+import {
+    inspectWorkflowExposureOutput,
+    type WorkflowExposureInspectionResult
+} from '@/modules/analysis/application/workflow/exposure-payload-reader';
+import { processExportNode } from '@/modules/plugin/application/exports/ExportNodeProcessor';
+import { WorkflowNodeExecutor } from '@/modules/analysis/application/workflow/WorkflowNodeExecutor';
+import { WorkflowSession, type WorkflowOutputsSnapshot } from '@/modules/analysis/application/workflow/WorkflowSession';
+import { createDebugArtifactBatch } from '@/modules/analysis/application/workflow/debug/debug-artifact-batch';
+import type { DebugEnvironmentState } from '@/modules/analysis/application/workflow/debug/DebugEnvironment';
+import { WorkflowRuntime, WorkflowTraceError } from '@/modules/analysis/application/workflow/WorkflowRuntime';
+import { WorkflowScheduler, type WorkflowExecutionStatus } from '@/modules/analysis/application/workflow/WorkflowScheduler';
+import type { ReverseChannelCommandPayloadView } from '@/core/reverse-channel/contracts/command-handler';
 import { WorkflowGraph, WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
+import type {
+    WorkflowExecutionContext,
+    WorkflowNode,
+    WorkflowNodeOutput
+} from '@/modules/analysis/contracts/workflow.types';
+import type { PluginBinaryCache } from '@/modules/plugin/application/binaries/PluginBinaryCache';
 import fg from 'fast-glob';
 import path from 'node:path';
 import fs from 'node:fs/promises';
@@ -21,13 +36,13 @@ interface DebugExecutionLogReporter {
 }
 
 interface DebugSessionRequest {
-    workflow: import('@/modules/analysis/contracts/http.workflow').WorkflowDefinition;
-    nestedPlugins: import('@/modules/analysis/contracts/http.workflow').NestedPluginDefinition[];
+    workflow: import('@/modules/analysis/contracts/http-workflow').WorkflowDefinition;
+    nestedPlugins: import('@/modules/analysis/contracts/http-workflow').NestedPluginDefinition[];
     trajectoryId: string;
-    trajectoryFrames: import('@/modules/analysis/contracts/http.workflow').TrajectoryFrame[];
+    trajectoryFrames: import('@/modules/analysis/contracts/http-workflow').TrajectoryFrame[];
     pluginId: string;
     teamId: string;
-    userConfig: import('@/core/reverse-channel/contracts/commandHandler').ReverseChannelCommandPayloadView;
+    userConfig: ReverseChannelCommandPayloadView;
     storageClusterId?: string;
     timestep?: number;
 };
@@ -40,9 +55,9 @@ interface DebugNodeResult {
     error?: string;
     stack?: string;
     reason?: string;
-    nestedTrace?: import('@/modules/analysis/application/workflow/InlineWorkflowRuntime').InlineWorkflowTraceNode[];
+    nestedTrace?: import('@/modules/analysis/application/workflow/WorkflowRuntime').InlineWorkflowTraceNode[];
     durationMs: number;
-    contextSnapshot: ReturnType<typeof snapshotWorkflowOutputs>;
+    contextSnapshot: WorkflowOutputsSnapshot;
 };
 
 interface DebugSessionInfo {
@@ -68,10 +83,10 @@ interface DebugSession {
     nodeStatuses: Map<string, 'executed' | 'skipped' | 'error'>;
     forEachNodeId: string | null;
     storageClusterId: string;
-    nestedPlugins: import('@/modules/analysis/contracts/http.workflow').NestedPluginDefinition[];
-    preparedExecution: import('@/modules/analysis/application/workflow/debug/DebugEntrypointExecutor').PreparedDebugExecutionEnvironment | null;
-    exposureCache: Map<string, import('@/modules/analysis/application/workflow/debug/DebugExposureProcessor').DebugExposureInspectionResult>;
-    exposuresByNodeId: Map<string, import('@/modules/analysis/contracts/http.analysis').AnalysisExposureDefinition>;
+    nestedPlugins: import('@/modules/analysis/contracts/http-workflow').NestedPluginDefinition[];
+    preparedExecution: DebugEnvironmentState | null;
+    exposureCache: Map<string, WorkflowExposureInspectionResult>;
+    exposuresByNodeId: Map<string, import('@/modules/analysis/contracts/http-analysis').AnalysisExposureDefinition>;
     exportNodeToExposureNodeId: Map<string, string>;
     cleanupPaths: string[];
     cleanupDirectories: string[];
@@ -80,13 +95,13 @@ interface DebugSession {
 interface ExecutedNodeExecutionOutcome {
     status: 'executed';
     output: import('@/modules/analysis/contracts/workflow.types').WorkflowNodeOutput;
-    nestedTrace?: import('@/modules/analysis/application/workflow/InlineWorkflowRuntime').InlineWorkflowTraceNode[];
+    nestedTrace?: import('@/modules/analysis/application/workflow/WorkflowRuntime').InlineWorkflowTraceNode[];
 }
 
 interface SkippedNodeExecutionOutcome {
     status: 'skipped';
     reason: string;
-    nestedTrace?: import('@/modules/analysis/application/workflow/InlineWorkflowRuntime').InlineWorkflowTraceNode[];
+    nestedTrace?: import('@/modules/analysis/application/workflow/WorkflowRuntime').InlineWorkflowTraceNode[];
 }
 
 type NodeExecutionOutcome = ExecutedNodeExecutionOutcome | SkippedNodeExecutionOutcome;
@@ -125,53 +140,55 @@ export class DebugSessionManager {
         }
     });
     private executionLogReporter: DebugExecutionLogReporter | null = null;
+    private readonly nodeExecutor: WorkflowNodeExecutor;
 
     constructor(
-        private readonly workflowNodeRegistry: import('@/modules/analysis/application/workflow/NodeRegistry').WorkflowNodeRegistry,
-        private readonly debugEntrypointExecutor: import('@/modules/analysis/application/workflow/debug/DebugEntrypointExecutor').DebugEntrypointExecutor,
-        private readonly inlineWorkflowRuntime: InlineWorkflowRuntime,
-        private readonly exportNodeProcessorService: import('@/modules/plugin/application/exports/ExportNodeProcessorService').ExportNodeProcessorService
-    ) {}
+        workflowNodeRegistry: import('@/modules/analysis/application/workflow/NodeRegistry').WorkflowNodeRegistry,
+        private readonly debugEnvironment: import('@/modules/analysis/application/workflow/debug/DebugEnvironment').DebugEnvironment,
+        private readonly workflowRuntime: WorkflowRuntime,
+        private readonly pluginBinaryCache: PluginBinaryCache,
+        private readonly binaryExecutorService: BinaryExecutorService
+    ) {
+        this.nodeExecutor = new WorkflowNodeExecutor(workflowNodeRegistry);
+    }
 
     createSession(request: DebugSessionRequest): DebugSessionInfo {
+        const {
+            workflow: workflowDefinition,
+            storageClusterId,
+            timestep: selectedTimestep,
+            ...sessionParams
+        } = request;
         const sessionId = `dbg_${Date.now()}_${++sessionCounter}`;
-        const workflow = new WorkflowGraph(request.workflow);
+        const workflow = new WorkflowGraph(workflowDefinition);
         const executableNodes = workflow.topologicalSort();
         const nodeById = new Map(executableNodes.map((node) => [node.id, node]));
-        const rootNodeIds = executableNodes
-            .filter((node) => !workflow.edges.some((edge) => edge.target === node.id))
-            .map((node) => node.id);
+        const rootNodeIds = workflow.getRootNodeIds();
 
-        const stubAnalysis: import('@/modules/analysis/contracts/http.analysis').DaemonAnalysisDocument = {
+        const stubAnalysis: import('@/modules/analysis/contracts/http-analysis').DaemonAnalysisDocument = {
             _id: `debug_${sessionId}`,
             pluginDisplayName: 'Debug Session'
         };
 
-        const selectedTimestep = request.timestep;
         const hasSelectedTimestep = selectedTimestep !== undefined;
-        const context = createWorkflowExecutionContext({
-            userConfig: request.userConfig,
+        const context = WorkflowSession.create({
+            ...sessionParams,
             runtimeArguments: {},
-            trajectoryId: request.trajectoryId,
-            trajectoryFrames: request.trajectoryFrames,
             analysis: stubAnalysis,
             analysisId: `debug_${sessionId}`,
-            pluginId: request.pluginId,
-            teamId: request.teamId,
             selectedFrameOnly: hasSelectedTimestep,
             selectedTimesteps: hasSelectedTimestep ? [selectedTimestep] : undefined,
             selectedTimestep,
-            workflow,
-            nestedPlugins: request.nestedPlugins
-        });
+            workflow
+        }).context;
 
-        const { exposuresByNodeId, exportNodeToExposureNodeId } = buildWorkflowExposureMaps(request.workflow);
+        const { exposuresByNodeId, exportNodeToExposureNodeId } = WorkflowSession.buildExposureMaps(workflowDefinition);
         const forEachNode = executableNodes.find((node) => node.type === WorkflowNodeType.ForEach);
         let totalIterations = 0;
         if (forEachNode) {
             totalIterations = hasSelectedTimestep
                 ? 1
-                : request.trajectoryFrames.length;
+                : sessionParams.trajectoryFrames.length;
         }
 
         const session: DebugSession = {
@@ -184,8 +201,8 @@ export class DebugSessionManager {
             completedNodeIds: new Set(),
             nodeStatuses: new Map(),
             forEachNodeId: forEachNode ? forEachNode.id : null,
-            storageClusterId: request.storageClusterId ?? VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID,
-            nestedPlugins: request.nestedPlugins,
+            storageClusterId: storageClusterId ?? VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID,
+            nestedPlugins: sessionParams.nestedPlugins,
             preparedExecution: null,
             exposureCache: new Map(),
             exposuresByNodeId,
@@ -239,7 +256,7 @@ export class DebugSessionManager {
                     reason: result?.reason ?? `No handler registered for node type "${node.type}"`,
                     nestedTrace: result?.nestedTrace,
                     durationMs,
-                    contextSnapshot: snapshotWorkflowOutputs(session.context.outputs)
+                    contextSnapshot: this.snapshotSessionOutputs(session)
                 };
             }
 
@@ -250,7 +267,7 @@ export class DebugSessionManager {
                 output: result.output,
                 nestedTrace: result.nestedTrace,
                 durationMs,
-                contextSnapshot: snapshotWorkflowOutputs(session.context.outputs)
+                contextSnapshot: this.snapshotSessionOutputs(session)
             };
         } catch (error) {
             const durationMs = Date.now() - startTime;
@@ -266,9 +283,9 @@ export class DebugSessionManager {
                 status: 'error',
                 error: message,
                 stack,
-                nestedTrace: error instanceof InlineWorkflowTraceError ? error.trace : undefined,
+                nestedTrace: error instanceof WorkflowTraceError ? error.trace : undefined,
                 durationMs,
-                contextSnapshot: snapshotWorkflowOutputs(session.context.outputs)
+                contextSnapshot: this.snapshotSessionOutputs(session)
             };
         }
     }
@@ -337,32 +354,29 @@ export class DebugSessionManager {
         switch (node.type) {
             case WorkflowNodeType.Plugin:
                 return this.executePluginNode(session, node);
-            case WorkflowNodeType.Entrypoint:
-                return this.executeEntrypointNode(session, node);
-            case WorkflowNodeType.Exposure:
-                return this.executeExposureNode(session, node);
             case WorkflowNodeType.Export:
                 return this.executeExportNode(session, node);
             case WorkflowNodeType.Arguments:
             default: {
-                const [orderedResult] = await runOrderedWorkflowNodes({
-                    nodes: [node],
-                    context: session.context,
-                    registry: this.workflowNodeRegistry
-                });
-                if (!orderedResult) {
-                    return null;
-                }
-
-                if (orderedResult.status === 'skipped') {
+                const result = await this.nodeExecutor.executeNode(
+                    node,
+                    await this.createNodeExecutionContext(session, node)
+                );
+                if (result.status === 'skipped') {
                     return {
                         status: 'skipped',
-                        reason: orderedResult.reason!
+                        reason: result.reason!
                     };
                 }
 
-                const output = orderedResult.output!;
-                session.context.outputs.set(node.id, output);
+                const output = result.output!;
+                if (output.skipped === true && typeof output.reason === 'string') {
+                    return {
+                        status: 'skipped',
+                        reason: output.reason
+                    };
+                }
+
                 return {
                     status: 'executed',
                     output
@@ -386,25 +400,15 @@ export class DebugSessionManager {
     }
 
     private enqueueNodeIds(session: DebugSession, nodeIds: string[]): void {
+        const scheduler = this.createSessionScheduler(session);
+
         for (let index = nodeIds.length - 1; index >= 0; index -= 1) {
             const nodeId = nodeIds[index];
             if (!nodeId || session.completedNodeIds.has(nodeId) || session.scheduledNodeIds.has(nodeId)) {
                 continue;
             }
 
-            const nodeStateCache = new Map<string, WorkflowRuntimeNodeState>();
-            const resolvingNodeIds = new Set<string>();
-            const isReady = session.context.workflow.edges
-                .filter((edge) => edge.target === nodeId)
-                .every((edge) => resolveWorkflowParentEdgeState({
-                    workflow: session.context.workflow,
-                    outputs: session.context.outputs,
-                    getNodeExecutionStatus: (currentNodeId) => this.getWorkflowExecutionStatus(session, currentNodeId),
-                    edge,
-                    targetNodeId: nodeId,
-                    nodeStateCache,
-                    resolvingNodeIds
-                }).resolved);
+            const isReady = scheduler.areParentEdgesResolved(nodeId);
             if (!isReady) {
                 continue;
             }
@@ -415,43 +419,7 @@ export class DebugSessionManager {
     }
 
     private getNodeSkipReason(session: DebugSession, node: WorkflowNode): string | undefined {
-        const parentEdges = session.context.workflow.edges.filter((edge) => edge.target === node.id);
-        if (parentEdges.length === 0) {
-            return undefined;
-        }
-
-        const nodeStateCache = new Map<string, WorkflowRuntimeNodeState>();
-        const resolvingNodeIds = new Set<string>();
-        let hasActiveParent = false;
-        let inactiveReason: string | undefined;
-
-        for (const parentEdge of parentEdges) {
-            const parentState = resolveWorkflowParentEdgeState({
-                workflow: session.context.workflow,
-                outputs: session.context.outputs,
-                getNodeExecutionStatus: (currentNodeId) => this.getWorkflowExecutionStatus(session, currentNodeId),
-                edge: parentEdge,
-                targetNodeId: node.id,
-                nodeStateCache,
-                resolvingNodeIds
-            });
-            if (!parentState.resolved) {
-                return parentState.reason;
-            }
-
-            if (parentState.active) {
-                if (parentState.reason) {
-                    return parentState.reason;
-                }
-
-                hasActiveParent = true;
-                continue;
-            }
-
-            inactiveReason ??= parentState.reason;
-        }
-
-        return hasActiveParent ? undefined : inactiveReason;
+        return this.createSessionScheduler(session).getSkipReason(node);
     }
 
     private resolveNextNodeIds(
@@ -459,23 +427,14 @@ export class DebugSessionManager {
         node: WorkflowNode,
         result: NodeExecutionOutcome | null
     ): string[] {
-        const workflow = session.context.workflow;
-
         if (!result || result.status === 'skipped') {
-            return workflow.getChildren(node.id).map((childNode) => childNode.id);
+            return session.context.workflow.getChildNodeIds(node.id);
         }
 
-        if (node.type === WorkflowNodeType.IfStatement || node.type === WorkflowNodeType.SwitchStatement) {
-            const { activeNodeIds, inactiveNodeIds } = resolveWorkflowRuntimeChildNodeIds(
-                workflow,
-                node,
-                result.output!
-            );
+        const { activeNodeIds, inactiveNodeIds } = this.createSessionScheduler(session)
+            .resolveChildNodeIds(node, result.output!);
 
-            return [...activeNodeIds, ...inactiveNodeIds];
-        }
-
-        return workflow.getChildren(node.id).map((childNode) => childNode.id);
+        return [...activeNodeIds, ...inactiveNodeIds];
     }
 
     private getWorkflowExecutionStatus(
@@ -503,7 +462,7 @@ export class DebugSessionManager {
         node: WorkflowNode
     ): Promise<NodeExecutionOutcome> {
         const preparedExecution = await this.ensurePreparedExecutionEnvironment(session);
-        const execution = await this.inlineWorkflowRuntime.executePluginNode({
+        const execution = await this.workflowRuntime.executePluginNode({
             node,
             workflow: session.context.workflow.definition,
             nestedPlugins: session.nestedPlugins,
@@ -544,71 +503,16 @@ export class DebugSessionManager {
         };
     }
 
-    private async executeEntrypointNode(
-        session: DebugSession,
-        node: WorkflowNode
-    ): Promise<NodeExecutionOutcome> {
-        const preparedExecution = await this.ensurePreparedExecutionEnvironment(session);
-        const execution = await this.debugEntrypointExecutor.executePrepared(
-            node,
-            session.context,
-            preparedExecution,
-            this.createDebugLogSink(
-                session.sessionId,
-                node.id,
-                {
-                    nodeId: node.id,
-                    nodeType: node.type,
-                    pluginId: session.context.pluginId,
-                    executionPath: [node.id]
-                }
-            )
-        );
-
-        session.context.outputs.set(node.id, execution.output);
-
-        return {
-            status: 'executed',
-            output: execution.output
-        };
+    private snapshotSessionOutputs(session: DebugSession): WorkflowOutputsSnapshot {
+        return WorkflowSession.snapshotOutputs(session.context.outputs);
     }
 
-    private async executeExposureNode(
-        session: DebugSession,
-        node: WorkflowNode
-    ): Promise<NodeExecutionOutcome> {
-        const preparedExecution = await this.ensurePreparedExecutionEnvironment(session);
-        const exposure = session.exposuresByNodeId.get(node.id);
-        if (!exposure || !exposure.results) {
-            return {
-                status: 'skipped',
-                reason: `Exposure node ${node.id} has no results file configured`
-            };
-        }
-
-        const inspection = await inspectDebugExposureResult(
-            preparedExecution.outputDir,
-            exposure.results
-        );
-        session.exposureCache.set(node.id, inspection);
-
-        const output: WorkflowNodeOutput = {
-            outputFilePath: inspection.outputFilePath,
-            listingRowCount: inspection.listingRowCount,
-            subListingNames: inspection.subListingNames,
-            hasExportPayload: inspection.exportPayload !== null
-        };
-        const linkedExportNodeId = Array.from(session.exportNodeToExposureNodeId.entries())
-            .find(([, exposureNodeId]) => exposureNodeId === node.id)?.[0];
-        if (linkedExportNodeId) {
-            output.linkedExportNodeId = linkedExportNodeId;
-        }
-
-        session.context.outputs.set(node.id, output);
-        return {
-            status: 'executed',
-            output
-        };
+    private createSessionScheduler(session: DebugSession): WorkflowScheduler {
+        return new WorkflowScheduler({
+            workflow: session.context.workflow,
+            outputs: session.context.outputs,
+            getNodeExecutionStatus: (nodeId) => this.getWorkflowExecutionStatus(session, nodeId)
+        });
     }
 
     private createDebugLogSink(
@@ -626,6 +530,64 @@ export class DebugSessionManager {
             nodeId,
             metadata
         });
+    }
+
+    private async createNodeExecutionContext(
+        session: DebugSession,
+        node: WorkflowNode
+    ): Promise<WorkflowExecutionContext> {
+        if (node.type !== WorkflowNodeType.Entrypoint && node.type !== WorkflowNodeType.Exposure) {
+            return session.context;
+        }
+
+        const preparedExecution = await this.ensurePreparedExecutionEnvironment(session);
+        const baseExecution = session.context.execution;
+        const nextExecution = {
+            ...baseExecution
+        };
+
+        if (node.type === WorkflowNodeType.Entrypoint) {
+            nextExecution.entrypoint = {
+                ...baseExecution?.entrypoint,
+                jobId: `debug:${node.id}:${Date.now()}`,
+                outputDir: preparedExecution.outputDir,
+                pluginBinaryCache: this.pluginBinaryCache,
+                binaryExecutorService: this.binaryExecutorService,
+                logSink: this.createDebugLogSink(
+                    session.sessionId,
+                    node.id,
+                    {
+                        nodeId: node.id,
+                        nodeType: node.type,
+                        pluginId: session.context.pluginId,
+                        executionPath: [node.id]
+                    }
+                ),
+                restoreOutputOnError: true,
+                includeOutputFiles: true,
+                nonZeroExitMessage: (result) => `Entrypoint exited with code ${result.code}: ${result.stderr || result.stdout}`,
+                extraOutput: {
+                    dumpPath: preparedExecution.dumpPath
+                },
+                errorMessage: `Entrypoint ${node.id} is missing runtime configuration`
+            };
+        }
+
+        if (node.type === WorkflowNodeType.Exposure) {
+            nextExecution.exposure = {
+                ...baseExecution?.exposure,
+                mode: 'debug',
+                outputDir: preparedExecution.outputDir,
+                onInspection: (nodeId, inspection) => {
+                    session.exposureCache.set(nodeId, inspection);
+                }
+            };
+        }
+
+        return {
+            ...session.context,
+            execution: nextExecution
+        };
     }
 
     private async executeExportNode(
@@ -651,10 +613,14 @@ export class DebugSessionManager {
 
         let inspection = session.exposureCache.get(exposureNodeId);
         if (!inspection) {
-            inspection = await inspectDebugExposureResult(
-                preparedExecution.outputDir,
-                exposure.results
-            );
+            if (!exposure.results) {
+                return {
+                    status: 'skipped',
+                    reason: `Exposure ${exposureNodeId} has no results file configured`
+                };
+            }
+
+            inspection = await inspectWorkflowExposureOutput(preparedExecution.outputDir, exposure.results);
             session.exposureCache.set(exposureNodeId, inspection);
         }
 
@@ -669,7 +635,7 @@ export class DebugSessionManager {
         const artifactBatch = createDebugArtifactBatch(exportDirectory);
         const storageClusterId = session.storageClusterId;
 
-        await this.exportNodeProcessorService.process({
+        await processExportNode({
             executionData: {
                 analysisId: session.context.analysisId,
                 trajectoryId: session.context.trajectoryId,
@@ -704,12 +670,12 @@ export class DebugSessionManager {
         };
     }
 
-    private async ensurePreparedExecutionEnvironment(session: DebugSession): Promise<PreparedDebugExecutionEnvironment> {
+    private async ensurePreparedExecutionEnvironment(session: DebugSession): Promise<DebugEnvironmentState> {
         if (session.preparedExecution) {
             return session.preparedExecution;
         }
 
-        const preparedExecution = await this.debugEntrypointExecutor.prepareExecutionEnvironment(
+        const preparedExecution = await this.debugEnvironment.prepare(
             session.sessionId,
             session.context,
             session.storageClusterId

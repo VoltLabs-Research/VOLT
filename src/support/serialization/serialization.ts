@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 interface SerializableObject {
     [key: string]: SerializableValue | undefined;
 }
@@ -7,7 +5,6 @@ interface SerializableObject {
 type SerializableValue = bigint | boolean | Date | Function | null | number | SerializableObject | SerializableValue[] | string | symbol | undefined;
 
 const CLI_ARGUMENTS_TOKEN_PREFIX = '__volt_cli_args__:';
-const CLI_ARGUMENTS_TOKEN_SCHEMA = z.string().array();
 
 export const encodeCliArgumentsToken = (argumentsArray: string[]): string => {
     const payload = JSON.stringify(argumentsArray);
@@ -28,7 +25,11 @@ export const decodeCliArgumentsToken = (value: string): string[] | null => {
 
     try {
         const payload = Buffer.from(encodedPayload, 'base64url').toString('utf8');
-        return CLI_ARGUMENTS_TOKEN_SCHEMA.parse(JSON.parse(payload));
+        const parsed = JSON.parse(payload);
+        if (!Array.isArray(parsed) || parsed.some((entry) => typeof entry !== 'string')) {
+            return null;
+        }
+        return parsed as string[];
     } catch {
         return null;
     }

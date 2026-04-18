@@ -1,4 +1,4 @@
-import type { RedisConnectionService } from '@/core/storage/infrastructure/redis/RedisConnectionService';
+import type { RedisConnection } from '@/core/storage/infrastructure/redis/RedisConnection';
 
 const AUTO_PREVIEW_CLAIM_TTL_SECONDS = 30 * 60;
 
@@ -8,12 +8,12 @@ const buildAutoPreviewRasterKey = (trajectoryId: string): string => {
 
 export class TrajectoryAutoPreviewClaimStore {
     constructor(
-        private readonly redisConnectionService: RedisConnectionService
+        private readonly redisConnection: RedisConnection
     ) {
     }
 
     claimRasterization(trajectoryId: string): Promise<boolean> {
-        return this.redisConnectionService.setKeyIfAbsent(
+        return this.redisConnection.setKeyIfAbsent(
             buildAutoPreviewRasterKey(trajectoryId),
             new Date().toISOString(),
             AUTO_PREVIEW_CLAIM_TTL_SECONDS
@@ -21,6 +21,6 @@ export class TrajectoryAutoPreviewClaimStore {
     }
 
     async releaseRasterization(trajectoryId: string): Promise<void> {
-        await this.redisConnectionService.deleteKey(buildAutoPreviewRasterKey(trajectoryId));
+        await this.redisConnection.deleteKey(buildAutoPreviewRasterKey(trajectoryId));
     }
 };

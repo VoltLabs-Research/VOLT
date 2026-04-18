@@ -1,9 +1,7 @@
 import { BaseDomainEvent } from '@/core/events/BaseDomainEvent';
-import type { TeamClusterServiceExposure } from '@/core/runtime/contracts/serviceExposure';
+import type { ExposureSnapshotPayload } from '@/modules/container/contracts/reverse-channel-container';
 
-export interface ExposureSnapshotUpdatedEventData {
-    exposures: TeamClusterServiceExposure[];
-}
+export type ExposureSnapshotUpdatedEventData = ExposureSnapshotPayload;
 
 export class ExposureSnapshotUpdatedEvent extends BaseDomainEvent<ExposureSnapshotUpdatedEventData> {
     static readonly eventName = 'container.exposure-snapshot-updated';

@@ -41,8 +41,7 @@ export class TrajectoryGlbWorker extends BaseWorker<GlbConversionQueueJobPayload
                 timestep: payload.timestep,
                 objectKey: payload.objectKey,
                 ownerClusterId: payload.ownerClusterId,
-                teamId: payload.teamId,
-                trajectoryName: payload.trajectoryName
+                teamId: payload.teamId
             });
             await bullJob.updateProgress(100);
 
@@ -66,7 +65,6 @@ export class TrajectoryGlbWorker extends BaseWorker<GlbConversionQueueJobPayload
             jobId: payload.jobId,
             teamId: payload.teamId,
             trajectoryId: payload.trajectoryId,
-            trajectoryName: payload.trajectoryName,
             timestep: payload.timestep
         };
 

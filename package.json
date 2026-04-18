@@ -42,8 +42,7 @@
     "tmp-promise": "^3.0.3",
     "unzipper": "^0.12.3",
     "ws": "^8.20.0",
-    "xstate": "^5.30.0",
-    "zod": "^4.3.6"
+    "xstate": "^5.30.0"
   },
   "devDependencies": {
     "@types/async-retry": "^1.4.9",

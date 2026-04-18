@@ -1,20 +1,18 @@
 import { asClass, asFunction, createContainer } from 'awilix';
-import { createArtifactUploadQueueService } from '@/modules/plugin/application/artifacts/ArtifactUploadQueueService';
-import { ArtifactUploadWorkerService } from '@/modules/plugin/application/artifacts/ArtifactUploadWorkerService';
-import { createExportNodeProcessorService } from '@/modules/plugin/application/exports/ExportNodeProcessorService';
-import { createPluginBinaryCacheService } from '@/modules/plugin/application/binaries/PluginBinaryCacheService';
+import { ArtifactUploadQueue } from '@/modules/plugin/application/artifacts/ArtifactUploadQueue';
+import { ArtifactUploadWorker } from '@/modules/plugin/application/artifacts/ArtifactUploadWorker';
+import { PluginBinaryCache } from '@/modules/plugin/application/binaries/PluginBinaryCache';
 import { createPluginListingRepository } from '@/modules/plugin/infrastructure/repositories/PluginListingRepository';
-import { createResultProcessorService } from '@/modules/plugin/application/exports/ResultProcessorService';
+import { DefaultResultProcessor } from '@/modules/plugin/application/exports/ResultProcessor';
 
 type BootstrapContainer = ReturnType<typeof createContainer>;
 
 export const registerPluginBootstrap = (container: BootstrapContainer): void => {
     container.register({
         pluginListingRepository: asFunction(createPluginListingRepository).singleton(),
-        pluginBinaryCacheService: asFunction(createPluginBinaryCacheService).singleton(),
-        artifactUploadQueueService: asFunction(createArtifactUploadQueueService).singleton(),
-        exportNodeProcessorService: asFunction(createExportNodeProcessorService).singleton(),
-        resultProcessorService: asFunction(createResultProcessorService).singleton(),
-        artifactUploadWorkerService: asClass(ArtifactUploadWorkerService).singleton()
+        pluginBinaryCache: asClass(PluginBinaryCache).singleton(),
+        artifactUploadQueue: asClass(ArtifactUploadQueue).singleton(),
+        resultProcessor: asClass(DefaultResultProcessor).singleton(),
+        artifactUploadWorker: asClass(ArtifactUploadWorker).singleton()
     });
 };

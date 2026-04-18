@@ -80,7 +80,6 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
                 analysisId: payload.analysisId,
                 teamId: payload.teamId,
                 trajectoryId: payload.trajectoryId,
-                trajectoryName: payload.trajectoryName,
                 timestep: payload.timestep
             });
 
@@ -95,7 +94,6 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
                 analysisId: payload.analysisId,
                 teamId: payload.teamId,
                 trajectoryId: payload.trajectoryId,
-                trajectoryName: payload.trajectoryName,
                 timestep: payload.timestep
             });
             await this.cleanupBatchDirectory(payload.batchDirectory);
@@ -112,7 +110,6 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
                     analysisId: payload.analysisId,
                     teamId: payload.teamId,
                     trajectoryId: payload.trajectoryId,
-                    trajectoryName: payload.trajectoryName,
                     timestep: payload.timestep,
                     error: error instanceof Error ? error.message : String(error)
                 }).catch(() => {});

@@ -1,7 +1,10 @@
-import { isRecord } from '@/support/type-guards/isRecord';
 import type { MsgpackObject, MsgpackValue } from '@/support/serialization/msgpack-value';
 import mergeChunkedValue from '@/core/reverse-channel/application/merge-chunked-value';
 import { Unpackr, type Options as MsgpackDecoderOptions } from 'msgpackr';
+
+const isMsgpackObject = (value: MsgpackValue): value is MsgpackObject => {
+    return typeof value === 'object' && value !== null && !Array.isArray(value) && !(value instanceof Uint8Array);
+};
 
 type ChunkLike = Uint8Array | Buffer;
 
@@ -79,7 +82,7 @@ export const mergeSelectiveChunk = (
     incoming: MsgpackValue,
     keyFilter: (key: string) => boolean
 ): MsgpackObject | null => {
-    if (!isRecord(incoming)) {
+    if (!isMsgpackObject(incoming)) {
         return target;
     }
 
@@ -95,5 +98,5 @@ export const mergeSelectiveChunk = (
     }
 
     const merged = mergeChunkedValue(target, filtered);
-    return isRecord(merged) ? merged : target;
+    return isMsgpackObject(merged) ? merged : target;
 };

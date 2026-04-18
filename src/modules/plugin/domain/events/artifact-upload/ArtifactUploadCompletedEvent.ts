@@ -1,7 +1,7 @@
 import { BaseDomainEvent } from '@/core/events/BaseDomainEvent';
-import type { BaseArtifactUploadEventData } from '@/modules/plugin/domain/events/shared/BaseArtifactUploadEventData';
+import type { BaseArtifactUploadEventData } from '@/modules/plugin/domain/events/shared/base-artifact-upload-event-data';
 
-export interface ArtifactUploadCompletedEventData extends BaseArtifactUploadEventData {}
+export type ArtifactUploadCompletedEventData = BaseArtifactUploadEventData;
 
 export class ArtifactUploadCompletedEvent extends BaseDomainEvent<ArtifactUploadCompletedEventData> {
     static readonly eventName = 'plugin.artifact-upload.completed';

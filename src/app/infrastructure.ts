@@ -1,14 +1,14 @@
 import { asValue, createContainer } from 'awilix';
-import { InMemoryCommandBus } from '@/core/commands/InMemoryCommandBus';
-import { InMemoryEventBus } from '@/core/events/InMemoryEventBus';
+import { CommandRegistry } from '@/core/commands/CommandRegistry';
+import { EventDispatcher } from '@/core/events/EventDispatcher';
 import { RuntimeEventBroker } from '@/core/reverse-channel/application/RuntimeEventBroker';
-import { connectMongo, disconnectMongo } from '@/core/storage/infrastructure/mongo/MongoConnectionService';
-import { DockerRuntimeService } from '@/core/runtime/infrastructure/DockerRuntimeService';
+import { connectMongo, disconnectMongo } from '@/core/storage/infrastructure/mongo/mongo-connection-service';
+import { DockerRuntime } from '@/core/runtime/infrastructure/DockerRuntime';
 import { MinioService } from '@/core/storage/infrastructure/minio/MinioService';
 import { QueueService } from '@/core/queues/application/QueueService';
-import { RedisConnectionService } from '@/core/storage/infrastructure/redis/RedisConnectionService';
-import { AnalysisExecutionDataStore } from '@/modules/analysis/infrastructure/storage/AnalysisExecutionDataStore';
-import { RedisExplorerReadService } from '@/modules/container/infrastructure/remote-access/RedisExplorerReadService';
+import { RedisConnection } from '@/core/storage/infrastructure/redis/RedisConnection';
+import { AnalysisDataStore } from '@/modules/analysis/infrastructure/storage/AnalysisDataStore';
+import { RedisExplorer } from '@/modules/container/infrastructure/remote-access/RedisExplorer';
 import { TrajectoryAutoPreviewClaimStore } from '@/modules/trajectory/infrastructure/storage/TrajectoryAutoPreviewClaimStore';
 
 type BootstrapContainer = ReturnType<typeof createContainer>;
@@ -17,26 +17,26 @@ export const registerInfrastructure = (
     container: BootstrapContainer,
     config: import('@/core/config').DaemonConfig
 ): void => {
-    const commandBus = new InMemoryCommandBus();
-    const eventBus = new InMemoryEventBus();
-    const eventBroker = new RuntimeEventBroker(eventBus);
-    const dockerRuntimeService = new DockerRuntimeService(eventBroker);
+    const commandRegistry = new CommandRegistry();
+    const eventDispatcher = new EventDispatcher();
+    const eventBroker = new RuntimeEventBroker(eventDispatcher);
+    const dockerRuntime = new DockerRuntime(eventBroker);
     const minioService = new MinioService(config);
-    const redisConnectionService = new RedisConnectionService(config);
-    const analysisExecutionDataStore = new AnalysisExecutionDataStore(config);
-    const redisExplorerReadService = new RedisExplorerReadService(config);
-    const trajectoryAutoPreviewClaimStore = new TrajectoryAutoPreviewClaimStore(redisConnectionService);
-    const queueService = new QueueService(redisConnectionService);
+    const redisConnection = new RedisConnection(config);
+    const analysisDataStore = new AnalysisDataStore(config);
+    const redisExplorer = new RedisExplorer(config);
+    const trajectoryAutoPreviewClaimStore = new TrajectoryAutoPreviewClaimStore(redisConnection);
+    const queueService = new QueueService(redisConnection);
 
     container.register({
-        commandBus: asValue(commandBus),
-        eventBus: asValue(eventBus),
+        commandRegistry: asValue(commandRegistry),
+        eventDispatcher: asValue(eventDispatcher),
         eventBroker: asValue(eventBroker),
-        dockerRuntimeService: asValue(dockerRuntimeService),
+        dockerRuntime: asValue(dockerRuntime),
         minioService: asValue(minioService),
-        redisConnectionService: asValue(redisConnectionService),
-        analysisExecutionDataStore: asValue(analysisExecutionDataStore),
-        redisExplorerReadService: asValue(redisExplorerReadService),
+        redisConnection: asValue(redisConnection),
+        analysisDataStore: asValue(analysisDataStore),
+        redisExplorer: asValue(redisExplorer),
         trajectoryAutoPreviewClaimStore: asValue(trajectoryAutoPreviewClaimStore),
         queueService: asValue(queueService)
     });
@@ -44,29 +44,29 @@ export const registerInfrastructure = (
 
 export const connectDaemonInfrastructure = async (
     config: import('@/core/config').DaemonConfig,
-    analysisExecutionDataStore: AnalysisExecutionDataStore,
-    redisConnectionService: RedisConnectionService,
-    redisExplorerReadService: RedisExplorerReadService,
+    analysisDataStore: AnalysisDataStore,
+    redisConnection: RedisConnection,
+    redisExplorer: RedisExplorer,
     minioService: MinioService
 ): Promise<void> => {
     await Promise.all([
-        analysisExecutionDataStore.connect(),
-        redisConnectionService.connect(),
-        redisExplorerReadService.connect(),
+        analysisDataStore.connect(),
+        redisConnection.connect(),
+        redisExplorer.connect(),
         connectMongo(config.mongodbUri),
         minioService.ensureBuckets()
     ]);
 };
 
 export const disconnectDaemonInfrastructure = async (
-    analysisExecutionDataStore: AnalysisExecutionDataStore,
-    redisConnectionService: RedisConnectionService,
-    redisExplorerReadService: RedisExplorerReadService
+    analysisDataStore: AnalysisDataStore,
+    redisConnection: RedisConnection,
+    redisExplorer: RedisExplorer
 ): Promise<void> => {
     await Promise.all([
-        analysisExecutionDataStore.disconnect(),
+        analysisDataStore.disconnect(),
         disconnectMongo(),
-        redisConnectionService.disconnect(),
-        redisExplorerReadService.disconnect()
+        redisConnection.disconnect(),
+        redisExplorer.disconnect()
     ]);
 };

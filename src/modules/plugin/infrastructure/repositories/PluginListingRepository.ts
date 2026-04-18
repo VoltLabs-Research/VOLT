@@ -1,13 +1,13 @@
-import { PluginListingRowModel } from '@/modules/plugin/domain/models/PluginListingRowModel';
-import { PluginSubListingRowModel } from '@/modules/plugin/domain/models/PluginSubListingRowModel';
+import { PluginListingRowModel } from '@/modules/plugin/domain/models/plugin-listing-row-model';
+import { PluginSubListingRowModel } from '@/modules/plugin/domain/models/plugin-sub-listing-row-model';
 import { calculatePaginationOffset, calculateTotalPages, normalizePagination } from '@/support/contracts/pagination';
-import { ObjectBucketName } from '@/core/storage/contracts/http.objectStore';
+import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
 import { decodeMultiStream } from '@/support/serialization/selective-msgpack';
 import mergeChunkedValue from '@/core/reverse-channel/application/merge-chunked-value';
 import { createZstdDecompressionStream } from '@/support/serialization/storage-codec';
-import { isRecord } from '@/support/type-guards/isRecord';
-import type { PluginListingRowDocument } from '@/modules/plugin/domain/models/PluginListingRowModel';
-import type { PluginSubListingRowDocument } from '@/modules/plugin/domain/models/PluginSubListingRowModel';
+import { isRecord } from '@/support/type-guards/is-record';
+import type { PluginListingRowDocument } from '@/modules/plugin/domain/models/plugin-listing-row-model';
+import type { PluginSubListingRowDocument } from '@/modules/plugin/domain/models/plugin-sub-listing-row-model';
 import type { PaginatedResult } from '@/support/contracts/pagination';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
 import type {
@@ -21,7 +21,7 @@ import type {
     PluginMongoRowsImportInput,
     PluginMongoRowsPurgeInput,
     PluginSubListingFilter
-} from '@/modules/plugin/infrastructure/repositories/PluginListingRepository.contract';
+} from '@/modules/plugin/infrastructure/repositories/plugin-listing-repository-contract';
 
 type MongoRow = PluginMongoRow;
 
@@ -107,7 +107,6 @@ const SYSTEM_KEYS = new Set([
     'analysis',
     'exposureId',
     'exposureName',
-    'trajectoryName',
     'timestep',
     'payloadObjectKey',
     'subListingNames',

@@ -48,6 +48,6 @@ const bootstrap = async () => {
 };
 
 bootstrap().catch((error) => {
-    logger.error({ err: error }, 'Failed to start cluster daemon');
+    logger.error(`Failed to start cluster daemon: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
 });

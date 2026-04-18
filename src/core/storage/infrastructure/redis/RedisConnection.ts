@@ -1,8 +1,14 @@
-import { z } from 'zod';
 import type { DaemonConfig } from '@/core/config';
 import Redis from 'ioredis';
 
-type TeamJobRecord = z.infer<typeof teamJobRecordSchema>;
+interface TeamJobRecord {
+    jobId: string;
+    teamId: string;
+    queueType: string;
+    status: string;
+    timestamp?: string;
+    updatedAt?: string;
+}
 
 interface RedisConnectionOptions {
     host: string;
@@ -10,15 +16,6 @@ interface RedisConnectionOptions {
     username?: string;
     password?: string;
 };
-
-const teamJobRecordSchema = z.object({
-    jobId: z.string(),
-    teamId: z.string(),
-    queueType: z.string(),
-    status: z.string(),
-    timestamp: z.string().optional(),
-    updatedAt: z.string().optional()
-});
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const STATUS_TTL_SECONDS = 86_400;
@@ -212,8 +209,7 @@ export class RedisConnection {
             }
 
             try {
-                const parsedRecord = teamJobRecordSchema.safeParse(JSON.parse(record));
-                if (parsedRecord.success) jobs.push(parsedRecord.data);
+                jobs.push(JSON.parse(record) as TeamJobRecord);
             } catch {
                 continue;
             }

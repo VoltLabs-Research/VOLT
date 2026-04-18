@@ -1,8 +1,8 @@
 import crypto from 'node:crypto';
 
 import { logger } from '@/core/logger';
-import type { RedisConnectionService } from '@/core/storage/infrastructure/redis/RedisConnectionService';
-import { DelayedError, type Job } from 'bullmq';
+import type { RedisConnection } from '@/core/storage/infrastructure/redis/RedisConnection';
+import { DelayedError } from 'bullmq';
 
 type QueueScopeKind = 'trajectory' | 'team';
 
@@ -33,6 +33,11 @@ interface DelayJobOnQueueScopeContentionOptions {
     delayMs?: number;
 }
 
+interface DelayableQueueJob {
+    token?: string;
+    moveToDelayed(timestamp: number, token?: string): Promise<void>;
+}
+
 const DEFAULT_LEASE_TTL_MS = 5 * 60 * 1000;
 const DEFAULT_HEARTBEAT_MS = 60 * 1000;
 const DEFAULT_CONTENTION_DELAY_MS = 5 * 1000;
@@ -42,7 +47,7 @@ const createScopeLabel = (constraint: QueueScopeConstraint): string => {
 };
 
 export const tryAcquireQueueScopeLease = async (
-    redisConnectionService: RedisConnectionService,
+    redisConnection: RedisConnection,
     queueName: string,
     constraints: QueueScopeConstraint[],
     options: AcquireQueueScopeLeaseOptions = {}
@@ -68,19 +73,12 @@ export const tryAcquireQueueScopeLease = async (
 
     for (const constraint of applicableConstraints) {
         const scopeKey = `queue-scope:${queueName}:${constraint.scope}:${constraint.scopeId}`;
-        const acquired = await redisConnectionService.tryAcquireExpiringSlot(scopeKey, token, constraint.limit, ttlMs);
+        const acquired = await redisConnection.tryAcquireExpiringSlot(scopeKey, token, constraint.limit, ttlMs);
 
         if (!acquired) {
             for (const acquiredKey of acquiredKeys) {
-                await redisConnectionService.releaseExpiringSlot(acquiredKey, token, ttlMs).catch((error) => {
-                    logger.warn(
-                        {
-                            err: error,
-                            acquiredKey,
-                            queueName
-                        },
-                        'Failed to rollback partially acquired queue scope slot'
-                    );
+                await redisConnection.releaseExpiringSlot(acquiredKey, token, ttlMs).catch((error) => {
+                    logger.warn('Failed to rollback partially acquired queue scope slot');
                 });
             }
 
@@ -99,30 +97,14 @@ export const tryAcquireQueueScopeLease = async (
         }
 
         for (const [index, scopeKey] of acquiredKeys.entries()) {
-            const constraint = applicableConstraints[index]!;
-            redisConnectionService.renewExpiringSlot(scopeKey, token, ttlMs)
+            redisConnection.renewExpiringSlot(scopeKey, token, ttlMs)
                 .then((renewed) => {
                     if (!renewed) {
-                        logger.warn(
-                            {
-                                queueName,
-                                scopeKey,
-                                scopeLabel: createScopeLabel(constraint)
-                            },
-                            'Failed to renew queue scope slot'
-                        );
+                        logger.warn('Failed to renew queue scope slot');
                     }
                 })
                 .catch((error) => {
-                    logger.warn(
-                        {
-                            err: error,
-                            queueName,
-                            scopeKey,
-                            scopeLabel: createScopeLabel(constraint)
-                        },
-                        'Queue scope slot heartbeat failed'
-                    );
+                    logger.warn('Queue scope slot heartbeat failed');
                 });
         }
     }, heartbeatMs);
@@ -140,15 +122,8 @@ export const tryAcquireQueueScopeLease = async (
                 clearInterval(heartbeat);
 
                 for (const scopeKey of acquiredKeys) {
-                    await redisConnectionService.releaseExpiringSlot(scopeKey, token, ttlMs).catch((error) => {
-                        logger.warn(
-                            {
-                                err: error,
-                                queueName,
-                                scopeKey
-                            },
-                            'Failed to release queue scope slot'
-                        );
+                    await redisConnection.releaseExpiringSlot(scopeKey, token, ttlMs).catch((error) => {
+                        logger.warn('Failed to release queue scope slot');
                     });
                 }
             }
@@ -157,23 +132,11 @@ export const tryAcquireQueueScopeLease = async (
     };
 };
 
-export const delayJobOnQueueScopeContention = async <T extends object>(
-    bullJob: Job<T>,
+export const delayJobOnQueueScopeContention = async (
+    bullJob: DelayableQueueJob,
     options: DelayJobOnQueueScopeContentionOptions
 ): Promise<void> => {
     const delayMs = options.delayMs ?? DEFAULT_CONTENTION_DELAY_MS;
-
-    logger.info(
-        {
-            delayMs,
-            jobId: options.jobId,
-            queueName: options.queueName,
-            scope: options.scope.scope,
-            scopeId: options.scope.scopeId,
-            limit: options.scope.limit
-        },
-        'Delaying queue job because the configured scope limit is currently saturated'
-    );
 
     await bullJob.moveToDelayed(Date.now() + delayMs, bullJob.token);
     throw new DelayedError();

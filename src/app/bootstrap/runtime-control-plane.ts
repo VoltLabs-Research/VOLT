@@ -8,24 +8,24 @@ export const registerRuntimeControlPlaneBootstrap = (
     container: BootstrapContainer
 ): void => {
     container.register({
-        queueConcurrencyCoordinator: asFunction((analysisWorker, trajectoryRasterWorkerService, trajectoryGlbWorkerService, sshImportWorkerService) => {
+        queueConcurrencyCoordinator: asFunction((analysisWorker, trajectoryRasterWorker, trajectoryGlbWorker, sshImportWorker) => {
             return new QueueConcurrencyCoordinator({
                 analysisWorker,
-                trajectoryRasterWorkerService,
-                trajectoryGlbWorkerService,
-                sshImportWorkerService
+                trajectoryRasterWorker,
+                trajectoryGlbWorker,
+                sshImportWorker
             });
         }).singleton(),
-        runtimeRoleCoordinator: asFunction((queueConcurrencyCoordinator, queueScopeLimitsRegistry, analysisWorker, artifactUploadWorkerService, trajectoryRasterWorkerService, trajectoryGlbWorkerService, sshImportWorkerService) => {
+        runtimeRoleCoordinator: asFunction((queueConcurrencyCoordinator, queueScopeLimitsRegistry, analysisWorker, artifactUploadWorker, trajectoryRasterWorker, trajectoryGlbWorker, sshImportWorker) => {
             return new RuntimeRoleCoordinator(
                 queueConcurrencyCoordinator,
                 queueScopeLimitsRegistry,
                 {
                     analysisWorker,
-                    artifactUploadWorkerService,
-                    trajectoryRasterWorkerService,
-                    trajectoryGlbWorkerService,
-                    sshImportWorkerService
+                    artifactUploadWorker,
+                    trajectoryRasterWorker,
+                    trajectoryGlbWorker,
+                    sshImportWorker
                 }
             );
         }).singleton()

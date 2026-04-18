@@ -17,7 +17,7 @@ import type { DaemonConfig } from '@/core/config';
 import type { GlbExporter } from '@/modules/trajectory/application/glb/GlbExporter';
 import { FileExtractor } from '@/modules/trajectory/infrastructure/extraction/FileExtractor';
 import { SSHConnection, type SSHConnectionConfig } from '@/modules/trajectory/infrastructure/ssh/SSHConnection';
-import { TrajectoryParserFactory } from '@/modules/trajectory/application/parsing/TrajectoryParserFactory';
+import { parseTrajectoryMetadata } from '@/modules/trajectory/application/parsing/TrajectoryParserFactory';
 import type {
     CompletedTrajectoryImportPayload,
     SSHImportJobPayload,
@@ -51,7 +51,6 @@ export class SSHImportWorker extends BaseWorker<SSHImportJobPayload> {
             teamClusterId: this.config.teamClusterId,
             daemonPassword: this.config.daemonPassword,
             trajectoryId: payload.trajectoryId,
-            trajectoryName: payload.trajectoryName,
             teamId: payload.teamId,
             userId: payload.userId
         };
@@ -100,7 +99,7 @@ export class SSHImportWorker extends BaseWorker<SSHImportJobPayload> {
 
             const frames: CompletedTrajectoryImportPayload['frames'] = [];
             for (const file of extractedFiles) {
-                const metadata = await TrajectoryParserFactory.parseMetadata(file.path);
+                const metadata = await parseTrajectoryMetadata(file.path);
                 const objectKey = toCompressedDumpObjectKey(payload.trajectoryId, metadata.timestep);
                 const compressedPath = `${file.path}.zst`;
 
@@ -124,7 +123,6 @@ export class SSHImportWorker extends BaseWorker<SSHImportJobPayload> {
                 await this.glbExporter.preprocessTrajectory({
                     teamId: payload.teamId,
                     trajectoryId: payload.trajectoryId,
-                    trajectoryName: payload.trajectoryName,
                     timestep: metadata.timestep,
                     objectKey
                 });
@@ -181,7 +179,6 @@ export class SSHImportWorker extends BaseWorker<SSHImportJobPayload> {
             jobId: payload.jobId,
             teamId: payload.teamId,
             trajectoryId: payload.trajectoryId,
-            trajectoryName: payload.trajectoryName,
             error
         };
         const promise = status === 'started'

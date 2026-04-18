@@ -1,9 +1,7 @@
 import { BaseDomainEvent } from '@/core/events/BaseDomainEvent';
-import type { BaseArtifactUploadEventData } from '@/modules/plugin/domain/events/shared/BaseArtifactUploadEventData';
+import type { BaseArtifactUploadEventData } from '@/modules/plugin/domain/events/shared/base-artifact-upload-event-data';
 
-export interface ArtifactUploadFailedEventData extends BaseArtifactUploadEventData {
-    error: string;
-}
+export type ArtifactUploadFailedEventData = BaseArtifactUploadEventData & { error: string };
 
 export class ArtifactUploadFailedEvent extends BaseDomainEvent<ArtifactUploadFailedEventData> {
     static readonly eventName = 'plugin.artifact-upload.failed';

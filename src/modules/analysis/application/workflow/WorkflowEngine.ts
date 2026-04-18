@@ -1,8 +1,8 @@
 import { logger } from '@/core/logger';
-import { runOrderedWorkflowNodes } from '@/modules/analysis/application/workflow/OrderedNodeRunner';
-import { createWorkflowExecutionContext, snapshotWorkflowOutputs } from '@/modules/analysis/application/workflow/WorkflowExecutionContextFactory';
+import { WorkflowNodeExecutor } from '@/modules/analysis/application/workflow/WorkflowNodeExecutor';
 import { WorkflowNodeRegistry } from '@/modules/analysis/application/workflow/NodeRegistry';
-import { WorkflowGraph, WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
+import { WorkflowSession } from '@/modules/analysis/application/workflow/WorkflowSession';
+import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
 import type { DaemonAnalysisDocument, NestedPluginDefinition, TrajectoryDumpDescriptor, TrajectoryFrame, WorkflowDefinition } from '@/contracts';
 import type { WorkflowNodeOutput } from '@/modules/analysis/contracts/workflow.types';
 
@@ -39,7 +39,7 @@ interface WorkflowContextPlanOutput extends WorkflowNodeOutput {
 
 interface WorkflowPlanResult {
     items: Array<WorkflowNodeOutput | TrajectoryDumpDescriptor>;
-    forEachNodeId: string;
+    forEachNodeId?: string;
     nodeOutputSnapshots: Record<string, WorkflowNodeOutput>;
     batchMode?: boolean;
     batchTrajectoryDumps?: TrajectoryDumpDescriptor[];
@@ -58,37 +58,30 @@ const createRuntimeArguments = (request: WorkflowExecutionRequest): WorkflowNode
     };
 };
 
-const createPlanningContext = (request: WorkflowExecutionRequest) => {
-    return createWorkflowExecutionContext({
-        userConfig: request.userConfig,
+const createPlanningSession = (request: WorkflowExecutionRequest): WorkflowSession => {
+    const { options, ...sessionParams } = request;
+
+    return WorkflowSession.createFromDefinition({
+        ...sessionParams,
         runtimeArguments: createRuntimeArguments(request),
-        trajectoryId: request.trajectoryId,
-        trajectoryFrames: request.trajectoryFrames,
-        analysis: request.analysis,
-        analysisId: request.analysisId,
-        pluginId: request.pluginId,
-        teamId: request.teamId,
-        selectedFrameOnly: request.options?.selectedFrameOnly,
-        selectedTimesteps: request.options?.selectedTimesteps,
-        selectedTimestep: request.options?.timestep,
-        workflow: new WorkflowGraph(request.workflow),
-        nestedPlugins: request.nestedPlugins
+        selectedFrameOnly: options?.selectedFrameOnly,
+        selectedTimesteps: options?.selectedTimesteps,
+        selectedTimestep: options?.timestep
     });
 };
 
 const createBatchPlan = (
-    context: ReturnType<typeof createWorkflowExecutionContext>,
+    session: WorkflowSession,
     contextNodeId: string
 ): WorkflowPlanResult | null => {
-    const dumps = (context.outputs.get(contextNodeId) as WorkflowContextPlanOutput | undefined)?.trajectory_dumps;
+    const dumps = (session.getOutput(contextNodeId) as WorkflowContextPlanOutput | undefined)?.trajectory_dumps;
     if (!dumps?.length) {
         return null;
     }
 
     return {
         items: dumps,
-        forEachNodeId: '',
-        nodeOutputSnapshots: snapshotWorkflowOutputs(context.outputs),
+        nodeOutputSnapshots: session.snapshotOutputs(),
         batchMode: true,
         batchTrajectoryDumps: dumps,
         contextNodeId
@@ -96,22 +89,35 @@ const createBatchPlan = (
 };
 
 export class WorkflowEngine {
+    private readonly nodeExecutor: WorkflowNodeExecutor;
+
     constructor(
         private readonly registry: WorkflowNodeRegistry
-    ) {}
+    ) {
+        this.nodeExecutor = new WorkflowNodeExecutor(registry);
+    }
 
     async planExecutionStrategy(request: WorkflowExecutionRequest): Promise<WorkflowPlanResult | null> {
-        const context = createPlanningContext(request);
-        const executionOrder = context.workflow.topologicalSort();
+        const session = createPlanningSession(request);
+        const executionOrder = session.context.workflow.topologicalSort();
         const hasForEachNode = executionOrder.some((node) => node.type === WorkflowNodeType.ForEach);
 
         logger.info(`@daemon-workflow-engine: planning execution for plugin "${request.pluginId}" (batchMode=${!hasForEachNode})`);
         let contextNodeId: string | undefined;
 
-        const results = await runOrderedWorkflowNodes({
+        const results = await this.nodeExecutor.executeOrdered({
             nodes: executionOrder,
-            context,
-            registry: this.registry,
+            context: session.context,
+            shouldSkipNode: (node) => {
+                return [
+                    WorkflowNodeType.Plugin,
+                    WorkflowNodeType.Entrypoint,
+                    WorkflowNodeType.Exposure,
+                    WorkflowNodeType.Export
+                ].includes(node.type)
+                    ? `Node type "${node.type}" is skipped during planning`
+                    : undefined;
+            },
             stopAfterNode: (result) => result.status === 'executed' && result.node.type === WorkflowNodeType.ForEach
         });
 
@@ -130,13 +136,13 @@ export class WorkflowEngine {
                 return {
                     items,
                     forEachNodeId: result.node.id,
-                    nodeOutputSnapshots: snapshotWorkflowOutputs(context.outputs)
+                    nodeOutputSnapshots: session.snapshotOutputs()
                 };
             }
         }
 
         if (!hasForEachNode && contextNodeId) {
-            return createBatchPlan(context, contextNodeId);
+            return createBatchPlan(session, contextNodeId);
         }
 
         return null;

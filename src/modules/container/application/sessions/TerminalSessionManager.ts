@@ -1,8 +1,8 @@
-import { DockerRuntimeService } from '@/core/runtime/infrastructure/DockerRuntimeService';
-import { withTimeout } from '@/core/observability/infrastructure/daemonInstrumentation';
+import { DockerRuntime } from '@/core/runtime/infrastructure/DockerRuntime';
+import { withTimeout } from '@/core/observability/infrastructure/daemon-instrumentation';
 import { REVERSE_CHANNEL } from '@/contracts';
-import { BASE64_SESSION_CHUNK_PATTERN, SESSION_ATTACH_TIMEOUT_MS } from '@/core/reverse-channel/contracts/reverseChannelSessionConstants';
-import type { RuntimeTerminalAttachment } from '@/core/runtime/infrastructure/DockerRuntimeService';
+import { BASE64_SESSION_CHUNK_PATTERN, SESSION_ATTACH_TIMEOUT_MS } from '@/core/reverse-channel/contracts/reverse-channel-session-constants';
+import type { RuntimeTerminalAttachment } from '@/core/runtime/infrastructure/DockerRuntime';
 import type { TeamClusterDaemonSessionAttachPayload, TeamClusterDaemonSessionDataPayload, TeamClusterDaemonSessionEndPayload, TeamClusterDaemonSessionInputPayload, TeamClusterDaemonSessionResizePayload } from '@/contracts';
 import type { CommandResult } from '@voltstack/daemon-cluster-client';
 
@@ -20,7 +20,7 @@ interface SessionTransition {
 };
 
 interface TerminalSessionManagerOptions {
-    dockerRuntimeService?: DockerRuntimeService;
+    dockerRuntime?: DockerRuntime;
     coordinator: TerminalSessionManagerCoordinator;
 };
 
@@ -41,7 +41,7 @@ export class TerminalSessionManager {
     constructor(private readonly options: TerminalSessionManagerOptions) {}
 
     async attachSession(payload: TeamClusterDaemonSessionAttachPayload): Promise<CommandResult> {
-        if (!this.options.dockerRuntimeService) {
+        if (!this.options.dockerRuntime) {
             const message = 'Terminal services are not available';
             this.options.coordinator.emitSessionEnd({
                 type: 'session-end',
@@ -77,13 +77,13 @@ export class TerminalSessionManager {
                 return this.createSessionAttachFailureResult(400, message);
             }
 
-            const dockerRuntimeService = this.options.dockerRuntimeService;
-            if (!dockerRuntimeService) {
+            const dockerRuntime = this.options.dockerRuntime;
+            if (!dockerRuntime) {
                 return this.createSessionAttachFailureResult(503, 'Terminal services are not available');
             }
 
             attachment = await withTimeout(
-                () => dockerRuntimeService.attachTerminal(containerId),
+                () => dockerRuntime.attachTerminal(containerId),
                 {
                     operation: 'reverse-channel.container-terminal.attach',
                     timeoutMs: SESSION_ATTACH_TIMEOUT_MS,

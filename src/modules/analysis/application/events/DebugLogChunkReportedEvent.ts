@@ -1,11 +1,7 @@
 import { BaseDomainEvent } from '@/core/events/BaseDomainEvent';
-import type { ExecutionLogSegment } from '@/modules/analysis/application/events/ExecutionLogSegment';
+import type { DebugLogChunkPayload } from '@/modules/analysis/contracts/reverse-channel-analysis';
 
-export interface DebugLogChunkReportedEventData {
-    nodeId: string;
-    segments: ExecutionLogSegment[];
-    sessionId: string;
-}
+export type DebugLogChunkReportedEventData = DebugLogChunkPayload;
 
 export class DebugLogChunkReportedEvent extends BaseDomainEvent<DebugLogChunkReportedEventData> {
     static readonly eventName = 'analysis.debug-log-chunk-reported';

@@ -9,7 +9,6 @@ import type { DaemonConfig } from '@/core/config';
 import { Readable } from 'node:stream';
 import type { Readable as NodeReadable } from 'node:stream';
 import type { ReadableStream as WebReadableStream } from 'node:stream/web';
-import { z } from 'zod';
 
 interface DirectObjectStoreHeadResponse {
     contentLength?: number;
@@ -77,18 +76,20 @@ interface DirectObjectStoreFetchInit extends RequestInit {
     duplex?: 'half';
 }
 
-const directObjectStoreListEntrySchema = z.object({
-    key: z.string().min(1),
-    contentLength: z.number().finite().optional(),
-    etag: z.string().optional(),
-    lastModified: z.coerce.date().optional()
-});
+interface RawDirectObjectStoreListResponse {
+    keys?: string[];
+    objects?: DirectObjectStoreListEntry[];
+    nextCursor?: string;
+}
 
-const directObjectStoreListResponseSchema = z.object({
-    keys: z.array(z.string().min(1)).default([]),
-    objects: z.array(directObjectStoreListEntrySchema).default([]),
-    nextCursor: z.string().optional()
-}).transform(({ objects, keys, nextCursor }) => {
+interface ObjectStoreErrorPayload {
+    code?: string;
+    message?: string;
+}
+
+const normalizeListResponse = (payload: RawDirectObjectStoreListResponse): DirectObjectStoreListResponse => {
+    const objects = payload.objects ?? [];
+    const keys = payload.keys ?? [];
     const resolvedKeys = keys.length > 0 ? keys : objects.map((object) => object.key);
 
     return {
@@ -96,14 +97,9 @@ const directObjectStoreListResponseSchema = z.object({
         objects: objects.length > 0
             ? objects
             : resolvedKeys.map((key) => ({ key })),
-        nextCursor
+        nextCursor: payload.nextCursor
     };
-});
-
-const objectStoreErrorPayloadSchema = z.object({
-    code: z.string(),
-    message: z.string()
-});
+};
 
 const parseHeadResponse = (headers: Headers): DirectObjectStoreHeadResponse => {
     const contentLengthHeader = headers.get('content-length');
@@ -170,10 +166,11 @@ export class DirectObjectStoreClient {
             query.set('limit', request.limit.toString());
         }
 
-        return directObjectStoreListResponseSchema.parse(await (await this.fetch(
+        const response = await this.fetch(
             this.buildCollectionPath(ownerClusterId, request.bucket, query),
             { method: 'GET' }
-        )).json());
+        );
+        return normalizeListResponse(await response.json() as RawDirectObjectStoreListResponse);
     }
 
     readonly head = async (ownerClusterId: string, bucket: string, objectKey: string): Promise<DirectObjectStoreHeadResponse> => {
@@ -255,13 +252,18 @@ export class DirectObjectStoreClient {
         }
 
         const payloadText = await response.text();
-        const parsedPayload = objectStoreErrorPayloadSchema.safeParse(JSON.parse(payloadText));
+        let parsedPayload: ObjectStoreErrorPayload | null = null;
+        try {
+            parsedPayload = JSON.parse(payloadText) as ObjectStoreErrorPayload;
+        } catch {
+            parsedPayload = null;
+        }
 
-        if (parsedPayload.success) {
-            throw Object.assign(new Error(parsedPayload.data.message), {
+        if (parsedPayload && typeof parsedPayload.message === 'string') {
+            throw Object.assign(new Error(parsedPayload.message), {
                 name: 'ObjectStoreProxyError',
                 statusCode: response.status,
-                code: parsedPayload.data.code
+                code: parsedPayload.code
             });
         }
 

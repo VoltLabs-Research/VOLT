@@ -19,7 +19,7 @@ const queueAutoPreviewRasterization = async (
     modelObjectKey: string,
     input: any
 ): Promise<void> => {
-    const { ownerClusterId, teamId, trajectoryName } = input;
+    const { ownerClusterId, teamId } = input;
 
     const queueInput: RasterizeTrajectoryRequest = {
         trajectoryId: input.trajectoryId,
@@ -30,10 +30,6 @@ const queueAutoPreviewRasterization = async (
             timestep: input.timestep
         }
     };
-
-    if (trajectoryName) {
-        queueInput.trajectoryName = trajectoryName;
-    }
 
     await trajectoryRasterQueue.queueRasterizationJobs(queueInput);
     logger.info('Handled auto-preview rasterization enqueue for generated GLB');

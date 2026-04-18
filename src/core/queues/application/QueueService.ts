@@ -1,6 +1,6 @@
 import { logger } from '@/core/logger';
 import { ANALYSIS_QUEUE_NAME, ARTIFACT_UPLOAD_QUEUE_NAME, SSH_IMPORT_QUEUE_NAME, TRAJECTORY_GLB_QUEUE_NAME, TRAJECTORY_RASTER_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
-import { RedisConnectionService } from '@/core/storage/infrastructure/redis/RedisConnectionService';
+import { RedisConnection } from '@/core/storage/infrastructure/redis/RedisConnection';
 import { Queue, Worker, type Job, type JobState } from 'bullmq';
 
 export interface QueuePayload {
@@ -48,7 +48,7 @@ export class QueueService {
     private readonly queues = new Map<string, Queue<QueuePayload>>();
 
     constructor(
-        private readonly redisConnectionService: RedisConnectionService
+        private readonly redisConnection: RedisConnection
     ) {
     }
 
@@ -74,17 +74,6 @@ export class QueueService {
                 const existingState = await existingJob.getState();
 
                 if (existingState !== 'unknown' && PRESERVED_JOB_STATES.has(existingState)) {
-                    logger.info(
-                        {
-                            durationMs: Date.now() - startedAt,
-                            jobId,
-                            payloadBytes,
-                            preserveExistingJob: true,
-                            queueName,
-                            skippedReason: 'existing-job-active'
-                        },
-                        'Skipped queue enqueue'
-                    );
                     return false;
                 }
 
@@ -101,18 +90,6 @@ export class QueueService {
             removeOnComplete: options.removeOnComplete ?? 1000,
             removeOnFail: options.removeOnFail ?? 1000
         });
-
-        logger.info(
-            {
-                durationMs: Date.now() - startedAt,
-                jobId,
-                payloadBytes,
-                preserveExistingJob: options.preserveExistingJob === true,
-                queueName,
-                replacedExistingJob: preservedExistingJob
-            },
-            'Enqueued queue job'
-        );
 
         return true;
     }
@@ -135,16 +112,6 @@ export class QueueService {
                 removeOnFail: 1000
             }
         })));
-
-        logger.info(
-            {
-                durationMs: Date.now() - startedAt,
-                payloadCount: payloads.length,
-                payloadBytes: payloads.reduce((total, payload) => total + this.measurePayloadBytes(payload), 0),
-                queueName
-            },
-            'Enqueued queue jobs in bulk'
-        );
     }
 
     createWorker = <T extends QueuePayload>(
@@ -160,7 +127,7 @@ export class QueueService {
             queueName,
             (job) => processor(job.data, job),
             {
-                connection: this.redisConnectionService.getConnectionOptions(),
+                connection: this.redisConnection.getConnectionOptions(),
                 concurrency: options.concurrency ?? 1,
                 // Generous lock settings to survive GC pauses and heavy processing.
                 // Default 30s is far too short — long GC mark-compact cycles (1s+)
@@ -218,7 +185,7 @@ export class QueueService {
         }
 
         const queue = new Queue<QueuePayload>(queueName, {
-            connection: this.redisConnectionService.getConnectionOptions()
+            connection: this.redisConnection.getConnectionOptions()
         });
         this.queues.set(queueName, queue);
         return queue;

@@ -1,8 +1,5 @@
 import type { AwilixContainer } from 'awilix';
-import { registerDaemonCommands } from '@/app/bootstrap/commands';
-import { registerDaemonEventSubscribers } from '@/app/bootstrap/events';
 import { logger } from '@/core/logger';
-import { startMemoryMonitor, stopMemoryMonitor } from '@/core/memory';
 import { connectDaemonInfrastructure, disconnectDaemonInfrastructure } from '@/app/infrastructure';
 
 export class DaemonLifecycle {
@@ -10,69 +7,58 @@ export class DaemonLifecycle {
         private readonly container: AwilixContainer,
         private readonly config: import('@/core/config').DaemonConfig,
         private readonly bootStartedAt: number,
-        private readonly eventBus: import('@/core/events/InMemoryEventBus').InMemoryEventBus,
-        private readonly commandBus: import('@/core/commands/InMemoryCommandBus').InMemoryCommandBus,
-        private readonly analysisExecutionDataStore: import('@/modules/analysis/infrastructure/storage/AnalysisExecutionDataStore').AnalysisExecutionDataStore,
-        private readonly redisConnectionService: import('@/core/storage/infrastructure/redis/RedisConnectionService').RedisConnectionService,
-        private readonly redisExplorerReadService: import('@/modules/container/infrastructure/remote-access/RedisExplorerReadService').RedisExplorerReadService,
+        private readonly eventDispatcher: import('@/core/events/EventDispatcher').EventDispatcher,
+        private readonly commandRegistry: import('@/core/commands/CommandRegistry').CommandRegistry,
+        private readonly analysisDataStore: import('@/modules/analysis/infrastructure/storage/AnalysisDataStore').AnalysisDataStore,
+        private readonly redisConnection: import('@/core/storage/infrastructure/redis/RedisConnection').RedisConnection,
+        private readonly redisExplorer: import('@/modules/container/infrastructure/remote-access/RedisExplorer').RedisExplorer,
         private readonly minioService: import('@/core/storage/infrastructure/minio/MinioService').MinioService,
         private readonly queueService: import('@/core/queues/application/QueueService').QueueService,
         private readonly debugSessionManager: import('@/modules/analysis/application/workflow/debug/DebugSessionManager').DebugSessionManager,
-        private readonly analysisWorker: import('@/modules/analysis/application/execution/AnalysisWorker').AnalysisWorker,
-        private readonly artifactUploadWorkerService: import('@/modules/plugin/application/artifacts/ArtifactUploadWorkerService').ArtifactUploadWorkerService,
-        private readonly trajectoryRasterWorkerService: import('@/modules/trajectory/application/raster/TrajectoryRasterWorkerService').TrajectoryRasterWorkerService,
-        private readonly trajectoryGlbWorkerService: import('@/modules/trajectory/application/glb/TrajectoryGlbWorkerService').TrajectoryGlbWorkerService,
-        private readonly sshImportWorkerService: import('@/modules/trajectory/application/import/SSHImportWorkerService').SSHImportWorkerService,
-        private readonly daemonExposureRegistryService: import('@/modules/container/application/access/DaemonExposureRegistryService').DaemonExposureRegistryService,
+        private readonly analysisWorker: import('@/modules/analysis/application/workers/AnalysisWorker').AnalysisWorker,
+        private readonly artifactUploadWorker: import('@/modules/plugin/application/artifacts/ArtifactUploadWorker').ArtifactUploadWorker,
+        private readonly trajectoryRasterWorker: import('@/modules/trajectory/application/raster/TrajectoryRasterWorker').TrajectoryRasterWorker,
+        private readonly trajectoryGlbWorker: import('@/modules/trajectory/application/glb/TrajectoryGlbWorker').TrajectoryGlbWorker,
+        private readonly sshImportWorker: import('@/modules/trajectory/application/import/SSHImportWorker').SSHImportWorker,
+        private readonly daemonExposureRegistry: import('@/modules/container/application/access/DaemonExposureRegistry').DaemonExposureRegistry,
         private readonly objectGatewayServer: import('@/core/storage/infrastructure/gateway/ObjectGatewayServer').ObjectGatewayServer,
         private readonly voltCloudConnection: import('@/modules/container/infrastructure/connection/VoltCloudConnection').VoltCloudConnection,
-        private readonly reverseChannelSocketBridge: import('@/modules/container/infrastructure/reverse-channel/ReverseChannelSocketBridge').ReverseChannelSocketBridge,
+        private readonly reverseChannelBridge: import('@/modules/container/infrastructure/reverse-channel/ReverseChannelBridge').ReverseChannelBridge,
         private readonly runtimeRoleCoordinator: import('@/app/coordination/RuntimeRoleCoordinator').RuntimeRoleCoordinator
     ) {}
 
     async start(): Promise<void> {
-        logger.info({ teamClusterId: this.config.teamClusterId }, 'Bootstrapping cluster daemon services');
+        logger.info(`Bootstrapping cluster daemon services for teamClusterId=${this.config.teamClusterId}`);
 
-        await registerDaemonEventSubscribers(this.container, this.eventBus);
-        await registerDaemonCommands(
-            this.container,
-            this.commandBus,
-            this.reverseChannelSocketBridge
-        );
+        await this.eventDispatcher.registerDecoratedGroups(this.container);
+        await this.commandRegistry.registerDecoratedGroups(this.container, this.reverseChannelBridge);
 
-        this.reverseChannelSocketBridge.bindToClient(this.voltCloudConnection);
+        this.reverseChannelBridge.bindToClient(this.voltCloudConnection);
 
         await connectDaemonInfrastructure(
             this.config,
-            this.analysisExecutionDataStore,
-            this.redisConnectionService,
-            this.redisExplorerReadService,
+            this.analysisDataStore,
+            this.redisConnection,
+            this.redisExplorer,
             this.minioService
         );
 
-        startMemoryMonitor();
         await this.voltCloudConnection.start();
 
         if (this.config.objectGatewayEnabled) {
             await this.objectGatewayServer.start();
-            this.daemonExposureRegistryService.upsertDaemonExposure(
+            this.daemonExposureRegistry.upsertDaemonExposure(
                 this.objectGatewayServer.getExposure()
             );
         } else {
-            logger.warn({ teamClusterId: this.config.teamClusterId }, 'Object gateway is disabled by configuration');
+            logger.warn(`Object gateway is disabled by configuration for teamClusterId=${this.config.teamClusterId}`);
         }
 
         const runtimeConfig = await this.voltCloudConnection.getRuntimeConfig();
 
-        logger.info(
-            {
-                teamClusterId: this.config.teamClusterId,
-                queueConcurrency: runtimeConfig.queueConcurrency
-            },
-            'Loaded daemon runtime config from Volt'
-        );
+        logger.info(`Loaded daemon runtime config from Volt for teamClusterId=${this.config.teamClusterId}: queueConcurrency analysis=${runtimeConfig.queueConcurrency.analysis}, rasterizer=${runtimeConfig.queueConcurrency.rasterizer}, glbPreprocessing=${runtimeConfig.queueConcurrency.glbPreprocessing}, sshImport=${runtimeConfig.queueConcurrency.sshImport}`);
 
-        this.daemonExposureRegistryService.start();
+        this.daemonExposureRegistry.start();
         await this.runtimeRoleCoordinator.initialize(runtimeConfig);
         this.voltCloudConnection.emitLifecycleEvent(
             'services-ready',
@@ -80,31 +66,23 @@ export class DaemonLifecycle {
         );
 
         logger.info(`cluster-daemon started for team cluster ${this.config.teamClusterId}`);
-        logger.info(
-            {
-                durationMs: Date.now() - this.bootStartedAt,
-                teamClusterId: this.config.teamClusterId
-            },
-            'Cluster daemon services ready'
-        );
     }
 
     async stop(): Promise<void> {
-        stopMemoryMonitor();
         this.debugSessionManager.shutdown();
         await this.analysisWorker.stop();
-        await this.artifactUploadWorkerService.stop();
-        await this.trajectoryRasterWorkerService.stop();
-        await this.trajectoryGlbWorkerService.stop();
-        await this.sshImportWorkerService.stop();
+        await this.artifactUploadWorker.stop();
+        await this.trajectoryRasterWorker.stop();
+        await this.trajectoryGlbWorker.stop();
+        await this.sshImportWorker.stop();
 
         if (this.config.objectGatewayEnabled) {
-            this.daemonExposureRegistryService.removeDaemonExposure(
+            this.daemonExposureRegistry.removeDaemonExposure(
                 this.objectGatewayServer.getExposure().id
             );
         }
 
-        this.daemonExposureRegistryService.stop();
+        this.daemonExposureRegistry.stop();
 
         if (this.config.objectGatewayEnabled) {
             await this.objectGatewayServer.stop();
@@ -113,9 +91,9 @@ export class DaemonLifecycle {
         this.voltCloudConnection.stop();
         await this.queueService.close();
         await disconnectDaemonInfrastructure(
-            this.analysisExecutionDataStore,
-            this.redisConnectionService,
-            this.redisExplorerReadService
+            this.analysisDataStore,
+            this.redisConnection,
+            this.redisExplorer
         );
     }
 }

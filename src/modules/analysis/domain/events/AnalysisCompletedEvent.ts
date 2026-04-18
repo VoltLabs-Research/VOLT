@@ -1,7 +1,7 @@
 import { BaseDomainEvent } from '@/core/events/BaseDomainEvent';
-import type { BaseAnalysisEventData } from '@/modules/analysis/domain/events/shared/BaseAnalysisEventData';
+import type { BaseAnalysisEventData } from '@/modules/analysis/domain/events/base-analysis-event-data';
 
-export interface AnalysisCompletedEventData extends BaseAnalysisEventData {}
+export type AnalysisCompletedEventData = BaseAnalysisEventData;
 
 export class AnalysisCompletedEvent extends BaseDomainEvent<AnalysisCompletedEventData> {
     static readonly eventName = 'analysis.completed';

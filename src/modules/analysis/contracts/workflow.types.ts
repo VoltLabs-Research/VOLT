@@ -1,7 +1,18 @@
 import { Graph as GraphlibGraph, alg as graphlibAlgorithms, type Edge as GraphlibEdge } from '@dagrejs/graphlib';
+import type { BinaryExecutorService, ProcessExecutionLogSink } from '@/core/runtime/infrastructure/binary-executor-service';
+import type { PluginBinaryCache } from '@/modules/plugin/application/binaries/PluginBinaryCache';
+import type { ArtifactUploadBatch } from '@/modules/plugin/contracts/artifact-upload';
+import type { ResultProcessorService } from '@/modules/plugin/application/exports/result-processor-service-contract';
+import type { WorkflowExposureInspectionResult } from '@/modules/analysis/application/workflow/exposure-payload-reader';
 
-import type { DaemonAnalysisDocument, TrajectoryDumpDescriptor, TrajectoryFrame } from './http.analysis';
-import type { WorkflowDefinition, WorkflowEdgeDefinition, WorkflowNodeData } from './http.workflow';
+import type { AnalysisJobExecutionData, DaemonAnalysisDocument } from './http-analysis';
+import type {
+    TrajectoryDumpDescriptor,
+    TrajectoryFrame,
+    WorkflowDefinition,
+    WorkflowEdgeDefinition,
+    WorkflowNodeData
+} from './http-workflow';
 
 export interface WorkflowNodePosition {
     x: number;
@@ -31,6 +42,53 @@ export interface WorkflowValueMap {
 
 export type WorkflowNodeOutput = WorkflowValueMap
 
+export interface WorkflowEntrypointConfigDefaults {
+    binaryObjectPath?: string;
+    argumentsTemplate?: string;
+    entrypointType?: import('@/core/runtime/contracts/http-runtime').EntrypointType;
+    requirementsFile?: string;
+    entrypointScript?: string;
+    timeoutMs?: number;
+}
+
+export interface WorkflowPreparedEntrypointArgs {
+    args: string[];
+    release?: () => void;
+}
+
+export interface WorkflowEntrypointExecutionOptions {
+    defaults?: WorkflowEntrypointConfigDefaults;
+    jobId: string;
+    outputDir: string;
+    pluginBinaryCache: PluginBinaryCache;
+    binaryExecutorService: BinaryExecutorService;
+    logSink?: ProcessExecutionLogSink;
+    prepareArgs?: (args: string[]) => WorkflowPreparedEntrypointArgs;
+    restoreOutputOnError?: boolean;
+    includeOutputFiles?: boolean;
+    extraOutput?: WorkflowNodeOutput;
+    nonZeroExitMessage?: string | ((result: Awaited<ReturnType<BinaryExecutorService['executeProcess']>>) => string);
+    requireNonEmptyArguments?: boolean;
+    requireEntrypointType?: boolean;
+    missingTypeMessage?: string;
+    errorMessage?: string;
+}
+
+export interface WorkflowExposureExecutionOptions {
+    mode: 'runtime' | 'debug' | 'inline';
+    outputDir: string;
+    executionData?: AnalysisJobExecutionData;
+    timestep?: number;
+    artifactUploadBatch?: ArtifactUploadBatch;
+    resultProcessor?: ResultProcessorService;
+    onInspection?: (nodeId: string, inspection: WorkflowExposureInspectionResult) => void;
+}
+
+export interface WorkflowExecutionOptions {
+    entrypoint?: WorkflowEntrypointExecutionOptions;
+    exposure?: WorkflowExposureExecutionOptions;
+}
+
 export type WorkflowOutputs = Map<string, WorkflowNodeOutput>
 
 export interface WorkflowExecutionContext {
@@ -50,6 +108,7 @@ export interface WorkflowExecutionContext {
     selectedTimestep?: number;
     workflow: WorkflowGraph;
     nestedWorkflows: Map<string, WorkflowDefinition>;
+    execution?: WorkflowExecutionOptions;
 }
 
 export enum WorkflowNodeType {
@@ -128,6 +187,48 @@ export class WorkflowGraph {
             .filter((node): node is WorkflowNode => node !== null);
     }
 
+    getChildNodeIds(nodeId: string, sourceHandle?: string): string[] {
+        return this.getChildEdges(nodeId, sourceHandle)
+            .map((edge) => edge.target);
+    }
+
+    getRootNodes(): WorkflowNode[] {
+        return this.nodes.filter((node) => this.getParentEdges(node.id).length === 0);
+    }
+
+    getRootNodeIds(): string[] {
+        return this.getRootNodes().map((node) => node.id);
+    }
+
+    getIfBranchChildNodeIds(nodeId: string, branch: 'true' | 'false'): string[] {
+        return this.getChildEdges(nodeId)
+            .filter((edge) => matchesIfBranchHandle(edge.sourceHandle, branch))
+            .map((edge) => edge.target);
+    }
+
+    getIfInactiveBranchChildNodeIds(nodeId: string, branch: 'true' | 'false'): string[] {
+        const activeNodeIds = new Set(this.getIfBranchChildNodeIds(nodeId, branch));
+
+        return this.getChildNodeIds(nodeId)
+            .filter((childNodeId) => !activeNodeIds.has(childNodeId));
+    }
+
+    getSwitchChildNodeIds(nodeId: string, matchedCaseId: string | null): {
+        activeNodeIds: string[];
+        inactiveNodeIds: string[];
+    } {
+        const continueNodeIds = this.getChildNodeIds(nodeId, 'continue');
+        const caseNodeIds = this.getChildNodeIds(nodeId, 'cases');
+        const matchedNodeIds = matchedCaseId
+            ? caseNodeIds.filter((childNodeId) => childNodeId === matchedCaseId)
+            : [];
+
+        return {
+            activeNodeIds: [...matchedNodeIds, ...continueNodeIds],
+            inactiveNodeIds: caseNodeIds.filter((childNodeId) => childNodeId !== matchedCaseId)
+        };
+    }
+
     getRuntimeRootNodes(): WorkflowNode[] {
         for (const type of [WorkflowNodeType.ForEach, WorkflowNodeType.Context, WorkflowNodeType.Arguments, WorkflowNodeType.Modifier]) {
             const runtimeRootNode = this.nodes.find((node) => node.type === type);
@@ -138,6 +239,14 @@ export class WorkflowGraph {
         }
 
         return [];
+    }
+
+    getRuntimeStartNodes(): WorkflowNode[] {
+        const runtimeRootNodes = this.getRuntimeRootNodes();
+
+        return runtimeRootNodes.length > 0
+            ? runtimeRootNodes
+            : this.nodes.filter((node) => node.type === WorkflowNodeType.Entrypoint);
     }
 
     findParentByType(nodeId: string, type: WorkflowNodeType): WorkflowNode | null {
@@ -216,7 +325,7 @@ export class WorkflowGraph {
     findDescendantNodesOnBranch(startNodeId: string, sourceHandle: string): string[] {
         const result: string[] = [];
         const visited = new Set<string>();
-        const initialChildren = this.getChildren(startNodeId, sourceHandle).map((node) => node.id);
+        const initialChildren = this.getChildNodeIds(startNodeId, sourceHandle);
         const queue = [...initialChildren];
 
         while (queue.length > 0) {
@@ -231,7 +340,7 @@ export class WorkflowGraph {
 
             visited.add(nodeId);
             result.push(nodeId);
-            const downstreamChildren = this.getChildren(nodeId).map((node) => node.id);
+            const downstreamChildren = this.getChildNodeIds(nodeId);
             queue.push(...downstreamChildren);
         }
 

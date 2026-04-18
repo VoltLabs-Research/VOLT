@@ -84,7 +84,6 @@ class DefaultArtifactUploadBatch implements ArtifactUploadBatch {
             analysisId: this.context.analysisId,
             teamId: this.context.teamId,
             trajectoryId: this.context.trajectoryId,
-            trajectoryName: this.context.trajectoryName,
             timestep: this.context.timestep,
             batchDirectory: this.batchDirectory as string,
             uploads: this.uploads

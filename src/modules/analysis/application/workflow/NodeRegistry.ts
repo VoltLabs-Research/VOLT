@@ -1,4 +1,12 @@
-import { resolveWorkflowOutputReference, resolveWorkflowTemplate } from '@/modules/analysis/application/workflow/WorkflowOutputResolution';
+import { WorkflowArgumentsHandler } from '@/modules/analysis/application/workflow/nodes/ArgumentsHandler';
+import { WorkflowContextHandler } from '@/modules/analysis/application/workflow/nodes/ContextHandler';
+import { WorkflowEntrypointHandler } from '@/modules/analysis/application/workflow/nodes/WorkflowEntrypointHandler';
+import { WorkflowExposureHandler } from '@/modules/analysis/application/workflow/nodes/ExposureHandler';
+import { WorkflowForEachHandler } from '@/modules/analysis/application/workflow/nodes/ForEachHandler';
+import { WorkflowIfStatementHandler } from '@/modules/analysis/application/workflow/nodes/IfStatementHandler';
+import { WorkflowModifierHandler } from '@/modules/analysis/application/workflow/nodes/ModifierHandler';
+import { WorkflowSwitchCaseHandler, WorkflowSwitchStatementHandler } from '@/modules/analysis/application/workflow/nodes/SwitchStatementHandler';
+import { WorkflowValueResolver } from '@/modules/analysis/application/workflow/WorkflowValueResolver';
 import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput, WorkflowNodeType, WorkflowValue } from '@/modules/analysis/contracts/workflow.types';
 
 export interface WorkflowNodeHandler<TOutput extends object = object> {
@@ -8,6 +16,22 @@ export interface WorkflowNodeHandler<TOutput extends object = object> {
 
 export class WorkflowNodeRegistry {
     private readonly handlers = new Map<WorkflowNodeType, WorkflowNodeHandler<object>>();
+
+    static createDefault(): WorkflowNodeRegistry {
+        const workflowNodeRegistry = new WorkflowNodeRegistry();
+
+        workflowNodeRegistry.register(new WorkflowModifierHandler());
+        workflowNodeRegistry.register(new WorkflowArgumentsHandler(workflowNodeRegistry));
+        workflowNodeRegistry.register(new WorkflowContextHandler());
+        workflowNodeRegistry.register(new WorkflowForEachHandler(workflowNodeRegistry));
+        workflowNodeRegistry.register(new WorkflowEntrypointHandler());
+        workflowNodeRegistry.register(new WorkflowExposureHandler());
+        workflowNodeRegistry.register(new WorkflowIfStatementHandler(workflowNodeRegistry));
+        workflowNodeRegistry.register(new WorkflowSwitchStatementHandler(workflowNodeRegistry));
+        workflowNodeRegistry.register(new WorkflowSwitchCaseHandler());
+
+        return workflowNodeRegistry;
+    }
 
     constructor(handlers: WorkflowNodeHandler<object>[] = []) {
         for (const handler of handlers) {
@@ -34,17 +58,43 @@ export class WorkflowNodeRegistry {
         return output;
     }
 
-    resolveReference(ref: string, context: WorkflowExecutionContext, currentNodeId?: string): WorkflowValue {
-        return resolveWorkflowOutputReference(ref, context.outputs, {
+    createValueResolver(
+        context: WorkflowExecutionContext,
+        currentNodeId?: string
+    ): WorkflowValueResolver {
+        return new WorkflowValueResolver({
+            outputs: context.outputs,
             workflow: context.workflow,
+            context,
             currentNodeId
         });
     }
 
+    resolveReference(ref: string, context: WorkflowExecutionContext, currentNodeId?: string): WorkflowValue {
+        return this.createValueResolver(context, currentNodeId).resolveReference(ref);
+    }
+
     resolveTemplate(template: string, context: WorkflowExecutionContext, currentNodeId?: string): string {
-        return resolveWorkflowTemplate(template, context.outputs, {
-            workflow: context.workflow,
-            currentNodeId
-        });
+        return this.createValueResolver(context, currentNodeId).resolveTemplate(template);
+    }
+
+    shouldResolveExpression(value: WorkflowValue): value is string {
+        return WorkflowValueResolver.shouldResolveExpression(value);
+    }
+
+    resolveExpressionValue(
+        expression: string,
+        context: WorkflowExecutionContext,
+        currentNodeId?: string
+    ): Promise<WorkflowValue> {
+        return this.createValueResolver(context, currentNodeId).resolveExpressionValue(expression);
+    }
+
+    resolveComparableString(
+        expression: string,
+        context: WorkflowExecutionContext,
+        currentNodeId?: string
+    ): Promise<string> {
+        return this.createValueResolver(context, currentNodeId).resolveComparableString(expression);
     }
 };

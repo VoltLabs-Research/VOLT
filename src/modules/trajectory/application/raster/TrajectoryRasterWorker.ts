@@ -69,7 +69,6 @@ export class TrajectoryRasterWorker extends BaseWorker<RasterQueueJobPayload> {
             jobId: payload.jobId,
             teamId: payload.teamId,
             trajectoryId: payload.trajectoryId,
-            trajectoryName: payload.trajectoryName,
             timestep: payload.timestep
         };
         const promise = status === 'started'

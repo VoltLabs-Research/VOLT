@@ -1,10 +1,11 @@
-import { asClass, asFunction, createContainer } from 'awilix';
-import { AnalysisDispatchService } from '@/modules/analysis/application/dispatch/AnalysisDispatchService';
-import { createDaemonArtifactReporterService } from '@/modules/analysis/application/artifacts/DaemonArtifactReporterService';
-import { AnalysisWorker } from '@/modules/analysis/application/execution/AnalysisWorker';
+import { asClass, createContainer } from 'awilix';
+import { AnalysisDispatcher } from '@/modules/analysis/application/analysis/AnalysisDispatcher';
+import { DaemonArtifactReporter } from '@/modules/analysis/application/analysis/DaemonArtifactReporter';
+import { AnalysisWorker } from '@/modules/analysis/application/workers/AnalysisWorker';
+import { AnalysisEnvironment } from '@/modules/analysis/application/workflow/AnalysisEnvironment';
 import { WorkflowEngine } from '@/modules/analysis/application/workflow/WorkflowEngine';
-import { InlineWorkflowRuntime } from '@/modules/analysis/application/workflow/InlineWorkflowRuntime';
-import { DebugEntrypointExecutor } from '@/modules/analysis/application/workflow/debug/DebugEntrypointExecutor';
+import { WorkflowRuntime } from '@/modules/analysis/application/workflow/WorkflowRuntime';
+import { DebugEnvironment } from '@/modules/analysis/application/workflow/debug/DebugEnvironment';
 import { DebugSessionManager } from '@/modules/analysis/application/workflow/debug/DebugSessionManager';
 
 type BootstrapContainer = ReturnType<typeof createContainer>;
@@ -14,11 +15,12 @@ export const registerAnalysisBootstrap = (
 ): void => {
     container.register({
         workflowEngine: asClass(WorkflowEngine).singleton(),
-        debugEntrypointExecutor: asClass(DebugEntrypointExecutor).singleton(),
-        inlineWorkflowRuntime: asClass(InlineWorkflowRuntime).singleton(),
+        debugEnvironment: asClass(DebugEnvironment).singleton(),
+        workflowRuntime: asClass(WorkflowRuntime).singleton(),
         debugSessionManager: asClass(DebugSessionManager).singleton(),
-        analysisDispatchService: asClass(AnalysisDispatchService).singleton(),
-        daemonArtifactReporterService: asFunction(createDaemonArtifactReporterService).singleton(),
+        analysisDispatcher: asClass(AnalysisDispatcher).singleton(),
+        daemonArtifactReporter: asClass(DaemonArtifactReporter).singleton(),
+        analysisEnvironment: asClass(AnalysisEnvironment).singleton(),
         analysisWorker: asClass(AnalysisWorker).singleton()
     });
 };

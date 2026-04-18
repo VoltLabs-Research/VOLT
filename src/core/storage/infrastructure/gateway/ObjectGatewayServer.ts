@@ -1,25 +1,19 @@
-import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureSourceKind, TeamClusterServiceExposureStatus } from '@/core/runtime/contracts/serviceExposure';
-import { TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER, TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER } from '@/core/storage/contracts/http.objectStore';
+import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureSourceKind, TeamClusterServiceExposureStatus } from '@/core/runtime/contracts/service-exposure';
+import { TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER, TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER } from '@/core/storage/contracts/http-object-store';
 import { logger } from '@/core/logger';
 import type { DaemonConfig } from '@/core/config';
-import type { TeamClusterServiceExposure } from '@/core/runtime/contracts/serviceExposure';
+import type { TeamClusterServiceExposure } from '@/core/runtime/contracts/service-exposure';
 import type { MinioService } from '@/core/storage/infrastructure/minio/MinioService';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import type { ObjectGatewayTelemetryService } from '@/core/observability/infrastructure/ObjectGatewayTelemetryService';
+import type { ObjectGatewayTelemetry } from '@/core/observability/infrastructure/ObjectGatewayTelemetry';
 import express, { type NextFunction, type Request, type Response } from 'express';
-import { z } from 'zod';
 
 type ObjectGatewayCollectionOperation = 'list' | 'delete-prefix';
 type ObjectGatewayObjectOperation = 'head' | 'get' | 'put' | 'delete';
 
 type ObjectStatLike = Awaited<ReturnType<MinioService['statObject']>>;
 type ObjectStreamLike = Awaited<ReturnType<MinioService['getObjectStream']>>;
-
-interface ObjectGatewayCapabilityGuard {
-    ensureServesStorageReads(command: string): void;
-    ensureAcceptsStorageWrites(command: string): void;
-}
 
 interface ObjectGatewayDirectAccessClaims {
     ownerClusterId: string;
@@ -29,7 +23,6 @@ interface ObjectGatewayDirectAccessClaims {
 }
 
 interface ObjectGatewaySecurity {
-    capabilityGuard?: ObjectGatewayCapabilityGuard;
     verifyDirectAccessToken?: (token: string) => ObjectGatewayDirectAccessClaims | null;
 }
 
@@ -68,39 +61,6 @@ class ObjectGatewayHttpError extends Error {
     }
 }
 
-const parseObjectGatewayInput = <T>(schema: z.ZodType<T>, input: unknown): T => {
-    const parsed = schema.safeParse(input);
-    if (parsed.success) {
-        return parsed.data;
-    }
-
-    throw new ObjectGatewayHttpError(400, parsed.error.issues[0]?.message ?? 'Object gateway request is invalid');
-};
-
-const positiveIntegerSchema = z.number().finite().refine((value) => value > 0 && Number.isInteger(value), {
-    message: 'limit must be a positive integer'
-});
-
-const objectGatewayListQuerySchema = z.object({
-    prefix: z.string().default(''),
-    cursor: z.string().optional(),
-    limit: z.preprocess(
-        (value) => value === undefined ? DEFAULT_LIST_LIMIT : Number(value),
-        positiveIntegerSchema
-    )
-});
-
-const objectGatewayDeletePrefixQuerySchema = z.object({
-    prefix: z.string().min(1, 'prefix query parameter is required')
-});
-
-const contentLengthSchema = z.preprocess(
-    (value) => value === undefined ? Number.NaN : Number(value),
-    z.number().finite().refine((value) => value >= 0 && Number.isInteger(value), {
-        message: 'content-length header is required for uploads'
-    })
-);
-
 const isMinioNotFoundError = (error: MinioError): boolean => {
     return error.code === 'NotFound' || error.code === 'NoSuchKey';
 };
@@ -114,7 +74,12 @@ const decodePathComponent = (value: string, fieldName: string): string => {
 };
 
 const readContentLength = (request: Request): number => {
-    return parseObjectGatewayInput(contentLengthSchema, request.get('content-length'));
+    const raw = request.get('content-length');
+    const parsed = raw === undefined ? Number.NaN : Number(raw);
+    if (!Number.isFinite(parsed) || parsed < 0 || !Number.isInteger(parsed)) {
+        throw new ObjectGatewayHttpError(400, 'content-length header is required for uploads');
+    }
+    return parsed;
 };
 
 const assertDirectAccessClaims = (
@@ -154,7 +119,7 @@ export class ObjectGatewayServer {
     constructor(
         private readonly config: DaemonConfig,
         private readonly minioService: MinioService,
-        private readonly telemetryService: ObjectGatewayTelemetryService,
+        private readonly telemetryService: ObjectGatewayTelemetry,
         private readonly security: ObjectGatewaySecurity = {}
     ) {
         this.allowedBuckets = new Set(this.minioService.listBuckets());
@@ -201,12 +166,7 @@ export class ObjectGatewayServer {
             }
         };
 
-        logger.info({
-            action: 'object-gateway.started',
-            teamClusterId: this.config.teamClusterId,
-            host: this.bindHost,
-            port: this.bindPort
-        }, 'Started daemon object gateway');
+        logger.info(`Started daemon object gateway for teamClusterId=${this.config.teamClusterId}, host=${this.bindHost}, port=${this.bindPort}`);
     }
 
     async stop(): Promise<void> {
@@ -359,19 +319,19 @@ export class ObjectGatewayServer {
         bucket: string,
         searchParams: URLSearchParams,
         response: Response,
-        tracker: ReturnType<ObjectGatewayTelemetryService['beginRequest']>
+        tracker: ReturnType<ObjectGatewayTelemetry['beginRequest']>
     ): Promise<void> {
-        this.security.capabilityGuard?.ensureServesStorageReads('object-gateway.list');
-        const query = parseObjectGatewayInput(objectGatewayListQuerySchema, {
-            prefix: searchParams.get('prefix') ?? undefined,
-            cursor: searchParams.get('cursor') ?? undefined,
-            limit: searchParams.get('limit') ?? undefined
-        });
+        const limitParam = searchParams.get('limit');
+        const limit = limitParam === null ? DEFAULT_LIST_LIMIT : Number(limitParam);
+        if (!Number.isInteger(limit) || limit <= 0) {
+            throw new ObjectGatewayHttpError(400, 'limit must be a positive integer');
+        }
+
         const result = await this.minioService.listObjectsPage({
             bucket,
-            prefix: query.prefix,
-            ...(query.cursor ? { cursor: query.cursor } : {}),
-            limit: Math.min(query.limit, MAX_LIST_LIMIT)
+            prefix: searchParams.get('prefix') ?? '',
+            cursor: searchParams.get('cursor') ?? undefined,
+            limit: Math.min(limit, MAX_LIST_LIMIT)
         });
 
         const bytesOut = this.writeJson(response, 200, result);
@@ -385,13 +345,13 @@ export class ObjectGatewayServer {
         bucket: string,
         searchParams: URLSearchParams,
         response: Response,
-        tracker: ReturnType<ObjectGatewayTelemetryService['beginRequest']>
+        tracker: ReturnType<ObjectGatewayTelemetry['beginRequest']>
     ): Promise<void> {
-        this.security.capabilityGuard?.ensureAcceptsStorageWrites('object-gateway.delete-prefix');
-        const query = parseObjectGatewayInput(objectGatewayDeletePrefixQuerySchema, {
-            prefix: searchParams.get('prefix') ?? undefined
-        });
-        const deletedCount = await this.minioService.deleteByPrefix(bucket, query.prefix);
+        const prefix = searchParams.get('prefix');
+        if (!prefix) {
+            throw new ObjectGatewayHttpError(400, 'prefix query parameter is required');
+        }
+        const deletedCount = await this.minioService.deleteByPrefix(bucket, prefix);
         const bytesOut = this.writeJson(response, 200, {
             deleted: true,
             deletedCount
@@ -407,9 +367,8 @@ export class ObjectGatewayServer {
         bucket: string,
         objectKey: string,
         response: Response,
-        tracker: ReturnType<ObjectGatewayTelemetryService['beginRequest']>
+        tracker: ReturnType<ObjectGatewayTelemetry['beginRequest']>
     ): Promise<void> {
-        this.security.capabilityGuard?.ensureServesStorageReads('object-gateway.head');
         const stat = await this.readObjectStat(bucket, objectKey);
         this.writeObjectHeaders(response, stat);
         response.status(200).end();
@@ -424,9 +383,8 @@ export class ObjectGatewayServer {
         bucket: string,
         objectKey: string,
         response: Response,
-        tracker: ReturnType<ObjectGatewayTelemetryService['beginRequest']>
+        tracker: ReturnType<ObjectGatewayTelemetry['beginRequest']>
     ): Promise<void> {
-        this.security.capabilityGuard?.ensureServesStorageReads('object-gateway.get');
         const skipMetadataHeader = request.get(TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER);
         const skipMetadata = skipMetadataHeader === '1' || skipMetadataHeader === 'true';
         const [stat, stream] = skipMetadata
@@ -489,9 +447,8 @@ export class ObjectGatewayServer {
         bucket: string,
         objectKey: string,
         response: Response,
-        tracker: ReturnType<ObjectGatewayTelemetryService['beginRequest']>
+        tracker: ReturnType<ObjectGatewayTelemetry['beginRequest']>
     ): Promise<void> {
-        this.security.capabilityGuard?.ensureAcceptsStorageWrites('object-gateway.put');
         const contentLength = readContentLength(request);
 
         await this.minioService.putObjectStream({
@@ -513,9 +470,8 @@ export class ObjectGatewayServer {
         bucket: string,
         objectKey: string,
         response: Response,
-        tracker: ReturnType<ObjectGatewayTelemetryService['beginRequest']>
+        tracker: ReturnType<ObjectGatewayTelemetry['beginRequest']>
     ): Promise<void> {
-        this.security.capabilityGuard?.ensureAcceptsStorageWrites('object-gateway.delete');
         await this.readObjectStat(bucket, objectKey);
         await this.minioService.removeObject(bucket, objectKey);
         response.status(204).end();
@@ -650,13 +606,13 @@ export class ObjectGatewayServer {
         const statusCodeError = error as Partial<StatusCodeError>;
         if (statusCodeError.statusCode !== undefined) {
             this.writeJson(response, statusCodeError.statusCode, {
-                ...(statusCodeError.code ? { code: statusCodeError.code } : {}),
+                code: statusCodeError.code,
                 message: error.message
             });
             return;
         }
 
-        logger.error({ err: error }, 'Object gateway request failed');
+        logger.error(`Object gateway request failed: ${error.message}`);
         this.writeJson(response, 500, {
             message: 'Object gateway request failed'
         });

@@ -1,15 +1,7 @@
 import { BaseDomainEvent } from '@/core/events/BaseDomainEvent';
-import type { RuntimeProgressEvent as DaemonRuntimeProgressEvent } from '@voltstack/daemon-cluster-client';
+import type { RuntimeProgressPayload } from '@/core/runtime/contracts/reverse-channel-runtime';
 
-type RuntimeProgressPayload = NonNullable<DaemonRuntimeProgressEvent['payload']>;
-type RuntimeProgressStage = DaemonRuntimeProgressEvent['stage'];
-
-export interface RuntimeProgressEventData {
-    action: string;
-    payload?: RuntimeProgressPayload;
-    stage: RuntimeProgressStage;
-    timestamp: string;
-}
+export type RuntimeProgressEventData = RuntimeProgressPayload;
 
 export class RuntimeProgressEvent extends BaseDomainEvent<RuntimeProgressEventData> {
     static readonly eventName = 'runtime.progress';

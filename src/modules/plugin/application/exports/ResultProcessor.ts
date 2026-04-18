@@ -7,9 +7,8 @@ import {
     readWorkflowExposurePayload,
     type WorkflowExposurePayloadValue
 } from '@/modules/analysis/application/workflow/exposure-payload-reader';
-import { isRecord } from '@/support/type-guards/is-record';
 import type { PluginListingRepository } from '@/modules/plugin/infrastructure/repositories/plugin-listing-repository-contract';
-import type { ExportNodeProcessor } from '@/modules/plugin/application/exports/ExportNodeProcessor';
+import { processExportNode } from '@/modules/plugin/application/exports/ExportNodeProcessor';
 import type { ArtifactUploadBatch } from '@/modules/plugin/contracts/artifact-upload';
 import { getRecommendedResultProcessingConcurrency } from '@/support/policies/analysis-resource-policy';
 import type { AnalysisExposureDefinition, AnalysisJobExecutionData } from '@/modules/analysis/contracts/http-analysis';
@@ -23,8 +22,7 @@ export class DefaultResultProcessor implements ResultProcessorService {
     private readonly exposureProcessingLimiter: Bottleneck;
 
     constructor(
-        private readonly pluginListingRepository: PluginListingRepository,
-        private readonly exportNodeProcessor: ExportNodeProcessor
+        private readonly pluginListingRepository: PluginListingRepository
     ) {
         this.exposureProcessingLimiter = new Bottleneck({
             maxConcurrent: EXPOSURE_RESULT_PROCESSING_CONCURRENCY
@@ -102,7 +100,7 @@ export class DefaultResultProcessor implements ResultProcessorService {
             subListingNames = [];
 
             if (exposure.export && exportPayload) {
-                await this.exportNodeProcessor.process({
+                await processExportNode({
                     executionData: {
                         analysisId,
                         trajectoryId,
@@ -141,7 +139,7 @@ async function precomputeListingRows(
     }
 
     const mainListing = decoded.main_listing;
-    if (!isRecord(mainListing) || Object.keys(mainListing).length === 0) {
+    if (typeof mainListing !== 'object' || mainListing === null || Array.isArray(mainListing) || Object.keys(mainListing).length === 0) {
         logger.warn(`Empty or missing main_listing in decoded payload for objectKey=${objectKey}`);
         return;
     }
@@ -170,7 +168,6 @@ async function precomputeListingRows(
             plugin: pluginId,
             team: teamId,
             trajectory: trajectoryId,
-            trajectoryName: '',
             analysis: analysisId,
             exposureName: exposure.name,
             exposureId: exposure.nodeId,

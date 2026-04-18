@@ -1,12 +1,7 @@
 import { BaseDomainEvent } from '@/core/events/BaseDomainEvent';
+import type { TimedTrajectoryJobEventData } from '@/modules/trajectory/domain/events/shared/trajectory-job-event-data';
 
-export interface GlbStartedEventData {
-    jobId: string;
-    teamId: string;
-    timestep?: number;
-    trajectoryId: string;
-    trajectoryName?: string;
-}
+export type GlbStartedEventData = TimedTrajectoryJobEventData;
 
 export class GlbStartedEvent extends BaseDomainEvent<GlbStartedEventData> {
     static readonly eventName = 'trajectory.glb.started';

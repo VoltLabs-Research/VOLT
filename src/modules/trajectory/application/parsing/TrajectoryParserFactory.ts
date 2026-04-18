@@ -1,18 +1,25 @@
 import { createReadStream } from 'node:fs';
 import { createInterface } from 'node:readline';
-import type { ParsedTrajectory } from '@/core/runtime/infrastructure/native/NativeModuleLoader';
 
-interface FrameMetadata {
+export interface ParsedSimulationCellGeometry {
+    cell_vectors: [[number, number, number], [number, number, number], [number, number, number]];
+    cell_origin: [number, number, number];
+    periodic_boundary_conditions: { x: boolean; y: boolean; z: boolean };
+}
+
+export interface ParsedSimulationCell {
+    boundingBox: { width: number; height: number; length: number };
+    geometry: ParsedSimulationCellGeometry;
+}
+
+export interface ParsedFrameMetadata {
     timestep: number;
     natoms: number;
     headers: string[];
-    simulationCell: ParsedTrajectory['metadata']['simulationCell'];
+    simulationCell: ParsedSimulationCell;
 }
 
-type SimulationCell = FrameMetadata['simulationCell'];
-type SimulationCellGeometry = SimulationCell['geometry'];
-
-const createSimulationCell = (periodicBoundaryConditions: SimulationCellGeometry['periodic_boundary_conditions']): SimulationCell => {
+const createSimulationCell = (periodicBoundaryConditions: { x: boolean; y: boolean; z: boolean }): ParsedSimulationCell => {
     return {
         boundingBox: {
             width: 0,
@@ -27,7 +34,7 @@ const createSimulationCell = (periodicBoundaryConditions: SimulationCellGeometry
     };
 };
 
-const parseDumpMetadataOnly = (headerLines: string[]): FrameMetadata => {
+const parseDumpMetadataOnly = (headerLines: string[]): ParsedFrameMetadata => {
         let timestep = 0;
         let natoms = 0;
         let headers: string[] = [];
@@ -117,7 +124,7 @@ const parseDumpMetadataOnly = (headerLines: string[]): FrameMetadata => {
         };
 };
 
-const parseDataMetadataOnly = (headerLines: string[]): FrameMetadata => {
+const parseDataMetadataOnly = (headerLines: string[]): ParsedFrameMetadata => {
         let timestep = 0;
         let natoms = 0;
         const headers: string[] = [];
@@ -196,42 +203,40 @@ const parseDataMetadataOnly = (headerLines: string[]): FrameMetadata => {
         };
 };
 
-export class TrajectoryParserFactory {
-    static async parseMetadata(filePath: string): Promise<FrameMetadata> {
-        const headerLines = await new Promise<string[]>((resolve, reject) => {
-            const lines: string[] = [];
-            const stream = createReadStream(filePath, {
-                encoding: 'utf8',
-                highWaterMark: 8 * 1024
-            });
-
-            const rl = createInterface({
-                input: stream,
-                crlfDelay: Infinity
-            });
-
-            rl.on('line', (line) => {
-                lines.push(line);
-                if (lines.length >= 200) {
-                    rl.close();
-                    stream.destroy();
-                }
-            });
-
-            rl.on('close', () => resolve(lines));
-            rl.on('error', reject);
-            stream.on('error', reject);
+export const parseTrajectoryMetadata = async (filePath: string): Promise<ParsedFrameMetadata> => {
+    const headerLines = await new Promise<string[]>((resolve, reject) => {
+        const lines: string[] = [];
+        const stream = createReadStream(filePath, {
+            encoding: 'utf8',
+            highWaterMark: 8 * 1024
         });
 
-        if (headerLines.some((line) => line.includes('ITEM: TIMESTEP'))) {
-            return parseDumpMetadataOnly(headerLines);
-        }
+        const rl = createInterface({
+            input: stream,
+            crlfDelay: Infinity
+        });
 
-        const content = headerLines.join('\n');
-        if (/^\s*\d+\s+atoms/m.test(content) && /(xlo\s+xhi|ylo\s+yhi|zlo\s+zhi)/m.test(content)) {
-            return parseDataMetadataOnly(headerLines);
-        }
+        rl.on('line', (line) => {
+            lines.push(line);
+            if (lines.length >= 200) {
+                rl.close();
+                stream.destroy();
+            }
+        });
 
-        throw new Error('Unsupported trajectory format');
+        rl.on('close', () => resolve(lines));
+        rl.on('error', reject);
+        stream.on('error', reject);
+    });
+
+    if (headerLines.some((line) => line.includes('ITEM: TIMESTEP'))) {
+        return parseDumpMetadataOnly(headerLines);
     }
-}
+
+    const content = headerLines.join('\n');
+    if (/^\s*\d+\s+atoms/m.test(content) && /(xlo\s+xhi|ylo\s+yhi|zlo\s+zhi)/m.test(content)) {
+        return parseDataMetadataOnly(headerLines);
+    }
+
+    throw new Error('Unsupported trajectory format');
+};

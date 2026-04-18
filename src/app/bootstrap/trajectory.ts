@@ -1,32 +1,30 @@
-import { asClass, asFunction, createContainer } from 'awilix';
-import { createFilterEvaluatorService } from '@/modules/trajectory/domain/services/FilterEvaluatorService';
-import { createTrajectoryGlbQueueService } from '@/modules/trajectory/application/glb/TrajectoryGlbQueueService';
-import { GlbExporterService } from '@/modules/trajectory/application/glb/GlbExporterService';
-import { SSHImportWorkerService } from '@/modules/trajectory/application/import/SSHImportWorkerService';
-import { TrajectoryGlbWorkerService } from '@/modules/trajectory/application/glb/TrajectoryGlbWorkerService';
-import { TrajectoryPluginParserService } from '@/modules/trajectory/application/parsing/TrajectoryPluginParserService';
-import { createTrajectoryParserService } from '@/modules/trajectory/application/parsing/TrajectoryParserService';
-import { createTrajectoryRasterQueueService } from '@/modules/trajectory/application/raster/TrajectoryRasterQueueService';
-import { createRasterizerService } from '@/modules/trajectory/application/raster/RasterizerService';
-import { TrajectoryRasterWorkerService } from '@/modules/trajectory/application/raster/TrajectoryRasterWorkerService';
-import { FileExtractorService } from '@/modules/trajectory/infrastructure/extraction/FileExtractorService';
-import { SSHConnectionService } from '@/modules/trajectory/infrastructure/ssh/SSHConnectionService';
+import { asClass, createContainer } from 'awilix';
+import { FilterEvaluator } from '@/modules/trajectory/domain/services/FilterEvaluator';
+import { GlbExporter } from '@/modules/trajectory/application/glb/GlbExporter';
+import { SSHImportWorker } from '@/modules/trajectory/application/import/SSHImportWorker';
+import { TrajectoryGlbWorker } from '@/modules/trajectory/application/glb/TrajectoryGlbWorker';
+import { TrajectoryPluginParser } from '@/modules/trajectory/application/parsing/TrajectoryPluginParser';
+import { TrajectoryParser } from '@/modules/trajectory/application/parsing/TrajectoryParser';
+import { TrajectoryRasterQueue } from '@/modules/trajectory/application/raster/TrajectoryRasterQueue';
+import { Rasterizer } from '@/modules/trajectory/application/raster/Rasterizer';
+import { TrajectoryRasterWorker } from '@/modules/trajectory/application/raster/TrajectoryRasterWorker';
+import { FileExtractor } from '@/modules/trajectory/infrastructure/extraction/FileExtractor';
+import { SSHConnection } from '@/modules/trajectory/infrastructure/ssh/SSHConnection';
 
 type BootstrapContainer = ReturnType<typeof createContainer>;
 
 export const registerTrajectoryBootstrap = (container: BootstrapContainer): void => {
     container.register({
-        trajectoryParserService: asFunction(createTrajectoryParserService).singleton(),
-        trajectoryPluginParserService: asClass(TrajectoryPluginParserService).singleton(),
-        trajectoryRasterQueueService: asFunction(createTrajectoryRasterQueueService).singleton(),
-        trajectoryGlbQueueService: asFunction(createTrajectoryGlbQueueService).singleton(),
-        rasterizerService: asFunction(createRasterizerService).singleton(),
-        glbExporterService: asClass(GlbExporterService).singleton(),
-        filterEvaluatorService: asFunction(createFilterEvaluatorService).singleton(),
-        sshConnectionService: asClass(SSHConnectionService).singleton(),
-        fileExtractorService: asClass(FileExtractorService).singleton(),
-        sshImportWorkerService: asClass(SSHImportWorkerService).singleton(),
-        trajectoryRasterWorkerService: asClass(TrajectoryRasterWorkerService).singleton(),
-        trajectoryGlbWorkerService: asClass(TrajectoryGlbWorkerService).singleton()
+        trajectoryParser: asClass(TrajectoryParser).singleton(),
+        trajectoryPluginParser: asClass(TrajectoryPluginParser).singleton(),
+        trajectoryRasterQueue: asClass(TrajectoryRasterQueue).singleton(),
+        rasterizer: asClass(Rasterizer).singleton(),
+        glbExporter: asClass(GlbExporter).singleton(),
+        filterEvaluator: asClass(FilterEvaluator).singleton(),
+        sshConnection: asClass(SSHConnection).singleton(),
+        fileExtractor: asClass(FileExtractor).singleton(),
+        sshImportWorker: asClass(SSHImportWorker).singleton(),
+        trajectoryRasterWorker: asClass(TrajectoryRasterWorker).singleton(),
+        trajectoryGlbWorker: asClass(TrajectoryGlbWorker).singleton()
     });
 };

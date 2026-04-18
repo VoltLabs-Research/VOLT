@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { IDomainEvent } from '@/core/events/IDomainEvent';
+import type { IDomainEvent } from '@/core/events/i-domain-event';
 
 export abstract class BaseDomainEvent<TPayload extends object = object> implements IDomainEvent<TPayload> {
     readonly eventId = randomUUID();
