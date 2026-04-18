@@ -30,13 +30,7 @@ const logHttpRequest = (
     response: Response,
     context: HttpRequestContext
 ): void => {
-    logger.info({
-        traceId: context.traceId,
-        method: request.method,
-        path: context.path,
-        statusCode: response.statusCode,
-        durationMs: Date.now() - context.startedAt
-    }, '@http-request');
+    logger.info(`@http-request traceId=${context.traceId} method=${request.method} path=${context.path} statusCode=${response.statusCode}`);
 };
 
 export const requestContextMiddleware = (

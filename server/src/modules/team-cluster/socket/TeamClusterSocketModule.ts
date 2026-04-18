@@ -212,7 +212,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
                 try {
                     await this.teamClusterLifecycleService.markDaemonDisconnected(teamClusterId);
                 } catch (error: unknown) {
-                    logger.warn({ err: error, teamClusterId }, 'Failed to mark team cluster disconnected after daemon socket close');
+                    logger.warn(`Failed to mark team cluster disconnected after daemon socket close teamClusterId=${teamClusterId}`);
                 }
             }
         });
@@ -318,14 +318,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         const registeredTeamClusterId = this.teamClusterReverseChannelService.getRegisteredTeamClusterId(socketId);
 
         if ('teamClusterId' in payload && registeredTeamClusterId && payload.teamClusterId !== registeredTeamClusterId) {
-            logger.warn(
-                {
-                    registeredTeamClusterId,
-                    payloadTeamClusterId: payload.teamClusterId,
-                    type: payload.type
-                },
-                'Ignoring daemon server event with mismatched team cluster id'
-            );
+            logger.warn(`Ignoring daemon server event with mismatched team cluster id registeredTeamClusterId=${registeredTeamClusterId} payloadTeamClusterId=${payload.teamClusterId} type=${payload.type}`);
             return true;
         }
 
@@ -339,14 +332,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         ) {
             const result = await this.processDaemonJobCompletionUseCase.execute(payload as never);
             if (!result.success) {
-                logger.warn(
-                    {
-                        type: payload.type,
-                        statusCode: result.error.statusCode,
-                        message: result.error.message
-                    },
-                    'Failed to process daemon job event'
-                );
+                logger.warn(`Failed to process daemon job event type=${payload.type} statusCode=${result.error.statusCode} message=${result.error.message}`);
             }
 
             return true;
@@ -396,15 +382,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             const result = await this.processDaemonSceneArtifactUpsertUseCase.executeBatch(inputs);
 
             if (!result.success) {
-                logger.warn(
-                    {
-                        type: payload.type,
-                        batchSize: payload.items.length,
-                        statusCode: result.error.statusCode,
-                        message: result.error.message
-                    },
-                    'Failed to process daemon scene artifact batch'
-                );
+                logger.warn(`Failed to process daemon scene artifact batch type=${payload.type} batchSize=${payload.items.length} statusCode=${result.error.statusCode} message=${result.error.message}`);
             }
 
             return true;

@@ -114,8 +114,7 @@ export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTr
                     port: sshConnection.props.port,
                     username: sshConnection.props.username,
                     encryptedPassword: sshConnection.props.encryptedPassword,
-                    trajectoryId,
-                    trajectoryName
+                    trajectoryId
                 }
             });
             queued = true;

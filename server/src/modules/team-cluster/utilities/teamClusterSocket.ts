@@ -236,7 +236,6 @@ export interface TeamClusterDaemonAnalysisJobCompletionEventPayload {
     analysisId: string;
     teamId: string;
     trajectoryId?: string;
-    trajectoryName?: string;
     timestep?: number;
     success: boolean;
     error?: string;
@@ -251,7 +250,6 @@ export interface TeamClusterDaemonAnalysisJobStatusEventPayload {
     analysisId: string;
     teamId: string;
     trajectoryId?: string;
-    trajectoryName?: string;
     timestep?: number;
     status: 'running' | 'completed' | 'failed';
     error?: string;
@@ -264,7 +262,6 @@ export interface TeamClusterDaemonRasterJobStatusEventPayload {
     jobId: string;
     teamId: string;
     trajectoryId: string;
-    trajectoryName?: string;
     timestep?: number;
     status: 'running' | 'completed' | 'failed';
     error?: string;
@@ -277,7 +274,6 @@ export interface TeamClusterDaemonGlbJobStatusEventPayload {
     jobId: string;
     teamId: string;
     trajectoryId: string;
-    trajectoryName?: string;
     timestep?: number;
     status: 'running' | 'completed' | 'failed';
     error?: string;
@@ -290,7 +286,6 @@ export interface TeamClusterDaemonSshImportJobStatusEventPayload {
     jobId: string;
     teamId: string;
     trajectoryId: string;
-    trajectoryName?: string;
     status: 'running' | 'completed' | 'failed';
     error?: string;
 };
@@ -303,7 +298,6 @@ export interface TeamClusterDaemonArtifactUploadJobStatusEventPayload {
     analysisId: string;
     teamId: string;
     trajectoryId: string;
-    trajectoryName?: string;
     timestep?: number;
     status: 'queued' | 'running' | 'completed' | 'failed';
     error?: string;

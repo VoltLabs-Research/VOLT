@@ -166,12 +166,7 @@ const mountModule = (rootRouter: Router, module: HttpModule): void => {
         });
 
         rootRouter.use(module.basePath, ...middleware, module.router);
-        logger.debug({
-            basePath: module.basePath,
-            resource: module.resource,
-            teamScope,
-            durationMs: Date.now() - startedAt
-        }, '@http-bootstrap: module-mounted');
+        logger.debug(`@http-bootstrap: module-mounted basePath=${module.basePath} resource=${module.resource} teamScope=${teamScope} durationMs=${Date.now() - startedAt}`);
         return;
     }
 
@@ -191,12 +186,7 @@ const mountModule = (rootRouter: Router, module: HttpModule): void => {
 
     rootRouter.use(module.basePath, module.router);
 
-    logger.debug({
-        basePath: module.basePath,
-        resource: module.resource,
-        teamScope,
-        durationMs: Date.now() - startedAt
-    }, '@http-bootstrap: module-mounted');
+    logger.debug(`@http-bootstrap: module-mounted basePath=${module.basePath} resource=${module.resource} teamScope=${teamScope} durationMs=${Date.now() - startedAt}`);
 };
 
 const mountHttpRoutes = (): Router => {
@@ -209,10 +199,7 @@ const mountHttpRoutes = (): Router => {
         mountModule(router, module);
     }
 
-    logger.info({
-        moduleCount: HTTP_MODULES.length,
-        durationMs: Date.now() - startedAt
-    }, '@http-bootstrap: mounted-routes');
+    logger.info(`@http-bootstrap: mounted-routes moduleCount=${HTTP_MODULES.length} durationMs=${Date.now() - startedAt}`);
 
     return router;
 };

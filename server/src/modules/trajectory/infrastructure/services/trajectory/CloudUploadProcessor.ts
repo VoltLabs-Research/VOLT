@@ -96,14 +96,7 @@ export default class CloudUploadProcessor {
                 maxTimeout: RETRY_OPTIONS.baseDelayMs * RETRY_OPTIONS.maxAttempts,
                 shouldRetry: ({ error }) => isRetryableTeamClusterTransportError(error),
                 onFailedAttempt: ({ attemptNumber }) => {
-                    logger.warn({
-                        attempt: attemptNumber,
-                        commandName,
-                        maxAttempts: RETRY_OPTIONS.maxAttempts,
-                        teamClusterId: task.teamClusterId,
-                        timestep: task.timestep,
-                        trajectoryId: task.trajectoryId
-                    }, `@cloud-upload-processor: transient daemon transport failure during ${commandName}`);
+                    logger.warn(`\`@cloud-upload-processor: transient daemon transport failure during ${commandName}\` attempt=${attemptNumber} commandName=${commandName} maxAttempts=${RETRY_OPTIONS.maxAttempts} teamClusterId=${task.teamClusterId}`);
                 }
             });
         } catch (error) {

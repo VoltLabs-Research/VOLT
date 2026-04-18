@@ -103,13 +103,7 @@ const authenticateWithSecretKey = async (
     };
 
     setRequestAuthContext(req, authContext);
-    logger.info({
-        traceId: req.requestContext?.traceId,
-        authType: AuthenticationType.SecretKey,
-        secretKeyId: secretKey.id,
-        teamId: req.secretKeyTeamId,
-        durationMs: authContext.durationMs
-    }, '@authentication');
+    logger.info(`@authentication traceId=${req.requestContext?.traceId} authType=${AuthenticationType.SecretKey} secretKeyId=${secretKey.id} teamId=${req.secretKeyTeamId}`);
 
     res.on('finish', () => {
         const usageLogRepository = container.resolve<ISecretKeyUsageLogRepository>(TEAM_TOKENS.SecretKeyUsageLogRepository);
@@ -176,12 +170,7 @@ const authenticateWithUserToken = async (
     };
 
     setRequestAuthContext(req, authContext);
-    logger.info({
-        traceId: req.requestContext?.traceId,
-        authType: AuthenticationType.User,
-        userId: user.id,
-        durationMs: authContext.durationMs
-    }, '@authentication');
+    logger.info(`@authentication traceId=${req.requestContext?.traceId} authType=${AuthenticationType.User} userId=${user.id} durationMs=${authContext.durationMs}`);
 
     return true;
 };
@@ -216,11 +205,7 @@ export const protect = async (
         };
 
         setRequestAuthContext(req, authContext);
-        logger.debug({
-            traceId: req.requestContext?.traceId,
-            authType: req.authType,
-            cached: true
-        }, '@authentication');
+        logger.debug(`@authentication traceId=${req.requestContext?.traceId} authType=${req.authType} cached=${true}`);
         next();
         return;
     }
@@ -229,20 +214,14 @@ export const protect = async (
     const token = getBearerToken(req);
 
     if (!token) {
-        logger.warn({
-            traceId: req.requestContext?.traceId,
-            durationMs: Date.now() - authenticationStartedAt
-        }, '@authentication: missing bearer token');
+        logger.warn(`@authentication: missing bearer token traceId=${req.requestContext?.traceId} durationMs=${Date.now() - authenticationStartedAt}`);
         BaseResponse.error(res, ErrorCodes.AUTHENTICATION_REQUIRED, 401, ErrorCodes.AUTHENTICATION_REQUIRED);
         return;
     }
 
     const isAuthenticated = await authenticateFromToken(req, res, token);
     if (!isAuthenticated) {
-        logger.warn({
-            traceId: req.requestContext?.traceId,
-            durationMs: Date.now() - authenticationStartedAt
-        }, '@authentication: rejected');
+        logger.warn(`@authentication: rejected traceId=${req.requestContext?.traceId} durationMs=${Date.now() - authenticationStartedAt}`);
         return;
     }
 

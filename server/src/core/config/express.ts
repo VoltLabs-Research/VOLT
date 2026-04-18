@@ -83,7 +83,7 @@ const corsMiddleware = cors((req, callback) => {
                 return;
             }
 
-            logger.info({ origin }, 'CORS blocked origin');
+            logger.info(`CORS blocked origin origin=${origin}`);
             originCallback(new Error('Not allowed by CORS'));
         }
     });

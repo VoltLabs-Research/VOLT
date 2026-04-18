@@ -42,7 +42,7 @@ export const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
         groupStatusPresentation = 'badge'
     } = props;
     const prefersReducedMotion = usePrefersReducedMotion();
-    const { groups, isConnected, isLoading } = useTeamJobs();
+    const { groups, isConnected, isLoading } = useTeamJobs({ subscribe: false });
     const setCurrentTimestep = useEditorStore((state) => state.setCurrentTimestep);
     const {
         relevantJobs,

@@ -97,13 +97,7 @@ export const checkTeamMembership = async (req: AuthenticatedRequest, res: Respon
     if (canReuseTeamMembershipContext(req, teamId, userId)) {
         req.teamPermissions = req.requestContext?.team?.permissions || [];
 
-        logger.debug({
-            traceId: req.requestContext?.traceId,
-            teamId,
-            userId,
-            durationMs: Date.now() - startedAt,
-            cached: true
-        }, '@check-team-membership');
+        logger.debug(`@check-team-membership traceId=${req.requestContext?.traceId} teamId=${teamId} userId=${userId} durationMs=${Date.now() - startedAt}`);
         next();
         return;
     }
@@ -128,12 +122,7 @@ export const checkTeamMembership = async (req: AuthenticatedRequest, res: Respon
         };
 
         setRequestTeamContext(req, teamContext);
-        logger.info({
-            traceId: req.requestContext?.traceId,
-            teamId,
-            source: teamContext.source,
-            durationMs: teamContext.durationMs
-        }, '@check-team-membership');
+        logger.info(`@check-team-membership traceId=${req.requestContext?.traceId} teamId=${teamId} source=${teamContext.source} durationMs=${teamContext.durationMs}`);
 
         next();
         return;
@@ -183,14 +172,7 @@ export const checkTeamMembership = async (req: AuthenticatedRequest, res: Respon
     };
 
     setRequestTeamContext(req, teamContext);
-    logger.info({
-        traceId: req.requestContext?.traceId,
-        teamId,
-        userId,
-        permissionsCount: req.teamPermissions.length,
-        source: teamContext.source,
-        durationMs: teamContext.durationMs
-    }, '@check-team-membership');
+    logger.info(`@check-team-membership traceId=${req.requestContext?.traceId} teamId=${teamId} userId=${userId} permissionsCount=${req.teamPermissions.length}`);
 
     next();
 };

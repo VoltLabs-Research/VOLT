@@ -83,10 +83,7 @@ export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, L
         })) as Container[];
 
         void this.syncRuntimeStatus(containersSnapshot).catch((error: unknown) => {
-            logger.warn({
-                err: error,
-                containerCount: containers.length
-            }, 'Background container runtime sync failed');
+            logger.warn(`Background container runtime sync failed containerCount=${containers.length}`);
         });
     }
 

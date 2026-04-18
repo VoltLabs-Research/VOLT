@@ -40,17 +40,6 @@ const awaitProcessExit = async (child: ReturnType<typeof spawn>): Promise<void> 
 @injectable()
 export default class CompressionProcessor {
     async process(task: CompressionTask): Promise<void> {
-        logger.info(
-            {
-                compressedFramePath: task.compressedFramePath,
-                objectKey: task.objectKey,
-                sourceFramePath: task.sourceFramePath,
-                timestep: task.timestep,
-                trajectoryId: task.trajectoryId
-            },
-            '@trajectory-compression-processor: compressing frame with zstd'
-        );
-
         const child = spawn('zstd', [
             '-T0',
             '-5',

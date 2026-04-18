@@ -464,18 +464,7 @@ export default class ClusterTransferCoordinator {
                 publishUpdate: true
             });
 
-            logger.info({
-                action: 'cluster.transfer.completed',
-                transferJobId: completedJob.id,
-                scopeType: completedJob.props.scopeType,
-                scopeId: completedJob.props.scopeId,
-                sourceClusterId: completedJob.props.sourceClusterId,
-                destinationClusterId: completedJob.props.destinationClusterId,
-                copiedObjects: completedJob.props.stats.copiedObjects,
-                copiedBytes: completedJob.props.stats.copiedBytes,
-                verifiedObjects: completedJob.props.stats.verifiedObjects,
-                verifiedBytes: completedJob.props.stats.verifiedBytes
-            }, 'Completed cluster transfer job');
+            logger.info(`Completed cluster transfer job transferJobId=${completedJob.id} scopeType=${completedJob.props.scopeType} scopeId=${completedJob.props.scopeId} sourceClusterId=${completedJob.props.sourceClusterId}`);
 
             return completedJob;
         } catch (error) {
@@ -488,15 +477,7 @@ export default class ClusterTransferCoordinator {
                 publishUpdate: true
             });
 
-            logger.error({
-                action: 'cluster.transfer.verify.failed',
-                transferJobId: failedJob.id,
-                scopeType: failedJob.props.scopeType,
-                scopeId: failedJob.props.scopeId,
-                sourceClusterId: failedJob.props.sourceClusterId,
-                destinationClusterId: failedJob.props.destinationClusterId,
-                error
-            }, 'Cluster transfer job failed');
+            logger.error(`Cluster transfer job failed transferJobId=${failedJob.id} scopeType=${failedJob.props.scopeType} scopeId=${failedJob.props.scopeId} sourceClusterId=${failedJob.props.sourceClusterId}`);
 
             return failedJob;
         }
@@ -506,14 +487,7 @@ export default class ClusterTransferCoordinator {
         job: ClusterTransferJob,
         placement: StoragePlacement
     ): Promise<ClusterTransferJob> {
-        logger.info({
-            action: 'cluster.transfer.copy.started',
-            transferJobId: job.id,
-            scopeType: job.props.scopeType,
-            scopeId: job.props.scopeId,
-            sourceClusterId: job.props.sourceClusterId,
-            destinationClusterId: job.props.destinationClusterId
-        }, 'Starting cluster transfer copy phase');
+        logger.info(`Starting cluster transfer copy phase transferJobId=${job.id} scopeType=${job.props.scopeType} scopeId=${job.props.scopeId} sourceClusterId=${job.props.sourceClusterId}`);
 
         let currentJob = await this.setJobState(job.id, 'copying', {}, {
             publishUpdate: true
@@ -752,15 +726,7 @@ export default class ClusterTransferCoordinator {
             return;
         }
 
-        logger.info({
-            action: 'cluster.transfer.mongo.copy.started',
-            transferJobId: job.id,
-            scopeType: job.props.scopeType,
-            scopeId: job.props.scopeId,
-            sourceClusterId: job.props.sourceClusterId,
-            destinationClusterId: job.props.destinationClusterId,
-            analysisCount: analysisIds.length
-        }, 'Replicating daemon Mongo listing state for cluster transfer');
+        logger.info(`Replicating daemon Mongo listing state for cluster transfer transferJobId=${job.id} scopeType=${job.props.scopeType} scopeId=${job.props.scopeId} sourceClusterId=${job.props.sourceClusterId}`);
 
         for (const documentType of MONGO_DOCUMENT_TYPES) {
             let skip = 0;
@@ -805,15 +771,7 @@ export default class ClusterTransferCoordinator {
             }
         }
 
-        logger.info({
-            action: 'cluster.transfer.mongo.copy.completed',
-            transferJobId: job.id,
-            scopeType: job.props.scopeType,
-            scopeId: job.props.scopeId,
-            sourceClusterId: job.props.sourceClusterId,
-            destinationClusterId: job.props.destinationClusterId,
-            analysisCount: analysisIds.length
-        }, 'Replicated daemon Mongo listing state for cluster transfer');
+        logger.info(`Replicated daemon Mongo listing state for cluster transfer transferJobId=${job.id} scopeType=${job.props.scopeType} scopeId=${job.props.scopeId} sourceClusterId=${job.props.sourceClusterId}`);
     }
 
     private async purgeMongoListings(
@@ -848,14 +806,7 @@ export default class ClusterTransferCoordinator {
             deletedRows += result.deletedRows;
         }
 
-        logger.info({
-            action: 'cluster.transfer.mongo.purge.completed',
-            sourceClusterId,
-            scopeType,
-            scopeId,
-            analysisCount: analysisIds.length,
-            deletedRows
-        }, 'Purged source daemon Mongo listing state for cluster transfer');
+        logger.info(`Purged source daemon Mongo listing state for cluster transfer sourceClusterId=${sourceClusterId} scopeType=${scopeType} scopeId=${scopeId} analysisCount=${analysisIds.length}`);
 
         return deletedRows;
     }
@@ -1193,13 +1144,7 @@ export default class ClusterTransferCoordinator {
                 ...(job.props.errorMessage ? { error: job.props.errorMessage } : {})
             }));
         } catch (error) {
-            logger.warn({
-                action: 'cluster.transfer.projected-job.failed',
-                transferJobId: job.id,
-                scopeType: job.props.scopeType,
-                scopeId: job.props.scopeId,
-                error
-            }, 'Failed to project cluster transfer job into team jobs history');
+            logger.warn(`Failed to project cluster transfer job into team jobs history transferJobId=${job.id} scopeType=${job.props.scopeType} scopeId=${job.props.scopeId}`);
         }
     }
 

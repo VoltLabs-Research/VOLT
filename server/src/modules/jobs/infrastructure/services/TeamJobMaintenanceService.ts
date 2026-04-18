@@ -189,11 +189,7 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
                 const confirmedAffectedJobs = this.normalizeAffectedJobs(response.affectedJobs, jobs.length);
 
                 if (confirmedAffectedJobs !== jobs.length) {
-                    logger.warn({
-                        teamClusterId,
-                        requestedJobs: jobs.length,
-                        affectedJobs: confirmedAffectedJobs
-                    }, '[TeamJobMaintenanceService] Cluster returned partial confirmation for job action');
+                    logger.warn(`[TeamJobMaintenanceService] Cluster returned partial confirmation for job action teamClusterId=${teamClusterId} requestedJobs=${jobs.length} affectedJobs=${confirmedAffectedJobs}`);
                     clusterFailures.push({
                         teamClusterId,
                         requestedJobs: jobs.length,

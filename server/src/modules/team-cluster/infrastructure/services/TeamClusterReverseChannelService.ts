@@ -261,7 +261,7 @@ export default class TeamClusterReverseChannelService {
                         continue;
                     }
 
-                    logger.warn({ sessionId, type: entry.type }, '[ReverseChannel] Session idle TTL expired — cleaning up');
+                    logger.warn(`[ReverseChannel] Session idle TTL expired — cleaning up sessionId=${sessionId} type=${entry.type}`);
 
                     if (entry.type === 'terminal') {
                         entry.stream.destroy();
@@ -304,7 +304,7 @@ export default class TeamClusterReverseChannelService {
         if (teamClusterId && this.daemonSocketIdsByTeamClusterId.get(teamClusterId) === socketId) {
             this.daemonSocketIdsByTeamClusterId.delete(teamClusterId);
             this.exposureRegistryService.clearTeamCluster(teamClusterId);
-            logger.warn({ socketId, teamClusterId }, '[ReverseChannel] Daemon connection unregistered');
+            logger.warn(`[ReverseChannel] Daemon connection unregistered socketId=${socketId} teamClusterId=${teamClusterId}`);
         }
 
         this.teamClusterIdsBySocketId.delete(socketId);
@@ -603,7 +603,7 @@ export default class TeamClusterReverseChannelService {
 
             case 'runtime-progress':
                 this.handleRuntimeProgressPayload(socketId, payload).catch((error: Error) => {
-                    logger.error({ error, socketId, payload }, '[ReverseChannel] Runtime progress handling failed');
+                    logger.error(`[ReverseChannel] Runtime progress handling failed socketId=${socketId}`);
                 });
                 return;
 
@@ -783,7 +783,7 @@ export default class TeamClusterReverseChannelService {
             // accumulate — Node's PassThrough will buffer up to highWaterMark
             // and then start returning false.  The daemon side does not support
             // pause/resume yet, so we accept the write but note the pressure.
-            logger.debug({ requestId: payload.requestId }, '[ReverseChannel] Stream backpressure hit');
+            logger.debug(`[ReverseChannel] Stream backpressure hit requestId=${payload.requestId}`);
         }
     }
 

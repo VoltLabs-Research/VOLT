@@ -430,7 +430,7 @@ export class AnalysisListingExportCatalogService {
                 exposureId: doc.exposureId || '',
                 exposureName: doc.exposureName || '',
                 trajectory: String(doc.trajectory || ''),
-                trajectoryName: doc.trajectoryName || '',
+                trajectoryName: doc.trajectoryName as string,
                 timestep: doc.timestep ?? 0,
                 row: (doc.row && typeof doc.row === 'object') ? doc.row : {}
             };
