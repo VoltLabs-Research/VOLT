@@ -1,10 +1,11 @@
 import type { AnalysisExposureDefinition } from '@/modules/analysis/contracts/http-analysis';
 import type { ArtifactUploadBatch } from '@/modules/plugin/contracts/artifact-upload';
+import type { MsgpackObject } from '@/support/serialization/msgpack-value';
 
 export type ExporterName = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter' | 'ChartExporter';
 
 export interface ExporterEntry {
-    exportData: Record<string, unknown>;
+    exportData: MsgpackObject;
     arrayIndex: number | undefined;
 }
 
@@ -85,7 +86,7 @@ export interface ExportExecutionData {
 export interface ExportExecutionInput {
     executionData: ExportExecutionData;
     exposure: AnalysisExposureDefinition;
-    decodedPayload: Record<string, unknown>;
+    decodedPayload: MsgpackObject;
     timestep: number;
     storageClusterId: string;
     artifactUploadBatch: ArtifactUploadBatch;

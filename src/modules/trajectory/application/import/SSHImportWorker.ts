@@ -28,7 +28,6 @@ import type { VoltCloudConnection } from '@/modules/container/infrastructure/con
 import { compressFileWithZstd, toCompressedDumpObjectKey } from '@/support/serialization/storage-codec';
 
 const scryptAsync = promisify(crypto.scrypt);
-const sanitizeTempPrefix = (value: string): string => value.replace(/[^a-zA-Z0-9._-]+/g, '-');
 
 export class SSHImportWorker extends BaseWorker<SSHImportJobPayload> {
     protected readonly queueName = SSH_IMPORT_QUEUE_NAME;
@@ -58,7 +57,7 @@ export class SSHImportWorker extends BaseWorker<SSHImportJobPayload> {
         await fs.mkdir(DAEMON_PATHS.sshImport, { recursive: true });
         const workdirHandle = await createTempDir({
             tmpdir: DAEMON_PATHS.sshImport,
-            prefix: `${sanitizeTempPrefix(payload.trajectoryId)}-`,
+            prefix: `${this.sanitizeTempPrefix(payload.trajectoryId)}-`,
             unsafeCleanup: true
         });
         const workdir = workdirHandle.path;
@@ -220,5 +219,9 @@ export class SSHImportWorker extends BaseWorker<SSHImportJobPayload> {
 
         const direct = await this.voltCloudConnection.sendServerCommand('trajectory.import-complete', payload);
         return direct !== undefined;
+    }
+
+    private sanitizeTempPrefix(value: string): string {
+        return value.replace(/[^a-zA-Z0-9._-]+/g, '-');
     }
 }

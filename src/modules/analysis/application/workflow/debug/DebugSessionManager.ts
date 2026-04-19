@@ -234,7 +234,7 @@ export class DebugSessionManager {
         const startTime = Date.now();
 
         try {
-            const skipReason = this.getNodeSkipReason(session, node);
+            const skipReason = this.createSessionScheduler(session).getSkipReason(node);
             const result = skipReason
                 ? {
                     status: 'skipped',
@@ -256,7 +256,7 @@ export class DebugSessionManager {
                     reason: result?.reason ?? `No handler registered for node type "${node.type}"`,
                     nestedTrace: result?.nestedTrace,
                     durationMs,
-                    contextSnapshot: this.snapshotSessionOutputs(session)
+                    contextSnapshot: WorkflowSession.snapshotOutputs(session.context.outputs)
                 };
             }
 
@@ -267,7 +267,7 @@ export class DebugSessionManager {
                 output: result.output,
                 nestedTrace: result.nestedTrace,
                 durationMs,
-                contextSnapshot: this.snapshotSessionOutputs(session)
+                contextSnapshot: WorkflowSession.snapshotOutputs(session.context.outputs)
             };
         } catch (error) {
             const durationMs = Date.now() - startTime;
@@ -285,7 +285,7 @@ export class DebugSessionManager {
                 stack,
                 nestedTrace: error instanceof WorkflowTraceError ? error.trace : undefined,
                 durationMs,
-                contextSnapshot: this.snapshotSessionOutputs(session)
+                contextSnapshot: WorkflowSession.snapshotOutputs(session.context.outputs)
             };
         }
     }
@@ -418,10 +418,6 @@ export class DebugSessionManager {
         }
     }
 
-    private getNodeSkipReason(session: DebugSession, node: WorkflowNode): string | undefined {
-        return this.createSessionScheduler(session).getSkipReason(node);
-    }
-
     private resolveNextNodeIds(
         session: DebugSession,
         node: WorkflowNode,
@@ -501,10 +497,6 @@ export class DebugSessionManager {
             output: execution.output,
             nestedTrace: execution.trace
         };
-    }
-
-    private snapshotSessionOutputs(session: DebugSession): WorkflowOutputsSnapshot {
-        return WorkflowSession.snapshotOutputs(session.context.outputs);
     }
 
     private createSessionScheduler(session: DebugSession): WorkflowScheduler {

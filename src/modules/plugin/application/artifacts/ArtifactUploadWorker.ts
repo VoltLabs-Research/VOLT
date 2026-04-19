@@ -30,23 +30,6 @@ interface ArtifactUploadStatusReporter {
 
 const DEFAULT_ARTIFACT_UPLOAD_CONCURRENCY = readPositiveIntegerEnv('ARTIFACT_UPLOAD_CONCURRENCY') ?? 8;
 
-const shouldCompress = (contentType: string | undefined): boolean => {
-    return contentType === 'application/msgpack' || contentType === 'model/gltf-binary';
-};
-
-const resolveObjectKey = (objectKey: string, contentType: string | undefined, compressed: boolean): string => {
-    if (!compressed) {
-        return objectKey;
-    }
-    if (contentType === 'application/msgpack' && !objectKey.endsWith('.msgpack.zst')) {
-        return `${objectKey}.zst`;
-    }
-    if (contentType === 'model/gltf-binary' && !objectKey.endsWith('.glb.zst')) {
-        return `${objectKey}.zst`;
-    }
-    return objectKey;
-};
-
 export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPayload> {
     protected readonly queueName = ARTIFACT_UPLOAD_QUEUE_NAME;
 
@@ -121,13 +104,13 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
     }
 
     private async uploadOne(upload: ArtifactUploadBatchJobPayload['uploads'][number]): Promise<void> {
-        const compressed = shouldCompress(upload.contentType);
+        const compressed = this.shouldCompress(upload.contentType);
         const sourcePath = compressed ? `${upload.sourcePath}.zst` : upload.sourcePath;
         if (compressed) {
             await compressFileWithZstd(upload.sourcePath, sourcePath);
         }
 
-        const objectKey = resolveObjectKey(upload.objectKey, upload.contentType, compressed);
+        const objectKey = this.resolveObjectKey(upload.objectKey, upload.contentType, compressed);
         const contentEncoding = compressed ? 'zstd' : upload.contentEncoding;
 
         try {
@@ -166,5 +149,22 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
         await fs.rm(batchDirectory, { recursive: true, force: true }).catch((error) => {
             logger.warn(`Failed to cleanup artifact upload batch directory ${batchDirectory}: ${error instanceof Error ? error.message : String(error)}`);
         });
+    }
+
+    private shouldCompress(contentType: string | undefined): boolean {
+        return contentType === 'application/msgpack' || contentType === 'model/gltf-binary';
+    }
+
+    private resolveObjectKey(objectKey: string, contentType: string | undefined, compressed: boolean): string {
+        if (!compressed) {
+            return objectKey;
+        }
+        if (contentType === 'application/msgpack' && !objectKey.endsWith('.msgpack.zst')) {
+            return `${objectKey}.zst`;
+        }
+        if (contentType === 'model/gltf-binary' && !objectKey.endsWith('.glb.zst')) {
+            return `${objectKey}.zst`;
+        }
+        return objectKey;
     }
 }

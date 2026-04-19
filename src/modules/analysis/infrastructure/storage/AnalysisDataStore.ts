@@ -21,12 +21,6 @@ interface RedisConnectionOptions {
 const ANALYSIS_EXECUTION_DATA_KEY_PREFIX = 'analysis:execution-data:';
 const ANALYSIS_EXECUTION_DATA_TTL_SECONDS = 604_800;
 
-const createAnalysisExecutionDataKey = (analysisId: string): string => {
-    const randomSuffix = Math.random().toString(36).slice(2, 10);
-
-    return `${ANALYSIS_EXECUTION_DATA_KEY_PREFIX}${analysisId}:${Date.now()}:${randomSuffix}`;
-};
-
 export class AnalysisDataStore {
     private readonly client: Redis;
 
@@ -73,7 +67,7 @@ export class AnalysisDataStore {
         await this.connect();
 
         const storedAt = new Date().toISOString();
-        const key = createAnalysisExecutionDataKey(executionData.identity.analysisId);
+        const key = this.createAnalysisExecutionDataKey(executionData.identity.analysisId);
         const serializedPayload = payload?.serializedPayload ?? serializeAnalysisExecutionData(executionData);
         const compressedPayload = payload?.compressedPayload ?? compressSerializedAnalysisExecutionData(serializedPayload);
 
@@ -130,5 +124,11 @@ export class AnalysisDataStore {
             );
             return null;
         }
+    }
+
+    private createAnalysisExecutionDataKey(analysisId: string): string {
+        const randomSuffix = Math.random().toString(36).slice(2, 10);
+
+        return `${ANALYSIS_EXECUTION_DATA_KEY_PREFIX}${analysisId}:${Date.now()}:${randomSuffix}`;
     }
 };

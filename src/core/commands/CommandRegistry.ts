@@ -40,45 +40,6 @@ const COMMAND_ROOTS = [
     'modules/trajectory/application/commands'
 ];
 
-const buildCommandName = (namespace: string, name: string): string => {
-    return `${namespace}.${name}`;
-};
-
-const normalizeCommandResult = (
-    result: unknown,
-    command: CommandMethodMetadata
-): CommandResult => {
-    if (command.options.raw === true) {
-        return result as CommandResult;
-    }
-
-    return {
-        status: command.options.status,
-        data: (result ?? null) as CommandResult['data']
-    };
-};
-
-const discoverCommandGroups = (): Promise<DiscoveredCommandGroup[]> => {
-    return discoverModuleExports<DiscoveredCommandGroup>({
-        filePattern: COMMAND_FILE_PATTERN,
-        roots: COMMAND_ROOTS,
-        mapExport: ({ exportName, relativePath }, exportedValue) => {
-            const metadata = getCommandGroupMetadata(exportedValue);
-
-            if (!metadata) {
-                return null;
-            }
-
-            return {
-                registrationName: `command-group:${relativePath}.${exportName}`,
-                Group: exportedValue as CommandGroupClass,
-                namespace: metadata.namespace,
-                commands: metadata.commands
-            };
-        }
-    });
-};
-
 export class CommandRegistry {
     private readonly handlers = new Map<string, RegisteredCommand>();
 
@@ -88,14 +49,14 @@ export class CommandRegistry {
     ): Promise<void> {
         logger.info('@command-registry: Registering cluster daemon commands');
 
-        for (const commandGroup of await discoverCommandGroups()) {
+        for (const commandGroup of await this.discoverCommandGroups()) {
             container.register({
                 [commandGroup.registrationName]: asClass(commandGroup.Group).scoped()
             });
 
             for (const command of commandGroup.commands) {
                 this.register(
-                    buildCommandName(commandGroup.namespace, command.name),
+                    this.buildCommandName(commandGroup.namespace, command.name),
                     async (payload) => {
                         const commandGroupInstance = resolveScopedRegistration<Record<string, (payload: CommandPayload) => unknown>>(
                             container,
@@ -104,7 +65,7 @@ export class CommandRegistry {
                         );
                         const result = await commandGroupInstance[command.propertyKey](payload);
 
-                        return normalizeCommandResult(result, command);
+                        return this.normalizeCommandResult(result, command);
                     }
                 );
             }
@@ -141,5 +102,41 @@ export class CommandRegistry {
         }
 
         this.handlers.set(commandName, handler);
+    }
+
+    private buildCommandName(namespace: string, name: string): string {
+        return `${namespace}.${name}`;
+    }
+
+    private normalizeCommandResult(result: unknown, command: CommandMethodMetadata): CommandResult {
+        if (command.options.raw === true) {
+            return result as CommandResult;
+        }
+
+        return {
+            status: command.options.status,
+            data: (result ?? null) as CommandResult['data']
+        };
+    }
+
+    private discoverCommandGroups(): Promise<DiscoveredCommandGroup[]> {
+        return discoverModuleExports<DiscoveredCommandGroup>({
+            filePattern: COMMAND_FILE_PATTERN,
+            roots: COMMAND_ROOTS,
+            mapExport: ({ exportName, relativePath }, exportedValue) => {
+                const metadata = getCommandGroupMetadata(exportedValue);
+
+                if (!metadata) {
+                    return null;
+                }
+
+                return {
+                    registrationName: `command-group:${relativePath}.${exportName}`,
+                    Group: exportedValue as CommandGroupClass,
+                    namespace: metadata.namespace,
+                    commands: metadata.commands
+                };
+            }
+        });
     }
 }

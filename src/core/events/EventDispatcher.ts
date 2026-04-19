@@ -24,44 +24,19 @@ const EVENT_ROOTS = [
     'core/runtime/infrastructure/events'
 ];
 
-const buildEventName = (namespace: string, name: string): string => {
-    return `${namespace}.${name}`;
-};
-
-const discoverEventGroups = (): Promise<DiscoveredEventGroup[]> => {
-    return discoverModuleExports<DiscoveredEventGroup>({
-        filePattern: EVENT_FILE_PATTERN,
-        roots: EVENT_ROOTS,
-        mapExport: ({ exportName, relativePath }, exportedValue) => {
-            const metadata = getEventGroupMetadata(exportedValue);
-
-            if (!metadata) {
-                return null;
-            }
-
-            return {
-                registrationName: `event-group:${relativePath}.${exportName}`,
-                Group: exportedValue as EventGroupClass,
-                namespace: metadata.namespace,
-                events: metadata.events
-            };
-        }
-    });
-};
-
 export class EventDispatcher {
     private readonly handlers = new Map<string, Set<EventHandler>>();
 
     async registerDecoratedGroups(container: AwilixContainer): Promise<void> {
         logger.info('@event-dispatcher: Registering cluster daemon subscribers');
 
-        for (const { registrationName, Group, namespace, events } of await discoverEventGroups()) {
+        for (const { registrationName, Group, namespace, events } of await this.discoverEventGroups()) {
             container.register({
                 [registrationName]: asClass(Group).scoped()
             });
 
             for (const eventMetadata of events) {
-                this.subscribe(buildEventName(namespace, eventMetadata.name), (event) => {
+                this.subscribe(this.buildEventName(namespace, eventMetadata.name), (event) => {
                     const eventGroup = resolveScopedRegistration<Record<string, (event: IDomainEvent) => Promise<void> | void>>(
                         container,
                         registrationName,
@@ -89,5 +64,30 @@ export class EventDispatcher {
         const handlers = this.handlers.get(eventName) ?? new Set<EventHandler>();
         handlers.add(handler);
         this.handlers.set(eventName, handlers);
+    }
+
+    private buildEventName(namespace: string, name: string): string {
+        return `${namespace}.${name}`;
+    }
+
+    private discoverEventGroups(): Promise<DiscoveredEventGroup[]> {
+        return discoverModuleExports<DiscoveredEventGroup>({
+            filePattern: EVENT_FILE_PATTERN,
+            roots: EVENT_ROOTS,
+            mapExport: ({ exportName, relativePath }, exportedValue) => {
+                const metadata = getEventGroupMetadata(exportedValue);
+
+                if (!metadata) {
+                    return null;
+                }
+
+                return {
+                    registrationName: `event-group:${relativePath}.${exportName}`,
+                    Group: exportedValue as EventGroupClass,
+                    namespace: metadata.namespace,
+                    events: metadata.events
+                };
+            }
+        });
     }
 }

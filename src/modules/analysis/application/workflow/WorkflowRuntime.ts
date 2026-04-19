@@ -26,14 +26,16 @@ import type { AnalysisJobExecutionData } from '@/modules/analysis/contracts/http
 import type { ArtifactUploadBatch } from '@/modules/plugin/contracts/artifact-upload';
 import type { ResultProcessorService } from '@/modules/plugin/application/exports/result-processor-service-contract';
 import type { WorkflowExecutionOptions } from '@/modules/analysis/contracts/workflow.types';
-import fs from 'node:fs/promises';
 import { dir as createTempDir } from 'tmp-promise';
+import fs from 'node:fs/promises';
 
 interface WorkflowTraceContext {
     currentPluginId: string;
-    traceCounter: {
-        value: number;
-    };
+    traceCounter: WorkflowTraceCounter;
+}
+
+interface WorkflowTraceCounter {
+    value: number;
 }
 
 interface WorkflowProcessLogContext {
@@ -68,7 +70,7 @@ type PluginNodeLike = Pick<WorkflowNodeDefinition, 'id' | 'type' | 'data'>;
 
 export interface AggregatedTrajectoryFrame extends TrajectoryFrame {
     originalPath?: string;
-};
+}
 
 export interface WorkflowExposureArtifact {
     exposureId: string;
@@ -110,7 +112,7 @@ export interface WorkflowPluginReferenceValueWithSelections {
 interface PluginExecutionOutput {
     pluginId: string;
     output: WorkflowNodeOutput;
-};
+}
 
 export interface ExecutePluginNodeInput extends WorkflowExecutionBaseInput {
     node: PluginNodeLike;
@@ -160,17 +162,6 @@ export interface InlineWorkflowTraceNode {
     children?: InlineWorkflowTraceNode[];
 }
 
-export class WorkflowTraceError extends Error {
-    constructor(
-        message: string,
-        readonly trace: InlineWorkflowTraceNode[],
-        options?: ErrorOptions
-    ) {
-        super(message, options);
-        this.name = 'WorkflowTraceError';
-    }
-}
-
 interface WorkflowExecutionOutcome {
     output: WorkflowNodeOutput;
     trace: InlineWorkflowTraceNode[];
@@ -198,103 +189,18 @@ interface WorkflowVisitContext {
     executionPath: string[];
 }
 
+export class WorkflowTraceError extends Error {
+    constructor(
+        message: string,
+        readonly trace: InlineWorkflowTraceNode[],
+        options?: ErrorOptions
+    ) {
+        super(message, options);
+        this.name = 'WorkflowTraceError';
+    }
+}
+
 const MAX_BATCH_PLUGIN_CONCURRENCY = 2;
-
-const createTraceNode = (
-    context: WorkflowTraceContext | null,
-    input: Omit<InlineWorkflowTraceNode, 'traceId' | 'pluginId'>
-): InlineWorkflowTraceNode | null => {
-    if (!context) {
-        return null;
-    }
-
-    return {
-        traceId: `trace_${++context.traceCounter.value}`,
-        pluginId: context.currentPluginId,
-        ...input
-    };
-};
-
-const createTraceContext = (
-    currentPluginId: string,
-    traceCounter: WorkflowTraceContext['traceCounter'] | undefined,
-    enabled: boolean
-): WorkflowTraceContext | null => {
-    if (!enabled || !traceCounter) {
-        return null;
-    }
-
-    return {
-        currentPluginId,
-        traceCounter
-    };
-};
-
-const toError = (error: Error | undefined, fallbackMessage: string): Error => error ?? new Error(fallbackMessage);
-
-const buildAggregatedPluginOutput = (
-    executions: PluginExecutionOutput[]
-): WorkflowNodeOutput => {
-    const allExposureItems = executions.flatMap(
-        (execution) => (execution.output as WorkflowExecutionResultOutput).execution_result.exposures.items
-    );
-
-    return {
-        pluginIds: executions.map((execution) => execution.pluginId),
-        executions: {
-            items: executions,
-            str_json: JSON.stringify(executions)
-        },
-        execution_result: {
-            exposures: {
-                items: allExposureItems,
-                str_json: JSON.stringify(allExposureItems)
-            }
-        }
-    };
-};
-
-export const createNestedExecutionResult = (
-    items: WorkflowExposureArtifact[]
-): WorkflowExecutionResultOutput => ({
-    execution_result: {
-        exposures: {
-            items,
-            str_json: JSON.stringify(items)
-        }
-    }
-});
-
-const appendTraceNode = (
-    trace: InlineWorkflowTraceNode[],
-    context: WorkflowTraceContext | null,
-    input: Omit<InlineWorkflowTraceNode, 'traceId' | 'pluginId'>
-): void => {
-    const traceNode = createTraceNode(context, input);
-    if (traceNode) {
-        trace.push(traceNode);
-    }
-};
-
-const createInlineDumpDescriptor = (
-    dumpTarget: WorkflowDumpTarget
-): TrajectoryDumpDescriptor => ({
-    timestep: dumpTarget.timestep,
-    natoms: dumpTarget.natoms,
-    simulationCell: dumpTarget.simulationCell,
-    path: dumpTarget.localPath,
-    originalPath: dumpTarget.originalPath
-});
-
-const resolveInlineTrajectoryFrames = (
-    input: WorkflowExecutionBaseInput
-): AggregatedTrajectoryFrame[] => input.trajectoryFrames?.length
-    ? input.trajectoryFrames
-    : [{
-        timestep: input.dumpTarget.timestep,
-        natoms: input.dumpTarget.natoms,
-        simulationCell: input.dumpTarget.simulationCell
-    }];
 
 export class WorkflowRuntime {
     private readonly nodeExecutor: WorkflowNodeExecutor;
@@ -318,7 +224,7 @@ export class WorkflowRuntime {
         );
         if (!executions.length) {
             return {
-                output: buildAggregatedPluginOutput([]),
+                output: this.buildAggregatedPluginOutput([]),
                 trace: []
             };
         }
@@ -329,7 +235,7 @@ export class WorkflowRuntime {
 
         for (const executionTarget of executions) {
             const startedAt = Date.now();
-            const targetTraceContext = createTraceContext(
+            const targetTraceContext = this.createTraceContext(
                 executionTarget.pluginId,
                 traceCounter,
                 input.captureTrace === true
@@ -356,7 +262,7 @@ export class WorkflowRuntime {
                     pluginId: executionTarget.pluginId,
                     output: nestedExecution.output
                 });
-                appendTraceNode(trace, targetTraceContext, {
+                this.appendTraceNode(trace, targetTraceContext, {
                     nodeId: executionTarget.pluginId,
                     nodeType: input.node.type,
                     label: executionTarget.pluginId,
@@ -371,7 +277,7 @@ export class WorkflowRuntime {
                 const childTrace = runtimeError instanceof WorkflowTraceError
                     ? runtimeError.trace
                     : undefined;
-                appendTraceNode(trace, targetTraceContext, {
+                this.appendTraceNode(trace, targetTraceContext, {
                     nodeId: executionTarget.pluginId,
                     nodeType: input.node.type,
                     label: executionTarget.pluginId,
@@ -386,12 +292,12 @@ export class WorkflowRuntime {
                     throw new WorkflowTraceError(message, trace, { cause: error });
                 }
 
-                throw toError(runtimeError, message);
+                throw this.toError(runtimeError, message);
             }
         }
 
         return {
-            output: buildAggregatedPluginOutput(aggregatedExecutions),
+            output: this.buildAggregatedPluginOutput(aggregatedExecutions),
             trace
         };
     }
@@ -485,7 +391,7 @@ export class WorkflowRuntime {
     private async executePluginForRuntime(ctx: WorkflowVisitContext): Promise<WorkflowNodeOutput> {
         const { input } = ctx;
         if (input.dumpTargets.length === 0) {
-            return createNestedExecutionResult([]);
+            return this.createNestedExecutionResult([]);
         }
 
         const shouldBatch = input.isBatchMode && input.dumpTargets.length > 1;
@@ -516,7 +422,7 @@ export class WorkflowRuntime {
         for (const group of groups) {
             aggregated.push(...group);
         }
-        return createNestedExecutionResult(aggregated);
+        return this.createNestedExecutionResult(aggregated);
     }
 
     private buildRuntimeExecutionOptions(input: WorkflowExecuteInput): WorkflowExecutionOptions {
@@ -577,7 +483,7 @@ export class WorkflowRuntime {
     ): ExecutePluginNodeInput {
         const { identity } = ctx.input.executionData;
 
-        return {
+        const pluginExecutionInput: ExecutePluginNodeInput = {
             node: ctx.node,
             workflow: ctx.input.executionData.workflow.definition,
             nestedPlugins: ctx.input.executionData.workflow.nestedPlugins,
@@ -593,6 +499,8 @@ export class WorkflowRuntime {
             executionPath: ctx.executionPath,
             logSinkFactory: ctx.input.logSinkFactory
         };
+
+        return pluginExecutionInput;
     }
 
     private async mapLimited<T, R>(items: T[], limit: number, task: (item: T, index: number) => Promise<R>): Promise<R[]> {
@@ -619,8 +527,12 @@ export class WorkflowRuntime {
 
         const executionMode = pluginNodeData.executionMode
             ?? (!pluginNodeData.pluginId && pluginNodeData.argumentReference ? 'argumentReference' : pluginNodeData.pluginId ? 'manual' : undefined);
-        const config = (pluginNodeData.config ?? {}) as WorkflowNodeOutput;
-        const selectedTimesteps = pluginNodeData.selectedTimesteps ?? [];
+        const config = pluginNodeData.config
+            ? pluginNodeData.config as WorkflowNodeOutput
+            : {};
+        const selectedTimesteps = pluginNodeData.selectedTimesteps
+            ? pluginNodeData.selectedTimesteps
+            : [];
         if (executionMode === 'argumentReference') {
             if (!workflow || !pluginNodeData.argumentReference) {
                 return [];
@@ -696,8 +608,14 @@ export class WorkflowRuntime {
             userConfig: pluginNodeData.config,
             runtimeArguments: {},
             trajectoryId: input.trajectoryId,
-            trajectoryFrames: resolveInlineTrajectoryFrames(input),
-            trajectoryDumpOverrides: [createInlineDumpDescriptor(input.dumpTarget)],
+            trajectoryFrames: input.trajectoryFrames?.length
+                ? input.trajectoryFrames
+                : [{
+                    timestep: input.dumpTarget.timestep,
+                    natoms: input.dumpTarget.natoms,
+                    simulationCell: input.dumpTarget.simulationCell
+                }],
+            trajectoryDumpOverrides: [this.createInlineDumpDescriptor(input.dumpTarget)],
             analysis: input.analysis,
             analysisId: input.analysisId,
             pluginId,
@@ -726,13 +644,13 @@ export class WorkflowRuntime {
             nestedPlugins: input.nestedPlugins
         });
         const nestedContext = nestedSession.context;
-        const workflowTraceContext = createTraceContext(
+        const workflowTraceContext = this.createTraceContext(
             pluginId,
             traceContext?.traceCounter,
             traceContext !== null
         );
         const localizedDumpTarget = WorkflowSession.createLocalDumpDescriptor(
-            createInlineDumpDescriptor(input.dumpTarget),
+            this.createInlineDumpDescriptor(input.dumpTarget),
             input.dumpTarget.localPath,
             {
                 originalPath: input.dumpTarget.originalPath
@@ -755,7 +673,7 @@ export class WorkflowRuntime {
             try {
                 const execution = await this.nodeExecutor.executeNode(node, nestedContext);
                 if (execution.status === 'skipped') {
-                    appendTraceNode(trace, workflowTraceContext, {
+                    this.appendTraceNode(trace, workflowTraceContext, {
                         nodeId: node.id,
                         nodeType: node.type,
                         status: 'skipped',
@@ -776,7 +694,7 @@ export class WorkflowRuntime {
                     nestedSession.setOutput(node.id, output);
                 }
 
-                appendTraceNode(trace, workflowTraceContext, {
+                this.appendTraceNode(trace, workflowTraceContext, {
                     nodeId: node.id,
                     nodeType: node.type,
                     status: 'completed',
@@ -788,14 +706,14 @@ export class WorkflowRuntime {
                     const forEachOutput = nestedSession.getOutput(node.id);
                     if (!forEachOutput) {
                         return {
-                            output: createNestedExecutionResult([]),
+                            output: this.createNestedExecutionResult([]),
                             trace
                         };
                     }
                     const items = forEachOutput.items as WorkflowNodeOutput[];
                     if (!items.length) {
                         return {
-                            output: createNestedExecutionResult([]),
+                            output: this.createNestedExecutionResult([]),
                             trace
                         };
                     }
@@ -812,7 +730,7 @@ export class WorkflowRuntime {
             } catch (error) {
                 const runtimeError = error instanceof Error ? error : undefined;
                 const message = runtimeError?.message ?? `Nested node ${node.id} failed`;
-                appendTraceNode(trace, workflowTraceContext, {
+                this.appendTraceNode(trace, workflowTraceContext, {
                     nodeId: node.id,
                     nodeType: node.type,
                     status: 'error',
@@ -825,7 +743,7 @@ export class WorkflowRuntime {
                     throw new WorkflowTraceError(message, trace, { cause: error });
                 }
 
-                throw toError(runtimeError, message);
+                throw this.toError(runtimeError, message);
             }
         }
 
@@ -852,7 +770,7 @@ export class WorkflowRuntime {
 
         for (const node of nestedPlugin.workflow.nodes) {
             if (node.type === WorkflowNodeType.Export) {
-                appendTraceNode(trace, workflowTraceContext, {
+                this.appendTraceNode(trace, workflowTraceContext, {
                     nodeId: node.id,
                     nodeType: node.type,
                     status: 'skipped',
@@ -863,7 +781,7 @@ export class WorkflowRuntime {
         }
 
         return {
-            output: createNestedExecutionResult(exposures),
+            output: this.createNestedExecutionResult(exposures),
             trace
         };
     }
@@ -875,7 +793,7 @@ export class WorkflowRuntime {
         const { nestedPlugins, dumpTarget, trajectoryId, analysisId, teamId } = params.input;
         const { analysis, trajectoryFrames } = params.session.context;
 
-        return {
+        const pluginExecutionInput: ExecutePluginNodeInput = {
             nestedPlugins,
             outputs: params.session.outputs,
             dumpTarget,
@@ -892,6 +810,8 @@ export class WorkflowRuntime {
             executionPath,
             logSinkFactory: params.logSinkFactory
         };
+
+        return pluginExecutionInput;
     }
 
     private collectNestedExposureArtifacts(session: WorkflowSession): WorkflowExposureArtifact[] {
@@ -903,12 +823,11 @@ export class WorkflowRuntime {
             }
 
             const output = session.getOutput(node.id);
-            if (
-                !output
-                || output.skipped === true
-                || typeof output.filePath !== 'string'
-                || typeof output.results !== 'string'
-            ) {
+            if (!output || output.skipped === true) {
+                continue;
+            }
+
+            if (typeof output.filePath !== 'string' || typeof output.results !== 'string') {
                 continue;
             }
 
@@ -972,7 +891,7 @@ export class WorkflowRuntime {
                     this.createNestedPluginExecutionInput(params, nodeExecutionPath)
                 );
                 params.session.setOutput(params.node.id, execution.output);
-                appendTraceNode(params.trace, params.traceContext, {
+                this.appendTraceNode(params.trace, params.traceContext, {
                     nodeId: params.node.id,
                     nodeType: params.node.type,
                     status: 'completed',
@@ -989,7 +908,7 @@ export class WorkflowRuntime {
                 this.createNestedNodeExecutionContext(params, nodeExecutionPath)
             );
             if (execution.status === 'skipped') {
-                appendTraceNode(params.trace, params.traceContext, {
+                this.appendTraceNode(params.trace, params.traceContext, {
                     nodeId: params.node.id,
                     nodeType: params.node.type,
                     status: 'skipped',
@@ -1001,7 +920,7 @@ export class WorkflowRuntime {
 
             const output = execution.output as WorkflowNodeOutput;
             if (output.skipped === true && typeof output.reason === 'string') {
-                appendTraceNode(params.trace, params.traceContext, {
+                this.appendTraceNode(params.trace, params.traceContext, {
                     nodeId: params.node.id,
                     nodeType: params.node.type,
                     status: 'skipped',
@@ -1012,7 +931,7 @@ export class WorkflowRuntime {
                 return;
             }
 
-            appendTraceNode(params.trace, params.traceContext, {
+            this.appendTraceNode(params.trace, params.traceContext, {
                 nodeId: params.node.id,
                 nodeType: params.node.type,
                 status: 'completed',
@@ -1023,7 +942,7 @@ export class WorkflowRuntime {
         } catch (error) {
             const runtimeError = error instanceof Error ? error : undefined;
             const message = runtimeError?.message ?? `Nested runtime node ${params.node.id} failed`;
-            appendTraceNode(params.trace, params.traceContext, {
+            this.appendTraceNode(params.trace, params.traceContext, {
                 nodeId: params.node.id,
                 nodeType: params.node.type,
                 status: 'error',
@@ -1036,7 +955,7 @@ export class WorkflowRuntime {
                 throw new WorkflowTraceError(message, params.trace, { cause: error });
             }
 
-            throw toError(runtimeError, message);
+            throw this.toError(runtimeError, message);
         }
     }
 
@@ -1084,6 +1003,86 @@ export class WorkflowRuntime {
 
             await this.executeReadyNestedChild(params, childNode, executionPath);
         }
+    }
+
+    private createTraceContext(
+        currentPluginId: string,
+        traceCounter: WorkflowTraceContext['traceCounter'] | undefined,
+        enabled: boolean
+    ): WorkflowTraceContext | null {
+        if (!enabled || !traceCounter) {
+            return null;
+        }
+
+        return {
+            currentPluginId,
+            traceCounter
+        };
+    }
+
+    private toError(error: Error | undefined, fallbackMessage: string): Error {
+        if (error) {
+            return error;
+        }
+
+        return new Error(fallbackMessage);
+    }
+
+    private buildAggregatedPluginOutput(executions: PluginExecutionOutput[]): WorkflowNodeOutput {
+        const allExposureItems = executions.flatMap(
+            (execution) => (execution.output as WorkflowExecutionResultOutput).execution_result.exposures.items
+        );
+
+        return {
+            pluginIds: executions.map((execution) => execution.pluginId),
+            executions: {
+                items: executions,
+                str_json: JSON.stringify(executions)
+            },
+            execution_result: {
+                exposures: {
+                    items: allExposureItems,
+                    str_json: JSON.stringify(allExposureItems)
+                }
+            }
+        };
+    }
+
+    private createNestedExecutionResult(items: WorkflowExposureArtifact[]): WorkflowExecutionResultOutput {
+        return {
+            execution_result: {
+                exposures: {
+                    items,
+                    str_json: JSON.stringify(items)
+                }
+            }
+        };
+    }
+
+    private appendTraceNode(
+        trace: InlineWorkflowTraceNode[],
+        context: WorkflowTraceContext | null,
+        input: Omit<InlineWorkflowTraceNode, 'traceId' | 'pluginId'>
+    ): void {
+        if (!context) {
+            return;
+        }
+
+        trace.push({
+            traceId: `trace_${++context.traceCounter.value}`,
+            pluginId: context.currentPluginId,
+            ...input
+        });
+    }
+
+    private createInlineDumpDescriptor(dumpTarget: WorkflowDumpTarget): TrajectoryDumpDescriptor {
+        return {
+            timestep: dumpTarget.timestep,
+            natoms: dumpTarget.natoms,
+            simulationCell: dumpTarget.simulationCell,
+            path: dumpTarget.localPath,
+            originalPath: dumpTarget.originalPath
+        };
     }
 
 }

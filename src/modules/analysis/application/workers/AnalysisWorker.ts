@@ -43,15 +43,17 @@ export class AnalysisWorker extends BaseWorker<AnalysisQueueJobPayload> {
 
     protected scopeConstraints(payload: AnalysisQueueJobPayload): QueueScopeConstraint[] {
         const limits = this.queueScopeLimitsRegistry.getSnapshot().analysisProcessing;
+        const metadata = payload.metadata as AnalysisJobMetadata;
+
         return [
-            { scope: 'trajectory', scopeId: payload.metadata?.trajectoryId ?? '', limit: limits.maxRunningPerTrajectory },
+            { scope: 'trajectory', scopeId: metadata.trajectoryId, limit: limits.maxRunningPerTrajectory },
             { scope: 'team', scopeId: payload.teamId, limit: limits.maxRunningPerTeam }
         ];
     }
 
     protected async process(payload: AnalysisQueueJobPayload, bullJob: BullMQJob<AnalysisQueueJobPayload>): Promise<void> {
         const job = payload as AnalysisWorkerJobPayload;
-        const metadata = (job.metadata ?? {}) as AnalysisJobMetadata;
+        const metadata = job.metadata as AnalysisJobMetadata;
         const executionData = await this.analysisDataStore.resolve(job);
         const isBatchMode = executionData.batch !== undefined;
         const timestep = isBatchMode ? undefined : (job.timestep ?? metadata.timestep);

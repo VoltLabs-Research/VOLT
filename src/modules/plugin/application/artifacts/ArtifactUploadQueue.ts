@@ -16,24 +16,6 @@ import type {
     ArtifactUploadStageInput
 } from '@/modules/plugin/contracts/artifact-upload';
 
-const sanitizeFileName = (value: string): string => {
-    const sanitized = value.replace(/[^a-zA-Z0-9._-]+/g, '-');
-    return sanitized.length > 0 ? sanitized : 'artifact';
-};
-
-const resolveFileName = (input: ArtifactUploadStageInput, fallbackName: string): string => {
-    if (input.fileName) {
-        return sanitizeFileName(input.fileName);
-    }
-
-    const objectBaseName = path.basename(input.objectKey);
-    if (objectBaseName.length > 0) {
-        return sanitizeFileName(objectBaseName);
-    }
-
-    return sanitizeFileName(fallbackName);
-};
-
 class DefaultArtifactUploadBatch implements ArtifactUploadBatch {
     private readonly uploads: ArtifactUploadBatchUpload[] = [];
     private nextSequence = 0;
@@ -80,7 +62,7 @@ class DefaultArtifactUploadBatch implements ArtifactUploadBatch {
         }
 
         const payload: ArtifactUploadBatchJobPayload = {
-            jobId: `artifact-upload-${sanitizeFileName(this.context.analysisJobId)}`,
+            jobId: `artifact-upload-${this.sanitizeFileName(this.context.analysisJobId)}`,
             analysisId: this.context.analysisId,
             teamId: this.context.teamId,
             trajectoryId: this.context.trajectoryId,
@@ -131,7 +113,7 @@ class DefaultArtifactUploadBatch implements ArtifactUploadBatch {
         await fs.mkdir(DAEMON_PATHS.artifactUploads, { recursive: true });
         const tempDirectory = await createTempDir({
             tmpdir: DAEMON_PATHS.artifactUploads,
-            prefix: `${sanitizeFileName(this.context.analysisId)}-${sanitizeFileName(this.context.analysisJobId)}-`,
+            prefix: `${this.sanitizeFileName(this.context.analysisId)}-${this.sanitizeFileName(this.context.analysisJobId)}-`,
             unsafeCleanup: true
         });
         this.batchDirectory = tempDirectory.path;
@@ -148,7 +130,7 @@ class DefaultArtifactUploadBatch implements ArtifactUploadBatch {
         }
 
         const batchDirectoryPath = await this.ensureBatchDirectory();
-        const fileName = resolveFileName(input, `artifact-${this.nextSequence}`);
+        const fileName = this.resolveFileName(input, `artifact-${this.nextSequence}`);
         const stagedPath = path.join(batchDirectoryPath, `${`${this.nextSequence}`.padStart(4, '0')}-${fileName}`);
         this.nextSequence += 1;
 
@@ -164,6 +146,24 @@ class DefaultArtifactUploadBatch implements ArtifactUploadBatch {
             metadata: input.metadata,
             reportArtifact: input.reportArtifact
         });
+    }
+
+    private sanitizeFileName(value: string): string {
+        const sanitized = value.replace(/[^a-zA-Z0-9._-]+/g, '-');
+        return sanitized.length > 0 ? sanitized : 'artifact';
+    }
+
+    private resolveFileName(input: ArtifactUploadStageInput, fallbackName: string): string {
+        if (input.fileName) {
+            return this.sanitizeFileName(input.fileName);
+        }
+
+        const objectBaseName = path.basename(input.objectKey);
+        if (objectBaseName.length > 0) {
+            return this.sanitizeFileName(objectBaseName);
+        }
+
+        return this.sanitizeFileName(fallbackName);
     }
 }
 

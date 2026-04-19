@@ -1,10 +1,11 @@
-import path from 'node:path';
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 import type { BubbleDataPoint, ChartConfiguration, ChartTypeRegistry, Point } from 'chart.js';
 
 import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
 import { buildArtifactReportInput, getNestedValue } from '@/modules/plugin/application/exports/export-node-processor-shared';
 import type { ChartExportOptions, ExportExecutionInput } from '@/modules/plugin/application/exports/export-node-processor-types';
+import type { MsgpackObject, MsgpackValue } from '@/support/serialization/msgpack-value';
+import path from 'node:path';
 
 interface ChartPoint {
     x: string | number;
@@ -15,15 +16,15 @@ type SupportedChartType = 'line' | 'bar' | 'scatter';
 type SupportedChartDatasetValue = number | [number, number] | Point | BubbleDataPoint | null;
 
 const extractChartData = (
-    decodedPayload: Record<string, unknown>,
+    decodedPayload: MsgpackObject,
     options: ChartExportOptions
 ): ChartPoint[] => {
-    const readChartPoint = (xValue: unknown, yValue: unknown): ChartPoint | null => {
+    const readChartPoint = (xValue: MsgpackValue | undefined, yValue: MsgpackValue | undefined): ChartPoint | null => {
         if (typeof xValue !== 'string' && typeof xValue !== 'number') {
             return null;
         }
 
-        if (typeof yValue !== 'number' || !Number.isFinite(yValue)) {
+        if (typeof yValue !== 'number') {
             return null;
         }
 
@@ -36,30 +37,13 @@ const extractChartData = (
     const xAxis = getNestedValue(decodedPayload, options.xAxisKey);
     const yAxis = getNestedValue(decodedPayload, options.yAxisKey);
 
-    if (Array.isArray(xAxis) && Array.isArray(yAxis)) {
-        return xAxis
-            .map((x, index) => readChartPoint(x, yAxis[index]))
-            .filter((point): point is ChartPoint => point !== null);
-    }
-
-    if (!Array.isArray(decodedPayload)) {
+    if (!(xAxis instanceof Array) || !(yAxis instanceof Array)) {
         return [];
     }
 
-    return decodedPayload
-        .map((entry) => {
-            if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) {
-                return null;
-            }
-
-            const record = entry as Record<string, unknown>;
-            return {
-                x: record[options.xAxisKey],
-                y: record[options.yAxisKey]
-            };
-        })
-        .map((entry) => entry ? readChartPoint(entry.x, entry.y) : null)
-        .filter((entry): entry is ChartPoint => entry !== null);
+    return xAxis
+        .map((x, index) => readChartPoint(x, yAxis[index]))
+        .filter((point): point is ChartPoint => point !== null);
 };
 
 export const exportChartArtifact = async (
@@ -73,34 +57,41 @@ export const exportChartArtifact = async (
         return false;
     }
 
-    if (options.chartType === 'scatter' && chartData.some((point) => !Number.isFinite(Number(point.x)))) {
-        return false;
-    }
-
-    const width = options.width || 1200;
-    const height = options.height || 800;
+    const {
+        chartType: requestedChartType,
+        width = 1200,
+        height = 800,
+        backgroundColor = '#1a1a2e',
+        title = '',
+        lineColor = '#3b82f6',
+        fillColor = 'rgba(59, 130, 246, 0.3)',
+        showLegend = true,
+        showGrid = true,
+        xAxisLabel = '',
+        yAxisLabel = ''
+    } = options;
     const chartCanvas = new ChartJSNodeCanvas({
         width,
         height,
-        backgroundColour: options.backgroundColor || '#1a1a2e'
+        backgroundColour: backgroundColor
     });
-    const chartType: SupportedChartType = options.chartType === 'area'
+    const chartType: SupportedChartType = requestedChartType === 'area'
         ? 'line'
-        : options.chartType;
+        : requestedChartType;
     const chartConfiguration: ChartConfiguration<keyof ChartTypeRegistry, SupportedChartDatasetValue[], string> = {
         type: chartType,
         data: {
             labels: chartType === 'scatter'
                 ? undefined
-                : chartData.map((point) => String(point.x)),
+                : chartData.map((point) => `${point.x}`),
             datasets: [{
-                label: options.title || 'Data',
+                label: title.length > 0 ? title : 'Data',
                 data: chartType === 'scatter'
                     ? chartData.map((point) => ({ x: Number(point.x), y: point.y }))
                     : chartData.map((point) => point.y),
-                borderColor: options.lineColor || '#3b82f6',
-                backgroundColor: options.fillColor || 'rgba(59, 130, 246, 0.3)',
-                fill: options.chartType === 'area',
+                borderColor: lineColor,
+                backgroundColor: fillColor,
+                fill: requestedChartType === 'area',
                 tension: 0.1,
                 pointRadius: chartType === 'scatter' ? 4 : 2,
                 borderWidth: 2
@@ -111,36 +102,36 @@ export const exportChartArtifact = async (
             animation: false,
             plugins: {
                 legend: {
-                    display: options.showLegend ?? true,
+                    display: showLegend,
                     labels: { color: '#ffffff' }
                 },
                 title: {
-                    display: Boolean(options.title),
-                    text: options.title || '',
+                    display: title.length > 0,
+                    text: title,
                     color: '#ffffff'
                 }
             },
             scales: {
                 x: {
                     title: {
-                        display: Boolean(options.xAxisLabel),
-                        text: options.xAxisLabel || '',
+                        display: xAxisLabel.length > 0,
+                        text: xAxisLabel,
                         color: '#ffffff'
                     },
                     grid: {
-                        display: options.showGrid ?? true,
+                        display: showGrid,
                         color: 'rgba(255,255,255,0.1)'
                     },
                     ticks: { color: '#cccccc' }
                 },
                 y: {
                     title: {
-                        display: Boolean(options.yAxisLabel),
-                        text: options.yAxisLabel || '',
+                        display: yAxisLabel.length > 0,
+                        text: yAxisLabel,
                         color: '#ffffff'
                     },
                     grid: {
-                        display: options.showGrid ?? true,
+                        display: showGrid,
                         color: 'rgba(255,255,255,0.1)'
                     },
                     ticks: { color: '#cccccc' }

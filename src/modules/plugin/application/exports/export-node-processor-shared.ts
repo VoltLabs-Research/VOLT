@@ -1,24 +1,25 @@
 import { logger } from '@/core/logger';
 import type { SceneArtifactUpsertBatchItem as ReportArtifactInput } from '@/modules/plugin/contracts/reverse-channel-plugin';
 import type { ExportExecutionInput, ExporterEntry, ExporterName } from '@/modules/plugin/application/exports/export-node-processor-types';
+import type { MsgpackObject, MsgpackScalar, MsgpackValue } from '@/support/serialization/msgpack-value';
 
-type ExportValue = boolean | null | number | string;
+type ExportValue = MsgpackScalar;
 
 export const YIELD_INTERVAL = 50_000;
 
 export const yieldToEventLoop = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
 
-export const getNestedValue = (data: object, key: string): ExportValue | object | object[] | undefined => {
+export const getNestedValue = (data: MsgpackObject, key: string): MsgpackValue | undefined => {
     if (!key) {
         return data;
     }
 
-    return key.split('.').reduce<ExportValue | object | object[] | undefined>((current, segment) => {
-        if (typeof current !== 'object' || current === null || Array.isArray(current)) {
+    return key.split('.').reduce<MsgpackValue | undefined>((current, segment) => {
+        if (typeof current !== 'object' || current === null || current instanceof Array) {
             return undefined;
         }
 
-        return (current as Record<string, ExportValue | object | object[] | undefined>)[segment];
+        return current[segment];
     }, data);
 };
 
@@ -37,32 +38,28 @@ export const buildObjectPath = (
 };
 
 export const resolveExporterEntries = (
-    decodedPayload: object,
+    decodedPayload: MsgpackObject,
     exporter: ExporterName
 ): ExporterEntry[] => {
-    if (Array.isArray(decodedPayload)) {
-        return [];
-    }
+    const rawExport = decodedPayload.export;
 
-    const rawExport = (decodedPayload as Record<string, unknown>).export;
-
-    if (Array.isArray(rawExport)) {
+    if (rawExport instanceof Array) {
         const entries: ExporterEntry[] = [];
 
         for (let index = 0; index < rawExport.length; index += 1) {
             const element = rawExport[index];
-            if (typeof element !== 'object' || element === null || Array.isArray(element)) {
+            if (typeof element !== 'object' || element === null || element instanceof Array) {
                 logger.warn(`Skipping non-record element in export array for exporter=${exporter}, index=${index}`);
                 continue;
             }
 
-            const exporterData = (element as Record<string, unknown>)[exporter];
-            if (typeof exporterData !== 'object' || exporterData === null || Array.isArray(exporterData)) {
+            const exporterData = element[exporter];
+            if (typeof exporterData !== 'object' || exporterData === null || exporterData instanceof Array) {
                 logger.warn(`Exporter key missing from export array element for exporter=${exporter}, index=${index}`);
                 continue;
             }
 
-            entries.push({ exportData: exporterData as Record<string, unknown>, arrayIndex: index });
+            entries.push({ exportData: exporterData, arrayIndex: index });
         }
 
         return entries;
@@ -72,12 +69,12 @@ export const resolveExporterEntries = (
         return [];
     }
 
-    const exporterData = (rawExport as Record<string, unknown>)[exporter];
-    if (typeof exporterData !== 'object' || exporterData === null || Array.isArray(exporterData)) {
+    const exporterData = rawExport[exporter];
+    if (typeof exporterData !== 'object' || exporterData === null || exporterData instanceof Array) {
         return [];
     }
 
-    return [{ exportData: exporterData as Record<string, unknown>, arrayIndex: undefined }];
+    return [{ exportData: exporterData, arrayIndex: undefined }];
 };
 
 export const buildArtifactReportInput = (

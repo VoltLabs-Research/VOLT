@@ -120,14 +120,6 @@ export class WebSocketSessionManager {
 
     constructor(private readonly options: WebSocketSessionManagerOptions) {}
 
-    hasSession(sessionId: string): boolean {
-        return this.webSocketStates.has(sessionId);
-    }
-
-    getSessionIds(): string[] {
-        return Array.from(this.webSocketStates.keys());
-    }
-
     async attachSession(payload: TeamClusterDaemonSessionAttachPayload): Promise<CommandResult> {
         if (!payload.targetUrl) {
             const message = 'targetUrl is required';

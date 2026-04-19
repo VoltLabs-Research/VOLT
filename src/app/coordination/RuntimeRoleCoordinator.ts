@@ -43,14 +43,6 @@ const describeQueueScopeLimits = (queueScopeLimits: TeamClusterDaemonQueueScopeL
     return `analysisProcessing(perTrajectory=${queueScopeLimits.analysisProcessing.maxRunningPerTrajectory}, perTeam=${queueScopeLimits.analysisProcessing.maxRunningPerTeam}), artifactUpload(perTrajectory=${queueScopeLimits.artifactUpload.maxRunningPerTrajectory}, perTeam=${queueScopeLimits.artifactUpload.maxRunningPerTeam}), trajectoryGlbConversion(perTrajectory=${queueScopeLimits.trajectoryGlbConversion.maxRunningPerTrajectory}, perTeam=${queueScopeLimits.trajectoryGlbConversion.maxRunningPerTeam}), cloudUpload(perTrajectory=${queueScopeLimits.cloudUpload.maxRunningPerTrajectory}, perTeam=${queueScopeLimits.cloudUpload.maxRunningPerTeam}), trajectoryCompression(perTrajectory=${queueScopeLimits.trajectoryCompression.maxRunningPerTrajectory}, perTeam=${queueScopeLimits.trajectoryCompression.maxRunningPerTeam})`;
 };
 
-const roleRunsComputeWorkers = (role: TeamClusterRuntimeRoleConfig['effectiveRole']): boolean => {
-    return role !== 'storage-server';
-};
-
-const roleOwnsStorage = (role: TeamClusterRuntimeRoleConfig['effectiveRole']): boolean => {
-    return role !== 'compute-node';
-};
-
 const describeRoleConfig = (roleConfig: TeamClusterRuntimeRoleConfig): string => {
     return `desiredRole=${roleConfig.desiredRole}, effectiveRole=${roleConfig.effectiveRole}, runtimeVersion=${roleConfig.runtimeVersion}, drainingCompute=${roleConfig.draining.compute}, drainingStorage=${roleConfig.draining.storage}, lastAppliedAt=${roleConfig.lastAppliedAt ?? 'null'}`;
 };
@@ -106,11 +98,11 @@ export class RuntimeRoleCoordinator {
         const nextRoleConfig = structuredClone(roleConfig);
         const previousEffectiveRole = this.snapshot.roleConfig.effectiveRole;
         const isComputeDrain = previousEffectiveRole !== nextRoleConfig.desiredRole
-            && roleRunsComputeWorkers(previousEffectiveRole)
-            && !roleRunsComputeWorkers(nextRoleConfig.desiredRole);
+            && this.roleRunsComputeWorkers(previousEffectiveRole)
+            && !this.roleRunsComputeWorkers(nextRoleConfig.desiredRole);
         const isStorageDrain = previousEffectiveRole !== nextRoleConfig.desiredRole
-            && roleOwnsStorage(previousEffectiveRole)
-            && !roleOwnsStorage(nextRoleConfig.desiredRole);
+            && this.roleOwnsStorage(previousEffectiveRole)
+            && !this.roleOwnsStorage(nextRoleConfig.desiredRole);
 
         this.snapshot.roleConfig = {
             ...structuredClone(this.snapshot.roleConfig),
@@ -126,7 +118,7 @@ export class RuntimeRoleCoordinator {
             await this.stopComputeWorkers();
         }
 
-        if (roleRunsComputeWorkers(nextRoleConfig.desiredRole)) {
+        if (this.roleRunsComputeWorkers(nextRoleConfig.desiredRole)) {
             this.startComputeWorkers();
         }
 
@@ -174,5 +166,13 @@ export class RuntimeRoleCoordinator {
         await this.dependencies.trajectoryGlbWorker.stop();
         await this.dependencies.sshImportWorker.stop();
         this.computeWorkersRunning = false;
+    }
+
+    private roleRunsComputeWorkers(role: TeamClusterRuntimeRoleConfig['effectiveRole']): boolean {
+        return role !== 'storage-server';
+    }
+
+    private roleOwnsStorage(role: TeamClusterRuntimeRoleConfig['effectiveRole']): boolean {
+        return role !== 'compute-node';
     }
 }

@@ -9,7 +9,7 @@ interface PluginReferencePlanningItem {
     referencePath: string;
     pluginId: string;
     config: WorkflowNodeOutput;
-};
+}
 
 export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
     readonly type = WorkflowNodeType.Arguments;
@@ -20,7 +20,9 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
     constructor(private readonly registry: WorkflowNodeRegistry) {}
 
     async execute(node: WorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowNodeOutput> {
-        const persistedDefinitions = node.data.arguments?.arguments ?? [];
+        const persistedDefinitions = node.data.arguments?.arguments
+            ? node.data.arguments.arguments
+            : [];
         const definitions = [
             ...persistedDefinitions,
             ...this.createRuntimeArgumentDefinitions(context, persistedDefinitions)
@@ -70,7 +72,11 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
                         cliArgs.push(`--${argumentKey}`);
                     }
                 } else if (definition.type === 'select' && definition.multipleSelection) {
-                    const selectedValues = Array.isArray(value) ? value : value ? [value] : [];
+                    const selectedValues = value instanceof Array
+                        ? value
+                        : value === null || value === undefined
+                            ? []
+                            : [value];
 
                     if (selectedValues.length > 0) {
                         cliArgs.push(`--${argumentKey}`, selectedValues.join(','));
@@ -113,7 +119,15 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
     private getVisibilityConditionValues(
         condition: WorkflowArgumentVisibilityCondition
     ): Array<string | number | boolean> {
-        return condition.values ?? (condition.value === undefined ? [] : [condition.value]);
+        if (condition.values) {
+            return condition.values;
+        }
+
+        if (condition.value === undefined) {
+            return [];
+        }
+
+        return [condition.value];
     }
 
     private matchesVisibilityCondition(
@@ -131,7 +145,7 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
         }
 
         if (condition.operator === 'in') {
-            if (Array.isArray(currentValue)) {
+            if (currentValue instanceof Array) {
                 return currentValue.some((entry) => comparisonValues.includes(entry as string | number | boolean));
             }
 
@@ -139,7 +153,7 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
         }
 
         if (condition.operator === 'notIn') {
-            if (Array.isArray(currentValue)) {
+            if (currentValue instanceof Array) {
                 return currentValue.every((entry) => !comparisonValues.includes(entry as string | number | boolean));
             }
 
@@ -193,8 +207,10 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
             return;
         }
 
-        if (definition.type === 'list' && Array.isArray(resolvedValue)) {
-            const nestedDefinitions = definition.listArguments ?? [];
+        if (definition.type === 'list' && resolvedValue instanceof Array) {
+            const nestedDefinitions = definition.listArguments
+                ? definition.listArguments
+                : [];
             resolvedValue.forEach((entry, index) => {
                 const item = entry as WorkflowNodeOutput;
 
@@ -216,28 +232,19 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
         }
     }
 
-    private hasArgumentDefinition(definitions: WorkflowArgumentDefinition[], argumentKey: string): boolean {
-        return definitions.some((definition) => {
-            if (definition.argument === argumentKey) {
-                return true;
-            }
-
-            return definition.listArguments
-                ? this.hasArgumentDefinition(definition.listArguments, argumentKey)
-                : false;
-        });
-    }
-
     private createRuntimeArgumentDefinitions(
         context: WorkflowExecutionContext,
         persistedDefinitions: WorkflowArgumentDefinition[]
     ): WorkflowArgumentDefinition[] {
         const definitions: WorkflowArgumentDefinition[] = [];
         const selectedTimestepsArgument = WorkflowArgumentsHandler.RESERVED_RUNTIME_ARGUMENTS.selectedTimesteps;
-        const hasReservedArgument = this.hasArgumentDefinition(
-            persistedDefinitions,
-            selectedTimestepsArgument
-        );
+        const hasReservedArgument = persistedDefinitions.some((definition) => {
+            if (definition.argument === selectedTimestepsArgument) {
+                return true;
+            }
+
+            return this.definitionTreeHasArgument(definition.listArguments, selectedTimestepsArgument);
+        });
 
         if (!hasReservedArgument && context.runtimeArguments[selectedTimestepsArgument] !== undefined) {
             definitions.push({
@@ -247,5 +254,22 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
         }
 
         return definitions;
+    }
+
+    private definitionTreeHasArgument(
+        definitions: WorkflowArgumentDefinition[] | undefined,
+        argumentKey: string
+    ): boolean {
+        if (!definitions) {
+            return false;
+        }
+
+        return definitions.some((definition) => {
+            if (definition.argument === argumentKey) {
+                return true;
+            }
+
+            return this.definitionTreeHasArgument(definition.listArguments, argumentKey);
+        });
     }
 }
