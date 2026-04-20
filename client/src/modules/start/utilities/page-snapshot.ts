@@ -27,15 +27,73 @@ const collectDocumentStyles = (): string => {
     return allCSS;
 };
 
-const removeScripts = (html: string): string => {
-    return html.replace(/<script[\s\S]*?<\/script>/gi, '');
+const mirrorInputState = (live: ParentNode, clone: ParentNode): void => {
+    const liveInputs = live.querySelectorAll<HTMLInputElement>('input');
+    const cloneInputs = clone.querySelectorAll<HTMLInputElement>('input');
+    liveInputs.forEach((liveInput, index) => {
+        const cloneInput = cloneInputs[index];
+        if (!cloneInput) return;
+        if (liveInput.type === 'checkbox' || liveInput.type === 'radio') {
+            if (liveInput.checked) cloneInput.setAttribute('checked', '');
+            else cloneInput.removeAttribute('checked');
+        } else {
+            cloneInput.setAttribute('value', liveInput.value);
+        }
+    });
+
+    const liveTextareas = live.querySelectorAll<HTMLTextAreaElement>('textarea');
+    const cloneTextareas = clone.querySelectorAll<HTMLTextAreaElement>('textarea');
+    liveTextareas.forEach((liveTextarea, index) => {
+        const cloneTextarea = cloneTextareas[index];
+        if (cloneTextarea) cloneTextarea.textContent = liveTextarea.value;
+    });
+
+    const liveSelects = live.querySelectorAll<HTMLSelectElement>('select');
+    const cloneSelects = clone.querySelectorAll<HTMLSelectElement>('select');
+    liveSelects.forEach((liveSelect, index) => {
+        const cloneSelect = cloneSelects[index];
+        if (!cloneSelect) return;
+        const liveOptions = liveSelect.querySelectorAll('option');
+        const cloneOptions = cloneSelect.querySelectorAll('option');
+        liveOptions.forEach((liveOption, optionIndex) => {
+            const cloneOption = cloneOptions[optionIndex];
+            if (!cloneOption) return;
+            if (liveOption.selected) cloneOption.setAttribute('selected', '');
+            else cloneOption.removeAttribute('selected');
+        });
+    });
+};
+
+const mirrorCanvasState = (live: ParentNode, clone: ParentNode): void => {
+    const liveCanvases = live.querySelectorAll<HTMLCanvasElement>('canvas');
+    const cloneCanvases = clone.querySelectorAll<HTMLCanvasElement>('canvas');
+    liveCanvases.forEach((liveCanvas, index) => {
+        const cloneCanvas = cloneCanvases[index];
+        if (!cloneCanvas || !cloneCanvas.parentNode) return;
+        try {
+            const image = document.createElement('img');
+            image.src = liveCanvas.toDataURL();
+            for (const attr of Array.from(cloneCanvas.attributes)) {
+                image.setAttribute(attr.name, attr.value);
+            }
+            cloneCanvas.parentNode.replaceChild(image, cloneCanvas);
+        } catch {
+            return;
+        }
+    });
 };
 
 export const capturePageSnapshot = (): string | null => {
     try {
         const rootAttrs = serializeAttributes(document.documentElement);
-        const bodyAttrs = serializeAttributes(document.body);
-        const html = `<!DOCTYPE html>
+        const bodyClone = document.body.cloneNode(true) as HTMLElement;
+
+        mirrorInputState(document.body, bodyClone);
+        mirrorCanvasState(document.body, bodyClone);
+        bodyClone.querySelectorAll('script').forEach((node) => node.remove());
+
+        const bodyAttrs = serializeAttributes(bodyClone);
+        return `<!DOCTYPE html>
 <html ${rootAttrs}>
 <head>
 <style>
@@ -43,10 +101,8 @@ ${collectDocumentStyles()}
 ${SNAPSHOT_STYLES}
 </style>
 </head>
-<body ${bodyAttrs}>${document.body.innerHTML}</body>
+<body ${bodyAttrs}>${bodyClone.innerHTML}</body>
 </html>`;
-
-        return removeScripts(html);
     } catch {
         return null;
     }

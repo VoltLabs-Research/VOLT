@@ -88,17 +88,11 @@ const LAST_OPENED_AT_COLUMN = dateColumn<NotebookDocument>('lastOpenedAt', 'Last
     fallback: '-'
 });
 
-const CREATED_AT_COLUMN = dateColumn<NotebookDocument>('createdAt', 'Created At', {
-    width: 110,
-    withTitle: true
-});
-
 const LIST_NOTEBOOK_COLUMNS: ColumnConfig<NotebookDocument>[] = [
     TITLE_COLUMN,
     CLUSTER_COLUMN,
     CREATED_BY_COLUMN,
-    LAST_OPENED_AT_COLUMN,
-    CREATED_AT_COLUMN
+    LAST_OPENED_AT_COLUMN
 ];
 
 const TRAJECTORY_NOTEBOOK_COLUMNS: ColumnConfig<NotebookDocument>[] = [
@@ -106,8 +100,7 @@ const TRAJECTORY_NOTEBOOK_COLUMNS: ColumnConfig<NotebookDocument>[] = [
     TRAJECTORY_COLUMN,
     CLUSTER_COLUMN,
     CREATED_BY_COLUMN,
-    LAST_OPENED_AT_COLUMN,
-    CREATED_AT_COLUMN
+    LAST_OPENED_AT_COLUMN
 ];
 
 const resolveColumns = (tab: NotebooksListingTabId): ColumnConfig<NotebookDocument>[] => {

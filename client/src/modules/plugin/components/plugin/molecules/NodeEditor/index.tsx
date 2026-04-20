@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import type { FC } from 'react';
 import type { Node } from '@xyflow/react';
 import { Trash2 } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import DangerZone from '@/shared/presentation/components/DangerZone';
+import SegmentedTabs from '@/shared/presentation/components/SegmentedTabs';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import ModifierEditor from './editors/ModifierEditor';
@@ -24,6 +26,8 @@ interface NodeEditorProps {
     node: Node;
 };
 
+type NodeEditorSection = 'details' | 'connectors';
+
 const EDITOR_COMPONENTS: Partial<Record<NodeType, FC<{ node: Node }>>> = {
     [NodeType.MODIFIER]: ModifierEditor,
     [NodeType.ARGUMENTS]: ArgumentsEditor,
@@ -38,9 +42,15 @@ const EDITOR_COMPONENTS: Partial<Record<NodeType, FC<{ node: Node }>>> = {
     [NodeType.SWITCH_CASE]: SwitchCaseEditor
 };
 
+const SECTION_TABS: ReadonlyArray<{ id: NodeEditorSection; label: string }> = [
+    { id: 'details', label: 'Details' },
+    { id: 'connectors', label: 'Connectors' }
+];
+
 const NodeEditor = ({ node }: NodeEditorProps) => {
     const deleteNode = usePluginBuilderStore((state) => state.deleteNode);
     const selectNode = usePluginBuilderStore((state) => state.selectNode);
+    const [activeSection, setActiveSection] = useState<NodeEditorSection>('details');
 
     const nodeType = node.type as NodeType;
     const EditorComponent = EDITOR_COMPONENTS[nodeType];
@@ -51,22 +61,36 @@ const NodeEditor = ({ node }: NodeEditorProps) => {
     };
 
     return (
-        <Container className='p-1 y-auto'>
-            <Container>
-                {EditorComponent ? (
-                    <EditorComponent node={node} />
-                ) : (
-                    <Container>
-                        <Paragraph>No editor available for this node type.</Paragraph>
-                    </Container>
+        <>
+            <Container className='floating-node-panel-tabs'>
+                <SegmentedTabs
+                    tabs={SECTION_TABS}
+                    activeTab={activeSection}
+                    onChange={setActiveSection}
+                    ariaLabel='Node configuration sections'
+                    size='sm'
+                    fullWidth
+                    layoutId={`node-editor-${node.id}`}
+                />
+            </Container>
+
+            <Container className='floating-node-panel-body'>
+                {activeSection === 'details' && (
+                    EditorComponent ? (
+                        <EditorComponent node={node} />
+                    ) : (
+                        <Paragraph className='font-size-2 color-muted'>
+                            No editor available for this node type.
+                        </Paragraph>
+                    )
+                )}
+
+                {activeSection === 'connectors' && (
+                    <ConnectorLayoutEditor node={node} />
                 )}
             </Container>
 
-            <Container className='mt-1'>
-                <ConnectorLayoutEditor node={node} />
-            </Container>
-
-            <Container className='mt-1'>
+            <Container className='floating-node-panel-footer'>
                 <DangerZone
                     title='Delete Node'
                     description='Remove this node and its connections'
@@ -75,7 +99,7 @@ const NodeEditor = ({ node }: NodeEditorProps) => {
                     onAction={handleDelete}
                 />
             </Container>
-        </Container>
+        </>
     );
 };
 

@@ -58,12 +58,7 @@ const COLUMNS: ColumnConfig<LatexListingRow>[] = [
         skeleton: { variant: 'text', width: 200 }
     },
     userColumn<LatexListingRow>('lastEditedBy', 'Last Edited By', { isFolder: isLatexFolder }),
-    userColumn<LatexListingRow>('createdBy', 'Created By', { isFolder: isLatexFolder }),
     dateColumn<LatexListingRow>('updatedAt', 'Updated At', {
-        width: 110,
-        withTitle: true
-    }),
-    dateColumn<LatexListingRow>('createdAt', 'Created At', {
         width: 110,
         withTitle: true
     })

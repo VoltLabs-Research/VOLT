@@ -28,7 +28,7 @@ export interface SceneArtifactParams {
 export interface SceneArtifactTrajectory {
     _id: string;
     name?: string;
-    teamCluster?: TeamCluster | string | null;
+    storageClusterId?: TeamCluster | string | null;
 };
 
 export interface SceneArtifactAnalysis {
@@ -44,7 +44,7 @@ export interface SceneArtifact extends BaseEntity {
     trajectory: SceneArtifactTrajectory | string;
     analysis?: SceneArtifactAnalysis | string;
     plugin?: SceneArtifactPlugin | string;
-    teamCluster?: TeamCluster | string | null;
+    storageClusterId?: TeamCluster | string | null;
     sourceType: SceneArtifactSourceType;
     timestep: number;
     objectName: string;

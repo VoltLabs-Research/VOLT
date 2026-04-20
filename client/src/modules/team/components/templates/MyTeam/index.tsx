@@ -213,26 +213,6 @@ export default function MyTeamTemplate() {
             }
         },
         {
-            key: 'trajectoriesCount',
-            title: 'Trajectories',
-            render: (_value, member) => <span className='color-secondary font-size-2'>{member.trajectoriesCount}</span>
-        },
-        {
-            key: 'analysesCount',
-            title: 'Analyses',
-            render: (_value, member) => <span className='color-secondary font-size-2'>{member.analysesCount}</span>
-        },
-        {
-            key: 'latexCount',
-            title: 'LaTeX',
-            render: (_value, member) => <span className='color-secondary font-size-2'>{member.latexCount}</span>
-        },
-        {
-            key: 'whiteboardsCount',
-            title: 'Whiteboards',
-            render: (_value, member) => <span className='color-secondary font-size-2'>{member.whiteboardsCount}</span>
-        },
-        {
             key: 'timeSpentLast7Days',
             title: 'Time (7d)',
             render: (_value, member) => {

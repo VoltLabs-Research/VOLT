@@ -1,10 +1,9 @@
 import { analysisQuery } from '@/modules/analysis/hooks/queries';
 import { SOCKET_ANALYSIS_EVENTS } from '@/modules/socket/analysis/constants/analysis-socket-events';
 import { SOCKET_TEAM_EVENTS } from '@/modules/socket/team/constants/team-socket-events';
-import { clusterColumn, dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
+import { dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import useRetryFailedFrames from '@/modules/analysis/hooks/use-retry-failed-frames';
-import AnalysisConfigPreview from '@/modules/analysis/components/atoms/AnalysisConfigPreview';
 import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCellPopover';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
@@ -39,10 +38,6 @@ const renderFrameCount: NonNullable<ColumnConfig<Analysis>['render']> = (value) 
     return value.toLocaleString();
 };
 
-const renderConfig: NonNullable<ColumnConfig<Analysis>['render']> = (_value, row) => {
-    return <AnalysisConfigPreview analysis={row} />;
-};
-
 const getDeleteConfirmationMessage = (selectedItems: Analysis[]): string => {
     let message = 'Delete this analysis? This cannot be undone.';
 
@@ -68,7 +63,6 @@ const COLUMNS: ColumnConfig<Analysis>[] = [
         render: renderPluginName,
         skeleton: { variant: 'text', width: 110 }
     },
-    clusterColumn<Analysis>(),
     {
         key: 'status',
         title: 'Status',
@@ -77,30 +71,14 @@ const COLUMNS: ColumnConfig<Analysis>[] = [
         skeleton: { variant: 'rounded', width: 90, height: 24 }
     },
     {
-        key: 'totalFrames',
-        title: 'Total Frames',
-        sortable: true,
-        render: renderFrameCount,
-        skeleton: { variant: 'text', width: 90 }
-    },
-    {
         key: 'completedFrames',
         title: 'Completed Frames',
         sortable: true,
         render: renderFrameCount,
         skeleton: { variant: 'text', width: 110 }
     },
-    {
-        key: 'config',
-        title: 'Config',
-        sortable: false,
-        render: renderConfig,
-        skeleton: { variant: 'text', width: 110 }
-    },
     userColumn<Analysis>('createdBy', 'Created By'),
-    dateColumn<Analysis>('startedAt', 'Started At', { sortable: false, withTitle: true, fallback: '-' }),
-    dateColumn<Analysis>('finishedAt', 'Finished At', { sortable: false, withTitle: true, fallback: '-' }),
-    dateColumn<Analysis>('createdAt', 'Created At', { sortable: false, withTitle: true })
+    dateColumn<Analysis>('finishedAt', 'Finished At', { sortable: false, withTitle: true, fallback: '-' })
 ];
 
 const AnalysesListing = () => {

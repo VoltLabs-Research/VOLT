@@ -18,7 +18,7 @@ export interface SharedCanvasState {
     playSpeed?: number;
     rangeStart?: number;
     rangeEnd?: number;
-    modelDragOffset?: { x: number; y: number; z: number };
+    modelDragOffsets?: Record<string, { x: number; y: number; z: number }>;
     lights?: Plain;
     effects?: Plain;
     grid?: Plain;
@@ -114,7 +114,7 @@ export const selectSharedCanvasState = (state: EditorStore): SharedCanvasState =
         playSpeed: state.playSpeed,
         rangeStart: state.rangeStart,
         rangeEnd: state.rangeEnd,
-        modelDragOffset: state.modelDragOffset,
+        modelDragOffsets: state.modelDragOffsets,
         lights: pickDataFields(state.lights, LIGHTS_DATA_KEYS),
         effects: pickDataFields(state.effects, EFFECTS_DATA_KEYS),
         grid: pickDataFields(state.grid, GRID_DATA_KEYS),
@@ -207,8 +207,8 @@ export const applySharedCanvasPatch = (patch: SharedCanvasState): void => {
             next.rangeEnd = patch.rangeEnd;
         }
 
-        if (patch.modelDragOffset !== undefined) {
-            next.modelDragOffset = patch.modelDragOffset;
+        if (patch.modelDragOffsets !== undefined) {
+            next.modelDragOffsets = patch.modelDragOffsets;
         }
 
         mergeSlice(next, state, 'lights', patch.lights, record);

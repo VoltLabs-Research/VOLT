@@ -86,8 +86,12 @@
     text-align: left;
 }
 
-.document-listing-cell.header-cell {
-    font-weight: 600;
+.document-listing-cell.header-cell,
+.document-listing-cell.header-cell .font-size-2-5 {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    letter-spacing: 0;
 }
 
 .document-listing-cell.is-numeric {

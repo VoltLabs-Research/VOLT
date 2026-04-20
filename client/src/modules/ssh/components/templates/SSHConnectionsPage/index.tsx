@@ -6,7 +6,6 @@ import {
 } from '@/modules/ssh/hooks/queries';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import { openModal } from '@/shared/presentation/components/Modal';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
@@ -144,21 +143,15 @@ const SSHConnectionsPage = () => {
             key: 'host',
             title: 'Host',
             sortable: true,
-            skeleton: { variant: 'text', width: 120 }
-        },
-        {
-            key: 'port',
-            title: 'Port',
-            sortable: true,
-            skeleton: { variant: 'text', width: 60 }
+            render: (_value, row) => `${row.host}${row.port && row.port !== 22 ? `:${row.port}` : ''}`,
+            skeleton: { variant: 'text', width: 140 }
         },
         {
             key: 'username',
             title: 'Username',
             sortable: true,
             skeleton: { variant: 'text', width: 100 }
-        },
-        dateColumn<SSHConnection>('createdAt', 'Created', { width: 80 })
+        }
     ], []);
 
     let createNew;

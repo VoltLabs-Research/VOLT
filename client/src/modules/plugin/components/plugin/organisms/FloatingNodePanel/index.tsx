@@ -11,8 +11,16 @@ import CloseButton from '@/shared/presentation/components/CloseButton';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 
-const PANEL_WIDTH = 380;
+const PANEL_WIDTH = 400;
 const PANEL_MARGIN = 16;
+const PANEL_MIN_HEIGHT = 220;
+const PANEL_VIEWPORT_RATIO = 0.75;
+
+interface PanelPosition {
+    top: number;
+    right: number;
+    maxHeight: number;
+};
 
 const panelVariants = {
     hidden: { opacity: 0, scale: 0.95, y: 8 },
@@ -28,44 +36,55 @@ const FloatingNodePanel = () => {
     const viewport = useViewport();
     const panelRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLElement | null>(null);
-    const [position, setPosition] = useState<{ top: number; right: number } | null>(null);
+    const [position, setPosition] = useState<PanelPosition | null>(null);
 
-    const computePosition = useCallback((node: Node) => {
+    const computePosition = useCallback((node: Node): PanelPosition => {
         const container = containerRef.current;
-        if(!container) return { top: PANEL_MARGIN, right: PANEL_MARGIN };
+        const containerHeight = container?.getBoundingClientRect().height
+            ?? (typeof window !== 'undefined' ? window.innerHeight : PANEL_MIN_HEIGHT + 2 * PANEL_MARGIN);
+        const containerWidth = container?.getBoundingClientRect().width
+            ?? (typeof window !== 'undefined' ? window.innerWidth : PANEL_WIDTH + 2 * PANEL_MARGIN);
+        const containerTop = container?.getBoundingClientRect().top ?? 0;
+        const containerLeft = container?.getBoundingClientRect().left ?? 0;
 
-        const containerRect = container.getBoundingClientRect();
+        const viewportBound = typeof window !== 'undefined'
+            ? Math.floor(window.innerHeight * PANEL_VIEWPORT_RATIO)
+            : containerHeight;
+        const maxHeight = Math.max(
+            PANEL_MIN_HEIGHT,
+            Math.min(viewportBound, containerHeight - 2 * PANEL_MARGIN)
+        );
+
         const nodeScreen = flowToScreenPosition({
             x: node.position.x + (node.measured?.width ?? 280),
             y: node.position.y
         });
 
-        const relativeY = nodeScreen.y - containerRect.top;
-        const maxTop = containerRect.height - PANEL_MARGIN;
+        const relativeY = nodeScreen.y - containerTop;
+        const maxTop = Math.max(PANEL_MARGIN, containerHeight - maxHeight - PANEL_MARGIN);
         const clampedTop = Math.max(PANEL_MARGIN, Math.min(relativeY, maxTop));
 
-        const nodeRightEdge = nodeScreen.x - containerRect.left + 24;
-        const availableRight = containerRect.width - nodeRightEdge - PANEL_WIDTH - PANEL_MARGIN;
+        const nodeRightEdge = nodeScreen.x - containerLeft + 24;
+        const availableRight = containerWidth - nodeRightEdge - PANEL_WIDTH - PANEL_MARGIN;
         const right = availableRight > 0
-            ? containerRect.width - nodeRightEdge - PANEL_WIDTH
+            ? containerWidth - nodeRightEdge - PANEL_WIDTH
             : PANEL_MARGIN;
 
-        return { top: clampedTop, right };
+        return { top: clampedTop, right, maxHeight };
     }, [flowToScreenPosition]);
 
     const liveSelectedNode = selectedNode
-        ? nodes.find(n => n.id === selectedNode.id) ?? selectedNode
+        ? nodes.find((node) => node.id === selectedNode.id) ?? selectedNode
         : null;
 
     useEffect(() => {
-        if(!liveSelectedNode) return;
-        const pos = computePosition(liveSelectedNode);
-        setPosition(pos);
+        if (!liveSelectedNode) return;
+        setPosition(computePosition(liveSelectedNode));
     }, [liveSelectedNode?.id, liveSelectedNode?.position.x, liveSelectedNode?.position.y, viewport.x, viewport.y, viewport.zoom, computePosition]);
 
     useEffect(() => {
         const canvas = document.querySelector('.plugin-builder-canvas');
-        if(canvas instanceof HTMLElement){
+        if (canvas instanceof HTMLElement) {
             containerRef.current = canvas;
         }
     }, []);
@@ -82,14 +101,14 @@ const FloatingNodePanel = () => {
                 <motion.div
                     ref={panelRef}
                     className='floating-node-panel p-absolute overflow-hidden glass-bg d-flex column'
-                    style={{ top: position.top, right: position.right }}
+                    style={{ top: position.top, right: position.right, maxHeight: position.maxHeight }}
                     variants={panelVariants}
                     initial='hidden'
                     animate='visible'
                     exit='exit'
-                    transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
+                    transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
                     key={liveSelectedNode.id}
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(event) => event.stopPropagation()}
                 >
                     <Container className='d-flex items-center gap-075 floating-node-panel-header p-1'>
                         <Container className='d-flex flex-center floating-node-panel-icon radius-sm color-secondary'>
@@ -101,9 +120,7 @@ const FloatingNodePanel = () => {
                         <CloseButton onClick={handleClose} />
                     </Container>
 
-                    <Container className='floating-node-panel-body flex-1 min-h-0 y-auto'>
-                        <NodeEditor node={liveSelectedNode} />
-                    </Container>
+                    <NodeEditor node={liveSelectedNode} />
                 </motion.div>
             )}
         </AnimatePresence>

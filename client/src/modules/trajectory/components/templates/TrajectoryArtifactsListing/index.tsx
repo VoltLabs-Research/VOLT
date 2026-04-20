@@ -1,7 +1,7 @@
 import sceneArtifactService from '@/modules/trajectory/api/services/scene-artifacts';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
-import { clusterColumn, dateColumn, enumColumn, populatedNameColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
+import { dateColumn, enumColumn, populatedNameColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
 import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
@@ -21,6 +21,15 @@ const createEmptyResponse = (params: PaginationParams): PaginatedResponse<SceneA
 });
 
 const COLUMNS: ColumnConfig<SceneArtifact>[] = [
+    {
+        key: 'displayName',
+        title: 'Display Name',
+        sortable: true,
+        render: (value) => <span className='font-size-2 color-secondary'>{String(value)}</span>,
+        skeleton: { variant: 'text', width: 180 }
+    },
+    enumColumn<SceneArtifact>('sourceType', 'Source', { sortable: true, width: 120 }),
+    populatedNameColumn<SceneArtifact>('plugin', 'Plugin'),
     populatedNameColumn<SceneArtifact>('trajectory', 'Trajectory', { width: 180 }),
     {
         key: 'timestep',
@@ -30,21 +39,7 @@ const COLUMNS: ColumnConfig<SceneArtifact>[] = [
         skeleton: { variant: 'text', width: 80 }
     },
     statusColumn<SceneArtifact>('status', 'Status', { sortable: true, width: 90 }),
-    {
-        key: 'displayName',
-        title: 'Display Name',
-        sortable: true,
-        render: (value) => <span className='font-size-2 color-secondary'>{String(value)}</span>,
-        skeleton: { variant: 'text', width: 180 }
-    },
-    clusterColumn<SceneArtifact>(),
-    populatedNameColumn<SceneArtifact>('plugin', 'Plugin'),
-    enumColumn<SceneArtifact>('sourceType', 'Source', { sortable: true, width: 120 }),
     dateColumn<SceneArtifact>('updatedAt', 'Updated At', {
-        width: 110,
-        withTitle: true
-    }),
-    dateColumn<SceneArtifact>('createdAt', 'Created At', {
         width: 110,
         withTitle: true
     })

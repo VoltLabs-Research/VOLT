@@ -27,6 +27,7 @@ interface UserColumnOptions<TRow> {
 interface ClusterColumnOptions<TRow> {
     width?: number;
     isFolder?: (row: TRow) => boolean;
+    key?: string;
 };
 
 interface PopulatedNameColumnOptions<TRow> {
@@ -157,8 +158,10 @@ const resolvePopulatedName = (value: unknown): string | null => {
 export function clusterColumn<TRow = unknown>(
     options?: ClusterColumnOptions<TRow>
 ): ColumnConfig<TRow> {
+    const key = options?.key ?? 'teamCluster';
+
     return {
-        key: 'teamCluster',
+        key,
         title: 'Cluster',
         sortable: false,
         render: (_value: unknown, row: TRow) => {
@@ -166,7 +169,7 @@ export function clusterColumn<TRow = unknown>(
                 return <span className='font-size-2 color-muted'>-</span>;
             }
 
-            const rawValue = (row as Record<string, unknown>).teamCluster;
+            const rawValue = (row as Record<string, unknown>)[key];
             const cluster = (!rawValue || typeof rawValue === 'string') ? null : rawValue as Record<string, unknown>;
             const name = resolvePopulatedName(rawValue);
 
