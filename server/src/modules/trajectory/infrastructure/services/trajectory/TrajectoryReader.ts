@@ -1,6 +1,6 @@
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 
 import { inject, injectable } from 'tsyringe';
 

@@ -12,6 +12,7 @@ import {
 } from '@modules/plugin/application/dtos/listing-row/GetAnalysisListingExportOptionsDTO';
 import { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
 import { resolveAnalysisComputeClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { enrichDaemonListingRows } from '@modules/plugin/application/use-cases/listing-row/listing-row-enrichment';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
@@ -284,7 +285,7 @@ export class AnalysisListingExportCatalogService {
         do {
             const daemonResult = await this.daemonClient.command<DaemonPaginatedResult>(
                 teamClusterId,
-                'plugin.listings.list',
+                ChannelCommands.PluginListingsList,
                 { analysisId, page, limit: pageSize }
             );
 
@@ -540,7 +541,7 @@ export class AnalysisListingExportCatalogService {
         do {
             const daemonResult = await this.daemonClient.command<DaemonPaginatedDataResult<DaemonSubListingRow>>(
                 teamClusterId,
-                'plugin.sub-listings.list',
+                ChannelCommands.PluginSubListingsList,
                 {
                     teamId,
                     analysisId,

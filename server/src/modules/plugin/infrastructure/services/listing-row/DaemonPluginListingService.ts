@@ -9,10 +9,11 @@ import {
 } from '@modules/plugin/domain/contracts/listing-row/PluginListing';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { ExportType } from '@shared/domain/port/IBaseRepository';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { resolveAnalysisComputeClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { getExposureNodes } from '@modules/plugin/utilities/exposure/get-exposure-nodes';
 import { WorkflowNode } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
@@ -58,7 +59,7 @@ export class DaemonPluginListingService implements IPluginListingService, IPlugi
 
         const daemonResult = await this.daemonClient.command<DaemonPaginatedResult>(
             resolved.teamClusterId,
-            'plugin.listings.list',
+            ChannelCommands.PluginListingsList,
             {
                 pluginId,
                 teamId: options.teamId,
@@ -110,7 +111,7 @@ export class DaemonPluginListingService implements IPluginListingService, IPlugi
         do {
             const result = await this.daemonClient.command<DaemonPaginatedResult>(
                 resolved.teamClusterId,
-                'plugin.listings.list',
+                ChannelCommands.PluginListingsList,
                 {
                     pluginId,
                     teamId: options.teamId,

@@ -4,7 +4,7 @@ import { resolveAccessibleChat } from '@modules/chat/utilities/chat/resolveAcces
 import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
 import type { IChatMessageRepository } from '@modules/chat/domain/port/chat-message/IChatMessageRepository';
 import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';

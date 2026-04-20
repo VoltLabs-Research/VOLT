@@ -7,7 +7,7 @@ import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/Scripting
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import pRetry from 'p-retry';
 import { inject, injectable } from 'tsyringe';
 import type { IScriptingSessionLock } from '@modules/scripting/domain/port/IScriptingSessionLock';
@@ -81,8 +81,6 @@ const selectExistingTrajectoryNotebook = (
         return right.id.localeCompare(left.id);
     })[0] || null;
 };
-
-class PendingNotebookNotFoundError extends Error {}
 
 @injectable()
 export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScriptingJupyterSessionInputDTO, CreateScriptingJupyterSessionOutputDTO, ApplicationError> {
@@ -326,7 +324,10 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
                 const notebooks = await this.scriptingNotebookRepository.findAllWithTrajectory(input.trajectoryId!);
                 const existingNotebook = selectExistingTrajectoryNotebook(notebooks, input.teamId);
                 if (!existingNotebook) {
-                    throw new PendingNotebookNotFoundError('Pending notebook not created yet');
+                    throw ApplicationError.notFound(
+                        ErrorCodes.SCRIPTING_PENDING_NOTEBOOK_NOT_FOUND,
+                        'Pending notebook not created yet'
+                    );
                 }
 
                 return existingNotebook.id;
@@ -335,7 +336,10 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
                 factor: 1,
                 minTimeout: LOCK_BUSY_WAIT_DELAY_MS,
                 maxTimeout: LOCK_BUSY_WAIT_DELAY_MS,
-                shouldRetry: ({ error }) => error instanceof PendingNotebookNotFoundError
+                shouldRetry: ({ error }) => {
+                    return error instanceof ApplicationError
+                        && error.code === ErrorCodes.SCRIPTING_PENDING_NOTEBOOK_NOT_FOUND;
+                }
             });
         } catch {
             return '';

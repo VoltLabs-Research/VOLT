@@ -2,7 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { RevokeSecretKeyByIdInputDTO, RevokeSecretKeyByIdOutputDTO } from '@modules/team/application/dtos/secret-key/RevokeSecretKeyByIdDTO';
 import { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { injectable, inject } from 'tsyringe';

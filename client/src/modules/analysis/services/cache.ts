@@ -81,6 +81,29 @@ export const upsertAnalysisCaches = (analysis: Analysis): void => {
     });
 };
 
+export const upsertAnalysisFromSocketPayload = (data: Record<string, unknown>, trajectoryName = ''): void => {
+    const trajectoryId = String(data.trajectoryId || '');
+    if (!trajectoryId) {
+        return;
+    }
+
+    const newAnalysis = {
+        _id: data.analysisId,
+        plugin: data.pluginId,
+        pluginDisplayName: data.pluginDisplayName,
+        config: data.config,
+        trajectory: { _id: trajectoryId, name: trajectoryName },
+        totalFrames: data.totalFrames,
+        completedFrames: data.completedFrames,
+        status: data.status,
+        createdAt: data.createdAt,
+        updatedAt: data.createdAt
+    } as unknown as Analysis;
+
+    upsertAnalysisCaches(newAnalysis);
+    void analysisQuery.cache.invalidate();
+};
+
 export const findCachedAnalysisById = ({ analysisId, trajectoryId, fallbackAnalyses = [] }: FindCachedAnalysisByIdInput): Analysis | undefined => {
     const fallbackMatch = fallbackAnalyses.find((analysis) => analysis._id === analysisId);
     if (fallbackMatch) {

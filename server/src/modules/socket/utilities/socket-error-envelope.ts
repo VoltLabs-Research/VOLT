@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ErrorCode } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 
 const SOCKET_ERROR_CODES = new Set<ErrorCode>(Object.values(ErrorCodes));
 

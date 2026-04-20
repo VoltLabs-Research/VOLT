@@ -16,7 +16,7 @@ import type { AIChatFinishEvent, IAIChatTransport } from '@modules/ai/domain/por
 import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { IUseCase } from '@shared/application/IUseCase';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';

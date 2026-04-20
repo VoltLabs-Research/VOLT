@@ -5,7 +5,7 @@ import { inject, injectable } from 'tsyringe';
 import { ContainerOwnershipService } from '@modules/container/infrastructure/services/ContainerOwnershipService';
 import { ContainerAccessiblePortResolver } from '@modules/container/infrastructure/services/ContainerAccessiblePortResolver';
 import { ContainerPortProxyRelayService } from '@modules/container/infrastructure/services/ContainerPortProxyRelayService';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ErrorCodes } from '@core/constants/error-codes';
 
 @injectable()

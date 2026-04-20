@@ -1,4 +1,4 @@
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { access, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 

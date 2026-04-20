@@ -1,6 +1,7 @@
 import analysisService from '@/modules/analysis/api/service';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
+import { SOCKET_ANALYSIS_EVENTS } from '@/modules/socket/analysis/constants/analysis-socket-events';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type {
@@ -35,12 +36,6 @@ interface UseAnalysisFrameLogResult {
     truncated: boolean;
     nextCursor: string | null;
 }
-
-const ANALYSIS_LOG_SOCKET_EVENTS = {
-    SUBSCRIBE: 'subscribe_to_analysis_log',
-    UNSUBSCRIBE: 'unsubscribe_from_analysis_log',
-    CHUNK: 'analysis-log:chunk'
-} as const;
 
 const initialState: UseAnalysisFrameLogResult = {
     isLoading: false,
@@ -127,7 +122,7 @@ const useAnalysisFrameLog = ({
         };
     }, [active, analysisId, timestep]);
 
-    useSocketEvent<AnalysisLogChunkEvent>(ANALYSIS_LOG_SOCKET_EVENTS.CHUNK, (event) => {
+    useSocketEvent<AnalysisLogChunkEvent>(SOCKET_ANALYSIS_EVENTS.LOG_CHUNK, (event) => {
         if (!active || event.analysisId !== analysisId || event.timestep !== timestep) {
             return;
         }
@@ -153,7 +148,7 @@ const useAnalysisFrameLog = ({
         }
 
         const subscribe = () => {
-            socket.emitWithoutAck(ANALYSIS_LOG_SOCKET_EVENTS.SUBSCRIBE, {
+            socket.emitWithoutAck(SOCKET_ANALYSIS_EVENTS.LOG_SUBSCRIBE, {
                 analysisId,
                 timestep,
                 afterCursor: cursorRef.current ?? undefined
@@ -169,7 +164,7 @@ const useAnalysisFrameLog = ({
 
         return () => {
             unsubscribeConnectionChange();
-            socket.emitWithoutAck(ANALYSIS_LOG_SOCKET_EVENTS.UNSUBSCRIBE, {
+            socket.emitWithoutAck(SOCKET_ANALYSIS_EVENTS.LOG_UNSUBSCRIBE, {
                 analysisId,
                 timestep
             });

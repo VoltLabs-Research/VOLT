@@ -8,7 +8,7 @@ import {
     resolveContainerPortProxyRelayProtocol
 } from '@modules/container/infrastructure/utilities/container-port-proxy';
 import { TeamClusterServiceExposureAccessMode } from '@modules/team-cluster/utilities/teamClusterSocket';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { LocalRelayPortAllocator } from '@shared/infrastructure/services/LocalRelayPortAllocator';

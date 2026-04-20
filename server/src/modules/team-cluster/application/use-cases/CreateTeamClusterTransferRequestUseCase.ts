@@ -7,7 +7,7 @@ import { requireOwnedTeamCluster } from '@modules/team-cluster/application/utili
 import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import ClusterTransferRunner from '@modules/team-cluster/infrastructure/services/ClusterTransferRunner';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';

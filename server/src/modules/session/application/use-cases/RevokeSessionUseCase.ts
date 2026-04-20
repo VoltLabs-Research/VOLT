@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 import type { RevokeSessionInputDTO } from '@modules/session/application/dtos/RevokeSessionDTO';

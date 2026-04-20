@@ -1,7 +1,7 @@
 import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { FindActivityByTeamIdInputDTO, FindActivityByTeamIdOutputDTO } from '@modules/daily-activity/application/dtos/FindActivityByTeamIdDTO';
 import type { IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
 import type { IUseCase } from '@shared/application/IUseCase';

@@ -7,7 +7,7 @@ import { inject, injectable } from 'tsyringe';
 import type { INotificationRepository } from '@modules/notification/domain/port/INotificationRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import type ApplicationError from '@shared/application/errors/ApplicationErrors';
+import type ApplicationError from '@shared/application/errors/ApplicationError';
 
 @injectable()
 export default class CreateNotificationUseCase implements IUseCase<CreateNotificationInputDTO, CreateNotificationOutputDTO, ApplicationError> {

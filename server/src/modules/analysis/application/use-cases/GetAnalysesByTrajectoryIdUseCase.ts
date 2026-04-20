@@ -1,7 +1,7 @@
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { GetAnalysesByTrajectoryIdInputDTO, GetAnalysesByTrajectoryIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysesByTrajectoryIdDTO';
 import { extractPluginId } from '@modules/analysis/infrastructure/services/AnalysisPluginDisplayNameService';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 import type { IUseCase } from '@shared/application/IUseCase';

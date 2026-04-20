@@ -17,7 +17,7 @@ import {
 } from '@modules/team-cluster/utilities/teamClusterSocket';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
 import { collectAllowedClientOrigins } from '@shared/infrastructure/utilities/client-origins';

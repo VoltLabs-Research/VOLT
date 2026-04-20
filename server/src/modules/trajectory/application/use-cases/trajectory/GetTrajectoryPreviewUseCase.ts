@@ -9,7 +9,7 @@ import { getTrajectoryRasterPreviewsPrefix } from '@modules/raster/utilities/ras
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 
 import { injectable, inject } from 'tsyringe';
 

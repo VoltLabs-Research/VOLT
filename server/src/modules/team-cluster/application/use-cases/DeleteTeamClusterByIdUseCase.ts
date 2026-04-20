@@ -10,7 +10,8 @@ import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/se
 import { assertConfirmedPassword } from '@modules/team-cluster/utilities/assertConfirmedPassword';
 import { buildManualTeamClusterUninstallCommand } from '@modules/team-cluster/utilities/installRoot';
 import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
@@ -77,7 +78,7 @@ export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeam
             try {
                 uninstallCommandResult = await this.teamClusterDaemonClient.commandWithSemanticResult<{ accepted?: boolean; reason?: string; message?: string; }>(
                     input.teamClusterId,
-                    'runtime.uninstall',
+                    ChannelCommands.RuntimeUninstall,
                     {
                         reason: `Delete requested by user ${input.userId}`
                     },

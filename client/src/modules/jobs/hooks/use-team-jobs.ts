@@ -26,6 +26,7 @@ interface UseTeamJobsOptions {
 };
 
 const TEAM_JOBS_INITIAL_LOAD_TIMEOUT_MS = 5000;
+const TEAM_JOBS_UPDATE_FLUSH_INTERVAL_MS = 50;
 const RASTER_QUEUE_TYPE = 'trajectory_rasterization';
 
 const isTerminalJobStatus = (status: JobStatus): boolean => {
@@ -40,6 +41,8 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
     const latestObservedRevisionRef = useRef(0);
     const trajectoryInvalidationTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
     const jobsLoadingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+    const pendingJobUpdatesRef = useRef<Job[]>([]);
+    const jobUpdateFlushTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
     const isConnected = useTeamJobsStore((state) => state.isConnected);
     const isLoading = useTeamJobsStore((state) => state.isLoading);
@@ -87,6 +90,61 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
         setLoading(false);
     }, [clearJobsLoadingTimeout, setGroups, setLoading]);
 
+    const flushPendingJobUpdates = useCallback(() => {
+        jobUpdateFlushTimerRef.current = undefined;
+
+        const queued = pendingJobUpdatesRef.current;
+        if (queued.length === 0) return;
+        pendingJobUpdatesRef.current = [];
+
+        const currentIds = useTeamJobsStore.getState().requestedRasterTrajectoryIds;
+        let nextRasterIds: Set<string> | null = null;
+        let hasTerminalNonRaster = false;
+        const rasterCompletedTrajectoryIds = new Set<string>();
+
+        for (const event of queued) {
+            const isRasterUpdate = event.queueType === RASTER_QUEUE_TYPE;
+            if (isRasterUpdate) {
+                if (currentIds.has(event.trajectoryId!)) {
+                    if (!nextRasterIds) nextRasterIds = new Set(currentIds);
+                    nextRasterIds.delete(event.trajectoryId!);
+                }
+                if (event.status === JobStatus.Completed) {
+                    rasterCompletedTrajectoryIds.add(event.trajectoryId!);
+                }
+            } else if (isTerminalJobStatus(event.status)) {
+                hasTerminalNonRaster = true;
+            }
+        }
+
+        if (nextRasterIds) {
+            setRequestedRasterTrajectoryIds(nextRasterIds);
+        }
+
+        updateTeamJobsGroupsQueryData((currentGroups) => {
+            let groups = currentGroups;
+            for (const event of queued) {
+                groups = applyJobUpdate(groups, event);
+            }
+            return groups;
+        }, queryClient);
+
+        for (const trajectoryId of rasterCompletedTrajectoryIds) {
+            queryClient.invalidateQueries({
+                queryKey: TRAJECTORY_QUERY_KEYS.preview({ trajectoryId }),
+                exact: true
+            });
+        }
+
+        if (hasTerminalNonRaster) {
+            clearTimeout(trajectoryInvalidationTimer.current);
+            trajectoryInvalidationTimer.current = setTimeout(() => {
+                queryClient.invalidateQueries({ queryKey: TRAJECTORY_QUERY_KEYS.simulationGrid() });
+                queryClient.invalidateQueries({ queryKey: TRAJECTORY_QUERY_KEYS.trajectories() });
+            }, 500);
+        }
+    }, [queryClient, setRequestedRasterTrajectoryIds]);
+
     const handleJobUpdate = useCallback((event: Job) => {
         if (!event.trajectoryId) return;
         if (currentTeamId && typeof event.teamId === 'string' && event.teamId !== currentTeamId) {
@@ -96,44 +154,16 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
             return;
         }
 
-        const isRasterUpdate = event.queueType === RASTER_QUEUE_TYPE;
-
-        if (isRasterUpdate) {
-            const currentIds = useTeamJobsStore.getState().requestedRasterTrajectoryIds;
-            if (currentIds.has(event.trajectoryId)) {
-                const nextIds = new Set(currentIds);
-                nextIds.delete(event.trajectoryId);
-                setRequestedRasterTrajectoryIds(nextIds);
-            }
-        }
-
-        updateTeamJobsGroupsQueryData((currentGroups) => applyJobUpdate(currentGroups, event), queryClient);
-
         if (typeof event.revision === 'number') {
             latestObservedRevisionRef.current = Math.max(latestObservedRevisionRef.current, event.revision);
         }
 
-        if (isRasterUpdate) {
-            if (event.status === JobStatus.Completed) {
-                queryClient.invalidateQueries({
-                    queryKey: TRAJECTORY_QUERY_KEYS.preview({ trajectoryId: event.trajectoryId }),
-                    exact: true
-                });
-            }
+        pendingJobUpdatesRef.current.push(event);
 
-            return;
+        if (jobUpdateFlushTimerRef.current === undefined) {
+            jobUpdateFlushTimerRef.current = setTimeout(flushPendingJobUpdates, TEAM_JOBS_UPDATE_FLUSH_INTERVAL_MS);
         }
-
-        if (!isTerminalJobStatus(event.status)) {
-            return;
-        }
-
-        clearTimeout(trajectoryInvalidationTimer.current);
-        trajectoryInvalidationTimer.current = setTimeout(() => {
-            queryClient.invalidateQueries({ queryKey: TRAJECTORY_QUERY_KEYS.simulationGrid() });
-            queryClient.invalidateQueries({ queryKey: TRAJECTORY_QUERY_KEYS.trajectories() });
-        }, 500);
-    }, [currentTeamId, queryClient, setRequestedRasterTrajectoryIds]);
+    }, [currentTeamId, flushPendingJobUpdates]);
 
     const handleInitialJobsEvent = useCallback((payload: TeamJobsEventPayload) => {
         if (payload.revision < latestObservedRevisionRef.current) {
@@ -172,6 +202,11 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
 
     const clearTeamJobs = useCallback(() => {
         clearJobsLoadingTimeout();
+        if (jobUpdateFlushTimerRef.current !== undefined) {
+            clearTimeout(jobUpdateFlushTimerRef.current);
+            jobUpdateFlushTimerRef.current = undefined;
+        }
+        pendingJobUpdatesRef.current = [];
         previousTeamIdRef.current = null;
         latestObservedRevisionRef.current = 0;
         resetTeamJobsGroupsQueryData(queryClient);

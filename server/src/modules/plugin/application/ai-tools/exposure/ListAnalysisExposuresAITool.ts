@@ -6,7 +6,7 @@ import { AITool } from '@shared/application/ai/AITool';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 
 import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';

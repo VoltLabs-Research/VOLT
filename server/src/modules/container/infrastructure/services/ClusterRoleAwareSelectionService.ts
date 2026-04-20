@@ -9,7 +9,7 @@ import {
     TeamClusterStatus
 } from '@modules/team-cluster/domain/entities/TeamCluster';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
 
 import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';

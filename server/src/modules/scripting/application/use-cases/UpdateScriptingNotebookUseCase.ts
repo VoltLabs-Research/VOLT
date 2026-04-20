@@ -3,7 +3,7 @@ import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/Scripting
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type {

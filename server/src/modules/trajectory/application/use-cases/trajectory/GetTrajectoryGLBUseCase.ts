@@ -6,7 +6,7 @@ import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/Traject
 import { SYS_BUCKETS } from '@core/config/minio';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import {
     getClusterGlbStream,
     getLocalGlbStream

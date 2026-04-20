@@ -15,4 +15,12 @@ export default class SimulationCellRepository
     constructor() {
         super(SimulationCellModel, simulationCellMapper);
     }
+
+    async createMany(items: SimulationCellProps[]): Promise<SimulationCell[]> {
+        if (items.length === 0) return [];
+
+        const persistenceDocs = items.map((item) => this.mapper.toPersistence(item));
+        const inserted = await this.model.insertMany(persistenceDocs, { ordered: true });
+        return inserted.map((doc) => this.mapper.toDomain(doc as SimulationCellDocument));
+    }
 };

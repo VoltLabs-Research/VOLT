@@ -1,7 +1,7 @@
 import { resolveAccessibleChat } from '@modules/chat/utilities/chat/resolveAccessibleChat';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';

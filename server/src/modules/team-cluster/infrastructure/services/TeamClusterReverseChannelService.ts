@@ -1,15 +1,12 @@
 import { ContainerDeploymentProgressService } from '@modules/container/infrastructure/services/ContainerDeploymentProgressService';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import { isObjectGatewayBinaryRelayEnabled } from '@modules/team-cluster/infrastructure/services/ObjectGatewayFeatureFlags';
 import { TeamClusterReverseTerminalExec, TeamClusterReverseTerminalStream } from '@modules/team-cluster/utilities/TeamClusterReverseTerminal';
 import {
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
-    type TeamClusterDaemonBinaryRelayDescriptor,
     TeamClusterDaemonResponseType,
     TeamClusterServiceExposureAccessMode,
     TeamClusterDaemonSessionKind,
-    TeamClusterDaemonTerminalTarget,
     TeamClusterTunnelSessionStatus,
     type TeamClusterDaemonCommandMessage,
     type TeamClusterDaemonExposureSnapshotPayload,
@@ -34,7 +31,8 @@ import {
     type TeamClusterTunnelStream
 } from '@modules/team-cluster/utilities/TeamClusterReverseTunnelStream';
 import { TeamClusterReverseWebSocketStream } from '@modules/team-cluster/utilities/teamClusterReverseWebSocket';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import { ErrorCodes } from '@core/constants/error-codes';
 import logger from '@shared/infrastructure/logger';
 import { randomUUID } from 'node:crypto';
 import { PassThrough } from 'node:stream';
@@ -44,7 +42,6 @@ import type {
     ContainerTerminalSize
 } from '@modules/container/domain/port/IContainerService';
 import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import type TeamClusterBinaryRelayService from './TeamClusterBinaryRelayService';
 import type TeamClusterExposureRegistryService from './TeamClusterExposureRegistryService';
 
 type TeamClusterDaemonCommandData = Record<string, unknown> | TeamClusterDaemonSessionAttachPayload;
@@ -55,7 +52,7 @@ interface TeamClusterDaemonCommandPayload {
     responseType: TeamClusterDaemonResponseType;
 };
 
-export interface TeamClusterExposureTunnelOpenRequest {
+interface TeamClusterExposureTunnelOpenRequest {
     exposureId: string;
     accessMode: TeamClusterServiceExposureAccessMode;
 };
@@ -64,7 +61,7 @@ interface TeamClusterCommandOptions {
     timeoutMs?: number;
 };
 
-export interface TeamClusterDirectTunnelOpenRequest {
+interface TeamClusterDirectTunnelOpenRequest {
     targetHost: string;
     targetPort: number;
     accessMode: TeamClusterServiceExposureAccessMode;
@@ -77,7 +74,6 @@ interface TeamClusterDaemonExposureTunnelOpenMessage {
     sessionId: string;
     exposureId: string;
     accessMode: TeamClusterServiceExposureAccessMode;
-    relay?: TeamClusterDaemonBinaryRelayDescriptor;
 };
 
 interface TeamClusterDaemonDirectTunnelOpenMessage {
@@ -86,7 +82,6 @@ interface TeamClusterDaemonDirectTunnelOpenMessage {
     targetHost: string;
     targetPort: number;
     accessMode: TeamClusterServiceExposureAccessMode;
-    relay?: TeamClusterDaemonBinaryRelayDescriptor;
 };
 
 type TeamClusterDaemonTunnelOpenMessage = TeamClusterDaemonExposureTunnelOpenMessage | TeamClusterDaemonDirectTunnelOpenMessage;
@@ -148,17 +143,6 @@ interface PendingPromiseOptions<TResult, TEntry extends PendingEntry> {
     emitMessage: () => void;
 };
 
-export class TeamClusterDaemonStreamError extends Error {
-    constructor(
-        message: string,
-        public readonly status: number,
-        public readonly headers: TeamClusterDaemonSocketHeaders = {}
-    ) {
-        super(message);
-        Object.setPrototypeOf(this, TeamClusterDaemonStreamError.prototype);
-    }
-}
-
 export interface TeamClusterReverseChannelStreamAttachment {
     status: number;
     headers: TeamClusterDaemonSocketHeaders;
@@ -166,8 +150,6 @@ export interface TeamClusterReverseChannelStreamAttachment {
 };
 
 type PendingEntry = PendingResponseEntry | PendingStreamEntry | PendingTerminalEntry | PendingWebSocketEntry | PendingTunnelEntry;
-const OBJECT_GATEWAY_EXPOSURE_NAME = 'object-gateway';
-const OBJECT_GATEWAY_EXPOSURE_SERVICE_LABEL = 'volt.exposure.service';
 
 const readSelectedWebSocketProtocol = (payload: unknown): string | undefined => {
     if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
@@ -220,9 +202,6 @@ export default class TeamClusterReverseChannelService {
 
         @inject(TEAM_CLUSTER_TOKENS.TeamClusterExposureRegistryService)
         private readonly exposureRegistryService: TeamClusterExposureRegistryService,
-
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterBinaryRelayService)
-        private readonly teamClusterBinaryRelayService: TeamClusterBinaryRelayService,
 
         @inject(ContainerDeploymentProgressService)
         private readonly containerDeploymentProgressService: ContainerDeploymentProgressService
@@ -450,9 +429,6 @@ export default class TeamClusterReverseChannelService {
         const socketId = await this.requireDaemonSocketId(teamClusterId);
         const sessionId = randomUUID();
         const openPayload = this.createTunnelOpenPayload(sessionId, target, accessMode);
-        if (this.shouldUseBinaryRelayTunnel(teamClusterId, openPayload)) {
-            return this.openBinaryRelayTunnel(teamClusterId, socketId, openPayload);
-        }
 
         const stream = new TeamClusterReverseTunnelStream({
             onWrite: (chunk) => {
@@ -478,46 +454,6 @@ export default class TeamClusterReverseChannelService {
             }),
             emitMessage: () => {
                 this.emitToDaemon(socketId, openPayload);
-            }
-        });
-    }
-
-    private openBinaryRelayTunnel(
-        teamClusterId: string,
-        socketId: string,
-        openPayload: TeamClusterDaemonTunnelOpenMessage
-    ): Promise<TeamClusterTunnelStream> {
-        const { stream, relay } = this.teamClusterBinaryRelayService.openSession({
-            teamClusterId,
-            sessionId: openPayload.sessionId,
-            accessMode: openPayload.accessMode,
-            onLocalClose: () => {
-                this.closeTunnel(openPayload.sessionId);
-            }
-        });
-        const relayOpenPayload: TeamClusterDaemonTunnelOpenMessage = {
-            ...openPayload,
-            relay
-        };
-
-        return this.createPendingPromise({
-            correlationId: openPayload.sessionId,
-            entryType: 'tunnel',
-            timeoutMs: this.terminalTimeoutMs,
-            timeoutMessage: 'Timed out waiting for daemon tunnel attachment',
-            createEntry: (resolve, reject, timeout) => ({
-                type: 'tunnel',
-                socketId,
-                timeout,
-                stream,
-                resolve,
-                reject: (error) => {
-                    this.teamClusterBinaryRelayService.closeSession(relay.relaySessionId, error);
-                    reject(error);
-                }
-            }),
-            emitMessage: () => {
-                this.emitToDaemon(socketId, relayOpenPayload);
             }
         });
     }
@@ -646,7 +582,7 @@ export default class TeamClusterReverseChannelService {
         });
     }
 
-    detachSession(sessionId: string): void {
+    private detachSession(sessionId: string): void {
         const entry = this.pendingEntries.get(sessionId);
         if (!entry || (entry.type !== 'terminal' && entry.type !== 'websocket')) {
             return;
@@ -717,10 +653,13 @@ export default class TeamClusterReverseChannelService {
         if (!payload.ok) {
             this.pendingEntries.delete(payload.requestId);
             this.untouchSession(payload.requestId);
-            entry.reject(new TeamClusterDaemonStreamError(
+            entry.reject(new ApplicationError(
+                ErrorCodes.TEAM_CLUSTER_DAEMON_STREAM_REQUEST_FAILED,
                 payload.message || 'Daemon stream request failed',
-                payload.status,
-                payload.headers || {}
+                {
+                    statusCode: payload.status,
+                    headers: payload.headers || {}
+                }
             ));
             return;
         }
@@ -969,7 +908,9 @@ export default class TeamClusterReverseChannelService {
             return;
         }
 
+        // destroy() after closeRemote() so http.Agent evicts the dead socket from its pool.
         entry.stream.closeRemote();
+        entry.stream.destroy();
         this.pendingEntries.delete(payload.sessionId);
         this.untouchSession(payload.sessionId);
     }
@@ -1141,29 +1082,6 @@ export default class TeamClusterReverseChannelService {
             targetPort: target.targetPort,
             accessMode: target.accessMode
         };
-    }
-
-    private shouldUseBinaryRelayTunnel(
-        teamClusterId: string,
-        payload: TeamClusterDaemonTunnelOpenMessage
-    ): boolean {
-        if ('targetHost' in payload || payload.accessMode !== TeamClusterServiceExposureAccessMode.Http) {
-            return false;
-        }
-
-        const exposure = this.exposureRegistryService.getTeamClusterExposure(teamClusterId, payload.exposureId);
-        const isObjectGatewayTunnel = Boolean(
-            exposure
-            && exposure.teamClusterId === teamClusterId
-            && exposure.exposureName === OBJECT_GATEWAY_EXPOSURE_NAME
-            && exposure.labels[OBJECT_GATEWAY_EXPOSURE_SERVICE_LABEL] === OBJECT_GATEWAY_EXPOSURE_NAME
-        );
-
-        if (!isObjectGatewayTunnel) {
-            return false;
-        }
-
-        return isObjectGatewayBinaryRelayEnabled();
     }
 
     private async requireDaemonSocketId(teamClusterId: string): Promise<string> {

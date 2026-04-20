@@ -34,7 +34,7 @@ import type { ITeamAIIntegrationSecretCipher } from '@modules/team/domain/port/a
 import type { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ai-integration/ITeamAIIntegrationRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';

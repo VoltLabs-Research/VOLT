@@ -2,7 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import { Container } from '@modules/container/domain/entities/Container';
 import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()

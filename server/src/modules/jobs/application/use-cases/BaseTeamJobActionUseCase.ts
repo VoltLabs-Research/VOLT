@@ -1,6 +1,6 @@
 import { Result } from '@shared/domain/port/Result';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type ApplicationError from '@shared/application/errors/ApplicationErrors';
+import type ApplicationError from '@shared/application/errors/ApplicationError';
 
 interface TeamJobActionInput {
     teamId: string;

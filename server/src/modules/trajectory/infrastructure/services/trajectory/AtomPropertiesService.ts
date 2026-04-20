@@ -10,10 +10,11 @@ import {
 } from '@modules/team-cluster/application/utilities/cluster-location';
 import { IAtomPropertiesService, ExposureAtomConfig, AnalysisAllAtomsResult } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import Analysis from '@modules/analysis/domain/entities/Analysis';
 import Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 
 import { injectable, inject } from 'tsyringe';
 
@@ -124,7 +125,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
 
         return this.daemonClient.command<AnalysisAllAtomsResult | null>(
             teamClusterId,
-            'trajectory.plugin.analysis-all-atoms',
+            ChannelCommands.TrajectoryPluginAnalysisAllAtoms,
             {
                 trajectoryId,
                 analysisId,
@@ -156,7 +157,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
 
         const rawIndex = await this.daemonClient.command<Record<string, Record<string, unknown>> | null>(
             teamClusterId,
-            'trajectory.plugin.atom-index',
+            ChannelCommands.TrajectoryPluginAtomIndex,
             {
                 trajectoryId,
                 analysisId,
@@ -192,7 +193,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
 
         const result = await this.daemonClient.command<Record<number, number> | number[] | null>(
             teamClusterId,
-            'trajectory.plugin.modifier-values',
+            ChannelCommands.TrajectoryPluginModifierValues,
             {
                 trajectoryId,
                 analysisId,
@@ -233,7 +234,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
 
         const result = await this.daemonClient.command<{ min: number; max: number } | null>(
             teamClusterId,
-            'trajectory.plugin.modifier-stats',
+            ChannelCommands.TrajectoryPluginModifierStats,
             {
                 trajectoryId,
                 analysisId,
@@ -263,7 +264,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
 
         const result = await this.daemonClient.command<number[] | null>(
             teamClusterId,
-            'trajectory.plugin.modifier-unique-values',
+            ChannelCommands.TrajectoryPluginModifierUniqueValues,
             {
                 trajectoryId,
                 analysisId,
@@ -320,7 +321,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
     ): Promise<string[]> {
         const perAtomProperties = await this.daemonClient.command<string[]>(
             teamClusterId,
-            'trajectory.plugin.property-names',
+            ChannelCommands.TrajectoryPluginPropertyNames,
             {
                 trajectoryId,
                 analysisId,

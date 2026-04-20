@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Request, Response, NextFunction } from 'express';
 import { container } from 'tsyringe';
 import { v4 } from 'uuid';

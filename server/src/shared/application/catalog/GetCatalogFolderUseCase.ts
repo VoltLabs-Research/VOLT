@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { CatalogFolderEntity, CatalogFolderProps } from '@shared/domain/catalog/CatalogFolder';
 import type { ICatalogFolderRepository } from '@shared/domain/catalog/ICatalogFolderRepository';

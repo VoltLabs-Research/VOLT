@@ -4,7 +4,7 @@ import { DeleteSecretKeyByIdInputDTO } from '@modules/team/application/dtos/secr
 import SecretKeyDeletedEvent from '@modules/team/domain/events/secret-key/SecretKeyDeletedEvent';
 import { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';

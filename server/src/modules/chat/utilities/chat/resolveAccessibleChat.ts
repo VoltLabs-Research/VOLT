@@ -2,7 +2,7 @@ import { Result } from '@shared/domain/port/Result';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { isParticipant } from '@modules/chat/utilities/chat/isParticipant';
 import Chat from '@modules/chat/domain/entities/chat/Chat';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
 
 export async function resolveAccessibleChat(

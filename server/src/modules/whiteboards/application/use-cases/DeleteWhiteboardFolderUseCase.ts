@@ -6,7 +6,7 @@ import type { WhiteboardFolderProps } from '@modules/whiteboards/domain/entities
 import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
 import { inject, injectable } from 'tsyringe';
 import { DeleteCatalogFolderUseCase } from '@shared/application/catalog/DeleteCatalogFolderUseCase';
-import type ApplicationError from '@shared/application/errors/ApplicationErrors';
+import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { DeleteWhiteboardFolderInputDTO, DeleteWhiteboardFolderOutputDTO } from '@modules/whiteboards/application/dtos/DeleteWhiteboardFolderDTO';
 import type { IWhiteboardFolderRepository } from '@modules/whiteboards/domain/port/IWhiteboardFolderRepository';

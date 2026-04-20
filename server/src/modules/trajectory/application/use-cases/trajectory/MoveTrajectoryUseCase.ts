@@ -6,7 +6,7 @@ import type { ITrajectoryFolderRepository } from '@modules/trajectory/domain/por
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { MoveCatalogItemUseCase } from '@shared/application/catalog/MoveCatalogItemUseCase';
-import type ApplicationError from '@shared/application/errors/ApplicationErrors';
+import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { inject, injectable } from 'tsyringe';
 

@@ -9,7 +9,7 @@ import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory
 import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
 import { Result } from '@shared/domain/port/Result';
@@ -131,29 +131,30 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
             }
 
             const importedFrames = input.frames || [];
-            const persistedFrames = [] as Array<{ timestep: number; natoms: number; simulationCell: string; }>;
+            const framesWithCells = importedFrames.filter((frame) => Boolean(frame.simulationCell));
+            const cellInputs = framesWithCells.map((frame) => ({
+                ...(frame.simulationCell as Record<string, unknown>),
+                team: trajectory.props.team,
+                trajectory: trajectory.id,
+                timestep: frame.timestep
+            }));
+
+            const createdCells = cellInputs.length > 0
+                ? await this.simulationCellRepository.createMany(cellInputs as never)
+                : [];
+            const cellIdByTimestep = new Map<number, string>(
+                framesWithCells.map((frame, index) => [frame.timestep, createdCells[index]!.id])
+            );
+
             let totalSize = 0;
-
-            for (const frame of importedFrames) {
-                let simulationCellId = '';
-
-                if (frame.simulationCell) {
-                    const simulationCell = await this.simulationCellRepository.create({
-                        ...(frame.simulationCell as Record<string, unknown>),
-                        team: trajectory.props.team,
-                        trajectory: trajectory.id,
-                        timestep: frame.timestep
-                    });
-                    simulationCellId = simulationCell.id;
-                }
-
-                persistedFrames.push({
+            const persistedFrames = importedFrames.map((frame) => {
+                totalSize += frame.size;
+                return {
                     timestep: frame.timestep,
                     natoms: frame.natoms,
-                    simulationCell: simulationCellId
-                });
-                totalSize += frame.size;
-            }
+                    simulationCell: cellIdByTimestep.get(frame.timestep) ?? ''
+                };
+            });
 
             await this.trajectoryRepository.updateById(trajectory.id, {
                 status: TrajectoryStatus.Completed,

@@ -242,44 +242,50 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     });
     const deferredData = useDeferredValue(data);
     const socketInvalidationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pendingQueryKeysRef = useRef<Map<string, QueryKey>>(new Map());
+    const socketInvalidationRef = useRef<SocketInvalidationConfig[] | undefined>(socketInvalidation);
+
+    useEffect(() => {
+        socketInvalidationRef.current = socketInvalidation;
+    }, [socketInvalidation]);
 
     useEffect(() => {
         if (!socketInvalidation?.length) {
             return;
         }
 
-        const pendingQueryKeys = new Map<string, QueryKey>();
         const flushInvalidations = () => {
-            const queryKeys = Array.from(pendingQueryKeys.values());
-            pendingQueryKeys.clear();
+            const queryKeys = Array.from(pendingQueryKeysRef.current.values());
+            pendingQueryKeysRef.current.clear();
             socketInvalidationTimerRef.current = null;
             Promise.allSettled(
                 queryKeys.map((currentQueryKey) => queryClient.invalidateQueries({ queryKey: currentQueryKey }))
             );
         };
 
-        const unsubscribers = socketInvalidation.map(({ event, queryKeys: invalidationQueryKeys }) => {
-            return socketService.on(event, () => {
-                invalidationQueryKeys.forEach((currentQueryKey) => {
-                    pendingQueryKeys.set(JSON.stringify(currentQueryKey), currentQueryKey);
-                });
+        const events = new Set<string>();
+        for (const { event } of socketInvalidation) events.add(event);
 
-                if (socketInvalidationTimerRef.current) {
-                    return;
+        const unsubscribers = Array.from(events).map((event) => {
+            return socketService.on(event, () => {
+                const current = socketInvalidationRef.current ?? [];
+                for (const entry of current) {
+                    if (entry.event !== event) continue;
+                    for (const key of entry.queryKeys) {
+                        pendingQueryKeysRef.current.set(JSON.stringify(key), key);
+                    }
                 }
 
+                if (socketInvalidationTimerRef.current) return;
                 socketInvalidationTimerRef.current = setTimeout(flushInvalidations, 150);
             });
         });
 
         return () => {
-            if (socketInvalidationTimerRef.current) {
-                clearTimeout(socketInvalidationTimerRef.current);
-                socketInvalidationTimerRef.current = null;
-            }
             unsubscribers.forEach((unsubscribe) => unsubscribe());
         };
-    }, [socketService, socketInvalidation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- read latest via ref to avoid tearing down listeners
+    }, [socketService, socketInvalidation?.map((entry) => entry.event).sort().join(',')]);
 
     const wrappedGetMenuOptions = useCallback((item: T, selectedItems: T[]) => {
         const menuOptions = getMenuOptions ? getMenuOptions(item, selectedItems) : [];

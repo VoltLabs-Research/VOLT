@@ -5,7 +5,7 @@ import { JoinTeamByInviteCodeInputDTO, JoinTeamByInviteCodeOutputDTO } from '@mo
 import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
 import { ITeamRoleRepository } from '@modules/team/domain/port/team-role/ITeamRoleRepository';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { injectable, inject } from 'tsyringe';

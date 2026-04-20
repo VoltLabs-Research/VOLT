@@ -13,8 +13,6 @@ import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 
 import type { RenderableExposure } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import type { RenderableExposurePayload, ListSceneArtifactsInputDTO } from '@/modules/trajectory/api/dtos/scene-artifacts';
-import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
 
 export type ExposureLoadState = 'idle' | 'loading' | 'loaded' | 'error';
 
@@ -84,43 +82,32 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
         }
     }, [analysisIdArray, queryResults, checkAccessDeniedError]);
 
-    // Invalidate scene artifacts queries when an analysis transitions to 'completed'
-    // so stale empty results are replaced with actual exposure data.
+    // Fallback: when any tracked analysis flips to Completed, refresh the broad
+    // scene artifacts key. Realtime artifact merging is driven by the
+    // scene-artifact.upserted socket event in useCanvasSidebarScene.
     const { statusMap } = useAnalysisStatus({ trajectoryId, enabled: !!trajectoryId });
-    const prevStatusMapRef = useRef<Map<string, string>>(new Map());
+    const prevStatusesRef = useRef<Map<string, string>>(new Map());
 
     useEffect(() => {
         if (!trajectoryId) return;
-        const prev = prevStatusMapRef.current;
+        const prev = prevStatusesRef.current;
+        const next = new Map<string, string>();
+        let hasNewCompletion = false;
 
         for (const analysisId of trackedIdsRef.current) {
-            const currentStatus = statusMap.get(analysisId)?.status;
-            const previousStatus = prev.get(analysisId);
-
-            if (currentStatus === CanvasAnalysisStatusEnum.Completed && previousStatus && previousStatus !== CanvasAnalysisStatusEnum.Completed) {
-                const params = buildParams(trajectoryId, analysisId);
-                const queryKey = buildSceneArtifactsQueryOptions(params).queryKey;
-                queryClient.invalidateQueries({ queryKey });
+            const current = statusMap.get(analysisId)?.status;
+            if (current) next.set(analysisId, current);
+            if (current === CanvasAnalysisStatusEnum.Completed
+                && prev.get(analysisId)
+                && prev.get(analysisId) !== CanvasAnalysisStatusEnum.Completed) {
+                hasNewCompletion = true;
             }
         }
 
-        // Also invalidate the broad scene artifacts key so timeline queries refresh too
-        const hasNewCompletion = Array.from(trackedIdsRef.current).some((id) => {
-            const cur = statusMap.get(id)?.status;
-            const prv = prev.get(id);
-            return cur === CanvasAnalysisStatusEnum.Completed && prv && prv !== CanvasAnalysisStatusEnum.Completed;
-        });
         if (hasNewCompletion) {
             queryClient.invalidateQueries({ queryKey: SCENE_ARTIFACTS_QUERY_KEYS.sceneArtifacts() });
         }
-
-        // Snapshot current statuses for next comparison
-        const nextSnapshot = new Map<string, string>();
-        for (const analysisId of trackedIdsRef.current) {
-            const status = statusMap.get(analysisId)?.status;
-            if (status) nextSnapshot.set(analysisId, status);
-        }
-        prevStatusMapRef.current = nextSnapshot;
+        prevStatusesRef.current = next;
     }, [statusMap, trajectoryId, queryClient]);
 
     const exposureEntries = useMemo(() => {
@@ -170,24 +157,9 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
     const loadExposuresForAnalysis = useCallback(async (analysisId: string) => {
         if (!trajectoryId) return;
 
-        // If already tracked, check cache state to determine if we need to refetch
         if (trackedIdsRef.current.has(analysisId)) {
-            const params = buildParams(trajectoryId, analysisId);
-            const queryKey = buildSceneArtifactsQueryOptions(params).queryKey;
+            const queryKey = buildSceneArtifactsQueryOptions(buildParams(trajectoryId, analysisId)).queryKey;
             const state = queryClient.getQueryState(queryKey);
-            if (state?.fetchStatus === 'fetching') return;
-
-            // Allow refetch if the cached result is empty (analysis may have completed since)
-            if (state?.status === 'success') {
-                const cached = queryClient.getQueryData<PaginatedResponse<SceneArtifact | RenderableExposurePayload>>(queryKey);
-                const hasData = cached?.data && (cached.data as unknown[]).length > 0;
-                if (hasData) return;
-                // Empty success: invalidate so useQueries triggers a fresh fetch
-                await queryClient.invalidateQueries({ queryKey });
-                return;
-            }
-
-            // Error state: invalidate to trigger a refetch via useQueries
             if (state?.status === 'error') {
                 reportedErrorsRef.current.delete(analysisId);
                 await queryClient.invalidateQueries({ queryKey });
@@ -195,7 +167,6 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
             return;
         }
 
-        // New analysis ID: add to tracked set, useQueries will start the fetch
         setTrackedAnalysisIds((prev) => {
             const next = new Set(prev);
             next.add(analysisId);

@@ -1,7 +1,7 @@
 import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
 import type { ListLatexAssetsInputDTO, ListLatexAssetsOutputDTO } from '@modules/latex/application/dtos/ListLatexAssetsDTO';
 import type { IUseCase } from '@shared/application/IUseCase';
