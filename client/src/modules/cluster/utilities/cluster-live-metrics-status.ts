@@ -3,11 +3,11 @@ import { RecoveryStateTone } from '@/shared/presentation/components/RecoveryStat
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
 
 export enum ClusterLiveMetricsLabel {
-    Healthy = 'Healthy',
+    Healthy = 'Active',
     Warning = 'Warning',
-    Critical = 'Critical',
-    WaitingForLiveMetrics = 'Waiting for live metrics',
-    MetricsUnavailable = 'Metrics unavailable'
+    Critical = 'Failed',
+    WaitingForLiveMetrics = 'Pending',
+    MetricsUnavailable = 'Paused'
 };
 
 export interface ClusterLiveMetricsStatus {

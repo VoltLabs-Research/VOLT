@@ -1,4 +1,5 @@
 import ChartContainer from '@/shared/presentation/components/ChartContainer';
+import type { ChartStat } from '@/shared/presentation/components/ChartContainer';
 import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
 import { Activity } from 'lucide-react';
 import { useEffect, useId, useMemo, useState } from 'react';
@@ -174,12 +175,21 @@ const NetworkChart = ({
         };
     }, [history, data, calculateDelta]);
 
-    const statItems = useMemo(() => {
+    const peakThroughput = useMemo(() => {
+        if (!history.length) return 0;
+        return history.reduce((max, point) => {
+            const total = point.rx + point.tx;
+            return total > max ? total : max;
+        }, 0);
+    }, [history]);
+
+    const statItems = useMemo<ChartStat[]>(() => {
+        const currentTotal = stats.totalRx + stats.totalTx;
         return [
-            { label: 'RX Total', value: formatByteSize(stats.totalRx) },
-            { label: 'TX Total', value: formatByteSize(stats.totalTx) }
+            { label: 'Throughput', value: formatByteSize(currentTotal), emphasis: 'primary' },
+            { label: 'Peak', value: formatByteSize(peakThroughput), emphasis: 'secondary' }
         ];
-    }, [stats.totalRx, stats.totalTx]);
+    }, [stats.totalRx, stats.totalTx, peakThroughput]);
 
     const renderTooltip: ContentType<ValueType, NameType> = ({ active, payload }: TooltipContentProps<ValueType, NameType>) => {
         if(!active || !payload?.length) return null;

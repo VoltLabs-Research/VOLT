@@ -30,23 +30,23 @@
 }
 
 .sidebar-sub-item.is-selected {
-    background: var(--active-bg);
-    color: var(--selected-indicator);
+    background: color-mix(in srgb, var(--accent-blue) 14%, transparent);
+    color: var(--color-text-primary);
     font-weight: 500;
 }
 
 .sidebar-sub-item.is-selected:hover,
 .sidebar-sub-item.is-selected:focus-visible {
-    background: var(--active-bg);
-    color: var(--selected-indicator);
+    background: color-mix(in srgb, var(--accent-blue) 18%, transparent);
+    color: var(--color-text-primary);
 }
 
 .sidebar-sub-item:focus-visible,
 .sidebar-nested-item:focus-visible {
-    outline: none;
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
     background: var(--hover-bg);
     color: var(--color-text-primary);
-    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent);
 }
 
 .sidebar-nested-section {
@@ -62,7 +62,7 @@
 .sidebar-nested-chevron {
     flex-shrink: 0;
     margin-left: auto;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-fast) var(--ease-standard);
 }
 
 .sidebar-nested-chevron.is-expanded {
@@ -97,15 +97,15 @@
 }
 
 .sidebar-nested-item.is-selected {
-    background: var(--active-bg);
-    color: var(--selected-indicator);
+    background: color-mix(in srgb, var(--accent-blue) 14%, transparent);
+    color: var(--color-text-primary);
     font-weight: 500;
 }
 
 .sidebar-nested-item.is-selected:hover,
 .sidebar-nested-item.is-selected:focus-visible {
-    background: var(--active-bg);
-    color: var(--selected-indicator);
+    background: color-mix(in srgb, var(--accent-blue) 18%, transparent);
+    color: var(--color-text-primary);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -91,6 +91,19 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     const bootstrapLoading = analysesQuery.isLoading;
 
     const analyses = analysesQuery.data?.data ?? [];
+
+    if (typeof window !== 'undefined') {
+        (window as any).__VOLT_SIDEBAR_DEBUG = {
+            trajectoryId,
+            dataShape: analysesQuery.data ? Object.keys(analysesQuery.data) : null,
+            dataIsArray: Array.isArray(analysesQuery.data),
+            rawDataLen: Array.isArray(analysesQuery.data) ? analysesQuery.data.length : undefined,
+            innerLen: analyses.length,
+            isLoading: analysesQuery.isLoading,
+            isError: analysesQuery.isError,
+            errorMsg: analysesQuery.error?.message
+        };
+    }
     const selectedAnalysis = useMemo(() => {
         if (!analysisConfigId) {
             return undefined;

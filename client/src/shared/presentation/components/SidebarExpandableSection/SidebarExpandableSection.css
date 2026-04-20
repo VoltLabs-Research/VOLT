@@ -4,7 +4,7 @@
 
 .sidebar-section-chevron {
     margin-left: auto;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-fast) var(--ease-standard);
 }
 
 .sidebar-section-chevron.is-expanded {

@@ -90,6 +90,20 @@
     font-weight: 600;
 }
 
+.document-listing-cell.is-numeric {
+    justify-content: flex-end;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.document-listing-cell.is-numeric .document-listing-cell-value {
+    text-align: right;
+}
+
+.document-listing-cell.header-cell.is-numeric .document-listing-sort-button {
+    justify-content: flex-end;
+}
+
 .document-listing-sort-button {
     width: 100%;
     min-width: 0;

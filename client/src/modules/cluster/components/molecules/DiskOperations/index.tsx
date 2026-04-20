@@ -42,6 +42,16 @@ const DiskOperations = ({ history, metrics }: DiskOperationsProps) => {
         speed: metrics?.diskOperations?.speed ?? 0
     }), [metrics]);
 
+    const currentThroughput = currentValues.read + currentValues.write;
+
+    const peakThroughput = useMemo(() => {
+        if (chartData.length === 0) return 0;
+        return chartData.reduce((max, point) => {
+            const total = point.read + point.write;
+            return total > max ? total : max;
+        }, 0);
+    }, [chartData]);
+
     const renderTooltip = ({ active, payload }: Record<string, unknown>) => {
         if (!active || !Array.isArray(payload) || payload.length < 1) return null;
 
@@ -62,9 +72,8 @@ const DiskOperations = ({ history, metrics }: DiskOperationsProps) => {
             title='Disk Operations'
             isLoading={!metrics}
             stats={[
-                { label: 'Read', value: `${currentValues.read} MB/s` },
-                { label: 'Write', value: `${currentValues.write} MB/s` },
-                { label: 'IOPS', value: currentValues.speed }
+                { label: 'Throughput', value: `${currentThroughput.toFixed(1)} MB/s`, emphasis: 'primary' },
+                { label: 'Peak', value: `${peakThroughput.toFixed(1)} MB/s`, emphasis: 'secondary' }
             ]}
             statsLoading={!metrics}
         >
