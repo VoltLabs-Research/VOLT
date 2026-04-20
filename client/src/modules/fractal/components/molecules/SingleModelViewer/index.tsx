@@ -418,6 +418,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
 
     return (
         <SimulationCellBox
+            sceneKey={sceneKey}
             boxBounds={boxBounds}
             transforms={cellBoxTransforms}
             orbitControlsRef={orbitControlsRef}

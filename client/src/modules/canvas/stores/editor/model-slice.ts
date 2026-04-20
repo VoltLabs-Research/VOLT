@@ -1,5 +1,5 @@
 import { isSameScene, isTimestepScopedScene } from '@/modules/canvas/utilities/scene-identity';
-import { DEFAULT_SCENE } from '@/modules/fractal/utilities/scene-utils';
+import { DEFAULT_SCENE, getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import { areModelWorldBoundsEqual } from '@/modules/fractal/utilities/model-world-bounds';
 
 import type { EditorStore } from './types';
@@ -55,7 +55,7 @@ const getSceneStateWithoutTimestepScopedScenes = (state: ModelState): Pick<Model
     };
 };
 
-const MODEL_DRAG_OFFSET_INITIAL: ModelDragOffset = { x: 0, y: 0, z: 0 };
+const MODEL_DRAG_OFFSET_ZERO: ModelDragOffset = { x: 0, y: 0, z: 0 };
 
 const createInitialState = (): ModelState => ({
     activeModel: null,
@@ -68,7 +68,7 @@ const createInitialState = (): ModelState => ({
     pointCloudSettings: POINT_CLOUD_SETTINGS_INITIAL,
     sceneVisualOverrides: {},
     modelWorldBounds: null,
-    modelDragOffset: MODEL_DRAG_OFFSET_INITIAL,
+    modelDragOffsets: {},
     showSimulationCell: true,
     isPointCloudScene: false
 });
@@ -98,9 +98,16 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
     },
 
     removeScene(scene: SceneObjectType) {
-        set((state) => ({
-            activeScenes: state.activeScenes.filter(s => !isSameScene(s, scene))
-        }));
+        set((state) => {
+            const removedKey = getSceneKey(scene);
+            const nextOffsets = { ...state.modelDragOffsets };
+            delete nextOffsets[removedKey];
+
+            return {
+                activeScenes: state.activeScenes.filter(s => !isSameScene(s, scene)),
+                modelDragOffsets: nextOffsets
+            };
+        });
     },
 
     toggleScene(scene: SceneObjectType) {
@@ -235,13 +242,23 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
         });
     },
 
-    setModelDragOffset(offset: ModelDragOffset) {
+    setModelDragOffsetForScene(sceneKey: string, offset: ModelDragOffset) {
         set((state) => {
-            const current = state.modelDragOffset;
-            if (current.x === offset.x && current.y === offset.y && current.z === offset.z) {
+            const current = state.modelDragOffsets[sceneKey];
+            if (current && current.x === offset.x && current.y === offset.y && current.z === offset.z) {
                 return state;
             }
-            return { modelDragOffset: offset };
+
+            return {
+                modelDragOffsets: {
+                    ...state.modelDragOffsets,
+                    [sceneKey]: offset
+                }
+            };
         });
+    },
+
+    getModelDragOffsetForScene(sceneKey: string): ModelDragOffset {
+        return get().modelDragOffsets[sceneKey] ?? MODEL_DRAG_OFFSET_ZERO;
     }
 });

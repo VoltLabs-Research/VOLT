@@ -22,6 +22,7 @@ interface SimulationCellTransforms {
 };
 
 interface SimulationCellBoxProps {
+    sceneKey: string;
     boxBounds?: BoxBounds;
     children?: ReactNode;
     transforms?: SimulationCellTransforms;
@@ -42,7 +43,10 @@ const _cameraForward = new THREE.Vector3();
 type DragAxisLock = 'x' | 'y' | 'z';
 const FLOOR_AXIS_LOCK: DragAxisLock = 'z';
 
+const ZERO_OFFSET = { x: 0, y: 0, z: 0 } as const;
+
 const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
+    sceneKey,
     boxBounds,
     children,
     transforms,
@@ -66,8 +70,8 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     // so only Z changes regardless of which plane DragControls picked.
     const dragStartPosRef = useRef(new THREE.Vector3());
     const showSimulationCell = useEditorStore((state) => state.showSimulationCell);
-    const modelDragOffset = useEditorStore((state) => state.modelDragOffset);
-    const setModelDragOffset = useEditorStore((state) => state.setModelDragOffset);
+    const modelDragOffset = useEditorStore((state) => state.modelDragOffsets[sceneKey] ?? ZERO_OFFSET);
+    const setModelDragOffsetForScene = useEditorStore((state) => state.setModelDragOffsetForScene);
     const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
     const [axisLock, setAxisLock] = useState<DragAxisLock>(FLOOR_AXIS_LOCK);
     const axisLockRef = useRef<DragAxisLock>(FLOOR_AXIS_LOCK);
@@ -142,8 +146,8 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     useEffect(() => {
         if (isDraggingRef.current) return;
 
-        const { x, y, z } = useEditorStore.getState().modelDragOffset;
-        currentDragPosRef.current.set(x, y, z);
+        const offset = useEditorStore.getState().modelDragOffsets[sceneKey] ?? ZERO_OFFSET;
+        currentDragPosRef.current.set(offset.x, offset.y, offset.z);
         targetDragPosRef.current.copy(currentDragPosRef.current);
         dragMatrixRef.current.compose(currentDragPosRef.current, _identityQuat, _unitScale);
 
@@ -152,7 +156,7 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
             dragRef.current.matrixWorldNeedsUpdate = true;
         }
         invalidate();
-    }, [boxBounds, transforms, invalidate]);
+    }, [boxBounds, transforms, invalidate, sceneKey]);
 
     useEffect(() => {
         if (isDraggingRef.current) return;
@@ -161,12 +165,13 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     }, [modelDragOffset, invalidate]);
 
     useEffect(() => {
-        return remoteModelDragBus.on((offset) => {
+        return remoteModelDragBus.on((event) => {
+            if (event.sceneKey !== sceneKey) return;
             if (isDraggingRef.current) return;
-            targetDragPosRef.current.set(offset.x, offset.y, offset.z);
+            targetDragPosRef.current.set(event.offset.x, event.offset.y, event.offset.z);
             invalidate();
         });
-    }, [invalidate]);
+    }, [invalidate, sceneKey]);
 
     useFrame((_, delta) => {
         if (isDraggingRef.current) return;
@@ -273,9 +278,12 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
                 currentDragPosRef.current.copy(_clampedPos);
                 targetDragPosRef.current.copy(_clampedPos);
                 localModelDragBus.emit({
-                    x: _clampedPos.x,
-                    y: _clampedPos.y,
-                    z: _clampedPos.z
+                    sceneKey,
+                    offset: {
+                        x: _clampedPos.x,
+                        y: _clampedPos.y,
+                        z: _clampedPos.z
+                    }
                 });
                 invalidate();
             }}
@@ -284,7 +292,7 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
                 dragMatrixRef.current.decompose(_decomposePos, _decomposeQuat, _decomposeScale);
                 currentDragPosRef.current.copy(_decomposePos);
                 targetDragPosRef.current.copy(_decomposePos);
-                setModelDragOffset({
+                setModelDragOffsetForScene(sceneKey, {
                     x: _decomposePos.x,
                     y: _decomposePos.y,
                     z: _decomposePos.z

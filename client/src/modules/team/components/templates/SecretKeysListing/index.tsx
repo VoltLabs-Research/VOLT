@@ -69,11 +69,6 @@ const COLUMNS: ColumnConfig<SecretKey>[] = [
         sortable: false,
         fallback: 'Never',
         withTitle: true
-    }),
-    dateColumn<SecretKey>('createdAt', 'Created At', {
-        width: 110,
-        sortable: false,
-        withTitle: true
     })
 ];
 

@@ -79,13 +79,14 @@
 /** Floating Node Panel **/
 .floating-node-panel {
     z-index: 100;
-    width: 380px;
-    max-height: 75vh;
+    width: 400px;
     border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-elevated);
 }
 
 .floating-node-panel-header {
     border-bottom: 1px solid var(--color-border-soft);
+    flex-shrink: 0;
 }
 
 .floating-node-panel-icon {
@@ -94,6 +95,21 @@
     background: var(--color-surface-3);
 }
 
+.floating-node-panel-tabs {
+    padding: 0.75rem 1rem 0;
+    flex-shrink: 0;
+}
+
 .floating-node-panel-body {
+    overflow-y: auto;
     overflow-x: hidden;
+    flex: 1;
+    min-height: 0;
+    padding: 1rem;
+}
+
+.floating-node-panel-footer {
+    border-top: 1px solid var(--color-border-soft);
+    padding: 0.75rem 1rem;
+    flex-shrink: 0;
 }

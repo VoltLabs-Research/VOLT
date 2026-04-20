@@ -12,6 +12,7 @@ interface UseLiveModelDragOptions {
 interface LiveDragPayload {
     trajectoryId: string;
     ownerId: string;
+    sceneKey: string;
     x: number;
     y: number;
     z: number;
@@ -33,7 +34,7 @@ const useLiveModelDrag = ({
             return;
         }
 
-        return localModelDragBus.on((offset) => {
+        return localModelDragBus.on(({ sceneKey, offset }) => {
             const now = Date.now();
             if (now - lastEmitRef.current < EMIT_THROTTLE_MS) return;
             lastEmitRef.current = now;
@@ -41,6 +42,7 @@ const useLiveModelDrag = ({
             socketService.emit('canvas.workspace.model_drag', {
                 trajectoryId,
                 ownerId,
+                sceneKey,
                 x: offset.x,
                 y: offset.y,
                 z: offset.z
@@ -58,11 +60,15 @@ const useLiveModelDrag = ({
             if (!payload) return;
             if (payload.trajectoryId !== trajectoryId) return;
             if (payload.ownerId !== ownerId) return;
+            if (!payload.sceneKey) return;
 
             remoteModelDragBus.emit({
-                x: payload.x,
-                y: payload.y,
-                z: payload.z
+                sceneKey: payload.sceneKey,
+                offset: {
+                    x: payload.x,
+                    y: payload.y,
+                    z: payload.z
+                }
             });
         });
     }, [enabled, trajectoryId, ownerId, socketService]);

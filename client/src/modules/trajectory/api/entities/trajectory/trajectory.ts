@@ -30,6 +30,6 @@ export interface Trajectory extends BaseEntity {
     processingProgress?: TrajectoryProcessingProgress;
     users: (User | string)[];
     createdBy?: User | string;
-    teamCluster?: TeamCluster | string | null;
+    storageClusterId?: TeamCluster | string | null;
     availableModels?: AvailableModels;
 };

@@ -54,7 +54,9 @@ export interface ModelState {
     pointCloudSettings: PointCloudSettingsState;
     sceneVisualOverrides: SceneVisualOverrides;
     modelWorldBounds: ModelWorldBounds | null;
-    modelDragOffset: ModelDragOffset;
+    // Drag offset per scene key — each model has its own translation, so
+    // moving one leaves the others untouched.
+    modelDragOffsets: Record<string, ModelDragOffset>;
     showSimulationCell: boolean;
     isPointCloudScene: boolean;
 };
@@ -83,7 +85,8 @@ export interface ModelActions {
     getSceneLineWidth: (sceneKey: string) => number | undefined;
     setShowSimulationCell: (show: boolean) => void;
     setIsPointCloudScene: (isPointCloud: boolean) => void;
-    setModelDragOffset: (offset: ModelDragOffset) => void;
+    setModelDragOffsetForScene: (sceneKey: string, offset: ModelDragOffset) => void;
+    getModelDragOffsetForScene: (sceneKey: string) => ModelDragOffset;
 };
 
 export type ModelStore = ModelActions & ModelState;
