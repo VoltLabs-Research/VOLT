@@ -7,6 +7,18 @@
     --radius-2xl: 24px;
     --radius-full: 9999px;
 
+    /* Motion — Apple HIG easings and durations */
+    --ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
+    --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+    --ease-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+    --ease-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+
+    --duration-instant: 100ms;
+    --duration-fast: 150ms;
+    --duration-base: 250ms;
+    --duration-slow: 400ms;
+    --duration-slower: 600ms;
+
     --z-floating: 99999;
 }
 
@@ -46,8 +58,8 @@
     --color-autofill-bg: #171719;
     --color-autofill-text: #f0f0f0;
 
-    --accent-blue: #0062FF;
-    --color-brand-primary: #0062FF;
+    --accent-blue: #0A84FF;
+    --color-brand-primary: #0A84FF;
     --accent-indigo: #5e5ce6;
     --accent-purple: #bf5af2;
     --accent-green: #2dcc70;
@@ -78,9 +90,9 @@
     --status-warning-bg: rgba(255, 214, 10, 0.1);
     --status-warning-border: rgba(255, 214, 10, 0.2);
 
-    --status-info: #0062FF;
-    --status-info-bg: rgba(0, 98, 255, 0.1);
-    --status-info-border: rgba(0, 98, 255, 0.2);
+    --status-info: #0A84FF;
+    --status-info-bg: rgba(10, 132, 255, 0.15);
+    --status-info-border: rgba(10, 132, 255, 0.28);
 
     --hover-bg: rgba(255, 255, 255, 0.04);
     --active-bg: rgba(255, 255, 255, 0.06);

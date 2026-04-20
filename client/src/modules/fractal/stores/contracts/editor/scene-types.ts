@@ -37,6 +37,12 @@ export interface ModelData {
     glbs: TrajectoryGLBs | null;
 };
 
+export interface ModelDragOffset {
+    x: number;
+    y: number;
+    z: number;
+};
+
 export interface ModelState {
     activeScene: SceneObjectType;
     activeScenes: SceneObjectType[];
@@ -48,6 +54,7 @@ export interface ModelState {
     pointCloudSettings: PointCloudSettingsState;
     sceneVisualOverrides: SceneVisualOverrides;
     modelWorldBounds: ModelWorldBounds | null;
+    modelDragOffset: ModelDragOffset;
     showSimulationCell: boolean;
     isPointCloudScene: boolean;
 };
@@ -76,6 +83,7 @@ export interface ModelActions {
     getSceneLineWidth: (sceneKey: string) => number | undefined;
     setShowSimulationCell: (show: boolean) => void;
     setIsPointCloudScene: (isPointCloud: boolean) => void;
+    setModelDragOffset: (offset: ModelDragOffset) => void;
 };
 
 export type ModelStore = ModelActions & ModelState;

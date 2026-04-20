@@ -9,6 +9,7 @@ import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-c
 interface WorkspaceTabsProps {
     disableAuxWorkspaces?: boolean;
     peers?: WorkspacePresenceUser[];
+    self?: WorkspacePresenceUser;
     activeOwnerId?: string;
     onSelectPeer?: (peerId: string) => void;
 };
@@ -16,6 +17,7 @@ interface WorkspaceTabsProps {
 const WorkspaceTabs = ({
     disableAuxWorkspaces = false,
     peers = [],
+    self,
     activeOwnerId,
     onSelectPeer
 }: WorkspaceTabsProps) => {
@@ -23,7 +25,7 @@ const WorkspaceTabs = ({
     const { activeWorkspace, setActiveWorkspace } = useCanvasUrlState();
     const isRaster = activeWorkspace === CanvasWorkspace.Raster;
     const isScripting = activeWorkspace === CanvasWorkspace.Scripting;
-    const canShowPeers = Boolean(onSelectPeer && peers.length > 0);
+    const canShowPeers = Boolean(onSelectPeer && (peers.length > 0 || self));
 
     return (
         <Container className="d-flex items-center px-1 gap-025">
@@ -80,6 +82,7 @@ const WorkspaceTabs = ({
             {canShowPeers && (
                 <WorkspacePeerAvatars
                     peers={peers}
+                    self={self}
                     activeOwnerId={activeOwnerId}
                     onSelectPeer={onSelectPeer!}
                 />

@@ -1,5 +1,5 @@
 import { DragControls } from '@react-three/drei';
-import { useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import type { BoxBounds } from '@/modules/fractal/types';
 import { getBoxDimensions } from '@/modules/fractal/utilities/box-utils';
 import { Theme } from '@/shared/presentation/hooks/use-theme';
@@ -8,6 +8,7 @@ import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useMemo, useRef, useEffect, forwardRef, useState } from 'react';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { localModelDragBus, remoteModelDragBus } from '@/modules/canvas/collaboration/live-drag-bus';
 import type { ReactNode, RefObject } from 'react';
 
 interface SimulationCellTransforms {
@@ -34,6 +35,8 @@ const _decomposePos = new THREE.Vector3();
 const _decomposeQuat = new THREE.Quaternion();
 const _decomposeScale = new THREE.Vector3();
 const _clampedPos = new THREE.Vector3();
+const _identityQuat = new THREE.Quaternion();
+const _unitScale = new THREE.Vector3(1, 1, 1);
 
 const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     boxBounds,
@@ -50,7 +53,13 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     // Keep drag matrix in a ref — mutated imperatively during drag to avoid
     // React re-renders of the entire subtree (model with millions of points).
     const dragMatrixRef = useRef(new THREE.Matrix4());
+    // Interpolation refs: remote updates move the target; a per-frame lerp
+    // chases it from the current position for visual smoothing.
+    const currentDragPosRef = useRef(new THREE.Vector3());
+    const targetDragPosRef = useRef(new THREE.Vector3());
     const showSimulationCell = useEditorStore((state) => state.showSimulationCell);
+    const modelDragOffset = useEditorStore((state) => state.modelDragOffset);
+    const setModelDragOffset = useEditorStore((state) => state.setModelDragOffset);
     const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
 
     useEffect(() => {
@@ -90,14 +99,52 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     }, [transforms]);
 
     useEffect(() => {
-        dragMatrixRef.current.identity();
-        // Apply identity to DragControls' group so it resets visually.
+        if (isDraggingRef.current) return;
+
+        const { x, y, z } = useEditorStore.getState().modelDragOffset;
+        currentDragPosRef.current.set(x, y, z);
+        targetDragPosRef.current.copy(currentDragPosRef.current);
+        dragMatrixRef.current.compose(currentDragPosRef.current, _identityQuat, _unitScale);
+
         if (dragRef.current) {
-            dragRef.current.matrix.identity();
+            dragRef.current.matrix.copy(dragMatrixRef.current);
             dragRef.current.matrixWorldNeedsUpdate = true;
         }
         invalidate();
     }, [boxBounds, transforms, invalidate]);
+
+    useEffect(() => {
+        if (isDraggingRef.current) return;
+        targetDragPosRef.current.set(modelDragOffset.x, modelDragOffset.y, modelDragOffset.z);
+        invalidate();
+    }, [modelDragOffset, invalidate]);
+
+    useEffect(() => {
+        return remoteModelDragBus.on((offset) => {
+            if (isDraggingRef.current) return;
+            targetDragPosRef.current.set(offset.x, offset.y, offset.z);
+            invalidate();
+        });
+    }, [invalidate]);
+
+    useFrame((_, delta) => {
+        if (isDraggingRef.current) return;
+
+        const current = currentDragPosRef.current;
+        const target = targetDragPosRef.current;
+        if (current.distanceToSquared(target) < 1e-6) return;
+
+        // Frame-rate independent smoothing: higher factor = snappier, lower = softer.
+        const alpha = 1 - Math.exp(-18 * delta);
+        current.lerp(target, alpha);
+
+        dragMatrixRef.current.compose(current, _identityQuat, _unitScale);
+        if (dragRef.current) {
+            dragRef.current.matrix.copy(dragMatrixRef.current);
+            dragRef.current.matrixWorldNeedsUpdate = true;
+        }
+        invalidate();
+    });
 
     const geometry = useMemo(() => {
         if (!boxBounds) return null;
@@ -169,10 +216,25 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
                     dragRef.current.matrix.copy(dragMatrixRef.current);
                     dragRef.current.matrixWorldNeedsUpdate = true;
                 }
+                currentDragPosRef.current.copy(_clampedPos);
+                targetDragPosRef.current.copy(_clampedPos);
+                localModelDragBus.emit({
+                    x: _clampedPos.x,
+                    y: _clampedPos.y,
+                    z: _clampedPos.z
+                });
                 invalidate();
             }}
             onDragEnd={() => {
                 isDraggingRef.current = false;
+                dragMatrixRef.current.decompose(_decomposePos, _decomposeQuat, _decomposeScale);
+                currentDragPosRef.current.copy(_decomposePos);
+                targetDragPosRef.current.copy(_decomposePos);
+                setModelDragOffset({
+                    x: _decomposePos.x,
+                    y: _decomposePos.y,
+                    z: _decomposePos.z
+                });
                 invalidate();
                 if (orbitControlsRef?.current) {
                     orbitControlsRef.current.enabled = true;

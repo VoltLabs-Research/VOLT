@@ -10,7 +10,6 @@
 
 .theme-card:hover {
     border-color: var(--accent-blue);
-    transform: translateY(-2px);
 }
 
 .theme-card:focus-visible {

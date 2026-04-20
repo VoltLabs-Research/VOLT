@@ -20,6 +20,7 @@ import { SOCKET_ANALYSIS_EVENTS } from '@/modules/socket/analysis/constants/anal
 import { SOCKET_SCENE_ARTIFACT_EVENTS } from '@/modules/socket/trajectory/constants/scene-artifact-socket-events';
 import { SOCKET_TEAM_EVENTS } from '@/modules/socket/team/constants/team-socket-events';
 import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
+import { useCanvasCanCollaborate } from '@/modules/canvas/api/access';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -172,10 +173,12 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         void queryClient.invalidateQueries({ queryKey: SCENE_ARTIFACTS_QUERY_KEYS.sceneArtifacts() });
     }, [trajectoryId]);
 
-    useSocketEvent<Record<string, unknown>>(SOCKET_ANALYSIS_EVENTS.CREATED, handleAnalysisCreated, { enabled: !!trajectoryId });
-    useSocketEvent<Record<string, unknown>>(SOCKET_TEAM_EVENTS.JOB_UPDATED, patchStatusFromSocket, { enabled: !!trajectoryId });
-    useSocketEvent<Record<string, unknown>>(SOCKET_ANALYSIS_EVENTS.STATUS_CHANGED, handleAnalysisStatusChanged, { enabled: !!trajectoryId });
-    useSocketEvent<Record<string, unknown>>(SOCKET_SCENE_ARTIFACT_EVENTS.UPSERTED, handleSceneArtifactUpserted, { enabled: !!trajectoryId });
+    const canCollaborate = useCanvasCanCollaborate();
+    const socketEnabled = !!trajectoryId && canCollaborate;
+    useSocketEvent<Record<string, unknown>>(SOCKET_ANALYSIS_EVENTS.CREATED, handleAnalysisCreated, { enabled: socketEnabled });
+    useSocketEvent<Record<string, unknown>>(SOCKET_TEAM_EVENTS.JOB_UPDATED, patchStatusFromSocket, { enabled: socketEnabled });
+    useSocketEvent<Record<string, unknown>>(SOCKET_ANALYSIS_EVENTS.STATUS_CHANGED, handleAnalysisStatusChanged, { enabled: socketEnabled });
+    useSocketEvent<Record<string, unknown>>(SOCKET_SCENE_ARTIFACT_EVENTS.UPSERTED, handleSceneArtifactUpserted, { enabled: socketEnabled });
 
     useEffect(() => {
         if (!analysisConfigId) return;

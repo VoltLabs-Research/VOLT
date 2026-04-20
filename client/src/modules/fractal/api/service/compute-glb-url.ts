@@ -1,4 +1,5 @@
 import { buildBackendUrl } from '@/app/core/http/utilities/backend-origin';
+import type { CanvasAccessMode } from '@/modules/canvas/api/access';
 import type {
     SceneObjectType,
     PluginScene,
@@ -13,6 +14,7 @@ export interface ComputeGlbUrlParams {
     currentTimestep: number | undefined;
     analysisId: string;
     activeScene?: SceneObjectType;
+    mode?: CanvasAccessMode;
 };
 
 const DEFAULT_ANALYSIS_ID = 'default';
@@ -28,6 +30,7 @@ const buildApiUrl = (path: string): string => {
 };
 
 const buildPluginUrl = (
+    mode: CanvasAccessMode,
     teamId: string,
     trajectoryId: string,
     scene: PluginScene,
@@ -35,10 +38,16 @@ const buildPluginUrl = (
 ): string | null => {
     const { analysisId, exposureId } = scene;
     if (!analysisId || !exposureId) return null;
+
+    if (mode === 'public') {
+        return buildApiUrl(`/api/canvas/${trajectoryId}/exposures/${analysisId}/${exposureId}/${timestep}/glb`);
+    }
+
     return buildApiUrl(`/api/plugins/${teamId}/exposures/glb/${trajectoryId}/${analysisId}/${exposureId}/${timestep}`);
 };
 
 const buildColorCodingUrl = (
+    mode: CanvasAccessMode,
     teamId: string,
     trajectoryId: string,
     scene: ColorCodingScene,
@@ -54,10 +63,16 @@ const buildColorCodingUrl = (
         timestep: String(timestep)
     });
     if (exposureId) params.set('exposureId', exposureId);
+
+    if (mode === 'public') {
+        return buildApiUrl(`/api/canvas/${trajectoryId}/color-coding/model/${effectiveAnalysisId}?${params.toString()}`);
+    }
+
     return buildApiUrl(`/api/color-codings/${teamId}/${trajectoryId}/${effectiveAnalysisId}?${params.toString()}`);
 };
 
 const buildParticleFilterUrl = (
+    mode: CanvasAccessMode,
     teamId: string,
     trajectoryId: string,
     scene: ParticleFilterScene,
@@ -101,6 +116,10 @@ const buildParticleFilterUrl = (
         }
     }
 
+    if (mode === 'public') {
+        return buildApiUrl(`/api/canvas/${trajectoryId}/particle-filter/model/${effectiveAnalysisId}?${params.toString()}`);
+    }
+
     return buildApiUrl(`/api/particle-filters/${teamId}/${trajectoryId}/${effectiveAnalysisId}?${params.toString()}`);
 };
 
@@ -109,17 +128,18 @@ export const computeGlbUrl = ({
     trajectoryId,
     currentTimestep,
     analysisId,
-    activeScene
+    activeScene,
+    mode = 'rbac'
 }: ComputeGlbUrlParams): string | null => {
     if (!trajectoryId || currentTimestep === undefined) return null;
 
     switch (activeScene?.source) {
         case 'plugin':
-            return buildPluginUrl(teamId, trajectoryId, activeScene, currentTimestep);
+            return buildPluginUrl(mode, teamId, trajectoryId, activeScene, currentTimestep);
         case 'color-coding':
-            return buildColorCodingUrl(teamId, trajectoryId, activeScene, currentTimestep);
+            return buildColorCodingUrl(mode, teamId, trajectoryId, activeScene, currentTimestep);
         case 'particle-filter':
-            return buildParticleFilterUrl(teamId, trajectoryId, activeScene, currentTimestep);
+            return buildParticleFilterUrl(mode, teamId, trajectoryId, activeScene, currentTimestep);
         default:
             return buildApiUrl(`/api/canvas/${trajectoryId}/glb/${currentTimestep}/${analysisId}`);
     }

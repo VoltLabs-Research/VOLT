@@ -1,9 +1,19 @@
+import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import {
     buildKeys,
-    createMutation,
-    createQuery
+    createMutation
 } from '@/shared/infrastructure/query/create-paginated-query';
-import type { GetColorCodingPropertiesInputDTO, GetColorCodingStatsInputDTO } from '../../api/dtos/color-coding';
+import {
+    useCanvasAccessMode,
+    useCanvasDataAccess,
+    withAccessMode
+} from '@/modules/canvas/api/access';
+import type {
+    ColorCodingProperties,
+    ColorCodingStats,
+    GetColorCodingPropertiesInputDTO,
+    GetColorCodingStatsInputDTO
+} from '../../api/dtos/color-coding';
 import colorCodingService from '../../api/services/color-coding';
 
 const BASE_KEY = 'trajectory';
@@ -18,10 +28,35 @@ export const COLOR_CODING_QUERY_KEYS = {
     colorCodingStats: KEYS.colorCodingStats
 } as const;
 
-export const colorCodingPropertiesQuery = createQuery(KEYS.colorCodingProperties, colorCodingService.getProperties);
-export const colorCodingStatsQuery = createQuery(KEYS.colorCodingStats, colorCodingService.getStats);
+type ColorCodingPropertiesOptions = Partial<UseQueryOptions<ColorCodingProperties, Error, ColorCodingProperties>>;
+type ColorCodingStatsOptions = Partial<UseQueryOptions<ColorCodingStats, Error, ColorCodingStats>>;
 
-export const buildColorCodingPropertiesQueryOptions = colorCodingPropertiesQuery.buildOptions;
-export const buildColorCodingStatsQueryOptions = colorCodingStatsQuery.buildOptions;
+export const colorCodingPropertiesQuery = (
+    params: GetColorCodingPropertiesInputDTO,
+    options?: ColorCodingPropertiesOptions
+) => {
+    const mode = useCanvasAccessMode();
+    const dataAccess = useCanvasDataAccess();
+
+    return useQuery<ColorCodingProperties, Error, ColorCodingProperties>({
+        ...options,
+        queryKey: withAccessMode(mode, KEYS.colorCodingProperties(params)),
+        queryFn: () => dataAccess.getColorCodingProperties(params)
+    });
+};
+
+export const colorCodingStatsQuery = (
+    params: GetColorCodingStatsInputDTO,
+    options?: ColorCodingStatsOptions
+) => {
+    const mode = useCanvasAccessMode();
+    const dataAccess = useCanvasDataAccess();
+
+    return useQuery<ColorCodingStats, Error, ColorCodingStats>({
+        ...options,
+        queryKey: withAccessMode(mode, KEYS.colorCodingStats(params)),
+        queryFn: () => dataAccess.getColorCodingStats(params)
+    });
+};
 
 export const useApplyColorCodingMutation = createMutation(colorCodingService.apply);

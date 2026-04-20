@@ -2,6 +2,7 @@ import { useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import { useCanvasAccessStore } from '@/modules/canvas/api/access';
 import { fetchPluginById, PLUGIN_QUERY_KEYS, syncPluginEntityCaches, useAllPluginsQuery } from './queries';
 
 const usePluginCatalog = () => {
@@ -11,6 +12,10 @@ const usePluginCatalog = () => {
     const allPluginsQuery = useAllPluginsQuery({ enabled: false });
 
     const loadAllPlugins = useCallback(async ({ force = true }: { limit?: number; force?: boolean } = {}): Promise<void> => {
+        if (useCanvasAccessStore.getState().mode === 'public') {
+            return;
+        }
+
         const currentPlugins = queryClient.getQueryData<Plugin[]>(PLUGIN_QUERY_KEYS.allList());
         if (!force && currentPlugins && currentPlugins.length > 0) return;
 

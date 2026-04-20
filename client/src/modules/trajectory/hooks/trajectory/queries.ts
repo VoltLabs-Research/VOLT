@@ -12,6 +12,14 @@ import {
 import { batchInvalidateQueries } from '@/shared/infrastructure/query/cache-utils';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { useInfiniteQuery } from '@tanstack/react-query';
+import {
+    buildCanvasDataAccess,
+    DEFAULT_CANVAS_ACCESS_STATE,
+    useCanvasAccessMode,
+    useCanvasAccessStore,
+    useCanvasDataAccess,
+    withAccessMode
+} from '@/modules/canvas/api/access';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type {
     CreateTrajectoryInputDTO,
@@ -111,7 +119,12 @@ export const debugTrajectoriesQuery = createQuery(KEYS.debug, async (): Promise<
     );
 });
 export const trajectoryPreviewQuery = createQuery(KEYS.preview, trajectoryService.getPreview);
-export const trajectoryAtomsQuery = createQuery(KEYS.atoms, trajectoryService.getAtoms);
+const getAtomsWithAccess = (params: GetAtomsInputDTO) => {
+    const mode = useCanvasAccessStore.getState().mode;
+    return buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode }).getAtoms(params);
+};
+const getAtomsKey = (params: GetAtomsInputDTO) => withAccessMode(useCanvasAccessStore.getState().mode, KEYS.atoms(params));
+export const trajectoryAtomsQuery = createQuery(getAtomsKey, getAtomsWithAccess);
 export const trajectorySamplesQuery = createQuery(KEYS.samples, () => trajectoryService.listSamples({}));
 export const trajectoryMetricsQuery = createQuery(KEYS.metrics, () => trajectoryService.getMetrics({}));
 
@@ -218,10 +231,13 @@ export const useTrajectoryAtomsInfiniteQuery = (
     params: TrajectoryAtomsInfiniteParams,
     options?: TrajectoryQueryOptions
 ) => {
+    const mode = useCanvasAccessMode();
+    const dataAccess = useCanvasDataAccess();
+
     return useInfiniteQuery({
         ...options,
-        queryKey: [...KEYS.atomsInfinite(), params],
-        queryFn: ({ pageParam }) => trajectoryService.getAtoms({
+        queryKey: withAccessMode(mode, [...KEYS.atomsInfinite(), params]),
+        queryFn: ({ pageParam }) => dataAccess.getAtoms({
             ...params,
             page: pageParam
         }),
