@@ -67,10 +67,6 @@ const COLUMNS: ColumnConfig<WhiteboardListingRow>[] = [
     dateColumn<WhiteboardListingRow>('updatedAt', 'Updated At', {
         width: 110,
         withTitle: true
-    }),
-    dateColumn<WhiteboardListingRow>('createdAt', 'Created At', {
-        width: 110,
-        withTitle: true
     })
 ];
 

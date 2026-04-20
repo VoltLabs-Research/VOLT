@@ -1,4 +1,4 @@
-import { download, get } from '@/app/core/http/utilities/create-service';
+import { download, get, paginated } from '@/app/core/http/utilities/create-service';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
@@ -43,7 +43,7 @@ interface GetCanvasDumpParams {
 export default {
     getBootstrap: get<GetPublicCanvasBootstrapInput, GetPublicCanvasBootstrapOutput>('/:trajectoryId/bootstrap'),
     getTrajectory: get<GetCanvasTrajectoryParams, Trajectory>('/:trajectoryId'),
-    listAnalyses: get<ListCanvasAnalysesParams, PaginatedResponse<Analysis>>('/:trajectoryId/analyses', {
+    listAnalyses: paginated<ListCanvasAnalysesParams, PaginatedResponse<Analysis>>('/:trajectoryId/analyses', {
         omit: ['trajectoryId'],
         query: ({ page, limit }) => ({
             ...(page !== undefined ? { page } : {}),

@@ -47,21 +47,6 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
         render: (_value, row) => formatNumber(isTrajectoryFolderRow(row) ? 0 : row.frames[0]?.natoms ?? 0),
         skeleton: { variant: 'text', width: 70 }
     },
-    clusterColumn<TrajectoryListingRow>({ isFolder: isTrajectoryFolderRow, width: 150 }),
-    {
-        key: 'status',
-        title: 'Status',
-        render: (value, row) => isTrajectoryFolderRow(row)
-            ? <span className='font-size-2 color-muted'>-</span>
-            : <StatusBadge status={String(value)} />,
-        skeleton: { variant: 'rounded', width: 90, height: 24 }
-    },
-    {
-        key: 'isPublic',
-        title: 'Public',
-        render: (value, row) => <span className='font-size-2 color-secondary'>{isTrajectoryFolderRow(row) ? '-' : value ? 'Yes' : 'No'}</span>,
-        skeleton: { variant: 'text', width: 70 }
-    },
     {
         key: 'framesCount',
         title: 'Frames',
@@ -74,11 +59,16 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
         render: (_value, row) => formatSize(isTrajectoryFolderRow(row) ? 0 : row.stats.totalSize),
         skeleton: { variant: 'text', width: 90 }
     },
+    {
+        key: 'status',
+        title: 'Status',
+        render: (value, row) => isTrajectoryFolderRow(row)
+            ? <span className='font-size-2 color-muted'>-</span>
+            : <StatusBadge status={String(value)} />,
+        skeleton: { variant: 'rounded', width: 90, height: 24 }
+    },
+    clusterColumn<TrajectoryListingRow>({ isFolder: isTrajectoryFolderRow, width: 150, key: 'storageClusterId' }),
     dateColumn<TrajectoryListingRow>('updatedAt', 'Updated At', {
-        width: 110,
-        withTitle: true
-    }),
-    dateColumn<TrajectoryListingRow>('createdAt', 'Created At', {
         width: 110,
         withTitle: true
     })

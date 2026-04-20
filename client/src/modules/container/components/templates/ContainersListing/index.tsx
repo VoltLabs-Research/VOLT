@@ -15,14 +15,12 @@ import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
 import RenameFolderModal from '@/shared/presentation/components/RenameFolderModal';
 import Title from '@/shared/presentation/components/Title';
 import { openModal } from '@/shared/presentation/components/Modal';
-import { clusterColumn, dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
+import { clusterColumn, dateColumn } from '@/shared/presentation/utilities/column-presets';
 import useTip from '@/shared/tips/use-tip';
 import { formatSize } from '@/shared/utils/format';
 import { Folder, FolderPlus, Pencil, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
 import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
-import { useOpenContainerPort } from '@/modules/container/hooks/use-open-container-port';
-import { getPrimaryAccessiblePort } from '@/modules/container/utilities/get-primary-accessible-port';
 
 const renderName: NonNullable<ColumnConfig<ContainerListingRow>['render']> = (value, row) => {
     return (
@@ -40,8 +38,6 @@ const renderName: NonNullable<ColumnConfig<ContainerListingRow>['render']> = (va
 };
 
 const ContainersListing = () => {
-    const { openPort, openingPort } = useOpenContainerPort();
-
     useTip('containers-organization');
 
     const columns: ColumnConfig<ContainerListingRow>[] = [
@@ -58,12 +54,6 @@ const ContainersListing = () => {
         sortable: true,
         render: (value, row) => <span className='font-size-2 color-secondary'>{isContainerFolderRow(row) ? '-' : String(value)}</span>,
         skeleton: { variant: 'text', width: 150 }
-    },
-    {
-        key: 'internalIp',
-        title: 'Internal IP',
-        render: (value, row) => <span className='font-size-2 color-secondary font-family-mono'>{isContainerFolderRow(row) ? '-' : String(value || '-')}</span>,
-        skeleton: { variant: 'text', width: 120 }
     },
     clusterColumn<ContainerListingRow>({ isFolder: isContainerFolderRow }),
     {
@@ -86,52 +76,7 @@ const ContainersListing = () => {
         },
         skeleton: { variant: 'text', width: 90 }
     },
-    {
-        key: 'ports',
-        title: 'Exposed Ports',
-        sortable: false,
-        render: (_value, row) => {
-            if (isContainerFolderRow(row)) {
-                return <span className='font-size-2 color-muted'>-</span>;
-            }
-
-            const primaryPort = getPrimaryAccessiblePort(row.accessiblePorts);
-
-            return (
-                <Container className='d-flex items-center gap-05 wrap'>
-                    {row.ports.slice(0, 3).map((port) => (
-                        <span key={port.private} className='font-size-1 color-secondary font-family-mono'>
-                            {port.private}
-                        </span>
-                    ))}
-                    {primaryPort && (
-                        <Button
-                            variant='ghost'
-                            intent='brand'
-                            size='sm'
-                            onClick={() => openPort(row._id, primaryPort.private)}
-                            isLoading={openingPort === primaryPort.private}
-                        >
-                            Open
-                        </Button>
-                    )}
-                    {!primaryPort && row.ports.length > 0 && (
-                        <span className='font-size-1 color-muted'>TCP only</span>
-                    )}
-                    {row.ports.length === 0 && (
-                        <span className='font-size-2 color-secondary'>0</span>
-                    )}
-                </Container>
-            );
-        },
-        skeleton: { variant: 'text', width: 90 }
-    },
-    userColumn<ContainerListingRow>('createdBy', 'Created By', { isFolder: isContainerFolderRow }),
     dateColumn<ContainerListingRow>('updatedAt', 'Updated At', {
-        width: 110,
-        withTitle: true
-    }),
-    dateColumn<ContainerListingRow>('createdAt', 'Created At', {
         width: 110,
         withTitle: true
     })

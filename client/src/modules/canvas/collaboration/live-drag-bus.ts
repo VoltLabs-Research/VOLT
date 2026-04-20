@@ -1,6 +1,11 @@
 import type { ModelDragOffset } from '@/modules/fractal/stores/contracts/editor/scene-types';
 
-type Listener = (offset: ModelDragOffset) => void;
+export interface ModelDragEvent {
+    sceneKey: string;
+    offset: ModelDragOffset;
+};
+
+type Listener = (event: ModelDragEvent) => void;
 
 const createBus = () => {
     const listeners = new Set<Listener>();
@@ -12,8 +17,8 @@ const createBus = () => {
                 listeners.delete(listener);
             };
         },
-        emit(offset: ModelDragOffset): void {
-            listeners.forEach((listener) => listener(offset));
+        emit(event: ModelDragEvent): void {
+            listeners.forEach((listener) => listener(event));
         }
     };
 };

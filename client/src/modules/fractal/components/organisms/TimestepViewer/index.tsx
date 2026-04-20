@@ -50,17 +50,18 @@ export interface TimestepViewerRef {
     loadModel: () => void;
 };
 
-const DEFAULT_MODEL_EXTENT = 12;
-const MIN_SPAWN_PADDING = 2;
+// Matches the `targetSize` used by calculateBoxTransforms (box-utils.ts) —
+// every model is auto-scaled so its largest dimension is this many world units.
+const WORLD_MODEL_EXTENT = 8;
+const SPAWN_PADDING = 2;
+const SPAWN_STEP = WORLD_MODEL_EXTENT + SPAWN_PADDING;
 
 const computeSpawnPosition = (
     camera: THREE.Camera,
-    basePosition: OptionalPosition,
-    existing: Array<{ pos: OptionalPosition; extent: number }>,
-    newExtent: number
+    existing: OptionalPosition[]
 ): OptionalPosition => {
-    // Use camera-right (perpendicular to forward and scene-up) so the new
-    // model lands sideways within the current view — not behind, not too far.
+    // Camera-right (perpendicular to forward and scene-up) drops the new model
+    // sideways within the current view — not behind, not too far.
     const forward = new THREE.Vector3();
     camera.getWorldDirection(forward);
     const right = new THREE.Vector3().crossVectors(forward, camera.up);
@@ -70,30 +71,20 @@ const computeSpawnPosition = (
         right.normalize();
     }
 
-    const anchor = new THREE.Vector3(
-        basePosition.x ?? 0,
-        basePosition.y ?? 0,
-        basePosition.z ?? 0
-    );
-    if (existing.length > 0) {
-        const sum = existing.reduce(
-            (acc, entry) => {
-                acc.x += entry.pos.x ?? 0;
-                acc.y += entry.pos.y ?? 0;
-                acc.z += entry.pos.z ?? 0;
-                return acc;
-            },
-            new THREE.Vector3()
-        );
-        anchor.copy(sum.divideScalar(existing.length));
+    // Place the new model just past the rightmost existing one along the
+    // camera-right axis, so it's always visibly adjacent rather than stacked.
+    let maxProjection = -Infinity;
+    const rightmost = new THREE.Vector3();
+    for (const pos of existing) {
+        const p = new THREE.Vector3(pos.x ?? 0, pos.y ?? 0, pos.z ?? 0);
+        const proj = p.dot(right);
+        if (proj > maxProjection) {
+            maxProjection = proj;
+            rightmost.copy(p);
+        }
     }
 
-    const existingReach = existing.reduce((max, entry) => {
-        return Math.max(max, entry.extent / 2);
-    }, 0);
-    const offset = existingReach + newExtent / 2 + MIN_SPAWN_PADDING;
-
-    const spawn = anchor.clone().addScaledVector(right, offset);
+    const spawn = rightmost.clone().addScaledVector(right, SPAWN_STEP);
     return { x: spawn.x, y: spawn.y, z: spawn.z };
 };
 
@@ -132,24 +123,16 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     }, [storeActiveScenes, forceDefaultScene]);
 
     const camera = useThree((state) => state.camera);
-    // Extent per scene key (widest dimension of its bounding box) — used to
-    // size the spawn offset of the next model so it doesn't overlap.
-    const sceneExtentsRef = useRef<Map<string, number>>(new Map());
     // Stable spawn position per scene key — computed once on first appearance.
     // Keeps existing models put when a new scene is added.
     const scenePositionsRef = useRef<Map<string, OptionalPosition>>(new Map());
     const [selectedModelIndex, setSelectedModelIndex] = useState<number | null>(null);
 
-    const handleModelLoaded = useCallback((sceneKey: string, bounds: BoundsInfo) => {
-        if (!bounds?.size) return;
-
-        const extent = Math.max(bounds.size.x, bounds.size.y, bounds.size.z);
-        if (!Number.isFinite(extent) || extent <= 0) return;
-
-        const previous = sceneExtentsRef.current.get(sceneKey);
-        if (previous !== undefined && Math.abs(previous - extent) < 0.01) return;
-
-        sceneExtentsRef.current.set(sceneKey, extent);
+    const handleModelLoaded = useCallback((_sceneKey: string, _bounds: BoundsInfo) => {
+        // Bounds are model-local units (pre cellBoxTransforms scale) so we
+        // don't use them for spawn sizing — all trajectory models share the
+        // same world extent via calculateBoxTransforms. Keep the hook for
+        // future per-scene bookkeeping.
     }, []);
 
     const scenePositions = useMemo<OptionalPosition[]>(() => {
@@ -177,12 +160,10 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
                     z: position.z ?? 0
                 };
             } else {
-                const existing = Array.from(scenePositionsRef.current.entries()).map(([key, pos]) => ({
-                    pos,
-                    extent: sceneExtentsRef.current.get(key) ?? DEFAULT_MODEL_EXTENT
-                }));
-                const newExtent = sceneExtentsRef.current.get(sceneKey) ?? DEFAULT_MODEL_EXTENT;
-                spawn = computeSpawnPosition(camera, position, existing, newExtent);
+                spawn = computeSpawnPosition(
+                    camera,
+                    Array.from(scenePositionsRef.current.values())
+                );
             }
 
             scenePositionsRef.current.set(sceneKey, spawn);
@@ -199,13 +180,12 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
         for (const key of scenePositionsRef.current.keys()) {
             if (!liveKeys.has(key)) {
                 scenePositionsRef.current.delete(key);
-                sceneExtentsRef.current.delete(key);
             }
         }
     }, [scenesToRender]);
 
     const renderScene = useCallback((scene: SceneObjectType, index: number) => {
-        const scenePosition = scenePositions[index] || position;
+        const scenePosition = scenePositions[index] ?? position;
         const sceneKey = getSceneKey(scene);
         const sceneOverride = sceneVisualOverrides[sceneKey];
         const dislocationLineSettings: DislocationLineSceneSettings | undefined = scene.source === 'plugin'
@@ -217,40 +197,52 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
                     ?? DEFAULT_DISLOCATION_LINE_WIDTH
             }
             : undefined;
+        // SingleModelViewer renders with `disableAutoTransform: true`, so its
+        // `position` prop never reaches the model. We apply the spawn offset
+        // via a wrapping group — composes cleanly with DragControls and the
+        // internal cellBoxTransforms.
+        const spawnPosition: [number, number, number] = [
+            scenePosition.x ?? 0,
+            scenePosition.y ?? 0,
+            scenePosition.z ?? 0
+        ];
 
         return (
-            <SingleModelViewer
-                teamId={teamId}
+            <group
                 key={`${scene.source}-${scene.sceneType}-${'exposureId' in scene ? scene.exposureId : ''}-${index}`}
-                trajectoryId={trajectoryId}
-                currentTimestep={currentTimestep}
-                analysisId={analysisId}
-                sceneConfig={scene}
-                slicePlaneConfig={slicePlaneConfig}
-                boxBounds={boxBounds}
-                pointSizeMultiplier={pointCloudSettings.pointSizeMultiplier}
-                pointCloudSettings={pointCloudSettings}
-                dislocationLineSettings={dislocationLineSettings}
-                sceneVisualOverrides={sceneVisualOverrides}
-                setModelWorldBounds={setModelWorldBounds}
-                activeModelBounds={activeModelBounds}
-                onModelBoundsChanged={onModelBoundsChanged}
-                onLoadingStateChanged={onLoadingStateChanged}
-                rotation={rotation}
-                position={scenePosition}
-                scale={scale}
-                autoFit={autoFit}
-                autoFitKeyOverride={autoFitKeyOverride}
-                orbitControlsRef={orbitControlsRef}
-                enableSlice={enableSlice}
-                enableInstancing={enableInstancing}
-                updateThrottle={updateThrottle}
-                isPrimary={index === scenesToRender.length - 1}
-                onModelLoaded={(bounds) => handleModelLoaded(sceneKey, bounds)}
-                onSelect={() => setSelectedModelIndex(index)}
-                isSelected={selectedModelIndex === index}
-                onContentTypeDetected={onContentTypeDetected}
-            />
+                position={spawnPosition}
+            >
+                <SingleModelViewer
+                    teamId={teamId}
+                    trajectoryId={trajectoryId}
+                    currentTimestep={currentTimestep}
+                    analysisId={analysisId}
+                    sceneConfig={scene}
+                    slicePlaneConfig={slicePlaneConfig}
+                    boxBounds={boxBounds}
+                    pointSizeMultiplier={pointCloudSettings.pointSizeMultiplier}
+                    pointCloudSettings={pointCloudSettings}
+                    dislocationLineSettings={dislocationLineSettings}
+                    sceneVisualOverrides={sceneVisualOverrides}
+                    setModelWorldBounds={setModelWorldBounds}
+                    activeModelBounds={activeModelBounds}
+                    onModelBoundsChanged={onModelBoundsChanged}
+                    onLoadingStateChanged={onLoadingStateChanged}
+                    rotation={rotation}
+                    scale={scale}
+                    autoFit={autoFit}
+                    autoFitKeyOverride={autoFitKeyOverride}
+                    orbitControlsRef={orbitControlsRef}
+                    enableSlice={enableSlice}
+                    enableInstancing={enableInstancing}
+                    updateThrottle={updateThrottle}
+                    isPrimary={index === scenesToRender.length - 1}
+                    onModelLoaded={(bounds) => handleModelLoaded(sceneKey, bounds)}
+                    onSelect={() => setSelectedModelIndex(index)}
+                    isSelected={selectedModelIndex === index}
+                    onContentTypeDetected={onContentTypeDetected}
+                />
+            </group>
         );
     }, [
         activeModelBounds,

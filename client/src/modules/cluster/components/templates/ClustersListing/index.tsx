@@ -19,12 +19,6 @@ import {
     getTeamClusterRoleSummary,
     isTeamClusterRoleTransitionPending
 } from '@/modules/cluster/utilities/team-cluster-role';
-import {
-    getClusterTransferDirectionLabel as getTransferDirectionLabel,
-    getClusterTransferJobStateBadgeVariant as getTransferStateBadgeVariant,
-    getClusterTransferJobStateLabel as getTransferStateLabel,
-    getClusterTransferJobSummaryLabel as getTransferSummaryLabel
-} from '@/modules/cluster/utilities/team-cluster-transfer';
 import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluster-waiting';
 import { TEAM_CLUSTER_SOCKET_EVENTS } from '@/modules/cluster/api/service/endpoints/team-cluster-socket-events';
@@ -42,8 +36,6 @@ import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type { ColumnConfig, MenuOption, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import type { ServerRow } from '@/modules/cluster/utilities/transform-cluster-row';
 import '@/modules/cluster/components/organisms/ServerTable/ServerTable.css';
-
-const ACTIVE_TRANSFER_PREVIEW_LIMIT = 3;
 
 const renderMetricValue = (value: number | null): ReactNode => {
     if (value === null) {
@@ -138,10 +130,6 @@ const ClustersListing = () => {
         ];
     }, [vm.selectedTeamId]);
 
-    const clusterNameById = useMemo(() => {
-        return new Map(state.clusters.map((cluster) => [cluster._id, cluster.name]));
-    }, [state.clusters]);
-
     const columns = useMemo<ColumnConfig<ServerRow>[]>(() => [
         {
             key: 'name',
@@ -200,71 +188,6 @@ const ClustersListing = () => {
             )
         },
         {
-            key: 'installedVersion',
-            title: 'Version',
-            sortable: true,
-            width: 140,
-            render: (_, row) => <Paragraph className='font-size-2 color-secondary'>{row.installedVersion ?? '--'}</Paragraph>
-        },
-        {
-            key: 'activeTransfers',
-            title: 'Active Transfers',
-            headerTitleClassName: 'font-weight-4',
-            width: 340,
-            render: (_, row) => {
-                if (row.activeTransfers.length === 0) {
-                    return <Paragraph className='font-size-1 color-muted'>--</Paragraph>;
-                }
-
-                const visibleTransfers = row.activeTransfers.slice(0, ACTIVE_TRANSFER_PREVIEW_LIMIT);
-                const remainingTransfers = row.activeTransfers.length - visibleTransfers.length;
-
-                return (
-                    <Container className='d-flex column gap-05'>
-                        {visibleTransfers.map((job) => {
-                            const peerClusterId = job.sourceClusterId === row.id
-                                ? job.destinationClusterId
-                                : job.sourceClusterId;
-                            const peerClusterName = clusterNameById.get(peerClusterId) ?? peerClusterId;
-
-                            return (
-                                <Container key={job._id} className='d-flex column gap-025'>
-                                    <Container className='d-flex items-center gap-05 flex-wrap'>
-                                        <StatusBadge variant={getTransferStateBadgeVariant(job.state)} size='compact'>
-                                            {getTransferStateLabel(job.state)}
-                                        </StatusBadge>
-                                        <Paragraph className='font-size-1 color-secondary'>
-                                            {getTransferSummaryLabel(job)}
-                                        </Paragraph>
-                                    </Container>
-                                    <Paragraph className='font-size-1 color-muted'>
-                                        {getTransferDirectionLabel(job, row.id)} · {peerClusterName}
-                                    </Paragraph>
-                                </Container>
-                            );
-                        })}
-                        {remainingTransfers > 0 && (
-                            <Paragraph className='font-size-1 color-muted'>+{remainingTransfers} more</Paragraph>
-                        )}
-                    </Container>
-                );
-            }
-        },
-        {
-            key: 'lastHeartbeatAt',
-            title: 'Last Heartbeat',
-            sortable: true,
-            width: 180,
-            render: (_, row) => <Paragraph className='font-size-1 color-secondary'>{formatClusterTimestamp(row.lastHeartbeatAt)}</Paragraph>
-        },
-        {
-            key: 'daemonPort',
-            title: 'Daemon Port',
-            sortable: true,
-            width: 140,
-            render: (_, row) => <Paragraph className='font-size-2 color-secondary font-family-mono'>{row.daemonPort ?? '--'}</Paragraph>
-        },
-        {
             key: 'cpu',
             title: 'CPU',
             sortable: true,
@@ -286,26 +209,13 @@ const ClustersListing = () => {
             render: (_, row) => renderDiskValue(row)
         },
         {
-            key: 'network',
-            title: 'Network',
-            sortable: true,
-            width: 180
-        },
-        {
-            key: 'analysisCount',
-            title: 'Computed Analyzes',
+            key: 'lastHeartbeatAt',
+            title: 'Last Heartbeat',
             sortable: true,
             width: 180,
-            render: (_, row) => <Paragraph className='font-size-2 color-secondary'>{row.analysisCount ?? '--'}</Paragraph>
-        },
-        {
-            key: 'uptime',
-            title: 'Uptime',
-            sortable: true,
-            width: 140,
-            render: (_, row) => <Paragraph className='font-size-2 font-weight-5 color-secondary'>{row.uptime}</Paragraph>
+            render: (_, row) => <Paragraph className='font-size-1 color-secondary'>{formatClusterTimestamp(row.lastHeartbeatAt)}</Paragraph>
         }
-    ], [clusterNameById]);
+    ], []);
 
     const getMenuOptions = useCallback((row: ServerRow): MenuOption[] => [
         {
