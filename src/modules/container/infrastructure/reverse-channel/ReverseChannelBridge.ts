@@ -1,4 +1,6 @@
 import { TTLCache } from '@isaacs/ttlcache';
+import { Service } from '@/core/decorators/service';
+import { createTraceLogContext, extractDaemonTraceContext } from '@/core/observability/infrastructure/daemon-instrumentation';
 import { DockerRuntime } from '@/core/runtime/infrastructure/DockerRuntime';
 import { logger } from '@/core/logger';
 import { REVERSE_CHANNEL } from '@/core/reverse-channel/contracts/reverse-channel-constants';
@@ -10,24 +12,29 @@ import type {
     TeamClusterDaemonSessionResizePayload,
     TeamClusterDaemonTunnelClosePayload,
     TeamClusterDaemonTunnelDataPayload,
-    TeamClusterDaemonTunnelOpenPayload as LocalTeamClusterDaemonTunnelOpenPayload,
+    TeamClusterDaemonTunnelOpenPayload,
     TeamClusterDaemonTunnelStatePayload
-} from '@/core/reverse-channel/contracts/reverse-channel-socket';
-import { adaptReverseChannelHandler } from '@/core/reverse-channel/infrastructure/reverse-channel-command-adapter';
-import type { ReverseChannelCommandExecutor } from '@/core/reverse-channel/contracts/command-handler';
-import { BASE64_SESSION_CHUNK_PATTERN, SESSION_ATTACH_TIMEOUT_MS } from '@/core/reverse-channel/contracts/reverse-channel-session-constants';
-import { readTunnelOpenPayload } from '@/core/reverse-channel/infrastructure/reverse-channel-tunnel-open';
+} from '@voltstack/daemon-cluster-client';
+import type {
+    ReverseChannelCommandExecutor,
+    ReverseChannelCommandPayloadView
+} from '@/core/reverse-channel/contracts/reverse-channel-messaging';
+import { BASE64_SESSION_CHUNK_PATTERN, SESSION_ATTACH_TIMEOUT_MS } from '@/core/reverse-channel/contracts/reverse-channel-constants';
 import { TeamClusterServiceExposureAccessMode } from '@/core/runtime/contracts/service-exposure';
 import { TerminalSessionManager } from '@/modules/container/application/sessions/TerminalSessionManager';
 import { WebSocketSessionManager } from '@/modules/container/application/sessions/WebSocketSessionManager';
-import { readSessionAttachPayload } from '@/core/reverse-channel/infrastructure/reverse-channel-session-attach';
 import { OBJECT_GATEWAY_EXPOSURE } from '@/core/storage/infrastructure/gateway/ObjectGatewayServer';
-import { BinaryRelayBridge } from '@/modules/container/infrastructure/relay/BinaryRelayBridge';
+import ApplicationError from '@/app/coordination/ApplicationError';
 import net from 'node:net';
 import type { DaemonExposureRegistry } from '@/modules/container/application/access/DaemonExposureRegistry';
 import type { ObjectGatewayTelemetry } from '@/core/observability/infrastructure/ObjectGatewayTelemetry';
 import type { VoltCloudConnection } from '@/modules/container/infrastructure/connection/VoltCloudConnection';
-import type { CommandResult, TeamClusterDaemonMessage as InboundTeamClusterDaemonMessage } from '@voltstack/daemon-cluster-client';
+import type {
+    CommandResult,
+    HandlerContext,
+    ReverseChannelHandler,
+    TeamClusterDaemonMessage as InboundTeamClusterDaemonMessage
+} from '@voltstack/daemon-cluster-client';
 
 interface ReverseChannelTunnelState {
     transitionId: number;
@@ -51,6 +58,24 @@ interface RegisteredReverseChannelCommand {
     execute: ReverseChannelCommandExecutor;
 }
 
+type UnsupportedSessionAttachPayload = Pick<TeamClusterDaemonSessionAttachPayload, 'sessionId'> & {
+    kind: string;
+};
+
+type ParsedSessionAttachPayload =
+    | TeamClusterDaemonSessionAttachPayload
+    | UnsupportedSessionAttachPayload;
+
+type DirectTunnelOpenPayload = {
+    type: 'tunnel-open';
+    sessionId: string;
+    targetHost: string;
+    targetPort: number;
+    accessMode: string;
+};
+
+type InboundTunnelOpenPayload = TeamClusterDaemonTunnelOpenPayload | DirectTunnelOpenPayload;
+
 type OutboundBridgeMessage =
     | TeamClusterDaemonSessionDataPayload
     | TeamClusterDaemonSessionEndPayload
@@ -60,17 +85,16 @@ type OutboundBridgeMessage =
 
 type InboundMessageHandler = (message: InboundTeamClusterDaemonMessage) => void;
 type SessionAttachHandler = (payload: TeamClusterDaemonSessionAttachPayload) => Promise<CommandResult>;
-type RawTunnelOpenMessage = Parameters<typeof readTunnelOpenPayload>[0];
 
 const SESSION_IDLE_TTL_MS = 10 * 60 * 1000;
 
+@Service('reverseChannelBridge')
 export class ReverseChannelBridge {
     private readonly tunnelStates = new Map<string, ReverseChannelTunnelState>();
     private readonly attachingSessionIds = new Map<string, number>();
     private readonly cancelledSessionTransitions = new Set<number>();
     private readonly terminalSessionManager: TerminalSessionManager;
     private readonly webSocketSessionManager: WebSocketSessionManager;
-    private readonly binaryRelayBridge: BinaryRelayBridge;
     private nextSessionTransitionId = 0;
 
     private readonly sessionActivity = new TTLCache<string, true>({
@@ -94,7 +118,7 @@ export class ReverseChannelBridge {
         'session-input': (message) => this.handleSessionInput(message as TeamClusterDaemonSessionInputPayload),
         'session-resize': (message) => this.handleSessionResize(message as TeamClusterDaemonSessionResizePayload),
         'session-detach': (message) => this.handleSessionDetach(message as { sessionId: string }),
-        'tunnel-open': (message) => this.handleTunnelOpen(readTunnelOpenPayload(message as RawTunnelOpenMessage) as LocalTeamClusterDaemonTunnelOpenPayload),
+        'tunnel-open': (message) => this.handleTunnelOpen(message as unknown as InboundTunnelOpenPayload),
         'tunnel-data': (message) => this.handleTunnelData(message as TeamClusterDaemonTunnelDataPayload),
         'tunnel-close': (message) => this.handleTunnelClose(message as { sessionId: string })
     };
@@ -132,21 +156,13 @@ export class ReverseChannelBridge {
                 touchSession: this.touchSession.bind(this)
             }
         });
-        this.binaryRelayBridge = new BinaryRelayBridge({
-            emitTunnelClose: this.emitMessage.bind(this),
-            emitTunnelState: this.emitTunnelState.bind(this),
-            touchSession: this.touchSession.bind(this),
-            clearSessionActivityIfUntracked: this.clearSessionActivityIfUntracked.bind(this),
-            endSessionTransition: this.endSessionTransition.bind(this),
-            wasSessionTransitionCancelled: (transition) => this.cancelledSessionTransitions.has(transition.transitionId)
-        }, this.objectGatewayTelemetry);
     }
 
     registerCommand(commandName: string, execute: ReverseChannelCommandExecutor): void {
         if (this.voltCloudConnection) {
             this.voltCloudConnection.client.registerHandler(
                 commandName,
-                adaptReverseChannelHandler(commandName, execute)
+                this.createCommandHandler(commandName, execute)
             );
             return;
         }
@@ -160,7 +176,7 @@ export class ReverseChannelBridge {
         for (const command of this.pendingCommands) {
             voltCloudConnection.client.registerHandler(
                 command.commandName,
-                adaptReverseChannelHandler(command.commandName, command.execute)
+                this.createCommandHandler(command.commandName, command.execute)
             );
         }
 
@@ -171,6 +187,74 @@ export class ReverseChannelBridge {
             .onDisconnected(() => {
                 this.cleanup();
             });
+    }
+
+    private createCommandHandler(
+        commandName: string,
+        execute: ReverseChannelCommandExecutor
+    ): ReverseChannelHandler {
+        return {
+            handle: async (payload, ctx): Promise<CommandResult> => {
+                const commandPayloadView = payload as ReverseChannelCommandPayloadView | undefined;
+                const requestId = this.resolveCommandRequestId(commandPayloadView, ctx);
+                const commandLogContext = {
+                    requestId,
+                    ...createTraceLogContext(extractDaemonTraceContext(commandPayloadView))
+                };
+
+                try {
+                    const result = await execute(payload as object | undefined);
+                    return {
+                        status: result.status,
+                        data: result.data,
+                        body: result.body,
+                        headers: result.headers,
+                        stream: result.stream
+                    };
+                } catch (error) {
+                    if (error instanceof ApplicationError) {
+                        logger.warn('Daemon command rejected');
+                        return {
+                            status: error.statusCode,
+                            data: {
+                                status: 'error',
+                                code: error.code,
+                                message: error.message
+                            }
+                        };
+                    }
+
+                    const unhandledError = error instanceof Error
+                        ? error
+                        : new Error('An unexpected error occurred');
+                    logger.error(
+                        {
+                            command: commandName,
+                            code: 'INTERNAL_ERROR',
+                            message: unhandledError.message,
+                            stack: unhandledError.stack,
+                            ...commandLogContext
+                        },
+                        'Daemon command failed with unhandled exception'
+                    );
+                    return {
+                        status: 500,
+                        data: {
+                            status: 'error',
+                            code: 'INTERNAL_ERROR',
+                            message: unhandledError.message
+                        }
+                    };
+                }
+            }
+        };
+    }
+
+    private resolveCommandRequestId(
+        payload: ReverseChannelCommandPayloadView | undefined,
+        ctx?: HandlerContext
+    ): string | undefined {
+        return ctx?.requestId ?? payload?.requestId;
     }
 
     private touchSession(sessionId: string): void {
@@ -213,7 +297,6 @@ export class ReverseChannelBridge {
         if (this.terminalSessionManager.terminalStates.has(sessionId)) return;
         if (this.webSocketSessionManager.webSocketStates.has(sessionId)) return;
         if (this.tunnelStates.has(sessionId)) return;
-        if (this.binaryRelayBridge.sessions.has(sessionId)) return;
         this.sessionActivity.delete(sessionId);
     }
 
@@ -221,9 +304,6 @@ export class ReverseChannelBridge {
         this.terminalSessionManager.cleanupSession(sessionId);
         this.webSocketSessionManager.cleanupSession(sessionId);
         this.cleanupTunnelSession(sessionId);
-        this.binaryRelayBridge.cleanupSession(sessionId, {
-            emitTunnelClose: false
-        });
     }
 
     cleanup(): void {
@@ -243,10 +323,6 @@ export class ReverseChannelBridge {
             this.cleanupInteractiveSession(sessionId);
         }
 
-        for (const sessionId of this.binaryRelayBridge.sessions.keys()) {
-            this.cleanupInteractiveSession(sessionId);
-        }
-
         this.sessionActivity.clear();
     }
 
@@ -254,16 +330,15 @@ export class ReverseChannelBridge {
         this.inboundMessageHandlers[message.type]?.(message);
     }
 
-    attachSession(payload: object | undefined): Promise<CommandResult> {
-        const attachPayload = readSessionAttachPayload(payload);
-        const attachSession = this.sessionAttachHandlers[attachPayload.kind as TeamClusterDaemonSessionAttachPayload['kind']];
+    attachSession(payload: ParsedSessionAttachPayload): Promise<CommandResult> {
+        const attachSession = this.sessionAttachHandlers[payload.kind as TeamClusterDaemonSessionAttachPayload['kind']];
         if (attachSession) {
-            return attachSession(attachPayload as TeamClusterDaemonSessionAttachPayload);
+            return attachSession(payload as TeamClusterDaemonSessionAttachPayload);
         }
 
         return Promise.resolve({
             status: 400,
-            data: { status: 'error', message: `Unsupported session kind: ${attachPayload.kind}` }
+            data: { status: 'error', message: `Unsupported session kind: ${payload.kind}` }
         });
     }
 
@@ -290,7 +365,7 @@ export class ReverseChannelBridge {
         this.cleanupTunnelSession(message.sessionId);
     }
 
-    private handleTunnelOpen(payload: LocalTeamClusterDaemonTunnelOpenPayload): void {
+    private handleTunnelOpen(payload: InboundTunnelOpenPayload): void {
         const sessionTransition = this.beginSessionTransition(payload.sessionId);
         if (!sessionTransition) {
             this.emitTunnelState({
@@ -340,24 +415,6 @@ export class ReverseChannelBridge {
 
             targetHost = exposure.targetHost;
             targetPort = exposure.targetPort;
-        }
-
-        if (payload.relay) {
-            this.binaryRelayBridge.openTunnel({
-                sessionId: payload.sessionId,
-                transition: sessionTransition,
-                relay: payload.relay,
-                targetHost,
-                targetPort,
-                isObjectGatewayTunnel
-            });
-            this.touchSession(payload.sessionId);
-            this.emitTunnelState({
-                type: 'tunnel-state',
-                sessionId: payload.sessionId,
-                status: REVERSE_CHANNEL.TunnelSessionStatus.Opening
-            });
-            return;
         }
 
         const tunnelSocket = net.createConnection({

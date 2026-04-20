@@ -6,70 +6,24 @@ import {
     TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
 } from '@/core/storage/contracts/http-object-store';
 import type { DaemonConfig } from '@/core/config';
+import type {
+    ClusterObjectHeadResponse,
+    ClusterObjectListEntry,
+    ClusterObjectListRequest,
+    ClusterObjectListResponse,
+    ClusterObjectReadOptions,
+    ClusterObjectStreamResponse,
+    RemoteClusterObjectPutBufferRequest,
+    RemoteClusterObjectPutStreamRequest,
+    RemoteClusterObjectStoreGateway
+} from '@/core/storage/contracts/cluster-object-store';
 import { Readable } from 'node:stream';
-import type { Readable as NodeReadable } from 'node:stream';
 import type { ReadableStream as WebReadableStream } from 'node:stream/web';
-
-interface DirectObjectStoreHeadResponse {
-    contentLength?: number;
-    contentType?: string;
-    contentEncoding?: string;
-    etag?: string;
-    lastModified?: Date;
-    metadata: Record<string, string>;
-}
-
-interface DirectObjectStoreStreamResponse extends DirectObjectStoreHeadResponse {
-    stream: NodeReadable;
-}
-
-interface DirectObjectStoreListEntry {
-    key: string;
-    contentLength?: number;
-    etag?: string;
-    lastModified?: Date;
-}
-
-interface DirectObjectStoreReadOptions {
-    skipMetadata?: boolean;
-}
-
-interface DirectObjectStoreListRequest {
-    bucket: string;
-    prefix?: string;
-    cursor?: string;
-    limit?: number;
-}
-
-interface DirectObjectStoreListResponse {
-    keys: string[];
-    objects: DirectObjectStoreListEntry[];
-    nextCursor?: string;
-}
-
-interface DirectObjectStorePutBufferRequest {
-    bucket: string;
-    objectKey: string;
-    buffer: Buffer;
-    contentType?: string;
-    contentEncoding?: string;
-    metadata?: Record<string, string>;
-}
-
-interface DirectObjectStorePutStreamRequest {
-    bucket: string;
-    objectKey: string;
-    stream: NodeReadable;
-    contentLength: number;
-    contentType?: string;
-    contentEncoding?: string;
-    metadata?: Record<string, string>;
-}
 
 interface DirectObjectStoreRequestInit {
     method: string;
     headers?: HeadersInit;
-    body?: Buffer | NodeReadable;
+    body?: Buffer | Readable;
 }
 
 interface DirectObjectStoreFetchInit extends RequestInit {
@@ -78,7 +32,7 @@ interface DirectObjectStoreFetchInit extends RequestInit {
 
 interface RawDirectObjectStoreListResponse {
     keys?: string[];
-    objects?: DirectObjectStoreListEntry[];
+    objects?: ClusterObjectListEntry[];
     nextCursor?: string;
 }
 
@@ -87,7 +41,7 @@ interface ObjectStoreErrorPayload {
     message?: string;
 }
 
-const normalizeListResponse = (payload: RawDirectObjectStoreListResponse): DirectObjectStoreListResponse => {
+const normalizeListResponse = (payload: RawDirectObjectStoreListResponse): ClusterObjectListResponse => {
     const objects = payload.objects ?? [];
     const keys = payload.keys ?? [];
     const resolvedKeys = keys.length > 0 ? keys : objects.map((object) => object.key);
@@ -101,7 +55,7 @@ const normalizeListResponse = (payload: RawDirectObjectStoreListResponse): Direc
     };
 };
 
-const parseHeadResponse = (headers: Headers): DirectObjectStoreHeadResponse => {
+const parseHeadResponse = (headers: Headers): ClusterObjectHeadResponse => {
     const contentLengthHeader = headers.get('content-length');
     const contentType = headers.get('content-type');
     const contentEncoding = headers.get('content-encoding');
@@ -117,7 +71,7 @@ const parseHeadResponse = (headers: Headers): DirectObjectStoreHeadResponse => {
         metadata[headerName.slice(TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX.length)] = headerValue;
     });
 
-    const response: DirectObjectStoreHeadResponse = { metadata };
+    const response: ClusterObjectHeadResponse = { metadata };
 
     if (contentLengthHeader) {
         response.contentLength = Number(contentLengthHeader);
@@ -144,15 +98,15 @@ const parseHeadResponse = (headers: Headers): DirectObjectStoreHeadResponse => {
 
 const GET_REQUEST_INIT: DirectObjectStoreRequestInit = { method: 'GET' };
 
-export class DirectObjectStoreClient {
+export class DirectObjectStoreClient implements RemoteClusterObjectStoreGateway {
     constructor(
         private readonly config: DaemonConfig
     ) {}
 
     async list(
         ownerClusterId: string,
-        request: DirectObjectStoreListRequest
-    ): Promise<DirectObjectStoreListResponse> {
+        request: ClusterObjectListRequest
+    ): Promise<ClusterObjectListResponse> {
         const query = new URLSearchParams();
         if (request.prefix) {
             query.set('prefix', request.prefix);
@@ -173,7 +127,7 @@ export class DirectObjectStoreClient {
         return normalizeListResponse(await response.json() as RawDirectObjectStoreListResponse);
     }
 
-    readonly head = async (ownerClusterId: string, bucket: string, objectKey: string): Promise<DirectObjectStoreHeadResponse> => {
+    readonly head = async (ownerClusterId: string, bucket: string, objectKey: string): Promise<ClusterObjectHeadResponse> => {
         const response = await this.fetch(this.buildObjectPath(ownerClusterId, bucket, objectKey), {
             method: 'HEAD'
         });
@@ -185,8 +139,8 @@ export class DirectObjectStoreClient {
         ownerClusterId: string,
         bucket: string,
         objectKey: string,
-        options?: DirectObjectStoreReadOptions
-    ): Promise<DirectObjectStoreStreamResponse> {
+        options?: ClusterObjectReadOptions
+    ): Promise<ClusterObjectStreamResponse> {
         const headers = options && options.skipMetadata
             ? { [TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER]: '1' }
             : undefined;
@@ -206,23 +160,18 @@ export class DirectObjectStoreClient {
         };
     }
 
-    readonly putBuffer = async (ownerClusterId: string, request: DirectObjectStorePutBufferRequest): Promise<void> => {
+    readonly putBuffer = async (ownerClusterId: string, request: RemoteClusterObjectPutBufferRequest): Promise<void> => {
         await this.fetch(this.buildObjectPath(ownerClusterId, request.bucket, request.objectKey), {
             method: 'PUT',
-            headers: this.buildUploadHeaders(request.buffer.length, request.contentType, request.contentEncoding, request.metadata),
+            headers: this.buildUploadHeaders(request),
             body: request.buffer
         });
     };
 
-    readonly putStream = async (ownerClusterId: string, request: DirectObjectStorePutStreamRequest): Promise<void> => {
+    readonly putStream = async (ownerClusterId: string, request: RemoteClusterObjectPutStreamRequest): Promise<void> => {
         await this.fetch(this.buildObjectPath(ownerClusterId, request.bucket, request.objectKey), {
             method: 'PUT',
-            headers: this.buildUploadHeaders(
-                request.contentLength,
-                request.contentType,
-                request.contentEncoding,
-                request.metadata
-            ),
+            headers: this.buildUploadHeaders(request),
             body: request.stream
         });
     };
@@ -287,25 +236,22 @@ export class DirectObjectStoreClient {
     }
 
     private buildUploadHeaders(
-        contentLength: number,
-        contentType?: string,
-        contentEncoding?: string,
-        metadata?: Record<string, string>
+        request: RemoteClusterObjectPutBufferRequest | RemoteClusterObjectPutStreamRequest
     ): Record<string, string> {
         const headers: Record<string, string> = {
-            'content-length': contentLength.toString()
+            'content-length': ('buffer' in request ? request.buffer.length : request.contentLength).toString()
         };
 
-        if (contentType) {
-            headers['content-type'] = contentType;
+        if (request.contentType) {
+            headers['content-type'] = request.contentType;
         }
 
-        if (contentEncoding) {
-            headers['content-encoding'] = contentEncoding;
+        if (request.contentEncoding) {
+            headers['content-encoding'] = request.contentEncoding;
         }
 
-        if (metadata) {
-            for (const [key, value] of Object.entries(metadata)) {
+        if (request.metadata) {
+            for (const [key, value] of Object.entries(request.metadata)) {
                 headers[`${TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX}${key.toLowerCase()}`] = value;
             }
         }

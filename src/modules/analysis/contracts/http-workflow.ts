@@ -1,21 +1,6 @@
 import type { EntrypointType } from '@/core/runtime/contracts/http-runtime';
-
-interface WorkflowNodePosition {
-    x: number;
-    y: number;
-}
-
-interface WorkflowValueMap {
-    [key: string]: WorkflowValue;
-}
-
-type WorkflowValue =
-    | WorkflowValueMap
-    | WorkflowValue[]
-    | boolean
-    | null
-    | number
-    | string
+import type { JsonObject, JsonValue } from '@/support/types/json';
+import type { WorkflowNodePosition } from '@/modules/analysis/contracts/workflow.types';
 
 export interface WorkflowEdgeDefinition {
     source: string;
@@ -46,8 +31,8 @@ export interface WorkflowArgumentDefinition {
     argument?: string;
     type?: string;
     label?: string;
-    default?: WorkflowValue;
-    value?: WorkflowValue;
+    default?: JsonValue;
+    value?: JsonValue;
     options?: WorkflowArgumentOption[];
     optionsFromArguments?: WorkflowArgumentOptionSource[];
     listArguments?: WorkflowArgumentDefinition[];
@@ -98,12 +83,12 @@ export interface WorkflowExposureData {
 export interface WorkflowExportData {
     exporter: string;
     type: string;
-    options?: WorkflowValueMap;
+    options?: JsonObject;
 }
 
 export interface WorkflowPluginReferenceSelection {
     pluginId: string;
-    config?: WorkflowValueMap;
+    config?: JsonObject;
 }
 
 export interface WorkflowPluginReferenceValue {
@@ -111,14 +96,14 @@ export interface WorkflowPluginReferenceValue {
 }
 
 interface WorkflowPluginConfigById {
-    [pluginId: string]: WorkflowValueMap;
+    [pluginId: string]: JsonObject;
 }
 
 export interface WorkflowPluginNodeData {
     executionMode?: string;
     pluginId?: string;
     argumentReference?: string;
-    config?: WorkflowValueMap;
+    config?: JsonObject;
     configByPluginId?: WorkflowPluginConfigById;
     selectedTimesteps?: number[];
 }
@@ -133,7 +118,7 @@ export interface WorkflowEntrypointData {
 }
 
 export interface WorkflowNodeData {
-    modifier?: WorkflowValueMap;
+    modifier?: JsonObject;
     arguments?: WorkflowArgumentsData;
     forEach?: WorkflowForEachData;
     entrypoint?: WorkflowEntrypointData;
@@ -178,7 +163,7 @@ export interface NestedPluginDefinition {
 export interface PluginReferenceExecutionRequest {
     referencePath: string;
     pluginId: string;
-    config: WorkflowValueMap;
+    config: JsonObject;
 }
 
 export interface TrajectoryFrame {

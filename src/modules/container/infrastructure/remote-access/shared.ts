@@ -78,14 +78,9 @@ export const parseRedisKeyPath = (path: string): ParsedRedisKeyPath | null => {
 };
 
 export const toMongoDocument = (value: RemoteExplorerMongoDocument['value']): RemoteExplorerMongoDocument => {
-    const recordValue = JSON.parse(JSON.stringify(value)) as RemoteExplorerMongoDocument['value'];
+    const recordValue = structuredClone(value);
     const idValue = recordValue._id;
-    const id = typeof idValue === 'string'
-        ? idValue
-        : JSON.stringify(idValue) as string;
+    const id = typeof idValue === 'string' ? idValue : JSON.stringify(idValue) as string;
 
-    return {
-        id,
-        value: recordValue
-    };
+    return { id, value: recordValue };
 };

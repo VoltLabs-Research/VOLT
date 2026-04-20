@@ -1,17 +1,15 @@
-import zlib from 'node:zlib';
-import type { AnalysisStartRequest, AnalysisStartTransportRequest } from '@/contracts';
+import type {
+    AnalysisStartRequest,
+    AnalysisStartRequestWithTrace,
+    AnalysisStartTransportPayload
+} from '@/contracts';
 import { Command, CommandGroup } from '@/core/commands/decorators';
 import { extractDaemonTraceContext } from '@/core/observability/infrastructure/daemon-instrumentation';
-import type { DaemonTraceContext } from '@/core/observability/infrastructure/daemon-instrumentation';
+import { inflateBase64GzipJson } from '@/support/serialization/gzip-base64-json';
 import type { AnalysisDispatcher } from '@/modules/analysis/application/analysis/AnalysisDispatcher';
 
-interface AnalysisStartRequestWithTrace extends AnalysisStartRequest {
-    traceContext?: DaemonTraceContext;
-}
-
-interface AnalysisStartTransportPayload extends AnalysisStartTransportRequest {
-    traceContext?: DaemonTraceContext;
-}
+const readMaybeCompressed = <T>(compressed: unknown, fallback: T): T =>
+    typeof compressed === 'string' ? inflateBase64GzipJson<T>(compressed) : fallback;
 
 @CommandGroup('analysis')
 export class AnalysisCommands {
@@ -27,18 +25,14 @@ export class AnalysisCommands {
     private readAnalysisStartRequest(payload: AnalysisStartTransportPayload): AnalysisStartRequestWithTrace {
         const request = { ...payload } as AnalysisStartRequestWithTrace;
 
-        request.trajectoryFrames = typeof payload.trajectoryFramesCompressed === 'string'
-            ? this.readCompressedJson<AnalysisStartRequest['trajectoryFrames']>(payload.trajectoryFramesCompressed)
-            : payload.trajectoryFrames ?? [];
-        request.workflow = typeof payload.workflowCompressed === 'string'
-            ? this.readCompressedJson<AnalysisStartRequest['workflow']>(payload.workflowCompressed)
-            : payload.workflow as AnalysisStartRequest['workflow'];
-        request.nestedPlugins = typeof payload.nestedPluginsCompressed === 'string'
-            ? this.readCompressedJson<AnalysisStartRequest['nestedPlugins']>(payload.nestedPluginsCompressed)
-            : payload.nestedPlugins ?? [];
-        request.pluginReferenceExecutions = typeof payload.pluginReferenceExecutionsCompressed === 'string'
-            ? this.readCompressedJson<AnalysisStartRequest['pluginReferenceExecutions']>(payload.pluginReferenceExecutionsCompressed)
-            : payload.pluginReferenceExecutions ?? [];
+        request.trajectoryFrames = readMaybeCompressed<AnalysisStartRequest['trajectoryFrames']>(
+            payload.trajectoryFramesCompressed, payload.trajectoryFrames ?? []);
+        request.workflow = readMaybeCompressed<AnalysisStartRequest['workflow']>(
+            payload.workflowCompressed, payload.workflow as AnalysisStartRequest['workflow']);
+        request.nestedPlugins = readMaybeCompressed<AnalysisStartRequest['nestedPlugins']>(
+            payload.nestedPluginsCompressed, payload.nestedPlugins ?? []);
+        request.pluginReferenceExecutions = readMaybeCompressed<AnalysisStartRequest['pluginReferenceExecutions']>(
+            payload.pluginReferenceExecutionsCompressed, payload.pluginReferenceExecutions ?? []);
 
         const traceContext = extractDaemonTraceContext(payload as unknown as Record<string, unknown>);
         if (traceContext) {
@@ -46,9 +40,5 @@ export class AnalysisCommands {
         }
 
         return request;
-    }
-
-    private readCompressedJson<T>(value: string): T {
-        return JSON.parse(zlib.gunzipSync(Buffer.from(value, 'base64')).toString('utf8')) as T;
     }
 }

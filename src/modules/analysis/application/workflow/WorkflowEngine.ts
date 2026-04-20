@@ -1,4 +1,5 @@
 import { logger } from '@/core/logger';
+import { Service } from '@/core/decorators/service';
 import { WorkflowNodeExecutor } from '@/modules/analysis/application/workflow/WorkflowNodeExecutor';
 import { WorkflowNodeRegistry } from '@/modules/analysis/application/workflow/NodeRegistry';
 import { WorkflowSession } from '@/modules/analysis/application/workflow/WorkflowSession';
@@ -6,17 +7,11 @@ import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
 import type { DaemonAnalysisDocument, NestedPluginDefinition, TrajectoryDumpDescriptor, TrajectoryFrame, WorkflowDefinition } from '@/contracts';
 import type { WorkflowNodeOutput } from '@/modules/analysis/contracts/workflow.types';
 
-interface WorkflowExecutionOptions {
-    selectedFrameOnly?: boolean;
-    selectedTimesteps?: number[];
-    timestep?: number;
-}
-
 interface WorkflowRuntimeArgumentSelection extends WorkflowNodeOutput {
     value: number;
 }
 
-interface WorkflowExecutionRequest {
+export interface WorkflowExecutionRequest {
     workflow: WorkflowDefinition;
     nestedPlugins?: NestedPluginDefinition[];
     trajectoryId: string;
@@ -26,7 +21,9 @@ interface WorkflowExecutionRequest {
     pluginId: string;
     userConfig: WorkflowNodeOutput;
     teamId: string;
-    options?: WorkflowExecutionOptions;
+    selectedFrameOnly?: boolean;
+    selectedTimesteps?: number[];
+    timestep?: number;
 }
 
 interface WorkflowForEachPlanOutput extends WorkflowNodeOutput {
@@ -47,26 +44,23 @@ interface WorkflowPlanResult {
 };
 
 const createRuntimeArguments = (request: WorkflowExecutionRequest): WorkflowNodeOutput => {
-    if (!request.options?.selectedTimesteps?.length) {
+    if (!request?.selectedTimesteps?.length) {
         return {};
     }
 
     return {
-        selectedTimesteps: request.options.selectedTimesteps.map(
+        selectedTimesteps: request.selectedTimesteps.map(
             (timestep): WorkflowRuntimeArgumentSelection => ({ value: timestep })
         )
     };
 };
 
 const createPlanningSession = (request: WorkflowExecutionRequest): WorkflowSession => {
-    const { options, ...sessionParams } = request;
+    const { ...sessionParams } = request;
 
     return WorkflowSession.createFromDefinition({
         ...sessionParams,
-        runtimeArguments: createRuntimeArguments(request),
-        selectedFrameOnly: options?.selectedFrameOnly,
-        selectedTimesteps: options?.selectedTimesteps,
-        selectedTimestep: options?.timestep
+        runtimeArguments: createRuntimeArguments(request)
     });
 };
 
@@ -88,6 +82,7 @@ const createBatchPlan = (
     };
 };
 
+@Service('workflowEngine')
 export class WorkflowEngine {
     private readonly nodeExecutor: WorkflowNodeExecutor;
 

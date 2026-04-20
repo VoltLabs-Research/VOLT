@@ -1,38 +1,26 @@
 import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureSourceKind, TeamClusterServiceExposureStatus } from '@/core/runtime/contracts/service-exposure';
+import { Factory } from '@/core/decorators/service';
 import { TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER, TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER } from '@/core/storage/contracts/http-object-store';
+import type { LocalClusterObjectStat, LocalClusterObjectStoreGateway } from '@/core/storage/contracts/cluster-object-store';
+import type { ObjectGatewayDirectAccessClaims, ObjectGatewaySecurity } from '@/core/storage/contracts/object-gateway';
 import { logger } from '@/core/logger';
 import type { DaemonConfig } from '@/core/config';
+import ApplicationError from '@/app/coordination/ApplicationError';
 import type { TeamClusterServiceExposure } from '@/core/runtime/contracts/service-exposure';
-import type { MinioService } from '@/core/storage/infrastructure/minio/MinioService';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import type { ObjectGatewayTelemetry } from '@/core/observability/infrastructure/ObjectGatewayTelemetry';
+import type { MinioService } from '@/core/storage/infrastructure/minio/MinioService';
+import { verifyTeamClusterDirectAccessToken } from '@/modules/container/application/access/team-cluster-direct-access-token-verifier';
+import type { Readable } from 'node:stream';
 import express, { type NextFunction, type Request, type Response } from 'express';
 
 type ObjectGatewayCollectionOperation = 'list' | 'delete-prefix';
 type ObjectGatewayObjectOperation = 'head' | 'get' | 'put' | 'delete';
 
-type ObjectStatLike = Awaited<ReturnType<MinioService['statObject']>>;
-type ObjectStreamLike = Awaited<ReturnType<MinioService['getObjectStream']>>;
-
-interface ObjectGatewayDirectAccessClaims {
-    ownerClusterId: string;
-    exposureId: string;
-    exposureName: string;
-    accessMode: TeamClusterServiceExposureAccessMode;
-}
-
-interface ObjectGatewaySecurity {
-    verifyDirectAccessToken?: (token: string) => ObjectGatewayDirectAccessClaims | null;
-}
-
 interface StatusCodeError extends Error {
     code?: string;
     statusCode: number;
-}
-
-interface MinioError extends Error {
-    code?: string;
 }
 
 interface ObjectGatewayRouteParams {
@@ -51,62 +39,6 @@ const LOOPBACK_HOST = '127.0.0.1';
 
 const OBJECT_COLLECTION_ROUTE = `${OBJECT_GATEWAY_BUCKETS_PATH}:bucket/objects`;
 
-class ObjectGatewayHttpError extends Error {
-    constructor(
-        public readonly statusCode: number,
-        message: string
-    ) {
-        super(message);
-        Object.setPrototypeOf(this, ObjectGatewayHttpError.prototype);
-    }
-}
-
-const isMinioNotFoundError = (error: MinioError): boolean => {
-    return error.code === 'NotFound' || error.code === 'NoSuchKey';
-};
-
-const decodePathComponent = (value: string, fieldName: string): string => {
-    try {
-        return decodeURIComponent(value);
-    } catch {
-        throw new ObjectGatewayHttpError(400, `${fieldName} contains invalid path encoding`);
-    }
-};
-
-const readContentLength = (request: Request): number => {
-    const raw = request.get('content-length');
-    const parsed = raw === undefined ? Number.NaN : Number(raw);
-    if (!Number.isFinite(parsed) || parsed < 0 || !Number.isInteger(parsed)) {
-        throw new ObjectGatewayHttpError(400, 'content-length header is required for uploads');
-    }
-    return parsed;
-};
-
-const assertDirectAccessClaims = (
-    claims: ObjectGatewayDirectAccessClaims | null,
-    teamClusterId: string
-): asserts claims is ObjectGatewayDirectAccessClaims => {
-    if (!claims) {
-        throw new ObjectGatewayHttpError(401, 'Direct access token is invalid or expired');
-    }
-
-    if (claims.ownerClusterId !== teamClusterId) {
-        throw new ObjectGatewayHttpError(401, 'Direct access token is invalid or expired');
-    }
-
-    if (claims.exposureId !== OBJECT_GATEWAY_EXPOSURE_ID) {
-        throw new ObjectGatewayHttpError(401, 'Direct access token is invalid or expired');
-    }
-
-    if (claims.exposureName !== OBJECT_GATEWAY_EXPOSURE_NAME) {
-        throw new ObjectGatewayHttpError(401, 'Direct access token is invalid or expired');
-    }
-
-    if (claims.accessMode !== TeamClusterServiceExposureAccessMode.Http) {
-        throw new ObjectGatewayHttpError(401, 'Direct access token is invalid or expired');
-    }
-};
-
 export class ObjectGatewayServer {
     private readonly app = express();
     private server: Server | null = null;
@@ -118,11 +50,11 @@ export class ObjectGatewayServer {
 
     constructor(
         private readonly config: DaemonConfig,
-        private readonly minioService: MinioService,
+        private readonly objectStore: LocalClusterObjectStoreGateway,
         private readonly telemetryService: ObjectGatewayTelemetry,
         private readonly security: ObjectGatewaySecurity = {}
     ) {
-        this.allowedBuckets = new Set(this.minioService.listBuckets());
+        this.allowedBuckets = new Set(this.objectStore.listBuckets());
         this.configureRoutes();
     }
 
@@ -220,7 +152,11 @@ export class ObjectGatewayServer {
         });
 
         this.app.all(OBJECT_COLLECTION_ROUTE, (request, _response, next) => {
-            next(new ObjectGatewayHttpError(405, `Unsupported method for object collection: ${request.method}`));
+            next(new ApplicationError(
+                'ObjectGateway::UnsupportedCollectionMethod',
+                `Unsupported method for object collection: ${request.method}`,
+                405
+            ));
         });
 
         this.app.use(OBJECT_COLLECTION_ROUTE, (request, response, next) => {
@@ -228,7 +164,7 @@ export class ObjectGatewayServer {
         });
 
         this.app.use((_request, _response, next) => {
-            next(new ObjectGatewayHttpError(404, 'Object gateway route not found'));
+            next(new ApplicationError('ObjectGateway::RouteNotFound', 'Object gateway route not found', 404));
         });
 
         this.app.use((error: Error, _request: Request, response: Response, _next: NextFunction) => {
@@ -257,7 +193,7 @@ export class ObjectGatewayServer {
         } catch (error) {
             const statusCode = (error as Partial<StatusCodeError>).statusCode;
             tracker.complete({
-                statusCode: error instanceof ObjectGatewayHttpError || statusCode !== undefined ? statusCode as number : 500,
+                statusCode: error instanceof ApplicationError || statusCode !== undefined ? statusCode as number : 500,
                 hasError: true
             });
             next(error);
@@ -270,7 +206,7 @@ export class ObjectGatewayServer {
     ): Promise<void> {
         const objectKeyPath = request.path.replace(/^\/+/, '');
         if (!objectKeyPath) {
-            throw new ObjectGatewayHttpError(404, 'Object gateway route not found');
+            throw new ApplicationError('ObjectGateway::RouteNotFound', 'Object gateway route not found', 404);
         }
 
         const operation = this.readObjectOperation(request.method);
@@ -278,7 +214,7 @@ export class ObjectGatewayServer {
 
         try {
             const bucket = this.readAllowedBucket(request.params.bucket);
-            const objectKey = decodePathComponent(objectKeyPath, 'objectKey');
+            const objectKey = this.decodePathComponent(objectKeyPath, 'objectKey');
 
             if (operation === 'head') {
                 await this.handleHeadObjectRequest(bucket, objectKey, response, tracker);
@@ -299,7 +235,7 @@ export class ObjectGatewayServer {
         } catch (error) {
             const statusCode = (error as Partial<StatusCodeError>).statusCode;
             tracker.complete({
-                statusCode: error instanceof ObjectGatewayHttpError || statusCode !== undefined ? statusCode as number : 500,
+                statusCode: error instanceof ApplicationError || statusCode !== undefined ? statusCode as number : 500,
                 hasError: true
             });
             throw error;
@@ -307,12 +243,41 @@ export class ObjectGatewayServer {
     }
 
     private readAllowedBucket(encodedBucket: string): string {
-        const bucket = decodePathComponent(encodedBucket, 'bucket');
+        const bucket = this.decodePathComponent(encodedBucket, 'bucket');
         if (!this.allowedBuckets.has(bucket)) {
-            throw new ObjectGatewayHttpError(403, `Bucket is not allowed: ${bucket}`);
+            throw new ApplicationError('ObjectGateway::BucketNotAllowed', `Bucket is not allowed: ${bucket}`, 403);
         }
 
         return bucket;
+    }
+
+    private decodePathComponent(value: string, fieldName: string): string {
+        try {
+            return decodeURIComponent(value);
+        } catch {
+            throw new ApplicationError('ObjectGateway::InvalidPathEncoding', `${fieldName} contains invalid path encoding`, 400);
+        }
+    }
+
+    private readContentLength(request: Pick<Request, 'get'>): number {
+        const contentLength = Number(request.get('content-length'));
+        if (!Number.isFinite(contentLength) || contentLength < 0 || !Number.isInteger(contentLength)) {
+            throw new ApplicationError('ObjectGateway::MissingContentLength', 'content-length header is required for uploads', 400);
+        }
+
+        return contentLength;
+    }
+
+    private assertDirectAccessClaims(claims: ObjectGatewayDirectAccessClaims | null): void {
+        if (
+            !claims
+            || claims.ownerClusterId !== this.config.teamClusterId
+            || claims.exposureId !== OBJECT_GATEWAY_EXPOSURE_ID
+            || claims.exposureName !== OBJECT_GATEWAY_EXPOSURE_NAME
+            || claims.accessMode !== TeamClusterServiceExposureAccessMode.Http
+        ) {
+            throw new ApplicationError('ObjectGateway::InvalidDirectAccessToken', 'Direct access token is invalid or expired', 401);
+        }
     }
 
     private async handleListCollectionRequest(
@@ -324,10 +289,10 @@ export class ObjectGatewayServer {
         const limitParam = searchParams.get('limit');
         const limit = limitParam === null ? DEFAULT_LIST_LIMIT : Number(limitParam);
         if (!Number.isInteger(limit) || limit <= 0) {
-            throw new ObjectGatewayHttpError(400, 'limit must be a positive integer');
+            throw new ApplicationError('ObjectGateway::InvalidListLimit', 'limit must be a positive integer', 400);
         }
 
-        const result = await this.minioService.listObjectsPage({
+        const result = await this.objectStore.listObjectsPage({
             bucket,
             prefix: searchParams.get('prefix') ?? '',
             cursor: searchParams.get('cursor') ?? undefined,
@@ -349,9 +314,9 @@ export class ObjectGatewayServer {
     ): Promise<void> {
         const prefix = searchParams.get('prefix');
         if (!prefix) {
-            throw new ObjectGatewayHttpError(400, 'prefix query parameter is required');
+            throw new ApplicationError('ObjectGateway::MissingPrefix', 'prefix query parameter is required', 400);
         }
-        const deletedCount = await this.minioService.deleteByPrefix(bucket, prefix);
+        const deletedCount = await this.objectStore.deleteByPrefix(bucket, prefix);
         const bytesOut = this.writeJson(response, 200, {
             deleted: true,
             deletedCount
@@ -449,9 +414,9 @@ export class ObjectGatewayServer {
         response: Response,
         tracker: ReturnType<ObjectGatewayTelemetry['beginRequest']>
     ): Promise<void> {
-        const contentLength = readContentLength(request);
+        const contentLength = this.readContentLength(request);
 
-        await this.minioService.putObjectStream({
+        await this.objectStore.putObjectStream({
             bucket,
             objectKey,
             stream: request,
@@ -473,7 +438,7 @@ export class ObjectGatewayServer {
         tracker: ReturnType<ObjectGatewayTelemetry['beginRequest']>
     ): Promise<void> {
         await this.readObjectStat(bucket, objectKey);
-        await this.minioService.removeObject(bucket, objectKey);
+        await this.objectStore.removeObject(bucket, objectKey);
         response.status(204).end();
         tracker.complete({
             statusCode: 204
@@ -485,27 +450,27 @@ export class ObjectGatewayServer {
         if (method === 'GET') return 'get';
         if (method === 'PUT') return 'put';
         if (method === 'DELETE') return 'delete';
-        throw new ObjectGatewayHttpError(405, `Unsupported method for object resource: ${method}`);
+        throw new ApplicationError('ObjectGateway::UnsupportedObjectMethod', `Unsupported method for object resource: ${method}`, 405);
     }
 
-    private async readObjectStat(bucket: string, objectKey: string): Promise<ObjectStatLike> {
+    private async readObjectStat(bucket: string, objectKey: string): Promise<LocalClusterObjectStat> {
         try {
-            return await this.minioService.statObject(bucket, objectKey);
+            return await this.objectStore.statObject(bucket, objectKey);
         } catch (error) {
-            if (error instanceof Error && isMinioNotFoundError(error)) {
-                throw new ObjectGatewayHttpError(404, `Object not found: ${bucket}/${objectKey}`);
+            if (error instanceof Error && 'code' in error && (error.code === 'NotFound' || error.code === 'NoSuchKey')) {
+                throw new ApplicationError('ObjectGateway::ObjectNotFound', `Object not found: ${bucket}/${objectKey}`, 404);
             }
 
             throw error;
         }
     }
 
-    private async readObjectStream(bucket: string, objectKey: string): Promise<ObjectStreamLike> {
+    private async readObjectStream(bucket: string, objectKey: string): Promise<Readable> {
         try {
-            return await this.minioService.getObjectStream(bucket, objectKey);
+            return await this.objectStore.getObjectStream(bucket, objectKey);
         } catch (error) {
-            if (error instanceof Error && isMinioNotFoundError(error)) {
-                throw new ObjectGatewayHttpError(404, `Object not found: ${bucket}/${objectKey}`);
+            if (error instanceof Error && 'code' in error && (error.code === 'NotFound' || error.code === 'NoSuchKey')) {
+                throw new ApplicationError('ObjectGateway::ObjectNotFound', `Object not found: ${bucket}/${objectKey}`, 404);
             }
 
             throw error;
@@ -540,7 +505,7 @@ export class ObjectGatewayServer {
         return Object.keys(metadata).length > 0 ? metadata : undefined;
     }
 
-    private writeObjectHeaders(response: Response, stat: ObjectStatLike): void {
+    private writeObjectHeaders(response: Response, stat: LocalClusterObjectStat): void {
         const metadata: Record<string, string> = {};
         const sourceMetadata = stat.metaData as Record<string, string>;
 
@@ -548,27 +513,25 @@ export class ObjectGatewayServer {
             metadata[key.toLowerCase()] = value;
         }
 
-        const { contentEncoding, contentLength, etag, lastModified } = stat;
         const contentType = metadata['content-type'];
+        const contentEncoding = metadata['content-encoding'];
 
         if (contentType) {
             response.setHeader('content-type', contentType);
         }
 
-        if (contentLength !== undefined) {
-            response.setHeader('content-length', contentLength);
-        }
+        response.setHeader('content-length', stat.size);
 
         if (contentEncoding) {
             response.setHeader('content-encoding', contentEncoding);
         }
 
-        if (etag) {
-            response.setHeader('etag', etag);
+        if (stat.etag) {
+            response.setHeader('etag', stat.etag);
         }
 
-        if (lastModified) {
-            response.setHeader('last-modified', lastModified);
+        if (stat.lastModified) {
+            response.setHeader('last-modified', stat.lastModified.toUTCString());
         }
 
         for (const [metadataKey, metadataValue] of Object.entries(metadata)) {
@@ -596,8 +559,9 @@ export class ObjectGatewayServer {
             return;
         }
 
-        if (error instanceof ObjectGatewayHttpError) {
+        if (error instanceof ApplicationError) {
             this.writeJson(response, error.statusCode, {
+                code: error.code,
                 message: error.message
             });
             return;
@@ -621,12 +585,12 @@ export class ObjectGatewayServer {
     private authorizeRequest(request: Request): void {
         const token = request.get(TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER);
         if (!token) {
-            throw new ObjectGatewayHttpError(401, 'Direct access token is required');
+            throw new ApplicationError('ObjectGateway::DirectAccessTokenRequired', 'Direct access token is required', 401);
         }
 
         const verifyDirectAccessToken = this.security.verifyDirectAccessToken;
         const claims = verifyDirectAccessToken ? verifyDirectAccessToken(token) : null;
-        assertDirectAccessClaims(claims, this.config.teamClusterId);
+        this.assertDirectAccessClaims(claims);
     }
 }
 
@@ -634,3 +598,11 @@ export const OBJECT_GATEWAY_EXPOSURE = Object.freeze({
     id: OBJECT_GATEWAY_EXPOSURE_ID,
     exposureName: OBJECT_GATEWAY_EXPOSURE_NAME
 });
+
+export const provideObjectGatewayServer = Factory('objectGatewayServer')((
+    config: DaemonConfig,
+    minioService: MinioService,
+    objectGatewayTelemetry: ObjectGatewayTelemetry
+) => new ObjectGatewayServer(config, minioService, objectGatewayTelemetry, {
+    verifyDirectAccessToken: (token) => verifyTeamClusterDirectAccessToken(config.daemonPassword, token)
+}));

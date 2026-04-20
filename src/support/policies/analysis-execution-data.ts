@@ -1,18 +1,15 @@
 import zlib from 'node:zlib';
 import type { AnalysisJobExecutionData } from '@/contracts';
+import { inflateBase64GzipJson } from '@/support/serialization/gzip-base64-json';
 
-export const serializeAnalysisExecutionData = (executionData: AnalysisJobExecutionData): string => {
-    return JSON.stringify(executionData);
-};
+export const serializeAnalysisExecutionData = (executionData: AnalysisJobExecutionData): string =>
+    JSON.stringify(executionData);
 
-export const compressSerializedAnalysisExecutionData = (serializedValue: string): string => {
-    return zlib.gzipSync(serializedValue).toString('base64');
-};
+export const compressSerializedAnalysisExecutionData = (serializedValue: string): string =>
+    zlib.gzipSync(serializedValue).toString('base64');
 
-export const inflateAnalysisExecutionData = (compressedValue: string): AnalysisJobExecutionData => {
-    const buffer = Buffer.from(compressedValue, 'base64');
-    return JSON.parse(zlib.gunzipSync(buffer).toString('utf8')) as AnalysisJobExecutionData;
-};
+export const inflateAnalysisExecutionData = (compressedValue: string): AnalysisJobExecutionData =>
+    inflateBase64GzipJson<AnalysisJobExecutionData>(compressedValue);
 
 export const parseStoredAnalysisExecutionData = (storedValue: string): AnalysisJobExecutionData => {
     try {

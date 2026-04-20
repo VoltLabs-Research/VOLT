@@ -1,32 +1,11 @@
 import { createReadStream } from 'node:fs';
-import type { Readable } from 'node:stream';
 import { compressFileWithZstd } from '@/support/serialization/storage-codec';
+import type { ScopedClusterObjectStore } from '@/core/storage/contracts/cluster-object-store';
 import fsPromises from 'node:fs/promises';
 import { tmpName } from 'tmp-promise';
 
-interface PutObjectInput {
-    bucket: string;
-    objectKey: string;
-    body: Buffer;
-    metadata?: Record<string, string>;
-}
-
-interface ObjectStoreClient {
-    putObject(input: PutObjectInput): Promise<void>;
-
-    putObjectStream(input: PutObjectStreamInput): Promise<void>;
-}
-
-interface PutObjectStreamInput {
-    bucket: string;
-    objectKey: string;
-    stream: Readable;
-    size: number;
-    metadata?: Record<string, string>;
-}
-
 export interface UploadBufferToObjectStoreInput {
-    objectStore: ObjectStoreClient;
+    objectStore: ScopedClusterObjectStore;
     bucket: string;
     objectKey: string;
     buffer: Buffer;

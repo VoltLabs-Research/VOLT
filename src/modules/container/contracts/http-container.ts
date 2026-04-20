@@ -23,8 +23,4 @@ export interface CreateContainerRequest {
     cmd?: string[];
 };
 
-export enum ContainerAction {
-    Start = 'start',
-    Stop = 'stop',
-    Restart = 'restart'
-};
+export type ContainerAction = 'start' | 'stop' | 'restart';

@@ -1,3 +1,4 @@
+import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import { DAEMON_PATHS } from '@/core/paths';
 import { VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@/core/storage/contracts/http-object-store';
@@ -23,6 +24,7 @@ export interface DebugEnvironmentState {
     outputDir: string;
 }
 
+@Service('debugEnvironment')
 export class DebugEnvironment {
     constructor(
         private readonly objectStore: ClusterObjectStore

@@ -1,6 +1,7 @@
 import type { AnalysisExposureDefinition } from '@/modules/analysis/contracts/http-analysis';
 import type { ArtifactUploadBatch } from '@/modules/plugin/contracts/artifact-upload';
 import type { MsgpackObject } from '@/support/serialization/msgpack-value';
+import type { JobIdentity } from '@/support/contracts/job-identity';
 
 export type ExporterName = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter' | 'ChartExporter';
 
@@ -76,12 +77,9 @@ export interface ChartExportOptions {
     showGrid?: boolean;
 }
 
-export interface ExportExecutionData {
-    analysisId: string;
-    trajectoryId: string;
-    pluginId: string;
+export type ExportExecutionData = Required<Pick<JobIdentity, 'analysisId' | 'trajectoryId' | 'pluginId'>> & {
     storageClusterId?: string;
-}
+};
 
 export interface ExportExecutionInput {
     executionData: ExportExecutionData;

@@ -1,11 +1,13 @@
+import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
-import { ContainerAction } from '@/modules/container/contracts/http-container';
-import { OrchestrationAction } from '@/core/runtime/contracts/http-runtime';
-import { createTraceLogContext, withTimeout } from '@/core/observability/infrastructure/daemon-instrumentation';
+import type { ContainerAction } from '@/modules/container/contracts/http-container';
+import { VOLT_MANAGED_CONTAINER_LABEL_KEY, VOLT_MANAGED_CONTAINER_LABEL_VALUE } from '@/core/runtime/contracts/runtime-container';
+import { ProgressStageType } from '@voltstack/daemon-cluster-client';
+import { withTimeout } from '@/core/observability/infrastructure/daemon-instrumentation';
 import type { DaemonTraceContext } from '@/core/observability/infrastructure/daemon-instrumentation';
 import type { RuntimeEventBroker } from '@/core/reverse-channel/application/RuntimeEventBroker';
 import type { CreateContainerRequest } from '@/modules/container/contracts/http-container';
-import { Writable } from 'node:stream';
+import { Writable, type Duplex } from 'node:stream';
 import Docker from 'dockerode';
 import net from 'node:net';
 import path from 'node:path';
@@ -48,7 +50,7 @@ interface RuntimeContainerFileEntry {
 }
 
 export interface RuntimeTerminalAttachment {
-    stream: NodeJS.ReadWriteStream;
+    stream: Duplex;
     exec: RuntimeTerminalExec;
 }
 
@@ -65,21 +67,14 @@ interface HostPortBinding {
     HostPort: string;
 }
 
-enum ProgressStageType {
-    Accepted = 'accepted',
-    Queued = 'queued',
-    Running = 'running',
-    Completed = 'completed',
-    Failed = 'failed'
-}
-
 const MAX_EXEC_BUFFER_SIZE = 10 * 1024 * 1024;
 const DEFAULT_DOCKER_EXEC_TIMEOUT_MS = 120_000;
 
+@Service('dockerRuntime')
 export class DockerRuntime {
     private readonly docker: Docker;
 
-    constructor(private readonly eventBroker?: RuntimeEventBroker) {
+    constructor(private readonly eventBroker: RuntimeEventBroker) {
         this.docker = new Docker({
             socketPath: '/var/run/docker.sock',
             timeout: 60_000
@@ -97,41 +92,49 @@ export class DockerRuntime {
         });
     };
 
-    async createContainer(input: CreateContainerRequest): Promise<Docker.ContainerInspectInfo> {
-        const env: string[] = [];
-        if (input.env) {
-            for (const entry of input.env) {
-                env.push(`${entry.key}=${entry.value}`);
-            }
-        }
-
+    private getPortsFromRequest(input: CreateContainerRequest){
         const exposedPorts: Record<string, Record<string, never>> = {};
         const portBindings: Record<string, HostPortBinding[]> = {};
-        if (input.ports) {
-            for (const port of input.ports) {
-                const portKey = `${port.private}/tcp`;
-                exposedPorts[portKey] = {};
-                portBindings[portKey] = [{ HostPort: port.public && port.public > 0 ? `${port.public}` : '' }];
-            }
+
+        for(const port of input.ports ?? []){
+            const key = `${port.private}/tcp`;
+            exposedPorts[key] = {};
+            portBindings[key] = [{ HostPort: port.public && port.public > 0 ? `${port.public}` : '' }];
         }
+        
+        return { exposedPorts, portBindings };
+    }
+
+    private getEnvFromRequest(input: CreateContainerRequest){
+        const env: string[] = [];
+        for(const entry of input.env ?? []){
+            env.push(`${entry.key}=${entry.value}`);
+        }
+        return env;
+    }
+
+    async createContainer(input: CreateContainerRequest): Promise<Docker.ContainerInspectInfo> {
+        const env = this.getEnvFromRequest(input);
+        const { exposedPorts, portBindings } = this.getPortsFromRequest(input);
+        const { image, name: containerName } = input;
 
         this.emitContainerCreateProgress(input, ProgressStageType.Accepted, {
-            image: input.image,
-            containerName: input.name,
+            image,
+            containerName,
             step: 'accepted'
         });
 
         this.emitContainerCreateProgress(input, ProgressStageType.Running, {
-            image: input.image,
-            containerName: input.name,
+            image,
+            containerName,
             step: 'pulling-image'
         });
 
-        await this.ensureImage(input.image);
+        await this.ensureImage(image);
 
         this.emitContainerCreateProgress(input, ProgressStageType.Running, {
-            image: input.image,
-            containerName: input.name,
+            image,
+            containerName,
             step: 'creating-container'
         });
 
@@ -142,7 +145,7 @@ export class DockerRuntime {
             Env: env,
             Cmd: input.cmd,
             Labels: {
-                'volt.managed': 'true',
+                [VOLT_MANAGED_CONTAINER_LABEL_KEY]: VOLT_MANAGED_CONTAINER_LABEL_VALUE,
                 ...input.labels
             },
             ExposedPorts: exposedPorts,
@@ -156,8 +159,8 @@ export class DockerRuntime {
         });
 
         this.emitContainerCreateProgress(input, ProgressStageType.Running, {
-            image: input.image,
-            containerName: input.name,
+            image,
+            containerName,
             containerId: container.id,
             step: 'starting-container'
         });
@@ -185,15 +188,16 @@ export class DockerRuntime {
 
     async applyContainerAction(containerId: string, action: ContainerAction): Promise<Docker.ContainerInspectInfo> {
         const container = this.docker.getContainer(containerId);
-        if (action === ContainerAction.Start) {
+
+        if (action === 'start') {
             await container.start();
         }
 
-        if (action === ContainerAction.Stop) {
+        if (action === 'stop') {
             await container.stop();
         }
 
-        if (action === ContainerAction.Restart) {
+        if (action === 'restart') {
             await container.restart();
         }
 
@@ -279,7 +283,7 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
             Cmd: ['/bin/sh'],
             Env: ['TERM=xterm-256color']
         });
-        const stream = await dockerExec.start({ hijack: true, stdin: true });
+        const stream = await dockerExec.start({ hijack: true, stdin: true }) as unknown as Duplex;
 
         return {
             stream,
@@ -367,7 +371,7 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
         logger.info(`Provisioning Docker image from registry for imageName=${imageName}`);
 
         this.eventBroker?.emitProgress({
-            action: OrchestrationAction.ContainerCreate,
+            action: 'container-create',
             stage: ProgressStageType.Running,
             timestamp: new Date().toISOString(),
             payload: {
@@ -429,7 +433,7 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
         }
 
         this.eventBroker.emitProgress({
-            action: OrchestrationAction.ContainerCreate,
+            action: 'container-create',
             stage,
             timestamp: new Date().toISOString(),
             payload: {
@@ -545,7 +549,6 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
         stdin?: string,
         options: DockerExecOptions = {}
     ): Promise<string> {
-        const startedAt = Date.now();
         const {
             operationName = 'docker-exec',
             timeoutMs = DEFAULT_DOCKER_EXEC_TIMEOUT_MS,

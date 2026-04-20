@@ -2,7 +2,15 @@ import Bottleneck from 'bottleneck';
 import { TTLCache } from '@isaacs/ttlcache';
 import retry from 'async-retry';
 
+import { Service } from '@/core/decorators/service';
 import { DockerRuntime } from '@/core/runtime/infrastructure/DockerRuntime';
+import {
+    HTTP_PORTS_LABEL_KEY,
+    TEAM_CLUSTER_ID_LABEL_KEY,
+    TEAM_ID_LABEL_KEY,
+    WEBSOCKET_PORTS_LABEL_KEY,
+    resolveComposeDefaultNetworkName
+} from '@/core/runtime/contracts/runtime-container';
 import { logger } from '@/core/logger';
 import { createHash } from 'node:crypto';
 import type { CreateNotebookSessionResponse, NotebookContainerStage, NotebookContainerResources, NotebookSessionSnapshot } from '@/contracts';
@@ -59,12 +67,10 @@ const JUPYTER_BACKGROUND_STARTUP_LIMIT = 2;
 const RUNTIME_LABEL_KEY = 'volt.runtime.kind';
 const RUNTIME_LABEL_VALUE = 'jupyter';
 const NOTEBOOK_ID_LABEL_KEY = 'volt.notebook.id';
-const TEAM_ID_LABEL_KEY = 'volt.team.id';
-const TEAM_CLUSTER_ID_LABEL_KEY = 'volt.team-cluster.id';
-const HTTP_PORTS_LABEL_KEY = 'volt.exposure.http.ports';
-const WEBSOCKET_PORTS_LABEL_KEY = 'volt.exposure.websocket.ports';
 const RUNTIME_FINGERPRINT_ENV_KEY = 'VOLT_RUNTIME_FINGERPRINT';
+const PUBLIC_BASE_PATH_ENV_KEY = 'VOLT_PUBLIC_BASE_PATH';
 
+@Service('jupyterRuntime')
 export class JupyterRuntime {
     private static readonly RUNTIME_STATE_TTL_MS = 30 * 60 * 1000;
 
@@ -197,19 +203,7 @@ export class JupyterRuntime {
     private async ensureContainer(input: EnsureNotebookSessionInput): Promise<ContainerResolutionResult> {
         const existingContainer = await this.findRuntimeContainerCandidate(input.notebook._id);
         if (existingContainer) {
-            const shouldRecreateContainer = await (async (): Promise<boolean> => {
-                try {
-                    const container = await this.dockerRuntime.getContainer(existingContainer.containerId);
-                    const environment = container.Config.Env;
-                    if (!environment) {
-                        return false;
-                    }
-
-                    return !environment.includes(`${RUNTIME_FINGERPRINT_ENV_KEY}=${this.buildRuntimeFingerprint(input)}`);
-                } catch {
-                    return false;
-                }
-            })();
+            const shouldRecreateContainer = await this.shouldRecreateContainer(existingContainer.containerId, input);
             if (shouldRecreateContainer) {
                 await this.cancelStartupOperation(input.notebook._id);
                 await this.dockerRuntime.deleteContainer(existingContainer.containerId);
@@ -267,7 +261,7 @@ export class JupyterRuntime {
                     value: input.requestedBy
                 },
                 {
-                    key: 'VOLT_PUBLIC_BASE_PATH',
+                    key: PUBLIC_BASE_PATH_ENV_KEY,
                     value: input.publicBasePath
                 },
                 {
@@ -294,7 +288,7 @@ export class JupyterRuntime {
                 [WEBSOCKET_PORTS_LABEL_KEY]: `${this.config.jupyter.port}`
             },
             cmd: this.buildNativeStartupCommand(input.publicBasePath),
-            networkMode: this.resolveComposeNetworkName()
+            networkMode: resolveComposeDefaultNetworkName(this.config.composeProjectName)
         });
 
         const hostPort = await this.dockerRuntime.getPublishedPort(container.Id, this.config.jupyter.port);
@@ -327,15 +321,7 @@ export class JupyterRuntime {
             : null;
 
         if (!publicBasePath) {
-            publicBasePath = await (async (): Promise<string | null> => {
-                try {
-                    const container = await this.dockerRuntime.getContainer(runtimeContainer.containerId);
-                    const entry = container.Config.Env.find((value) => value.startsWith('VOLT_PUBLIC_BASE_PATH='));
-                    return entry ? entry.slice('VOLT_PUBLIC_BASE_PATH='.length) : null;
-                } catch {
-                    return null;
-                }
-            })();
+            publicBasePath = await this.readContainerEnvValue(runtimeContainer.containerId, PUBLIC_BASE_PATH_ENV_KEY);
         }
 
         if (!publicBasePath) {
@@ -473,15 +459,9 @@ export class JupyterRuntime {
             return;
         }
 
-        const queuedAt = Date.now();
         await this.startupLimiter.schedule(async () => {
             if (startupOperation.controller.signal.aborted) {
                 return;
-            }
-
-            const waitMs = Date.now() - queuedAt;
-            if (waitMs >= 250) {
-                const counts = this.startupLimiter.counts();
             }
 
             const deadlineMs = Date.now() + Math.max(this.config.jupyter.startTimeoutMs, 0);
@@ -660,7 +640,7 @@ export class JupyterRuntime {
             readinessOrigins.add(resolvedRuntimeState.readinessOrigin);
         }
 
-        const composeNetworkName = this.resolveComposeNetworkName();
+        const composeNetworkName = resolveComposeDefaultNetworkName(this.config.composeProjectName);
         if (composeNetworkName) {
             try {
                 const container = await this.dockerRuntime.getContainer(resolvedRuntimeState.containerId);
@@ -728,7 +708,7 @@ export class JupyterRuntime {
             token: this.config.jupyter.token,
             frameAncestors: this.config.jupyter.frameAncestors,
             notebookRoot: this.config.jupyter.notebookRoot,
-            networkMode: this.resolveComposeNetworkName(),
+            networkMode: resolveComposeDefaultNetworkName(this.config.composeProjectName),
             containerResources: input.containerResources,
             startupCommand: this.buildNativeStartupCommand(input.publicBasePath)
         })).digest('hex');
@@ -767,12 +747,31 @@ export class JupyterRuntime {
         return `volt-jupyter-${notebookId}`;
     }
 
-    private resolveComposeNetworkName(): string | undefined {
-        if (!this.config.composeProjectName) {
-            return undefined;
+    private async shouldRecreateContainer(
+        containerId: string,
+        input: EnsureNotebookSessionInput
+    ): Promise<boolean> {
+        const currentFingerprint = await this.readContainerEnvValue(containerId, RUNTIME_FINGERPRINT_ENV_KEY);
+        if (currentFingerprint === null) {
+            return false;
         }
 
-        return `${this.config.composeProjectName}_default`;
+        return currentFingerprint !== this.buildRuntimeFingerprint(input);
+    }
+
+    private async readContainerEnvValue(containerId: string, key: string): Promise<string | null> {
+        try {
+            const environment = (await this.dockerRuntime.getContainer(containerId)).Config.Env;
+            if (!environment) {
+                return null;
+            }
+
+            const prefix = `${key}=`;
+            const entry = environment.find((value) => value.startsWith(prefix));
+            return entry ? entry.slice(prefix.length) : null;
+        } catch {
+            return null;
+        }
     }
 
     private async cancelStartupOperation(notebookId: string): Promise<void> {

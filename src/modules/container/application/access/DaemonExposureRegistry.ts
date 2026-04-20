@@ -1,12 +1,21 @@
 import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureSourceKind, TeamClusterServiceExposureStatus } from '@/contracts';
 import type { TeamClusterServiceExposure } from '@/contracts';
 import type { DaemonConfig } from '@/core/config';
+import { Service } from '@/core/decorators/service';
 import type { EventDispatcher } from '@/core/events/EventDispatcher';
 import { logger } from '@/core/logger';
+import {
+    HTTP_PORTS_LABEL_KEY,
+    TEAM_CLUSTER_ID_LABEL_KEY,
+    TEAM_ID_LABEL_KEY,
+    VOLT_MANAGED_CONTAINER_LABEL_KEY,
+    VOLT_MANAGED_CONTAINER_LABEL_VALUE,
+    WEBSOCKET_PORTS_LABEL_KEY
+} from '@/core/runtime/contracts/runtime-container';
 import { isIP } from 'node:net';
 import type Dockerode from 'dockerode';
 import type { DockerRuntime } from '@/core/runtime/infrastructure/DockerRuntime';
-import { ExposureSnapshotUpdatedEvent } from '@/modules/container/application/events/ExposureSnapshotUpdatedEvent';
+import { ExposureSnapshotUpdatedEvent } from '@/modules/container/domain/events';
 import type { VoltCloudConnection } from '@/modules/container/infrastructure/connection/VoltCloudConnection';
 
 type ContainerInfo = Dockerode.ContainerInfo;
@@ -26,10 +35,6 @@ interface ContainerExposureContext {
 }
 
 const EXPOSURE_SYNC_INTERVAL_MS = 5_000;
-const HTTP_PORT_LABEL = 'volt.exposure.http.ports';
-const WEBSOCKET_PORT_LABEL = 'volt.exposure.websocket.ports';
-const TEAM_ID_LABEL = 'volt.team.id';
-const TEAM_CLUSTER_ID_LABEL = 'volt.team-cluster.id';
 
 const readPortSet = (value: string | undefined): Set<number> => {
     if (!value) {
@@ -98,6 +103,7 @@ const readPublishedTcpPorts = (inspection: ContainerInspection): number[] => {
     return containerPorts;
 };
 
+@Service('daemonExposureRegistry')
 export class DaemonExposureRegistry {
     private syncTimer: NodeJS.Timeout | null = null;
     private exposures = new Map<string, TeamClusterServiceExposure>();
@@ -183,7 +189,7 @@ export class DaemonExposureRegistry {
     private async runSync(startedAt: number): Promise<void> {
         const includeStoppedContainers = true;
         const containers = await this.dockerRuntime.listContainers(includeStoppedContainers, {
-            label: ['volt.managed=true']
+            label: [`${VOLT_MANAGED_CONTAINER_LABEL_KEY}=${VOLT_MANAGED_CONTAINER_LABEL_VALUE}`]
         });
         const exposureContexts = await Promise.all(containers.map((container) => this.readContainerExposureContext(container)));
         const nextExposures = exposureContexts.flatMap((context) => {
@@ -229,8 +235,8 @@ export class DaemonExposureRegistry {
         try {
             const inspection = await this.dockerRuntime.getContainer(container.Id);
             const labels = inspection.Config.Labels;
-            const teamId = labels[TEAM_ID_LABEL];
-            const teamClusterId = labels[TEAM_CLUSTER_ID_LABEL];
+            const teamId = labels[TEAM_ID_LABEL_KEY];
+            const teamClusterId = labels[TEAM_CLUSTER_ID_LABEL_KEY];
 
             if (!teamId || !teamClusterId || teamClusterId !== this.config.teamClusterId) {
                 return null;
@@ -241,7 +247,7 @@ export class DaemonExposureRegistry {
             return {
                 container,
                 containerName,
-                httpPorts: readPortSet(labels[HTTP_PORT_LABEL]),
+                httpPorts: readPortSet(labels[HTTP_PORTS_LABEL_KEY]),
                 labels,
                 publishedPorts: readPublishedTcpPorts(inspection),
                 status: inspection.State.Running
@@ -250,7 +256,7 @@ export class DaemonExposureRegistry {
                 targetHost: readInspectionInternalIp(inspection) || containerName,
                 teamClusterId,
                 teamId,
-                websocketPorts: readPortSet(labels[WEBSOCKET_PORT_LABEL])
+                websocketPorts: readPortSet(labels[WEBSOCKET_PORTS_LABEL_KEY])
             };
         } catch {
             return null;
@@ -258,7 +264,7 @@ export class DaemonExposureRegistry {
     }
 
     private createContainerExposure(context: ContainerExposureContext, containerPort: number): TeamClusterServiceExposure {
-        const accessModes = [TeamClusterServiceExposureAccessMode.Tcp];
+        const accessModes: TeamClusterServiceExposureAccessMode[] = [TeamClusterServiceExposureAccessMode.Tcp];
         if (context.httpPorts.has(containerPort)) {
             accessModes.push(TeamClusterServiceExposureAccessMode.Http);
         }

@@ -3,7 +3,7 @@ import type { SceneArtifactUpsertBatchItem as ReportArtifactInput } from '@/modu
 import type { ExportExecutionInput, ExporterEntry, ExporterName } from '@/modules/plugin/application/exports/export-node-processor-types';
 import type { MsgpackObject, MsgpackScalar, MsgpackValue } from '@/support/serialization/msgpack-value';
 
-type ExportValue = MsgpackScalar;
+
 
 export const YIELD_INTERVAL = 50_000;
 

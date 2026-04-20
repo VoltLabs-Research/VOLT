@@ -1,3 +1,4 @@
+import { Service } from '@/core/decorators/service';
 import { TRAJECTORY_RASTER_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import type { QueueService } from '@/core/queues/application/QueueService';
 import { ObjectBucketName } from '@/contracts';
@@ -7,6 +8,7 @@ import type { TrajectoryAutoPreviewClaimStore } from '@/modules/trajectory/infra
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
 import { buildRasterJobPayload, type ParsedRasterModel } from '@/modules/trajectory/domain/raster/raster-job-factory';
 import { toQueuedJobNotification } from '@/support/queue/to-queued-job-notification';
+import { mapLimited } from '@/support/concurrency/map-limited';
 
 const RASTER_JOB_NAME = 'Rasterize trajectory preview';
 
@@ -24,6 +26,7 @@ const STAT_CONCURRENCY = 10;
 
 const ANALYSIS_MODEL_PATTERN = /^trajectory-[^/]+\/analysis-([^/]+)\/glb\/(\d+)\/([^/]+)\.glb\.zst$/;
 
+@Service('trajectoryRasterQueue')
 export class TrajectoryRasterQueue {
     constructor(
         private readonly objectStore: ClusterObjectStore,
@@ -133,33 +136,28 @@ export class TrajectoryRasterQueue {
     private async getExistingOutputKeys(ownerClusterId: string, models: ParsedRasterModel[]): Promise<Set<string>> {
         const existingOutputKeys = new Set<string>();
 
-        for (let i = 0; i < models.length; i += STAT_CONCURRENCY) {
-            const batch = models.slice(i, i + STAT_CONCURRENCY);
-            const results = await Promise.all(
-                batch.map(async (rasterModel): Promise<string | null> => {
-                    try {
-                        await this.objectStore.head(ownerClusterId, ObjectBucketName.Rasterizer, rasterModel.outputObjectKey);
-                        return rasterModel.outputObjectKey;
-                    } catch (error) {
-                        const objectStoreError = error as ObjectNotFoundError;
-                        if (
-                            objectStoreError.code === 'NotFound'
-                            || objectStoreError.code === 'NoSuchKey'
-                            || objectStoreError.statusCode === 404
-                            || objectStoreError.status === 404
-                        ) {
-                            return null;
-                        }
-
-                        throw error;
-                    }
-                })
-            );
-
-            for (const key of results) {
-                if (key !== null) {
-                    existingOutputKeys.add(key);
+        const results = await mapLimited(models, STAT_CONCURRENCY, async (rasterModel): Promise<string | null> => {
+            try {
+                await this.objectStore.head(ownerClusterId, ObjectBucketName.Rasterizer, rasterModel.outputObjectKey);
+                return rasterModel.outputObjectKey;
+            } catch (error) {
+                const objectStoreError = error as ObjectNotFoundError;
+                if (
+                    objectStoreError.code === 'NotFound'
+                    || objectStoreError.code === 'NoSuchKey'
+                    || objectStoreError.statusCode === 404
+                    || objectStoreError.status === 404
+                ) {
+                    return null;
                 }
+
+                throw error;
+            }
+        });
+
+        for (const key of results) {
+            if (key !== null) {
+                existingOutputKeys.add(key);
             }
         }
 

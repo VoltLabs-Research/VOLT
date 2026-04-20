@@ -1,3 +1,4 @@
+import { Service } from '@/core/decorators/service';
 import { normalizePagination, calculatePaginationOffset } from '@/contracts/pagination';
 import { withNativeProcessingTempDir } from '@/support/native-temp-dir';
 import { createWriteStream } from 'node:fs';
@@ -94,6 +95,7 @@ const toParsedTrajectory = (result: NativeParseResult): ParsedTrajectory => {
     };
 };
 
+@Service('trajectoryParser')
 export class TrajectoryParser {
     constructor(
         private readonly objectStore: ClusterObjectStore

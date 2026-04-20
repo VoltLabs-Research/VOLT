@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import { dir as createTempDir } from 'tmp-promise';
 
+import { Service } from '@/core/decorators/service';
 import { DAEMON_PATHS } from '@/core/paths';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
 import { downloadCompressedDump } from '@/modules/analysis/application/workflow/dump-download';
@@ -10,16 +11,19 @@ import type {
     AnalysisJobMetadata
 } from '@/modules/analysis/contracts/http-analysis';
 import type { WorkflowNodeOutput } from '@/modules/analysis/contracts/workflow.types';
+import { mapLimited } from '@/support/concurrency/map-limited';
 
-type AnalysisOutput = WorkflowNodeOutput;
+const BATCH_DUMP_DOWNLOAD_CONCURRENCY = 8;
+
 
 export interface AnalysisEnvironmentState {
     outputDir: string;
-    outputs: Map<string, AnalysisOutput>;
+    outputs: Map<string, WorkflowNodeOutput>;
     dumpTargets: WorkflowDumpTarget[];
     dumpLocalPaths: string[];
 }
 
+@Service('analysisEnvironment')
 export class AnalysisEnvironment {
     constructor(private readonly objectStore: ClusterObjectStore) {}
 
@@ -68,9 +72,15 @@ export class AnalysisEnvironment {
 
     private async downloadBatchDumps(runtime: AnalysisEnvironmentState, executionData: AnalysisJobExecutionData): Promise<void> {
         const { storageClusterId } = executionData.identity;
-        for (const dump of executionData.batch!.trajectoryDumps) {
-            runtime.dumpLocalPaths.push(await downloadCompressedDump(this.objectStore, dump.path, storageClusterId!, DAEMON_PATHS.analysisDumps));
-        }
+        const dumps = executionData.batch!.trajectoryDumps;
+
+        const localPaths = await mapLimited(
+            dumps,
+            BATCH_DUMP_DOWNLOAD_CONCURRENCY,
+            (dump) => downloadCompressedDump(this.objectStore, dump.path, storageClusterId!, DAEMON_PATHS.analysisDumps)
+        );
+
+        runtime.dumpLocalPaths.push(...localPaths);
     }
 
     private async downloadSingleDump(
@@ -122,7 +132,7 @@ export class AnalysisEnvironment {
         executionData: AnalysisJobExecutionData,
         metadata: AnalysisJobMetadata,
         runtime: AnalysisEnvironmentState
-    ): Map<string, AnalysisOutput> {
+    ): Map<string, WorkflowNodeOutput> {
         const outputs = this.snapshotToOutputs(executionData);
         const forEachNodeId = executionData.workflow.forEachNodeId;
         if (!forEachNodeId) {
@@ -149,14 +159,14 @@ export class AnalysisEnvironment {
         executionData: AnalysisJobExecutionData,
         dumpTargets: WorkflowDumpTarget[],
         outputDir: string
-    ): Map<string, AnalysisOutput> {
+    ): Map<string, WorkflowNodeOutput> {
         const outputs = this.snapshotToOutputs(executionData);
         const contextNodeId = executionData.batch?.contextNodeId;
         if (!contextNodeId) {
             return outputs;
         }
 
-        const trajectoryDumps = dumpTargets.map((target): AnalysisOutput => ({
+        const trajectoryDumps = dumpTargets.map((target): WorkflowNodeOutput => ({
             timestep: target.timestep,
             natoms: target.natoms,
             simulationCell: target.simulationCell,
@@ -176,7 +186,7 @@ export class AnalysisEnvironment {
         return outputs;
     }
 
-    private snapshotToOutputs(executionData: AnalysisJobExecutionData): Map<string, AnalysisOutput> {
-        return new Map(Object.entries(executionData.workflow.nodeOutputSnapshots)) as Map<string, AnalysisOutput>;
+    private snapshotToOutputs(executionData: AnalysisJobExecutionData): Map<string, WorkflowNodeOutput> {
+        return new Map(Object.entries(executionData.workflow.nodeOutputSnapshots)) as Map<string, WorkflowNodeOutput>;
     }
 }

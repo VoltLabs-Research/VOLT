@@ -1,3 +1,4 @@
+import { Service } from '@/core/decorators/service';
 import type { RedisConnection } from '@/core/storage/infrastructure/redis/RedisConnection';
 
 const AUTO_PREVIEW_CLAIM_TTL_SECONDS = 30 * 60;
@@ -6,6 +7,7 @@ const buildAutoPreviewRasterKey = (trajectoryId: string): string => {
     return `trajectory:${trajectoryId}:auto-preview-raster`;
 };
 
+@Service('trajectoryAutoPreviewClaimStore')
 export class TrajectoryAutoPreviewClaimStore {
     constructor(
         private readonly redisConnection: RedisConnection

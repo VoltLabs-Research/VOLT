@@ -1,13 +1,15 @@
 import Bottleneck from 'bottleneck';
 
+import { Service } from '@/core/decorators/service';
 import type { EventDispatcher } from '@/core/events/EventDispatcher';
-import { logger } from '@/core/logger';
-import { SceneArtifactBatchReportedEvent } from '@/modules/plugin/application/events/SceneArtifactBatchReportedEvent';
+import { SceneArtifactBatchReportedEvent } from '@/modules/plugin/domain/events';
 import type { SceneArtifactUpsertBatchItem as ReportArtifactInput } from '@/modules/plugin/contracts/reverse-channel-plugin';
+import { logAndSwallow, safeExecute } from '@/support/error/errorMessage';
 
 const SCENE_ARTIFACT_BATCH_SIZE = 64;
 const SCENE_ARTIFACT_BATCH_FLUSH_INTERVAL_MS = 250;
 
+@Service('daemonArtifactReporter')
 export class DaemonArtifactReporter {
     private readonly batcher: Bottleneck.Batcher;
     private readonly pendingArtifacts = new Map<string, ReportArtifactInput>();
@@ -35,16 +37,14 @@ export class DaemonArtifactReporter {
 
             void this.enqueuePublish(batch);
         });
-        this.batcher.on('error', (error) => {
-            logger.warn(`Artifact batcher error: ${error instanceof Error ? error.message : String(error)}`);
-        });
+        this.batcher.on('error', logAndSwallow('warn', {}, 'Artifact batcher error'));
     }
 
     async reportArtifact(input: ReportArtifactInput): Promise<void> {
         this.pendingArtifacts.set(input.objectName, input);
-        void this.batcher.add(input.objectName).catch((error) => {
-            logger.warn(`Failed to enqueue artifact batch item objectName=${input.objectName}: ${error instanceof Error ? error.message : String(error)}`);
-        });
+        void this.batcher.add(input.objectName).catch(
+            logAndSwallow('warn', { objectName: input.objectName }, 'Failed to enqueue artifact batch item')
+        );
     }
 
     async flushPendingArtifacts(): Promise<void> {
@@ -65,13 +65,10 @@ export class DaemonArtifactReporter {
                     return;
                 }
 
-                try {
-                    await this.eventDispatcher.publish(new SceneArtifactBatchReportedEvent({
-                        items: batch
-                    }));
-                } catch (error) {
-                    logger.warn(`Failed to flush scene artifact batch event: ${error instanceof Error ? error.message : String(error)}`);
-                }
+                await safeExecute(
+                    () => this.eventDispatcher.publish(new SceneArtifactBatchReportedEvent({ items: batch })),
+                    logAndSwallow('warn', {}, 'Failed to flush scene artifact batch event')
+                );
             });
 
         return this.publishQueue;

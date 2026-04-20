@@ -84,7 +84,7 @@ export class RuntimeCommands {
             } catch (error) {
                 const details = `Runtime uninstall failed: ${error instanceof Error ? error.message : String(error)}`;
 
-                this.voltCloudConnection.emitLifecycleEvent('delete-failed', details);
+                this.voltCloudConnection.emitLifecycleEvent('uninstall-failed', details);
                 await this.voltCloudConnection.reportDeleteFailed(details);
                 process.exit(1);
             }

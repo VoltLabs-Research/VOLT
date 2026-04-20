@@ -1,4 +1,4 @@
-import { BASE64_SESSION_CHUNK_PATTERN, SESSION_ATTACH_TIMEOUT_MS, WEBSOCKET_BUFFERED_AMOUNT_BYTES_CAP, WEBSOCKET_PENDING_MESSAGE_BYTES_CAP } from '@/core/reverse-channel/contracts/reverse-channel-session-constants';
+import { BASE64_SESSION_CHUNK_PATTERN, SESSION_ATTACH_TIMEOUT_MS, WEBSOCKET_BUFFERED_AMOUNT_BYTES_CAP, WEBSOCKET_PENDING_MESSAGE_BYTES_CAP } from '@/core/reverse-channel/contracts/reverse-channel-constants';
 import { WebSocket } from 'ws';
 import type { TeamClusterDaemonSessionAttachPayload, TeamClusterDaemonSessionDataPayload, TeamClusterDaemonSessionEndPayload, TeamClusterDaemonSessionInputPayload } from '@/contracts';
 import type { CommandResult } from '@voltstack/daemon-cluster-client';
@@ -143,9 +143,7 @@ export class WebSocketSessionManager {
         }
 
         try {
-            const webSocket = payload.protocols && payload.protocols.length > 0
-                ? new WebSocket(payload.targetUrl, payload.protocols)
-                : new WebSocket(payload.targetUrl);
+            const webSocket = new WebSocket(payload.targetUrl);
             const pendingMessages: PendingWebSocketMessage[] = [];
             const sessionActor = createActor(webSocketSessionMachine, {
                 input: {
@@ -229,10 +227,7 @@ export class WebSocketSessionManager {
                     attachSettled = true;
                     resolve({
                         status: 200,
-                        data: {
-                            status: 'success',
-                            data: { attached: true }
-                        }
+                        data: { attached: true }
                     });
                 };
 

@@ -1,3 +1,4 @@
+import { Service } from '@/core/decorators/service';
 import type { WorkflowNodeRegistry } from '@/modules/analysis/application/workflow/NodeRegistry';
 import { WorkflowNodeExecutor } from '@/modules/analysis/application/workflow/WorkflowNodeExecutor';
 import { WorkflowScheduler } from '@/modules/analysis/application/workflow/WorkflowScheduler';
@@ -20,12 +21,14 @@ import type {
     WorkflowNodeOutput,
     WorkflowOutputs
 } from '@/modules/analysis/contracts/workflow.types';
-import type { BinaryExecutorService, ProcessExecutionLogSink } from '@/core/runtime/infrastructure/binary-executor-service';
+import type { ProcessExecutionLogSink } from '@/core/runtime/contracts/execution-log';
+import type { BinaryExecutorService } from '@/core/runtime/infrastructure/binary-executor-service';
 import type { PluginBinaryCache } from '@/modules/plugin/application/binaries/PluginBinaryCache';
 import type { AnalysisJobExecutionData } from '@/modules/analysis/contracts/http-analysis';
 import type { ArtifactUploadBatch } from '@/modules/plugin/contracts/artifact-upload';
 import type { ResultProcessorService } from '@/modules/plugin/application/exports/result-processor-service-contract';
 import type { WorkflowExecutionOptions } from '@/modules/analysis/contracts/workflow.types';
+import ApplicationError from '@/app/coordination/ApplicationError';
 import { dir as createTempDir } from 'tmp-promise';
 import fs from 'node:fs/promises';
 
@@ -167,6 +170,10 @@ interface WorkflowExecutionOutcome {
     trace: InlineWorkflowTraceNode[];
 }
 
+interface WorkflowTraceDetails {
+    trace: InlineWorkflowTraceNode[];
+}
+
 export interface WorkflowExecuteInput {
     jobId: string;
     executionData: AnalysisJobExecutionData;
@@ -189,19 +196,32 @@ interface WorkflowVisitContext {
     executionPath: string[];
 }
 
-export class WorkflowTraceError extends Error {
-    constructor(
-        message: string,
-        readonly trace: InlineWorkflowTraceNode[],
-        options?: ErrorOptions
-    ) {
-        super(message, options);
-        this.name = 'WorkflowTraceError';
+const WORKFLOW_TRACE_ERROR_CODE = 'Workflow::Trace';
+
+const createWorkflowTraceFailure = (
+    message: string,
+    trace: InlineWorkflowTraceNode[],
+    cause?: unknown
+): ApplicationError => {
+    return new ApplicationError(WORKFLOW_TRACE_ERROR_CODE, message, {
+        statusCode: 500,
+        details: { trace } satisfies WorkflowTraceDetails,
+        cause
+    });
+};
+
+const readWorkflowTrace = (error: unknown): InlineWorkflowTraceNode[] | undefined => {
+    if (!(error instanceof ApplicationError) || error.code !== WORKFLOW_TRACE_ERROR_CODE) {
+        return undefined;
     }
-}
+
+    const details = error.details as WorkflowTraceDetails | undefined;
+    return Array.isArray(details?.trace) ? details.trace : undefined;
+};
 
 const MAX_BATCH_PLUGIN_CONCURRENCY = 2;
 
+@Service('workflowRuntime')
 export class WorkflowRuntime {
     private readonly nodeExecutor: WorkflowNodeExecutor;
 
@@ -274,9 +294,7 @@ export class WorkflowRuntime {
             } catch (error) {
                 const runtimeError = error instanceof Error ? error : undefined;
                 const message = runtimeError?.message ?? `Inline plugin ${executionTarget.pluginId} failed`;
-                const childTrace = runtimeError instanceof WorkflowTraceError
-                    ? runtimeError.trace
-                    : undefined;
+                const childTrace = readWorkflowTrace(runtimeError);
                 this.appendTraceNode(trace, targetTraceContext, {
                     nodeId: executionTarget.pluginId,
                     nodeType: input.node.type,
@@ -289,7 +307,7 @@ export class WorkflowRuntime {
                 });
 
                 if (input.captureTrace === true) {
-                    throw new WorkflowTraceError(message, trace, { cause: error });
+                    throw createWorkflowTraceFailure(message, trace, error);
                 }
 
                 throw this.toError(runtimeError, message);
@@ -740,7 +758,7 @@ export class WorkflowRuntime {
                 });
 
                 if (workflowTraceContext) {
-                    throw new WorkflowTraceError(message, trace, { cause: error });
+                    throw createWorkflowTraceFailure(message, trace, error);
                 }
 
                 throw this.toError(runtimeError, message);
@@ -952,7 +970,7 @@ export class WorkflowRuntime {
             });
 
             if (params.traceContext) {
-                throw new WorkflowTraceError(message, params.trace, { cause: error });
+                throw createWorkflowTraceFailure(message, params.trace, error);
             }
 
             throw this.toError(runtimeError, message);

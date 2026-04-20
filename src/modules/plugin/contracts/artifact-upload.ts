@@ -1,3 +1,4 @@
+import type { JobIdentity } from '@/support/contracts/job-identity';
 import type { SceneArtifactUpsertBatchItem } from '@/modules/plugin/contracts/reverse-channel-plugin';
 
 export interface ArtifactStageInput {
@@ -15,12 +16,10 @@ export type ArtifactStageBufferInput = ArtifactStageInput & {
     buffer: Buffer;
 };
 
-export interface ArtifactUploadBatchContext {
+export interface ArtifactUploadBatchContext extends Omit<JobIdentity, 'jobId'> {
     analysisId: string;
     analysisJobId: string;
-    teamId: string;
     trajectoryId: string;
-    timestep?: number;
 }
 
 export interface ArtifactUploadStageInput extends ArtifactStageInput {
@@ -40,12 +39,9 @@ export type ArtifactUploadStageBufferInput = ArtifactUploadStageInput & {
 
 export type ArtifactUploadBatchUpload = Omit<ArtifactUploadStageFileInput, 'fileName'>;
 
-export interface ArtifactUploadBatchJobPayload {
-    jobId: string;
+export interface ArtifactUploadBatchJobPayload extends JobIdentity {
     analysisId: string;
-    teamId: string;
     trajectoryId: string;
-    timestep?: number;
     batchDirectory: string;
     uploads: ArtifactUploadBatchUpload[];
 }

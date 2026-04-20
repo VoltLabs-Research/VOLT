@@ -1,24 +1,23 @@
-import { logger } from '@/core/logger';
+import { Service } from '@/core/decorators/service';
 import type { TeamClusterDaemonQueueConcurrency } from '@/core/runtime/contracts/team-cluster-runtime';
 import type { AnalysisWorker } from '@/modules/analysis/application/workers/AnalysisWorker';
 import type { SSHImportWorker } from '@/modules/trajectory/application/import/SSHImportWorker';
 import type { TrajectoryGlbWorker } from '@/modules/trajectory/application/glb/TrajectoryGlbWorker';
 import type { TrajectoryRasterWorker } from '@/modules/trajectory/application/raster/TrajectoryRasterWorker';
 
-interface QueueConcurrencyCoordinatorDependencies {
-    analysisWorker: AnalysisWorker;
-    trajectoryRasterWorker: TrajectoryRasterWorker;
-    trajectoryGlbWorker: TrajectoryGlbWorker;
-    sshImportWorker: SSHImportWorker;
-}
-
+@Service('queueConcurrencyCoordinator')
 export class QueueConcurrencyCoordinator {
-    constructor(private readonly dependencies: QueueConcurrencyCoordinatorDependencies) {}
+    constructor(
+        private readonly analysisWorker: AnalysisWorker,
+        private readonly trajectoryRasterWorker: TrajectoryRasterWorker,
+        private readonly trajectoryGlbWorker: TrajectoryGlbWorker,
+        private readonly sshImportWorker: SSHImportWorker
+    ) {}
 
     apply(queueConcurrency: TeamClusterDaemonQueueConcurrency): void {
-        this.dependencies.analysisWorker.setConcurrency(queueConcurrency.analysis);
-        this.dependencies.trajectoryRasterWorker.setConcurrency(queueConcurrency.rasterizer);
-        this.dependencies.trajectoryGlbWorker.setConcurrency(queueConcurrency.glbPreprocessing);
-        this.dependencies.sshImportWorker.setConcurrency(queueConcurrency.sshImport);
+        this.analysisWorker.setConcurrency(queueConcurrency.analysis);
+        this.trajectoryRasterWorker.setConcurrency(queueConcurrency.rasterizer);
+        this.trajectoryGlbWorker.setConcurrency(queueConcurrency.glbPreprocessing);
+        this.sshImportWorker.setConcurrency(queueConcurrency.sshImport);
     }
 }

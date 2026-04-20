@@ -6,11 +6,7 @@
   "scripts": {
     "start": "node scripts/start.js",
     "dev": "tsx src/index.ts",
-    "build": "rm -rf dist && tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
-    "contracts:parity": "node ../tools/check-contract-parity.js",
-    "test:object-gateway": "npx tsx --test src/core/storage/infrastructure/gateway/ObjectGatewayServer.test.ts src/core/storage/infrastructure/object-store/TeamClusterDirectObjectStoreClient.test.ts src/core/storage/infrastructure/minio/MinioService.test.ts",
-    "perf:baseline": "node -e \"console.log(JSON.stringify({ package: 'cluster-daemon', status: 'placeholder', capture: { payload: ['TODO: record bytes for a representative daemon REST response with x-trace-id', 'TODO: record bytes for a representative socket/job payload with metadata.traceId'], latency: ['TODO: record daemon job dispatch duration ms', 'TODO: record representative socket emit/ack duration ms'] }, compatibility: { httpHeader: 'x-trace-id', socketTraceField: 'traceId', logFields: ['traceId', 'spanName', 'transport', 'durationMs', 'status'] } }, null, 2))\"",
-    "perf:smoke": "node -e \"console.log(JSON.stringify({ package: 'cluster-daemon', check: 'perf-smoke-placeholder', traceHeader: 'x-trace-id', socketTraceField: 'traceId', result: 'pass' }, null, 2))\""
+    "build": "rm -rf dist && tsc -p tsconfig.json && tsc-alias -p tsconfig.json"
   },
   "dependencies": {
     "@dagrejs/graphlib": "^4.0.1",
@@ -35,8 +31,6 @@
     "mongoose": "^8.21.0",
     "msgpackr": "^1.11.9",
     "pino": "^10.1.0",
-    "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1",
     "ssh2-sftp-client": "^12.1.1",
     "systeminformation": "^5.31.5",
     "tmp-promise": "^3.0.3",

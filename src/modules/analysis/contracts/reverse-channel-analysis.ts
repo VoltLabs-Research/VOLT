@@ -1,18 +1,14 @@
-import type {
-    AuthenticatedMessageContext,
-    AuthenticatedReverseChannelMessage
-} from '@/core/reverse-channel/contracts/authenticated';
-import { readTimestepDedupeSegment } from '@/core/reverse-channel/contracts/reverse-channel-dedupe';
+import {
+    readTimestepDedupeSegment,
+    type AuthenticatedMessageContext,
+    type AuthenticatedReverseChannelMessage
+} from '@/core/reverse-channel/contracts/reverse-channel-messaging';
 import type { ExecutionLogSegment } from '@/core/runtime/contracts/execution-log';
-import type { AnalysisStartedEventData } from '@/modules/analysis/domain/events/AnalysisStartedEvent';
-import type { BaseAnalysisEventData } from '@/modules/analysis/domain/events/base-analysis-event-data';
+import type {
+    BaseAnalysisEventData
+} from '@/modules/analysis/domain/events';
 
-type AnalysisJobIdentity = Pick<
-    BaseAnalysisEventData,
-    'analysisId' | 'jobId' | 'name' | 'teamId' | 'timestep'
->;
-
-type AnalysisJobCompletionPayload = AnalysisJobIdentity & { error?: string };
+type AnalysisJobCompletionPayload = BaseAnalysisEventData & { error?: string };
 
 export interface AnalysisLogChunkPayload {
     analysisId: string;
@@ -31,7 +27,7 @@ export interface DebugLogChunkPayload {
 
 export type AnalysisJobStatusMessage = AuthenticatedReverseChannelMessage<
     'analysis-job-status',
-    AnalysisStartedEventData & { status: 'running' }
+    BaseAnalysisEventData & { status: 'running' }
 >;
 
 export type AnalysisJobCompletionMessage = AuthenticatedReverseChannelMessage<
@@ -45,16 +41,16 @@ export type DebugLogChunkMessage = AuthenticatedReverseChannelMessage<'debug-log
 
 export const createAnalysisJobStatusMessage = (
     context: AuthenticatedMessageContext,
-    payload: AnalysisStartedEventData
+    payload: BaseAnalysisEventData
 ): AnalysisJobStatusMessage => ({
     type: 'analysis-job-status',
-    status: 'running',
     ...context,
-    ...payload
+    ...payload,
+    status: 'running'
 });
 
 export const createAnalysisJobStatusDedupeKey = (
-    payload: Pick<AnalysisStartedEventData, 'jobId' | 'timestep'>
+    payload: Pick<BaseAnalysisEventData, 'jobId' | 'timestep'>
 ): string => {
     return `analysis.job-status:${payload.jobId}:running:${readTimestepDedupeSegment(payload.timestep)}`;
 };
@@ -66,12 +62,12 @@ export const createAnalysisJobCompletionMessage = (
     type: 'analysis-job-completion',
     ...context,
     ...payload,
-    success: payload.error === undefined,
-    ...(payload.error !== undefined ? { error: payload.error } : {})
+    ...(payload.error !== undefined ? { error: payload.error } : {}),
+    success: payload.error === undefined
 });
 
 export const createAnalysisJobCompletionDedupeKey = (
-    payload: Pick<AnalysisJobIdentity, 'jobId' | 'timestep'> & { error?: string }
+    payload: Pick<BaseAnalysisEventData, 'jobId' | 'timestep'> & { error?: string }
 ): string => {
     return `analysis.job-completion:${payload.jobId}:${payload.error ? 'failed' : 'completed'}:${readTimestepDedupeSegment(payload.timestep)}`;
 };

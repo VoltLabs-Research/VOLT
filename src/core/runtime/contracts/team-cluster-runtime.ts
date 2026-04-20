@@ -49,7 +49,6 @@ export interface TeamClusterDaemonQueueConcurrencyApplyPayload {
 }
 
 export interface TeamClusterDaemonRuntimeConfig {
-    contractVersion: number;
     queueConcurrency: TeamClusterDaemonQueueConcurrency;
     queueScopeLimits: TeamClusterDaemonQueueScopeLimits;
     roleConfig: TeamClusterRuntimeRoleConfig;
@@ -92,5 +91,3 @@ export const createDefaultTeamClusterRuntimeRoleConfig = (
         lastAppliedAt: null
     };
 };
-
-export const TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION = 3;

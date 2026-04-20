@@ -1,59 +1,28 @@
+import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import { Client } from 'minio';
 import type { DaemonConfig } from '@/core/config';
-import type { Readable } from 'node:stream';
 import type { BucketItem } from 'minio';
+import type {
+    ClusterObjectListEntry,
+    ClusterObjectListResponse,
+    LocalClusterObjectListRequest,
+    LocalClusterObjectStat,
+    LocalClusterObjectStoreGateway,
+    ScopedClusterObjectPutInput,
+    ScopedClusterObjectPutStreamInput
+} from '@/core/storage/contracts/cluster-object-store';
 
-interface PutObjectInput {
-    bucket: string;
-    objectKey: string;
-    body: Buffer;
-    metadata?: Record<string, string>;
-}
-
-interface PutStreamInput {
-    bucket: string;
-    objectKey: string;
-    stream: Readable;
-    size: number;
-    metadata?: Record<string, string>;
-}
-
-interface ListObjectsPageInput {
-    bucket: string;
-    prefix: string;
-    cursor?: string;
-    limit: number;
-}
-
-interface ListObjectsPageEntry {
-    key: string;
-    contentLength?: number;
-    etag?: string;
-    lastModified?: Date;
-}
-
-interface ListObjectsPageResult {
-    keys: string[];
-    objects: ListObjectsPageEntry[];
-    nextCursor?: string;
-}
-
-interface ListedMinioObjectShape {
-    name: string;
-}
-
-type ListedMinioObject = Extract<BucketItem, ListedMinioObjectShape>;
-
-export class MinioService {
+@Service('minioService')
+export class MinioService implements LocalClusterObjectStoreGateway {
     private readonly client: Client;
     private static readonly SAFE_LIST_PAGE_SIZE = 200;
     readonly ensureBuckets: () => Promise<void>;
     readonly listBuckets: () => string[];
-    readonly getObjectStream: (bucket: string, objectKey: string) => Promise<Readable>;
-    readonly statObject: (bucket: string, objectKey: string) => ReturnType<Client['statObject']>;
-    readonly putObject: (input: PutObjectInput) => Promise<void>;
-    readonly putObjectStream: (input: PutStreamInput) => Promise<void>;
+    readonly getObjectStream: LocalClusterObjectStoreGateway['getObjectStream'];
+    readonly statObject: (bucket: string, objectKey: string) => Promise<LocalClusterObjectStat>;
+    readonly putObject: (input: ScopedClusterObjectPutInput) => Promise<void>;
+    readonly putObjectStream: (input: ScopedClusterObjectPutStreamInput) => Promise<void>;
     readonly removeObject: (bucket: string, objectKey: string) => Promise<void>;
 
     constructor(
@@ -132,10 +101,10 @@ export class MinioService {
         return keys;
     }
 
-    async listObjectsPage(input: ListObjectsPageInput): Promise<ListObjectsPageResult> {
+    async listObjectsPage(input: LocalClusterObjectListRequest): Promise<ClusterObjectListResponse> {
         const requestedLimit = input.limit;
         const maxKeys = requestedLimit + 1;
-        const collectedObjects: ListObjectsPageEntry[] = [];
+        const collectedObjects: ClusterObjectListEntry[] = [];
         let continuationToken = '';
         let startAfter = input.cursor;
         if (startAfter === undefined) {
@@ -185,9 +154,24 @@ export class MinioService {
 
     async deleteByPrefix(bucket: string, prefix: string): Promise<number> {
         const BATCH_SIZE = 1000;
+        const MAX_INFLIGHT_BATCHES = 4;
         let batch: string[] = [];
         let deletedCount = 0;
         let continuationToken = '';
+        const inFlight: Promise<void>[] = [];
+
+        const drainInFlight = async (minFree: number): Promise<void> => {
+            while (inFlight.length >= MAX_INFLIGHT_BATCHES - minFree + 1 && inFlight.length > 0) {
+                await inFlight.shift();
+            }
+        };
+
+        const submitBatch = async (keys: string[]): Promise<void> => {
+            deletedCount += keys.length;
+            const task = this.client.removeObjects(bucket, keys).then(() => undefined);
+            inFlight.push(task);
+            await drainInFlight(1);
+        };
 
         do {
             const result = await this.client.listObjectsV2Query(
@@ -208,9 +192,9 @@ export class MinioService {
                 batch.push(listedObject.key);
 
                 if (batch.length >= BATCH_SIZE) {
-                    deletedCount += batch.length;
-                    await this.client.removeObjects(bucket, batch);
+                    const toSubmit = batch;
                     batch = [];
+                    await submitBatch(toSubmit);
                 }
             }
 
@@ -220,14 +204,14 @@ export class MinioService {
         } while (continuationToken);
 
         if (batch.length > 0) {
-            deletedCount += batch.length;
-            await this.client.removeObjects(bucket, batch);
+            await submitBatch(batch);
         }
 
+        await Promise.all(inFlight);
         return deletedCount;
     }
 
-    private readListItem(item: BucketItem): ListObjectsPageEntry | null {
+    private readListItem(item: BucketItem): ClusterObjectListEntry | null {
         if (item.name === undefined) {
             return null;
         }

@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { dir as createTempDir } from 'tmp-promise';
 
+import { Service } from '@/core/decorators/service';
 import { DAEMON_PATHS } from '@/core/paths';
 import { ARTIFACT_UPLOAD_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import { QueueService } from '@/core/queues/application/QueueService';
@@ -73,11 +74,6 @@ class DefaultArtifactUploadBatch implements ArtifactUploadBatch {
 
         await this.queueService.enqueue(ARTIFACT_UPLOAD_QUEUE_NAME, payload, {
             preserveExistingJob: true,
-            attempts: 6,
-            backoff: {
-                type: 'exponential',
-                delay: 1_000
-            },
             removeOnComplete: 1_000,
             removeOnFail: false
         });
@@ -167,6 +163,7 @@ class DefaultArtifactUploadBatch implements ArtifactUploadBatch {
     }
 }
 
+@Service('artifactUploadQueue')
 export class ArtifactUploadQueue {
     constructor(private readonly queueService: QueueService) {}
 

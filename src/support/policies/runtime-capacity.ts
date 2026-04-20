@@ -20,14 +20,3 @@ export const getAvailableCpuCount = (): number => {
 
     return os.cpus().length;
 };
-
-export const getEffectiveMemoryLimitBytes = (): number => {
-    const hostMemory = os.totalmem();
-    const constrainedMemory = process.constrainedMemory();
-
-    if (constrainedMemory > 0) {
-        return Math.min(hostMemory, constrainedMemory);
-    }
-
-    return hostMemory;
-};

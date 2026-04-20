@@ -1,6 +1,10 @@
 import type { EntrypointType } from '@/core/runtime/contracts/http-runtime';
 import type { NestedPluginDefinition, PluginReferenceExecutionRequest, TrajectoryDumpDescriptor, TrajectoryFrame, WorkflowDefinition } from '@/modules/analysis/contracts/http-workflow';
 import type { WorkflowValueMap } from '@/modules/analysis/contracts/workflow.types';
+import type { DaemonTraceContext } from '@/core/observability/infrastructure/daemon-instrumentation';
+import type { JobIdentity } from '@/support/contracts/job-identity';
+
+export type WithTrace<T> = T & { traceContext?: DaemonTraceContext };
 
 export interface AnalysisValueMap {
     [key: string]: AnalysisValue;
@@ -83,11 +87,10 @@ export interface AnalysisEntrypointSnapshot {
     binaryRef?: ResolvedObjectRef;
 }
 
-export interface AnalysisExecutionIdentity {
+export interface AnalysisExecutionIdentity extends Omit<JobIdentity, 'jobId'> {
     pluginId: string;
     trajectoryId: string;
     analysisId: string;
-    teamId: string;
     computeClusterId?: string;
     storageClusterId?: string;
 }
@@ -137,10 +140,7 @@ export interface AnalysisJobMetadata {
     forEachIndex?: number;
 }
 
-export interface AnalysisQueueJobPayload<TMetadata = AnalysisJobMetadata> {
-    jobId: string;
-    teamId: string;
-    timestep?: number;
+export interface AnalysisQueueJobPayload<TMetadata = AnalysisJobMetadata> extends JobIdentity {
     sessionId?: string;
     status: string;
     queueType: string;
@@ -188,6 +188,9 @@ export interface AnalysisStartRequest extends AnalysisStartTransportRequest {
     nestedPlugins: NestedPluginDefinition[];
 }
 
+export type AnalysisStartRequestWithTrace = WithTrace<AnalysisStartRequest>;
+export type AnalysisStartTransportPayload = WithTrace<AnalysisStartTransportRequest>;
+
 export interface RetryJobsRequest {
     jobIds: string[];
 }
@@ -205,13 +208,8 @@ export interface JobsActionResponse {
     affectedJobs: number;
 }
 
-export interface QueuedJobNotification {
-    jobId: string;
-    teamId: string;
+export interface QueuedJobNotification extends JobIdentity {
     name?: string;
-    timestep?: number;
-    trajectoryId?: string;
-    analysisId?: string;
     queueType: string;
 }
 

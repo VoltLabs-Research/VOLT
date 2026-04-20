@@ -1,5 +1,6 @@
 import type { ContainerAction, CreateContainerRequest } from '@/contracts';
 import { Command, CommandGroup } from '@/core/commands/decorators';
+import { resolveComposeDefaultNetworkName } from '@/core/runtime/contracts/runtime-container';
 import type { DockerRuntime } from '@/core/runtime/infrastructure/DockerRuntime';
 
 interface ContainerListPayload {
@@ -33,7 +34,7 @@ export class ContainerCommands {
 
     @Command('create', { status: 201 })
     create(payload: CreateContainerRequest) {
-        const networkMode = payload.networkMode || this.resolveComposeNetworkName();
+        const networkMode = payload.networkMode || resolveComposeDefaultNetworkName(process.env.COMPOSE_PROJECT_NAME);
 
         return this.dockerRuntime.createContainer(
             networkMode && !payload.networkMode
@@ -84,14 +85,5 @@ export class ContainerCommands {
     async writeFile(payload: ContainerFileWritePayload) {
         await this.dockerRuntime.writeContainerFile(payload.containerId, payload.path, payload.content);
         return { written: true };
-    }
-
-    private resolveComposeNetworkName(): string | undefined {
-        const composeProjectName = process.env.COMPOSE_PROJECT_NAME?.trim();
-        if (!composeProjectName) {
-            return undefined;
-        }
-
-        return `${composeProjectName}_default`;
     }
 }

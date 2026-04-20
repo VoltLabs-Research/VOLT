@@ -1,5 +1,5 @@
 import { RemoteExplorerContentType, RemoteExplorerEntryType, RemoteExplorerNodeType, RemoteExplorerTarget } from '@/contracts';
-import type { ReverseChannelCommandResult } from '@/core/reverse-channel/contracts/command-handler';
+import type { ReverseChannelCommandResult } from '@/core/reverse-channel/contracts/reverse-channel-messaging';
 import { MAX_MONGO_DOCUMENTS, buildAttachmentContentDisposition, normalizeExplorerPath, toMongoDocument, toWebReadableStream } from '@/modules/container/infrastructure/remote-access/shared';
 import type { RemoteExplorerEntry, RemoteExplorerMongoDocument, RemoteExplorerNode } from '@/contracts';
 import BaseRemoteAccess from '@/modules/container/infrastructure/remote-access/BaseRemoteAccess';

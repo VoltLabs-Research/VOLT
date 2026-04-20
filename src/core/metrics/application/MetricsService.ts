@@ -26,9 +26,7 @@ export class MetricsService {
         checkAgeOnGet: true
     });
 
-    async collectSnapshot(
-        cloudMetrics: CloudMetricsSnapshot = { cloudLatencyMs: null, connectedToCloud: false }
-    ): Promise<MetricsSnapshot> {
+    async collectSnapshot(cloudMetrics: CloudMetricsSnapshot): Promise<MetricsSnapshot> {
         const [currentLoad, memoryData, disk, fsStats, disksIO, networkStats] = await Promise.all([
             si.currentLoad(),
             si.mem(),
@@ -42,17 +40,19 @@ export class MetricsService {
             totalBytes: memoryData.total,
             freeBytes: memoryData.free,
             usedBytes: memoryData.used,
-            usagePercent: memoryData.total > 0
-                ? Math.round((memoryData.used / memoryData.total) * 100)
-                : 0
+            usagePercent: memoryData.total > 0 ? Math.round((memoryData.used / memoryData.total) * 100) : 0
         };
+
+        const { rx_sec, wx_sec } = fsStats;
+        const { rIO_sec, wIO_sec } = disksIO;
         const diskOperations = {
-            readMegabytesPerSecond: Math.round((((fsStats.rx_sec ?? 0) / BYTES_PER_MB) * 100)) / 100,
-            writeMegabytesPerSecond: Math.round((((fsStats.wx_sec ?? 0) / BYTES_PER_MB) * 100)) / 100,
-            readIOPS: Math.round(disksIO.rIO_sec ?? 0),
-            writeIOPS: Math.round(disksIO.wIO_sec ?? 0),
-            totalIOPS: Math.round(disksIO.rIO_sec ?? 0) + Math.round(disksIO.wIO_sec ?? 0)
+            readMegabytesPerSecond: Math.round((((rx_sec ?? 0) / BYTES_PER_MB) * 100)) / 100,
+            writeMegabytesPerSecond: Math.round((((wx_sec ?? 0) / BYTES_PER_MB) * 100)) / 100,
+            readIOPS: Math.round(rIO_sec ?? 0),
+            writeIOPS: Math.round(wIO_sec ?? 0),
+            totalIOPS: Math.round(rIO_sec ?? 0) + Math.round(wIO_sec ?? 0)
         };
+
         const snapshot: MetricsSnapshot = {
             timestamp: new Date().toISOString(),
             hostname: os.hostname(),
@@ -73,12 +73,11 @@ export class MetricsService {
 
     private async collectDiskUsage(): Promise<DiskUsageSnapshot> {
         const cachedDiskUsage = this.cachedDiskUsage.get(DISK_USAGE_CACHE_KEY);
-        if (cachedDiskUsage) {
-            return cachedDiskUsage;
-        }
+        if (cachedDiskUsage) return cachedDiskUsage;
 
         const fileSystems = await si.fsSize();
         const rootFileSystem = fileSystems.find((fileSystem) => fileSystem.mount === '/') ?? fileSystems[0];
+
         const snapshot: DiskUsageSnapshot = rootFileSystem
             ? {
                 totalBytes: rootFileSystem.size,
@@ -86,12 +85,7 @@ export class MetricsService {
                 usedBytes: rootFileSystem.used,
                 usagePercent: Math.round(rootFileSystem.use)
             }
-            : {
-                totalBytes: 0,
-                freeBytes: 0,
-                usedBytes: 0,
-                usagePercent: 0
-            };
+            : { totalBytes: 0, freeBytes: 0, usedBytes: 0, usagePercent: 0 };
 
         this.cachedDiskUsage.set(DISK_USAGE_CACHE_KEY, snapshot);
 

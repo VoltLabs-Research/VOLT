@@ -1,16 +1,10 @@
 import type { PaginatedResult } from '@/support/contracts/pagination';
 import type { PluginListingRowDocument } from '@/modules/plugin/domain/models/plugin-listing-row-model';
 import type { PluginSubListingRowDocument } from '@/modules/plugin/domain/models/plugin-sub-listing-row-model';
+import type { JsonObject, JsonValue } from '@/support/types/json';
 
-interface PluginMongoObject {
-    [key: string]: PluginMongoValue;
-}
-
-export type PluginMongoValue = null | boolean | number | string | PluginMongoValue[] | PluginMongoObject;
-
-export interface PluginMongoRow {
-    [key: string]: PluginMongoValue;
-}
+export type PluginMongoValue = JsonValue;
+export type PluginMongoRow = JsonObject;
 
 export interface PluginListingFilter {
     pluginId?: string;
@@ -57,12 +51,20 @@ export interface ListingPaginatedResult extends PaginatedResult<PluginListingRow
     subListingNames: string[];
 }
 
-export interface PluginMongoRowsExportInput {
+export type PluginDocumentType = 'listing' | 'sub-listing';
+
+interface PluginMongoScopedInput {
+    documentType: PluginDocumentType;
+}
+
+interface PluginMongoAnalysisScopedInput extends PluginMongoScopedInput {
     analysisIds: string[];
-    documentType: 'listing' | 'sub-listing';
+}
+
+export type PluginMongoRowsExportInput = PluginMongoAnalysisScopedInput & {
     skip?: number;
     limit?: number;
-}
+};
 
 export interface PluginMongoRowsExportResult {
     rows: PluginMongoRow[];
@@ -71,15 +73,11 @@ export interface PluginMongoRowsExportResult {
     nextSkip: number;
 }
 
-export interface PluginMongoRowsImportInput {
+export type PluginMongoRowsImportInput = PluginMongoScopedInput & {
     rows: PluginMongoRow[];
-    documentType: 'listing' | 'sub-listing';
-}
+};
 
-export interface PluginMongoRowsPurgeInput {
-    analysisIds: string[];
-    documentType: 'listing' | 'sub-listing';
-}
+export type PluginMongoRowsPurgeInput = PluginMongoAnalysisScopedInput;
 
 export interface PluginListingRepository {
     listPluginListings(filter: PluginListingFilter): Promise<ListingPaginatedResult>;

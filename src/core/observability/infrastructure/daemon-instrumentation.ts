@@ -1,4 +1,5 @@
 import { logger } from '@/core/logger';
+import { errorMessage } from '@/support/error/errorMessage';
 
 interface TimeoutExecutionOptions {
     onTimeout?: () => void | Promise<void>;
@@ -95,28 +96,15 @@ export const withTimeout = async <T>(
     const timeoutPromise = new Promise<never>((_, reject) => {
         timeoutId = setTimeout(() => {
             logger.warn('Operation timed out');
-            const onTimeout = options.onTimeout;
-            const cleanup = onTimeout ? onTimeout() : undefined;
-
-            Promise.resolve(cleanup)
-                .catch((error) => {
-                    logger.warn(`Timeout cleanup failed for operation=${options.operation}: ${error instanceof Error ? error.message : String(error)}`);
-                })
-                .finally(() => {
-                    reject(new Error(`${options.operation} timed out after ${options.timeoutMs}ms`));
-                });
+            Promise.resolve(options.onTimeout?.())
+                .catch((err) => logger.warn(`Timeout cleanup failed for operation=${options.operation}: ${errorMessage(err)}`))
+                .finally(() => reject(new Error(`${options.operation} timed out after ${options.timeoutMs}ms`)));
         }, options.timeoutMs);
-
-        if (timeoutId.unref) {
-            timeoutId.unref();
-        }
     });
 
     try {
         return await Promise.race([execute(), timeoutPromise]);
     } finally {
-        if (timeoutId) {
-            clearTimeout(timeoutId);
-        }
+        if (timeoutId) clearTimeout(timeoutId);
     }
 };

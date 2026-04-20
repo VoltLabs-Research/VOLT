@@ -1,9 +1,11 @@
 import type {
     AuthenticatedMessageContext,
     AuthenticatedReverseChannelMessage
-} from '@/core/reverse-channel/contracts/authenticated';
-import type { ArtifactUploadFailedEventData } from '@/modules/plugin/domain/events/artifact-upload/ArtifactUploadFailedEvent';
-import type { BaseArtifactUploadEventData } from '@/modules/plugin/domain/events/shared/base-artifact-upload-event-data';
+} from '@/core/reverse-channel/contracts/reverse-channel-messaging';
+import type {
+    ArtifactUploadFailedEventData,
+    BaseArtifactUploadEventData
+} from '@/modules/plugin/domain/events';
 
 type ArtifactUploadJobStatus =
     | 'queued'
@@ -50,10 +52,10 @@ export const createArtifactUploadJobStatusMessage = (
     status: ArtifactUploadJobStatus
 ): ArtifactUploadJobStatusMessage => ({
     type: 'artifact-upload-job-status',
-    status,
     ...context,
     ...payload,
-    ...('error' in payload ? { error: payload.error } : {})
+    ...('error' in payload ? { error: payload.error } : {}),
+    status
 });
 
 export const createArtifactUploadJobStatusDedupeKey = (

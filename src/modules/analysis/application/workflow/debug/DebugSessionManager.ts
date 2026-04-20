@@ -1,7 +1,11 @@
 import { TTLCache } from '@isaacs/ttlcache';
+import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
-import type { BinaryExecutorService, ProcessExecutionLogSink } from '@/core/runtime/infrastructure/binary-executor-service';
-import type { ExecutionLogSegmentMetadata } from '@/core/runtime/contracts/execution-log';
+import type {
+    ExecutionLogSegmentMetadata,
+    ProcessExecutionLogSink
+} from '@/core/runtime/contracts/execution-log';
+import type { BinaryExecutorService } from '@/core/runtime/infrastructure/binary-executor-service';
 import {
     createDebugExecutionLogSink
 } from '@/core/runtime/infrastructure/execution-log-streaming';
@@ -15,10 +19,11 @@ import { WorkflowNodeExecutor } from '@/modules/analysis/application/workflow/Wo
 import { WorkflowSession, type WorkflowOutputsSnapshot } from '@/modules/analysis/application/workflow/WorkflowSession';
 import { createDebugArtifactBatch } from '@/modules/analysis/application/workflow/debug/debug-artifact-batch';
 import type { DebugEnvironmentState } from '@/modules/analysis/application/workflow/debug/DebugEnvironment';
-import { WorkflowRuntime, WorkflowTraceError } from '@/modules/analysis/application/workflow/WorkflowRuntime';
+import { WorkflowRuntime } from '@/modules/analysis/application/workflow/WorkflowRuntime';
 import { WorkflowScheduler, type WorkflowExecutionStatus } from '@/modules/analysis/application/workflow/WorkflowScheduler';
-import type { ReverseChannelCommandPayloadView } from '@/core/reverse-channel/contracts/command-handler';
+import type { ReverseChannelCommandPayloadView } from '@/core/reverse-channel/contracts/reverse-channel-messaging';
 import { WorkflowGraph, WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
+import ApplicationError from '@/app/coordination/ApplicationError';
 import type {
     WorkflowExecutionContext,
     WorkflowNode,
@@ -31,7 +36,7 @@ import fs from 'node:fs/promises';
 
 interface DebugExecutionLogReporter {
     reportDebugLogChunk(
-        input: import('@/modules/analysis/application/events/DebugLogChunkReportedEvent').DebugLogChunkReportedEventData
+        input: import('@/modules/analysis/contracts/reverse-channel-analysis').DebugLogChunkPayload
     ): Promise<void>;
 }
 
@@ -117,6 +122,7 @@ const SESSION_IDLE_TTL_MS = 5 * 60 * 1000;
 
 let sessionCounter = 0;
 
+@Service('debugSessionManager')
 export class DebugSessionManager {
     private readonly sessions = new TTLCache<string, DebugSession>({
         ttl: SESSION_IDLE_TTL_MS,
@@ -283,7 +289,13 @@ export class DebugSessionManager {
                 status: 'error',
                 error: message,
                 stack,
-                nestedTrace: error instanceof WorkflowTraceError ? error.trace : undefined,
+                nestedTrace: error instanceof ApplicationError
+                    && error.code === 'Workflow::Trace'
+                    && typeof error.details === 'object'
+                    && error.details !== null
+                    && Array.isArray((error.details as { trace?: unknown }).trace)
+                    ? (error.details as { trace: DebugNodeResult['nestedTrace'] }).trace
+                    : undefined,
                 durationMs,
                 contextSnapshot: WorkflowSession.snapshotOutputs(session.context.outputs)
             };

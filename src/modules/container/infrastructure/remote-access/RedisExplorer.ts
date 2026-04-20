@@ -1,4 +1,5 @@
 import type { DaemonConfig } from '@/core/config';
+import { Service } from '@/core/decorators/service';
 import Redis, { type RedisOptions } from 'ioredis';
 
 interface RedisExplorerDatabaseSummary {
@@ -6,6 +7,7 @@ interface RedisExplorerDatabaseSummary {
     keyCount: number;
 };
 
+@Service('redisExplorer')
 export class RedisExplorer {
     private readonly client: Redis;
     readonly connectionOptions: RedisOptions;

@@ -1,5 +1,5 @@
-import { logger } from '@/core/logger';
-import { DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS, TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION, createDefaultTeamClusterRuntimeRoleConfig } from '@/core/runtime/contracts/team-cluster-runtime';
+import { Service } from '@/core/decorators/service';
+import { DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS, createDefaultTeamClusterRuntimeRoleConfig } from '@/core/runtime/contracts/team-cluster-runtime';
 import type {
     TeamClusterDaemonQueueConcurrency,
     TeamClusterDaemonQueueScopeLimits,
@@ -15,14 +15,6 @@ import type { TrajectoryGlbWorker } from '@/modules/trajectory/application/glb/T
 import type { TrajectoryRasterWorker } from '@/modules/trajectory/application/raster/TrajectoryRasterWorker';
 import type { QueueConcurrencyCoordinator } from './QueueConcurrencyCoordinator';
 
-interface RuntimeRoleCoordinatorDependencies {
-    analysisWorker: AnalysisWorker;
-    artifactUploadWorker: ArtifactUploadWorker;
-    trajectoryRasterWorker: TrajectoryRasterWorker;
-    trajectoryGlbWorker: TrajectoryGlbWorker;
-    sshImportWorker: SSHImportWorker;
-}
-
 interface QueueSettingsSnapshot {
     queueConcurrency: TeamClusterDaemonQueueConcurrency;
     queueScopeLimits: TeamClusterDaemonQueueScopeLimits;
@@ -35,41 +27,40 @@ const DEFAULT_QUEUE_CONCURRENCY: TeamClusterDaemonQueueConcurrency = {
     sshImport: 2
 };
 
-const describeQueueConcurrency = (queueConcurrency: TeamClusterDaemonQueueConcurrency): string => {
-    return `analysis=${queueConcurrency.analysis}, rasterizer=${queueConcurrency.rasterizer}, glbPreprocessing=${queueConcurrency.glbPreprocessing}, sshImport=${queueConcurrency.sshImport}`;
-};
-
-const describeQueueScopeLimits = (queueScopeLimits: TeamClusterDaemonQueueScopeLimits): string => {
-    return `analysisProcessing(perTrajectory=${queueScopeLimits.analysisProcessing.maxRunningPerTrajectory}, perTeam=${queueScopeLimits.analysisProcessing.maxRunningPerTeam}), artifactUpload(perTrajectory=${queueScopeLimits.artifactUpload.maxRunningPerTrajectory}, perTeam=${queueScopeLimits.artifactUpload.maxRunningPerTeam}), trajectoryGlbConversion(perTrajectory=${queueScopeLimits.trajectoryGlbConversion.maxRunningPerTrajectory}, perTeam=${queueScopeLimits.trajectoryGlbConversion.maxRunningPerTeam}), cloudUpload(perTrajectory=${queueScopeLimits.cloudUpload.maxRunningPerTrajectory}, perTeam=${queueScopeLimits.cloudUpload.maxRunningPerTeam}), trajectoryCompression(perTrajectory=${queueScopeLimits.trajectoryCompression.maxRunningPerTrajectory}, perTeam=${queueScopeLimits.trajectoryCompression.maxRunningPerTeam})`;
-};
-
-const describeRoleConfig = (roleConfig: TeamClusterRuntimeRoleConfig): string => {
-    return `desiredRole=${roleConfig.desiredRole}, effectiveRole=${roleConfig.effectiveRole}, runtimeVersion=${roleConfig.runtimeVersion}, drainingCompute=${roleConfig.draining.compute}, drainingStorage=${roleConfig.draining.storage}, lastAppliedAt=${roleConfig.lastAppliedAt ?? 'null'}`;
-};
-
+@Service('runtimeRoleCoordinator')
 export class RuntimeRoleCoordinator {
     private computeWorkersRunning = false;
     private snapshot: TeamClusterDaemonRuntimeConfig = {
-        contractVersion: TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION,
         queueConcurrency: structuredClone(DEFAULT_QUEUE_CONCURRENCY),
         queueScopeLimits: structuredClone(DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS),
         roleConfig: createDefaultTeamClusterRuntimeRoleConfig()
     };
+    private roleOperationQueue: Promise<unknown> = Promise.resolve();
 
     constructor(
         private readonly queueConcurrencyCoordinator: QueueConcurrencyCoordinator,
         private readonly queueScopeLimitsRegistry: QueueScopeLimitsRegistry,
-        private readonly dependencies: RuntimeRoleCoordinatorDependencies
+        private readonly analysisWorker: AnalysisWorker,
+        private readonly artifactUploadWorker: ArtifactUploadWorker,
+        private readonly trajectoryRasterWorker: TrajectoryRasterWorker,
+        private readonly trajectoryGlbWorker: TrajectoryGlbWorker,
+        private readonly sshImportWorker: SSHImportWorker
     ) {}
 
     async initialize(runtimeConfig: TeamClusterDaemonRuntimeConfig): Promise<TeamClusterDaemonRuntimeConfig> {
-        this.snapshot = structuredClone(runtimeConfig);
+        return this.runRoleOperation(async () => {
+            this.snapshot = {
+                queueConcurrency: structuredClone(runtimeConfig.queueConcurrency),
+                queueScopeLimits: structuredClone(runtimeConfig.queueScopeLimits),
+                roleConfig: structuredClone(runtimeConfig.roleConfig)
+            };
 
-        this.queueScopeLimitsRegistry.apply(this.snapshot.queueScopeLimits);
+            this.queueScopeLimitsRegistry.apply(this.snapshot.queueScopeLimits);
 
-        await this.applyRoleConfig(this.snapshot.roleConfig);
+            await this.applyRoleConfigInternal(this.snapshot.roleConfig);
 
-        return this.getSnapshot();
+            return this.getSnapshot();
+        });
     }
 
     getSnapshot(): TeamClusterDaemonRuntimeConfig {
@@ -94,51 +85,42 @@ export class RuntimeRoleCoordinator {
         };
     }
 
-    async applyRoleConfig(roleConfig: TeamClusterRuntimeRoleConfig): Promise<TeamClusterDaemonRoleApplyResult> {
+    applyRoleConfig(roleConfig: TeamClusterRuntimeRoleConfig): Promise<TeamClusterDaemonRoleApplyResult> {
+        return this.runRoleOperation(() => this.applyRoleConfigInternal(roleConfig));
+    }
+
+    private async applyRoleConfigInternal(roleConfig: TeamClusterRuntimeRoleConfig): Promise<TeamClusterDaemonRoleApplyResult> {
         const nextRoleConfig = structuredClone(roleConfig);
         const previousEffectiveRole = this.snapshot.roleConfig.effectiveRole;
+
         const isComputeDrain = previousEffectiveRole !== nextRoleConfig.desiredRole
             && this.roleRunsComputeWorkers(previousEffectiveRole)
             && !this.roleRunsComputeWorkers(nextRoleConfig.desiredRole);
-        const isStorageDrain = previousEffectiveRole !== nextRoleConfig.desiredRole
-            && this.roleOwnsStorage(previousEffectiveRole)
-            && !this.roleOwnsStorage(nextRoleConfig.desiredRole);
 
-        this.snapshot.roleConfig = {
-            ...structuredClone(this.snapshot.roleConfig),
-            desiredRole: nextRoleConfig.desiredRole,
-            runtimeVersion: nextRoleConfig.runtimeVersion,
-            draining: {
-                compute: isComputeDrain,
-                storage: isStorageDrain
-            }
-        };
-
-        if (isComputeDrain) {
-            await this.stopComputeWorkers();
-        }
+        if (isComputeDrain) await this.stopComputeWorkers();
 
         if (this.roleRunsComputeWorkers(nextRoleConfig.desiredRole)) {
             this.startComputeWorkers();
         }
 
         this.snapshot.roleConfig = {
+            ...structuredClone(this.snapshot.roleConfig),
             desiredRole: nextRoleConfig.desiredRole,
-            effectiveRole: nextRoleConfig.desiredRole,
             runtimeVersion: nextRoleConfig.runtimeVersion,
-            draining: {
-                compute: false,
-                storage: false
-            },
+            draining: { compute: false, storage: false },
             lastAppliedAt: new Date().toISOString()
         };
 
-        const snapshot = this.getSnapshot();
-
         return {
             accepted: true,
-            roleConfig: snapshot.roleConfig
+            roleConfig: this.getSnapshot().roleConfig
         };
+    }
+
+    private runRoleOperation<R>(task: () => Promise<R>): Promise<R> {
+        const next = this.roleOperationQueue.catch(() => undefined).then(task);
+        this.roleOperationQueue = next.catch(() => undefined);
+        return next;
     }
 
     private startComputeWorkers(): void {
@@ -147,32 +129,34 @@ export class RuntimeRoleCoordinator {
             return;
         }
 
-        this.dependencies.analysisWorker.start(this.snapshot.queueConcurrency.analysis);
-        this.dependencies.artifactUploadWorker.start();
-        this.dependencies.trajectoryRasterWorker.start(this.snapshot.queueConcurrency.rasterizer);
-        this.dependencies.trajectoryGlbWorker.start(this.snapshot.queueConcurrency.glbPreprocessing);
-        this.dependencies.sshImportWorker.start(this.snapshot.queueConcurrency.sshImport);
+        const { analysis, rasterizer, glbPreprocessing, sshImport } = this.snapshot.queueConcurrency;
+
+        this.analysisWorker.start(analysis);
+        this.artifactUploadWorker.start();
+        this.trajectoryRasterWorker.start(rasterizer);
+        this.trajectoryGlbWorker.start(glbPreprocessing);
+        this.sshImportWorker.start(sshImport);
+
         this.computeWorkersRunning = true;
     }
 
-    private async stopComputeWorkers(): Promise<void> {
+    async stopComputeWorkers(): Promise<void> {
         if (!this.computeWorkersRunning) {
             return;
         }
 
-        await this.dependencies.analysisWorker.stop();
-        await this.dependencies.artifactUploadWorker.stop();
-        await this.dependencies.trajectoryRasterWorker.stop();
-        await this.dependencies.trajectoryGlbWorker.stop();
-        await this.dependencies.sshImportWorker.stop();
+        await Promise.all([
+            this.analysisWorker.stop(),
+            this.artifactUploadWorker.stop(),
+            this.trajectoryRasterWorker.stop(),
+            this.trajectoryGlbWorker.stop(),
+            this.sshImportWorker.stop()
+        ]);
+
         this.computeWorkersRunning = false;
     }
 
     private roleRunsComputeWorkers(role: TeamClusterRuntimeRoleConfig['effectiveRole']): boolean {
         return role !== 'storage-server';
-    }
-
-    private roleOwnsStorage(role: TeamClusterRuntimeRoleConfig['effectiveRole']): boolean {
-        return role !== 'compute-node';
     }
 }

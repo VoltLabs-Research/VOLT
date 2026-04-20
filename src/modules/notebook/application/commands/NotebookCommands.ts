@@ -25,12 +25,7 @@ export class NotebookCommands {
 
     @Command('session.create', { status: 201 })
     createSession(payload: CreateNotebookSessionRequest) {
-        return this.jupyterRuntime.ensureSession({
-            notebook: payload.notebook,
-            requestedBy: payload.requestedBy,
-            publicBasePath: payload.publicBasePath,
-            containerResources: payload.containerResources
-        });
+        return this.jupyterRuntime.ensureSession(payload);
     }
 
     private async getReadinessGatedRuntimeTarget(notebookId: string) {

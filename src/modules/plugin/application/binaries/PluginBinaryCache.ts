@@ -1,3 +1,4 @@
+import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import { DAEMON_PATHS } from '@/core/paths';
 import { createReadStream, createWriteStream } from 'node:fs';
@@ -225,6 +226,7 @@ const resolveExtractedPackagedEntrypoint = async (
     );
 };
 
+@Service('pluginBinaryCache')
 export class PluginBinaryCache {
     private readonly binaryCachePromises = new Map<string, Promise<string>>();
     private readonly pythonRuntimePromises = new Map<string, Promise<ExecutionRuntime>>();
@@ -302,33 +304,41 @@ export class PluginBinaryCache {
 
         await fs.mkdir(DAEMON_PATHS.pluginBinCache, { recursive: true });
 
+        const tempPath = `${localPath}.partial-${process.pid}-${Date.now()}`;
         const response = await this.objectStore.getStream(source.ownerClusterId, PLUGINS_BUCKET, binaryObjectPath, {
             skipMetadata: true
         });
-        await pipeline(response.stream, createWriteStream(localPath));
-        if (source.expectedHash) {
-            const computedHash = await computeFileHash(localPath);
-            if (computedHash !== source.expectedHash) {
-                logger.error(
-                    {
-                        action: 'artifact.resolve.hash-mismatch',
-                        binaryObjectPath,
-                        computedHash,
-                        expectedHash: source.expectedHash
-                    },
-                    'Downloaded plugin binary hash does not match expected hash'
-                );
-                await fs.rm(localPath, { force: true }).catch(() => {});
-                throw new Error(`Downloaded plugin binary hash mismatch for ${binaryObjectPath}`);
-            }
-        }
 
-        if (source.expectedHash) {
-            await fs.writeFile(`${localPath}${HASH_MARKER_FILENAME_SUFFIX}`, source.expectedHash, 'utf-8');
-        } else {
-            await fs.rm(`${localPath}${HASH_MARKER_FILENAME_SUFFIX}`, { force: true }).catch(() => {});
+        try {
+            await pipeline(response.stream, createWriteStream(tempPath));
+            if (source.expectedHash) {
+                const computedHash = await computeFileHash(tempPath);
+                if (computedHash !== source.expectedHash) {
+                    logger.error(
+                        {
+                            action: 'artifact.resolve.hash-mismatch',
+                            binaryObjectPath,
+                            computedHash,
+                            expectedHash: source.expectedHash
+                        },
+                        'Downloaded plugin binary hash does not match expected hash'
+                    );
+                    throw new Error(`Downloaded plugin binary hash mismatch for ${binaryObjectPath}`);
+                }
+            }
+
+            await fs.chmod(tempPath, 0o755);
+            await fs.rename(tempPath, localPath);
+
+            if (source.expectedHash) {
+                await fs.writeFile(`${localPath}${HASH_MARKER_FILENAME_SUFFIX}`, source.expectedHash, 'utf-8');
+            } else {
+                await fs.rm(`${localPath}${HASH_MARKER_FILENAME_SUFFIX}`, { force: true }).catch(() => {});
+            }
+        } catch (error) {
+            await fs.rm(tempPath, { force: true }).catch(() => {});
+            throw error;
         }
-        await fs.chmod(localPath, 0o755);
 
         logger.info(`Binary cached: ${binaryObjectPath} -> ${localPath}`);
         return localPath;

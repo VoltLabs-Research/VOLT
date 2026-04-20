@@ -1,4 +1,6 @@
 import type { DaemonConfig } from '@/core/config';
+import { Service } from '@/core/decorators/service';
+import type { RedisConnectionOptions } from '@/core/storage/contracts/redis-connection';
 import Redis from 'ioredis';
 
 interface TeamJobRecord {
@@ -10,27 +12,9 @@ interface TeamJobRecord {
     updatedAt?: string;
 }
 
-interface RedisConnectionOptions {
-    host: string;
-    port: number;
-    username?: string;
-    password?: string;
-};
-
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const STATUS_TTL_SECONDS = 86_400;
-const RENEW_EXPIRING_KEY_SCRIPT = `
-if redis.call('GET', KEYS[1]) == ARGV[1] then
-    return redis.call('PEXPIRE', KEYS[1], ARGV[2])
-end
-return 0
-`;
-const DELETE_KEY_IF_VALUE_MATCHES_SCRIPT = `
-if redis.call('GET', KEYS[1]) == ARGV[1] then
-    return redis.call('DEL', KEYS[1])
-end
-return 0
-`;
+
 const ACQUIRE_EXPIRING_SLOT_SCRIPT = `
 redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', ARGV[1])
 local current = redis.call('ZCARD', KEYS[1])
@@ -41,6 +25,7 @@ if current < tonumber(ARGV[3]) then
 end
 return 0
 `;
+
 const RENEW_EXPIRING_SLOT_SCRIPT = `
 redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', ARGV[1])
 local score = redis.call('ZSCORE', KEYS[1], ARGV[3])
@@ -51,6 +36,7 @@ if score then
 end
 return 0
 `;
+
 const RELEASE_EXPIRING_SLOT_SCRIPT = `
 local removed = redis.call('ZREM', KEYS[1], ARGV[1])
 local remaining = redis.call('ZCARD', KEYS[1])
@@ -62,6 +48,7 @@ end
 return removed
 `;
 
+@Service('redisConnection')
 export class RedisConnection {
     private readonly client: Redis;
     private readonly connectionOptions: RedisConnectionOptions;
@@ -75,27 +62,26 @@ export class RedisConnection {
             username: config.redis.username,
             password: config.redis.password
         };
+
         this.client = new Redis({
-            ...this.getConnectionOptions(),
+            ...this.connectionOptions,
             maxRetriesPerRequest: null,
             lazyConnect: true
         });
     }
 
-    readonly getConnectionOptions = (): RedisConnectionOptions => this.connectionOptions;
-
     async connect(): Promise<void> {
-        if (this.client.status === 'ready') {
-            return;
-        }
+        if (this.client.status === 'ready') return;
 
         await this.client.connect();
     }
 
+    getConnectionOptions(): RedisConnectionOptions {
+        return this.connectionOptions;
+    }
+
     readonly disconnect = async (): Promise<void> => {
-        if (this.client.status === 'end') {
-            return;
-        }
+        if (this.client.status === 'end') return;
 
         await this.client.quit();
     };
@@ -167,10 +153,20 @@ export class RedisConnection {
         return this.client.del(key);
     };
 
+    readonly getValue = async (key: string): Promise<string | null> => {
+        await this.connect();
+
+        return this.client.get(key);
+    };
+
+    readonly setValueWithTtl = async (key: string, value: string, ttlSeconds: number): Promise<void> => {
+        await this.connect();
+
+        await this.client.setex(key, ttlSeconds, value);
+    };
+
     async projectJobStatuses(payloads: TeamJobRecord[]): Promise<void> {
-        if (payloads.length === 0) {
-            return;
-        }
+        if (payloads.length === 0) return;
 
         await this.connect();
 
@@ -193,9 +189,7 @@ export class RedisConnection {
     async getTeamJobs(teamId: string): Promise<TeamJobRecord[]> {
         const setKey = `team:${teamId}:jobs`;
         const jobIds = await this.client.smembers(setKey);
-        if (jobIds.length === 0) {
-            return [];
-        }
+        if (jobIds.length === 0) return [];
 
         const records = await this.client.mget(jobIds.map((jobId) => `${JOB_STATUS_KEY_PREFIX}${jobId}`));
         const jobs: TeamJobRecord[] = [];
@@ -223,9 +217,7 @@ export class RedisConnection {
     }
 
     async removeJobs(teamId: string, jobIds: string[]): Promise<number> {
-        if (jobIds.length === 0) {
-            return 0;
-        }
+        if (jobIds.length === 0) return 0;
 
         const distinctJobIds = Array.from(new Set(jobIds));
         const pipeline = this.client.pipeline();
@@ -233,16 +225,14 @@ export class RedisConnection {
         for (const jobId of distinctJobIds) {
             pipeline.del(`${JOB_STATUS_KEY_PREFIX}${jobId}`);
         }
+
         pipeline.srem(`team:${teamId}:jobs`, ...distinctJobIds);
 
         const responses = await pipeline.exec() as [Error | null, number][];
-
         let deletedKeys = 0;
 
         for (const [index, [error, result]] of responses.entries()) {
-            if (error) {
-                throw error;
-            }
+            if (error) throw error;
 
             if (index < distinctJobIds.length) {
                 deletedKeys += result;
@@ -251,5 +241,4 @@ export class RedisConnection {
 
         return deletedKeys;
     }
-
 };

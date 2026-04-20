@@ -1,4 +1,4 @@
-import type { AnalysisJobExecutionData, AnalysisQueueJobPayload } from '@/contracts';
+import type { AnalysisQueueJobPayload } from '@/contracts';
 import { Command, CommandGroup } from '@/core/commands/decorators';
 import type { QueueService } from '@/core/queues/application/QueueService';
 import { ANALYSIS_QUEUE_NAME, SSH_IMPORT_QUEUE_NAME, TRAJECTORY_GLB_QUEUE_NAME, TRAJECTORY_RASTER_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
@@ -41,16 +41,12 @@ export class QueueCommands {
         const normalizedPayload = {
             ...payload,
             metadata: (payload.metadata as Record<string, unknown> | undefined) ?? {}
-        } as AnalysisQueueJobPayload;
+        } as unknown as AnalysisQueueJobPayload;
 
         if (typeof executionDataCompressed === 'string' && !normalizedPayload.executionData) {
-            normalizedPayload.executionData = this.readCompressedAnalysisExecutionData(executionDataCompressed);
+            normalizedPayload.executionData = inflateAnalysisExecutionData(executionDataCompressed);
         }
 
-        return normalizedPayload;
-    }
-
-    private readCompressedAnalysisExecutionData(value: unknown): AnalysisJobExecutionData {
-        return inflateAnalysisExecutionData(value as string);
+        return normalizedPayload as unknown as Record<string, unknown>;
     }
 }

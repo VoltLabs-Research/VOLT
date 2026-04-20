@@ -1,18 +1,17 @@
-type DaemonRuntimeRole = 'cluster' | 'storage-server' | 'compute-node';
-type DaemonObjectBucketName = 'volt-dumps' | 'volt-models' | 'volt-plugins' | 'volt-rasterizer';
+import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
+import type { RedisConnectionOptions } from '@/core/storage/contracts/redis-connection';
+import type {
+    TeamClusterDaemonQueueConcurrency,
+    TeamClusterDaemonQueueScopeLimits,
+    TeamClusterDaemonRuntimeConfig,
+    TeamClusterRuntimeRoleConfig
+} from '@/core/runtime/contracts/team-cluster-runtime';
 
 interface MinioConfig {
     endpoint: string;
     accessKey: string;
     secretKey: string;
     useSSL: boolean;
-}
-
-interface RedisConfig {
-    host: string;
-    port: number;
-    username?: string;
-    password?: string;
 }
 
 interface JupyterHostPortRange {
@@ -35,51 +34,12 @@ interface JupyterConfig {
     publicBasePath: string;
 }
 
-interface DaemonRuntimeRoleDrainState {
-    compute: boolean;
-    storage: boolean;
-}
-
-interface DaemonQueueScopeLimit {
-    maxRunningPerTrajectory: number;
-    maxRunningPerTeam: number;
-}
-
-interface DaemonQueueScopeLimits {
-    analysisProcessing: DaemonQueueScopeLimit;
-    artifactUpload: DaemonQueueScopeLimit;
-    cloudUpload: DaemonQueueScopeLimit;
-    trajectoryCompression: DaemonQueueScopeLimit;
-    trajectoryGlbConversion: DaemonQueueScopeLimit;
-}
-
-interface DaemonQueueConcurrency {
-    analysis: number;
-    rasterizer: number;
-    glbPreprocessing: number;
-    sshImport: number;
-}
-
-interface DaemonRuntimeRoleConfig {
-    desiredRole: DaemonRuntimeRole;
-    effectiveRole: DaemonRuntimeRole;
-    runtimeVersion: number;
-    draining: DaemonRuntimeRoleDrainState;
-    lastAppliedAt?: string | Date | null;
-}
-
-export interface DaemonRuntimeConfig {
-    contractVersion: number;
-    queueConcurrency: DaemonQueueConcurrency;
-    queueScopeLimits: DaemonQueueScopeLimits;
-    roleConfig: DaemonRuntimeRoleConfig;
-}
+export type DaemonRuntimeConfig = TeamClusterDaemonRuntimeConfig;
 
 export interface DaemonConfig {
     port: number;
     host: string;
     teamId?: string;
-    objectGatewayEnabled: boolean;
     teamClusterId: string;
     daemonPassword: string;
     enrollmentToken?: string;
@@ -93,9 +53,9 @@ export interface DaemonConfig {
     installRoot?: string;
     minio: MinioConfig;
     mongodbUri: string;
-    redis: RedisConfig;
+    redis: RedisConnectionOptions;
     jupyter: JupyterConfig;
-    allowedBuckets: DaemonObjectBucketName[];
+    allowedBuckets: ObjectBucketName[];
 }
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 10_000;
@@ -178,7 +138,7 @@ export const loadConfig = (): DaemonConfig => {
         secretKey: readRequiredString('MINIO_SECRET_KEY'),
         useSSL: readBooleanWithDefault('MINIO_USE_SSL', false)
     };
-    const redis: RedisConfig = {
+    const redis: RedisConnectionOptions = {
         host: readRequiredString('REDIS_HOST'),
         port: readNumberWithDefault('REDIS_PORT', 6379),
         username: readOptionalString('REDIS_USERNAME'),
@@ -201,18 +161,17 @@ export const loadConfig = (): DaemonConfig => {
         ),
         publicBasePath: normalizePath(readStringWithDefault('JUPYTER_PUBLIC_BASE_PATH', '/api/notebooks/proxy'))
     };
-    const allowedBuckets: DaemonObjectBucketName[] = [
-        'volt-dumps',
-        'volt-models',
-        'volt-plugins',
-        'volt-rasterizer'
+    const allowedBuckets: ObjectBucketName[] = [
+        ObjectBucketName.Dumps,
+        ObjectBucketName.Models,
+        ObjectBucketName.Plugins,
+        ObjectBucketName.Rasterizer
     ];
 
     const config: DaemonConfig = {
         port: readNumberWithDefault('PORT', 8080),
         host: readStringWithDefault('HOST', '0.0.0.0'),
         teamId: readOptionalString('TEAM_ID') ?? readOptionalString('VOLT_TEAM_ID'),
-        objectGatewayEnabled: readBooleanWithDefault('TEAM_CLUSTER_OBJECT_GATEWAY_ENABLED', true),
         teamClusterId: readRequiredString('TEAM_CLUSTER_ID'),
         daemonPassword: readRequiredString('TEAM_CLUSTER_DAEMON_PASSWORD'),
         enrollmentToken: readOptionalString('TEAM_CLUSTER_ENROLLMENT_TOKEN'),

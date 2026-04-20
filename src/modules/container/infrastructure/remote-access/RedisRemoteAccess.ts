@@ -1,6 +1,6 @@
 import { RedisExplorer } from '@/modules/container/infrastructure/remote-access/RedisExplorer';
 import { RemoteExplorerContentType, RemoteExplorerEntryType, RemoteExplorerNodeType, RemoteExplorerTarget } from '@/contracts';
-import type { ReverseChannelCommandResult } from '@/core/reverse-channel/contracts/command-handler';
+import type { ReverseChannelCommandResult } from '@/core/reverse-channel/contracts/reverse-channel-messaging';
 import type { RemoteExplorerEntry, RemoteExplorerNode } from '@/contracts';
 import { buildAttachmentContentDisposition, normalizeExplorerPath, parseRedisDatabasePath, parseRedisKeyPath, toWebReadableStream } from '@/modules/container/infrastructure/remote-access/shared';
 import BaseRemoteAccess from '@/modules/container/infrastructure/remote-access/BaseRemoteAccess';

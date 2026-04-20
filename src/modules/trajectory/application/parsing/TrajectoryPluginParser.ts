@@ -1,3 +1,4 @@
+import { Service } from '@/core/decorators/service';
 import { decodeMultiStream, mergeSelectiveChunk } from '@/support/serialization/selective-msgpack';
 import { isRecord } from '@/support/type-guards/is-record';
 import { ObjectBucketName } from '@/contracts';
@@ -15,39 +16,24 @@ interface AtomProperties {
     [key: string]: AtomPropertyValue | undefined;
 }
 
-type PerAtomRow = AtomProperties;
 type PerAtomColumnarData = Record<string, AtomPropertyValue[]>;
-type PerAtomProperties = PerAtomRow[] | PerAtomColumnarData;
+type PerAtomProperties = AtomProperties[] | PerAtomColumnarData;
 interface PluginDecodedPayload {
     'per-atom-properties'?: PerAtomProperties | null;
     [key: string]: PluginDecodedValue;
 }
 type ModifierStats = { min: number; max: number };
 
-interface PluginPropertyNamesRequest {
+interface PluginExposureRequestBase {
     trajectoryId: string;
     analysisId: string;
     exposureId: string;
-    timestep?: number;
     ownerClusterId: string;
 }
 
-interface PluginModifierAnalysisRequest {
-    trajectoryId: string;
-    analysisId: string;
-    exposureId: string;
-    timestep: number;
-    ownerClusterId: string;
-}
-
-interface PluginAtomIndexRequest {
-    trajectoryId: string;
-    analysisId: string;
-    exposureId: string;
-    timestep: number;
-    targetIds: number[];
-    ownerClusterId: string;
-}
+type PluginPropertyNamesRequest = PluginExposureRequestBase & { timestep?: number };
+type PluginModifierAnalysisRequest = PluginExposureRequestBase & { timestep: number };
+type PluginAtomIndexRequest = PluginModifierAnalysisRequest & { targetIds: number[] };
 
 interface PluginModifierValuesRequest extends PluginModifierAnalysisRequest {
     property: string;
@@ -57,13 +43,9 @@ interface PluginModifierUniqueValuesRequest extends PluginModifierValuesRequest 
     maxValues?: number;
 }
 
-interface PluginAnalysisAllAtomsRequest {
-    trajectoryId: string;
-    analysisId: string;
-    timestep: number;
+type PluginAnalysisAllAtomsRequest = Omit<PluginModifierAnalysisRequest, 'exposureId'> & {
     atomIds?: Set<number>;
-    ownerClusterId: string;
-}
+};
 
 interface PluginAnalysisAllAtomsResponse {
     propertyNames: string[];
@@ -98,6 +80,7 @@ function getMinMaxFromTypedArray(arr: Float32Array | Float64Array | Int32Array |
     return { min, max };
 }
 
+@Service('trajectoryPluginParser')
 export class TrajectoryPluginParser {
     constructor(
         private readonly objectStore: ClusterObjectStore
@@ -418,9 +401,9 @@ export class TrajectoryPluginParser {
         return parsed;
     }
 
-    private normalizePerAtomProperties(value: PerAtomProperties | null | undefined): PerAtomRow[] | null {
+    private normalizePerAtomProperties(value: PerAtomProperties | null | undefined): AtomProperties[] | null {
         if (Array.isArray(value)) {
-            return value.map((item) => this.flattenPerAtomRow(item));
+            return value.map((item) => this.flattenAtomProperties(item));
         }
 
         if (!this.isColumnarPerAtomData(value)) {
@@ -433,7 +416,7 @@ export class TrajectoryPluginParser {
         }
 
         const rowCount = entries[0][1].length;
-        const rows: PerAtomRow[] = Array.from({ length: rowCount }, () => ({}));
+        const rows: AtomProperties[] = Array.from({ length: rowCount }, () => ({}));
 
         for (const [key, column] of entries) {
             for (let index = 0; index < rowCount; index++) {
@@ -441,11 +424,11 @@ export class TrajectoryPluginParser {
             }
         }
 
-        return rows.map((row) => this.flattenPerAtomRow(row));
+        return rows.map((row) => this.flattenAtomProperties(row));
     }
 
-    private flattenPerAtomRow(row: PerAtomRow): PerAtomRow {
-        const flattened: PerAtomRow = {};
+    private flattenAtomProperties(row: AtomProperties): AtomProperties {
+        const flattened: AtomProperties = {};
 
         for (const [key, value] of Object.entries(row)) {
             if (key === 'id' || !Array.isArray(value)) {

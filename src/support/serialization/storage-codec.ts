@@ -7,8 +7,6 @@ interface ZstdStreamResult {
 }
 
 const DUMP_ZSTD_EXTENSION = '.dump.zst';
-const GLB_ZSTD_EXTENSION = '.glb.zst';
-const MSGPACK_ZSTD_EXTENSION = '.msgpack.zst';
 const ZSTD_NOT_INSTALLED_MESSAGE = 'zstd binary is not installed in the runtime image';
 
 const rejectSpawnError = (reject: (error: Error) => void) => {

@@ -1,4 +1,5 @@
 import type { NestedPluginDefinition, TrajectoryFrame, WorkflowDefinition } from '@/contracts';
+import type { ReverseChannelCommandPayloadView } from '@/core/reverse-channel/contracts/reverse-channel-messaging';
 import { Command, CommandGroup } from '@/core/commands/decorators';
 import type { DebugSessionManager } from '@/modules/analysis/application/workflow/debug/DebugSessionManager';
 
@@ -8,7 +9,7 @@ interface DebugStartPayload {
     pluginId: string;
     teamId: string;
     trajectoryId: string;
-    config?: Record<string, unknown>;
+    config?: ReverseChannelCommandPayloadView;
     timestep?: number;
     storageClusterId?: string;
     nestedPlugins?: NestedPluginDefinition[];

@@ -1,4 +1,5 @@
 import { ObjectBucketName } from '@/contracts';
+import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import { withNativeProcessingTempDir } from '@/support/native-temp-dir';
 import { createReadStream, createWriteStream } from 'node:fs';
@@ -12,6 +13,7 @@ import headlessRasterizer from '@voltstack/headless-rasterizer';
 const TRAJECTORY_PREVIEW_WIDTH = 3840;
 const TRAJECTORY_PREVIEW_HEIGHT = 2160;
 
+@Service('rasterizer')
 export class Rasterizer {
     constructor(
         private readonly objectStore: ClusterObjectStore

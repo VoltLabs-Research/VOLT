@@ -1,132 +1,29 @@
-import { logger } from '@/core/logger';
 import type { DaemonConfig } from '@/core/config';
-import type { Readable } from 'node:stream';
-
-interface ClusterObjectHeadResponse {
-    contentLength?: number;
-    contentType?: string;
-    contentEncoding?: string;
-    etag?: string;
-    lastModified?: Date;
-    metadata: Record<string, string>;
-}
-
-interface ClusterObjectStreamResponse extends ClusterObjectHeadResponse {
-    stream: Readable;
-}
-
-interface ClusterObjectListEntry {
-    key: string;
-    contentLength?: number;
-    etag?: string;
-    lastModified?: Date;
-}
-
-interface ClusterObjectReadOptions {
-    skipMetadata?: boolean;
-}
-
-interface ClusterObjectPutInput {
-    ownerClusterId: string;
-    bucket: string;
-    objectKey: string;
-    body: Buffer;
-    metadata?: Record<string, string>;
-}
-
-interface ClusterObjectPutStreamInput {
-    ownerClusterId: string;
-    bucket: string;
-    objectKey: string;
-    stream: Readable;
-    size: number;
-    metadata?: Record<string, string>;
-}
-
-interface ClusterObjectListRequest {
-    bucket: string;
-    prefix: string;
-    cursor?: string;
-    limit?: number;
-}
-
-interface ClusterObjectListResponse {
-    keys: string[];
-    objects: ClusterObjectListEntry[];
-    nextCursor?: string;
-}
-
-interface LocalClusterObjectStat {
-    size: number;
-    metaData: Record<string, string>;
-    etag?: string;
-    lastModified?: Date;
-}
-
-interface LocalClusterObjectPutRequest {
-    bucket: string;
-    objectKey: string;
-    body: Buffer;
-    metadata?: Record<string, string>;
-}
-
-interface LocalClusterObjectPutStreamRequest {
-    bucket: string;
-    objectKey: string;
-    stream: Readable;
-    size: number;
-    metadata?: Record<string, string>;
-}
-
-interface LocalClusterObjectStoreGateway {
-    statObject(bucket: string, objectKey: string): Promise<LocalClusterObjectStat>;
-    getObjectStream(bucket: string, objectKey: string): Promise<Readable>;
-    putObject(input: LocalClusterObjectPutRequest): Promise<void>;
-    putObjectStream(input: LocalClusterObjectPutStreamRequest): Promise<void>;
-    listObjectsPage(input: ClusterObjectListRequest): Promise<ClusterObjectListResponse>;
-}
-
-interface RemoteClusterObjectPutBufferRequest {
-    bucket: string;
-    objectKey: string;
-    buffer: Buffer;
-    contentType?: string;
-    contentEncoding?: string;
-    metadata?: Record<string, string>;
-}
-
-interface RemoteClusterObjectPutStreamRequest {
-    bucket: string;
-    objectKey: string;
-    stream: Readable;
-    contentLength: number;
-    contentType?: string;
-    contentEncoding?: string;
-    metadata?: Record<string, string>;
-}
-
-interface RemoteClusterObjectStoreGateway {
-    head(ownerClusterId: string, bucket: string, objectKey: string): Promise<ClusterObjectHeadResponse>;
-    getStream(
-        ownerClusterId: string,
-        bucket: string,
-        objectKey: string,
-        options?: ClusterObjectReadOptions
-    ): Promise<ClusterObjectStreamResponse>;
-    putBuffer(ownerClusterId: string, request: RemoteClusterObjectPutBufferRequest): Promise<void>;
-    putStream(ownerClusterId: string, request: RemoteClusterObjectPutStreamRequest): Promise<void>;
-    list(ownerClusterId: string, request: ClusterObjectListRequest): Promise<ClusterObjectListResponse>;
-}
+import { Factory } from '@/core/decorators/service';
+import type {
+    ClusterObjectHeadResponse,
+    ClusterObjectListEntry,
+    ClusterObjectListRequest,
+    ClusterObjectListResponse,
+    ClusterObjectPutInput,
+    ClusterObjectPutStreamInput,
+    ClusterObjectReadOptions,
+    ClusterObjectStore,
+    ClusterObjectStreamResponse,
+    LocalClusterObjectStat,
+    LocalClusterObjectStoreGateway,
+    RemoteClusterObjectPutBufferRequest,
+    RemoteClusterObjectPutStreamRequest,
+    RemoteClusterObjectStoreGateway,
+    ScopedClusterObjectPutInput,
+    ScopedClusterObjectPutStreamInput,
+    ScopedClusterObjectStore
+} from '@/core/storage/contracts/cluster-object-store';
 
 interface ClusterObjectStoreDeps {
     config: DaemonConfig;
     minioService: LocalClusterObjectStoreGateway;
     remoteClient: RemoteClusterObjectStoreGateway;
-}
-
-interface ScopedClusterObjectStore {
-    putObject(input: Omit<ClusterObjectPutInput, 'ownerClusterId'>): Promise<void>;
-    putObjectStream(input: Omit<ClusterObjectPutStreamInput, 'ownerClusterId'>): Promise<void>;
 }
 
 interface SplitObjectMetadataResult {
@@ -136,18 +33,20 @@ interface SplitObjectMetadataResult {
     remoteMetadata: Record<string, string>;
 }
 
-export interface ClusterObjectStore {
-    head(ownerClusterId: string, bucket: string, objectKey: string): Promise<ClusterObjectHeadResponse>;
-    getStream(
-        ownerClusterId: string,
-        bucket: string,
-        objectKey: string,
-        options?: ClusterObjectReadOptions
-    ): Promise<ClusterObjectStreamResponse>;
-    putObject(input: ClusterObjectPutInput): Promise<void>;
-    putObjectStream(input: ClusterObjectPutStreamInput): Promise<void>;
-    list(ownerClusterId: string, request: ClusterObjectListRequest): Promise<ClusterObjectListResponse>;
-}
+export type {
+    ClusterObjectHeadResponse,
+    ClusterObjectListEntry,
+    ClusterObjectListRequest,
+    ClusterObjectListResponse,
+    ClusterObjectPutInput,
+    ClusterObjectPutStreamInput,
+    ClusterObjectReadOptions,
+    ClusterObjectStore,
+    ClusterObjectStreamResponse,
+    ScopedClusterObjectPutInput,
+    ScopedClusterObjectPutStreamInput,
+    ScopedClusterObjectStore
+} from '@/core/storage/contracts/cluster-object-store';
 
 class DefaultClusterObjectStore implements ClusterObjectStore {
     public constructor(private readonly deps: ClusterObjectStoreDeps) {}
@@ -330,6 +229,12 @@ const splitObjectMetadata = (metadata?: Record<string, string>): SplitObjectMeta
 export const createClusterObjectStore = (deps: ClusterObjectStoreDeps): ClusterObjectStore => {
     return new DefaultClusterObjectStore(deps);
 };
+
+export const provideClusterObjectStore = Factory('objectStore')((
+    config: DaemonConfig,
+    minioService: LocalClusterObjectStoreGateway,
+    remoteClient: RemoteClusterObjectStoreGateway
+): ClusterObjectStore => createClusterObjectStore({ config, minioService, remoteClient }));
 
 export const createScopedClusterObjectStore = (
     objectStore: ClusterObjectStore,

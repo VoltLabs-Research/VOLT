@@ -1,11 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
 
-interface PluginListingRowObject {
-    [key: string]: PluginListingRowValue;
-}
-
-type PluginListingRowValue = null | boolean | number | string | PluginListingRowValue[] | PluginListingRowObject;
-
 export interface PluginListingRowDocument {
     _id: string;
     plugin?: string;
@@ -16,7 +10,7 @@ export interface PluginListingRowDocument {
     exposureName?: string;
     timestep?: number;
     payloadObjectKey?: string;
-    [key: string]: PluginListingRowValue;
+    [key: string]: unknown;
 };
 
 const pluginListingRowSchema = new Schema({}, {
@@ -45,5 +39,5 @@ pluginListingRowSchema.index(
     { name: 'plugin_listing_plugin_trajectory_timestep_idx' }
 );
 
-export const PluginListingRowModel = mongoose.models.DaemonPluginListingRow
-    || mongoose.model<PluginListingRowDocument>('DaemonPluginListingRow', pluginListingRowSchema);
+export const PluginListingRowModel: mongoose.Model<PluginListingRowDocument> = mongoose.models.DaemonPluginListingRow
+    || mongoose.model('DaemonPluginListingRow', pluginListingRowSchema);

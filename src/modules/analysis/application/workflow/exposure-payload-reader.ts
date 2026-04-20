@@ -7,19 +7,18 @@ const isPlainObject = (value: MsgpackValue): value is MsgpackObject => {
     return typeof value === 'object' && value !== null && !Array.isArray(value) && !(value instanceof Uint8Array);
 };
 
-export type WorkflowExposurePayloadValue = MsgpackObject;
 
 export interface WorkflowExposurePayloadReadResult {
-    listing: WorkflowExposurePayloadValue | null;
+    listing: MsgpackObject | null;
     subListingNames: string[];
-    exportData: WorkflowExposurePayloadValue | null;
+    exportData: MsgpackObject | null;
 }
 
 export interface WorkflowExposureInspectionResult {
     outputFilePath: string;
     listingRowCount: number;
     subListingNames: string[];
-    exportPayload: WorkflowExposurePayloadValue | null;
+    exportPayload: MsgpackObject | null;
 }
 
 const LISTING_KEYS = new Set(['main_listing']);
@@ -35,8 +34,8 @@ export const createWorkflowExposureOutputFilePath = (
 export const readWorkflowExposurePayload = async (
     filePath: string
 ): Promise<WorkflowExposurePayloadReadResult> => {
-    let listing: WorkflowExposurePayloadValue | null = null;
-    let exportData: WorkflowExposurePayloadValue | null = null;
+    let listing: MsgpackObject | null = null;
+    let exportData: MsgpackObject | null = null;
     const subListingNames = new Set<string>();
 
     for await (const message of decodeMultiStream(createReadStream(filePath))) {

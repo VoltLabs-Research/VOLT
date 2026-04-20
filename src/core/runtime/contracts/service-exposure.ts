@@ -14,18 +14,21 @@ export interface TeamClusterServiceExposure {
     containerPort?: number;
 };
 
-export enum TeamClusterServiceExposureAccessMode {
-    Http = 'http',
-    Tcp = 'tcp',
-    WebSocket = 'websocket'
-};
+export const TeamClusterServiceExposureAccessMode = Object.freeze({
+    Http: 'http',
+    Tcp: 'tcp',
+    WebSocket: 'websocket'
+} as const);
+export type TeamClusterServiceExposureAccessMode = typeof TeamClusterServiceExposureAccessMode[keyof typeof TeamClusterServiceExposureAccessMode];
 
-export enum TeamClusterServiceExposureStatus {
-    Active = 'active',
-    Unavailable = 'unavailable'
-};
+export const TeamClusterServiceExposureStatus = Object.freeze({
+    Active: 'active',
+    Unavailable: 'unavailable'
+} as const);
+export type TeamClusterServiceExposureStatus = typeof TeamClusterServiceExposureStatus[keyof typeof TeamClusterServiceExposureStatus];
 
-export enum TeamClusterServiceExposureSourceKind {
-    Container = 'container',
-    Daemon = 'daemon'
-};
+export const TeamClusterServiceExposureSourceKind = Object.freeze({
+    Container: 'container',
+    Daemon: 'daemon'
+} as const);
+export type TeamClusterServiceExposureSourceKind = typeof TeamClusterServiceExposureSourceKind[keyof typeof TeamClusterServiceExposureSourceKind];

@@ -1,9 +1,13 @@
-import { asClass, type AwilixContainer } from 'awilix';
-import { discoverModuleExports } from '@/app/bootstrap/module-discovery';
-import { resolveScopedRegistration } from '@/app/bootstrap/scoped-resolution';
-import { CommandError } from '@/core/commands/CommandError';
-import { getCommandGroupMetadata, type CommandMethodMetadata } from '@/core/commands/decorators';
+import type { AwilixContainer } from 'awilix';
+import {
+    getCommandGroupMetadata,
+    getRegisteredCommandGroups,
+    type CommandMethodMetadata
+} from '@/core/commands/decorators';
+import { registerDecoratedGroupsOnContainer } from '@/core/decorators/register-decorated-groups-on-container';
+import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
+import ApplicationError from '@/app/coordination/ApplicationError';
 import type { ReverseChannelBridge } from '@/modules/container/infrastructure/reverse-channel/ReverseChannelBridge';
 
 export type CommandPayload = object | undefined;
@@ -18,72 +22,65 @@ export interface CommandResult {
 
 type RegisteredCommand = (payload: CommandPayload) => Promise<CommandResult>;
 
-interface CommandGroupClass {
-    new (...args: readonly unknown[]): object;
-}
-
-interface DiscoveredCommandGroup {
-    readonly registrationName: string;
-    readonly Group: CommandGroupClass;
-    readonly namespace: string;
-    readonly commands: readonly CommandMethodMetadata[];
-}
-
-const COMMAND_FILE_PATTERN = /Commands\.(cjs|cts|js|ts)$/;
-const COMMAND_ROOTS = [
-    'core/runtime/application/commands',
-    'modules/analysis/application/commands',
-    'modules/container/application/commands',
-    'modules/jobs/application/commands',
-    'modules/notebook/application/commands',
-    'modules/plugin/application/commands',
-    'modules/trajectory/application/commands'
-];
-
+@Service('commandRegistry')
 export class CommandRegistry {
     private readonly handlers = new Map<string, RegisteredCommand>();
+    private readyResolve: (() => void) | null = null;
+    private readonly readyPromise: Promise<void> = new Promise((resolve) => { this.readyResolve = resolve; });
+    private ready = false;
 
     async registerDecoratedGroups(
         container: AwilixContainer,
         reverseChannelBridge: ReverseChannelBridge
     ): Promise<void> {
-        logger.info('@command-registry: Registering cluster daemon commands');
+        logger.info('@command-registry: registering cluster daemon commands');
 
-        for (const commandGroup of await this.discoverCommandGroups()) {
-            container.register({
-                [commandGroup.registrationName]: asClass(commandGroup.Group).scoped()
-            });
+        registerDecoratedGroupsOnContainer<CommandMethodMetadata>({
+            kind: 'command-group',
+            container,
+            groups: getRegisteredCommandGroups(),
+            getMetadata: (Group) => {
+                const metadata = getCommandGroupMetadata(Group);
+                if (!metadata) {
+                    return null;
+                }
 
-            for (const command of commandGroup.commands) {
-                this.register(
-                    this.buildCommandName(commandGroup.namespace, command.name),
-                    async (payload) => {
-                        const commandGroupInstance = resolveScopedRegistration<Record<string, (payload: CommandPayload) => unknown>>(
-                            container,
-                            commandGroup.registrationName,
-                            {}
-                        );
-                        const result = await commandGroupInstance[command.propertyKey](payload);
-
-                        return this.normalizeCommandResult(result, command);
-                    }
-                );
+                return {
+                    namespace: metadata.namespace,
+                    methods: metadata.commands
+                };
+            },
+            onMethod: ({ namespace, method, resolveInstance }) => {
+                const commandName = `${namespace}.${method.name}`;
+                this.register(commandName, async (payload) => {
+                    const instance = resolveInstance() as Record<string, (payload: CommandPayload) => unknown>;
+                    const result = await instance[method.propertyKey](payload);
+                    return this.normalizeCommandResult(result, method);
+                });
             }
-        }
+        });
 
-        for (const commandName of this.getCommandNames()) {
-            reverseChannelBridge.registerCommand(commandName, (payload) => {
-                return this.dispatch(commandName, payload);
-            });
+        for (const name of this.handlers.keys()) {
+            reverseChannelBridge.registerCommand(name, (payload) => this.dispatch(name, payload));
         }
 
         logger.info('@command-registry: Cluster daemon commands registered');
     }
 
+    markReady(): void {
+        if (this.ready) return;
+        this.ready = true;
+        this.readyResolve?.();
+    }
+
     async dispatch(commandName: string, payload: CommandPayload): Promise<CommandResult> {
+        if (!this.ready) {
+            await this.readyPromise;
+        }
+
         const handler = this.handlers.get(commandName);
         if (!handler) {
-            throw CommandError.notFound(
+            throw ApplicationError.notFound(
                 'COMMAND_NOT_REGISTERED',
                 `Command not registered: ${commandName}`
             );
@@ -92,20 +89,12 @@ export class CommandRegistry {
         return handler(payload);
     }
 
-    getCommandNames(): string[] {
-        return [...this.handlers.keys()];
-    }
-
     private register(commandName: string, handler: RegisteredCommand): void {
         if (this.handlers.has(commandName)) {
             throw new Error(`Command already registered: ${commandName}`);
         }
 
         this.handlers.set(commandName, handler);
-    }
-
-    private buildCommandName(namespace: string, name: string): string {
-        return `${namespace}.${name}`;
     }
 
     private normalizeCommandResult(result: unknown, command: CommandMethodMetadata): CommandResult {
@@ -117,26 +106,5 @@ export class CommandRegistry {
             status: command.options.status,
             data: (result ?? null) as CommandResult['data']
         };
-    }
-
-    private discoverCommandGroups(): Promise<DiscoveredCommandGroup[]> {
-        return discoverModuleExports<DiscoveredCommandGroup>({
-            filePattern: COMMAND_FILE_PATTERN,
-            roots: COMMAND_ROOTS,
-            mapExport: ({ exportName, relativePath }, exportedValue) => {
-                const metadata = getCommandGroupMetadata(exportedValue);
-
-                if (!metadata) {
-                    return null;
-                }
-
-                return {
-                    registrationName: `command-group:${relativePath}.${exportName}`,
-                    Group: exportedValue as CommandGroupClass,
-                    namespace: metadata.namespace,
-                    commands: metadata.commands
-                };
-            }
-        });
     }
 }

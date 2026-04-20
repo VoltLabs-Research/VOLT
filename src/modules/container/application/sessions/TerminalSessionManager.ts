@@ -1,7 +1,7 @@
 import { DockerRuntime } from '@/core/runtime/infrastructure/DockerRuntime';
 import { withTimeout } from '@/core/observability/infrastructure/daemon-instrumentation';
 import { REVERSE_CHANNEL } from '@/contracts';
-import { BASE64_SESSION_CHUNK_PATTERN, SESSION_ATTACH_TIMEOUT_MS } from '@/core/reverse-channel/contracts/reverse-channel-session-constants';
+import { BASE64_SESSION_CHUNK_PATTERN, SESSION_ATTACH_TIMEOUT_MS } from '@/core/reverse-channel/contracts/reverse-channel-constants';
 import type { RuntimeTerminalAttachment } from '@/core/runtime/infrastructure/DockerRuntime';
 import type { TeamClusterDaemonSessionAttachPayload, TeamClusterDaemonSessionDataPayload, TeamClusterDaemonSessionEndPayload, TeamClusterDaemonSessionInputPayload, TeamClusterDaemonSessionResizePayload } from '@/contracts';
 import type { CommandResult } from '@voltstack/daemon-cluster-client';
@@ -142,10 +142,7 @@ export class TerminalSessionManager {
 
             return {
                 status: 200,
-                data: {
-                    status: 'success',
-                    data: { attached: true }
-                }
+                data: { attached: true }
             };
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to attach terminal';

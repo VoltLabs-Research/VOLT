@@ -1,53 +1,90 @@
 import { ProgressStageType } from '@voltstack/daemon-cluster-client';
+import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
-import { DaemonCommandError } from '@/core/reverse-channel/application/DaemonCommandError';
 import { OrchestrationAction, EntrypointType } from '@/core/runtime/contracts/http-runtime';
 import { ANALYSIS_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import { QueueService } from '@/core/queues/application/QueueService';
+import ApplicationError from '@/app/coordination/ApplicationError';
 import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
 import { createTraceLogContext, serializeDaemonTraceContext } from '@/core/observability/infrastructure/daemon-instrumentation';
 import { compressSerializedAnalysisExecutionData, serializeAnalysisExecutionData } from '@/support/policies/analysis-execution-data';
-import { WorkflowEngine } from '@/modules/analysis/application/workflow/WorkflowEngine';
+import { WorkflowEngine, type WorkflowExecutionRequest } from '@/modules/analysis/application/workflow/WorkflowEngine';
 import { WorkflowSession } from '@/modules/analysis/application/workflow/WorkflowSession';
 import { RuntimeEventBroker } from '@/core/reverse-channel/application/RuntimeEventBroker';
+import { RedisConnection } from '@/core/storage/infrastructure/redis/RedisConnection';
 import { buildBatchAnalysisJob, buildItemAnalysisJob } from '@/modules/analysis/domain/jobs/analysis-job-factory';
+import { createHash } from 'node:crypto';
+
+const PLAN_CACHE_TTL_SECONDS = 600;
+
+type WorkflowPlanResult = NonNullable<Awaited<ReturnType<WorkflowEngine['planExecutionStrategy']>>>;
 import type {
     AnalysisExecutionDataReference,
     AnalysisJobExecutionData,
     AnalysisQueueJobPayload,
-    AnalysisStartRequest,
+    AnalysisStartRequestWithTrace,
     AnalysisStartResponse,
     PlannedExecutionItem,
     QueuedJobNotification
 } from '@/modules/analysis/contracts/http-analysis';
 import type { AnalysisDataStore } from '@/modules/analysis/infrastructure/storage/AnalysisDataStore';
-import type { DaemonTraceContext } from '@/core/observability/infrastructure/daemon-instrumentation';
 
 interface StoredExecutionDataResult {
     executionDataCompressed?: string;
     executionDataReference?: AnalysisExecutionDataReference;
 }
 
-interface AnalysisStartRequestWithTrace extends AnalysisStartRequest {
-    traceContext?: DaemonTraceContext;
-}
-
+@Service('analysisDispatcher')
 export class AnalysisDispatcher {
     constructor(
         private readonly workflowEngine: WorkflowEngine,
         private readonly queueService: QueueService,
         private readonly analysisDataStore: AnalysisDataStore,
-        private readonly eventBroker: RuntimeEventBroker
+        private readonly eventBroker: RuntimeEventBroker,
+        private readonly redisConnection: RedisConnection
     ) {}
 
+    private buildPlanCacheKey(request: WorkflowExecutionRequest): string {
+        const keyInput = JSON.stringify({
+            workflow: request.workflow,
+            userConfig: request.userConfig,
+            trajectoryFrames: request.trajectoryFrames,
+            nestedPlugins: request.nestedPlugins,
+            selectedFrameOnly: request.selectedFrameOnly,
+            selectedTimesteps: request.selectedTimesteps,
+            timestep: request.timestep,
+            trajectoryId: request.trajectoryId
+        });
+        const hash = createHash('sha1').update(keyInput).digest('hex');
+        return `analysis-plan:${request.pluginId}:${hash}`;
+    }
+
+    private async loadCachedPlan(cacheKey: string): Promise<WorkflowPlanResult | null> {
+        try {
+            const cached = await this.redisConnection.getValue(cacheKey);
+            if (!cached) return null;
+            return JSON.parse(cached) as WorkflowPlanResult;
+        } catch (error) {
+            logger.warn({ err: error, cacheKey }, '@analysis-dispatcher: plan cache read failed');
+            return null;
+        }
+    }
+
+    private async storeCachedPlan(cacheKey: string, plan: WorkflowPlanResult): Promise<void> {
+        try {
+            await this.redisConnection.setValueWithTtl(cacheKey, JSON.stringify(plan), PLAN_CACHE_TTL_SECONDS);
+        } catch (error) {
+            logger.warn({ err: error, cacheKey }, '@analysis-dispatcher: plan cache write failed');
+        }
+    }
+
     async startAnalysis(input: AnalysisStartRequestWithTrace): Promise<AnalysisStartResponse> {
-        const startedAt = Date.now();
         const serializedTraceContext = serializeDaemonTraceContext(input.traceContext);
         const workflow = input.workflow;
         const entrypoint = workflow.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint)?.data.entrypoint;
 
         if (!entrypoint?.binaryObjectPath || !entrypoint.arguments) {
-            throw DaemonCommandError.badRequest(
+            throw ApplicationError.badRequest(
                 'Analysis::Start::InvalidEntrypoint',
                 'Daemon workflow entrypoint is invalid'
             );
@@ -63,28 +100,23 @@ export class AnalysisDispatcher {
             }
         });
 
-        const plan = await this.workflowEngine.planExecutionStrategy({
-            workflow: input.workflow,
-            nestedPlugins: input.nestedPlugins,
-            trajectoryId: input.trajectoryId,
-            trajectoryFrames: input.trajectoryFrames,
-            analysis: input.analysis,
-            analysisId: input.analysisId,
-            pluginId: input.pluginId,
-            userConfig: input.config,
-            teamId: input.teamId,
-            options: {
-                selectedFrameOnly: input.selectedFrameOnly,
-                selectedTimesteps: input.selectedTimesteps,
-                timestep: input.timestep
-            }
-        });
+        const planRequest: WorkflowExecutionRequest = {
+            ...input,
+            userConfig: input.config
+        };
+        const planCacheKey = this.buildPlanCacheKey(planRequest);
+        const cachedPlan = await this.loadCachedPlan(planCacheKey);
+        const plan = cachedPlan ?? await this.workflowEngine.planExecutionStrategy(planRequest);
 
         if (!plan || plan.items.length === 0) {
-            throw DaemonCommandError.unprocessableEntity(
+            throw ApplicationError.unprocessableEntity(
                 'Analysis::Start::EmptyExecutionPlan',
                 'No items after daemon workflow planning'
             );
+        }
+
+        if (!cachedPlan) {
+            await this.storeCachedPlan(planCacheKey, plan);
         }
 
         const isBatchMode = plan.batchMode === true;
@@ -100,7 +132,7 @@ export class AnalysisDispatcher {
             : plannedItems.map((item, index) => {
                 const timestep = item.timestep ?? item.frame;
                 if (typeof timestep !== 'number') {
-                    throw DaemonCommandError.unprocessableEntity(
+                    throw ApplicationError.unprocessableEntity(
                         'Analysis::Start::MissingTimestep',
                         `Missing timestep for analysis job ${input.analysisId}-${index}`
                     );

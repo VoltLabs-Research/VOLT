@@ -1,12 +1,13 @@
 import Bottleneck from 'bottleneck';
 
+import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
 import {
     createWorkflowExposureOutputFilePath,
-    readWorkflowExposurePayload,
-    type WorkflowExposurePayloadValue
+    readWorkflowExposurePayload
 } from '@/modules/analysis/application/workflow/exposure-payload-reader';
+import type { MsgpackObject } from '@/support/serialization/msgpack-value';
 import type { PluginListingRepository } from '@/modules/plugin/infrastructure/repositories/plugin-listing-repository-contract';
 import { processExportNode } from '@/modules/plugin/application/exports/ExportNodeProcessor';
 import type { ArtifactUploadBatch } from '@/modules/plugin/contracts/artifact-upload';
@@ -18,6 +19,7 @@ import fs from 'node:fs/promises';
 
 const EXPOSURE_RESULT_PROCESSING_CONCURRENCY = getRecommendedResultProcessingConcurrency();
 
+@Service('resultProcessor')
 export class DefaultResultProcessor implements ResultProcessorService {
     private readonly exposureProcessingLimiter: Bottleneck;
 
@@ -126,7 +128,7 @@ async function precomputeListingRows(
     pluginListingRepository: PluginListingRepository,
     executionData: AnalysisJobExecutionData,
     exposure: AnalysisExposureDefinition,
-    decoded: WorkflowExposurePayloadValue | null,
+    decoded: MsgpackObject | null,
     subListingNames: string[],
     objectKey: string,
     payloadOwnerClusterId: string,

@@ -1,9 +1,10 @@
 import { logger } from '@/core/logger';
 import type {
     ExecutionLogSegment,
-    ExecutionLogSegmentMetadata
+    ExecutionLogSegmentMetadata,
+    ProcessExecutionLogChunk,
+    ProcessExecutionLogSink
 } from '@/core/runtime/contracts/execution-log';
-import type { ProcessExecutionLogChunk, ProcessExecutionLogSink } from '@/core/runtime/infrastructure/binary-executor-service';
 
 interface AnalysisExecutionLogReporter {
     reportAnalysisLogChunk(input: AnalysisExecutionLogChunkReport): Promise<void>;
@@ -88,54 +89,45 @@ const createBufferedExecutionLogSink = (
 
         flushQueue = flushQueue
             .catch(() => undefined)
-            .then(async () => {
-                try {
-                    await flushSegments(segments);
-                } catch (error) {
-                    logger.warn('Failed to flush buffered execution logs');
-                }
-            });
+            .then(() => flushSegments(segments))
+            .catch((err) => logger.warn({ err }, 'Failed to flush buffered execution logs'));
 
         await flushQueue;
     };
 
     return {
         handleChunk(chunk: ProcessExecutionLogChunk): void {
-        if (!chunk.text) {
-            return;
-        }
+            if (!chunk.text) return;
 
-        const segment: ExecutionLogSegment = {
-            stream: chunk.stream,
-            text: chunk.text,
-            occurredAt: chunk.occurredAt,
-            nodeId: metadata?.nodeId,
-            nodeType: metadata?.nodeType,
-            nodeLabel: metadata?.nodeLabel,
-            pluginId: metadata?.pluginId,
-            executionPath: metadata?.executionPath ? [...metadata.executionPath] : undefined
-        };
+            const segment: ExecutionLogSegment = {
+                stream: chunk.stream,
+                text: chunk.text,
+                occurredAt: chunk.occurredAt,
+                nodeId: metadata?.nodeId,
+                nodeType: metadata?.nodeType,
+                nodeLabel: metadata?.nodeLabel,
+                pluginId: metadata?.pluginId,
+                executionPath: metadata?.executionPath ? [...metadata.executionPath] : undefined
+            };
 
-        buffer.push(segment);
-        bufferedBytes += Buffer.byteLength(segment.text, 'utf8');
+            buffer.push(segment);
+            bufferedBytes += Buffer.byteLength(segment.text, 'utf8');
 
-        if (bufferedBytes >= maxBufferedBytes) {
-            enqueueFlush();
-            return;
-        }
+            if (bufferedBytes >= maxBufferedBytes) {
+                enqueueFlush();
+                return;
+            }
 
-        if (flushTimer) {
-            return;
-        }
+            if (flushTimer) {
+                return;
+            }
 
-        flushTimer = setTimeout(() => {
-            flushTimer = null;
-            enqueueFlush();
-        }, flushIntervalMs);
+            flushTimer = setTimeout(() => {
+                flushTimer = null;
+                enqueueFlush();
+            }, flushIntervalMs);
 
-        if (flushTimer.unref) {
-            flushTimer.unref();
-        }
+            flushTimer.unref?.();
         },
         flush: enqueueFlush
     };

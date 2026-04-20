@@ -1,8 +1,10 @@
+import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import { compressSerializedAnalysisExecutionData, inflateAnalysisExecutionData, parseStoredAnalysisExecutionData, serializeAnalysisExecutionData } from '@/support/policies/analysis-execution-data';
 import Redis from 'ioredis';
 import type { DaemonConfig } from '@/core/config';
 import type { AnalysisExecutionDataReference, AnalysisJobExecutionData } from '@/contracts';
+import type { RedisConnectionOptions } from '@/core/storage/contracts/redis-connection';
 
 interface AnalysisExecutionDataPayload {
     jobId: string;
@@ -11,16 +13,10 @@ interface AnalysisExecutionDataPayload {
     executionDataReference?: AnalysisExecutionDataReference;
 }
 
-interface RedisConnectionOptions {
-    host: string;
-    port: number;
-    username?: string;
-    password?: string;
-};
-
 const ANALYSIS_EXECUTION_DATA_KEY_PREFIX = 'analysis:execution-data:';
 const ANALYSIS_EXECUTION_DATA_TTL_SECONDS = 604_800;
 
+@Service('analysisDataStore')
 export class AnalysisDataStore {
     private readonly client: Redis;
 

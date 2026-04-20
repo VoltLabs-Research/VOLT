@@ -1,5 +1,6 @@
 import { createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
+import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -25,6 +26,7 @@ interface ExtractedFile {
 
 const JUNK_ENTRY_BASENAMES = new Set(['__MACOSX', '.DS_Store', 'Thumbs.db']);
 
+@Service('fileExtractor')
 export class FileExtractor {
     async extractFiles(files: UploadedFile[], workingDir: string): Promise<ExtractedFile[]> {
         const finalFiles: ExtractedFile[] = [];

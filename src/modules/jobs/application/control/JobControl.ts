@@ -1,3 +1,4 @@
+import { Factory } from '@/core/decorators/service';
 import type { QueueService } from '@/core/queues/application/QueueService';
 import { stopProcess } from '@/core/runtime/infrastructure/process-tracker';
 import type {
@@ -41,11 +42,11 @@ export class JobControl {
         return { affectedJobs };
     };
 
-    clearJobsHistory = (_input: ClearJobsHistoryRequest): Promise<JobsActionResponse> => {
+    clearJobsHistory = async (_input: ClearJobsHistoryRequest): Promise<JobsActionResponse> => {
         return { affectedJobs: 0 };
     };
 }
 
-export const createJobControlService = (queueService: QueueService): JobControl => {
+export const createJobControlService = Factory('jobControl')((queueService: QueueService): JobControl => {
     return new JobControl(queueService);
-};
+});

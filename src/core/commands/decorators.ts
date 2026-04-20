@@ -1,5 +1,5 @@
-const COMMAND_GROUP_NAMESPACE = Symbol('command-group-namespace');
-const COMMAND_GROUP_METHODS = Symbol('command-group-methods');
+import type { DecoratedGroupClass } from '@/core/decorators/create-decorated-group-registry';
+import { createNamespacedMethodDecorators } from '@/core/decorators/create-namespaced-method-decorators';
 
 export interface CommandOptions {
     readonly raw?: boolean;
@@ -17,56 +17,24 @@ export interface CommandGroupMetadata {
     readonly commands: readonly CommandMethodMetadata[];
 }
 
-interface DecoratedCommandGroupClass {
-    new (...args: readonly unknown[]): object;
-    [COMMAND_GROUP_NAMESPACE]?: string;
-    [COMMAND_GROUP_METHODS]?: CommandMethodMetadata[];
-}
+const decorators = createNamespacedMethodDecorators<CommandMethodMetadata, [name: string, options?: CommandOptions]>({
+    decoratorLabel: '@Command',
+    buildMethodMetadata: (propertyKey, name, options = {}) => ({ name, options, propertyKey })
+});
 
-const getCommandMethods = (target: DecoratedCommandGroupClass): CommandMethodMetadata[] => {
-    if (!target[COMMAND_GROUP_METHODS]) {
-        target[COMMAND_GROUP_METHODS] = [];
-    }
-
-    return target[COMMAND_GROUP_METHODS]!;
-};
-
-export const CommandGroup = (namespace: string): ClassDecorator => {
-    return (target) => {
-        (target as DecoratedCommandGroupClass)[COMMAND_GROUP_NAMESPACE] = namespace;
-    };
-};
-
-export const Command = (name: string, options: CommandOptions = {}): MethodDecorator => {
-    return (target, propertyKey, descriptor) => {
-        if (typeof descriptor?.value !== 'function') {
-            throw new Error(`@Command can only decorate methods: ${String(propertyKey)}`);
-        }
-
-        const commandGroupClass = (target as { constructor: DecoratedCommandGroupClass }).constructor;
-        getCommandMethods(commandGroupClass).push({
-            name,
-            options,
-            propertyKey: String(propertyKey)
-        });
-    };
-};
+export const CommandGroup = decorators.Group;
+export const Command = decorators.Method;
 
 export const getCommandGroupMetadata = (value: unknown): CommandGroupMetadata | null => {
-    if (typeof value !== 'function') {
-        return null;
-    }
-
-    const commandGroupClass = value as DecoratedCommandGroupClass;
-    const namespace = commandGroupClass[COMMAND_GROUP_NAMESPACE];
-    const commands = commandGroupClass[COMMAND_GROUP_METHODS];
-
-    if (!namespace || !commands?.length) {
+    const metadata = decorators.getMetadata(value);
+    if (!metadata) {
         return null;
     }
 
     return {
-        namespace,
-        commands: [...commands]
+        namespace: metadata.namespace,
+        commands: metadata.methods
     };
 };
+
+export const getRegisteredCommandGroups = (): readonly DecoratedGroupClass[] => decorators.getRegisteredGroups();

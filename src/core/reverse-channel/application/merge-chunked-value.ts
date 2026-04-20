@@ -1,5 +1,5 @@
 type ChunkedArray = ChunkedValue[];
-type ChunkedRecord = Record<string, ChunkedValue>;
+interface ChunkedRecord { [key: string]: ChunkedValue }
 type ChunkedValue = boolean | ChunkedArray | ChunkedRecord | null | number | string;
 
 const isChunkedRecord = (value: ChunkedValue): value is ChunkedRecord => {
@@ -7,28 +7,13 @@ const isChunkedRecord = (value: ChunkedValue): value is ChunkedRecord => {
 };
 
 const mergeChunkedArray = (target: ChunkedArray, incoming: ChunkedArray): ChunkedArray => {
-    for (let i = 0; i < incoming.length; i++) {
-        target.push(incoming[i]);
-    }
-
+    target.push(...incoming);
     return target;
 };
 
 const mergeChunkedRecord = (target: ChunkedRecord, incoming: ChunkedRecord): ChunkedRecord => {
     for (const [key, incomingValue] of Object.entries(incoming)) {
-        const targetValue = target[key];
-
-        if (Array.isArray(targetValue) && Array.isArray(incomingValue)) {
-            target[key] = mergeChunkedArray(targetValue, incomingValue);
-            continue;
-        }
-
-        if (isChunkedRecord(targetValue) && isChunkedRecord(incomingValue)) {
-            target[key] = mergeChunkedRecord(targetValue, incomingValue);
-            continue;
-        }
-
-        target[key] = incomingValue;
+        target[key] = mergeChunkedValue(target[key] ?? null, incomingValue);
     }
 
     return target;

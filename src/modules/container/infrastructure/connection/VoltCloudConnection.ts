@@ -1,10 +1,11 @@
 import Bottleneck from 'bottleneck';
 
+import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import { MetricsService } from '@/core/metrics/application/MetricsService';
 import { RuntimeEventBroker } from '@/core/reverse-channel/application/RuntimeEventBroker';
 import type { TeamClusterDaemonServerEventMessage } from '@/core/reverse-channel/contracts/server-event';
-import { RuntimeCommands } from '@/core/runtime/contracts/commands';
+import { RuntimeCommands } from '@/core/commands/command-names';
 import { OrchestrationAction } from '@/core/runtime/contracts/http-runtime';
 import type { RuntimeProgressMessage } from '@/core/runtime/contracts/reverse-channel-runtime';
 import http from 'node:http';
@@ -15,8 +16,8 @@ import {
 } from '@voltstack/daemon-cluster-client';
 import type { DaemonConfig, DaemonRuntimeConfig } from '@/core/config';
 import type { RuntimeLifecycleEventType, TeamClusterDaemonMessage } from '@voltstack/daemon-cluster-client';
-import type { ExposureSnapshotMessage } from '@/modules/container/contracts/reverse-channel-container';
-import { TeamClusterStatus } from '@/modules/container/contracts/volt-cloud-types';
+import { TeamClusterStatus } from '@/modules/container/contracts/container-types';
+import type { ExposureSnapshotMessage } from '@/modules/container/contracts/container-types';
 
 interface RuntimeLifecycleUpdateRequest {
     teamClusterId: string;
@@ -45,6 +46,7 @@ interface QueuedEventMessage {
     dedupeKey?: string;
 }
 
+@Service('voltCloudConnection')
 export class VoltCloudConnection {
     private connectedToCloud = false;
     private lastCloudLatencyMs: number | null = null;
@@ -65,7 +67,7 @@ export class VoltCloudConnection {
     private cloudLatencyProbeTimer: ReturnType<typeof setInterval> | null = null;
     private controlPlaneMetricsDirty = false;
 
-    readonly client: ClusterDaemonClient;
+    public readonly client: ClusterDaemonClient;
 
     constructor(
         private readonly config: DaemonConfig,
@@ -134,23 +136,7 @@ export class VoltCloudConnection {
                 this.lastHeartbeatFailureAt = null;
                 this.controlPlaneMetricsDirty = true;
                 this.emitLifecycleEvent('cloud-socket-connected', 'Outbound cloud socket connected');
-                if (this.client.isReady()) {
-                    while (this.bufferedEventQueue.length > 0) {
-                        const queued = this.bufferedEventQueue[0] as QueuedEventMessage;
-
-                        try {
-                            this.client.emit(queued.message);
-                            this.bufferedEventQueue.shift();
-
-                            if (queued.dedupeKey) {
-                                this.bufferedEventDedupeKeys.delete(queued.dedupeKey);
-                            }
-                        } catch (err) {
-                            logger.warn(`Failed to flush buffered daemon event type=${queued.message.type}: ${err instanceof Error ? err.message : String(err)}`);
-                            break;
-                        }
-                    }
-                }
+                this.drainBufferedEvents();
                 logger.info('Connected to VoltCloud');
             })
             .onDisconnected((reason) => {
@@ -201,17 +187,9 @@ export class VoltCloudConnection {
         return this.connectedToCloud;
     }
 
-    getTeamClusterId(): string {
-        return this.client.getTeamClusterId();
-    }
-
-    getDaemonPassword(): string {
-        return this.client.getDaemonPassword();
-    }
-
     emitMessage(message: OutboundMessage): void {
         try {
-            this.client.emit(message);
+            this.client.emit(message as unknown as TeamClusterDaemonMessage);
         } catch (err) {
             logger.warn(`Failed to emit message to VoltCloud: ${err instanceof Error ? err.message : String(err)}`);
         }
@@ -225,15 +203,6 @@ export class VoltCloudConnection {
             return;
         }
 
-        if (this.connectedToCloud && this.client.isReady()) {
-            try {
-                this.client.emit(message);
-                return;
-            } catch (err) {
-                logger.warn(`Failed to emit daemon event immediately; buffering type=${message.type}: ${err instanceof Error ? err.message : String(err)}`);
-            }
-        }
-
         if (this.bufferedEventQueue.length >= this.bufferedEventMaxQueueSize) {
             logger.warn(`Buffered daemon event queue is full; dropping event type=${message.type}, dedupeKey=${dedupeKey ?? 'none'}, queueLength=${this.bufferedEventQueue.length}`);
             return;
@@ -243,10 +212,29 @@ export class VoltCloudConnection {
             this.bufferedEventDedupeKeys.add(dedupeKey);
         }
 
-        this.bufferedEventQueue.push({
-            message,
-            dedupeKey
-        });
+        this.bufferedEventQueue.push({ message, dedupeKey });
+        this.drainBufferedEvents();
+    }
+
+    private drainBufferedEvents(): void {
+        if (!this.connectedToCloud || !this.client.isReady()) return;
+
+        while (this.bufferedEventQueue.length > 0) {
+            const queued = this.bufferedEventQueue[0] as QueuedEventMessage;
+
+            try {
+                this.client.emit(queued.message as unknown as TeamClusterDaemonMessage);
+            } catch (err) {
+                logger.warn(`Failed to flush buffered daemon event type=${queued.message.type}: ${err instanceof Error ? err.message : String(err)}`);
+                return;
+            }
+
+            this.bufferedEventQueue.shift();
+
+            if (queued.dedupeKey) {
+                this.bufferedEventDedupeKeys.delete(queued.dedupeKey);
+            }
+        }
     }
 
     async reportDeleteFailed(_details?: string): Promise<void> {

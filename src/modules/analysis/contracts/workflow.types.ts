@@ -1,5 +1,6 @@
 import { Graph as GraphlibGraph, alg as graphlibAlgorithms, type Edge as GraphlibEdge } from '@dagrejs/graphlib';
-import type { BinaryExecutorService, ProcessExecutionLogSink } from '@/core/runtime/infrastructure/binary-executor-service';
+import type { ProcessExecutionLogSink } from '@/core/runtime/contracts/execution-log';
+import type { BinaryExecutorService } from '@/core/runtime/infrastructure/binary-executor-service';
 import type { PluginBinaryCache } from '@/modules/plugin/application/binaries/PluginBinaryCache';
 import type { ArtifactUploadBatch } from '@/modules/plugin/contracts/artifact-upload';
 import type { ResultProcessorService } from '@/modules/plugin/application/exports/result-processor-service-contract';
@@ -28,6 +29,9 @@ export interface WorkflowNode {
 
 export type WorkflowEdge = WorkflowEdgeDefinition
 
+// Intentionally permissive (`object` lets domain objects like
+// `PluginExecutionOutput` flow through `WorkflowNodeOutput`). Narrower
+// JSON-only flavours live in `support/types/json.ts`.
 export type WorkflowValue =
     | boolean
     | null
@@ -40,7 +44,7 @@ export interface WorkflowValueMap {
     [key: string]: WorkflowValue;
 }
 
-export type WorkflowNodeOutput = WorkflowValueMap
+export type WorkflowNodeOutput = WorkflowValueMap;
 
 export interface WorkflowEntrypointConfigDefaults {
     binaryObjectPath?: string;

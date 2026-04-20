@@ -1,3 +1,4 @@
+import { Factory } from '@/core/decorators/service';
 import { PluginListingRowModel } from '@/modules/plugin/domain/models/plugin-listing-row-model';
 import { PluginSubListingRowModel } from '@/modules/plugin/domain/models/plugin-sub-listing-row-model';
 import { calculatePaginationOffset, calculateTotalPages, normalizePagination } from '@/support/contracts/pagination';
@@ -23,17 +24,15 @@ import type {
     PluginSubListingFilter
 } from '@/modules/plugin/infrastructure/repositories/plugin-listing-repository-contract';
 
-type MongoRow = PluginMongoRow;
-
-interface ImportableMongoRow extends MongoRow {
+type ImportableMongoRow = PluginMongoRow & {
     _id: string;
     payloadOwnerClusterId?: string;
-}
+};
 
-interface PluginListingPageDocument extends PluginListingRowDocument {
-    row?: MongoRow;
+type PluginListingPageDocument = PluginListingRowDocument & {
+    row?: PluginMongoRow;
     subListingNames?: string[];
-}
+};
 
 interface PluginListingQuery {
     plugin?: string;
@@ -79,7 +78,7 @@ interface PagedDocumentsResult<TDocument> {
 };
 
 interface SubListingPageResult {
-    rows: MongoRow[];
+    rows: PluginMongoRow[];
     total: number;
 };
 
@@ -115,8 +114,8 @@ const SYSTEM_KEYS = new Set([
 ]);
 
 const appendRowsWithinPage = (
-    pageRows: MongoRow[],
-    rows: MongoRow[],
+    pageRows: PluginMongoRow[],
+    rows: PluginMongoRow[],
     total: number,
     offset: number,
     limit: number
@@ -337,7 +336,7 @@ export class MongoPluginListingRepository implements PluginListingRepository {
                     })
                     .skip(skip)
                     .limit(limit)
-                    .lean<MongoRow[]>()
+                    .lean<PluginMongoRow[]>()
             ]);
 
             return {
@@ -356,7 +355,7 @@ export class MongoPluginListingRepository implements PluginListingRepository {
                 })
                 .skip(skip)
                 .limit(limit)
-                .lean<MongoRow[]>()
+                .lean<PluginMongoRow[]>()
         ]);
 
         return {
@@ -431,7 +430,7 @@ export class MongoPluginListingRepository implements PluginListingRepository {
             return null;
         }
 
-        const listingDocument = await PluginListingRowModel.findOne<PluginSubListingSourceDocument | null>(
+        const listingDocument = await PluginListingRowModel.findOne(
             {
                 analysis: filter.analysisId,
                 exposureId: filter.exposureId,
@@ -442,7 +441,7 @@ export class MongoPluginListingRepository implements PluginListingRepository {
                 payloadOwnerClusterId: 1,
                 _id: 0
             }
-        ).lean();
+        ).lean<PluginSubListingSourceDocument | null>();
 
         if (!listingDocument) {
             return null;
@@ -469,9 +468,9 @@ export class MongoPluginListingRepository implements PluginListingRepository {
             skipMetadata: true
         });
         const stream = createZstdDecompressionStream(response.stream).stream;
-        const pageRows: MongoRow[] = [];
+        const pageRows: PluginMongoRow[] = [];
         let totalRows = 0;
-        let mergedObjectRow: MongoRow | null = null;
+        let mergedObjectRow: PluginMongoRow | null = null;
         let hasMergedObjectRow = false;
 
         for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
@@ -483,7 +482,7 @@ export class MongoPluginListingRepository implements PluginListingRepository {
             if (Array.isArray(subListingChunk)) {
                 totalRows = appendRowsWithinPage(
                     pageRows,
-                    subListingChunk.filter(isRecord),
+                    subListingChunk.filter(isRecord) as PluginMongoRow[],
                     totalRows,
                     offset,
                     limit
@@ -495,7 +494,7 @@ export class MongoPluginListingRepository implements PluginListingRepository {
                 continue;
             }
 
-            const mergedValue = mergeChunkedValue(mergedObjectRow, subListingChunk);
+            const mergedValue = mergeChunkedValue(mergedObjectRow, subListingChunk as unknown as Parameters<typeof mergeChunkedValue>[1]);
             mergedObjectRow = isRecord(mergedValue)
                 ? mergedValue
                 : mergedObjectRow;
@@ -519,9 +518,9 @@ export class MongoPluginListingRepository implements PluginListingRepository {
     }
 };
 
-export const createPluginListingRepository = (
+export const createPluginListingRepository = Factory('pluginListingRepository')((
     objectStore: ClusterObjectStore,
     localOwnerClusterId: string
 ): PluginListingRepository => {
     return new MongoPluginListingRepository(objectStore, localOwnerClusterId);
-};
+});

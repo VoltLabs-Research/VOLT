@@ -1,4 +1,5 @@
 import { ObjectBucketName } from '@/contracts';
+import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
@@ -35,6 +36,7 @@ const queueAutoPreviewRasterization = async (
     logger.info('Handled auto-preview rasterization enqueue for generated GLB');
 };
 
+@Service('glbExporter')
 export class GlbExporter {
     constructor(
         private readonly objectStore: ClusterObjectStore,

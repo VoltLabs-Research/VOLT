@@ -1,5 +1,6 @@
 import SftpClient from 'ssh2-sftp-client';
 
+import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import { withTimeout } from '@/core/observability/infrastructure/daemon-instrumentation';
 import fs from 'node:fs/promises';
@@ -63,6 +64,7 @@ const toSSHFileStatEntry = (
     };
 };
 
+@Service('sshConnection')
 export class SSHConnection {
     private readonly progressThrottleMs = 150;
     private readonly streamHighWaterMark = 1024 * 1024;
@@ -88,7 +90,7 @@ export class SSHConnection {
                 writeStreamOptions: {
                     highWaterMark: this.streamHighWaterMark
                 }
-            });
+            } as Parameters<typeof client.get>[2]);
         });
     }
 
