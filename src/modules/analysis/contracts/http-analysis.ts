@@ -199,13 +199,9 @@ export interface RemoveRunningJobsRequest {
     jobIds: string[];
 }
 
-export interface ClearJobsHistoryRequest {
-    teamId: string;
-    jobIds: string[];
-}
-
 export interface JobsActionResponse {
     affectedJobs: number;
+    affectedJobIds: string[];
 }
 
 export interface QueuedJobNotification extends JobIdentity {

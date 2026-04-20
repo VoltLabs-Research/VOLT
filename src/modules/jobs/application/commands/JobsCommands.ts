@@ -1,4 +1,4 @@
-import type { ClearJobsHistoryRequest, RemoveRunningJobsRequest, RetryJobsRequest } from '@/contracts';
+import type { RemoveRunningJobsRequest, RetryJobsRequest } from '@/contracts';
 import { Command, CommandGroup } from '@/core/commands/decorators';
 import type { RedisConnection } from '@/core/storage/infrastructure/redis/RedisConnection';
 import type { JobControl } from '@/modules/jobs/application/control/JobControl';
@@ -29,10 +29,5 @@ export class JobsCommands {
     @Command('remove-running')
     removeRunning(payload: RemoveRunningJobsRequest) {
         return this.jobControl.removeRunningJobs(payload);
-    }
-
-    @Command('clear-history')
-    clearHistory(payload: ClearJobsHistoryRequest) {
-        return this.jobControl.clearJobsHistory(payload);
     }
 }

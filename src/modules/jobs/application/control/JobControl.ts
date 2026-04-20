@@ -2,7 +2,6 @@ import { Factory } from '@/core/decorators/service';
 import type { QueueService } from '@/core/queues/application/QueueService';
 import { stopProcess } from '@/core/runtime/infrastructure/process-tracker';
 import type {
-    ClearJobsHistoryRequest,
     JobsActionResponse,
     RemoveRunningJobsRequest,
     RetryJobsRequest
@@ -12,21 +11,21 @@ export class JobControl {
     constructor(private readonly queueService: QueueService) {}
 
     retryJobs = async (input: RetryJobsRequest): Promise<JobsActionResponse> => {
-        let affectedJobs = 0;
+        const affectedJobIds: string[] = [];
 
         for (const jobId of input.jobIds) {
             const retried = await this.queueService.retryJobById(jobId);
             if (!retried) {
                 continue;
             }
-            affectedJobs += 1;
+            affectedJobIds.push(jobId);
         }
 
-        return { affectedJobs };
+        return { affectedJobs: affectedJobIds.length, affectedJobIds };
     };
 
     removeRunningJobs = async (input: RemoveRunningJobsRequest): Promise<JobsActionResponse> => {
-        let affectedJobs = 0;
+        const affectedJobIds: string[] = [];
 
         for (const jobId of input.jobIds) {
             const stopped = stopProcess(jobId);
@@ -36,14 +35,10 @@ export class JobControl {
                 continue;
             }
 
-            affectedJobs += 1;
+            affectedJobIds.push(jobId);
         }
 
-        return { affectedJobs };
-    };
-
-    clearJobsHistory = async (_input: ClearJobsHistoryRequest): Promise<JobsActionResponse> => {
-        return { affectedJobs: 0 };
+        return { affectedJobs: affectedJobIds.length, affectedJobIds };
     };
 }
 
