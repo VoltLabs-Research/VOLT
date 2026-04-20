@@ -2,10 +2,15 @@ delete:
   operationId: removeRunningJobs
   tags:
   - Jobs
-  summary: Cancel running jobs
-  description: Cancels all currently running jobs for the specified team.
+  summary: Remove queued and running jobs for a trajectory
+  description: Kills the running processes and removes queued and in-flight jobs for the specified trajectory, dropping them from BullMQ and the Redis projection.
   parameters:
   - name: teamId
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: trajectoryId
     in: path
     required: true
     schema:

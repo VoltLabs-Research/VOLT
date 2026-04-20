@@ -16,16 +16,6 @@ enum AnalysisRelation {
 
 type AnalysisRelations = `${AnalysisRelation}`;
 
-interface AnalysisTrajectoryInverse {
-    path: string;
-    behavior: 'addToSet';
-};
-
-const analysisTrajectoryInverse: AnalysisTrajectoryInverse = {
-    path: 'analysis',
-    behavior: 'addToSet'
-};
-
 export interface AnalysisDocument extends Persistable<
     AnalysisProps,
     AnalysisRelations
@@ -81,9 +71,7 @@ const AnalysisSchema = new Schema<AnalysisDocument>({
         ...teamRefField()
     },
     trajectory: {
-        ...trajectoryRefField(),
-        cascade: 'delete',
-        inverse: analysisTrajectoryInverse
+        ...trajectoryRefField()
     },
     createdBy: {
         ...userRefField()

@@ -14,8 +14,7 @@ export interface LatexAssetDocument extends Persistable<LatexAssetProps, `${Late
 
 const LatexAssetSchema: Schema<LatexAssetDocument> = new Schema({
     team: {
-        ...teamRefField(true),
-        cascade: 'delete'
+        ...teamRefField(true)
     },
     document: {
         type: Schema.Types.ObjectId,

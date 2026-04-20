@@ -7217,43 +7217,20 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /api/jobs/{teamId}/history:
-    delete:
-      operationId: clearJobHistory
-      tags:
-        - Jobs
-      summary: Clear job history
-      description: Clears all completed job records from the team's history.
-      parameters:
-        - name: teamId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /api/jobs/{teamId}/running:
+  /api/jobs/{teamId}/{trajectoryId}/running:
     delete:
       operationId: removeRunningJobs
       tags:
         - Jobs
-      summary: Cancel running jobs
-      description: Cancels all currently running jobs for the specified team.
+      summary: Remove queued and running jobs for a trajectory
+      description: Kills the running processes and removes queued and in-flight jobs for the specified trajectory, dropping them from BullMQ and the Redis projection.
       parameters:
         - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: trajectoryId
           in: path
           required: true
           schema:
@@ -7273,15 +7250,20 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /api/jobs/{teamId}/failed/retries:
+  /api/jobs/{teamId}/{trajectoryId}/failed/retries:
     post:
       operationId: retryFailedJobs
       tags:
         - Jobs
-      summary: Retry failed jobs
-      description: Retries all failed jobs for the specified team.
+      summary: Retry failed jobs for a trajectory
+      description: Re-queues every failed job for the specified trajectory, preserving the original payload.
       parameters:
         - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: trajectoryId
           in: path
           required: true
           schema:
@@ -7299,7 +7281,7 @@ paths:
                       data:
                         type: object
                         properties:
-                          retriedCount:
+                          retriedFrames:
                             type: integer
                             description: Number of jobs queued for retry.
         '400':

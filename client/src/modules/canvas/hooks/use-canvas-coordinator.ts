@@ -5,21 +5,47 @@ import {
 } from '../utilities/selected-timestep-analysis';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useCanvasBootstrapQuery, useCanvasAnalysesQuery, useCanvasTrajectoryQuery } from './queries';
+import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import useCanvasUrlState from './use-canvas-url-state';
-import useGetTrajectoryById from '@/modules/trajectory/hooks/trajectory/use-get-trajectory-by-id';
-import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
 import { useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
 const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
     const { analysisId } = useCanvasUrlState();
-    const { trajectory, isLoading, error } = useGetTrajectoryById({
-        trajectoryId,
-        enabled: !!trajectoryId
-    });
-    const analysesQuery = useAnalysesByTrajectoryQuery(
+    const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
+    const shouldFetch = Boolean(trajectoryId);
+
+    const bootstrapQuery = useCanvasBootstrapQuery(
+        { trajectoryId: trajectoryId ?? '' },
+        {
+            enabled: shouldFetch,
+            retry: (failureCount, error) => {
+                if (checkAccessDeniedError(error)) {
+                    return false;
+                }
+                return failureCount < 2;
+            }
+        }
+    );
+
+    const trajectoryQuery = useCanvasTrajectoryQuery(
+        { trajectoryId: trajectoryId ?? '' },
+        {
+            enabled: shouldFetch,
+            refetchOnMount: 'always',
+            retry: (failureCount, error) => {
+                if (checkAccessDeniedError(error)) {
+                    return false;
+                }
+                return failureCount < 2;
+            }
+        }
+    );
+
+    const analysesQuery = useCanvasAnalysesQuery(
         { trajectoryId: trajectoryId ?? '', page: 1, limit: 100 },
-        { enabled: !!trajectoryId }
+        { enabled: shouldFetch }
     );
 
     const {
@@ -33,6 +59,9 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
         resetModel: state.resetModel,
         resetPlayback: state.resetPlayback
     })));
+
+    const trajectory = trajectoryQuery.data ?? null;
+    const isLoading = trajectoryQuery.isLoading || bootstrapQuery.isLoading;
 
     const analyses = useMemo(() => {
         return analysesQuery.data?.data ?? [];
@@ -103,7 +132,10 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
         availableTimesteps,
         currentTimestep: resolvedCurrentTimestep,
         isLoading,
-        error
+        error: trajectoryQuery.error?.message ?? null,
+        bootstrap: bootstrapQuery.data ?? null,
+        accessDenied,
+        accessDeniedMessage
     };
 };
 

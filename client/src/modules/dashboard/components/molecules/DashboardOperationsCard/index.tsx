@@ -1,6 +1,6 @@
 import './DashboardOperationsCard.css';
 import DashboardCard from '@/modules/dashboard/components/atoms/DashboardCard';
-import DashboardTabs from '@/modules/dashboard/components/molecules/DashboardTabs';
+import SegmentedTabs from '@/shared/presentation/components/SegmentedTabs';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
 import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
 import { getClusterLiveMetricsStatus } from '@/modules/cluster/utilities/cluster-live-metrics-status';
@@ -14,7 +14,6 @@ import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import Loader from '@/shared/presentation/components/Loader';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import { ArrowDown, ArrowUp, Clock3, Cpu, HardDrive, MemoryStick } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { HiOutlineServerStack } from 'react-icons/hi2';
 import type { TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
@@ -22,11 +21,20 @@ import type { ReactNode } from 'react';
 
 type DashboardOperationsTabId = 'clusters' | 'compute-jobs';
 
-interface ClusterSummaryMetricProps {
-    icon: ReactNode;
+interface ClusterProgressMetricProps {
     label: string;
-    value: string;
+    percent: number;
+    detail?: string;
 }
+
+const CRITICAL_THRESHOLD = 85;
+
+const clampPercent = (value: number): number => {
+    if (!Number.isFinite(value)) return 0;
+    if (value < 0) return 0;
+    if (value > 100) return 100;
+    return value;
+};
 
 const DASHBOARD_OPERATIONS_TABS: Array<{ id: DashboardOperationsTabId; label: string }> = [
     { id: 'clusters', label: 'Clusters' },
@@ -57,12 +65,34 @@ const getClusterStatusClassName = (variant: 'success' | 'warning' | 'danger' | '
     return `dashboard-operations-cluster-status is-${variant}`;
 };
 
-const ClusterSummaryMetric = ({ icon, label, value }: ClusterSummaryMetricProps) => {
+const ClusterProgressMetric = ({ label, percent, detail }: ClusterProgressMetricProps) => {
+    const clamped = clampPercent(percent);
+    const isCritical = clamped >= CRITICAL_THRESHOLD;
+    const title = detail ? `${label} · ${clamped.toFixed(0)}% · ${detail}` : `${label} · ${clamped.toFixed(0)}%`;
+
     return (
-        <span className='dashboard-operations-cluster-metric'>
-            <span className='dashboard-operations-cluster-metric-icon'>{icon}</span>
-            <span className='dashboard-operations-cluster-metric-label'>{label} {value}</span>
-        </span>
+        <div
+            className={`dashboard-operations-cluster-metric ${isCritical ? 'is-critical' : ''}`}
+            role='group'
+            aria-label={title}
+            title={title}
+        >
+            <span className='dashboard-operations-cluster-metric-label'>{label}</span>
+            <div
+                className='dashboard-operations-cluster-metric-track'
+                role='progressbar'
+                aria-valuenow={Math.round(clamped)}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={label}
+            >
+                <div
+                    className='dashboard-operations-cluster-metric-fill'
+                    style={{ width: `${clamped}%` }}
+                />
+            </div>
+            <span className='dashboard-operations-cluster-metric-value'>{Math.round(clamped)}%</span>
+        </div>
     );
 };
 
@@ -175,6 +205,7 @@ const DashboardOperationsCard = () => {
                                 </Container>
 
                                 <span className={getClusterStatusClassName(liveMetricsStatus.variant)}>
+                                    <span className='dashboard-operations-cluster-status-dot' aria-hidden='true' />
                                     {liveMetricsStatus.label}
                                 </span>
                             </Container>
@@ -182,36 +213,37 @@ const DashboardOperationsCard = () => {
                             {liveMetrics
                                 ? (
                                     <>
-                                        <Container className='dashboard-operations-cluster-metrics-row'>
-                                            <ClusterSummaryMetric
-                                                icon={<Cpu size={12} strokeWidth={1.8} />}
+                                        <Container className='dashboard-operations-cluster-metrics-row d-flex column'>
+                                            <ClusterProgressMetric
                                                 label='CPU'
-                                                value={`${Math.round(liveMetrics.cpu.usage)}% · ${liveMetrics.cpu.cores} cores`}
+                                                percent={liveMetrics.cpu.usage}
+                                                detail={`${liveMetrics.cpu.cores} cores`}
                                             />
-                                            <ClusterSummaryMetric
-                                                icon={<MemoryStick size={12} strokeWidth={1.8} />}
-                                                label='MEM'
-                                                value={`${liveMetrics.memory.used.toFixed(1)} / ${liveMetrics.memory.total.toFixed(1)} GB`}
+                                            <ClusterProgressMetric
+                                                label='Memory'
+                                                percent={liveMetrics.memory.total > 0
+                                                    ? (liveMetrics.memory.used / liveMetrics.memory.total) * 100
+                                                    : 0}
+                                                detail={`${liveMetrics.memory.used.toFixed(1)} / ${liveMetrics.memory.total.toFixed(1)} GB`}
                                             />
-                                            <ClusterSummaryMetric
-                                                icon={<HardDrive size={12} strokeWidth={1.8} />}
-                                                label='DISK'
-                                                value={`${liveMetrics.disk.used.toFixed(1)} / ${liveMetrics.disk.total.toFixed(1)} GB`}
+                                            <ClusterProgressMetric
+                                                label='Disk'
+                                                percent={liveMetrics.disk.total > 0
+                                                    ? (liveMetrics.disk.used / liveMetrics.disk.total) * 100
+                                                    : 0}
+                                                detail={`${liveMetrics.disk.used.toFixed(1)} / ${liveMetrics.disk.total.toFixed(1)} GB`}
                                             />
                                         </Container>
 
-                                        <Container className='dashboard-operations-cluster-footer d-flex items-center gap-075'>
+                                        <Container className='dashboard-operations-cluster-footer d-flex items-center'>
                                             <span className='dashboard-operations-cluster-footer-item'>
-                                                <ArrowDown size={12} strokeWidth={1.8} />
-                                                {networkIncomingLabel}
+                                                <span aria-hidden='true'>↓</span> {networkIncomingLabel}
                                             </span>
                                             <span className='dashboard-operations-cluster-footer-item'>
-                                                <ArrowUp size={12} strokeWidth={1.8} />
-                                                {networkOutgoingLabel}
+                                                <span aria-hidden='true'>↑</span> {networkOutgoingLabel}
                                             </span>
                                             {latencyLabel && (
                                                 <span className='dashboard-operations-cluster-footer-item'>
-                                                    <Clock3 size={12} strokeWidth={1.8} />
                                                     {latencyLabel}
                                                 </span>
                                             )}
@@ -247,7 +279,7 @@ const DashboardOperationsCard = () => {
     return (
         <DashboardCard className='dashboard-operations-card d-flex column' overflowHidden={true}>
             <Container className='dashboard-tabbed-card-header'>
-                <DashboardTabs
+                <SegmentedTabs
                     tabs={DASHBOARD_OPERATIONS_TABS}
                     activeTab={activeTab}
                     onChange={setActiveTab}

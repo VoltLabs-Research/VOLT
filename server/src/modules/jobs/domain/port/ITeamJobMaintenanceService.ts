@@ -6,28 +6,23 @@ export interface TeamClusterFailureDetail {
     message?: string;
 };
 
-export interface ClearTeamJobsHistoryResult {
+export interface RemoveTeamJobsResult {
     deletedJobs: number;
     deletedAnalyses: number;
     affectedClusters: number;
     clusterFailures: TeamClusterFailureDetail[];
 };
 
-export interface RemoveTeamRunningJobsResult {
-    deletedJobs: number;
-    deletedAnalyses: number;
-    affectedClusters: number;
-    clusterFailures: TeamClusterFailureDetail[];
-};
-
-export interface RetryTeamFailedJobsResult {
+export interface RetryTeamJobsResult {
     retriedFrames: number;
     affectedClusters: number;
     clusterFailures: TeamClusterFailureDetail[];
 };
 
 export interface ITeamJobMaintenanceService {
-    clearHistory(teamId: string): Promise<ClearTeamJobsHistoryResult>;
-    removeRunningJobs(teamId: string): Promise<RemoveTeamRunningJobsResult>;
-    retryFailedJobs(teamId: string, jobIds?: string[]): Promise<RetryTeamFailedJobsResult>;
+    removeJobs(teamId: string, jobIds: string[]): Promise<RemoveTeamJobsResult>;
+    retryJobs(teamId: string, jobIds: string[]): Promise<RetryTeamJobsResult>;
+    removeJobsForAnalysis(teamId: string, analysisId: string): Promise<RemoveTeamJobsResult>;
+    removeJobsForTrajectory(teamId: string, trajectoryId: string): Promise<RemoveTeamJobsResult>;
+    retryFailedJobsForTrajectory(teamId: string, trajectoryId: string): Promise<RetryTeamJobsResult>;
 };

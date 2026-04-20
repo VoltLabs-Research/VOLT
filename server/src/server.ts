@@ -11,7 +11,9 @@ import { registerAllSubscribers } from './core/events/registerAllSubscribers';
 import { SOCKET_TOKENS } from './modules/socket/infrastructure/di/SocketTokens';
 import { ScriptingJupyterProxyService } from './modules/scripting/infrastructure/services/ScriptingJupyterProxyService';
 import { TEAM_CLUSTER_TOKENS } from './modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import { TRAJECTORY_TOKENS } from './modules/trajectory/infrastructure/di/TrajectoryTokens';
 import ClusterTransferRunner from './modules/team-cluster/infrastructure/services/ClusterTransferRunner';
+import TrajectoryCloneRunner from './modules/trajectory/infrastructure/services/trajectory/TrajectoryCloneRunner';
 import { httpErrorMiddleware } from './shared/infrastructure/http/middleware/error';
 import logger from './shared/infrastructure/logger';
 import mongoConnector from './shared/infrastructure/utilities/mongo-connector';
@@ -39,6 +41,7 @@ registerAllDependencies();
 let activeServer: http.Server | null = null;
 let activeSocketGateway: SocketGateway | null = null;
 let activeClusterTransferRunner: ClusterTransferRunner | null = null;
+let activeTrajectoryCloneRunner: TrajectoryCloneRunner | null = null;
 let shuttingDown = false;
 const activeConnections = new Set<NetSocket>();
 
@@ -120,6 +123,11 @@ const shutdown = async () => {
         if (activeClusterTransferRunner) {
             activeClusterTransferRunner.stop();
             activeClusterTransferRunner = null;
+        }
+
+        if (activeTrajectoryCloneRunner) {
+            activeTrajectoryCloneRunner.stop();
+            activeTrajectoryCloneRunner = null;
         }
 
         const shutdownResults = await Promise.allSettled(shutdownTasks);
@@ -225,6 +233,7 @@ const startServer = async () => {
 
             activeSocketGateway = container.resolve<SocketGateway>(SOCKET_TOKENS.SocketGateway);
             activeClusterTransferRunner = container.resolve<ClusterTransferRunner>(TEAM_CLUSTER_TOKENS.ClusterTransferRunner);
+            activeTrajectoryCloneRunner = container.resolve<TrajectoryCloneRunner>(TRAJECTORY_TOKENS.TrajectoryCloneRunner);
             const socketModules = container.resolveAll<ISocketModule>(SOCKET_TOKENS.SocketModule);
             for (const module of socketModules) {
                 activeSocketGateway.register(module);
@@ -232,6 +241,7 @@ const startServer = async () => {
 
             await activeSocketGateway.initialize(server);
             activeClusterTransferRunner.start();
+            activeTrajectoryCloneRunner.start();
             logger.info(`@server: SocketGateway ready on :${SERVER_PORT}`);
 
             logger.info(`@server: running at http://${SERVER_HOST}:${SERVER_PORT}/`);

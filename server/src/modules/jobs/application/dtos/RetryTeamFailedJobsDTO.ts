@@ -1,11 +1,8 @@
-import type { TeamClusterFailureDetail } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
+import type { RetryTeamJobsResult } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
 
 export interface RetryTeamFailedJobsInputDTO {
     teamId: string;
+    trajectoryId: string;
 };
 
-export interface RetryTeamFailedJobsOutputDTO {
-    retriedFrames: number;
-    affectedClusters: number;
-    clusterFailures: TeamClusterFailureDetail[];
-};
+export type RetryTeamFailedJobsOutputDTO = RetryTeamJobsResult;

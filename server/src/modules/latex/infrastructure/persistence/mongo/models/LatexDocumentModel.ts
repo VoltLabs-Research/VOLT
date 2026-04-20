@@ -18,8 +18,7 @@ export interface LatexDocumentDocument extends Omit<LatexDocumentDocumentBase, '
 
 const LatexDocumentSchema: Schema<LatexDocumentDocument> = new Schema({
     team: {
-        ...teamRefField(true),
-        cascade: 'delete'
+        ...teamRefField(true)
     },
     title: {
         type: String,

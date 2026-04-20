@@ -95,4 +95,20 @@ export default class ChatRepository
 
         return !!result;
     }
+
+    async removeUserReferences(userId: string): Promise<void> {
+        await this.model.updateMany(
+            { $or: [{ participants: userId }, { admins: userId }] },
+            { $pull: { participants: userId, admins: userId } }
+        );
+    }
+
+    async findIdsWithEmptyParticipants(): Promise<string[]> {
+        const docs = await this.model
+            .find({ participants: { $size: 0 } })
+            .select('_id')
+            .lean();
+
+        return docs.map((doc) => String(doc._id));
+    }
 };

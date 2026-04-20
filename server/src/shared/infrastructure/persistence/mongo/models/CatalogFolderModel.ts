@@ -15,8 +15,7 @@ export interface CatalogFolderDocument extends Document {
 
 const CatalogFolderSchema = new Schema<CatalogFolderDocument>({
     team: {
-        ...teamRefField(true),
-        cascade: 'delete'
+        ...teamRefField(true)
     },
     createdBy: {
         ...userRefField(true)

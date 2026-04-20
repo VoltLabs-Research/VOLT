@@ -19,8 +19,7 @@ const LatexFileSchema: Schema<LatexFileDocument> = new Schema({
         required: true
     },
     team: {
-        ...teamRefField(true),
-        cascade: 'delete'
+        ...teamRefField(true)
     },
     name: {
         type: String,

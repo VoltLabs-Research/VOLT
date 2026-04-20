@@ -26,10 +26,9 @@ const JobGroup = ({ group, defaultExpanded = false, statusPresentation = 'badge'
     const statusClassName = frameGroupStatusClassNames[group.overallStatus];
     const {
         loadingAction,
-        handleClearHistory,
         handleRemoveRunningJobs,
         handleRetryFailedJobs
-    } = useJobGroupActions();
+    } = useJobGroupActions(group.trajectoryId);
 
     const handleToggle = () => {
         setIsExpanded((value) => !value);
@@ -50,7 +49,6 @@ const JobGroup = ({ group, defaultExpanded = false, statusPresentation = 'badge'
             <JobGroupMenu
                 trajectoryId={group.trajectoryId}
                 loadingAction={loadingAction}
-                onClearHistory={handleClearHistory}
                 onRemoveRunningJobs={handleRemoveRunningJobs}
                 onRetryFailedJobs={handleRetryFailedJobs}
                 trigger={(

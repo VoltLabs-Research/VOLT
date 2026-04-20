@@ -1,0 +1,33 @@
+.workspace-cursors-overlay {
+    pointer-events: none;
+    z-index: 8;
+}
+
+.workspace-cursor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 2px;
+    will-change: transform;
+    transition: transform 80ms linear, opacity 120ms linear;
+    opacity: 0.85;
+}
+
+.workspace-cursor-label {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: 10px;
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transform: translate(6px, 10px);
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

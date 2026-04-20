@@ -394,11 +394,9 @@ paths:
     $ref: paths/whiteboards/by-teamid__by-whiteboardid__assets__by-assetid.yaml
   /api/daily-activities/{teamId}:
     $ref: paths/daily-activities/by-teamid.yaml
-  /api/jobs/{teamId}/history:
-    $ref: paths/jobs/by-teamid__history.yaml
-  /api/jobs/{teamId}/running:
+  /api/jobs/{teamId}/{trajectoryId}/running:
     $ref: paths/jobs/by-teamid__running.yaml
-  /api/jobs/{teamId}/failed/retries:
+  /api/jobs/{teamId}/{trajectoryId}/failed/retries:
     $ref: paths/jobs/by-teamid__failed__retries.yaml
   /api/notifications:
     $ref: paths/notifications/index.yaml

@@ -1,12 +1,8 @@
-import type { TeamClusterFailureDetail } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
+import type { RemoveTeamJobsResult } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
 
 export interface RemoveTeamRunningJobsInputDTO {
     teamId: string;
+    trajectoryId: string;
 };
 
-export interface RemoveTeamRunningJobsOutputDTO {
-    deletedJobs: number;
-    deletedAnalyses: number;
-    affectedClusters: number;
-    clusterFailures: TeamClusterFailureDetail[];
-};
+export type RemoveTeamRunningJobsOutputDTO = RemoveTeamJobsResult;

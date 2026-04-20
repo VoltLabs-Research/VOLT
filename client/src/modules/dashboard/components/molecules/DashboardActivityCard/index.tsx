@@ -1,6 +1,6 @@
 import './DashboardActivityCard.css';
 import DashboardCard from '@/modules/dashboard/components/atoms/DashboardCard';
-import DashboardTabs from '@/modules/dashboard/components/molecules/DashboardTabs';
+import SegmentedTabs from '@/shared/presentation/components/SegmentedTabs';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
 import { ACTIVITY_ACCENT, ACTIVITY_ICON } from '@/modules/daily-activity/utilities/activity-mappings';
 import Container from '@/shared/presentation/components/Container';
@@ -410,7 +410,7 @@ const DashboardActivityCard = () => {
     return (
         <DashboardCard className='dashboard-activity-card d-flex column'>
             <Container className='dashboard-tabbed-card-header'>
-                <DashboardTabs
+                <SegmentedTabs
                     tabs={DASHBOARD_ACTIVITY_TABS}
                     activeTab={activeTab}
                     onChange={setActiveTab}

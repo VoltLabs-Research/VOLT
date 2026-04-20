@@ -2,16 +2,28 @@ import useCanvasUrlState, { CanvasWorkspace } from '../../../hooks/use-canvas-ur
 import { useNavigate } from 'react-router-dom';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
+import WorkspacePeerAvatars from '../WorkspacePeerAvatars';
+
+import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
 
 interface WorkspaceTabsProps {
     disableAuxWorkspaces?: boolean;
+    peers?: WorkspacePresenceUser[];
+    activeOwnerId?: string;
+    onSelectPeer?: (peerId: string) => void;
 };
 
-const WorkspaceTabs = ({ disableAuxWorkspaces = false }: WorkspaceTabsProps) => {
+const WorkspaceTabs = ({
+    disableAuxWorkspaces = false,
+    peers = [],
+    activeOwnerId,
+    onSelectPeer
+}: WorkspaceTabsProps) => {
     const navigate = useNavigate();
     const { activeWorkspace, setActiveWorkspace } = useCanvasUrlState();
     const isRaster = activeWorkspace === CanvasWorkspace.Raster;
     const isScripting = activeWorkspace === CanvasWorkspace.Scripting;
+    const canShowPeers = Boolean(onSelectPeer && peers.length > 0);
 
     return (
         <Container className="d-flex items-center px-1 gap-025">
@@ -65,6 +77,13 @@ const WorkspaceTabs = ({ disableAuxWorkspaces = false }: WorkspaceTabsProps) => 
                     Scripting
                 </Button>
             </Container>
+            {canShowPeers && (
+                <WorkspacePeerAvatars
+                    peers={peers}
+                    activeOwnerId={activeOwnerId}
+                    onSelectPeer={onSelectPeer!}
+                />
+            )}
         </Container>
     );
 };

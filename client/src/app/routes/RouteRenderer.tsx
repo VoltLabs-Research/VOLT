@@ -7,7 +7,7 @@ import PageTransition from '@/shared/presentation/components/PageTransition';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import DashboardLayout from '@/modules/dashboard/components/organisms/DashboardLayout';
-import { guestRoutes, protectedRoutes, publicRoutes } from '@/app/routes/definitions';
+import { guestRoutes, optionalAuthRoutes, protectedRoutes, publicRoutes } from '@/app/routes/definitions';
 import ProtectedRoute, { RouteMode } from '@/app/routes/ProtectedRoute';
 import { RoutePermissionMode } from '@/app/routes/types';
 import { Route } from 'react-router-dom';
@@ -169,6 +169,14 @@ export const renderGuestRoutes = () => {
     return (
         <Route element={<ProtectedRoute mode={RouteMode.Guest} />}>
             {guestRoutes.map((route) => renderRouteWithChildren(route))}
+        </Route>
+    );
+};
+
+export const renderOptionalAuthRoutes = () => {
+    return (
+        <Route element={<ProtectedRoute mode={RouteMode.OptionalAuth} />}>
+            {optionalAuthRoutes.map((route) => renderRouteWithChildren(route))}
         </Route>
     );
 };

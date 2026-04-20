@@ -121,6 +121,6 @@ export const computeGlbUrl = ({
         case 'particle-filter':
             return buildParticleFilterUrl(teamId, trajectoryId, activeScene, currentTimestep);
         default:
-            return buildApiUrl(`/api/trajectories/${teamId}/${trajectoryId}/glb/${currentTimestep}/${analysisId}`);
+            return buildApiUrl(`/api/canvas/${trajectoryId}/glb/${currentTimestep}/${analysisId}`);
     }
 };

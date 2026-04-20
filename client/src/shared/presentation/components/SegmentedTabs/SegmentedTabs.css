@@ -1,0 +1,80 @@
+.segmented-tabs {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-full);
+    width: fit-content;
+}
+
+.segmented-tabs--full {
+    display: flex;
+    width: 100%;
+}
+
+.segmented-tabs--full .segmented-tabs__tab {
+    flex: 1;
+    justify-content: center;
+}
+
+.segmented-tabs__tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: color .15s ease;
+    white-space: nowrap;
+}
+
+.segmented-tabs--md .segmented-tabs__tab {
+    padding: .375rem .875rem;
+}
+
+.segmented-tabs--sm .segmented-tabs__tab {
+    padding: .25rem .625rem;
+    font-size: .75rem;
+}
+
+.segmented-tabs__tab:hover:not(.is-active) {
+    color: var(--color-text-primary);
+}
+
+.segmented-tabs__tab:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+.segmented-tabs__tab.is-active {
+    color: var(--color-text-primary);
+}
+
+.segmented-tabs__pill {
+    position: absolute;
+    inset: 0;
+    background: var(--color-content-bg);
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-card);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.segmented-tabs__label {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: .375rem;
+    font-size: .8125rem;
+    line-height: 1;
+    font-weight: 500;
+}
+
+.segmented-tabs__icon {
+    color: currentColor;
+}

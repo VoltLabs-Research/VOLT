@@ -2,14 +2,12 @@ import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import { CiRedo, CiStop1 } from 'react-icons/ci';
-import { RxTrash } from 'react-icons/rx';
 import type { ReactElement } from 'react';
 
 interface JobGroupMenuProps {
     trajectoryId: string;
     trigger: ReactElement;
-    loadingAction: string | null;
-    onClearHistory: () => void;
+    loadingAction: 'remove' | 'retry' | null;
     onRemoveRunningJobs: () => void;
     onRetryFailedJobs: () => void;
 };
@@ -18,7 +16,6 @@ const JobGroupMenu = ({
     trajectoryId,
     trigger,
     loadingAction,
-    onClearHistory,
     onRemoveRunningJobs,
     onRetryFailedJobs
 }: JobGroupMenuProps) => {
@@ -33,18 +30,6 @@ const JobGroupMenu = ({
         >
             {(close) => (
                 <PopoverMenu label='Job group actions' onClose={close}>
-                    <PopoverMenuItem
-                        icon={<RxTrash />}
-                        onClick={() => {
-                            onClearHistory();
-                            close();
-                        }}
-                        variant='danger'
-                        isLoading={loadingAction === 'clear'}
-                        disabled={loadingAction !== null}
-                    >
-                        Clear History
-                    </PopoverMenuItem>
                     <PopoverMenuItem
                         icon={<CiStop1 />}
                         onClick={() => {
