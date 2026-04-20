@@ -4,11 +4,14 @@ import { useEditorStore } from '@/modules/canvas/stores/editor';
 import SimulationCellView from '../../molecules/SimulationCellView';
 import TimelineHeader from '../../molecules/TimelineHeader';
 import TimelineRuler from '../../molecules/TimelineRuler';
+import TimelinePresencePlayheads from '../../atoms/TimelinePresencePlayheads';
 import useTimelineJobActivity from '../../../hooks/use-timeline-job-activity';
 import useCanvasTimelineTabs from '@/modules/canvas/hooks/use-canvas-timeline-tabs';
 import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
 import { resolveRangedTimesteps } from '@/modules/canvas/utilities/timeline-range';
 import useTip from '@/shared/tips/use-tip';
+
+import type { CanvasPresenceUser } from '@/modules/canvas/hooks/use-canvas-presence';
 
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { memo, useMemo, useCallback, useState, useRef, useEffect } from 'react';
@@ -31,6 +34,7 @@ interface TimelineProps {
     currentTimestep: number | undefined;
     availableTimesteps: number[];
     analysisId: string | undefined;
+    presenceUsers?: CanvasPresenceUser[];
     onTabChange?: (tab: string) => void;
     onDownloadExposureListing?: (params: {
         pluginId: string;
@@ -49,6 +53,7 @@ const Timeline = ({
     currentTimestep,
     availableTimesteps,
     analysisId,
+    presenceUsers,
     onTabChange,
     onDownloadExposureListing
 }: TimelineProps) => {
@@ -199,84 +204,43 @@ const Timeline = ({
 
     const rulerRef = useRef<HTMLDivElement>(null);
     const tickElementsRef = useRef<HTMLDivElement[]>([]);
+    const tickCentersRef = useRef<number[]>([]);
+    const [tickCentersVersion, setTickCentersVersion] = useState(0);
     const [playheadLeft, setPlayheadLeft] = useState<number>(0);
+    const [scrollLeft, setScrollLeft] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
     const isDraggingRef = useRef(false);
+    const pendingScrubRafRef = useRef<number | null>(null);
+    const pendingScrubClientXRef = useRef<number | null>(null);
 
     const [zoomPercent, setZoomPercent] = useState(100);
-    const lastZoomRef = useRef(100);
-
-    const syncZoomPercent = useCallback(() => {
-        if (!sceneRef.current?.getCurrentZoom) {
-            return;
-        }
-
-        const nextZoom = sceneRef.current.getCurrentZoom();
-        if (Math.abs(nextZoom - lastZoomRef.current) <= 1) {
-            return;
-        }
-
-        lastZoomRef.current = nextZoom;
-        setZoomPercent(nextZoom);
-    }, [sceneRef]);
 
     useEffect(() => {
-        let animationFrameId: number | null = null;
-        let samplingDeadline = 0;
+        let cancelled = false;
+        let unsubscribe: (() => void) | undefined;
+        let retryTimeoutId: number | undefined;
 
-        const runZoomSampling = () => {
-            syncZoomPercent();
-
-            if (performance.now() < samplingDeadline) {
-                animationFrameId = window.requestAnimationFrame(runZoomSampling);
+        const trySubscribe = () => {
+            if (cancelled) return;
+            const scene = sceneRef.current;
+            if (scene?.subscribeZoom) {
+                unsubscribe = scene.subscribeZoom((nextZoom) => setZoomPercent(nextZoom));
                 return;
             }
-
-            animationFrameId = null;
+            retryTimeoutId = window.setTimeout(trySubscribe, 120);
         };
 
-        const scheduleZoomSampling = (durationMs = 600) => {
-            samplingDeadline = performance.now() + durationMs;
-
-            if (animationFrameId === null) {
-                animationFrameId = window.requestAnimationFrame(runZoomSampling);
-            }
-        };
-
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                scheduleZoomSampling();
-            }
-        };
-
-        const handleZoomInteraction = () => {
-            scheduleZoomSampling();
-        };
-
-        scheduleZoomSampling(800);
-        window.addEventListener('wheel', handleZoomInteraction, { passive: true });
-        window.addEventListener('pointerup', handleZoomInteraction);
-        window.addEventListener('keydown', handleZoomInteraction);
-        document.addEventListener('visibilitychange', handleVisibilityChange);
+        trySubscribe();
 
         return () => {
-            if (animationFrameId !== null) {
-                window.cancelAnimationFrame(animationFrameId);
-            }
-
-            window.removeEventListener('wheel', handleZoomInteraction);
-            window.removeEventListener('pointerup', handleZoomInteraction);
-            window.removeEventListener('keydown', handleZoomInteraction);
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            cancelled = true;
+            if (retryTimeoutId !== undefined) window.clearTimeout(retryTimeoutId);
+            unsubscribe?.();
         };
-    }, [syncZoomPercent]);
+    }, [sceneRef]);
 
     const handleZoomPreset = useCallback((preset: number) => {
-        if (sceneRef.current?.zoomTo) {
-            sceneRef.current.zoomTo(preset);
-            lastZoomRef.current = preset;
-            setZoomPercent(preset);
-        }
+        sceneRef.current?.zoomTo?.(preset);
     }, [sceneRef]);
 
     const scrollToTick = useCallback((tickEl: HTMLDivElement, smooth: boolean) => {
@@ -295,11 +259,15 @@ const Timeline = ({
         const ruler = rulerRef.current;
         if (!ruler) {
             tickElementsRef.current = [];
+            tickCentersRef.current = [];
+            setTickCentersVersion((version) => version + 1);
             return [];
         }
 
         const tickElements = Array.from(ruler.querySelectorAll<HTMLDivElement>('.canvas-ruler-tick'));
         tickElementsRef.current = tickElements;
+        tickCentersRef.current = tickElements.map((el) => el.offsetLeft + el.offsetWidth / 2);
+        setTickCentersVersion((version) => version + 1);
         return tickElements;
     }, []);
 
@@ -307,19 +275,27 @@ const Timeline = ({
         collectTickElements();
     }, [collectTickElements, ticks]);
 
+    useEffect(() => {
+        const ruler = rulerRef.current;
+        if (!ruler) return;
+        const resizeObserver = new ResizeObserver(() => collectTickElements());
+        resizeObserver.observe(ruler);
+        return () => resizeObserver.disconnect();
+    }, [collectTickElements]);
+
     const updatePlayheadPosition = useCallback(() => {
         const ruler = rulerRef.current;
         if (!ruler || rangedTimesteps.length === 0) return;
-        const tickElements = tickElementsRef.current.length > 0
-            ? tickElementsRef.current
-            : collectTickElements();
-        const tickEl = tickElements[safeCurrentIndex];
+        if (tickElementsRef.current.length === 0) {
+            collectTickElements();
+        }
+        const tickEl = tickElementsRef.current[safeCurrentIndex];
         if (!tickEl) return;
-        const tickCenter = tickEl.offsetLeft + tickEl.offsetWidth / 2;
+        const tickCenter = tickCentersRef.current[safeCurrentIndex] ?? (tickEl.offsetLeft + tickEl.offsetWidth / 2);
         const scrollOffset = ruler.scrollLeft;
         setPlayheadLeft(tickCenter - scrollOffset);
+        setScrollLeft(scrollOffset);
 
-        // Auto-scroll: if the active tick is outside the visible region, scroll to it
         const rulerWidth = ruler.clientWidth;
         const visibleLeft = scrollOffset;
         const visibleRight = scrollOffset + rulerWidth;
@@ -343,25 +319,29 @@ const Timeline = ({
         };
     }, [updatePlayheadPosition]);
 
-    const pickNearestTimestep = useCallback((clientX: number) => {
+    const applyScrubAtClientX = useCallback((clientX: number) => {
         const ruler = rulerRef.current;
         if (!ruler || rangedTimesteps.length === 0) return;
-        const tickElements = tickElementsRef.current.length > 0
-            ? tickElementsRef.current
-            : collectTickElements();
-        if (tickElements.length === 0) return;
+        if (tickCentersRef.current.length === 0) {
+            collectTickElements();
+        }
+        const centers = tickCentersRef.current;
+        if (centers.length === 0) return;
 
-        let nearestIndex = 0;
-        let minDist = Infinity;
+        const rulerRect = ruler.getBoundingClientRect();
+        const localX = clientX - rulerRect.left + ruler.scrollLeft;
 
-        for (let i = 0; i < tickElements.length; i++) {
-            const rect = tickElements[i].getBoundingClientRect();
-            const tickCenterX = rect.left + rect.width / 2;
-            const dist = Math.abs(clientX - tickCenterX);
-            if (dist < minDist) {
-                minDist = dist;
-                nearestIndex = i;
-            }
+        let lo = 0;
+        let hi = centers.length - 1;
+        while (lo < hi) {
+            const mid = (lo + hi) >> 1;
+            if (centers[mid] < localX) lo = mid + 1;
+            else hi = mid;
+        }
+
+        let nearestIndex = lo;
+        if (nearestIndex > 0 && Math.abs(centers[nearestIndex - 1] - localX) <= Math.abs(centers[nearestIndex] - localX)) {
+            nearestIndex -= 1;
         }
 
         if (nearestIndex < rangedTimesteps.length) {
@@ -369,22 +349,42 @@ const Timeline = ({
         }
     }, [collectTickElements, rangedTimesteps, setCurrentTimestep]);
 
+    const scheduleScrub = useCallback((clientX: number) => {
+        pendingScrubClientXRef.current = clientX;
+        if (pendingScrubRafRef.current !== null) return;
+        pendingScrubRafRef.current = window.requestAnimationFrame(() => {
+            pendingScrubRafRef.current = null;
+            const pending = pendingScrubClientXRef.current;
+            pendingScrubClientXRef.current = null;
+            if (pending !== null) applyScrubAtClientX(pending);
+        });
+    }, [applyScrubAtClientX]);
+
+    useEffect(() => {
+        return () => {
+            if (pendingScrubRafRef.current !== null) {
+                window.cancelAnimationFrame(pendingScrubRafRef.current);
+                pendingScrubRafRef.current = null;
+            }
+        };
+    }, []);
+
     const handleRulerClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-        pickNearestTimestep(event.clientX);
-    }, [pickNearestTimestep]);
+        applyScrubAtClientX(event.clientX);
+    }, [applyScrubAtClientX]);
 
     const handleRulerPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
         if (event.button !== 0) return;
         setIsDragging(true);
         isDraggingRef.current = true;
         event.currentTarget.setPointerCapture(event.pointerId);
-        pickNearestTimestep(event.clientX);
-    }, [pickNearestTimestep]);
+        applyScrubAtClientX(event.clientX);
+    }, [applyScrubAtClientX]);
 
     const handleRulerPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
         if (!isDragging) return;
-        pickNearestTimestep(event.clientX);
-    }, [isDragging, pickNearestTimestep]);
+        scheduleScrub(event.clientX);
+    }, [isDragging, scheduleScrub]);
 
     const handleRulerPointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
         if (!isDragging) return;
@@ -459,20 +459,31 @@ const Timeline = ({
             />
 
             {activeTab === 'timeline' && (
-                <TimelineRuler
-                    rulerRef={rulerRef}
-                    ticks={ticks}
-                    playheadLeft={playheadLeft}
-                    startFrame={startFrame}
-                    endFrame={endFrame}
-                    currentFrame={currentFrame}
-                    onClick={handleRulerClick}
-                    onPointerDown={handleRulerPointerDown}
-                    onPointerMove={handleRulerPointerMove}
-                    onPointerUp={handleRulerPointerUp}
-                    onWheel={handleRulerWheel}
-                    onKeyDown={handleRulerKeyDown}
-                />
+                <Container className='p-relative'>
+                    <TimelineRuler
+                        rulerRef={rulerRef}
+                        ticks={ticks}
+                        playheadLeft={playheadLeft}
+                        startFrame={startFrame}
+                        endFrame={endFrame}
+                        currentFrame={currentFrame}
+                        onClick={handleRulerClick}
+                        onPointerDown={handleRulerPointerDown}
+                        onPointerMove={handleRulerPointerMove}
+                        onPointerUp={handleRulerPointerUp}
+                        onWheel={handleRulerWheel}
+                        onKeyDown={handleRulerKeyDown}
+                    />
+                    {presenceUsers && presenceUsers.length > 0 && (
+                        <TimelinePresencePlayheads
+                            key={tickCentersVersion}
+                            users={presenceUsers}
+                            rangedTimesteps={rangedTimesteps}
+                            tickCenters={tickCentersRef.current}
+                            scrollLeft={scrollLeft}
+                        />
+                    )}
+                </Container>
             )}
 
             {activeTab === 'particles' && trajectory?._id && (
