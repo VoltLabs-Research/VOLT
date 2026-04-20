@@ -1,12 +1,13 @@
 import { getDashboardNavigationItems } from '@/app/routes/metadata';
 import { DashboardNavigationSection } from '@/app/routes/types';
 import { useMemo } from 'react';
-import { IoSettingsOutline } from 'react-icons/io5';
+import { IoSettings, IoSettingsOutline } from 'react-icons/io5';
 import { useLocation, useNavigate } from 'react-router';
 import { TbBook } from 'react-icons/tb';
 import Container from '@/shared/presentation/components/Container';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import SidebarExpandableSection from '@/shared/presentation/components/SidebarExpandableSection';
+import Tooltip from '@/shared/presentation/components/Tooltip';
 
 interface SidebarFooterNavigationProps {
     setSettingsExpanded: (status: boolean) => void;
@@ -31,21 +32,27 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collap
         }));
     }, [pathname, navigate]);
 
+    const settingsActive = pathname.startsWith('/dashboard/settings');
+
     if (collapsed) {
         return (
             <Container className='sidebar-footer-nav'>
-                <SidebarNavItem
-                    label='Settings'
-                    icon={IoSettingsOutline}
-                    isSelected={pathname.startsWith('/dashboard/settings')}
-                    onClick={() => navigate(defaultSettingsPath)}
-                />
+                <Tooltip content='Settings' placement='right'>
+                    <SidebarNavItem
+                        label='Settings'
+                        icon={settingsActive ? IoSettings : IoSettingsOutline}
+                        isSelected={settingsActive}
+                        onClick={() => navigate(defaultSettingsPath)}
+                    />
+                </Tooltip>
 
-                <SidebarNavItem
-                    label='Read the docs'
-                    icon={TbBook}
-                    onClick={handleOpenDocs}
-                />
+                <Tooltip content='Read the docs' placement='right'>
+                    <SidebarNavItem
+                        label='Read the docs'
+                        icon={TbBook}
+                        onClick={handleOpenDocs}
+                    />
+                </Tooltip>
             </Container>
         );
     }
@@ -54,8 +61,8 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collap
         <Container className='sidebar-footer-nav'>
             <SidebarExpandableSection
                 label='Settings'
-                icon={IoSettingsOutline}
-                isActive={pathname.startsWith('/dashboard/settings')}
+                icon={settingsActive ? IoSettings : IoSettingsOutline}
+                isActive={settingsActive}
                 subItems={settingsSubItems}
                 expanded={settingsExpanded}
                 onExpandedChange={setSettingsExpanded}

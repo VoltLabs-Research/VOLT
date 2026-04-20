@@ -36,8 +36,8 @@ const DocumentListingGrid = <T extends { _id: string },>({
     renderItem,
     renderSkeleton,
     emptyIcon,
-    emptyTitle = 'Nothing here yet',
-    emptyMessage = 'No items to display',
+    emptyTitle = 'No items to show',
+    emptyMessage = 'Nothing to display here.',
     emptyButtonText,
     emptyButtonIsLoading = false,
     onEmptyButtonClick,
@@ -100,8 +100,8 @@ const DocumentListingGrid = <T extends { _id: string },>({
             {shouldShowErrorState && (
                 <Container className='document-listing-grid-empty flex-center'>
                     <RecoveryState
-                        title='Unable to load these items'
-                        description={errorMessage ?? 'Something went wrong while loading this content.'}
+                        title="Couldn't load these items"
+                        description={errorMessage ?? 'Try again in a moment.'}
                         tone={RecoveryStateTone.Error}
                         retryLabel={retryButtonText}
                         isRetrying={isLoading}
@@ -114,7 +114,7 @@ const DocumentListingGrid = <T extends { _id: string },>({
                 <Container className='document-listing-grid-empty flex-center'>
                     <RecoveryState
                         title='Access denied'
-                        description={errorMessage ?? 'You do not have permission to view these items.'}
+                        description={errorMessage ?? "You don't have permission to view these items."}
                         tone={RecoveryStateTone.AccessDenied}
                     />
                 </Container>

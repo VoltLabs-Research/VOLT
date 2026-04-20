@@ -23,7 +23,7 @@ const TableSkeletonRow = <TRow,>({
         >
             {columns.map((col, colIdx) => (
                 <Container
-                    className='document-listing-cell overflow-hidden d-flex items-center font-size-2 color-secondary'
+                    className={`document-listing-cell overflow-hidden d-flex items-center font-size-2 color-secondary ${col.numeric ? 'is-numeric' : ''}`}
                     data-label={col.title}
                     key={`${String(col.key ?? col.path ?? col.title ?? colIdx)}-skeleton`}
                     role='gridcell'

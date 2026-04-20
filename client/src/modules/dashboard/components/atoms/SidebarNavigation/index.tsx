@@ -6,23 +6,36 @@ import useSidebarClusters from '@/modules/cluster/hooks/use-sidebar-clusters';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
 import Container from '@/shared/presentation/components/Container';
-import Divider from '@/shared/presentation/components/Divider';
 import SidebarExpandableSection from '@/shared/presentation/components/SidebarExpandableSection';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import Tooltip from '@/shared/presentation/components/Tooltip';
-import TeamSelector from '@/modules/team/components/atoms/TeamSelector';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useMemo } from 'react';
-import { CiChat1 } from 'react-icons/ci';
 import { GoWorkflow } from 'react-icons/go';
-import { HiOutlineServer } from 'react-icons/hi';
-import { IoIosAdd } from 'react-icons/io';
-import { IoAnalytics, IoBookOutline, IoCubeOutline, IoKeyOutline, IoLockClosedOutline, IoPeopleOutline } from 'react-icons/io5';
-import { MdAutoAwesome, MdImportExport } from 'react-icons/md';
-import { RiHomeSmile2Fill } from 'react-icons/ri';
+import { HiOutlineServer, HiServer } from 'react-icons/hi';
+import {
+    IoAnalytics,
+    IoAnalyticsOutline,
+    IoBook,
+    IoBookOutline,
+    IoChatbubble,
+    IoChatbubbleOutline,
+    IoCube,
+    IoCubeOutline,
+    IoGridOutline,
+    IoKey,
+    IoKeyOutline,
+    IoLockClosed,
+    IoLockClosedOutline,
+    IoPeople,
+    IoPeopleOutline,
+    IoSparkles,
+    IoSparklesOutline
+} from 'react-icons/io5';
+import { MdImportExport } from 'react-icons/md';
 import { TbCube3dSphere, TbFileTypePdf } from 'react-icons/tb';
-import { PiUserPlus, PiPaintBrushBold } from 'react-icons/pi';
+import { PiPaintBrush, PiPaintBrushFill } from 'react-icons/pi';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import type { IconType } from 'react-icons';
 import type { DashboardNavigationItem } from '@/app/routes/metadata';
@@ -33,19 +46,24 @@ interface SidebarNavigationProps {
     onExpandSidebar?: () => void;
 };
 
-const DASHBOARD_NAVIGATION_ICONS: Record<DashboardNavigationIconKey, IconType> = {
-    [DashboardNavigationIconKey.AI]: MdAutoAwesome,
-    [DashboardNavigationIconKey.Containers]: IoCubeOutline,
-    [DashboardNavigationIconKey.Dashboard]: RiHomeSmile2Fill,
-    [DashboardNavigationIconKey.Import]: MdImportExport,
-    [DashboardNavigationIconKey.Latex]: TbFileTypePdf,
-    [DashboardNavigationIconKey.ManageRoles]: IoKeyOutline,
-    [DashboardNavigationIconKey.Messages]: CiChat1,
-    [DashboardNavigationIconKey.MyTeam]: IoPeopleOutline,
-    [DashboardNavigationIconKey.Notebooks]: IoBookOutline,
-    [DashboardNavigationIconKey.Plugins]: GoWorkflow,
-    [DashboardNavigationIconKey.SecretKeys]: IoLockClosedOutline,
-    [DashboardNavigationIconKey.Whiteboards]: PiPaintBrushBold
+interface IconPair {
+    inactive: IconType;
+    active: IconType;
+};
+
+const DASHBOARD_NAVIGATION_ICONS: Record<DashboardNavigationIconKey, IconPair> = {
+    [DashboardNavigationIconKey.AI]: { inactive: IoSparklesOutline, active: IoSparkles },
+    [DashboardNavigationIconKey.Containers]: { inactive: IoCubeOutline, active: IoCube },
+    [DashboardNavigationIconKey.Dashboard]: { inactive: IoGridOutline, active: IoGridOutline },
+    [DashboardNavigationIconKey.Import]: { inactive: MdImportExport, active: MdImportExport },
+    [DashboardNavigationIconKey.Latex]: { inactive: TbFileTypePdf, active: TbFileTypePdf },
+    [DashboardNavigationIconKey.ManageRoles]: { inactive: IoKeyOutline, active: IoKey },
+    [DashboardNavigationIconKey.Messages]: { inactive: IoChatbubbleOutline, active: IoChatbubble },
+    [DashboardNavigationIconKey.MyTeam]: { inactive: IoPeopleOutline, active: IoPeople },
+    [DashboardNavigationIconKey.Notebooks]: { inactive: IoBookOutline, active: IoBook },
+    [DashboardNavigationIconKey.Plugins]: { inactive: GoWorkflow, active: GoWorkflow },
+    [DashboardNavigationIconKey.SecretKeys]: { inactive: IoLockClosedOutline, active: IoLockClosed },
+    [DashboardNavigationIconKey.Whiteboards]: { inactive: PiPaintBrush, active: PiPaintBrushFill }
 };
 
 const MAIN_NAVIGATION_ITEMS = getDashboardNavigationItems(DashboardNavigationSection.Main);
@@ -199,53 +217,65 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
 
     const renderNavItem = (item: DashboardNavigationItem) => {
         const isAllowed = canAccess(item);
-        const Icon = item.icon ? DASHBOARD_NAVIGATION_ICONS[item.icon] : null;
+        const iconPair = item.icon ? DASHBOARD_NAVIGATION_ICONS[item.icon] : null;
         let onClick: (() => void) | undefined;
         if (isAllowed) {
             onClick = () => handleNavigate(item.path);
         }
 
-        if (!Icon) {
+        if (!iconPair) {
             return null;
         }
+
+        const selected = isSelected(item.path);
+        const Icon = selected ? iconPair.active : iconPair.inactive;
 
         const content = (
             <Container className='sidebar-nav-item-wrapper'>
                 <SidebarNavItem
                     label={item.label}
                     icon={Icon}
-                    isSelected={isSelected(item.path)}
+                    isSelected={selected}
                     onClick={onClick}
                     disabled={!isAllowed}
                 />
             </Container>
         );
 
+        const tooltipContent = isAllowed
+            ? item.label
+            : (item.disabledReason ?? 'You do not have permission to access this section.');
+        const tooltipDisabled = isAllowed && !collapsed;
+
         return (
             <Tooltip
                 key={item.path}
-                content={item.disabledReason ?? 'You do not have permission to access this section.'}
+                content={tooltipContent}
                 placement='right'
-                disabled={isAllowed}
+                disabled={tooltipDisabled}
             >
                 {content}
             </Tooltip>
         );
     };
 
+    const trajectoriesActive = pathname.includes('/trajectories') || pathname.includes('/simulation-cells');
+    const analysisActive = pathname.includes('/analysis-configs') || isAnalysisPluginListingRoute;
+    const clustersActive = pathname.includes('/dashboard/clusters');
+
     return (
         <nav className='sidebar-nav y-auto'>
             {MAIN_NAVIGATION_ITEMS.map(renderNavItem)}
 
             <Tooltip
-                content='You do not have permission to view trajectories.'
+                content={canAccessTrajectories ? 'Trajectories' : 'You do not have permission to view trajectories.'}
                 placement='right'
-                disabled={canAccessTrajectories}
+                disabled={canAccessTrajectories && !collapsed}
             >
                 <SidebarExpandableSection
                     label='Trajectories'
                     icon={TbCube3dSphere}
-                    isActive={pathname.includes('/trajectories') || pathname.includes('/simulation-cells')}
+                    isActive={trajectoriesActive}
                     subItems={trajectoriesSubItems}
                     disabled={!canAccessTrajectories}
                     onRequestSidebarExpand={onExpandSidebar}
@@ -253,53 +283,35 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
             </Tooltip>
 
             <Tooltip
-                content='You do not have permission to view analysis.'
+                content={canAccessAnalysis ? 'Analysis' : 'You do not have permission to view analysis.'}
                 placement='right'
-                disabled={canAccessAnalysis}
+                disabled={canAccessAnalysis && !collapsed}
             >
                 <SidebarExpandableSection
                     label='Analysis'
-                    icon={IoAnalytics}
-                    isActive={pathname.includes('/analysis-configs') || isAnalysisPluginListingRoute}
+                    icon={analysisActive ? IoAnalytics : IoAnalyticsOutline}
+                    isActive={analysisActive}
                     subItems={analysisSubItems}
                     disabled={!canAccessAnalysis}
                     onRequestSidebarExpand={onExpandSidebar}
                 />
             </Tooltip>
 
-            <SidebarExpandableSection
-                label='Clusters'
-                icon={HiOutlineServer}
-                isActive={pathname.includes('/dashboard/clusters')}
-                subItems={clustersSubItems}
-                onRequestSidebarExpand={onExpandSidebar}
-            />
+            <Tooltip
+                content='Clusters'
+                placement='right'
+                disabled={!collapsed}
+            >
+                <SidebarExpandableSection
+                    label='Clusters'
+                    icon={clustersActive ? HiServer : HiOutlineServer}
+                    isActive={clustersActive}
+                    subItems={clustersSubItems}
+                    onRequestSidebarExpand={onExpandSidebar}
+                />
+            </Tooltip>
 
             {SECONDARY_NAVIGATION_ITEMS.map(renderNavItem)}
-
-            <Divider className={`sidebar-divider ${collapsed ? 'is-hidden' : ''}`} />
-
-            <Container className={`sidebar-team-section ${collapsed ? 'is-hidden' : ''}`}>
-                <TeamSelector className='team-select' />
-            </Container>
-
-            {!collapsed && (
-                <SidebarNavItem
-                    label='Create Team'
-                    icon={IoIosAdd}
-                    commandFor='team-creator-modal'
-                    command='show-modal'
-                />
-            )}
-
-            {!collapsed && (
-                <SidebarNavItem
-                    label='Join an Existing Team'
-                    icon={PiUserPlus}
-                    commandFor='join-team-modal'
-                    command='show-modal'
-                />
-            )}
 
             {!sidebarClusters.isOnClustersRoute && (
                 <ClusterCredentialsModal

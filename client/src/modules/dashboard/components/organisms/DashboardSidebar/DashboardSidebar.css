@@ -6,7 +6,27 @@
     display: flex;
     flex-direction: column;
     background: transparent;
-    transition: width 0.2s ease;
+    transition: width var(--duration-fast) var(--ease-standard);
+}
+
+.sidebar-workspace {
+    padding: 0.25rem 0.75rem 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.sidebar-workspace .sidebar-workspace-selector {
+    flex: 1;
+    min-width: 0;
+}
+
+.sidebar-workspace .sidebar-workspace-selector .select-trigger {
+    width: 100%;
+}
+
+.sidebar-workspace-actions-trigger {
+    flex-shrink: 0;
 }
 
 .sidebar-overlay {
@@ -30,6 +50,10 @@
 .sidebar-footer {
     padding: 0.75rem;
     border-top: 1px solid var(--color-border-soft);
+}
+
+.dashboard-sidebar.is-collapsed .sidebar-workspace {
+    display: none;
 }
 
 .sidebar-footer-nav {
@@ -98,7 +122,7 @@
     background: none;
     border: none;
     border-radius: var(--radius-sm);
-    transition: background 0.15s ease;
+    transition: background var(--duration-fast) var(--ease-standard);
 }
 
 .dashboard-sidebar.is-collapsed .user-menu-trigger-collapsed:hover {
@@ -109,8 +133,12 @@
 @media screen and (max-width: 1024px) {
     .dashboard-sidebar {
         transform: translateX(-100%);
-        transition: transform 0.25s ease, width 0.2s ease;
+        transition: transform var(--duration-base) var(--ease-standard), width var(--duration-fast) var(--ease-standard);
         width: 280px !important;
+    }
+
+    .dashboard-sidebar.is-collapsed .sidebar-workspace {
+        display: flex;
     }
 
     .dashboard-sidebar.is-open {

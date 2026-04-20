@@ -14,17 +14,24 @@ import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import Loader from '@/shared/presentation/components/Loader';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { HiOutlineServerStack } from 'react-icons/hi2';
 import type { TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
 import type { ReactNode } from 'react';
 
 type DashboardOperationsTabId = 'clusters' | 'compute-jobs';
+type ClusterMetricTabId = 'cpu' | 'memory' | 'disk' | 'network';
 
 interface ClusterProgressMetricProps {
     label: string;
     percent: number;
     detail?: string;
+}
+
+interface ClusterNetworkMetricProps {
+    incomingLabel: string | null;
+    outgoingLabel: string | null;
+    latencyLabel: string | null;
 }
 
 const CRITICAL_THRESHOLD = 85;
@@ -39,6 +46,13 @@ const clampPercent = (value: number): number => {
 const DASHBOARD_OPERATIONS_TABS: Array<{ id: DashboardOperationsTabId; label: string }> = [
     { id: 'clusters', label: 'Clusters' },
     { id: 'compute-jobs', label: 'Compute Jobs' }
+];
+
+const CLUSTER_METRIC_TABS: ReadonlyArray<{ id: ClusterMetricTabId; label: string }> = [
+    { id: 'cpu', label: 'CPU' },
+    { id: 'memory', label: 'Memory' },
+    { id: 'disk', label: 'Disk' },
+    { id: 'network', label: 'Network' }
 ];
 
 const ROLE_LABELS: Record<TeamClusterRole, string> = {
@@ -96,8 +110,33 @@ const ClusterProgressMetric = ({ label, percent, detail }: ClusterProgressMetric
     );
 };
 
+const ClusterNetworkMetric = ({ incomingLabel, outgoingLabel, latencyLabel }: ClusterNetworkMetricProps) => {
+    return (
+        <div className='dashboard-operations-cluster-network' role='group' aria-label='Network activity'>
+            <div className='dashboard-operations-cluster-network-row'>
+                <span className='dashboard-operations-cluster-network-label'>Incoming</span>
+                <span className='dashboard-operations-cluster-network-value'>
+                    <span aria-hidden='true'>↓</span> {incomingLabel ?? '—'}
+                </span>
+            </div>
+            <div className='dashboard-operations-cluster-network-row'>
+                <span className='dashboard-operations-cluster-network-label'>Outgoing</span>
+                <span className='dashboard-operations-cluster-network-value'>
+                    <span aria-hidden='true'>↑</span> {outgoingLabel ?? '—'}
+                </span>
+            </div>
+            {latencyLabel && (
+                <span className='dashboard-operations-cluster-network-latency'>
+                    Latency · {latencyLabel}
+                </span>
+            )}
+        </div>
+    );
+};
+
 const DashboardOperationsCard = () => {
     const [activeTab, setActiveTab] = useState<DashboardOperationsTabId>('compute-jobs');
+    const [activeMetricByClusterId, setActiveMetricByClusterId] = useState<Record<string, ClusterMetricTabId>>({});
     const selectedTeamId = useSelectedTeamId();
     const teamClustersQuery = useTeamClustersQuery(selectedTeamId ?? '', {
         enabled: Boolean(selectedTeamId)
@@ -120,6 +159,10 @@ const DashboardOperationsCard = () => {
     const metricsByClusterId = useMemo(() => {
         return new Map(clusters.map((cluster) => [resolveClusterMetricId(cluster), cluster]));
     }, [clusters]);
+
+    const setClusterMetricTab = useCallback((clusterId: string, metricTab: ClusterMetricTabId) => {
+        setActiveMetricByClusterId((previous) => ({ ...previous, [clusterId]: metricTab }));
+    }, []);
 
     const jobsEmptyState = (
         <EmptyState
@@ -191,6 +234,21 @@ const DashboardOperationsCard = () => {
                     const latencyLabel = formatClusterLatency(liveMetrics?.responseTimes.self ?? null);
                     const networkIncomingLabel = liveMetrics ? formatNetworkSpeed(liveMetrics.network.incoming) : null;
                     const networkOutgoingLabel = liveMetrics ? formatNetworkSpeed(liveMetrics.network.outgoing) : null;
+                    const activeMetric = activeMetricByClusterId[teamCluster._id] ?? 'cpu';
+
+                    const memoryPercent = liveMetrics && liveMetrics.memory.total > 0
+                        ? (liveMetrics.memory.used / liveMetrics.memory.total) * 100
+                        : 0;
+                    const diskPercent = liveMetrics && liveMetrics.disk.total > 0
+                        ? (liveMetrics.disk.used / liveMetrics.disk.total) * 100
+                        : 0;
+
+                    const memoryDetail = liveMetrics
+                        ? `${liveMetrics.memory.used.toFixed(1)} / ${liveMetrics.memory.total.toFixed(1)} GB`
+                        : undefined;
+                    const diskDetail = liveMetrics
+                        ? `${liveMetrics.disk.used.toFixed(1)} / ${liveMetrics.disk.total.toFixed(1)} GB`
+                        : undefined;
 
                     return (
                         <Container key={teamCluster._id} className='dashboard-operations-cluster-item d-flex column'>
@@ -213,39 +271,65 @@ const DashboardOperationsCard = () => {
                             {liveMetrics
                                 ? (
                                     <>
-                                        <Container className='dashboard-operations-cluster-metrics-row d-flex column'>
-                                            <ClusterProgressMetric
-                                                label='CPU'
-                                                percent={liveMetrics.cpu.usage}
-                                                detail={`${liveMetrics.cpu.cores} cores`}
-                                            />
-                                            <ClusterProgressMetric
-                                                label='Memory'
-                                                percent={liveMetrics.memory.total > 0
-                                                    ? (liveMetrics.memory.used / liveMetrics.memory.total) * 100
-                                                    : 0}
-                                                detail={`${liveMetrics.memory.used.toFixed(1)} / ${liveMetrics.memory.total.toFixed(1)} GB`}
-                                            />
-                                            <ClusterProgressMetric
-                                                label='Disk'
-                                                percent={liveMetrics.disk.total > 0
-                                                    ? (liveMetrics.disk.used / liveMetrics.disk.total) * 100
-                                                    : 0}
-                                                detail={`${liveMetrics.disk.used.toFixed(1)} / ${liveMetrics.disk.total.toFixed(1)} GB`}
-                                            />
-                                        </Container>
+                                        <SegmentedTabs
+                                            tabs={CLUSTER_METRIC_TABS}
+                                            activeTab={activeMetric}
+                                            onChange={(id) => setClusterMetricTab(teamCluster._id, id)}
+                                            ariaLabel={`${teamCluster.name} metrics view`}
+                                            layoutId={teamCluster._id}
+                                            size='sm'
+                                        />
 
-                                        <Container className='dashboard-operations-cluster-footer d-flex items-center'>
-                                            <span className='dashboard-operations-cluster-footer-item'>
-                                                <span aria-hidden='true'>↓</span> {networkIncomingLabel}
-                                            </span>
-                                            <span className='dashboard-operations-cluster-footer-item'>
-                                                <span aria-hidden='true'>↑</span> {networkOutgoingLabel}
-                                            </span>
-                                            {latencyLabel && (
-                                                <span className='dashboard-operations-cluster-footer-item'>
-                                                    {latencyLabel}
-                                                </span>
+                                        <Container className='dashboard-operations-cluster-tab-panel d-flex column'>
+                                            {activeMetric === 'cpu' && (
+                                                <>
+                                                    <ClusterProgressMetric
+                                                        label='CPU'
+                                                        percent={liveMetrics.cpu.usage}
+                                                        detail={`${liveMetrics.cpu.cores} cores`}
+                                                    />
+                                                    <span className='dashboard-operations-cluster-tab-subtitle'>
+                                                        {liveMetrics.cpu.cores} cores
+                                                    </span>
+                                                </>
+                                            )}
+
+                                            {activeMetric === 'memory' && (
+                                                <>
+                                                    <ClusterProgressMetric
+                                                        label='Memory'
+                                                        percent={memoryPercent}
+                                                        detail={memoryDetail}
+                                                    />
+                                                    {memoryDetail && (
+                                                        <span className='dashboard-operations-cluster-tab-subtitle'>
+                                                            {memoryDetail}
+                                                        </span>
+                                                    )}
+                                                </>
+                                            )}
+
+                                            {activeMetric === 'disk' && (
+                                                <>
+                                                    <ClusterProgressMetric
+                                                        label='Disk'
+                                                        percent={diskPercent}
+                                                        detail={diskDetail}
+                                                    />
+                                                    {diskDetail && (
+                                                        <span className='dashboard-operations-cluster-tab-subtitle'>
+                                                            {diskDetail}
+                                                        </span>
+                                                    )}
+                                                </>
+                                            )}
+
+                                            {activeMetric === 'network' && (
+                                                <ClusterNetworkMetric
+                                                    incomingLabel={networkIncomingLabel}
+                                                    outgoingLabel={networkOutgoingLabel}
+                                                    latencyLabel={latencyLabel}
+                                                />
                                             )}
                                         </Container>
                                     </>
