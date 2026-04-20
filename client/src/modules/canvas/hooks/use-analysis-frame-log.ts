@@ -1,7 +1,7 @@
-import analysisService from '@/modules/analysis/api/service';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
 import { SOCKET_ANALYSIS_EVENTS } from '@/modules/socket/analysis/constants/analysis-socket-events';
+import { useCanvasAccessStore, useCanvasCanCollaborate, useCanvasDataAccess } from '@/modules/canvas/api/access';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type {
@@ -54,6 +54,9 @@ const useAnalysisFrameLog = ({
     live = false
 }: UseAnalysisFrameLogOptions): UseAnalysisFrameLogResult => {
     const socket = useSocket();
+    const dataAccess = useCanvasDataAccess();
+    const canCollaborate = useCanvasCanCollaborate();
+    const effectiveLive = live && canCollaborate;
     const [state, setState] = useState<UseAnalysisFrameLogResult>(initialState);
     const [hasLoadedInitial, setHasLoadedInitial] = useState(false);
     const cursorRef = useRef<string | null>(null);
@@ -85,7 +88,9 @@ const useAnalysisFrameLog = ({
         setHasLoadedInitial(false);
         cursorRef.current = null;
 
-        analysisService.getFrameLog({
+        const trajectoryId = useCanvasAccessStore.getState().trajectoryId ?? '';
+        dataAccess.getAnalysisFrameLog({
+            trajectoryId,
             analysisId,
             timestep
         }).then((response: GetAnalysisFrameLogResponse) => {
@@ -120,7 +125,7 @@ const useAnalysisFrameLog = ({
         return () => {
             cancelled = true;
         };
-    }, [active, analysisId, timestep]);
+    }, [active, analysisId, timestep, dataAccess]);
 
     useSocketEvent<AnalysisLogChunkEvent>(SOCKET_ANALYSIS_EVENTS.LOG_CHUNK, (event) => {
         if (!active || event.analysisId !== analysisId || event.timestep !== timestep) {
@@ -139,11 +144,11 @@ const useAnalysisFrameLog = ({
             nextCursor: event.cursor
         }));
     }, {
-        enabled: active && hasLoadedInitial && !!analysisId && typeof timestep === 'number'
+        enabled: active && canCollaborate && hasLoadedInitial && !!analysisId && typeof timestep === 'number'
     });
 
     useEffect(() => {
-        if (!active || !live || !hasLoadedInitial || !analysisId || typeof timestep !== 'number') {
+        if (!active || !effectiveLive || !hasLoadedInitial || !analysisId || typeof timestep !== 'number') {
             return;
         }
 
@@ -169,7 +174,7 @@ const useAnalysisFrameLog = ({
                 timestep
             });
         };
-    }, [socket, active, live, hasLoadedInitial, analysisId, timestep]);
+    }, [socket, active, effectiveLive, hasLoadedInitial, analysisId, timestep]);
 
     return useMemo(() => state, [state]);
 };

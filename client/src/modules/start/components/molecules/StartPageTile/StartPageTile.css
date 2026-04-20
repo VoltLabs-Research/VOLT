@@ -15,7 +15,7 @@
     height: 100%;
     padding: 0;
     background: var(--color-content-bg);
-    border-radius: 20px;
+    border-radius: var(--radius-xl);
     border: 1px solid var(--color-border);
     overflow: hidden;
     cursor: pointer;
@@ -46,7 +46,7 @@
     inset: 0;
     z-index: 5;
     pointer-events: none;
-    border-radius: 20px;
+    border-radius: var(--radius-xl);
     opacity: 0;
     transition: opacity 0.4s ease;
     background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
@@ -124,7 +124,7 @@
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--material-regular-border);
     color: var(--color-text-primary);
-    border-radius: 50%;
+    border-radius: var(--radius-full);
     display: flex;
     align-items: center;
     justify-content: center;

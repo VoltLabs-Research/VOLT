@@ -18,8 +18,7 @@ export interface SharedCanvasState {
     playSpeed?: number;
     rangeStart?: number;
     rangeEnd?: number;
-    camera?: Plain;
-    orbitControls?: Plain;
+    modelDragOffset?: { x: number; y: number; z: number };
     lights?: Plain;
     effects?: Plain;
     grid?: Plain;
@@ -28,30 +27,6 @@ export interface SharedCanvasState {
     performanceSettings?: Plain;
     configuration?: Plain;
 }
-
-const CAMERA_DATA_KEYS = ['type', 'position', 'up', 'perspective', 'orthographic'] as const;
-
-const ORBIT_CONTROLS_DATA_KEYS = [
-    'enabled',
-    'enableDamping',
-    'dampingFactor',
-    'enableZoom',
-    'zoomSpeed',
-    'enableRotate',
-    'rotateSpeed',
-    'enablePan',
-    'panSpeed',
-    'screenSpacePanning',
-    'autoRotate',
-    'autoRotateSpeed',
-    'minDistance',
-    'maxDistance',
-    'minPolarAngle',
-    'maxPolarAngle',
-    'minAzimuthAngle',
-    'maxAzimuthAngle',
-    'target'
-] as const;
 
 const LIGHTS_DATA_KEYS = ['global', 'directional', 'point', 'spot', 'hemisphere', 'rectArea'] as const;
 
@@ -139,8 +114,7 @@ export const selectSharedCanvasState = (state: EditorStore): SharedCanvasState =
         playSpeed: state.playSpeed,
         rangeStart: state.rangeStart,
         rangeEnd: state.rangeEnd,
-        camera: pickDataFields(state.camera, CAMERA_DATA_KEYS),
-        orbitControls: pickDataFields(state.orbitControls, ORBIT_CONTROLS_DATA_KEYS),
+        modelDragOffset: state.modelDragOffset,
         lights: pickDataFields(state.lights, LIGHTS_DATA_KEYS),
         effects: pickDataFields(state.effects, EFFECTS_DATA_KEYS),
         grid: pickDataFields(state.grid, GRID_DATA_KEYS),
@@ -233,8 +207,10 @@ export const applySharedCanvasPatch = (patch: SharedCanvasState): void => {
             next.rangeEnd = patch.rangeEnd;
         }
 
-        mergeSlice(next, state, 'camera', patch.camera, record);
-        mergeSlice(next, state, 'orbitControls', patch.orbitControls, record);
+        if (patch.modelDragOffset !== undefined) {
+            next.modelDragOffset = patch.modelDragOffset;
+        }
+
         mergeSlice(next, state, 'lights', patch.lights, record);
         mergeSlice(next, state, 'effects', patch.effects, record);
         mergeSlice(next, state, 'grid', patch.grid, record);

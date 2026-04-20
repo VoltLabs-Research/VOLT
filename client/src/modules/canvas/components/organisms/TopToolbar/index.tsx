@@ -7,16 +7,16 @@ import WorkspaceTabs from '../../molecules/WorkspaceTabs';
 
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
-import { memo, useState, useCallback } from 'react';
+import { memo, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sileo } from 'sileo';
 import UserMenuPopover from '@/modules/auth/components/molecules/UserMenuPopover';
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
-import Avatar from '@/shared/presentation/components/Avatar';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
 import useShortcutDiscovery from '@/shared/tips/use-shortcut-discovery';
+import { HiOutlineDotsVertical } from 'react-icons/hi';
 
 import './TopToolbar.css';
 
@@ -91,6 +91,18 @@ const TopToolbar = ({
         useScreenshotStore.getState().requestCapture();
     }, [recordScreenshotShortcutTip]);
 
+    const selfPresence = useMemo<WorkspacePresenceUser | undefined>(() => {
+        if (!user) return undefined;
+        return {
+            id: user._id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            avatar: user.avatar,
+            isAnonymous: false
+        };
+    }, [user]);
+
     const menus = buildMenus({
         showStatusBar,
         allowStatusBarToggle: !localGlbMode,
@@ -140,6 +152,7 @@ const TopToolbar = ({
             <WorkspaceTabs
                 disableAuxWorkspaces={localGlbMode}
                 peers={workspacePeers}
+                self={localGlbMode ? undefined : selfPresence}
                 activeOwnerId={workspaceActiveOwnerId}
                 onSelectPeer={onSelectWorkspacePeer}
             />

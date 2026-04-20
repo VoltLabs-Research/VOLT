@@ -7,6 +7,12 @@ import {
 import { createEntityCacheResource } from '@/shared/api/query-resources';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import {
+    buildCanvasDataAccess,
+    DEFAULT_CANVAS_ACCESS_STATE,
+    useCanvasAccessStore,
+    withAccessMode
+} from '@/modules/canvas/api/access';
+import {
     upsertEntityInList,
     removeEntityFromList,
     patchPaginatedPage,
@@ -104,10 +110,15 @@ export const buildAllPluginsQueryOptions = () => ({
     queryFn: fetchAllPlugins
 });
 
-export const buildPluginByIdQueryOptions = (params: GetPluginInputDTO) => ({
-    queryKey: PLUGIN_QUERY_KEYS.pluginById(params),
-    queryFn: () => pluginService.getById(params)
-});
+export const buildPluginByIdQueryOptions = (params: GetPluginInputDTO) => {
+    const accessState = useCanvasAccessStore.getState();
+    const dataAccess = buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode: accessState.mode });
+    const trajectoryId = accessState.trajectoryId ?? '';
+    return {
+        queryKey: withAccessMode(accessState.mode, PLUGIN_QUERY_KEYS.pluginById(params)),
+        queryFn: () => dataAccess.getPluginById({ trajectoryId, pluginId: params._id })
+    };
+};
 
 export const fetchPluginById = (
     params: GetPluginInputDTO,

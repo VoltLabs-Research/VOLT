@@ -4,6 +4,12 @@ import { TRAJECTORY_QUERY_KEYS } from '@/modules/trajectory/hooks/trajectory/que
 import { buildKeys, createQuery } from '@/shared/infrastructure/query';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { useMutation } from '@tanstack/react-query';
+import {
+    buildCanvasDataAccess,
+    DEFAULT_CANVAS_ACCESS_STATE,
+    useCanvasAccessStore,
+    withAccessMode
+} from '@/modules/canvas/api/access';
 import type {
     GetRasterMetadataParams,
     TriggerRasterizationParams,
@@ -38,7 +44,12 @@ const clearRasterizationRequestPending = (trajectoryId: string): void => {
     useTeamJobsStore.getState().setRequestedRasterTrajectoryIds(nextIds);
 };
 
-export const rasterMetadataQuery = createQuery(KEYS.metadata, rasterService.getMetadata);
+const getRasterMetadataWithAccess = (params: GetRasterMetadataParams) => {
+    const mode = useCanvasAccessStore.getState().mode;
+    return buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode }).getRasterMetadata(params);
+};
+const rasterMetadataKey = (params: GetRasterMetadataParams) => withAccessMode(useCanvasAccessStore.getState().mode, KEYS.metadata(params));
+export const rasterMetadataQuery = createQuery(rasterMetadataKey, getRasterMetadataWithAccess);
 
 export const useTriggerRasterizationMutation = () => {
     return useMutation<TriggerRasterizationResponse, Error, TriggerRasterizationParams>({

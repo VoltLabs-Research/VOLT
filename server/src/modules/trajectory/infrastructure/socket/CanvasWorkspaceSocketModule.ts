@@ -32,6 +32,12 @@ interface WorkspaceCursorPayload extends WorkspaceRoomPayload {
     y: number;
 }
 
+interface WorkspaceModelDragPayload extends WorkspaceRoomPayload {
+    x: number;
+    y: number;
+    z: number;
+}
+
 interface ConnectionContext {
     lobbyTrajectoryId?: string;
     workspaceTrajectoryId?: string;
@@ -68,6 +74,7 @@ export default class CanvasWorkspaceSocketModule extends BaseSocketModule {
         this.registerPublishSnapshot(connection);
         this.registerApplyPatch(connection);
         this.registerCursor(connection);
+        this.registerModelDrag(connection);
         this.registerDisconnect(connection);
     }
 
@@ -247,6 +254,31 @@ export default class CanvasWorkspaceSocketModule extends BaseSocketModule {
                 avatar: conn.user.avatar,
                 x: payload.x,
                 y: payload.y
+            });
+        });
+    }
+
+    private registerModelDrag(connection: ISocketConnection): void {
+        this.on<WorkspaceModelDragPayload>(connection.id, 'canvas.workspace.model_drag', (conn, payload) => {
+            if (!conn.user || !this.isValidId(payload.trajectoryId) || !this.isValidId(payload.ownerId)) {
+                return;
+            }
+
+            if (payload.ownerId !== conn.user._id) {
+                return;
+            }
+
+            if (typeof payload.x !== 'number' || typeof payload.y !== 'number' || typeof payload.z !== 'number') {
+                return;
+            }
+
+            const room = this.workspaceRoom(payload.trajectoryId, payload.ownerId);
+            this.emitToRoomExcept(conn.id, room, 'canvas.workspace.model_drag', {
+                trajectoryId: payload.trajectoryId,
+                ownerId: payload.ownerId,
+                x: payload.x,
+                y: payload.y,
+                z: payload.z
             });
         });
     }

@@ -11,6 +11,11 @@ interface UseInfiniteScrollOptions {
 const useInfiniteScroll = ({ rootRef, hasMore, isFetchingMore, onLoadMore }: UseInfiniteScrollOptions) => {
     const sentinelRef = useRef<HTMLDivElement | null>(null);
     const hasMountedRef = useRef(false);
+    const onLoadMoreRef = useRef(onLoadMore);
+
+    useEffect(() => {
+        onLoadMoreRef.current = onLoadMore;
+    });
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -29,9 +34,7 @@ const useInfiniteScroll = ({ rootRef, hasMore, isFetchingMore, onLoadMore }: Use
             (entries) => {
                 const entry = entries[0];
                 if (entry?.isIntersecting && hasMore && !isFetchingMore && hasMountedRef.current) {
-                    if (onLoadMore) {
-                        onLoadMore();
-                    }
+                    onLoadMoreRef.current?.();
                 }
             },
             { root, rootMargin: '0px 0px 200px 0px', threshold: 0 }
@@ -39,7 +42,7 @@ const useInfiniteScroll = ({ rootRef, hasMore, isFetchingMore, onLoadMore }: Use
 
         observer.observe(sentinel);
         return () => observer.disconnect();
-    }, [rootRef, hasMore, isFetchingMore, onLoadMore]);
+    }, [rootRef, hasMore, isFetchingMore]);
 
     return { sentinelRef };
 };

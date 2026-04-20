@@ -131,7 +131,7 @@ const ClusterMonitoringPage = () => {
 
                         {shouldRenderVisualizations && (
                             <Suspense fallback={renderDeferredVisualizationsFallback()}>
-                                <Container className='clusters-grid'>
+                                <Container className='clusters-grid-equal'>
                                     <ResourceUsage metrics={vm.metrics} />
                                     <CpuDistribution history={vm.history} metrics={vm.metrics} />
                                 </Container>

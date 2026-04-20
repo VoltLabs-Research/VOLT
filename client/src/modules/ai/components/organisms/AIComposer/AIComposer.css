@@ -8,7 +8,7 @@
 
 .ai-composer-input-wrapper {
     border: 1px solid var(--color-border-soft);
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     background: var(--input-bg);
     padding: 0.5rem 0.55rem 0.5rem 0.75rem;
     min-height: 3rem;
@@ -43,7 +43,7 @@
     width: 1.9rem;
     height: 1.9rem;
     border: none;
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     background: transparent;
     color: var(--color-text-secondary);
     transition: color 0.2s ease, background-color 0.2s ease;
@@ -69,7 +69,7 @@
     max-width: 180px;
     min-width: 132px;
     height: 1.9rem;
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     border: none !important;
     box-shadow: none !important;
     background: transparent;
@@ -91,14 +91,10 @@
     height: 2rem;
     flex: 0 0 2rem;
     border: none;
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     background: var(--color-text-primary);
     color: var(--color-bg);
-    transition: transform 0.2s ease, opacity 0.2s ease;
-}
-
-.ai-composer-send:hover:not(:disabled) {
-    transform: translateY(-1px);
+    transition: opacity 0.2s ease;
 }
 
 .ai-composer-send:disabled {

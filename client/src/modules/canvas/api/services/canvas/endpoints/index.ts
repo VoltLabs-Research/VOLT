@@ -6,6 +6,14 @@ import type {
     GetPublicCanvasBootstrapInput,
     GetPublicCanvasBootstrapOutput
 } from '@/modules/canvas/api/dtos/bootstrap';
+import atoms from './atoms';
+import simulationCell from './simulation-cell';
+import sceneArtifacts from './scene-artifacts';
+import colorCoding from './color-coding';
+import particleFilter from './particle-filter';
+import plugins from './plugins';
+import analyses from './analyses';
+import rasters from './rasters';
 
 interface GetCanvasTrajectoryParams {
     trajectoryId: string;
@@ -44,5 +52,13 @@ export default {
     }),
     getRasterFrame: download<GetCanvasRasterFrameParams>('GET', '/:trajectoryId/frames/:timestep'),
     getAnalysisRasterFrame: download<GetCanvasAnalysisRasterFrameParams>('GET', '/:trajectoryId/frames/:timestep/:analysisId/:model'),
-    getDump: download<GetCanvasDumpParams>('GET', '/:trajectoryId/dumps/:timestep')
+    getDump: download<GetCanvasDumpParams>('GET', '/:trajectoryId/dumps/:timestep'),
+    ...atoms,
+    ...simulationCell,
+    ...sceneArtifacts,
+    ...colorCoding,
+    ...particleFilter,
+    ...plugins,
+    ...analyses,
+    ...rasters
 };

@@ -18,7 +18,6 @@
 .metric-card {
     border: 1px solid var(--glass-border);
     padding: 1.25rem;
-    background: var(--color-surface-1);
 }
 
 .metric-card-value {
