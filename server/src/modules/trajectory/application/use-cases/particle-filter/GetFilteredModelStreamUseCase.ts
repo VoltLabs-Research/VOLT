@@ -4,7 +4,7 @@ import { buildParticleFilterRequest } from '@modules/trajectory/application/util
 import { IParticleFilterService } from '@modules/trajectory/domain/port/particle-filter/IParticleFilterService';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 
 import { injectable, inject } from 'tsyringe';
 

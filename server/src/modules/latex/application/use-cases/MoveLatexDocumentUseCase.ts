@@ -4,7 +4,7 @@ import type { LatexFolderProps } from '@modules/latex/domain/entities/LatexFolde
 import type { LatexDocumentProps } from '@modules/latex/domain/entities/LatexDocument';
 import { inject, injectable } from 'tsyringe';
 import { MoveCatalogItemUseCase } from '@shared/application/catalog/MoveCatalogItemUseCase';
-import type ApplicationError from '@shared/application/errors/ApplicationErrors';
+import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import type { ILatexFolderRepository } from '@modules/latex/domain/port/ILatexFolderRepository';

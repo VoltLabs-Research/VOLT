@@ -9,7 +9,7 @@ import type {
 import type { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
 import type { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type ApplicationError from '@shared/application/errors/ApplicationErrors';
+import type ApplicationError from '@shared/application/errors/ApplicationError';
 
 @injectable()
 export default class ListSimulationCellsByTeamIdUseCase implements IUseCase<ListSimulationCellsByTeamIdInputDTO, ListSimulationCellsByTeamIdOutputDTO, ApplicationError> {

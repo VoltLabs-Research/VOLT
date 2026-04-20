@@ -4,7 +4,7 @@ import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import AuthSessionService from '@modules/auth/infrastructure/services/AuthSessionService';
 import User, { UserRole } from '@modules/auth/domain/entities/User';
 import UserCreatedEvent from '@modules/auth/domain/events/UserCreatedEvent';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SessionActivityType } from '@modules/session/domain/entities/Session';
 import { Result } from '@shared/domain/port/Result';

@@ -2,7 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import SSHConnection from '@modules/ssh/domain/entities/SSHConnection';
 import type { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
 import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 

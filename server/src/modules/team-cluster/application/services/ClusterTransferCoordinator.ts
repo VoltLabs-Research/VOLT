@@ -18,7 +18,7 @@ import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamClu
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import {
     ChannelCommands,
@@ -88,6 +88,9 @@ const MONGO_TRANSFER_BATCH_SIZE = 200;
 const MONGO_DOCUMENT_TYPES: TeamClusterDaemonPluginMongoDocumentType[] = ['listing', 'sub-listing'];
 const CLUSTER_TRANSFER_QUEUE_TYPE = 'cluster_transfer';
 const CLUSTER_TRANSFER_FALLBACK_TRAJECTORY_ID = 'cluster-transfer-operations';
+const CLUSTER_TRANSFER_CLAIM_TTL_MS = 5 * 60 * 1000;
+const CLUSTER_TRANSFER_CLAIM_RENEW_INTERVAL_MS = 60 * 1000;
+const CLUSTER_TRANSFER_WORKER_ID = `${process.pid}:${Math.random().toString(36).slice(2, 10)}`;
 const CLUSTER_TRANSFER_FALLBACK_TRAJECTORY_NAME = 'Cluster Transfers';
 const TRANSFER_PROGRESS_FLUSH_EVERY_OBJECTS = 50;
 const TRANSFER_PROGRESS_FLUSH_EVERY_BYTES = 64 * 1024 * 1024;
@@ -284,17 +287,28 @@ export default class ClusterTransferCoordinator {
 
         await this.assertTransferClusters(placement, input.destinationClusterId);
 
-        const queuedJob = await this.clusterTransferJobRepository.create(createClusterTransferJobProps({
-            team: input.teamId,
-            scopeType: input.scopeType,
-            scopeId: input.scopeId,
-            sourceClusterId: placement.props.primaryClusterId,
-            destinationClusterId: input.destinationClusterId,
-            buckets: placement.props.buckets,
-            requestedBy: input.requestedBy,
-            cleanupSource: true,
-            reason: input.reason ?? 'manual'
-        }));
+        let queuedJob: ClusterTransferJob;
+        try {
+            queuedJob = await this.clusterTransferJobRepository.create(createClusterTransferJobProps({
+                team: input.teamId,
+                scopeType: input.scopeType,
+                scopeId: input.scopeId,
+                sourceClusterId: placement.props.primaryClusterId,
+                destinationClusterId: input.destinationClusterId,
+                buckets: placement.props.buckets,
+                requestedBy: input.requestedBy,
+                cleanupSource: true,
+                reason: input.reason ?? 'manual'
+            }));
+        } catch (error) {
+            // Unique index on (scopeType, scopeId, open-states): another caller raced us.
+            const duplicate = await this.clusterTransferJobRepository.findOpenByScope(input.scopeType, input.scopeId);
+            if (duplicate) {
+                await this.publishTransferJobProjection(duplicate);
+                return duplicate;
+            }
+            throw error;
+        }
 
         await this.publishTransferJobProjection(queuedJob);
 
@@ -305,12 +319,31 @@ export default class ClusterTransferCoordinator {
         let processedJobs = 0;
 
         while (processedJobs < limit) {
-            const nextJob = await this.clusterTransferJobRepository.findNextRunnable();
-            if (!nextJob) {
+            const claimedJob = await this.clusterTransferJobRepository.claimNextRunnable(
+                CLUSTER_TRANSFER_WORKER_ID,
+                CLUSTER_TRANSFER_CLAIM_TTL_MS
+            );
+            if (!claimedJob) {
                 break;
             }
 
-            await this.executeJob(nextJob.id);
+            const renewTimer = setInterval(() => {
+                void this.clusterTransferJobRepository.renewClaim(
+                    claimedJob.id,
+                    CLUSTER_TRANSFER_WORKER_ID,
+                    CLUSTER_TRANSFER_CLAIM_TTL_MS
+                ).catch((error) => {
+                    logger.warn({ error, jobId: claimedJob.id }, '[ClusterTransferCoordinator] Failed to renew claim');
+                });
+            }, CLUSTER_TRANSFER_CLAIM_RENEW_INTERVAL_MS);
+            renewTimer.unref?.();
+
+            try {
+                await this.executeJob(claimedJob.id);
+            } finally {
+                clearInterval(renewTimer);
+                await this.clusterTransferJobRepository.releaseClaim(claimedJob.id, CLUSTER_TRANSFER_WORKER_ID).catch(() => undefined);
+            }
             processedJobs += 1;
         }
 

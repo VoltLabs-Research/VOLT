@@ -4,7 +4,7 @@ import { injectable, inject } from 'tsyringe';
 import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
 import { SSHConnectionOwnershipService } from '@modules/ssh/application/services/SSHConnectionOwnershipService';
 import type { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { DeleteSSHConnectionByIdInputDTO } from '@modules/ssh/application/dtos/DeleteSSHConnectionByIdDTO';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import SSHConnectionDeletedEvent from '@modules/ssh/domain/events/SSHConnectionDeletedEvent';

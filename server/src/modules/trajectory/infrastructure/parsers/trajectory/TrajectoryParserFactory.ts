@@ -2,7 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { FrameMetadata } from '@modules/trajectory/domain/contracts/trajectory';
 import LammpsDataParser from './LammpsDataParser';
 import LammpsDumpParser from './LammpsDumpParser';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 
 import { createReadStream } from 'fs';
 import { createInterface } from 'readline';

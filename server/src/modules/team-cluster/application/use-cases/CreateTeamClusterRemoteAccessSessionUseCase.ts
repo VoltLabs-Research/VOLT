@@ -8,7 +8,7 @@ import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/I
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterRemoteAccessSessionService from '@modules/team-cluster/infrastructure/services/TeamClusterRemoteAccessSessionService';
 import { assertConfirmedPassword } from '@modules/team-cluster/utilities/assertConfirmedPassword';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import logger from '@shared/infrastructure/logger';

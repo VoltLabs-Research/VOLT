@@ -9,7 +9,7 @@ import TeamCluster, {
 } from '@modules/team-cluster/domain/entities/TeamCluster';
 import FirstTeamClusterConnectedEvent from '@modules/team-cluster/domain/events/FirstTeamClusterConnectedEvent';
 import { getTeamClusterRoom, TEAM_CLUSTER_LIFECYCLE_EVENT } from '@modules/team-cluster/utilities/teamClusterSocket';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
@@ -388,11 +388,15 @@ export default class TeamClusterLifecycleService {
         await this.deleteTeamCluster(teamCluster);
     }
 
+    private async countTrue<T>(items: T[], apply: (item: T) => Promise<boolean>): Promise<number> {
+        const outcomes = await Promise.all(items.map(apply));
+        return outcomes.filter(Boolean).length;
+    }
+
     async markHeartbeatTimeouts(cutoff: Date): Promise<number> {
         const timedOutClusters = await this.teamClusterRepository.findHeartbeatTimedOutConnectedClusters(cutoff);
-        let markedCount = 0;
 
-        for (const teamCluster of timedOutClusters) {
+        return this.countTrue(timedOutClusters, async (teamCluster) => {
             const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
                 status: TeamClusterStatus.Disconnected,
                 lastDisconnectAt: new Date()
@@ -404,50 +408,32 @@ export default class TeamClusterLifecycleService {
                 logContext: 'heartbeat-timeout'
             });
 
-            if (updatedTeamCluster.props.status !== TeamClusterStatus.Disconnected) {
-                continue;
-            }
-
-            if (updatedTeamCluster.props.updatedAt.getTime() <= teamCluster.props.updatedAt.getTime()) {
-                continue;
-            }
-
-            markedCount += 1;
+            if (updatedTeamCluster.props.status !== TeamClusterStatus.Disconnected) return false;
+            if (updatedTeamCluster.props.updatedAt.getTime() <= teamCluster.props.updatedAt.getTime()) return false;
 
             logger.warn(`Team cluster marked as disconnected after heartbeat timeout teamClusterId=${teamCluster.id} teamId=${teamCluster.props.team} lastHeartbeatAt=${teamCluster.props.lastHeartbeatAt}`);
-        }
-
-        return markedCount;
+            return true;
+        });
     }
 
     async finalizeDeletingClustersByEvidence(cutoff: Date): Promise<number> {
         const deletingClusters = await this.teamClusterRepository.findHeartbeatTimedOutDeletingClusters(cutoff);
-        let deletedCount = 0;
 
-        for (const teamCluster of deletingClusters) {
+        return this.countTrue(deletingClusters, async (teamCluster) => {
             const currentTeamCluster = await this.requireTeamClusterById(teamCluster.id);
-            if (currentTeamCluster.props.status !== TeamClusterStatus.Deleting) {
-                continue;
-            }
-
-            if (currentTeamCluster.props.lastHeartbeatAt !== null && currentTeamCluster.props.lastHeartbeatAt >= cutoff) {
-                continue;
-            }
+            if (currentTeamCluster.props.status !== TeamClusterStatus.Deleting) return false;
+            if (currentTeamCluster.props.lastHeartbeatAt !== null && currentTeamCluster.props.lastHeartbeatAt >= cutoff) return false;
 
             await this.deleteTeamCluster(currentTeamCluster);
-            deletedCount += 1;
-
             logger.info(`Team cluster deletion completed after runtime disconnect evidence teamClusterId=${teamCluster.id} teamId=${teamCluster.props.team} lastHeartbeatAt=${teamCluster.props.lastHeartbeatAt}`);
-        }
-
-        return deletedCount;
+            return true;
+        });
     }
 
     async markDeletingTimeouts(cutoff: Date): Promise<number> {
         const timedOutClusters = await this.teamClusterRepository.findDeletingTimedOutClusters(cutoff);
-        let markedCount = 0;
 
-        for (const teamCluster of timedOutClusters) {
+        return this.countTrue(timedOutClusters, async (teamCluster) => {
             const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
                 status: TeamClusterStatus.DeleteFailed
             }, {
@@ -458,20 +444,12 @@ export default class TeamClusterLifecycleService {
                 logContext: 'delete-timeout'
             });
 
-            if (updatedTeamCluster.props.status !== TeamClusterStatus.DeleteFailed) {
-                continue;
-            }
-
-            if (updatedTeamCluster.props.updatedAt.getTime() <= teamCluster.props.updatedAt.getTime()) {
-                continue;
-            }
-
-            markedCount += 1;
+            if (updatedTeamCluster.props.status !== TeamClusterStatus.DeleteFailed) return false;
+            if (updatedTeamCluster.props.updatedAt.getTime() <= teamCluster.props.updatedAt.getTime()) return false;
 
             logger.warn(`Team cluster marked as delete-failed after delete timeout teamClusterId=${teamCluster.id} teamId=${teamCluster.props.team}`);
-        }
-
-        return markedCount;
+            return true;
+        });
     }
 
     async deleteTeamCluster(teamCluster: TeamCluster): Promise<void> {

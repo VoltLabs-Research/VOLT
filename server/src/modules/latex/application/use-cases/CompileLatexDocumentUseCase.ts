@@ -9,7 +9,7 @@ import {
     runCompiler,
     withDocumentCompileLock
 } from '@modules/latex/application/ai-tools/compile-helpers';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
 import fs from 'node:fs/promises';
 import path from 'node:path';

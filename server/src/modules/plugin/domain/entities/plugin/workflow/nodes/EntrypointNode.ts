@@ -8,6 +8,7 @@ export interface EntrypointNodeData{
     binary?: string;
     binaryObjectPath?: string;
     binaryFileName?: string;
+    binaryHash?: string;
     type?: EntrypointNodeType;
     arguments: string;
     requirementsFile?: string;

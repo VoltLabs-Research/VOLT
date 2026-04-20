@@ -10,7 +10,7 @@ import type {
     RuntimeContainerInfo
 } from '@modules/container/domain/port/IContainerService';
 import { buildDockerContainerConfig } from '@modules/container/utilities/DockerContainerConfigFactory';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
 import Docker from 'dockerode';
 import path from 'node:path';

@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IPasswordHasher } from '@modules/auth/domain/port/IPasswordHasher';
 import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 

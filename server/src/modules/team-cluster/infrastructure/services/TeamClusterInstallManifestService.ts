@@ -14,7 +14,7 @@ import {
     TEAM_CLUSTER_INSTALL_MANIFEST_VERSION
 } from '@modules/team-cluster/infrastructure/services/install-manifest/TeamClusterInstallManifestFiles';
 import { normalizeTeamClusterInstallRoot } from '@modules/team-cluster/utilities/installRoot';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import path from 'node:path';

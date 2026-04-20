@@ -4,7 +4,7 @@ import type WhiteboardFolder from '@modules/whiteboards/domain/entities/Whiteboa
 import type { WhiteboardFolderProps } from '@modules/whiteboards/domain/entities/WhiteboardFolder';
 import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
 import { MoveCatalogItemUseCase } from '@shared/application/catalog/MoveCatalogItemUseCase';
-import type ApplicationError from '@shared/application/errors/ApplicationErrors';
+import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
 import type { IWhiteboardFolderRepository } from '@modules/whiteboards/domain/port/IWhiteboardFolderRepository';

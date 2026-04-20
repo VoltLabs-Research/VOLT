@@ -2,7 +2,7 @@ import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
 import type { UpdateUserActivityInputDTO, UpdateUserActivityOutputDTO } from '@modules/daily-activity/application/dtos/UpdateUserActivityDTO';
 import type { IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';

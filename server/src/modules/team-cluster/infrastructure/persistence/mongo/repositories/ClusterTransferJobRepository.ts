@@ -53,6 +53,52 @@ export default class ClusterTransferJobRepository
         return document ? this.mapper.toDomain(document) : null;
     }
 
+    async claimNextRunnable(workerId: string, claimTtlMs: number): Promise<ClusterTransferJob | null> {
+        const now = new Date();
+        const claimExpiresAt = new Date(now.getTime() + claimTtlMs);
+
+        const document = await this.model.findOneAndUpdate(
+            {
+                state: { $in: OPEN_TRANSFER_JOB_STATES },
+                $or: [
+                    { claimedBy: null },
+                    { claimedBy: { $exists: false } },
+                    { claimExpiresAt: null },
+                    { claimExpiresAt: { $lte: now } }
+                ]
+            },
+            {
+                $set: {
+                    claimedBy: workerId,
+                    claimExpiresAt
+                }
+            },
+            {
+                new: true,
+                sort: { updatedAt: 1, createdAt: 1 }
+            }
+        ).exec();
+
+        return document ? this.mapper.toDomain(document) : null;
+    }
+
+    async renewClaim(jobId: string, workerId: string, claimTtlMs: number): Promise<boolean> {
+        const claimExpiresAt = new Date(Date.now() + claimTtlMs);
+        const result = await this.model.updateOne(
+            { _id: jobId, claimedBy: workerId },
+            { $set: { claimExpiresAt } }
+        ).exec();
+
+        return result.modifiedCount > 0;
+    }
+
+    async releaseClaim(jobId: string, workerId: string): Promise<void> {
+        await this.model.updateOne(
+            { _id: jobId, claimedBy: workerId },
+            { $set: { claimedBy: null, claimExpiresAt: null } }
+        ).exec();
+    }
+
     async listOpenByClusterIds(teamId: string, clusterIds: string[]): Promise<ClusterTransferJob[]> {
         const normalizedClusterIds = [...new Set(clusterIds.filter(Boolean))];
 

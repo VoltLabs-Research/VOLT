@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import { asRecord } from '@shared/infrastructure/utilities/type-guards';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { Response } from 'express';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 

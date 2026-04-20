@@ -16,7 +16,6 @@ import TeamClusterQueueScopeLimitsService from './TeamClusterQueueScopeLimitsSer
 
 import { injectable, inject } from 'tsyringe';
 import { DelayedError, Queue, Worker } from 'bullmq';
-import type { Job } from 'bullmq';
 import { v4 as uuid } from 'uuid';
 import IORedis from 'ioredis';
 
@@ -94,12 +93,7 @@ export default class CloudUploadQueueService {
             connection,
             defaultJobOptions: {
                 removeOnComplete: { count: 500 },
-                removeOnFail: { count: 200 },
-                attempts: 3,
-                backoff: {
-                    type: 'exponential',
-                    delay: 1000
-                }
+                removeOnFail: { count: 200 }
             }
         });
 
@@ -205,35 +199,16 @@ export default class CloudUploadQueueService {
             if (error instanceof DelayedError) return;
 
             const { jobId, teamId, trajectoryId, trajectoryName, timestep } = job.data;
-            const terminalFailure = this.isTerminalFailure(job);
 
             logger.error(
                 {
                     jobId,
                     trajectoryId,
                     timestep,
-                    error: error.message,
-                    attemptsMade: job.attemptsMade,
-                    attempts: this.getAttemptLimit(job),
-                    terminalFailure
+                    error: error.message
                 },
                 `@cloud-upload-queue: job failed`
             );
-
-            if (!terminalFailure) {
-                await this.runListenerStep('publish retrying upload status', async () => {
-                    await this.publishStatus(jobId, teamId, 'retrying', {
-                        trajectoryId,
-                        trajectoryName,
-                        timestep,
-                        error: error.message,
-                        attemptsMade: job.attemptsMade,
-                        attempts: this.getAttemptLimit(job)
-                    });
-                });
-
-                return;
-            }
 
             await this.runListenerStep('publish failed upload status', async () => {
                 await this.publishStatus(jobId, teamId, JobStatus.Failed, {
@@ -398,20 +373,6 @@ export default class CloudUploadQueueService {
                 );
             }
         }
-    }
-
-    private isTerminalFailure(job: Job<CloudUploadJobData>): boolean {
-        return job.attemptsMade >= this.getAttemptLimit(job);
-    }
-
-    private getAttemptLimit(job: Job<CloudUploadJobData>): number {
-        const attempts = job.opts.attempts;
-
-        if (typeof attempts === 'number' && Number.isFinite(attempts) && attempts > 0) {
-            return attempts;
-        }
-
-        return 1;
     }
 
     private async runListenerStep(action: string, operation: () => Promise<void>): Promise<void> {

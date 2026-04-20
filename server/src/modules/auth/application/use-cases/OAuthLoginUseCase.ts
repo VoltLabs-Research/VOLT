@@ -2,7 +2,7 @@ import { OAuthLoginInputDTO, OAuthLoginOutputDTO } from '@modules/auth/applicati
 import { toPersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import AuthSessionService from '@modules/auth/infrastructure/services/AuthSessionService';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { SessionActivityType } from '@modules/session/domain/entities/Session';
 import { Result } from '@shared/domain/port/Result';
 import generateRandomName from '@shared/infrastructure/utilities/generate-random-name';

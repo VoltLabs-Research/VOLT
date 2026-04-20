@@ -20,7 +20,7 @@ import { resolveSceneArtifactStorageCluster } from '@modules/trajectory/utilitie
 import { IStorageService } from '@shared/domain/port/IStorageService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TrajectoryNativeDaemonService from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 
 import { Readable } from 'node:stream';
 import { injectable, inject } from 'tsyringe';

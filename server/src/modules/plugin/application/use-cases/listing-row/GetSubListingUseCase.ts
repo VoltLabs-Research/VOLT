@@ -4,6 +4,7 @@ import {
     SubListingColumn
 } from '@modules/plugin/application/dtos/listing-row/GetSubListingDTO';
 import { resolveAnalysisComputeClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { resolveListingPagination } from '@modules/plugin/application/use-cases/listing-row/listing-row-pagination';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
@@ -61,7 +62,7 @@ export class GetSubListingUseCase implements IUseCase<GetSubListingInputDTO, Get
 
         const daemonResult = await this.daemonClient.command<DaemonPaginatedResult>(
             teamClusterId,
-            'plugin.sub-listings.list',
+            ChannelCommands.PluginSubListingsList,
             {
                 teamId: input.teamId,
                 analysisId: input.analysisId,

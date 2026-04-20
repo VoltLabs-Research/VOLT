@@ -8,7 +8,7 @@ import {
 } from '@shared/infrastructure/http/responses/download-response';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { sanitizeAssetPath } from '@modules/latex/application/utilities/sanitize-asset-path';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
 import type { ExportLatexDocumentInputDTO, ExportLatexDocumentOutputDTO } from '@modules/latex/application/dtos/ExportLatexDocumentDTO';
 import type { IUseCase } from '@shared/application/IUseCase';

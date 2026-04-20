@@ -2,7 +2,7 @@ import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
 import type {
     GetRasterFramePNGInputDTO,

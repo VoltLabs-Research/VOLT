@@ -2,7 +2,7 @@ import { STATIC_ROOT } from '@core/config/paths';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { DownloadSampleSimulationsInputDTO, DownloadSampleSimulationsOutputDTO } from '@modules/trajectory/application/dtos/trajectory/DownloadSampleSimulationsDTO';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 
 import { injectable } from 'tsyringe';
 import { createReadStream } from 'node:fs';

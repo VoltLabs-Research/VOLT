@@ -3,7 +3,7 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
 import { GetSSHConnectionByIdInputDTO, GetSSHConnectionByIdOutputDTO } from '@modules/ssh/application/dtos/GetSSHConnectionByIdDTO';
 import { SSHConnectionOwnershipService } from '@modules/ssh/application/services/SSHConnectionOwnershipService';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { toSafeSSHConnectionDTO } from '@modules/ssh/application/utils/ssh-error-utils';
 
 @injectable()

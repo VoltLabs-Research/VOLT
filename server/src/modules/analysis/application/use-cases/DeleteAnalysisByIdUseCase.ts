@@ -3,7 +3,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { resolveAnalysisStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { Result } from '@shared/domain/port/Result';
 import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';

@@ -6,7 +6,7 @@ import TeamMemberCreatedEvent from '@modules/team/domain/events/team-member/Team
 import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import { ITeamRoleRepository } from '@modules/team/domain/port/team-role/ITeamRoleRepository';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';

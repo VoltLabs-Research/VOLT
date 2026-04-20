@@ -3,6 +3,7 @@ import {
     GetPluginListingDocumentsOutputDTO
 } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
 import { resolveAnalysisComputeClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { buildListingColumns, enrichDaemonListingRows } from '@modules/plugin/application/use-cases/listing-row/listing-row-enrichment';
 import { resolveListingPagination } from '@modules/plugin/application/use-cases/listing-row/listing-row-pagination';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
@@ -75,7 +76,7 @@ export class GetPluginListingDocumentsUseCase implements IUseCase<
 
         const daemonResult = await this.daemonClient.command<DaemonPaginatedResult>(
             resolved.teamClusterId,
-            'plugin.listings.list',
+            ChannelCommands.PluginListingsList,
             {
                 pluginId: input.pluginId,
                 teamId: input.teamId,

@@ -4,6 +4,7 @@ import {
     ListingRowByAnalysisData
 } from '@modules/plugin/application/dtos/listing-row/GetListingRowsByAnalysisIdDTO';
 import { resolveAnalysisComputeClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { enrichDaemonListingRows } from '@modules/plugin/application/use-cases/listing-row/listing-row-enrichment';
 import { resolveListingPagination } from '@modules/plugin/application/use-cases/listing-row/listing-row-pagination';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
@@ -61,7 +62,7 @@ export class GetListingRowsByAnalysisIdUseCase implements IUseCase<GetListingRow
 
         const daemonResult = await this.daemonClient.command<DaemonPaginatedResult>(
             teamClusterId,
-            'plugin.listings.list',
+            ChannelCommands.PluginListingsList,
             {
                 teamId: input.teamId,
                 analysisId: input.analysisId,

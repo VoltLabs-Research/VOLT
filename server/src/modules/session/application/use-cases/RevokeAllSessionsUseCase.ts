@@ -4,7 +4,7 @@ import { inject, injectable } from 'tsyringe';
 import type { RevokeAllSessionsInputDTO, RevokeAllSessionsOutputDTO } from '@modules/session/application/dtos/RevokeAllSessionsDTO';
 import type { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type ApplicationError from '@shared/application/errors/ApplicationErrors';
+import type ApplicationError from '@shared/application/errors/ApplicationError';
 
 @injectable()
 export default class RevokeAllSessionsUseCase implements IUseCase<RevokeAllSessionsInputDTO, RevokeAllSessionsOutputDTO, ApplicationError>{

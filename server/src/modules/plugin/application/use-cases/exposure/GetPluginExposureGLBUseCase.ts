@@ -14,7 +14,7 @@ import { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/sce
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Result } from '@shared/domain/port/Result';
 import { injectable, inject } from 'tsyringe';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import type { SceneArtifactProps } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';

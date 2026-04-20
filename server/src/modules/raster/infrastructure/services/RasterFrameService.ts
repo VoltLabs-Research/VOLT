@@ -3,7 +3,7 @@ import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTok
 import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { resolveSceneArtifactStorageCluster } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-storage-cluster';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
 import type { IRasterFrameReader, RasterFrameResult } from '@modules/raster/domain/port/IRasterFrameReader';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';

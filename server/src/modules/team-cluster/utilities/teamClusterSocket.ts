@@ -7,8 +7,7 @@ import {
 import {
     ChannelCommands,
     TEAM_CLUSTER_DAEMON_EVENT,
-    TEAM_CLUSTER_EVENT,
-    TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION
+    TEAM_CLUSTER_EVENT
 } from '@shared/infrastructure/contracts/team-cluster';
 
 export enum TeamClusterDaemonResponseType {
@@ -21,11 +20,6 @@ export enum TeamClusterDaemonSessionKind {
     Terminal = 'terminal',
     Tunnel = 'tunnel',
     WebSocket = 'websocket'
-};
-
-export enum TeamClusterDaemonTerminalTarget {
-    Container = 'container',
-    Host = 'host'
 };
 
 export enum TeamClusterTunnelSessionStatus {
@@ -50,7 +44,6 @@ export interface TeamClusterDaemonRegisteredPayload {
 export interface TeamClusterDaemonSessionAttachPayload {
     sessionId: string;
     kind: TeamClusterDaemonSessionKind;
-    terminalTarget?: TeamClusterDaemonTerminalTarget;
     containerId?: string;
     targetUrl?: string;
     protocols?: string[];
@@ -148,22 +141,11 @@ export interface TeamClusterDaemonExposureRemovePayload {
     exposureIds: string[];
 };
 
-/**
- * Opens a generic tunnel session against a persistent exposure or direct target.
- */
-export interface TeamClusterDaemonBinaryRelayDescriptor {
-    relaySessionId: string;
-    relayUrl: string;
-    relayToken: string;
-    relayProtocolVersion: 1;
-};
-
 export interface TeamClusterDaemonExposureTunnelOpenPayload {
     type: 'tunnel-open';
     sessionId: string;
     exposureId: string;
     accessMode: TeamClusterServiceExposure['accessModes'][number];
-    relay?: TeamClusterDaemonBinaryRelayDescriptor;
 };
 
 export interface TeamClusterDaemonDirectTunnelOpenPayload {
@@ -172,7 +154,6 @@ export interface TeamClusterDaemonDirectTunnelOpenPayload {
     targetHost: string;
     targetPort: number;
     accessMode: TeamClusterServiceExposure['accessModes'][number];
-    relay?: TeamClusterDaemonBinaryRelayDescriptor;
 };
 
 export type TeamClusterDaemonTunnelOpenPayload =
@@ -208,15 +189,6 @@ export interface TeamClusterDaemonTunnelClosePayload {
     sessionId: string;
     code?: number;
     message?: string;
-};
-
-/**
- * Keeps long-lived tunnel sessions observable without transferring business data.
- */
-export interface TeamClusterDaemonTunnelHeartbeatPayload {
-    type: 'tunnel-heartbeat';
-    sessionId: string;
-    occurredAt: string;
 };
 
 export interface TeamClusterDaemonRuntimeProgressPayload {
@@ -385,7 +357,6 @@ export type TeamClusterDaemonMessage =
     | TeamClusterDaemonTunnelStatePayload
     | TeamClusterDaemonTunnelDataPayload
     | TeamClusterDaemonTunnelClosePayload
-    | TeamClusterDaemonTunnelHeartbeatPayload
     | TeamClusterDaemonRuntimeProgressPayload
     | TeamClusterDaemonServerEventMessage;
 
@@ -402,8 +373,7 @@ export type {
 export {
     ChannelCommands,
     TEAM_CLUSTER_DAEMON_EVENT,
-    TEAM_CLUSTER_EVENT,
-    TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION
+    TEAM_CLUSTER_EVENT
 };
 
 export const TEAM_CLUSTER_LIFECYCLE_EVENT = TEAM_CLUSTER_EVENT.lifecycleUpdated;

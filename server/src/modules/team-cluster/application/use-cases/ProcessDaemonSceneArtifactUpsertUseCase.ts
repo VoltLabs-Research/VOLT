@@ -7,12 +7,18 @@ import {
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import SceneArtifactBatchUpsertedEvent, {
+    SceneArtifactBatchUpsertedArtifact
+} from '@modules/trajectory/domain/events/scene-artifacts/SceneArtifactBatchUpsertedEvent';
+import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { SceneArtifactParams, SceneArtifactSourceType, SceneArtifactStatus } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
@@ -40,6 +46,7 @@ interface ProcessDaemonSceneArtifactUpsertOutputDTO {
 
 interface PreparedSceneArtifactUpsertEntry {
     objectName: string;
+    teamId: string;
     data: {
         trajectory: string;
         storageClusterId: string;
@@ -72,7 +79,10 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
         private readonly trajectoryRepository: ITrajectoryRepository,
 
         @inject(TRAJECTORY_TOKENS.SceneArtifactRepository)
-        private readonly sceneArtifactRepository: ISceneArtifactRepository
+        private readonly sceneArtifactRepository: ISceneArtifactRepository,
+
+        @inject(SHARED_TOKENS.EventBus)
+        private readonly eventBus: IEventBus
     ) {}
 
     async execute(
@@ -81,6 +91,7 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
         try {
             const entries = await this.prepareUpsertEntries([input]);
             await this.sceneArtifactRepository.upsertManyByObjectName(entries);
+            await this.publishBatchUpserted(entries);
 
             return Result.ok({ acknowledged: true });
         } catch (error: unknown) {
@@ -100,6 +111,7 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
         try {
             const entries = await this.prepareUpsertEntries(inputs);
             await this.sceneArtifactRepository.upsertManyByObjectName(entries);
+            await this.publishBatchUpserted(entries);
 
             return Result.ok({ acknowledged: true });
         } catch (error: unknown) {
@@ -111,6 +123,45 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
                 ApplicationError.internalServerError('Failed to process daemon scene artifact upsert batch')
             );
         }
+    }
+
+    private async publishBatchUpserted(entries: PreparedSceneArtifactUpsertEntry[]): Promise<void> {
+        if (!entries.length) {
+            return;
+        }
+
+        const groups = new Map<string, { teamId: string; trajectoryId: string; analysisId?: string; artifacts: SceneArtifactBatchUpsertedArtifact[] }>();
+
+        for (const entry of entries) {
+            const key = `${entry.data.trajectory}::${entry.data.analysis ?? ''}`;
+            let group = groups.get(key);
+            if (!group) {
+                group = {
+                    teamId: entry.teamId,
+                    trajectoryId: entry.data.trajectory,
+                    analysisId: entry.data.analysis,
+                    artifacts: []
+                };
+                groups.set(key, group);
+            }
+            group.artifacts.push({
+                objectName: entry.objectName,
+                trajectoryId: entry.data.trajectory,
+                analysisId: entry.data.analysis,
+                pluginId: entry.data.plugin,
+                sourceType: entry.data.sourceType,
+                timestep: entry.data.timestep,
+                displayName: entry.data.displayName,
+                status: entry.data.status
+            });
+        }
+
+        await Promise.all(Array.from(groups.values()).map((group) =>
+            this.eventBus.publish(new SceneArtifactBatchUpsertedEvent(group)).catch((err) => {
+                logger.warn({ err, trajectoryId: group.trajectoryId, analysisId: group.analysisId },
+                    '[ProcessDaemonSceneArtifactUpsertUseCase] Failed to publish scene-artifact.upserted');
+            })
+        ));
     }
 
     private async prepareUpsertEntries(
@@ -262,6 +313,7 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
 
             return {
                 objectName: input.objectName,
+                teamId: trajectory.props.team,
                 data: {
                     trajectory: trajectory.id,
                     storageClusterId: sanitizedStorageClusterId,

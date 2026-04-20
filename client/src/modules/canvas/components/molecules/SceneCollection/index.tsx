@@ -1,14 +1,22 @@
 import AnalysisTreeNode from '../../molecules/AnalysisTreeNode';
-import CanvasSlider from '../../atoms/CanvasSlider';
 import { resolvePluginSceneRenderMetadata } from '../../../utilities/plugin-exposure-export';
 import { isSameScene } from '@/modules/canvas/utilities/scene-identity';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
+import {
+    CanvasTreeEmptyRow,
+    CanvasTreeRow,
+    CanvasTreeSkeletonRows,
+    MaybeContextMenu
+} from '../../atoms/CanvasTree';
+import {
+    buildAddRemoveOption,
+    buildTransparencySubmenu,
+    transparencyOption
+} from '../../../utilities/tree-menus';
 
-import { Atom, Box, Eye, Minus, Plus } from 'lucide-react';
+import { Atom, Box } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
-import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 
 import type { AnalysisSectionData } from '../../../hooks/use-canvas-sidebar-scene';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
@@ -38,6 +46,7 @@ interface SceneCollectionProps {
         trajectoryId?: string;
         exposureName?: string;
     }) => void;
+    onRetryLoadExposures?: (analysisId: string) => void;
     showDefaultScene?: boolean;
     showSimulationCell?: boolean;
     onToggleSimulationCell?: () => void;
@@ -66,6 +75,7 @@ const SceneCollection = ({
     onDeleteAnalysis,
     onDownloadAnalysis,
     onDownloadExposureListing,
+    onRetryLoadExposures,
     showDefaultScene = true,
     showSimulationCell = true,
     onToggleSimulationCell,
@@ -85,167 +95,74 @@ const SceneCollection = ({
 
     const defaultSceneKey = getSceneKey(defaultScene);
     const defaultOpacity = sceneVisualOverrides[defaultSceneKey]?.opacity ?? 1;
-
-    const defaultTransparencySubmenu = (
-        <div className="context-menu-transparency">
-            <span className="context-menu-transparency__label">Transparency</span>
-            <CanvasSlider
-                ariaLabel="Adjust trajectory transparency"
-                min={0}
-                max={1}
-                step={0.01}
-                value={defaultOpacity}
-                onChange={(value: number) => setSceneOpacity?.(defaultSceneKey, value)}
-                ariaValueText={`${Math.round(defaultOpacity * 100)}% opacity`}
-            />
-        </div>
-    );
-
-    const defaultSceneOptions: MenuOption[] = [
-        ...(isDefaultActive
-            ? [{
-                label: 'Remove from scene',
-                icon: Minus,
-                destructive: true,
-                onClick: () => removeScene(defaultScene)
-            }]
-            : [{
-                label: 'Add to scene',
-                icon: Plus,
-                onClick: () => addScene(defaultScene)
-            }]
-        ),
-        {
-            label: 'Transparency',
-            icon: Eye,
-            submenuContent: defaultTransparencySubmenu
-        }
-    ];
-
     const simulationCellKey = 'simulation-cell';
     const simulationCellOpacity = sceneVisualOverrides[simulationCellKey]?.opacity ?? 1;
 
-    const simulationCellTransparencySubmenu = (
-        <div className="context-menu-transparency">
-            <span className="context-menu-transparency__label">Transparency</span>
-            <CanvasSlider
-                ariaLabel="Adjust simulation cell transparency"
-                min={0}
-                max={1}
-                step={0.01}
-                value={simulationCellOpacity}
-                onChange={(value: number) => setSceneOpacity?.(simulationCellKey, value)}
-                ariaValueText={`${Math.round(simulationCellOpacity * 100)}% opacity`}
-            />
-        </div>
-    );
+    const defaultSceneOptions: MenuOption[] = [
+        buildAddRemoveOption({
+            isActive: !!isDefaultActive,
+            onAdd: () => addScene(defaultScene),
+            onRemove: () => removeScene(defaultScene)
+        }),
+        transparencyOption(buildTransparencySubmenu('trajectory', defaultOpacity, (value) => setSceneOpacity?.(defaultSceneKey, value)))
+    ];
 
     const simulationCellOptions: MenuOption[] = [
-        ...(showSimulationCell
-            ? [{
-                label: 'Remove from scene',
-                icon: Minus,
-                destructive: true,
-                onClick: onToggleSimulationCell
-            }]
-            : [{
-                label: 'Add to scene',
-                icon: Plus,
-                onClick: onToggleSimulationCell
-            }]
-        ),
-        {
-            label: 'Transparency',
-            icon: Eye,
-            submenuContent: simulationCellTransparencySubmenu
-        }
+        buildAddRemoveOption({
+            isActive: !!showSimulationCell,
+            onAdd: () => onToggleSimulationCell?.(),
+            onRemove: () => onToggleSimulationCell?.()
+        }),
+        transparencyOption(buildTransparencySubmenu('simulation cell', simulationCellOpacity, (value) => setSceneOpacity?.(simulationCellKey, value)))
     ];
+
+    const trajectoryRow = (
+        <CanvasTreeRow
+            isActive={!!isDefaultActive}
+            icon={<Atom style={{ width: 13, height: 13, color: TREE_SCENE_ICON_COLOR }} />}
+            label='Trajectory'
+            onClick={() => {
+                if (isRasterSelectionMode) {
+                    onSelectRasterScene?.(defaultScene, 'Trajectory');
+                } else {
+                    onSelectScene(defaultScene);
+                }
+            }}
+        />
+    );
+
+    const simulationCellRow = (
+        <CanvasTreeRow
+            isActive={showSimulationCell}
+            icon={<Box style={{ width: 13, height: 13, color: TREE_SCENE_ICON_COLOR }} />}
+            label='Simulation Cell'
+            onClick={onToggleSimulationCell}
+        />
+    );
 
     return (
         <Container className="canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label="Scene hierarchy">
             {showDefaultScene && (
-                isRasterSelectionMode ? (
-                    <button
-                        className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary cursor-pointer u-select-none ${isDefaultActive ? 'selected' : ''}`}
-                        style={{ paddingLeft: 16 }}
-                        onClick={() => {
-                            onSelectRasterScene?.(defaultScene, 'Trajectory');
-                        }}
-                        role="treeitem"
-                        aria-selected={isDefaultActive}
-                        type="button"
-                    >
-                        <span className="canvas-tree-spacer" />
-                        <Atom style={{ width: 13, height: 13, color: TREE_SCENE_ICON_COLOR }} />
-                        <span className={`${isDefaultActive ? 'color-primary' : 'color-secondary'}`}>
-                            Trajectory
-                        </span>
-                    </button>
-                ) : (
-                    <ContextMenuPopover
-                        id="canvas-ctx-default-scene"
-                        trigger={(
-                            <button
-                                className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary cursor-pointer u-select-none ${isDefaultActive ? 'selected' : ''}`}
-                                style={{ paddingLeft: 16 }}
-                                onClick={() => {
-                                    onSelectScene(defaultScene);
-                                }}
-                                role="treeitem"
-                                aria-selected={isDefaultActive}
-                                type="button"
-                            >
-                                <span className="canvas-tree-spacer" />
-                                <Atom style={{ width: 13, height: 13, color: TREE_SCENE_ICON_COLOR }} />
-                                <span className={`${isDefaultActive ? 'color-primary' : 'color-secondary'}`}>
-                                    Trajectory
-                                </span>
-                            </button>
-                        )}
-                        options={defaultSceneOptions}
-                        size='sm'
-                    />
-                )
+                <MaybeContextMenu enabled={!isRasterSelectionMode} id='canvas-ctx-default-scene' options={defaultSceneOptions}>
+                    {trajectoryRow}
+                </MaybeContextMenu>
             )}
 
             {showDefaultScene && !isRasterSelectionMode && (
-                <ContextMenuPopover
-                    id="canvas-ctx-simulation-cell"
-                    trigger={(
-                        <button
-                            className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary cursor-pointer u-select-none ${showSimulationCell ? 'selected' : ''}`}
-                            style={{ paddingLeft: 16 }}
-                            onClick={onToggleSimulationCell}
-                            role="treeitem"
-                            aria-selected={showSimulationCell}
-                            type="button"
-                        >
-                            <span className="canvas-tree-spacer" />
-                            <Box style={{ width: 13, height: 13, color: TREE_SCENE_ICON_COLOR }} />
-                            <span className={`${showSimulationCell ? 'color-primary' : 'color-secondary'}`}>
-                                Simulation Cell
-                            </span>
-                        </button>
-                    )}
-                    options={simulationCellOptions}
-                    size='sm'
-                />
+                <MaybeContextMenu enabled={true} id='canvas-ctx-simulation-cell' options={simulationCellOptions}>
+                    {simulationCellRow}
+                </MaybeContextMenu>
             )}
 
-            {showSectionsSkeleton && totalAnalyses > 0 && (
-                Array.from({ length: Math.min(totalAnalyses, 3) }).map((_, i) => (
-                    <Container key={`skel-${i}`} className="canvas-tree-item d-flex items-center gap-05 color-secondary canvas-tree-item--indent">
-                        <span className="canvas-tree-spacer" />
-                        <Container className="canvas-tree-skeleton" />
-                    </Container>
-                ))
+            {showSectionsSkeleton && (
+                <CanvasTreeSkeletonRows count={Math.min(Math.max(totalAnalyses, 1), 3)} />
             )}
 
             {!showSectionsSkeleton && filteredSections.map((section: AnalysisSectionData) => (
                 <AnalysisTreeNode
                     key={section.analysis._id}
                     section={section}
-                    effectiveStatus={statusMap.get(section.analysis._id)?.status}
+                    status={statusMap.get(section.analysis._id)?.status}
                     isExpanded={expandedSections.has(section.analysis._id)}
                     onToggle={toggleSection}
                     onSelectScene={onSelectScene}
@@ -255,6 +172,7 @@ const SceneCollection = ({
                     onDeleteAnalysis={onDeleteAnalysis}
                     onDownloadAnalysis={onDownloadAnalysis}
                     onDownloadExposureListing={onDownloadExposureListing}
+                    onRetryLoadExposures={onRetryLoadExposures}
                     sceneVisualOverrides={sceneVisualOverrides}
                     setSceneOpacity={setSceneOpacity ?? (() => undefined)}
                     setSceneLineWidth={setSceneLineWidth ?? (() => undefined)}
@@ -268,9 +186,7 @@ const SceneCollection = ({
             ))}
 
             {!showSectionsSkeleton && totalAnalyses === 0 && (
-                <Container className="p-1 text-center">
-                    <Paragraph className="color-muted font-size-1">No analyses available</Paragraph>
-                </Container>
+                <CanvasTreeEmptyRow label='No analyses available' />
             )}
         </Container>
     );

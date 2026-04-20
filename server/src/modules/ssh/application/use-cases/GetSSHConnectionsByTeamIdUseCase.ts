@@ -4,7 +4,7 @@ import { injectable, inject } from 'tsyringe';
 import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
 import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
 import { GetSSHConnectionsByTeamIdInputDTO, GetSSHConnectionsByTeamIdOutputDTO } from '@modules/ssh/application/dtos/GetSSHConnectionsByTeamIdDTO';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { toSafeSSHConnectionDTO } from '@modules/ssh/application/utils/ssh-error-utils';
 
 @injectable()

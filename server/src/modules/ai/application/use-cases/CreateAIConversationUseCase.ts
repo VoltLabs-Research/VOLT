@@ -3,7 +3,7 @@ import type { AIMessageProps } from '@modules/ai/domain/entities/AIMessage';
 import { AIMessageRole } from '@modules/ai/domain/entities/AIMessage';
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import { IUseCase } from '@shared/application/IUseCase';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
 import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
 import { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRepository';

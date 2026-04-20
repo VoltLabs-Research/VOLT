@@ -2,7 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import type { ErrorCode } from '@core/constants/error-codes';
 import type { SafeSSHConnectionDTO } from '@modules/ssh/application/dtos/CreateSSHConnectionDTO';
 import type SSHConnection from '@modules/ssh/domain/entities/SSHConnection';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import {
     hasNumberProperty,
     hasStringProperty,
@@ -125,6 +125,10 @@ export const resolveSSHServiceError = (
     fallbackCode: ErrorCode,
     fallbackMessage: string
 ): ApplicationError => {
+    if (error instanceof ApplicationError) {
+        return error;
+    }
+
     if (isSSHServiceFailure(error)) {
         return new ApplicationError(
             error.code,

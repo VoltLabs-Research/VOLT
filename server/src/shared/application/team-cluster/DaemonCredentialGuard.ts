@@ -4,7 +4,7 @@ import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/I
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { hashEnrollmentToken } from '@modules/team-cluster/utilities/enrollmentToken';
 import { secureCompare } from '@modules/team-cluster/utilities/secureCompare';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
 
 export interface DecryptedTeamClusterServiceCredentials {

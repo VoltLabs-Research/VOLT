@@ -3,7 +3,7 @@ import { ChatMessageMetadata, ChatMessageType } from '@modules/chat/domain/entit
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { SendChatMessageUseCase } from './SendChatMessageUseCase';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
