@@ -142,7 +142,12 @@ const ModifiersSection = ({
     }
 
     if (!pluginLoading && modifiers.length === 0) {
-        return <EmptyState title='No modifiers available' description='' />;
+        return (
+            <EmptyState
+                title='No plugins available'
+                description='Install or enable plugins in your team cluster to apply modifiers to this trajectory.'
+            />
+        );
     }
 
     return (

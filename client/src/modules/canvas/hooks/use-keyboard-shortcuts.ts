@@ -1,7 +1,9 @@
 import { useKeyboardShortcutsStore } from '../stores/use-keyboard-shortcuts-store';
 import { useScreenshotStore } from '../stores/use-screenshot-store';
+import { useCommandPaletteStore } from '../stores/use-command-palette-store';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { resolveRangedTimesteps } from '@/modules/canvas/utilities/timeline-range';
+import { clearShortcutActions, registerShortcutAction } from '../utilities/shortcut-actions';
 import useCanvasUrlState from './use-canvas-url-state';
 
 import { useEffect, useRef } from 'react';
@@ -164,19 +166,42 @@ const useKeyboardShortcuts = ({
             },
 
             'show-shortcuts': togglePanel,
-            'show-shortcuts-ctrl-k': togglePanel,
+
+            'command-palette': () => {
+                useCommandPaletteStore.getState().toggle();
+            },
+
+            'undo': () => {
+                useEditorStore.temporal.getState().undo();
+            },
+
+            'redo': () => {
+                useEditorStore.temporal.getState().redo();
+            },
 
             'screenshot': () => {
                 useScreenshotStore.getState().requestCapture();
             },
 
             'escape': () => {
+                if (useCommandPaletteStore.getState().isOpen) {
+                    useCommandPaletteStore.getState().close();
+                    return;
+                }
                 if (useKeyboardShortcutsStore.getState().showPanel) {
                     setShowPanel(false);
                     return;
                 }
                 setResultsPluginId(undefined, { replace: true });
             }
+        };
+
+        for (const [id, action] of Object.entries(actionsRef.current)) {
+            registerShortcutAction(id, action);
+        }
+
+        return () => {
+            clearShortcutActions();
         };
     }, [
         togglePanel,

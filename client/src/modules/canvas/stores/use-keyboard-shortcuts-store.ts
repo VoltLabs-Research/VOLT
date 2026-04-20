@@ -48,8 +48,10 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     { id: 'reset-camera', description: 'Reset camera', keys: ['r'], scope: 'canvas', category: 'view' },
     { id: 'increase-point-size', description: 'Increase point size', keys: ['ctrl', '='], scope: 'canvas', category: 'view' },
     { id: 'decrease-point-size', description: 'Decrease point size', keys: ['ctrl', '-'], scope: 'canvas', category: 'view' },
-    { id: 'show-shortcuts', description: 'Show shortcuts', keys: ['?'], scope: 'global', category: 'general' },
-    { id: 'show-shortcuts-ctrl-k', description: 'Show shortcuts', keys: ['ctrl', 'k'], scope: 'global', category: 'general' },
+    { id: 'undo', description: 'Undo', keys: ['ctrl', 'z'], scope: 'canvas', category: 'general' },
+    { id: 'redo', description: 'Redo', keys: ['ctrl', 'shift', 'z'], scope: 'canvas', category: 'general' },
+    { id: 'show-shortcuts', description: 'Show shortcuts', keys: ['shift', '?'], scope: 'global', category: 'general' },
+    { id: 'command-palette', description: 'Open command palette', keys: ['ctrl', 'k'], scope: 'global', category: 'general' },
     { id: 'screenshot', description: 'Screenshot', keys: ['ctrl', 's'], scope: 'canvas', category: 'general' },
     { id: 'escape', description: 'Close panels', keys: ['escape'], scope: 'global', category: 'general' }
 ];

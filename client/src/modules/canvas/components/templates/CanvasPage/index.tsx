@@ -12,6 +12,7 @@ import { useLocalGlbStore } from '@/modules/canvas/stores/use-local-glb-store';
 import useDownloadPluginListing from '../../../hooks/use-download-plugin-listing';
 import useKeyboardShortcuts from '../../../hooks/use-keyboard-shortcuts';
 import useResizable from '../../../hooks/use-resizable';
+import useViewportNarrow from '../../../hooks/use-viewport-narrow';
 import useDownloadTrajectoryAnalyses from '@/modules/trajectory/hooks/trajectory/use-download-trajectory-analyses';
 import useDownloadTrajectory from '@/modules/trajectory/hooks/trajectory/use-download-trajectory';
 import CanvasPresence from '../../atoms/CanvasPresence';
@@ -22,6 +23,7 @@ import ShortcutFeedback from '../../molecules/ShortcutFeedback';
 import AnalysisListingDownloadModal, {
     ANALYSIS_LISTING_DOWNLOAD_MODAL_ID
 } from '../../organisms/AnalysisListingDownloadModal';
+import CommandPalette from '../../organisms/CommandPalette';
 import KeyboardShortcutsPanel from '../../organisms/KeyboardShortcutsPanel';
 import ObjectsPanel from '../../organisms/ObjectsPanel';
 import PluginResultsViewer from '../../organisms/PluginResultsViewer';
@@ -35,7 +37,7 @@ import CanvasRasterViewport from '@/modules/raster/components/organisms/CanvasRa
 import { ResizeDirection } from '@/modules/canvas/hooks/use-resizable';
 
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
-import { Download, ExternalLink } from 'lucide-react';
+import { Download, ExternalLink, PanelLeft, PanelRight } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
@@ -43,6 +45,7 @@ import ScriptingWorkspace from '@/modules/scripting/components/organisms/Scripti
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
+import ErrorBoundary from '@/shared/presentation/components/ErrorBoundary';
 import { openModal } from '@/shared/presentation/components/Modal';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import useTip from '@/shared/tips/use-tip';
@@ -75,7 +78,7 @@ const CanvasPage = () => {
         currentTimestep,
         isLoading: trajectoryLoading
     } = useCanvasCoordinator({ trajectoryId });
-    const { canvasUsers } = useCanvasPresence({ trajectoryId, enabled: !!trajectoryId });
+    const { canvasUsers, broadcastTimestep } = useCanvasPresence({ trajectoryId, enabled: !!trajectoryId });
     useTip('canvas-shortcuts', {
         enabled: Boolean(trajectoryId) && !trajectoryLoading
     });
@@ -123,11 +126,16 @@ const CanvasPage = () => {
     const [rasterContainerSelections, setRasterContainerSelections] = useState<RasterContainerSelection[]>(() => createInitialRasterContainerSelections());
     const [activeRasterContainerId, setActiveRasterContainerId] = useState<RasterContainerId>('container-1');
     const [downloadAnalysisModalTargetId, setDownloadAnalysisModalTargetId] = useState<string | null>(null);
+    const isNarrowViewport = useViewportNarrow();
+    const [leftDrawerOpen, setLeftDrawerOpen] = useState(false);
+    const [rightDrawerOpen, setRightDrawerOpen] = useState(false);
 
     useEffect(() => {
-        setRasterContainerSelections(createInitialRasterContainerSelections());
-        setActiveRasterContainerId('container-1');
-    }, []);
+        if (!isNarrowViewport) {
+            setLeftDrawerOpen(false);
+            setRightDrawerOpen(false);
+        }
+    }, [isNarrowViewport]);
 
     useEffect(() => {
         if (!isLocalGlbViewer) {
@@ -153,6 +161,12 @@ const CanvasPage = () => {
         editorState.resetModel();
     }, [trajectoryId, isLocalGlbViewer]);
 
+    useEffect(() => {
+        if (!trajectoryId || currentTimestep === undefined) return;
+        const timeoutId = window.setTimeout(() => broadcastTimestep(currentTimestep), 200);
+        return () => window.clearTimeout(timeoutId);
+    }, [trajectoryId, currentTimestep, broadcastTimestep]);
+
     const hasFrames = !!(trajectory?.frames && trajectory.frames.length > 0);
     const showLoading = useMemo(() =>
         isLocalGlbViewer
@@ -165,7 +179,8 @@ const CanvasPage = () => {
         direction: ResizeDirection.Horizontal,
         initialSize: 250,
         minSize: 180,
-        maxSize: 420
+        maxSize: 420,
+        storageKey: 'volt:canvas:left-panel-size'
     });
 
     const rightPanel = useResizable({
@@ -173,7 +188,8 @@ const CanvasPage = () => {
         initialSize: 268,
         minSize: 200,
         maxSize: 420,
-        growPositive: false
+        growPositive: false,
+        storageKey: 'volt:canvas:right-panel-size'
     });
 
     const timeline = useResizable({
@@ -181,7 +197,8 @@ const CanvasPage = () => {
         initialSize: 65,
         minSize: 60,
         maxSize: 360,
-        growPositive: false
+        growPositive: false,
+        storageKey: 'volt:canvas:timeline-size'
     });
 
     const handleTimelineTabChange = useCallback((tab: string) => {
@@ -342,7 +359,7 @@ const CanvasPage = () => {
     }
 
     return (
-        <Container className="canvas-editor-root d-flex column vh-max wh-max overflow-hidden p-relative">
+        <Container className={`canvas-editor-root d-flex column vh-max wh-max overflow-hidden p-relative${isNarrowViewport ? ' canvas-editor-root--narrow' : ''}`}>
             <TopToolbar
                 canExport={canExportTrajectory}
                 canDownloadAnalyses={canDownloadTrajectoryAnalyses}
@@ -353,10 +370,36 @@ const CanvasPage = () => {
             <PreloadingOverlay />
             <CanvasPresence users={canvasUsers} />
 
+            {isNarrowViewport && (leftDrawerOpen || rightDrawerOpen) && (
+                <button
+                    type='button'
+                    className='canvas-panel-drawer-backdrop'
+                    aria-label='Close panel'
+                    onClick={() => { setLeftDrawerOpen(false); setRightDrawerOpen(false); }}
+                />
+            )}
+
             <Container className="canvas-editor-main d-flex flex-1 overflow-hidden p-relative min-h-0">
                 {!isLocalGlbViewer && (
                     <>
-                        <Container id="canvas-left-panel" className="canvas-left-panel d-flex column f-shrink-0 min-h-0" style={{ width: leftPanel.size }}>
+                        {isNarrowViewport && !leftDrawerOpen && (
+                            <button
+                                type='button'
+                                className='canvas-panel-drawer-toggle canvas-panel-drawer-toggle--left'
+                                onClick={() => setLeftDrawerOpen(true)}
+                                aria-label='Open objects panel'
+                                aria-expanded={leftDrawerOpen}
+                                aria-controls='canvas-left-panel'
+                            >
+                                <PanelLeft size={14} aria-hidden='true' />
+                            </button>
+                        )}
+                        <Container
+                            id="canvas-left-panel"
+                            className="canvas-left-panel d-flex column f-shrink-0 min-h-0"
+                            style={{ width: leftPanel.size }}
+                            data-drawer-open={isNarrowViewport ? (leftDrawerOpen ? 'true' : 'false') : undefined}
+                        >
                             <Container id="canvas-left-panel-top" className="canvas-left-panel-top d-flex column min-h-0 overflow-hidden flex-1">
                                 <ObjectsPanel
                                     trajectory={trajectory}
@@ -382,22 +425,30 @@ const CanvasPage = () => {
 
                 <Container className="canvas-center-panel d-flex column flex-1 overflow-hidden">
                     <Container className="canvas-center-viewport d-flex column flex-1 overflow-hidden">
-                        <Viewport
-                            trajectory={trajectory}
-                            currentTimestep={currentTimestep}
-                            sceneConfig={sceneConfig}
-                            analysisId={analysisId}
-                            forcedGlbUrl={forcedGlbUrl}
-                            showGrid={showGrid}
-                            showGizmo={showGizmo}
-                            isLoading={isRasterWorkspace ? false : showLoading}
-                            sceneRef={sceneRef}
-                            bodyContent={viewportBodyContent}
-                            hideGradient={isScriptingWorkspace || isRasterWorkspace}
-                            renderScene={!isScriptingWorkspace && !isRasterWorkspace}
-                            showSceneActions={!isRasterWorkspace}
-                            headerActionsBeforePerformance={viewportHeaderActions}
-                        />
+                        <ErrorBoundary
+                            fallbackTitle='Viewport crashed'
+                            fallbackDescription='The 3D viewport hit an unexpected error. Reset to recover without losing your trajectory data.'
+                            onError={() => {
+                                useEditorStore.getState().resetModel();
+                            }}
+                        >
+                            <Viewport
+                                trajectory={trajectory}
+                                currentTimestep={currentTimestep}
+                                sceneConfig={sceneConfig}
+                                analysisId={analysisId}
+                                forcedGlbUrl={forcedGlbUrl}
+                                showGrid={showGrid}
+                                showGizmo={showGizmo}
+                                isLoading={isRasterWorkspace ? false : showLoading}
+                                sceneRef={sceneRef}
+                                bodyContent={viewportBodyContent}
+                                hideGradient={isScriptingWorkspace || isRasterWorkspace}
+                                renderScene={!isScriptingWorkspace && !isRasterWorkspace}
+                                showSceneActions={!isRasterWorkspace}
+                                headerActionsBeforePerformance={viewportHeaderActions}
+                            />
+                        </ErrorBoundary>
                     </Container>
                     {!isLocalGlbViewer && !isScriptingWorkspace && (
                         <>
@@ -416,6 +467,7 @@ const CanvasPage = () => {
                                     currentTimestep={currentTimestep}
                                     availableTimesteps={availableTimesteps}
                                     analysisId={analysisId}
+                                    presenceUsers={canvasUsers}
                                     onTabChange={handleTimelineTabChange}
                                     onDownloadExposureListing={handleDownloadExposureListing}
                                 />
@@ -434,14 +486,31 @@ const CanvasPage = () => {
                             {...rightPanel.handleProps}
                         />
 
-                        <Container id="canvas-right-panel" className="canvas-right-panel-container d-flex column f-shrink-0" style={{ width: rightPanel.size }}>
+                        {isNarrowViewport && !rightDrawerOpen && (
+                            <button
+                                type='button'
+                                className='canvas-panel-drawer-toggle canvas-panel-drawer-toggle--right'
+                                onClick={() => setRightDrawerOpen(true)}
+                                aria-label='Open plugins panel'
+                                aria-expanded={rightDrawerOpen}
+                                aria-controls='canvas-right-panel'
+                            >
+                                <PanelRight size={14} aria-hidden='true' />
+                            </button>
+                        )}
+                        <Container
+                            id="canvas-right-panel"
+                            className="canvas-right-panel-container d-flex column f-shrink-0"
+                            style={{ width: rightPanel.size }}
+                            data-drawer-open={isNarrowViewport ? (rightDrawerOpen ? 'true' : 'false') : undefined}
+                        >
                             <RightPanel trajectory={trajectory} trajectoryId={trajectoryId} analysisId={analysisId} currentTimestep={currentTimestep} />
                         </Container>
                     </>
                 )}
             </Container>
 
-            {!isLocalGlbViewer && showStatusBar && trajectory && currentTimestep !== undefined && (
+            {!isLocalGlbViewer && showStatusBar && (
                 <StatusBar trajectory={trajectory} currentTimestep={currentTimestep} />
             )}
             {!isLocalGlbViewer && showWidgets && resultsPluginId && analysisId && (
@@ -457,6 +526,7 @@ const CanvasPage = () => {
                 onClose={() => setDownloadAnalysisModalTargetId(null)}
             />
             <KeyboardShortcutsPanel />
+            <CommandPalette />
             <ShortcutFeedback />
             <ExposureSettingsWidget />
 

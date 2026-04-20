@@ -8,6 +8,7 @@ export interface CanvasPresenceUser {
     firstName?: string;
     lastName?: string;
     isAnonymous: boolean;
+    currentTimestep?: number;
 };
 
 interface PresenceState {
@@ -89,10 +90,22 @@ const useCanvasPresence = ({ trajectoryId, enabled = true }: UseCanvasPresencePr
         };
     }, [trajectoryId, enabled, subscribeToPresence, socketService]);
 
+    const broadcastTimestep = useCallback((timestep: number | undefined) => {
+        if (!enabled || !trajectoryId || !isConnectedRef.current || timestep === undefined) {
+            return;
+        }
+
+        socketService.emit('canvas_user_timestep', {
+            trajectoryId,
+            timestep
+        }).catch(() => { /* server may not implement — safe no-op */ });
+    }, [enabled, trajectoryId, socketService]);
+
     return {
         canvasUsers,
         rasterUsers,
-        allUsers: [...canvasUsers, ...rasterUsers]
+        allUsers: [...canvasUsers, ...rasterUsers],
+        broadcastTimestep
     };
 };
 
