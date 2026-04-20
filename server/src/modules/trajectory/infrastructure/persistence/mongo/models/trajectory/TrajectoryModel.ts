@@ -36,8 +36,7 @@ const TrajectorySchema: Schema<TrajectoryDocument> = new Schema({
         trim: true
     },
     team: {
-        ...teamRefField(true),
-        inverse: { path: 'trajectories', behavior: 'addToSet' }
+        ...teamRefField(true)
     },
     folder: {
         type: Schema.Types.ObjectId,

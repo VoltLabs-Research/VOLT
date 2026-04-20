@@ -33,7 +33,8 @@ interface RouteReadyMeasurement {
 
 export enum RouteMode {
     Protected = 'protected',
-    Guest = 'guest'
+    Guest = 'guest',
+    OptionalAuth = 'optional-auth'
 };
 
 setGetTeamId(() => useTeamStore.getState().selectedTeamId ?? null);
@@ -68,7 +69,9 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
         && isAuthenticated
         && !canAccessWithoutSelectedTeam
         && Boolean(selectedTeamId);
-    const shouldMountRealtimeEffects = mode === RouteMode.Protected && hasToken && isAuthenticated;
+    const shouldMountRealtimeEffects = (mode === RouteMode.Protected || mode === RouteMode.OptionalAuth)
+        && hasToken
+        && isAuthenticated;
 
     const teamClustersQuery = useTeamClustersQuery(selectedTeamId ?? '', {
         enabled: shouldCheckTeamClusterAccess
@@ -227,6 +230,10 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
             );
         }
 
+        return renderProtectedContent(<Outlet />);
+    }
+
+    if (mode === RouteMode.OptionalAuth) {
         return renderProtectedContent(<Outlet />);
     }
 

@@ -2,6 +2,7 @@ import { buildMenus } from '../../molecules/TopToolbarMenus';
 import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
 import MenuPopover from '../../molecules/MenuPopover';
+import TrajectorySharePanelPopover from '../../molecules/TrajectorySharePanelPopover';
 import WorkspaceTabs from '../../molecules/WorkspaceTabs';
 
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
@@ -19,12 +20,24 @@ import useShortcutDiscovery from '@/shared/tips/use-shortcut-discovery';
 
 import './TopToolbar.css';
 
+import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
+
+interface TopToolbarShareInfo {
+    trajectoryId: string;
+    isPublic: boolean;
+    canManageVisibility: boolean;
+};
+
 interface TopToolbarProps {
     canExport?: boolean;
     canDownloadAnalyses?: boolean;
     onExport?: () => void;
     onDownloadAnalyses?: () => void;
     localGlbMode?: boolean;
+    workspacePeers?: WorkspacePresenceUser[];
+    workspaceActiveOwnerId?: string;
+    onSelectWorkspacePeer?: (peerId: string) => void;
+    share?: TopToolbarShareInfo;
 }
 
 const TopToolbar = ({
@@ -32,7 +45,11 @@ const TopToolbar = ({
     canDownloadAnalyses = false,
     onExport,
     onDownloadAnalyses,
-    localGlbMode = false
+    localGlbMode = false,
+    workspacePeers,
+    workspaceActiveOwnerId,
+    onSelectWorkspacePeer,
+    share
 }: TopToolbarProps) => {
     const [openMenu, setOpenMenu] = useState<string | null>(null);
     const [isSigningOut, setIsSigningOut] = useState(false);
@@ -120,9 +137,21 @@ const TopToolbar = ({
                 ))}
             </nav>
 
-            <WorkspaceTabs disableAuxWorkspaces={localGlbMode} />
+            <WorkspaceTabs
+                disableAuxWorkspaces={localGlbMode}
+                peers={workspacePeers}
+                activeOwnerId={workspaceActiveOwnerId}
+                onSelectPeer={onSelectWorkspacePeer}
+            />
 
             <Container className="canvas-toolbar-info d-flex items-center content-end w-max">
+                {share && user && (
+                    <TrajectorySharePanelPopover
+                        trajectoryId={share.trajectoryId}
+                        isPublic={share.isPublic}
+                        canManageVisibility={share.canManageVisibility}
+                    />
+                )}
                 <ThemeToggleButton className="canvas-toolbar-theme-toggle" />
                 <UserMenuPopover
                     onSettingsClick={handleSettingsClick}

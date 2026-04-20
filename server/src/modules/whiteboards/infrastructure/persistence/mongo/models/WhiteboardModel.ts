@@ -18,8 +18,7 @@ export interface WhiteboardDocument extends Omit<WhiteboardDocumentBase, 'folder
 
 const WhiteboardSchema: Schema<WhiteboardDocument> = new Schema({
     team: {
-        ...teamRefField(true),
-        cascade: 'delete'
+        ...teamRefField(true)
     },
     createdBy: {
         ...userRefField(true)

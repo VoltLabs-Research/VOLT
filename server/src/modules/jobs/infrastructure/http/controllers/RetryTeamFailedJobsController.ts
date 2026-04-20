@@ -3,5 +3,5 @@ import { createController } from '@shared/infrastructure/http/controllers/create
 import RetryTeamFailedJobsUseCase from '@modules/jobs/application/use-cases/RetryTeamFailedJobsUseCase';
 
 export default createController(RetryTeamFailedJobsUseCase, {
-    validationSchema: jobsValidation.teamAction
+    validationSchema: jobsValidation.trajectoryAction
 });

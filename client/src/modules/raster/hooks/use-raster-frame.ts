@@ -1,4 +1,4 @@
-import rasterService from '@/modules/raster/api/service';
+import canvasService from '@/modules/canvas/api/services/canvas';
 import { RasterFrameScope } from '@/modules/raster/api/entities/raster';
 import { isApiError } from '@/shared/errors/core';
 import { useQuery } from '@tanstack/react-query';
@@ -81,13 +81,13 @@ export const useRasterFrame = ({
         retry: false,
         queryFn: async ({ signal }) => {
             const blob = requiresAnalysisFrame
-                ? await rasterService.getFrame({
+                ? await canvasService.getAnalysisRasterFrame({
                     trajectoryId: trajectoryId!,
                     timestep: timestep!,
                     analysisId: analysisId!,
                     model: model!
                 })
-                : await rasterService.getTrajectoryFrame({
+                : await canvasService.getRasterFrame({
                     trajectoryId: trajectoryId!,
                     timestep: timestep!
                 });

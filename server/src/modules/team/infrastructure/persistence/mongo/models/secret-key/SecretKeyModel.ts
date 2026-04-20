@@ -16,8 +16,7 @@ const SecretKeySchema: Schema<SecretKeyDocument> = new Schema({
     team: {
         type: Schema.Types.ObjectId,
         ref: 'Team',
-        required: true,
-        cascade: 'delete'
+        required: true
     },
     role: {
         type: Schema.Types.ObjectId,

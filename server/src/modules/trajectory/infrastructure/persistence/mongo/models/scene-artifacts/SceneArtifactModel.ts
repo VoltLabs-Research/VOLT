@@ -13,8 +13,7 @@ const SceneArtifactSchema: Schema<SceneArtifactDocument> = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Trajectory',
         required: true,
-        index: true,
-        cascade: 'delete'
+        index: true
     },
     storageClusterId: {
         type: Schema.Types.ObjectId,
@@ -26,15 +25,13 @@ const SceneArtifactSchema: Schema<SceneArtifactDocument> = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Analysis',
         required: false,
-        index: true,
-        cascade: 'delete'
+        index: true
     },
     plugin: {
         type: Schema.Types.ObjectId,
         ref: 'Plugin',
         required: false,
-        index: true,
-        cascade: 'delete'
+        index: true
     },
     sourceType: {
         type: String,

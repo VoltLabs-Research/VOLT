@@ -21,8 +21,7 @@ const SecretKeyUsageLogSchema: Schema<SecretKeyUsageLogDocument> = new Schema({
         required: true
     },
     team: {
-        ...teamRefField(true),
-        cascade: 'delete'
+        ...teamRefField(true)
     },
     method: {
         type: String,

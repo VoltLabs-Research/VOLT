@@ -1,4 +1,4 @@
-import { renderPublicRoutes, renderGuestRoutes, renderProtectedRoutes } from './routes/RouteRenderer';
+import { renderPublicRoutes, renderGuestRoutes, renderProtectedRoutes, renderOptionalAuthRoutes } from './routes/RouteRenderer';
 import { resolveRouteTitle } from './routes/title-resolver';
 import { reportHotspotDuration } from './core/http/utilities/client-instrumentation';
 import { useGlobalShortcuts } from '@/shared/presentation/hooks/use-global-shortcuts';
@@ -137,6 +137,7 @@ const AppRoutes = () => {
             <ErrorBoundary onError={handleRenderError}>
                 <Routes>
                     {renderPublicRoutes()}
+                    {renderOptionalAuthRoutes()}
                     {renderGuestRoutes()}
                     {renderProtectedRoutes()}
                     <Route path='*' element={<NotFoundState />} />

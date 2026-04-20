@@ -15,8 +15,7 @@ const TeamAIIntegrationSchema: Schema<TeamAIIntegrationDocument> = new Schema({
     team: {
         type: Schema.Types.ObjectId,
         ref: 'Team',
-        required: true,
-        cascade: 'delete'
+        required: true
     },
     provider: {
         type: String,

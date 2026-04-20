@@ -1,0 +1,29 @@
+.workspace-peer-avatars {
+    margin-left: 0.5rem;
+    padding-left: 0.5rem;
+    border-left: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+
+.workspace-peer-avatar-button {
+    background: transparent;
+    border: 2px solid transparent;
+    padding: 0;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: transform 120ms ease, border-color 120ms ease;
+    line-height: 0;
+}
+
+.workspace-peer-avatar-button:hover {
+    transform: translateY(-1px);
+}
+
+.workspace-peer-avatar-button.is-active {
+    border-color: var(--color-primary, #6366f1);
+}
+
+.workspace-peer-overflow {
+    background: var(--surface-subtle, rgba(255, 255, 255, 0.08));
+    color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+    margin-left: 2px;
+}

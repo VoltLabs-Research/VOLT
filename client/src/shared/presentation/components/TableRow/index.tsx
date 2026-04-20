@@ -15,30 +15,28 @@ import type { CSSProperties, KeyboardEvent, MouseEvent } from 'react';
 interface TableRowProps<T extends Identifiable> {
     item: T;
     columns: ColumnConfig<T>[];
-    columnWidths: number[];
+    columnStyles: CSSProperties[];
     getMenuOptions?: (item: T, selectedItems: T[]) => MenuOption[];
     selectedItems: T[];
     isSelected: boolean;
     onClick: (event: MouseEvent | KeyboardEvent, item: T) => void;
     onItemClick?: (item: T, event: MouseEvent) => boolean;
     onContextMenu: (item: T) => void;
-    useFlexDistribution: boolean;
     columnGap?: number;
     draggableId?: string | null;
     droppableId?: string | null;
 };
 
-const TableRow = <T extends Identifiable>({ 
-    item, 
-    columns, 
-    columnWidths, 
-    getMenuOptions, 
+const TableRow = <T extends Identifiable>({
+    item,
+    columns,
+    columnStyles,
+    getMenuOptions,
     selectedItems,
     isSelected,
     onClick,
     onItemClick,
     onContextMenu,
-    useFlexDistribution,
     columnGap = 16,
     draggableId = null,
     droppableId = null
@@ -92,8 +90,7 @@ const TableRow = <T extends Identifiable>({
     const rowStyle: CSSProperties = {
         display: 'flex',
         alignItems: 'center',
-        justifyContent: useFlexDistribution ? 'space-between' : 'flex-start',
-        gap: useFlexDistribution ? undefined : `${columnGap}px`,
+        gap: `${columnGap}px`,
         transform: CSS.Translate.toString(transform),
         zIndex: isDragging ? 10 : undefined
     };
@@ -106,7 +103,6 @@ const TableRow = <T extends Identifiable>({
     const rowClassName = [
         'document-listing-table-row-container',
         'cursor-pointer',
-        'w-max',
         isSelected ? 'is-selected' : '',
         draggableId ? 'has-drag-handle' : '',
         droppableId ? 'is-droppable' : '',
@@ -220,16 +216,7 @@ const TableRow = <T extends Identifiable>({
                         title={title}
                         role='gridcell'
                         aria-label={title ? `${columnTitle}: ${title}` : `${columnTitle}: no value`}
-                        style={
-                            useFlexDistribution
-                                ? { flex: 1, minWidth: 0 }
-                                : { 
-                                    width: columnWidths[colIdx], 
-                                    minWidth: columnWidths[colIdx], 
-                                    maxWidth: columnWidths[colIdx], 
-                                    flexShrink: 0 
-                                }
-                        }
+                        style={columnStyles[colIdx]}
                     >
                         {colIdx === 0 && draggableId ? (
                             <span className='document-listing-cell-content'>

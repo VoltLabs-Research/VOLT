@@ -8,8 +8,7 @@ export default createHttpModule({
     resource: Resource.TRAJECTORY,
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
-        router.delete('/history', controllers.clearHistory.handle);
-        router.delete('/running', controllers.removeRunningJobs.handle);
-        router.post('/failed/retries', controllers.retryFailedJobs.handle);
+        router.delete('/:trajectoryId/running', controllers.removeRunningJobs.handle);
+        router.post('/:trajectoryId/failed/retries', controllers.retryFailedJobs.handle);
     }
 });

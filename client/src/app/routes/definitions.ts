@@ -144,17 +144,6 @@ export const protectedRoutes: RouteConfig[] = [
         requiredPermissions: ['trajectory:read']
     },
     {
-        path: '/canvas/glb',
-        title: 'GLB Viewer',
-        loader: () => import('@/modules/canvas/components/templates/CanvasPage')
-    },
-    {
-        path: '/canvas/:trajectoryId',
-        title: 'Canvas',
-        loader: () => import('@/modules/canvas/components/templates/CanvasPage'),
-        requiredPermissions: ['trajectory:read']
-    },
-    {
         path: '/dashboard/whiteboard/:whiteboardId',
         title: 'Whiteboard',
         loader: () => import('@/modules/whiteboards/components/templates/WhiteboardEditorPage'),
@@ -395,5 +384,23 @@ export const guestRoutes: RouteConfig[] = [
         path: '/auth/oauth/callback',
         title: 'Signing In',
         loader: () => import('@/modules/auth/components/templates/OAuthCallback')
+    }
+];
+
+export const optionalAuthRoutes: RouteConfig[] = [
+    {
+        path: '/canvas/glb',
+        title: 'GLB Viewer',
+        loader: () => import('@/modules/canvas/components/templates/CanvasPage')
+    },
+    {
+        path: '/canvas/:trajectoryId',
+        title: 'Canvas',
+        loader: () => import('@/modules/canvas/components/templates/CanvasPage')
+    },
+    {
+        path: '/canvas/:trajectoryId/workspace/:ownerId',
+        title: 'Canvas',
+        loader: () => import('@/modules/canvas/components/templates/CanvasPage')
     }
 ];

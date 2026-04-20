@@ -10,6 +10,7 @@ import GetTeamMetricsUseCase from '@modules/trajectory/application/use-cases/tra
 import GetTrajectoriesByTeamIdUseCase from '@modules/trajectory/application/use-cases/trajectory/GetTrajectoriesByTeamIdUseCase';
 import GetTrajectoryByIdUseCase from '@modules/trajectory/application/use-cases/trajectory/GetTrajectoryByIdUseCase';
 import GetTrajectoryFolderUseCase from '@modules/trajectory/application/use-cases/trajectory/GetTrajectoryFolderUseCase';
+import CloneTrajectoryController from './CloneTrajectoryController';
 import GetTrajectoryGLBController from './GetTrajectoryGLBController';
 import GetTrajectoryPreviewController from './GetTrajectoryPreviewController';
 import ListTrajectoryFoldersUseCase from '@modules/trajectory/application/use-cases/trajectory/ListTrajectoryFoldersUseCase';
@@ -69,7 +70,8 @@ const resolvedControllers = createControllerRegistry({
     listTeamSceneArtifacts: ListTeamSceneArtifactsController,
     downloadSamples: DownloadSampleSimulationsController,
     downloadTrajectoryAnalyses: DownloadTrajectoryAnalysesController,
-    downloadTrajectory: DownloadTrajectoryController
+    downloadTrajectory: DownloadTrajectoryController,
+    cloneTrajectory: CloneTrajectoryController
 });
 
 export default {

@@ -10,11 +10,6 @@ enum TeamInvitationRelation {
     Role = 'role'
 };
 
-interface TeamInvitationInverseRelation {
-    path: 'invitations';
-    behavior: 'addToSet';
-};
-
 type TeamInvitationRelations = `${TeamInvitationRelation}`;
 
 export interface TeamInvitationDocument extends Persistable<TeamInvitationProps, TeamInvitationRelations>, Document{};
@@ -24,11 +19,6 @@ const TeamInvitationSchema: Schema<TeamInvitationDocument> = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Team',
         required: [true, ValidationCodes.TEAM_INVITATION_TEAM_REQUIRED],
-        inverse: {
-            path: 'invitations',
-            behavior: 'addToSet'
-        } as TeamInvitationInverseRelation,
-        cascade: 'delete',
         index: true
     },
     invitedBy: {

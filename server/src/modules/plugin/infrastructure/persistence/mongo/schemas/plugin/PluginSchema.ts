@@ -11,8 +11,7 @@ export const PluginSchema = new Schema({
     team: {
         type: Schema.Types.ObjectId,
         ref: 'Team',
-        required: true,
-        inverse: { path: 'plugins', behavior: 'addToSet' }
+        required: true
     },
     workflow: {
         type: WorkflowSchema,

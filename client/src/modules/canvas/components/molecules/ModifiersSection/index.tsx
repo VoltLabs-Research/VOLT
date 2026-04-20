@@ -10,7 +10,7 @@ import type React from 'react';
 
 const SKELETON_ROWS = 5;
 
-const getPluginActionCopy = (execState: ExecState) => {
+const getPluginActionCopy = (execState: ExecState, isForeignTrajectory = false) => {
     if (execState === ExecState.Success) {
         return {
             label: 'Executed',
@@ -28,7 +28,7 @@ const getPluginActionCopy = (execState: ExecState) => {
     }
 
     return {
-        label: 'Execute plugin',
+        label: isForeignTrajectory ? 'Clone & run' : 'Execute plugin',
         intent: 'brand' as const,
         icon: <Play size={14} />
     };
@@ -39,6 +39,7 @@ interface ModifierPopoverItemProps {
     execState: ExecState;
     showAction: boolean;
     hasContent: boolean;
+    isForeignTrajectory?: boolean;
     onAction: () => void;
     renderModifierConfig: (option: ModifierOption) => React.ReactNode;
 };
@@ -48,10 +49,11 @@ const ModifierPopoverItem = ({
     execState,
     showAction,
     hasContent,
+    isForeignTrajectory,
     onAction,
     renderModifierConfig
 }: ModifierPopoverItemProps) => {
-    const pluginAction = getPluginActionCopy(execState);
+    const pluginAction = getPluginActionCopy(execState, isForeignTrajectory);
     const trigger = (
         <button
             type='button'
@@ -113,6 +115,7 @@ interface ModifiersSectionProps {
     getExecState: (option: ModifierOption) => ExecState;
     showAction: (option: ModifierOption) => boolean;
     hasContent: (option: ModifierOption) => boolean;
+    isForeignTrajectory?: boolean;
     onAction: (option: ModifierOption) => void;
     renderModifierConfig: (option: ModifierOption) => React.ReactNode;
 };
@@ -123,6 +126,7 @@ const ModifiersSection = ({
     getExecState,
     showAction,
     hasContent,
+    isForeignTrajectory,
     onAction,
     renderModifierConfig
 }: ModifiersSectionProps) => {
@@ -160,6 +164,7 @@ const ModifiersSection = ({
                         execState={getExecState(option)}
                         showAction={showAction(option)}
                         hasContent={hasContent(option)}
+                        isForeignTrajectory={isForeignTrajectory}
                         onAction={() => onAction(option)}
                         renderModifierConfig={renderModifierConfig}
                     />

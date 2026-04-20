@@ -16,6 +16,7 @@ export default createHttpModule({
         router.route('/')
             .post(uploadTrajectoryFiles('trajectoryFiles'), controllers.create.handle)
             .get(trajectoryValidation.listByTeamId, controllers.getByTeamId.handle);
+        router.post('/clones', trajectoryValidation.clone, controllers.cloneTrajectory.handle);
         router.get('/folders', trajectoryValidation.listFolders, controllers.listFolders.handle);
         router.get('/folders/:folderId', trajectoryValidation.getFolder, controllers.getFolder.handle);
         router.post('/folders', trajectoryValidation.createFolder, controllers.createFolder.handle);

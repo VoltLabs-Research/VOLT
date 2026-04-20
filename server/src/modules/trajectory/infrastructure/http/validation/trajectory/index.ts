@@ -85,6 +85,11 @@ const downloadTrajectoryAnalysesQuerySchema = z.object({
     name: z.string().trim().min(1).max(255).optional()
 }).strict();
 
+const cloneTrajectoryBodySchema = z.object({
+    sourceTrajectoryId: objectIdSchema,
+    targetClusterId: objectIdSchema.optional()
+}).strict();
+
 export const trajectoryValidation = createResourceValidation({
     listByTeamId: {
         params: teamParamsSchema,
@@ -151,5 +156,9 @@ export const trajectoryValidation = createResourceValidation({
     move: {
         params: trajectoryParamsSchema,
         body: moveTrajectorySchema
+    },
+    clone: {
+        params: teamParamsSchema,
+        body: cloneTrajectoryBodySchema
     }
 });

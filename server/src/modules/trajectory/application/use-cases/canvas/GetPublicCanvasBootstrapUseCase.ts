@@ -1,7 +1,6 @@
-import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { PublicCanvasAccessMode } from '@modules/trajectory/application/dtos/canvas/GetPublicCanvasBootstrapDTO';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
@@ -13,7 +12,6 @@ import type {
 } from '@modules/trajectory/application/dtos/canvas/GetPublicCanvasBootstrapDTO';
 import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
 
 const toBootstrapTrajectory = (trajectory: Trajectory): PublicCanvasBootstrapTrajectoryDTO => {
@@ -39,8 +37,8 @@ export class GetPublicCanvasBootstrapUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(TrajectoryReadAccessService)
+        private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
         @inject(TEAM_TOKENS.TeamMemberRepository)
         private readonly teamMemberRepository: ITeamMemberRepository
@@ -49,41 +47,35 @@ export class GetPublicCanvasBootstrapUseCase implements IUseCase<
     async execute(
         input: GetPublicCanvasBootstrapInputDTO
     ): Promise<Result<GetPublicCanvasBootstrapOutputDTO, ApplicationError>> {
-        const trajectory = await this.trajectoryRepository.findById(input.trajectoryId);
+        try {
+            const trajectory = await this.trajectoryReadAccessService.assertReadable(
+                input.trajectoryId,
+                input.userId
+            );
 
-        if (!trajectory) {
-            return Result.fail(ApplicationError.notFound(
-                ErrorCodes.TRAJECTORY_NOT_FOUND,
-                'Trajectory not found'
-            ));
-        }
+            let hasTeamMembership = false;
+            if (input.userId) {
+                const membership = await this.teamMemberRepository.findOne({
+                    team: String(trajectory.props.team),
+                    user: input.userId
+                });
+                hasTeamMembership = membership !== null;
+            }
 
-        const teamId = String(trajectory.props.team);
-        let hasTeamMembership = false;
-
-        if (input.userId) {
-            const membership = await this.teamMemberRepository.findOne({
-                team: teamId,
-                user: input.userId
+            return Result.ok({
+                access: {
+                    mode: PublicCanvasAccessMode.ReadOnly,
+                    isGuest: !input.userId,
+                    isPublic: trajectory.props.isPublic,
+                    hasTeamMembership
+                },
+                trajectory: toBootstrapTrajectory(trajectory)
             });
-            hasTeamMembership = membership !== null;
+        } catch (error) {
+            if (error instanceof ApplicationError) {
+                return Result.fail(error);
+            }
+            throw error;
         }
-
-        if (!trajectory.props.isPublic && !hasTeamMembership) {
-            return Result.fail(ApplicationError.forbidden(
-                ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN,
-                'Team membership required to access this trajectory'
-            ));
-        }
-
-        return Result.ok({
-            access: {
-                mode: PublicCanvasAccessMode.ReadOnly,
-                isGuest: !input.userId,
-                isPublic: trajectory.props.isPublic,
-                hasTeamMembership
-            },
-            trajectory: toBootstrapTrajectory(trajectory)
-        });
     }
 };

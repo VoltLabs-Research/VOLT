@@ -3,5 +3,5 @@ import { createController } from '@shared/infrastructure/http/controllers/create
 import RemoveTeamRunningJobsUseCase from '@modules/jobs/application/use-cases/RemoveTeamRunningJobsUseCase';
 
 export default createController(RemoveTeamRunningJobsUseCase, {
-    validationSchema: jobsValidation.teamAction
+    validationSchema: jobsValidation.trajectoryAction
 });

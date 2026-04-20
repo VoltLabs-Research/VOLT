@@ -15,6 +15,7 @@ import type { ColumnConfig } from '@/shared/presentation/components/DocumentList
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
+import SegmentedTabs from '@/shared/presentation/components/SegmentedTabs';
 import Title from '@/shared/presentation/components/Title';
 import useDocumentListingPagination from '@/shared/presentation/hooks/use-document-listing-pagination';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
@@ -24,7 +25,7 @@ import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-cli
 import './DocumentListing.css';
 import { Skeleton } from '@mui/material';
 import { motion } from 'framer-motion';
-import { ExternalLink, Plus } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, ExternalLink, Plus } from 'lucide-react';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { RiFileCopyLine } from 'react-icons/ri';
 import { RxDotsHorizontal } from 'react-icons/rx';
@@ -122,12 +123,16 @@ const sanitizePersistenceKey = (value: string): string => {
         .slice(0, 48) || 'listing';
 };
 
-const resolvePersistenceKey = (queryKey: QueryKey, title: string | React.ReactNode): string => {
-    if (typeof title === 'string' && title.trim()) {
-        return sanitizePersistenceKey(title);
+const hashString = (value: string): string => {
+    let hash = 0;
+    for (let i = 0; i < value.length; i++) {
+        hash = ((hash << 5) - hash + value.charCodeAt(i)) | 0;
     }
+    return Math.abs(hash).toString(36);
+};
 
-    return sanitizePersistenceKey(JSON.stringify(queryKey));
+const resolvePersistenceKey = (queryKey: QueryKey): string => {
+    return sanitizePersistenceKey(`list-${hashString(JSON.stringify(queryKey))}`);
 };
 
 const DocumentListing = <T extends { _id: string }, TContext = Record<string, never>>({
@@ -170,7 +175,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     const prefersReducedMotion = usePrefersReducedMotion();
     const [searchParams, setSearchParams] = useSearchParams();
     const resolvedTabs = useMemo(() => tabs?.length ? tabs : DEFAULT_TABS, [tabs]);
-    const persistenceKey = useMemo(() => resolvePersistenceKey(queryKey, title), [queryKey, title]);
+    const persistenceKey = useMemo(() => resolvePersistenceKey(queryKey), [queryKey]);
     const tabParamKey = `${persistenceKey}-tab`;
     const sortKeyParamKey = `${persistenceKey}-sort`;
     const sortDirectionParamKey = `${persistenceKey}-dir`;
@@ -349,13 +354,19 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         }
 
         const columnKey = getColumnSortKey(col);
-        if (!sortConfig || sortConfig.key !== columnKey) {
-            return <span className='sort-indicator' aria-hidden='true'>⇅</span>;
-        }
+        const isActive = sortConfig?.key === columnKey;
+        const Icon = !isActive
+            ? ArrowUpDown
+            : sortConfig.direction === 'asc' ? ArrowUp : ArrowDown;
 
-        return sortConfig.direction === 'asc'
-            ? <span className='sort-indicator' aria-hidden='true'>↑</span>
-            : <span className='sort-indicator' aria-hidden='true'>↓</span>;
+        return (
+            <span
+                className={`sort-indicator d-flex flex-center ${isActive ? 'is-active' : ''}`}
+                aria-hidden='true'
+            >
+                <Icon size={12} strokeWidth={2} />
+            </span>
+        );
     }, [getColumnSortKey, sortConfig]);
 
     const getAriaSort = useCallback((col: ColumnConfig<T>): 'ascending' | 'descending' | 'none' => {
@@ -502,12 +513,12 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     };
 
     return (
-        <Container className={`d-flex column h-max document-listing-container color-secondary ${compact ? 'is-compact' : ''}`}>
+        <Container className={`d-flex column h-max document-listing-container color-secondary gap-1 ${compact ? 'is-compact' : ''}`}>
             <span style={VISUALLY_HIDDEN_STYLES} aria-live='polite' aria-atomic='true'>
                 {sortAnnouncement}
             </span>
             {!hideHeader && (
-                <Container className={`d-flex column ${gap}`}>
+                <Container className={`d-flex column ${gap}`}>  
                     <Container className='d-flex column gap-1-5 document-listing-header-top-container p-2'>
                         <Container className='d-flex content-between items-start gap-1-5'>
                             <Container className='document-listing-header-main d-flex gap-1 items-start'>
@@ -568,21 +579,16 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                         </Container>
                     </Container>
 
-                    {!hideTabs && (
+                    {!hideTabs && resolvedTabs.length >= 2 && (
                         <Container>
-                            <Container className='d-flex w-max gap-1 document-listing-header-tabs-container' role='group' aria-label='Listing view and actions'>
-                                {resolvedTabs.map((tab) => (
-                                    <button
-                                        key={tab.id}
-                                        type='button'
-                                        className={`d-flex items-center gap-1 color-secondary document-listing-header-tab-container d-flex flex-center ${activeTabId === tab.id ? 'is-active' : ''}`}
-                                        onClick={() => handleTabChange(tab.id)}
-                                        aria-pressed={activeTabId === tab.id}
-                                        aria-label={tab.label}
-                                    >
-                                        <Paragraph>{tab.label}</Paragraph>
-                                    </button>
-                                ))}
+                            <Container className='document-listing-header-tabs-container'>
+                                <SegmentedTabs
+                                    tabs={resolvedTabs}
+                                    activeTab={activeTabId}
+                                    onChange={handleTabChange}
+                                    ariaLabel='Listing views'
+                                    layoutId={`${persistenceKey}-tabs`}
+                                />
                             </Container>
                             <Container className='document-listing-header-filters-container' />
                         </Container>
