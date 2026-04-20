@@ -51,6 +51,7 @@ interface ObjectsPanelProps {
 const PANEL_ICON_COLOR = 'var(--color-text-secondary)';
 const TREE_MODIFIER_ICON_SIZE = 12;
 const TREE_MODIFIER_ICON_COLOR = 'var(--accent-blue)';
+const TIMESTEP_PAGE_SIZE = 50;
 
 const PARTICLE_FILTER_ACTION_LABELS = {
     delete: 'Delete',
@@ -161,6 +162,8 @@ const ObjectsPanel = ({
     const [particleFilterOpen, setParticleFilterOpen] = useState(true);
     const [expandedColorCodingTimesteps, setExpandedColorCodingTimesteps] = useState<Set<number>>(new Set());
     const [expandedParticleFilterTimesteps, setExpandedParticleFilterTimesteps] = useState<Set<number>>(new Set());
+    const [colorCodingVisibleCount, setColorCodingVisibleCount] = useState(TIMESTEP_PAGE_SIZE);
+    const [particleFilterVisibleCount, setParticleFilterVisibleCount] = useState(TIMESTEP_PAGE_SIZE);
     const { activeWorkspace } = useCanvasUrlState();
     const isRasterWorkspace = activeWorkspace === CanvasWorkspace.Raster;
 
@@ -390,18 +393,36 @@ const ObjectsPanel = ({
     const toggleParticleFilterTimestep = useCallback(toggleTimestepSetter(setExpandedParticleFilterTimesteps), []);
     const toggleColorCodingTimestep = useCallback(toggleTimestepSetter(setExpandedColorCodingTimesteps), []);
 
+    const artifactsByTimestep = useMemo(() => {
+        const colorIndex = new Map<number, SceneArtifact[]>();
+        colorCodingArtifacts.forEach((artifact) => {
+            const list = colorIndex.get(artifact.timestep);
+            if (list) list.push(artifact);
+            else colorIndex.set(artifact.timestep, [artifact]);
+        });
+        const particleIndex = new Map<number, SceneArtifact[]>();
+        particleFilterArtifacts.forEach((artifact) => {
+            const list = particleIndex.get(artifact.timestep);
+            if (list) list.push(artifact);
+            else particleIndex.set(artifact.timestep, [artifact]);
+        });
+        return { colorIndex, particleIndex };
+    }, [colorCodingArtifacts, particleFilterArtifacts]);
+
     const renderArtifactTreeSection = useCallback((params: {
-        artifacts: SceneArtifact[];
+        artifactsByTimestep: Map<number, SceneArtifact[]>;
         timesteps: number[];
         expandedSet: Set<number>;
         toggleTimestep: (timestep: number) => void;
         icon: ComponentType<{ style?: React.CSSProperties }>;
         menuIdPrefix: string;
         ariaLabel: string;
+        visibleCount: number;
+        onShowMore: () => void;
     }) => {
-        const { artifacts, timesteps, expandedSet, toggleTimestep, icon: Icon, menuIdPrefix, ariaLabel } = params;
+        const { artifactsByTimestep, timesteps, expandedSet, toggleTimestep, icon: Icon, menuIdPrefix, ariaLabel, visibleCount, onShowMore } = params;
 
-        if (artifacts.length === 0) {
+        if (timesteps.length === 0) {
             return (
                 <Container className="canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label={ariaLabel}>
                     <CanvasTreeEmptyRow label={sceneArtifactsLoading ? 'Loading...' : 'No models generated'} />
@@ -409,20 +430,32 @@ const ObjectsPanel = ({
             );
         }
 
+        const visibleTimesteps = timesteps.slice(0, visibleCount);
+        const hiddenCount = Math.max(0, timesteps.length - visibleCount);
+
         return (
             <Container className="canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label={ariaLabel}>
-                {timesteps.map((timestep) => {
-                    const timestepArtifacts = artifacts.filter((artifact) => artifact.timestep === timestep);
+                {visibleTimesteps.map((timestep) => {
+                    const timestepArtifacts = artifactsByTimestep.get(timestep) ?? [];
                     const isExpanded = expandedSet.has(timestep);
                     const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
+                    const groupId = `${menuIdPrefix}-group-${timestep}`;
 
                     return (
-                        <Container key={timestep} className="canvas-tree-group">
+                        <Container
+                            key={timestep}
+                            className="canvas-tree-group"
+                            role="treeitem"
+                            aria-expanded={isExpanded}
+                            aria-level={1}
+                        >
                             <button
                                 type="button"
+                                id={groupId}
                                 className="canvas-tree-group-header d-flex items-center gap-05"
                                 onClick={() => toggleTimestep(timestep)}
                                 aria-expanded={isExpanded}
+                                aria-controls={isExpanded ? `${groupId}-children` : undefined}
                             >
                                 <ChevronIcon className={`canvas-tree-group-chevron ${isExpanded ? '' : 'collapsed'}`} style={{ width: 13, height: 13 }} />
                                 <Icon style={{ width: TREE_MODIFIER_ICON_SIZE, height: TREE_MODIFIER_ICON_SIZE, color: TREE_MODIFIER_ICON_COLOR }} />
@@ -430,10 +463,24 @@ const ObjectsPanel = ({
                                 <span className="canvas-tree-group-count">{timestepArtifacts.length}</span>
                             </button>
 
-                            {isExpanded && timestepArtifacts.map((artifact) => renderArtifactTreeItem(artifact, Icon, menuIdPrefix))}
+                            {isExpanded && (
+                                <div id={`${groupId}-children`} role="group">
+                                    {timestepArtifacts.map((artifact) => renderArtifactTreeItem(artifact, Icon, menuIdPrefix))}
+                                </div>
+                            )}
                         </Container>
                     );
                 })}
+
+                {hiddenCount > 0 && (
+                    <button
+                        type='button'
+                        className='canvas-tree-show-more font-size-05 color-secondary'
+                        onClick={onShowMore}
+                    >
+                        Show {Math.min(TIMESTEP_PAGE_SIZE, hiddenCount)} more timesteps ({hiddenCount} hidden)
+                    </button>
+                )}
             </Container>
         );
     }, [renderArtifactTreeItem, sceneArtifactsLoading]);
@@ -484,13 +531,15 @@ const ObjectsPanel = ({
                 onExpandedChange={setColorCodingOpen}
             >
                 {renderArtifactTreeSection({
-                    artifacts: colorCodingArtifacts,
+                    artifactsByTimestep: artifactsByTimestep.colorIndex,
                     timesteps: colorCodingTimesteps,
                     expandedSet: expandedColorCodingTimesteps,
                     toggleTimestep: toggleColorCodingTimestep,
                     icon: Palette,
                     menuIdPrefix: 'canvas-ctx-color-coding',
-                    ariaLabel: 'Color Coding hierarchy'
+                    ariaLabel: 'Color Coding hierarchy',
+                    visibleCount: colorCodingVisibleCount,
+                    onShowMore: () => setColorCodingVisibleCount((current) => current + TIMESTEP_PAGE_SIZE)
                 })}
             </RightCollapsible>
 
@@ -501,13 +550,15 @@ const ObjectsPanel = ({
                 onExpandedChange={setParticleFilterOpen}
             >
                 {renderArtifactTreeSection({
-                    artifacts: particleFilterArtifacts,
+                    artifactsByTimestep: artifactsByTimestep.particleIndex,
                     timesteps: particleFilterTimesteps,
                     expandedSet: expandedParticleFilterTimesteps,
                     toggleTimestep: toggleParticleFilterTimestep,
                     icon: Filter,
                     menuIdPrefix: 'canvas-ctx-particle-filter',
-                    ariaLabel: 'Particle Filter hierarchy'
+                    ariaLabel: 'Particle Filter hierarchy',
+                    visibleCount: particleFilterVisibleCount,
+                    onShowMore: () => setParticleFilterVisibleCount((current) => current + TIMESTEP_PAGE_SIZE)
                 })}
             </RightCollapsible>
         </Container>

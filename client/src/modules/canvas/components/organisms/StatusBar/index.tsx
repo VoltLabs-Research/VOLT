@@ -16,8 +16,8 @@ interface StatusItem {
 };
 
 interface StatusBarProps {
-    trajectory: Trajectory;
-    currentTimestep: number;
+    trajectory: Trajectory | null | undefined;
+    currentTimestep: number | undefined;
 };
 
 const StatusGroup = ({ items }: { items: StatusItem[] }) => (
@@ -34,10 +34,10 @@ const StatusGroup = ({ items }: { items: StatusItem[] }) => (
 );
 
 const StatusBar = ({ trajectory, currentTimestep }: StatusBarProps) => {
-    const activitySummary = useAnalysisActivitySummary(trajectory);
+    const activitySummary = useAnalysisActivitySummary(trajectory ?? undefined);
 
     let teamName = '-';
-    if (typeof trajectory.team === 'object') {
+    if (trajectory && typeof trajectory.team === 'object' && trajectory.team) {
         teamName = trajectory.team.name;
     }
 
@@ -78,15 +78,19 @@ const StatusBar = ({ trajectory, currentTimestep }: StatusBarProps) => {
                 value: <span className="color-secondary">Idle</span>
             };
 
+    const atoms = trajectory?.frames?.[0]?.natoms ?? 0;
+    const frames = trajectory?.frames?.length ?? 0;
+    const size = trajectory?.stats?.totalSize !== undefined ? formatSize(trajectory.stats.totalSize) : '—';
+
     const left: StatusItem[] = [
-        { key: 'atoms', label: 'Atoms', value: trajectory.frames[0]?.natoms ?? 0 },
-        { key: 'frames', label: 'Frames', value: trajectory.frames.length },
-        { key: 'size', label: 'Size', value: formatSize(trajectory.stats.totalSize) },
+        { key: 'atoms', label: 'Atoms', value: atoms },
+        { key: 'frames', label: 'Frames', value: frames },
+        { key: 'size', label: 'Size', value: size },
         activityItem
     ];
 
     const right: StatusItem[] = [
-        { key: 'timestep', label: 'Timestep', value: currentTimestep },
+        { key: 'timestep', label: 'Timestep', value: currentTimestep ?? '—' },
         { key: 'team', label: '', value: teamName }
     ];
 

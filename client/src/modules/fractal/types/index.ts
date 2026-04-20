@@ -19,6 +19,8 @@ export interface OrbitControlsHandle {
     object: Camera;
     minDistance: number;
     maxDistance: number;
+    addEventListener: (type: 'change' | 'start' | 'end', listener: () => void) => void;
+    removeEventListener: (type: 'change' | 'start' | 'end', listener: () => void) => void;
 };
 
 export type { BoxBounds, Pos3D, ModelLoadingState };

@@ -2,3 +2,87 @@
     background: var(--color-bg);
     color: var(--color-text-primary);
 }
+
+.canvas-panel-drawer-toggle {
+    position: absolute;
+    z-index: 6;
+    top: 50%;
+    transform: translateY(-50%);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 54px;
+    padding: 0;
+    border: 1px solid var(--color-border-soft, rgba(255, 255, 255, 0.1));
+    background: var(--color-bg-subtle, rgba(0, 0, 0, 0.55));
+    backdrop-filter: blur(6px);
+    color: var(--color-text-secondary, inherit);
+    cursor: pointer;
+    transition: background-color 140ms ease, color 140ms ease;
+}
+
+.canvas-panel-drawer-toggle:hover {
+    background: var(--color-bg-hover, rgba(255, 255, 255, 0.1));
+    color: var(--color-text-primary);
+}
+
+.canvas-panel-drawer-toggle--left {
+    left: 0;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    border-left: none;
+}
+
+.canvas-panel-drawer-toggle--right {
+    right: 0;
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-right: none;
+}
+
+@media (max-width: 1199px) {
+    .canvas-editor-root.canvas-editor-root--narrow .canvas-left-panel,
+    .canvas-editor-root.canvas-editor-root--narrow .canvas-right-panel-container {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        z-index: 5;
+        box-shadow: 0 0 24px rgba(0, 0, 0, 0.4);
+        transition: transform 180ms ease;
+    }
+
+    .canvas-editor-root.canvas-editor-root--narrow .canvas-left-panel {
+        left: 0;
+    }
+
+    .canvas-editor-root.canvas-editor-root--narrow .canvas-right-panel-container {
+        right: 0;
+    }
+
+    .canvas-editor-root.canvas-editor-root--narrow .canvas-left-panel[data-drawer-open='false'] {
+        transform: translateX(-100%);
+    }
+
+    .canvas-editor-root.canvas-editor-root--narrow .canvas-right-panel-container[data-drawer-open='false'] {
+        transform: translateX(100%);
+    }
+
+    .canvas-editor-root.canvas-editor-root--narrow .canvas-panel-drawer-toggle {
+        display: flex;
+    }
+
+    .canvas-editor-root.canvas-editor-root--narrow .canvas-resize-handle {
+        display: none;
+    }
+}
+
+.canvas-panel-drawer-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    background: rgba(0, 0, 0, 0.35);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}

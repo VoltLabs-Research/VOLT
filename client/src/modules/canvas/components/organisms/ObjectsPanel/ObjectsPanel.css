@@ -225,3 +225,19 @@
         transition: none;
     }
 }
+
+.canvas-tree-show-more {
+    margin: 4px 8px 6px;
+    padding: 6px 10px;
+    border: 1px dashed var(--color-border-soft);
+    border-radius: var(--radius-xs);
+    background: transparent;
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.canvas-tree-show-more:hover {
+    background: var(--hover-bg);
+    border-color: var(--color-border);
+}
