@@ -73,6 +73,10 @@ export interface ColumnConfig<TRow = unknown> {
     minWidth?: number;
     /** Flex grow weight. Higher values claim more leftover space. Defaults to 1. */
     flex?: number;
+    /** Numeric column — right-aligns header and cell, applies tabular-nums. */
+    numeric?: boolean;
+    /** Hidden unless the user opts in via the column picker. */
+    defaultHidden?: boolean;
     headerTitleClassName?: string;
     render?: (value: unknown, row: TRow) => React.ReactNode;
     skeleton?: { variant: 'text' | 'rounded'; width: number; height?: number };
@@ -345,9 +349,19 @@ const DocumentListingTable = <T extends Identifiable>({
                 >
                     {columns.map((col, colIdx) => {
                         const isSorted = getAriaSort(col) !== 'none';
+                        const cellClassName = [
+                            'document-listing-cell',
+                            'header-cell',
+                            'overflow-hidden',
+                            'd-flex',
+                            'items-center',
+                            'color-secondary',
+                            isSorted ? 'is-sorted' : '',
+                            col.numeric ? 'is-numeric' : ''
+                        ].filter(Boolean).join(' ');
                         return (
                             <Container
-                                className={`document-listing-cell header-cell overflow-hidden d-flex items-center color-secondary ${isSorted ? 'is-sorted' : ''}`}
+                                className={cellClassName}
                                 key={`header-${getColumnTitle(col)}-${colIdx}`}
                                 role='columnheader'
                                 aria-sort={getAriaSort(col)}
@@ -387,6 +401,8 @@ const DocumentListingTable = <T extends Identifiable>({
                     </DndContext>
                 ) : rows}
 
+                <Container ref={sentinelRef} style={{ height: 1 }} aria-hidden='true' />
+
                 {isFetchingMore && Array.from({ length: skeletonRowsCount }).map((_, i) => (
                     <TableSkeletonRow
                         key={`fetching-${i}`}
@@ -396,12 +412,10 @@ const DocumentListingTable = <T extends Identifiable>({
                     />
                 ))}
 
-                <Container ref={sentinelRef} style={{ height: 1 }} aria-hidden='true' />
-
                 {shouldShowEmptyState && (
                     <RecoveryState
                         icon={<FileText size={26} strokeWidth={1.5} />}
-                        title='Nothing here yet'
+                        title='No items to show'
                         description={emptyMessage}
                         retryLabel={emptyButtonText}
                         onRetry={onEmptyButtonClick}
@@ -410,8 +424,8 @@ const DocumentListingTable = <T extends Identifiable>({
 
                 {shouldShowErrorState && (
                     <RecoveryState
-                        title='Unable to load this list'
-                        description={errorMessage ?? 'Something went wrong while loading this data.'}
+                        title="Couldn't load this list"
+                        description={errorMessage ?? 'Try again in a moment.'}
                         tone={RecoveryStateTone.Error}
                         retryLabel={retryButtonText}
                         isRetrying={isLoading}
@@ -422,7 +436,7 @@ const DocumentListingTable = <T extends Identifiable>({
                 {shouldShowAccessDeniedState && (
                     <RecoveryState
                         title='Access denied'
-                        description={errorMessage ?? 'You do not have permission to view this list.'}
+                        description={errorMessage ?? "You don't have permission to view this list."}
                         tone={RecoveryStateTone.AccessDenied}
                     />
                 )}

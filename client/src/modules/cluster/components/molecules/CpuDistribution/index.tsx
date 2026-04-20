@@ -52,11 +52,7 @@ const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
 
     const stats = useMemo(() => {
         if (chartData.length === 0 || numCores === 0) {
-            return {
-                avgUsage: '0',
-                maxCore: '0',
-                minCore: '0'
-            };
+            return { avgUsage: '0' };
         }
 
         const coreAverages = Array.from({ length: numCores }, (_, coreIndex) => {
@@ -69,9 +65,7 @@ const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
         });
 
         return {
-            avgUsage: (coreAverages.reduce((a, b) => a + b, 0) / numCores).toFixed(1),
-            maxCore: Math.max(...coreAverages).toFixed(1),
-            minCore: Math.min(...coreAverages).toFixed(1)
+            avgUsage: (coreAverages.reduce((a, b) => a + b, 0) / numCores).toFixed(1)
         };
     }, [chartData, numCores]);
 
@@ -107,10 +101,8 @@ const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
             title='CPU Distribution'
             isLoading={!metrics}
             stats={[
-                { label: 'Cores', value: numCores },
-                { label: 'Avg', value: `${stats.avgUsage}%` },
-                { label: 'Max', value: `${stats.maxCore}%` },
-                { label: 'Min', value: `${stats.minCore}%` }
+                { label: 'Avg', value: `${stats.avgUsage}%`, emphasis: 'primary' },
+                { label: 'Cores', value: numCores, emphasis: 'secondary' }
             ]}
             statsLoading={!metrics}
         >

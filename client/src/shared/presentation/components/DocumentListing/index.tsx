@@ -25,7 +25,7 @@ import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-cli
 import './DocumentListing.css';
 import { Skeleton } from '@mui/material';
 import { motion } from 'framer-motion';
-import { ArrowDown, ArrowUp, ArrowUpDown, ExternalLink, Plus } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, Columns3, ExternalLink, Plus } from 'lucide-react';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { RiFileCopyLine } from 'react-icons/ri';
 import { RxDotsHorizontal } from 'react-icons/rx';
@@ -179,9 +179,11 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     const tabParamKey = `${persistenceKey}-tab`;
     const sortKeyParamKey = `${persistenceKey}-sort`;
     const sortDirectionParamKey = `${persistenceKey}-dir`;
+    const hiddenColumnsParamKey = `${persistenceKey}-hide`;
     const persistedTabId = searchParams.get(tabParamKey) || undefined;
     const persistedSortKey = searchParams.get(sortKeyParamKey) || undefined;
     const persistedSortDirection = searchParams.get(sortDirectionParamKey);
+    const persistedHiddenColumns = searchParams.get(hiddenColumnsParamKey);
     const initialTabId = useMemo(() => {
         return resolveInitialTabId(resolvedTabs, persistedTabId ?? defaultTabId);
     }, [defaultTabId, persistedTabId, resolvedTabs]);
@@ -196,6 +198,32 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         };
     });
     const [activeTabId, setActiveTabId] = useState(initialTabId);
+    const getColumnKey = useCallback((col: ColumnConfig<T>): string => {
+        return String(col.key ?? col.path ?? '');
+    }, []);
+    const defaultHiddenColumnKeys = useMemo(() => {
+        return new Set(columns.filter((col) => col.defaultHidden).map(getColumnKey));
+    }, [columns, getColumnKey]);
+    const [hiddenColumnKeys, setHiddenColumnKeys] = useState<Set<string>>(() => {
+        if (persistedHiddenColumns !== null) {
+            return new Set(persistedHiddenColumns.split(',').filter(Boolean));
+        }
+        return defaultHiddenColumnKeys;
+    });
+    const visibleColumns = useMemo(() => {
+        return columns.filter((col) => !hiddenColumnKeys.has(getColumnKey(col)));
+    }, [columns, hiddenColumnKeys, getColumnKey]);
+    const toggleColumnVisibility = useCallback((columnKey: string) => {
+        setHiddenColumnKeys((previous) => {
+            const next = new Set(previous);
+            if (next.has(columnKey)) {
+                next.delete(columnKey);
+            } else {
+                next.add(columnKey);
+            }
+            return next;
+        });
+    }, []);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -206,13 +234,21 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         const currentTab = searchParams.get(tabParamKey);
         const currentSortKey = searchParams.get(sortKeyParamKey);
         const currentSortDirection = searchParams.get(sortDirectionParamKey);
+        const currentHiddenColumns = searchParams.get(hiddenColumnsParamKey);
         const shouldPersistTab = !hideTabs && resolvedTabs.length > 1;
         const nextTab = shouldPersistTab ? activeTabId : null;
+
+        const hiddenKeysSorted = [...hiddenColumnKeys].sort();
+        const defaultHiddenSorted = [...defaultHiddenColumnKeys].sort();
+        const matchesDefault = hiddenKeysSorted.length === defaultHiddenSorted.length
+            && hiddenKeysSorted.every((key, index) => key === defaultHiddenSorted[index]);
+        const nextHiddenColumns = matchesDefault ? null : (hiddenKeysSorted.join(',') || '');
 
         if (
             currentTab === nextTab
             && currentSortKey === (sortConfig?.key ?? null)
             && currentSortDirection === (sortConfig?.direction ?? null)
+            && currentHiddenColumns === nextHiddenColumns
         ) {
             return;
         }
@@ -220,9 +256,10 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         setSearchParams((prev) => applySearchParamUpdates(prev, {
             [tabParamKey]: nextTab,
             [sortKeyParamKey]: sortConfig?.key ?? null,
-            [sortDirectionParamKey]: sortConfig?.direction ?? null
+            [sortDirectionParamKey]: sortConfig?.direction ?? null,
+            [hiddenColumnsParamKey]: nextHiddenColumns
         }), { replace: true });
-    }, [activeTabId, hideTabs, resolvedTabs.length, searchParams, setSearchParams, sortConfig, sortDirectionParamKey, sortKeyParamKey, tabParamKey]);
+    }, [activeTabId, defaultHiddenColumnKeys, hiddenColumnKeys, hiddenColumnsParamKey, hideTabs, resolvedTabs.length, searchParams, setSearchParams, sortConfig, sortDirectionParamKey, sortKeyParamKey, tabParamKey]);
 
     const getColumnSortKey = useCallback((col: ColumnConfig<T>): string => {
         return String(col.key ?? col.path ?? '');
@@ -414,6 +451,24 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         );
     }, [headerMenuOptions.length]);
 
+    const shouldShowColumnPicker = view === 'table' && columns.length > 1;
+    const columnPickerTrigger = useMemo(() => {
+        if (!shouldShowColumnPicker) return null;
+        return (
+            <Button
+                variant='ghost'
+                intent='neutral'
+                size='sm'
+                shape='circle'
+                iconOnly
+                title='Toggle columns'
+                aria-label='Toggle columns'
+            >
+                <Columns3 size={16} />
+            </Button>
+        );
+    }, [shouldShowColumnPicker]);
+
     const headerDocLink = useMemo(() => {
         if (!docLink) {
             return null;
@@ -485,7 +540,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                 >
                     <DocumentListingTable
                         listingLabel={typeof title === 'string' ? title : undefined}
-                        columns={columns}
+                        columns={visibleColumns}
                         data={sortedData}
                         onCellClick={handleSort}
                         getCellTitle={(col) => <>{col.title} {getSortIndicator(col)}</>}
@@ -541,9 +596,42 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                                         ) : null}
                                     </Container>
                                 )}
-                                {(headerDocLink || headerMenuTrigger) && (
+                                {(headerDocLink || headerMenuTrigger || columnPickerTrigger) && (
                                     <Container className='d-flex gap-05 items-center'>
                                         {headerDocLink}
+                                        {columnPickerTrigger && (
+                                            <Popover
+                                                id='document-listing-column-picker'
+                                                trigger={columnPickerTrigger}
+                                                noPadding
+                                                className='context-menu-popover context-menu-popover--md'
+                                            >
+                                                {() => (
+                                                    <PopoverMenu label='Toggle columns'>
+                                                        {columns.map((col) => {
+                                                            const columnKey = getColumnKey(col);
+                                                            const optionLabel = String(col.title ?? col.label ?? col.key ?? col.path ?? columnKey);
+                                                            const isVisible = !hiddenColumnKeys.has(columnKey);
+                                                            return (
+                                                                <button
+                                                                    type='button'
+                                                                    role='menuitemcheckbox'
+                                                                    aria-checked={isVisible}
+                                                                    key={`document-listing-column-option-${columnKey}`}
+                                                                    className='document-listing-column-picker-item d-flex items-center gap-075'
+                                                                    onClick={() => toggleColumnVisibility(columnKey)}
+                                                                >
+                                                                    <span className='document-listing-column-picker-check d-flex flex-center' aria-hidden='true'>
+                                                                        {isVisible ? <Check size={14} /> : null}
+                                                                    </span>
+                                                                    <span className='flex-1 text-left'>{optionLabel}</span>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </PopoverMenu>
+                                                )}
+                                            </Popover>
+                                        )}
                                         {headerMenuTrigger && (
                                             <Popover
                                                 id='document-listing-header-menu'

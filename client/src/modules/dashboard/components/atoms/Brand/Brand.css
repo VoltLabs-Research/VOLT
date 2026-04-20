@@ -13,8 +13,9 @@
 }
 
 .sidebar-brand-title {
-    font-size: 0.95rem;
-    font-weight: 600;
+    font-size: .95rem;
+    font-weight: 590;
+    letter-spacing: -0.01em;
     text-transform: uppercase;
     color: var(--color-text-primary);
 }

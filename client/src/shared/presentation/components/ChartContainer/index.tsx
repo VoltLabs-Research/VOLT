@@ -5,9 +5,12 @@ import { Skeleton } from '@mui/material';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-interface ChartStat {
+export type ChartStatEmphasis = 'primary' | 'secondary';
+
+export interface ChartStat {
     label: string;
     value: string | number;
+    emphasis?: ChartStatEmphasis;
 };
 
 interface ChartContainerProps {
@@ -35,6 +38,32 @@ const ChartContainer = ({
         return <LucideIcon className='color-muted-foreground' style={{ width: 20, height: 20 }} />;
     };
 
+    const renderStat = (stat: ChartStat) => {
+        // Legacy default: treat stats without an emphasis flag as secondary
+        // so old call sites keep their low-visual-weight behaviour.
+        const emphasis: ChartStatEmphasis = stat.emphasis ?? 'secondary';
+        const valueClassName = emphasis === 'primary'
+            ? 'chart-stat-value chart-stat-value-primary'
+            : 'chart-stat-value chart-stat-value-secondary';
+        const skeletonWidth = emphasis === 'primary' ? 80 : 50;
+        const skeletonHeight = emphasis === 'primary' ? 28 : 18;
+
+        return (
+            <Container key={stat.label} className='d-flex column gap-025'>
+                <span className='chart-stat-label font-size-1 color-muted'>
+                    {stat.label}
+                </span>
+                {statsLoading ? (
+                    <Skeleton variant='text' width={skeletonWidth} height={skeletonHeight} />
+                ) : (
+                    <span className={valueClassName}>
+                        {stat.value}
+                    </span>
+                )}
+            </Container>
+        );
+    };
+
     return (
         <Container className='d-flex h-max column p-1-5 chart-container radius-lg sm:p-1'>
             <Container className='d-flex content-between mb-1-5 sm:column sm:gap-1'>
@@ -45,21 +74,8 @@ const ChartContainer = ({
                     </Title>
                 </Container>
                 {stats && (
-                    <Container className='d-flex gap-1-5 flex-wrap sm:w-max sm:gap-1'>
-                        {stats.map((stat) => (
-                            <Container key={stat.label} className='d-flex column gap-025'>
-                                <span className='chart-stat-label font-size-1 color-muted'>
-                                    {stat.label}
-                                </span>
-                                {statsLoading ? (
-                                    <Skeleton variant='text' width={60} height={18} />
-                                ) : (
-                                    <span className='chart-stat-value font-size-3 color-primary'>
-                                        {stat.value}
-                                    </span>
-                                )}
-                            </Container>
-                        ))}
+                    <Container className='d-flex items-end gap-1-5 flex-wrap sm:w-max sm:gap-1'>
+                        {stats.map(renderStat)}
                     </Container>
                 )}
             </Container>

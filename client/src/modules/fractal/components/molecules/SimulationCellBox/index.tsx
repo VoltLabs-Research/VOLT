@@ -6,7 +6,7 @@ import { Theme } from '@/shared/presentation/hooks/use-theme';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
 import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
-import { useMemo, useRef, useEffect, forwardRef, useState } from 'react';
+import { useMemo, useRef, useEffect, forwardRef, useState, useCallback } from 'react';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { localModelDragBus, remoteModelDragBus } from '@/modules/canvas/collaboration/live-drag-bus';
 import type { ReactNode, RefObject } from 'react';
@@ -37,6 +37,10 @@ const _decomposeScale = new THREE.Vector3();
 const _clampedPos = new THREE.Vector3();
 const _identityQuat = new THREE.Quaternion();
 const _unitScale = new THREE.Vector3(1, 1, 1);
+const _cameraForward = new THREE.Vector3();
+
+type DragAxisLock = 'x' | 'y' | 'z';
+const FLOOR_AXIS_LOCK: DragAxisLock = 'z';
 
 const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     boxBounds,
@@ -47,6 +51,7 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     onHoverChange
 }, ref) => {
     const invalidate = useThree((state) => state.invalidate);
+    const camera = useThree((state) => state.camera);
     const dragRef = useRef<THREE.Group>(null!);
     const contentRef = useRef<THREE.Group>(null!);
     const isDraggingRef = useRef(false);
@@ -57,10 +62,46 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     // chases it from the current position for visual smoothing.
     const currentDragPosRef = useRef(new THREE.Vector3());
     const targetDragPosRef = useRef(new THREE.Vector3());
+    // Position captured at drag start — used in vertical mode to freeze X/Y
+    // so only Z changes regardless of which plane DragControls picked.
+    const dragStartPosRef = useRef(new THREE.Vector3());
     const showSimulationCell = useEditorStore((state) => state.showSimulationCell);
     const modelDragOffset = useEditorStore((state) => state.modelDragOffset);
     const setModelDragOffset = useEditorStore((state) => state.setModelDragOffset);
     const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
+    const [axisLock, setAxisLock] = useState<DragAxisLock>(FLOOR_AXIS_LOCK);
+    const axisLockRef = useRef<DragAxisLock>(FLOOR_AXIS_LOCK);
+    axisLockRef.current = axisLock;
+
+    // Pick the vertical drag plane (XZ or YZ) whose normal points most at the
+    // camera, so the pointer has the best leverage over Z.
+    const pickVerticalAxisLock = useCallback((): DragAxisLock => {
+        camera.getWorldDirection(_cameraForward);
+        return Math.abs(_cameraForward.x) > Math.abs(_cameraForward.y) ? 'y' : 'x';
+    }, [camera]);
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Alt' && axisLockRef.current === FLOOR_AXIS_LOCK) {
+                setAxisLock(pickVerticalAxisLock());
+            }
+        };
+        const handleKeyUp = (event: KeyboardEvent) => {
+            if (event.key === 'Alt') {
+                setAxisLock(FLOOR_AXIS_LOCK);
+            }
+        };
+        const handleBlur = () => setAxisLock(FLOOR_AXIS_LOCK);
+
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        window.addEventListener('blur', handleBlur);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+            window.removeEventListener('blur', handleBlur);
+        };
+    }, [pickVerticalAxisLock]);
 
     useEffect(() => {
         return subscribeToAppTheme(setTheme);
@@ -189,6 +230,7 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
         <DragControls
             ref={dragRef}
             autoTransform={false}
+            axisLock={axisLock}
             matrix={dragMatrixRef.current}
             dragLimits={[
                 undefined,
@@ -198,6 +240,7 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
             onHover={onHoverChange}
             onDragStart={() => {
                 isDraggingRef.current = true;
+                dragStartPosRef.current.copy(currentDragPosRef.current);
                 onSelect?.(contentRef.current);
                 if (orbitControlsRef?.current) {
                     orbitControlsRef.current.enabled = false;
@@ -206,7 +249,18 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
             onDrag={(localMatrix: THREE.Matrix4) => {
                 // Decompose into scratch vectors — zero allocations.
                 localMatrix.decompose(_decomposePos, _decomposeQuat, _decomposeScale);
-                _clampedPos.set(_decomposePos.x, _decomposePos.y, Math.max(0, _decomposePos.z));
+                // In vertical mode DragControls drags on XZ or YZ; freeze the
+                // in-plane horizontal axis so the motion feels purely up/down.
+                const isVertical = axisLockRef.current !== FLOOR_AXIS_LOCK;
+                if (isVertical) {
+                    _clampedPos.set(
+                        dragStartPosRef.current.x,
+                        dragStartPosRef.current.y,
+                        Math.max(0, _decomposePos.z)
+                    );
+                } else {
+                    _clampedPos.set(_decomposePos.x, _decomposePos.y, Math.max(0, _decomposePos.z));
+                }
 
                 // Mutate the ref matrix in-place and apply directly to the
                 // DragControls group — no React state update, no re-render.

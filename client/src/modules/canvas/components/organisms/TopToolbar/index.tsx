@@ -170,9 +170,9 @@ const TopToolbar = ({
                     onSettingsClick={handleSettingsClick}
                     onSignOut={handleSignOut}
                     isSigningOut={isSigningOut}
-                        trigger={
+                    trigger={
                         <Button variant='ghost' intent='neutral' iconOnly aria-label='Open user menu' title='Open user menu' className="canvas-toolbar-user-trigger cursor-pointer">
-                            <Avatar user={user} size="xs" />
+                            <HiOutlineDotsVertical size={16} />
                         </Button>
                     }
                 />

@@ -208,9 +208,18 @@ const TableRow = <T extends Identifiable>({
                 const title = formatUnknownValue(cellValue);
                 const columnTitle = getColumnTitle(col);
 
+                const cellClassName = [
+                    'document-listing-cell',
+                    'overflow-hidden',
+                    'd-flex',
+                    'items-center',
+                    'font-size-2',
+                    'color-secondary',
+                    col.numeric ? 'is-numeric' : ''
+                ].filter(Boolean).join(' ');
                 return (
                     <Container
-                        className='document-listing-cell overflow-hidden d-flex items-center font-size-2 color-secondary'
+                        className={cellClassName}
                         data-label={columnTitle}
                         key={`cell-${columnTitle}-${colIdx}`}
                         title={title}
