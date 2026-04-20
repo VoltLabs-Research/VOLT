@@ -8,14 +8,14 @@ import {
 } from '@/modules/plugin/utilities/plugin/argument-values';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { ARGUMENT_TYPE_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
+import ArgumentOptionsEditor from './ArgumentOptionsEditor';
 import Button from '@/shared/presentation/components/Button';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import IconButton from '@/shared/presentation/components/IconButton';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Select from '@/shared/presentation/components/Select';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import type {
     IArgumentDefinition,
@@ -131,53 +131,19 @@ const ArgumentDefinitionSection = ({
         }));
     }, [publishedPlugins]);
 
-    const handleAddOption = useCallback((argumentIndex: number) => {
+    const handleOptionsChange = useCallback((argumentIndex: number, nextOptions: IArgumentOption[]) => {
         const currentArgument = argumentDefinitions[argumentIndex];
-        const currentOptions = currentArgument.options ?? [];
-        const nextOption: IArgumentOption = {
-            key: '',
-            label: ''
-        };
-
-        handleArgumentChange(argumentIndex, {
-            ...currentArgument,
-            options: [...currentOptions, nextOption]
-        });
-    }, [argumentDefinitions, handleArgumentChange]);
-
-    const handleRemoveOption = useCallback((argumentIndex: number, optionIndex: number) => {
-        const currentArgument = argumentDefinitions[argumentIndex];
-        const currentOptions = currentArgument.options ?? [];
-
-        handleArgumentChange(argumentIndex, {
-            ...currentArgument,
-            options: currentOptions.filter((_, index) => index !== optionIndex)
-        });
-    }, [argumentDefinitions, handleArgumentChange]);
-
-    const handleOptionChange = useCallback((
-        argumentIndex: number,
-        optionIndex: number,
-        field: keyof IArgumentOption,
-        value: string
-    ) => {
-        const currentArgument = argumentDefinitions[argumentIndex];
-        const currentOptions = currentArgument.options ?? [];
-        const nextOptions = currentOptions.map((option, index) => {
-            if (index !== optionIndex) {
-                return option;
-            }
-
-            return {
-                ...option,
-                [field]: value
-            };
-        });
-
-        handleArgumentChange(argumentIndex, {
+        const nextArgument: IArgumentDefinition = {
             ...currentArgument,
             options: nextOptions
-        });
+        };
+
+        const defaultValue = currentArgument.default;
+        if (typeof defaultValue === 'string' && !nextOptions.some((option) => option.key === defaultValue)) {
+            delete nextArgument.default;
+        }
+
+        handleArgumentChange(argumentIndex, nextArgument);
     }, [argumentDefinitions, handleArgumentChange]);
 
     const createArgumentFieldHandler = useCallback((argumentIndex: number, field: keyof IArgumentDefinition) => {
@@ -276,16 +242,6 @@ const ArgumentDefinitionSection = ({
             });
         };
     }, [argumentDefinitions, handleArgumentChange]);
-
-    const createOptionFieldHandler = useCallback((
-        argumentIndex: number,
-        optionIndex: number,
-        field: keyof IArgumentOption
-    ) => {
-        return (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-            handleOptionChange(argumentIndex, optionIndex, field, event.target.value);
-        };
-    }, [handleOptionChange]);
 
     const handleVisibilityEnabledChange = useCallback((argumentIndex: number, enabled: boolean) => {
         const currentArgument = argumentDefinitions[argumentIndex];
@@ -601,48 +557,12 @@ const ArgumentDefinitionSection = ({
                             )}
 
                             {argument.type === ArgumentType.SELECT && (
-                        <Container className='d-flex column gap-05 mt-05'>
-                            <Paragraph className='font-size-085 font-bold'>Options</Paragraph>
-                            {(argument.options ?? []).map((option, optionIndex) => (
-                                <Container key={optionIndex} className='d-flex column items-center gap-05'>
-                                    <FormFieldRHF
-                                        variant='inline'
-                                        label='Key'
-                                        name={`option-key-${level}-${index}-${optionIndex}`}
-                                        fieldType='input'
-                                        value={option.key}
-                                        onChange={createOptionFieldHandler(index, optionIndex, 'key')}
-                                        placeholder='option_key'
+                                <Container className='d-flex column gap-05 mt-05'>
+                                    <ArgumentOptionsEditor
+                                        options={argument.options ?? []}
+                                        onOptionsChange={(nextOptions) => handleOptionsChange(index, nextOptions)}
                                     />
-                                    <FormFieldRHF
-                                        variant='inline'
-                                        label='Label'
-                                        name={`option-label-${level}-${index}-${optionIndex}`}
-                                        fieldType='input'
-                                        value={option.label}
-                                        onChange={createOptionFieldHandler(index, optionIndex, 'label')}
-                                        placeholder='Option Label'
-                                    />
-                                    <IconButton
-                                        variant='ghost'
-                                        size='sm'
-                                        onClick={() => handleRemoveOption(index, optionIndex)}
-                                        aria-label='Remove option'
-                                    >
-                                        <Trash2 size={14} />
-                                    </IconButton>
                                 </Container>
-                            ))}
-                            <Button
-                                variant='outline'
-                                intent='neutral'
-                                size='sm'
-                                leftIcon={<Plus size={12} />}
-                                onClick={() => handleAddOption(index)}
-                            >
-                                Add Option
-                            </Button>
-                        </Container>
                             )}
 
                             {argument.type === ArgumentType.LIST && (
@@ -702,30 +622,47 @@ const ArgumentDefinitionSection = ({
                         </>
                             )}
 
-                            {argument.type !== ArgumentType.LIST && !isPluginReferenceArgumentType(argument.type) && (
-                                <>
-                                    <FormFieldRHF
-                                        variant='inline'
-                                        label='Value'
-                                        name={`value-${level}-${index}`}
-                                        fieldType={argument.type === ArgumentType.BOOLEAN ? 'select' : 'input'}
-                                        value={getArgumentFieldInputValue(argument, 'value')}
-                                        onChange={createArgumentFieldHandler(index, 'value')}
-                                        options={argument.type === ArgumentType.BOOLEAN ? BOOLEAN_ARGUMENT_VALUE_OPTIONS : undefined}
-                                        placeholder='Preset hidden value'
-                                    />
-                                    <FormFieldRHF
-                                        variant='inline'
-                                        label='Default Value'
-                                        name={`default-${level}-${index}`}
-                                        fieldType={argument.type === ArgumentType.BOOLEAN ? 'select' : 'input'}
-                                        value={getArgumentFieldInputValue(argument, 'default')}
-                                        onChange={createArgumentFieldHandler(index, 'default')}
-                                        options={argument.type === ArgumentType.BOOLEAN ? BOOLEAN_ARGUMENT_VALUE_OPTIONS : undefined}
-                                        placeholder='Default value'
-                                    />
-                                </>
-                            )}
+                            {argument.type !== ArgumentType.LIST && !isPluginReferenceArgumentType(argument.type) && (() => {
+                                const scalarOptions: SelectOption[] | undefined = argument.type === ArgumentType.BOOLEAN
+                                    ? BOOLEAN_ARGUMENT_VALUE_OPTIONS
+                                    : argument.type === ArgumentType.SELECT
+                                        ? (argument.options ?? [])
+                                            .filter((option) => option.key.trim().length > 0)
+                                            .map((option) => ({
+                                                value: option.key,
+                                                title: option.label?.trim() ? `${option.label} (${option.key})` : option.key
+                                            }))
+                                        : undefined;
+
+                                const scalarFieldType: 'input' | 'select' = argument.type === ArgumentType.BOOLEAN || argument.type === ArgumentType.SELECT
+                                    ? 'select'
+                                    : 'input';
+
+                                return (
+                                    <>
+                                        <FormFieldRHF
+                                            variant='inline'
+                                            label='Value'
+                                            name={`value-${level}-${index}`}
+                                            fieldType={scalarFieldType}
+                                            value={getArgumentFieldInputValue(argument, 'value')}
+                                            onChange={createArgumentFieldHandler(index, 'value')}
+                                            options={scalarOptions}
+                                            placeholder='Preset hidden value'
+                                        />
+                                        <FormFieldRHF
+                                            variant='inline'
+                                            label='Default Value'
+                                            name={`default-${level}-${index}`}
+                                            fieldType={scalarFieldType}
+                                            value={getArgumentFieldInputValue(argument, 'default')}
+                                            onChange={createArgumentFieldHandler(index, 'default')}
+                                            options={scalarOptions}
+                                            placeholder='Default value'
+                                        />
+                                    </>
+                                );
+                            })()}
                         </CollapsibleSection>
                     );
                 })()
