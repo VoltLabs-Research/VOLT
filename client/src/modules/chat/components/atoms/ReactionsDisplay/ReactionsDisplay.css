@@ -24,10 +24,6 @@
     box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
 }
 
-.chat-reaction:active {
-    transform: translateY(1px);
-}
-
 .chat-reaction.user-reacted {
     background: var(--accent-blue);
     color: var(--color-contrast-high);

@@ -7,6 +7,14 @@ import {
 } from '@tanstack/react-query';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { createMutation, buildKeys } from '@/shared/infrastructure/query';
+import {
+    buildCanvasDataAccess,
+    DEFAULT_CANVAS_ACCESS_STATE,
+    useCanvasAccessMode,
+    useCanvasAccessStore,
+    useCanvasDataAccess,
+    withAccessMode
+} from '@/modules/canvas/api/access';
 import listingService from '../../api/services/listing';
 import type { ExportListingByAnalysisInputDTO } from '../../api/dtos/listing/export-listing-by-analysis';
 import type { ExportPluginListingInputDTO } from '../../api/dtos/listing/export-plugin-listing';
@@ -58,23 +66,36 @@ export const LISTING_QUERY_KEYS = {
 
 // ─── Listing queries ─────────────────────────────────────────────────────────
 
-export const buildPluginListingQueryOptions = (params: GetPluginListingInputDTO) => ({
-    queryKey: LISTING_QUERY_KEYS.listingDetail(params),
-    queryFn: () => listingService.getListing(params)
-});
+export const buildPluginListingQueryOptions = (params: GetPluginListingInputDTO) => {
+    const accessState = useCanvasAccessStore.getState();
+    const dataAccess = buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode: accessState.mode });
+    const trajectoryId = params.trajectoryId ?? accessState.trajectoryId ?? '';
+    return {
+        queryKey: withAccessMode(accessState.mode, LISTING_QUERY_KEYS.listingDetail(params)),
+        queryFn: () => dataAccess.getPluginListing({ ...params, trajectoryId })
+    };
+};
 
 export const fetchPluginListing = (params: GetPluginListingInputDTO) => {
     return queryClient.fetchQuery(buildPluginListingQueryOptions(params));
 };
 
 export const usePluginListingSubListingQueries = (paramsList: GetPluginListingInputDTO[]) => {
+    const mode = useCanvasAccessMode();
+    const dataAccess = useCanvasDataAccess();
+    const storeTrajectoryId = useCanvasAccessStore((state) => state.trajectoryId);
+
     return useQueries({
-        queries: paramsList.map((params) => ({
-            ...buildPluginListingQueryOptions(params),
-            staleTime: 5 * 60 * 1000,
-            enabled: Boolean(params.pluginId) && Boolean(params.trajectoryId),
-            retry: false
-        }))
+        queries: paramsList.map((params) => {
+            const trajectoryId = params.trajectoryId ?? storeTrajectoryId ?? '';
+            return {
+                queryKey: withAccessMode(mode, LISTING_QUERY_KEYS.listingDetail(params)),
+                queryFn: () => dataAccess.getPluginListing({ ...params, trajectoryId }),
+                staleTime: 5 * 60 * 1000,
+                enabled: Boolean(params.pluginId) && Boolean(trajectoryId),
+                retry: false
+            };
+        })
     });
 };
 
@@ -82,9 +103,15 @@ export const usePluginListingQuery = (
     params: GetPluginListingInputDTO,
     options?: QueryOptions<GetPluginListingOutputDTO, GetPluginListingOutputDTO>
 ) => {
+    const mode = useCanvasAccessMode();
+    const dataAccess = useCanvasDataAccess();
+    const storeTrajectoryId = useCanvasAccessStore((state) => state.trajectoryId);
+    const trajectoryId = params.trajectoryId ?? storeTrajectoryId ?? '';
+
     return useQuery<GetPluginListingOutputDTO, Error, GetPluginListingOutputDTO, QueryKey>({
-        ...buildPluginListingQueryOptions(params),
-        ...options
+        ...options,
+        queryKey: withAccessMode(mode, LISTING_QUERY_KEYS.listingDetail(params)),
+        queryFn: () => dataAccess.getPluginListing({ ...params, trajectoryId })
     });
 };
 
@@ -92,13 +119,18 @@ export const usePluginListingInfiniteQuery = (
     params: Omit<GetPluginListingInputDTO, 'page'> & { limit: number },
     options: { getNextPageParam: (lastPage: GetPluginListingOutputDTO) => number | undefined; enabled?: boolean }
 ) => {
+    const mode = useCanvasAccessMode();
+    const dataAccess = useCanvasDataAccess();
+    const storeTrajectoryId = useCanvasAccessStore((state) => state.trajectoryId);
+    const trajectoryId = params.trajectoryId ?? storeTrajectoryId ?? '';
+
     return useInfiniteQuery({
-        queryKey: LISTING_QUERY_KEYS.listingInfiniteDetail(params),
-        queryFn: ({ pageParam }) => listingService.getListing({
+        queryKey: withAccessMode(mode, LISTING_QUERY_KEYS.listingInfiniteDetail(params)),
+        queryFn: ({ pageParam }) => dataAccess.getPluginListing({
             pluginId: params.pluginId,
             exposureName: params.exposureName,
             exposureId: params.exposureId,
-            trajectoryId: params.trajectoryId,
+            trajectoryId,
             analysisId: params.analysisId,
             page: pageParam as number,
             limit: params.limit
@@ -115,9 +147,15 @@ export const useSubListingInfiniteQuery = (
     params: Omit<GetSubListingInputDTO, 'page'> & { limit: number },
     options: { getNextPageParam: (lastPage: GetSubListingOutputDTO) => number | undefined; enabled?: boolean }
 ) => {
+    const mode = useCanvasAccessMode();
+    const dataAccess = useCanvasDataAccess();
+    const storeTrajectoryId = useCanvasAccessStore((state) => state.trajectoryId);
+    const trajectoryId = storeTrajectoryId ?? '';
+
     return useInfiniteQuery({
-        queryKey: LISTING_QUERY_KEYS.subListingDetail(params),
-        queryFn: ({ pageParam }) => listingService.getSubListing({
+        queryKey: withAccessMode(mode, LISTING_QUERY_KEYS.subListingDetail(params)),
+        queryFn: ({ pageParam }) => dataAccess.getSubListing({
+            trajectoryId,
             analysisId: params.analysisId,
             exposureId: params.exposureId,
             timestep: params.timestep,

@@ -4,14 +4,11 @@ import { useEditorStore } from '@/modules/canvas/stores/editor';
 import SimulationCellView from '../../molecules/SimulationCellView';
 import TimelineHeader from '../../molecules/TimelineHeader';
 import TimelineRuler from '../../molecules/TimelineRuler';
-import TimelinePresencePlayheads from '../../atoms/TimelinePresencePlayheads';
 import useTimelineJobActivity from '../../../hooks/use-timeline-job-activity';
 import useCanvasTimelineTabs from '@/modules/canvas/hooks/use-canvas-timeline-tabs';
 import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
 import { resolveRangedTimesteps } from '@/modules/canvas/utilities/timeline-range';
 import useTip from '@/shared/tips/use-tip';
-
-import type { CanvasPresenceUser } from '@/modules/canvas/hooks/use-canvas-presence';
 
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { memo, useMemo, useCallback, useState, useRef, useEffect } from 'react';
@@ -34,7 +31,6 @@ interface TimelineProps {
     currentTimestep: number | undefined;
     availableTimesteps: number[];
     analysisId: string | undefined;
-    presenceUsers?: CanvasPresenceUser[];
     onTabChange?: (tab: string) => void;
     onDownloadExposureListing?: (params: {
         pluginId: string;
@@ -53,7 +49,6 @@ const Timeline = ({
     currentTimestep,
     availableTimesteps,
     analysisId,
-    presenceUsers,
     onTabChange,
     onDownloadExposureListing
 }: TimelineProps) => {
@@ -205,9 +200,7 @@ const Timeline = ({
     const rulerRef = useRef<HTMLDivElement>(null);
     const tickElementsRef = useRef<HTMLDivElement[]>([]);
     const tickCentersRef = useRef<number[]>([]);
-    const [tickCentersVersion, setTickCentersVersion] = useState(0);
     const [playheadLeft, setPlayheadLeft] = useState<number>(0);
-    const [scrollLeft, setScrollLeft] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
     const isDraggingRef = useRef(false);
     const pendingScrubRafRef = useRef<number | null>(null);
@@ -260,14 +253,12 @@ const Timeline = ({
         if (!ruler) {
             tickElementsRef.current = [];
             tickCentersRef.current = [];
-            setTickCentersVersion((version) => version + 1);
             return [];
         }
 
         const tickElements = Array.from(ruler.querySelectorAll<HTMLDivElement>('.canvas-ruler-tick'));
         tickElementsRef.current = tickElements;
         tickCentersRef.current = tickElements.map((el) => el.offsetLeft + el.offsetWidth / 2);
-        setTickCentersVersion((version) => version + 1);
         return tickElements;
     }, []);
 
@@ -294,7 +285,6 @@ const Timeline = ({
         const tickCenter = tickCentersRef.current[safeCurrentIndex] ?? (tickEl.offsetLeft + tickEl.offsetWidth / 2);
         const scrollOffset = ruler.scrollLeft;
         setPlayheadLeft(tickCenter - scrollOffset);
-        setScrollLeft(scrollOffset);
 
         const rulerWidth = ruler.clientWidth;
         const visibleLeft = scrollOffset;
@@ -474,15 +464,6 @@ const Timeline = ({
                         onWheel={handleRulerWheel}
                         onKeyDown={handleRulerKeyDown}
                     />
-                    {presenceUsers && presenceUsers.length > 0 && (
-                        <TimelinePresencePlayheads
-                            key={tickCentersVersion}
-                            users={presenceUsers}
-                            rangedTimesteps={rangedTimesteps}
-                            tickCenters={tickCentersRef.current}
-                            scrollLeft={scrollLeft}
-                        />
-                    )}
                 </Container>
             )}
 

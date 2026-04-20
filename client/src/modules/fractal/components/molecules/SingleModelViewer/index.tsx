@@ -6,6 +6,7 @@ import { buildCellBoxTransforms, calculateBoxTransforms, getGroundOffset } from 
 import { debugFractal, warnFractal } from '@/modules/fractal/utilities/debug-log';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import { computeGlbUrl } from '@/modules/fractal/api/service/compute-glb-url';
+import { useCanvasAccessMode } from '@/modules/canvas/api/access';
 import './SingleModelViewer.css';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -225,15 +226,17 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
 
     const sliceClippingPlanes = useSlicingPlanes(enableSlice, slicePlaneConfig, modelWorldBounds);
 
+    const canvasMode = useCanvasAccessMode();
     const url = useMemo(() =>
         computeGlbUrl({
             teamId: teamId || '',
             trajectoryId,
             currentTimestep,
             analysisId,
-            activeScene: sceneConfig
+            activeScene: sceneConfig,
+            mode: canvasMode
         }),
-        [teamId, trajectoryId, currentTimestep, analysisId, sceneConfig]
+        [teamId, trajectoryId, currentTimestep, analysisId, sceneConfig, canvasMode]
     );
 
     const handleEmptyData = useCallback(async () => {

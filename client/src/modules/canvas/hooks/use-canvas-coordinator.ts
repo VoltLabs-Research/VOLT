@@ -134,6 +134,7 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
         isLoading,
         error: trajectoryQuery.error?.message ?? null,
         bootstrap: bootstrapQuery.data ?? null,
+        access: bootstrapQuery.data?.access ?? null,
         accessDenied,
         accessDeniedMessage
     };

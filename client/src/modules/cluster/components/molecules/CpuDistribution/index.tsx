@@ -8,8 +8,7 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
-    ResponsiveContainer,
-    Legend
+    ResponsiveContainer
 } from 'recharts';
 import { Cpu } from 'lucide-react';
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
@@ -118,25 +117,15 @@ const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
             <ResponsiveContainer width='100%' height={300}>
                 <LineChart
                     data={chartData}
-                    margin={{
-                        top: 10,
-                        right: 10,
-                        left: 0,
-                        bottom: 0
-                    }}
+                    margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
                 >
-                    <CartesianGrid strokeDasharray='3 3' stroke='var(--color-border-soft)' />
-                    <YAxis
-                        domain={[0, 100]}
-                        stroke='var(--color-text-muted)'
-                        style={{ fontSize: '12px' }}
-                        tickFormatter={(v) => `${v}%`}
+                    <CartesianGrid
+                        strokeDasharray='3 3'
+                        stroke='var(--color-border-soft)'
+                        vertical={false}
                     />
+                    <YAxis domain={[0, 100]} hide />
                     <Tooltip content={renderTooltip} />
-                    <Legend
-                        wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }}
-                        iconType='plainline'
-                    />
                     {coreColors.map((color, coreIndex) => (
                         <Line
                             key={`core${coreIndex}`}
@@ -147,7 +136,7 @@ const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
                             dot={false}
                             name={`Core ${coreIndex}`}
                             isAnimationActive={false}
-                            opacity={0.8}
+                            opacity={0.85}
                         />
                     ))}
                 </LineChart>

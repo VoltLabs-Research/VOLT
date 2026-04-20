@@ -6,9 +6,9 @@ import useAnalysisStatus from '../../../hooks/use-analysis-status';
 import { CanvasAnalysisStatusEnum, normalizeCanvasAnalysisStatus } from '../../../utilities/analysis-status';
 import useCanvasCleanup from '../../../hooks/use-canvas-cleanup';
 import useCanvasCoordinator from '../../../hooks/use-canvas-coordinator';
-import useCanvasPresence from '../../../hooks/use-canvas-presence';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
 import useCanvasWorkspace from '@/modules/canvas/collaboration/use-canvas-workspace';
+import useLiveModelDrag from '@/modules/canvas/collaboration/use-live-model-drag';
 import useWorkspaceCursors from '@/modules/canvas/collaboration/use-workspace-cursors';
 import WorkspaceCursorsOverlay from '../../atoms/WorkspaceCursorsOverlay';
 import { useLocalGlbStore } from '@/modules/canvas/stores/use-local-glb-store';
@@ -18,7 +18,6 @@ import useResizable from '../../../hooks/use-resizable';
 import useViewportNarrow from '../../../hooks/use-viewport-narrow';
 import useDownloadTrajectoryAnalyses from '@/modules/trajectory/hooks/trajectory/use-download-trajectory-analyses';
 import useDownloadTrajectory from '@/modules/trajectory/hooks/trajectory/use-download-trajectory';
-import CanvasPresence from '../../atoms/CanvasPresence';
 import PreloadingOverlay from '../../atoms/PreloadingOverlay';
 import ResizeHandle from '../../atoms/ResizeHandle';
 import ExposureSettingsWidget from '../../molecules/ExposureSettingsWidget';
@@ -42,6 +41,7 @@ import { ResizeDirection } from '@/modules/canvas/hooks/use-resizable';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import { useCanvasAccessStore, useCanvasCanCollaborate } from '@/modules/canvas/api/access';
 import { Download, ExternalLink, PanelLeft, PanelRight } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -81,24 +81,60 @@ const CanvasPage = () => {
         trajectory,
         availableTimesteps,
         currentTimestep,
-        isLoading: trajectoryLoading
+        isLoading: trajectoryLoading,
+        access: canvasAccess
     } = useCanvasCoordinator({ trajectoryId });
-    const { canvasUsers, broadcastTimestep } = useCanvasPresence({ trajectoryId, enabled: !!trajectoryId });
+
+    const setCanvasAccess = useCanvasAccessStore((state) => state.setAccess);
+    const resetCanvasAccess = useCanvasAccessStore((state) => state.reset);
+
+    useEffect(() => {
+        if (!canvasAccess || !trajectoryId) {
+            return;
+        }
+
+        const mode = canvasAccess.hasTeamMembership ? 'rbac' : 'public';
+        const canMutate = canvasAccess.hasTeamMembership;
+
+        setCanvasAccess({
+            mode,
+            trajectoryId,
+            teamId: undefined,
+            canMutate,
+            canCollaborate: canMutate,
+            isGuest: !canvasAccess.hasTeamMembership,
+            hasTeamMembership: canvasAccess.hasTeamMembership
+        });
+    }, [canvasAccess, trajectoryId, setCanvasAccess]);
+
+    useEffect(() => {
+        return () => {
+            resetCanvasAccess();
+        };
+    }, [resetCanvasAccess]);
     const viewportContainerRef = useRef<HTMLDivElement | null>(null);
+    const canCollaborate = useCanvasCanCollaborate();
     const {
         peersInLobby,
         ownerId: workspaceOwnerId,
+        isOwner: isWorkspaceOwner,
         navigateToWorkspace
     } = useCanvasWorkspace({
         trajectoryId,
         ownerId: ownerIdParam,
-        enabled: !!trajectoryId
+        enabled: !!trajectoryId && canCollaborate
     });
     const { cursors: workspaceCursors } = useWorkspaceCursors({
         trajectoryId,
         ownerId: workspaceOwnerId,
-        enabled: !!trajectoryId && !!workspaceOwnerId,
+        enabled: !!trajectoryId && !!workspaceOwnerId && canCollaborate,
         containerRef: viewportContainerRef
+    });
+    useLiveModelDrag({
+        trajectoryId,
+        ownerId: workspaceOwnerId,
+        isOwner: isWorkspaceOwner,
+        enabled: !!trajectoryId && !!workspaceOwnerId && canCollaborate
     });
     useTip('canvas-shortcuts', {
         enabled: Boolean(trajectoryId) && !trajectoryLoading
@@ -181,12 +217,6 @@ const CanvasPage = () => {
         editorState.resetPlayback();
         editorState.resetModel();
     }, [trajectoryId, isLocalGlbViewer]);
-
-    useEffect(() => {
-        if (!trajectoryId || currentTimestep === undefined) return;
-        const timeoutId = window.setTimeout(() => broadcastTimestep(currentTimestep), 200);
-        return () => window.clearTimeout(timeoutId);
-    }, [trajectoryId, currentTimestep, broadcastTimestep]);
 
     const hasFrames = !!(trajectory?.frames && trajectory.frames.length > 0);
     const showLoading = useMemo(() =>
@@ -429,7 +459,6 @@ const CanvasPage = () => {
                 share={shareInfo}
             />
             <PreloadingOverlay />
-            <CanvasPresence users={canvasUsers} />
 
             {isNarrowViewport && (leftDrawerOpen || rightDrawerOpen) && (
                 <button
@@ -535,7 +564,6 @@ const CanvasPage = () => {
                                     currentTimestep={currentTimestep}
                                     availableTimesteps={availableTimesteps}
                                     analysisId={analysisId}
-                                    presenceUsers={canvasUsers}
                                     onTabChange={handleTimelineTabChange}
                                     onDownloadExposureListing={handleDownloadExposureListing}
                                 />

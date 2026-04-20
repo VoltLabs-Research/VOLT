@@ -15,7 +15,8 @@ import type {
     ModelState,
     PointCloudSettingsState,
     SceneObjectType,
-    ModelData
+    ModelData,
+    ModelDragOffset
 } from '@/modules/fractal/stores/contracts/editor/scene-types';
 import type { StateCreator } from 'zustand';
 
@@ -54,6 +55,8 @@ const getSceneStateWithoutTimestepScopedScenes = (state: ModelState): Pick<Model
     };
 };
 
+const MODEL_DRAG_OFFSET_INITIAL: ModelDragOffset = { x: 0, y: 0, z: 0 };
+
 const createInitialState = (): ModelState => ({
     activeModel: null,
     activeScene: DEFAULT_SCENE,
@@ -65,6 +68,7 @@ const createInitialState = (): ModelState => ({
     pointCloudSettings: POINT_CLOUD_SETTINGS_INITIAL,
     sceneVisualOverrides: {},
     modelWorldBounds: null,
+    modelDragOffset: MODEL_DRAG_OFFSET_INITIAL,
     showSimulationCell: true,
     isPointCloudScene: false
 });
@@ -228,6 +232,16 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
         set((state) => {
             if (state.isPointCloudScene === isPointCloud) return state;
             return { isPointCloudScene: isPointCloud };
+        });
+    },
+
+    setModelDragOffset(offset: ModelDragOffset) {
+        set((state) => {
+            const current = state.modelDragOffset;
+            if (current.x === offset.x && current.y === offset.y && current.z === offset.z) {
+                return state;
+            }
+            return { modelDragOffset: offset };
         });
     }
 });

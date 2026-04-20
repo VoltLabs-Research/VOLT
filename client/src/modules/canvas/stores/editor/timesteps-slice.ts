@@ -1,4 +1,5 @@
 import { preloadFractalSceneAsset } from '@/modules/fractal/api/service/preload-scene-asset';
+import { useCanvasAccessStore } from '@/modules/canvas/api/access';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 
 import type { EditorStore } from './types';
@@ -49,7 +50,8 @@ export const createTimestepSlice: StateCreator<EditorStore, [], [], TimestepStor
                 trajectoryId,
                 currentTimestep: timestep,
                 analysisId,
-                activeScene: activeScene as SceneObjectType
+                activeScene: activeScene as SceneObjectType,
+                mode: useCanvasAccessStore.getState().mode
             };
 
             try {

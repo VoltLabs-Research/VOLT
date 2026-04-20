@@ -48,6 +48,8 @@ const COORDINATE_SKELETON: ColumnSkeletonConfig = {
     width: 80
 };
 
+const EMPTY_PROPERTIES: string[] = [];
+
 const renderAtomTypeBadge = (value: unknown) => {
     if (typeof value !== 'string' && typeof value !== 'number') {
         return <AtomTypeBadge type='-' />;
@@ -95,20 +97,17 @@ export default function PerAtomViewer() {
         setSearchParams((prev) => applySearchParamUpdates(prev, { timestep }), { replace: true });
     }, [searchParams, setSearchParams, timestep]);
 
-    const firstPageAtomsQuery = trajectoryAtomsQuery(
-        {
-            trajectoryId: trajectoryId ?? '',
-            analysisId,
-            timestep: timestep ?? 0,
-            page: 1,
-            limit: 100
-        },
-        {
-            enabled: isEnabled
-        }
-    );
+    const firstPageAtomsParams = useMemo(() => ({
+        trajectoryId: trajectoryId ?? '',
+        analysisId,
+        timestep: timestep ?? 0,
+        page: 1,
+        limit: 100
+    }), [trajectoryId, analysisId, timestep]);
 
-    const properties = firstPageAtomsQuery.data?._meta?.properties ?? [];
+    const firstPageAtomsQuery = trajectoryAtomsQuery(firstPageAtomsParams, { enabled: isEnabled });
+
+    const properties = firstPageAtomsQuery.data?._meta?.properties ?? EMPTY_PROPERTIES;
 
     const timestepOptions = useMemo<SelectOption[]>(() => {
         return availableTimesteps.map((availableTimestep) => ({
@@ -126,7 +125,7 @@ export default function PerAtomViewer() {
         setSearchParams((prev) => applySearchParamUpdates(prev, { timestep: nextTimestep }));
     }, [setSearchParams]);
 
-    const fetchData = async (params: PerAtomViewerFetchParams): Promise<PaginatedResponse<AtomListingRow>> => {
+    const fetchData = useCallback(async (params: PerAtomViewerFetchParams): Promise<PaginatedResponse<AtomListingRow>> => {
         const result = await getAtoms({
             trajectoryId: params.trajectoryId,
             analysisId: params.analysisId,
@@ -142,7 +141,7 @@ export default function PerAtomViewer() {
                 _id: String(atom.id)
             }))
         };
-    };
+    }, [getAtoms]);
 
     const columns = useMemo<ColumnConfig[]>(() => {
         const baseCols: ColumnConfig[] = [
@@ -196,6 +195,8 @@ export default function PerAtomViewer() {
         timestep: timestep ?? 0
     }), [trajectoryId, analysisId, timestep]);
 
+    const listingQueryKey = useMemo(() => TRAJECTORY_QUERY_KEYS.perAtom(), []);
+
     const headerActions = useMemo(() => {
         if (timestep === undefined || !timestepOptions.length) {
             return null;
@@ -222,7 +223,7 @@ export default function PerAtomViewer() {
     return (
         <DocumentListing<AtomListingRow, PerAtomViewerContext>
             title={`Per-Atom Properties - Frame ${timestep ?? '-'}`}
-            queryKey={TRAJECTORY_QUERY_KEYS.perAtom()}
+            queryKey={listingQueryKey}
             columns={columns}
             fetchData={fetchData}
             context={listingContext}

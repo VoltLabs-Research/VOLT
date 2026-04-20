@@ -27,7 +27,7 @@
 }
 
 .ai-message-bubble {
-    border-radius: 1.1rem;
+    border-radius: var(--radius-lg);
     padding: 0.75rem 0.95rem;
     white-space: normal;
     line-height: 1.55;
@@ -51,7 +51,7 @@
 .ai-message-bubble.is-user {
     background: var(--color-surface-1);
     color: var(--color-text-primary);
-    border-radius: 1rem;
+    border-radius: var(--radius-lg);
 }
 
 .ai-message-text {
@@ -361,7 +361,7 @@
     height: 1.55rem;
     padding: 0 0.55rem;
     border: 1px solid var(--color-border-soft);
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     background: transparent;
     font-family: inherit;
     font-size: 0.72rem;
@@ -393,7 +393,7 @@
 
 .ai-message-skeleton {
     height: 3.5rem;
-    border-radius: 1rem;
+    border-radius: var(--radius-lg);
     border: 1px solid var(--color-border-soft);
     background: var(--color-surface-1);
     animation: pulse 1.2s ease-in-out infinite;
