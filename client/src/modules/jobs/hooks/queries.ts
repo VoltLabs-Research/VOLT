@@ -6,16 +6,20 @@ import { createSocketQuery } from '@/shared/infrastructure/query';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { useMutation } from '@tanstack/react-query';
 import type { FrameJobGroup, Job, TrajectoryJobGroup } from '../api/entities/job';
-import type { RetryFailedJobsOutputDTO } from '../api/dtos/retry-failed-jobs';
+import type { RemoveRunningJobsOutputDTO, RemoveRunningJobsParams } from '../api/dtos/remove-running-jobs';
+import type { RetryFailedJobsOutputDTO, RetryFailedJobsParams } from '../api/dtos/retry-failed-jobs';
 import type { MutationOptions } from '@/shared/infrastructure/query';
 import type { QueryClient } from '@tanstack/react-query';
-
-type ClearJobHistoryResult = Awaited<ReturnType<typeof service.clearHistory>>;
-type RemoveRunningJobsResult = Awaited<ReturnType<typeof service.removeRunningJobs>>;
 
 export interface TeamJobsMutationContext {
     previousGroups: TrajectoryJobGroup[];
 };
+
+const REMOVABLE_STATUSES = new Set<JobStatus>([
+    JobStatus.Queued,
+    JobStatus.Running,
+    JobStatus.Retrying
+]);
 
 const getActiveQueryClient = (client?: QueryClient): QueryClient => client ?? queryClient;
 
@@ -101,49 +105,66 @@ const syncTrajectoryGroup = (group: TrajectoryJobGroup): TrajectoryJobGroup | nu
     };
 };
 
-const compactTrajectoryGroups = (groups: TrajectoryJobGroup[]): TrajectoryJobGroup[] => {
+const mapTrajectoryGroups = (
+    groups: TrajectoryJobGroup[],
+    trajectoryId: string,
+    transformJobs: (jobs: Job[]) => Job[]
+): TrajectoryJobGroup[] => {
     return groups
+        .map((group) => {
+            if (group.trajectoryId !== trajectoryId) {
+                return group;
+            }
+
+            return {
+                ...group,
+                frameGroups: group.frameGroups.map((frameGroup) => ({
+                    ...frameGroup,
+                    jobs: transformJobs(frameGroup.jobs)
+                }))
+            };
+        })
         .map(syncTrajectoryGroup)
         .filter((group): group is TrajectoryJobGroup => group !== null);
 };
 
-const removeRunningJobsFromGroups = (groups: TrajectoryJobGroup[]): TrajectoryJobGroup[] => {
-    return compactTrajectoryGroups(groups.map((group) => ({
-        ...group,
-        frameGroups: group.frameGroups.map((frameGroup) => ({
-            ...frameGroup,
-            jobs: frameGroup.jobs.filter((job) => job.status !== JobStatus.Running)
-        }))
-    })));
+const dropRemovableJobsInTrajectory = (
+    groups: TrajectoryJobGroup[],
+    trajectoryId: string
+): TrajectoryJobGroup[] => {
+    return mapTrajectoryGroups(groups, trajectoryId, (jobs) =>
+        jobs.filter((job) => !REMOVABLE_STATUSES.has(job.status))
+    );
 };
 
-const markFailedJobsForRetry = (groups: TrajectoryJobGroup[]): TrajectoryJobGroup[] => {
-    return compactTrajectoryGroups(groups.map((group) => ({
-        ...group,
-        frameGroups: group.frameGroups.map((frameGroup) => ({
-            ...frameGroup,
-            jobs: frameGroup.jobs.map((job): Job => {
-                if (job.status === JobStatus.Failed) {
-                    return {
-                        ...job,
-                        status: JobStatus.QueuedAfterFailure
-                    };
-                }
-
+const markFailedJobsForRetryInTrajectory = (
+    groups: TrajectoryJobGroup[],
+    trajectoryId: string
+): TrajectoryJobGroup[] => {
+    return mapTrajectoryGroups(groups, trajectoryId, (jobs) =>
+        jobs.map((job): Job => {
+            if (job.status !== JobStatus.Failed) {
                 return job;
-            })
-        }))
-    })));
+            }
+
+            return {
+                ...job,
+                status: JobStatus.QueuedAfterFailure
+            };
+        })
+    );
 };
 
-export const useRemoveRunningJobsMutation = (options?: MutationOptions<RemoveRunningJobsResult, void>) => {
-    return useMutation<RemoveRunningJobsResult, Error, void, TeamJobsMutationContext>({
+export const useRemoveRunningJobsMutation = (
+    options?: MutationOptions<RemoveRunningJobsOutputDTO, RemoveRunningJobsParams>
+) => {
+    return useMutation<RemoveRunningJobsOutputDTO, Error, RemoveRunningJobsParams, TeamJobsMutationContext>({
         ...options,
-        mutationFn: () => service.removeRunningJobs({}),
-        onMutate: async () => {
+        mutationFn: (params) => service.removeRunningJobs(params),
+        onMutate: async ({ trajectoryId }) => {
             const context = createTeamJobsMutationContext();
 
-            setTeamJobsGroupsQueryData(removeRunningJobsFromGroups(context.previousGroups));
+            setTeamJobsGroupsQueryData(dropRemovableJobsInTrajectory(context.previousGroups, trajectoryId));
 
             return context;
         },
@@ -159,14 +180,16 @@ export const useRemoveRunningJobsMutation = (options?: MutationOptions<RemoveRun
     });
 };
 
-export const useRetryFailedJobsMutation = (options?: MutationOptions<RetryFailedJobsOutputDTO, void>) => {
-    return useMutation<RetryFailedJobsOutputDTO, Error, void, TeamJobsMutationContext>({
+export const useRetryFailedJobsMutation = (
+    options?: MutationOptions<RetryFailedJobsOutputDTO, RetryFailedJobsParams>
+) => {
+    return useMutation<RetryFailedJobsOutputDTO, Error, RetryFailedJobsParams, TeamJobsMutationContext>({
         ...options,
-        mutationFn: () => service.retryFailedJobs({}),
-        onMutate: async () => {
+        mutationFn: (params) => service.retryFailedJobs(params),
+        onMutate: async ({ trajectoryId }) => {
             const context = createTeamJobsMutationContext();
 
-            setTeamJobsGroupsQueryData(markFailedJobsForRetry(context.previousGroups));
+            setTeamJobsGroupsQueryData(markFailedJobsForRetryInTrajectory(context.previousGroups, trajectoryId));
 
             return context;
         },
@@ -175,29 +198,6 @@ export const useRetryFailedJobsMutation = (options?: MutationOptions<RetryFailed
         },
         onSuccess: (result, _variables, context) => {
             if (result.retriedFrames === 0) {
-                restoreTeamJobsGroupsQueryData(context);
-            }
-        },
-        onSettled: options?.onSettled
-    });
-};
-
-export const useClearJobHistoryMutation = (options?: MutationOptions<ClearJobHistoryResult, void>) => {
-    return useMutation<ClearJobHistoryResult, Error, void, TeamJobsMutationContext>({
-        ...options,
-        mutationFn: () => service.clearHistory({}),
-        onMutate: async () => {
-            const context = createTeamJobsMutationContext();
-
-            setTeamJobsGroupsQueryData([]);
-
-            return context;
-        },
-        onError: (_error, _variables, context) => {
-            restoreTeamJobsGroupsQueryData(context);
-        },
-        onSuccess: (result, _variables, context) => {
-            if (result.deletedJobs === 0 && result.deletedAnalyses === 0) {
                 restoreTeamJobsGroupsQueryData(context);
             }
         },

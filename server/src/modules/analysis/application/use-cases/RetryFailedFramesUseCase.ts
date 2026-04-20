@@ -77,7 +77,7 @@ export default class RetryFailedFramesUseCase implements IUseCase<RetryFailedFra
             });
         }
 
-        const retryResult = await this.teamJobMaintenanceService.retryFailedJobs(teamId, failedJobIds);
+        const retryResult = await this.teamJobMaintenanceService.retryJobs(teamId, failedJobIds);
 
         return Result.ok({
             message: retryResult.retriedFrames > 0

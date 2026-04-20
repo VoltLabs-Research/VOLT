@@ -73,8 +73,7 @@ const UserSchema: Schema<UserDocument> = new Schema({
     },
     teams: [{
         type: Schema.Types.ObjectId,
-        ref: 'Team',
-        cascade: 'pull'
+        ref: 'Team'
     }],
     analyses: [{
         type: Schema.Types.ObjectId,

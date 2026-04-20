@@ -56,6 +56,10 @@ interface ExecutePluginArgs {
     timestep?: number;
 };
 
+interface BeforeExecuteResult {
+    proceed: boolean;
+};
+
 interface UsePluginExecutionArgs {
     trajectoryId?: string;
     currentTimestep?: number;
@@ -64,6 +68,7 @@ interface UsePluginExecutionArgs {
     getSelectedTimesteps: (pluginId: string) => number[] | undefined;
     executePlugin: (args: ExecutePluginArgs) => Promise<unknown>;
     pluginConfigs?: Record<string, Record<string, unknown>>;
+    beforeExecute?: (option: ModifierOption) => Promise<BeforeExecuteResult>;
 };
 
 const usePluginExecution = ({
@@ -73,7 +78,8 @@ const usePluginExecution = ({
     getSelectedTeamClusterId,
     getSelectedTimesteps,
     executePlugin,
-    pluginConfigs
+    pluginConfigs,
+    beforeExecute
 }: UsePluginExecutionArgs) => {
     const [execStates, setExecStates] = useState<Map<string, ExecState>>(new Map());
     const successTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -106,6 +112,15 @@ const usePluginExecution = ({
         }
 
         try {
+            if (beforeExecute) {
+                const result = await beforeExecute(option);
+                if (!result.proceed) {
+                    setExecStates((prev) => new Map(prev).set(modId, ExecState.Success));
+                    clearExecStateLater(modId);
+                    return;
+                }
+            }
+
             const userConfig = pluginConfigs?.[option.pluginModifierId] || {};
             const selectedTeamClusterId = getSelectedTeamClusterId(option);
             const selectedTimesteps = getSelectedTimesteps(option.pluginModifierId);
@@ -159,6 +174,7 @@ const usePluginExecution = ({
         getSelectedTimesteps,
         executePlugin,
         pluginConfigs,
+        beforeExecute,
         clearExecStateLater
     ]);
 

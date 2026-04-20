@@ -1,6 +1,6 @@
 .document-listing-table-header-container {
-    padding: 2rem 2rem 1rem;
-    z-index: 200000;
+    padding: 2rem 2rem;
+    z-index: 2;
 }
 
 .document-listing-table-body-container {
@@ -60,8 +60,8 @@
 }
 
 .document-listing-table-row-container.is-selected {
-    background-color: var(--hover-bg);
-    box-shadow: inset 1px 0 0 var(--accent-blue);
+    background-color: var(--active-bg);
+    box-shadow: inset 3px 0 0 var(--accent-blue);
 }
 
 .document-listing-table-row-container.is-dragging {
@@ -140,6 +140,10 @@
 .document-listing-infinite-skeleton-loader .skeleton-row {
     padding: 1rem;
     margin: 0 !important;
+}
+
+.document-listing-skeleton-bar {
+    background-color: color-mix(in srgb, var(--color-text-muted) 18%, transparent) !important;
 }
 
 .document-listing-empty-content {

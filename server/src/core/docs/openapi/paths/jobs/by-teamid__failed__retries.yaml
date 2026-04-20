@@ -2,10 +2,15 @@ post:
   operationId: retryFailedJobs
   tags:
   - Jobs
-  summary: Retry failed jobs
-  description: Retries all failed jobs for the specified team.
+  summary: Retry failed jobs for a trajectory
+  description: Re-queues every failed job for the specified trajectory, preserving the original payload.
   parameters:
   - name: teamId
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: trajectoryId
     in: path
     required: true
     schema:
@@ -23,7 +28,7 @@ post:
                 data:
                   type: object
                   properties:
-                    retriedCount:
+                    retriedFrames:
                       type: integer
                       description: Number of jobs queued for retry.
     '400':

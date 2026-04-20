@@ -10,8 +10,7 @@ const TeamRoleSchema: Schema<TeamRoleDocument> = new Schema({
     team: {
         type: Schema.Types.ObjectId,
         ref: 'Team',
-        required: true,
-        cascade: 'delete'
+        required: true
     },
     name: {
         type: String,

@@ -33,8 +33,7 @@ const ScriptingNotebookContainerResourcesSchema = new Schema({
 
 const ScriptingNotebookSchema: Schema<ScriptingNotebookDocument> = new Schema({
     team: {
-        ...teamRefField(true),
-        cascade: 'delete'
+        ...teamRefField(true)
     },
     teamCluster: {
         type: Schema.Types.ObjectId,

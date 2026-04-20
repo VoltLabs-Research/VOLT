@@ -8,6 +8,9 @@ import useCanvasCleanup from '../../../hooks/use-canvas-cleanup';
 import useCanvasCoordinator from '../../../hooks/use-canvas-coordinator';
 import useCanvasPresence from '../../../hooks/use-canvas-presence';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
+import useCanvasWorkspace from '@/modules/canvas/collaboration/use-canvas-workspace';
+import useWorkspaceCursors from '@/modules/canvas/collaboration/use-workspace-cursors';
+import WorkspaceCursorsOverlay from '../../atoms/WorkspaceCursorsOverlay';
 import { useLocalGlbStore } from '@/modules/canvas/stores/use-local-glb-store';
 import useDownloadPluginListing from '../../../hooks/use-download-plugin-listing';
 import useKeyboardShortcuts from '../../../hooks/use-keyboard-shortcuts';
@@ -37,6 +40,8 @@ import CanvasRasterViewport from '@/modules/raster/components/organisms/CanvasRa
 import { ResizeDirection } from '@/modules/canvas/hooks/use-resizable';
 
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
+import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { Download, ExternalLink, PanelLeft, PanelRight } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -67,7 +72,7 @@ interface DownloadExposureListingParams {
 
 const CanvasPage = () => {
     usePageTitle('Canvas');
-    const { trajectoryId: rawTrajectoryId } = useParams<{ trajectoryId?: string }>();
+    const { trajectoryId: rawTrajectoryId, ownerId: ownerIdParam } = useParams<{ trajectoryId?: string; ownerId?: string }>();
     const trajectoryId = rawTrajectoryId ?? '';
     const isLocalGlbViewer = !rawTrajectoryId;
 
@@ -79,6 +84,22 @@ const CanvasPage = () => {
         isLoading: trajectoryLoading
     } = useCanvasCoordinator({ trajectoryId });
     const { canvasUsers, broadcastTimestep } = useCanvasPresence({ trajectoryId, enabled: !!trajectoryId });
+    const viewportContainerRef = useRef<HTMLDivElement | null>(null);
+    const {
+        peersInLobby,
+        ownerId: workspaceOwnerId,
+        navigateToWorkspace
+    } = useCanvasWorkspace({
+        trajectoryId,
+        ownerId: ownerIdParam,
+        enabled: !!trajectoryId
+    });
+    const { cursors: workspaceCursors } = useWorkspaceCursors({
+        trajectoryId,
+        ownerId: workspaceOwnerId,
+        enabled: !!trajectoryId && !!workspaceOwnerId,
+        containerRef: viewportContainerRef
+    });
     useTip('canvas-shortcuts', {
         enabled: Boolean(trajectoryId) && !trajectoryLoading
     });
@@ -236,6 +257,42 @@ const CanvasPage = () => {
         return statusMap.get(analysisId)?.status ?? normalizeCanvasAnalysisStatus(selectedAnalysis?.status);
     }, [analysisId, statusMap, trajectory?._id, trajectory?.analysis]);
 
+    const selectedTeamId = useSelectedTeamId();
+    const { canAccess: canAccessTeamPermissions } = useTeamPermissions();
+    const trajectoryTeamId = useMemo(() => {
+        const team = trajectory?.team;
+        if (!team) {
+            return undefined;
+        }
+        if (typeof team === 'string') {
+            return team;
+        }
+        if (typeof team === 'object' && '_id' in team) {
+            return team._id;
+        }
+        return undefined;
+    }, [trajectory?.team]);
+
+    const shareInfo = useMemo(() => {
+        if (isLocalGlbViewer || !trajectory?._id) {
+            return undefined;
+        }
+
+        const isTeamOwner = Boolean(
+            selectedTeamId
+            && trajectoryTeamId
+            && selectedTeamId === trajectoryTeamId
+        );
+        const canManageVisibility = isTeamOwner
+            && canAccessTeamPermissions(['trajectory:update']);
+
+        return {
+            trajectoryId: trajectory._id,
+            isPublic: Boolean(trajectory.isPublic),
+            canManageVisibility
+        };
+    }, [canAccessTeamPermissions, isLocalGlbViewer, selectedTeamId, trajectory?._id, trajectory?.isPublic, trajectoryTeamId]);
+
     const canDownloadAnalysisListing = Boolean(analysisId && selectedAnalysisStatus === CanvasAnalysisStatusEnum.Completed);
     const canDownloadTrajectoryAnalyses = Boolean(
         trajectory?._id
@@ -366,6 +423,10 @@ const CanvasPage = () => {
                 onExport={handleExportTrajectory}
                 onDownloadAnalyses={handleDownloadTrajectoryAnalyses}
                 localGlbMode={isLocalGlbViewer}
+                workspacePeers={peersInLobby}
+                workspaceActiveOwnerId={workspaceOwnerId}
+                onSelectWorkspacePeer={navigateToWorkspace}
+                share={shareInfo}
             />
             <PreloadingOverlay />
             <CanvasPresence users={canvasUsers} />
@@ -424,7 +485,10 @@ const CanvasPage = () => {
                 )}
 
                 <Container className="canvas-center-panel d-flex column flex-1 overflow-hidden">
-                    <Container className="canvas-center-viewport d-flex column flex-1 overflow-hidden">
+                    <Container
+                        className="canvas-center-viewport d-flex column flex-1 overflow-hidden p-relative"
+                        ref={viewportContainerRef as React.RefObject<HTMLDivElement>}
+                    >
                         <ErrorBoundary
                             fallbackTitle='Viewport crashed'
                             fallbackDescription='The 3D viewport hit an unexpected error. Reset to recover without losing your trajectory data.'
@@ -449,6 +513,10 @@ const CanvasPage = () => {
                                 headerActionsBeforePerformance={viewportHeaderActions}
                             />
                         </ErrorBoundary>
+                        <WorkspaceCursorsOverlay
+                            cursors={workspaceCursors}
+                            containerRef={viewportContainerRef}
+                        />
                     </Container>
                     {!isLocalGlbViewer && !isScriptingWorkspace && (
                         <>

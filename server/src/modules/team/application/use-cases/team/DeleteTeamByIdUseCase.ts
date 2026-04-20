@@ -21,7 +21,7 @@ export default class DeleteTeamByIdUseCase implements IUseCase<DeleteTeamByIdInp
     ){}
 
     async execute(input: DeleteTeamByIdInputDTO): Promise<Result<null, ApplicationError>> {
-        const { teamId } = input;
+        const { teamId, userId } = input;
         const deleted = await this.teamRepository.deleteById(teamId);
         if(!deleted){
             return Result.fail(ApplicationError.notFound(
@@ -31,7 +31,8 @@ export default class DeleteTeamByIdUseCase implements IUseCase<DeleteTeamByIdInp
         }
 
         await this.eventBus.publish(new TeamDeletedEvent({
-            teamId
+            teamId,
+            userId
         }));
 
         return Result.ok(null);

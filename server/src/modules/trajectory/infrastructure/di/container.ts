@@ -12,6 +12,33 @@ import { GetParticleFilterUniqueValuesUseCase } from '@modules/trajectory/applic
 import { PreviewParticleFilterUseCase } from '@modules/trajectory/application/use-cases/particle-filter/PreviewParticleFilterUseCase';
 import { ListTrajectorySceneArtifactsUseCase } from '@modules/trajectory/application/use-cases/scene-artifacts/ListTrajectorySceneArtifactsUseCase';
 import { GetPublicCanvasBootstrapUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasBootstrapUseCase';
+import { GetPublicCanvasDumpUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasDumpUseCase';
+import { GetPublicCanvasGLBUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasGLBUseCase';
+import { GetPublicCanvasPreviewUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasPreviewUseCase';
+import { GetPublicCanvasRasterFrameUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasRasterFrameUseCase';
+import { GetPublicCanvasTrajectoryUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasTrajectoryUseCase';
+import { ListPublicCanvasAnalysesUseCase } from '@modules/trajectory/application/use-cases/canvas/ListPublicCanvasAnalysesUseCase';
+import { GetPublicCanvasAtomsUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasAtomsUseCase';
+import { GetPublicCanvasSimulationCellUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasSimulationCellUseCase';
+import { ListPublicCanvasSceneArtifactsUseCase } from '@modules/trajectory/application/use-cases/canvas/ListPublicCanvasSceneArtifactsUseCase';
+import { GetPublicCanvasColorCodingPropertiesUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasColorCodingPropertiesUseCase';
+import { GetPublicCanvasColorCodingStatsUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasColorCodingStatsUseCase';
+import { GetPublicCanvasColoredModelStreamUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasColoredModelStreamUseCase';
+import { GetPublicCanvasParticleFilterPropertiesUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasParticleFilterPropertiesUseCase';
+import { GetPublicCanvasParticleFilterUniqueValuesUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasParticleFilterUniqueValuesUseCase';
+import { GetPublicCanvasParticleFilterPreviewUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasParticleFilterPreviewUseCase';
+import { GetPublicCanvasFilteredModelStreamUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasFilteredModelStreamUseCase';
+import { GetPublicCanvasPluginUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasPluginUseCase';
+import { GetPublicCanvasPluginListingUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasPluginListingUseCase';
+import { GetPublicCanvasSubListingUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasSubListingUseCase';
+import { GetPublicCanvasPluginExposureGLBUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasPluginExposureGLBUseCase';
+import { GetPublicCanvasAnalysisFrameLogUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasAnalysisFrameLogUseCase';
+import { GetPublicCanvasRasterMetadataUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasRasterMetadataUseCase';
+import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
+import TrajectoryCloneCoordinator from '@modules/trajectory/application/services/TrajectoryCloneCoordinator';
+import TrajectoryCloneRunner from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryCloneRunner';
+import TrajectoryCloneJobRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryCloneJobRepository';
+import CloneTrajectoryUseCase from '@modules/trajectory/application/use-cases/trajectory/CloneTrajectoryUseCase';
 import JobStatusChangedEventHandler from '@modules/trajectory/application/events/JobStatusChangedEventHandler';
 import GetTeamMetricsUseCase from '@modules/trajectory/application/use-cases/trajectory/GetTeamMetricsUseCase';
 import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
@@ -39,6 +66,8 @@ import MoveTrajectoryUseCase from '@modules/trajectory/application/use-cases/tra
 import UpdateTrajectoryFolderUseCase from '@modules/trajectory/application/use-cases/trajectory/UpdateTrajectoryFolderUseCase';
 import TrajectoryFolderRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFolderRepository';
 import TrajectoryPresenceSocketModule from '@modules/trajectory/infrastructure/socket/TrajectoryPresenceSocketModule';
+import CanvasWorkspaceSocketModule from '@modules/trajectory/infrastructure/socket/CanvasWorkspaceSocketModule';
+import CanvasWorkspaceRealtimeStateService from '@modules/trajectory/infrastructure/services/canvas/CanvasWorkspaceRealtimeStateService';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 
 export const registerTrajectoryDependencies = (): void => {
@@ -62,6 +91,11 @@ export const registerTrajectoryDependencies = (): void => {
             [TRAJECTORY_TOKENS.ColorCodingService, ColorCodingService],
             [TRAJECTORY_TOKENS.ParticleFilterService, ParticleFilterService],
             [TRAJECTORY_TOKENS.TrajectoryPresenceSocketModule, TrajectoryPresenceSocketModule],
+            [TRAJECTORY_TOKENS.CanvasWorkspaceRealtimeStateService, CanvasWorkspaceRealtimeStateService],
+            [TRAJECTORY_TOKENS.CanvasWorkspaceSocketModule, CanvasWorkspaceSocketModule],
+            [TRAJECTORY_TOKENS.TrajectoryCloneJobRepository, TrajectoryCloneJobRepository],
+            [TRAJECTORY_TOKENS.TrajectoryCloneCoordinator, TrajectoryCloneCoordinator],
+            [TRAJECTORY_TOKENS.TrajectoryCloneRunner, TrajectoryCloneRunner],
             GetColorCodingPropertiesUseCase,
             GetColorCodingStatsUseCase,
             CreateTrajectoryFolderUseCase,
@@ -76,7 +110,31 @@ export const registerTrajectoryDependencies = (): void => {
             GetParticleFilterUniqueValuesUseCase,
             ListTrajectoryFoldersUseCase,
             ListTrajectorySceneArtifactsUseCase,
+            TrajectoryReadAccessService,
             GetPublicCanvasBootstrapUseCase,
+            GetPublicCanvasDumpUseCase,
+            GetPublicCanvasGLBUseCase,
+            GetPublicCanvasPreviewUseCase,
+            GetPublicCanvasRasterFrameUseCase,
+            GetPublicCanvasTrajectoryUseCase,
+            ListPublicCanvasAnalysesUseCase,
+            GetPublicCanvasAtomsUseCase,
+            GetPublicCanvasSimulationCellUseCase,
+            ListPublicCanvasSceneArtifactsUseCase,
+            GetPublicCanvasColorCodingPropertiesUseCase,
+            GetPublicCanvasColorCodingStatsUseCase,
+            GetPublicCanvasColoredModelStreamUseCase,
+            GetPublicCanvasParticleFilterPropertiesUseCase,
+            GetPublicCanvasParticleFilterUniqueValuesUseCase,
+            GetPublicCanvasParticleFilterPreviewUseCase,
+            GetPublicCanvasFilteredModelStreamUseCase,
+            GetPublicCanvasPluginUseCase,
+            GetPublicCanvasPluginListingUseCase,
+            GetPublicCanvasSubListingUseCase,
+            GetPublicCanvasPluginExposureGLBUseCase,
+            GetPublicCanvasAnalysisFrameLogUseCase,
+            GetPublicCanvasRasterMetadataUseCase,
+            CloneTrajectoryUseCase,
             MoveTrajectoryUseCase,
             GetTeamMetricsUseCase,
             UpdateTrajectoryFolderUseCase,
@@ -86,7 +144,8 @@ export const registerTrajectoryDependencies = (): void => {
             ...createClassBindings(AI_TOKENS.AITool, trajectoryAiTools)
         ],
         aliases: [
-            [SOCKET_TOKENS.SocketModule, TRAJECTORY_TOKENS.TrajectoryPresenceSocketModule]
+            [SOCKET_TOKENS.SocketModule, TRAJECTORY_TOKENS.TrajectoryPresenceSocketModule],
+            [SOCKET_TOKENS.SocketModule, TRAJECTORY_TOKENS.CanvasWorkspaceSocketModule]
         ]
     });
 };

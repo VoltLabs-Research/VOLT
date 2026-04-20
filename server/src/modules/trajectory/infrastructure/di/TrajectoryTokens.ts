@@ -16,5 +16,10 @@ export const TRAJECTORY_TOKENS = {
     ColorCodingService: Symbol.for('ColorCodingService'),
     ParticleFilterService: Symbol.for('ParticleFilterService'),
     CloudUploadQueueService: Symbol.for('CloudUploadQueueService'),
-    TrajectoryPresenceSocketModule: Symbol.for('TrajectoryPresenceSocketModule')
+    TrajectoryPresenceSocketModule: Symbol.for('TrajectoryPresenceSocketModule'),
+    CanvasWorkspaceRealtimeStateService: Symbol.for('CanvasWorkspaceRealtimeStateService'),
+    CanvasWorkspaceSocketModule: Symbol.for('CanvasWorkspaceSocketModule'),
+    TrajectoryCloneJobRepository: Symbol.for('TrajectoryCloneJobRepository'),
+    TrajectoryCloneCoordinator: Symbol.for('TrajectoryCloneCoordinator'),
+    TrajectoryCloneRunner: Symbol.for('TrajectoryCloneRunner')
 } as const;

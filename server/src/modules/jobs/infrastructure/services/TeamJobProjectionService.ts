@@ -7,9 +7,11 @@ import { JobStatus } from '@modules/jobs/domain/entities/Job';
 
 const STATUS_TTL_SECONDS = 86400;
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
+const JOB_TOMBSTONE_KEY_PREFIX = 'jobs:removed:';
 const PROJECTED_JOB_SOURCE = 'projected';
 const LOCAL_PROJECTED_JOB_BACKING_SOURCE = 'local';
 const MISSING_SNAPSHOT_SENTINEL = '__missing__';
+const TOMBSTONED_SENTINEL = '__tombstoned__';
 const MAX_UPSERT_RETRIES = 8;
 
 const UPSERT_PROJECTED_JOB_SNAPSHOT_SCRIPT = `
@@ -17,6 +19,11 @@ local expected = ARGV[1]
 local nextSnapshotRaw = ARGV[2]
 local ttl = tonumber(ARGV[3])
 local linkAnalysis = ARGV[4] == '1'
+
+if redis.call('EXISTS', KEYS[5]) == 1 then
+    return {-1, '${TOMBSTONED_SENTINEL}'}
+end
+
 local current = redis.call('GET', KEYS[1])
 
 if expected == '${MISSING_SNAPSHOT_SENTINEL}' then
@@ -169,16 +176,21 @@ export default class TeamJobProjectionService {
 
             const result = await this.redis.eval(
                 UPSERT_PROJECTED_JOB_SNAPSHOT_SCRIPT,
-                4,
+                5,
                 jobStatusKey,
                 projectedTeamJobsKey,
                 this.projectedAnalysisJobsKey(nextSnapshot.analysisId ?? 'noop'),
                 revisionKey,
+                this.jobTombstoneKey(jobId),
                 previousRawSnapshot ?? MISSING_SNAPSHOT_SENTINEL,
                 nextSnapshotRaw,
                 STATUS_TTL_SECONDS,
                 nextSnapshot.analysisId ? '1' : '0'
             ) as [number, string] | null;
+
+            if (Array.isArray(result) && result[0] === -1) {
+                return nextSnapshot;
+            }
 
             if (Array.isArray(result) && result[0] === 1) {
                 const persistedSnapshot = this.parseSnapshot(result[1]);
@@ -208,6 +220,10 @@ export default class TeamJobProjectionService {
 
     private jobStatusKey(jobId: string): string {
         return `${JOB_STATUS_KEY_PREFIX}${jobId}`;
+    }
+
+    private jobTombstoneKey(jobId: string): string {
+        return `${JOB_TOMBSTONE_KEY_PREFIX}${jobId}`;
     }
 
     private projectedTeamJobsKey(teamId: string): string {

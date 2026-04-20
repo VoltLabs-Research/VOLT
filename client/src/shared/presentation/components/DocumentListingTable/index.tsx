@@ -11,17 +11,39 @@ import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { FileText } from 'lucide-react';
 import { useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import React from 'react';
+import type { CSSProperties } from 'react';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { SelectOption } from '@/shared/presentation/components/Select';
 import type { DragEndEvent } from '@dnd-kit/core';
 
-const MIN_COLUMN_WIDTH = 180;
-const MAX_COLUMN_WIDTH = 280;
-const COLUMN_GAP = 16;
-
+const DEFAULT_MIN_COLUMN_WIDTH = 140;
 const COMPACT_MIN_COLUMN_WIDTH = 80;
-const COMPACT_MAX_COLUMN_WIDTH = 200;
+
+const DEFAULT_COLUMN_GAP = 16;
 const COMPACT_COLUMN_GAP = 8;
+
+const resolveColumnStyle = <TRow,>(
+    col: ColumnConfig<TRow>,
+    fallbackMinWidth: number
+): CSSProperties => {
+    if (typeof col.width === 'number' && col.width > 0) {
+        return {
+            flex: `0 0 ${col.width}px`,
+            minWidth: col.width,
+            maxWidth: col.width
+        };
+    }
+
+    const minWidth = typeof col.minWidth === 'number' && col.minWidth > 0
+        ? col.minWidth
+        : fallbackMinWidth;
+    const flex = typeof col.flex === 'number' && col.flex > 0 ? col.flex : 1;
+
+    return {
+        flex: `${flex} 1 ${minWidth}px`,
+        minWidth
+    };
+};
 
 export interface Identifiable {
     _id: string;
@@ -45,7 +67,12 @@ export interface ColumnConfig<TRow = unknown> {
     title?: string;
     path?: string;
     label?: string;
+    /** Fixed pixel width. When set, the column does not flex. */
     width?: number;
+    /** Minimum pixel width when the column flexes. Ignored if `width` is set. */
+    minWidth?: number;
+    /** Flex grow weight. Higher values claim more leftover space. Defaults to 1. */
+    flex?: number;
     headerTitleClassName?: string;
     render?: (value: unknown, row: TRow) => React.ReactNode;
     skeleton?: { variant: 'text' | 'rounded'; width: number; height?: number };
@@ -116,31 +143,21 @@ const DocumentListingTable = <T extends Identifiable>({
         })
     );
 
-    const resolvedMinWidth = compact ? COMPACT_MIN_COLUMN_WIDTH : MIN_COLUMN_WIDTH;
-    const resolvedMaxWidth = compact ? COMPACT_MAX_COLUMN_WIDTH : MAX_COLUMN_WIDTH;
-    const resolvedGap = compact ? COMPACT_COLUMN_GAP : COLUMN_GAP;
+    const resolvedMinWidth = compact ? COMPACT_MIN_COLUMN_WIDTH : DEFAULT_MIN_COLUMN_WIDTH;
+    const resolvedGap = compact ? COMPACT_COLUMN_GAP : DEFAULT_COLUMN_GAP;
 
-    const columnWidths = useMemo(() => columns.map((col) => {
-        if (typeof col.width === 'number' && col.width > 0) return col.width;
-        const title = typeof col.title === 'string' ? col.title : col.label;
-        const titleLength = typeof title === 'string' ? title.length : 10;
-        return Math.max(resolvedMinWidth, Math.min(titleLength * 14, resolvedMaxWidth));
-    }), [columns, resolvedMinWidth, resolvedMaxWidth]);
+    const columnStyles = useMemo(() => columns.map(
+        (col) => resolveColumnStyle(col, resolvedMinWidth)
+    ), [columns, resolvedMinWidth]);
 
     const minContentWidth = useMemo(() => {
-        const sum = columnWidths.reduce((acc, w) => acc + w, 0);
+        if (columns.length === 0) return 0;
+        const sum = columns.reduce((acc, col) => {
+            if (typeof col.width === 'number' && col.width > 0) return acc + col.width;
+            return acc + (typeof col.minWidth === 'number' && col.minWidth > 0 ? col.minWidth : resolvedMinWidth);
+        }, 0);
         return sum + (columns.length - 1) * resolvedGap;
-    }, [columnWidths, columns.length, resolvedGap]);
-
-    const useFlexDistribution = useMemo(() => {
-        if (typeof window === 'undefined') {
-            return false;
-        }
-        const availableWidth = window.innerWidth - 350;
-        return availableWidth >= minContentWidth;
-    }, [minContentWidth]);
-
-    const effectiveWidth = useFlexDistribution ? '100%' : `${minContentWidth}px`;
+    }, [columns, resolvedMinWidth, resolvedGap]);
 
     const rootRef = scrollContainerRef && 'current' in scrollContainerRef ? scrollContainerRef : null;
     const { sentinelRef } = useInfiniteScroll({
@@ -298,14 +315,13 @@ const DocumentListingTable = <T extends Identifiable>({
             key={item._id}
             item={item}
             columns={columns}
-            columnWidths={columnWidths}
+            columnStyles={columnStyles}
             getMenuOptions={getMenuOptions}
             selectedItems={selectedItems}
             isSelected={selectedIds.has(item._id)}
             onClick={handleRowClick}
             onItemClick={onItemClick}
             onContextMenu={handleRowContextMenu}
-            useFlexDistribution={useFlexDistribution}
             columnGap={resolvedGap}
             draggableId={draggableIdsByItemId.get(item._id) ?? null}
             droppableId={droppableIdsByItemId.get(item._id) ?? null}
@@ -325,42 +341,37 @@ const DocumentListingTable = <T extends Identifiable>({
                 <Container
                     className='document-listing-table-header-container p-sticky top-0 d-flex'
                     role='row'
-                    style={{
-                        width: effectiveWidth,
-                        gap: useFlexDistribution ? undefined : `${resolvedGap}px`,
-                        justifyContent: useFlexDistribution ? 'space-between' : 'flex-start'
-                    }}
+                    style={{ minWidth: `${minContentWidth}px`, gap: `${resolvedGap}px` }}
                 >
-                    {columns.map((col, colIdx) => (
-                        <Container
-                            className='document-listing-cell header-cell overflow-hidden d-flex items-center color-secondary'
-                            key={`header-${getColumnTitle(col)}-${colIdx}`}
-                            role='columnheader'
-                            aria-sort={getAriaSort(col)}
-                            style={
-                                useFlexDistribution
-                                    ? { flex: 1, minWidth: 0 }
-                                    : { width: columnWidths[colIdx], minWidth: columnWidths[colIdx], maxWidth: columnWidths[colIdx], flexShrink: 0 }
-                            }
-                        >
-                            {col.sortable ? (
-                                <button
-                                    type='button'
-                                    className='document-listing-sort-button d-flex items-center color-secondary'
-                                    onClick={() => onCellClick(col)}
-                                    aria-label={`Sort by ${getColumnTitle(col)}`}
-                                >
+                    {columns.map((col, colIdx) => {
+                        const isSorted = getAriaSort(col) !== 'none';
+                        return (
+                            <Container
+                                className={`document-listing-cell header-cell overflow-hidden d-flex items-center color-secondary ${isSorted ? 'is-sorted' : ''}`}
+                                key={`header-${getColumnTitle(col)}-${colIdx}`}
+                                role='columnheader'
+                                aria-sort={getAriaSort(col)}
+                                style={columnStyles[colIdx]}
+                            >
+                                {col.sortable ? (
+                                    <button
+                                        type='button'
+                                        className='document-listing-sort-button d-flex items-center color-secondary'
+                                        onClick={() => onCellClick(col)}
+                                        aria-label={`Sort by ${getColumnTitle(col)}`}
+                                    >
+                                        <Title className={`font-size-2-5 color-secondary ${col.headerTitleClassName ?? 'font-weight-5'}`}>
+                                            {getCellTitle(col)}
+                                        </Title>
+                                    </button>
+                                ) : (
                                     <Title className={`font-size-2-5 color-secondary ${col.headerTitleClassName ?? 'font-weight-5'}`}>
                                         {getCellTitle(col)}
                                     </Title>
-                                </button>
-                            ) : (
-                                <Title className={`font-size-2-5 color-secondary ${col.headerTitleClassName ?? 'font-weight-5'}`}>
-                                    {getCellTitle(col)}
-                                </Title>
-                            )}
-                        </Container>
-                    ))}
+                                )}
+                            </Container>
+                        );
+                    })}
                 </Container>
             )}
 
@@ -368,7 +379,7 @@ const DocumentListingTable = <T extends Identifiable>({
                 ref={bodyRef}
                 className='d-flex column p-relative document-listing-table-body-container flex-1'
                 role='rowgroup'
-                style={{ minWidth: (useFlexDistribution || !shouldShowContent) ? undefined : `${minContentWidth}px` }}
+                style={{ minWidth: shouldShowContent ? `${minContentWidth}px` : undefined }}
             >
                 {dragAndDrop ? (
                     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
@@ -377,11 +388,10 @@ const DocumentListingTable = <T extends Identifiable>({
                 ) : rows}
 
                 {isFetchingMore && Array.from({ length: skeletonRowsCount }).map((_, i) => (
-                    <TableSkeletonRow 
-                        key={`fetching-${i}`} 
-                        columns={columns} 
-                        columnWidths={columnWidths} 
-                        useFlexDistribution={useFlexDistribution}
+                    <TableSkeletonRow
+                        key={`fetching-${i}`}
+                        columns={columns}
+                        columnStyles={columnStyles}
                         columnGap={resolvedGap}
                     />
                 ))}
@@ -421,11 +431,10 @@ const DocumentListingTable = <T extends Identifiable>({
                     <Container className='document-listing-overlay-blur p-absolute inset-0'>
                         <Container className='document-listing-infinite-skeleton-loader p-absolute inset-0 overflow-hidden d-flex column'>
                             {Array.from({ length: 20 }).map((_, index) => (
-                                <TableSkeletonRow 
-                                    key={`loading-skeleton-${index}`} 
-                                    columns={columns} 
-                                    columnWidths={columnWidths} 
-                                    useFlexDistribution={useFlexDistribution}
+                                <TableSkeletonRow
+                                    key={`loading-skeleton-${index}`}
+                                    columns={columns}
+                                    columnStyles={columnStyles}
                                     columnGap={resolvedGap}
                                 />
                             ))}

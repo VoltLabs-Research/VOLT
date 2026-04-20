@@ -1,5 +1,5 @@
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
-import BaseTeamJobActionUseCase from '@modules/jobs/application/use-cases/BaseTeamJobActionUseCase';
+import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 import type { RemoveTeamRunningJobsInputDTO, RemoveTeamRunningJobsOutputDTO } from '@modules/jobs/application/dtos/RemoveTeamRunningJobsDTO';
 import type { ITeamJobMaintenanceService } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
@@ -7,18 +7,15 @@ import type { IUseCase } from '@shared/application/IUseCase';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
 
 @injectable()
-export default class RemoveTeamRunningJobsUseCase extends BaseTeamJobActionUseCase<
-    RemoveTeamRunningJobsInputDTO,
-    RemoveTeamRunningJobsOutputDTO
-> implements IUseCase<RemoveTeamRunningJobsInputDTO, RemoveTeamRunningJobsOutputDTO, ApplicationError> {
+export default class RemoveTeamRunningJobsUseCase implements IUseCase<RemoveTeamRunningJobsInputDTO, RemoveTeamRunningJobsOutputDTO, ApplicationError> {
     constructor(
         @inject(JOBS_TOKENS.TeamJobMaintenanceService)
         private readonly teamJobMaintenanceService: ITeamJobMaintenanceService
-    ) {
-        super();
-    }
+    ) {}
 
-    protected async run(teamId: string): Promise<RemoveTeamRunningJobsOutputDTO> {
-        return this.teamJobMaintenanceService.removeRunningJobs(teamId);
+    async execute(input: RemoveTeamRunningJobsInputDTO): Promise<Result<RemoveTeamRunningJobsOutputDTO, ApplicationError>> {
+        const outcome = await this.teamJobMaintenanceService.removeJobsForTrajectory(input.teamId, input.trajectoryId);
+
+        return Result.ok(outcome);
     }
 };

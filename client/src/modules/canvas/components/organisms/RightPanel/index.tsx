@@ -2,6 +2,9 @@ import { buildCanvasModifierOptions, LEGACY_MODIFIERS } from '../../../utilities
 import useTip from '@/shared/tips/use-tip';
 import usePluginExecution from '../../../hooks/use-plugin-execution';
 import { ExecState } from '../../../hooks/use-plugin-execution';
+import useTrajectoryCloneFlow from '../../../hooks/use-trajectory-clone-flow';
+import { useTrajectoryCloneFlowStore } from '../../../stores/use-trajectory-clone-flow-store';
+import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import ModifierConfig from '../../molecules/ModifierConfig';
 import ModifiersSection from '../../molecules/ModifiersSection';
 
@@ -42,11 +45,29 @@ interface RightPanelProps {
     currentTimestep?: number;
 };
 
+const resolveTrajectoryTeamId = (trajectory?: Trajectory | null): string | undefined => {
+    if (!trajectory) {
+        return undefined;
+    }
+
+    if (typeof trajectory.team === 'string') {
+        return trajectory.team;
+    }
+
+    if (trajectory.team && typeof trajectory.team === 'object' && '_id' in trajectory.team) {
+        return trajectory.team._id;
+    }
+
+    return undefined;
+};
+
 const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: RightPanelProps) => {
     useTip('canvas-render-settings');
 
+    const currentUser = useCurrentUser();
     const selectedTeamId = useSelectedTeamId();
     const executePluginMutation = useExecutePluginMutation();
+    const { cloneAndRun } = useTrajectoryCloneFlow();
     const { modifiers, getPluginArguments, isLoading: pluginLoading } = usePluginSelectors();
     const { data: teamClustersResponse } = usePluginTeamClustersQuery({
         teamId: selectedTeamId ?? '',
@@ -74,6 +95,39 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
     }, [executionTeamClusters]);
 
     const hasTeamClusterOptions = teamClusterOptions.length > 0;
+    const trajectoryTeamId = resolveTrajectoryTeamId(trajectory);
+    const isForeignTrajectory = Boolean(
+        selectedTeamId
+        && trajectoryTeamId
+        && trajectoryTeamId !== selectedTeamId
+    );
+
+    const consumeCloneIntent = useTrajectoryCloneFlowStore((state) => state.consumeIntent);
+    const removeCloneEntry = useTrajectoryCloneFlowStore((state) => state.removeEntry);
+
+    useEffect(() => {
+        if (!trajectoryId || !trajectory || isForeignTrajectory) {
+            return;
+        }
+
+        const intent = consumeCloneIntent(trajectoryId);
+        if (!intent) {
+            return;
+        }
+
+        executePluginMutation.mutateAsync({
+            pluginId: intent.pluginId,
+            trajectoryId,
+            teamClusterId: intent.targetClusterId,
+            config: intent.config,
+            selectedTimesteps: intent.selectedTimesteps,
+            timestep: intent.timestep
+        }).catch(() => {
+            removeCloneEntry(trajectoryId);
+        }).finally(() => {
+            removeCloneEntry(trajectoryId);
+        });
+    }, [trajectoryId, trajectory, isForeignTrajectory, consumeCloneIntent, executePluginMutation, removeCloneEntry]);
 
     const handlePluginConfigChange = useCallback((pluginId: string, key: string, value: unknown) => {
         setPluginConfigs((prev) => ({
@@ -151,7 +205,34 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
         },
         executePlugin: executePluginMutation.mutateAsync,
         pluginConfigs,
-        getSelectedTimesteps
+        getSelectedTimesteps,
+        beforeExecute: async (option) => {
+            if (!isForeignTrajectory || !trajectoryId || !option.pluginModifierId) {
+                return { proceed: true };
+            }
+
+            const selectedClusterId = getSelectedClusterId(
+                option.pluginModifierId,
+                option.plugin?.teamCluster
+            );
+            if (!selectedClusterId) {
+                throw new Error('Missing team cluster selection');
+            }
+
+            await cloneAndRun({
+                sourceTrajectoryId: trajectoryId,
+                targetClusterId: selectedClusterId,
+                intent: {
+                    pluginId: option.pluginModifierId,
+                    config: pluginConfigs[option.pluginModifierId] ?? {},
+                    selectedTimesteps: getSelectedTimesteps(option.pluginModifierId),
+                    timestep: currentTimestep,
+                    targetClusterId: selectedClusterId
+                }
+            });
+
+            return { proceed: false };
+        }
     });
 
     const allModifiers = useMemo<ModifierOption[]>(() => buildCanvasModifierOptions(modifiers), [modifiers]);
@@ -239,6 +320,10 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
         teamClusterOptions
     ]);
 
+    if (!currentUser) {
+        return null;
+    }
+
     return (
         <Container className="d-flex h-max overflow-hidden">
             <Container className="w-max h-max overflow-auto">
@@ -264,6 +349,7 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
                         getExecState={getExecState}
                         showAction={shouldShowAction}
                         hasContent={modifierHasContent}
+                        isForeignTrajectory={isForeignTrajectory}
                         onAction={handleAction}
                         renderModifierConfig={renderModifierConfig}
                     />
