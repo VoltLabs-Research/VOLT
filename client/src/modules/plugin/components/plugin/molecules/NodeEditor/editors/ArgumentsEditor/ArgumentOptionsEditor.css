@@ -1,0 +1,158 @@
+.argument-options-editor {
+    --argument-options-handle-width: 18px;
+    --argument-options-action-width: 28px;
+    --argument-options-field-gap: 1rem;
+}
+
+.argument-options-grid {
+    padding: 0 0.25rem;
+    gap: 0;
+}
+
+.argument-options-grid__spacer {
+    display: inline-block;
+    width: var(--argument-options-handle-width);
+    flex-shrink: 0;
+}
+
+.argument-options-grid__spacer--action {
+    width: var(--argument-options-action-width);
+}
+
+.argument-options-grid__gap {
+    display: inline-block;
+    width: var(--argument-options-field-gap);
+    flex-shrink: 0;
+}
+
+.argument-options-grid__header {
+    min-width: 0;
+    padding-left: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.argument-options-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.argument-options-row {
+    padding: 4px 6px;
+    gap: 0;
+    border-radius: var(--radius-xs, 4px);
+    transition: background-color 120ms ease, border-color 120ms ease;
+    border: 1px solid transparent;
+}
+
+.argument-options-row > .argument-options-input--key,
+.argument-options-row > .argument-options-input--label {
+    margin: 0;
+}
+
+.argument-options-row > .argument-options-input--key {
+    margin-left: 0.25rem;
+}
+
+.argument-options-row > .argument-options-input--label {
+    margin-left: var(--argument-options-field-gap);
+}
+
+.argument-options-row > .argument-options-row__remove {
+    margin-left: 0.5rem;
+}
+
+.argument-options-row:hover {
+    background: var(--hover-bg, rgba(255, 255, 255, 0.03));
+}
+
+.argument-options-row.has-error {
+    border-color: var(--color-danger, #ef4444);
+    background: rgba(239, 68, 68, 0.06);
+}
+
+.argument-options-row.is-drop-target {
+    border-top: 2px solid var(--accent-blue, #3b82f6);
+    margin-top: -2px;
+}
+
+.argument-options-row__handle {
+    width: var(--argument-options-handle-width);
+    height: 22px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted, rgba(255, 255, 255, 0.3));
+    cursor: grab;
+    opacity: 0;
+    transition: opacity 140ms ease, color 140ms ease;
+    flex-shrink: 0;
+}
+
+.argument-options-row:hover .argument-options-row__handle,
+.argument-options-row:focus-within .argument-options-row__handle {
+    opacity: 1;
+}
+
+.argument-options-row__handle:hover {
+    color: var(--color-text-secondary, inherit);
+}
+
+.argument-options-row__handle:active {
+    cursor: grabbing;
+}
+
+.argument-options-input {
+    min-width: 0;
+    padding: 6px 10px;
+    border: 1px solid var(--color-border-soft, rgba(255, 255, 255, 0.08));
+    border-radius: var(--radius-xs, 4px);
+    background: var(--color-bg-subtle, rgba(255, 255, 255, 0.02));
+    color: var(--color-text-primary, inherit);
+    outline: none;
+    transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.argument-options-input:hover {
+    border-color: var(--color-border, rgba(255, 255, 255, 0.16));
+}
+
+.argument-options-input:focus {
+    border-color: var(--accent-blue, #3b82f6);
+    background: var(--color-bg, rgba(0, 0, 0, 0.15));
+}
+
+.argument-options-input.has-error {
+    border-color: var(--color-danger, #ef4444);
+}
+
+.argument-options-input--key {
+    font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+}
+
+.argument-options-row__remove {
+    opacity: 0;
+    color: var(--color-text-muted, rgba(255, 255, 255, 0.4));
+    transition: opacity 140ms ease, color 140ms ease;
+    flex-shrink: 0;
+}
+
+.argument-options-row:hover .argument-options-row__remove,
+.argument-options-row:focus-within .argument-options-row__remove {
+    opacity: 1;
+}
+
+.argument-options-row__remove:hover {
+    color: var(--color-danger, #ef4444);
+}
+
+.argument-options-error-hint {
+    color: var(--color-danger, #ef4444);
+}
+
+.argument-options-footer {
+    padding-top: 0.25rem;
+}
+
