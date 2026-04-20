@@ -2,7 +2,7 @@ import { SignInInputDTO, SignInOutputDTO } from '@modules/auth/application/dtos/
 import { toPersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import AuthSessionService from '@modules/auth/infrastructure/services/AuthSessionService';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SessionActivityType } from '@modules/session/domain/entities/Session';
 import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';

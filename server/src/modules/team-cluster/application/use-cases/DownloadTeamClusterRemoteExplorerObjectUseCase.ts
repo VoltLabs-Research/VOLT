@@ -7,9 +7,9 @@ import { preflightRemoteExplorerAccess } from '@modules/team-cluster/application
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import RemoteExplorerDaemonGateway from '@modules/team-cluster/infrastructure/services/RemoteExplorerDaemonGateway';
 import TeamClusterRemoteAccessSessionService from '@modules/team-cluster/infrastructure/services/TeamClusterRemoteAccessSessionService';
-import { TeamClusterDaemonStreamError } from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
@@ -111,15 +111,19 @@ export default class DownloadTeamClusterRemoteExplorerObjectUseCase implements I
                 disposition: 'attachment'
             }));
         } catch (error: unknown) {
-            if (error instanceof ApplicationError) {
-                return Result.fail(error);
-            }
-
-            if (error instanceof TeamClusterDaemonStreamError && error.status === 404) {
+            if (
+                error instanceof ApplicationError
+                && error.code === ErrorCodes.TEAM_CLUSTER_DAEMON_STREAM_REQUEST_FAILED
+                && error.statusCode === 404
+            ) {
                 return Result.fail(ApplicationError.notFound(
                     'TeamCluster::RemoteExplorerObjectNotFound',
                     'The requested remote explorer object was not found'
                 ));
+            }
+
+            if (error instanceof ApplicationError) {
+                return Result.fail(error);
             }
 
             return Result.fail(ApplicationError.badRequest(

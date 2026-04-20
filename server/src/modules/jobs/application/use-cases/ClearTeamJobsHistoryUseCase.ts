@@ -4,7 +4,7 @@ import { inject, injectable } from 'tsyringe';
 import type { ClearTeamJobsHistoryInputDTO, ClearTeamJobsHistoryOutputDTO } from '@modules/jobs/application/dtos/ClearTeamJobsHistoryDTO';
 import type { ITeamJobMaintenanceService } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type ApplicationError from '@shared/application/errors/ApplicationErrors';
+import type ApplicationError from '@shared/application/errors/ApplicationError';
 
 @injectable()
 export default class ClearTeamJobsHistoryUseCase extends BaseTeamJobActionUseCase<

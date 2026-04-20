@@ -5,7 +5,7 @@ import { IPluginStorageService } from '@modules/plugin/domain/port/plugin/IPlugi
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 
 import type { BinaryUploadResult } from '@modules/plugin/domain/port/plugin/IPluginStorageService';
 

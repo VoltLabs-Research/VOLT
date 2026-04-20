@@ -6,10 +6,17 @@ import {
     VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID
 } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import { isStorageObjectNotFoundError } from '@shared/infrastructure/utilities/storage-errors';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 import zlib from 'node:zlib';
+import { promisify } from 'node:util';
+import type IORedis from 'ioredis';
+
+const gzipAsync = promisify(zlib.gzip);
+
+const DISPATCH_SECTION_CACHE_TTL_SECONDS = 600;
 import type Analysis from '@modules/analysis/domain/entities/Analysis';
 import type Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
 import type {
@@ -103,8 +110,6 @@ interface NestedPluginDefinition {
     workflow: WorkflowSerializable;
 };
 
-interface DaemonPluginReferenceExecutionRequest extends PluginReferenceExecutionRequest {};
-
 interface TrajectoryFramePayload {
     timestep: number;
     natoms: number;
@@ -125,7 +130,7 @@ interface PluginDispatchPayload extends Record<string, unknown> {
     workflowCompressed?: string;
     nestedPlugins?: NestedPluginDefinition[];
     nestedPluginsCompressed?: string;
-    pluginReferenceExecutions?: DaemonPluginReferenceExecutionRequest[];
+    pluginReferenceExecutions?: PluginReferenceExecutionRequest[];
     pluginReferenceExecutionsCompressed?: string;
     config: Record<string, unknown>;
     selectedFrameOnly?: boolean;
@@ -149,11 +154,6 @@ interface EncodedDispatchSection<T> {
     compressedValue?: string;
     rawValue?: T;
 };
-
-interface StorageObjectErrorLike {
-    code?: string;
-    statusCode?: number;
-}
 
 const buildNestedPluginDefinition = (plugin: Plugin): NestedPluginDefinition => {
     return {
@@ -186,8 +186,8 @@ const dedupePluginsById = (plugins: Plugin[]): Plugin[] => {
 
 const dedupePluginReferenceExecutions = (
     pluginReferenceExecutions: PluginReferenceExecutionRequest[]
-): DaemonPluginReferenceExecutionRequest[] => {
-    const dedupedPluginReferenceExecutions = new Map<string, DaemonPluginReferenceExecutionRequest>();
+): PluginReferenceExecutionRequest[] => {
+    const dedupedPluginReferenceExecutions = new Map<string, PluginReferenceExecutionRequest>();
 
     for (const pluginReferenceExecution of pluginReferenceExecutions) {
         const key = createPluginReferenceExecutionKey(pluginReferenceExecution);
@@ -205,7 +205,7 @@ const dedupePluginReferenceExecutions = (
     return Array.from(dedupedPluginReferenceExecutions.values());
 };
 
-const encodeDispatchSection = <T>(value: T): EncodedDispatchSection<T> => {
+const encodeDispatchSection = async <T>(value: T): Promise<EncodedDispatchSection<T>> => {
     const serializedValue = JSON.stringify(value);
     const rawBytes = Buffer.byteLength(serializedValue);
 
@@ -217,23 +217,13 @@ const encodeDispatchSection = <T>(value: T): EncodedDispatchSection<T> => {
         };
     }
 
-    const compressedValue = zlib.gzipSync(serializedValue).toString('base64');
+    const compressed = await gzipAsync(serializedValue);
+    const compressedValue = compressed.toString('base64');
     return {
         rawBytes,
         storedBytes: Buffer.byteLength(compressedValue),
         compressedValue
     };
-};
-
-const isStorageObjectNotFoundError = (error: unknown): error is StorageObjectErrorLike => {
-    if (typeof error !== 'object' || error === null) {
-        return false;
-    }
-
-    const candidate = error as StorageObjectErrorLike;
-    return candidate.code === 'NotFound'
-        || candidate.code === 'NoSuchKey'
-        || candidate.statusCode === 404;
 };
 
 @injectable()
@@ -246,8 +236,61 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
 
         @inject(TEAM_CLUSTER_TOKENS.DaemonAnalysisCompletionService)
-        private readonly daemonAnalysisCompletionService: DaemonAnalysisCompletionService
+        private readonly daemonAnalysisCompletionService: DaemonAnalysisCompletionService,
+
+        @inject(SHARED_TOKENS.RedisClient)
+        private readonly redis: IORedis
     ){}
+
+    private readonly inflightEncodes = new Map<string, Promise<EncodedDispatchSection<unknown>>>();
+
+    private async cachedEncode<T>(cacheKey: string, value: T): Promise<EncodedDispatchSection<T>> {
+        try {
+            const cached = await this.redis.get(cacheKey);
+            if (cached) {
+                return JSON.parse(cached) as EncodedDispatchSection<T>;
+            }
+        } catch (error: unknown) {
+            logger.warn({ err: error, cacheKey }, '@plugin-execution-router: dispatch section cache read failed');
+        }
+
+        const existing = this.inflightEncodes.get(cacheKey) as Promise<EncodedDispatchSection<T>> | undefined;
+        if (existing) return existing;
+
+        const pending = (async () => {
+            const encoded = await encodeDispatchSection(value);
+            try {
+                await this.redis.setex(cacheKey, DISPATCH_SECTION_CACHE_TTL_SECONDS, JSON.stringify(encoded));
+            } catch (error: unknown) {
+                logger.warn({ err: error, cacheKey }, '@plugin-execution-router: dispatch section cache write failed');
+            }
+            return encoded;
+        })().finally(() => {
+            this.inflightEncodes.delete(cacheKey);
+        });
+
+        this.inflightEncodes.set(cacheKey, pending as Promise<EncodedDispatchSection<unknown>>);
+        return pending;
+    }
+
+    private encodeWorkflowSection(plugin: Plugin): Promise<EncodedDispatchSection<WorkflowSerializable>> {
+        const revision = plugin.props.updatedAt.getTime();
+        const cacheKey = `plugin-dispatch:workflow:${plugin.id}:${revision}`;
+        return this.cachedEncode(cacheKey, plugin.props.workflow.props as unknown as WorkflowSerializable);
+    }
+
+    private encodeNestedPluginsSection(
+        rootPluginId: string,
+        deps: Plugin[],
+        nestedPlugins: NestedPluginDefinition[]
+    ): Promise<EncodedDispatchSection<NestedPluginDefinition[]>> {
+        const revisionToken = deps
+            .map((d) => `${d.id}@${d.props.updatedAt.getTime()}`)
+            .sort()
+            .join('|');
+        const cacheKey = `plugin-dispatch:nested:${rootPluginId}:${revisionToken || 'empty'}`;
+        return this.cachedEncode(cacheKey, nestedPlugins);
+    }
 
     async route(input: RoutePluginExecutionInput): Promise<void> {
         const uniqueDependencyPlugins = dedupePluginsById(input.pluginDependencies);
@@ -255,16 +298,17 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             input.plugin,
             ...uniqueDependencyPlugins
         ]);
-        for (const dependency of uniquePluginsToSync) {
-            await this.syncPluginBinaryIfNeeded(input.teamClusterId, dependency);
-        }
 
         const nestedPlugins = uniqueDependencyPlugins.map(buildNestedPluginDefinition);
         const pluginReferenceExecutions = dedupePluginReferenceExecutions(input.pluginReferenceExecutions);
-        const encodedTrajectoryFrames = encodeDispatchSection(input.trajectoryFrames);
-        const encodedWorkflow = encodeDispatchSection(input.plugin.props.workflow.props as unknown as WorkflowSerializable);
-        const encodedNestedPlugins = encodeDispatchSection(nestedPlugins);
-        const encodedPluginReferenceExecutions = encodeDispatchSection(pluginReferenceExecutions);
+
+        const [, encodedTrajectoryFrames, encodedWorkflow, encodedNestedPlugins, encodedPluginReferenceExecutions] = await Promise.all([
+            Promise.all(uniquePluginsToSync.map((dependency) => this.syncPluginBinaryIfNeeded(input.teamClusterId, dependency))),
+            encodeDispatchSection(input.trajectoryFrames),
+            this.encodeWorkflowSection(input.plugin),
+            this.encodeNestedPluginsSection(input.plugin.id, uniqueDependencyPlugins, nestedPlugins),
+            encodeDispatchSection(pluginReferenceExecutions)
+        ]);
         const dispatchPayload: PluginDispatchPayload = {
             analysis: serializeAnalysis(input.analysis),
             analysisId: input.analysisId,
@@ -322,7 +366,8 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
         await this.daemonAnalysisCompletionService.initializeSession(
             input.analysisId,
             response.totalJobs,
-            input.teamId
+            input.teamId,
+            input.trajectoryId
         );
 
         if (response.jobs?.length > 0) {
@@ -341,7 +386,8 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
 
     private async syncPluginBinaryIfNeeded(teamClusterId: string, plugin: Plugin): Promise<void> {
         const entrypointNode = plugin.props.workflow.props.nodes.find((node) => node.type === 'entrypoint');
-        const objectKey = entrypointNode?.data.entrypoint?.binaryObjectPath;
+        const entrypoint = entrypointNode?.data.entrypoint;
+        const objectKey = entrypoint?.binaryObjectPath;
         if (!objectKey) {
             throw ApplicationError.badRequest(
                 ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
@@ -349,7 +395,7 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             );
         }
 
-        const expectedHash = await this.readObjectSha256(objectKey);
+        const expectedHash = entrypoint?.binaryHash ?? await this.readObjectSha256(objectKey);
 
         const syncResponse = await this.teamClusterDaemonClient.command<DaemonPluginSyncResponse>(teamClusterId, ChannelCommands.PluginSync, {
             pluginId: plugin.id,
@@ -358,18 +404,7 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             expectedHash
         });
 
-        if (syncResponse.synced) {
-            return;
-        }
-
-        const finalSyncResponse = await this.teamClusterDaemonClient.command<DaemonPluginSyncResponse>(teamClusterId, ChannelCommands.PluginSync, {
-            pluginId: plugin.id,
-            objectKey,
-            ownerClusterId: VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID,
-            expectedHash
-        });
-
-        if (!finalSyncResponse.synced) {
+        if (!syncResponse.synced) {
             throw ApplicationError.conflict(
                 ErrorCodes.PLUGIN_EXECUTOR_BINARY_NOT_ACCESSIBLE,
                 `Plugin binary is not reachable from compute cluster: ${objectKey}`

@@ -7,7 +7,7 @@ import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/Tea
 import { requireOwnedTeamCluster } from '@modules/team-cluster/application/utilities/team-cluster-ownership';
 import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import {

@@ -1,4 +1,4 @@
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 
 const DAEMON_DISCONNECT_MESSAGES = [

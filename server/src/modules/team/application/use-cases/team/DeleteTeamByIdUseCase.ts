@@ -4,7 +4,7 @@ import { DeleteTeamByIdInputDTO } from '@modules/team/application/dtos/team/Dele
 import TeamDeletedEvent from '@modules/team/domain/events/team/TeamDeletedEvent';
 import { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';

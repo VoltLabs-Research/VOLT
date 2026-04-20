@@ -14,7 +14,7 @@ import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/trajectory/TrajectoryParserFactory';
 import CloudUploadQueueService from '@modules/trajectory/infrastructure/services/trajectory/CloudUploadQueueService';
 import CompressionQueueService, { CompressionJobData } from '@modules/trajectory/infrastructure/services/trajectory/CompressionQueueService';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
 
 import { injectable, inject } from 'tsyringe';
@@ -332,8 +332,16 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
     }
 
     /**
-     * Builds and sort valid trajectory frames.
-     * Invalid or failed frames are skipped.
+     * Builds and sorts valid trajectory frames, deduplicated by timestep.
+     *
+     * Uploaded directories can legally contain the same dump twice (e.g. a
+     * top-level `dump.ensayo.50000.config` and a nested `e/dump.ensayo.50000.config`).
+     * Both resolve to the same timestep, which is the unit of work for every
+     * downstream stage (cache path, object key, GLB jobId on the daemon). The
+     * daemon's BullMQ deduplicates by jobId, so without this dedup the server
+     * would initialize the GLB drain counter using the inflated frame count and
+     * the decrement would never reach zero, leaving the trajectory in
+     * `processing` forever. Keep the first parsed occurrence per timestep.
      */
     private async buildFrames(
         trajectoryId: string,
@@ -341,13 +349,22 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         files: ExtractedFile[]
     ): Promise<ParsedFrame[]>{
         const limit = pLimit(this.concurrency);
-        const frames = await Promise.all(files.map((file) => {
+        const parsed = await Promise.all(files.map((file) => {
             return limit(() => this.parseFrame(trajectoryId, teamId, file));
         }));
 
-        return frames
-            .filter((frame): frame is ParsedFrame => frame !== null)
-            .sort((a, b) => (a.timestep as number) - (b.timestep as number));
+        const byTimestep = new Map<number, ParsedFrame>();
+        for (const frame of parsed) {
+            if (!frame) continue;
+            const timestep = frame.timestep as number;
+            if (byTimestep.has(timestep)) {
+                logger.warn(`@trajectory-background-processor: dropping duplicate frame trajectoryId=${trajectoryId} timestep=${timestep}`);
+                continue;
+            }
+            byTimestep.set(timestep, frame);
+        }
+
+        return [...byTimestep.values()].sort((a, b) => (a.timestep as number) - (b.timestep as number));
     }
 
     /**
@@ -625,21 +642,28 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         logger.info(`@trajectory-background-processor: GLB preprocessing enqueued and session initialized frameCount=${frameDescriptors.length} batchCount=${frameDescriptorBatches.length} trajectoryId=${trajectory._id}`);
     }
 
+    private glbSessionKeys(trajectoryId: string) {
+        const base = `daemon-glb:${trajectoryId}`;
+        return {
+            remaining: `${base}:remaining`,
+            failed: `${base}:failed`,
+            terminalSet: `${base}:terminal-keys`
+        };
+    }
+
     /**
      * Sets up a Redis counter to track how many GLB conversion jobs remain for this trajectory.
      * When all jobs report back (via trajectory.glb-job-status), the drain logic in
      * DaemonAnalysisCompletionService will decrement this counter and finalize the trajectory.
      */
     private async initializeGlbSession(trajectoryId: string, totalJobs: number): Promise<void> {
-        const remainingKey = `daemon-glb:${trajectoryId}:remaining`;
-        const failedKey = `daemon-glb:${trajectoryId}:failed`;
-        const terminalReceiptSetKey = `daemon-glb:${trajectoryId}:terminal-keys`;
-        const staleReceiptKeys = await this.redis.smembers(terminalReceiptSetKey);
+        const keys = this.glbSessionKeys(trajectoryId);
+        const staleReceiptKeys = await this.redis.smembers(keys.terminalSet);
 
         const pipeline = this.redis.pipeline();
-        pipeline.set(remainingKey, totalJobs.toString(), 'EX', GLB_SESSION_TTL_SECONDS);
-        pipeline.del(failedKey);
-        pipeline.del(terminalReceiptSetKey);
+        pipeline.set(keys.remaining, totalJobs.toString(), 'EX', GLB_SESSION_TTL_SECONDS);
+        pipeline.del(keys.failed);
+        pipeline.del(keys.terminalSet);
 
         if (staleReceiptKeys.length > 0) {
             pipeline.del(...staleReceiptKeys);
@@ -672,21 +696,4 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         }));
     }
 
-    private async clearGlbSession(trajectoryId: string): Promise<void> {
-        const remainingKey = `daemon-glb:${trajectoryId}:remaining`;
-        const failedKey = `daemon-glb:${trajectoryId}:failed`;
-        const terminalReceiptSetKey = `daemon-glb:${trajectoryId}:terminal-keys`;
-        const staleReceiptKeys = await this.redis.smembers(terminalReceiptSetKey);
-
-        const pipeline = this.redis.pipeline();
-        pipeline.del(remainingKey);
-        pipeline.del(failedKey);
-        pipeline.del(terminalReceiptSetKey);
-
-        if (staleReceiptKeys.length > 0) {
-            pipeline.del(...staleReceiptKeys);
-        }
-
-        await pipeline.exec();
-    }
 };

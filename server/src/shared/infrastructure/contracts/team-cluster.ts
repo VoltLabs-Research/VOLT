@@ -6,7 +6,6 @@ import type {
     TeamClusterServicesProps
 } from '@modules/team-cluster/domain/entities/TeamCluster';
 
-export const TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION = 3;
 export const TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH = '/internal/team-cluster/object-store/v1';
 export const TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER = 'x-team-cluster-id';
 export const TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER = 'x-team-cluster-daemon-password';
@@ -37,26 +36,31 @@ export const ChannelCommands = Object.freeze({
     ContainerProcessesList: 'container.processes.list',
     ContainerFilesList: 'container.files.list',
     ContainerFileRead: 'container.file.read',
-    ContainerFileWrite: 'container.file.write',
 
     JobsList: 'jobs.list',
     JobsRetry: 'jobs.retry',
     JobsRemoveRunning: 'jobs.remove-running',
-    JobsClearHistory: 'jobs.clear-history',
 
     NotebookDelete: 'notebook.delete',
     NotebookRuntimeGet: 'notebook.runtime.get',
     NotebookSessionCreate: 'notebook.session.create',
 
     PluginSync: 'plugin.sync',
+    PluginListingsList: 'plugin.listings.list',
+    PluginSubListingsList: 'plugin.sub-listings.list',
     PluginTransferMongoExport: 'plugin.transfer.mongo.export',
     PluginTransferMongoImport: 'plugin.transfer.mongo.import',
     PluginTransferMongoPurge: 'plugin.transfer.mongo.purge',
 
+    DebugStart: 'debug.start',
+    DebugStep: 'debug.step',
+    DebugContinue: 'debug.continue',
+    DebugStop: 'debug.stop',
+
     RuntimeConfigGet: 'runtime.config.get',
     RuntimeRoleApply: 'runtime.role.apply',
     RuntimeQueueConcurrencyApply: 'runtime.queue-concurrency.apply',
-    RuntimeRestart: 'runtime.restart',
+    RuntimeUninstall: 'runtime.uninstall',
 
     QueueDispatch: 'queue.dispatch',
 
@@ -74,7 +78,15 @@ export const ChannelCommands = Object.freeze({
     TrajectoryNativeAtoms: 'trajectory.native.atoms',
     TrajectoryNativeFilterPreview: 'trajectory.native.filter-preview',
     TrajectoryNativeColorModel: 'trajectory.native.color-model',
-    TrajectoryNativeParticleFilterModel: 'trajectory.native.particle-filter-model'
+    TrajectoryNativeParticleFilterModel: 'trajectory.native.particle-filter-model',
+
+    TrajectoryPluginPropertyNames: 'trajectory.plugin.property-names',
+    TrajectoryPluginModifierAnalysis: 'trajectory.plugin.modifier-analysis',
+    TrajectoryPluginAtomIndex: 'trajectory.plugin.atom-index',
+    TrajectoryPluginModifierValues: 'trajectory.plugin.modifier-values',
+    TrajectoryPluginModifierStats: 'trajectory.plugin.modifier-stats',
+    TrajectoryPluginModifierUniqueValues: 'trajectory.plugin.modifier-unique-values',
+    TrajectoryPluginAnalysisAllAtoms: 'trajectory.plugin.analysis-all-atoms'
 });
 
 export interface ResolvedTeamClusterDaemonConnection {
@@ -112,14 +124,6 @@ export interface TeamClusterDaemonQueueConcurrencyApplyPayload {
     queueScopeLimits: TeamClusterQueueScopeLimitsProps;
 };
 
-export interface TeamClusterRuntimeSnapshot {
-    contractVersion: number;
-    queueConcurrency: TeamClusterQueueConcurrencyProps;
-    queueScopeLimits: TeamClusterQueueScopeLimitsProps;
-    roleConfig: TeamClusterRuntimeRoleConfigProps;
-    effectiveCapabilities: TeamClusterEffectiveCapabilitiesProps;
-}
-
 export interface TeamClusterDaemonRoleApplyPayload {
     [key: string]: unknown;
     roleConfig: TeamClusterRuntimeRoleConfigProps;
@@ -133,13 +137,6 @@ export interface TeamClusterDaemonRoleApplyResult {
 
 export type TeamClusterDaemonPluginMongoDocumentType = 'listing' | 'sub-listing';
 
-export interface TeamClusterDaemonPluginMongoExportPayload {
-    analysisIds: string[];
-    documentType: TeamClusterDaemonPluginMongoDocumentType;
-    skip?: number;
-    limit?: number;
-}
-
 export interface TeamClusterDaemonPluginMongoExportResult {
     rows: Record<string, unknown>[];
     total: number;
@@ -147,19 +144,8 @@ export interface TeamClusterDaemonPluginMongoExportResult {
     nextSkip: number;
 }
 
-export interface TeamClusterDaemonPluginMongoImportPayload {
-    analysisIds: string[];
-    documentType: TeamClusterDaemonPluginMongoDocumentType;
-    rows: Record<string, unknown>[];
-}
-
 export interface TeamClusterDaemonPluginMongoImportResult {
     importedRows: number;
-}
-
-export interface TeamClusterDaemonPluginMongoPurgePayload {
-    analysisIds: string[];
-    documentType: TeamClusterDaemonPluginMongoDocumentType;
 }
 
 export interface TeamClusterDaemonPluginMongoPurgeResult {
@@ -185,19 +171,3 @@ export interface StoragePlacement {
     bytesUsed?: number;
 }
 
-export interface ResolvedObjectRef {
-    ownerClusterId: string;
-    bucket: string;
-    objectKey: string;
-    expectedHash?: string;
-    sizeBytes?: number;
-}
-
-export interface ResolvedObjectWrite {
-    ownerClusterId: string;
-    bucket: string;
-    objectKey: string;
-    expectedHash?: string;
-    sizeBytes?: number;
-    contentType?: string;
-}

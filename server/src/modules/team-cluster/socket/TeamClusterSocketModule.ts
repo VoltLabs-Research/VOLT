@@ -22,7 +22,6 @@ import {
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
     TEAM_CLUSTER_DAEMON_REGISTERED_EVENT,
     TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
-    TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION,
     TEAM_CLUSTER_SUBSCRIPTION_EVENT,
     type TeamClusterDaemonCommandMessage,
     type TeamClusterDaemonMessage,
@@ -36,7 +35,7 @@ import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModul
 import type { ISocketRoomManager } from '@modules/socket/domain/port/ISocketRoomManager';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import type { ProcessDaemonSceneArtifactUpsertInputDTO } from '@modules/team-cluster/application/use-cases/ProcessDaemonSceneArtifactUpsertUseCase';
-import type ApplicationError from '@shared/application/errors/ApplicationErrors';
+import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type { Result } from '@shared/domain/port/Result';
 import logger from '@shared/infrastructure/logger';
 
@@ -253,7 +252,6 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
                 data: {
                     status: 'success',
                     data: {
-                        contractVersion: TEAM_CLUSTER_RUNTIME_CONTRACT_VERSION,
                         queueConcurrency: teamCluster.props.queueConcurrency,
                         queueScopeLimits: teamCluster.props.queueScopeLimits,
                         roleConfig: teamCluster.props.roleConfig,
@@ -278,23 +276,6 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
 
         if (payload.command === 'runtime.delete-completed') {
             const result = await this.completeTeamClusterDeletionUseCase.execute(payload.payload as never);
-            this.emitUseCaseResult(socketId, payload.requestId, result);
-            return;
-        }
-
-        if (
-            payload.command === 'analysis.job-complete'
-            || payload.command === 'analysis.job-status'
-            || payload.command === 'trajectory.raster-job-status'
-            || payload.command === 'trajectory.glb-job-status'
-        ) {
-            const result = await this.processDaemonJobCompletionUseCase.execute(payload.payload as never);
-            this.emitUseCaseResult(socketId, payload.requestId, result);
-            return;
-        }
-
-        if (payload.command === 'trajectory.scene-artifact.upsert') {
-            const result = await this.processDaemonSceneArtifactUpsertUseCase.execute(payload.payload as never);
             this.emitUseCaseResult(socketId, payload.requestId, result);
             return;
         }

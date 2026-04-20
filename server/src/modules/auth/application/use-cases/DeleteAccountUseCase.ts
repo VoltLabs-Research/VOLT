@@ -1,7 +1,7 @@
 import { DeleteAccountInputDTO, DeleteAccountOutputDTO } from '@modules/auth/application/dtos/DeleteAccountDTO';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import UserDeletedEvent from '@modules/auth/domain/events/UserDeletedEvent';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';

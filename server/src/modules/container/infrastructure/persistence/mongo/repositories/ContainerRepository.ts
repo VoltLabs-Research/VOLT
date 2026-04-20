@@ -2,7 +2,7 @@ import { Container } from '@modules/container/domain/entities/Container';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { ContainerModel } from '@modules/container/infrastructure/persistence/mongo/models/ContainerModel';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import containerMapper from '@modules/container/infrastructure/persistence/mongo/mappers/ContainerMapper';
 import { injectable } from 'tsyringe';
 import type { IContainerProps } from '@modules/container/domain/entities/Container';

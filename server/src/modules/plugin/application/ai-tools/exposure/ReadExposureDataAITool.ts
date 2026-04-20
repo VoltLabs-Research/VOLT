@@ -8,7 +8,7 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { decodeMultiStream } from '@shared/infrastructure/utilities/msgpack';
 import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { createZstdDecompressionStream } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 
 import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';

@@ -2,7 +2,7 @@ import {
     TeamClusterRemoteAccessSessionDTO,
     TeamClusterRemoteAccessTargetDTO
 } from '@modules/team-cluster/application/dtos/TeamClusterRemoteAccessDTO';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { InMemoryAbsoluteExpiryStore } from '@shared/infrastructure/services/InMemoryAbsoluteExpiryStore';
 import { randomUUID } from 'node:crypto';
 import { injectable } from 'tsyringe';

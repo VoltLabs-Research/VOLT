@@ -3,7 +3,7 @@ import { GetColoredModelStreamInputDTO, GetColoredModelStreamOutputDTO } from '@
 import { IColorCodingService } from '@modules/trajectory/domain/port/color-coding/IColorCodingService';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 
 import { injectable, inject } from 'tsyringe';
 

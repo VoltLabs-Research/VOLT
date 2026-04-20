@@ -5,7 +5,7 @@ import {
     createDownloadStreamResponse,
     sanitizeDownloadName
 } from '@shared/infrastructure/http/responses/download-response';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
 import { Readable } from 'node:stream';
 import type { ExportLatexDocumentInputDTO, ExportLatexDocumentOutputDTO } from '@modules/latex/application/dtos/ExportLatexDocumentDTO';

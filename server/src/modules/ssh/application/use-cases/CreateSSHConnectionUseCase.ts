@@ -5,7 +5,7 @@ import { injectable, inject } from 'tsyringe';
 import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
 import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
 import { ISSHCredentialsCipher } from '@modules/ssh/domain/port/ISSHCredentialsCipher';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import SSHConnection from '@modules/ssh/domain/entities/SSHConnection';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';

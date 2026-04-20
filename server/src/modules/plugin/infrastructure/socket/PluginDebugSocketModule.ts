@@ -2,7 +2,7 @@ import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands, VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@shared/infrastructure/contracts/team-cluster';
 import { PluginDependencyResolverService } from '@modules/plugin/infrastructure/services/plugin/PluginDependencyResolverService';
 import PluginDebugSessionRegistryService from '@modules/plugin/infrastructure/services/PluginDebugSessionRegistryService';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
@@ -168,7 +168,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
         // Best-effort cleanup of all active sessions
         for (const [sessionId, entry] of this.pluginDebugSessionRegistry.listSessions()) {
             try {
-                await this.daemonClient.command(entry.teamClusterId, 'debug.stop', { sessionId });
+                await this.daemonClient.command(entry.teamClusterId, ChannelCommands.DebugStop, { sessionId });
             } catch {
                 // Ignore errors during shutdown
             }
@@ -261,7 +261,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                 // Send debug.start command to daemon
                 const response = await this.daemonClient.command<DaemonDebugStartResponse>(
                     teamClusterId,
-                    'debug.start',
+                    ChannelCommands.DebugStart,
                     {
                         workflow,
                         trajectoryId: payload.trajectoryId,
@@ -326,7 +326,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
             try {
                 const response = await this.daemonClient.command<DaemonDebugStepResponse>(
                     entry.teamClusterId,
-                    'debug.step',
+                    ChannelCommands.DebugStep,
                     { sessionId: payload.sessionId }
                 );
 
@@ -373,7 +373,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
             try {
                 const response = await this.daemonClient.command<DaemonDebugContinueResponse>(
                     entry.teamClusterId,
-                    'debug.continue',
+                    ChannelCommands.DebugContinue,
                     { sessionId: payload.sessionId }
                 );
 
@@ -411,7 +411,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
             try {
                 await this.daemonClient.command(
                     entry.teamClusterId,
-                    'debug.stop',
+                    ChannelCommands.DebugStop,
                     { sessionId: payload.sessionId }
                 );
             } catch {
@@ -473,7 +473,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
 
     private cleanupSessionsForSocket(socketId: string): void {
         for (const [sessionId, entry] of this.pluginDebugSessionRegistry.unregisterSessionsForSocket(socketId)) {
-            this.daemonClient.command(entry.teamClusterId, 'debug.stop', { sessionId }).catch(() => {});
+            this.daemonClient.command(entry.teamClusterId, ChannelCommands.DebugStop, { sessionId }).catch(() => {});
         }
     }
 }

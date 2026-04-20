@@ -6,7 +6,7 @@ import { ISSHConnectionService } from '@modules/ssh/domain/port/ISSHConnectionSe
 import { ListSSHFilesInputDTO } from '@modules/ssh/application/dtos/ListSSHFilesInputDTO';
 import { ListSSHFilesOutputDTO, SSHFileEntryDTO } from '@modules/ssh/application/dtos/ListSSHFilesOutputDTO';
 import { SSHConnectionOwnershipService } from '@modules/ssh/application/services/SSHConnectionOwnershipService';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { resolveSSHServiceError } from '@modules/ssh/application/utils/ssh-error-utils';
 import { ErrorCodes } from '@core/constants/error-codes';
 

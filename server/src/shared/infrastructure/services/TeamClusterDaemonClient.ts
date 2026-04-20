@@ -2,7 +2,7 @@ import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/Tea
 import TeamClusterReverseChannelService from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
 import { TeamClusterDaemonResponseType, TeamClusterServiceExposureAccessMode } from '@modules/team-cluster/utilities/teamClusterSocket';
 import { TeamClusterReverseWebSocketStream } from '@modules/team-cluster/utilities/teamClusterReverseWebSocket';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { getHttpRequestContext } from '@shared/infrastructure/http/request-context';
 import logger from '@shared/infrastructure/logger';
@@ -71,23 +71,22 @@ interface DaemonDispatchLogContext {
     timeoutMs?: number;
 };
 
-const isResponseEnvelope = <T>(value: unknown): value is TeamClusterDaemonResponseEnvelope<T> => {
-    return isRecord(value) && value.status === 'success' && 'data' in value;
-};
-
 const isSemanticPayload = (value: unknown): value is TeamClusterDaemonSemanticPayload => {
     return isRecord(value);
 };
 
+/**
+ * The SDK's ReverseChannelBridge wraps every successful command response in
+ * `{status: 'success', data: result.data}` before sending it over the wire.
+ * Unwrap that inner envelope so callers see the raw result directly.
+ */
 const unwrapResponseEnvelopeData = (value: unknown): unknown => {
-    if (!isResponseEnvelope(value)) {
+    if (!isRecord(value) || value.status !== 'success' || !('data' in value)) {
         return value;
     }
 
-    return value.data;
+    return (value as unknown as TeamClusterDaemonResponseEnvelope<unknown>).data;
 };
-
-// TODO: THIS IS UGLY, VOLTSDK EXISTS FOR AVOID THIS
 
 const isDaemonErrorPayload = (value: unknown): value is DaemonErrorPayload => {
     return (

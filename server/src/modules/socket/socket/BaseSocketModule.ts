@@ -5,7 +5,7 @@ import { ISocketRoomManager, PresenceUser } from '@modules/socket/domain/port/IS
 import { ISocketEventRegistry, SocketEventHandler } from '@modules/socket/domain/port/ISocketEventRegistry';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import type { ErrorCode } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import {
     createSocketErrorEnvelope,
     createSocketErrorEnvelopeFromApplicationError,

@@ -4,7 +4,7 @@ import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 import type { INotificationRepository } from '@modules/notification/domain/port/INotificationRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type ApplicationError from '@shared/application/errors/ApplicationErrors';
+import type ApplicationError from '@shared/application/errors/ApplicationError';
 
 @injectable()
 export default class GetMyNotificationsUseCase

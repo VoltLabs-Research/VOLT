@@ -41,8 +41,10 @@ export default class TeamClusterHeartbeatMonitor {
     async runSweep(): Promise<void> {
         const heartbeatCutoff = new Date(Date.now() - TEAM_CLUSTER_HEARTBEAT_TIMEOUT_MS);
         const deleteCutoff = new Date(Date.now() - TEAM_CLUSTER_DELETE_TIMEOUT_MS);
-        await this.teamClusterLifecycleService.markHeartbeatTimeouts(heartbeatCutoff);
-        await this.teamClusterLifecycleService.finalizeDeletingClustersByEvidence(heartbeatCutoff);
-        await this.teamClusterLifecycleService.markDeletingTimeouts(deleteCutoff);
+        await Promise.all([
+            this.teamClusterLifecycleService.markHeartbeatTimeouts(heartbeatCutoff),
+            this.teamClusterLifecycleService.finalizeDeletingClustersByEvidence(heartbeatCutoff),
+            this.teamClusterLifecycleService.markDeletingTimeouts(deleteCutoff)
+        ]);
     }
 };

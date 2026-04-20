@@ -15,7 +15,6 @@ import TeamClusterQueueScopeLimitsService from './TeamClusterQueueScopeLimitsSer
 import logger from '@shared/infrastructure/logger';
 import { injectable, inject } from 'tsyringe';
 import { DelayedError, Queue, Worker } from 'bullmq';
-import type { Job } from 'bullmq';
 import { v4 as uuid } from 'uuid';
 import IORedis from 'ioredis';
 import type { JobStatusChangedValue } from '@modules/jobs/domain/events/JobStatusChangedEvent';
@@ -82,12 +81,7 @@ export default class CompressionQueueService {
             connection,
             defaultJobOptions: {
                 removeOnComplete: { count: 500 },
-                removeOnFail: { count: 200 },
-                attempts: 2,
-                backoff: {
-                    type: 'exponential',
-                    delay: 1000
-                }
+                removeOnFail: { count: 200 }
             }
         });
 
@@ -182,19 +176,6 @@ export default class CompressionQueueService {
         this.worker.on('failed', async (job, error) => {
             if (!job) return;
             if (error instanceof DelayedError) return;
-            const terminalFailure = this.isTerminalFailure(job);
-
-            if (!terminalFailure) {
-                await this.runListenerStep('publish retrying compression status', async () => {
-                    await this.publishStatus(job.data.jobId, job.data.teamId, 'retrying', {
-                        trajectoryId: job.data.trajectoryId,
-                        trajectoryName: job.data.trajectoryName,
-                        timestep: job.data.timestep,
-                        error: error.message
-                    });
-                });
-                return;
-            }
 
             await this.runListenerStep('publish failed compression status', async () => {
                 await this.publishStatus(job.data.jobId, job.data.teamId, JobStatus.Failed, {
@@ -318,15 +299,6 @@ export default class CompressionQueueService {
                 successfulJobs
             );
         }
-    }
-
-    private isTerminalFailure(job: Job<CompressionJobData>): boolean {
-        return job.attemptsMade >= this.getAttemptLimit(job);
-    }
-
-    private getAttemptLimit(job: Job<CompressionJobData>): number {
-        const attempts = job.opts.attempts;
-        return typeof attempts === 'number' && Number.isFinite(attempts) && attempts > 0 ? attempts : 1;
     }
 
     private async runListenerStep(action: string, operation: () => Promise<void>): Promise<void> {

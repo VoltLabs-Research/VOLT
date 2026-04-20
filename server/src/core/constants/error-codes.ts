@@ -8,14 +8,8 @@ export const ErrorCodes = createErrorCodes({
     WORKER_TIMEOUT: 'Worker::Timeout',
     WORKER_EXIT_ERROR: 'Worker::ExitError',
     JOB_CANCELLED: 'Job::Cancelled',
-    RASTER_WORKER_DOWNLOAD_FAILED: 'Raster::Worker::DownloadFailed',
-    RASTER_WORKER_INPUT_NOT_FOUND: 'Raster::Worker::InputNotFound',
-    RASTER_WORKER_RENDER_FAILED: 'Raster::Worker::RenderFailed',
-    RASTER_WORKER_OUTPUT_INVALID: 'Raster::Worker::OutputInvalid',
-    RASTER_WORKER_UPLOAD_FAILED: 'Raster::Worker::UploadFailed',
 
     AUTH_UNAUTHORIZED: 'Auth::Unauthorized',
-    AUTH_CREDENTIALS_MISSING: 'Auth::Credentials::Missing',
     AUTH_CREDENTIALS_INVALID: 'Auth::Credentials::Invalid',
 
     AUTHENTICATION_REQUIRED: 'Authentication::Required',
@@ -32,6 +26,7 @@ export const ErrorCodes = createErrorCodes({
     TEAM_ID_REQUIRED: 'Team::IdRequired',
     TEAM_ACCESS_DENIED: 'Team::AccessDenied',
     TEAM_CLUSTER_NOT_FOUND: 'TeamCluster::NotFound',
+    TEAM_CLUSTER_DAEMON_STREAM_REQUEST_FAILED: 'TeamCluster::DaemonStreamRequestFailed',
     RBAC_INSUFFICIENT_PERMISSIONS: 'RBAC::InsufficientPermissions',
     TEAM_MEMBERSHIP_FORBIDDEN: 'Team::Membership::Forbidden',
     TEAM_USER_NOT_MEMBER: 'Team::UserNotAMember',
@@ -168,6 +163,7 @@ export const ErrorCodes = createErrorCodes({
     SCRIPTING_SESSION_FAILED: 'Scripting::Session::Failed',
     SCRIPTING_DAEMON_UNAVAILABLE: 'Scripting::Daemon::Unavailable',
     SCRIPTING_NOTEBOOK_NOT_FOUND: 'Scripting::Notebook::NotFound',
+    SCRIPTING_PENDING_NOTEBOOK_NOT_FOUND: 'Scripting::PendingNotebookNotFound',
     SCRIPTING_LOCK_FAILED: 'Scripting::Lock::Failed',
 
     TEAM_INVITE_CODE_NOT_FOUND: 'TeamInviteCode::NotFound',

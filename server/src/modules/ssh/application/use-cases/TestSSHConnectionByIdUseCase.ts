@@ -5,7 +5,7 @@ import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
 import { TestSSHConnectionByIdInputDTO, TestSSHConnectionByIdOutputDTO } from '@modules/ssh/application/dtos/TestSSHConnectionByIdDTO';
 import { SSHConnectionOwnershipService } from '@modules/ssh/application/services/SSHConnectionOwnershipService';
 import { ISSHConnectionService } from '@modules/ssh/domain/port/ISSHConnectionService';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { resolveSSHServiceError } from '@modules/ssh/application/utils/ssh-error-utils';
 import { ErrorCodes } from '@core/constants/error-codes';
 

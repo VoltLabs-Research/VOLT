@@ -1,7 +1,7 @@
 import { USER_POPULATE, LAST_EDITED_BY_POPULATE } from '@shared/application/PopulatePresets';
 import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
 import type { ListLatexDocumentsInputDTO, ListLatexDocumentsOutputDTO } from '@modules/latex/application/dtos/ListLatexDocumentsDTO';
 import type { IUseCase } from '@shared/application/IUseCase';

@@ -1,4 +1,4 @@
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 
 import type TeamCluster from '@modules/team-cluster/domain/entities/TeamCluster';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';

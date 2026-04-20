@@ -8,7 +8,7 @@ import type {
 } from '@modules/simulation-cell/application/dtos/GetSimulationCellByTrajectoryDTO';
 import type { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
 import type { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
-import type ApplicationError from '@shared/application/errors/ApplicationErrors';
+import type ApplicationError from '@shared/application/errors/ApplicationError';
 
 @injectable()
 export default class GetSimulationCellByTrajectoryUseCase {

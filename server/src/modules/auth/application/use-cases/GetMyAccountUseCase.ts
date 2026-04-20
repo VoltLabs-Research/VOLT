@@ -1,6 +1,6 @@
 import { GetMyAccountInputDTO, GetMyAccountOutputDTO } from '@modules/auth/application/dtos/GetMyAccountDTO';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';

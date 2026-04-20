@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Download, Eye, FlaskConical, Atom, Minus, MousePointerClick, Plus, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Download, FlaskConical, Atom, MousePointerClick, Trash2 } from 'lucide-react';
 import {
     DEFAULT_DISLOCATION_LINE_WIDTH,
     buildPluginScene,
@@ -7,10 +7,23 @@ import {
 import { isSameScene } from '@/modules/canvas/utilities/scene-identity';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import { Exporter } from '@/modules/plugin/api/entities/plugin/workflow-enums';
-import CanvasSlider from '../../atoms/CanvasSlider';
+import {
+    AnalysisStatusDot,
+    AnalysisTreeRetryRow,
+    CanvasTreeEmptyRow,
+    CanvasTreeRow,
+    CanvasTreeSkeletonRows,
+    MaybeContextMenu
+} from '../../atoms/CanvasTree';
+import {
+    buildAddRemoveOption,
+    buildLineWidthSubmenu,
+    buildTransparencySubmenu,
+    lineSettingsOption,
+    transparencyOption
+} from '../../../utilities/tree-menus';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
-import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, normalizeCanvasAnalysisStatus } from '../../../utilities/analysis-status';
 import { useMemo } from 'react';
@@ -19,13 +32,12 @@ import type { AnalysisSectionData } from '../../../hooks/use-canvas-sidebar-scen
 import type { CanvasAnalysisStatus } from '../../../utilities/analysis-status';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { SceneObjectType, SceneRenderMetadata, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
-import type { RenderableExposure } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import type { RasterSelectableScene } from '@/modules/raster/types/container-selection';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 
 interface AnalysisTreeNodeProps {
     section: AnalysisSectionData;
-    effectiveStatus?: CanvasAnalysisStatus;
+    status?: CanvasAnalysisStatus;
     isExpanded: boolean;
     onToggle: (id: string) => void;
     onSelectScene: (scene: SceneObjectType, analysis?: Analysis) => void;
@@ -41,6 +53,7 @@ interface AnalysisTreeNodeProps {
         trajectoryId?: string;
         exposureName?: string;
     }) => void;
+    onRetryLoadExposures?: (analysisId: string) => void;
     sceneVisualOverrides: SceneVisualOverrides;
     setSceneOpacity: (sceneKey: string, opacity: number) => void;
     setSceneLineWidth: (sceneKey: string, lineWidth: number) => void;
@@ -56,7 +69,7 @@ const SCENE_ICON_COLOR = 'var(--accent-blue)';
 
 const AnalysisTreeNode = ({
     section,
-    effectiveStatus,
+    status,
     isExpanded,
     onToggle,
     onSelectScene,
@@ -66,6 +79,7 @@ const AnalysisTreeNode = ({
     onDeleteAnalysis,
     onDownloadAnalysis,
     onDownloadExposureListing,
+    onRetryLoadExposures,
     sceneVisualOverrides,
     setSceneOpacity,
     setSceneLineWidth,
@@ -77,18 +91,15 @@ const AnalysisTreeNode = ({
     const { analysis, pluginDisplayName, entry, isCurrentAnalysis, userConfig } = section;
     const isRasterSelectionMode = selectionMode === 'raster';
     const hasExposures = entry.state === 'loaded' && entry.exposures.length > 0;
-    const isLoading = entry.state === 'loading';
     const fallbackStatus = normalizeCanvasAnalysisStatus(analysis.status);
-    const resolvedStatus = effectiveStatus ?? fallbackStatus;
+    const resolvedStatus = status ?? fallbackStatus;
     const isAnalysisInProgress = isCanvasAnalysisInProgress(resolvedStatus);
     const canDownloadAnalysis = resolvedStatus === CanvasAnalysisStatusEnum.Completed;
     const isSelectedAnalysis = isRasterSelectionMode
         ? selectedScene?.source === 'plugin' && 'analysisId' in selectedScene && selectedScene.analysisId === analysis._id
         : isCurrentAnalysis;
 
-    const formattedUserConfig = useMemo(() => {
-        return JSON.stringify(userConfig ?? {}, null, 2);
-    }, [userConfig]);
+    const formattedUserConfig = useMemo(() => JSON.stringify(userConfig ?? {}, null, 2), [userConfig]);
 
     const tooltipContent = useMemo(() => {
         const hasConfig = formattedUserConfig !== '{}';
@@ -112,9 +123,7 @@ const AnalysisTreeNode = ({
     }, [formattedUserConfig, isAnalysisInProgress]);
 
     const handleSelectAnalysis = () => {
-        if (isAnalysisInProgress) {
-            return;
-        }
+        if (isAnalysisInProgress) return;
 
         if (isRasterSelectionMode) {
             onToggle(analysis._id);
@@ -130,27 +139,12 @@ const AnalysisTreeNode = ({
     };
 
     const analysisMenuOptions: MenuOption[] = [
-        {
-            label: isSelectedAnalysis ? 'Deselect' : 'Select',
-            icon: MousePointerClick,
-            onClick: handleSelectAnalysis,
-            disabled: isAnalysisInProgress
-        },
-        {
-            label: 'Download',
-            icon: Download,
-            onClick: () => onDownloadAnalysis(analysis._id),
-            disabled: !canDownloadAnalysis
-        },
-        {
-            label: 'Delete',
-            icon: Trash2,
-            onClick: () => onDeleteAnalysis(analysis._id),
-            destructive: true
-        }
+        { label: isSelectedAnalysis ? 'Deselect' : 'Select', icon: MousePointerClick, onClick: handleSelectAnalysis, disabled: isAnalysisInProgress },
+        { label: 'Download', icon: Download, onClick: () => onDownloadAnalysis(analysis._id), disabled: !canDownloadAnalysis },
+        { label: 'Delete', icon: Trash2, onClick: () => onDeleteAnalysis(analysis._id), destructive: true }
     ];
 
-    const analysisTrigger = (
+    const analysisRow = (
         <Container
             className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary u-select-none canvas-tree-item--indent ${isSelectedAnalysis ? 'selected' : ''} ${isAnalysisInProgress ? 'is-disabled' : 'cursor-pointer'}`}
             onClick={handleSelectAnalysis}
@@ -179,44 +173,39 @@ const AnalysisTreeNode = ({
                 }
             </Button>
             <FlaskConical style={{ width: 13, height: 13, color: isSelectedAnalysis ? ANALYSIS_ICON_ACTIVE_COLOR : ANALYSIS_ICON_COLOR }} />
-            <span className={`${isSelectedAnalysis ? 'color-primary' : 'color-secondary'}`}>
+            <span className={isSelectedAnalysis ? 'color-primary' : 'color-secondary'}>
                 {pluginDisplayName}
             </span>
             <span className="flex-1" />
-            {resolvedStatus && (
-                <span className={`canvas-tree-status-dot canvas-tree-status-dot--${resolvedStatus} font-size-05`}>
-                    ●
-                </span>
-            )}
+            <AnalysisStatusDot status={resolvedStatus} />
         </Container>
     );
 
-    const analysisTriggerWithTooltip = (
+    const analysisTrigger = (
         <Tooltip content={tooltipContent} disabled={!tooltipContent} placement='right-start' className='canvas-tree-config-tooltip'>
-            {analysisTrigger}
+            {analysisRow}
         </Tooltip>
-    );
-
-    const analysisTriggerWithContextMenu = isRasterSelectionMode ? analysisTriggerWithTooltip : (
-        <ContextMenuPopover
-            id={`canvas-ctx-analysis-${analysis._id}`}
-            trigger={<Container>{analysisTriggerWithTooltip}</Container>}
-            options={analysisMenuOptions}
-            size='sm'
-        />
     );
 
     return (
         <>
-            {analysisTriggerWithContextMenu}
+            <MaybeContextMenu
+                enabled={!isRasterSelectionMode}
+                id={`canvas-ctx-analysis-${analysis._id}`}
+                options={analysisMenuOptions}
+            >
+                {analysisTrigger}
+            </MaybeContextMenu>
 
-            {isExpanded && isLoading && (
-                <Container className="canvas-tree-item d-flex items-center gap-05 color-secondary canvas-tree-item--indent-lg">
-                    <Container className="canvas-tree-skeleton canvas-tree-skeleton--compact" />
-                </Container>
+            {isExpanded && entry.state === 'loading' && (
+                <CanvasTreeSkeletonRows count={1} compact indent='lg' />
             )}
 
-            {isExpanded && hasExposures && entry.exposures.map((exposure: RenderableExposure) => {
+            {isExpanded && entry.state === 'error' && onRetryLoadExposures && (
+                <AnalysisTreeRetryRow onRetry={() => onRetryLoadExposures(analysis._id)} />
+            )}
+
+            {isExpanded && hasExposures && entry.exposures.map((exposure) => {
                 const sceneRenderMetadata = buildSceneRenderMetadata(exposure.export)
                     ?? resolveSceneRenderMetadata?.(section.pluginId, exposure.exposureId);
                 const scene = buildPluginScene({
@@ -234,49 +223,12 @@ const AnalysisTreeNode = ({
                 const defaultLineWidth = sceneRenderMetadata?.defaultLineWidth ?? DEFAULT_DISLOCATION_LINE_WIDTH;
                 const currentLineWidth = sceneOverride?.lineWidth ?? defaultLineWidth;
 
-                const transparencySubmenu = (
-                    <div className="context-menu-transparency">
-                        <span className="context-menu-transparency__label">Transparency</span>
-                        <CanvasSlider
-                            ariaLabel={`Adjust ${exposure.name} transparency`}
-                            min={0}
-                            max={1}
-                            step={0.01}
-                            value={currentOpacity}
-                            onChange={(value: number) => setSceneOpacity(sceneKey, value)}
-                            ariaValueText={`${Math.round(currentOpacity * 100)}% opacity`}
-                        />
-                    </div>
-                );
-                const lineSettingsSubmenu = isDislocationExposure ? (
-                    <div className="context-menu-transparency">
-                        <span className="context-menu-transparency__label">Line Width</span>
-                        <CanvasSlider
-                            ariaLabel={`Adjust ${exposure.name} line width`}
-                            min={Math.max(0.01, defaultLineWidth * 0.25)}
-                            max={Math.max(defaultLineWidth * 3, defaultLineWidth + 0.25)}
-                            step={Math.max(0.01, defaultLineWidth * 0.05)}
-                            value={currentLineWidth}
-                            onChange={(value: number) => setSceneLineWidth(sceneKey, value)}
-                            ariaValueText={`${currentLineWidth.toFixed(2)} line width`}
-                        />
-                    </div>
-                ) : null;
-
                 const exposureMenuOptions: MenuOption[] = [
-                    ...(isActive
-                        ? [{
-                            label: 'Remove from scene',
-                            icon: Minus,
-                            destructive: true,
-                            onClick: () => onRemoveScene(scene)
-                        }]
-                        : [{
-                            label: 'Add to scene',
-                            icon: Plus,
-                            onClick: () => onAddScene(scene)
-                        }]
-                    ),
+                    buildAddRemoveOption({
+                        isActive,
+                        onAdd: () => onAddScene(scene),
+                        onRemove: () => onRemoveScene(scene)
+                    }),
                     {
                         label: 'Download',
                         icon: Download,
@@ -289,64 +241,42 @@ const AnalysisTreeNode = ({
                             });
                         }
                     },
-                    {
-                        label: 'Transparency',
-                        icon: Eye,
-                        submenuContent: transparencySubmenu
-                    },
-                    ...(lineSettingsSubmenu ? [{
-                        label: 'Line Settings',
-                        icon: SlidersHorizontal,
-                        submenuContent: lineSettingsSubmenu
-                    }] : [])
+                    transparencyOption(buildTransparencySubmenu(exposure.name, currentOpacity, (value) => setSceneOpacity(sceneKey, value))),
+                    ...(isDislocationExposure
+                        ? [lineSettingsOption(buildLineWidthSubmenu(exposure.name, currentLineWidth, defaultLineWidth, (value) => setSceneLineWidth(sceneKey, value)))]
+                        : [])
                 ];
 
                 const exposureTrigger = (
-                    <button
-                        className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary cursor-pointer u-select-none canvas-tree-item--indent-lg ${isActive ? 'selected' : ''}`}
+                    <CanvasTreeRow
+                        indent='lg'
+                        isActive={isActive}
+                        icon={<Atom style={{ width: 12, height: 12, color: SCENE_ICON_COLOR }} />}
+                        label={exposure.name}
                         onClick={() => {
                             if (isRasterSelectionMode) {
                                 onSelectRasterScene?.(scene, exposure.name);
                                 return;
                             }
-
                             onSelectScene(scene, analysis);
                         }}
-                        role="treeitem"
-                        aria-selected={isActive}
-                        type="button"
-                    >
-                        <span className="canvas-tree-spacer" />
-                        <Atom style={{ width: 12, height: 12, color: SCENE_ICON_COLOR }} />
-                        <span className={`${isActive ? 'color-primary' : 'color-secondary'}`}>
-                            {exposure.name}
-                        </span>
-                    </button>
+                    />
                 );
 
-                if (isRasterSelectionMode) {
-                    return (
-                        <Container key={exposure.exposureId}>
-                            {exposureTrigger}
-                        </Container>
-                    );
-                }
-
                 return (
-                    <ContextMenuPopover
+                    <MaybeContextMenu
                         key={exposure.exposureId}
+                        enabled={!isRasterSelectionMode}
                         id={`canvas-ctx-exposure-${exposure.analysisId}-${exposure.exposureId}`}
-                        trigger={exposureTrigger}
                         options={exposureMenuOptions}
-                        size='sm'
-                    />
+                    >
+                        {exposureTrigger}
+                    </MaybeContextMenu>
                 );
             })}
 
             {isExpanded && entry.state === 'loaded' && entry.exposures.length === 0 && (
-                <Container className="canvas-tree-item d-flex items-center gap-05 color-secondary canvas-tree-item--indent-lg">
-                    <span className="color-muted font-size-1">No models</span>
-                </Container>
+                <CanvasTreeEmptyRow label='No models' indent='lg' />
             )}
         </>
     );

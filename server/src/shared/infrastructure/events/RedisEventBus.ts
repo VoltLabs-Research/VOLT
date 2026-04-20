@@ -71,22 +71,30 @@ export default class RedisEventBus implements IEventBus{
 
     private initializeSubscriberListener(): void{
         this.subscriber.on('message', async (channel, message) => {
-            const handlers = this.handlers.get(channel)!;
+            const handlers = this.handlers.get(channel);
+            if (!handlers || handlers.length === 0) return;
 
+            // Snapshot to avoid iterating a list that could be mutated
+            // concurrently by a subscribe() call arriving mid-dispatch.
+            const snapshot = handlers.slice();
+
+            let eventData: unknown;
             try{
-                const eventData = JSON.parse(message);
-                const results = await Promise.allSettled(handlers.map((handler) => handler.handle(eventData)));
-                for(let i = 0; i < results.length; i++){
-                    const result = results[i];
-                    if(result.status === 'rejected'){
-                        logger.error(
-                            result.reason,
-                            `@redis-event-bus: handler[${i}] for channel "${channel}" rejected`
-                        );
-                    }
-                }
+                eventData = JSON.parse(message);
             }catch(error){
-                logger.error(`@redis-event-bus: error processing message on channel ${channel}: ${error}`);
+                logger.error(`@redis-event-bus: error parsing message on channel ${channel}: ${error}`);
+                return;
+            }
+
+            const results = await Promise.allSettled(snapshot.map((handler) => handler.handle(eventData as IDomainEvent)));
+            for(let i = 0; i < results.length; i++){
+                const result = results[i];
+                if(result.status === 'rejected'){
+                    logger.error(
+                        result.reason,
+                        `@redis-event-bus: handler[${i}] for channel "${channel}" rejected`
+                    );
+                }
             }
         });
     }

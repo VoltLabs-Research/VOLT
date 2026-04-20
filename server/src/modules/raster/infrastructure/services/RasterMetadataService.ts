@@ -7,7 +7,7 @@ import {
 } from '@modules/team-cluster/application/utilities/cluster-location';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 import { parseAnalysisRasterFrameKey, parseRasterTimestep } from '@modules/raster/utilities/raster-storage-paths';

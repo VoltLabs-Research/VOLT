@@ -1,16 +1,25 @@
 import { isArtifactSceneActive, toSceneObjectFromArtifact } from '@/modules/canvas/utilities/scene-identity';
-import CanvasSlider from '../../atoms/CanvasSlider';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import useAnalysisStatus from '../../../hooks/use-analysis-status';
 import useCanvasSidebarState from '../../../hooks/use-canvas-sidebar-state';
 import useSceneArtifacts from '../../../hooks/use-scene-artifacts';
 import SceneCollection from '../../molecules/SceneCollection';
+import {
+    CanvasTreeEmptyRow,
+    CanvasTreeRow,
+    MaybeContextMenu
+} from '../../atoms/CanvasTree';
+import {
+    buildAddRemoveOption,
+    buildTransparencySubmenu,
+    transparencyOption
+} from '../../../utilities/tree-menus';
 
-import { ChevronDown, ChevronRight, Eye, Filter, Layers, Minus, Palette, Plus } from 'lucide-react';
+import { ChevronDown, ChevronRight, Filter, Layers, Palette } from 'lucide-react';
+import type { ComponentProps, ComponentType, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import Container from '@/shared/presentation/components/Container';
-import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { CanvasWorkspace } from '@/modules/canvas/hooks/use-canvas-url-state';
 import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
@@ -48,15 +57,22 @@ const PARTICLE_FILTER_ACTION_LABELS = {
     highlight: 'Color Selection'
 } as const;
 
+const COLLAPSIBLE_PRESET = {
+    className: 'canvas-right-dropdown',
+    headerClassName: 'canvas-right-dropdown-header d-flex items-center gap-05',
+    titleClassName: 'canvas-right-dropdown-title font-size-05 color-muted',
+    iconClassName: 'canvas-right-dropdown-icon',
+    bodyClassName: 'canvas-right-dropdown-body',
+    contentClassName: 'd-flex column',
+    noSpacing: true,
+    arrowSize: 13,
+    useDefaultHeaderStyles: false,
+    useDefaultTitleStyles: false
+} as const;
+
 const formatArtifactValue = (value: unknown): string => {
-    if (typeof value !== 'number' || Number.isNaN(value)) {
-        return String(value ?? '');
-    }
-
-    if (Number.isInteger(value)) {
-        return String(value);
-    }
-
+    if (typeof value !== 'number' || Number.isNaN(value)) return String(value ?? '');
+    if (Number.isInteger(value)) return String(value);
     return String(Number(value.toFixed(3)));
 };
 
@@ -64,7 +80,6 @@ const formatParticleFilterConditionLabel = (condition: SceneArtifactParticleFilt
     if (typeof condition.property !== 'string' || typeof condition.operator !== 'string' || condition.value === undefined) {
         return '';
     }
-
     return `${condition.property} ${condition.operator} ${formatArtifactValue(condition.value)}`;
 };
 
@@ -74,9 +89,7 @@ const formatParticleFilterArtifactLabel = (artifact: SceneArtifact): string => {
         ? formatParticleFilterConditionLabel(params.conditions[0])
         : formatParticleFilterConditionLabel(params);
 
-    if (!baseCondition) {
-        return displayName;
-    }
+    if (!baseCondition) return displayName;
 
     const extraConditions = Array.isArray(params.conditions) && params.conditions.length > 1
         ? `+${params.conditions.length - 1} more`
@@ -104,16 +117,34 @@ const formatColorCodingArtifactLabel = (artifact: SceneArtifact): string => {
 };
 
 const formatArtifactLabel = (artifact: SceneArtifact): string => {
-    if (artifact.sourceType === 'particle-filter') {
-        return formatParticleFilterArtifactLabel(artifact);
-    }
-
-    if (artifact.sourceType === 'color-coding') {
-        return formatColorCodingArtifactLabel(artifact);
-    }
-
+    if (artifact.sourceType === 'particle-filter') return formatParticleFilterArtifactLabel(artifact);
+    if (artifact.sourceType === 'color-coding') return formatColorCodingArtifactLabel(artifact);
     return artifact.displayName;
 };
+
+interface RightCollapsibleProps {
+    title: string;
+    icon?: ReactNode;
+    expanded: boolean;
+    onExpandedChange: (next: boolean) => void;
+    headerAction?: ReactNode;
+    children: ReactNode;
+    extraClassName?: string;
+}
+
+const RightCollapsible = ({ title, icon, expanded, onExpandedChange, headerAction, children, extraClassName }: RightCollapsibleProps) => (
+    <CollapsibleSection
+        {...COLLAPSIBLE_PRESET}
+        className={`${COLLAPSIBLE_PRESET.className} ${extraClassName ?? ''}`}
+        title={title}
+        icon={icon}
+        expanded={expanded}
+        onExpandedChange={onExpandedChange}
+        headerAction={headerAction}
+    >
+        {children}
+    </CollapsibleSection>
+);
 
 const ObjectsPanel = ({
     trajectory,
@@ -145,6 +176,7 @@ const ObjectsPanel = ({
         addScene,
         removeScene,
         onDeleteAnalysis,
+        onRetryLoadExposures,
         sceneCollectionTotalAnalyses,
         selectedTimestepTotalAnalyses,
         hasSelectedTimestepAnalyses
@@ -194,9 +226,7 @@ const ObjectsPanel = ({
             return;
         }
 
-        setExpandedParticleFilterTimesteps((current) => {
-            return new Set([...current].filter((timestep) => particleFilterTimesteps.includes(timestep)));
-        });
+        setExpandedParticleFilterTimesteps((current) => new Set([...current].filter((t) => particleFilterTimesteps.includes(t))));
     }, [particleFilterTimesteps]);
 
     useEffect(() => {
@@ -205,48 +235,62 @@ const ObjectsPanel = ({
             return;
         }
 
-        setExpandedColorCodingTimesteps((current) => {
-            return new Set([...current].filter((timestep) => colorCodingTimesteps.includes(timestep)));
-        });
+        setExpandedColorCodingTimesteps((current) => new Set([...current].filter((t) => colorCodingTimesteps.includes(t))));
     }, [colorCodingTimesteps]);
 
     const handleSelectRasterScene = useCallback((scene: RasterSelectableScene, label: string) => {
-        if (!onUpdateRasterContainerSelection) {
-            return;
-        }
-
+        if (!onUpdateRasterContainerSelection) return;
         const model = scene.source === 'plugin' ? scene.exposureId : undefined;
-
-        onUpdateRasterContainerSelection(activeRasterContainerId, {
-            scene,
-            label,
-            model
-        });
+        onUpdateRasterContainerSelection(activeRasterContainerId, { scene, label, model });
     }, [activeRasterContainerId, onUpdateRasterContainerSelection]);
+
+    const sharedSceneCollectionProps: Partial<ComponentProps<typeof SceneCollection>> = useMemo(() => ({
+        expandedSections,
+        toggleSection,
+        showSectionsSkeleton,
+        activeScene,
+        onSelectScene,
+        isSceneInActiveScenes,
+        addScene,
+        removeScene,
+        statusMap,
+        onDeleteAnalysis,
+        onDownloadAnalysis: onDownloadAnalysis ?? (() => undefined),
+        onDownloadExposureListing,
+        onRetryLoadExposures,
+        sceneVisualOverrides,
+        setSceneOpacity,
+        setSceneLineWidth
+    }), [
+        activeScene,
+        addScene,
+        expandedSections,
+        isSceneInActiveScenes,
+        onDeleteAnalysis,
+        onDownloadAnalysis,
+        onDownloadExposureListing,
+        onRetryLoadExposures,
+        onSelectScene,
+        removeScene,
+        sceneVisualOverrides,
+        setSceneLineWidth,
+        setSceneOpacity,
+        showSectionsSkeleton,
+        statusMap,
+        toggleSection
+    ]);
 
     const renderRasterContainerPanel = useCallback((selection: RasterContainerSelection) => {
         const isActive = selection.id === activeRasterContainerId;
 
         return (
-            <CollapsibleSection
+            <RightCollapsible
                 key={selection.id}
                 title={selection.title}
                 icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
                 expanded={isActive}
-                onExpandedChange={(next) => {
-                    if (next) {
-                        onSetActiveRasterContainer?.(selection.id);
-                    }
-                }}
-                className={`canvas-right-dropdown ${isActive ? 'canvas-raster-container-panel--active' : ''}`}
-                headerClassName="canvas-right-dropdown-header d-flex items-center gap-05"
-                titleClassName="canvas-right-dropdown-title font-size-05 color-muted"
-                iconClassName="canvas-right-dropdown-icon"
-                bodyClassName="canvas-right-dropdown-body"
-                contentClassName="d-flex column"
-                noSpacing
-                useDefaultHeaderStyles={false}
-                useDefaultTitleStyles={false}
+                onExpandedChange={(next) => { if (next) onSetActiveRasterContainer?.(selection.id); }}
+                extraClassName={isActive ? 'canvas-raster-container-panel--active' : ''}
                 headerAction={(
                     <button
                         type="button"
@@ -259,54 +303,26 @@ const ObjectsPanel = ({
             >
                 {isActive && (
                     <SceneCollection
+                        {...(sharedSceneCollectionProps as ComponentProps<typeof SceneCollection>)}
                         filteredSections={sceneCollectionSections}
-                        expandedSections={expandedSections}
-                        toggleSection={toggleSection}
-                        showSectionsSkeleton={showSectionsSkeleton}
-                        activeScene={activeScene}
-                        onSelectScene={onSelectScene}
-                        isSceneInActiveScenes={isSceneInActiveScenes}
-                        addScene={addScene}
-                        removeScene={removeScene}
                         totalAnalyses={sceneCollectionTotalAnalyses}
-                        statusMap={statusMap}
-                        onDeleteAnalysis={onDeleteAnalysis}
-                        onDownloadAnalysis={onDownloadAnalysis ?? (() => undefined)}
-                        onDownloadExposureListing={onDownloadExposureListing}
                         showSimulationCell={showSimulationCell}
                         onToggleSimulationCell={handleToggleSimulationCell}
-                        sceneVisualOverrides={sceneVisualOverrides}
-                        setSceneOpacity={setSceneOpacity}
-                        setSceneLineWidth={setSceneLineWidth}
                         selectionMode="raster"
                         selectedScene={selection.scene}
                         onSelectRasterScene={handleSelectRasterScene}
                     />
                 )}
-            </CollapsibleSection>
+            </RightCollapsible>
         );
     }, [
         activeRasterContainerId,
-        activeScene,
-        addScene,
-        expandedSections,
         handleSelectRasterScene,
-        isSceneInActiveScenes,
-        onDeleteAnalysis,
-        onDownloadAnalysis,
-        onDownloadExposureListing,
-        onSelectScene,
         onSetActiveRasterContainer,
-        removeScene,
         sceneCollectionSections,
         sceneCollectionTotalAnalyses,
-        sceneVisualOverrides,
-        setSceneLineWidth,
-        setSceneOpacity,
-        showSectionsSkeleton,
-        showSimulationCell,
-        statusMap,
-        toggleSection
+        sharedSceneCollectionProps,
+        showSimulationCell
     ]);
 
     const getArtifactMenuOptions = useCallback((artifact: SceneArtifact): MenuOption[] => {
@@ -318,150 +334,86 @@ const ObjectsPanel = ({
         const currentOpacity = sceneVisualOverrides[sceneKey]?.opacity ?? 1;
         const artifactLabel = formatArtifactLabel(artifact);
 
-        const options: MenuOption[] = [];
-
-        if (isActive) {
-            options.push({
-                label: 'Remove from scene',
-                icon: Minus,
-                destructive: true,
-                onClick: () => removeScene(scene)
-            });
-        } else {
-            options.push({
-                label: 'Add to scene',
-                icon: Plus,
-                onClick: () => {
-                    syncArtifactTimestep(artifact);
-                    addScene(scene);
-                }   
-            });
-        }
-
-        const transparencySubmenu = (
-            <div className="context-menu-transparency glass-bg">
-                <span className="context-menu-transparency__label">Transparency</span>
-                <CanvasSlider
-                    ariaLabel={`Adjust ${artifactLabel} transparency`}
-                    min={0}
-                    max={1}
-                    step={0.01}
-                    value={currentOpacity}
-                    onChange={(value: number) => setSceneOpacity(sceneKey, value)}
-                    ariaValueText={`${Math.round(currentOpacity * 100)}% opacity`}
-                />
-            </div>
-        );
-
-        options.push({
-            label: 'Transparency',
-            icon: Eye,
-            submenuContent: transparencySubmenu
-        });
-
-        return options;
+        return [
+            buildAddRemoveOption({
+                isActive,
+                onAdd: () => { syncArtifactTimestep(artifact); addScene(scene); },
+                onRemove: () => removeScene(scene)
+            }),
+            transparencyOption(buildTransparencySubmenu(artifactLabel, currentOpacity, (value) => setSceneOpacity(sceneKey, value)))
+        ];
     }, [isSceneInActiveScenes, sceneVisualOverrides, addScene, removeScene, setSceneOpacity, syncArtifactTimestep]);
 
-    const renderArtifactPlaceholder = useCallback((label: string) => {
-        return (
-            <Container className="canvas-tree-item canvas-tree-item--indent d-flex items-center gap-05 color-muted font-size-1">
-                <span className="canvas-tree-spacer" />
-                <span className="canvas-tree-item__text canvas-tree-item__text--muted">{label}</span>
-            </Container>
-        );
-    }, []);
-
-    const toggleParticleFilterTimestep = useCallback((timestep: number) => {
-        setExpandedParticleFilterTimesteps((current) => {
-            const next = new Set(current);
-
-            if (next.has(timestep)) {
-                next.delete(timestep);
-            } else {
-                next.add(timestep);
-            }
-
-            return next;
-        });
-    }, []);
-
-    const toggleColorCodingTimestep = useCallback((timestep: number) => {
-        setExpandedColorCodingTimesteps((current) => {
-            const next = new Set(current);
-
-            if (next.has(timestep)) {
-                next.delete(timestep);
-            } else {
-                next.add(timestep);
-            }
-
-            return next;
-        });
-    }, []);
-
-    const renderArtifactTreeItem = useCallback((artifact: SceneArtifact, icon: typeof Palette, menuIdPrefix: string, indentClassName: string = 'canvas-tree-item--indent') => {
+    const renderArtifactTreeItem = useCallback((
+        artifact: SceneArtifact,
+        Icon: ComponentType<{ style?: React.CSSProperties }>,
+        menuIdPrefix: string
+    ) => {
         const scene = toSceneObjectFromArtifact(artifact);
         const isActive = isArtifactSceneActive(activeScene, artifact);
         const artifactLabel = formatArtifactLabel(artifact);
-        const itemClassName = `canvas-tree-item ${indentClassName} font-size-1 d-flex items-center gap-05 color-secondary cursor-pointer u-select-none ${isActive ? 'selected' : ''}`;
-        const textClassName = `canvas-tree-item__text ${isActive ? 'color-primary' : 'color-secondary'}`;
-        const Icon = icon;
 
         const trigger = (
-            <button
-                className={itemClassName}
+            <CanvasTreeRow
+                indent='lg'
+                isActive={isActive}
+                icon={<Icon style={{ width: TREE_MODIFIER_ICON_SIZE, height: TREE_MODIFIER_ICON_SIZE, color: TREE_MODIFIER_ICON_COLOR }} />}
+                label={artifactLabel}
                 onClick={() => {
-                    if (!scene) {
-                        return;
-                    }
-
+                    if (!scene) return;
                     syncArtifactTimestep(artifact);
                     onSelectScene(scene);
                 }}
-                role="treeitem"
-                aria-selected={isActive}
-                type="button"
-                title={artifactLabel}
-            >
-                <span className="canvas-tree-spacer" />
-                <Icon style={{ width: TREE_MODIFIER_ICON_SIZE, height: TREE_MODIFIER_ICON_SIZE, color: TREE_MODIFIER_ICON_COLOR }} />
-                <span className={textClassName}>{artifactLabel}</span>
-            </button>
+            />
         );
 
         return (
-            <ContextMenuPopover
+            <MaybeContextMenu
                 key={artifact._id}
+                enabled={!!scene}
                 id={`${menuIdPrefix}-${artifact._id}`}
-                trigger={trigger}
                 options={getArtifactMenuOptions(artifact)}
-                size='sm'
-            />
+            >
+                {trigger}
+            </MaybeContextMenu>
         );
     }, [activeScene, getArtifactMenuOptions, onSelectScene, syncArtifactTimestep]);
 
-    const renderParticleFilterTreeSection = useCallback(() => {
-        if (sceneArtifactsLoading && particleFilterArtifacts.length === 0) {
-            return (
-                <Container className="canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label="Particle Filter hierarchy">
-                    {renderArtifactPlaceholder('Loading...')}
-                </Container>
-            );
-        }
+    const toggleTimestepSetter = (setter: React.Dispatch<React.SetStateAction<Set<number>>>) =>
+        (timestep: number) => setter((current) => {
+            const next = new Set(current);
+            if (next.has(timestep)) next.delete(timestep);
+            else next.add(timestep);
+            return next;
+        });
 
-        if (!sceneArtifactsLoading && particleFilterArtifacts.length === 0) {
+    const toggleParticleFilterTimestep = useCallback(toggleTimestepSetter(setExpandedParticleFilterTimesteps), []);
+    const toggleColorCodingTimestep = useCallback(toggleTimestepSetter(setExpandedColorCodingTimesteps), []);
+
+    const renderArtifactTreeSection = useCallback((params: {
+        artifacts: SceneArtifact[];
+        timesteps: number[];
+        expandedSet: Set<number>;
+        toggleTimestep: (timestep: number) => void;
+        icon: ComponentType<{ style?: React.CSSProperties }>;
+        menuIdPrefix: string;
+        ariaLabel: string;
+    }) => {
+        const { artifacts, timesteps, expandedSet, toggleTimestep, icon: Icon, menuIdPrefix, ariaLabel } = params;
+
+        if (artifacts.length === 0) {
             return (
-                <Container className="canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label="Particle Filter hierarchy">
-                    {renderArtifactPlaceholder('No models generated')}
+                <Container className="canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label={ariaLabel}>
+                    <CanvasTreeEmptyRow label={sceneArtifactsLoading ? 'Loading...' : 'No models generated'} />
                 </Container>
             );
         }
 
         return (
-            <Container className="canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label="Particle Filter hierarchy">
-                {particleFilterTimesteps.map((timestep) => {
-                    const timestepArtifacts = particleFilterArtifacts.filter((artifact) => artifact.timestep === timestep);
-                    const isExpanded = expandedParticleFilterTimesteps.has(timestep);
+            <Container className="canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label={ariaLabel}>
+                {timesteps.map((timestep) => {
+                    const timestepArtifacts = artifacts.filter((artifact) => artifact.timestep === timestep);
+                    const isExpanded = expandedSet.has(timestep);
                     const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
 
                     return (
@@ -469,205 +421,95 @@ const ObjectsPanel = ({
                             <button
                                 type="button"
                                 className="canvas-tree-group-header d-flex items-center gap-05"
-                                onClick={() => toggleParticleFilterTimestep(timestep)}
+                                onClick={() => toggleTimestep(timestep)}
                                 aria-expanded={isExpanded}
                             >
                                 <ChevronIcon className={`canvas-tree-group-chevron ${isExpanded ? '' : 'collapsed'}`} style={{ width: 13, height: 13 }} />
-                                <Filter style={{ width: TREE_MODIFIER_ICON_SIZE, height: TREE_MODIFIER_ICON_SIZE, color: TREE_MODIFIER_ICON_COLOR }} />
+                                <Icon style={{ width: TREE_MODIFIER_ICON_SIZE, height: TREE_MODIFIER_ICON_SIZE, color: TREE_MODIFIER_ICON_COLOR }} />
                                 <span className="canvas-tree-item__text">{timestep}</span>
                                 <span className="canvas-tree-group-count">{timestepArtifacts.length}</span>
                             </button>
 
-                            {isExpanded && timestepArtifacts.map((artifact) => renderArtifactTreeItem(
-                                artifact,
-                                Filter,
-                                'canvas-ctx-particle-filter',
-                                'canvas-tree-item--indent-lg'
-                            ))}
+                            {isExpanded && timestepArtifacts.map((artifact) => renderArtifactTreeItem(artifact, Icon, menuIdPrefix))}
                         </Container>
                     );
                 })}
             </Container>
         );
-    }, [expandedParticleFilterTimesteps, particleFilterArtifacts, particleFilterTimesteps, renderArtifactPlaceholder, renderArtifactTreeItem, sceneArtifactsLoading, toggleParticleFilterTimestep]);
-
-    const renderColorCodingTreeSection = useCallback(() => {
-        if (sceneArtifactsLoading && colorCodingArtifacts.length === 0) {
-            return (
-                <Container className="canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label="Color Coding hierarchy">
-                    {renderArtifactPlaceholder('Loading...')}
-                </Container>
-            );
-        }
-
-        if (!sceneArtifactsLoading && colorCodingArtifacts.length === 0) {
-            return (
-                <Container className="canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label="Color Coding hierarchy">
-                    {renderArtifactPlaceholder('No models generated')}
-                </Container>
-            );
-        }
-
-        return (
-            <Container className="canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label="Color Coding hierarchy">
-                {colorCodingTimesteps.map((timestep) => {
-                    const timestepArtifacts = colorCodingArtifacts.filter((artifact) => artifact.timestep === timestep);
-                    const isExpanded = expandedColorCodingTimesteps.has(timestep);
-                    const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
-
-                    return (
-                        <Container key={timestep} className="canvas-tree-group">
-                            <button
-                                type="button"
-                                className="canvas-tree-group-header d-flex items-center gap-05"
-                                onClick={() => toggleColorCodingTimestep(timestep)}
-                                aria-expanded={isExpanded}
-                            >
-                                <ChevronIcon className={`canvas-tree-group-chevron ${isExpanded ? '' : 'collapsed'}`} style={{ width: 13, height: 13 }} />
-                                <Palette style={{ width: TREE_MODIFIER_ICON_SIZE, height: TREE_MODIFIER_ICON_SIZE, color: TREE_MODIFIER_ICON_COLOR }} />
-                                <span className="canvas-tree-item__text">{timestep}</span>
-                                <span className="canvas-tree-group-count">{timestepArtifacts.length}</span>
-                            </button>
-
-                            {isExpanded && timestepArtifacts.map((artifact) => renderArtifactTreeItem(
-                                artifact,
-                                Palette,
-                                'canvas-ctx-color-coding',
-                                'canvas-tree-item--indent-lg'
-                            ))}
-                        </Container>
-                    );
-                })}
-            </Container>
-        );
-    }, [colorCodingArtifacts, colorCodingTimesteps, expandedColorCodingTimesteps, renderArtifactPlaceholder, renderArtifactTreeItem, sceneArtifactsLoading, toggleColorCodingTimestep]);
+    }, [renderArtifactTreeItem, sceneArtifactsLoading]);
 
     return (
         <Container className="canvas-objects-panel d-flex column min-h-0 overflow-auto">
-            <CollapsibleSection
+            <RightCollapsible
                 title="Scene Collection"
                 icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
                 expanded={sceneCollectionOpen}
                 onExpandedChange={setSceneCollectionOpen}
-                className="canvas-right-dropdown"
-                headerClassName="canvas-right-dropdown-header d-flex items-center gap-05"
-                titleClassName="canvas-right-dropdown-title font-size-05 color-muted"
-                iconClassName="canvas-right-dropdown-icon"
-                bodyClassName="canvas-right-dropdown-body"
-                contentClassName="d-flex column"
-                noSpacing
-                arrowSize={13}
-                useDefaultHeaderStyles={false}
-                useDefaultTitleStyles={false}
             >
-                {isRasterWorkspace
-                    ? (
-                        <Container className="canvas-raster-container-panels d-flex column gap-05">
-                            {rasterContainerSelections.map(renderRasterContainerPanel)}
-                        </Container>
-                    )
-                    : (
-                        <SceneCollection
-                            filteredSections={sceneCollectionSections}
-                            expandedSections={expandedSections}
-                            toggleSection={toggleSection}
-                            showSectionsSkeleton={showSectionsSkeleton}
-                            activeScene={activeScene}
-                            onSelectScene={onSelectScene}
-                            isSceneInActiveScenes={isSceneInActiveScenes}
-                            addScene={addScene}
-                            removeScene={removeScene}
-                            totalAnalyses={sceneCollectionTotalAnalyses}
-                            statusMap={statusMap}
-                            onDeleteAnalysis={onDeleteAnalysis}
-                            onDownloadAnalysis={onDownloadAnalysis ?? (() => undefined)}
-                            onDownloadExposureListing={onDownloadExposureListing}
-                            showSimulationCell={showSimulationCell}
-                            onToggleSimulationCell={handleToggleSimulationCell}
-                            sceneVisualOverrides={sceneVisualOverrides}
-                            setSceneOpacity={setSceneOpacity}
-                            setSceneLineWidth={setSceneLineWidth}
-                        />
-                    )}
-            </CollapsibleSection>
+                {isRasterWorkspace ? (
+                    <Container className="canvas-raster-container-panels d-flex column gap-05">
+                        {rasterContainerSelections.map(renderRasterContainerPanel)}
+                    </Container>
+                ) : (
+                    <SceneCollection
+                        {...(sharedSceneCollectionProps as ComponentProps<typeof SceneCollection>)}
+                        filteredSections={sceneCollectionSections}
+                        totalAnalyses={sceneCollectionTotalAnalyses}
+                        showSimulationCell={showSimulationCell}
+                        onToggleSimulationCell={handleToggleSimulationCell}
+                    />
+                )}
+            </RightCollapsible>
 
             {!isRasterWorkspace && hasSelectedTimestepAnalyses && (
-                <CollapsibleSection
+                <RightCollapsible
                     title="Timestep-scoped analyses"
                     icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
                     expanded={selectedTimestepAnalysisOpen}
                     onExpandedChange={setSelectedTimestepAnalysisOpen}
-                    className="canvas-right-dropdown"
-                    headerClassName="canvas-right-dropdown-header d-flex items-center gap-05"
-                    titleClassName="canvas-right-dropdown-title font-size-05 color-muted"
-                    iconClassName="canvas-right-dropdown-icon"
-                    bodyClassName="canvas-right-dropdown-body"
-                    contentClassName="d-flex column"
-                    noSpacing
-                    arrowSize={13}
-                    useDefaultHeaderStyles={false}
-                    useDefaultTitleStyles={false}
                 >
                     <SceneCollection
+                        {...(sharedSceneCollectionProps as ComponentProps<typeof SceneCollection>)}
                         filteredSections={selectedTimestepSections}
-                        expandedSections={expandedSections}
-                        toggleSection={toggleSection}
-                        showSectionsSkeleton={showSectionsSkeleton}
-                        activeScene={activeScene}
-                        onSelectScene={onSelectScene}
-                        isSceneInActiveScenes={isSceneInActiveScenes}
-                        addScene={addScene}
-                        removeScene={removeScene}
                         totalAnalyses={selectedTimestepTotalAnalyses}
-                        statusMap={statusMap}
-                        onDeleteAnalysis={onDeleteAnalysis}
-                        onDownloadAnalysis={onDownloadAnalysis ?? (() => undefined)}
-                        onDownloadExposureListing={onDownloadExposureListing}
                         showDefaultScene={false}
-                        sceneVisualOverrides={sceneVisualOverrides}
-                        setSceneOpacity={setSceneOpacity}
-                        setSceneLineWidth={setSceneLineWidth}
                     />
-                </CollapsibleSection>
+                </RightCollapsible>
             )}
 
-            <CollapsibleSection
+            <RightCollapsible
                 title="Color Coding"
                 icon={<Palette style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
                 expanded={colorCodingOpen}
                 onExpandedChange={setColorCodingOpen}
-                className="canvas-right-dropdown"
-                headerClassName="canvas-right-dropdown-header d-flex items-center gap-05"
-                titleClassName="canvas-right-dropdown-title font-size-05 color-muted"
-                iconClassName="canvas-right-dropdown-icon"
-                bodyClassName="canvas-right-dropdown-body"
-                contentClassName="d-flex column"
-                noSpacing
-                arrowSize={13}
-                useDefaultHeaderStyles={false}
-                useDefaultTitleStyles={false}
             >
-                {renderColorCodingTreeSection()}
-            </CollapsibleSection>
+                {renderArtifactTreeSection({
+                    artifacts: colorCodingArtifacts,
+                    timesteps: colorCodingTimesteps,
+                    expandedSet: expandedColorCodingTimesteps,
+                    toggleTimestep: toggleColorCodingTimestep,
+                    icon: Palette,
+                    menuIdPrefix: 'canvas-ctx-color-coding',
+                    ariaLabel: 'Color Coding hierarchy'
+                })}
+            </RightCollapsible>
 
-            <CollapsibleSection
+            <RightCollapsible
                 title="Particle Filter"
                 icon={<Filter style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
                 expanded={particleFilterOpen}
                 onExpandedChange={setParticleFilterOpen}
-                className="canvas-right-dropdown"
-                headerClassName="canvas-right-dropdown-header d-flex items-center gap-05"
-                titleClassName="canvas-right-dropdown-title font-size-05 color-muted"
-                iconClassName="canvas-right-dropdown-icon"
-                bodyClassName="canvas-right-dropdown-body"
-                contentClassName="d-flex column"
-                noSpacing
-                arrowSize={13}
-                useDefaultHeaderStyles={false}
-                useDefaultTitleStyles={false}
             >
-                {renderParticleFilterTreeSection()}
-            </CollapsibleSection>
+                {renderArtifactTreeSection({
+                    artifacts: particleFilterArtifacts,
+                    timesteps: particleFilterTimesteps,
+                    expandedSet: expandedParticleFilterTimesteps,
+                    toggleTimestep: toggleParticleFilterTimestep,
+                    icon: Filter,
+                    menuIdPrefix: 'canvas-ctx-particle-filter',
+                    ariaLabel: 'Particle Filter hierarchy'
+                })}
+            </RightCollapsible>
         </Container>
     );
 };

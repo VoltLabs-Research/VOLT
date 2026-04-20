@@ -2,7 +2,7 @@ import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { GetUserChatsInputDTO, GetUserChatsOutputDTO } from '@modules/chat/application/dtos/chat/GetUserChatsDTO';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
 import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
 

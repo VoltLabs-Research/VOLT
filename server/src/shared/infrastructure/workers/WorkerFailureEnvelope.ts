@@ -1,4 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import type { ErrorCode } from '@core/constants/error-codes';
 
@@ -16,27 +17,18 @@ interface WorkerFailureEnvelopeRecord {
     details?: unknown;
 };
 
-export interface NormalizeWorkerFailureEnvelopeOptions {
+interface ApplicationErrorFailureDetails {
+    failure?: unknown;
+};
+
+interface NormalizeWorkerFailureEnvelopeOptions {
     failure?: unknown;
     error?: unknown;
     fallbackCode?: ErrorCode;
     fallbackDetails?: string;
 };
 
-export interface CreateWorkerFailureMessageOptions {
-    jobId: string;
-    failure: WorkerFailureEnvelope;
-    metadata?: Record<string, unknown>;
-};
-
-export interface WorkerFailureMessage extends Record<string, unknown> {
-    status: 'failed';
-    jobId: string;
-    error: string;
-    failure: WorkerFailureEnvelope;
-};
-
-export const isErrorCode = (value: unknown): value is ErrorCode => {
+const isErrorCode = (value: unknown): value is ErrorCode => {
     if (typeof value !== 'string') {
         return false;
     }
@@ -64,6 +56,18 @@ const resolveStringDetails = (value: unknown): string | undefined => {
     }
 
     return normalizedValue;
+};
+
+const readApplicationErrorFailure = (error: ApplicationError): WorkerFailureEnvelope | undefined => {
+    const details = error.details as ApplicationErrorFailureDetails | undefined;
+    if (!isWorkerFailureEnvelopeRecord(details?.failure) || !isErrorCode(details.failure.code)) {
+        return undefined;
+    }
+
+    return createWorkerFailureEnvelope({
+        code: details.failure.code,
+        details: resolveStringDetails(details.failure.details)
+    });
 };
 
 export const createWorkerFailureEnvelope = (options?: WorkerFailureEnvelopeInput): WorkerFailureEnvelope => {
@@ -97,11 +101,21 @@ export const normalizeWorkerFailureEnvelope = (
         });
     }
 
-    if (options.error instanceof WorkerFailureError) {
-        return createWorkerFailureEnvelope({
-            code: options.error.failure.code,
-            details: options.error.failure.details || options.fallbackDetails
-        });
+    if (options.error instanceof ApplicationError) {
+        const applicationFailure = readApplicationErrorFailure(options.error);
+        if (applicationFailure) {
+            return createWorkerFailureEnvelope({
+                code: applicationFailure.code,
+                details: applicationFailure.details || options.fallbackDetails
+            });
+        }
+
+        if (isErrorCode(options.error.code)) {
+            return createWorkerFailureEnvelope({
+                code: options.error.code,
+                details: resolveStringDetails(options.error.message) || options.fallbackDetails
+            });
+        }
     }
 
     if (isWorkerFailureEnvelopeRecord(options.error) && isErrorCode(options.error.code)) {
@@ -139,26 +153,3 @@ export const normalizeWorkerFailureEnvelope = (
     });
 };
 
-export const createWorkerFailureMessage = (
-    options: CreateWorkerFailureMessageOptions
-): WorkerFailureMessage => {
-    const metadata = options.metadata || {};
-
-    return {
-        ...metadata,
-        status: 'failed',
-        jobId: options.jobId,
-        error: getWorkerFailureErrorMessage(options.failure),
-        failure: options.failure
-    };
-};
-
-export class WorkerFailureError extends Error {
-    public readonly failure: WorkerFailureEnvelope;
-
-    constructor(failure: WorkerFailureEnvelope) {
-        super(getWorkerFailureErrorMessage(failure));
-        this.name = 'WorkerFailureError';
-        this.failure = failure;
-    }
-};

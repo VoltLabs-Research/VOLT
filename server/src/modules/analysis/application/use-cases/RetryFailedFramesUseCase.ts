@@ -5,7 +5,7 @@ import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import TeamJobsService from '@modules/team/socket/team/TeamJobsService';
 import { Result } from '@shared/domain/port/Result';
 import { RetryFailedFramesInputDTO, RetryFailedFramesOutputDTO } from '@modules/analysis/application/dtos/RetryFailedFramesDTO';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';

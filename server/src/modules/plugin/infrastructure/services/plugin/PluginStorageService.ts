@@ -12,7 +12,7 @@ import WorkflowProjectionService from '@modules/plugin/utilities/plugin/Workflow
 
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IStorageService } from '@shared/domain/port/IStorageService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
@@ -143,6 +143,8 @@ export default class PluginStorageService implements IPluginStorageService {
             });
         }
 
+        const binaryHash = computeSha256(file.buffer);
+
         await this.binaryCacheService.evictByPluginId(pluginId);
         await this.storageService.upload(
             SYS_BUCKETS.PLUGINS,
@@ -151,14 +153,15 @@ export default class PluginStorageService implements IPluginStorageService {
             {
                 'Content-Type': file.mimetype || 'application/octet-stream',
                 'x-amz-meta-original-name': originalName,
-                'x-amz-meta-sha256': computeSha256(file.buffer)
+                'x-amz-meta-sha256': binaryHash
             }
         );
 
         plugin.props.workflow.updateEntrypoint({
             binary: originalName,
             binaryObjectPath: objectPath,
-            binaryFileName: originalName
+            binaryFileName: originalName,
+            binaryHash
         });
 
         await this.persistWorkflow(pluginId, plugin.props.workflow);
@@ -274,6 +277,7 @@ export default class PluginStorageService implements IPluginStorageService {
             const binaryBuffer = await binaryFile.buffer();
             const binaryFileName = path.basename(binaryFile.path);
             const binaryObjectPath = `plugin-binaries/${newPlugin._id}/${v4()}-${binaryFileName}`;
+            const binaryHash = computeSha256(binaryBuffer);
 
             await this.storageService.upload(
                 SYS_BUCKETS.PLUGINS,
@@ -282,14 +286,15 @@ export default class PluginStorageService implements IPluginStorageService {
                 {
                     'Content-Type': 'application/octet-stream',
                     'x-amz-meta-original-name': binaryFileName,
-                    'x-amz-meta-sha256': computeSha256(binaryBuffer)
+                    'x-amz-meta-sha256': binaryHash
                 }
             );
 
             newPlugin.props.workflow.updateEntrypoint({
                 binary: binaryFileName,
                 binaryObjectPath,
-                binaryFileName
+                binaryFileName,
+                binaryHash
             });
             
             await this.persistWorkflow(newPlugin._id, newPlugin.props.workflow);

@@ -5,7 +5,7 @@ import { ExecutePluginUseCase } from '@modules/plugin/application/use-cases/plug
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { CreateAnalysisInputDTO, CreateAnalysisOutputDTO } from '@modules/analysis/application/dtos/CreateAnalysisDTO';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';

@@ -8,7 +8,7 @@ import type { IContainerFolderRepository } from '@modules/container/domain/port/
 import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import { DeleteCatalogFolderUseCase } from '@shared/application/catalog/DeleteCatalogFolderUseCase';
-import type ApplicationError from '@shared/application/errors/ApplicationErrors';
+import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { inject, injectable } from 'tsyringe';
 

@@ -4,7 +4,7 @@ import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity'
 import { ErrorCodes } from '@core/constants/error-codes';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
 import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
 

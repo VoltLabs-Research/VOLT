@@ -8,6 +8,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { injectable, inject } from 'tsyringe';
 import logger from '@shared/infrastructure/logger';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ErrorCode } from '@core/constants/error-codes';
 import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
@@ -35,17 +36,6 @@ interface SSH2Connection {
     client: Client;
     sftp: SFTPWrapper;
 };
-
-class SSHServiceError extends Error {
-    constructor(
-        public readonly code: ErrorCode,
-        public readonly statusCode: number,
-        message: string
-    ) {
-        super(message);
-        this.name = 'SSHServiceError';
-    }
-}
 
 @injectable()
 export default class SSHConnectionService implements ISSHConnectionService {
@@ -177,9 +167,8 @@ export default class SSHConnectionService implements ISSHConnectionService {
         onProgress?: (progress: DownloadProgress) => void
     ): Promise<string[]> {
         if (remotePath === '/') {
-            throw new SSHServiceError(
+            throw ApplicationError.badRequest(
                 ErrorCodes.VALIDATION_INVALID_INPUT,
-                400,
                 'Refusing to download root directory'
             );
         }
@@ -284,7 +273,7 @@ export default class SSHConnectionService implements ISSHConnectionService {
                     }
                 },
                 shouldRetry: ({ error }) => {
-                    if (error instanceof SSHServiceError) {
+                    if (error instanceof ApplicationError) {
                         return false;
                     }
 
@@ -434,16 +423,16 @@ export default class SSHConnectionService implements ISSHConnectionService {
         return `'${value.replace(/'/g, `'\\''`)}'`;
     }
 
-    private normalizeServiceError(error: unknown, fallbackMessage: string): SSHServiceError {
-        if (error instanceof SSHServiceError) {
+    private normalizeServiceError(error: unknown, fallbackMessage: string): ApplicationError {
+        if (error instanceof ApplicationError) {
             return error;
         }
 
         if (this.isPathNotFoundError(error)) {
-            return new SSHServiceError(
+            return new ApplicationError(
                 ErrorCodes.SSH_PATH_NOT_FOUND,
-                404,
-                'SSH path not found'
+                'SSH path not found',
+                404
             );
         }
 
@@ -452,42 +441,42 @@ export default class SSHConnectionService implements ISSHConnectionService {
             const sshError = error as Error & { code?: unknown; level?: string };
 
             if (msg.includes('timed out') || msg.includes('timeout') || sshError.code === 'ETIMEDOUT') {
-                return new SSHServiceError(
+                return new ApplicationError(
                     ErrorCodes.SSH_CONNECTION_TIMEOUT,
-                    408,
-                    `SSH connection timed out: ${error.message}`
+                    `SSH connection timed out: ${error.message}`,
+                    408
                 );
             }
 
             if (msg.includes('authentication') || sshError.level === 'client-authentication') {
-                return new SSHServiceError(
+                return new ApplicationError(
                     ErrorCodes.SSH_AUTH_FAILED,
-                    401,
-                    `SSH authentication failed: ${error.message}`
+                    `SSH authentication failed: ${error.message}`,
+                    401
                 );
             }
 
             if (msg.includes('econnrefused') || sshError.code === 'ECONNREFUSED') {
-                return new SSHServiceError(
+                return new ApplicationError(
                     ErrorCodes.SSH_CONNECTION_REFUSED,
-                    502,
-                    `SSH connection refused: ${error.message}`
+                    `SSH connection refused: ${error.message}`,
+                    502
                 );
             }
 
             if (msg.includes('ehostunreach') || msg.includes('enetunreach') || sshError.code === 'EHOSTUNREACH' || sshError.code === 'ENETUNREACH') {
-                return new SSHServiceError(
+                return new ApplicationError(
                     ErrorCodes.SSH_HOST_UNREACHABLE,
-                    502,
-                    `SSH host unreachable: ${error.message}`
+                    `SSH host unreachable: ${error.message}`,
+                    502
                 );
             }
         }
 
-        return new SSHServiceError(
+        return new ApplicationError(
             ErrorCodes.INTERNAL_SERVER_ERROR,
-            500,
-            fallbackMessage
+            fallbackMessage,
+            500
         );
     }
 

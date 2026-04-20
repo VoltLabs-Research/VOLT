@@ -177,12 +177,28 @@ class SocketIOAdapter implements ISocketService {
     }
 
     updateAuth(auth: Record<string, unknown>): void {
-        this.options.auth = { ...auth };
+        const next = { ...auth };
+        const previous = (this.options.auth ?? {}) as Record<string, unknown>;
+        const unchanged = this.authEquals(previous, next);
 
-        if (this.socket?.connected) {
+        this.options.auth = next;
+
+        if (!this.socket) return;
+
+        (this.socket.auth as Record<string, unknown>) = next;
+
+        if (unchanged) return;
+
+        if (this.socket.connected) {
             this.disconnect();
             this.connect().catch(console.warn);
         }
+    }
+
+    private authEquals(a: Record<string, unknown>, b: Record<string, unknown>): boolean {
+        const keysA = Object.keys(a);
+        return keysA.length === Object.keys(b).length
+            && keysA.every((key) => Object.hasOwn(b, key) && Object.is(a[key], b[key]));
     }
 
     onConnectionChange(listener: (connected: boolean) => void): () => void {

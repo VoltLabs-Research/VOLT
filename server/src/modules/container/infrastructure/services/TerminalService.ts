@@ -4,7 +4,7 @@ import type { ContainerTerminalAttachment } from '@modules/container/domain/port
 import type { ITeamClusterContainerRuntimeService } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
 import { ContainerTerminalAttachContext, ContainerTerminalError, ContainerTerminalResizePayload, ITerminalClient, ITerminalService } from '@modules/container/domain/port/ITerminalService';
 import { ContainerOwnershipService } from '@modules/container/infrastructure/services/ContainerOwnershipService';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 

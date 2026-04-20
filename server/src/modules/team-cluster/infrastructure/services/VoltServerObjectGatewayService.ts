@@ -5,8 +5,9 @@ import {
     TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
     VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID
 } from '@shared/infrastructure/contracts/team-cluster';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { isStorageObjectNotFoundError } from '@shared/infrastructure/utilities/storage-errors';
 import { inject, injectable } from 'tsyringe';
 import type { IStorageService, FileMetadata } from '@shared/domain/port/IStorageService';
 import type { Readable } from 'node:stream';
@@ -23,22 +24,6 @@ interface ServerObjectHeadResponse {
 export interface ServerObjectStreamResponse extends ServerObjectHeadResponse {
     stream: Readable;
 }
-
-interface StorageObjectErrorLike {
-    code?: string;
-    statusCode?: number;
-}
-
-const isStorageObjectNotFoundError = (error: unknown): error is StorageObjectErrorLike => {
-    if (typeof error !== 'object' || error === null) {
-        return false;
-    }
-
-    const candidate = error as StorageObjectErrorLike;
-    return candidate.code === 'NotFound'
-        || candidate.code === 'NoSuchKey'
-        || candidate.statusCode === 404;
-};
 
 const normalizeObjectMetadata = (stat: FileMetadata): Record<string, string> => {
     return Object.fromEntries(

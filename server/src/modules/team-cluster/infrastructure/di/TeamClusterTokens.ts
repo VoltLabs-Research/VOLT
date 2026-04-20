@@ -8,8 +8,6 @@ export const TEAM_CLUSTER_TOKENS = Object.freeze({
     TeamClusterHeartbeatMonitor: Symbol.for('TeamClusterHeartbeatMonitor'),
     TeamClusterExposureRegistryService: Symbol.for('TeamClusterExposureRegistryService'),
     TeamClusterReverseChannelService: Symbol.for('TeamClusterReverseChannelService'),
-    TeamClusterBinaryRelayService: Symbol.for('TeamClusterBinaryRelayService'),
-    TeamClusterBinaryRelayUpgradeService: Symbol.for('TeamClusterBinaryRelayUpgradeService'),
     TeamClusterTcpExposureRelayService: Symbol.for('TeamClusterTcpExposureRelayService'),
     TeamClusterSocketModule: Symbol.for('TeamClusterSocketModule'),
     RemoteExplorerDaemonGateway: Symbol.for('RemoteExplorerDaemonGateway'),

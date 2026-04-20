@@ -1,6 +1,6 @@
 import { TeamClusterServiceExposureAccessMode } from '@modules/team-cluster/utilities/teamClusterSocket';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
@@ -12,7 +12,6 @@ import {
     TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
     TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
 } from '@shared/infrastructure/contracts/team-cluster';
-import { ensureObjectGatewayAccessEnabled } from './ObjectGatewayFeatureFlags';
 import TeamClusterDirectAccessTokenService from './TeamClusterDirectAccessTokenService';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
@@ -279,7 +278,6 @@ export default class TeamClusterObjectGatewayClient {
         teamClusterId: string,
         request: TeamClusterObjectGatewayListRequest
     ): Promise<TeamClusterObjectGatewayListResponse> {
-        ensureObjectGatewayAccessEnabled('read');
         const query = new URLSearchParams();
         query.set('limit', String(request.limit ?? DEFAULT_LIST_LIMIT));
 
@@ -340,7 +338,6 @@ export default class TeamClusterObjectGatewayClient {
     }
 
     async head(teamClusterId: string, bucket: string, objectKey: string): Promise<TeamClusterObjectGatewayHeadResponse> {
-        ensureObjectGatewayAccessEnabled('read');
         const response = await this.fetch(teamClusterId, {
             method: 'HEAD',
             path: this.buildObjectPath(bucket, objectKey)
@@ -371,7 +368,6 @@ export default class TeamClusterObjectGatewayClient {
         objectKey: string,
         options?: TeamClusterObjectGatewayReadOptions
     ): Promise<TeamClusterObjectGatewayStreamResponse> {
-        ensureObjectGatewayAccessEnabled('read');
         const response = await this.fetch(teamClusterId, {
             method: 'GET',
             path: this.buildObjectPath(bucket, objectKey),
@@ -386,7 +382,6 @@ export default class TeamClusterObjectGatewayClient {
     }
 
     async getBuffer(teamClusterId: string, bucket: string, objectKey: string): Promise<Buffer> {
-        ensureObjectGatewayAccessEnabled('read');
         const response = await this.fetch(teamClusterId, {
             method: 'GET',
             path: this.buildObjectPath(bucket, objectKey),
@@ -397,7 +392,6 @@ export default class TeamClusterObjectGatewayClient {
     }
 
     async putStream(teamClusterId: string, request: TeamClusterObjectGatewayPutStreamRequest): Promise<void> {
-        ensureObjectGatewayAccessEnabled('write');
         await this.fetch(teamClusterId, {
             method: 'PUT',
             path: this.buildObjectPath(request.bucket, request.objectKey),
@@ -407,7 +401,6 @@ export default class TeamClusterObjectGatewayClient {
     }
 
     async putBuffer(teamClusterId: string, request: TeamClusterObjectGatewayPutBufferRequest): Promise<void> {
-        ensureObjectGatewayAccessEnabled('write');
         await this.fetch(teamClusterId, {
             method: 'PUT',
             path: this.buildObjectPath(request.bucket, request.objectKey),
@@ -417,7 +410,6 @@ export default class TeamClusterObjectGatewayClient {
     }
 
     async deleteObject(teamClusterId: string, bucket: string, objectKey: string): Promise<void> {
-        ensureObjectGatewayAccessEnabled('write');
         await this.fetch(teamClusterId, {
             method: 'DELETE',
             path: this.buildObjectPath(bucket, objectKey)
@@ -425,7 +417,6 @@ export default class TeamClusterObjectGatewayClient {
     }
 
     async deleteByPrefix(teamClusterId: string, bucket: string, prefix: string): Promise<number | undefined> {
-        ensureObjectGatewayAccessEnabled('write');
         const query = new URLSearchParams();
         query.set('prefix', prefix);
 

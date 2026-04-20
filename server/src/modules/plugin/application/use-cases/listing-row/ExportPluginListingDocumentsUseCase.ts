@@ -2,6 +2,7 @@ import {
     ExportPluginListingDocumentsInputDTO
 } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
 import { resolveAnalysisComputeClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { buildListingExportColumns, enrichDaemonListingRows } from '@modules/plugin/application/use-cases/listing-row/listing-row-enrichment';
 import { createSerializedDownloadResponse } from '@shared/infrastructure/http/responses/download-response';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
@@ -58,7 +59,7 @@ export class ExportPluginListingDocumentsUseCase implements IUseCase<
         do {
             const result = await this.daemonClient.command<DaemonPaginatedResult>(
                 resolved.teamClusterId,
-                'plugin.listings.list',
+                ChannelCommands.PluginListingsList,
                 {
                     pluginId: input.pluginId,
                     teamId: input.teamId,

@@ -6,7 +6,7 @@ import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectio
 import { ISSHCredentialsCipher } from '@modules/ssh/domain/port/ISSHCredentialsCipher';
 import { UpdateSSHConnectionByIdInputDTO, UpdateSSHConnectionByIdOutputDTO } from '@modules/ssh/application/dtos/UpdateSSHConnectionByIdDTO';
 import { SSHConnectionOwnershipService } from '@modules/ssh/application/services/SSHConnectionOwnershipService';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type SSHConnection from '@modules/ssh/domain/entities/SSHConnection';
 import type { SSHConnectionProps } from '@modules/ssh/domain/entities/SSHConnection';
 import {

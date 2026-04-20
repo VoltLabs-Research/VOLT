@@ -1,6 +1,5 @@
-import { computeDifferingConfigFields } from '../utilities/canvas-sidebar-scene';
-import { isSameScene } from '../utilities/scene-identity';
-import { normalizeCanvasAnalysisStatus } from '../utilities/analysis-status';
+import { isSameScene, isSameSceneRenderMetadata } from '../utilities/scene-identity';
+import { AnalysisStatus, normalizeCanvasAnalysisStatus } from '../utilities/analysis-status';
 import { DEFAULT_ENTRY } from './use-exposure-manager';
 import {
     extractTrajectoryTimesteps,
@@ -8,24 +7,28 @@ import {
     getSelectedTimestepsForAnalysis
 } from '../utilities/selected-timestep-analysis';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
-import useAnalysisStatus from './use-analysis-status';
 import useCanvasUrlState from './use-canvas-url-state';
 import useExposureManager from './use-exposure-manager';
 import { buildPluginScene, resolveExposureSceneRenderMetadata } from '../utilities/plugin-exposure-export';
 
 import { useAnalysesByTrajectoryQuery, analysisQuery } from '@/modules/analysis/hooks/queries';
-import { findCachedAnalysisById, upsertAnalysisCaches, updateAnalysisStatusCaches } from '@/modules/analysis/services/cache';
+import { findCachedAnalysisById, updateAnalysisStatusCaches, upsertAnalysisFromSocketPayload } from '@/modules/analysis/services/cache';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
+import queryClient from '@/shared/infrastructure/query/query-client';
+import { SCENE_ARTIFACTS_QUERY_KEYS } from '@/modules/trajectory/hooks/scene-artifacts/queries';
+import { SOCKET_ANALYSIS_EVENTS } from '@/modules/socket/analysis/constants/analysis-socket-events';
+import { SOCKET_SCENE_ARTIFACT_EVENTS } from '@/modules/socket/trajectory/constants/scene-artifact-socket-events';
 import { SOCKET_TEAM_EVENTS } from '@/modules/socket/team/constants/team-socket-events';
 import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 
 import type { ExposureEntry } from './use-exposure-manager';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
-import type { SceneObjectType, SceneRenderMetadata } from '@/modules/fractal/api/entities/scene';
+import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 
 export interface AnalysisSectionData {
@@ -40,15 +43,6 @@ export interface AnalysisSectionData {
 interface UseCanvasSidebarSceneProps {
     trajectory?: Trajectory | null;
     trajectoryId?: string;
-};
-
-const isSameSceneRenderMetadata = (
-    left?: SceneRenderMetadata,
-    right?: SceneRenderMetadata
-): boolean => {
-    return left?.exporter === right?.exporter
-        && left?.exportType === right?.exportType
-        && left?.defaultLineWidth === right?.defaultLineWidth;
 };
 
 const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: UseCanvasSidebarSceneProps) => {
@@ -75,8 +69,6 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     })));
 
     const { analysisId: analysisConfigId, setAnalysisId } = useCanvasUrlState();
-
-    const { isAnalysisInProgress } = useAnalysisStatus({ trajectoryId, enabled: !!trajectoryId });
 
     const { exposureEntries, getEntry, loadExposuresForAnalysis, resetEntries } = useExposureManager({ trajectoryId });
     const { pluginsById } = usePluginSelectors();
@@ -143,28 +135,10 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         if (!trajectoryId || data.trajectoryId !== trajectoryId) {
             return;
         }
-
-        const newAnalysis = {
-            _id: data.analysisId,
-            plugin: data.pluginId,
-            pluginDisplayName: data.pluginDisplayName,
-            config: data.config,
-            trajectory: {
-                _id: String(data.trajectoryId || ''),
-                name: trajectory?.name ?? ''
-            },
-            totalFrames: data.totalFrames,
-            completedFrames: data.completedFrames,
-            status: data.status,
-            createdAt: data.createdAt,
-            updatedAt: data.createdAt
-        } as unknown as Analysis;
-
-        upsertAnalysisCaches(newAnalysis);
-        void analysisQuery.cache.invalidate();
+        upsertAnalysisFromSocketPayload(data, trajectory?.name ?? '');
     }, [trajectory?.name, trajectoryId]);
 
-    const handleJobUpdated = useCallback((update: Record<string, unknown>) => {
+    const patchStatusFromSocket = useCallback((update: Record<string, unknown>) => {
         if (!trajectoryId || update.trajectoryId !== trajectoryId || !update.analysisId) {
             return;
         }
@@ -182,8 +156,26 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         });
     }, [trajectoryId]);
 
-    useSocketEvent<Record<string, unknown>>('analysis.created', handleAnalysisCreated, { enabled: !!trajectoryId });
-    useSocketEvent<Record<string, unknown>>(SOCKET_TEAM_EVENTS.JOB_UPDATED, handleJobUpdated, { enabled: !!trajectoryId });
+    const handleAnalysisStatusChanged = useCallback((update: Record<string, unknown>) => {
+        patchStatusFromSocket(update);
+        if (update.status === AnalysisStatus.Completed) {
+            const pluginName = (update.pluginDisplayName as string | undefined)
+                ?? (resolvedAnalyses.find((a) => a._id === update.analysisId)?.pluginDisplayName ?? 'Analysis');
+            sileo.success({ title: `${pluginName} completed`, description: 'Artifacts are ready in Scene Collection.' });
+        }
+    }, [patchStatusFromSocket, resolvedAnalyses]);
+
+    const handleSceneArtifactUpserted = useCallback((update: Record<string, unknown>) => {
+        if (!trajectoryId || update.trajectoryId !== trajectoryId) {
+            return;
+        }
+        void queryClient.invalidateQueries({ queryKey: SCENE_ARTIFACTS_QUERY_KEYS.sceneArtifacts() });
+    }, [trajectoryId]);
+
+    useSocketEvent<Record<string, unknown>>(SOCKET_ANALYSIS_EVENTS.CREATED, handleAnalysisCreated, { enabled: !!trajectoryId });
+    useSocketEvent<Record<string, unknown>>(SOCKET_TEAM_EVENTS.JOB_UPDATED, patchStatusFromSocket, { enabled: !!trajectoryId });
+    useSocketEvent<Record<string, unknown>>(SOCKET_ANALYSIS_EVENTS.STATUS_CHANGED, handleAnalysisStatusChanged, { enabled: !!trajectoryId });
+    useSocketEvent<Record<string, unknown>>(SOCKET_SCENE_ARTIFACT_EVENTS.UPSERTED, handleSceneArtifactUpserted, { enabled: !!trajectoryId });
 
     useEffect(() => {
         if (!analysisConfigId) return;
@@ -192,19 +184,13 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
             next.add(analysisConfigId);
             return next;
         });
-    }, [analysisConfigId]);
-
-    useEffect(() => {
-        if (!selectedAnalysis) return;
-
-        loadExposuresForAnalysis(selectedAnalysis._id);
-    }, [loadExposuresForAnalysis, selectedAnalysis]);
+        loadExposuresForAnalysis(analysisConfigId);
+    }, [analysisConfigId, loadExposuresForAnalysis]);
 
     useEffect(() => {
         if (resolvedAnalyses.length === 0) return;
         expandedSections.forEach((analysisId) => {
-            const analysis = resolvedAnalyses.find((x: Analysis) => x._id === analysisId);
-            if (!analysis) return;
+            if (!resolvedAnalyses.some((x: Analysis) => x._id === analysisId)) return;
             const entry = getEntry(analysisId);
             if (entry.state === 'idle' || entry.state === 'error') {
                 loadExposuresForAnalysis(analysisId);
@@ -269,11 +255,6 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
         setActiveScene({ sceneType: 'trajectory', source: 'default' });
     }, [analysisConfigId, getEntry, pluginsById, selectedAnalysisPluginId, setActiveScene]);
-
-    const differingConfigByAnalysis = useMemo(() => {
-        if (resolvedAnalyses.length === 0) return new Map<string, [string, unknown][]>();
-        return computeDifferingConfigFields(resolvedAnalyses);
-    }, [resolvedAnalyses]);
 
     const trajectoryTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
 
@@ -385,8 +366,6 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         return map;
     }, [filteredSections, setHeaderPopoverOpen]);
 
-    const showSectionsSkeleton = bootstrapLoading || (resolvedAnalyses.length > 0 && allAnalysisSections.length === 0);
-
     return {
         trajectoryId,
         searchQuery,
@@ -402,8 +381,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         sceneCollectionSections,
         selectedTimestepSections,
         hasSelectedTimestepAnalyses,
-        differingConfigByAnalysis,
-        showSectionsSkeleton,
+        showSectionsSkeleton: bootstrapLoading,
         headerPopoverCallbacks,
 
         activeScene,
@@ -414,7 +392,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
         toggleSection,
         onDeleteAnalysis,
-        isAnalysisInProgress
+        onRetryLoadExposures: loadExposuresForAnalysis
     };
 };
 

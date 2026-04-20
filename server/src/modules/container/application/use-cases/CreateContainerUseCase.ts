@@ -10,7 +10,7 @@ import { TeamClusterSelectionService } from '@modules/container/infrastructure/s
 import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
 import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';

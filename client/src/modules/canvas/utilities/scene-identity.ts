@@ -2,7 +2,7 @@ import {
     ParticleFilterSceneCombinator
 } from '@/modules/fractal/api/entities/scene';
 
-import type { SceneObjectType, ParticleFilterSceneCondition } from '@/modules/fractal/api/entities/scene';
+import type { SceneObjectType, ParticleFilterSceneCondition, SceneRenderMetadata } from '@/modules/fractal/api/entities/scene';
 import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
 
 interface MaybeParticleFilterCondition {
@@ -191,6 +191,15 @@ export const toSceneObjectFromArtifact = (artifact: SceneArtifact): SceneObjectT
     }
 
     return null;
+};
+
+export const isSameSceneRenderMetadata = (
+    left?: SceneRenderMetadata,
+    right?: SceneRenderMetadata
+): boolean => {
+    return left?.exporter === right?.exporter
+        && left?.exportType === right?.exportType
+        && left?.defaultLineWidth === right?.defaultLineWidth;
 };
 
 export const isArtifactSceneActive = (activeScene: MaybeScene | null | undefined, artifact: SceneArtifact): boolean => {
