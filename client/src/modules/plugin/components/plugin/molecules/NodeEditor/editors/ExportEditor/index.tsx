@@ -2,7 +2,7 @@ import { useCallback, useState, useMemo, useEffect } from 'react';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/molecules/NodeEditor/hooks/use-node-editor-form';
 import { Exporter } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import { EXPORTER_OPTIONS, EXPORT_TYPE_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
+import FormSection from '@/shared/presentation/components/FormSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import CodeEditor from '@/shared/presentation/components/CodeEditor';
 import type { IExportData } from '@/modules/plugin/api/entities/plugin/workflow';
@@ -89,7 +89,7 @@ const ExportEditor = ({ node }: EditorProps) => {
 
     return (
         <>
-            <CollapsibleSection title='Export Configuration' defaultExpanded>
+            <FormSection title='Export Configuration'>
                 <FormFieldRHF<ExportEditorFormValues>
                     variant='inline'
                     label='Exporter'
@@ -106,11 +106,11 @@ const ExportEditor = ({ node }: EditorProps) => {
                     control={form.control}
                     options={EXPORT_TYPE_SELECT_OPTIONS}
                 />
-            </CollapsibleSection>
+            </FormSection>
 
             {isChartExporter && (
                 <>
-                    <CollapsibleSection title='Chart Data Mapping' defaultExpanded>
+                    <FormSection title='Chart Data Mapping'>
                         <FormFieldRHF
                             variant='inline'
                             label='X-Axis Key'
@@ -138,9 +138,9 @@ const ExportEditor = ({ node }: EditorProps) => {
                             onChange={createChartOptionChangeHandler('chartType')}
                             options={CHART_TYPE_OPTIONS}
                         />
-                    </CollapsibleSection>
+                    </FormSection>
 
-                    <CollapsibleSection title='Chart Labels'>
+                    <FormSection title='Chart Labels'>
                         <FormFieldRHF
                             variant='inline'
                             label='Chart Title'
@@ -168,18 +168,18 @@ const ExportEditor = ({ node }: EditorProps) => {
                             onChange={createChartOptionChangeHandler('yAxisLabel')}
                             placeholder='Y Axis'
                         />
-                    </CollapsibleSection>
+                    </FormSection>
                 </>
             )}
 
             {!isChartExporter && (
-                <CollapsibleSection title='Export Options' defaultExpanded>
+                <FormSection title='Export Options'>
                     <CodeEditor
                         value={jsonValue}
                         onChange={handleJsonChange}
                         rows={6}
                     />
-                </CollapsibleSection>
+                </FormSection>
             )}
         </>
     );

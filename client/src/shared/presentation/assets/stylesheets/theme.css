@@ -20,6 +20,17 @@
     --duration-slower: 600ms;
 
     --z-floating: 99999;
+
+    /* Breakpoints (reference only — CSS custom props can't be used inside @media) */
+    --bp-xs: 480px;
+    --bp-sm: 640px;
+    --bp-md: 768px;
+    --bp-lg: 1024px;
+    --bp-xl: 1280px;
+    --bp-2xl: 1440px;
+
+    /* Minimum touch target size (WCAG 2.5.5 AAA) */
+    --touch-target-min: 44px;
 }
 
 :root[data-theme='dark'] {

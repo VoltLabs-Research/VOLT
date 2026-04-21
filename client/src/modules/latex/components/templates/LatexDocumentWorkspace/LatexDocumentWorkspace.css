@@ -896,3 +896,67 @@
         max-width: 100%;
     }
 }
+
+/**
+ * Stack the 3-panel workspace vertically on phones. The inline widths coming from
+ * React (files/preview/editor) must be overridden with !important since they live
+ * in the element's style attribute. Drag handles are hidden because pointer-based
+ * resize is not usable on touch.
+ */
+@media (max-width: 900px) {
+    .latex-workspace__layout {
+        flex-direction: column !important;
+        overflow-y: auto;
+    }
+
+    .latex-workspace__files,
+    .latex-workspace__preview,
+    .latex-workspace__main-content {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        flex: 0 0 auto;
+    }
+
+    .latex-workspace__files {
+        max-height: 32dvh;
+        border-bottom: 1px solid var(--color-border-soft);
+        border-right: none;
+    }
+
+    .latex-workspace__main-content {
+        min-height: 52dvh;
+        flex: 1 1 auto;
+    }
+
+    .latex-workspace__preview {
+        min-height: 48dvh;
+        max-height: none;
+        border-top: 1px solid var(--color-border-soft);
+        border-left: none;
+    }
+
+    .latex-drag-handle,
+    .latex-drag-handle-horizontal {
+        display: none !important;
+    }
+
+    .latex-ai-panel {
+        max-height: 60dvh;
+    }
+
+    /* Ids receive higher specificity than the class above — re-assert widths. */
+    #latex-file-panel,
+    #latex-preview-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .latex-pdf-toolbar {
+        padding: 0.375rem 0.5rem;
+    }
+
+    .latex-pdf-stage {
+        padding: 0.5rem;
+    }
+}

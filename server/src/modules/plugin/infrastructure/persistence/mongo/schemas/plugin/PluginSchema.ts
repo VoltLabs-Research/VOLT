@@ -31,11 +31,7 @@ export const PluginSchema = new Schema({
             _id: { type: String, required: true },
             name: { type: String, required: true },
             results: { type: String, required: true },
-            iterable: { type: String },
-            iterableChunkSize: { type: Number },
             icon: { type: String },
-            canvas: { type: Boolean, default: false },
-            raster: { type: Boolean, default: false },
             hasListing: { type: Boolean, default: true },
             export: { type: ExportDataSchema, default: null }
         }],

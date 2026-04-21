@@ -28,7 +28,7 @@ const WorkspaceTabs = ({
     const canShowPeers = Boolean(onSelectPeer && (peers.length > 0 || self));
 
     return (
-        <Container className="d-flex items-center px-1 gap-025">
+        <Container className="d-flex items-center px-1 gap-025 canvas-workspace-tabs">
             <Button
                 variant="ghost"
                 intent="canvas"

@@ -1,0 +1,167 @@
+.argument-definition-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.argument-definition-empty {
+    padding: 1.25rem 1rem;
+    text-align: center;
+    border: 1px dashed var(--color-border-soft);
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+}
+
+.argument-row-header {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.5rem 0.25rem 0.375rem;
+    border-radius: var(--radius-md);
+}
+
+.argument-row-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+    padding: 0.375rem 0.25rem;
+    border: none;
+    background: transparent;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    text-align: left;
+    border-radius: var(--radius-xs);
+}
+
+.argument-row-toggle:hover {
+    background: var(--hover-bg);
+}
+
+.argument-row-toggle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+.argument-row-chevron {
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+    transition: transform .15s ease;
+}
+
+.argument-row.is-expanded .argument-row-chevron {
+    transform: rotate(90deg);
+}
+
+.argument-row-title {
+    flex: 1;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.argument-row-title--placeholder {
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+.argument-row-type-badge {
+    flex-shrink: 0;
+    font-size: 0.6875rem;
+    line-height: 1;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-full);
+    background: var(--color-surface-2);
+    color: var(--color-text-secondary);
+}
+
+.argument-row-delete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    border-radius: var(--radius-xs);
+    opacity: 0;
+    transition: opacity .12s ease, color .12s ease, background-color .12s ease;
+    flex-shrink: 0;
+}
+
+.argument-row:hover .argument-row-delete,
+.argument-row:focus-within .argument-row-delete {
+    opacity: 1;
+}
+
+.argument-row-delete:hover {
+    color: var(--accent-red);
+    background: var(--hover-bg);
+}
+
+.argument-row-delete:focus-visible {
+    outline: none;
+    opacity: 1;
+    box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+.argument-row-body {
+    padding: 0.75rem 0;
+    border-top: 1px solid var(--color-border-soft);
+    display: flex;
+    flex-direction: column;
+}
+
+.argument-row-subheading {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    margin: 1.25rem 0 0.5rem 0.25rem;
+}
+
+.argument-row-subblock {
+    padding: 0.25rem;
+}
+
+.add-argument-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    width: 100%;
+    padding: 0.625rem 0.75rem;
+    margin-top: 0.5rem;
+    border: 1px dashed var(--color-border-soft);
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition: border-color .12s ease, color .12s ease, background-color .12s ease;
+}
+
+.add-argument-button:hover {
+    border-color: var(--color-border);
+    color: var(--color-text-primary);
+    background: var(--hover-bg);
+}
+
+.add-argument-button:focus-visible {
+    outline: none;
+    border-color: var(--focus-ring);
+    box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+.argument-row-nested {
+    margin-top: 0.5rem;
+}

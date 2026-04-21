@@ -80,6 +80,7 @@
 .floating-node-panel {
     z-index: 100;
     width: 400px;
+    max-width: calc(100vw - 1rem);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-elevated);
 }
@@ -112,4 +113,46 @@
     border-top: 1px solid var(--color-border-soft);
     padding: 0.75rem 1rem;
     flex-shrink: 0;
+}
+
+@media screen and (max-width: 768px) {
+    /* Canvas toolbar should wrap instead of overflowing horizontally on phones. */
+    .canvas-toolbar {
+        left: 0.5rem;
+        right: 0.5rem;
+        max-width: calc(100vw - 1rem);
+        flex-wrap: wrap;
+        justify-content: center;
+        bottom: 0.75rem;
+    }
+
+    .canvas-toolbar-divider {
+        display: none;
+    }
+
+    .canvas-empty-state-card {
+        padding: 1.5rem 1.25rem;
+        max-width: calc(100vw - 2rem);
+    }
+
+    /* Floating inspector/edit panel docks to the bottom of the screen on phones. */
+    .floating-node-panel {
+        position: fixed !important;
+        inset: auto 0.5rem 0.5rem 0.5rem !important;
+        top: auto !important;
+        left: 0.5rem !important;
+        right: 0.5rem !important;
+        width: auto !important;
+        max-width: calc(100vw - 1rem) !important;
+        max-height: min(70dvh, 560px);
+        border-radius: var(--radius-md);
+    }
+
+    .floating-node-panel-body {
+        padding: 0.75rem;
+    }
+
+    .floating-node-panel-tabs {
+        padding: 0.5rem 0.75rem 0;
+    }
 }

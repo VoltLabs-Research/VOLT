@@ -16,7 +16,8 @@
 .analysis-listing-download-modal__options {
     max-height: 16rem;
     overflow: auto;
-    width: 450px;
+    width: 100%;
+    max-width: 450px;
     padding-right: 0.25rem;
 }
 

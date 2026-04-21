@@ -1,5 +1,5 @@
 import Button from '@/shared/presentation/components/Button';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
+import FormSection from '@/shared/presentation/components/FormSection';
 import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Paragraph from '@/shared/presentation/components/Paragraph';
@@ -104,7 +104,7 @@ const EntrypointEditor = ({ node }: EditorProps) => {
 
     return (
         <>
-            <CollapsibleSection title={binarySectionTitle} defaultExpanded>
+            <FormSection title={binarySectionTitle}>
                 <Container className='d-flex column gap-05 binary-upload-container'>
                     <input
                         ref={fileInputRef}
@@ -163,9 +163,9 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                         </Container>
                     )}
                 </Container>
-            </CollapsibleSection>
+            </FormSection>
 
-            <CollapsibleSection title='Execution' defaultExpanded>
+            <FormSection title='Execution'>
                 <FormFieldRHF<EntrypointEditorFormValues>
                     variant='inline'
                     label='Type'
@@ -194,10 +194,10 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                     rows={3}
                     autocomplete={{ options: nodeReferenceOptions }}
                 />
-            </CollapsibleSection>
+            </FormSection>
 
             {watchedEntrypointType === EntrypointType.PYTHON_SCRIPT && (
-                <CollapsibleSection title='Requirements File' defaultExpanded>
+                <FormSection title='Requirements File'>
                     <Container className='d-flex column gap-05'>
                         <Paragraph className='entrypoint-requirements-hint font-size-1 color-secondary'>
                             Define the Python dependencies to install into the cached virtual environment.
@@ -216,20 +216,9 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                             />
                         </Container>
                     </Container>
-                </CollapsibleSection>
+                </FormSection>
             )}
 
-            <CollapsibleSection title='Options'>
-                <FormFieldRHF<EntrypointEditorFormValues>
-                    variant='inline'
-                    label='Timeout (ms)'
-                    fieldType='input'
-                    name='timeout'
-                    control={form.control}
-                    inputProps={{ type: 'number' }}
-                    placeholder='30000'
-                />
-            </CollapsibleSection>
         </>
     );
 };

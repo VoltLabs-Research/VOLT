@@ -181,8 +181,7 @@ export const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
                 binary: '',
                 type: EntrypointType.EXECUTABLE,
                 arguments: '{{ context.outputPath }} {{ context.allDumpLocalPaths }} {{ arguments.as_str }}',
-                requirementsFile: '',
-                timeout: -1
+                requirementsFile: ''
             }
         })
     },
@@ -223,10 +222,7 @@ export const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
         createDefaultData: () => ({
             exposure: {
                 name: '',
-                results: '',
-                canvas: false,
-                raster: false,
-                iterable: ''
+                results: ''
             }
         })
     },

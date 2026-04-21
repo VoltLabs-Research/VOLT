@@ -1,5 +1,5 @@
 import { z } from 'zod/v4';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
+import FormSection from '@/shared/presentation/components/FormSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/molecules/NodeEditor/hooks/use-node-editor-form';
 import type { EditorProps } from '../types';
@@ -25,7 +25,7 @@ const SwitchCaseEditor = ({ node }: EditorProps) => {
     const isDefaultCase = form.watch('defaultCase') ?? false;
 
     return (
-        <CollapsibleSection title='Case' defaultExpanded>
+        <FormSection title='Case'>
             <FormFieldRHF<SwitchCaseEditorFormValues>
                 variant='inline'
                 label='Value'
@@ -42,7 +42,7 @@ const SwitchCaseEditor = ({ node }: EditorProps) => {
                 name='defaultCase'
                 control={form.control}
             />
-        </CollapsibleSection>
+        </FormSection>
     );
 };
 

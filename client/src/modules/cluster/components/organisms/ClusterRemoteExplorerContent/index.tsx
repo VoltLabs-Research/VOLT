@@ -1,5 +1,6 @@
 import { TeamClusterRemoteAccessTarget, TeamClusterRemoteExplorerContentType, TeamClusterRemoteExplorerEntryType } from '@/modules/cluster/api/entities/team-cluster-remote-access';
 import ClusterMongoDocumentViewer from '@/modules/cluster/components/molecules/ClusterMongoDocumentViewer';
+import useDashboardHeaderContent from '@/modules/dashboard/hooks/use-dashboard-header-content';
 import JsonTree from '@/modules/plugin/components/plugin/atoms/JsonTree';
 import { useRemoteExplorer } from '@/shared/api/remote-explorer';
 import { triggerBrowserDownload } from '@/shared/utils/file';
@@ -9,13 +10,15 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import FileExplorer from '@/shared/presentation/components/FileExplorer';
 import FileExplorerRow from '@/shared/presentation/components/FileExplorer/FileExplorerRow';
+import IconButton from '@/shared/presentation/components/IconButton';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import RefreshButton from '@/shared/presentation/components/RefreshButton';
-import Title from '@/shared/presentation/components/Title';
+import SearchInput from '@/shared/presentation/components/SearchInput';
 import { decode } from '@msgpack/msgpack';
-import { Database, Download, FileJson, FolderOpen, HardDrive, Package } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { Database, Download, FileJson, FolderOpen, HardDrive, Package, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './ClusterRemoteExplorerContent.css';
+import type { FolderBreadcrumbItem } from '@/shared/presentation/hooks/use-folder-breadcrumbs';
 import type {
     TeamClusterRemoteAccessSession,
     TeamClusterRemoteExplorerEntry,
@@ -127,6 +130,11 @@ const ClusterRemoteExplorerContent = ({
     const [msgpackDecoded, setMsgpackDecoded] = useState<Record<string, unknown> | unknown[] | null>(null);
     const [isMsgpackDecoding, setIsMsgpackDecoding] = useState(false);
     const [msgpackError, setMsgpackError] = useState<string | null>(null);
+    const [filterQuery, setFilterQuery] = useState('');
+    const [isDetailsVisible, setIsDetailsVisible] = useState(true);
+
+    const remoteExplorerRef = useRef(remoteExplorer);
+    remoteExplorerRef.current = remoteExplorer;
 
     useEffect(() => {
         remoteExplorer.navigateTo('/');
@@ -169,9 +177,54 @@ const ClusterRemoteExplorerContent = ({
         loadEntries();
     }, [teamCluster._id, session.sessionId, target, explorerState.path]);
 
+    useEffect(() => {
+        setFilterQuery('');
+    }, [explorerState.path]);
+
+    const filteredEntries = useMemo(() => {
+        const query = filterQuery.trim().toLowerCase();
+        if (!query) {
+            return entries;
+        }
+        return entries.filter((entry) => entry.name.toLowerCase().includes(query));
+    }, [entries, filterQuery]);
+
+    const handleBreadcrumbNavigate = useCallback((id: string | null) => {
+        remoteExplorerRef.current.navigateTo(id ?? '/');
+    }, []);
+
+    const globalSearchBreadcrumb = useMemo(() => {
+        const cwd = explorerState.cwd;
+        if (!cwd || cwd === '/') {
+            return null;
+        }
+
+        const segments = cwd.split('/').filter(Boolean);
+        const items: FolderBreadcrumbItem[] = [{ id: null, title: 'Root' }];
+        segments.forEach((segment, index) => {
+            items.push({
+                id: '/' + segments.slice(0, index + 1).join('/'),
+                title: segment
+            });
+        });
+
+        return {
+            items,
+            onNavigate: handleBreadcrumbNavigate
+        };
+    }, [explorerState.cwd, handleBreadcrumbNavigate]);
+
+    useDashboardHeaderContent({ globalSearchBreadcrumb });
+
     const selectedEntry = useMemo(() => {
         return entries.find((entry) => toExplorerPath(entry.path) === explorerState.selectedPath) ?? null;
     }, [entries, explorerState.selectedPath]);
+
+    useEffect(() => {
+        if (selectedEntry && !isNavigableEntry(selectedEntry)) {
+            setIsDetailsVisible(true);
+        }
+    }, [explorerState.selectedPath]);
 
     useEffect(() => {
         if (!selectedEntry || isNavigableEntry(selectedEntry)) {
@@ -305,20 +358,14 @@ const ClusterRemoteExplorerContent = ({
     );
 
     const headerLeft = (
-        <Container className='d-flex items-center gap-1 flex-1'>
-            <Button
-                variant='ghost'
-                intent='neutral'
-                size='sm'
-                onClick={explorerState.goUp}
-                disabled={explorerState.isAtRoot}
-            >
-                Up
-            </Button>
-            <Paragraph className='font-size-2 color-secondary cluster-remote-explorer-path'>
-                {explorerState.cwd}
-            </Paragraph>
-        </Container>
+        <SearchInput
+            variant='small'
+            placeholder='Filter in current location'
+            value={filterQuery}
+            aria-label='Filter entries in current directory'
+            onChange={(event) => setFilterQuery(event.target.value)}
+            containerClassName='cluster-remote-explorer-filter'
+        />
     );
 
     const headerRight = (
@@ -393,73 +440,106 @@ const ClusterRemoteExplorerContent = ({
         );
     }, [isNodeLoading, nodeError, node, selectedEntry, msgpackDecoded, msgpackError]);
 
+    const shouldShowFloatingDetail = Boolean(selectedEntry) && !!selectedEntry && !isNavigableEntry(selectedEntry) && isDetailsVisible;
+    const SelectedEntryIcon = selectedEntry ? getEntryIcon(selectedEntry) : Database;
+
     return (
         <Container className='cluster-remote-explorer-layout'>
-            <Container className='cluster-remote-explorer-panel radius-md overflow-hidden'>
+            <Container className='cluster-remote-explorer-panel cluster-remote-explorer-main radius-md overflow-hidden'>
                 <FileExplorer
                     headerLeft={headerLeft}
                     headerRight={headerRight}
                     columns={columns}
                     isLoading={isEntriesLoading}
-                    isEmpty={!entriesError && entries.length === 0}
-                    emptyMessage='No entries found'
+                    isEmpty={!entriesError && filteredEntries.length === 0}
+                    emptyMessage={
+                        filterQuery && entries.length > 0
+                            ? `No entries matching "${filterQuery}"`
+                            : 'No entries found'
+                    }
                     error={entriesError}
                     onRetry={() => {
                         loadEntries(true);
                     }}
                     isRetrying={isEntriesRefreshing}
                 >
-                    {entries.map(renderEntryRow)}
+                    {filteredEntries.map(renderEntryRow)}
                 </FileExplorer>
             </Container>
 
-            <Container className='cluster-remote-explorer-detail cluster-remote-explorer-panel radius-md p-1 d-flex column gap-1'>
-                <Container className='cluster-remote-explorer-detail-header d-flex items-center gap-1'>
-                    <Container className='d-flex column gap-025 flex-1'>
-                        <Title className='font-size-3 font-weight-6 color-primary'>Details</Title>
-                        <Paragraph className='font-size-2 color-secondary cluster-remote-explorer-detail-path' title={selectedEntry?.path}>
-                            {selectedEntry
-                                ? selectedEntry.path
-                                : 'Select a collection, key or object to inspect its contents.'}
-                        </Paragraph>
+            {shouldShowFloatingDetail && selectedEntry && (
+                <Container
+                    className='cluster-remote-explorer-detail radius-lg'
+                    role='region'
+                    aria-label={`Details for ${selectedEntry.name}`}
+                >
+                    <IconButton
+                        className='cluster-remote-explorer-detail-close'
+                        onClick={() => setIsDetailsVisible(false)}
+                        size='sm'
+                        variant='ghost'
+                        title='Close details'
+                        aria-label='Close details'
+                    >
+                        <X size={14} />
+                    </IconButton>
+
+                    <Container className='cluster-remote-explorer-detail-summary d-flex items-center gap-075'>
+                        <Container className='cluster-remote-explorer-detail-icon d-flex flex-center f-shrink-0'>
+                            <SelectedEntryIcon size={16} />
+                        </Container>
+                        <Container className='d-flex column gap-025 flex-1 min-w-0'>
+                            <Paragraph className='font-size-2 font-weight-5 color-primary text-truncate' title={selectedEntry.name}>
+                                {selectedEntry.name}
+                            </Paragraph>
+                            <Paragraph
+                                className='font-size-1 color-muted text-truncate cluster-remote-explorer-detail-path'
+                                title={selectedEntry.path}
+                            >
+                                {selectedEntry.path}
+                            </Paragraph>
+                        </Container>
                     </Container>
-                    {selectedEntry && (
-                        <Button
-                            variant='outline'
-                            intent='white'
-                            size='sm'
-                            onClick={handlePathCopy}
-                        >
-                            Copy path
-                        </Button>
-                    )}
-                    {selectedEntry && isDownloadableEntry(selectedEntry) && (
-                        <Button
-                            variant='outline'
-                            intent='white'
-                            size='sm'
-                            leftIcon={<Download size={14} />}
-                            isLoading={isDownloading}
-                            onClick={handleDownload}
-                        >
-                            Download
-                        </Button>
-                    )}
-                    {selectedEntry && isMsgpackDecodable(selectedEntry, target) && (
-                        <Button
-                            variant='outline'
-                            intent='white'
-                            size='sm'
-                            leftIcon={<FileJson size={14} />}
-                            isLoading={isMsgpackDecoding}
-                            onClick={handleDecodeMsgpack}
-                        >
-                            {msgpackDecoded ? 'Re-decode MsgPack' : 'Decode MsgPack'}
-                        </Button>
-                    )}
+
+                    <Container className='cluster-remote-explorer-detail-expanded d-flex column gap-075'>
+                        <Container className='cluster-remote-explorer-detail-actions d-flex gap-05'>
+                            <Button
+                                variant='outline'
+                                intent='white'
+                                size='sm'
+                                onClick={handlePathCopy}
+                            >
+                                Copy path
+                            </Button>
+                            {isDownloadableEntry(selectedEntry) && (
+                                <Button
+                                    variant='outline'
+                                    intent='white'
+                                    size='sm'
+                                    leftIcon={<Download size={14} />}
+                                    isLoading={isDownloading}
+                                    onClick={handleDownload}
+                                >
+                                    Download
+                                </Button>
+                            )}
+                            {isMsgpackDecodable(selectedEntry, target) && (
+                                <Button
+                                    variant='outline'
+                                    intent='white'
+                                    size='sm'
+                                    leftIcon={<FileJson size={14} />}
+                                    isLoading={isMsgpackDecoding}
+                                    onClick={handleDecodeMsgpack}
+                                >
+                                    {msgpackDecoded ? 'Re-decode MsgPack' : 'Decode MsgPack'}
+                                </Button>
+                            )}
+                        </Container>
+                        {detailContent}
+                    </Container>
                 </Container>
-                {detailContent}
-            </Container>
+            )}
         </Container>
     );
 };

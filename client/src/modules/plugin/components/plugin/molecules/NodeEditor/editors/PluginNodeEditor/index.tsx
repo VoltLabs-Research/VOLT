@@ -14,7 +14,7 @@ import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin
 import { getUserConfigurableArguments } from '@/modules/plugin/utilities/plugin/argument-values';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import Container from '@/shared/presentation/components/Container';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
+import FormSection from '@/shared/presentation/components/FormSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import { normalizeSelectedTimesteps } from '@/modules/canvas/utilities/selected-timestep-analysis';
@@ -295,15 +295,14 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
                 <Paragraph className='font-size-1 color-muted'>
                     Manual fallback configuration will be used for whichever referenced plugin the user selects.
                 </Paragraph>
-                {referencedCandidatePluginIds.map((pluginId, index) => {
+                {referencedCandidatePluginIds.map((pluginId) => {
                     const pluginLabel = publishedPluginsById[pluginId]?.modifier?.name?.trim() || pluginId;
                     const configDefinitions = referencedPluginConfigDefinitions[pluginId] ?? [];
 
                     return (
-                        <CollapsibleSection
+                        <FormSection
                             key={pluginId}
                             title={pluginLabel}
-                            defaultExpanded={index === 0}
                         >
                             <ArgumentFieldsRenderer
                                 arguments={configDefinitions}
@@ -314,7 +313,7 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
                                 autocompleteOptions={autocompleteOptions}
                                 allowTemplateReferenceMode
                             />
-                        </CollapsibleSection>
+                        </FormSection>
                     );
                 })}
                 <PluginExecutionConfigFields
@@ -336,7 +335,7 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
 
     return (
         <>
-            <CollapsibleSection title='Plugin Reference' defaultExpanded>
+            <FormSection title='Plugin Reference'>
                 <FormFieldRHF
                     variant='inline'
                     label='Mode'
@@ -384,9 +383,9 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
                         )}
                     </>
                 )}
-            </CollapsibleSection>
+            </FormSection>
 
-            <CollapsibleSection title='Runtime Configuration' defaultExpanded>
+            <FormSection title='Runtime Configuration'>
                 {executionMode === PluginNodeExecutionMode.MANUAL ? (
                     selectedPluginId ? (
                         <PluginExecutionConfigFields
@@ -412,7 +411,7 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
                         </Container>
                     )
                 ) : renderArgumentReferenceConfiguration()}
-            </CollapsibleSection>
+            </FormSection>
         </>
     );
 };

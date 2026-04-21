@@ -1,0 +1,111 @@
+.container-overview {
+    animation: animate-fade-in 0.3s ease-out;
+    max-width: 960px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.container-overview-divider {
+    height: 1px;
+    background: var(--color-border-soft);
+    margin: 1.5rem 0;
+    border: 0;
+}
+
+.container-overview-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2rem;
+    position: relative;
+}
+
+.container-overview-metrics > * + *::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(-1rem - 0.5px);
+    width: 1px;
+    background: var(--color-border-soft);
+}
+
+.container-overview-metrics > * {
+    position: relative;
+}
+
+.container-overview-section-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0 0 0.5rem;
+    letter-spacing: -0.01em;
+}
+
+.container-overview-port-row,
+.container-overview-env-row {
+    padding: 0.625rem 0;
+    border-top: 1px solid var(--color-border-soft);
+    min-width: 0;
+    gap: 1rem;
+}
+
+.container-overview-port-row:first-of-type,
+.container-overview-env-row:first-of-type {
+    border-top: 0;
+}
+
+.container-overview-env-key {
+    color: var(--color-text-primary);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    flex-shrink: 0;
+    max-width: 45%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.container-overview-env-value {
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.container-overview-port-label {
+    color: var(--color-text-primary);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+.container-overview-port-mapping {
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+    .container-overview-metrics {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
+
+    .container-overview-metrics > * + *::before {
+        left: 0;
+        right: 0;
+        top: calc(-0.625rem - 0.5px);
+        bottom: auto;
+        width: auto;
+        height: 1px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .container-overview {
+        animation: none;
+    }
+}
