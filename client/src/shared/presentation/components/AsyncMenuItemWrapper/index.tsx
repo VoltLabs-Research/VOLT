@@ -14,7 +14,7 @@ const MENU_ICON_SIZES: Record<'sm' | 'md', number> = {
     md: 16
 };
 
-const AsyncMenuItemWrapper: React.FC<AsyncMenuItemWrapperProps> = ({ option, onSuccess, size = 'md' }) => {
+const AsyncMenuItemWrapper = ({ option, onSuccess, size = 'md' }: AsyncMenuItemWrapperProps) => {
     const [isLoading, setIsLoading] = useState(false);
 
     const handleClick = async () => {

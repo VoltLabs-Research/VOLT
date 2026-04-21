@@ -1,5 +1,4 @@
 import { cn } from '@/shared/utils';
-import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
 import './Button.css';
 import { Children, forwardRef, useRef } from 'react';
@@ -213,9 +212,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
     const content = (
         <>
             {isLoading && (
-                <Container className="button-loader p-absolute d-flex items-center content-center">
+                <div className="volt-container button-loader p-absolute d-flex items-center content-center">
                     <Loader scale={0.6} isFixed={false} />
-                </Container>
+                </div>
             )}
 
             {leftIcon && <span className="button-icon-left font-size-4" aria-hidden='true'>{leftIcon}</span>}

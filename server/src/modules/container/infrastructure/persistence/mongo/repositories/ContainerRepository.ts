@@ -102,10 +102,6 @@ export class ContainerRepository extends MongooseBaseRepository<Container, ICont
         return this.findById(id, options);
     }
 
-    async deleteByTeamId(teamId: string): Promise<void> {
-        await this.model.deleteMany({ team: teamId });
-    }
-
     async findByIdOrFail(containerId: string): Promise<Container> {
         const container = await this.findById(containerId);
         if (!container) {

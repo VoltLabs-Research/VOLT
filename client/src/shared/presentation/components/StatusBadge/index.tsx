@@ -1,6 +1,6 @@
 import { cn } from '@/shared/utils';
 import './StatusBadge.css';
-import React from 'react';
+import type { ReactNode } from 'react';
 
 export interface StatusBadgeProps{
     /**
@@ -22,7 +22,7 @@ export interface StatusBadgeProps{
     /**
      * Badge content (alternative to status)
      */
-    children?: React.ReactNode;
+    children?: ReactNode;
 
     /**
      * Additional CSS classes
@@ -74,7 +74,7 @@ const statusToVariant = (status: string): string => {
     }
 };
 
-const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant, size = 'default', children, className = '' }) => {
+const StatusBadge = ({ status, variant, size = 'default', children, className = '' }: StatusBadgeProps) => {
     const computedVariant = variant ?? (status ? statusToVariant(status) : 'neutral');
     const content = children ?? status;
 

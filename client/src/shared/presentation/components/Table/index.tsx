@@ -1,5 +1,5 @@
 import './Table.css';
-import { Skeleton } from '@mui/material';
+import Skeleton from '@/shared/presentation/components/Skeleton';
 import { useCallback } from 'react';
 import { formatUnknownValue } from '@/shared/utils/format';
 

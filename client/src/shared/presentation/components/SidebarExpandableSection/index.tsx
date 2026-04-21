@@ -1,5 +1,4 @@
 import Button from '@/shared/presentation/components/Button';
-import Container from '@/shared/presentation/components/Container';
 import './SidebarExpandableSection.css';
 import '@/shared/presentation/components/SidebarSubItems/SidebarSubItems.css';
 import NestedSubItems from './NestedSubItems';
@@ -85,7 +84,7 @@ const SidebarExpandableSection = forwardRef<HTMLDivElement, SidebarExpandableSec
     };
 
     return (
-        <Container ref={ref} className='sidebar-expandable-section'>
+        <div ref={ref} className='volt-container sidebar-expandable-section'>
             <Button
                 variant='ghost'
                 intent='neutral'
@@ -95,9 +94,9 @@ const SidebarExpandableSection = forwardRef<HTMLDivElement, SidebarExpandableSec
                 aria-expanded={expanded}
                 aria-controls={subItemsId}
             >
-                <Container className='sidebar-nav-icon font-size-4'>
+                <div className='volt-container sidebar-nav-icon font-size-4'>
                     <Icon />
-                </Container>
+                </div>
                 <span className='sidebar-nav-label text-truncate'>{label}</span>
                 <IoChevronDown
                     className={`sidebar-section-chevron ${expanded ? 'is-expanded' : ''} color-muted`}
@@ -115,7 +114,7 @@ const SidebarExpandableSection = forwardRef<HTMLDivElement, SidebarExpandableSec
                     ))}
                 </ul>
             )}
-        </Container>
+        </div>
     );
 });
 

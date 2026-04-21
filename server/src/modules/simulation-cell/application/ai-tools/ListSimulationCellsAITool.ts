@@ -1,9 +1,10 @@
 import { AITool } from '@shared/application/ai/AITool';
 import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
-import ListSimulationCellsByTeamIdUseCase from '@modules/simulation-cell/application/use-cases/ListSimulationCellsByTeamIdUseCase';
 import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
 import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
+import type { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
+import type { SimulationCellTrajectoryReference } from '@modules/simulation-cell/domain/entities/SimulationCell';
 
 @injectable()
 export class ListSimulationCellsAITool extends AITool {
@@ -15,46 +16,46 @@ export class ListSimulationCellsAITool extends AITool {
     });
 
     constructor(
-        @inject(SIMULATION_CELL_TOKENS.ListSimulationCellsByTeamIdUseCase)
-        protected readonly useCase: ListSimulationCellsByTeamIdUseCase
+        @inject(SIMULATION_CELL_TOKENS.SimulationCellRepository)
+        protected readonly repository: ISimulationCellRepository
     ) {
         super();
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
-            teamId: scope.teamId,
+        const result = await this.repository.findAll({
+            filter: { team: scope.teamId },
+            populate: { path: 'trajectory', select: ['name'] },
             page: params.page,
             limit: params.limit
         });
 
-        if (!result.success) throw result.error;
-
         return {
-            summary: `Found ${result.value.total} simulation cells.`,
-            data: result.value.data.map((cell) => {
+            summary: `Found ${result.total} simulation cells.`,
+            data: result.data.map((cell) => {
+                const trajectoryRef = cell.props.trajectory as string | SimulationCellTrajectoryReference;
                 let trajectory = '';
                 let boundingBox = '';
 
-                if (typeof cell.trajectory === 'string') {
-                    trajectory = cell.trajectory;
-                } else if (cell.trajectory?.name) {
-                    trajectory = cell.trajectory.name;
+                if (typeof trajectoryRef === 'string') {
+                    trajectory = trajectoryRef;
+                } else if (trajectoryRef?.name) {
+                    trajectory = trajectoryRef.name;
                 }
 
-                if (cell.boundingBox) {
-                    boundingBox = `${cell.boundingBox.width}x${cell.boundingBox.height}x${cell.boundingBox.length}`;
+                if (cell.props.boundingBox) {
+                    boundingBox = `${cell.props.boundingBox.width}x${cell.props.boundingBox.height}x${cell.props.boundingBox.length}`;
                 }
 
                 return {
                     cellId: cell._id,
-                    timestep: cell.timestep,
+                    timestep: cell.props.timestep,
                     trajectory,
                     boundingBox,
-                    createdAt: cell.createdAt ?? null
+                    createdAt: cell.props.createdAt ?? null
                 };
             }),
-            total: result.value.total
+            total: result.total
         };
     }
 };

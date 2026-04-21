@@ -48,9 +48,4 @@ export interface ISessionRepository extends IBaseRepository<Session, SessionProp
         ip: string,
         reason: string
     ): Promise<Session>;
-
-    /**
-     * Update last activity timestamp
-     */
-    updateActivity(sessionId: string): Promise<void>;
 };

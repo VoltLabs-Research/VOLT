@@ -1,7 +1,4 @@
 import CloseButton from '@/shared/presentation/components/CloseButton';
-import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import Title from '@/shared/presentation/components/Title';
 import FloatingRootContext, { TopLayerRootContext } from '@/shared/presentation/contexts/FloatingRootContext';
 import './Modal.css';
 import React from 'react';
@@ -31,16 +28,9 @@ interface ModalProps {
 };
 
 const COARSE_POINTER_MEDIA_QUERY = '(pointer: coarse)';
-let activeDialog: HTMLDialogElement | null = null;
 
 const isDialogElement = (element: HTMLElement | null): element is HTMLDialogElement => {
     return element instanceof HTMLDialogElement;
-};
-
-const getActiveDialog = (): HTMLDialogElement | null => activeDialog;
-
-const setActiveDialog = (dialog: HTMLDialogElement | null): void => {
-    activeDialog = dialog;
 };
 
 const isCoarsePointerDevice = () => {
@@ -114,8 +104,6 @@ const Modal = ({
                     restoreFocusElementRef.current = document.activeElement;
                 }
 
-                setActiveDialog(dialogElement);
-
                 window.requestAnimationFrame(() => {
                     if (!dialogElement.open) {
                         return;
@@ -126,10 +114,6 @@ const Modal = ({
                 });
 
                 return;
-            }
-
-            if (getActiveDialog() === dialogElement) {
-                setActiveDialog(null);
             }
 
             if (restoreFocusElementRef.current?.isConnected) {
@@ -145,11 +129,6 @@ const Modal = ({
 
         return () => {
             observer.disconnect();
-
-            if (getActiveDialog() === dialogElement) {
-                setActiveDialog(null);
-            }
-
             restoreFocusElementRef.current = null;
         };
     }, [dialogElement]);
@@ -206,13 +185,13 @@ const Modal = ({
             >
                 <TopLayerRootContext.Provider value={dialogElement ?? undefined}>
                     <FloatingRootContext.Provider value={dialogElement ?? undefined}>
-                        <Container className='d-flex column w-max'>
+                        <div className='volt-container d-flex column w-max'>
                             {(title || description) && (
-                                <Container className='d-flex items-start content-between volt-modal-header'>
-                                    <Container className='d-flex column gap-025'>
-                                        {title && <Title id={titleId} className='font-size-4 font-weight-6'>{title}</Title>}
-                                        {description && <Paragraph id={descriptionId} className='font-size-2 color-secondary'>{description}</Paragraph>}
-                                    </Container>
+                                <div className='volt-container d-flex items-start content-between volt-modal-header'>
+                                    <div className='volt-container d-flex column gap-025'>
+                                        {title && <h3 id={titleId} className='volt-title font-size-4 font-weight-6'>{title}</h3>}
+                                        {description && <p id={descriptionId} className='volt-text font-size-2 color-secondary'>{description}</p>}
+                                    </div>
                                     {dismissible && (
                                         <CloseButton
                                             commandfor={id}
@@ -220,19 +199,19 @@ const Modal = ({
                                             aria-label='Close modal'
                                         />
                                     )}
-                                </Container>
+                                </div>
                             )}
 
-                            <Container className='volt-modal-body'>
+                            <div className='volt-container volt-modal-body'>
                                 {children}
-                            </Container>
+                            </div>
 
                             {footer && (
-                                <Container className='d-flex items-center content-end gap-05 volt-modal-footer'>
+                                <div className='volt-container d-flex items-center content-end gap-05 volt-modal-footer'>
                                     {footer}
-                                </Container>
+                                </div>
                             )}
-                        </Container>
+                        </div>
                     </FloatingRootContext.Provider>
                 </TopLayerRootContext.Provider>
             </dialog>

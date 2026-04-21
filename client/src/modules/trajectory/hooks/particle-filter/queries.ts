@@ -1,20 +1,21 @@
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import {
     buildKeys,
-    createMutation
-} from '@/shared/infrastructure/query/create-paginated-query';
+    createMutation,
+    createQuery
+} from '@/shared/infrastructure/query';
 import {
-    useCanvasAccessMode,
-    useCanvasDataAccess,
+    buildCanvasDataAccess,
+    DEFAULT_CANVAS_ACCESS_STATE,
+    useCanvasAccessStore,
     withAccessMode
 } from '@/modules/canvas/api/access';
+import particleFilterService from '../../api/services/particle-filter';
 import type {
     FilterPropertiesData,
     GetFilterPropertiesInputDTO,
     GetUniqueValuesInputDTO,
     GetUniqueValuesOutputDTO
 } from '../../api/dtos/particle-filter';
-import particleFilterService from '../../api/services/particle-filter';
 
 const BASE_KEY = 'trajectory';
 
@@ -29,36 +30,26 @@ export const PARTICLE_FILTER_QUERY_KEYS = {
     uniqueValuesByParams: KEYS.uniqueValues
 } as const;
 
-type FilterPropertiesOptions = Partial<UseQueryOptions<FilterPropertiesData, Error, FilterPropertiesData>>;
-type UniqueValuesOptions = Partial<UseQueryOptions<GetUniqueValuesOutputDTO, Error, GetUniqueValuesOutputDTO>>;
-
-export const filterPropertiesQuery = (
-    params: GetFilterPropertiesInputDTO,
-    options?: FilterPropertiesOptions
-) => {
-    const mode = useCanvasAccessMode();
-    const dataAccess = useCanvasDataAccess();
-
-    return useQuery<FilterPropertiesData, Error, FilterPropertiesData>({
-        ...options,
-        queryKey: withAccessMode(mode, KEYS.filterProperties(params)),
-        queryFn: () => dataAccess.getParticleFilterProperties(params)
-    });
+const currentDataAccess = () => {
+    const mode = useCanvasAccessStore.getState().mode;
+    return buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode });
 };
 
-export const uniqueValuesQuery = (
-    params: GetUniqueValuesInputDTO,
-    options?: UniqueValuesOptions
-) => {
-    const mode = useCanvasAccessMode();
-    const dataAccess = useCanvasDataAccess();
+const getFilterPropertiesKey = (params: GetFilterPropertiesInputDTO) =>
+    withAccessMode(useCanvasAccessStore.getState().mode, KEYS.filterProperties(params));
 
-    return useQuery<GetUniqueValuesOutputDTO, Error, GetUniqueValuesOutputDTO>({
-        ...options,
-        queryKey: withAccessMode(mode, KEYS.uniqueValues(params)),
-        queryFn: () => dataAccess.getParticleFilterUniqueValues(params)
-    });
-};
+const getUniqueValuesKey = (params: GetUniqueValuesInputDTO) =>
+    withAccessMode(useCanvasAccessStore.getState().mode, KEYS.uniqueValues(params));
+
+export const filterPropertiesQuery = createQuery<GetFilterPropertiesInputDTO, FilterPropertiesData>(
+    getFilterPropertiesKey,
+    (params) => currentDataAccess().getParticleFilterProperties(params)
+);
+
+export const uniqueValuesQuery = createQuery<GetUniqueValuesInputDTO, GetUniqueValuesOutputDTO>(
+    getUniqueValuesKey,
+    (params) => currentDataAccess().getParticleFilterUniqueValues(params)
+);
 
 export const usePreviewFilterMutation = createMutation(particleFilterService.preview);
 export const useApplyFilterMutation = createMutation(particleFilterService.applyAction);

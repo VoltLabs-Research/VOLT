@@ -1,22 +1,21 @@
-import Container from '@/shared/presentation/components/Container';
-import React from 'react';
+import type { ReactNode } from 'react';
 
 interface WarningZoneProps {
-    icon?: React.ReactNode;
+    icon?: ReactNode;
     message: string;
     className?: string;
 };
 
-const WarningZone: React.FC<WarningZoneProps> = ({
+const WarningZone = ({
     icon,
     message,
     className = ''
-}) => {
+}: WarningZoneProps) => {
     return (
-        <Container className={`zone-warning d-flex items-center gap-05 font-size-2 ${className}`} role='status' aria-live='polite'>
-            {icon && <Container className='d-flex items-center content-center f-shrink-0'>{icon}</Container>}
-            <Container className='flex-1'>{message}</Container>
-        </Container>
+        <div className={`volt-container zone-warning d-flex items-center gap-05 font-size-2 ${className}`} role='status' aria-live='polite'>
+            {icon && <div className='volt-container d-flex items-center content-center f-shrink-0'>{icon}</div>}
+            <div className='volt-container flex-1'>{message}</div>
+        </div>
     );
 };
 

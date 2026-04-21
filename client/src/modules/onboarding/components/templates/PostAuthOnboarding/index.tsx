@@ -14,11 +14,8 @@ import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
 import { switchSelectedTeam } from '@/modules/team/stores/team/use-team-store';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import Button from '@/shared/presentation/components/Button';
-import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Loader from '@/shared/presentation/components/Loader';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import Title from '@/shared/presentation/components/Title';
 import { sileo } from 'sileo';
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
@@ -135,18 +132,18 @@ const PostAuthOnboarding = () => {
     };
 
     let content: ReactNode = (
-        <Container className='post-auth-onboarding-shell d-flex column gap-2'>
+        <div className='volt-container post-auth-onboarding-shell d-flex column gap-2'>
             <form className='post-auth-onboarding-content d-flex column gap-2' onSubmit={handleSubmit}>
-                <Container className='d-flex column gap-1 text-center'>
-                    <Title as='h1' className='font-size-6 font-weight-6'>
+                <div className='volt-container d-flex column gap-1 text-center'>
+                    <h1 className='volt-title font-size-6 font-weight-6'>
                         {stepState.title}
-                    </Title>
-                    <Paragraph className='post-auth-onboarding-description color-secondary'>
+                    </h1>
+                    <p className='volt-text post-auth-onboarding-description color-secondary'>
                         {stepState.description}
-                    </Paragraph>
-                </Container>
+                    </p>
+                </div>
 
-                <Container className='d-flex column gap-1'>
+                <div className='volt-container d-flex column gap-1'>
                     <FormFieldRHF
                         label='Team name'
                         placeholder='e.g., Research Lab'
@@ -159,7 +156,7 @@ const PostAuthOnboarding = () => {
                             }
                         }}
                     />
-                </Container>
+                </div>
 
                 <Button
                     variant='solid'
@@ -173,14 +170,14 @@ const PostAuthOnboarding = () => {
                     Create Team & Continue
                 </Button>
             </form>
-        </Container>
+        </div>
     );
 
     if (isLoading) {
         content = (
-            <Container className='post-auth-onboarding-loading d-flex column items-center content-center gap-1'>
+            <div className='volt-container post-auth-onboarding-loading d-flex column items-center content-center gap-1'>
                 <Loader scale={0.6} isFixed={false} announce label='Loading onboarding' />
-            </Container>
+            </div>
         );
     }
 

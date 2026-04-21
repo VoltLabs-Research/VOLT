@@ -6,15 +6,14 @@ import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/Traject
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import CompressionProcessor from './CompressionProcessor';
-import {
-    delayJobOnQueueScopeContention,
-    tryAcquireQueueScopeLease,
-    type QueueScopeLease
-} from './queue-scope-lease';
 import TeamClusterQueueScopeLimitsService from './TeamClusterQueueScopeLimitsService';
 import logger from '@shared/infrastructure/logger';
+import {
+    createBullScopedQueue,
+    type BullScopedQueueController
+} from '@shared/infrastructure/workers/createBullScopedQueue';
+
 import { injectable, inject } from 'tsyringe';
-import { DelayedError, Queue, Worker } from 'bullmq';
 import { v4 as uuid } from 'uuid';
 import IORedis from 'ioredis';
 import type { JobStatusChangedValue } from '@modules/jobs/domain/events/JobStatusChangedEvent';
@@ -49,8 +48,7 @@ export type CompressionSessionDrainCallback = (
 
 @injectable()
 export default class CompressionQueueService {
-    private queue: Queue | null = null;
-    private worker: Worker | null = null;
+    private controller: BullScopedQueueController<CompressionJobData, CompressionJobData> | null = null;
     private drainCallback: CompressionSessionDrainCallback | null = null;
 
     constructor(
@@ -72,25 +70,19 @@ export default class CompressionQueueService {
     }
 
     public start(): void {
-        if (this.queue) return;
+        if (this.controller) {
+            this.controller.start();
+            return;
+        }
 
-        const connection = createBullMQRedisConnectionOptions(getRedisConfig());
-        const concurrency = getTrajectoryCompressionQueueConcurrency();
-
-        this.queue = new Queue(QUEUE_NAME, {
-            connection,
-            defaultJobOptions: {
-                removeOnComplete: { count: 500 },
-                removeOnFail: { count: 200 }
-            }
-        });
-
-        this.worker = new Worker<CompressionJobData>(
-            QUEUE_NAME,
-            async (job) => {
-                let queueScopeLease: QueueScopeLease | null = null;
-
-                try {
+        this.controller = createBullScopedQueue<CompressionJobData, CompressionJobData>({
+            name: QUEUE_NAME,
+            logTag: '@trajectory-compression-queue',
+            redisConnectionFactory: () => createBullMQRedisConnectionOptions(getRedisConfig()),
+            concurrency: getTrajectoryCompressionQueueConcurrency(),
+            scopeLease: {
+                redis: this.redis,
+                resolveConstraints: async (job) => {
                     const trajectoryId = job.data.trajectoryId.trim();
                     if (!trajectoryId) {
                         throw new Error(`Missing trajectoryId for compression job ${job.data.jobId}`);
@@ -100,104 +92,74 @@ export default class CompressionQueueService {
                         job.data.teamClusterId,
                         'trajectoryCompression'
                     );
-                    const { lease, blockingScope } = await tryAcquireQueueScopeLease(
-                        this.redis,
-                        QUEUE_NAME,
-                        [
-                            {
-                                scope: 'trajectory',
-                                scopeId: trajectoryId,
-                                limit: queueScopeLimits.maxRunningPerTrajectory
-                            },
-                            {
-                                scope: 'team',
-                                scopeId: job.data.teamId,
-                                limit: queueScopeLimits.maxRunningPerTeam
-                            }
-                        ]
-                    );
-                    queueScopeLease = lease;
-                    if (!queueScopeLease || blockingScope) {
-                        await delayJobOnQueueScopeContention(job, {
-                            queueName: QUEUE_NAME,
-                            jobId: job.data.jobId,
-                            scope: blockingScope ?? {
-                                scope: 'trajectory',
-                                scopeId: trajectoryId,
-                                limit: queueScopeLimits.maxRunningPerTrajectory
-                            }
-                        });
-                    }
-
-                    await this.publishStatus(job.data.jobId, job.data.teamId, JobStatus.Running, {
-                        trajectoryId,
-                        trajectoryName: job.data.trajectoryName,
-                        timestep: job.data.timestep,
-                        message: 'Compressing frame with zstd'
-                    });
-
-                    await this.compressionProcessor.process(job.data);
-                    return job.data;
-                } finally {
-                    if (queueScopeLease) {
-                        await queueScopeLease.release();
-                    }
+                    return [
+                        {
+                            scope: 'trajectory',
+                            scopeId: trajectoryId,
+                            limit: queueScopeLimits.maxRunningPerTrajectory
+                        },
+                        {
+                            scope: 'team',
+                            scopeId: job.data.teamId,
+                            limit: queueScopeLimits.maxRunningPerTeam
+                        }
+                    ];
                 }
             },
-            {
-                connection,
-                concurrency,
-                removeOnComplete: { count: 500 },
-                removeOnFail: { count: 200 }
+            processor: async (job) => {
+                const trajectoryId = job.data.trajectoryId.trim();
+
+                await this.publishStatus(job.data.jobId, job.data.teamId, JobStatus.Running, {
+                    trajectoryId,
+                    trajectoryName: job.data.trajectoryName,
+                    timestep: job.data.timestep,
+                    message: 'Compressing frame with zstd'
+                });
+
+                await this.compressionProcessor.process(job.data);
+                return job.data;
+            },
+            onJobCompleted: async (job) => {
+                await this.runListenerStep('publish completed compression status', async () => {
+                    await this.publishStatus(job.data.jobId, job.data.teamId, JobStatus.Completed, {
+                        trajectoryId: job.data.trajectoryId,
+                        trajectoryName: job.data.trajectoryName,
+                        timestep: job.data.timestep,
+                        compressedFramePath: job.data.compressedFramePath,
+                        objectKey: job.data.objectKey,
+                        compressionCodec: job.data.compressionCodec
+                    });
+                });
+
+                await this.runListenerStep('track successful compression job', async () => {
+                    await this.trackSuccessfulJob(job.data);
+                });
+
+                await this.runListenerStep('decrement compression session', async () => {
+                    await this.decrementSession(job.data);
+                });
+            },
+            onJobFailed: async (job, error) => {
+                await this.runListenerStep('publish failed compression status', async () => {
+                    await this.publishStatus(job.data.jobId, job.data.teamId, JobStatus.Failed, {
+                        trajectoryId: job.data.trajectoryId,
+                        trajectoryName: job.data.trajectoryName,
+                        timestep: job.data.timestep,
+                        error: error.message
+                    });
+                });
+
+                await this.runListenerStep('increment failed compression count', async () => {
+                    await this.incrementFailed(job.data.trajectoryId);
+                });
+
+                await this.runListenerStep('decrement compression session', async () => {
+                    await this.decrementSession(job.data);
+                });
             }
-        );
-
-        this.worker.on('completed', async (job) => {
-            await this.runListenerStep('publish completed compression status', async () => {
-                await this.publishStatus(job.data.jobId, job.data.teamId, JobStatus.Completed, {
-                    trajectoryId: job.data.trajectoryId,
-                    trajectoryName: job.data.trajectoryName,
-                    timestep: job.data.timestep,
-                    compressedFramePath: job.data.compressedFramePath,
-                    objectKey: job.data.objectKey,
-                    compressionCodec: job.data.compressionCodec
-                });
-            });
-
-            await this.runListenerStep('track successful compression job', async () => {
-                await this.trackSuccessfulJob(job.data);
-            });
-
-            await this.runListenerStep('decrement compression session', async () => {
-                await this.decrementSession(job.data);
-            });
         });
 
-        this.worker.on('failed', async (job, error) => {
-            if (!job) return;
-            if (error instanceof DelayedError) return;
-
-            await this.runListenerStep('publish failed compression status', async () => {
-                await this.publishStatus(job.data.jobId, job.data.teamId, JobStatus.Failed, {
-                    trajectoryId: job.data.trajectoryId,
-                    trajectoryName: job.data.trajectoryName,
-                    timestep: job.data.timestep,
-                    error: error.message
-                });
-            });
-
-            await this.runListenerStep('increment failed compression count', async () => {
-                await this.incrementFailed(job.data.trajectoryId);
-            });
-
-            await this.runListenerStep('decrement compression session', async () => {
-                await this.decrementSession(job.data);
-            });
-        });
-
-        this.worker.on('error', (error) => {
-            logger.error(error, '@trajectory-compression-queue: worker error');
-        });
+        this.controller.start();
     }
 
     public async enqueueBatch(
@@ -221,7 +183,8 @@ export default class CompressionQueueService {
             };
         });
 
-        await this.queue!.addBulk(jobEntries.map(({ name, data, opts }) => ({ name, data, opts })));
+        const handle = this.controller!.requireHandle();
+        await handle.addBulk(jobEntries.map(({ name, data, opts }) => ({ name, data, opts })));
 
         await Promise.all(jobEntries.map(({ jobId, data }) => this.publishStatus(jobId, data.teamId, JobStatus.Queued, {
             trajectoryId: data.trajectoryId,
@@ -231,6 +194,12 @@ export default class CompressionQueueService {
         })));
 
         return jobEntries.map((entry) => entry.jobId);
+    }
+
+    public async stop(): Promise<void> {
+        if (this.controller) {
+            await this.controller.close();
+        }
     }
 
     private sessionKey(trajectoryId: string): string {

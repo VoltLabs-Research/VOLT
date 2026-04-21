@@ -1,5 +1,4 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Modal, { closeModal } from '@/shared/presentation/components/Modal';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
@@ -118,7 +117,7 @@ const NewFolderModal = ({
             onClose={handleModalClose}
             footer={<ModalFooterActions primary={primaryAction} secondary={secondaryAction} />}
         >
-            <Container className='p-1-5'>
+            <div className='volt-container p-1-5'>
                 <FormFieldRHF
                     label={fieldLabel}
                     placeholder={placeholder}
@@ -128,7 +127,7 @@ const NewFolderModal = ({
                     inputProps={inputProps}
                     error={error}
                 />
-            </Container>
+            </div>
         </Modal>
     );
 };

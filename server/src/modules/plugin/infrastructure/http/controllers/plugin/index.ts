@@ -2,6 +2,7 @@ import { ClonePluginUseCase } from '@modules/plugin/application/use-cases/plugin
 import { CreatePluginUseCase } from '@modules/plugin/application/use-cases/plugin/CreatePluginUseCase';
 import { DeleteBinaryUseCase } from '@modules/plugin/application/use-cases/plugin/DeleteBinaryUseCase';
 import { DeletePluginByIdUseCase } from '@modules/plugin/application/use-cases/plugin/DeletePluginByIdUseCase';
+import { DownloadPluginBinaryUseCase } from '@modules/plugin/application/use-cases/plugin/DownloadPluginBinaryUseCase';
 import { ExecutePluginUseCase } from '@modules/plugin/application/use-cases/plugin/ExecutePluginUseCase';
 import { ExportPluginUseCase } from '@modules/plugin/application/use-cases/plugin/ExportPluginUseCase';
 import { GetPluginByIdUseCase } from '@modules/plugin/application/use-cases/plugin/GetPluginByIdUseCase';
@@ -32,6 +33,7 @@ const ClonePluginController = createController(ClonePluginUseCase, HttpStatus.Cr
 const CreatePluginController = createController(CreatePluginUseCase, HttpStatus.Created);
 const DeleteBinaryController = createController(DeleteBinaryUseCase, HttpStatus.NoContent);
 const DeletePluginByIdController = createController(DeletePluginByIdUseCase, HttpStatus.NoContent);
+const DownloadPluginBinaryController = createPreparedDownloadStreamController(DownloadPluginBinaryUseCase);
 const ExecutePluginController = createController(ExecutePluginUseCase, {
     extendParams: withAuthenticatedUserId
 });
@@ -48,6 +50,7 @@ export default createControllerRegistry({
     create: CreatePluginController,
     deleteBinary: DeleteBinaryController,
     deleteById: DeletePluginByIdController,
+    downloadBinary: DownloadPluginBinaryController,
     executePlugin: ExecutePluginController,
     exportPlugin: ExportPluginController,
     getPluginById: GetPluginByIdController,

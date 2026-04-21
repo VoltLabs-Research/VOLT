@@ -1,10 +1,13 @@
 import { BaseController } from './BaseController';
 import { BaseStreamController } from './BaseStreamController';
 import { PaginatedBaseController } from './PaginatedBaseController';
+import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
+import logger from '@shared/infrastructure/logger';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import { asRecord } from '@shared/infrastructure/utilities/type-guards';
 import { container, injectable } from 'tsyringe';
+import { validateRequest, ValidationTarget } from '@shared/infrastructure/http/middleware/validation';
 import type { Response } from 'express';
 import type { IUseCase, UseCaseInput, UseCaseInstance, UseCaseOutput } from '@shared/application/IUseCase';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
@@ -18,6 +21,8 @@ type ControllerSuccessHandler<TUseCase extends UseCaseInstance> = (
     value: UseCaseOutput<TUseCase>
 ) => void | Promise<void>;
 
+type ControllerUnexpectedErrorHandler = (res: Response, error: unknown) => void;
+
 interface ControllerOptions<TUseCase extends UseCaseInstance = UseCaseInstance> {
     statusCode?: HttpStatus;
     validationSchema?: ValidationSchemaInput;
@@ -26,13 +31,32 @@ interface ControllerOptions<TUseCase extends UseCaseInstance = UseCaseInstance> 
         params: Record<string, unknown>
     ) => Record<string, unknown>;
     handleSuccess?: ControllerSuccessHandler<TUseCase>;
-    handleUnexpectedError?: (res: Response, error: unknown) => void;
+    /**
+     * Opt-in escape hatch: if provided, ANY rejection bubbling out of `handle`
+     * is routed here instead of reaching the global error middleware. Prefer
+     * throwing a typed ApplicationError from the use case over using this.
+     */
+    handleUnexpectedError?: ControllerUnexpectedErrorHandler;
 };
 
 type DerivedControllerOptions<TUseCase extends UseCaseInstance = UseCaseInstance> = Omit<
     ControllerOptions<TUseCase>,
     'statusCode'
 >;
+
+interface StreamControllerOptions<TUseCase extends IUseCase<unknown, StreamableOutput, unknown>>
+    extends DerivedControllerOptions<TUseCase> {
+    getHeaders?: (resultValue: UseCaseOutput<TUseCase>) => Record<string, string>;
+    prepareOutput?: (resultValue: UseCaseOutput<TUseCase>) => Promise<void>;
+};
+
+type PreparedDownloadStreamControllerOptions<
+    TUseCase extends IUseCase<unknown, StreamableOutput, unknown>
+> = Omit<StreamControllerOptions<TUseCase>, 'getHeaders' | 'prepareOutput'>;
+
+// ---------------------------------------------------------------------------
+// Shared helpers — identical across every variant, defined once.
+// ---------------------------------------------------------------------------
 
 const readUserAgent = (req: AuthenticatedRequest): string => {
     const userAgent = req.headers['user-agent'];
@@ -46,16 +70,6 @@ const buildRequestValidationContext = (req: AuthenticatedRequest): Record<string
         token: req.token
     };
 };
-
-interface StreamControllerOptions<TUseCase extends IUseCase<unknown, StreamableOutput, unknown>>
-    extends DerivedControllerOptions<TUseCase> {
-    getHeaders?: (resultValue: UseCaseOutput<TUseCase>) => Record<string, string>;
-    prepareOutput?: (resultValue: UseCaseOutput<TUseCase>) => Promise<void>;
-};
-
-type PreparedDownloadStreamControllerOptions<
-    TUseCase extends IUseCase<unknown, StreamableOutput, unknown>
-> = Omit<StreamControllerOptions<TUseCase>, 'getHeaders' | 'prepareOutput'>;
 
 const getControllerOptions = <TUseCase extends UseCaseInstance>(
     statusCodeOrOptions: HttpStatus | ControllerOptions<TUseCase> | undefined,
@@ -110,6 +124,100 @@ const buildControllerParams = (
     return extendParams(req, baseParams);
 };
 
+/**
+ * Wraps a controller's `handle` so that any rejection is routed through the
+ * `handleUnexpectedError` option — preserving the pre-refactor escape hatch
+ * for routes that mask errors with a custom payload. If the override itself
+ * throws, we re-throw so the global error middleware picks it up.
+ */
+const wrapHandleWithUnexpectedErrorHook = <THandler extends (req: AuthenticatedRequest, res: Response) => Promise<void>>(
+    handler: THandler,
+    onUnexpectedError: ControllerUnexpectedErrorHandler
+): THandler => {
+    const wrapped = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+        try {
+            await handler(req, res);
+        } catch (error) {
+            logger.error(error);
+
+            if (res.headersSent) {
+                throw error;
+            }
+
+            onUnexpectedError(res, error);
+        }
+    };
+
+    return wrapped as THandler;
+};
+
+/**
+ * Wraps `handle` with an inline validation pass. This is the single source of
+ * truth for request validation now that `BaseController.validate()` has been
+ * removed — see Task 4.3 of the complexity-reduction plan. The validation
+ * middleware previously exposed via `createValidationMiddleware` is still
+ * supported for routes that mount it explicitly; those routes will populate
+ * `req.validated` first, and this wrapper will simply re-assert the schema
+ * (cheap) or be a no-op when the controller has no `validationSchema`.
+ */
+const wrapHandleWithValidation = <THandler extends (req: AuthenticatedRequest, res: Response) => Promise<void>>(
+    handler: THandler,
+    validationSchema: ValidationSchemaInput | undefined
+): THandler => {
+    if (!validationSchema) {
+        return handler;
+    }
+
+    const wrapped = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+        const validationResult = validateRequest(
+            req,
+            validationSchema,
+            ValidationTarget.Body,
+            buildRequestValidationContext(req)
+        );
+
+        if (!validationResult.success) {
+            BaseResponse.error(
+                res,
+                validationResult.message,
+                HttpStatus.BadRequest,
+                validationResult.code
+            );
+            return;
+        }
+
+        await handler(req, res);
+    };
+
+    return wrapped as THandler;
+};
+
+/**
+ * Apply the shared handle wrappers (validation + unexpected-error escape hatch)
+ * in the same order used by every generated class. Keeps the per-variant
+ * constructor bodies down to a single line.
+ */
+const composeHandle = <THandler extends (req: AuthenticatedRequest, res: Response) => Promise<void>>(
+    handle: THandler,
+    validationSchema: ValidationSchemaInput | undefined,
+    onUnexpectedError: ControllerUnexpectedErrorHandler | undefined
+): THandler => {
+    let next = wrapHandleWithValidation(handle, validationSchema);
+
+    if (onUnexpectedError) {
+        next = wrapHandleWithUnexpectedErrorHook(next, onUnexpectedError);
+    }
+
+    return next;
+};
+
+// ---------------------------------------------------------------------------
+// Public factories — each returns a concrete class type so call sites keep
+// their existing narrowed shape for tsyringe's `container.resolve` / route
+// wiring. The shared pieces above eliminate 95% of the duplication that
+// used to live inside each factory.
+// ---------------------------------------------------------------------------
+
 export const createController = <TUseCase extends UseCaseInstance>(
     useCaseToken: InjectionToken<TUseCase>,
     statusCodeOrOptions: HttpStatus | ControllerOptions<TUseCase> = HttpStatus.OK
@@ -121,14 +229,12 @@ export const createController = <TUseCase extends UseCaseInstance>(
         constructor() {
             const useCase = container.resolve<TUseCase>(useCaseToken);
             super(useCase, options.statusCode);
-        }
 
-        protected override getValidationSchema(): ValidationSchemaInput | undefined {
-            return options.validationSchema;
-        }
-
-        protected override getRequestValidationContext(req: AuthenticatedRequest): unknown {
-            return buildRequestValidationContext(req);
+            this.handle = composeHandle(
+                this.handle,
+                options.validationSchema,
+                options.handleUnexpectedError
+            );
         }
 
         protected override getParams(req: AuthenticatedRequest): UseCaseInput<TUseCase> {
@@ -150,14 +256,6 @@ export const createController = <TUseCase extends UseCaseInstance>(
 
             return super.handleSuccess(req, res, value);
         }
-
-        protected override handleUnexpectedError(res: Response, error: unknown): void {
-            if (options.handleUnexpectedError) {
-                return options.handleUnexpectedError(res, error);
-            }
-
-            return super.handleUnexpectedError(res, error);
-        }
     };
 
     return GeneratedController;
@@ -174,14 +272,12 @@ export const createPaginatedController = <
         constructor() {
             const useCase = container.resolve<TUseCase>(useCaseToken);
             super(useCase);
-        }
 
-        protected override getValidationSchema(): ValidationSchemaInput | undefined {
-            return options.validationSchema;
-        }
-
-        protected override getRequestValidationContext(req: AuthenticatedRequest): unknown {
-            return buildRequestValidationContext(req);
+            this.handle = composeHandle(
+                this.handle,
+                options.validationSchema,
+                options.handleUnexpectedError
+            );
         }
 
         protected override getParams(req: AuthenticatedRequest): UseCaseInput<TUseCase> {
@@ -202,15 +298,7 @@ export const createPaginatedController = <
                 return;
             }
 
-            super.handleSuccess(req, res, value);
-        }
-
-        protected override handleUnexpectedError(res: Response, error: unknown): void {
-            if (options.handleUnexpectedError) {
-                return options.handleUnexpectedError(res, error);
-            }
-
-            return super.handleUnexpectedError(res, error);
+            super.handleSuccess(req, res, value as PaginatedResult<unknown>);
         }
     };
 
@@ -228,14 +316,12 @@ export const createStreamController = <
         constructor() {
             const useCase = container.resolve<TUseCase>(useCaseToken);
             super(useCase);
-        }
 
-        protected override getValidationSchema(): ValidationSchemaInput | undefined {
-            return options.validationSchema;
-        }
-
-        protected override getRequestValidationContext(req: AuthenticatedRequest): unknown {
-            return buildRequestValidationContext(req);
+            this.handle = composeHandle(
+                this.handle,
+                options.validationSchema,
+                options.handleUnexpectedError
+            );
         }
 
         protected override getParams(req: AuthenticatedRequest): UseCaseInput<TUseCase> {
@@ -246,37 +332,29 @@ export const createStreamController = <
             ) as UseCaseInput<TUseCase>;
         }
 
-        protected override getHeaders(resultValue: UseCaseOutput<TUseCase>): Record<string, string> {
+        protected override getHeaders(resultValue: StreamableOutput): Record<string, string> {
             return options.getHeaders
-                ? options.getHeaders(resultValue)
+                ? options.getHeaders(resultValue as UseCaseOutput<TUseCase>)
                 : super.getHeaders(resultValue);
         }
 
-        protected override async prepareOutput(resultValue: UseCaseOutput<TUseCase>): Promise<void> {
+        protected override async prepareOutput(resultValue: StreamableOutput): Promise<void> {
             if (options.prepareOutput) {
-                await options.prepareOutput(resultValue);
+                await options.prepareOutput(resultValue as UseCaseOutput<TUseCase>);
             }
         }
 
         protected override async handleSuccess(
             req: AuthenticatedRequest,
             res: Response,
-            value: UseCaseOutput<TUseCase>
+            value: StreamableOutput
         ): Promise<void> {
             if (options.handleSuccess) {
-                await options.handleSuccess(req, res, value);
+                await options.handleSuccess(req, res, value as UseCaseOutput<TUseCase>);
                 return;
             }
 
             await super.handleSuccess(req, res, value);
-        }
-
-        protected override handleUnexpectedError(res: Response, error: unknown): void {
-            if (options.handleUnexpectedError) {
-                return options.handleUnexpectedError(res, error);
-            }
-
-            return super.handleUnexpectedError(res, error);
         }
     };
 

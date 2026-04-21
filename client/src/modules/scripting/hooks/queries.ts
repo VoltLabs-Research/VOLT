@@ -1,4 +1,4 @@
-import service from '../api/service';
+import service from '../api/scripting-service';
 import {
     buildKeys,
     createInvalidatingMutation,

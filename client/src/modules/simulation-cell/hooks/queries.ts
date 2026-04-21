@@ -1,12 +1,11 @@
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import { buildKeys, createQuery } from '@/shared/infrastructure/query/create-paginated-query';
+import { buildKeys, createQuery } from '@/shared/infrastructure/query';
 import {
-    useCanvasAccessMode,
-    useCanvasDataAccess,
+    buildCanvasDataAccess,
+    DEFAULT_CANVAS_ACCESS_STATE,
+    useCanvasAccessStore,
     withAccessMode
 } from '@/modules/canvas/api/access';
 import service from '../api/service';
-import type { SimulationCell } from '../api/entities/simulation-cell';
 import type { GetSimulationCellsParams } from '../api/dtos/get-simulation-cells';
 import type { GetSimulationCellByTrajectoryParams } from '../api/dtos/get-simulation-cell-by-trajectory';
 
@@ -23,20 +22,16 @@ export const simulationCellsQueryKey = KEYS.listing;
 
 export const simulationCellsQuery = createQuery(KEYS.listing, service.getAll);
 
-type SimulationCellByTrajectoryResult = SimulationCell | null;
-
-type SimulationCellQueryOptions = Partial<UseQueryOptions<SimulationCellByTrajectoryResult, Error, SimulationCellByTrajectoryResult>>;
-
-export const simulationCellByTrajectoryQuery = (
-    params: GetSimulationCellByTrajectoryParams,
-    options?: SimulationCellQueryOptions
-) => {
-    const mode = useCanvasAccessMode();
-    const dataAccess = useCanvasDataAccess();
-
-    return useQuery<SimulationCellByTrajectoryResult, Error, SimulationCellByTrajectoryResult>({
-        ...options,
-        queryKey: withAccessMode(mode, KEYS.byTrajectory(params)),
-        queryFn: () => dataAccess.getSimulationCell(params)
-    });
+const getSimulationCellWithAccess = (params: GetSimulationCellByTrajectoryParams) => {
+    const mode = useCanvasAccessStore.getState().mode;
+    return buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode }).getSimulationCell(params);
 };
+
+const simulationCellByTrajectoryKey = (params: GetSimulationCellByTrajectoryParams) => {
+    return withAccessMode(useCanvasAccessStore.getState().mode, KEYS.byTrajectory(params));
+};
+
+export const simulationCellByTrajectoryQuery = createQuery(
+    simulationCellByTrajectoryKey,
+    getSimulationCellWithAccess
+);

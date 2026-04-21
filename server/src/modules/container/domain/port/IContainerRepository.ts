@@ -2,6 +2,5 @@ import { IBaseRepository } from '@shared/domain/port/IBaseRepository';
 import { Container, IContainerProps } from '@modules/container/domain/entities/Container';
 
 export interface IContainerRepository extends IBaseRepository<Container, IContainerProps> {
-    deleteByTeamId(teamId: string): Promise<void>;
     findByIdOrFail(containerId: string): Promise<Container>;
 };

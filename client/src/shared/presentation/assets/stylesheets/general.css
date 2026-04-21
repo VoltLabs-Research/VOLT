@@ -438,6 +438,21 @@
     border-radius: var(--radius-full);
 }
 
+/** Divider **/
+.volt-divider {
+    background: var(--color-border-soft);
+}
+
+.volt-divider--horizontal {
+    height: 1px;
+    width: 100%;
+}
+
+.volt-divider--vertical {
+    width: 1px;
+    height: 100%;
+}
+
 /** Shared Animations **/
 @keyframes animate-pulse {
     0%, 100% { opacity: 1; }

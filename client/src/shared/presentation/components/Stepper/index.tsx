@@ -1,4 +1,3 @@
-import Container from '../Container';
 import './Stepper.css';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -183,15 +182,15 @@ const Stepper = <K extends string>({
 
     if(!indicators){
         return (
-            <Container className='stepper-standalone'>
+            <div className='volt-container stepper-standalone'>
                 {renderStepContent()}
-            </Container>
+            </div>
         );
     }
 
     return (
-        <Container className='stepper-with-sidebar d-flex overflow-hidden flex-1'>
-            <Container className='stepper-sidebar d-flex column gap-05' role='tablist' aria-orientation='vertical'>
+        <div className='volt-container stepper-with-sidebar d-flex overflow-hidden flex-1'>
+            <div className='volt-container stepper-sidebar d-flex column gap-05' role='tablist' aria-orientation='vertical'>
                 {stepIndicators.map((indicator, index) => {
                     const indicatorIndex = steps.findIndex((s) => s.key === indicator.key);
                     const isActive = indicator.key === activeStep;
@@ -201,7 +200,7 @@ const Stepper = <K extends string>({
                     const panelId = `${stepperId}-${indicator.key}-panel`;
                     
                     return (
-                        <Container key={indicator.key}>
+                        <div className="volt-container" key={indicator.key}>
                             <button
                                 id={tabId}
                                 type='button'
@@ -214,27 +213,27 @@ const Stepper = <K extends string>({
                                 onClick={() => handleIndicatorClick(indicator.key)}
                                 onKeyDown={(event) => handleIndicatorKeyDown(event, index)}
                             >
-                                <Container className='stepper-indicator-number d-flex flex-center font-weight-6'>
+                                <div className='volt-container stepper-indicator-number d-flex flex-center font-weight-6'>
                                     {index + 1}
-                                </Container>
-                                <Container className='stepper-indicator-label d-flex column gap-025'>
+                                </div>
+                                <div className='volt-container stepper-indicator-label d-flex column gap-025'>
                                     <span className='stepper-indicator-title'>{indicator.label}</span>
                                     {indicator.description && (
                                         <small className='stepper-indicator-desc'>{indicator.description}</small>
                                     )}
-                                </Container>
+                                </div>
                             </button>
                             {index < stepIndicators.length - 1 && (
-                                <Container className={`stepper-line ${indicatorIndex < currentIndex ? 'active' : ''}`} />
+                                <div className={`volt-container stepper-line ${indicatorIndex < currentIndex ? 'active' : ''}`} />
                             )}
-                        </Container>
+                        </div>
                     );
                 })}
-            </Container>
-            <Container className='stepper-content y-auto flex-1'>
+            </div>
+            <div className='volt-container stepper-content y-auto flex-1'>
                 {renderStepContent()}
-            </Container>
-        </Container>
+            </div>
+        </div>
     );
 };
 

@@ -1,5 +1,3 @@
-import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import './ChartTooltip.css';
 
 export interface ChartTooltipItem {
@@ -14,11 +12,11 @@ interface ChartTooltipProps {
 };
 
 const ChartTooltip = ({ title, items }: ChartTooltipProps) => (
-    <Container className='chart-tooltip' role='tooltip'>
+    <div className='volt-container chart-tooltip' role='tooltip'>
         {title && (
-            <Paragraph className='chart-tooltip-title font-size-2 font-weight-6 color-primary'>
+            <p className='volt-text chart-tooltip-title font-size-2 font-weight-6 color-primary'>
                 {title}
-            </Paragraph>
+            </p>
         )}
         <ul className='chart-tooltip-list'>
             {items.map((item, index) => (
@@ -31,7 +29,7 @@ const ChartTooltip = ({ title, items }: ChartTooltipProps) => (
                 </li>
             ))}
         </ul>
-    </Container>
+    </div>
 );
 
 export default ChartTooltip;

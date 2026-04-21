@@ -1,7 +1,7 @@
 import { ApiError, extractServerCode } from '@voltstack/voltclient';
 import axios from 'axios';
-import type { AxiosProgressEvent, AxiosRequestConfig } from 'axios';
-import type { CredentialProvider, HttpClient, HttpHeaders, HttpRequest } from '@voltstack/voltclient';
+import type { AxiosProgressEvent, AxiosRequestConfig, AxiosInstance } from 'axios';
+import type { CredentialProvider, HttpClient, HttpRequest } from '@voltstack/voltclient';
 
 interface CreateInstrumentedHttpClientOptions {
     baseUrl: string;
@@ -9,16 +9,23 @@ interface CreateInstrumentedHttpClientOptions {
     timeout: number;
 };
 
-interface TimeoutSignalResult {
-    signal?: AbortSignal;
-    cleanup: () => void;
-    didTimeout: () => boolean;
-};
-
 const DEFAULT_HTTP_TIMEOUT_MS = 30_000;
 const DISABLED_HTTP_TIMEOUT_MS = 0;
 const SLOW_REQUEST_THRESHOLD_MS = 2_000;
 const HOTSPOT_WARN_THRESHOLD_MS = 1_000;
+
+const HTTP_STATUS_CODES: Record<number, string> = {
+    400: 'Http::400',
+    401: 'Http::401',
+    403: 'Http::403',
+    404: 'Http::404',
+    409: 'Http::409',
+    429: 'Http::429',
+    500: 'Http::500',
+    502: 'Http::502',
+    503: 'Http::503',
+    504: 'Http::504'
+};
 
 let clientTraceId: string | null = null;
 
@@ -42,112 +49,40 @@ const logInstrumentation = (
     logger(`[client] ${label} ${Math.round(durationMs)}ms`, metadata ?? {});
 };
 
-const buildTimeoutSignal = (signal: AbortSignal | undefined, timeoutMs: number): TimeoutSignalResult => {
-    if (timeoutMs <= 0) {
-        return {
-            signal,
-            cleanup: () => undefined,
-            didTimeout: () => false
-        };
+class InstrumentedHttpClient implements HttpClient {
+    private readonly api: AxiosInstance;
+    private readonly defaultTimeoutMs: number;
+
+    constructor({ baseUrl, credential, timeout }: CreateInstrumentedHttpClientOptions) {
+        this.defaultTimeoutMs = timeout;
+        this.api = axios.create({
+            baseURL: baseUrl,
+            withCredentials: true
+        });
+
+        this.api.interceptors.request.use(async (config) => {
+            config.headers = config.headers ?? {};
+            config.headers['x-trace-id'] = getClientTraceId();
+
+            const token = credential ? await credential.getToken() : null;
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
+            }
+
+            return config;
+        });
     }
-
-    const controller = new AbortController();
-    let timedOut = false;
-    const timeoutId = window.setTimeout(() => {
-        timedOut = true;
-        controller.abort(new DOMException(`Request timed out after ${timeoutMs}ms`, 'TimeoutError'));
-    }, timeoutMs);
-
-    const abortFromSource = () => {
-        controller.abort(signal?.reason);
-    };
-
-    if (signal?.aborted) {
-        abortFromSource();
-    } else {
-        signal?.addEventListener('abort', abortFromSource, { once: true });
-    }
-
-    return {
-        signal: controller.signal,
-        cleanup: () => {
-            window.clearTimeout(timeoutId);
-            signal?.removeEventListener('abort', abortFromSource);
-        },
-        didTimeout: () => timedOut
-    };
-};
-
-const buildTraceHeaders = (headers?: HttpHeaders): HttpHeaders => {
-    return {
-        ...headers,
-        'x-trace-id': getClientTraceId()
-    };
-};
-
-const getHttpFallbackCode = (status: number): string => {
-    if (status === 400) {
-        return 'Http::400';
-    }
-
-    if (status === 401) {
-        return 'Http::401';
-    }
-
-    if (status === 403) {
-        return 'Http::403';
-    }
-
-    if (status === 404) {
-        return 'Http::404';
-    }
-
-    if (status === 409) {
-        return 'Http::409';
-    }
-
-    if (status === 429) {
-        return 'Http::429';
-    }
-
-    if (status === 500) {
-        return 'Http::500';
-    }
-
-    if (status === 502) {
-        return 'Http::502';
-    }
-
-    if (status === 503) {
-        return 'Http::503';
-    }
-
-    if (status === 504) {
-        return 'Http::504';
-    }
-
-    return 'Internal::Server::Error';
-};
-
-class BrowserAxiosHttpClient implements HttpClient {
-    private readonly api = axios.create({
-        timeout: DISABLED_HTTP_TIMEOUT_MS,
-        withCredentials: true
-    });
-
-    constructor(
-        private readonly baseUrl: string,
-        private readonly credential?: CredentialProvider
-    ) {}
 
     async request<T>(request: HttpRequest): Promise<T> {
-        const token = this.credential ? await this.credential.getToken() : null;
-        const headers = buildTraceHeaders(request.headers);
-        const hasExplicitContentType = headers['Content-Type'] !== undefined || headers['content-type'] !== undefined;
+        const requestStart = performance.now();
+        const requestTimeoutMs = typeof Reflect.get(request, 'timeoutMs') === 'number'
+            ? Number(Reflect.get(request, 'timeoutMs'))
+            : request.responseType === 'blob'
+                ? DISABLED_HTTP_TIMEOUT_MS
+                : this.defaultTimeoutMs;
 
-        if (token) {
-            headers.Authorization = `Bearer ${token}`;
-        }
+        const headers = { ...(request.headers ?? {}) };
+        const hasExplicitContentType = headers['Content-Type'] !== undefined || headers['content-type'] !== undefined;
 
         if (request.body instanceof FormData) {
             delete headers['Content-Type'];
@@ -156,26 +91,36 @@ class BrowserAxiosHttpClient implements HttpClient {
             headers['Content-Type'] = 'application/json';
         }
 
+        const config: AxiosRequestConfig = {
+            method: request.method,
+            url: request.url,
+            params: request.query,
+            data: request.body,
+            headers,
+            signal: request.signal,
+            timeout: requestTimeoutMs,
+            responseType: request.responseType ?? 'json',
+            onUploadProgress: request.onUploadProgress
+                ? (event: AxiosProgressEvent) => {
+                    request.onUploadProgress?.({
+                        loaded: event.loaded,
+                        total: event.total
+                    });
+                }
+                : undefined
+        };
+
         try {
-            const config: AxiosRequestConfig = {
-                baseURL: this.baseUrl,
-                method: request.method,
-                url: request.url,
-                params: request.query,
-                data: request.body,
-                headers,
-                signal: request.signal,
-                responseType: request.responseType ?? 'json',
-                onUploadProgress: request.onUploadProgress
-                    ? (event: AxiosProgressEvent) => {
-                        request.onUploadProgress?.({
-                            loaded: event.loaded,
-                            total: event.total
-                        });
-                    }
-                    : undefined
-            };
             const response = await this.api.request<T>(config);
+            const durationMs = performance.now() - requestStart;
+
+            if (durationMs >= SLOW_REQUEST_THRESHOLD_MS) {
+                logInstrumentation('http.slow', durationMs, {
+                    method: request.method,
+                    url: request.url,
+                    traceId: getClientTraceId()
+                });
+            }
 
             if (response.status === 204 || response.headers['content-length'] === '0') {
                 return undefined as T;
@@ -199,7 +144,13 @@ class BrowserAxiosHttpClient implements HttpClient {
                 throw error;
             }
 
-            if (error.code === 'ECONNABORTED') {
+            if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+                const durationMs = performance.now() - requestStart;
+                logInstrumentation('http.timeout', durationMs, {
+                    method: request.method,
+                    url: request.url,
+                    traceId: getClientTraceId()
+                }, true);
                 throw new ApiError('Network::Timeout', undefined, error);
             }
 
@@ -208,61 +159,8 @@ class BrowserAxiosHttpClient implements HttpClient {
             }
 
             const codeFromServer = extractServerCode(error.response.data);
-            const fallbackCode = getHttpFallbackCode(error.response.status);
+            const fallbackCode = HTTP_STATUS_CODES[error.response.status] ?? 'Internal::Server::Error';
             throw new ApiError(codeFromServer ?? fallbackCode, error.response.status, error);
-        }
-    }
-}
-
-class InstrumentedHttpClient implements HttpClient {
-    private readonly transport: BrowserAxiosHttpClient;
-    private readonly timeoutMs: number;
-
-    constructor({ baseUrl, credential, timeout }: CreateInstrumentedHttpClientOptions) {
-        this.transport = new BrowserAxiosHttpClient(baseUrl, credential);
-        this.timeoutMs = timeout;
-    }
-
-    async request<T>(request: HttpRequest): Promise<T> {
-        const requestStart = performance.now();
-        const requestTimeoutMs = typeof Reflect.get(request, 'timeoutMs') === 'number'
-            ? Number(Reflect.get(request, 'timeoutMs'))
-            : request.responseType === 'blob'
-                ? DISABLED_HTTP_TIMEOUT_MS
-                : this.timeoutMs;
-        const timeout = buildTimeoutSignal(request.signal, requestTimeoutMs);
-
-        try {
-            const response = await this.transport.request<T>({
-                ...request,
-                headers: buildTraceHeaders(request.headers),
-                signal: timeout.signal
-            });
-            const durationMs = performance.now() - requestStart;
-
-            if (durationMs >= SLOW_REQUEST_THRESHOLD_MS) {
-                logInstrumentation('http.slow', durationMs, {
-                    method: request.method,
-                    url: request.url,
-                    traceId: getClientTraceId()
-                });
-            }
-
-            return response;
-        } catch (error) {
-            const durationMs = performance.now() - requestStart;
-
-            if (timeout.didTimeout()) {
-                logInstrumentation('http.timeout', durationMs, {
-                    method: request.method,
-                    url: request.url,
-                    traceId: getClientTraceId()
-                }, true);
-            }
-
-            throw error;
-        } finally {
-            timeout.cleanup();
         }
     }
 }

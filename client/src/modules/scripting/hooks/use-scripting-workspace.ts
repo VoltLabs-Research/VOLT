@@ -1,4 +1,4 @@
-import service from '../api/service';
+import service from '../api/scripting-service';
 import {
     scriptingNotebooksQuery,
     useCreateScriptingSessionMutation,
@@ -15,7 +15,7 @@ import {
     pickActiveNotebook
 } from '../utilities/workspace';
 import { isApiError } from '@/shared/errors/core';
-import { SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID } from '../components/molecules/ScriptingNotebookDeploymentModal';
+import { SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID } from '../components/ScriptingNotebookDeploymentModal';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import { showPromise } from '@/shared/presentation/hooks/toast';
@@ -28,7 +28,7 @@ import type { ScriptingSession, NotebookContainerStage } from '../api/entities/s
 import type {
     ScriptingNotebookDeploymentModalRequest,
     ScriptingNotebookDeploymentSelection
-} from '../components/molecules/ScriptingNotebookDeploymentModal';
+} from '../components/ScriptingNotebookDeploymentModal';
 import type { WaitForReadyScriptingSessionOptions, WaitForReadyScriptingSessionResult } from '../utilities/jupyter-session';
 
 interface UseScriptingWorkspaceInput {

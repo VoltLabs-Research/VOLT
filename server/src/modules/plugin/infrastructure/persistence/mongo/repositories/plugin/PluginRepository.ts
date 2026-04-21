@@ -14,18 +14,6 @@ export default class PluginRepository
         super(PluginModel, pluginMapper);
     }
 
-    async deleteById(id: string): Promise<boolean> {
-        const result = await this.model.findByIdAndDelete(id);
-        return !!result;
-    }
-    async delete(id: string): Promise<void> {
-        await this.deleteById(id);
-    }
-
-    async update(id: string, updates: Partial<PluginProps>): Promise<Plugin | null> {
-        return this.updateById(id, updates);
-    }
-
     async findByIds(ids: string[]): Promise<Plugin[]> {
         if (!ids.length) {
             return [];

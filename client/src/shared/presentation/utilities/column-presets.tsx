@@ -1,7 +1,6 @@
 import { formatDistanceToNow } from 'date-fns';
 import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCellPopover';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
-import Container from '@/shared/presentation/components/Container';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import type { User } from '@/modules/auth/api/entities/user';
 import type { ReactNode } from 'react';
@@ -233,12 +232,12 @@ export function titleWithIconColumn<TRow = unknown>(
         title: label,
         sortable: options?.sortable ?? true,
         render: (_value: unknown, row: TRow) => (
-            <Container className='d-flex items-center gap-075'>
-                <Container className='d-flex flex-center color-secondary'>
+            <div className='volt-container d-flex items-center gap-075'>
+                <div className='volt-container d-flex flex-center color-secondary'>
                     {icon}
-                </Container>
+                </div>
                 <span className='font-weight-6 color-secondary text-truncate'>{resolveTitle(row)}</span>
-            </Container>
+            </div>
         ),
         skeleton: { variant: 'text', width: options?.width ?? 180 }
     };

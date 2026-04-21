@@ -1,7 +1,7 @@
 import { ActivityType } from '@modules/daily-activity/domain/entities/DailyActivity';
 import dailyActitvityMapper from '@modules/daily-activity/infrastructure/persistence/mongo/mappers/DailyActivityMapper';
 import DailyActivityModel from '@modules/daily-activity/infrastructure/persistence/mongo/models/DailyActivityModel';
-import DailyActivity from '@modules/daily-activity/domain/entities/DailyActivity';
+import type DailyActivity from '@modules/daily-activity/domain/entities/DailyActivity';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import { injectable } from 'tsyringe';
 import type { DailyActivityProps } from '@modules/daily-activity/domain/entities/DailyActivity';

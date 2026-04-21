@@ -1,4 +1,3 @@
-import Container from '@/shared/presentation/components/Container';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import { motion } from 'framer-motion';
 import { useId } from 'react';
@@ -45,7 +44,7 @@ const SegmentedTabs = <TId extends string>({
     ].filter(Boolean).join(' ');
 
     return (
-        <Container className={containerClassName} role='tablist' aria-label={ariaLabel}>
+        <div className={`volt-container ${containerClassName}`} role='tablist' aria-label={ariaLabel}>
             {tabs.map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
@@ -74,7 +73,7 @@ const SegmentedTabs = <TId extends string>({
                     </button>
                 );
             })}
-        </Container>
+        </div>
     );
 };
 

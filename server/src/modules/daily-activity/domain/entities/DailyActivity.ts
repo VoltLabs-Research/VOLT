@@ -29,9 +29,14 @@ export enum ActivityType {
     SecretKeyDeletion = 'secret-key-deletion'
 };
 
-export default class DailyActivity {
-    constructor(
-        public _id: string,
-        public props: DailyActivityProps
-    ) {}
+export interface DailyActivity {
+    _id: string;
+    props: DailyActivityProps;
 };
+
+export const createDailyActivity = (_id: string, props: DailyActivityProps): DailyActivity => ({
+    _id,
+    props
+});
+
+export default DailyActivity;

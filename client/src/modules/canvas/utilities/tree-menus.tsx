@@ -1,5 +1,5 @@
 import { Eye, Minus, Plus, SlidersHorizontal } from 'lucide-react';
-import CanvasSlider from '../components/atoms/CanvasSlider';
+import CanvasSlider from '../components/CanvasSlider';
 
 import type { MenuOption } from '@/shared/presentation/types/menu';
 

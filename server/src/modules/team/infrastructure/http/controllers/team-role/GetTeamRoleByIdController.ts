@@ -1,5 +1,12 @@
-import { createController } from '@shared/infrastructure/http/controllers/createController';
-import GetTeamRoleByIdUseCase from '@modules/team/application/use-cases/team-role/GetTeamRoleByIdUseCase';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { createGetByIdController } from '@shared/infrastructure/http/controllers/createReadController';
 
-const GetTeamRoleByIdController = createController(GetTeamRoleByIdUseCase);
+const GetTeamRoleByIdController = createGetByIdController({
+    repositoryToken: TEAM_TOKENS.TeamRoleRepository,
+    paramKey: 'roleId',
+    notFoundCode: ErrorCodes.TEAM_ROLE_NOT_FOUND,
+    notFoundMessage: 'TeamRole not found'
+});
+
 export default GetTeamRoleByIdController;

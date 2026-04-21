@@ -10,11 +10,11 @@ import {
     useCanvasAccessStore,
     withAccessMode
 } from '@/modules/canvas/api/access';
+import type { GetRasterMetadataParams } from '@/modules/raster/api/dtos/get-raster-metadata';
 import type {
-    GetRasterMetadataParams,
     TriggerRasterizationParams,
     TriggerRasterizationResponse
-} from '@/modules/raster/api/dtos';
+} from '@/modules/raster/api/dtos/trigger-rasterization';
 
 const BASE_KEY = 'raster';
 
@@ -51,6 +51,10 @@ const getRasterMetadataWithAccess = (params: GetRasterMetadataParams) => {
 const rasterMetadataKey = (params: GetRasterMetadataParams) => withAccessMode(useCanvasAccessStore.getState().mode, KEYS.metadata(params));
 export const rasterMetadataQuery = createQuery(rasterMetadataKey, getRasterMetadataWithAccess);
 
+// Kept as raw `useMutation`: needs composed `onError` alongside `onSuccess`
+// plus pre-mutation pending-state bookkeeping. `createMutation` only composes
+// `onSuccess`, so wiring the error path through the helper would lose the
+// defensive cleanup and duplicate the try/catch inside `mutationFn`.
 export const useTriggerRasterizationMutation = () => {
     return useMutation<TriggerRasterizationResponse, Error, TriggerRasterizationParams>({
         mutationFn: async (variables) => {

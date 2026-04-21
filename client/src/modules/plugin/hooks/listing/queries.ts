@@ -6,7 +6,7 @@ import {
     type UseQueryOptions
 } from '@tanstack/react-query';
 import queryClient from '@/shared/infrastructure/query/query-client';
-import { createMutation, buildKeys } from '@/shared/infrastructure/query';
+import { createMutation, createQuery, buildKeys } from '@/shared/infrastructure/query';
 import {
     buildCanvasDataAccess,
     DEFAULT_CANVAS_ACCESS_STATE,
@@ -18,10 +18,7 @@ import {
 import listingService from '../../api/services/listing';
 import type { ExportListingByAnalysisInputDTO } from '../../api/dtos/listing/export-listing-by-analysis';
 import type { ExportPluginListingInputDTO } from '../../api/dtos/listing/export-plugin-listing';
-import type {
-    GetAnalysisListingExportOptionsInputDTO,
-    GetAnalysisListingExportOptionsOutputDTO
-} from '../../api/dtos/listing/get-analysis-listing-export-options';
+import type { GetAnalysisListingExportOptionsInputDTO } from '../../api/dtos/listing/get-analysis-listing-export-options';
 import type { GetPluginListingInputDTO, GetPluginListingOutputDTO } from '../../api/dtos/listing/get-plugin-listing';
 import type { GetSubListingInputDTO, GetSubListingOutputDTO } from '../../api/dtos/listing/get-sub-listing';
 
@@ -80,6 +77,8 @@ export const fetchPluginListing = (params: GetPluginListingInputDTO) => {
     return queryClient.fetchQuery(buildPluginListingQueryOptions(params));
 };
 
+// Kept as raw `useQueries`: `createQuery` wraps a single `useQuery`; there is
+// no helper for parallel multi-query dispatch.
 export const usePluginListingSubListingQueries = (paramsList: GetPluginListingInputDTO[]) => {
     const mode = useCanvasAccessMode();
     const dataAccess = useCanvasDataAccess();
@@ -99,6 +98,10 @@ export const usePluginListingSubListingQueries = (paramsList: GetPluginListingIn
     });
 };
 
+// Kept as raw `useQuery`: the query key and `queryFn` derive from React hooks
+// (`useCanvasAccessMode`, `useCanvasDataAccess`, `useCanvasAccessStore`) that
+// must run inside the hook body. `createQuery` resolves key/fn from plain
+// params at module scope and cannot call hooks.
 export const usePluginListingQuery = (
     params: GetPluginListingInputDTO,
     options?: QueryOptions<GetPluginListingOutputDTO, GetPluginListingOutputDTO>
@@ -115,6 +118,10 @@ export const usePluginListingQuery = (
     });
 };
 
+// Kept as raw `useInfiniteQuery`: depends on React hooks for key/fn and uses
+// a custom response shape (not `PaginatedResponse<TEntity>`) plus a per-call
+// `getNextPageParam`. `createInfiniteQuery` is locked to `PaginatedResponse`
+// and owns pagination semantics itself.
 export const usePluginListingInfiniteQuery = (
     params: Omit<GetPluginListingInputDTO, 'page'> & { limit: number },
     options: { getNextPageParam: (lastPage: GetPluginListingOutputDTO) => number | undefined; enabled?: boolean }
@@ -143,6 +150,8 @@ export const usePluginListingInfiniteQuery = (
 
 // ─── Sub-listing queries ─────────────────────────────────────────────────────
 
+// Kept as raw `useInfiniteQuery`: same reason as `usePluginListingInfiniteQuery`
+// (React-hook-derived key/fn plus custom non-`PaginatedResponse` page shape).
 export const useSubListingInfiniteQuery = (
     params: Omit<GetSubListingInputDTO, 'page'> & { limit: number },
     options: { getNextPageParam: (lastPage: GetSubListingOutputDTO) => number | undefined; enabled?: boolean }
@@ -169,16 +178,10 @@ export const useSubListingInfiniteQuery = (
     });
 };
 
-export const useAnalysisListingExportOptionsQuery = (
-    params: GetAnalysisListingExportOptionsInputDTO,
-    options?: QueryOptions<GetAnalysisListingExportOptionsOutputDTO, GetAnalysisListingExportOptionsOutputDTO>
-) => {
-    return useQuery<GetAnalysisListingExportOptionsOutputDTO, Error, GetAnalysisListingExportOptionsOutputDTO, QueryKey>({
-        queryKey: LISTING_QUERY_KEYS.analysisExportOptionsDetail(params),
-        queryFn: () => listingService.getAnalysisListingExportOptions(params),
-        ...options
-    });
-};
+export const useAnalysisListingExportOptionsQuery = createQuery(
+    LISTING_QUERY_KEYS.analysisExportOptionsDetail,
+    (params: GetAnalysisListingExportOptionsInputDTO) => listingService.getAnalysisListingExportOptions(params)
+);
 
 // ─── Mutation hooks ──────────────────────────────────────────────────────────
 

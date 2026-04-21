@@ -1,6 +1,4 @@
 import Button from '@/shared/presentation/components/Button';
-import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
 import './EmptyState.css';
 import { useId } from 'react';
 import type { ReactNode } from 'react';
@@ -29,27 +27,28 @@ const EmptyState = ({
     announce = false
 }: EmptyStateProps) => {
     const headingId = useId();
+    const HeadingTag = headingLevel;
 
     return (
         <section aria-labelledby={headingId} className={`d-flex items-center content-center w-max h-max empty-state-container ${className || ''}`}>
-            <Container className='text-center d-flex column gap-1-5 items-center empty-state-content'>
+            <div className='volt-container text-center d-flex column gap-1-5 items-center empty-state-content'>
                 {announce && (
                     <span className='empty-state-live-region' aria-live='polite' aria-atomic='true'>
                         {title}. {description}
                     </span>
                 )}
                 {icon && (
-                    <Container className='d-flex content-center items-center empty-state-icon color-muted'>
+                    <div className='volt-container d-flex content-center items-center empty-state-icon color-muted'>
                         {icon}
-                    </Container>
+                    </div>
                 )}
 
-                <Container className='d-flex column gap-05 text-center'>
-                    <Title as={headingLevel} id={headingId} className='font-size-3 font-weight-5 color-primary'>
+                <div className='volt-container d-flex column gap-05 text-center'>
+                    <HeadingTag id={headingId} className='volt-title font-size-3 font-weight-5 color-primary'>
                         {title}
-                    </Title>
+                    </HeadingTag>
                     <span className='font-size-2 color-secondary line-height-5'>{description}</span>
-                </Container>
+                </div>
 
                 {buttonText && buttonOnClick && (
                     <Button
@@ -63,7 +62,7 @@ const EmptyState = ({
                         {buttonText}
                     </Button>
                 )}
-            </Container>
+            </div>
         </section>
     );
 };

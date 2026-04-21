@@ -5,7 +5,6 @@ import FloatingRootContext, {
     useFloatingOwnerIds,
     useFloatingRoot
 } from '@/shared/presentation/contexts/FloatingRootContext';
-import Container from '@/shared/presentation/components/Container';
 import composeRefs from '@/shared/presentation/utilities/compose-refs';
 import './Popover.css';
 import { useFloating, useClick, useDismiss, useRole, useInteractions, FloatingPortal, FloatingFocusManager, offset, flip, shift, autoUpdate } from '@floating-ui/react';
@@ -47,7 +46,7 @@ interface PopoverProps {
     shouldOpenOnContextMenu?: ContextMenuOpenPredicate;
 };
 
-const Popover: React.FC<PopoverProps> = ({
+const Popover = ({
     id,
     trigger,
     children,
@@ -62,7 +61,7 @@ const Popover: React.FC<PopoverProps> = ({
     ariaLabelledBy,
     ariaDescribedBy,
     shouldOpenOnContextMenu
-}) => {
+}: PopoverProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const [contextMenuPosition, setContextMenuPosition] = useState<ContextMenuPosition | null>(null);
     const [floatingElement, setFloatingElement] = useState<HTMLElement | null>(null);
@@ -201,24 +200,13 @@ const Popover: React.FC<PopoverProps> = ({
             {isOpen && (
                 <FloatingPortal root={floatingRoot}>
                     <FloatingFocusManager context={context} modal={false}>
-                        <Container
-                            ref={handleFloatingRef}
-                            id={id}
-                            className={`popover ${noPadding ? 'popover--no-padding' : ''} radius-lg d-flex column glass-bg ${className} color-primary`}
-                            style={floatingStyles}
-                            onClick={(event) => event.stopPropagation()}
-                            aria-label={ariaLabel}
-                            aria-labelledby={ariaLabelledBy}
-                            aria-describedby={ariaDescribedBy}
-                            tabIndex={-1}
-                            {...getFloatingProps()}
-                        >
+                        <div ref={handleFloatingRef} id={id} className={`volt-container popover ${noPadding ? 'popover--no-padding' : ''} radius-lg d-flex column glass-bg ${className} color-primary`} style={floatingStyles} onClick={(event) => event.stopPropagation()} aria-label={ariaLabel} aria-labelledby={ariaLabelledBy} aria-describedby={ariaDescribedBy} tabIndex={-1} {...getFloatingProps()}>
                             <FloatingOwnerIdsContext.Provider value={nextFloatingOwnerIds}>
                                 <FloatingRootContext.Provider value={floatingElement ?? floatingRoot}>
                                     {renderChildren()}
                                 </FloatingRootContext.Provider>
                             </FloatingOwnerIdsContext.Provider>
-                        </Container>
+                        </div>
                     </FloatingFocusManager>
                 </FloatingPortal>
             )}

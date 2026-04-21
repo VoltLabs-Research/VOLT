@@ -1,6 +1,4 @@
 import Button from '@/shared/presentation/components/Button';
-import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
 import './AccessDenied.css';
 import { ShieldOff } from 'lucide-react';
 import { useId } from 'react';
@@ -23,20 +21,21 @@ const AccessDenied = ({
 }: AccessDeniedProps) => {
     const navigate = useNavigate();
     const headingId = useId();
+    const HeadingTag = headingLevel;
 
     return (
         <section aria-labelledby={headingId} className={`access-denied-container d-flex items-center content-center w-max h-max ${className || ''}`}>
-            <Container className='text-center d-flex column gap-1-5 items-center access-denied-content'>
-                <Container className='d-flex content-center items-center access-denied-icon'>
+            <div className='volt-container text-center d-flex column gap-1-5 items-center access-denied-content'>
+                <div className='volt-container d-flex content-center items-center access-denied-icon'>
                     <ShieldOff size={24} />
-                </Container>
+                </div>
 
-                <Container className='d-flex column gap-05 text-center'>
-                    <Title as={headingLevel} id={headingId} className='font-size-3 font-weight-5 color-primary'>
+                <div className='volt-container d-flex column gap-05 text-center'>
+                    <HeadingTag id={headingId} className='volt-title font-size-3 font-weight-5 color-primary'>
                         {title}
-                    </Title>
+                    </HeadingTag>
                     <span className='font-size-2 color-secondary line-height-5'>{description}</span>
-                </Container>
+                </div>
 
                 {showBack && (
                     <Button
@@ -49,7 +48,7 @@ const AccessDenied = ({
                         Go back
                     </Button>
                 )}
-            </Container>
+            </div>
         </section>
     );
 };

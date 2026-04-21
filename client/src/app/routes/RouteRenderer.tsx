@@ -6,7 +6,7 @@ import Loader from '@/shared/presentation/components/Loader';
 import PageTransition from '@/shared/presentation/components/PageTransition';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
-import DashboardLayout from '@/modules/dashboard/components/organisms/DashboardLayout';
+import DashboardLayout from '@/modules/dashboard/components/DashboardLayout';
 import { guestRoutes, optionalAuthRoutes, protectedRoutes, publicRoutes } from '@/app/routes/definitions';
 import ProtectedRoute, { RouteMode } from '@/app/routes/ProtectedRoute';
 import { RoutePermissionMode } from '@/app/routes/types';

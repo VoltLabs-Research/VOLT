@@ -5,7 +5,7 @@ import './StartPage.css';
 import { useRef } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
-import UserInfo from '@/modules/auth/components/atoms/UserInfo';
+import UserInfo from '@/modules/auth/components/UserInfo';
 import Button from '@/shared/presentation/components/Button';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import useTip from '@/shared/tips/use-tip';
