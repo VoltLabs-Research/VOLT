@@ -1,6 +1,7 @@
 .container-details-layout {
     background: var(--color-content-bg);
-    min-height: 92vh;
+    height: 100%;
+    min-height: 0;
 }
 
 .container-details-status-badge {
@@ -44,6 +45,7 @@
     background: var(--color-content-bg);
     min-width: 0;
     min-height: 0;
+    overflow: auto;
 }
 
 .container-details-placeholder-state {

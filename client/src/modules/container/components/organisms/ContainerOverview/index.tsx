@@ -143,7 +143,7 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
     }));
 
     return (
-        <Container className='container-overview p-1-5 d-flex column'>
+        <Container className='container-overview d-flex column'>
             <Container className='container-overview-metrics'>
                 <ContainerMetricTile
                     label='CPU'
@@ -186,88 +186,88 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
 
             <hr className='container-overview-divider' />
 
-            <ContainerInspectorList title='Information' rows={inspectorRows} />
+            <Container className='container-overview-inspector'>
+                <ContainerInspectorList title='Information' rows={inspectorRows} />
 
-            <hr className='container-overview-divider' />
+                <Container className='container-overview-inspector-side'>
+                    <Container className='d-flex column'>
+                        <Title as='h3' className='container-overview-section-title'>Environment Variables</Title>
+                        <EditableKeyValueCard<EnvVariableFormItem>
+                            items={envItems}
+                            fields={[
+                                { key: 'key', placeholder: 'Key' },
+                                { key: 'value', placeholder: 'Value' }
+                            ]}
+                            emptyMessage='No environment variables'
+                            onSave={onUpdateEnv}
+                            createEmpty={() => ({ key: '', value: '' })}
+                            showCard={false}
+                            className='d-flex column'
+                            renderItem={(item, i) => (
+                                <Container key={i} className='container-overview-env-row d-flex items-center content-between'>
+                                    <span className='container-overview-env-key'>{item.key}</span>
+                                    <span className='container-overview-env-value'>{item.value}</span>
+                                </Container>
+                            )}
+                        />
+                    </Container>
 
-            <Container className='d-flex column'>
-                <Title as='h3' className='container-overview-section-title'>Environment Variables</Title>
-                <EditableKeyValueCard<EnvVariableFormItem>
-                    items={envItems}
-                    fields={[
-                        { key: 'key', placeholder: 'Key' },
-                        { key: 'value', placeholder: 'Value' }
-                    ]}
-                    emptyMessage='No environment variables'
-                    onSave={onUpdateEnv}
-                    createEmpty={() => ({ key: '', value: '' })}
-                    showCard={false}
-                    className='d-flex column'
-                    renderItem={(item, i) => (
-                        <Container key={i} className='container-overview-env-row d-flex items-center content-between'>
-                            <span className='container-overview-env-key'>{item.key}</span>
-                            <span className='container-overview-env-value'>{item.value}</span>
-                        </Container>
-                    )}
-                />
-            </Container>
+                    <Container className='d-flex column'>
+                        <Title as='h3' className='container-overview-section-title'>Port Bindings</Title>
+                        <EditableKeyValueCard<PortMappingFormItem>
+                            items={portItems}
+                            fields={[
+                                { key: 'private', placeholder: 'Container Port', type: 'number' },
+                                { key: 'public', placeholder: 'Host Port', type: 'number' }
+                            ]}
+                            emptyMessage='No ports exposed'
+                            onSave={onUpdatePorts}
+                            createEmpty={() => ({ private: 0 })}
+                            showCard={false}
+                            className='d-flex column'
+                            renderItem={(item, i) => {
+                                const resolvedPublicPort = typeof item.public === 'number' && item.public > 0
+                                    ? item.public
+                                    : null;
+                                const accessiblePort = container.accessiblePorts?.find((port) => port.private === item.private);
+                                const canOpen = accessiblePort?.browserAccessible && accessiblePort.status === 'available';
 
-            <hr className='container-overview-divider' />
-
-            <Container className='d-flex column'>
-                <Title as='h3' className='container-overview-section-title'>Port Bindings</Title>
-                <EditableKeyValueCard<PortMappingFormItem>
-                    items={portItems}
-                    fields={[
-                        { key: 'private', placeholder: 'Container Port', type: 'number' },
-                        { key: 'public', placeholder: 'Host Port', type: 'number' }
-                    ]}
-                    emptyMessage='No ports exposed'
-                    onSave={onUpdatePorts}
-                    createEmpty={() => ({ private: 0 })}
-                    showCard={false}
-                    className='d-flex column'
-                    renderItem={(item, i) => {
-                        const resolvedPublicPort = typeof item.public === 'number' && item.public > 0
-                            ? item.public
-                            : null;
-                        const accessiblePort = container.accessiblePorts?.find((port) => port.private === item.private);
-                        const canOpen = accessiblePort?.browserAccessible && accessiblePort.status === 'available';
-
-                        return (
-                            <Container key={i} className='container-overview-port-row d-flex content-between items-center'>
-                                <Container className='d-flex gap-075 items-center'>
-                                    <span className='container-overview-port-label'>{item.private}/tcp</span>
-                                    {resolvedPublicPort !== null && (
-                                        <Container className='d-flex gap-05 items-center'>
-                                            <span className='color-muted'>→</span>
-                                            <span className='container-overview-port-mapping'>{resolvedPublicPort}</span>
+                                return (
+                                    <Container key={i} className='container-overview-port-row d-flex content-between items-center'>
+                                        <Container className='d-flex gap-075 items-center'>
+                                            <span className='container-overview-port-label'>{item.private}/tcp</span>
+                                            {resolvedPublicPort !== null && (
+                                                <Container className='d-flex gap-05 items-center'>
+                                                    <span className='color-muted'>→</span>
+                                                    <span className='container-overview-port-mapping'>{resolvedPublicPort}</span>
+                                                </Container>
+                                            )}
                                         </Container>
-                                    )}
-                                </Container>
-                                <Container className='d-flex gap-05 items-center'>
-                                    {canOpen && (
-                                        <Button
-                                            variant='ghost'
-                                            intent='brand'
-                                            size='sm'
-                                            onClick={() => openPort(container._id, item.private)}
-                                            isLoading={openingPort === item.private}
-                                        >
-                                            Open
-                                        </Button>
-                                    )}
-                                    {!canOpen && accessiblePort?.status === 'unavailable' && (
-                                        <span className='font-size-1 color-muted'>Unavailable</span>
-                                    )}
-                                    {!canOpen && accessiblePort?.status !== 'unavailable' && (
-                                        <span className='font-size-1 color-muted'>TCP only</span>
-                                    )}
-                                </Container>
-                            </Container>
-                        );
-                    }}
-                />
+                                        <Container className='d-flex gap-05 items-center'>
+                                            {canOpen && (
+                                                <Button
+                                                    variant='ghost'
+                                                    intent='brand'
+                                                    size='sm'
+                                                    onClick={() => openPort(container._id, item.private)}
+                                                    isLoading={openingPort === item.private}
+                                                >
+                                                    Open
+                                                </Button>
+                                            )}
+                                            {!canOpen && accessiblePort?.status === 'unavailable' && (
+                                                <span className='font-size-1 color-muted'>Unavailable</span>
+                                            )}
+                                            {!canOpen && accessiblePort?.status !== 'unavailable' && (
+                                                <span className='font-size-1 color-muted'>TCP only</span>
+                                            )}
+                                        </Container>
+                                    </Container>
+                                );
+                            }}
+                        />
+                    </Container>
+                </Container>
             </Container>
         </Container>
     );

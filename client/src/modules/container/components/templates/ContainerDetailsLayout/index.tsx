@@ -8,7 +8,8 @@ import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import useTip from '@/shared/tips/use-tip';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ContainerAction } from '../../../api/dtos/update-container';
 import ContainerDetailsSkeleton from '../../atoms/ContainerDetailsSkeleton';
@@ -42,18 +43,7 @@ const ContainerDetailsLayout = () => {
     const { id } = useParams<ContainerDetailsRouteParams>();
     const { pathname } = useLocation();
     const navigate = useNavigate();
-    const didCollapseSidebar = useRef(false);
-
-    useEffect(() => {
-        didCollapseSidebar.current = true;
-        window.dispatchEvent(new CustomEvent('volt:request-sidebar-collapse'));
-
-        return () => {
-            if (didCollapseSidebar.current) {
-                window.dispatchEvent(new CustomEvent('volt:request-sidebar-expand'));
-            }
-        };
-    }, []);
+    const [headerActions, setHeaderActions] = useState<ReactNode>(null);
 
     const updateContainerMutation = containerQuery.useUpdateMutation();
     const deleteContainerMutation = containerQuery.useDeleteMutation();
@@ -105,7 +95,7 @@ const ContainerDetailsLayout = () => {
         }
     }, [checkAccessDeniedError, error, isError]);
 
-    const handleAction = async (action: ContainerAction | 'delete') => {
+    const handleAction = useCallback(async (action: ContainerAction | 'delete') => {
         if(!container || !id) return;
 
         try{
@@ -140,9 +130,9 @@ const ContainerDetailsLayout = () => {
         }catch{
             // Error handled by showPromise
         }
-    };
+    }, [container, id, deleteContainerMutation, updateContainerMutation, navigate]);
 
-    const handleUpdateEnv = async (env: EnvVariable[]) => {
+    const handleUpdateEnv = useCallback(async (env: EnvVariable[]) => {
         if(!id) return;
         await runAction({
             action: () => updateContainerMutation.mutateAsync({ id, params: { env } }),
@@ -152,9 +142,9 @@ const ContainerDetailsLayout = () => {
                 error: 'Failed to update environment variables'
             })
         });
-    };
+    }, [id, updateContainerMutation]);
 
-    const handleUpdatePorts = async (ports: PortMapping[]) => {
+    const handleUpdatePorts = useCallback(async (ports: PortMapping[]) => {
         if(!id) return;
         await runAction({
             action: () => updateContainerMutation.mutateAsync({ id, params: { ports } }),
@@ -164,7 +154,21 @@ const ContainerDetailsLayout = () => {
                 error: 'Failed to update ports'
             })
         });
-    };
+    }, [id, updateContainerMutation]);
+
+    const handleBack = useCallback(() => navigate('/dashboard/containers'), [navigate]);
+
+    const outletContext = useMemo<ContainerDetailsContext | null>(() => {
+        if (!container) return null;
+        return {
+            container,
+            stats,
+            isRunning: !!isRunning,
+            onUpdateEnv: handleUpdateEnv,
+            onUpdatePorts: handleUpdatePorts,
+            setHeaderActions
+        };
+    }, [container, stats, isRunning, handleUpdateEnv, handleUpdatePorts]);
 
     if(isLoading && !container){
         return <ContainerDetailsSkeleton />;
@@ -172,7 +176,7 @@ const ContainerDetailsLayout = () => {
 
     if(accessDenied) return <AccessDenied />;
 
-    if(!container){
+    if(!container || !outletContext){
         return (
             <Container className='d-flex flex-center h-max'>
                 <RecoveryState
@@ -186,21 +190,14 @@ const ContainerDetailsLayout = () => {
         );
     }
 
-    const outletContext: ContainerDetailsContext = {
-        container,
-        stats,
-        isRunning: !!isRunning,
-        onUpdateEnv: handleUpdateEnv,
-        onUpdatePorts: handleUpdatePorts
-    };
-
     return (
         <Container className='container-details-layout d-flex column'>
             <ContainerDetailsHeader
                 container={container}
-                onBack={() => navigate('/dashboard/containers')}
+                onBack={handleBack}
                 onAction={handleAction}
                 actionLoading={actionLoading}
+                contextualActions={headerActions}
             />
 
             <Container className='container-details-content-area flex-1 d-flex column'>

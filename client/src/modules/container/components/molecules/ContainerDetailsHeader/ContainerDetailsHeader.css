@@ -48,8 +48,7 @@
 }
 
 .container-details-header-tabs-row {
-    padding-top: 0.75rem;
-    margin-top: 0.25rem;
+    margin: 1.5rem 0;
 }
 
 .container-details-header-tabs-row .segmented-tabs {
