@@ -3,7 +3,8 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
-import type { SetLatexFileEntrypointInputDTO, SetLatexFileEntrypointOutputDTO } from '@modules/latex/application/dtos/SetLatexFileEntrypointDTO';
+import type { SetLatexFileEntrypointInputDTO } from '@modules/latex/application/dtos/SetLatexFileEntrypointDTO';
+import type { LatexFileDTO } from '@modules/latex/application/dtos/LatexFileDTO';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
@@ -16,7 +17,7 @@ import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFile
  * exactly one entrypoint per document at all times.
  */
 @injectable()
-export class SetLatexFileEntrypointUseCase implements IUseCase<SetLatexFileEntrypointInputDTO, SetLatexFileEntrypointOutputDTO, ApplicationError> {
+export class SetLatexFileEntrypointUseCase implements IUseCase<SetLatexFileEntrypointInputDTO, LatexFileDTO, ApplicationError> {
     constructor(
         @inject(LATEX_TOKENS.LatexDocumentRepository)
         private readonly latexDocumentRepository: ILatexDocumentRepository,
@@ -25,7 +26,7 @@ export class SetLatexFileEntrypointUseCase implements IUseCase<SetLatexFileEntry
         private readonly latexFileRepository: ILatexFileRepository
     ) {}
 
-    async execute(input: SetLatexFileEntrypointInputDTO): Promise<Result<SetLatexFileEntrypointOutputDTO, ApplicationError>> {
+    async execute(input: SetLatexFileEntrypointInputDTO): Promise<Result<LatexFileDTO, ApplicationError>> {
         try {
             const document = await this.latexDocumentRepository.findByTeamAndDocumentId(
                 input.teamId,

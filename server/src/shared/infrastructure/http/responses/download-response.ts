@@ -18,6 +18,12 @@ interface StreamResponseParams {
     contentLength?: number;
     cacheControl?: string;
     prepare?: () => Promise<void>;
+    /**
+     * Extra headers applied on top of the base set (e.g. `Content-Encoding`,
+     * `Vary`). Callers use this to surface transport-level negotiation details
+     * that the generic stream response does not synthesize itself.
+     */
+    extraHeaders?: Record<string, string>;
 }
 
 interface SerializedDownloadResponseParams {
@@ -50,7 +56,8 @@ export const createDownloadStreamResponse = ({
     disposition = 'attachment',
     contentLength,
     cacheControl,
-    prepare
+    prepare,
+    extraHeaders
 }: StreamResponseParams): DownloadStreamOutput => {
     const headers: Record<string, string> = {
         'Content-Type': contentType,
@@ -68,6 +75,12 @@ export const createDownloadStreamResponse = ({
 
     if (cacheControl) {
         headers['Cache-Control'] = cacheControl;
+    }
+
+    if (extraHeaders) {
+        for (const [name, value] of Object.entries(extraHeaders)) {
+            headers[name] = value;
+        }
     }
 
     const response: DownloadStreamOutput = {

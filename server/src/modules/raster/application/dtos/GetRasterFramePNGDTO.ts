@@ -1,5 +1,3 @@
-import type { DownloadStreamOutputDTO } from '@modules/raster/application/dtos/shared/DownloadStreamOutputDTO';
-
 export interface GetRasterFramePNGInputDTO {
     trajectoryId: string;
     teamId: string;
@@ -7,5 +5,3 @@ export interface GetRasterFramePNGInputDTO {
     analysisId?: string;
     model?: string;
 };
-
-export type GetRasterFramePNGOutputDTO = DownloadStreamOutputDTO;

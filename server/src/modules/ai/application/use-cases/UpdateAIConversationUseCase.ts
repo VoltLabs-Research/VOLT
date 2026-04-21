@@ -5,7 +5,8 @@ import { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
 import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
-import { UpdateAIConversationInputDTO, UpdateAIConversationOutputDTO } from '@modules/ai/application/dtos/UpdateAIConversationDTO';
+import { UpdateAIConversationInputDTO } from '@modules/ai/application/dtos/UpdateAIConversationDTO';
+import { AIConversationDTO } from '@modules/ai/application/dtos/ListAIConversationsDTO';
 import { inject, injectable } from 'tsyringe';
 
 interface UpdateAIConversationLookup {
@@ -15,13 +16,13 @@ interface UpdateAIConversationLookup {
 };
 
 @injectable()
-export default class UpdateAIConversationUseCase implements IUseCase<UpdateAIConversationInputDTO, UpdateAIConversationOutputDTO, ApplicationError> {
+export default class UpdateAIConversationUseCase implements IUseCase<UpdateAIConversationInputDTO, AIConversationDTO, ApplicationError> {
     constructor(
         @inject(AI_TOKENS.AIConversationRepository)
         private readonly conversationRepository: IAIConversationRepository
     ) {}
 
-    async execute(input: UpdateAIConversationInputDTO): Promise<Result<UpdateAIConversationOutputDTO, ApplicationError>> {
+    async execute(input: UpdateAIConversationInputDTO): Promise<Result<AIConversationDTO, ApplicationError>> {
         const conversation = await this.conversationRepository.findOne({
             _id: input.conversationId,
             teamId: input.teamId,

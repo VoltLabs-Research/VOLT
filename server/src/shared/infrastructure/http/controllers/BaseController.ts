@@ -6,12 +6,6 @@ import type { IUseCase, UseCaseError, UseCaseInput, UseCaseInstance, UseCaseOutp
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import type { RequestValidationState, ValidatedRequest } from '@shared/infrastructure/http/middleware/validation';
 
-export interface ControllerError {
-    message: string;
-    statusCode: number;
-    code?: string;
-};
-
 type ValidatedAuthenticatedRequest = AuthenticatedRequest & ValidatedRequest;
 
 export abstract class BaseController<TUseCase extends UseCaseInstance> {

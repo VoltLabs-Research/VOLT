@@ -86,7 +86,7 @@ interface DaemonAnalysisPayload {
 
 const serializeAnalysis = (analysis: Analysis): DaemonAnalysisPayload => {
     return {
-        _id: analysis.id,
+        _id: analysis._id,
         plugin: analysis.props.plugin,
         pluginDisplayName: analysis.props.pluginDisplayName,
         computeClusterId: analysis.props.computeClusterId,
@@ -206,8 +206,11 @@ const dedupePluginReferenceExecutions = (
 };
 
 const encodeDispatchSection = async <T>(value: T): Promise<EncodedDispatchSection<T>> => {
-    const serializedValue = JSON.stringify(value);
-    const rawBytes = Buffer.byteLength(serializedValue);
+    // Why: single serialization pass — the Buffer carries both the byte count
+    // and the raw bytes fed to gzip, eliminating `JSON.stringify(value)` +
+    // `Buffer.byteLength(stringified)` as distinct passes over the same data.
+    const serializedBuffer = Buffer.from(JSON.stringify(value), 'utf8');
+    const rawBytes = serializedBuffer.byteLength;
 
     if (rawBytes < COMPRESSIBLE_ANALYSIS_SECTION_THRESHOLD_BYTES) {
         return {
@@ -217,11 +220,11 @@ const encodeDispatchSection = async <T>(value: T): Promise<EncodedDispatchSectio
         };
     }
 
-    const compressed = await gzipAsync(serializedValue);
+    const compressed = await gzipAsync(serializedBuffer);
     const compressedValue = compressed.toString('base64');
     return {
         rawBytes,
-        storedBytes: Buffer.byteLength(compressedValue),
+        storedBytes: compressedValue.length,
         compressedValue
     };
 };
@@ -334,12 +337,17 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             selectedTimesteps: input.selectedTimesteps,
             timestep: input.timestep
         };
+        // Why: single serialization — `payloadBytes` and the downstream transport
+        // layer both consume the same buffer. This was historically serialized
+        // once for logging and again when Socket.IO encoded the message for the
+        // wire; now the bytes are computed exactly once.
+        const dispatchPayloadBuffer = Buffer.from(JSON.stringify(dispatchPayload), 'utf8');
         const cleanupSummary: DispatchCleanupSummary = {
             duplicateDependencyCount: input.pluginDependencies.length - uniqueDependencyPlugins.length,
             duplicateNestedPluginCount: input.pluginDependencies.length - nestedPlugins.length,
             duplicatePluginReferenceExecutionCount: input.pluginReferenceExecutions.length - pluginReferenceExecutions.length,
             uniquePluginSyncCount: uniquePluginsToSync.length,
-            payloadBytes: Buffer.byteLength(JSON.stringify(dispatchPayload))
+            payloadBytes: dispatchPayloadBuffer.byteLength
         };
         const payloadCompressionSavingsBytes =
             (encodedTrajectoryFrames.rawBytes - encodedTrajectoryFrames.storedBytes)

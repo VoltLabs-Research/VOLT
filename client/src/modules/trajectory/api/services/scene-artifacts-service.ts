@@ -8,7 +8,7 @@ import type {
     RenderableExposurePayload
 } from '../dtos/scene-artifacts';
 
-const buildSceneArtifactQuery = (
+export const buildSceneArtifactQuery = (
     params: Pick<ListSceneArtifactsInputDTO, 'analysisId' | 'projection' | 'timestep' | 'page' | 'limit' | 'sourceType' | 'type'>
 ) => {
     const sourceType = params.sourceType ?? params.type;

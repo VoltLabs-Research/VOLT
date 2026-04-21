@@ -1,5 +1,3 @@
-import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-
 export interface AIConversationDTO {
     _id: string;
     userId: string;
@@ -20,5 +18,3 @@ export interface ListAIConversationsInputDTO {
     limit?: number;
     includeArchived?: boolean;
 };
-
-export interface ListAIConversationsOutputDTO extends PaginatedResult<AIConversationDTO> { }

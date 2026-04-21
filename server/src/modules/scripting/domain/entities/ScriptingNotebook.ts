@@ -18,13 +18,14 @@ export interface ScriptingNotebookProps {
     updatedAt: Date;
 };
 
-export default class ScriptingNotebook {
-    constructor(
-        public readonly _id: string,
-        public props: ScriptingNotebookProps
-    ) {}
-
-    get id(): string {
-        return this._id;
-    }
+export interface ScriptingNotebook {
+    readonly _id: string;
+    props: ScriptingNotebookProps;
 };
+
+export const createScriptingNotebook = (_id: string, props: ScriptingNotebookProps): ScriptingNotebook => ({
+    _id,
+    props
+});
+
+export default ScriptingNotebook;

@@ -332,7 +332,9 @@ export default class ParticleFilterService implements IParticleFilterService {
             throw buildDumpNotFoundError();
         }
 
-        const response = await getLocalGlbStream(this.storageService, objectName);
+        // Why: server-side decode — request identity encoding so the downstream
+        // GLB parser gets raw bytes, never the passthrough zstd stream.
+        const response = await getLocalGlbStream(this.storageService, objectName, { acceptEncoding: 'identity' });
         return response.stream;
     }
 
@@ -384,7 +386,10 @@ export default class ParticleFilterService implements IParticleFilterService {
         }));
 
         const firstResult = results[0];
-        let combinedMask: Uint8Array = new Uint8Array(Array.from(firstResult.mask));
+        // Why: `new Uint8Array(firstResult.mask)` copies directly from the
+        // source typed array in a single memcpy. The legacy path went through
+        // `Array.from(...)` which boxed every byte into a number first.
+        let combinedMask: Uint8Array = new Uint8Array(firstResult.mask);
 
         for (let index = 1; index < results.length; index += 1) {
             combinedMask = this.combineMasks(combinedMask, results[index].mask, request.combinator);
@@ -397,27 +402,69 @@ export default class ParticleFilterService implements IParticleFilterService {
         };
     }
 
+    /**
+     * Combines two binary masks 32 bits at a time.
+     *
+     * Why: Uint8Array lane-wise iteration is bytecode-bound; casting to
+     * Uint32Array lets the JIT emit a single native AND/OR per word (~4×
+     * throughput on x86/ARM). The source byte offset must be a multiple of
+     * 4 for the cast to be legal — our masks come from `new Uint8Array(n)`
+     * so they are always backed by a fresh ArrayBuffer at offset 0.
+     */
     private combineMasks(
         leftMask: Uint8Array,
         rightMask: Uint8Array,
         combinator: ParticleFilterCombinator
     ): Uint8Array {
-        const combinedMask: Uint8Array = new Uint8Array(leftMask.length);
+        const length = leftMask.length;
+        const combinedMask = new Uint8Array(length);
+        const wordCount = length >>> 2;
+        const tailStart = wordCount << 2;
+        const isOr = combinator === ParticleFilterCombinator.Or;
 
-        for (let index = 0; index < leftMask.length; index += 1) {
-            if (combinator === ParticleFilterCombinator.Or) {
-                combinedMask[index] = leftMask[index] || rightMask[index] ? 1 : 0;
-                continue;
+        const alignedLeft = this.toU32View(leftMask, wordCount);
+        const alignedRight = this.toU32View(rightMask, wordCount);
+        const alignedOut = this.toU32View(combinedMask, wordCount);
+
+        if (isOr) {
+            for (let word = 0; word < wordCount; word++) {
+                alignedOut[word] = alignedLeft[word] | alignedRight[word];
             }
+        } else {
+            for (let word = 0; word < wordCount; word++) {
+                alignedOut[word] = alignedLeft[word] & alignedRight[word];
+            }
+        }
 
-            combinedMask[index] = leftMask[index] && rightMask[index] ? 1 : 0;
+        if (isOr) {
+            for (let index = tailStart; index < length; index++) {
+                combinedMask[index] = leftMask[index] | rightMask[index];
+            }
+        } else {
+            for (let index = tailStart; index < length; index++) {
+                combinedMask[index] = leftMask[index] & rightMask[index];
+            }
         }
 
         return combinedMask;
     }
 
+    private toU32View(mask: Uint8Array, wordCount: number): Uint32Array {
+        if ((mask.byteOffset % Uint32Array.BYTES_PER_ELEMENT) === 0) {
+            return new Uint32Array(mask.buffer, mask.byteOffset, wordCount);
+        }
+        const aligned = new Uint8Array(mask.byteLength);
+        aligned.set(mask);
+        return new Uint32Array(aligned.buffer, 0, wordCount);
+    }
+
     private countMatches(mask: Uint8Array): number {
-        return mask.reduce((total, value) => total + (value ? 1 : 0), 0);
+        const length = mask.length;
+        let count = 0;
+        for (let index = 0; index < length; index++) {
+            count += mask[index];
+        }
+        return count;
     }
 
     private buildObjectName(

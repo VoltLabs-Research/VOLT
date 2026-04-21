@@ -1,6 +1,5 @@
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { DeletePluginByIdInputDTO } from '@modules/plugin/application/dtos/plugin/DeletePluginByIdDTO';
-import { IPluginBinaryCacheService } from '@modules/plugin/domain/port/plugin/IPluginBinaryCacheService';
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import PluginDeletedEvent from '@modules/plugin/domain/events/PluginDeletedEvent';
 
@@ -16,7 +15,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 export class DeletePluginByIdUseCase implements IUseCase<DeletePluginByIdInputDTO, null, ApplicationError> {
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository,
-        @inject(PLUGIN_TOKENS.PluginBinaryCacheService) private binaryCacheService: IPluginBinaryCacheService,
         @inject(SHARED_TOKENS.EventBus) private eventBus: IEventBus
     ){}
 
@@ -28,8 +26,6 @@ export class DeletePluginByIdUseCase implements IUseCase<DeletePluginByIdInputDT
                 'Plugin not found'
             ));
         }
-
-        await this.binaryCacheService.evictByPluginId(input.pluginId);
 
         const deleted = await this.pluginRepository.deleteById(input.pluginId);
         if (!deleted) {

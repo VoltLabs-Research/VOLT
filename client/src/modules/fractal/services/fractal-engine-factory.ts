@@ -13,7 +13,7 @@ interface FractalSurface {
     invalidate: () => void;
 };
 
-export type FractalEngineCallbacks = {
+type FractalEngineCallbacks = {
     onModelLoaded?: (bounds: BoundsInfo) => void;
     onLoadingState?: (state: ModelLoadingState) => void;
     onModelAvailable?: (model: THREE.Group | null) => void;
@@ -22,7 +22,7 @@ export type FractalEngineCallbacks = {
 
 const assetLoader: IFractalAssetLoader = new FractalAssetLoader();
 
-export default class FractalEngineFactory {
+class FractalEngineFactory {
     create(
         surface: FractalSurface,
         params: FractalParams,

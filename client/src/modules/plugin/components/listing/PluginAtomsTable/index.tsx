@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import PluginCompactTable, { type ColumnConfig } from '@/modules/plugin/components/listing/PluginCompactTable';
 import { useTrajectoryAtomsInfiniteQuery } from '@/modules/trajectory/hooks/trajectory/queries';
+import { atomsToAoS } from '@/modules/trajectory/utilities/decode-atoms-binary';
 
 import type { AtomData } from '@/modules/trajectory/api/dtos/trajectory';
 import formatAtomValue from '@/modules/trajectory/shared/format-atom-value';
@@ -53,14 +54,14 @@ const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId, onDataReady }:
 
     const rows: AtomData[] = useMemo(() => {
         if (!infiniteData?.pages) return [];
-        return infiniteData.pages.flatMap((page) => page.data ?? []);
+        return infiniteData.pages.flatMap((page) => atomsToAoS(page));
     }, [infiniteData]);
 
     const properties: string[] = useMemo(() => {
         if (!infiniteData?.pages?.length) return [];
         for (let i = infiniteData.pages.length - 1; i >= 0; i--) {
-            const meta = infiniteData.pages[i]._meta;
-            if (meta?.properties?.length) return meta.properties;
+            const props = infiniteData.pages[i].propertyNames;
+            if (props?.length) return props;
         }
         return [];
     }, [infiniteData]);

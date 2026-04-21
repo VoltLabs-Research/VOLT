@@ -27,7 +27,6 @@ import AnalysisListingDownloadModal, {
 } from '../AnalysisListingDownloadModal';
 import CommandPalette from '../CommandPalette';
 import KeyboardShortcutsPanel from '../KeyboardShortcutsPanel';
-import ObjectsPanel from '../ObjectsPanel';
 import PluginResultsViewer from '../PluginResultsViewer';
 import RightPanel from '../RightPanel';
 import StatusBar from '../StatusBar';
@@ -42,7 +41,7 @@ import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useCanvasAccessStore, useCanvasCanCollaborate } from '@/modules/canvas/api/access';
-import { Download, ExternalLink, PanelLeft, PanelRight } from 'lucide-react';
+import { Download, ExternalLink, PanelRight } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
@@ -184,12 +183,10 @@ const CanvasPage = () => {
     const [activeRasterContainerId, setActiveRasterContainerId] = useState<RasterContainerId>('container-1');
     const [downloadAnalysisModalTargetId, setDownloadAnalysisModalTargetId] = useState<string | null>(null);
     const isNarrowViewport = useViewportNarrow();
-    const [leftDrawerOpen, setLeftDrawerOpen] = useState(false);
     const [rightDrawerOpen, setRightDrawerOpen] = useState(false);
 
     useEffect(() => {
         if (!isNarrowViewport) {
-            setLeftDrawerOpen(false);
             setRightDrawerOpen(false);
         }
     }, [isNarrowViewport]);
@@ -225,14 +222,6 @@ const CanvasPage = () => {
             : trajectoryLoading || !trajectory || (hasFrames && ((isModelLoading && !(didPreload && isPlaying)) || currentTimestep === undefined)),
         [isLocalGlbViewer, isModelLoading, didPreload, isPlaying, trajectory, hasFrames, currentTimestep, trajectoryLoading]
     );
-
-    const leftPanel = useResizable({
-        direction: ResizeDirection.Horizontal,
-        initialSize: 250,
-        minSize: 180,
-        maxSize: 420,
-        storageKey: 'volt:canvas:left-panel-size'
-    });
 
     const rightPanel = useResizable({
         direction: ResizeDirection.Horizontal,
@@ -389,7 +378,7 @@ const CanvasPage = () => {
         )
         : null;
 
-    const viewportHeaderActions = (canDownloadAnalysisListing || scriptingHeaderAction)
+    const toolbarContextualActions = (canDownloadAnalysisListing || scriptingHeaderAction)
         ? (
             <div className="volt-container d-flex items-center gap-05">
                 {canDownloadAnalysisListing && (
@@ -446,69 +435,33 @@ const CanvasPage = () => {
     }
 
     return (
-        <div className={`volt-container canvas-editor-root d-flex column vh-max wh-max overflow-hidden p-relative${isNarrowViewport ? ' canvas-editor-root--narrow' : ''}`}>
-            <TopToolbar
-                canExport={canExportTrajectory}
-                canDownloadAnalyses={canDownloadTrajectoryAnalyses}
-                onExport={handleExportTrajectory}
-                onDownloadAnalyses={handleDownloadTrajectoryAnalyses}
-                localGlbMode={isLocalGlbViewer}
-                workspacePeers={peersInLobby}
-                workspaceActiveOwnerId={workspaceOwnerId}
-                onSelectWorkspacePeer={navigateToWorkspace}
-                share={shareInfo}
-            />
+        <div className={`volt-container canvas-editor-root d-flex vh-max wh-max overflow-hidden p-relative${isNarrowViewport ? ' canvas-editor-root--narrow' : ''}`}>
             <PreloadingOverlay />
 
-            {isNarrowViewport && (leftDrawerOpen || rightDrawerOpen) && (
+            {isNarrowViewport && rightDrawerOpen && (
                 <button
                     type='button'
                     className='canvas-panel-drawer-backdrop'
                     aria-label='Close panel'
-                    onClick={() => { setLeftDrawerOpen(false); setRightDrawerOpen(false); }}
+                    onClick={() => setRightDrawerOpen(false)}
                 />
             )}
 
-            <div className="volt-container canvas-editor-main d-flex flex-1 overflow-hidden p-relative min-h-0">
-                {!isLocalGlbViewer && (
-                    <>
-                        {isNarrowViewport && !leftDrawerOpen && (
-                            <button
-                                type='button'
-                                className='canvas-panel-drawer-toggle canvas-panel-drawer-toggle--left'
-                                onClick={() => setLeftDrawerOpen(true)}
-                                aria-label='Open objects panel'
-                                aria-expanded={leftDrawerOpen}
-                                aria-controls='canvas-left-panel'
-                            >
-                                <PanelLeft size={14} aria-hidden='true' />
-                            </button>
-                        )}
-                        <div id="canvas-left-panel" className="volt-container canvas-left-panel d-flex column f-shrink-0 min-h-0" style={{ width: leftPanel.size }} data-drawer-open={isNarrowViewport ? (leftDrawerOpen ? 'true' : 'false') : undefined}>
-                            <div id="canvas-left-panel-top" className="volt-container canvas-left-panel-top d-flex column min-h-0 overflow-hidden flex-1">
-                                <ObjectsPanel
-                                    trajectory={trajectory}
-                                    onDownloadAnalysis={handleDownloadAnalysisListing}
-                                    onDownloadExposureListing={handleDownloadExposureListing}
-                                    rasterContainerSelections={rasterContainerSelections}
-                                    activeRasterContainerId={activeRasterContainerId}
-                                    onSetActiveRasterContainer={setActiveRasterContainerId}
-                                    onUpdateRasterContainerSelection={handleUpdateRasterContainerSelection}
-                                />
-                            </div>
-                        </div>
-
-                        <ResizeHandle
-                            direction={ResizeDirection.Horizontal}
-                            isDragging={leftPanel.isDragging}
-                            label="Resize left sidebar"
-                            controls="canvas-left-panel"
-                            {...leftPanel.handleProps}
-                        />
-                    </>
-                )}
-
-                <div className="volt-container canvas-center-panel d-flex column flex-1 overflow-hidden">
+            <div className="volt-container canvas-editor-main d-flex column flex-1 overflow-hidden p-relative min-h-0">
+                <TopToolbar
+                    trajectory={trajectory}
+                    canExport={canExportTrajectory}
+                    canDownloadAnalyses={canDownloadTrajectoryAnalyses}
+                    onExport={handleExportTrajectory}
+                    onDownloadAnalyses={handleDownloadTrajectoryAnalyses}
+                    localGlbMode={isLocalGlbViewer}
+                    workspacePeers={peersInLobby}
+                    workspaceActiveOwnerId={workspaceOwnerId}
+                    onSelectWorkspacePeer={navigateToWorkspace}
+                    share={shareInfo}
+                    contextualActions={toolbarContextualActions}
+                />
+                <div className="volt-container canvas-center-panel d-flex column flex-1 overflow-hidden min-h-0">
                     <div className="volt-container canvas-center-viewport d-flex column flex-1 overflow-hidden p-relative" ref={viewportContainerRef as React.RefObject<HTMLDivElement>}>
                         <ErrorBoundary
                             fallbackTitle='Viewport crashed'
@@ -531,7 +484,6 @@ const CanvasPage = () => {
                                 hideGradient={isScriptingWorkspace || isRasterWorkspace}
                                 renderScene={!isScriptingWorkspace && !isRasterWorkspace}
                                 showSceneActions={!isRasterWorkspace}
-                                headerActionsBeforePerformance={viewportHeaderActions}
                             />
                         </ErrorBoundary>
                         <WorkspaceCursorsOverlay
@@ -563,38 +515,48 @@ const CanvasPage = () => {
                         </>
                     )}
                 </div>
-
-                {!isLocalGlbViewer && (
-                    <>
-                        <ResizeHandle
-                            direction={ResizeDirection.Horizontal}
-                            isDragging={rightPanel.isDragging}
-                            label="Resize right sidebar"
-                            controls="canvas-right-panel"
-                            {...rightPanel.handleProps}
-                        />
-
-                        {isNarrowViewport && !rightDrawerOpen && (
-                            <button
-                                type='button'
-                                className='canvas-panel-drawer-toggle canvas-panel-drawer-toggle--right'
-                                onClick={() => setRightDrawerOpen(true)}
-                                aria-label='Open plugins panel'
-                                aria-expanded={rightDrawerOpen}
-                                aria-controls='canvas-right-panel'
-                            >
-                                <PanelRight size={14} aria-hidden='true' />
-                            </button>
-                        )}
-                        <div id="canvas-right-panel" className="volt-container canvas-right-panel-container d-flex column f-shrink-0" style={{ width: rightPanel.size }} data-drawer-open={isNarrowViewport ? (rightDrawerOpen ? 'true' : 'false') : undefined}>
-                            <RightPanel trajectory={trajectory} trajectoryId={trajectoryId} analysisId={analysisId} currentTimestep={currentTimestep} />
-                        </div>
-                    </>
+                {!isLocalGlbViewer && showStatusBar && (
+                    <StatusBar trajectory={trajectory} currentTimestep={currentTimestep} />
                 )}
             </div>
 
-            {!isLocalGlbViewer && showStatusBar && (
-                <StatusBar trajectory={trajectory} currentTimestep={currentTimestep} />
+            {!isLocalGlbViewer && (
+                <>
+                    <ResizeHandle
+                        direction={ResizeDirection.Horizontal}
+                        isDragging={rightPanel.isDragging}
+                        label="Resize right sidebar"
+                        controls="canvas-right-panel"
+                        {...rightPanel.handleProps}
+                    />
+
+                    {isNarrowViewport && !rightDrawerOpen && (
+                        <button
+                            type='button'
+                            className='canvas-panel-drawer-toggle canvas-panel-drawer-toggle--right'
+                            onClick={() => setRightDrawerOpen(true)}
+                            aria-label='Open plugins panel'
+                            aria-expanded={rightDrawerOpen}
+                            aria-controls='canvas-right-panel'
+                        >
+                            <PanelRight size={14} aria-hidden='true' />
+                        </button>
+                    )}
+                    <div id="canvas-right-panel" className="volt-container canvas-right-panel-container d-flex column f-shrink-0" style={{ width: rightPanel.size }} data-drawer-open={isNarrowViewport ? (rightDrawerOpen ? 'true' : 'false') : undefined}>
+                        <RightPanel
+                            trajectory={trajectory}
+                            trajectoryId={trajectoryId}
+                            analysisId={analysisId}
+                            currentTimestep={currentTimestep}
+                            onDownloadAnalysis={handleDownloadAnalysisListing}
+                            onDownloadExposureListing={handleDownloadExposureListing}
+                            rasterContainerSelections={rasterContainerSelections}
+                            activeRasterContainerId={activeRasterContainerId}
+                            onSetActiveRasterContainer={setActiveRasterContainerId}
+                            onUpdateRasterContainerSelection={handleUpdateRasterContainerSelection}
+                        />
+                    </div>
+                </>
             )}
             {!isLocalGlbViewer && showWidgets && resultsPluginId && analysisId && (
                 <PluginResultsViewer

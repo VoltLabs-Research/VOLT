@@ -36,7 +36,7 @@ const SOCKET_CORS_ORIGINS = collectAllowedClientOrigins([
 ]);
 const SOCKET_GATEWAY_CLOSE_TIMEOUT_MS = 1_500;
 
-export interface AuthenticatedSocket extends Socket{
+interface AuthenticatedSocket extends Socket{
     user?: ISocketConnectionUser | null;
 };
 
@@ -108,7 +108,20 @@ export default class SocketGateway{
             transports: ['websocket', 'polling'],
             pingTimeout: this.pingTimeout,
             pingInterval: this.pingInterval,
-            maxHttpBufferSize: 10e6 // 10 MB — safety net for chunked uploads (~682 KB base64 per chunk)
+            // Why: payloads on the client↔server channel include large
+            // structured JSON (trajectory atoms pages, filter metadata).
+            // `perMessageDeflate` trims 40–80 % of the gzip-friendly text
+            // portion; binary attachments passthrough uncompressed.
+            // Safe in Socket.IO v4 — opt-in per server.
+            perMessageDeflate: {
+                threshold: 1024,
+                zlibDeflateOptions: { chunkSize: 16 * 1024 },
+                zlibInflateOptions: { chunkSize: 16 * 1024 }
+            },
+            // Raised from 10 MB because binary attachments now travel without
+            // base64 inflation (≈ 1.33× reduction) but we also carry masks
+            // and property columns for multi-million atom trajectories.
+            maxHttpBufferSize: 64 * 1024 * 1024
         });
 
         this.adapterPub = createRedisClient();

@@ -1,4 +1,5 @@
-import { GetChatMessagesInputDTO, GetChatMessagesOutputDTO } from '@modules/chat/application/dtos/chat-message/GetChatMessagesDTO';
+import { GetChatMessagesInputDTO } from '@modules/chat/application/dtos/chat-message/GetChatMessagesDTO';
+import { PersistedChatMessageDTO } from '@modules/chat/application/dtos/chat-message/SendChatMessageDTO';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { resolveAccessibleChat } from '@modules/chat/utilities/chat/resolveAccessibleChat';
 import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
@@ -8,7 +9,7 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
 import type { IChatMessageRepository } from '@modules/chat/domain/port/chat-message/IChatMessageRepository';
 import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
-import type { FindOptions, PaginationOptions } from '@shared/domain/port/IBaseRepository';
+import type { FindOptions, PaginatedResult, PaginationOptions } from '@shared/domain/port/IBaseRepository';
 
 interface GetChatMessagesFilter {
     chat: string;
@@ -25,7 +26,7 @@ interface GetChatMessagesFindOptions extends FindOptions<GetChatMessagesFilter>,
 
 
 @injectable()
-export class GetChatMessagesUseCase implements IUseCase<GetChatMessagesInputDTO, GetChatMessagesOutputDTO, ApplicationError> {
+export class GetChatMessagesUseCase implements IUseCase<GetChatMessagesInputDTO, PaginatedResult<PersistedChatMessageDTO>, ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository)
         private messageRepo: IChatMessageRepository,
@@ -33,7 +34,7 @@ export class GetChatMessagesUseCase implements IUseCase<GetChatMessagesInputDTO,
         private chatRepo: IChatRepository
     ){}
 
-    async execute(input: GetChatMessagesInputDTO): Promise<Result<GetChatMessagesOutputDTO, ApplicationError>> {
+    async execute(input: GetChatMessagesInputDTO): Promise<Result<PaginatedResult<PersistedChatMessageDTO>, ApplicationError>> {
         const { chatId } = input;
         const options: GetChatMessagesFindOptions = {
             filter: {

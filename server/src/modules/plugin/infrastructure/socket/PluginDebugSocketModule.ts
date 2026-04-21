@@ -26,6 +26,7 @@ import type {
 import {
     WorkflowValidationMode
 } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
+import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import Plugin, { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 
@@ -137,6 +138,9 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
         private readonly pluginRepository: IPluginRepository,
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly trajectoryRepository: ITrajectoryRepository,
+
+        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository)
+        private readonly trajectoryFrameRepository: ITrajectoryFrameRepository,
         @inject(TeamClusterSelectionService)
         private readonly teamClusterSelectionService: TeamClusterSelectionService,
         @inject(PLUGIN_TOKENS.PluginDebugSessionRegistryService)
@@ -258,6 +262,8 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                         .map((candidate) => [candidate.id, candidate])
                 ).values()).map(buildNestedPluginDefinition);
 
+                const trajectoryFrames = await this.trajectoryFrameRepository.getFrames(payload.trajectoryId);
+
                 // Send debug.start command to daemon
                 const response = await this.daemonClient.command<DaemonDebugStartResponse>(
                     teamClusterId,
@@ -265,7 +271,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                     {
                         workflow,
                         trajectoryId: payload.trajectoryId,
-                        trajectoryFrames: trajectory.props.frames,
+                        trajectoryFrames,
                         pluginId: payload.pluginId,
                         teamId,
                         storageClusterId,

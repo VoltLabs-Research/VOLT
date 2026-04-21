@@ -1,4 +1,5 @@
-import { download, get, paginated } from '@/app/core/http/utilities/create-service';
+import { custom, download, get, paginated } from '@/app/core/http/utilities/create-service';
+import { decodeAtomsBinary } from '@/modules/trajectory/utilities/decode-atoms-binary';
 import { defineServiceModule } from '@/shared/api/service-module';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
@@ -11,6 +12,8 @@ import type {
 import type { GetAtomsInputDTO, GetAtomsOutputDTO } from '@/modules/trajectory/api/dtos/trajectory';
 import type { SimulationCell } from '@/modules/simulation-cell/api/entities/simulation-cell';
 import type { GetSimulationCellByTrajectoryParams } from '@/modules/simulation-cell/api/dtos/get-simulation-cell-by-trajectory';
+import { buildSceneArtifactQuery } from '@/modules/trajectory/api/services/scene-artifacts-service';
+import { buildPreviewQuery } from '@/modules/trajectory/api/services/particle-filter-service';
 import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
 import type {
     ListSceneArtifactsInputDTO,
@@ -74,15 +77,6 @@ interface GetCanvasDumpParams {
     timestep: number | string;
 };
 
-interface AtomsApiResponse {
-    status: 'success';
-    data: GetAtomsOutputDTO['data'];
-    pagination: GetAtomsOutputDTO['pagination'];
-    _meta?: {
-        properties: string[];
-    };
-};
-
 interface PublicCanvasPluginInput {
     trajectoryId: string;
     pluginId: string;
@@ -115,38 +109,6 @@ interface PublicCanvasFrameLogParams extends GetAnalysisFrameLogParams {
     trajectoryId: string;
 };
 
-const buildSceneArtifactQuery = (
-    params: Pick<ListSceneArtifactsInputDTO, 'analysisId' | 'projection' | 'timestep' | 'page' | 'limit' | 'sourceType' | 'type'>
-) => {
-    const sourceType = params.sourceType ?? params.type;
-    return {
-        ...(params.analysisId ? { analysisId: params.analysisId } : {}),
-        ...(params.projection ? { projection: params.projection } : {}),
-        ...(params.timestep !== undefined ? { timestep: params.timestep } : {}),
-        ...(params.page ? { page: params.page } : {}),
-        ...(params.limit ? { limit: params.limit } : {}),
-        ...(sourceType ? { sourceType } : {})
-    };
-};
-
-const buildPreviewQuery = (input: PreviewFilterInputDTO) => {
-    if (input.conditions && input.conditions.length > 0) {
-        return {
-            timestep: input.timestep,
-            combinator: input.combinator,
-            conditions: JSON.stringify(input.conditions)
-        };
-    }
-
-    return {
-        timestep: input.timestep,
-        property: input.property,
-        operator: input.operator,
-        value: input.value,
-        ...(input.exposureId ? { exposureId: input.exposureId } : {})
-    };
-};
-
 const endpoints = {
     getBootstrap: get<GetPublicCanvasBootstrapInput, GetPublicCanvasBootstrapOutput>('/:trajectoryId/bootstrap'),
     getTrajectory: get<GetCanvasTrajectoryParams, Trajectory>('/:trajectoryId'),
@@ -160,23 +122,26 @@ const endpoints = {
     getRasterFrame: download<GetCanvasRasterFrameParams>('GET', '/:trajectoryId/frames/:timestep'),
     getAnalysisRasterFrame: download<GetCanvasAnalysisRasterFrameParams>('GET', '/:trajectoryId/frames/:timestep/:analysisId/:model'),
     getDump: download<GetCanvasDumpParams>('GET', '/:trajectoryId/dumps/:timestep'),
-    getAtoms: get<GetAtomsInputDTO, GetAtomsOutputDTO, AtomsApiResponse>('/:trajectoryId/atoms', {
-        omit: ['trajectoryId', 'analysisId'],
-        query: ({ timestep, page, limit, analysisId }) => ({
-            timestep,
-            ...(page !== undefined ? { page } : {}),
-            ...(limit !== undefined ? { limit } : {}),
-            ...(analysisId ? { analysisId } : {})
-        }),
-        unwrap: 'raw',
-        map: (response) => ({
-            status: 'success',
-            data: response.data,
-            pagination: response.pagination,
-            _meta: {
-                properties: response._meta?.properties || []
+    getAtoms: custom<GetAtomsInputDTO, GetAtomsOutputDTO>(async ({ getClient }, params) => {
+        // Why: F2.S4 — binary transferables path. The endpoint emits a columnar
+        // binary body; the SDK transport exposes `blob`, which we then convert
+        // to an `ArrayBuffer` interpreted zero-copy by `decodeAtomsBinary`.
+        const blob = await getClient().request<Blob>(
+            'GET',
+            `/${params.trajectoryId}/frame/${params.timestep}/atoms`,
+            {
+                query: {
+                    fmt: 'bin',
+                    ...(params.page !== undefined ? { page: params.page } : {}),
+                    ...(params.limit !== undefined ? { limit: params.limit } : {}),
+                    ...(params.analysisId ? { analysisId: params.analysisId } : {})
+                },
+                responseType: 'blob'
             }
-        })
+        );
+
+        const buffer = await blob.arrayBuffer();
+        return decodeAtomsBinary(buffer);
     }),
     getSimulationCell: get<GetSimulationCellByTrajectoryParams, SimulationCell | null>(
         '/:trajectoryId/simulation-cell',

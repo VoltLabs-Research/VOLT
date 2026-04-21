@@ -5,11 +5,6 @@
 
 .cluster-resource-selection-card {
     border: 1px solid var(--color-border-soft);
-    background: color-mix(in srgb, var(--color-surface-1) 92%, var(--color-surface-2));
-}
-
-.cluster-resource-selection-row {
-    background: var(--color-surface-1);
 }
 
 .cluster-resource-selection-value {

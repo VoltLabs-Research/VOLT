@@ -1,4 +1,5 @@
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { PublicCanvasAccessMode } from '@modules/trajectory/application/dtos/canvas/GetPublicCanvasBootstrapDTO';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
 import { Result } from '@shared/domain/port/Result';
@@ -11,10 +12,12 @@ import type {
     PublicCanvasBootstrapTrajectoryDTO
 } from '@modules/trajectory/application/dtos/canvas/GetPublicCanvasBootstrapDTO';
 import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
+import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
 import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
+import type { TrajectoryFrame } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import type { IUseCase } from '@shared/application/IUseCase';
 
-const toBootstrapTrajectory = (trajectory: Trajectory): PublicCanvasBootstrapTrajectoryDTO => {
+const toBootstrapTrajectory = (trajectory: Trajectory, frames: TrajectoryFrame[]): PublicCanvasBootstrapTrajectoryDTO => {
     return {
         _id: trajectory.id,
         name: trajectory.props.name,
@@ -22,7 +25,7 @@ const toBootstrapTrajectory = (trajectory: Trajectory): PublicCanvasBootstrapTra
         isPublic: trajectory.props.isPublic,
         teamId: String(trajectory.props.team),
         analysisIds: trajectory.props.analysis ?? [],
-        frames: trajectory.props.frames.map((frame) => ({
+        frames: frames.map((frame) => ({
             timestep: frame.timestep,
             natoms: frame.natoms,
             simulationCell: String(frame.simulationCell)
@@ -41,7 +44,10 @@ export class GetPublicCanvasBootstrapUseCase implements IUseCase<
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
         @inject(TEAM_TOKENS.TeamMemberRepository)
-        private readonly teamMemberRepository: ITeamMemberRepository
+        private readonly teamMemberRepository: ITeamMemberRepository,
+
+        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository)
+        private readonly trajectoryFrameRepository: ITrajectoryFrameRepository
     ) {}
 
     async execute(
@@ -62,6 +68,8 @@ export class GetPublicCanvasBootstrapUseCase implements IUseCase<
                 hasTeamMembership = membership !== null;
             }
 
+            const frames = await this.trajectoryFrameRepository.getFrames(trajectory.id);
+
             return Result.ok({
                 access: {
                     mode: PublicCanvasAccessMode.ReadOnly,
@@ -69,7 +77,7 @@ export class GetPublicCanvasBootstrapUseCase implements IUseCase<
                     isPublic: trajectory.props.isPublic,
                     hasTeamMembership
                 },
-                trajectory: toBootstrapTrajectory(trajectory)
+                trajectory: toBootstrapTrajectory(trajectory, frames)
             });
         } catch (error) {
             if (error instanceof ApplicationError) {

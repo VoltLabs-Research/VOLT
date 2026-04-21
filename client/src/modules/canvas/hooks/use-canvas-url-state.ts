@@ -43,7 +43,7 @@ const useCanvasUrlState = () => {
     const selectedNotebookId = searchParams.get('notebook') || undefined;
     const rasterModel = searchParams.get('rasterModel') || undefined;
     const showWidgets = searchParams.get('widgets') !== 'false';
-    const showGrid = searchParams.get('grid') !== 'false';
+    const showGrid = searchParams.get('grid') === 'true';
     const showGizmo = searchParams.get('gizmo') !== 'false';
     const renderConfigOpen = searchParams.get('renderConfig') === 'true';
     const requestedWorkspace = searchParams.get('workspace');

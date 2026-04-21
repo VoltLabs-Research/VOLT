@@ -3,9 +3,8 @@ import { TrajectoryReadAccessService } from '@modules/trajectory/application/ser
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
-import type { AtomRecord } from '@modules/trajectory/application/dtos/trajectory/GetAtomsDTO';
+import type { GetAtomsColumnarOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetAtomsDTO';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 
 interface GetPublicCanvasAtomsInput {
     trajectoryId: string;
@@ -19,7 +18,7 @@ interface GetPublicCanvasAtomsInput {
 @injectable()
 export class GetPublicCanvasAtomsUseCase implements IUseCase<
     GetPublicCanvasAtomsInput,
-    PaginatedResult<AtomRecord>,
+    GetAtomsColumnarOutputDTO,
     ApplicationError
 > {
     constructor(
@@ -30,7 +29,7 @@ export class GetPublicCanvasAtomsUseCase implements IUseCase<
         private readonly getAtomsUseCase: GetAtomsUseCase
     ) {}
 
-    async execute(input: GetPublicCanvasAtomsInput): Promise<Result<PaginatedResult<AtomRecord>, ApplicationError>> {
+    async execute(input: GetPublicCanvasAtomsInput): Promise<Result<GetAtomsColumnarOutputDTO, ApplicationError>> {
         try {
             await this.trajectoryReadAccessService.assertReadable(input.trajectoryId, input.userId);
 

@@ -1,6 +1,5 @@
 import {
     useInfiniteQuery,
-    useQueries,
     useQuery,
     type QueryKey,
     type UseQueryOptions
@@ -75,27 +74,6 @@ export const buildPluginListingQueryOptions = (params: GetPluginListingInputDTO)
 
 export const fetchPluginListing = (params: GetPluginListingInputDTO) => {
     return queryClient.fetchQuery(buildPluginListingQueryOptions(params));
-};
-
-// Kept as raw `useQueries`: `createQuery` wraps a single `useQuery`; there is
-// no helper for parallel multi-query dispatch.
-export const usePluginListingSubListingQueries = (paramsList: GetPluginListingInputDTO[]) => {
-    const mode = useCanvasAccessMode();
-    const dataAccess = useCanvasDataAccess();
-    const storeTrajectoryId = useCanvasAccessStore((state) => state.trajectoryId);
-
-    return useQueries({
-        queries: paramsList.map((params) => {
-            const trajectoryId = params.trajectoryId ?? storeTrajectoryId ?? '';
-            return {
-                queryKey: withAccessMode(mode, LISTING_QUERY_KEYS.listingDetail(params)),
-                queryFn: () => dataAccess.getPluginListing({ ...params, trajectoryId }),
-                staleTime: 5 * 60 * 1000,
-                enabled: Boolean(params.pluginId) && Boolean(trajectoryId),
-                retry: false
-            };
-        })
-    });
 };
 
 // Kept as raw `useQuery`: the query key and `queryFn` derive from React hooks

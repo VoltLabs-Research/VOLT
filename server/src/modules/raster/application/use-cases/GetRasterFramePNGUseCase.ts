@@ -4,20 +4,18 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
-import type {
-    GetRasterFramePNGInputDTO,
-    GetRasterFramePNGOutputDTO
-} from '@modules/raster/application/dtos/GetRasterFramePNGDTO';
+import type { GetRasterFramePNGInputDTO } from '@modules/raster/application/dtos/GetRasterFramePNGDTO';
+import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
 import type { IRasterFrameReader } from '@modules/raster/domain/port/IRasterFrameReader';
 import type { IUseCase } from '@shared/application/IUseCase';
 
 @injectable()
-export class GetRasterFramePNGUseCase implements IUseCase<GetRasterFramePNGInputDTO, GetRasterFramePNGOutputDTO, ApplicationError> {
+export class GetRasterFramePNGUseCase implements IUseCase<GetRasterFramePNGInputDTO, DownloadStreamOutputDTO, ApplicationError> {
     constructor(
         @inject(RASTER_TOKENS.RasterFrameReader) private readonly rasterFrameReader: IRasterFrameReader
     ) {}
 
-    async execute(input: GetRasterFramePNGInputDTO): Promise<Result<GetRasterFramePNGOutputDTO, ApplicationError>> {
+    async execute(input: GetRasterFramePNGInputDTO): Promise<Result<DownloadStreamOutputDTO, ApplicationError>> {
         try {
             if ((input.analysisId && !input.model) || (!input.analysisId && input.model)) {
                 return Result.fail(ApplicationError.badRequest(

@@ -3,7 +3,6 @@ import { GetTrajectoryGLBInputDTO, GetTrajectoryGLBOutputDTO } from '@modules/tr
 import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { SYS_BUCKETS } from '@core/config/minio';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -35,6 +34,7 @@ export default class GetTrajectoryGLBUseCase implements IUseCase<GetTrajectoryGL
     async execute(input: GetTrajectoryGLBInputDTO): Promise<Result<GetTrajectoryGLBOutputDTO, ApplicationError>> {
         try {
             const { trajectoryId, timestep } = input;
+            const requestContext = { acceptEncoding: input.acceptEncoding };
 
             const trajectory = await this.trajectoryRepository.findById(trajectoryId);
             if (!trajectory) {
@@ -45,10 +45,10 @@ export default class GetTrajectoryGLBUseCase implements IUseCase<GetTrajectoryGL
             const objectName = buildTrajectoryGlbObjectName(trajectoryId, timestep);
 
             if (storageClusterId) {
-                return Result.ok(await getClusterGlbStream(this.objectGatewayClient, storageClusterId, objectName));
+                return Result.ok(await getClusterGlbStream(this.objectGatewayClient, storageClusterId, objectName, requestContext));
             }
 
-            return Result.ok(await getLocalGlbStream(this.storageService, objectName));
+            return Result.ok(await getLocalGlbStream(this.storageService, objectName, requestContext));
         } catch {
             return Result.fail(new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'GLB model not found', 404));
         }

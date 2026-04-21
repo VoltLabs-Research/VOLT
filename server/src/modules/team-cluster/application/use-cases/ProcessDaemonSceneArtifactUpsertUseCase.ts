@@ -299,7 +299,7 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
                     );
                 }
 
-                sanitizedAnalysisId = analysis.id;
+                sanitizedAnalysisId = analysis._id;
                 sanitizedPluginId = analysis.props.plugin;
                 sanitizedStorageClusterId = analysisStorageClusterId;
             }

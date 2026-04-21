@@ -1,4 +1,4 @@
-import type { ScriptingNotebookContainerResourcesDTO, ScriptingNotebookDTO } from './ScriptingNotebookDTO';
+import type { ScriptingNotebookContainerResourcesDTO } from './ScriptingNotebookDTO';
 
 export interface UpdateScriptingNotebookInputDTO {
     teamId: string;
@@ -7,5 +7,3 @@ export interface UpdateScriptingNotebookInputDTO {
     teamClusterId?: string;
     containerResources?: ScriptingNotebookContainerResourcesDTO;
 };
-
-export type UpdateScriptingNotebookOutputDTO = ScriptingNotebookDTO;

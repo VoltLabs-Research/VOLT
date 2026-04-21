@@ -15,6 +15,7 @@ interface GetPublicCanvasPluginExposureGLBInput {
     exposureId: string;
     timestep: string;
     userId?: string;
+    acceptEncoding?: string;
 };
 
 @injectable()
@@ -58,7 +59,8 @@ export class GetPublicCanvasPluginExposureGLBUseCase implements IUseCase<
                 trajectoryId: input.trajectoryId,
                 analysisId: input.analysisId,
                 exposureId: input.exposureId,
-                timestep: input.timestep
+                timestep: input.timestep,
+                acceptEncoding: input.acceptEncoding
             });
         } catch (error) {
             if (error instanceof ApplicationError) {

@@ -37,6 +37,12 @@ import logger from '@shared/infrastructure/logger';
 import { randomUUID } from 'node:crypto';
 import { PassThrough } from 'node:stream';
 import { inject, injectable } from 'tsyringe';
+import {
+    EnvelopeKind,
+    decodeEnvelope,
+    encodeEnvelope,
+    toUint8Array
+} from '@shared/infrastructure/types/reverseChannelBinary';
 import type {
     ContainerTerminalAttachment,
     ContainerTerminalSize
@@ -716,7 +722,7 @@ export default class TeamClusterReverseChannelService {
         }
 
         this.touchSession(payload.requestId);
-        const chunk = Buffer.from(payload.chunkBase64, 'base64');
+        const chunk = this.unwrapEnvelopeBuffer(payload.chunk);
         if (!entry.stream.write(chunk)) {
             // Backpressure: stream buffer is full.  We log once but do not
             // accumulate — Node's PassThrough will buffer up to highWaterMark
@@ -752,7 +758,7 @@ export default class TeamClusterReverseChannelService {
         }
 
         this.touchSession(payload.sessionId);
-        const chunk = Buffer.from(payload.chunkBase64, 'base64');
+        const chunk = this.unwrapEnvelopeBuffer(payload.chunk);
 
         if (entry.type === 'terminal') {
             entry.stream.write(chunk);
@@ -899,7 +905,7 @@ export default class TeamClusterReverseChannelService {
         }
 
         this.touchSession(payload.sessionId);
-        entry.stream.pushChunk(Buffer.from(payload.chunkBase64, 'base64'));
+        entry.stream.pushChunk(this.unwrapEnvelopeBuffer(payload.chunk));
     }
 
     private handleTunnelClosePayload(payload: TeamClusterDaemonTunnelClosePayload): void {
@@ -988,7 +994,7 @@ export default class TeamClusterReverseChannelService {
         const payload: TeamClusterDaemonSessionInputPayload = {
             type: 'session-input',
             sessionId,
-            chunkBase64: chunk.toString('base64'),
+            chunk: this.wrapEnvelopeBuffer(chunk),
             isBinary
         };
 
@@ -1015,11 +1021,37 @@ export default class TeamClusterReverseChannelService {
         const payload: TeamClusterDaemonTunnelDataPayload = {
             type: 'tunnel-data',
             sessionId,
-            chunkBase64: chunk.toString('base64'),
+            chunk: this.wrapEnvelopeBuffer(chunk),
             isBinary
         };
 
         this.emitToDaemon(socketId, payload);
+    }
+
+    /**
+     * Wraps a raw byte buffer into a `StreamChunk` envelope for the reverse
+     * channel. Envelope overhead is 10 B per chunk.
+     */
+    private wrapEnvelopeBuffer(chunk: Buffer | Uint8Array): Uint8Array {
+        // Buffer IS a Uint8Array subclass; encodeEnvelope only needs a
+        // Uint8Array view so no conversion is required.
+        return encodeEnvelope(0, EnvelopeKind.StreamChunk, chunk);
+    }
+
+    /**
+     * Unwraps a binary envelope into a `Buffer` safe for stream writes.
+     * Performs a single memcpy only when the inbound value is not already a
+     * `Uint8Array` or the envelope kind does not match the carrier contract.
+     */
+    private unwrapEnvelopeBuffer(chunk: Uint8Array | Buffer | ArrayBuffer): Buffer {
+        const bytes = toUint8Array(chunk);
+        const decoded = decodeEnvelope(bytes);
+        if (decoded.kind !== EnvelopeKind.StreamChunk) {
+            throw ApplicationError.internalServerError(
+                `Unexpected reverse channel envelope kind: ${decoded.kind}`
+            );
+        }
+        return Buffer.from(decoded.payload.buffer, decoded.payload.byteOffset, decoded.payload.byteLength);
     }
 
     private createCommandMessage(

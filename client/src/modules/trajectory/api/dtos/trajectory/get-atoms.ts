@@ -1,5 +1,3 @@
-import type { PaginatedResponse } from '@/shared/domain/pagination';
-
 export interface GetAtomsInputDTO {
     trajectoryId: string;
     analysisId?: string;
@@ -8,6 +6,31 @@ export interface GetAtomsInputDTO {
     limit?: number;
 };
 
+export type AtomColumnDType = 'f32' | 'u32' | 'u16';
+
+export interface AtomColumnView {
+    name: string;
+    dtype: AtomColumnDType;
+    values: Float32Array | Uint32Array | Uint16Array;
+};
+
+export interface GetAtomsOutputDTO {
+    count: number;
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    propertyNames: string[];
+    columns: AtomColumnView[];
+    getColumn: (name: string) => AtomColumnView | undefined;
+};
+
+/**
+ * Per-atom row projection, reconstructed lazily from the columnar body when a
+ * consumer still expects the legacy AoS shape (tables/debug UI). Prefer
+ * `getColumn` when only one property is needed — it skips the intermediate row
+ * allocation entirely.
+ */
 export interface AtomData {
     id: number;
     type: string | number;
@@ -15,10 +38,4 @@ export interface AtomData {
     y: number;
     z: number;
     [key: string]: unknown;
-};
-
-export interface GetAtomsOutputDTO extends PaginatedResponse<AtomData> {
-    _meta?: {
-        properties: string[];
-    };
 };

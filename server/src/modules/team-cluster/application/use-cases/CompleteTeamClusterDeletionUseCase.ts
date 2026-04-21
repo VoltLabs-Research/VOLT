@@ -1,7 +1,5 @@
-import {
-    CompleteTeamClusterDeletionInputDTO,
-    CompleteTeamClusterDeletionOutputDTO
-} from '@modules/team-cluster/application/dtos/CompleteTeamClusterDeletionDTO';
+import { CompleteTeamClusterDeletionInputDTO } from '@modules/team-cluster/application/dtos/CompleteTeamClusterDeletionDTO';
+import type { OperationSuccessDTO } from '@modules/team/application/dtos/common';
 import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -12,7 +10,7 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class CompleteTeamClusterDeletionUseCase implements IUseCase<
     CompleteTeamClusterDeletionInputDTO,
-    CompleteTeamClusterDeletionOutputDTO,
+    OperationSuccessDTO,
     ApplicationError
 > {
     constructor(
@@ -20,7 +18,7 @@ export default class CompleteTeamClusterDeletionUseCase implements IUseCase<
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService
     ){}
 
-    async execute(input: CompleteTeamClusterDeletionInputDTO): Promise<Result<CompleteTeamClusterDeletionOutputDTO, ApplicationError>> {
+    async execute(input: CompleteTeamClusterDeletionInputDTO): Promise<Result<OperationSuccessDTO, ApplicationError>> {
         try {
             await this.teamClusterLifecycleService.completeDeletion(input.teamClusterId, input.daemonPassword);
 

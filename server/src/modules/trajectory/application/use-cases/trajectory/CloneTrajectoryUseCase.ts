@@ -25,6 +25,7 @@ import { inject, injectable } from 'tsyringe';
 import type TrajectoryCloneJobRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryCloneJobRepository';
 import type TrajectoryCloneRunner from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryCloneRunner';
 import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 
 @injectable()
@@ -36,6 +37,9 @@ export default class CloneTrajectoryUseCase implements IUseCase<
     constructor(
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly trajectoryRepository: ITrajectoryRepository,
+
+        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository)
+        private readonly trajectoryFrameRepository: ITrajectoryFrameRepository,
 
         @inject(TrajectoryReadAccessService)
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
@@ -75,6 +79,7 @@ export default class CloneTrajectoryUseCase implements IUseCase<
             );
 
             const sourceClusterId = resolveTrajectoryStorageClusterId(source.props) ?? null;
+            const sourceFrames = await this.trajectoryFrameRepository.getFrames(source.id);
 
             const now = new Date();
 
@@ -85,7 +90,7 @@ export default class CloneTrajectoryUseCase implements IUseCase<
                 storageClusterId: destinationClusterId,
                 createdBy: input.userId,
                 status: TrajectoryStatus.Processing,
-                frames: source.props.frames.map((frame) => ({ ...frame })),
+                frames: sourceFrames.map((frame) => ({ ...frame })),
                 stats: { ...source.props.stats },
                 analysis: [],
                 rasterSceneViews: 0,
@@ -105,7 +110,7 @@ export default class CloneTrajectoryUseCase implements IUseCase<
                 destinationClusterId,
                 requestedBy: input.userId,
                 stats: {
-                    totalFrames: source.props.frames.length
+                    totalFrames: sourceFrames.length
                 }
             }));
 

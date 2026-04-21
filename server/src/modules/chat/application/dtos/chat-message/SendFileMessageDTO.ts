@@ -1,5 +1,3 @@
-import { PersistedChatMessageDTO } from '@modules/chat/application/dtos/chat-message/SendChatMessageDTO';
-
 interface FileDataInput{
     filename: string;
     originalName: string;
@@ -13,5 +11,3 @@ export interface SendFileMessageInputDTO{
     chatId: string;
     fileData: FileDataInput;
 };
-
-export interface SendFileMessageOutputDTO extends PersistedChatMessageDTO{}

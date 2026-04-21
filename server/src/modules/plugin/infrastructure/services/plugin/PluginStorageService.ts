@@ -4,7 +4,6 @@ import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import { IWorkflowValidatorService, WorkflowValidationMode } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import Workflow, { WorkflowProps } from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
-import { IPluginBinaryCacheService } from '@modules/plugin/domain/port/plugin/IPluginBinaryCacheService';
 import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { BinaryUploadResult, IPluginStorageService, PluginImportResult } from '@modules/plugin/domain/port/plugin/IPluginStorageService';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
@@ -58,10 +57,7 @@ export default class PluginStorageService implements IPluginStorageService {
         private storageService: IStorageService,
 
         @inject(PLUGIN_TOKENS.WorkflowValidatorService)
-        private readonly workflowValidator: IWorkflowValidatorService,
-
-        @inject(PLUGIN_TOKENS.PluginBinaryCacheService)
-        private binaryCacheService: IPluginBinaryCacheService
+        private readonly workflowValidator: IWorkflowValidatorService
     ){}
 
     private async persistWorkflow(pluginId: string, workflow: Workflow): Promise<void> {
@@ -101,7 +97,6 @@ export default class PluginStorageService implements IPluginStorageService {
         }
 
         await this.storageService.delete(SYS_BUCKETS.PLUGINS, pathToDelete);
-        await this.binaryCacheService.evictByPluginId(pluginId);
 
         plugin.props.workflow.updateEntrypoint({
             binaryObjectPath: undefined,
@@ -145,7 +140,6 @@ export default class PluginStorageService implements IPluginStorageService {
 
         const binaryHash = computeSha256(file.buffer);
 
-        await this.binaryCacheService.evictByPluginId(pluginId);
         await this.storageService.upload(
             SYS_BUCKETS.PLUGINS,
             objectPath,

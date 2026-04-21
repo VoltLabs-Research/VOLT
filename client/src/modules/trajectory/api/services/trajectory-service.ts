@@ -2,6 +2,7 @@ import { custom, paginated, get, patch, del, download } from '@/app/core/http/ut
 import { defineServiceModule } from '@/shared/api/service-module';
 import { createFolderCrudEndpoints } from '@/shared/api/folder-endpoints';
 import { base64ToBlob } from '@/shared/utils/file';
+import { decodeAtomsBinary } from '@/modules/trajectory/utilities/decode-atoms-binary';
 import type { EmptyParams } from '@/app/core/http/utilities/create-service';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { VoltClient } from '@voltstack/voltclient';
@@ -9,7 +10,6 @@ import type { DashboardMetrics } from '@/modules/dashboard/api/entities/dashboar
 import type { Trajectory } from '../entities/trajectory';
 import type { TrajectoryFolder } from '../entities/trajectory/trajectory-folder';
 import type {
-    AtomData,
     CreateTrajectoryInputDTO,
     CreateTrajectoryOutputDTO,
     DeleteTrajectoryInputDTO,
@@ -31,21 +31,6 @@ import type { UpdateTrajectoryFolderParams } from '../dtos/trajectory/update-tra
 
 interface GetTrajectoryByIdParams {
     trajectoryId: string;
-};
-
-interface AtomsApiResponse {
-    status: 'success';
-    data: AtomData[];
-    pagination: {
-        page: number;
-        limit: number;
-        total: number;
-        totalPages: number;
-        hasMore: boolean;
-    };
-    _meta?: {
-        properties: string[];
-    };
 };
 
 interface CreateTrajectoryApiResponse {
@@ -126,29 +111,28 @@ const endpoints = {
 
         return getClient().request('GET', `/${params.trajectoryId}/analyses/download`, requestArgs);
     }),
-    getAtoms: get<GetAtomsInputDTO, GetAtomsOutputDTO, AtomsApiResponse>(
-        '/:trajectoryId/atoms',
-        {
-            omit: ['trajectoryId', 'analysisId'],
-            query: ({ timestep, page, limit, analysisId }) => ({
-                timestep,
-                ...(page !== undefined ? { page } : {}),
-                ...(limit !== undefined ? { limit } : {}),
-                ...(analysisId ? { analysisId } : {})
-            }),
-            unwrap: 'raw',
-            map: (response) => {
-                return {
-                    status: 'success',
-                    data: response.data,
-                    pagination: response.pagination,
-                    _meta: {
-                        properties: response._meta?.properties || []
-                    }
-                };
+    getAtoms: custom<GetAtomsInputDTO, GetAtomsOutputDTO>(async ({ getClient }, params) => {
+        // Why: F2.S4 — the atoms endpoint now returns the columnar binary body
+        // directly (SoA, no JSON parse). The SDK exposes `blob` as the binary
+        // transport; we convert to `ArrayBuffer` and hand it to the shared
+        // zero-copy decoder.
+        const blob = await getClient().request<Blob>(
+            'GET',
+            `/${params.trajectoryId}/frame/${params.timestep}/atoms`,
+            {
+                query: {
+                    fmt: 'bin',
+                    ...(params.page !== undefined ? { page: params.page } : {}),
+                    ...(params.limit !== undefined ? { limit: params.limit } : {}),
+                    ...(params.analysisId ? { analysisId: params.analysisId } : {})
+                },
+                responseType: 'blob'
             }
-        }
-    ),
+        );
+
+        const buffer = await blob.arrayBuffer();
+        return decodeAtomsBinary(buffer);
+    }),
     ...folderEndpoints,
     getMetrics: get<EmptyParams, DashboardMetrics>('/metrics'),
     listSamples: get<EmptyParams, string[]>('/samples'),

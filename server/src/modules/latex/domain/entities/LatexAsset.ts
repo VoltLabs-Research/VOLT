@@ -13,13 +13,14 @@ export interface LatexAssetProps {
     updatedAt: Date;
 };
 
-export default class LatexAsset {
-    constructor(
-        public readonly _id: string,
-        public props: LatexAssetProps
-    ) {}
-
-    get id(): string {
-        return this._id;
-    }
+export interface LatexAsset {
+    readonly _id: string;
+    props: LatexAssetProps;
 };
+
+export const createLatexAsset = (_id: string, props: LatexAssetProps): LatexAsset => ({
+    _id,
+    props
+});
+
+export default LatexAsset;

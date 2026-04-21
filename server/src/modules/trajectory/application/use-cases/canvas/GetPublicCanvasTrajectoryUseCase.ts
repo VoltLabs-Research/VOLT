@@ -11,6 +11,7 @@ import { injectable, inject } from 'tsyringe';
 
 import type { GetTrajectoryByIdOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryByIdDTO';
 import type { IRasterStorage } from '@modules/raster/domain/port/IRasterStorage';
+import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 
 interface GetPublicCanvasTrajectoryInput {
@@ -31,6 +32,9 @@ export class GetPublicCanvasTrajectoryUseCase implements IUseCase<
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly repository: ITrajectoryRepository,
 
+        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository)
+        private readonly frameRepository: ITrajectoryFrameRepository,
+
         @inject(RASTER_TOKENS.RasterStorage)
         private readonly rasterStorage: IRasterStorage
     ) {}
@@ -40,7 +44,7 @@ export class GetPublicCanvasTrajectoryUseCase implements IUseCase<
             await this.trajectoryReadAccessService.assertReadable(input.trajectoryId, input.userId);
 
             const entity = await this.repository.findById(input.trajectoryId, {
-                populate: ['team', 'analysis', 'frames.simulationCell']
+                populate: ['team', 'analysis']
             });
 
             if (!entity) {
@@ -49,6 +53,8 @@ export class GetPublicCanvasTrajectoryUseCase implements IUseCase<
                     'Trajectory not found'
                 ));
             }
+
+            entity.props.frames = await this.frameRepository.getFrames(entity.id);
 
             const persistedTrajectory = toPersistedOutput(entity);
             const trajectoryWithPreviewAvailability = await resolveTrajectoryPreviewAvailability(

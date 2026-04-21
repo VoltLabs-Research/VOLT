@@ -18,9 +18,6 @@ interface EnvironmentThemeDefaults {
     fogColor: string;
 };
 
-/** @deprecated Use {@link RenderingOption} from `renderer.ts` directly. */
-export type EnvironmentOption<TValue> = RenderingOption<TValue>;
-
 export enum EnvironmentColorField {
     Background = 'backgroundColor',
     Fog = 'fogColor'
@@ -53,12 +50,12 @@ export enum EnvironmentPreset {
     Lobby = 'lobby'
 };
 
-export const BACKGROUND_TYPE_OPTIONS: EnvironmentOption<BackgroundType>[] = [
+export const BACKGROUND_TYPE_OPTIONS: RenderingOption<BackgroundType>[] = [
     { title: 'Color', value: BackgroundType.Color },
     { title: 'Environment', value: BackgroundType.Environment }
 ];
 
-export const ENVIRONMENT_PRESET_OPTIONS: EnvironmentOption<EnvironmentPreset>[] = [
+export const ENVIRONMENT_PRESET_OPTIONS: RenderingOption<EnvironmentPreset>[] = [
     { title: 'Studio', value: EnvironmentPreset.Studio },
     { title: 'City', value: EnvironmentPreset.City },
     { title: 'Sunset', value: EnvironmentPreset.Sunset },

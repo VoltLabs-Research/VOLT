@@ -1,8 +1,9 @@
-import ContainerFolder, { type ContainerFolderProps } from '@modules/container/domain/entities/ContainerFolder';
-import { createMongoMapper } from '@shared/infrastructure/persistence/mongo/createMongoMapper';
+import { createContainerFolder, type ContainerFolderProps } from '@modules/container/domain/entities/ContainerFolder';
+import { createMongoMapperFromFactory } from '@shared/infrastructure/persistence/mongo/createMongoMapper';
+import type ContainerFolder from '@modules/container/domain/entities/ContainerFolder';
 import type { CatalogFolderDocument } from '@shared/infrastructure/persistence/mongo/models/CatalogFolderModel';
 
-export default createMongoMapper<ContainerFolder, ContainerFolderProps, CatalogFolderDocument>(
-    ContainerFolder,
+export default createMongoMapperFromFactory<ContainerFolder, ContainerFolderProps, CatalogFolderDocument>(
+    createContainerFolder,
     ['team', 'createdBy', 'parent']
 );

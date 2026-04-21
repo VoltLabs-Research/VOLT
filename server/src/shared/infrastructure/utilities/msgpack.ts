@@ -1,4 +1,3 @@
-import { createReadStream } from 'node:fs';
 import { Decoder } from '@msgpack/msgpack';
 import type { DecoderOptions } from '@msgpack/msgpack';
 
@@ -15,10 +14,3 @@ export async function* decodeMultiStream(
         yield value;
     }
 };
-
-export async function* decodeMultiStreamFromFile(
-    filePath: string,
-    options?: MsgpackDecoderOptions
-): AsyncIterable<unknown> {
-    yield* decodeMultiStream(createReadStream(filePath) as AsyncIterable<ChunkLike>, options);
-}

@@ -140,7 +140,7 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
                 );
             } catch (error: unknown) {
                 logger.warn(
-                    { err: error, notebookId: notebook.id, runtimeNotebookId: notebook.props.runtimeNotebookId, trajectoryId },
+                    { err: error, notebookId: notebook._id, runtimeNotebookId: notebook.props.runtimeNotebookId, trajectoryId },
                     '[Scripting] Failed to delete Jupyter session on daemon'
                 );
             }

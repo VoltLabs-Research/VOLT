@@ -140,7 +140,7 @@ const useKeyboardShortcuts = ({
             },
 
             'toggle-grid': () => {
-                updateSearchParams({ grid: showGrid ? 'false' : null }, { replace: true });
+                updateSearchParams({ grid: showGrid ? null : 'true' }, { replace: true });
             },
 
             'toggle-widgets': () => {

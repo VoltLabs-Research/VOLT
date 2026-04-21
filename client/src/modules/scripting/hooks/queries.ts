@@ -5,7 +5,6 @@ import {
     createMutation,
     createQuery
 } from '@/shared/infrastructure/query';
-import queryClient from '@/shared/infrastructure/query/query-client';
 import type { CreateScriptingNotebookParams } from '../api/dtos/create-scripting-notebook';
 import type { CreateScriptingNotebookSessionParams, CreateScriptingSessionParams } from '../api/dtos/create-scripting-session';
 import type { DeleteScriptingNotebookParams } from '../api/dtos/delete-scripting-notebook';
@@ -23,8 +22,6 @@ const KEYS = buildKeys<ScriptingQueryKeys>('scripting');
 export const scriptingNotebooksQueryKey = KEYS.notebooks;
 
 export const scriptingNotebooksQuery = createQuery(KEYS.notebooks, service.listNotebooks);
-
-export const invalidateScriptingNotebooksQuery = () => queryClient.invalidateQueries({ queryKey: KEYS.notebooks() });
 
 export const useCreateScriptingNotebookMutation = createInvalidatingMutation<ScriptingNotebook, CreateScriptingNotebookParams>(
     service.createNotebook,

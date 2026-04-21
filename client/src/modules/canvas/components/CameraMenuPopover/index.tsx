@@ -2,13 +2,18 @@ import useCameraGroup from '../CanvasRenderSections/groups/camera';
 import CanvasRenderSubsectionContent from '../CanvasRenderSections/CanvasRenderSubsectionContent';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import Button from '@/shared/presentation/components/Button';
+import Tooltip from '@/shared/presentation/components/Tooltip';
 import { Settings } from 'lucide-react';
 import { useMemo } from 'react';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 
 import './CameraMenuPopover.css';
 
-const CameraMenuPopover = () => {
+interface CameraMenuPopoverProps {
+    compact?: boolean;
+}
+
+const CameraMenuPopover = ({ compact = false }: CameraMenuPopoverProps) => {
     const cameraGroup = useCameraGroup();
 
     const options = useMemo<MenuOption[]>(() => {
@@ -27,7 +32,23 @@ const CameraMenuPopover = () => {
     return (
         <ContextMenuPopover
             id="viewport-camera-menu"
-            trigger={(
+            trigger={compact ? (
+                <span className="canvas-viewport-floating-trigger">
+                    <Tooltip content="Camera" placement="bottom">
+                        <Button
+                            variant="ghost"
+                            intent="canvas"
+                            shape="rounded"
+                            size="sm"
+                            iconOnly
+                            className="canvas-viewport-floating-btn"
+                            aria-label="Camera settings"
+                        >
+                            <Settings size={14} />
+                        </Button>
+                    </Tooltip>
+                </span>
+            ) : (
                 <Button
                     variant="ghost"
                     intent="canvas"

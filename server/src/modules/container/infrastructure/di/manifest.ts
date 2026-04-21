@@ -27,8 +27,6 @@ import {
 import { ContainerFolderRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerFolderRepository';
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
-import { DockerNetworkRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/DockerNetworkRepository';
-import { DockerVolumeRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/DockerVolumeRepository';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import {
     ClusterRoleAwareSelectionService,
@@ -37,7 +35,6 @@ import {
     ContainerOwnershipService,
     ContainerPortProxyRelayService,
     DaemonContainerRuntimeService,
-    DockerContainerService,
     TeamClusterSelectionService,
     TerminalService
 } from '@modules/container/infrastructure/services';
@@ -72,9 +69,6 @@ export const containerDIManifest: ModuleManifest = {
     bindings: [
         [CONTAINER_TOKENS.ContainerRepository, ContainerRepository],
         [CONTAINER_TOKENS.ContainerFolderRepository, ContainerFolderRepository],
-        [CONTAINER_TOKENS.DockerNetworkRepository, DockerNetworkRepository],
-        [CONTAINER_TOKENS.DockerVolumeRepository, DockerVolumeRepository],
-        [CONTAINER_TOKENS.ContainerService, DockerContainerService],
         [CONTAINER_TOKENS.ContainerRuntimeService, DaemonContainerRuntimeService],
         [CONTAINER_TOKENS.TerminalService, TerminalService],
         [CONTAINER_TOKENS.ContainerAccessiblePortResolver, ContainerAccessiblePortResolver],

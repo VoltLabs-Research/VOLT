@@ -20,6 +20,10 @@ import type {
     GetTeamClusterRemoteExplorerNodeInputDTO,
     GetTeamClusterRemoteExplorerNodeOutputDTO
 } from './dtos/team-cluster/get-team-cluster-remote-explorer-node';
+import type {
+    GetTeamClusterResourceLimitsInputDTO,
+    GetTeamClusterResourceLimitsOutputDTO
+} from './dtos/team-cluster/get-team-cluster-resource-limits';
 import type { ListTeamClustersInputDTO, ListTeamClustersOutputDTO } from './dtos/team-cluster/list-team-clusters';
 import type {
     ListTeamClusterRemoteExplorerEntriesInputDTO,
@@ -108,6 +112,9 @@ const teamClusterEndpoints = {
     ),
     getRemoteExplorerNode: post<GetTeamClusterRemoteExplorerNodeInputDTO, GetTeamClusterRemoteExplorerNodeOutputDTO>(
         '/:teamId/clusters/:teamClusterId/remote-access/explorer/node'
+    ),
+    getResourceLimits: get<GetTeamClusterResourceLimitsInputDTO, GetTeamClusterResourceLimitsOutputDTO>(
+        '/:teamId/clusters/:teamClusterId/resource-limits'
     ),
     listRemoteExplorerEntries: post<ListTeamClusterRemoteExplorerEntriesInputDTO, ListTeamClusterRemoteExplorerEntriesOutputDTO>(
         '/:teamId/clusters/:teamClusterId/remote-access/explorer/entries'

@@ -1,4 +1,4 @@
-export interface PopulatedWhiteboardUser {
+interface PopulatedWhiteboardUser {
     _id: string;
     firstName?: string;
     lastName?: string;
@@ -18,13 +18,14 @@ export interface WhiteboardProps {
     updatedAt: Date;
 };
 
-export default class Whiteboard {
-    constructor(
-        public readonly _id: string,
-        public props: WhiteboardProps
-    ) {}
-
-    get id(): string {
-        return this._id;
-    }
+export interface Whiteboard {
+    readonly _id: string;
+    props: WhiteboardProps;
 };
+
+export const createWhiteboard = (_id: string, props: WhiteboardProps): Whiteboard => ({
+    _id,
+    props
+});
+
+export default Whiteboard;

@@ -14,12 +14,12 @@ import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type { ITempFileService } from '@shared/domain/port/ITempFileService';
 import type LatexFile from '@modules/latex/domain/entities/LatexFile';
 
-export interface CompilerConfig {
+interface CompilerConfig {
     binary: string;
     args: string[];
 };
 
-export interface CompilerRunResult {
+interface CompilerRunResult {
     success: boolean;
     log: string;
 };
@@ -38,7 +38,7 @@ interface SyncableAsset {
     version: string;
 };
 
-export interface PrepareWorkDirDeps {
+interface PrepareWorkDirDeps {
     latexDocumentRepository: ILatexDocumentRepository;
     latexAssetRepository: ILatexAssetRepository;
     latexFileRepository: ILatexFileRepository;
@@ -46,7 +46,7 @@ export interface PrepareWorkDirDeps {
     tempFileService: ITempFileService;
 };
 
-export interface PrepareWorkDirParams {
+interface PrepareWorkDirParams {
     teamId: string;
     documentId: string;
     workDir: string;
@@ -76,7 +76,7 @@ interface PrepareWorkDirNoCompiler {
     status: 'no-compiler';
 };
 
-export type PrepareWorkDirResult =
+type PrepareWorkDirResult =
     | PrepareWorkDirReady
     | PrepareWorkDirNoDocument
     | PrepareWorkDirNoFiles
@@ -112,7 +112,7 @@ const buildLatexFileVersion = (file: LatexFile): string => {
 };
 
 const buildAssetVersion = (asset: LatexAsset, relPath: string): string => {
-    return `${asset.id}:${relPath}:${asset.props.storageKey}:${asset.props.size}:${asset.props.updatedAt.toISOString()}`;
+    return `${asset._id}:${relPath}:${asset.props.storageKey}:${asset.props.size}:${asset.props.updatedAt.toISOString()}`;
 };
 
 const pathExistsAsFile = async (targetPath: string): Promise<boolean> => {

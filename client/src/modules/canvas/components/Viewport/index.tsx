@@ -1,7 +1,5 @@
 import { setSceneInteracting } from '../../hooks/use-scene-interaction';
-import CameraMenuPopover from '../CameraMenuPopover';
-import RenderMenuPopover from '../RenderMenuPopover';
-import ScreenshotMenuPopover from '../ScreenshotMenuPopover';
+import ViewportFloatingControls from '../ViewportFloatingControls';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { useLocalGlbStore } from '@/modules/canvas/stores/use-local-glb-store';
 import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
@@ -12,16 +10,7 @@ import { debugFractal } from '@/modules/fractal/utilities/debug-log';
 import { getFrameBoxBounds, getTrajectoryFrameByTimestep, hasFrameBoxBounds } from '@/modules/fractal/utilities/frame-box-bounds';
 import { getRenderableScenes } from '@/modules/fractal/utilities/scene-utils';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import EditableTrajectoryName from '@/modules/trajectory/components/EditableTrajectoryName';
-import {
-    getPerformancePresetLabel,
-    PERFORMANCE_PRESET_OPTIONS
-} from '@/shared/domain/rendering/performance';
-import Button from '@/shared/presentation/components/Button';
 import Loader from '@/shared/presentation/components/Loader';
-import Popover from '@/shared/presentation/components/Popover';
-import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
-import { Gauge } from 'lucide-react';
 import { useMemo, useCallback, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -47,8 +36,6 @@ interface ViewportProps {
     hideGradient?: boolean;
     renderScene?: boolean;
     showSceneActions?: boolean;
-    showHeader?: boolean;
-    headerActionsBeforePerformance?: ReactNode;
 };
 
 type CanvasTrajectory = Trajectory & {
@@ -94,9 +81,7 @@ const Viewport = ({
     bodyContent,
     hideGradient = false,
     renderScene = true,
-    showSceneActions = true,
-    showHeader = true,
-    headerActionsBeforePerformance
+    showSceneActions = true
 }: ViewportProps) => {
     const selectedTeamId = useSelectedTeamId() ?? undefined;
     const teamId = useMemo(() => {
@@ -112,9 +97,7 @@ const Viewport = ({
         setModelBounds,
         setModelWorldBounds,
         setModelLoadingState,
-        setIsPointCloudScene,
-        performancePreset,
-        setPerformancePreset
+        setIsPointCloudScene
     } = useEditorStore(useShallow((s) => ({
         activeScenes: s.activeScenes,
         slicePlaneConfig: s.configuration.slicePlaneConfig,
@@ -124,9 +107,7 @@ const Viewport = ({
         setModelBounds: s.setModelBounds,
         setModelWorldBounds: s.setModelWorldBounds,
         setModelLoadingState: s.setModelLoadingState,
-        setIsPointCloudScene: s.setIsPointCloudScene,
-        performancePreset: s.performanceSettings.preset,
-        setPerformancePreset: s.performanceSettings.setPreset
+        setIsPointCloudScene: s.setIsPointCloudScene
     })));
 
     const currentFrame = useMemo(() => {
@@ -211,72 +192,6 @@ const Viewport = ({
 
     return (
         <div className="volt-container canvas-viewport d-flex column flex-1 overflow-hidden p-relative min-h-0">
-            {showHeader && (
-                <div className="volt-container canvas-viewport-header d-flex items-center f-shrink-0">
-                    {trajectory && (
-                        <EditableTrajectoryName
-                            trajectoryId={trajectory._id}
-                            name={trajectory.name}
-                            className="canvas-viewport-trajectory-name"
-                        />
-                    )}
-
-                    <div className="volt-container flex-1" />
-
-                    {headerActionsBeforePerformance}
-
-                    {showSceneActions && (
-                        <>
-                            <RenderMenuPopover />
-
-                            <CameraMenuPopover />
-
-                            <ScreenshotMenuPopover />
-
-                            <Popover
-                                id="viewport-performance"
-                                noPadding
-                                trigger={(
-                                    <Button
-                                        variant="ghost"
-                                        intent="canvas"
-                                        shape="rounded"
-                                        size="sm"
-                                        className="font-size-05 canvas-btn-compact"
-                                        leftIcon={<span className="d-flex items-center content-center f-shrink-0"><Gauge size={12} /></span>}
-                                    >
-                                        {getPerformancePresetLabel(performancePreset)}
-                                    </Button>
-                                )}
-                            >
-                                {(close) => (
-                                    <PopoverMenu>
-                                        {PERFORMANCE_PRESET_OPTIONS.map((preset) => (
-                                            <Button
-                                                key={preset.value}
-                                                variant={preset.value === performancePreset ? 'solid' : 'ghost'}
-                                                intent="canvas"
-                                                shape="rounded"
-                                                size="sm"
-                                                className="font-size-05"
-                                                block
-                                                align="start"
-                                                onClick={() => {
-                                                    setPerformancePreset(preset.value);
-                                                    close();
-                                                }}
-                                            >
-                                                {preset.title}
-                                            </Button>
-                                        ))}
-                                    </PopoverMenu>
-                                )}
-                            </Popover>
-                        </>
-                    )}
-                </div>
-            )}
-
             <div className="volt-container canvas-viewport-body flex-1 p-relative min-h-0">
                 {!bodyContent && isLoading && (
                     <div className="volt-container canvas-viewport-loading d-flex items-center content-center p-absolute inset-0">
@@ -337,6 +252,8 @@ const Viewport = ({
                 )}
 
                 {!hideGradient && <div className="volt-container canvas-viewport-gradient p-absolute inset-0" />}
+
+                {showSceneActions && <ViewportFloatingControls />}
             </div>
         </div>
     );

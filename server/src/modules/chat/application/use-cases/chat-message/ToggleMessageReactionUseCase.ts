@@ -1,4 +1,5 @@
-import { ToggleMessageReactionInputDTO, ToggleMessageReactionOutputDTO } from '@modules/chat/application/dtos/chat-message/ToggleMessageReactionDTO';
+import { ToggleMessageReactionInputDTO } from '@modules/chat/application/dtos/chat-message/ToggleMessageReactionDTO';
+import { PersistedChatMessageDTO } from '@modules/chat/application/dtos/chat-message/SendChatMessageDTO';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { resolveAccessibleChat } from '@modules/chat/utilities/chat/resolveAccessibleChat';
 import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
@@ -13,7 +14,7 @@ import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatReposi
 import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 
 @injectable()
-export class ToggleMessageReactionUseCase implements IUseCase<ToggleMessageReactionInputDTO, ToggleMessageReactionOutputDTO, ApplicationError> {
+export class ToggleMessageReactionUseCase implements IUseCase<ToggleMessageReactionInputDTO, PersistedChatMessageDTO, ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository)
         private messageRepo: IChatMessageRepository,
@@ -23,7 +24,7 @@ export class ToggleMessageReactionUseCase implements IUseCase<ToggleMessageReact
         private socketEmitter: ISocketEmitter
     ){}
 
-    async execute(input: ToggleMessageReactionInputDTO): Promise<Result<ToggleMessageReactionOutputDTO, ApplicationError>> {
+    async execute(input: ToggleMessageReactionInputDTO): Promise<Result<PersistedChatMessageDTO, ApplicationError>> {
         const { emoji, messageId, userId } = input;
         const message = await this.messageRepo.findById(messageId);
         if (!message) {

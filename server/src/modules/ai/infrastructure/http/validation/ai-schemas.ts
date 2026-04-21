@@ -9,13 +9,6 @@ const createConversationSchema = z.object({
     message: z.string().trim().min(1).optional()
 }).strict();
 
-const sendMessageSchema = z.object({
-    message: z.string().trim().min(1).optional(),
-    messages: aiConversationMessagesSchema.optional(),
-    provider: z.enum(AIProvider).optional(),
-    model: z.string().trim().min(1).optional()
-});
-
 const streamMessageSchema = z.object({
     messages: aiConversationMessagesSchema,
     provider: z.enum(AIProvider).optional(),
@@ -57,7 +50,6 @@ const updateConversationSchema = z.object({
 
 export const aiConversationValidation = createResourceValidation({
     createConversation: createConversationSchema,
-    sendMessage: sendMessageSchema,
     sendStreamMessage: streamMessageSchema,
     updateConversation: updateConversationSchema
 });
