@@ -1,5 +1,4 @@
 export * from './CountTrajectoriesAITool';
-export * from './CreateAnalysisAITool';
 export * from './DeleteAnalysisAITool';
 export * from './DeleteTrajectoryAITool';
 export * from './GetAnalysisByIdAITool';

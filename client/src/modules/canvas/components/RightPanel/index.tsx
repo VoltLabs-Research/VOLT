@@ -1,12 +1,14 @@
-import { buildCanvasModifierOptions, LEGACY_MODIFIERS } from '../../utilities/modifier-registry';
+import { buildCanvasModifierOptions, BUILT_IN_MODIFIERS } from '../../utilities/modifier-registry';
 import useTip from '@/shared/tips/use-tip';
 import usePluginExecution from '../../hooks/use-plugin-execution';
 import { ExecState } from '../../hooks/use-plugin-execution';
 import useTrajectoryCloneFlow from '../../hooks/use-trajectory-clone-flow';
 import { useTrajectoryCloneFlowStore } from '../../stores/use-trajectory-clone-flow-store';
+import { useCanvasFocusStore } from '../../stores/use-canvas-focus-store';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import ModifierConfig from '../ModifierConfig';
 import ModifiersSection from '../ModifiersSection';
+import ObjectsPanel from '../ObjectsPanel';
 
 import PluginExecutionConfigFields from '@/modules/plugin/components/plugin/PluginExecutionConfigFields';
 import { useExecutePluginMutation, usePluginTeamClustersQuery } from '@/modules/plugin/hooks/plugin/queries';
@@ -25,11 +27,12 @@ import type { ComponentType, ReactNode } from 'react';
 import type { SelectOption } from '@/shared/presentation/components/Select';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { PluginTeamClusterOption } from '@/modules/plugin/api/entities/plugin/team-cluster';
+import type { RasterContainerId, RasterContainerSelection } from '@/modules/raster/types/container-selection';
 
 import './RightPanel.css';
 
-const LEGACY_COMPONENT_MAP = new Map<string, ComponentType<any> | undefined>(
-    LEGACY_MODIFIERS.map((m) => [m.id, m.component] as const)
+const BUILT_IN_COMPONENT_MAP = new Map<string, ComponentType<any> | undefined>(
+    BUILT_IN_MODIFIERS.map((m) => [m.id, m.component] as const)
 );
 
 interface PluginExecutionClusterConfig {
@@ -41,6 +44,18 @@ interface RightPanelProps {
     trajectoryId?: string;
     analysisId?: string;
     currentTimestep?: number;
+    onDownloadAnalysis?: (analysisId: string) => void | Promise<void>;
+    onDownloadExposureListing?: (params: {
+        pluginId: string;
+        exposureId: string;
+        analysisId?: string;
+        trajectoryId?: string;
+        exposureName?: string;
+    }) => void;
+    rasterContainerSelections?: RasterContainerSelection[];
+    activeRasterContainerId?: RasterContainerId;
+    onSetActiveRasterContainer?: (containerId: RasterContainerId) => void;
+    onUpdateRasterContainerSelection?: (containerId: RasterContainerId, updates: Partial<RasterContainerSelection>) => void;
 };
 
 const resolveTrajectoryTeamId = (trajectory?: Trajectory | null): string | undefined => {
@@ -59,7 +74,18 @@ const resolveTrajectoryTeamId = (trajectory?: Trajectory | null): string | undef
     return undefined;
 };
 
-const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: RightPanelProps) => {
+const RightPanel = ({
+    trajectory,
+    trajectoryId,
+    analysisId,
+    currentTimestep,
+    onDownloadAnalysis,
+    onDownloadExposureListing,
+    rasterContainerSelections,
+    activeRasterContainerId,
+    onSetActiveRasterContainer,
+    onUpdateRasterContainerSelection
+}: RightPanelProps) => {
     useTip('canvas-render-settings');
 
     const currentUser = useCurrentUser();
@@ -76,6 +102,32 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
     });
     useEnsurePluginCatalogLoaded();
     const [modifiersOpen, setModifiersOpen] = useState(true);
+    const focusedModifierId = useCanvasFocusStore((s) => s.focusedModifierId);
+    const clearFocusedModifier = useCanvasFocusStore((s) => s.clearFocusedModifier);
+
+    useEffect(() => {
+        if (!focusedModifierId) return;
+        setModifiersOpen(true);
+
+        // Why: wait for the CollapsibleSection to render its body before
+        // querying the DOM. Two RAFs give React + transition a chance to mount
+        // the trigger we're targeting.
+        const raf1 = window.requestAnimationFrame(() => {
+            const raf2 = window.requestAnimationFrame(() => {
+                const trigger = document.querySelector<HTMLButtonElement>(
+                    `[data-modifier-id="${CSS.escape(focusedModifierId)}"]`
+                );
+                if (trigger) {
+                    trigger.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                    trigger.click();
+                }
+                clearFocusedModifier();
+            });
+            return () => window.cancelAnimationFrame(raf2);
+        });
+
+        return () => window.cancelAnimationFrame(raf1);
+    }, [focusedModifierId, clearFocusedModifier]);
     const [pluginConfigs, setPluginConfigs] = useState<Record<string, Record<string, unknown>>>({});
     const [pluginExecutionClusters, setPluginExecutionClusters] = useState<Record<string, PluginExecutionClusterConfig>>({});
     const [pluginSelectedTimesteps, setPluginSelectedTimesteps] = useState<Record<string, number[] | undefined>>({});
@@ -251,7 +303,7 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
         if (option.isPlugin && option.pluginModifierId) {
             return true;
         }
-        return LEGACY_COMPONENT_MAP.has(option.modifierId);
+        return BUILT_IN_COMPONENT_MAP.has(option.modifierId);
     }, []);
 
     const handleAction = useCallback((option: ModifierOption) => {
@@ -285,10 +337,10 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
                 />
             );
         }else{
-            const LegacyComponent = LEGACY_COMPONENT_MAP.get(option.modifierId);
-            if(LegacyComponent){
+            const BuiltInComponent = BUILT_IN_COMPONENT_MAP.get(option.modifierId);
+            if(BuiltInComponent){
                 content = (
-                    <LegacyComponent
+                    <BuiltInComponent
                         trajectoryId={trajectoryId}
                         analysisId={analysisId}
                         currentTimestep={currentTimestep}
@@ -325,6 +377,15 @@ const RightPanel = ({ trajectory, trajectoryId, analysisId, currentTimestep }: R
     return (
         <div className="volt-container d-flex h-max overflow-hidden">
             <div className="volt-container w-max h-max overflow-auto">
+                <ObjectsPanel
+                    trajectory={trajectory}
+                    onDownloadAnalysis={onDownloadAnalysis}
+                    onDownloadExposureListing={onDownloadExposureListing}
+                    rasterContainerSelections={rasterContainerSelections}
+                    activeRasterContainerId={activeRasterContainerId}
+                    onSetActiveRasterContainer={onSetActiveRasterContainer}
+                    onUpdateRasterContainerSelection={onUpdateRasterContainerSelection}
+                />
                 <CollapsibleSection
                     title="Plugins"
                     icon={<Wrench size={13} />}

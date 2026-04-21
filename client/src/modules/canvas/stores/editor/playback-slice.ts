@@ -10,6 +10,30 @@ type PlaybackSliceGet = Parameters<StateCreator<EditorStore, [], [], PlaybackSto
 const DEFAULT_PLAY_SPEED = 1;
 const MIN_PLAY_SPEED = 0.1;
 const MAX_PLAY_SPEED = 10;
+// Why: when the trajectory metadata does not expose a target FPS, default to
+// 30 — the baseline documented in OPTIMIZATION_PLAN §F1.S4 acceptance for the
+// 1M-atoms playback scenario.
+const DEFAULT_TARGET_FPS = 30;
+
+// Why: `preloadAbortController` cannot live inside zustand state — it is not a
+// serializable value and Zustand's shallow-equal selector would churn. A single
+// module-level controller is fine because only one playback session can be
+// active per tab.
+let _preloadAbortController: AbortController | null = null;
+
+interface PlaybackRuntime {
+    generation: number;
+    lastFrameTime: number;
+    timesteps: number[];
+}
+
+const createInitialRuntime = (): PlaybackRuntime => ({
+    generation: 0,
+    lastFrameTime: 0,
+    timesteps: []
+});
+
+let _runtime: PlaybackRuntime = createInitialRuntime();
 
 const createInitialState = (): PlaybackState => ({
     isPlaying: false,
@@ -20,22 +44,9 @@ const createInitialState = (): PlaybackState => ({
     preloadProgress: 0,
     downlinkMbps: null,
     rangeStart: undefined,
-    rangeEnd: undefined
+    rangeEnd: undefined,
+    targetFps: DEFAULT_TARGET_FPS
 });
-
-let _rafId: number | null = null;
-let _lastFrameTime: number = 0;
-let _playbackGeneration = 0;
-let _preloadAbortController: AbortController | null = null;
-
-const clearPlaybackFrame = () => {
-    if (_rafId !== null) {
-        cancelAnimationFrame(_rafId);
-        _rafId = null;
-    }
-
-    _lastFrameTime = 0;
-};
 
 const cancelPreloading = () => {
     if (_preloadAbortController) {
@@ -44,12 +55,13 @@ const cancelPreloading = () => {
     }
 };
 
-const advancePlaybackGeneration = () => {
-    _playbackGeneration += 1;
-    return _playbackGeneration;
+const advancePlaybackGeneration = (): number => {
+    _runtime.generation += 1;
+    _runtime.lastFrameTime = 0;
+    return _runtime.generation;
 };
 
-const isAbortError = (error: unknown) => {
+const isAbortError = (error: unknown): boolean => {
     return error instanceof Error && error.name === 'AbortError';
 };
 
@@ -62,13 +74,22 @@ const updateCurrentTimestep = (timestep: number, set: PlaybackSliceSet, get: Pla
     get().clearTimestepScopedScenes();
 };
 
+const resolveFrameDelayMs = (playSpeed: number, targetFps: number): number => {
+    const effectiveFps = playSpeed * targetFps;
+    if (effectiveFps <= 0) {
+        return Number.POSITIVE_INFINITY;
+    }
+
+    return 1000 / effectiveFps;
+};
+
 export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStore> = (set, get) => ({
     ...createInitialState(),
 
     stopPlayback() {
-        clearPlaybackFrame();
         cancelPreloading();
         advancePlaybackGeneration();
+        _runtime.timesteps = [];
         set({
             isPlaying: false,
             isPreloading: false,
@@ -81,143 +102,155 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
         const { isPlaying, isPreloading, didPreload } = get();
         if (isPlaying || isPreloading) {
             get().stopPlayback();
-        } else {
-            const rangedTimesteps = resolveRangedTimesteps(timesteps, get().rangeStart, get().rangeEnd);
-            if (!rangedTimesteps.length) return;
+            return;
+        }
 
-            const playbackGeneration = advancePlaybackGeneration();
+        const rangedTimesteps = resolveRangedTimesteps(timesteps, get().rangeStart, get().rangeEnd);
+        if (!rangedTimesteps.length) return;
 
-            (async () => {
-                let shouldMarkPreloadComplete = didPreload;
+        const playbackGeneration = advancePlaybackGeneration();
+        _runtime.timesteps = timesteps;
 
-                if (!didPreload) {
-                    if (!trajectoryId) {
-                        return;
-                    }
+        (async () => {
+            let shouldMarkPreloadComplete = didPreload;
 
-                    const preloadAbortController = new AbortController();
-                    _preloadAbortController = preloadAbortController;
-                    set({ isPreloading: true, preloadProgress: 0 });
-
-                    try {
-                        const frameCount = timesteps.length;
-                        const maxFramesToPreload = frameCount > 100 ? 100 : undefined;
-                        const currentFrameIndex = get().currentTimestep !== undefined
-                            ? timesteps.indexOf(get().currentTimestep!)
-                            : 0;
-
-                        await get().loadModels({
-                            trajectoryId,
-                            timesteps,
-                            onProgress: (progress: number, metrics?: { bps: number }) => {
-                                if (_playbackGeneration !== playbackGeneration) {
-                                    return;
-                                }
-
-                                const mbps = metrics?.bps != null ? (metrics.bps * 8) / 1_000_000 : null;
-                                set({ preloadProgress: progress, downlinkMbps: mbps });
-                            },
-                            maxFramesToPreload,
-                            currentFrameIndex,
-                            signal: preloadAbortController.signal
-                        });
-                        shouldMarkPreloadComplete = true;
-                    } catch (error) {
-                        if (isAbortError(error)) {
-                            return;
-                        }
-                    } finally {
-                        if (_preloadAbortController === preloadAbortController) {
-                            _preloadAbortController = null;
-                        }
-
-                        if (_playbackGeneration !== playbackGeneration) {
-                            return;
-                        }
-
-                        set({
-                            isPreloading: false,
-                            didPreload: shouldMarkPreloadComplete
-                        });
-                    }
-                }
-
-                if (_playbackGeneration !== playbackGeneration) {
+            if (!didPreload) {
+                if (!trajectoryId) {
                     return;
                 }
 
-                set({ isPlaying: true });
+                const preloadAbortController = new AbortController();
+                _preloadAbortController = preloadAbortController;
+                set({ isPreloading: true, preloadProgress: 0 });
 
-                if (get().currentTimestep === undefined) {
-                    const rangedTs = resolveRangedTimesteps(timesteps, get().rangeStart, get().rangeEnd);
-                    if (rangedTs.length) {
-                        updateCurrentTimestep(rangedTs[0], set, get);
-                    }
-                }
+                try {
+                    const frameCount = timesteps.length;
+                    const maxFramesToPreload = frameCount > 100 ? 100 : undefined;
+                    const currentFrameIndex = get().currentTimestep !== undefined
+                        ? timesteps.indexOf(get().currentTimestep!)
+                        : 0;
 
-                _lastFrameTime = 0;
-
-                const tick = (timestamp: number) => {
-                    if (_playbackGeneration !== playbackGeneration) {
-                        _rafId = null;
-                        return;
-                    }
-
-                    if (!get().isPlaying) {
-                        _rafId = null;
-                        return;
-                    }
-
-                    if (get().isModelLoading) {
-                        _lastFrameTime = 0;
-                        _rafId = requestAnimationFrame(tick);
-                        return;
-                    }
-
-                    if (_lastFrameTime === 0) {
-                        _lastFrameTime = timestamp;
-                        _rafId = requestAnimationFrame(tick);
-                        return;
-                    }
-
-                    const elapsed = timestamp - _lastFrameTime;
-                    const frameDelay = 1000 / get().playSpeed;
-
-                    if (elapsed >= frameDelay) {
-                        _lastFrameTime = timestamp;
-
-                        const { currentTimestep } = get();
-                        const ts = resolveRangedTimesteps(timesteps, get().rangeStart, get().rangeEnd);
-
-                        if (!ts.length) {
-                            get().stopPlayback();
-                            return;
-                        }
-
-                        if (currentTimestep === undefined) {
-                            updateCurrentTimestep(ts[0], set, get);
-                        } else {
-                            const index = ts.indexOf(currentTimestep);
-                            if (index === -1) {
-                                updateCurrentTimestep(ts[0], set, get);
-                            } else {
-                                const nextIndex = (index + 1) % ts.length;
-                                updateCurrentTimestep(ts[nextIndex], set, get);
+                    await get().loadModels({
+                        trajectoryId,
+                        timesteps,
+                        onProgress: (progress: number, metrics?: { bps: number }) => {
+                            if (_runtime.generation !== playbackGeneration) {
+                                return;
                             }
-                        }
+
+                            const mbps = metrics?.bps != null ? (metrics.bps * 8) / 1_000_000 : null;
+                            set({ preloadProgress: progress, downlinkMbps: mbps });
+                        },
+                        maxFramesToPreload,
+                        currentFrameIndex,
+                        signal: preloadAbortController.signal
+                    });
+                    shouldMarkPreloadComplete = true;
+                } catch (error) {
+                    if (isAbortError(error)) {
+                        return;
+                    }
+                } finally {
+                    if (_preloadAbortController === preloadAbortController) {
+                        _preloadAbortController = null;
                     }
 
-                    _rafId = requestAnimationFrame(tick);
-                };
+                    if (_runtime.generation !== playbackGeneration) {
+                        return;
+                    }
 
-                _rafId = requestAnimationFrame(tick);
-            })();
+                    set({
+                        isPreloading: false,
+                        didPreload: shouldMarkPreloadComplete
+                    });
+                }
+            }
+
+            if (_runtime.generation !== playbackGeneration) {
+                return;
+            }
+
+            _runtime.lastFrameTime = 0;
+            set({ isPlaying: true });
+
+            if (get().currentTimestep === undefined) {
+                const ranged = resolveRangedTimesteps(timesteps, get().rangeStart, get().rangeEnd);
+                if (ranged.length) {
+                    updateCurrentTimestep(ranged[0], set, get);
+                }
+            }
+        })();
+    },
+
+    /**
+     * Drives the playback clock from the R3F `useFrame` callback.
+     *
+     * Called every rendered frame with the high-resolution clock reading. The
+     * slice no longer schedules its own `requestAnimationFrame` — the Canvas
+     * already pumps a single rAF loop under `frameloop="demand"`, and this
+     * method reuses it so playback is naturally frame-demand aware (playback
+     * stops advancing when the tab is hidden or the canvas is paused).
+     */
+    tick(now: number) {
+        const state = get();
+        if (!state.isPlaying) {
+            return;
         }
+
+        if (_runtime.timesteps.length === 0) {
+            return;
+        }
+
+        if (state.isModelLoading) {
+            _runtime.lastFrameTime = 0;
+            return;
+        }
+
+        if (_runtime.lastFrameTime === 0) {
+            _runtime.lastFrameTime = now;
+            return;
+        }
+
+        const elapsed = now - _runtime.lastFrameTime;
+        const frameDelay = resolveFrameDelayMs(state.playSpeed, state.targetFps);
+        if (elapsed < frameDelay) {
+            return;
+        }
+
+        _runtime.lastFrameTime = now;
+
+        const ranged = resolveRangedTimesteps(_runtime.timesteps, state.rangeStart, state.rangeEnd);
+        if (!ranged.length) {
+            state.stopPlayback();
+            return;
+        }
+
+        if (state.currentTimestep === undefined) {
+            updateCurrentTimestep(ranged[0], set, get);
+            return;
+        }
+
+        const index = ranged.indexOf(state.currentTimestep);
+        if (index === -1) {
+            updateCurrentTimestep(ranged[0], set, get);
+            return;
+        }
+
+        const nextIndex = (index + 1) % ranged.length;
+        updateCurrentTimestep(ranged[nextIndex], set, get);
     },
 
     setPlaySpeed(speed: number) {
         const clampedSpeed = Math.max(MIN_PLAY_SPEED, Math.min(MAX_PLAY_SPEED, speed));
         set({ playSpeed: clampedSpeed });
+    },
+
+    setTargetFps(fps: number) {
+        if (!Number.isFinite(fps) || fps <= 0) {
+            return;
+        }
+
+        set({ targetFps: fps });
     },
 
     setCurrentTimestep(timestep: number) {
@@ -285,9 +318,9 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
     },
 
     resetPlayback() {
-        clearPlaybackFrame();
         cancelPreloading();
         advancePlaybackGeneration();
+        _runtime = createInitialRuntime();
         set(createInitialState());
     }
 });

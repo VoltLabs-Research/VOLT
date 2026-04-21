@@ -26,7 +26,7 @@ interface TeamClusterDaemonSemanticPayload {
     message?: string;
 };
 
-export interface TeamClusterDaemonCommandOptions {
+interface TeamClusterDaemonCommandOptions {
     timeoutMs?: number;
     timeoutClass?: 'default' | 'interactive' | 'long-running-control-plane';
     retryClass?: 'none' | 'safe-read' | 'idempotent-command';
@@ -45,7 +45,7 @@ export interface TeamClusterDaemonNotebookRuntime {
     tunnelTargetPort: number;
 };
 
-export interface TeamClusterDaemonNotebookRuntimeLookupResponse {
+interface TeamClusterDaemonNotebookRuntimeLookupResponse {
     runtime: TeamClusterDaemonNotebookRuntime | null;
 };
 
@@ -369,6 +369,11 @@ export default class TeamClusterDaemonClient {
         });
     }
 
+    /**
+     * Invokes a daemon command whose response carries a raw binary body.
+     * The daemon returns the buffer under `response.data.body` as a native
+     * Socket.IO binary attachment (no base64 hop).
+     */
     async commandBuffer(teamClusterId: string, command: string, payload?: Record<string, unknown>): Promise<Buffer> {
         const payloadWithMetadata = this.buildPayloadWithMetadata(payload);
         const dispatchContext = this.createDispatchLogContext(
@@ -392,13 +397,17 @@ export default class TeamClusterDaemonClient {
                 this.throwDaemonError(command, response, 'Daemon buffer command returned a failure response');
             }
 
-            if (!response.bodyBase64) {
+            const data = unwrapResponseEnvelopeData(response.data);
+            const body = isRecord(data) ? data.body : undefined;
+            if (!body || (!(body instanceof Uint8Array) && !(body instanceof ArrayBuffer) && !Buffer.isBuffer(body))) {
                 throw ApplicationError.internalServerError('Daemon buffer response body is empty');
             }
 
             logger.info(`@team-cluster-daemon: buffer-response status=${response.status} durationMs=${Date.now() - startedAt}`);
 
-            return Buffer.from(response.bodyBase64, 'base64');
+            if (Buffer.isBuffer(body)) return body;
+            if (body instanceof Uint8Array) return Buffer.from(body.buffer, body.byteOffset, body.byteLength);
+            return Buffer.from(body);
         } catch (error) {
             logger.warn(`@team-cluster-daemon: buffer-failed durationMs=${Date.now() - startedAt}`);
             throw error;

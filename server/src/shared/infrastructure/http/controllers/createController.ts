@@ -1,17 +1,18 @@
 import { BaseController } from './BaseController';
 import { BaseStreamController } from './BaseStreamController';
 import { PaginatedBaseController } from './PaginatedBaseController';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
+import {
+    buildControllerParams,
+    wrapHandleWithValidation
+} from './controller-internals';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import logger from '@shared/infrastructure/logger';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import { asRecord } from '@shared/infrastructure/utilities/type-guards';
 import { container, injectable } from 'tsyringe';
-import { validateRequest, ValidationTarget } from '@shared/infrastructure/http/middleware/validation';
 import type { Response } from 'express';
 import type { IUseCase, UseCaseInput, UseCaseInstance, UseCaseOutput } from '@shared/application/IUseCase';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import type { RequestValidationState, ValidationSchemaInput } from '@shared/infrastructure/http/middleware/validation';
+import type { ValidationSchemaInput } from '@shared/infrastructure/http/middleware/validation';
 import type { StreamableOutput } from './BaseStreamController';
 import type { InjectionToken } from 'tsyringe';
 
@@ -56,20 +57,9 @@ type PreparedDownloadStreamControllerOptions<
 
 // ---------------------------------------------------------------------------
 // Shared helpers — identical across every variant, defined once.
+// See also `controller-internals.ts` for the bits shared with
+// `createReadController.ts`.
 // ---------------------------------------------------------------------------
-
-const readUserAgent = (req: AuthenticatedRequest): string => {
-    const userAgent = req.headers['user-agent'];
-
-    return Array.isArray(userAgent) ? userAgent[0] ?? '' : userAgent ?? '';
-};
-
-const buildRequestValidationContext = (req: AuthenticatedRequest): Record<string, unknown> => {
-    return {
-        userId: req.userId,
-        token: req.token
-    };
-};
 
 const getControllerOptions = <TUseCase extends UseCaseInstance>(
     statusCodeOrOptions: HttpStatus | ControllerOptions<TUseCase> | undefined,
@@ -85,43 +75,6 @@ const getControllerOptions = <TUseCase extends UseCaseInstance>(
         statusCode: fallbackStatusCode,
         ...statusCodeOrOptions
     };
-};
-
-const buildControllerParams = (
-    req: AuthenticatedRequest,
-    validationState: RequestValidationState,
-    extendParams?: (
-        req: AuthenticatedRequest,
-        params: Record<string, unknown>
-    ) => Record<string, unknown>
-): Record<string, unknown> => {
-    const bodyPayload = asRecord(validationState.body ?? req.body) ?? {};
-    const baseParams = {
-        ...(asRecord(validationState.params ?? req.params) ?? {}),
-        ...(asRecord(validationState.query ?? req.query) ?? {}),
-        ...(asRecord(validationState.request) ?? {}),
-        ...bodyPayload,
-        data: bodyPayload,
-        userId: req.userId,
-        authenticatedUserId: req.userId,
-        token: req.token,
-        authType: req.authType,
-        secretKeyId: req.secretKeyId,
-        secretKeyTeamId: req.secretKeyTeamId,
-        secretKeyRoleId: req.secretKeyRoleId,
-        ip: req.ip || req.socket.remoteAddress || '',
-        userAgent: readUserAgent(req),
-        traceId: req.requestContext?.traceId,
-        requestContext: req.requestContext,
-        file: req.file,
-        files: req.files
-    };
-
-    if (!extendParams) {
-        return baseParams;
-    }
-
-    return extendParams(req, baseParams);
 };
 
 /**
@@ -146,47 +99,6 @@ const wrapHandleWithUnexpectedErrorHook = <THandler extends (req: AuthenticatedR
 
             onUnexpectedError(res, error);
         }
-    };
-
-    return wrapped as THandler;
-};
-
-/**
- * Wraps `handle` with an inline validation pass. This is the single source of
- * truth for request validation now that `BaseController.validate()` has been
- * removed — see Task 4.3 of the complexity-reduction plan. The validation
- * middleware previously exposed via `createValidationMiddleware` is still
- * supported for routes that mount it explicitly; those routes will populate
- * `req.validated` first, and this wrapper will simply re-assert the schema
- * (cheap) or be a no-op when the controller has no `validationSchema`.
- */
-const wrapHandleWithValidation = <THandler extends (req: AuthenticatedRequest, res: Response) => Promise<void>>(
-    handler: THandler,
-    validationSchema: ValidationSchemaInput | undefined
-): THandler => {
-    if (!validationSchema) {
-        return handler;
-    }
-
-    const wrapped = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const validationResult = validateRequest(
-            req,
-            validationSchema,
-            ValidationTarget.Body,
-            buildRequestValidationContext(req)
-        );
-
-        if (!validationResult.success) {
-            BaseResponse.error(
-                res,
-                validationResult.message,
-                HttpStatus.BadRequest,
-                validationResult.code
-            );
-            return;
-        }
-
-        await handler(req, res);
     };
 
     return wrapped as THandler;

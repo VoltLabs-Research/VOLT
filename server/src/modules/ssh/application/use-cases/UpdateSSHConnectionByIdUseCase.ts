@@ -4,7 +4,8 @@ import { injectable, inject } from 'tsyringe';
 import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
 import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
 import { ISSHCredentialsCipher } from '@modules/ssh/domain/port/ISSHCredentialsCipher';
-import { UpdateSSHConnectionByIdInputDTO, UpdateSSHConnectionByIdOutputDTO } from '@modules/ssh/application/dtos/UpdateSSHConnectionByIdDTO';
+import { UpdateSSHConnectionByIdInputDTO } from '@modules/ssh/application/dtos/UpdateSSHConnectionByIdDTO';
+import { SafeSSHConnectionDTO } from '@modules/ssh/application/dtos/CreateSSHConnectionDTO';
 import { SSHConnectionOwnershipService } from '@modules/ssh/application/services/SSHConnectionOwnershipService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type SSHConnection from '@modules/ssh/domain/entities/SSHConnection';
@@ -16,7 +17,7 @@ import {
 import { ErrorCodes } from '@core/constants/error-codes';
 
 @injectable()
-export class UpdateSSHConnectionByIdUseCase implements IUseCase<UpdateSSHConnectionByIdInputDTO, UpdateSSHConnectionByIdOutputDTO, ApplicationError> {
+export class UpdateSSHConnectionByIdUseCase implements IUseCase<UpdateSSHConnectionByIdInputDTO, SafeSSHConnectionDTO, ApplicationError> {
     constructor(
         @inject(SSHConnectionOwnershipService)
         private readonly sshConnectionOwnershipService: SSHConnectionOwnershipService,
@@ -28,7 +29,7 @@ export class UpdateSSHConnectionByIdUseCase implements IUseCase<UpdateSSHConnect
         private readonly sshCredentialsCipher: ISSHCredentialsCipher
     ){}
 
-    async execute(input: UpdateSSHConnectionByIdInputDTO): Promise<Result<UpdateSSHConnectionByIdOutputDTO, ApplicationError>> {
+    async execute(input: UpdateSSHConnectionByIdInputDTO): Promise<Result<SafeSSHConnectionDTO, ApplicationError>> {
         const {
             host,
             name,

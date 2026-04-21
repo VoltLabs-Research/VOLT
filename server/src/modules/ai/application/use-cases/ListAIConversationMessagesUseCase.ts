@@ -5,7 +5,8 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
 import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
 import { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRepository';
-import { AIMessageDTO, ListAIConversationMessagesInputDTO, ListAIConversationMessagesOutputDTO } from '@modules/ai/application/dtos/ListAIConversationMessagesDTO';
+import { AIMessageDTO, ListAIConversationMessagesInputDTO } from '@modules/ai/application/dtos/ListAIConversationMessagesDTO';
+import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import AIMessageDTOMapper from '@modules/ai/utilities/AIMessageDTOMapper';
 import { inject, injectable } from 'tsyringe';
 
@@ -16,7 +17,7 @@ interface ListAIConversationMessagesLookup {
 };
 
 @injectable()
-export default class ListAIConversationMessagesUseCase implements IUseCase<ListAIConversationMessagesInputDTO, ListAIConversationMessagesOutputDTO, ApplicationError> {
+export default class ListAIConversationMessagesUseCase implements IUseCase<ListAIConversationMessagesInputDTO, PaginatedResult<AIMessageDTO>, ApplicationError> {
     constructor(
         @inject(AI_TOKENS.AIConversationRepository)
         private readonly conversationRepository: IAIConversationRepository,
@@ -28,7 +29,7 @@ export default class ListAIConversationMessagesUseCase implements IUseCase<ListA
         private readonly messageDTOMapper: AIMessageDTOMapper
     ) {}
 
-    async execute(input: ListAIConversationMessagesInputDTO): Promise<Result<ListAIConversationMessagesOutputDTO, ApplicationError>> {
+    async execute(input: ListAIConversationMessagesInputDTO): Promise<Result<PaginatedResult<AIMessageDTO>, ApplicationError>> {
         const page = Math.max(1, input.page ?? 1);
         const limit = Math.max(1, Math.min(200, input.limit ?? 50));
 

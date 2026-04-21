@@ -9,35 +9,35 @@ import DynamicIcon from '@/shared/presentation/components/DynamicIcon';
 import type { ResolvedModifier } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import type { ComponentType } from 'react';
 
-export interface LegacyModifierDefinition {
+export interface BuiltInModifierDefinition {
     id: string;
     title: string;
     icon: ComponentType<any>;
     component?: ComponentType<any>;
-    type?: 'legacy' | 'plugin';
+    type?: 'built-in' | 'plugin';
 };
 
-export const LEGACY_MODIFIERS: LegacyModifierDefinition[] = [
+export const BUILT_IN_MODIFIERS: BuiltInModifierDefinition[] = [
     {
         id: 'slice-plane',
         title: 'Slice Plane',
         icon: Scissors,
         component: SlicePlane,
-        type: 'legacy'
+        type: 'built-in'
     },
     {
         id: 'particle-filter',
         title: 'Particle Filter',
         icon: Droplets,
         component: ParticleFilter,
-        type: 'legacy'
+        type: 'built-in'
     },
     {
         id: 'color-coding',
         title: 'Color Coding',
         icon: LineChart,
         component: ColorCoding,
-        type: 'legacy'
+        type: 'built-in'
     }
 ];
 
@@ -62,7 +62,7 @@ const resolveIcon = (icon?: string): ComponentType<any> => {
 };
 
 export const buildCanvasModifierOptions = (pluginModifiers: ResolvedModifier[]): ModifierOption[] => {
-    const legacyOptions: ModifierOption[] = LEGACY_MODIFIERS.map((modifier) => ({
+    const builtInOptions: ModifierOption[] = BUILT_IN_MODIFIERS.map((modifier) => ({
         modifierId: modifier.id,
         title: modifier.title,
         Icon: modifier.icon,
@@ -79,5 +79,5 @@ export const buildCanvasModifierOptions = (pluginModifiers: ResolvedModifier[]):
         pluginModifierId: modifier.pluginId
     }));
 
-    return [...legacyOptions, ...pluginOptions];
+    return [...builtInOptions, ...pluginOptions];
 };

@@ -4,7 +4,8 @@ import { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
 import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
-import { AIConversationDTO, ListAIConversationsInputDTO, ListAIConversationsOutputDTO } from '@modules/ai/application/dtos/ListAIConversationsDTO';
+import { AIConversationDTO, ListAIConversationsInputDTO } from '@modules/ai/application/dtos/ListAIConversationsDTO';
+import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { inject, injectable } from 'tsyringe';
 
 interface ListAIConversationsFilter extends Partial<AIConversationProps> {
@@ -13,13 +14,13 @@ interface ListAIConversationsFilter extends Partial<AIConversationProps> {
 };
 
 @injectable()
-export default class ListAIConversationsUseCase implements IUseCase<ListAIConversationsInputDTO, ListAIConversationsOutputDTO, ApplicationError> {
+export default class ListAIConversationsUseCase implements IUseCase<ListAIConversationsInputDTO, PaginatedResult<AIConversationDTO>, ApplicationError> {
     constructor(
         @inject(AI_TOKENS.AIConversationRepository)
         private readonly conversationRepository: IAIConversationRepository
     ) {}
 
-    async execute(input: ListAIConversationsInputDTO): Promise<Result<ListAIConversationsOutputDTO, ApplicationError>> {
+    async execute(input: ListAIConversationsInputDTO): Promise<Result<PaginatedResult<AIConversationDTO>, ApplicationError>> {
         const page = Math.max(1, input.page ?? 1);
         const limit = Math.max(1, Math.min(200, input.limit ?? 50));
         const includeArchived = input.includeArchived === true;

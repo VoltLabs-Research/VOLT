@@ -16,10 +16,21 @@ import { isEnumValue } from '../../utilities';
 import type { RenderGroup } from '../../types';
 
 const useRendererGroup = (): RenderGroup => {
-    const { runtime, setRuntime } = useEditorStore(useShallow((state) => state.rendererSettings));
+    const rendererSettings = useEditorStore(useShallow((state) => state.rendererSettings));
     const isPointCloudScene = useEditorStore((s) => s.isPointCloudScene);
+    const runtime = rendererSettings?.runtime;
+    const setRuntime = rendererSettings?.setRuntime;
 
     return useMemo(() => {
+        if (!runtime || !setRuntime) {
+            return {
+                id: 'renderer',
+                title: 'Renderer',
+                icon: <MdTune size={12} />,
+                subsections: []
+            };
+        }
+
         const toneSection = {
             key: 'tone',
             title: RENDERER_SUBSECTION_TITLES.toneMapping,

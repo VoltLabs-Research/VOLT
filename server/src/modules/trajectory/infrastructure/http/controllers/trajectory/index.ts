@@ -17,7 +17,7 @@ import ListTrajectoryFoldersUseCase from '@modules/trajectory/application/use-ca
 import MoveTrajectoryUseCase from '@modules/trajectory/application/use-cases/trajectory/MoveTrajectoryUseCase';
 import UpdateTrajectoryByIdUseCase from '@modules/trajectory/application/use-cases/trajectory/UpdateTrajectoryByIdUseCase';
 import UpdateTrajectoryFolderUseCase from '@modules/trajectory/application/use-cases/trajectory/UpdateTrajectoryFolderUseCase';
-import { GetAtomsUseCase } from '@modules/trajectory/application/use-cases/trajectory/GetAtomsUseCase';
+import GetAtomsBinaryController from './GetAtomsBinaryController';
 import DownloadSampleSimulationsController from './DownloadSampleSimulationsController';
 import DownloadTrajectoryAnalysesController from './DownloadTrajectoryAnalysesController';
 import DownloadTrajectoryController from './DownloadTrajectoryController';
@@ -60,7 +60,6 @@ const GetTrajectoryFolderController = createController(GetTrajectoryFolderUseCas
 const UpdateTrajectoryByIdController = createController(UpdateTrajectoryByIdUseCase);
 const UpdateTrajectoryFolderController = createController(UpdateTrajectoryFolderUseCase);
 const MoveTrajectoryController = createController(MoveTrajectoryUseCase);
-const GetAtomsController = createPaginatedController(GetAtomsUseCase);
 const ListTrajectoryFoldersController = createPaginatedController(ListTrajectoryFoldersUseCase);
 const ListSampleSimulationsController = createController(ListSampleSimulationsUseCase);
 const resolvedControllers = createControllerRegistry({
@@ -86,7 +85,7 @@ export default {
     updateFolder: new UpdateTrajectoryFolderController(),
     move: new MoveTrajectoryController(),
     getMetrics: new GetTeamMetricsController(),
-    getAtoms: new GetAtomsController(),
+    getAtomsBinary: new GetAtomsBinaryController(),
     listFolders: new ListTrajectoryFoldersController(),
     ...resolvedControllers,
     listSamples: new ListSampleSimulationsController()

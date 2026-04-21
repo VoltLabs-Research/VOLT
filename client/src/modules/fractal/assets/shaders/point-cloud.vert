@@ -1,53 +1,32 @@
-/**
- * Copyright (c) 2025, Volt Authors. All rights reserved.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 #include <clipping_planes_pars_vertex>
 
 uniform float pointScale;
+uniform float uMinPointSize;
+
 varying vec3 vColor;
 varying vec3 vWorldPosition;
 
 /**
- * @summary
- * Vertex shader for point sprite rendering with per-vertex color passthrough 
- * and perspective-scaled point size.
-*/
+ * Vertex shader for point sprite rendering. The GLB streamed from the server
+ * already carries baked vertex colors (default / color-coding / particle-filter
+ * endpoints all produce a fully coloured point cloud), so the shader just
+ * forwards `color` to the fragment stage.
+ */
 void main(){
-    // Pass per-vertex color to fragment shader.
-    vColor = color; 
+    vColor = color;
 
-    // Compute world-space position for lighting calculations.
     vec4 worldPosition = modelMatrix * vec4(position, 1.0);
     vWorldPosition = worldPosition.xyz;
 
-    // Transform into view space and then clip space.
     vec4 mvPosition = viewMatrix * worldPosition;
     gl_Position = projectionMatrix * mvPosition;
 
-    // Perspective scaling. Points shrink with distance (-mvPosition.z).
-    // Compensate for the group scale applied by SimulationCellBox so that
-    // pointScale (computed in local/angstrom space) maps correctly to screen pixels.
     float modelScale = length(modelMatrix[0].xyz);
-    gl_PointSize = pointScale * modelScale * (300.0 / -mvPosition.z);
+    float perspectivePointSize = pointScale * modelScale * (300.0 / -mvPosition.z);
+    // Why: perspective shrinks `gl_PointSize` without a floor, so atoms fall
+    // below 1 px at normal zoom for big simulation cells. Clamp to a minimum
+    // so they never vanish just because the camera framed the full cell.
+    gl_PointSize = max(uMinPointSize, perspectivePointSize);
 
     #include <clipping_planes_vertex>
 }

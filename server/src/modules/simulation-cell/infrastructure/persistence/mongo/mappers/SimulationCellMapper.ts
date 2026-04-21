@@ -1,4 +1,4 @@
-import { createMongoMapperFromFactory } from '@shared/infrastructure/persistence/mongo/createMongoMapperFromFactory';
+import { createMongoMapperFromFactory } from '@shared/infrastructure/persistence/mongo/createMongoMapper';
 import { createSimulationCell } from '@modules/simulation-cell/domain/entities/SimulationCell';
 import type SimulationCell from '@modules/simulation-cell/domain/entities/SimulationCell';
 import type { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';

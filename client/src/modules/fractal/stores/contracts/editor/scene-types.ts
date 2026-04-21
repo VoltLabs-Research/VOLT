@@ -23,7 +23,7 @@ export interface PointCloudSettingsState {
     style: PointCloudStyleMode;
 };
 
-export interface TrajectoryGLBs {
+interface TrajectoryGLBs {
     trajectory: string;
     defect_mesh: string;
     interface_mesh: string;
@@ -61,7 +61,7 @@ export interface ModelState {
     isPointCloudScene: boolean;
 };
 
-export interface ModelActions {
+interface ModelActions {
     selectModel: (glbs: TrajectoryGLBs | null) => void;
     setGlbsWithoutLoading: (glbs: TrajectoryGLBs | null) => void;
     resetModel: () => void;
@@ -101,31 +101,42 @@ export interface PlaybackState {
     downlinkMbps?: number | null;
     rangeStart?: number;
     rangeEnd?: number;
+    // Why: frame-rate budget used to compute playback cadence. Driven from
+    // dataset metadata (LAMMPS dump frequency → FPS) so each trajectory plays
+    // at its native rhythm.
+    targetFps: number;
 };
 
-export interface PlaybackActions {
+interface PlaybackActions {
     togglePlay: (params: PlaybackTimelineParams) => void;
     setPlaySpeed: (speed: number) => void;
+    setTargetFps: (fps: number) => void;
     setCurrentTimestep: (timestep: number) => void;
     stopPlayback: () => void;
     resetPlayback: () => void;
     setRangeStart: (value: number | undefined) => void;
     setRangeEnd: (value: number | undefined) => void;
+    /**
+     * Advances the playback clock using the high-resolution reading supplied by
+     * R3F `useFrame`. Called from the Canvas subtree — not by a module-local
+     * rAF loop. Reuses the single rAF already scheduled by the renderer.
+     */
+    tick: (now: number) => void;
 };
 
 export type PlaybackStore = PlaybackState & PlaybackActions;
-export type TimelineGLBMap = Record<number, string>;
+type TimelineGLBMap = Record<number, string>;
 
 export interface PlaybackTimelineParams {
     trajectoryId?: string;
     timesteps: number[];
 };
 
-export interface TimestepActions {
+interface TimestepActions {
     loadModels: (params: LoadTimelineModelsParams) => Promise<TimelineGLBMap>;
 };
 
-export interface LoadTimelineModelsParams {
+interface LoadTimelineModelsParams {
     trajectoryId: string;
     timesteps: number[];
     onProgress?: (p: number, m?: { bps: number }) => void;

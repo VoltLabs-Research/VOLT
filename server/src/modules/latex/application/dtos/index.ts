@@ -5,7 +5,7 @@ export type { CreateLatexDocumentInputDTO, CreateLatexDocumentOutputDTO } from '
 export type { ListLatexDocumentsInputDTO, ListLatexDocumentsOutputDTO } from './ListLatexDocumentsDTO';
 export type { DeleteLatexDocumentInputDTO, DeleteLatexDocumentOutputDTO } from './DeleteLatexDocumentDTO';
 export type { UpdateLatexDocumentInputDTO, UpdateLatexDocumentOutputDTO } from './UpdateLatexDocumentDTO';
-export type { GetLatexDocumentInputDTO, GetLatexDocumentOutputDTO } from './GetLatexDocumentDTO';
+export type { GetLatexDocumentInputDTO } from './GetLatexDocumentDTO';
 export type { LatexAssetDTO } from './LatexAssetDTO';
 export type { UploadLatexAssetInputDTO, UploadLatexAssetOutputDTO } from './UploadLatexAssetDTO';
 export type { ListLatexAssetsInputDTO, ListLatexAssetsOutputDTO } from './ListLatexAssetsDTO';
@@ -15,5 +15,5 @@ export type { ListLatexFilesInputDTO, ListLatexFilesOutputDTO } from './ListLate
 export type { CreateLatexFileInputDTO, CreateLatexFileOutputDTO } from './CreateLatexFileDTO';
 export type { UpdateLatexFileInputDTO, UpdateLatexFileOutputDTO } from './UpdateLatexFileDTO';
 export type { DeleteLatexFileInputDTO, DeleteLatexFileOutputDTO } from './DeleteLatexFileDTO';
-export type { SetLatexFileEntrypointInputDTO, SetLatexFileEntrypointOutputDTO } from './SetLatexFileEntrypointDTO';
+export type { SetLatexFileEntrypointInputDTO } from './SetLatexFileEntrypointDTO';
 export type { UpdateLatexAssetInputDTO, UpdateLatexAssetOutputDTO } from './UpdateLatexAssetDTO';

@@ -22,7 +22,7 @@ export default class UpdateTrajectoryByIdUseCase implements IUseCase<UpdateTraje
             name,
             isPublic
         }, {
-            populate: ['team', 'analysis', 'frames.simulationCell']
+            populate: ['team', 'analysis']
         });
 
         if(!result){

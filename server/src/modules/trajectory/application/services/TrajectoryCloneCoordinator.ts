@@ -16,6 +16,7 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
+import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
@@ -78,6 +79,9 @@ export default class TrajectoryCloneCoordinator {
 
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly trajectoryRepository: ITrajectoryRepository,
+
+        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository)
+        private readonly trajectoryFrameRepository: ITrajectoryFrameRepository,
 
         @inject(TEAM_CLUSTER_TOKENS.StoragePlacementService)
         private readonly storagePlacementService: StoragePlacementService,
@@ -181,7 +185,8 @@ export default class TrajectoryCloneCoordinator {
             throw ApplicationError.notFound('Trajectory::NotFound', 'Source trajectory not found');
         }
 
-        const totalFrames = sourceTrajectory.props.frames?.length ?? 0;
+        const sourceFrames = await this.trajectoryFrameRepository.getFrames(sourceTrajectory.id);
+        const totalFrames = sourceFrames.length;
 
         let currentJob = await this.setJobState(initialJob.id, 'copying', {
             stats: {
@@ -196,7 +201,7 @@ export default class TrajectoryCloneCoordinator {
 
         const sourceClusterId = initialJob.props.sourceClusterId ?? null;
         const destinationClusterId = initialJob.props.destinationClusterId;
-        const sortedFrames = [...sourceTrajectory.props.frames].sort((a, b) => a.timestep - b.timestep);
+        const sortedFrames = [...sourceFrames].sort((a, b) => a.timestep - b.timestep);
 
         let pendingFrames = 0;
         let pendingBytes = 0;

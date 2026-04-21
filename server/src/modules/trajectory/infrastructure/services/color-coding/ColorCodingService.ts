@@ -346,7 +346,9 @@ export default class ColorCodingService implements IColorCodingService {
             throw buildDumpNotFoundError();
         }
 
-        const response = await getLocalGlbStream(this.storageService, objectName);
+        // Why: server-side decode — request identity encoding so the downstream
+        // GLB parser gets raw bytes, never the passthrough zstd stream.
+        const response = await getLocalGlbStream(this.storageService, objectName, { acceptEncoding: 'identity' });
         return response.stream;
     }
 };

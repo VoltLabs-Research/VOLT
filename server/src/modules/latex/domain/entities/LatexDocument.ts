@@ -1,4 +1,4 @@
-export interface PopulatedLatexUser {
+interface PopulatedLatexUser {
     _id: string;
     firstName?: string;
     lastName?: string;
@@ -16,13 +16,14 @@ export interface LatexDocumentProps {
     updatedAt: Date;
 };
 
-export default class LatexDocument {
-    constructor(
-        public readonly _id: string,
-        public props: LatexDocumentProps
-    ) {}
-
-    get id(): string {
-        return this._id;
-    }
+export interface LatexDocument {
+    readonly _id: string;
+    props: LatexDocumentProps;
 };
+
+export const createLatexDocument = (_id: string, props: LatexDocumentProps): LatexDocument => ({
+    _id,
+    props
+});
+
+export default LatexDocument;

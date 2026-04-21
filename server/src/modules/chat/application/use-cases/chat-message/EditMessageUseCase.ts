@@ -1,4 +1,5 @@
-import { EditMessageInputDTO, EditMessageOutputDTO } from '@modules/chat/application/dtos/chat-message/EditMessageDTO';
+import { EditMessageInputDTO } from '@modules/chat/application/dtos/chat-message/EditMessageDTO';
+import { PersistedChatMessageDTO } from '@modules/chat/application/dtos/chat-message/SendChatMessageDTO';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
 import { ErrorCodes } from '@core/constants/error-codes';
@@ -11,7 +12,7 @@ import type { IChatMessageRepository } from '@modules/chat/domain/port/chat-mess
 import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 
 @injectable()
-export class EditMessageUseCase implements IUseCase<EditMessageInputDTO, EditMessageOutputDTO, ApplicationError> {
+export class EditMessageUseCase implements IUseCase<EditMessageInputDTO, PersistedChatMessageDTO, ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository)
         private messageRepo: IChatMessageRepository,
@@ -19,7 +20,7 @@ export class EditMessageUseCase implements IUseCase<EditMessageInputDTO, EditMes
         private socketEmitter: ISocketEmitter
     ){}
 
-    async execute(input: EditMessageInputDTO): Promise<Result<EditMessageOutputDTO, ApplicationError>> {
+    async execute(input: EditMessageInputDTO): Promise<Result<PersistedChatMessageDTO, ApplicationError>> {
         const { messageId, userId, content } = input;
         const message = await this.messageRepo.findById(messageId);
         if (!message) {

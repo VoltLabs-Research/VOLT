@@ -2,13 +2,14 @@ import type { CatalogFolderProps } from '@shared/domain/catalog/CatalogFolder';
 
 export type ContainerFolderProps = CatalogFolderProps;
 
-export default class ContainerFolder {
-    constructor(
-        public readonly _id: string,
-        public props: ContainerFolderProps
-    ) {}
+export interface ContainerFolder {
+    readonly _id: string;
+    props: ContainerFolderProps;
+};
 
-    get id(): string {
-        return this._id;
-    }
-}
+export const createContainerFolder = (_id: string, props: ContainerFolderProps): ContainerFolder => ({
+    _id,
+    props
+});
+
+export default ContainerFolder;

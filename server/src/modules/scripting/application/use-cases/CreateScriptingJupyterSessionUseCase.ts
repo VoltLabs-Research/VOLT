@@ -78,7 +78,7 @@ const selectExistingTrajectoryNotebook = (
             return timestampDelta;
         }
 
-        return right.id.localeCompare(left.id);
+        return right._id.localeCompare(left._id);
     })[0] || null;
 };
 
@@ -134,7 +134,7 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
                 teamClusterId: await this.resolveNotebookTeamClusterId(notebook, input),
                 containerResources,
                 userId,
-                notebookId: notebook.id,
+                notebookId: notebook._id,
                 notebook: {
                     notebookPath: notebook.props.notebookPath,
                     content: notebook.props.content
@@ -143,7 +143,7 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             const session = await this.scriptingSessionOrchestrator.startSession(sessionInput);
 
             return Result.ok({
-                notebookId: notebook.id,
+                notebookId: notebook._id,
                 jupyter: session.jupyter
             });
         } catch (error) {
@@ -330,7 +330,7 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
                     );
                 }
 
-                return existingNotebook.id;
+                return existingNotebook._id;
             }, {
                 retries: LOCK_BUSY_WAIT_ATTEMPTS - 1,
                 factor: 1,

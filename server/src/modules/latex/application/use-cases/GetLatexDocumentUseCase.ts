@@ -3,18 +3,19 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
-import type { GetLatexDocumentInputDTO, GetLatexDocumentOutputDTO } from '@modules/latex/application/dtos/GetLatexDocumentDTO';
+import type { GetLatexDocumentInputDTO } from '@modules/latex/application/dtos/GetLatexDocumentDTO';
+import type { LatexDocumentDTO } from '@modules/latex/application/dtos/LatexDocumentDTO';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 
 @injectable()
-export class GetLatexDocumentUseCase implements IUseCase<GetLatexDocumentInputDTO, GetLatexDocumentOutputDTO, ApplicationError> {
+export class GetLatexDocumentUseCase implements IUseCase<GetLatexDocumentInputDTO, LatexDocumentDTO, ApplicationError> {
     constructor(
         @inject(LATEX_TOKENS.LatexDocumentRepository)
         private readonly latexDocumentRepository: ILatexDocumentRepository
     ) {}
 
-    async execute(input: GetLatexDocumentInputDTO): Promise<Result<GetLatexDocumentOutputDTO, ApplicationError>> {
+    async execute(input: GetLatexDocumentInputDTO): Promise<Result<LatexDocumentDTO, ApplicationError>> {
         try {
             const document = await this.latexDocumentRepository.findByTeamAndDocumentId(
                 input.teamId,

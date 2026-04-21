@@ -1,5 +1,5 @@
 import useJobStatusCounts from '../../hooks/use-job-status-counts';
-import PanelHeader from '../PanelHeader';
+import PanelHeader from '@/shared/presentation/components/PanelHeader';
 import StatusCounts from '../StatusCounts';
 
 import { Activity } from 'lucide-react';

@@ -115,7 +115,8 @@ export const debugTrajectoriesQuery = createQuery(KEYS.debug, async (): Promise<
     const result = await trajectoryService.getAll({ page: 1, limit: 1000 });
 
     return result.data.filter(
-        (trajectory: Trajectory) => trajectory.status === 'completed' && trajectory.frames && trajectory.frames.length > 0
+        (trajectory: Trajectory) => trajectory.status === 'completed'
+            && Array.isArray(trajectory.frames) && trajectory.frames.length > 0
     );
 });
 export const trajectoryPreviewQuery = createQuery(KEYS.preview, trajectoryService.getPreview);
@@ -125,8 +126,7 @@ const getAtomsWithAccess = (params: GetAtomsInputDTO) => {
 };
 const getAtomsKey = (params: GetAtomsInputDTO) => withAccessMode(useCanvasAccessStore.getState().mode, KEYS.atoms(params));
 export const trajectoryAtomsQuery = createQuery(getAtomsKey, getAtomsWithAccess);
-export const trajectorySamplesQuery = createQuery(KEYS.samples, () => trajectoryService.listSamples({}));
-export const trajectoryMetricsQuery = createQuery(KEYS.metrics, () => trajectoryService.getMetrics({}));
+const trajectorySamplesQuery = createQuery(KEYS.samples, () => trajectoryService.listSamples({}));
 
 const trajectoryFolderQueries = createFolderResourceQueries<
     TrajectoryFolder,
@@ -151,8 +151,6 @@ const trajectoryFolderQueries = createFolderResourceQueries<
 
 export const trajectoryFoldersQuery = trajectoryFolderQueries.foldersQuery;
 export const trajectoryFolderQuery = trajectoryFolderQueries.folderQuery;
-export const invalidateTrajectoryFoldersQuery = trajectoryFolderQueries.invalidateFoldersQuery;
-export const invalidateTrajectoryFolderQuery = trajectoryFolderQueries.invalidateFolderQuery;
 export const useCreateTrajectoryFolderMutation = trajectoryFolderQueries.useCreateFolderMutation;
 export const useUpdateTrajectoryFolderMutation = trajectoryFolderQueries.useUpdateFolderMutation;
 export const useDeleteTrajectoryFolderMutation = trajectoryFolderQueries.useDeleteFolderMutation;
@@ -191,23 +189,10 @@ export const TRAJECTORY_QUERY_KEYS = {
     ...TRAJECTORY_MODULE_QUERY_KEYS
 } as const;
 
-export const buildTrajectoriesQueryOptions = trajectoryQuery.useListQuery.buildOptions;
-export const fetchTrajectories = trajectoryQuery.useListQuery.fetch;
-
-export const buildTrajectoryByIdQueryOptions = (params: TrajectoryByIdParams) => {
-    return trajectoryDetailQuery.buildOptions(params.trajectoryId);
-};
-
-export const buildTrajectoryPreviewQueryOptions = trajectoryPreviewQuery.buildOptions;
-export const buildTrajectoryAtomsQueryOptions = trajectoryAtomsQuery.buildOptions;
 export const fetchTrajectoryAtoms = trajectoryAtomsQuery.fetch;
-export const buildTrajectorySamplesQueryOptions = () => trajectorySamplesQuery.buildOptions(undefined);
 export const fetchTrajectorySamples = () => trajectorySamplesQuery.fetch(undefined);
-export const buildTrajectoryMetricsQueryOptions = () => trajectoryMetricsQuery.buildOptions(undefined);
 export const useDownloadTrajectoryAnalysesMutation = createMutation<Blob, DownloadTrajectoryAnalysesInputDTO>(trajectoryService.downloadAnalyses);
 export const useDownloadTrajectoryMutation = createMutation<Blob, DownloadTrajectoryInputDTO>(trajectoryService.download);
-
-export const useTrajectoriesQuery = trajectoryQuery.useListQuery;
 
 export const useTrajectoriesInfiniteQuery = (
     params: GetTrajectoriesInputDTO,
@@ -243,8 +228,8 @@ export const useTrajectoryAtomsInfiniteQuery = (
         }),
         initialPageParam: 1,
         getNextPageParam: (lastPage: GetAtomsOutputDTO) => {
-            if (lastPage.pagination?.hasMore) {
-                return (lastPage.pagination.page ?? 1) + 1;
+            if (lastPage.page < lastPage.totalPages) {
+                return lastPage.page + 1;
             }
 
             return undefined;

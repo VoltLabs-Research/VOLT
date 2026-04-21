@@ -8,6 +8,7 @@ import {
 import Button from '@/shared/presentation/components/Button';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import Tooltip from '@/shared/presentation/components/Tooltip';
 import { Camera, Image } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -133,11 +134,31 @@ const ScreenshotMenuPanel = ({ close }: { close: () => void }) => {
     );
 };
 
-const ScreenshotMenuPopover = () => {
+interface ScreenshotMenuPopoverProps {
+    compact?: boolean;
+}
+
+const ScreenshotMenuPopover = ({ compact = false }: ScreenshotMenuPopoverProps) => {
     return (
         <ContextMenuPopover
             id='viewport-screenshot-menu'
-            trigger={(
+            trigger={compact ? (
+                <span className='canvas-viewport-floating-trigger'>
+                    <Tooltip content='Screenshot' placement='bottom'>
+                        <Button
+                            variant='ghost'
+                            intent='canvas'
+                            shape='rounded'
+                            size='sm'
+                            iconOnly
+                            className='canvas-viewport-floating-btn'
+                            aria-label='Screenshot settings'
+                        >
+                            <Camera size={14} />
+                        </Button>
+                    </Tooltip>
+                </span>
+            ) : (
                 <Button
                     variant='ghost'
                     intent='canvas'

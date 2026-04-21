@@ -1,4 +1,4 @@
-export interface CameraOption<TValue> {
+interface CameraOption<TValue> {
     value: TValue;
     title: string;
 };
@@ -75,7 +75,10 @@ export const CAMERA_SUBSECTION_TITLES = {
 export const PERSPECTIVE_DEFAULTS: PerspectiveCameraSettings = {
     fov: 50,
     near: 0.01,
-    far: 200,
+    // Why: the scene includes a ground grid + sim-cell + atom cloud that can
+    // span hundreds of units after the autofit scaling. A far plane of 200
+    // clipped atoms as soon as the user zoomed out past a few meters.
+    far: 10000,
     zoom: 1,
     filmGauge: 35,
     filmOffset: 0,
@@ -89,7 +92,7 @@ export const PERSPECTIVE_DEFAULTS: PerspectiveCameraSettings = {
 
 export const ORTHOGRAPHIC_DEFAULTS: OrthographicCameraSettings = {
     near: 0.1,
-    far: 1000,
+    far: 10000,
     zoom: 1
 };
 
@@ -114,7 +117,7 @@ export const ORBIT_CONTROLS_DEFAULT_SETTINGS: OrbitControlsSettings = {
     screenSpacePanning: true,
     autoRotate: false,
     autoRotateSpeed: 1.0,
-    minDistance: 2,
+    minDistance: 0.01,
     maxDistance: 10000,
     minPolarAngle: 0,
     maxPolarAngle: Math.PI,
@@ -123,11 +126,11 @@ export const ORBIT_CONTROLS_DEFAULT_SETTINGS: OrbitControlsSettings = {
     target: [0, 2, 0]
 };
 
-export const getDefaultPerspectiveCameraSettings = (): PerspectiveCameraSettings => ({
+const getDefaultPerspectiveCameraSettings = (): PerspectiveCameraSettings => ({
     ...PERSPECTIVE_DEFAULTS
 });
 
-export const getDefaultOrthographicCameraSettings = (): OrthographicCameraSettings => ({
+const getDefaultOrthographicCameraSettings = (): OrthographicCameraSettings => ({
     ...ORTHOGRAPHIC_DEFAULTS
 });
 

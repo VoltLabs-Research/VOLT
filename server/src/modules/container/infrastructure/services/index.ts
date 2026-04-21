@@ -4,6 +4,5 @@ export * from './ContainerDeploymentProgressService';
 export * from './ContainerOwnershipService';
 export * from './ContainerPortProxyRelayService';
 export * from './DaemonContainerRuntimeService';
-export * from './DockerContainerService';
 export * from './TeamClusterSelectionService';
 export * from './TerminalService';

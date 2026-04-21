@@ -110,8 +110,6 @@ const allPluginsQuery = createQuery<void, Plugin[]>(
     fetchAllPlugins
 );
 
-export const buildAllPluginsQueryOptions = () => allPluginsQuery.buildOptions();
-
 export const useAllPluginsQuery = (
     options?: QueryOptions<Plugin[], Plugin[]>
 ) => allPluginsQuery(undefined, options as QueryOptions<Plugin[], Plugin[]> | undefined);
@@ -157,14 +155,7 @@ const pluginsQuery = createQuery<GetPluginsInputDTO, PaginatedResponse<Plugin>>(
     (params) => pluginService.getAll(params)
 );
 
-export const buildPluginsQueryOptions = (params: GetPluginsInputDTO) => pluginsQuery.buildOptions(params);
-
 export const fetchPlugins = (params: GetPluginsInputDTO) => pluginsQuery.fetch(params);
-
-export const usePluginsQuery = (
-    params: GetPluginsInputDTO,
-    options?: QueryOptions<PaginatedResponse<Plugin>, PaginatedResponse<Plugin>>
-) => pluginsQuery(params, options as QueryOptions<PaginatedResponse<Plugin>, PaginatedResponse<Plugin>> | undefined);
 
 // usePluginCatalogInfiniteQuery: consumer supplies its own getNextPageParam and
 // enabled flag. createInfiniteQuery hardcodes getNextPageParam based on the
@@ -190,8 +181,6 @@ const teamClustersQuery = createQuery<ListPluginTeamClustersInputDTO, ListPlugin
     (params) => PLUGIN_QUERY_KEYS.teamClustersList(params),
     (params) => pluginService.listTeamClusters(params)
 );
-
-export const buildPluginTeamClustersQueryOptions = (params: ListPluginTeamClustersInputDTO) => teamClustersQuery.buildOptions(params);
 
 export const usePluginTeamClustersQuery = (
     params: ListPluginTeamClustersInputDTO,

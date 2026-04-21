@@ -39,12 +39,9 @@ const whiteboardPaginatedQuery = createPaginatedQuery<Whiteboard, ListWhiteboard
 });
 
 export const whiteboardsQueryKey = whiteboardPaginatedQuery.QUERY_KEYS.lists;
-export const whiteboardQueryKey = KEYS.single;
 
 export const whiteboardsQuery = whiteboardPaginatedQuery.useListQuery;
 export const whiteboardQuery = createQuery(KEYS.single, service.getWhiteboard);
-
-export const invalidateWhiteboardsQuery = () => whiteboardPaginatedQuery.cache.invalidate();
 
 const whiteboardFolderQueries = createFolderResourceQueries<
     WhiteboardFolder,
@@ -69,10 +66,6 @@ const whiteboardFolderQueries = createFolderResourceQueries<
 
 export const whiteboardFoldersQuery = whiteboardFolderQueries.foldersQuery;
 export const whiteboardFolderQuery = whiteboardFolderQueries.folderQuery;
-export const whiteboardFoldersQueryKey = whiteboardFolderQueries.foldersQueryKey;
-export const whiteboardFolderQueryKey = whiteboardFolderQueries.folderQueryKey;
-export const invalidateWhiteboardFoldersQuery = whiteboardFolderQueries.invalidateFoldersQuery;
-export const invalidateWhiteboardFolderQuery = whiteboardFolderQueries.invalidateFolderQuery;
 export const useCreateWhiteboardFolderMutation = whiteboardFolderQueries.useCreateFolderMutation;
 export const useUpdateWhiteboardFolderMutation = whiteboardFolderQueries.useUpdateFolderMutation;
 export const useDeleteWhiteboardFolderMutation = whiteboardFolderQueries.useDeleteFolderMutation;

@@ -2,7 +2,6 @@ export {
     useCanvasAccessStore,
     useCanvasAccess,
     useCanvasAccessMode,
-    useCanvasCanMutate,
     useCanvasCanCollaborate,
     useCanvasDataAccess,
     withAccessMode

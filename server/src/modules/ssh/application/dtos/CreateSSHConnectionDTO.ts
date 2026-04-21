@@ -1,6 +1,6 @@
 import { SSHConnectionProps } from '@modules/ssh/domain/entities/SSHConnection';
 
-export interface PersistedSSHConnectionDTO extends SSHConnectionProps {
+interface PersistedSSHConnectionDTO extends SSHConnectionProps {
     _id: string;
 }
 
@@ -15,5 +15,3 @@ export interface CreateSSHConnectionInputDTO{
     teamId: string;
     username: string;
 };
-
-export interface CreateSSHConnectionOutputDTO extends SafeSSHConnectionDTO{}

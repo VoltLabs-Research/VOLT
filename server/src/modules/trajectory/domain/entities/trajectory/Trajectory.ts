@@ -2,16 +2,33 @@ export enum TrajectoryStatus {
     Queued = 'queued',
     WaitingForProcess = 'waiting-for-process',
     Processing = 'processing',
-    Rendering = 'rendering',
     Completed = 'completed',
     Analyzing = 'analyzing',
     Failed = 'failed'
 };
 
+export interface TrajectoryFrameSimulationCellEmbed {
+    _id: string;
+    boundingBox: { width: number; height: number; length: number };
+    geometry: {
+        cell_vectors: number[][];
+        cell_origin: number[];
+        periodic_boundary_conditions: { x: boolean; y: boolean; z: boolean };
+    };
+    team?: string;
+    trajectory?: string;
+    timestep: number;
+    createdAt?: Date;
+    updatedAt?: Date;
+};
+
 export interface TrajectoryFrame {
     timestep: number;
     natoms: number;
-    simulationCell: string;
+    // Why: accepts either the raw ObjectId string (write path) or the fully
+    // populated simulation-cell payload (read path — what HTTP consumers need
+    // to render box bounds client-side). The repository maps accordingly.
+    simulationCell: string | TrajectoryFrameSimulationCellEmbed;
 };
 
 export interface TrajectoryStats {
@@ -27,7 +44,14 @@ export interface TrajectoryProps {
     createdBy: string;
     status: TrajectoryStatus;
     isPublic: boolean;
-    frames: TrajectoryFrame[];
+    /**
+     * Frames are persisted in the dedicated `trajectoryframes` collection
+     * (TrajectoryFrameRepository). They are not hydrated on the parent
+     * Trajectory entity by default — callers must fetch them explicitly.
+     * Kept on the props only as a transient shape for use cases that still
+     * pass the list around (clone source snapshot, daemon dispatch payload).
+     */
+    frames?: TrajectoryFrame[];
     analysis?: string[];
     rasterSceneViews: number;
     hasPreview?: boolean;

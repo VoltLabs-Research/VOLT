@@ -1,5 +1,3 @@
-import { AIConversationDTO } from './ListAIConversationsDTO';
-
 export interface UpdateAIConversationInputDTO {
     teamId: string;
     userId: string;
@@ -7,5 +5,3 @@ export interface UpdateAIConversationInputDTO {
     title?: string;
     isArchived?: boolean;
 };
-
-export interface UpdateAIConversationOutputDTO extends AIConversationDTO { }

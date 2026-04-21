@@ -1,4 +1,4 @@
-import { createMongoMapperFromFactory } from '@shared/infrastructure/persistence/mongo/createMongoMapperFromFactory';
+import { createMongoMapperFromFactory } from '@shared/infrastructure/persistence/mongo/createMongoMapper';
 import { createDailyActivity } from '@modules/daily-activity/domain/entities/DailyActivity';
 import type DailyActivity from '@modules/daily-activity/domain/entities/DailyActivity';
 import type { DailyActivityProps } from '@modules/daily-activity/domain/entities/DailyActivity';

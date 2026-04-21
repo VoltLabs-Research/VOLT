@@ -126,7 +126,7 @@ const readScriptingSessionStatus = async (
     if (!notebook.props.runtimeNotebookId) {
         return {
             response: {
-                notebookId: notebook.id,
+                notebookId: notebook._id,
                 jupyter: {
                     ready: false,
                     url: '',
@@ -146,7 +146,7 @@ const readScriptingSessionStatus = async (
         return {
             runtimeNotebookId: notebook.props.runtimeNotebookId,
             response: {
-                notebookId: notebook.id,
+                notebookId: notebook._id,
                 jupyter: {
                     ready: false,
                     url: jupyterUrl,
@@ -164,7 +164,7 @@ const readScriptingSessionStatus = async (
     return {
         runtimeNotebookId: notebook.props.runtimeNotebookId,
         response: {
-            notebookId: notebook.id,
+            notebookId: notebook._id,
             jupyter: {
                 ready: Boolean(runtime),
                 url: jupyterUrl,
@@ -243,7 +243,7 @@ const handleDeleteScriptingSession = async (
             }
         }
 
-        await scriptingNotebookRepository.updateById(notebook.id, {
+        await scriptingNotebookRepository.updateById(notebook._id, {
             runtimeNotebookId: undefined
         });
 
@@ -252,7 +252,7 @@ const handleDeleteScriptingSession = async (
         }
 
         const response: DeleteScriptingSessionResponse = {
-            notebookId: notebook.id,
+            notebookId: notebook._id,
             deleted: Boolean(runtimeNotebookId)
         };
 

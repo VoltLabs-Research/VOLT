@@ -7,11 +7,15 @@ import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRep
 import { IWorkflowValidatorService, WorkflowValidationMode } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import Workflow from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
 import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
+import PluginPublishedEvent from '@modules/plugin/domain/events/PluginPublishedEvent';
 
 import { ErrorCodes } from '@core/constants/error-codes';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
+import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 
 
@@ -22,7 +26,10 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
         private pluginRepository: IPluginRepository,
 
         @inject(PLUGIN_TOKENS.WorkflowValidatorService)
-        private workflowValidator: IWorkflowValidatorService
+        private workflowValidator: IWorkflowValidatorService,
+
+        @inject(SHARED_TOKENS.EventBus)
+        private eventBus: IEventBus
     ){}
 
     async execute(input: UpdatePluginByIdInputDTO): Promise<Result<UpdatePluginByIdOutputDTO>> {
@@ -98,6 +105,26 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
             ));
+        }
+
+        const transitionedToPublished = input.status === PluginStatus.Published
+            && plugin.props.status !== PluginStatus.Published;
+
+        if (transitionedToPublished) {
+            const entrypointNode = updatedPlugin.props.workflow.props.nodes
+                .find((node) => node.type === WorkflowNodeType.Entrypoint);
+            const entrypoint = entrypointNode?.data?.entrypoint;
+
+            await this.eventBus.publish(new PluginPublishedEvent({
+                pluginId: updatedPlugin.id,
+                teamId: updatedPlugin.props.team,
+                binaryObjectPath: entrypoint?.binaryObjectPath,
+                requirementsFile: entrypoint?.requirementsFile,
+                entrypointScript: entrypoint?.entrypointScript,
+                binaryHash: entrypoint?.binaryHash
+            })).catch((error: unknown) => {
+                logger.warn({ err: error, pluginId: updatedPlugin.id }, '@update-plugin-by-id: failed to publish PluginPublishedEvent');
+            });
         }
 
         return Result.ok(mapPluginToPersistedDTO(updatedPlugin));

@@ -1,5 +1,5 @@
 import service from '../api/service';
-import { teamClusterService } from '../api/service/team-cluster-service';
+import { teamClusterService } from '@/modules/cluster/api/service';
 import {
     buildKeys,
     createInvalidatingMutation,
@@ -95,6 +95,9 @@ export const useContainerByIdQuery = createQuery(KEYS.detail, (containerId) => s
 export const useContainerProcessesQuery = createQuery(KEYS.processes, (containerId) => service.getProcesses({ containerId }));
 export const useClusterResourceLimitsQuery = createQuery<{ teamId: string; teamClusterId: string }, ClusterResourceLimits>(
     KEYS.resourceLimits,
-    ({ teamId, teamClusterId }) => teamClusterService.getResourceLimits(teamId, teamClusterId)
+    async ({ teamId, teamClusterId }) => {
+        const result = await teamClusterService.getResourceLimits({ teamId, teamClusterId });
+        return result.resourceLimits;
+    }
 );
 export const useContainerStatsQuery = createQuery(KEYS.stats, (containerId) => service.getStats({ containerId }));

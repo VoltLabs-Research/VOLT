@@ -14,14 +14,33 @@ import { normalizeAnalysisId } from '@modules/trajectory/utilities/trajectory/mo
 import { injectable, inject } from 'tsyringe';
 
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import type { AtomRecord, GetAtomsInputDTO } from '@modules/trajectory/application/dtos/trajectory/GetAtomsDTO';
+import type {
+    AtomColumn,
+    GetAtomsColumnarInputDTO,
+    GetAtomsColumnarOutputDTO
+} from '@modules/trajectory/application/dtos/trajectory/GetAtomsDTO';
 import type { ITrajectoryReader } from '@modules/trajectory/domain/port/trajectory/ITrajectoryReader';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 
+const ID_PROPERTY_NAME = 'id';
+const TYPE_PROPERTY_NAME = 'type';
+const POSITION_PROPERTY_NAMES = ['x', 'y', 'z'] as const;
+
+const buildFloat32Column = (name: string, values: readonly number[]): AtomColumn => {
+    const buffer = new ArrayBuffer(values.length * Float32Array.BYTES_PER_ELEMENT);
+    new Float32Array(buffer).set(values as ArrayLike<number>);
+    return { name, dtype: 'f32', buffer: new Uint8Array(buffer) };
+};
+
+const buildUint32Column = (name: string, values: readonly number[]): AtomColumn => {
+    const buffer = new ArrayBuffer(values.length * Uint32Array.BYTES_PER_ELEMENT);
+    new Uint32Array(buffer).set(values as ArrayLike<number>);
+    return { name, dtype: 'u32', buffer: new Uint8Array(buffer) };
+};
+
 @injectable()
-export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResult<AtomRecord>, ApplicationError> {
+export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAtomsColumnarOutputDTO, ApplicationError> {
     constructor(
         @inject(TRAJECTORY_TOKENS.TrajectoryReader)
         private readonly trajectoryReader: ITrajectoryReader,
@@ -36,15 +55,19 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
         private readonly teamClusterSelectionService: TeamClusterSelectionService
     ) {}
 
-    async execute(input: GetAtomsInputDTO): Promise<Result<PaginatedResult<AtomRecord>, ApplicationError>> {
+    async execute(input: GetAtomsColumnarInputDTO): Promise<Result<GetAtomsColumnarOutputDTO, ApplicationError>> {
         try {
             const { trajectoryId, timestep } = input;
             const analysisId = normalizeAnalysisId(input.analysisId);
             const page = input.page ?? 1;
-            const limit = input.limit ?? 100;
+            // Why: callers that hit the binary endpoint for the canvas engine
+            // need the whole frame. A paginated default of 100 would silently
+            // return a sparse view; the explicit opt-in stays paginated for
+            // property-inspection tables.
+            const limit = input.limit ?? 5_000_000;
 
             const pageNum = Math.max(1, page);
-            const limitNum = Math.min(100000, Math.max(1, limit));
+            const limitNum = Math.min(5_000_000, Math.max(1, limit));
 
             const trajectory = await this.trajectoryRepository.findById(trajectoryId);
             if (!trajectory) {
@@ -100,9 +123,9 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
                 ownerClusterId
             );
 
-            const totalAtoms = atomsPage.totalAtoms;
             const nativeProperties = atomsPage.nativeProperties ?? [];
             const analysisPropertyNames = atomsPage.analysisPropertyNames ?? [];
+            const allProps = [...nativeProperties, ...analysisPropertyNames];
 
             let perAtomData: Map<number, Record<string, unknown>> | null = null;
             if (atomsPage.analysisAtoms && atomsPage.analysisAtoms.length > 0) {
@@ -113,44 +136,68 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
                 }
             }
 
-            const atoms: AtomRecord[] = [];
-            for (const atom of atomsPage.atoms) {
-                const record: AtomRecord = {
-                    id: atom.id,
-                    type: atom.type,
-                    x: atom.x,
-                    y: atom.y,
-                    z: atom.z
-                };
-
-                for (const prop of nativeProperties) {
-                    if (atom[prop] !== undefined) {
-                        record[prop] = atom[prop];
-                    }
+            const rowCount = atomsPage.atoms.length;
+            const ids = new Array<number>(rowCount);
+            const types = new Array<number>(rowCount);
+            const xs = new Array<number>(rowCount);
+            const ys = new Array<number>(rowCount);
+            const zs = new Array<number>(rowCount);
+            const extraColumns = new Map<string, number[]>();
+            for (const prop of allProps) {
+                if (prop === ID_PROPERTY_NAME
+                    || prop === TYPE_PROPERTY_NAME
+                    || POSITION_PROPERTY_NAMES.includes(prop as (typeof POSITION_PROPERTY_NAMES)[number])) {
+                    continue;
                 }
-
-                if (perAtomData?.has(atom.id)) {
-                    const pluginData = perAtomData.get(atom.id)!;
-                    for (const prop of analysisPropertyNames) {
-                        const propertyValue = pluginData[prop];
-                        if (propertyValue !== undefined) {
-                            record[prop] = propertyValue;
-                        }
-                    }
-                }
-
-                atoms.push(record);
+                extraColumns.set(prop, new Array<number>(rowCount));
             }
 
+            for (let row = 0; row < rowCount; row += 1) {
+                const atom = atomsPage.atoms[row];
+                const atomId = Number(atom.id);
+                ids[row] = atomId;
+                types[row] = Number(atom.type);
+                xs[row] = Number(atom.x);
+                ys[row] = Number(atom.y);
+                zs[row] = Number(atom.z);
+
+                for (const [prop, column] of extraColumns) {
+                    const nativeValue = atom[prop];
+                    if (typeof nativeValue === 'number') {
+                        column[row] = nativeValue;
+                        continue;
+                    }
+
+                    const analysisValue = perAtomData?.get(atomId)?.[prop];
+                    column[row] = typeof analysisValue === 'number'
+                        ? analysisValue
+                        : Number(analysisValue ?? Number.NaN);
+                }
+            }
+
+            const columns: AtomColumn[] = [
+                buildUint32Column(ID_PROPERTY_NAME, ids),
+                buildUint32Column(TYPE_PROPERTY_NAME, types),
+                buildFloat32Column('x', xs),
+                buildFloat32Column('y', ys),
+                buildFloat32Column('z', zs)
+            ];
+
+            for (const [prop, values] of extraColumns) {
+                columns.push(buildFloat32Column(prop, values));
+            }
+
+            const totalAtoms = atomsPage.totalAtoms;
             const totalPages = Math.ceil(totalAtoms / limitNum);
 
             return Result.ok({
-                data: atoms,
+                count: rowCount,
+                total: totalAtoms,
                 page: pageNum,
                 limit: limitNum,
-                total: totalAtoms,
                 totalPages,
-                _meta: { properties: [...nativeProperties, ...analysisPropertyNames] }
+                columns,
+                propertyNames: allProps
             });
         } catch (error: unknown) {
             if (error instanceof ApplicationError) {
@@ -162,5 +209,4 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsInputDTO, PaginatedResu
             );
         }
     }
-
 };

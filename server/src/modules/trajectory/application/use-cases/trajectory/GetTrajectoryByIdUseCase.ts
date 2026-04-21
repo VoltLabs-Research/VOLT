@@ -11,6 +11,7 @@ import { injectable, inject } from 'tsyringe';
 
 import type { GetTrajectoryByIdOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryByIdDTO';
 import type { IRasterStorage } from '@modules/raster/domain/port/IRasterStorage';
+import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import type { FindOptions } from '@shared/domain/port/IBaseRepository';
 
@@ -24,13 +25,15 @@ export default class GetTrajectoryByIdUseCase implements IUseCase<GetTrajectoryB
     constructor(
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly repository: ITrajectoryRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository)
+        private readonly frameRepository: ITrajectoryFrameRepository,
         @inject(RASTER_TOKENS.RasterStorage)
         private readonly rasterStorage: IRasterStorage
     ) {}
 
     async execute(input: GetTrajectoryByIdInput): Promise<Result<GetTrajectoryByIdOutputDTO, ApplicationError>> {
         const entity = await this.repository.findById(input.trajectoryId, {
-            populate: ['team', 'analysis', 'frames.simulationCell']
+            populate: ['team', 'analysis']
         });
         if (!entity) {
             return Result.fail(ApplicationError.notFound(
@@ -38,6 +41,12 @@ export default class GetTrajectoryByIdUseCase implements IUseCase<GetTrajectoryB
                 'Trajectory not found'
             ));
         }
+
+        // Why: frames live in a separate collection (F2.S6). Hydrate them into
+        // the props projection so existing HTTP consumers that expect
+        // `trajectory.frames` keep working.
+        entity.props.frames = await this.frameRepository.getFrames(entity.id);
+
         const persistedTrajectory = toPersistedOutput(entity);
         const trajectoryWithPreviewAvailability = await resolveTrajectoryPreviewAvailability(
             persistedTrajectory,

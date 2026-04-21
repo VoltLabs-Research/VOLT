@@ -1,17 +1,19 @@
 import { BaseController } from './BaseController';
 import { PaginatedBaseController } from './PaginatedBaseController';
+import {
+    buildControllerParams,
+    wrapHandleWithValidation
+} from './controller-internals';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import { Result } from '@shared/domain/port/Result';
-import { asRecord } from '@shared/infrastructure/utilities/type-guards';
 import { toPersistedOutput, type PersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { container, injectable } from 'tsyringe';
-import { validateRequest, ValidationTarget } from '@shared/infrastructure/http/middleware/validation';
 import type { InjectionToken } from 'tsyringe';
 import type { Response } from 'express';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import type { RequestValidationState, ValidationSchemaInput } from '@shared/infrastructure/http/middleware/validation';
+import type { ValidationSchemaInput } from '@shared/infrastructure/http/middleware/validation';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type {
     IBaseRepository,
@@ -72,85 +74,9 @@ type EntityWithProps<TProps> = { props: TProps };
 type ReadUseCase<TOutput> = IUseCase<ReadControllerParams, TOutput, ApplicationError>;
 
 // ---------------------------------------------------------------------------
-// Shared utilities (replicated from createController.ts to keep parity with
-// the existing `buildControllerParams` contract without exporting internals).
+// Shared utilities live in `controller-internals.ts` so this factory and
+// `createController.ts` stay in lockstep.
 // ---------------------------------------------------------------------------
-
-const readUserAgent = (req: AuthenticatedRequest): string => {
-    const userAgent = req.headers['user-agent'];
-
-    return Array.isArray(userAgent) ? userAgent[0] ?? '' : userAgent ?? '';
-};
-
-const buildRequestValidationContext = (req: AuthenticatedRequest): Record<string, unknown> => ({
-    userId: req.userId,
-    token: req.token
-});
-
-/**
- * Wraps the handle to perform request validation once before delegating to
- * the BaseController pipeline. Mirrors `wrapHandleWithValidation` from
- * `createController.ts` — kept local to avoid exporting internals.
- */
-const wrapReadHandleWithValidation = <THandler extends (req: AuthenticatedRequest, res: Response) => Promise<void>>(
-    handler: THandler,
-    validationSchema: ValidationSchemaInput | undefined
-): THandler => {
-    if (!validationSchema) {
-        return handler;
-    }
-
-    const wrapped = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const validationResult = validateRequest(
-            req,
-            validationSchema,
-            ValidationTarget.Body,
-            buildRequestValidationContext(req)
-        );
-
-        if (!validationResult.success) {
-            BaseResponse.error(
-                res,
-                validationResult.message,
-                HttpStatus.BadRequest,
-                validationResult.code
-            );
-            return;
-        }
-
-        await handler(req, res);
-    };
-
-    return wrapped as THandler;
-};
-
-const buildReadControllerParams = (
-    req: AuthenticatedRequest,
-    validationState: RequestValidationState
-): ReadControllerParams => {
-    const bodyPayload = asRecord(validationState.body ?? req.body) ?? {};
-
-    return {
-        ...(asRecord(validationState.params ?? req.params) ?? {}),
-        ...(asRecord(validationState.query ?? req.query) ?? {}),
-        ...(asRecord(validationState.request) ?? {}),
-        ...bodyPayload,
-        data: bodyPayload,
-        userId: req.userId,
-        authenticatedUserId: req.userId,
-        token: req.token,
-        authType: req.authType,
-        secretKeyId: req.secretKeyId,
-        secretKeyTeamId: req.secretKeyTeamId,
-        secretKeyRoleId: req.secretKeyRoleId,
-        ip: req.ip || req.socket.remoteAddress || '',
-        userAgent: readUserAgent(req),
-        traceId: req.requestContext?.traceId,
-        requestContext: req.requestContext,
-        file: req.file,
-        files: req.files
-    };
-};
 
 // ---------------------------------------------------------------------------
 // GET by id
@@ -219,11 +145,11 @@ export const createGetByIdController = <TProps, TEntity extends EntityWithProps<
 
             super(useCase, HttpStatus.OK);
 
-            this.handle = wrapReadHandleWithValidation(this.handle, validationSchema);
+            this.handle = wrapHandleWithValidation(this.handle, validationSchema);
         }
 
         protected override getParams(req: AuthenticatedRequest): ReadControllerParams {
-            return buildReadControllerParams(req, this.getValidatedRequestData(req));
+            return buildControllerParams(req, this.getValidatedRequestData(req)) as ReadControllerParams;
         }
     };
 
@@ -349,11 +275,11 @@ const buildPaginatedListController = <TProps, TEntity extends EntityWithProps<TP
 
             super(useCase);
 
-            this.handle = wrapReadHandleWithValidation(this.handle, validationSchema);
+            this.handle = wrapHandleWithValidation(this.handle, validationSchema);
         }
 
         protected override getParams(req: AuthenticatedRequest): ReadControllerParams {
-            return buildReadControllerParams(req, this.getValidatedRequestData(req));
+            return buildControllerParams(req, this.getValidatedRequestData(req)) as ReadControllerParams;
         }
     };
 
@@ -404,11 +330,11 @@ const buildFlatListController = <TProps, TEntity extends EntityWithProps<TProps>
 
             super(useCase, HttpStatus.OK);
 
-            this.handle = wrapReadHandleWithValidation(this.handle, validationSchema);
+            this.handle = wrapHandleWithValidation(this.handle, validationSchema);
         }
 
         protected override getParams(req: AuthenticatedRequest): ReadControllerParams {
-            return buildReadControllerParams(req, this.getValidatedRequestData(req));
+            return buildControllerParams(req, this.getValidatedRequestData(req)) as ReadControllerParams;
         }
 
         protected override handleSuccess(

@@ -3,11 +3,11 @@ import { parseNumericInput } from '../utilities/parse-numeric-input';
 import { ParticleFilterSceneCombinator } from '@/modules/fractal/api/entities/scene';
 import useFrameProperties from '@/modules/trajectory/hooks/particle-filter/use-frame-properties';
 import { buildPropertyOptions, resolvePropertySelection } from '@/modules/trajectory/hooks/particle-filter/use-property-selector.utilities';
-import { useApplyFilterMutation, uniqueValuesQuery, usePreviewFilterMutation } from '@/modules/trajectory/hooks/particle-filter/queries';
+import { uniqueValuesQuery } from '@/modules/trajectory/hooks/particle-filter/queries';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
-import { showPromise } from '@/shared/presentation/hooks/toast';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sileo } from 'sileo';
+import { useCanvasDataAccess } from '@/modules/canvas/api/access';
 
 import type {
     ParticleFilterScene,
@@ -25,25 +25,25 @@ export enum FilterOperator {
     GreaterThanOrEqual = '>=',
     LessThan = '<',
     LessThanOrEqual = '<='
-};
+}
 
 export enum FilterAction {
     Delete = 'delete',
     Highlight = 'highlight'
-};
+}
 
 interface FilterOption<TValue extends string> {
     value: TValue;
     title: string;
-};
+}
 
 interface ConditionSelection {
     property: string;
     propertyValue: string;
     exposureId: string | null;
-};
+}
 
-export interface FilterConditionState {
+interface FilterConditionState {
     id: string;
     property: string;
     propertyValue: string;
@@ -58,7 +58,7 @@ interface PreviewRequest {
     conditions: ParticleFilterConditionDTO[];
 }
 
-export interface PreviewResult {
+interface PreviewResult {
     matchCount: number;
     totalCount: number;
     request: PreviewRequest;
@@ -75,10 +75,7 @@ const buildConditionId = (): string => {
 
 const findDefaultPropertyOption = (propertyOptions: PropertyOption[]): PropertyOption | undefined => {
     const typeOption = propertyOptions.find((option) => option.exposureId === null && option.property.toLowerCase() === 'type');
-    if (typeOption) {
-        return typeOption;
-    }
-
+    if (typeOption) return typeOption;
     return propertyOptions[0];
 };
 
@@ -89,7 +86,6 @@ const resolveConditionSelection = (
     const selectedOption = propertyValue
         ? propertyOptions.find((option) => option.value === propertyValue)
         : undefined;
-
     if (selectedOption) {
         return {
             property: selectedOption.property,
@@ -97,16 +93,10 @@ const resolveConditionSelection = (
             exposureId: selectedOption.exposureId
         };
     }
-
     const defaultOption = findDefaultPropertyOption(propertyOptions);
     if (!defaultOption) {
-        return {
-            property: '',
-            propertyValue: '',
-            exposureId: null
-        };
+        return { property: '', propertyValue: '', exposureId: null };
     }
-
     return {
         property: defaultOption.property,
         propertyValue: defaultOption.value,
@@ -119,7 +109,6 @@ const createPropertyCondition = (
     id: string = buildConditionId()
 ): FilterConditionState => {
     const selection = resolveConditionSelection(propertyOptions);
-
     return {
         id,
         property: selection.property,
@@ -136,7 +125,6 @@ const syncConditionWithPropertyOptions = (
     propertyOptions: PropertyOption[]
 ): FilterConditionState => {
     const selection = resolveConditionSelection(propertyOptions, condition.propertyValue);
-
     if (
         condition.property === selection.property
         && condition.propertyValue === selection.propertyValue
@@ -144,7 +132,6 @@ const syncConditionWithPropertyOptions = (
     ) {
         return condition;
     }
-
     return {
         ...condition,
         property: selection.property,
@@ -155,10 +142,7 @@ const syncConditionWithPropertyOptions = (
 
 const toConditionDTO = (condition: FilterConditionState): ParticleFilterConditionDTO | null => {
     const parsedValue = parseNumericInput(condition.valueInput);
-    if (!condition.property || parsedValue === null) {
-        return null;
-    }
-
+    if (!condition.property || parsedValue === null) return null;
     return {
         property: condition.property,
         operator: condition.operator,
@@ -187,7 +171,6 @@ const toScene = (
     const combinator = request.combinator === ParticleFilterCombinator.Or
         ? ParticleFilterSceneCombinator.Or
         : ParticleFilterSceneCombinator.And;
-
     return {
         sceneType: 'particle-filter',
         source: 'particle-filter',
@@ -199,21 +182,6 @@ const toScene = (
         property: firstCondition?.property,
         operator: firstCondition?.operator,
         value: firstCondition?.value
-    };
-};
-
-const toLegacyPayload = (request: PreviewRequest): Partial<ParticleFilterConditionDTO> => {
-    if (request.conditions.length !== 1) {
-        return {};
-    }
-
-    const [condition] = request.conditions;
-
-    return {
-        property: condition.property,
-        operator: condition.operator,
-        value: condition.value,
-        ...(condition.exposureId ? { exposureId: condition.exposureId } : {})
     };
 };
 
@@ -243,6 +211,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
         currentTimestep,
         setActiveScene
     } = useModifierBase(options);
+    const dataAccess = useCanvasDataAccess();
     const { properties, isLoading: isLoadingProperties } = useFrameProperties({
         trajectoryId,
         analysisId,
@@ -250,8 +219,6 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
     });
     const propertyOptions = useMemo(() => buildPropertyOptions(properties), [properties]);
 
-    const previewMutation = usePreviewFilterMutation();
-    const applyFilterMutation = useApplyFilterMutation();
     const [uniqueValuesEnabled, setUniqueValuesEnabled] = useState(false);
     const [suggestionsConditionId, setSuggestionsConditionId] = useState<string | null>(null);
     const [matchMode, setMatchMode] = useState<ParticleFilterCombinator>(ParticleFilterCombinator.And);
@@ -259,6 +226,10 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
     const [action, setAction] = useState<FilterAction>(FilterAction.Delete);
     const [previewResult, setPreviewResult] = useState<PreviewResult | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+    const [isApplying, setIsApplying] = useState(false);
+
+    const pendingEvaluationIdRef = useRef(0);
 
     const resetPreviewState = useCallback(() => {
         setPreviewResult(null);
@@ -279,7 +250,6 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
         ) {
             return null;
         }
-
         return {
             trajectoryId,
             analysisId,
@@ -303,9 +273,6 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
         }
     );
 
-    const isLoadingPreview = previewMutation.isPending;
-    const isApplying = applyFilterMutation.isPending;
-
     const conditionSuggestions = useMemo(() => {
         return uniqueValuesResult.data?.values ?? [];
     }, [uniqueValuesResult.data]);
@@ -314,7 +281,6 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
         if (currentConditions.length === 0) {
             return [createPropertyCondition(propertyOptions)];
         }
-
         return currentConditions.map((condition) => syncConditionWithPropertyOptions(condition, propertyOptions));
     }, [propertyOptions]);
 
@@ -323,10 +289,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
     }, [syncAllConditions]);
 
     useEffect(() => {
-        if (!uniqueValuesEnabled || !uniqueValuesResult.error) {
-            return;
-        }
-
+        if (!uniqueValuesEnabled || !uniqueValuesResult.error) return;
         reportError(uniqueValuesResult.error, {
             surface: ErrorSurface.Toast,
             fallbackTitle: isAccessDeniedError(uniqueValuesResult.error)
@@ -337,10 +300,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
 
     const updateCondition = useCallback((conditionId: string, updater: (condition: FilterConditionState) => FilterConditionState) => {
         setConditions((currentConditions) => currentConditions.map((condition) => {
-            if (condition.id !== conditionId) {
-                return condition;
-            }
-
+            if (condition.id !== conditionId) return condition;
             return updater(condition);
         }));
         resetPreviewState();
@@ -356,7 +316,6 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
             if (currentConditions.length === 1) {
                 return [createPropertyCondition(propertyOptions)];
             }
-
             return currentConditions.filter((condition) => condition.id !== conditionId);
         });
         if (suggestionsConditionId === conditionId) {
@@ -369,7 +328,6 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
     const handlePropertyChange = useCallback((conditionId: string, value: string) => {
         updateCondition(conditionId, (condition) => {
             const selection = resolvePropertySelection(propertyOptions, value);
-
             return {
                 ...condition,
                 property: selection.property,
@@ -393,24 +351,14 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
         updateCondition(conditionId, (condition) => {
             const parsedValue = parseNumericInput(nextValue);
             let value = condition.value;
-            if (parsedValue !== null) {
-                value = parsedValue;
-            }
-
-            return {
-                ...condition,
-                value,
-                valueInput: nextValue
-            };
+            if (parsedValue !== null) value = parsedValue;
+            return { ...condition, value, valueInput: nextValue };
         });
     }, [updateCondition]);
 
     const fetchValueSuggestions = useCallback((conditionId: string) => {
         const condition = conditions.find((currentCondition) => currentCondition.id === conditionId);
-        if (!condition || !condition.property) {
-            return;
-        }
-
+        if (!condition || !condition.property) return;
         setSuggestionsConditionId(conditionId);
         setUniqueValuesEnabled(true);
         sileo.info({ title: 'Loading suggestions...' });
@@ -418,103 +366,81 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
 
     const buildPreviewRequest = useCallback((): PreviewRequest | null => {
         const nextConditions = conditions.map(toConditionDTO);
-        if (nextConditions.some((condition) => condition === null)) {
-            return null;
-        }
-
+        if (nextConditions.some((condition) => condition === null)) return null;
         return {
             combinator: matchMode,
             conditions: nextConditions.filter((condition): condition is ParticleFilterConditionDTO => condition !== null)
         };
     }, [conditions, matchMode]);
 
+    const runEvaluation = useCallback(async (request: PreviewRequest): Promise<PreviewResult | null> => {
+        if (!trajectoryId || currentTimestep === undefined) return null;
+        const evaluationId = ++pendingEvaluationIdRef.current;
+        // Why: the daemon evaluates the filter against the dump file on the
+        // compute cluster. We just ask for the match count and hand it to the
+        // UI — no client-side CPU work, no binary atoms download.
+        const response = await dataAccess.previewParticleFilter({
+            trajectoryId,
+            analysisId,
+            timestep: currentTimestep,
+            combinator: request.combinator,
+            conditions: request.conditions
+        });
+        if (evaluationId !== pendingEvaluationIdRef.current) return null;
+
+        return {
+            matchCount: response.matchCount,
+            totalCount: response.totalAtoms,
+            request
+        };
+    }, [trajectoryId, currentTimestep, analysisId, dataAccess]);
+
     const handlePreview = useCallback(async () => {
         if (!trajectoryId || currentTimestep === undefined) {
             setError('Missing required parameters');
             return;
         }
-
         const request = buildPreviewRequest();
         if (!request) {
             setError('Enter a valid value for every condition');
             return;
         }
-
-        const hasPluginCondition = request.conditions.some((condition) => Boolean(condition.exposureId));
-        if (hasPluginCondition && !analysisId) {
-            setError('Analysis required for modifier properties');
-            return;
-        }
-
         setError(null);
         setPreviewResult(null);
-        sileo.info({ title: 'Generating preview...' });
-
+        setIsLoadingPreview(true);
         try {
-            const result = await previewMutation.mutateAsync({
-                trajectoryId,
-                analysisId,
-                timestep: currentTimestep,
-                combinator: request.combinator,
-                conditions: request.conditions,
-                ...toLegacyPayload(request)
-            });
-
-            setPreviewResult({
-                matchCount: result.matchCount,
-                totalCount: result.totalAtoms,
-                request
-            });
-            sileo.success({ title: 'Preview generated' });
+            const result = await runEvaluation(request);
+            if (!result) return;
+            setPreviewResult(result);
         } catch (previewError: unknown) {
             setError(reportError(previewError, {
                 surface: ErrorSurface.Silent,
                 fallbackTitle: 'Preview failed'
             }).title);
+        } finally {
+            setIsLoadingPreview(false);
         }
-    }, [trajectoryId, currentTimestep, buildPreviewRequest, analysisId, previewMutation]);
+    }, [trajectoryId, currentTimestep, buildPreviewRequest, runEvaluation]);
 
     const handleApplyAction = useCallback(async () => {
         if (!previewResult || !trajectoryId || currentTimestep === undefined) {
             setError('Run preview first');
             return;
         }
-
         setError(null);
-
+        setIsApplying(true);
         try {
-            await showPromise(
-                applyFilterMutation.mutateAsync({
-                    trajectoryId,
-                    analysisId,
-                    timestep: currentTimestep,
-                    action,
-                    combinator: previewResult.request.combinator,
-                    conditions: previewResult.request.conditions,
-                    ...toLegacyPayload(previewResult.request)
-                }),
-                {
-                    loading: { title: 'Applying filter...' },
-                    success: { title: 'Filter applied successfully' },
-                    error: { title: 'Failed to apply filter' }
-                }
-            );
-
             setActiveScene(toScene(analysisId, action, previewResult.request));
-            window.dispatchEvent(new CustomEvent('canvas:scene-artifacts:changed', {
-                detail: {
-                    sourceType: 'particle-filter',
-                    trajectoryId
-                }
-            }));
             setPreviewResult(null);
         } catch (applyError: unknown) {
             setError(reportError(applyError, {
                 surface: ErrorSurface.Silent,
                 fallbackTitle: 'Failed to apply filter'
             }).title);
+        } finally {
+            setIsApplying(false);
         }
-    }, [previewResult, trajectoryId, currentTimestep, applyFilterMutation, analysisId, action, setActiveScene]);
+    }, [previewResult, trajectoryId, currentTimestep, analysisId, action, setActiveScene]);
 
     const handleCancelPreview = useCallback(() => {
         setPreviewResult(null);
@@ -522,22 +448,13 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
     }, []);
 
     const percentage = useMemo(() => {
-        if (!previewResult || previewResult.totalCount === 0) {
-            return '0';
-        }
-
+        if (!previewResult || previewResult.totalCount === 0) return '0';
         return ((previewResult.matchCount / previewResult.totalCount) * 100).toFixed(2);
     }, [previewResult]);
 
     const canPreview = useMemo(() => {
-        if (isLoadingPreview || isApplying || isLoadingProperties) {
-            return false;
-        }
-
-        if (conditions.length === 0) {
-            return false;
-        }
-
+        if (isLoadingPreview || isApplying || isLoadingProperties) return false;
+        if (conditions.length === 0) return false;
         return conditions.every((condition) => toConditionDTO(condition) !== null);
     }, [isLoadingPreview, isApplying, isLoadingProperties, conditions]);
 
@@ -555,10 +472,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
         setAction,
         fetchValueSuggestions,
         getValueSuggestions: (conditionId: string) => {
-            if (suggestionsConditionId !== conditionId) {
-                return [];
-            }
-
+            if (suggestionsConditionId !== conditionId) return [];
             return conditionSuggestions;
         },
         isLoadingValueSuggestions: uniqueValuesResult.isFetching,

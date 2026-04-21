@@ -6,6 +6,7 @@ export interface GetPluginExposureGLBInputDTO {
     analysisId: string;
     exposureId: string;
     timestep: string;
+    acceptEncoding?: string;
 };
 
 export type GetPluginExposureGLBOutputDTO = DownloadStreamOutputDTO;

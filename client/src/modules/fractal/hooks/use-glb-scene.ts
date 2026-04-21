@@ -49,45 +49,25 @@ function extractEngineParams(params: UseGlbSceneParams): FractalParams {
     };
 }
 
+/**
+ * useGlbScene — imperatively manages a FractalEngine and attaches the loaded
+ * model to a ref-owned Group. Mutations flow through the engine's imperative
+ * API; React re-renders are avoided for all hot-path updates (uniforms,
+ * visibility mask, color coding).
+ */
 export default function useGlbScene(
     params: UseGlbSceneParams,
-    /** Optional parent group ref. When provided the loaded model is attached
-     *  imperatively via `parent.add(model)` instead of being returned as React
-     *  state — this keeps the heavy 3D model out of React's reconciliation tree
-     *  and eliminates re-renders when the model swaps. */
     modelContainerRef?: RefObject<THREE.Group | null>
 ) {
     const { scene, camera, gl, invalidate } = useThree();
 
-    // Track the model imperatively — never store it in React state.
-    // A generation counter is bumped whenever the model changes so that
-    // downstream effects (point-cloud settings, opacity) still re-run.
     const modelRef = useRef<THREE.Object3D | null>(null);
-    const [modelGeneration, setModelGeneration] = useState(0);
+    const modelGenerationRef = useRef(0);
     const [modelBounds, setLocalModelBounds] = useState<BoundsInfo | null>(null);
 
-    const {
-        pointSizeMultiplier,
-        pointCloudSettings,
-        dislocationLineSettings,
-        sceneVisualOverrides,
-        activeModelBounds,
-        onModelBoundsChanged,
-        onLoadingStateChanged,
-        onContentTypeDetected
-    } = params;
-
     const engineRef = useRef<ReturnType<typeof createFractalEngine> | null>(null);
-    const lastLoggedUrlRef = useRef<string | null>(null);
-
-    const onModelBoundsChangedRef = useRef(onModelBoundsChanged);
-    onModelBoundsChangedRef.current = onModelBoundsChanged;
-
-    const onLoadingStateChangedRef = useRef(onLoadingStateChanged);
-    onLoadingStateChangedRef.current = onLoadingStateChanged;
-
-    const onContentTypeDetectedRef = useRef(onContentTypeDetected);
-    onContentTypeDetectedRef.current = onContentTypeDetected;
+    const paramsRef = useRef(params);
+    paramsRef.current = params;
 
     const [loadingState, setLoadingState] = useState<ModelLoadingState>({
         isLoading: false,
@@ -96,143 +76,118 @@ export default function useGlbScene(
     });
 
     useEffect(() => {
-        const engineParams = extractEngineParams(params);
+        const engineParams = extractEngineParams(paramsRef.current);
         engineRef.current = createFractalEngine(
-            {
-                scene,
-                camera,
-                gl,
-                invalidate
-            },
+            { scene, camera, gl, invalidate },
             engineParams,
             {
                 onModelLoaded: (bounds) => {
                     setLocalModelBounds(bounds);
-                    onModelBoundsChangedRef.current?.(bounds);
+                    paramsRef.current.onModelBoundsChanged?.(bounds);
                 },
                 onLoadingState: (state) => {
                     setLoadingState(state);
-                    onLoadingStateChangedRef.current?.(state);
+                    paramsRef.current.onLoadingStateChanged?.(state);
                 },
                 onContentTypeDetected: (info) => {
-                    onContentTypeDetectedRef.current?.(info);
+                    paramsRef.current.onContentTypeDetected?.(info);
                 },
                 onModelAvailable: (modelObj) => {
                     const parent = modelContainerRef?.current;
-
-                    // Remove previous model from its parent imperatively.
                     if (modelRef.current) {
                         modelRef.current.removeFromParent();
                     }
-
                     modelRef.current = modelObj;
-
                     if (modelObj && parent) {
                         parent.add(modelObj);
                     }
-
                     debugFractal('use-glb-scene.model-available', {
-                        url: params.url,
+                        url: paramsRef.current.url,
                         attachedToContainer: Boolean(modelObj && parent),
                         parentChildren: parent?.children.length ?? 0,
                         modelChildren: modelObj?.children.length ?? 0
                     });
-
-                    // Bump a lightweight generation counter so effects that
-                    // depend on "has the model changed?" still fire, without
-                    // putting the heavy Object3D into React state.
-                    setModelGeneration((g) => g + 1);
+                    modelGenerationRef.current += 1;
+                    // Apply settings imperatively on the new model.
+                    const engine = engineRef.current;
+                    if (engine) {
+                        engine.updatePointCloudSettings(
+                            paramsRef.current.pointCloudSettings,
+                            paramsRef.current.pointCloudSettings?.pointSizeMultiplier ?? 1
+                        );
+                        engine.updateOpacity(
+                            paramsRef.current.sceneKey,
+                            paramsRef.current.sceneVisualOverrides,
+                            paramsRef.current.pointCloudSettings
+                        );
+                        engine.updateDislocationLineWidth(paramsRef.current.dislocationLineSettings);
+                    }
                     invalidate();
                 }
             }
         );
 
+        // Why: React Strict Mode (and any future deps change on this effect)
+        // will dispose the engine above and recreate it here. The load-trigger
+        // effect below is keyed on (updateThrottle, updateScene) — both stay
+        // the same across the double-mount, so it would not re-fire and the
+        // fresh engine would never receive `loadIfNeeded()`. Kick off the
+        // load explicitly during creation so the pipeline is always primed.
+        if (paramsRef.current.url) {
+            engineRef.current.loadIfNeeded();
+        }
+
         return () => {
             engineRef.current?.dispose();
             engineRef.current = null;
-            // Ensure any model attached to the container is removed on unmount.
             if (modelRef.current) {
                 modelRef.current.removeFromParent();
                 modelRef.current = null;
             }
         };
-    }, [gl, invalidate, scene]);
+    }, [gl, invalidate, scene, camera, modelContainerRef]);
 
     useEffect(() => {
-        if (!engineRef.current) return;
-        engineRef.current.setCamera(camera);
+        const engine = engineRef.current;
+        if (!engine) return;
+        engine.setCamera(camera);
     }, [camera]);
 
+    // Single config effect — fires on primitive deps only to avoid re-running
+    // on every render. paramsRef gives the effect the latest full params.
     useEffect(() => {
-        const modelObj = modelRef.current;
-        const parent = modelContainerRef?.current;
-
-        if (!modelObj || !parent || modelObj.parent === parent) {
-            return;
-        }
-
-        parent.add(modelObj);
-        debugFractal('use-glb-scene.model-attached', {
-            url: params.url,
-            sceneKey: params.sceneKey,
-            parentChildren: parent.children.length,
-            modelChildren: modelObj.children.length
-        });
-        invalidate();
-    }, [invalidate, modelContainerRef, modelGeneration, params.sceneKey, params.url]);
-
-    useEffect(() => {
-        if (!params.url || lastLoggedUrlRef.current === params.url) {
-            return;
-        }
-
-        lastLoggedUrlRef.current = params.url;
-        debugFractal('use-glb-scene.url', {
-            url: params.url,
-            sceneKey: params.sceneKey
-        });
-    }, [params.sceneKey, params.url]);
-
-    useEffect(() => {
-        const engineParams = extractEngineParams(params);
-        engineRef.current?.configure(engineParams);
+        const engine = engineRef.current;
+        if (!engine) return;
+        engine.configure(extractEngineParams(paramsRef.current));
+        engine.updatePointCloudSettings(
+            paramsRef.current.pointCloudSettings,
+            paramsRef.current.pointCloudSettings?.pointSizeMultiplier ?? paramsRef.current.pointSizeMultiplier
+        );
+        engine.updateOpacity(
+            paramsRef.current.sceneKey,
+            paramsRef.current.sceneVisualOverrides,
+            paramsRef.current.pointCloudSettings
+        );
+        engine.updateDislocationLineWidth(paramsRef.current.dislocationLineSettings);
     }, [
         params.url,
         params.sliceClippingPlanes,
-        params.position?.x, params.position?.y, params.position?.z,
-        params.rotation?.x, params.rotation?.y, params.rotation?.z,
+        params.position.x, params.position.y, params.position.z,
+        params.rotation.x, params.rotation.y, params.rotation.z,
         params.scale,
         params.updateThrottle,
         params.disableAutoTransform,
         params.useFixedReference,
         params.sceneKey,
         params.boxBounds,
-        params.pointCloudSettings
+        params.pointCloudSettings,
+        params.pointSizeMultiplier,
+        params.sceneVisualOverrides,
+        params.dislocationLineSettings
     ]);
 
-    useEffect(() => {
-        engineRef.current?.updatePointCloudSettings(pointCloudSettings, pointSizeMultiplier);
-        // modelGeneration replaces the old `model` dependency — fires whenever the
-        // model reference changes without putting the Object3D into React state.
-    }, [modelGeneration, pointCloudSettings, pointSizeMultiplier]);
-
-    useEffect(() => {
-        engineRef.current?.updateOpacity(params.sceneKey, sceneVisualOverrides, pointCloudSettings);
-    }, [modelGeneration, pointCloudSettings, sceneVisualOverrides, params.sceneKey]);
-
-    useEffect(() => {
-        engineRef.current?.updateDislocationLineWidth(dislocationLineSettings);
-    }, [
-        modelGeneration,
-        dislocationLineSettings?.baseLineWidth,
-        dislocationLineSettings?.lineWidth
-    ]);
-
-    // Update point cloud cameraPosition uniform each rendered frame.
-    // With frameloop="demand" this only runs when a frame is already being
-    // produced (orbit, model load, etc.), so it adds zero continuous cost.
-    useFrame(({ camera }) => {
-        engineRef.current?.updateCameraPosition(camera.position);
+    useFrame(({ camera: frameCamera }) => {
+        engineRef.current?.updateCameraPosition(frameCamera.position);
     });
 
     const interaction = useModelInteraction({
@@ -240,44 +195,46 @@ export default function useGlbScene(
         onInvalidate: invalidate
     });
 
-    const lastUpdateSceneCallRef = useRef(0);
-    const updateSceneTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
+    // Integrate load throttling with rAF — Why: the previous setTimeout-based
+    // throttle competed with R3F's frame loop. We now request a load and rely
+    // on the engine's internal abort/generation logic to coalesce.
+    const pendingLoadRef = useRef<number | null>(null);
+    const lastLoadRequestRef = useRef(0);
     const updateScene = useCallback(() => {
         if (!engineRef.current) return;
         if (!params.url) return;
         engineRef.current.loadIfNeeded();
     }, [params.url]);
 
-    const throttledUpdateScene = useCallback(() => {
-        const now = Date.now();
-        const elapsed = now - lastUpdateSceneCallRef.current;
-
-        if (elapsed >= params.updateThrottle) {
-            lastUpdateSceneCallRef.current = now;
+    useEffect(() => {
+        if (pendingLoadRef.current !== null) {
+            cancelAnimationFrame(pendingLoadRef.current);
+            pendingLoadRef.current = null;
+        }
+        const now = performance.now();
+        const elapsed = now - lastLoadRequestRef.current;
+        const schedule = () => {
+            pendingLoadRef.current = null;
+            lastLoadRequestRef.current = performance.now();
             updateScene();
+        };
+        if (elapsed >= params.updateThrottle) {
+            schedule();
             return;
         }
-
-        if (updateSceneTimeoutRef.current) {
-            clearTimeout(updateSceneTimeoutRef.current);
-        }
-
-        updateSceneTimeoutRef.current = setTimeout(() => {
-            lastUpdateSceneCallRef.current = Date.now();
-            updateScene();
-        }, params.updateThrottle - elapsed);
+        pendingLoadRef.current = requestAnimationFrame(() => {
+            pendingLoadRef.current = requestAnimationFrame(schedule);
+        });
+        return () => {
+            if (pendingLoadRef.current !== null) {
+                cancelAnimationFrame(pendingLoadRef.current);
+                pendingLoadRef.current = null;
+            }
+        };
     }, [params.updateThrottle, updateScene]);
 
     useEffect(() => {
-        throttledUpdateScene();
-    }, [throttledUpdateScene]);
-
-    useEffect(() => {
-        if (!loadingState.error) {
-            return;
-        }
-
+        if (!loadingState.error) return;
         warnFractal('use-glb-scene.load-error', {
             url: params.url,
             sceneKey: params.sceneKey,
@@ -285,16 +242,8 @@ export default function useGlbScene(
         });
     }, [loadingState.error, params.sceneKey, params.url]);
 
-    useEffect(() => {
-        return () => {
-            if (updateSceneTimeoutRef.current) {
-                clearTimeout(updateSceneTimeoutRef.current);
-            }
-        };
-    }, []);
-
     return {
-        modelBounds: modelBounds ?? activeModelBounds,
+        modelBounds: modelBounds ?? params.activeModelBounds ?? null,
         isLoading: loadingState.isLoading,
         loadProgress: loadingState.progress,
         loadError: loadingState.error,

@@ -29,7 +29,6 @@ export const useCanvasAccess = (): CanvasAccessState => {
 };
 
 export const useCanvasAccessMode = () => useCanvasAccessStore((state) => state.mode);
-export const useCanvasCanMutate = () => useCanvasAccessStore((state) => state.canMutate);
 export const useCanvasCanCollaborate = () => useCanvasAccessStore((state) => state.canCollaborate);
 
 export const useCanvasDataAccess = (): CanvasDataAccess => {

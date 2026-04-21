@@ -1,5 +1,5 @@
 import type { GetAnalysesByTeamIdItemDTO } from '@modules/analysis/application/dtos/GetAnalysesByTeamIdDTO';
-import type { GetUserChatsOutputDTO } from '@modules/chat/application/dtos/chat/GetUserChatsDTO';
+import type { PersistedChatDTO } from '@modules/chat/domain/port/chat/IChatRepository';
 import type { ListContainersOutputDTO } from '@modules/container/application/dtos/ListContainersDTO';
 import type { PersistedPluginDTO } from '@modules/plugin/application/dtos/plugin/PersistedPluginDTO';
 import type { ListUserTeamsOutputDTO } from '@modules/team/application/dtos/team/ListUserTeamsDTO';
@@ -18,7 +18,7 @@ export interface GetGlobalSearchOutputDTO {
     trajectories: TrajectoryPersistedDTO[];
     teams: ListUserTeamsOutputDTO[];
     plugins: PersistedPluginDTO[];
-    chats: GetUserChatsOutputDTO[];
+    chats: PersistedChatDTO[];
 };
 
 export const EMPTY_GLOBAL_SEARCH_RESULTS: GetGlobalSearchOutputDTO = {

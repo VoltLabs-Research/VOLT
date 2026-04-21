@@ -19,11 +19,6 @@ export default createHttpModule({
         );
         router.get('/:teamId/:conversationId/messages', controllers.listMessages.handle);
         router.post(
-            '/:teamId/:conversationId/messages',
-            aiConversationValidation.sendMessage,
-            controllers.sendMessage.handle
-        );
-        router.post(
             '/:teamId/:conversationId/messages/stream',
             express.json({ limit: '5mb' }),
             aiConversationValidation.sendStreamMessage,

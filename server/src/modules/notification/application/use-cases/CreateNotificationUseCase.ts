@@ -1,6 +1,6 @@
 import { NOTIFICATION_TOKENS } from '@modules/notification/infrastructure/di/NotificationTokens';
 import NotificationCreatedEvent from '@modules/notification/domain/events/NotificationCreatedEvent';
-import type { CreateNotificationInputDTO, CreateNotificationOutputDTO } from '@modules/notification/application/dtos';
+import type { CreateNotificationInputDTO, PersistedNotificationDTO } from '@modules/notification/application/dtos';
 import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
@@ -10,7 +10,7 @@ import type { IEventBus } from '@shared/application/events/IEventBus';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
 
 @injectable()
-export default class CreateNotificationUseCase implements IUseCase<CreateNotificationInputDTO, CreateNotificationOutputDTO, ApplicationError> {
+export default class CreateNotificationUseCase implements IUseCase<CreateNotificationInputDTO, PersistedNotificationDTO, ApplicationError> {
     constructor(
         @inject(NOTIFICATION_TOKENS.NotificationRepository)
         private readonly notificationRepository: INotificationRepository,
@@ -18,7 +18,7 @@ export default class CreateNotificationUseCase implements IUseCase<CreateNotific
         private readonly eventBus: IEventBus
     ) { }
 
-    async execute(input: CreateNotificationInputDTO): Promise<Result<CreateNotificationOutputDTO, ApplicationError>> {
+    async execute(input: CreateNotificationInputDTO): Promise<Result<PersistedNotificationDTO, ApplicationError>> {
         const { recipient, title, content, link } = input;
 
         const notification = await this.notificationRepository.create({
