@@ -65,7 +65,7 @@ const DEFAULT_RELAY_PORT_START = 24000;
 const DEFAULT_RELAY_PORT_END = 24999;
 const PROXY_URL_ORIGIN = 'http://volt.local';
 
-const readCookies = (rawCookieHeader?: string): Record<string, string> => {
+const readCookies = (rawCookieHeader?: string): Record<string, string | undefined> => {
     if (!rawCookieHeader) {
         return {};
     }

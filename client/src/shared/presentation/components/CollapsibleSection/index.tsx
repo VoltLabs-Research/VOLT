@@ -1,6 +1,4 @@
-import Container from '@/shared/presentation/components/Container';
 import IconButton from '@/shared/presentation/components/IconButton';
-import Title from '@/shared/presentation/components/Title';
 import './CollapsibleSection.css';
 import { ChevronDown, Trash2, Plus } from 'lucide-react';
 import { useState, useEffect, memo, useId } from 'react';
@@ -70,6 +68,7 @@ const CollapsibleSection = ({
     const bodyId = `collapsible-section-body-${reactId}`;
     const headingId = `collapsible-section-heading-${reactId}`;
     const triggerId = `collapsible-section-trigger-${reactId}`;
+    const TitleTag = titleAs;
 
     useEffect(() => {
         if (actualExpanded && !hasBeenExpanded) {
@@ -102,7 +101,7 @@ const CollapsibleSection = ({
     };
 
     const actions = (
-        <Container className='d-flex items-center gap-025 collapsible-section-actions'>
+        <div className='volt-container d-flex items-center gap-025 collapsible-section-actions'>
             {headerAction}
             {onAdd && (
                 <IconButton
@@ -127,15 +126,15 @@ const CollapsibleSection = ({
                     <Trash2 size={16} />
                 </IconButton>
             )}
-        </Container>
+        </div>
     );
 
     return (
-        <Container className={`d-flex column ${noSpacing ? '' : 'mb-1-5'} ${className}`}>
-            <Container className={`${headerBaseClass} d-flex content-between items-center gap-05 ${headerClassName}`}>
-                <Title as={titleAs} id={headingId} className='collapsible-section-heading'>
+        <div className={`volt-container d-flex column ${noSpacing ? '' : 'mb-1-5'} ${className}`}>
+            <div className={`volt-container ${headerBaseClass} d-flex content-between items-center gap-05 ${headerClassName}`}>
+                <TitleTag id={headingId} className='volt-title collapsible-section-heading'>
                     {collapsible ? (
-                        <Container className='collapsible-section-header-row d-flex items-center gap-05'>
+                        <div className='volt-container collapsible-section-header-row d-flex items-center gap-05'>
                             <button
                                 id={triggerId}
                                 type='button'
@@ -144,10 +143,10 @@ const CollapsibleSection = ({
                                 aria-expanded={actualExpanded}
                                 aria-controls={bodyId}
                             >
-                                <Container className='collapsible-section-trigger-content d-flex items-center gap-05'>
+                                <div className='volt-container collapsible-section-trigger-content d-flex items-center gap-05'>
                                     {icon && <span className={`d-flex items-center ${iconClassName}`}>{icon}</span>}
                                     <span className={`${titleBaseClass} ${titleClassName}`}>{title}</span>
-                                </Container>
+                                </div>
                             </button>
                             {actions}
                             <button
@@ -158,25 +157,22 @@ const CollapsibleSection = ({
                                 aria-controls={bodyId}
                                 aria-label={`${actualExpanded ? 'Collapse' : 'Expand'} ${title}`}
                             >
-                                <Container
-                                    className={`collapsible-section-arrow d-flex flex-center ${!actualExpanded ? 'collapsible-section-arrow--collapsed' : ''}`}
-                                    aria-hidden='true'
-                                >
+                                <div className={`volt-container collapsible-section-arrow d-flex flex-center ${!actualExpanded ? 'collapsible-section-arrow--collapsed' : ''}`} aria-hidden='true'>
                                     <ChevronDown size={arrowSize} />
-                                </Container>
+                                </div>
                             </button>
-                        </Container>
+                        </div>
                     ) : (
-                        <Container className='d-flex items-center gap-05 collapsible-section-title-row'>
-                            <Container className='collapsible-section-trigger-content d-flex items-center gap-05'>
+                        <div className='volt-container d-flex items-center gap-05 collapsible-section-title-row'>
+                            <div className='volt-container collapsible-section-trigger-content d-flex items-center gap-05'>
                                 {icon && <span className={`d-flex items-center ${iconClassName}`}>{icon}</span>}
                                 <span className={`${titleBaseClass} ${titleClassName}`}>{title}</span>
-                            </Container>
+                            </div>
                             {actions}
-                        </Container>
+                        </div>
                     )}
-                </Title>
-            </Container>
+                </TitleTag>
+            </div>
             {collapsible && (
                 <div
                     id={bodyId}
@@ -185,20 +181,20 @@ const CollapsibleSection = ({
                     role='region'
                     aria-labelledby={triggerId}
                 >
-                    <Container className={`collapsible-section-content d-flex column ${contentClassName}`}>
+                    <div className={`volt-container collapsible-section-content d-flex column ${contentClassName}`}>
                         {hasBeenExpanded ? children : null}
-                    </Container>
+                    </div>
                 </div>
             )}
 
             {!collapsible && (
-                <Container id={bodyId} className={`collapsible-section-body collapsible-section-body--static ${bodyClassName}`} role='region' aria-labelledby={headingId}>
-                    <Container className={`collapsible-section-content d-flex column ${contentClassName}`}>
+                <div id={bodyId} className={`volt-container collapsible-section-body collapsible-section-body--static ${bodyClassName}`} role='region' aria-labelledby={headingId}>
+                    <div className={`volt-container collapsible-section-content d-flex column ${contentClassName}`}>
                         {children}
-                    </Container>
-                </Container>
+                    </div>
+                </div>
             )}
-        </Container>
+        </div>
     );
 };
 

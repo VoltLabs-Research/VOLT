@@ -1,4 +1,3 @@
-import Container from '@/shared/presentation/components/Container';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import EditableTag from '@/shared/presentation/components/EditableTag';
 import Select from '@/shared/presentation/components/Select';
@@ -218,15 +217,7 @@ const TableRow = <T extends Identifiable>({
                     col.numeric ? 'is-numeric' : ''
                 ].filter(Boolean).join(' ');
                 return (
-                    <Container
-                        className={cellClassName}
-                        data-label={columnTitle}
-                        key={`cell-${columnTitle}-${colIdx}`}
-                        title={title}
-                        role='gridcell'
-                        aria-label={title ? `${columnTitle}: ${title}` : `${columnTitle}: no value`}
-                        style={columnStyles[colIdx]}
-                    >
+                    <div className={`volt-container ${cellClassName}`} data-label={columnTitle} key={`cell-${columnTitle}-${colIdx}`} title={title} role='gridcell' aria-label={title ? `${columnTitle}: ${title}` : `${columnTitle}: no value`} style={columnStyles[colIdx]}>
                         {colIdx === 0 && draggableId ? (
                             <span className='document-listing-cell-content'>
                                 {renderDragHandle()}
@@ -239,7 +230,7 @@ const TableRow = <T extends Identifiable>({
                                 {renderCellContent(col, cellValue)}
                             </span>
                         )}
-                    </Container>
+                    </div>
                 );
             })}
         </motion.div>

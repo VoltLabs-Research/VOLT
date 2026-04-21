@@ -1,4 +1,3 @@
-import Container from '@/shared/presentation/components/Container';
 import SidebarBottom from '@/shared/presentation/components/SidebarBottom';
 import SidebarHeader from '@/shared/presentation/components/SidebarHeader';
 import './Sidebar.css';
@@ -138,26 +137,21 @@ const Sidebar = ({
             animate={{ width: collapsed ? collapsedWidth : expandedWidth }}
             transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 300, damping: 30 }}
         >
-            <Container className='editor-sidebar-container glass-bg b-none d-flex column glass-bg content-between overflow-hidden w-max h-max'>
-                <Container id={`${sidebarId}-content`} className='editor-sidebar-top-container'>
+            <div className='volt-container editor-sidebar-container glass-bg b-none d-flex column glass-bg content-between overflow-hidden w-max h-max'>
+                <div id={`${sidebarId}-content`} className='volt-container editor-sidebar-top-container'>
                     {headerElement}
 
                     {overrideContent ? (
-                        <Container>{overrideContent}</Container>
+                        <div className="volt-container">{overrideContent}</div>
                     ) : (
                         <>
                             {tags.length > 1 && (
-                                <Container className='p-1-5 editor-sidebar-tabs-region'>
-                                    <Container className='editor-sidebar-tabs-wrapper p-relative'>
+                                <div className='volt-container p-1-5 editor-sidebar-tabs-region'>
+                                    <div className='volt-container editor-sidebar-tabs-wrapper p-relative'>
                                         {canScrollLeft && (
                                             <div className='editor-sidebar-tabs-fade editor-sidebar-tabs-fade--left' aria-hidden='true' />
                                         )}
-                                            <Container
-                                                ref={tabsContainerRef}
-                                                className='d-flex p-05 content-between editor-sidebar-options-container scrollbar-none'
-                                                role='tablist'
-                                                aria-label='Sidebar sections'
-                                            >
+                                            <div ref={tabsContainerRef} className='volt-container d-flex p-05 content-between editor-sidebar-options-container scrollbar-none' role='tablist' aria-label='Sidebar sections'>
                                                 {tags.map((tag) => {
                                                     const isSelected = tag.id === activeTagId;
 
@@ -179,12 +173,12 @@ const Sidebar = ({
                                                         </button>
                                                     );
                                                 })}
-                                            </Container>
+                                            </div>
                                         {canScrollRight && (
                                             <div className='editor-sidebar-tabs-fade editor-sidebar-tabs-fade--right' aria-hidden='true' />
                                         )}
-                                    </Container>
-                                </Container>
+                                    </div>
+                                </div>
                             )}
 
                             {keepMounted ? (
@@ -216,10 +210,10 @@ const Sidebar = ({
                             )}
                         </>
                     )}
-                </Container>
+                </div>
 
                 {bottom}
-            </Container>
+            </div>
         </motion.aside>
     );
 };

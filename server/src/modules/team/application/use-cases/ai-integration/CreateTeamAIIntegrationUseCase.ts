@@ -39,7 +39,7 @@ export default class CreateTeamAIIntegrationUseCase implements IUseCase<CreateTe
             ));
         }
 
-        const existing = await this.integrationRepository.findByTeamAndProvider(input.teamId, provider);
+        const existing = await this.integrationRepository.findOne({ team: input.teamId, provider });
         if (existing) {
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.TEAM_AI_INTEGRATION_ALREADY_EXISTS,

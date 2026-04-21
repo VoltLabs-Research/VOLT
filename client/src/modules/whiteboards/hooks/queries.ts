@@ -1,11 +1,11 @@
 import service from '../api/service';
 import {
     buildKeys,
-    createInvalidatingMutation,
     createFolderResourceQueries,
+    createInvalidatingMutation,
+    createPaginatedQuery,
     createQuery
 } from '@/shared/infrastructure/query';
-import queryClient from '@/shared/infrastructure/query/query-client';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { CreateWhiteboardFolderParams } from '../api/dtos/create-whiteboard-folder-params';
 import type { CreateWhiteboardParams } from '../api/dtos/create-whiteboard-params';
@@ -20,22 +20,31 @@ import type { UpdateWhiteboardParams } from '../api/dtos/update-whiteboard-param
 import type { WhiteboardFolder } from '../api/entities/whiteboard-folder';
 import type { Whiteboard } from '../api/entities/whiteboard';
 
+const BASE_KEY = 'whiteboards';
+
 interface WhiteboardQueryKeys extends Record<string, unknown> {
-    list: ListWhiteboardsParams;
     single: { whiteboardId: string };
     folders: ListWhiteboardFoldersParams;
     folder: GetWhiteboardFolderParams;
 };
 
-const KEYS = buildKeys<WhiteboardQueryKeys>('whiteboards');
+const KEYS = buildKeys<WhiteboardQueryKeys>(BASE_KEY);
 
-export const whiteboardsQueryKey = KEYS.list;
+const whiteboardPaginatedQuery = createPaginatedQuery<Whiteboard, ListWhiteboardsParams>({
+    baseKey: BASE_KEY,
+    detailKey: (whiteboardId) => KEYS.single({ whiteboardId }),
+    service: {
+        list: service.listWhiteboards
+    }
+});
+
+export const whiteboardsQueryKey = whiteboardPaginatedQuery.QUERY_KEYS.lists;
 export const whiteboardQueryKey = KEYS.single;
 
-export const whiteboardsQuery = createQuery(KEYS.list, service.listWhiteboards);
+export const whiteboardsQuery = whiteboardPaginatedQuery.useListQuery;
 export const whiteboardQuery = createQuery(KEYS.single, service.getWhiteboard);
 
-export const invalidateWhiteboardsQuery = () => queryClient.invalidateQueries({ queryKey: KEYS.list() });
+export const invalidateWhiteboardsQuery = () => whiteboardPaginatedQuery.cache.invalidate();
 
 const whiteboardFolderQueries = createFolderResourceQueries<
     WhiteboardFolder,
@@ -55,7 +64,7 @@ const whiteboardFolderQueries = createFolderResourceQueries<
         deleteFolder: service.deleteWhiteboardFolder
     },
     buildFolderParams: (folderId) => ({ folderId }),
-    listingQueryKeys: [KEYS.list()]
+    listingQueryKeys: [whiteboardPaginatedQuery.QUERY_KEYS.lists()]
 });
 
 export const whiteboardFoldersQuery = whiteboardFolderQueries.foldersQuery;
@@ -70,26 +79,26 @@ export const useDeleteWhiteboardFolderMutation = whiteboardFolderQueries.useDele
 
 export const useCreateWhiteboardMutation = createInvalidatingMutation<Whiteboard, CreateWhiteboardParams>(
     service.createWhiteboard,
-    [KEYS.list()]
+    [whiteboardPaginatedQuery.QUERY_KEYS.lists()]
 );
 
 export const useUpdateWhiteboardMutation = createInvalidatingMutation<Whiteboard, UpdateWhiteboardParams>(
     service.updateWhiteboard,
     (_data, variables) => [
-        KEYS.list(),
+        whiteboardPaginatedQuery.QUERY_KEYS.lists(),
         KEYS.single({ whiteboardId: variables.whiteboardId })
     ]
 );
 
 export const useDeleteWhiteboardMutation = createInvalidatingMutation<void, DeleteWhiteboardParams>(
     service.deleteWhiteboard,
-    [KEYS.list()]
+    [whiteboardPaginatedQuery.QUERY_KEYS.lists()]
 );
 
 export const useMoveWhiteboardMutation = createInvalidatingMutation<Whiteboard, MoveWhiteboardParams>(
     service.moveWhiteboard,
     (_data, variables) => [
-        KEYS.list(),
+        whiteboardPaginatedQuery.QUERY_KEYS.lists(),
         KEYS.single({ whiteboardId: variables.whiteboardId })
     ]
 );

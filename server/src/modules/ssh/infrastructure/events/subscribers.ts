@@ -1,6 +1,12 @@
 import type { SubscriberManifest } from '@shared/infrastructure/events/registerSubscribers';
-import TeamDeletedEventHandler from '@modules/ssh/application/events/TeamDeletedEventHandler';
-import UserDeletedEventHandler from '@modules/ssh/application/events/UserDeletedEventHandler';
+import {
+    deleteManyOnTeamDeletedHandler,
+    deleteManyOnUserDeletedHandler
+} from '@shared/application/events/cascadeDeleteHandlerFactories';
+import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
+
+const TeamDeletedEventHandler = deleteManyOnTeamDeletedHandler(SSH_TOKENS.SSHConnectionRepository);
+const UserDeletedEventHandler = deleteManyOnUserDeletedHandler(SSH_TOKENS.SSHConnectionRepository);
 
 export const sshSubscriberManifest: SubscriberManifest = {
     'team.deleted': TeamDeletedEventHandler,

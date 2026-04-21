@@ -1,5 +1,3 @@
-import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import './CodeEditor.css';
 import { useCallback, useId } from 'react';
 import type { ChangeEvent, CSSProperties } from 'react';
@@ -84,19 +82,19 @@ const CodeEditor = ({
     };
 
     return (
-        <Container className={`code-editor-wrapper d-flex column h-max gap-05 ${className} ${error ? 'has-error' : ''}`}>
+        <div className={`volt-container code-editor-wrapper d-flex column h-max gap-05 ${className} ${error ? 'has-error' : ''}`}>
             {label && (
                 <label htmlFor={editorId} id={labelId} className='code-editor-label font-size-2 font-weight-5 color-primary'>
                     {label}
                 </label>
             )}
             {description && (
-                <Paragraph id={descriptionId} className='code-editor-description font-size-1 color-secondary'>
+                <p id={descriptionId} className='volt-text code-editor-description font-size-1 color-secondary'>
                     {description}
-                </Paragraph>
+                </p>
             )}
 
-            <Container className='p-relative overflow-hidden code-editor-container d-flex column' style={{ height: editorHeight }}>
+            <div className='volt-container p-relative overflow-hidden code-editor-container d-flex column' style={{ height: editorHeight }}>
                 <textarea
                     id={editorId}
                     name={name}
@@ -112,20 +110,14 @@ const CodeEditor = ({
                     style={textareaStyle}
                     className='code-editor-textarea font-size-2'
                 />
-            </Container>
+            </div>
 
             {error && (
-                <Paragraph
-                    id={errorId}
-                    role='status'
-                    aria-live='polite'
-                    aria-atomic='true'
-                    className='code-editor-error font-size-1'
-                >
+                <p id={errorId} role='status' aria-live='polite' aria-atomic='true' className='volt-text code-editor-error font-size-1'>
                     {error}
-                </Paragraph>
+                </p>
             )}
-        </Container>
+        </div>
     );
 };
 

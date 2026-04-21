@@ -1,14 +1,13 @@
-import Container from '@/shared/presentation/components/Container';
 import './PopoverMenu.css';
-import React from 'react';
 import { useEffect, useRef } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
 
 interface PopoverMenuItemElement extends HTMLElement {
     disabled?: boolean;
 };
 
 interface PopoverMenuProps {
-    children: React.ReactNode;
+    children: ReactNode;
     label?: string;
     onClose?: () => void;
 };
@@ -27,7 +26,7 @@ const getMenuItems = (menuElement: HTMLDivElement | null) => {
     });
 };
 
-const PopoverMenu: React.FC<PopoverMenuProps> = ({ children, label = 'Menu', onClose }) => {
+const PopoverMenu = ({ children, label = 'Menu', onClose }: PopoverMenuProps) => {
     const menuRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
@@ -41,7 +40,7 @@ const PopoverMenu: React.FC<PopoverMenuProps> = ({ children, label = 'Menu', onC
         };
     }, []);
 
-    const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
         const menuItems = getMenuItems(menuRef.current);
         const activeElement = document.activeElement;
         const currentIndex = menuItems.findIndex((item) => item === activeElement || item.contains(activeElement));
@@ -83,16 +82,9 @@ const PopoverMenu: React.FC<PopoverMenuProps> = ({ children, label = 'Menu', onC
     };
 
     return (
-        <Container
-            ref={menuRef}
-            className='popover-menu d-flex column gap-025'
-            role='menu'
-            aria-label={label}
-            aria-orientation='vertical'
-            onKeyDown={handleKeyDown}
-        >
+        <div ref={menuRef} className='volt-container popover-menu d-flex column gap-025' role='menu' aria-label={label} aria-orientation='vertical' onKeyDown={handleKeyDown}>
             {children}
-        </Container>
+        </div>
     );
 };
 

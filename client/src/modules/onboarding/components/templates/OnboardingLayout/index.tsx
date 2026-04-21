@@ -1,13 +1,12 @@
 import './OnboardingLayout.css';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { refreshSocketSession } from '@/modules/socket/core/services/socket-auth-session';
-import { JoinTeamModal } from '@/modules/team/components/organisms/JoinTeamModal';
+import { JoinTeamModal } from '@/modules/team/components/JoinTeamModal';
 import { switchSelectedTeam } from '@/modules/team/stores/team/use-team-store';
-import UserMenuPopover from '@/modules/auth/components/molecules/UserMenuPopover';
-import NotificationsPopover from '@/modules/notification/components/organisms/NotificationsPopover';
+import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
+import NotificationsPopover from '@/modules/notification/components/NotificationsPopover';
 import { openModal } from '@/shared/presentation/components/Modal';
 import Button from '@/shared/presentation/components/Button';
-import Container from '@/shared/presentation/components/Container';
 import type { ReactNode } from 'react';
 import type { JoinByInviteCodeOutputDTO } from '@/modules/team/api/dtos/team/join-by-invite-code';
 
@@ -43,21 +42,21 @@ const OnboardingLayout = ({
     }
 
     return (
-        <Container className='onboarding-layout'>
+        <div className='volt-container onboarding-layout'>
             <main className={contentClassNames.join(' ')}>
                 {children}
             </main>
 
             {overlay && (
-                <Container className='onboarding-layout__overlay'>
+                <div className='volt-container onboarding-layout__overlay'>
                     {overlay}
-                </Container>
+                </div>
             )}
 
             {leftSlot && (
-                <Container className='onboarding-layout__left-slot'>
+                <div className='volt-container onboarding-layout__left-slot'>
                     {leftSlot}
-                </Container>
+                </div>
             )}
 
             <Button
@@ -71,21 +70,21 @@ const OnboardingLayout = ({
             </Button>
 
             {user && (
-                <Container className='onboarding-layout__user-menu'>
+                <div className='volt-container onboarding-layout__user-menu'>
                     <UserMenuPopover
                         onSettingsClick={onSettingsClick}
                         onSignOut={onSignOut}
                         isSigningOut={isSigningOut}
                     />
-                </Container>
+                </div>
             )}
 
-            <Container className='onboarding-layout__notifications'>
+            <div className='volt-container onboarding-layout__notifications'>
                 <NotificationsPopover />
-            </Container>
+            </div>
 
             <JoinTeamModal onSuccess={handleJoinTeamSuccess} />
-        </Container>
+        </div>
     );
 };
 

@@ -50,7 +50,7 @@ import type {
 import type {
     GetRasterMetadataParams,
     GetRasterMetadataResponse
-} from '@/modules/raster/api/dtos';
+} from '@/modules/raster/api/dtos/get-raster-metadata';
 
 interface TrajectoryScopedParams {
     trajectoryId: string;

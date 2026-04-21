@@ -14,10 +14,6 @@ export default class TeamAIIntegrationRepository
         super(TeamAIIntegrationModel, teamAIIntegrationMapper);
     }
 
-    async findByTeamAndProvider(teamId: string, provider: TeamAIProvider): Promise<TeamAIIntegration | null> {
-        return this.findOne({ team: teamId, provider });
-    }
-
     async findByTeamAndProviderWithSecret(teamId: string, provider: TeamAIProvider): Promise<TeamAIIntegration | null> {
         const doc = await this.model.findOne({
             team: teamId,

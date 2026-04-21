@@ -28,7 +28,7 @@ export class CreateTeamRoleAITool extends TeamUseCaseAITool<
             (params, scope) => ({
                 teamId: scope.teamId,
                 name: params.name,
-                permissions: params.permissions,
+                permissions: params.permissions ?? [],
                 isSystem: false,
                 userId: scope.userId
             }),

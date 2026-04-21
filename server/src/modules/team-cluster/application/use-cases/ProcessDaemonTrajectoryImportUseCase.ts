@@ -143,7 +143,7 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
                 ? await this.simulationCellRepository.createMany(cellInputs as never)
                 : [];
             const cellIdByTimestep = new Map<number, string>(
-                framesWithCells.map((frame, index) => [frame.timestep, createdCells[index]!.id])
+                framesWithCells.map((frame, index) => [frame.timestep, createdCells[index]!._id])
             );
 
             let totalSize = 0;

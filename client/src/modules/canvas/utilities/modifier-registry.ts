@@ -1,6 +1,6 @@
-import ColorCoding from '../components/organisms/ColorCoding';
-import ParticleFilter from '../components/organisms/ParticleFilter';
-import SlicePlane from '../components/organisms/SlicePlane';
+import ColorCoding from '../components/ColorCoding';
+import ParticleFilter from '../components/ParticleFilter';
+import SlicePlane from '../components/SlicePlane';
 
 import { Wrench, LineChart, Scissors, Droplets } from 'lucide-react';
 import { createElement } from 'react';

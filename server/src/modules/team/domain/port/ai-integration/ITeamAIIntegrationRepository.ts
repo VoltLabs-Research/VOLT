@@ -2,7 +2,6 @@ import TeamAIIntegration, { TeamAIIntegrationProps, TeamAIProvider } from '@modu
 import { IBaseRepository } from '@shared/domain/port/IBaseRepository';
 
 export interface ITeamAIIntegrationRepository extends IBaseRepository<TeamAIIntegration, TeamAIIntegrationProps> {
-    findByTeamAndProvider(teamId: string, provider: TeamAIProvider): Promise<TeamAIIntegration | null>;
     findByTeamAndProviderWithSecret(teamId: string, provider: TeamAIProvider): Promise<TeamAIIntegration | null>;
     deleteByTeamAndProvider(teamId: string, provider: TeamAIProvider): Promise<boolean>;
     listByTeamId(teamId: string): Promise<TeamAIIntegration[]>;

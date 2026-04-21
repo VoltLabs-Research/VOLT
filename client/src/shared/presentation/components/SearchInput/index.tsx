@@ -1,5 +1,4 @@
 import { cn } from '@/shared/utils/cn';
-import Container from '@/shared/presentation/components/Container';
 import './SearchInput.css';
 import { forwardRef, useRef } from 'react';
 import type { InputHTMLAttributes, ReactNode } from 'react';
@@ -54,13 +53,13 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(({
     }
 
     return (
-        <Container className={cn('search-input-container d-flex items-center gap-05', variant === 'small' && 'search-input-container--small', containerClassName)}>
+        <div className={`volt-container ${cn('search-input-container d-flex items-center gap-05', variant === 'small' && 'search-input-container--small', containerClassName)}`}>
             <IoSearchOutline aria-hidden='true' className={cn('search-input-icon color-muted f-shrink-0', variant === 'small' && 'search-input-icon--small')} />
-            <Container className='search-input-content p-relative flex-1'>
+            <div className='volt-container search-input-content p-relative flex-1'>
                 {overlayVisible && overlayContent && (
-                    <Container className='search-input-overlay d-flex items-center'>
+                    <div className='volt-container search-input-overlay d-flex items-center'>
                         {overlayContent}
-                    </Container>
+                    </div>
                 )}
                 <input
                     ref={ref}
@@ -73,8 +72,8 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(({
                     className={cn('search-input font-size-2 color-primary flex-1', variant === 'small' && 'search-input--small', className, overlayVisible && 'search-input--with-overlay')}
                     {...props}
                 />
-            </Container>
-        </Container>
+            </div>
+        </div>
     );
 });
 

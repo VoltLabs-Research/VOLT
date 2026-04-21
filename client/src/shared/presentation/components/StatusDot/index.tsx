@@ -1,6 +1,5 @@
 import { cn } from '@/shared/utils';
 import './StatusDot.css';
-import React from 'react';
 
 interface StatusDotProps{
     isOnline: boolean;
@@ -9,12 +8,12 @@ interface StatusDotProps{
     label?: string;
 };
 
-const StatusDot: React.FC<StatusDotProps> = ({
+const StatusDot = ({
     isOnline,
     size = 'sm',
     className = '',
     label
-}) => {
+}: StatusDotProps) => {
     const classes = cn(
         'status-dot',
         'radius-full',

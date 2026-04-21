@@ -1,5 +1,11 @@
 @layer normalize, base, demo, toggle, debug, transitions;
 
+@property --complete {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
 @layer debug {
 
 }
@@ -8,6 +14,16 @@
   :root {
     --transition: 0.15s;
     --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .liquid-toggle {
+    transition-property: --complete, outline;
+    transition-duration: var(--transition);
+    transition-timing-function: var(--ease);
+  }
+
+  .liquid-toggle[data-active='true'] {
+    transition-duration: 0s;
   }
 
   [data-bounce='true']:has(button:active, [data-active='true']) {
@@ -266,6 +282,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .liquid-toggle,
+  .liquid-toggle[data-active='true'],
   .indicator--masked .mask,
   .wrapper,
   .liquid__track,

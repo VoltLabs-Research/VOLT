@@ -1,7 +1,5 @@
 import { cn } from '@/shared/utils/cn';
 import { getInitialsFromUser } from '@/shared/utils/user';
-import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import StatusDot from '@/shared/presentation/components/StatusDot';
 import './Avatar.css';
 import type { User } from '@/modules/auth/api/entities/user';
@@ -37,22 +35,22 @@ const Avatar = ({
     const altText = alt ?? (user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : 'Avatar');
 
     return (
-        <Container className={cn('avatar', `avatar-${size}`, 'd-flex flex-center radius-full overflow-hidden f-shrink-0 p-relative', className)}>
+        <div className={`volt-container ${cn('avatar', `avatar-${size}`, 'd-flex flex-center radius-full overflow-hidden f-shrink-0 p-relative', className)}`}>
             {icon ? (
-                <Container className='avatar-icon d-flex flex-center'>
+                <div className='volt-container avatar-icon d-flex flex-center'>
                     {icon}
-                </Container>
+                </div>
             ) : imageSrc ? (
                 <img src={imageSrc} alt={altText} className='w-max h-max avatar-image' />
             ) : (
-                <Paragraph className='avatar-initials font-weight-6'>
+                <p className='volt-text avatar-initials font-weight-6'>
                     {initials}
-                </Paragraph>
+                </p>
             )}
             {showStatus && (
                 <StatusDot isOnline={isOnline} className='avatar-status p-absolute bottom-0 right-0' />
             )}
-        </Container>
+        </div>
     );
 };
 

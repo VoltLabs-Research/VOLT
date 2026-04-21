@@ -15,12 +15,12 @@ const MENU_ICON_SIZES: Record<'sm' | 'md', number> = {
     md: 16
 };
 
-const AsyncContextMenuItem: React.FC<AsyncContextMenuItemProps> = ({
+const AsyncContextMenuItem = ({
     option,
     onClose,
     onError,
     size = 'md'
-}) => {
+}: AsyncContextMenuItemProps) => {
     const [isLoading, setIsLoading] = useState(false);
 
     const handleClick = useCallback(async () => {

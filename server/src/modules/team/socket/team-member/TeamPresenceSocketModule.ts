@@ -181,7 +181,7 @@ export default class TeamPresenceSocketModule extends BaseSocketModule {
             });
 
             if (session.userWentOfflineCompletely) {
-                await this.userRepository.updateLastSeen(session.userId, session.endedAt);
+                await this.userRepository.updateById(session.userId, { lastSeenAt: session.endedAt });
             }
         }
 

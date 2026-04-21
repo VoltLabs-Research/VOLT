@@ -36,7 +36,7 @@ const FOCUSABLE_SELECTOR = [
 ].join(', ');
 const NESTED_FLOATING_SELECTOR = '.select-dropdown, .form-field-autocomplete-menu';
 
-const SubmenuItemWrapper: React.FC<SubmenuItemWrapperProps> = ({ option, size = 'md', onOpen }) => {
+const SubmenuItemWrapper = ({ option, size = 'md', onOpen }: SubmenuItemWrapperProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement | null>(null);
     const triggerRef = useRef<HTMLButtonElement | null>(null);

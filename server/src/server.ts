@@ -23,10 +23,10 @@ import app from './core/config/express';
 import apiDocsRouter from './core/config/api-docs';
 import SocketGateway from './modules/socket/socket/SocketGateway';
 import http from 'http';
+import { createHttpTerminator, type HttpTerminator } from 'http-terminator';
 import { container } from 'tsyringe';
 import type { ISocketModule } from './modules/socket/domain/port/ISocketModule';
 import type { Duplex } from 'node:stream';
-import type { Socket as NetSocket } from 'node:net';
 
 const SERVER_PORT = readNumberEnv('SERVER_PORT', 8000);
 const SERVER_HOST = process.env.SERVER_HOST || '0.0.0.0';
@@ -38,62 +38,11 @@ const SERVER_SHUTDOWN_FORCE_EXIT_TIMEOUT = readNumberEnv('SERVER_SHUTDOWN_FORCE_
 
 registerAllDependencies();
 
-let activeServer: http.Server | null = null;
+let activeTerminator: HttpTerminator | null = null;
 let activeSocketGateway: SocketGateway | null = null;
 let activeClusterTransferRunner: ClusterTransferRunner | null = null;
 let activeTrajectoryCloneRunner: TrajectoryCloneRunner | null = null;
 let shuttingDown = false;
-const activeConnections = new Set<NetSocket>();
-
-const trackConnection = (socket: NetSocket | Duplex) => {
-    const trackedSocket = socket as NetSocket;
-    activeConnections.add(trackedSocket);
-    trackedSocket.once('close', () => {
-        activeConnections.delete(trackedSocket);
-    });
-};
-
-const destroyTrackedConnections = () => {
-    for (const connection of activeConnections) {
-        if (!connection.destroyed) {
-            connection.destroy();
-        }
-    }
-
-    activeConnections.clear();
-};
-
-const closeHttpServer = async (): Promise<void> => {
-    if (!activeServer) {
-        return;
-    }
-
-    const server = activeServer;
-    activeServer = null;
-
-    await new Promise<void>((resolve, reject) => {
-        const forceCloseTimer = setTimeout(() => {
-            logger.warn(`@server: force closing open HTTP connections during shutdown openConnections=${activeConnections.size} gracePeriodMs=${SERVER_SHUTDOWN_GRACE_PERIOD}`);
-
-            server.closeAllConnections?.();
-            destroyTrackedConnections();
-        }, SERVER_SHUTDOWN_GRACE_PERIOD);
-        forceCloseTimer.unref();
-
-        server.close((error) => {
-            clearTimeout(forceCloseTimer);
-
-            if (error) {
-                reject(error);
-                return;
-            }
-
-            resolve();
-        });
-
-        server.closeIdleConnections?.();
-    });
-};
 
 const shutdown = async () => {
     if (shuttingDown) {
@@ -105,8 +54,7 @@ const shutdown = async () => {
 
     try {
         const forceExitTimer = setTimeout(() => {
-            logger.error(`@server: forced shutdown timeout reached openConnections=${activeConnections.size} timeoutMs=${SERVER_SHUTDOWN_FORCE_EXIT_TIMEOUT}`);
-            destroyTrackedConnections();
+            logger.error(`@server: forced shutdown timeout reached timeoutMs=${SERVER_SHUTDOWN_FORCE_EXIT_TIMEOUT}`);
             process.exit(1);
         }, SERVER_SHUTDOWN_FORCE_EXIT_TIMEOUT);
         forceExitTimer.unref();
@@ -114,7 +62,14 @@ const shutdown = async () => {
         const socketGateway = activeSocketGateway;
         activeSocketGateway = null;
 
-        const shutdownTasks: Promise<unknown>[] = [closeHttpServer()];
+        const terminator = activeTerminator;
+        activeTerminator = null;
+
+        const shutdownTasks: Promise<unknown>[] = [];
+
+        if (terminator) {
+            shutdownTasks.push(terminator.terminate());
+        }
 
         if (socketGateway) {
             shutdownTasks.push(socketGateway.close());
@@ -163,7 +118,10 @@ const startServer = async () => {
     const { default: mountHttpRoutes } = await import('./core/bootstrap/mount-http-routes');
 
     const server = http.createServer(app);
-    activeServer = server;
+    activeTerminator = createHttpTerminator({
+        server,
+        gracefulTerminationTimeout: SERVER_SHUTDOWN_GRACE_PERIOD
+    });
 
     app.use('/api-docs', apiDocsRouter);
     app.use(mountHttpRoutes());
@@ -178,13 +136,7 @@ const startServer = async () => {
         logger.error(`@server: http server error: ${error}`);
     });
 
-    server.on('connection', (socket) => {
-        trackConnection(socket);
-    });
-
     server.on('upgrade', (request, socket, head) => {
-        trackConnection(socket);
-
         const proxyService = container.resolve(ScriptingJupyterProxyService);
         if (!proxyService.isJupyterUpgradeRequest(request)) {
             (socket as Duplex).destroy();

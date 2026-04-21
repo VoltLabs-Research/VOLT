@@ -1,7 +1,5 @@
-import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
 import './ChartContainer.css';
-import { Skeleton } from '@mui/material';
+import Skeleton from '@/shared/presentation/components/Skeleton';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -49,7 +47,7 @@ const ChartContainer = ({
         const skeletonHeight = emphasis === 'primary' ? 28 : 18;
 
         return (
-            <Container key={stat.label} className='d-flex column gap-025'>
+            <div key={stat.label} className='volt-container d-flex column gap-025'>
                 <span className='chart-stat-label font-size-1 color-muted'>
                     {stat.label}
                 </span>
@@ -60,37 +58,37 @@ const ChartContainer = ({
                         {stat.value}
                     </span>
                 )}
-            </Container>
+            </div>
         );
     };
 
     return (
-        <Container className='d-flex h-max column p-1-5 chart-container radius-lg sm:p-1'>
-            <Container className='d-flex content-between mb-1-5 sm:column sm:gap-1'>
-                <Container className='d-flex items-center gap-075'>
+        <div className='volt-container d-flex h-max column p-1-5 chart-container radius-lg sm:p-1'>
+            <div className='volt-container d-flex content-between mb-1-5 sm:column sm:gap-1'>
+                <div className='volt-container d-flex items-center gap-075'>
                     {renderIcon()}
-                    <Title className='font-size-3 chart-title font-weight-6 color-primary'>
+                    <h3 className='volt-title font-size-3 chart-title font-weight-6 color-primary'>
                         {title}
-                    </Title>
-                </Container>
+                    </h3>
+                </div>
                 {stats && (
-                    <Container className='d-flex items-end gap-1-5 flex-wrap sm:w-max sm:gap-1'>
+                    <div className='volt-container d-flex items-end gap-1-5 flex-wrap sm:w-max sm:gap-1'>
                         {stats.map(renderStat)}
-                    </Container>
+                    </div>
                 )}
-            </Container>
+            </div>
 
             {isLoading ? (
                 <Skeleton
                     variant='rectangular'
                     width='100%'
                     height={280}
-                    sx={{ borderRadius: '8px' }}
+                    style={{ borderRadius: 8 }}
                 />
             ) : (
                 children
             )}
-        </Container>
+        </div>
     );
 };
 

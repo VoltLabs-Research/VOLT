@@ -1,6 +1,3 @@
-import { DesktopPlatform } from '@/shared/utils/desktop-contract';
-import { getDesktopPlatform, isDesktopEnvironment } from '@/shared/utils/desktop-environment';
-
 export enum ClusterInstallPlatform {
     Windows = 'windows',
     MacOS = 'macos',
@@ -36,24 +33,7 @@ const detectBrowserInstallPlatform = (): ClusterInstallPlatform => {
 };
 
 export const detectClusterInstallPlatform = (): ClusterInstallPlatform => {
-    if (!isDesktopEnvironment()) {
-        return detectBrowserInstallPlatform();
-    }
-
-    const desktopPlatform = getDesktopPlatform();
-    if (desktopPlatform === DesktopPlatform.Windows) {
-        return ClusterInstallPlatform.Windows;
-    }
-
-    if (desktopPlatform === DesktopPlatform.MacOS) {
-        return ClusterInstallPlatform.MacOS;
-    }
-
-    if (desktopPlatform === DesktopPlatform.Linux) {
-        return ClusterInstallPlatform.Linux;
-    }
-
-    return ClusterInstallPlatform.Unknown;
+    return detectBrowserInstallPlatform();
 };
 
 const buildPosixInstallCommand = (teamClusterId: string, enrollmentToken: string, cloudUrl: string): string => {

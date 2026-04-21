@@ -74,19 +74,4 @@ export default class UserRepository
             lastSeenAt: now
         });
     }
-
-    async updateLastSeen(userId: string, timestamp: Date = new Date()): Promise<void> {
-        await this.updateById(userId, {
-            lastSeenAt: timestamp
-        });
-    }
-
-    async updateAvatar(userId: string, avatarUrl: string): Promise<void> {
-        await this.updateById(userId, { avatar: avatarUrl });
-    }
-
-    async deleteById(userId: string): Promise<boolean> {
-        const result = await this.model.findByIdAndDelete(userId);
-        return !!result;
-    }
 };

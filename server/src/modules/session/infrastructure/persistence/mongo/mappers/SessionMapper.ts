@@ -1,8 +1,9 @@
-import Session from '@modules/session/domain/entities/Session';
-import { createMongoMapper } from '@shared/infrastructure/persistence/mongo/createMongoMapper';
+import { createMongoMapperFromFactory } from '@shared/infrastructure/persistence/mongo/createMongoMapperFromFactory';
+import { createSession } from '@modules/session/domain/entities/Session';
+import type Session from '@modules/session/domain/entities/Session';
 import type { SessionProps } from '@modules/session/domain/entities/Session';
 import type { SessionDocument } from '@modules/session/infrastructure/persistence/mongo/models/SessionModel';
 
-export default createMongoMapper<Session, SessionProps, SessionDocument>(Session, [
+export default createMongoMapperFromFactory<Session, SessionProps, SessionDocument>(createSession, [
     'user'
 ]);

@@ -1,40 +1,65 @@
-import { registerAuthDependencies } from '@modules/auth/infrastructure/di/container';
-import { registerAnalysisDependencies } from '@modules/analysis/infrastructure/di/container';
-import { registerLatexDependencies } from '@modules/latex/infrastructure/di/container';
-import { registerAIDependencies } from '@modules/ai/infrastructure/di/container';
-import { registerWhiteboardDependencies } from '@modules/whiteboards/infrastructure/di/container';
+import 'reflect-metadata';
+import { container } from 'tsyringe';
 import { createRedisClient } from '@core/config/redis';
-import { registerChatDependencies } from '@modules/chat/infrastructure/di/container';
-import { registerContainerDependencies } from '@modules/container/infrastructure/di/container';
-import { registerDailyActivityDependencies } from '@modules/daily-activity/infrastructure/di/container';
-import { registerJobsDependencies } from '@modules/jobs/infrastructure/di/container';
-import { registerNotificationDependencies } from '@modules/notification/infrastructure/di/container';
-import { registerPluginDependencies } from '@modules/plugin/infrastructure/di/container';
-import { registerRasterDependencies } from '@modules/raster/infrastructure/di/container';
-import { registerScriptingDependencies } from '@modules/scripting/infrastructure/di/container';
-import { registerSessionDependencies } from '@modules/session/infrastructure/di/container';
-import { registerSharedDependencies } from '@shared/infrastructure/di/container';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { registerSimulationCellDependencies } from '@modules/simulation-cell/infrastructure/di/container';
-import { registerSocketDependencies } from '@modules/socket/infrastructure/di/container';
-import { registerSSHDependencies } from '@modules/ssh/infrastructure/di/container';
-import { registerSystemDependencies } from '@modules/system/infrastructure/di/container';
-import { registerTeamDependencies } from '@modules/team/infrastructure/di/container';
-import { registerTeamClusterDependencies } from '@modules/team-cluster/infrastructure/di/container';
-import { registerTrajectoryDependencies } from '@modules/trajectory/infrastructure/di/container';
+import { applyModuleManifests } from '@shared/infrastructure/di/ModuleManifest';
+import type { ModuleManifest } from '@shared/infrastructure/di/ModuleManifest';
 import FileExtractorService from '@shared/infrastructure/services/FileExtractorService';
 import RedisEventBus from '@shared/infrastructure/events/RedisEventBus';
 import MinioStorageService from '@shared/infrastructure/services/MinioStorageService';
 import TempFileService from '@shared/infrastructure/services/TempFileService';
-import { container } from 'tsyringe';
+
+import { sharedDIManifest } from '@shared/infrastructure/di/manifest';
+import { aiDIManifest } from '@modules/ai/infrastructure/di/manifest';
+import { analysisDIManifest } from '@modules/analysis/infrastructure/di/manifest';
+import { authDIManifest } from '@modules/auth/infrastructure/di/manifest';
+import { chatDIManifest } from '@modules/chat/infrastructure/di/manifest';
+import { containerDIManifest } from '@modules/container/infrastructure/di/manifest';
+import { dailyActivityDIManifest } from '@modules/daily-activity/infrastructure/di/manifest';
+import { jobsDIManifest } from '@modules/jobs/infrastructure/di/manifest';
+import { latexDIManifest } from '@modules/latex/infrastructure/di/manifest';
+import { notificationDIManifest } from '@modules/notification/infrastructure/di/manifest';
+import { pluginDIManifest } from '@modules/plugin/infrastructure/di/manifest';
+import { rasterDIManifest } from '@modules/raster/infrastructure/di/manifest';
+import { scriptingDIManifest } from '@modules/scripting/infrastructure/di/manifest';
+import { sessionDIManifest } from '@modules/session/infrastructure/di/manifest';
+import { simulationCellDIManifest } from '@modules/simulation-cell/infrastructure/di/manifest';
+import { socketDIManifest } from '@modules/socket/infrastructure/di/manifest';
+import { sshDIManifest } from '@modules/ssh/infrastructure/di/manifest';
+import { systemDIManifest } from '@modules/system/infrastructure/di/manifest';
+import { teamDIManifest } from '@modules/team/infrastructure/di/manifest';
+import { teamClusterDIManifest } from '@modules/team-cluster/infrastructure/di/manifest';
+import { trajectoryDIManifest } from '@modules/trajectory/infrastructure/di/manifest';
+import { whiteboardDIManifest } from '@modules/whiteboards/infrastructure/di/manifest';
+
+const MODULE_MANIFESTS: readonly ModuleManifest[] = [
+    sharedDIManifest,
+    authDIManifest,
+    teamDIManifest,
+    teamClusterDIManifest,
+    containerDIManifest,
+    pluginDIManifest,
+    scriptingDIManifest,
+    latexDIManifest,
+    trajectoryDIManifest,
+    sessionDIManifest,
+    rasterDIManifest,
+    systemDIManifest,
+    notificationDIManifest,
+    analysisDIManifest,
+    chatDIManifest,
+    dailyActivityDIManifest,
+    jobsDIManifest,
+    sshDIManifest,
+    socketDIManifest,
+    simulationCellDIManifest,
+    aiDIManifest,
+    whiteboardDIManifest
+];
 
 let dependenciesRegistered = false;
 
-export const registerAllDependencies = (): void => {
-    if (dependenciesRegistered) {
-        return;
-    }
-
+const registerInfrastructureSingletons = (): void => {
     const redisClient = createRedisClient();
     const storageService = new MinioStorageService();
 
@@ -43,29 +68,15 @@ export const registerAllDependencies = (): void => {
     container.registerInstance(SHARED_TOKENS.StorageService, storageService);
     container.registerSingleton(SHARED_TOKENS.TempFileService, TempFileService);
     container.registerSingleton(SHARED_TOKENS.FileExtractorService, FileExtractorService);
-    registerSharedDependencies();
+};
 
-    registerAuthDependencies();
-    registerTeamDependencies();
-    registerTeamClusterDependencies();
-    registerContainerDependencies();
-    registerPluginDependencies();
-    registerScriptingDependencies();
-    registerLatexDependencies();
-    registerTrajectoryDependencies();
-    registerSessionDependencies();
-    registerRasterDependencies();
-    registerSystemDependencies();
-    registerNotificationDependencies();
-    registerAnalysisDependencies();
-    registerChatDependencies();
-    registerDailyActivityDependencies();
-    registerJobsDependencies();
-    registerSSHDependencies();
-    registerSocketDependencies();
-    registerSimulationCellDependencies();
-    registerAIDependencies();
-    registerWhiteboardDependencies();
+export const registerAllDependencies = (): void => {
+    if (dependenciesRegistered) {
+        return;
+    }
+
+    registerInfrastructureSingletons();
+    applyModuleManifests(MODULE_MANIFESTS);
 
     dependenciesRegistered = true;
 };

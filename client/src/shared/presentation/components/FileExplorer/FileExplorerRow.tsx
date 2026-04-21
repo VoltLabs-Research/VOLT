@@ -1,5 +1,4 @@
 import { cn } from '@/shared/utils';
-import Container from '@/shared/presentation/components/Container';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import { Copy } from 'lucide-react';
 import { sileo } from 'sileo';
@@ -63,7 +62,7 @@ const FileExplorerRow = ({
 
     const content = (
         <>
-            <Container className='file-explorer-row-name'>
+            <div className='volt-container file-explorer-row-name'>
                 <span className='file-explorer-row-icon' aria-hidden='true'>{icon}</span>
                 <span className='file-explorer-row-text' title={name}>{name}</span>
                 <Tooltip content='Copy full file name'>
@@ -76,7 +75,7 @@ const FileExplorerRow = ({
                         <Copy size={14} aria-hidden='true' />
                     </button>
                 </Tooltip>
-            </Container>
+            </div>
             <span className='file-explorer-row-meta' title={type} aria-label={`Type: ${type ?? 'Not available'}`}>{type ?? '-'}</span>
             <span className='file-explorer-row-meta' title={size} aria-label={`Size: ${size ?? 'Not available'}`}>{size ?? '-'}</span>
             <span className='file-explorer-row-meta' title={date} aria-label={`Date: ${date ?? 'Not available'}`}>{date ?? '-'}</span>
@@ -85,25 +84,16 @@ const FileExplorerRow = ({
 
     if (!isInteractive) {
         return (
-            <Container className={rowClassName} role='listitem' aria-label={rowLabel}>
+            <div className={`volt-container ${rowClassName}`} role='listitem' aria-label={rowLabel}>
                 {content}
-            </Container>
+            </div>
         );
     }
 
     return (
-        <Container
-            className={rowClassName}
-            onClick={handleClick}
-            onDoubleClick={handleDoubleClick}
-            onKeyDown={handleKeyDown}
-            aria-label={rowLabel}
-            role='listitem'
-            tabIndex={0}
-            aria-selected={isSelected}
-        >
+        <div className={`volt-container ${rowClassName}`} onClick={handleClick} onDoubleClick={handleDoubleClick} onKeyDown={handleKeyDown} aria-label={rowLabel} role='listitem' tabIndex={0} aria-selected={isSelected}>
             {content}
-        </Container>
+        </div>
     );
 };
 

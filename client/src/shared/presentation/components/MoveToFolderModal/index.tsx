@@ -1,10 +1,8 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import Button from '@/shared/presentation/components/Button';
-import Container from '@/shared/presentation/components/Container';
 import FolderBreadcrumbs from '@/shared/presentation/components/FolderBreadcrumbs';
 import Modal, { closeModal } from '@/shared/presentation/components/Modal';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import useFolderBreadcrumbs from '@/shared/presentation/hooks/use-folder-breadcrumbs';
 import { Folder, FolderOpen, Home } from 'lucide-react';
@@ -177,25 +175,25 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
             onClose={handleModalClose}
             footer={<ModalFooterActions primary={primaryAction} secondary={secondaryAction} />}
         >
-            <Container className='d-flex column gap-1 p-1-5'>
+            <div className='volt-container d-flex column gap-1 p-1-5'>
                 <FolderBreadcrumbs items={breadcrumbs} onNavigate={setActiveFolderId} />
 
-                <Container className='d-flex items-center gap-075'>
+                <div className='volt-container d-flex items-center gap-075'>
                     {activeFolderId ? <FolderOpen size={16} /> : <Home size={16} />}
-                    <Paragraph className='font-size-2 color-secondary'>Current destination: {locationLabel}</Paragraph>
-                </Container>
+                    <p className='volt-text font-size-2 color-secondary'>Current destination: {locationLabel}</p>
+                </div>
 
                 {isCurrentDestination && (
-                    <Paragraph className='font-size-2 color-muted'>This {itemLabel.toLowerCase()} is already in this location.</Paragraph>
+                    <p className='volt-text font-size-2 color-muted'>This {itemLabel.toLowerCase()} is already in this location.</p>
                 )}
 
                 {submitError && (
-                    <Paragraph className='font-size-2 color-danger' role='status' aria-live='polite' aria-atomic='true'>
+                    <p className='volt-text font-size-2 color-danger' role='status' aria-live='polite' aria-atomic='true'>
                         {submitError}
-                    </Paragraph>
+                    </p>
                 )}
 
-                <Container className='d-flex column gap-075'>
+                <div className='volt-container d-flex column gap-075'>
                     <Button
                         variant='soft'
                         intent='neutral'
@@ -209,7 +207,7 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
                     </Button>
 
                     {isLoading && (
-                        <Paragraph className='font-size-2 color-muted'>Loading folders...</Paragraph>
+                        <p className='volt-text font-size-2 color-muted'>Loading folders...</p>
                     )}
 
                     {!isLoading && error && (
@@ -223,7 +221,7 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
                     )}
 
                     {!isLoading && !error && folders.length === 0 && (
-                        <Paragraph className='font-size-2 color-muted'>No folders are available here.</Paragraph>
+                        <p className='volt-text font-size-2 color-muted'>No folders are available here.</p>
                     )}
 
                     {!isLoading && !error && folders.map((folder) => (
@@ -240,8 +238,8 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
                             {folder.title}
                         </Button>
                     ))}
-                </Container>
-            </Container>
+                </div>
+            </div>
         </Modal>
     );
 }

@@ -1,6 +1,5 @@
 import '@/shared/presentation/components/LiquidToggle/LiquidToggle.css';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
-import { gsap } from 'gsap';
 import { useEffect, useRef, useState, useCallback } from 'react';
 
 interface LiquidToggleProps {
@@ -91,34 +90,14 @@ const LiquidToggle = ({
         if (!btnRef.current || disabled) return;
         const el = btnRef.current;
         const wasPressed = el.getAttribute('aria-pressed') === 'true';
+        const nextPressed = !wasPressed;
 
         setActive(true);
 
-        const nextPressed = !wasPressed;
-        const toValue = nextPressed ? 100 : 0;
-
-        if (prefersReducedMotion) {
-            commitPressedState(nextPressed);
-            return;
-        }
-
-        gsap.to({}, {
-            duration: 0.15,
-            ease: 'power2.out',
-            onUpdate: function () {
-                const progress = this.progress();
-                const currentValue = gsap.utils.interpolate(completeRef.current, toValue, progress);
-                setComplete(currentValue);
-                completeRef.current = currentValue;
-            },
-            onComplete: () => {
-                setActive(false);
-                el.setAttribute('aria-pressed', String(nextPressed));
-                onChange?.(nextPressed);
-                if (!isControlled) setInternalPressed(nextPressed);
-            }
-        });
-    }, [commitPressedState, disabled, isControlled, onChange, prefersReducedMotion]);
+        // CSS transitions on --complete (and dependent props) handle the visual tween.
+        // We commit the final state immediately; the browser animates via transition-duration.
+        commitPressedState(nextPressed);
+    }, [commitPressedState, disabled]);
 
     const handlePointerDown = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
         if (!btnRef.current || disabled) return;
@@ -155,24 +134,10 @@ const LiquidToggle = ({
             }
 
             const clampedComplete = Math.max(0, Math.min(100, rawComplete));
-
-            if (prefersReducedMotion) {
-                setComplete(clampedComplete);
-                completeRef.current = clampedComplete;
-                return;
-            }
-
-            gsap.to({}, {
-                duration: 0.1,
-                ease: 'power2.out',
-                onUpdate: function () {
-                    const progress = this.progress();
-                    const currentValue = gsap.utils.interpolate(completeRef.current, clampedComplete, progress);
-                    setComplete(currentValue);
-                }
-            });
+            setComplete(clampedComplete);
+            completeRef.current = clampedComplete;
         }
-    }, [disabled, isDragging, dragStart, dragBounds, prefersReducedMotion]);
+    }, [disabled, isDragging, dragStart, dragBounds]);
 
     const handlePointerUp = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
         if (disabled) return;
@@ -181,30 +146,7 @@ const LiquidToggle = ({
 
         if (isDragging) {
             const targetComplete = complete >= 50 ? 100 : 0;
-
-            if (prefersReducedMotion) {
-                commitPressedState(targetComplete >= 50);
-            } else {
-                gsap.to({}, {
-                    duration: 0.2,
-                    ease: 'power3.out',
-                    onUpdate: function () {
-                        const progress = this.progress();
-                        const currentValue = gsap.utils.interpolate(complete, targetComplete, progress);
-                        setComplete(currentValue);
-                        completeRef.current = currentValue;
-                    },
-                    onComplete: () => {
-                        setActive(false);
-                        const nextPressed = targetComplete >= 50;
-                        if (btnRef.current) {
-                            btnRef.current.setAttribute('aria-pressed', String(nextPressed));
-                        }
-                        onChange?.(nextPressed);
-                        if (!isControlled) setInternalPressed(nextPressed);
-                    }
-                });
-            }
+            commitPressedState(targetComplete >= 50);
         } else if (pressDuration <= 150) {
             toggleTimeline();
         } else {
@@ -216,7 +158,7 @@ const LiquidToggle = ({
         if (btnRef.current) {
             btnRef.current.releasePointerCapture(e.pointerId);
         }
-    }, [commitPressedState, disabled, isDragging, complete, toggleTimeline, onChange, isControlled, prefersReducedMotion]);
+    }, [commitPressedState, disabled, isDragging, complete, toggleTimeline]);
 
     const onClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
         if (isDragging) e.preventDefault();
@@ -232,6 +174,10 @@ const LiquidToggle = ({
         if (disabled) return;
         if (e.key === ' ') toggleTimeline();
     }, [disabled, toggleTimeline]);
+
+    // prefersReducedMotion is respected by the CSS @media (prefers-reduced-motion)
+    // block which disables transitions. Kept in deps to preserve intent for future use.
+    void prefersReducedMotion;
 
     return (
         <div className='liquid-toggle-wrapper'>

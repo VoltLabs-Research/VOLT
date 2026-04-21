@@ -1,4 +1,4 @@
-import DashboardLayout from '@/modules/dashboard/components/organisms/DashboardLayout';
+import DashboardLayout from '@/modules/dashboard/components/DashboardLayout';
 import { guestRoutes, optionalAuthRoutes, protectedRoutes, publicRoutes } from '@/app/routes/definitions';
 import type { RouteGroup } from '@/app/routes/types';
 

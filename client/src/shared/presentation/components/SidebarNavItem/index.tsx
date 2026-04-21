@@ -1,5 +1,4 @@
 import Button from '@/shared/presentation/components/Button';
-import Container from '@/shared/presentation/components/Container';
 import './SidebarNavItem.css';
 import { forwardRef } from 'react';
 import type { LucideIcon } from 'lucide-react';
@@ -42,9 +41,9 @@ const SidebarNavItem = forwardRef<HTMLButtonElement, SidebarNavItemProps>(({
             {...(commandFor ? { commandfor: commandFor } : {})}
             {...(command ? { command } : {})}
         >
-            <Container className='sidebar-nav-icon font-size-4'>
+            <div className='volt-container sidebar-nav-icon font-size-4'>
                 <Icon />
-            </Container>
+            </div>
             <span className='sidebar-nav-label'>{label}</span>
         </Button>
     );

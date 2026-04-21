@@ -1,5 +1,4 @@
 import { cn } from '@/shared/utils';
-import Container from '@/shared/presentation/components/Container';
 import type { ReactNode } from 'react';
 
 export interface SettingsSectionProps {
@@ -19,9 +18,9 @@ const SettingsSection = ({ children, className = '' }: SettingsSectionProps) => 
     );
 
     return (
-        <Container className={classes}>
+        <div className={`volt-container ${classes}`}>
             {children}
-        </Container>
+        </div>
     );
 };
 

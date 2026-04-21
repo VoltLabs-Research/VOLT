@@ -2,6 +2,7 @@ export * from './ClonePluginUseCase';
 export * from './CreatePluginUseCase';
 export * from './DeleteBinaryUseCase';
 export * from './DeletePluginByIdUseCase';
+export * from './DownloadPluginBinaryUseCase';
 export * from './ExecutePluginUseCase';
 export * from './ExportPluginUseCase';
 export * from './GetPluginByIdUseCase';

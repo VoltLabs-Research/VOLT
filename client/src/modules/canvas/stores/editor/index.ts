@@ -126,21 +126,11 @@ export const useEditorStore = create<EditorStore>()(
                     maxAzimuthAngle: state.orbitControls.maxAzimuthAngle,
                     target: state.orbitControls.target
                 },
-                performanceSettings: {
-                    preset: state.performanceSettings.preset,
-                    dpr: state.performanceSettings.dpr,
-                    performance: state.performanceSettings.performance,
-                    adaptiveEvents: state.performanceSettings.adaptiveEvents,
-                    interactionDegrade: state.performanceSettings.interactionDegrade
-                },
                 rendererSettings: {
-                    create: state.rendererSettings.create,
-                    runtime: state.rendererSettings.runtime
+                    create: state.rendererSettings.create
                 },
                 configuration: {
-                    slicePlaneConfig: state.configuration.slicePlaneConfig,
-                    activeSidebarOption: state.configuration.activeSidebarOption,
-                    activeModifier: state.configuration.activeModifier
+                    slicePlaneConfig: state.configuration.slicePlaneConfig
                 },
                 pointSizeMultiplier: state.pointSizeMultiplier,
                 pointCloudSettings: state.pointCloudSettings,

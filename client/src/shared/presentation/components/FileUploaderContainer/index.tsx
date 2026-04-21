@@ -1,5 +1,4 @@
 import { processFileSystemEntry } from '@/shared/utils/file';
-import Container from '@/shared/presentation/components/Container';
 import './FileUploaderContainer.css';
 import { useRef, useEffect, useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -11,10 +10,10 @@ interface FileUploaderContainerProps {
     onFilesDropped: (files: FileWithPath[], folderName: string) => void;
 };
 
-const FileUploaderContainer: React.FC<FileUploaderContainerProps> = ({
+const FileUploaderContainer = ({
     children,
     onFilesDropped
-}) => {
+}: FileUploaderContainerProps) => {
     const dropRef = useRef<HTMLDivElement>(null);
     const [isDraggingOver, setIsDraggingOver] = useState(false);
     const dragCounterRef = useRef(0);
@@ -105,19 +104,9 @@ const FileUploaderContainer: React.FC<FileUploaderContainerProps> = ({
     const dragMessage = isDraggingOver ? 'Drop files to upload them.' : '';
 
     const dropZone = (
-        <Container
-            ref={dropRef}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDropZoneDragLeave}
-            className={containerClasses}
-            aria-label='File upload drop zone'
-            role='region'
-            aria-live='polite'
-            aria-atomic='true'
-        >
+        <div ref={dropRef} onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDropZoneDragLeave} className={`volt-container ${containerClasses}`} aria-label='File upload drop zone' role='region' aria-live='polite' aria-atomic='true'>
             <span className='file-uploader-live-region'>{dragMessage}</span>
-        </Container>
+        </div>
     );
 
     return (
