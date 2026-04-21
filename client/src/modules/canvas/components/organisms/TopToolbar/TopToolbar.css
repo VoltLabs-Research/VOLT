@@ -86,6 +86,34 @@
     .canvas-top-toolbar {
         min-height: 48px;
         height: auto;
+        flex-wrap: wrap;
+        row-gap: 0.25rem;
+    }
+
+    .canvas-toolbar-logo,
+    .canvas-toolbar-info {
+        padding: 0 10px;
+    }
+
+    .canvas-toolbar-menus {
+        flex: 1 1 100%;
+        order: 3;
+        border-left: none;
+        border-right: none;
+        border-top: 1px solid var(--color-border-soft);
+        overflow-x: auto;
+        scrollbar-width: none;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .canvas-toolbar-menus::-webkit-scrollbar {
+        display: none;
+    }
+
+    .canvas-toolbar-info {
+        margin-left: auto;
     }
 
     .canvas-btn-compact {
@@ -95,5 +123,26 @@
 
     .canvas-btn-compact.shape-circle {
         width: 36px !important;
+    }
+
+    /*
+     * The workspace tabs (Dashboard / Scene / Raster / Scripting / peers) share the top
+     * row with the logo + user menu and overflow on phones. Let them scroll horizontally.
+     */
+    .canvas-workspace-tabs {
+        flex: 1 1 0;
+        min-width: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
+        flex-wrap: nowrap;
+    }
+
+    .canvas-workspace-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .canvas-workspace-tabs > * {
+        flex-shrink: 0;
     }
 }

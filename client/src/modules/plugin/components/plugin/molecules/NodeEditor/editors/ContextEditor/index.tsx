@@ -1,4 +1,4 @@
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
+import FormSection from '@/shared/presentation/components/FormSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/molecules/NodeEditor/hooks/use-node-editor-form';
 import { CONTEXT_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
@@ -21,7 +21,7 @@ const ContextEditor = ({ node }: EditorProps) => {
     const form = useContextEditorForm(node);
 
     return (
-        <CollapsibleSection title='Data Source' defaultExpanded>
+        <FormSection title='Data Source'>
             <FormFieldRHF<ContextEditorFormValues>
                 variant='inline'
                 label='Source'
@@ -30,7 +30,7 @@ const ContextEditor = ({ node }: EditorProps) => {
                 control={form.control}
                 options={CONTEXT_SELECT_OPTIONS}
             />
-        </CollapsibleSection>
+        </FormSection>
     );
 };
 

@@ -1,4 +1,4 @@
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
+import FormSection from '@/shared/presentation/components/FormSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/molecules/NodeEditor/hooks/use-node-editor-form';
 import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node-reference-autocomplete';
@@ -17,7 +17,7 @@ const ForEachEditor = ({ node }: EditorProps) => {
     const nodeReferenceOptions = useNodeReferenceAutocomplete(node.id);
 
     return (
-        <CollapsibleSection title='Iteration' defaultExpanded>
+        <FormSection title='Iteration'>
             <FormFieldRHF<ForEachEditorFormValues>
                 variant='inline'
                 label='Iterable Source'
@@ -27,7 +27,7 @@ const ForEachEditor = ({ node }: EditorProps) => {
                 placeholder='{{ Context.trajectory_dumps }}'
                 autocomplete={{ options: nodeReferenceOptions }}
             />
-        </CollapsibleSection>
+        </FormSection>
     );
 };
 

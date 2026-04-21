@@ -65,10 +65,6 @@
     padding: 3rem;
 }
 
-.p-fixed {
-    position: fixed;
-}
-
 /** Position **/
 .p-relative {
     position: relative;
@@ -170,6 +166,16 @@
 
 .y-auto {
     overflow-y: auto;
+}
+
+.x-auto {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.x-scroll {
+    overflow-x: scroll;
+    -webkit-overflow-scrolling: touch;
 }
 
 .overflow-auto {
@@ -621,5 +627,30 @@
 
     .sm\:d-flex {
         display: flex;
+    }
+}
+
+/** Responsive helpers — safe to use across the app **/
+.table-scroll-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.mobile-only {
+    display: none;
+}
+
+.desktop-only {
+    display: initial;
+}
+
+@media (max-width: 1024px) {
+    .mobile-only {
+        display: initial;
+    }
+
+    .desktop-only {
+        display: none !important;
     }
 }

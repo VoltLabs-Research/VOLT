@@ -48,32 +48,78 @@
         top: 0;
         bottom: 0;
         z-index: 5;
-        box-shadow: 0 0 24px rgba(0, 0, 0, 0.4);
-        transition: transform 180ms ease;
+        width: min(320px, 86vw) !important;
+        max-width: 86vw;
+        background: var(--glass-bg);
+        backdrop-filter: var(--glass-blur);
+        -webkit-backdrop-filter: var(--glass-blur);
+        transition: transform 220ms var(--ease-standard);
     }
 
     .canvas-editor-root.canvas-editor-root--narrow .canvas-left-panel {
         left: 0;
+        border-right: 1px solid var(--glass-border);
+        box-shadow: 8px 0 32px rgba(0, 0, 0, 0.35);
+        padding-left: env(safe-area-inset-left, 0px);
     }
 
     .canvas-editor-root.canvas-editor-root--narrow .canvas-right-panel-container {
         right: 0;
+        border-left: 1px solid var(--glass-border);
+        box-shadow: -8px 0 32px rgba(0, 0, 0, 0.35);
+        padding-right: env(safe-area-inset-right, 0px);
     }
 
     .canvas-editor-root.canvas-editor-root--narrow .canvas-left-panel[data-drawer-open='false'] {
         transform: translateX(-100%);
+        box-shadow: none;
     }
 
     .canvas-editor-root.canvas-editor-root--narrow .canvas-right-panel-container[data-drawer-open='false'] {
         transform: translateX(100%);
+        box-shadow: none;
     }
 
     .canvas-editor-root.canvas-editor-root--narrow .canvas-panel-drawer-toggle {
         display: flex;
     }
 
-    .canvas-editor-root.canvas-editor-root--narrow .canvas-resize-handle {
+    .canvas-editor-root.canvas-editor-root--narrow .canvas-resize-handle:not([aria-controls="canvas-center-timeline"]) {
         display: none;
+    }
+}
+
+/*
+ * Timeline drag-handle on touch viewports: make the grip visually obvious so
+ * the user knows it can be dragged vertically to expand/collapse the timeline.
+ */
+@media (pointer: coarse) and (max-width: 1199px) {
+    .canvas-resize-handle[aria-controls="canvas-center-timeline"] {
+        height: 20px;
+        margin-block: -9px;
+        border-top-width: 9px;
+        border-bottom-width: 9px;
+        background: color-mix(in srgb, var(--color-border-strong) 70%, transparent);
+        position: relative;
+    }
+
+    .canvas-resize-handle[aria-controls="canvas-center-timeline"]::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 40px;
+        height: 4px;
+        border-radius: 999px;
+        background: var(--color-text-muted);
+        opacity: 0.55;
+        pointer-events: none;
+    }
+
+    .canvas-resize-handle[aria-controls="canvas-center-timeline"].canvas-resize-handle--active::after {
+        opacity: 0.85;
+        background: var(--accent-blue);
     }
 }
 
@@ -81,8 +127,51 @@
     position: absolute;
     inset: 0;
     z-index: 4;
-    background: rgba(0, 0, 0, 0.35);
+    background: color-mix(in srgb, var(--color-overlay) 55%, transparent);
+    backdrop-filter: blur(6px) saturate(130%);
+    -webkit-backdrop-filter: blur(6px) saturate(130%);
     border: none;
     padding: 0;
     cursor: pointer;
+    animation: canvas-drawer-backdrop-in 180ms ease-out;
+}
+
+@keyframes canvas-drawer-backdrop-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .canvas-editor-root.canvas-editor-root--narrow .canvas-left-panel,
+    .canvas-editor-root.canvas-editor-root--narrow .canvas-right-panel-container {
+        transition: none;
+    }
+
+    .canvas-panel-drawer-backdrop {
+        animation: none;
+    }
+}
+
+/*
+ * Drawer toggle (the little slim button on the edges that opens the panel)
+ * — make it wider and more visible on phones with a clearer hit target.
+ */
+@media (pointer: coarse) and (max-width: 1199px) {
+    .canvas-panel-drawer-toggle {
+        width: 32px;
+        height: 64px;
+        background: var(--glass-bg);
+        backdrop-filter: var(--glass-blur);
+        -webkit-backdrop-filter: var(--glass-blur);
+        border-color: var(--glass-border);
+        box-shadow: var(--shadow-card);
+    }
+
+    .canvas-panel-drawer-toggle--left {
+        margin-left: env(safe-area-inset-left, 0px);
+    }
+
+    .canvas-panel-drawer-toggle--right {
+        margin-right: env(safe-area-inset-right, 0px);
+    }
 }

@@ -2,9 +2,8 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import IconButton from '@/shared/presentation/components/IconButton';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import { GripVertical, Plus, Trash2 } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { Plus, Trash2 } from 'lucide-react';
+import { useCallback, useMemo } from 'react';
 
 import type { IArgumentOption } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { KeyboardEvent } from 'react';
@@ -25,15 +24,10 @@ interface OptionRowProps {
     totalCount: number;
     duplicateKey: boolean;
     missingKey: boolean;
-    isDraggingOver: boolean;
     onKeyChange: (key: string) => void;
     onLabelChange: (label: string) => void;
     onRemove: () => void;
     onEnterOnLast: () => void;
-    onDragStart: () => void;
-    onDragOver: () => void;
-    onDragEnd: () => void;
-    onDrop: () => void;
 };
 
 const OptionRow = ({
@@ -42,15 +36,10 @@ const OptionRow = ({
     totalCount,
     duplicateKey,
     missingKey,
-    isDraggingOver,
     onKeyChange,
     onLabelChange,
     onRemove,
-    onEnterOnLast,
-    onDragStart,
-    onDragOver,
-    onDragEnd,
-    onDrop
+    onEnterOnLast
 }: OptionRowProps) => {
     const handleLabelKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
         if (event.key === 'Enter' && index === totalCount - 1) {
@@ -67,32 +56,7 @@ const OptionRow = ({
             : undefined;
 
     return (
-        <li
-            className={`argument-options-row d-flex items-center gap-05${isDraggingOver ? ' is-drop-target' : ''}${hasError ? ' has-error' : ''}`}
-            onDragOver={(event) => {
-                event.preventDefault();
-                onDragOver();
-            }}
-            onDrop={(event) => {
-                event.preventDefault();
-                onDrop();
-            }}
-        >
-            <button
-                type='button'
-                className='argument-options-row__handle flex-center f-shrink-0'
-                aria-label={`Reorder option ${index + 1}`}
-                draggable
-                onDragStart={(event) => {
-                    event.dataTransfer.effectAllowed = 'move';
-                    onDragStart();
-                }}
-                onDragEnd={onDragEnd}
-                tabIndex={-1}
-            >
-                <GripVertical size={12} aria-hidden='true' />
-            </button>
-
+        <li className={`argument-options-row d-flex items-center gap-05${hasError ? ' has-error' : ''}`}>
             <input
                 type='text'
                 value={option.key}
@@ -134,9 +98,6 @@ const ArgumentOptionsEditor = ({
     options,
     onOptionsChange
 }: ArgumentOptionsEditorProps) => {
-    const [dragSourceIndex, setDragSourceIndex] = useState<number | null>(null);
-    const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-
     const duplicateKeys = useMemo(() => {
         const seen = new Map<string, number>();
         const duplicates = new Set<string>();
@@ -174,14 +135,6 @@ const ArgumentOptionsEditor = ({
         onOptionsChange(options.filter((_, optionIndex) => optionIndex !== index));
     }, [options, onOptionsChange]);
 
-    const handleReorder = useCallback((sourceIndex: number, targetIndex: number) => {
-        if (sourceIndex === targetIndex) return;
-        const nextOptions = [...options];
-        const [moved] = nextOptions.splice(sourceIndex, 1);
-        nextOptions.splice(targetIndex, 0, moved);
-        onOptionsChange(nextOptions);
-    }, [options, onOptionsChange]);
-
     if (options.length === 0) {
         return (
             <Container className='argument-options-editor d-flex column gap-075'>
@@ -206,16 +159,11 @@ const ArgumentOptionsEditor = ({
 
     return (
         <Container className='argument-options-editor d-flex column gap-075'>
-            <Paragraph className='font-size-085 font-bold'>
-                Options <span className='color-muted font-weight-4'>({options.length})</span>
-            </Paragraph>
-
             <Container className='argument-options-grid d-flex items-center' aria-hidden='true'>
-                <span className='argument-options-grid__spacer' />
                 <span className='argument-options-grid__header font-size-05 color-muted flex-1'>Key</span>
                 <span className='argument-options-grid__gap' />
                 <span className='argument-options-grid__header font-size-05 color-muted flex-1'>Label</span>
-                <span className='argument-options-grid__spacer argument-options-grid__spacer--action' />
+                <span className='argument-options-grid__spacer--action' />
             </Container>
 
             <ul className='argument-options-list d-flex column gap-025' role='list'>
@@ -229,32 +177,21 @@ const ArgumentOptionsEditor = ({
                             totalCount={options.length}
                             duplicateKey={trimmedKey.length > 0 && duplicateKeys.has(trimmedKey)}
                             missingKey={trimmedKey.length === 0}
-                            isDraggingOver={dragOverIndex === index && dragSourceIndex !== null && dragSourceIndex !== index}
                             onKeyChange={(key) => handleKeyChange(index, key)}
                             onLabelChange={(label) => handleLabelChange(index, label)}
                             onRemove={() => handleRemoveOption(index)}
                             onEnterOnLast={handleAddOption}
-                            onDragStart={() => setDragSourceIndex(index)}
-                            onDragOver={() => setDragOverIndex(index)}
-                            onDragEnd={() => {
-                                setDragSourceIndex(null);
-                                setDragOverIndex(null);
-                            }}
-                            onDrop={() => {
-                                if (dragSourceIndex !== null) handleReorder(dragSourceIndex, index);
-                                setDragSourceIndex(null);
-                                setDragOverIndex(null);
-                            }}
                         />
                     );
                 })}
             </ul>
 
-            <Container className='argument-options-footer d-flex items-center gap-05'>
+            <Container className='argument-options-footer d-flex column gap-05'>
                 <Button
                     variant='outline'
                     intent='neutral'
                     size='sm'
+                    block
                     leftIcon={<Plus size={12} />}
                     onClick={handleAddOption}
                 >

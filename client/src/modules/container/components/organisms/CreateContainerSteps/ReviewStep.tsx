@@ -75,7 +75,7 @@ const ReviewStep = ({
                 <ReviewItem label='Name' value={config.name} />
                 <ReviewItem label='Team' value={selectedTeamName} />
                 <ReviewItem label='Cluster' value={selectedClusterName} />
-                <ReviewItem label='Image' value={selectedImage} valueClassName='font-family-mono' />
+                <ReviewItem label='Image' value={selectedImage} />
                 <ReviewItem label='Image source' value={imageSource} />
                 <ReviewItem label='CPU' value={`${config.cpus} vCPU`} />
                 <ReviewItem label='Memory' value={`${config.memory} MB`} />

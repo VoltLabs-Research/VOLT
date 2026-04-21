@@ -9,6 +9,7 @@
     margin-left: 280px;
     flex: 1;
     height: 99vh;
+    height: 99dvh;
     display: flex;
     flex-direction: column;
     background: var(--color-content-bg);
@@ -35,6 +36,8 @@
 
     .dashboard-content-wrapper {
         margin-left: 0;
+        height: 100vh;
+        height: 100dvh;
         border-radius: 0;
         border: none;
     }

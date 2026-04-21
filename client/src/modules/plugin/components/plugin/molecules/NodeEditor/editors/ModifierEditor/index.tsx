@@ -1,5 +1,7 @@
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
+import FormSection from '@/shared/presentation/components/FormSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import IconPicker from '@/shared/presentation/components/IconPicker';
+import { Controller } from 'react-hook-form';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/molecules/NodeEditor/hooks/use-node-editor-form';
 import type { EditorProps } from '../types';
 import { MODIFIER_EDITOR_DEFAULT_VALUES, modifierEditorSchema } from './schema';
@@ -16,7 +18,7 @@ const ModifierEditor = ({ node }: EditorProps) => {
 
     return (
         <>
-            <CollapsibleSection title='Plugin Info' defaultExpanded>
+            <FormSection title='Plugin Info'>
                 <FormFieldRHF<ModifierEditorFormValues>
                     variant='inline'
                     label='Name'
@@ -39,14 +41,14 @@ const ModifierEditor = ({ node }: EditorProps) => {
                     fieldType='input'
                     name='description'
                     control={form.control}
-                    placeholder='Plugin description...'
+                    placeholder='Plugin description…'
                 />
-            </CollapsibleSection>
+            </FormSection>
 
-            <CollapsibleSection title='Author Details'>
+            <FormSection title='Author'>
                 <FormFieldRHF<ModifierEditorFormValues>
                     variant='inline'
-                    label='Author'
+                    label='Name'
                     fieldType='input'
                     name='author'
                     control={form.control}
@@ -66,20 +68,27 @@ const ModifierEditor = ({ node }: EditorProps) => {
                     fieldType='input'
                     name='homepage'
                     control={form.control}
-                    placeholder='https://...'
+                    placeholder='https://…'
                 />
-            </CollapsibleSection>
+            </FormSection>
 
-            <CollapsibleSection title='Appearance'>
-                <FormFieldRHF<ModifierEditorFormValues>
-                    variant='inline'
-                    label='Icon'
-                    fieldType='input'
-                    name='icon'
-                    control={form.control}
-                    placeholder='TbPlugConnected'
-                />
-            </CollapsibleSection>
+            <FormSection title='Appearance'>
+                <div className='form-field-inline'>
+                    <label className='form-field-inline-label'>Icon</label>
+                    <div className='render-input-container'>
+                        <Controller
+                            name='icon'
+                            control={form.control}
+                            render={({ field }) => (
+                                <IconPicker
+                                    value={typeof field.value === 'string' ? field.value : ''}
+                                    onChange={field.onChange}
+                                />
+                            )}
+                        />
+                    </div>
+                </div>
+            </FormSection>
         </>
     );
 };

@@ -12,16 +12,12 @@ interface PluginExposureSummary {
     _id: string;
     name: string;
     hasListing?: boolean;
-    canvas?: boolean;
-    raster?: boolean;
 };
 
 interface PluginExposureResponse {
     exposureId: string;
     name: string;
     hasListing: boolean;
-    canvas: boolean;
-    raster: boolean;
 };
 
 @injectable()
@@ -47,9 +43,7 @@ export class GetPluginByIdAITool extends AITool {
             exposures = plugin.exposures.map((exposure: PluginExposureSummary) => ({
                 exposureId: exposure._id,
                 name: exposure.name,
-                hasListing: Boolean(exposure.hasListing),
-                canvas: exposure.canvas ?? false,
-                raster: exposure.raster ?? false
+                hasListing: Boolean(exposure.hasListing)
             }));
         }
 

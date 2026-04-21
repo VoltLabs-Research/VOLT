@@ -113,4 +113,30 @@
     .document-listing-header-tabs-container {
         padding: 0 1rem;
     }
+
+    /*
+     * Collapse the title-row + actions-row into a stacked layout and let the
+     * action cluster wrap onto the row below. Actions become full-width and
+     * their trailing create button becomes the primary (New/Upload) CTA.
+     */
+    .document-listing-header-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .document-listing-header-main {
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .document-listing-header-actions {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .document-listing-header-actions > * {
+        flex: 0 1 auto;
+    }
 }

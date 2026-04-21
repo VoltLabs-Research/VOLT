@@ -12,7 +12,7 @@ import { useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ContainerAction } from '../../../api/dtos/update-container';
 import ContainerDetailsSkeleton from '../../atoms/ContainerDetailsSkeleton';
-import ContainerSidebar from '../../molecules/ContainerSidebar';
+import ContainerDetailsHeader from '../../molecules/ContainerDetailsHeader';
 import { containerQuery, useContainerByIdQuery } from '../../../hooks/queries';
 import useContainerStats from '../../../hooks/use-container-stats';
 import type { EnvVariable } from '@/modules/container/api/entities/env-variable';
@@ -195,15 +195,15 @@ const ContainerDetailsLayout = () => {
     };
 
     return (
-        <Container className='container-details-layout d-flex overflow-hidden'>
-            <ContainerSidebar
+        <Container className='container-details-layout d-flex column'>
+            <ContainerDetailsHeader
                 container={container}
                 onBack={() => navigate('/dashboard/containers')}
                 onAction={handleAction}
                 actionLoading={actionLoading}
             />
 
-            <Container className='container-details-content-area y-auto flex-1 d-flex column'>
+            <Container className='container-details-content-area flex-1 d-flex column'>
                 <Outlet context={outletContext} />
             </Container>
         </Container>

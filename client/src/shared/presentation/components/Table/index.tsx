@@ -87,35 +87,37 @@ const Table = <T,>({
     };
 
     return (
-        <table className={`table ${className}`}>
-            {caption && <caption className='table-caption'>{caption}</caption>}
-            <thead>
-                <tr>
-                    {columns.map((col) => (
-                        <th key={col.key} scope='col' className={col.headerClassName} aria-sort={getAriaSort(col)}>
-                            {renderHeaderCell(col)}
-                        </th>
-                    ))}
-                </tr>
-            </thead>
-            <tbody>
-                {isLoading ? renderSkeletonRows() : (
-                    data.map((row, index) => (
-                        <tr
-                            key={getRowKey(row, index)}
-                            className={getRowClass(row)}
-                            onClick={onRowClick ? () => onRowClick(row) : undefined}
-                        >
-                            {columns.map((col) => (
-                                <td key={col.key} className={col.cellClassName}>
-                                    {renderCell(row, col)}
-                                </td>
-                            ))}
-                        </tr>
-                    ))
-                )}
-            </tbody>
-        </table>
+        <div className='table-scroll-wrapper'>
+            <table className={`table ${className}`}>
+                {caption && <caption className='table-caption'>{caption}</caption>}
+                <thead>
+                    <tr>
+                        {columns.map((col) => (
+                            <th key={col.key} scope='col' className={col.headerClassName} aria-sort={getAriaSort(col)}>
+                                {renderHeaderCell(col)}
+                            </th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {isLoading ? renderSkeletonRows() : (
+                        data.map((row, index) => (
+                            <tr
+                                key={getRowKey(row, index)}
+                                className={getRowClass(row)}
+                                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                            >
+                                {columns.map((col) => (
+                                    <td key={col.key} className={col.cellClassName}>
+                                        {renderCell(row, col)}
+                                    </td>
+                                ))}
+                            </tr>
+                        ))
+                    )}
+                </tbody>
+            </table>
+        </div>
     );
 };
 
