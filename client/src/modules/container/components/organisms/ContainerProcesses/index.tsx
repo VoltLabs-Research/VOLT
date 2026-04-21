@@ -1,9 +1,10 @@
 import { useContainerProcessesQuery } from '../../../hooks/queries';
+import { useContainerHeaderActions } from '../../../hooks/use-container-details-context';
+import { useMemo } from 'react';
 import './ContainerProcesses.css';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import Container from '@/shared/presentation/components/Container';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import Title from '@/shared/presentation/components/Title';
 import RefreshButton from '@/shared/presentation/components/RefreshButton';
 import Table from '@/shared/presentation/components/Table';
 import type { Column } from '@/shared/presentation/components/Table';
@@ -92,6 +93,12 @@ const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {
         staleTime: 5000
     });
 
+    const headerActions = useMemo(() => (
+        <RefreshButton label='Refresh' onClick={() => refetch()} />
+    ), [refetch]);
+
+    useContainerHeaderActions(headerActions);
+
     if(isError){
         checkAccessDeniedError(error);
     }
@@ -130,19 +137,13 @@ const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {
 
     return (
         <Container className='container-processes-container d-flex column'>
-            <Container className='container-processes-header d-flex content-between items-center'>
-                <Title as='h3' className='container-processes-title'>Running Processes</Title>
-                <RefreshButton label='Refresh' onClick={() => refetch()} />
-            </Container>
-            <Container className='flex-1 overflow-auto'>
-                <Table
-                    columns={COLUMNS}
-                    data={mappedProcesses}
-                    getRowKey={(row) => row.PID}
-                    isLoading={isLoading && mappedProcesses.length === 0}
-                    skeletonRows={8}
-                />
-            </Container>
+            <Table
+                columns={COLUMNS}
+                data={mappedProcesses}
+                getRowKey={(row) => row.PID}
+                isLoading={isLoading && mappedProcesses.length === 0}
+                skeletonRows={8}
+            />
         </Container>
     );
 };

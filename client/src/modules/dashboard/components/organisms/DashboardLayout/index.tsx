@@ -32,6 +32,21 @@ const isDashboardLocationState = (state: unknown): state is DashboardLocationSta
 
 const SIDEBAR_COLLAPSED_KEY = 'volt:sidebar-collapsed';
 
+// Routes whose nested children should share the same PageTransition key.
+// Navigating between siblings under these prefixes keeps the parent layout
+// mounted instead of remounting on every sub-path change.
+const NESTED_LAYOUT_PATH_PATTERNS: ReadonlyArray<RegExp> = [
+    /^\/dashboard\/containers\/[^/]+/
+];
+
+const getPageTransitionKey = (pathname: string): string => {
+    for (const pattern of NESTED_LAYOUT_PATH_PATTERNS) {
+        const match = pathname.match(pattern);
+        if (match) return match[0];
+    }
+    return pathname;
+};
+
 const DashboardLayout = () => {
     useGlobalSocketCacheSync();
 
@@ -156,7 +171,7 @@ const DashboardLayout = () => {
 
                 <Container className='dashboard-content-main flex-1 min-h-0 y-auto'>
                     <TrajectoryUploaderContainer>
-                        <PageTransition key={location.pathname}>
+                        <PageTransition key={getPageTransitionKey(location.pathname)}>
                             <Outlet context={outletContext} />
                         </PageTransition>
                     </TrajectoryUploaderContainer>
