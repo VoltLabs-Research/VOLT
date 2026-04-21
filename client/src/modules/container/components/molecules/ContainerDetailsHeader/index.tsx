@@ -10,6 +10,7 @@ import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useOpenContainerPort } from '@/modules/container/hooks/use-open-container-port';
 import { getPrimaryAccessiblePort } from '@/modules/container/utilities/get-primary-accessible-port';
 import { ContainerAction } from '@/modules/container/api/dtos/update-container';
+import type { ReactNode } from 'react';
 import type { Container as ContainerEntity } from '@/modules/container/api/entities/container';
 import type { SegmentedTabOption } from '@/shared/presentation/components/SegmentedTabs';
 import './ContainerDetailsHeader.css';
@@ -43,13 +44,15 @@ export interface ContainerDetailsHeaderProps {
     onBack: () => void;
     onAction: (action: ContainerAction | 'delete') => void;
     actionLoading: boolean;
+    contextualActions?: ReactNode;
 };
 
 const ContainerDetailsHeader = ({
     container,
     onBack,
     onAction,
-    actionLoading
+    actionLoading,
+    contextualActions
 }: ContainerDetailsHeaderProps) => {
     const navigate = useNavigate();
     const { pathname } = useLocation();
@@ -108,6 +111,7 @@ const ContainerDetailsHeader = ({
                 </Container>
 
                 <Container className='container-details-header-actions d-flex items-center gap-05'>
+                    {contextualActions}
                     {canUpdate && isRunning && (
                         <>
                             <Button
