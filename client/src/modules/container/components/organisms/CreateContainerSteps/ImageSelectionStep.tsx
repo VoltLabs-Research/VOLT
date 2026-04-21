@@ -53,7 +53,7 @@ const ImageSelectionStep = ({
             {customImage && (
                 <Container className='d-flex column gap-025 p-1 radius-sm create-container-image-preview'>
                     <Paragraph className='font-size-2 color-secondary'>Custom image preview</Paragraph>
-                    <Paragraph className='font-size-2 font-family-mono color-primary'>{customImage}</Paragraph>
+                    <Paragraph className='font-size-2 color-primary font-weight-5'>{customImage}</Paragraph>
                     <Paragraph className={`font-size-2 ${customImageError ? 'color-danger' : 'color-secondary'}`}>
                         {customImageError ?? 'Volt will pull this image directly from the registry when you deploy.'}
                     </Paragraph>

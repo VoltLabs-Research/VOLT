@@ -12,15 +12,5 @@ export const ExposureDataSchema = new Schema({
     results: {
         type: String,
         required: [true, ValidationCodes.PLUGIN_EXPOSURE_RESULTS_REQUIRED]
-    },
-    iterable: {
-        type: String
-    },
-    canvas: {
-        type: Boolean
-    },
-    raster: {
-        type: Boolean
     }
 }, { _id: false });
-

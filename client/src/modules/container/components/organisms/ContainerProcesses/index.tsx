@@ -44,7 +44,7 @@ const COLUMNS: Column<ProcessInfo>[] = [
     {
         key: 'PID',
         header: 'PID',
-        cellClassName: 'font-family-mono'
+        cellClassName: 'container-processes-numeric'
     },
     {
         key: 'Program',
@@ -54,23 +54,23 @@ const COLUMNS: Column<ProcessInfo>[] = [
     {
         key: 'Command',
         header: 'Command',
-        cellClassName: 'font-family-mono color-muted container-processes-command-cell text-truncate'
+        cellClassName: 'container-processes-command-cell text-truncate'
     },
     {
         key: 'Threads',
         header: 'Threads',
-        cellClassName: 'font-family-mono'
+        cellClassName: 'container-processes-numeric'
     },
     { key: 'User', header: 'User' },
     {
         key: 'MemB',
-        header: 'MemB',
-        cellClassName: 'font-family-mono'
+        header: 'Memory',
+        cellClassName: 'container-processes-numeric'
     },
     {
         key: 'Cpu',
-        header: 'Cpu%',
-        cellClassName: 'font-family-mono',
+        header: 'CPU',
+        cellClassName: 'container-processes-numeric',
         render: (row) => `${row.Cpu}%`
     }
 ];
@@ -129,9 +129,9 @@ const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {
     }
 
     return (
-        <Container className='d-flex h-max column overflow-hidden container-processes-container'>
-            <Container className='d-flex content-between items-center container-processes-header p-1'>
-                <Title className='font-size-3'>Running Processes</Title>
+        <Container className='container-processes-container d-flex column'>
+            <Container className='container-processes-header d-flex content-between items-center'>
+                <Title as='h3' className='container-processes-title'>Running Processes</Title>
                 <RefreshButton label='Refresh' onClick={() => refetch()} />
             </Container>
             <Container className='flex-1 overflow-auto'>

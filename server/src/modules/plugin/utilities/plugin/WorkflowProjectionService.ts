@@ -8,11 +8,7 @@ interface ComputedExposure {
     _id: string;
     name: string;
     results: string;
-    iterable?: string;
-    iterableChunkSize?: number;
     icon?: string;
-    canvas: boolean;
-    raster: boolean;
     hasListing: boolean;
     export: ExportNodeData | null;
 };
@@ -54,10 +50,6 @@ export default class WorkflowProjectionService {
                 name: exposure?.name ?? '',
                 icon: exposure?.icon,
                 results: exposure?.results ?? '',
-                iterable: exposure?.iterable,
-                iterableChunkSize: exposure?.iterableChunkSize,
-                canvas: exposure?.canvas === true,
-                raster: exposure?.raster === true,
                 hasListing: true
             };
         });

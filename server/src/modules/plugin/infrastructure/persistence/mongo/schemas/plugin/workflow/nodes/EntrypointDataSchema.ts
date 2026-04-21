@@ -28,9 +28,5 @@ export const EntrypointDataSchema = new Schema({
     },
     entrypointScript: {
         type: String
-    },
-    timeout: {
-        type: Number,
-        default: -1
     }
 }, { _id: false });

@@ -1,5 +1,7 @@
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
+import FormSection from '@/shared/presentation/components/FormSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import IconPicker from '@/shared/presentation/components/IconPicker';
+import { Controller } from 'react-hook-form';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/molecules/NodeEditor/hooks/use-node-editor-form';
 import type { EditorProps } from '../types';
 import { EXPOSURE_EDITOR_DEFAULT_VALUES, exposureEditorSchema } from './schema';
@@ -15,63 +17,44 @@ const ExposureEditor = ({ node }: EditorProps) => {
     const form = useExposureEditorForm(node);
 
     return (
-        <CollapsibleSection title='Results Exposure' defaultExpanded>
-            <FormFieldRHF<ExposureEditorFormValues>
-                variant='inline'
-                label='Exposure Name'
-                fieldType='input'
-                name='name'
-                control={form.control}
-                placeholder='analysis_results'
-            />
-            <FormFieldRHF<ExposureEditorFormValues>
-                variant='inline'
-                label='Icon'
-                fieldType='input'
-                name='icon'
-                control={form.control}
-                placeholder='TbChartDots3'
-            />
-            <FormFieldRHF<ExposureEditorFormValues>
-                variant='inline'
-                label='Results File Suffix'
-                fieldType='input'
-                name='results'
-                control={form.control}
-                placeholder='results.msgpack'
-            />
-            <FormFieldRHF<ExposureEditorFormValues>
-                variant='inline'
-                label='Iterable Path'
-                fieldType='input'
-                name='iterable'
-                control={form.control}
-                placeholder='data.atoms'
-            />
-            <FormFieldRHF<ExposureEditorFormValues>
-                variant='inline'
-                label='Iterable Chunk Size'
-                fieldType='input'
-                name='iterableChunkSize'
-                control={form.control}
-                inputProps={{ type: 'number', min: 1 }}
-                placeholder='50000'
-            />
-            <FormFieldRHF<ExposureEditorFormValues>
-                variant='inline'
-                label='3D Canvas'
-                fieldType='checkbox'
-                name='canvas'
-                control={form.control}
-            />
-            <FormFieldRHF<ExposureEditorFormValues>
-                variant='inline'
-                label='Raster Output'
-                fieldType='checkbox'
-                name='raster'
-                control={form.control}
-            />
-        </CollapsibleSection>
+        <>
+            <FormSection title='Exposure'>
+                <FormFieldRHF<ExposureEditorFormValues>
+                    variant='inline'
+                    label='Name'
+                    fieldType='input'
+                    name='name'
+                    control={form.control}
+                    placeholder='analysis_results'
+                />
+                <div className='form-field-inline'>
+                    <label className='form-field-inline-label'>Icon</label>
+                    <div className='render-input-container'>
+                        <Controller
+                            name='icon'
+                            control={form.control}
+                            render={({ field }) => (
+                                <IconPicker
+                                    value={typeof field.value === 'string' ? field.value : ''}
+                                    onChange={field.onChange}
+                                />
+                            )}
+                        />
+                    </div>
+                </div>
+            </FormSection>
+
+            <FormSection title='Data'>
+                <FormFieldRHF<ExposureEditorFormValues>
+                    variant='inline'
+                    label='Results Suffix'
+                    fieldType='input'
+                    name='results'
+                    control={form.control}
+                    placeholder='results.msgpack'
+                />
+            </FormSection>
+        </>
     );
 };
 

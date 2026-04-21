@@ -573,9 +573,9 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                 {sortAnnouncement}
             </span>
             {!hideHeader && (
-                <Container className={`d-flex column ${gap}`}>  
+                <Container className={`d-flex column ${gap}`}>
                     <Container className='d-flex column gap-1-5 document-listing-header-top-container p-2'>
-                        <Container className='d-flex content-between items-start gap-1-5'>
+                        <Container className='d-flex content-between items-start gap-1-5 document-listing-header-row'>
                             <Container className='document-listing-header-main d-flex gap-1 items-start'>
                                 {isLoading && !data.length ? (
                                     <Container className='d-flex column gap-025'>
@@ -656,7 +656,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                                     </Container>
                                 )}
                             </Container>
-                            <Container className='d-flex gap-2 items-center'>
+                            <Container className='d-flex gap-2 items-center document-listing-header-actions'>
                                 {headerActions}
                                 {createNew && (
                                     <Button variant='solid' intent='brand' onClick={createNew.onCreate} leftIcon={<Plus size={18} />}>

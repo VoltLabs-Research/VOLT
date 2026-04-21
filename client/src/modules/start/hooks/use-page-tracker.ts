@@ -1,6 +1,6 @@
 import { useStartAccessedPagesStore } from '../stores/use-start-accessed-pages-store';
 import { capturePageSnapshot } from '../utilities/page-snapshot';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { fadeFromBlack } from '@/shared/presentation/utilities/page-transition';
 
@@ -9,8 +9,14 @@ const EXCLUDED_PATHS = ['/start', '/auth/sign-in', '/auth/oauth/callback', '/err
 export const usePageTracker = () => {
     const location = useLocation();
     const addPage = useStartAccessedPagesStore((state) => state.addPage);
-    const latestSnapshotRef = useRef<string | null>(null);
     const currentPageRef = useRef<{ path: string; title: string } | null>(null);
+
+    const persistCurrent = useCallback(() => {
+        const page = currentPageRef.current;
+        if (!page) return;
+        const snapshot = capturePageSnapshot();
+        if (snapshot) addPage(page.path, page.title, snapshot);
+    }, [addPage]);
 
     useEffect(() => {
         fadeFromBlack();
@@ -18,44 +24,33 @@ export const usePageTracker = () => {
         const path = location.pathname;
 
         if (!path || EXCLUDED_PATHS.some((excludedPath) => path === excludedPath || path.startsWith(excludedPath + '/'))) {
+            currentPageRef.current = null;
             return;
         }
 
         const title = path;
         currentPageRef.current = { path, title };
-        latestSnapshotRef.current = null;
-
         addPage(path, title);
 
-        let isCancelled = false;
-
-        const tick = () => {
-            if (isCancelled) {
-                return;
-            }
-
-            const snapshot = capturePageSnapshot();
-
-            if (!isCancelled && snapshot) {
-                latestSnapshotRef.current = snapshot;
-                addPage(path, title, snapshot);
-            }
-        };
-
-        const firstTimeout = window.setTimeout(tick, 800);
-        const secondTimeout = window.setTimeout(tick, 3000);
+        const fallbackTimeout = window.setTimeout(persistCurrent, 1500);
 
         return () => {
-            isCancelled = true;
-            window.clearTimeout(firstTimeout);
-            window.clearTimeout(secondTimeout);
-
-            const page = currentPageRef.current;
-            const snapshot = latestSnapshotRef.current;
-
-            if (page && snapshot) {
-                addPage(page.path, page.title, snapshot);
-            }
+            window.clearTimeout(fallbackTimeout);
+            persistCurrent();
         };
-    }, [location.pathname, addPage]);
+    }, [location.pathname, addPage, persistCurrent]);
+
+    useEffect(() => {
+        const onVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') persistCurrent();
+        };
+
+        window.addEventListener('pagehide', persistCurrent);
+        document.addEventListener('visibilitychange', onVisibilityChange);
+
+        return () => {
+            window.removeEventListener('pagehide', persistCurrent);
+            document.removeEventListener('visibilitychange', onVisibilityChange);
+        };
+    }, [persistCurrent]);
 };

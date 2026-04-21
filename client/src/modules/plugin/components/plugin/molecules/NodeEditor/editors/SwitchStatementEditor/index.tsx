@@ -1,5 +1,5 @@
 import { z } from 'zod/v4';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
+import FormSection from '@/shared/presentation/components/FormSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node-reference-autocomplete';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/molecules/NodeEditor/hooks/use-node-editor-form';
@@ -24,7 +24,7 @@ const SwitchStatementEditor = ({ node }: EditorProps) => {
     const nodeReferenceOptions = useNodeReferenceAutocomplete(node.id);
 
     return (
-        <CollapsibleSection title='Evaluation' defaultExpanded>
+        <FormSection title='Evaluation'>
             <FormFieldRHF<SwitchStatementEditorFormValues>
                 variant='inline'
                 label='Expression'
@@ -34,7 +34,7 @@ const SwitchStatementEditor = ({ node }: EditorProps) => {
                 placeholder='{{ some-node-id.some-value }}'
                 autocomplete={{ options: nodeReferenceOptions }}
             />
-        </CollapsibleSection>
+        </FormSection>
     );
 };
 

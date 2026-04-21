@@ -125,7 +125,6 @@ export interface IEntrypointData {
     arguments: string;
     requirementsFile?: string;
     entrypointScript?: string;
-    timeout?: number;
 };
 
 export interface IPluginNodeData {
@@ -142,10 +141,6 @@ export interface IExposureData {
     name: string;
     icon?: string;
     results: string;
-    canvas?: boolean;
-    raster?: boolean;
-    iterable?: string;
-    iterableChunkSize?: number;
     [key: string]: unknown;
 };
 

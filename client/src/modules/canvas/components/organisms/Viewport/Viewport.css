@@ -15,6 +15,34 @@
     line-height: 24px;
 }
 
+/*
+ * On touch viewports the viewport header overflows because the trajectory name,
+ * the flex spacer, and the action buttons don't fit. Convert the whole strip into
+ * a horizontally scrollable rail with the trajectory name pinned to the left.
+ */
+@media (max-width: 768px) {
+    .canvas-viewport-header {
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex-wrap: nowrap;
+        scrollbar-width: none;
+    }
+
+    .canvas-viewport-header::-webkit-scrollbar {
+        display: none;
+    }
+
+    .canvas-viewport-header > * {
+        flex-shrink: 0;
+    }
+
+    .canvas-viewport-trajectory-name {
+        max-width: 35vw;
+        flex-shrink: 1;
+    }
+}
+
 .canvas-viewport-divider {
     width: 1px;
     height: 16px;

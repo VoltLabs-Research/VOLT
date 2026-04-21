@@ -1,0 +1,115 @@
+.form-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-section + .form-section {
+    margin-top: 1.5rem;
+}
+
+.form-section-header {
+    padding: 0 0.25rem 0.5rem;
+}
+
+.form-section-title {
+    margin: 0;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+
+.form-section-description {
+    margin: 0.25rem 0 0;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    line-height: 1.4;
+}
+
+.form-section-group {
+    border-top: 1px solid var(--color-border-soft)  ;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+/* Each inline field inside a section renders as a list row. */
+.form-section-group .form-field-inline {
+    display: grid;
+    grid-template-columns: minmax(88px, 40%) 1fr;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.875rem;
+    min-height: 2.5rem;
+    border-bottom: 1px solid var(--color-border-soft);
+    border-radius: 0;
+}
+
+.form-section-group > .form-field-inline:last-child,
+.form-section-group > :last-child .form-field-inline:last-child {
+    border-bottom: none;
+}
+
+.form-section-group .form-field-inline-label {
+    font-size: 0.8125rem;
+    color: var(--color-text-primary);
+}
+
+.form-section-group .form-field-inline-input,
+.form-section-group .form-field-inline-select,
+.form-section-group .form-field-inline-textarea {
+    padding: 0.25rem 0;
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.form-section-group .form-field-inline-textarea {
+    text-align: left;
+    padding: 0.25rem 0;
+}
+
+.form-section-group .form-field-inline-input:focus,
+.form-section-group .form-field-inline-select:focus,
+.form-section-group .form-field-inline-textarea:focus {
+    outline: none;
+    color: var(--color-text-primary);
+    box-shadow: none;
+}
+
+.form-section-group .form-field-inline-input:focus-visible,
+.form-section-group .form-field-inline-select:focus-visible,
+.form-section-group .form-field-inline-textarea:focus-visible {
+    box-shadow: none;
+    border: none;
+}
+
+.form-section-group .form-field-inline-input::placeholder {
+    color: var(--color-text-muted);
+    text-align: right;
+}
+
+.form-section-group .form-field-inline-textarea::placeholder {
+    text-align: left;
+}
+
+/* When the row holds a Select trigger or checkbox, keep right-alignment */
+.form-section-group .form-field-inline .render-input-container {
+    display: flex;
+    justify-content: flex-end;
+    min-width: 0;
+}
+
+.form-section-group .form-field-inline .select-trigger {
+    background: transparent;
+    border: none;
+    padding: 0;
+    min-height: unset;
+    color: var(--color-text-secondary);
+}
+
+.form-section-group .form-field-inline .select-trigger:hover {
+    color: var(--color-text-primary);
+}
