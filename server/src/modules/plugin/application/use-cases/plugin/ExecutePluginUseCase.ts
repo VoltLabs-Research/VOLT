@@ -17,6 +17,7 @@ import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTok
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
@@ -127,6 +128,9 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private trajectoryRepo: ITrajectoryRepository,
 
+        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository)
+        private trajectoryFrameRepo: ITrajectoryFrameRepository,
+
         @inject(PLUGIN_TOKENS.PluginExecutionRouter)
         private readonly pluginExecutionRouter: IPluginExecutionRouter,
 
@@ -203,7 +207,8 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             ));
         }
 
-        const selectedTimesteps = sanitizeSelectedTimesteps(input.selectedTimesteps, trajectory.props.frames);
+        const trajectoryFrames = await this.trajectoryFrameRepo.getFrames(input.trajectoryId);
+        const selectedTimesteps = sanitizeSelectedTimesteps(input.selectedTimesteps, trajectoryFrames);
         const hasSelectedTimestepsCollision = hasPersistedArgumentCollision(
             plugin.props.workflow.props.nodes,
             SELECTED_TIMESTEPS_RUNTIME_ARGUMENT_KEY
@@ -269,10 +274,10 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
         });
 
         try {
-            await this.storagePlacementService.ensurePlacement('analysis', analysis.id);
+            await this.storagePlacementService.ensurePlacement('analysis', analysis._id);
 
             await this.eventBus.publish(new AnalysisCreatedEvent({
-                analysisId: analysis.id,
+                analysisId: analysis._id,
                 trajectoryId: input.trajectoryId,
                 pluginId: plugin._id,
                 pluginDisplayName,
@@ -285,11 +290,17 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             await this.pluginExecutionRouter.route({
                 teamClusterId: computeClusterId,
                 analysis,
-                analysisId: analysis.id,
+                analysisId: analysis._id,
                 pluginDisplayName,
                 trajectoryId: input.trajectoryId,
                 trajectoryName: trajectory.props.name,
-                trajectoryFrames: trajectory.props.frames,
+                trajectoryFrames: trajectoryFrames.map((frame) => ({
+                    timestep: frame.timestep,
+                    natoms: frame.natoms,
+                    simulationCell: typeof frame.simulationCell === 'string'
+                        ? frame.simulationCell
+                        : frame.simulationCell._id
+                })),
                 teamId: input.teamId,
                 plugin,
                 pluginDependencies: allDependencies,
@@ -300,13 +311,13 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
                 timestep: input.timestep
             });
         } catch (error: unknown) {
-            await this.analysisRepo.updateById(analysis.id, {
+            await this.analysisRepo.updateById(analysis._id, {
                 status: 'failed',
                 finishedAt: new Date()
             }).catch((updateError: unknown) => {
                 logger.warn(
                     {
-                        analysisId: analysis.id,
+                        analysisId: analysis._id,
                         err: updateError
                     },
                     '@execute-plugin-use-case: failed to mark analysis as failed after dispatch error'
@@ -315,6 +326,6 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             throw error;
         }
 
-        return Result.ok({ analysisId: analysis.id });
+        return Result.ok({ analysisId: analysis._id });
     }
 };

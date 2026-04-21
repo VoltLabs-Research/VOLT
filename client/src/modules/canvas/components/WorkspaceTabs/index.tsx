@@ -1,91 +1,98 @@
 import useCanvasUrlState, { CanvasWorkspace } from '../../hooks/use-canvas-url-state';
 import { useNavigate } from 'react-router-dom';
 import Button from '@/shared/presentation/components/Button';
-import WorkspacePeerAvatars from '../WorkspacePeerAvatars';
-
-import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
+import Popover from '@/shared/presentation/components/Popover';
+import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
+import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
+import { Check, ChevronDown } from 'lucide-react';
 
 interface WorkspaceTabsProps {
     disableAuxWorkspaces?: boolean;
-    peers?: WorkspacePresenceUser[];
-    self?: WorkspacePresenceUser;
-    activeOwnerId?: string;
-    onSelectPeer?: (peerId: string) => void;
 };
 
-const WorkspaceTabs = ({
-    disableAuxWorkspaces = false,
-    peers = [],
-    self,
-    activeOwnerId,
-    onSelectPeer
-}: WorkspaceTabsProps) => {
+const WORKSPACE_LABEL: Record<CanvasWorkspace, string> = {
+    [CanvasWorkspace.Modeling]: 'Scene',
+    [CanvasWorkspace.Raster]: 'Raster',
+    [CanvasWorkspace.Scripting]: 'Scripting'
+};
+
+const WorkspaceTabs = ({ disableAuxWorkspaces = false }: WorkspaceTabsProps) => {
     const navigate = useNavigate();
     const { activeWorkspace, setActiveWorkspace } = useCanvasUrlState();
-    const isRaster = activeWorkspace === CanvasWorkspace.Raster;
-    const isScripting = activeWorkspace === CanvasWorkspace.Scripting;
-    const canShowPeers = Boolean(onSelectPeer && (peers.length > 0 || self));
+
+    const activeIcon = <Check size={12} />;
+    const iconSlot = <span style={{ width: 12, height: 12, display: 'inline-block' }} />;
 
     return (
         <div className="volt-container d-flex items-center px-1 gap-025 canvas-workspace-tabs">
-            <Button
-                variant="ghost"
-                intent="canvas"
-                size="sm"
-                shape="rounded"
-                className="font-size-1 canvas-btn-compact"
-                onClick={() => navigate('/dashboard')}
+            <Popover
+                id="canvas-workspace-switcher"
+                role="menu"
+                triggerAriaHaspopup="menu"
+                ariaLabel="Switch workspace"
+                placement="bottom-start"
+                noPadding
+                trigger={(
+                    <Button
+                        variant="ghost"
+                        intent="canvas"
+                        size="sm"
+                        shape="rounded"
+                        className="font-size-1 canvas-btn-compact"
+                        style={{ padding: 0 }}
+                        rightIcon={<span className="d-flex items-center content-center f-shrink-0"><ChevronDown size={12} /></span>}
+                    >
+                        {WORKSPACE_LABEL[activeWorkspace]}
+                    </Button>
+                )}
             >
-                Dashboard
-            </Button>
-            <div className="volt-container d-flex items-center gap-025" role="tablist" aria-label="Canvas workspaces">
-                <Button
-                    variant={!isRaster && !isScripting ? 'solid' : 'ghost'}
-                    intent="canvas"
-                    size="sm"
-                    shape="rounded"
-                    className="font-size-1 canvas-btn-compact"
-                    role="tab"
-                    aria-selected={!isRaster && !isScripting}
-                    onClick={() => setActiveWorkspace(CanvasWorkspace.Modeling)}
-                >
-                    Scene
-                </Button>
-                <Button
-                    variant={isRaster ? 'solid' : 'ghost'}
-                    intent="canvas"
-                    size="sm"
-                    shape="rounded"
-                    className="font-size-1 canvas-btn-compact"
-                    role="tab"
-                    aria-selected={isRaster}
-                    disabled={disableAuxWorkspaces}
-                    onClick={() => setActiveWorkspace(CanvasWorkspace.Raster)}
-                >
-                    Raster
-                </Button>
-                <Button
-                    variant={isScripting ? 'solid' : 'ghost'}
-                    intent="canvas"
-                    size="sm"
-                    shape="rounded"
-                    className="font-size-1 canvas-btn-compact"
-                    role="tab"
-                    aria-selected={isScripting}
-                    disabled={disableAuxWorkspaces}
-                    onClick={() => setActiveWorkspace(CanvasWorkspace.Scripting)}
-                >
-                    Scripting
-                </Button>
-            </div>
-            {canShowPeers && (
-                <WorkspacePeerAvatars
-                    peers={peers}
-                    self={self}
-                    activeOwnerId={activeOwnerId}
-                    onSelectPeer={onSelectPeer!}
-                />
-            )}
+                {(close) => (
+                    <PopoverMenu label="Switch workspace" onClose={close}>
+                        <PopoverMenuItem
+                            size="sm"
+                            rightAdornment={iconSlot}
+                            onClick={() => {
+                                navigate('/dashboard');
+                                close();
+                            }}
+                        >
+                            Dashboard
+                        </PopoverMenuItem>
+                        <PopoverMenuItem
+                            size="sm"
+                            rightAdornment={activeWorkspace === CanvasWorkspace.Modeling ? activeIcon : iconSlot}
+                            onClick={() => {
+                                setActiveWorkspace(CanvasWorkspace.Modeling);
+                                close();
+                            }}
+                        >
+                            Scene
+                        </PopoverMenuItem>
+                        <PopoverMenuItem
+                            size="sm"
+                            disabled={disableAuxWorkspaces}
+                            rightAdornment={activeWorkspace === CanvasWorkspace.Raster ? activeIcon : iconSlot}
+                            onClick={() => {
+                                setActiveWorkspace(CanvasWorkspace.Raster);
+                                close();
+                            }}
+                        >
+                            Raster
+                        </PopoverMenuItem>
+                        <PopoverMenuItem
+                            size="sm"
+                            disabled={disableAuxWorkspaces}
+                            rightAdornment={activeWorkspace === CanvasWorkspace.Scripting ? activeIcon : iconSlot}
+                            onClick={() => {
+                                setActiveWorkspace(CanvasWorkspace.Scripting);
+                                close();
+                            }}
+                        >
+                            Scripting
+                        </PopoverMenuItem>
+                    </PopoverMenu>
+                )}
+            </Popover>
         </div>
     );
 };

@@ -28,6 +28,7 @@ import type DaemonAnalysisCompletionService from '@modules/team-cluster/infrastr
 import type { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
 import type { ITrajectoryBackgroundProcessor, ProcessorContext, TrajectoryUploadFile } from '@modules/trajectory/domain/port/trajectory/ITrajectoryBackgroundProcessor';
 import type { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
+import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import type { ITrajectoryUploadStagingService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryUploadStagingService';
 import type { IEventBus } from '@shared/application/events/IEventBus';
@@ -60,8 +61,16 @@ interface GlbPreprocessingEnqueueResult {
     skippedJobs: number;
 };
 
+interface VtrIngestResult {
+    objectKey: string;
+    frameCount: number;
+    size: number;
+    bucket: string;
+};
+
 const GLB_SESSION_TTL_SECONDS = 86400;
 const GLB_ENQUEUE_BATCH_SIZE = 500;
+const VTR_INGEST_BATCH_SIZE = 200;
 
 interface GlbFrameDescriptor {
     timestep: number;
@@ -95,6 +104,9 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
 
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly trajectoryRepo: ITrajectoryRepository,
+
+        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository)
+        private readonly trajectoryFrameRepo: ITrajectoryFrameRepository,
 
         @inject(SIMULATION_CELL_TOKENS.SimulationCellRepository)
         private readonly simulationCellRepo: ISimulationCellRepository,
@@ -146,7 +158,8 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
                     return;
                 }
 
-                const allFrames = (trajectory.props.frames ?? []).map((f) => ({
+                const persistedFrames = await this.trajectoryFrameRepo.getFrames(trajectoryId);
+                const allFrames = persistedFrames.map((f) => ({
                     timestep: f.timestep,
                     natoms: f.natoms,
                     simulationCell: f.simulationCell
@@ -188,9 +201,55 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
                     return;
                 }
 
+                await this.runVtrIngest(frames, trajectory, teamId);
                 await this.enqueueGlbPreprocessing(frames, trajectory, teamId);
             }
         );
+    }
+
+    /**
+     * Triggers the daemon's .vtr ingest command with the full frame manifest.
+     * The daemon downloads each .dump.zst (which only exists as a short-lived
+     * raw archive), decompresses it, and writes the canonical .vtr back to
+     * its MinIO instance. We block GLB preprocessing until the .vtr lands to
+     * ensure downstream reads resolve against it.
+     */
+    private async runVtrIngest(
+        frames: Array<{ timestep: number; [key: string]: unknown }>,
+        trajectory: Trajectory,
+        _teamId: string
+    ): Promise<void> {
+        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        if (!storageClusterId) {
+            logger.warn(`@trajectory-background-processor: skipping vtr ingest — no storageClusterId trajectoryId=${trajectory._id}`);
+            return;
+        }
+
+        const frameDescriptors = frames.map((frame) => ({
+            timestep: Number(frame.timestep),
+            objectKey: this.dumpStorage.getObjectName(trajectory._id, String(frame.timestep))
+        }));
+
+        if (frameDescriptors.length === 0) return;
+
+        for (let offset = 0; offset < frameDescriptors.length; offset += VTR_INGEST_BATCH_SIZE) {
+            const batch = frameDescriptors.slice(offset, offset + VTR_INGEST_BATCH_SIZE);
+            await this.teamClusterDaemonClient.command<VtrIngestResult>(
+                storageClusterId,
+                ChannelCommands.TrajectoryVtrIngest,
+                {
+                    trajectoryId: trajectory._id,
+                    ownerClusterId: storageClusterId,
+                    frames: batch,
+                    lossless: true
+                },
+                {
+                    timeoutClass: 'long-running-control-plane'
+                }
+            );
+        }
+
+        logger.info(`@trajectory-background-processor: vtr ingest complete trajectoryId=${trajectory._id} frameCount=${frameDescriptors.length}`);
     }
 
     private registerCompressionDrainCallback(): void {

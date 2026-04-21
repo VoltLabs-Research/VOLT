@@ -3,38 +3,23 @@
     border-bottom: 1px solid var(--color-border-soft);
 }
 
-.canvas-toolbar-logo,
-.canvas-toolbar-info {
-    padding: 0 16px;
+.canvas-toolbar-trajectory {
+    max-width: 260px;
+    padding: 0 1rem;
+    justify-content: flex-start;
 }
 
-.canvas-toolbar-logo {
-    gap: 0.5rem;
-    min-width: 88px;
-    text-decoration: none;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+.canvas-toolbar-trajectory-name {
+    font-size: 0.78rem;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 24px;
 }
 
-.canvas-toolbar-logo-mark {
-    display: inline-flex;
-    width: 28px;
-    height: 28px;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999px;
-}
-
-.canvas-toolbar-logo:hover .canvas-volt {
-    color: var(--color-text-primary);
-}
-
-.canvas-toolbar-logo:focus-visible,
-.canvas-toolbar-user-trigger:focus-visible {
-    outline: none;
-    border-radius: var(--radius-sm);
-    box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--accent-blue);
+.canvas-workspace-tabs{
+    border-right: 1px solid var(--color-border-soft);
 }
 
 .canvas-toolbar-menus{
@@ -74,25 +59,12 @@
     margin-right: 0.25rem;
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .canvas-toolbar-logo,
-    .canvas-toolbar-logo-mark,
-    .canvas-btn-compact {
-        transition: none !important;
-    }
-}
-
 @media (max-width: 768px) {
     .canvas-top-toolbar {
         min-height: 48px;
         height: auto;
         flex-wrap: wrap;
         row-gap: 0.25rem;
-    }
-
-    .canvas-toolbar-logo,
-    .canvas-toolbar-info {
-        padding: 0 10px;
     }
 
     .canvas-toolbar-menus {

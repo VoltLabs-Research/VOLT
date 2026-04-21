@@ -2,18 +2,19 @@ import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { FindActivityByTeamIdInputDTO, FindActivityByTeamIdOutputDTO } from '@modules/daily-activity/application/dtos/FindActivityByTeamIdDTO';
+import type { FindActivityByTeamIdInputDTO } from '@modules/daily-activity/application/dtos/FindActivityByTeamIdDTO';
+import type { PersistedDailyActivityDTO } from '@modules/daily-activity/application/dtos/PersistedDailyActivityDTO';
 import type { IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
 
 @injectable()
-export default class FindActivityByTeamIdUseCase implements IUseCase<FindActivityByTeamIdInputDTO, FindActivityByTeamIdOutputDTO[], ApplicationError>{
+export default class FindActivityByTeamIdUseCase implements IUseCase<FindActivityByTeamIdInputDTO, PersistedDailyActivityDTO[], ApplicationError>{
     constructor(
         @inject(DAILY_ACTIVITY_TOKENS.DailyActivityRepository)
         private dailyActivityRepository: IDailyActivityRepository
     ){}
 
-    async execute(input: FindActivityByTeamIdInputDTO): Promise<Result<FindActivityByTeamIdOutputDTO[], ApplicationError>> {
+    async execute(input: FindActivityByTeamIdInputDTO): Promise<Result<PersistedDailyActivityDTO[], ApplicationError>> {
         const { teamId, range } = input;
         const result = await this.dailyActivityRepository.findActivityByTeamId(teamId, range);
         

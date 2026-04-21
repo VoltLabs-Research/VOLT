@@ -1,9 +1,10 @@
-import LatexDocument from '@modules/latex/domain/entities/LatexDocument';
-import { createMongoMapper } from '@shared/infrastructure/persistence/mongo/createMongoMapper';
+import { createLatexDocument } from '@modules/latex/domain/entities/LatexDocument';
+import { createMongoMapperFromFactory } from '@shared/infrastructure/persistence/mongo/createMongoMapper';
+import type LatexDocument from '@modules/latex/domain/entities/LatexDocument';
 import type { LatexDocumentProps } from '@modules/latex/domain/entities/LatexDocument';
 import type { LatexDocumentDocument } from '@modules/latex/infrastructure/persistence/mongo/models/LatexDocumentModel';
 
-export default createMongoMapper<LatexDocument, LatexDocumentProps, LatexDocumentDocument>(
-    LatexDocument,
+export default createMongoMapperFromFactory<LatexDocument, LatexDocumentProps, LatexDocumentDocument>(
+    createLatexDocument,
     ['team', 'createdBy', 'lastEditedBy', 'folder']
 );

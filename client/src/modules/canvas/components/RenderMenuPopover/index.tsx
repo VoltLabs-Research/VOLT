@@ -2,13 +2,18 @@ import useCanvasRenderGroups from '../CanvasRenderSections/useCanvasRenderGroups
 import RenderGroupSubmenuContent from './RenderGroupSubmenuContent';
 import Button from '@/shared/presentation/components/Button';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
+import Tooltip from '@/shared/presentation/components/Tooltip';
 import { Monitor } from 'lucide-react';
 import { useMemo } from 'react';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 
 import './RenderMenuPopover.css';
 
-const RenderMenuPopover = () => {
+interface RenderMenuPopoverProps {
+    compact?: boolean;
+}
+
+const RenderMenuPopover = ({ compact = false }: RenderMenuPopoverProps) => {
     const renderGroups = useCanvasRenderGroups();
 
     const options = useMemo<MenuOption[]>(() => {
@@ -23,7 +28,23 @@ const RenderMenuPopover = () => {
     return (
         <ContextMenuPopover
             id="viewport-render-menu"
-            trigger={(
+            trigger={compact ? (
+                <span className="canvas-viewport-floating-trigger">
+                    <Tooltip content="Render" placement="bottom">
+                        <Button
+                            variant="ghost"
+                            intent="canvas"
+                            shape="rounded"
+                            size="sm"
+                            iconOnly
+                            className="canvas-viewport-floating-btn"
+                            aria-label="Render settings"
+                        >
+                            <Monitor size={14} />
+                        </Button>
+                    </Tooltip>
+                </span>
+            ) : (
                 <Button
                     variant="ghost"
                     intent="canvas"

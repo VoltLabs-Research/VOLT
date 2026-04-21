@@ -1,10 +1,6 @@
-import { useSyncExternalStore } from 'react';
-
 interface ConfirmActionController {
     open: (options: ConfirmActionOptions) => Promise<boolean>;
 };
-
-type ConfirmActionOpenListener = () => void;
 
 export interface ConfirmActionOptions {
     title: string;
@@ -21,33 +17,6 @@ export enum ConfirmActionTone {
 };
 
 let confirmActionController: ConfirmActionController | null = null;
-let isConfirmActionOpen = false;
-const confirmActionOpenListeners = new Set<ConfirmActionOpenListener>();
-
-const emitConfirmActionOpenChange = () => {
-    confirmActionOpenListeners.forEach((listener) => listener());
-};
-
-export const setConfirmActionOpenState = (value: boolean): void => {
-    if (isConfirmActionOpen === value) {
-        return;
-    }
-
-    isConfirmActionOpen = value;
-    emitConfirmActionOpenChange();
-};
-
-export const getConfirmActionOpenState = (): boolean => {
-    return isConfirmActionOpen;
-};
-
-const subscribeToConfirmActionOpenState = (listener: ConfirmActionOpenListener): (() => void) => {
-    confirmActionOpenListeners.add(listener);
-
-    return () => {
-        confirmActionOpenListeners.delete(listener);
-    };
-};
 
 const getConfirmDeleteMessage = (itemName: string, customMessage?: string): string => {
     if (customMessage) {
@@ -118,12 +87,4 @@ export const confirm = (input: string | ConfirmActionOptions): Promise<boolean> 
 
 export const confirmDelete = (itemName: string, customMessage?: string): Promise<boolean> => {
     return confirmAction(getConfirmDeleteOptions(itemName, customMessage));
-};
-
-export const useConfirmActionState = (): boolean => {
-    return useSyncExternalStore(
-        subscribeToConfirmActionOpenState,
-        getConfirmActionOpenState,
-        getConfirmActionOpenState
-    );
 };

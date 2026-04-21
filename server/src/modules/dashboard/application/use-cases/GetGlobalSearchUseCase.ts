@@ -18,7 +18,7 @@ import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import type { GetUserChatsOutputDTO } from '@modules/chat/application/dtos/chat/GetUserChatsDTO';
+import type { PersistedChatDTO } from '@modules/chat/domain/port/chat/IChatRepository';
 import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
 import type { ChatParticipant } from '@modules/chat/domain/entities/chat/Chat';
 import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
@@ -74,7 +74,7 @@ const getParticipantSearchTokens = (participant: ChatParticipant): string[] => {
     return searchTokens;
 };
 
-const getLastMessageContent = (chat: GetUserChatsOutputDTO): string | undefined => {
+const getLastMessageContent = (chat: PersistedChatDTO): string | undefined => {
     const lastMessage = chat.lastMessage;
     if (typeof lastMessage !== 'object' || lastMessage === null) {
         return undefined;

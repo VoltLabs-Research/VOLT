@@ -21,6 +21,7 @@ import type { SceneArtifactProps } from '@modules/trajectory/domain/entities/sce
 import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
+import type { Readable } from 'node:stream';
 import { getClusterGlbStream, getLocalGlbStream } from '@modules/trajectory/utilities/storage/glb-stream-resolution';
 
 @injectable()
@@ -81,19 +82,43 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
         const objectName = artifact.props.objectName;
         const bucket = artifact.props.storageBucket || SYS_BUCKETS.MODELS;
         const teamClusterId = resolveSceneArtifactStorageClusterId(artifact.props);
+        const requestContext = { acceptEncoding: input.acceptEncoding };
+
+        const buildDownloadResponse = (
+            stream: Readable,
+            size: number | undefined,
+            filename: string,
+            contentEncoding: string
+        ) => {
+            const extraHeaders: Record<string, string> = {
+                'Vary': 'Accept-Encoding'
+            };
+
+            if (contentEncoding !== 'identity') {
+                extraHeaders['Content-Encoding'] = contentEncoding;
+            }
+
+            return createDownloadStreamResponse({
+                stream,
+                contentType: 'model/gltf-binary',
+                contentLength: contentEncoding === 'zstd' ? size : undefined,
+                disposition: 'inline',
+                filename,
+                cacheControl: 'public, max-age=31536000, immutable',
+                extraHeaders
+            });
+        };
 
         if (teamClusterId) {
             try {
-                const response = await getClusterGlbStream(this.objectGatewayClient, teamClusterId, objectName);
+                const response = await getClusterGlbStream(this.objectGatewayClient, teamClusterId, objectName, requestContext);
 
-                return Result.ok(createDownloadStreamResponse({
-                    stream: response.stream,
-                    contentType: 'model/gltf-binary',
-                    contentLength: response.size,
-                    disposition: 'inline',
-                    filename: response.objectName,
-                    cacheControl: 'public, max-age=31536000, immutable'
-                }));
+                return Result.ok(buildDownloadResponse(
+                    response.stream,
+                    response.size,
+                    response.objectName,
+                    response.contentEncoding
+                ));
             } catch (error) {
                 if (error instanceof ApplicationError && error.statusCode === 404) {
                     return Result.fail(ApplicationError.notFound(
@@ -108,15 +133,13 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
             }
         }
 
-        const response = await getLocalGlbStream(this.storageService, objectName);
+        const response = await getLocalGlbStream(this.storageService, objectName, requestContext);
 
-        return Result.ok(createDownloadStreamResponse({
-            stream: response.stream,
-            contentType: 'model/gltf-binary',
-            contentLength: response.size,
-            disposition: 'inline',
-            filename: response.objectName,
-            cacheControl: 'public, max-age=31536000, immutable'
-        }));
+        return Result.ok(buildDownloadResponse(
+            response.stream,
+            response.size,
+            response.objectName,
+            response.contentEncoding
+        ));
     }
 };

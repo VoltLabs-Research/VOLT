@@ -64,6 +64,7 @@ import ListTrajectoryFoldersUseCase from '@modules/trajectory/application/use-ca
 import MoveTrajectoryUseCase from '@modules/trajectory/application/use-cases/trajectory/MoveTrajectoryUseCase';
 import UpdateTrajectoryFolderUseCase from '@modules/trajectory/application/use-cases/trajectory/UpdateTrajectoryFolderUseCase';
 import TrajectoryFolderRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFolderRepository';
+import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
 import TrajectoryPresenceSocketModule from '@modules/trajectory/infrastructure/socket/TrajectoryPresenceSocketModule';
 import CanvasWorkspaceSocketModule from '@modules/trajectory/infrastructure/socket/CanvasWorkspaceSocketModule';
 import CanvasWorkspaceRealtimeStateService from '@modules/trajectory/infrastructure/services/canvas/CanvasWorkspaceRealtimeStateService';
@@ -75,6 +76,7 @@ export const trajectoryDIManifest: ModuleManifest = {
     name: 'trajectory',
     singletons: [
         [TRAJECTORY_TOKENS.TrajectoryRepository, TrajectoryRepository],
+        [TRAJECTORY_TOKENS.TrajectoryFrameRepository, TrajectoryFrameRepository],
         [TRAJECTORY_TOKENS.TrajectoryFolderRepository, TrajectoryFolderRepository],
         [TRAJECTORY_TOKENS.TeamMetricsQueryService, TeamMetricsQueryService],
         [TRAJECTORY_TOKENS.SceneArtifactRepository, SceneArtifactRepository],

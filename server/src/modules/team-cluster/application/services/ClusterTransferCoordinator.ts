@@ -860,7 +860,7 @@ export default class ClusterTransferCoordinator {
             }
 
             return resolveAnalysisComputeClusterId(analysis.props) === sourceClusterId
-                ? [analysis.id]
+                ? [analysis._id]
                 : [];
         }
 
@@ -875,7 +875,7 @@ export default class ClusterTransferCoordinator {
 
         return analyses
             .filter((analysis) => resolveAnalysisComputeClusterId(analysis.props) === sourceClusterId)
-            .map((analysis) => analysis.id);
+            .map((analysis) => analysis._id);
     }
 
     private async selectVictimPlacement(sourceCluster: TeamCluster): Promise<StoragePlacement | null> {

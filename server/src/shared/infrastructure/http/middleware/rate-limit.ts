@@ -28,19 +28,3 @@ export const createStandardRateLimiter = (max: number, message?: string) => {
         message
     });
 };
-
-export const createBurstRateLimiter = (max: number, windowMs: number, message?: string) => {
-    return createRateLimiter({
-        max,
-        windowMs,
-        message
-    });
-};
-
-export const createGeneralRateLimiter = (max: number, message?: string) => {
-    return createStandardRateLimiter(max, message);
-};
-
-export const createExportRateLimiter = (max: number, message?: string) => {
-    return createStandardRateLimiter(max, message);
-};

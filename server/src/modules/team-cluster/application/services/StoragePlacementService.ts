@@ -220,7 +220,7 @@ export default class StoragePlacementService {
                 continue;
             }
 
-            const placement = await this.ensurePlacement('analysis', analysis.id);
+            const placement = await this.ensurePlacement('analysis', analysis._id);
             if (placement.props.primaryClusterId !== primaryClusterId) {
                 continue;
             }
@@ -329,18 +329,18 @@ export default class StoragePlacementService {
         storageClusterId: string
     ): Promise<void> {
         for (const analysis of analyses) {
-            const existingPlacement = await this.storagePlacementRepository.findByScope('analysis', analysis.id);
+            const existingPlacement = await this.storagePlacementRepository.findByScope('analysis', analysis._id);
             const existingPrimaryClusterId = existingPlacement?.props.primaryClusterId;
 
-            await this.storagePlacementRepository.upsertByScope('analysis', analysis.id, createStoragePlacementProps({
+            await this.storagePlacementRepository.upsertByScope('analysis', analysis._id, createStoragePlacementProps({
                 team: analysis.props.team,
                 scopeType: 'analysis',
-                scopeId: analysis.id,
+                scopeId: analysis._id,
                 primaryClusterId: storageClusterId,
                 replicaClusterIds: existingPlacement?.props.replicaClusterIds.filter((clusterId) => {
                     return clusterId !== storageClusterId && clusterId !== existingPrimaryClusterId;
                 }) ?? [],
-                buckets: buildAnalysisPlacementBuckets(trajectoryId, analysis.id),
+                buckets: buildAnalysisPlacementBuckets(trajectoryId, analysis._id),
                 state: 'active',
                 lastVerifiedAt: existingPlacement?.props.lastVerifiedAt ?? null,
                 bytesUsed: existingPlacement?.props.bytesUsed ?? null,

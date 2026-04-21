@@ -15,6 +15,7 @@ import type { IRasterMetadataReader } from '@modules/raster/domain/port/IRasterM
 import type { IRasterStorage } from '@modules/raster/domain/port/IRasterStorage';
 import type { RasterMetadata } from '@modules/raster/domain/entities/RasterMetadata';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import type {
     RasterAnalysisMetadata,
@@ -40,6 +41,9 @@ export class RasterMetadataService implements IRasterMetadataReader {
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly trajectoryRepository: ITrajectoryRepository,
 
+        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository)
+        private readonly trajectoryFrameRepository: ITrajectoryFrameRepository,
+
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
         private readonly analysisRepository: IAnalysisRepository
     ) {}
@@ -51,7 +55,7 @@ export class RasterMetadataService implements IRasterMetadataReader {
             throw ApplicationError.notFound('Trajectory::NotFound', 'Trajectory not found');
         }
 
-        const totalFrames = trajectory.props.frames.length;
+        const totalFrames = await this.trajectoryFrameRepository.countFrames(trajectoryId);
         const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
         const trajectoryRaster = await this.getTrajectoryMetadata(trajectoryId, storageClusterId);
 
@@ -135,7 +139,7 @@ export class RasterMetadataService implements IRasterMetadataReader {
             const analysesMetadata = await Promise.all(analyses.map(async (analysis) => {
                 return this.getAnalysisMetadata(
                     trajectoryId,
-                    analysis.id,
+                    analysis._id,
                     totalFrames,
                     resolveAnalysisStorageClusterId(analysis.props)
                 );

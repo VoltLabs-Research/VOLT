@@ -1,5 +1,6 @@
 export const TRAJECTORY_TOKENS = {
     TrajectoryRepository: Symbol.for('TrajectoryRepository'),
+    TrajectoryFrameRepository: Symbol.for('TrajectoryFrameRepository'),
     TrajectoryFolderRepository: Symbol.for('TrajectoryFolderRepository'),
     TeamMetricsQueryService: Symbol.for('TeamMetricsQueryService'),
     SceneArtifactRepository: Symbol.for('SceneArtifactRepository'),

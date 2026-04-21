@@ -1,10 +1,13 @@
 import { buildMenus } from '../TopToolbarMenus';
 import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
 import useCanvasUrlState from '../../hooks/use-canvas-url-state';
+import CanvasPluginSearch from '../CanvasPluginSearch';
 import MenuPopover from '../MenuPopover';
 import TrajectorySharePanelPopover from '../TrajectorySharePanelPopover';
+import WorkspacePeerAvatars from '../WorkspacePeerAvatars';
 import WorkspaceTabs from '../WorkspaceTabs';
 
+import EditableTrajectoryName from '@/modules/trajectory/components/EditableTrajectoryName';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import { memo, useCallback, useMemo, useState } from 'react';
@@ -20,6 +23,8 @@ import { HiOutlineDotsVertical } from 'react-icons/hi';
 import './TopToolbar.css';
 
 import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
+import type { ReactNode } from 'react';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 
 interface TopToolbarShareInfo {
     trajectoryId: string;
@@ -28,6 +33,7 @@ interface TopToolbarShareInfo {
 };
 
 interface TopToolbarProps {
+    trajectory?: Trajectory | null;
     canExport?: boolean;
     canDownloadAnalyses?: boolean;
     onExport?: () => void;
@@ -37,9 +43,11 @@ interface TopToolbarProps {
     workspaceActiveOwnerId?: string;
     onSelectWorkspacePeer?: (peerId: string) => void;
     share?: TopToolbarShareInfo;
+    contextualActions?: ReactNode;
 }
 
 const TopToolbar = ({
+    trajectory,
     canExport = false,
     canDownloadAnalyses = false,
     onExport,
@@ -48,7 +56,8 @@ const TopToolbar = ({
     workspacePeers,
     workspaceActiveOwnerId,
     onSelectWorkspacePeer,
-    share
+    share,
+    contextualActions
 }: TopToolbarProps) => {
     const [openMenu, setOpenMenu] = useState<string | null>(null);
     const [isSigningOut, setIsSigningOut] = useState(false);
@@ -115,6 +124,8 @@ const TopToolbar = ({
         canDownloadAnalyses
     });
 
+    const canShowPeers = Boolean(onSelectWorkspacePeer && ((workspacePeers?.length ?? 0) > 0 || (!localGlbMode && selfPresence)));
+
     return (
         <header className="canvas-top-toolbar d-flex items-stretch u-select-none">
             <input
@@ -124,39 +135,61 @@ const TopToolbar = ({
                 hidden
                 onChange={handlePickerChange}
             />
-            <a
-                className="canvas-toolbar-logo d-flex items-center"
-                href="/dashboard"
-                aria-label="Go to Volt dashboard"
-                title="Back to Dashboard"
-                onClick={(event) => {
-                    event.preventDefault();
-                    navigate('/dashboard');
-                }}
-            >
-                <span className="canvas-toolbar-logo-mark font-size-1 color-primary font-weight-6" aria-hidden="true">VOLT</span>
-            </a>
+            <div className="volt-container canvas-toolbar-left d-flex items-center flex-1">
+                {trajectory ? (
+                    <div
+                        className="canvas-toolbar-logo canvas-toolbar-trajectory d-flex items-center"
+                        title={trajectory.name}
+                    >
+                        <EditableTrajectoryName
+                            trajectoryId={trajectory._id}
+                            name={trajectory.name}
+                            className="canvas-toolbar-trajectory-name"
+                        />
+                    </div>
+                ) : (
+                    <a
+                        className="canvas-toolbar-logo d-flex items-center"
+                        href="/dashboard"
+                        aria-label="Go to Volt dashboard"
+                        title="Back to Dashboard"
+                        onClick={(event) => {
+                            event.preventDefault();
+                            navigate('/dashboard');
+                        }}
+                    >
+                        <span className="canvas-toolbar-logo-mark font-size-1 color-primary font-weight-6" aria-hidden="true">VOLT</span>
+                    </a>
+                )}
 
-            <nav className="canvas-toolbar-menus px-1 d-flex gap-025 items-center" aria-label="Canvas primary navigation">
-                {menus.map((menu) => (
-                    <MenuPopover
-                        key={menu.label}
-                        menu={menu}
-                        openMenu={openMenu}
-                        onOpenChange={setOpenMenu}
+                <nav className="canvas-toolbar-menus px-1 d-flex gap-025 items-center" aria-label="Canvas primary navigation">
+                    {menus.map((menu) => (
+                        <MenuPopover
+                            key={menu.label}
+                            menu={menu}
+                            openMenu={openMenu}
+                            onOpenChange={setOpenMenu}
+                        />
+                    ))}
+                </nav>
+
+                <WorkspaceTabs disableAuxWorkspaces={localGlbMode} />
+            </div>
+
+            <div className="volt-container canvas-toolbar-center d-flex items-center content-center flex-1">
+                <CanvasPluginSearch />
+            </div>
+
+            <div className="volt-container canvas-toolbar-info d-flex items-center gap-025 flex-1 content-end">
+                {contextualActions}
+                {canShowPeers && onSelectWorkspacePeer && (
+                    <WorkspacePeerAvatars
+                        peers={workspacePeers ?? []}
+                        self={localGlbMode ? undefined : selfPresence}
+                        activeOwnerId={workspaceActiveOwnerId}
+                        onSelectPeer={onSelectWorkspacePeer}
                     />
-                ))}
-            </nav>
-
-            <WorkspaceTabs
-                disableAuxWorkspaces={localGlbMode}
-                peers={workspacePeers}
-                self={localGlbMode ? undefined : selfPresence}
-                activeOwnerId={workspaceActiveOwnerId}
-                onSelectPeer={onSelectWorkspacePeer}
-            />
-
-            <div className="volt-container canvas-toolbar-info d-flex items-center content-end w-max">
+                )}
                 {share && user && (
                     <TrajectorySharePanelPopover
                         trajectoryId={share.trajectoryId}

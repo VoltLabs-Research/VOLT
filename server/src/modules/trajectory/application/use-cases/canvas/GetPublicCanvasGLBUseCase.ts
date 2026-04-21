@@ -46,12 +46,13 @@ export class GetPublicCanvasGLBUseCase implements IUseCase<
             );
             const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
             const objectName = buildTrajectoryGlbObjectName(input.trajectoryId, input.timestep);
+            const requestContext = { acceptEncoding: input.acceptEncoding };
 
             if (storageClusterId) {
-                return Result.ok(await getClusterGlbStream(this.objectGatewayClient, storageClusterId, objectName));
+                return Result.ok(await getClusterGlbStream(this.objectGatewayClient, storageClusterId, objectName, requestContext));
             }
 
-            return Result.ok(await getLocalGlbStream(this.storageService, objectName));
+            return Result.ok(await getLocalGlbStream(this.storageService, objectName, requestContext));
         } catch (error) {
             if (error instanceof ApplicationError) {
                 return Result.fail(error);

@@ -1,6 +1,6 @@
 import { Result } from '@shared/domain/port/Result';
 import { IUseCase } from '@shared/application/IUseCase';
-import { CreateSSHConnectionInputDTO, CreateSSHConnectionOutputDTO } from '@modules/ssh/application/dtos/CreateSSHConnectionDTO';
+import { CreateSSHConnectionInputDTO, SafeSSHConnectionDTO } from '@modules/ssh/application/dtos/CreateSSHConnectionDTO';
 import { injectable, inject } from 'tsyringe';
 import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
 import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
@@ -17,7 +17,7 @@ import {
 } from '@modules/ssh/application/utils/ssh-error-utils';
 
 @injectable()
-export class CreateSSHConnectionUseCase implements IUseCase<CreateSSHConnectionInputDTO, CreateSSHConnectionOutputDTO, ApplicationError> {
+export class CreateSSHConnectionUseCase implements IUseCase<CreateSSHConnectionInputDTO, SafeSSHConnectionDTO, ApplicationError> {
     constructor(
         @inject(SSH_TOKENS.SSHConnectionRepository)
         private sshConnectionRepo: ISSHConnectionRepository,
@@ -29,7 +29,7 @@ export class CreateSSHConnectionUseCase implements IUseCase<CreateSSHConnectionI
         private readonly eventBus: IEventBus
     ){}
 
-    async execute(input: CreateSSHConnectionInputDTO): Promise<Result<CreateSSHConnectionOutputDTO, ApplicationError>> {
+    async execute(input: CreateSSHConnectionInputDTO): Promise<Result<SafeSSHConnectionDTO, ApplicationError>> {
         if (input.password.trim().length === 0) {
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.VALIDATION_INVALID_INPUT,

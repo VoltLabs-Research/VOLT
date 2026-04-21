@@ -11,7 +11,7 @@ import type {
     PreviewFilterOutputDTO
 } from '../dtos/particle-filter';
 
-const buildPreviewQuery = (input: PreviewFilterInputDTO) => {
+export const buildPreviewQuery = (input: PreviewFilterInputDTO) => {
     if (input.conditions && input.conditions.length > 0) {
         return {
             timestep: input.timestep,

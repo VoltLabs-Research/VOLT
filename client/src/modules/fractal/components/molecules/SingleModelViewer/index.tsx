@@ -8,7 +8,7 @@ import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import { computeGlbUrl } from '@/modules/fractal/api/service/compute-glb-url';
 import { useCanvasAccessMode } from '@/modules/canvas/api/access';
 import './SingleModelViewer.css';
-import { useFrame } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useMemo, useEffect, useCallback, useRef } from 'react';
 import type { BoxBounds, ModelLoadingState, OrbitControlsHandle } from '@/modules/fractal/types';
@@ -300,23 +300,18 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         });
     }, [autoFit, autoFitKey, boxBounds, currentTimestep, sceneKey, trajectoryId, url]);
 
-    useFrame((state) => {
+    const { invalidate } = useThree();
+
+    useEffect(() => {
         if (!autoFit || autoFitAppliedRef.current || !autoFitKeyRef.current) {
             return;
         }
+        if (!modelBounds) {
+            return;
+        }
 
-        const controls = orbitControlsRef?.current
-            ?? ((state as typeof state & { controls?: OrbitControlsHandle | null }).controls ?? null);
-
+        const controls = orbitControlsRef?.current;
         if (!controls) {
-            if (!autoFitWaitLoggedRef.current) {
-                debugFractal('single-model.autofit-waiting-controls', {
-                    trajectoryId,
-                    timestep: currentTimestep,
-                    sceneKey
-                });
-                autoFitWaitLoggedRef.current = true;
-            }
             return;
         }
 
@@ -328,18 +323,6 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
                 timestep: currentTimestep,
                 sceneKey
             });
-            return;
-        }
-
-        if (!modelBounds) {
-            if (!autoFitWaitLoggedRef.current) {
-                debugFractal('single-model.autofit-waiting-model-bounds', {
-                    trajectoryId,
-                    timestep: currentTimestep,
-                    sceneKey
-                });
-                autoFitWaitLoggedRef.current = true;
-            }
             return;
         }
 
@@ -364,7 +347,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
             trajectoryId,
             timestep: currentTimestep,
             sceneKey,
-            source: 'model-bounds',
+            source: 'model-bounds-effect',
             worldCenter: worldCenter.toArray(),
             worldSize: worldSize.toArray(),
             previousCameraPosition,
@@ -372,8 +355,18 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
             previousTarget,
             nextTarget: controls.target.toArray()
         });
-        state.invalidate();
-    });
+        invalidate();
+    }, [
+        autoFit,
+        autoFitKey,
+        cellBoxTransforms,
+        currentTimestep,
+        invalidate,
+        modelBounds,
+        orbitControlsRef,
+        sceneKey,
+        trajectoryId
+    ]);
 
     useEffect(() => {
         if (!isSelected) {

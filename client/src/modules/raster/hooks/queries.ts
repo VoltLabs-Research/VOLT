@@ -83,6 +83,3 @@ export const useTriggerRasterizationMutation = () => {
     });
 };
 
-export const RASTER_QUERY_KEYS = {
-    metadata: KEYS.metadata
-} as const;

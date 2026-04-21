@@ -1,31 +1,13 @@
 import { ValidationCodes } from '@core/constants/validation-codes';
-import { TrajectoryProps, TrajectoryFrame, TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
+import { TrajectoryProps, TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 
 import mongoose, { Schema, Model, Document } from 'mongoose';
 
 type TrajectoryRelations = 'createdBy' | 'team' | 'storageClusterId';
-type TrajectoryFrameRelations = 'simulationCell';
 
 export interface TrajectoryDocument extends Persistable<TrajectoryProps, TrajectoryRelations>, Document { };
-interface TrajectoryFrameDocument extends Persistable<TrajectoryFrame, TrajectoryFrameRelations>, Document { };
-
-const TimestepInfoSchema: Schema<TrajectoryFrameDocument> = new Schema({
-    timestep: {
-        type: Number,
-        required: true
-    },
-    natoms: {
-        type: Number,
-        required: true
-    },
-    simulationCell: {
-        type: Schema.Types.ObjectId,
-        ref: 'SimulationCell',
-        required: true
-    }
-}, { _id: false });
 
 const TrajectorySchema: Schema<TrajectoryDocument> = new Schema({
     name: {
@@ -63,7 +45,10 @@ const TrajectorySchema: Schema<TrajectoryDocument> = new Schema({
         type: Boolean,
         default: true
     },
-    frames: [TimestepInfoSchema],
+    // Why: frames are now persisted in the `trajectoryframes` collection (see
+    // TrajectoryFrameModel). Embedding them here used to make a single
+    // trajectory document exceed 1 MB on long simulations and serialized every
+    // `$push` through the parent's write lock.
     rasterSceneViews: {
         type: Number,
         default: 0

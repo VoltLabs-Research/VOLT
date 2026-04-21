@@ -1,6 +1,7 @@
 .workspace-peer-avatars {
     margin-left: 0.5rem;
     padding-left: 0.5rem;
+    height: 100%;
     border-left: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
 }
 

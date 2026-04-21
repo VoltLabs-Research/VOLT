@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const storage = multer.memoryStorage();
-export const DEFAULT_TRAJECTORY_UPLOAD_DIR = path.resolve(process.cwd(), 'storage/temp/trajectory-uploads');
+const DEFAULT_TRAJECTORY_UPLOAD_DIR = path.resolve(process.cwd(), 'storage/temp/trajectory-uploads');
 const trajectoryUploadDir = process.env.TRAJECTORY_UPLOAD_DIR || DEFAULT_TRAJECTORY_UPLOAD_DIR;
 const CHAT_MAX_FILE_SIZE = 25 * 1024 * 1024;
 

@@ -18,13 +18,14 @@ export interface AnalysisProps {
     updatedAt?: Date;
 };
 
-export default class Analysis {
-    constructor(
-        public readonly _id: string,
-        public props: AnalysisProps
-    ) {}
-
-    get id(): string {
-        return this._id;
-    }
+export interface Analysis {
+    readonly _id: string;
+    props: AnalysisProps;
 };
+
+export const createAnalysis = (_id: string, props: AnalysisProps): Analysis => ({
+    _id,
+    props
+});
+
+export default Analysis;

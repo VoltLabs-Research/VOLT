@@ -1,4 +1,4 @@
-import type { DownloadStreamOutputDTO } from '@modules/raster/application/dtos/shared/DownloadStreamOutputDTO';
+import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
 
 export interface GetPublicCanvasRasterFrameInputDTO {
     trajectoryId: string;

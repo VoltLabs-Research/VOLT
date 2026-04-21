@@ -12,7 +12,7 @@ interface AuthState{
 
 interface AuthActions{
     initializeAuth: () => Promise<void>;
-    markAuthenticated: (token?: string | null) => void;
+    markAuthenticated: (token: string | null) => void;
     signOut: () => void;
 };
 
@@ -58,23 +58,18 @@ export const useAuthStore = create<AuthStore>((set) => ({
     },
 
     markAuthenticated: (token) => {
-        let hasToken = true;
-
-        if (token !== undefined) {
-            if (token) {
-                tokenStorage.setToken(token);
-            } else {
-                tokenStorage.removeToken();
-            }
-
-            updateSocketAuthToken(token);
-            hasToken = !!token;
+        if (token) {
+            tokenStorage.setToken(token);
+        } else {
+            tokenStorage.removeToken();
         }
+
+        updateSocketAuthToken(token);
 
         set({
             isInitialized: true,
             isLoading: false,
-            hasToken
+            hasToken: Boolean(token)
         });
     },
 

@@ -14,7 +14,6 @@ export interface PluginProps extends Partial<PluginProjection> {
     status: PluginStatus;
     createdAt: Date;
     updatedAt: Date;
-    binaryPath?: string | null;
 };
 
 export default class Plugin {

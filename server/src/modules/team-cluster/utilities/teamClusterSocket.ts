@@ -37,7 +37,7 @@ export interface TeamClusterDaemonRegisterPayload {
     daemonPassword: string;
 };
 
-export interface TeamClusterDaemonRegisteredPayload {
+interface TeamClusterDaemonRegisteredPayload {
     teamClusterId: string;
 };
 
@@ -57,23 +57,50 @@ export interface TeamClusterDaemonCommandMessage {
     payload?: Record<string, unknown>;
 };
 
+/**
+ * Binary command carrier. `envelope` is a `Uint8Array` laid out as
+ * `[u32 opId][u16 kind][u32 len][payload...]` (see
+ * `@shared/infrastructure/types/reverseChannelBinary`). Socket.IO v4
+ * serializes typed-array fields as native binary attachments — no base64.
+ */
+interface TeamClusterDaemonCommandBinaryMessage {
+    type: 'command-binary';
+    requestId: string;
+    command: string;
+    envelope: Uint8Array;
+};
+
 export interface TeamClusterDaemonSocketResponsePayload<T = unknown> {
     type: 'response';
     requestId: string;
     ok: boolean;
     status: number;
     data?: T;
-    bodyBase64?: string;
     headers?: TeamClusterDaemonSocketHeaders;
     message?: string;
     streamId?: string;
+};
+
+/**
+ * Binary response carrier. `envelope` holds the structured binary result
+ * (mask, Float32 values, etc.). When `ok === false`, the envelope uses kind
+ * `Error` with a UTF-8 JSON blob `{code, message}` as payload.
+ */
+interface TeamClusterDaemonSocketBinaryResponsePayload {
+    type: 'response-binary';
+    requestId: string;
+    ok: boolean;
+    status: number;
+    envelope: Uint8Array;
+    headers?: TeamClusterDaemonSocketHeaders;
+    message?: string;
 };
 
 export interface TeamClusterDaemonSocketStreamPayload {
     type: 'stream';
     requestId: string;
     streamId: string;
-    chunkBase64: string;
+    chunk: Uint8Array;
 };
 
 export interface TeamClusterDaemonSocketStreamStatePayload {
@@ -86,7 +113,7 @@ export interface TeamClusterDaemonSocketStreamStatePayload {
 export interface TeamClusterDaemonSessionInputPayload {
     type: 'session-input';
     sessionId: string;
-    chunkBase64: string;
+    chunk: Uint8Array;
     isBinary: boolean;
 };
 
@@ -105,7 +132,7 @@ export interface TeamClusterDaemonSessionDetachPayload {
 export interface TeamClusterDaemonSessionDataPayload {
     type: 'session-data';
     sessionId: string;
-    chunkBase64: string;
+    chunk: Uint8Array;
     isBinary: boolean;
 };
 
@@ -128,7 +155,7 @@ export interface TeamClusterDaemonExposureSnapshotPayload {
 /**
  * Applies additive exposure changes without replacing the full registry.
  */
-export interface TeamClusterDaemonExposureUpsertPayload {
+interface TeamClusterDaemonExposureUpsertPayload {
     type: 'exposure-upsert';
     exposures: TeamClusterServiceExposure[];
 };
@@ -136,19 +163,19 @@ export interface TeamClusterDaemonExposureUpsertPayload {
 /**
  * Removes exposures that are no longer published by the daemon.
  */
-export interface TeamClusterDaemonExposureRemovePayload {
+interface TeamClusterDaemonExposureRemovePayload {
     type: 'exposure-remove';
     exposureIds: string[];
 };
 
-export interface TeamClusterDaemonExposureTunnelOpenPayload {
+interface TeamClusterDaemonExposureTunnelOpenPayload {
     type: 'tunnel-open';
     sessionId: string;
     exposureId: string;
     accessMode: TeamClusterServiceExposure['accessModes'][number];
 };
 
-export interface TeamClusterDaemonDirectTunnelOpenPayload {
+interface TeamClusterDaemonDirectTunnelOpenPayload {
     type: 'tunnel-open';
     sessionId: string;
     targetHost: string;
@@ -156,7 +183,7 @@ export interface TeamClusterDaemonDirectTunnelOpenPayload {
     accessMode: TeamClusterServiceExposure['accessModes'][number];
 };
 
-export type TeamClusterDaemonTunnelOpenPayload =
+type TeamClusterDaemonTunnelOpenPayload =
     | TeamClusterDaemonExposureTunnelOpenPayload
     | TeamClusterDaemonDirectTunnelOpenPayload;
 
@@ -173,11 +200,12 @@ export interface TeamClusterDaemonTunnelStatePayload {
 
 /**
  * Carries raw tunnel bytes for HTTP, WebSocket or arbitrary TCP sessions.
+ * `chunk` travels as a native Socket.IO binary attachment — no base64.
  */
 export interface TeamClusterDaemonTunnelDataPayload {
     type: 'tunnel-data';
     sessionId: string;
-    chunkBase64: string;
+    chunk: Uint8Array;
     isBinary: boolean;
 };
 
@@ -199,7 +227,7 @@ export interface TeamClusterDaemonRuntimeProgressPayload {
     payload?: Record<string, unknown>;
 };
 
-export interface TeamClusterDaemonAnalysisJobCompletionEventPayload {
+interface TeamClusterDaemonAnalysisJobCompletionEventPayload {
     type: 'analysis-job-completion';
     teamClusterId: string;
     daemonPassword: string;
@@ -213,7 +241,7 @@ export interface TeamClusterDaemonAnalysisJobCompletionEventPayload {
     error?: string;
 };
 
-export interface TeamClusterDaemonAnalysisJobStatusEventPayload {
+interface TeamClusterDaemonAnalysisJobStatusEventPayload {
     type: 'analysis-job-status';
     teamClusterId: string;
     daemonPassword: string;
@@ -227,7 +255,7 @@ export interface TeamClusterDaemonAnalysisJobStatusEventPayload {
     error?: string;
 };
 
-export interface TeamClusterDaemonRasterJobStatusEventPayload {
+interface TeamClusterDaemonRasterJobStatusEventPayload {
     type: 'trajectory-raster-job-status';
     teamClusterId: string;
     daemonPassword: string;
@@ -239,7 +267,7 @@ export interface TeamClusterDaemonRasterJobStatusEventPayload {
     error?: string;
 };
 
-export interface TeamClusterDaemonGlbJobStatusEventPayload {
+interface TeamClusterDaemonGlbJobStatusEventPayload {
     type: 'trajectory-glb-job-status';
     teamClusterId: string;
     daemonPassword: string;
@@ -251,7 +279,7 @@ export interface TeamClusterDaemonGlbJobStatusEventPayload {
     error?: string;
 };
 
-export interface TeamClusterDaemonSshImportJobStatusEventPayload {
+interface TeamClusterDaemonSshImportJobStatusEventPayload {
     type: 'ssh-import-job-status';
     teamClusterId: string;
     daemonPassword: string;
@@ -262,7 +290,7 @@ export interface TeamClusterDaemonSshImportJobStatusEventPayload {
     error?: string;
 };
 
-export interface TeamClusterDaemonArtifactUploadJobStatusEventPayload {
+interface TeamClusterDaemonArtifactUploadJobStatusEventPayload {
     type: 'artifact-upload-job-status';
     teamClusterId: string;
     daemonPassword: string;
@@ -286,7 +314,7 @@ export interface TeamClusterDaemonExecutionLogSegment {
     executionPath?: string[];
 };
 
-export interface TeamClusterDaemonAnalysisLogChunkEventPayload {
+interface TeamClusterDaemonAnalysisLogChunkEventPayload {
     type: 'analysis-log-chunk';
     teamClusterId: string;
     daemonPassword: string;
@@ -298,7 +326,7 @@ export interface TeamClusterDaemonAnalysisLogChunkEventPayload {
     segments: TeamClusterDaemonExecutionLogSegment[];
 };
 
-export interface TeamClusterDaemonDebugLogChunkEventPayload {
+interface TeamClusterDaemonDebugLogChunkEventPayload {
     type: 'debug-log-chunk';
     teamClusterId: string;
     daemonPassword: string;
@@ -307,7 +335,7 @@ export interface TeamClusterDaemonDebugLogChunkEventPayload {
     segments: TeamClusterDaemonExecutionLogSegment[];
 };
 
-export interface TeamClusterDaemonSceneArtifactUpsertBatchItem {
+interface TeamClusterDaemonSceneArtifactUpsertBatchItem {
     trajectory: string;
     storageClusterId: string;
     analysis?: string;
@@ -322,14 +350,14 @@ export interface TeamClusterDaemonSceneArtifactUpsertBatchItem {
     metadata?: Record<string, unknown>;
 };
 
-export interface TeamClusterDaemonSceneArtifactUpsertBatchEventPayload {
+interface TeamClusterDaemonSceneArtifactUpsertBatchEventPayload {
     type: 'trajectory-scene-artifact-upsert-batch';
     teamClusterId: string;
     daemonPassword: string;
     items: TeamClusterDaemonSceneArtifactUpsertBatchItem[];
 };
 
-export type TeamClusterDaemonServerEventMessage =
+type TeamClusterDaemonServerEventMessage =
     | TeamClusterDaemonAnalysisJobCompletionEventPayload
     | TeamClusterDaemonAnalysisJobStatusEventPayload
     | TeamClusterDaemonAnalysisLogChunkEventPayload
@@ -342,7 +370,9 @@ export type TeamClusterDaemonServerEventMessage =
 
 export type TeamClusterDaemonMessage =
     | TeamClusterDaemonCommandMessage
+    | TeamClusterDaemonCommandBinaryMessage
     | TeamClusterDaemonSocketResponsePayload
+    | TeamClusterDaemonSocketBinaryResponsePayload
     | TeamClusterDaemonSocketStreamPayload
     | TeamClusterDaemonSocketStreamStatePayload
     | TeamClusterDaemonSessionInputPayload

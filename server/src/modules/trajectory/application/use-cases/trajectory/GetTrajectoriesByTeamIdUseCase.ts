@@ -44,9 +44,6 @@ export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTraje
                 {
                     path: 'storageClusterId',
                     select: ['name']
-                },
-                {
-                    path: 'frames.simulationCell'
                 }
             ],
             sort: { updatedAt: -1 },

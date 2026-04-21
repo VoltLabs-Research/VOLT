@@ -113,7 +113,6 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
             storageClusterId,
             createdBy: userId,
             status: TrajectoryStatus.WaitingForProcess,
-            frames: [],
             stats,
             analysis: [],
             rasterSceneViews: 0,

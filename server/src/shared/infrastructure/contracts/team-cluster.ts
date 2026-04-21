@@ -46,6 +46,7 @@ export const ChannelCommands = Object.freeze({
     NotebookSessionCreate: 'notebook.session.create',
 
     PluginSync: 'plugin.sync',
+    PluginWarmup: 'plugin.warmup',
     PluginListingsList: 'plugin.listings.list',
     PluginSubListingsList: 'plugin.sub-listings.list',
     PluginTransferMongoExport: 'plugin.transfer.mongo.export',
@@ -70,6 +71,7 @@ export const ChannelCommands = Object.freeze({
 
     TrajectoryRasterize: 'trajectory.rasterize',
     TrajectoryEnqueuePreprocessing: 'trajectory.enqueue-preprocessing',
+    TrajectoryVtrIngest: 'trajectory.vtr.ingest',
     TrajectoryNativePreprocess: 'trajectory.native.preprocess',
     TrajectoryNativeMetadata: 'trajectory.native.metadata',
     TrajectoryNativePropertyStats: 'trajectory.native.property-stats',
@@ -89,7 +91,7 @@ export const ChannelCommands = Object.freeze({
     TrajectoryPluginAnalysisAllAtoms: 'trajectory.plugin.analysis-all-atoms'
 });
 
-export interface ResolvedTeamClusterDaemonConnection {
+interface ResolvedTeamClusterDaemonConnection {
     teamClusterId: string;
 };
 

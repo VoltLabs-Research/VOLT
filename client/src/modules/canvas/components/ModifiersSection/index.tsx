@@ -58,6 +58,7 @@ const ModifierPopoverItem = ({
             type='button'
             className='canvas-plugin-popover-trigger collapsible-section-trigger d-flex items-center gap-05 u-select-none'
             aria-label={`${option.title} settings`}
+            data-modifier-id={option.modifierId}
         >
             <div className='volt-container collapsible-section-trigger-content d-flex items-center gap-05'>
                 <span className='d-flex items-center color-muted'><option.Icon size={14} /></span>

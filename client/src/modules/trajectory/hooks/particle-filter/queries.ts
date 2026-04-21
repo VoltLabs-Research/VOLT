@@ -1,6 +1,5 @@
 import {
     buildKeys,
-    createMutation,
     createQuery
 } from '@/shared/infrastructure/query';
 import {
@@ -9,7 +8,6 @@ import {
     useCanvasAccessStore,
     withAccessMode
 } from '@/modules/canvas/api/access';
-import particleFilterService from '../../api/services/particle-filter';
 import type {
     FilterPropertiesData,
     GetFilterPropertiesInputDTO,
@@ -50,6 +48,3 @@ export const uniqueValuesQuery = createQuery<GetUniqueValuesInputDTO, GetUniqueV
     getUniqueValuesKey,
     (params) => currentDataAccess().getParticleFilterUniqueValues(params)
 );
-
-export const usePreviewFilterMutation = createMutation(particleFilterService.preview);
-export const useApplyFilterMutation = createMutation(particleFilterService.applyAction);

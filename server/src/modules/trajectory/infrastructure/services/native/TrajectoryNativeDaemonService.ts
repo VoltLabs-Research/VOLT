@@ -7,6 +7,7 @@ import { createZstdDecompressionStream } from '@modules/trajectory/utilities/sto
 import type { FrameMetadata } from '@modules/trajectory/domain/contracts/trajectory';
 
 import { Readable } from 'node:stream';
+import { toUint8Array } from '@shared/infrastructure/types/reverseChannelBinary';
 
 interface TrajectoryNativeRequest {
     teamClusterId: string;
@@ -73,7 +74,7 @@ interface TrajectoryNativeAtomsPageResponse {
 };
 
 interface TrajectoryNativeFilterPreviewResponse {
-    maskBase64: string;
+    mask: Uint8Array;
     matchCount: number;
     totalAtoms: number;
 };
@@ -135,6 +136,9 @@ export default class TrajectoryNativeDaemonService {
     }
 
     async previewFilter(input: TrajectoryNativeFilterPreviewRequest): Promise<{ mask: Uint8Array; matchCount: number; totalAtoms: number; }> {
+        // Why: `externalValues` travels as a `Uint8Array` field. Socket.IO v4
+        // serializes typed-array fields as native binary attachments, so the
+        // Float32 bytes cross the wire without a base64 hop.
         const response = await this.teamClusterDaemonClient.command<TrajectoryNativeFilterPreviewResponse>(
             input.teamClusterId,
             ChannelCommands.TrajectoryNativeFilterPreview,
@@ -145,14 +149,12 @@ export default class TrajectoryNativeDaemonService {
                 value: input.value,
                 ...(input.analysisId ? { analysisId: input.analysisId } : {}),
                 ...(input.exposureId ? { exposureId: input.exposureId } : {}),
-                externalValuesBase64: input.externalValues
-                    ? Buffer.from(input.externalValues.buffer, input.externalValues.byteOffset, input.externalValues.byteLength).toString('base64')
-                    : undefined
+                ...(input.externalValues ? { externalValues: this.floatArrayToBytes(input.externalValues) } : {})
             }
         );
 
         return {
-            mask: new Uint8Array(Buffer.from(response.maskBase64, 'base64')),
+            mask: toUint8Array(response.mask as unknown as Uint8Array | ArrayBuffer | Buffer),
             matchCount: response.matchCount,
             totalAtoms: response.totalAtoms
         };
@@ -168,9 +170,7 @@ export default class TrajectoryNativeDaemonService {
             gradient: input.gradient,
             ...(input.analysisId ? { analysisId: input.analysisId } : {}),
             ...(input.exposureId ? { exposureId: input.exposureId } : {}),
-            externalValuesBase64: input.externalValues
-                ? Buffer.from(input.externalValues.buffer, input.externalValues.byteOffset, input.externalValues.byteLength).toString('base64')
-                : undefined
+            ...(input.externalValues ? { externalValues: this.floatArrayToBytes(input.externalValues) } : {})
         });
     }
 
@@ -179,8 +179,12 @@ export default class TrajectoryNativeDaemonService {
             ...this.toBaseBody(input),
             objectKey: input.objectKey,
             action: input.action,
-            maskBase64: Buffer.from(input.mask).toString('base64')
+            mask: input.mask
         });
+    }
+
+    private floatArrayToBytes(floats: Float32Array): Uint8Array {
+        return new Uint8Array(floats.buffer, floats.byteOffset, floats.byteLength);
     }
 
     async getObjectBuffer(teamClusterId: string, bucket: string, objectKey: string): Promise<Buffer> {

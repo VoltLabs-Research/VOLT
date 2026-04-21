@@ -3,6 +3,7 @@ import useGetAtoms from '@/modules/trajectory/hooks/trajectory/use-get-atoms';
 import useGetTrajectoryById from '@/modules/trajectory/hooks/trajectory/use-get-trajectory-by-id';
 import { TRAJECTORY_QUERY_KEYS, trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import formatAtomValue from '@/modules/trajectory/shared/format-atom-value';
+import { atomsToAoS } from '@/modules/trajectory/utilities/decode-atoms-binary';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import Select from '@/shared/presentation/components/Select';
 import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-params';
@@ -105,7 +106,7 @@ export default function PerAtomViewer() {
 
     const firstPageAtomsQuery = trajectoryAtomsQuery(firstPageAtomsParams, { enabled: isEnabled });
 
-    const properties = firstPageAtomsQuery.data?._meta?.properties ?? EMPTY_PROPERTIES;
+    const properties = firstPageAtomsQuery.data?.propertyNames ?? EMPTY_PROPERTIES;
 
     const timestepOptions = useMemo<SelectOption[]>(() => {
         return availableTimesteps.map((availableTimestep) => ({
@@ -132,12 +133,21 @@ export default function PerAtomViewer() {
             limit: params.limit
         });
 
+        const rows = atomsToAoS(result).map((atom) => ({
+            ...atom,
+            _id: String(atom.id)
+        }));
+
         return {
-            ...result,
-            data: result.data.map((atom) => ({
-                ...atom,
-                _id: String(atom.id)
-            }))
+            status: 'success',
+            data: rows,
+            pagination: {
+                page: result.page,
+                limit: result.limit,
+                total: result.total,
+                totalPages: result.totalPages,
+                hasMore: result.page < result.totalPages
+            }
         };
     }, [getAtoms]);
 

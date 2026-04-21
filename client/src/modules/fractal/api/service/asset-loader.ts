@@ -5,6 +5,7 @@ import { debugFractal, warnFractal } from '@/modules/fractal/utilities/debug-log
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { geometryPool } from '@/modules/fractal/services/geometry-pool';
 import type IFractalAssetLoader from '@/modules/fractal/api/entities/asset-loader';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
@@ -12,29 +13,25 @@ const summarizeRenderableContent = (root: THREE.Object3D) => {
     let points = 0;
     let meshes = 0;
     let vertices = 0;
-
     root.traverse((child) => {
         if (child instanceof THREE.Points) {
             points += 1;
             vertices += child.geometry.getAttribute('position')?.count ?? 0;
             return;
         }
-
         if (child instanceof THREE.Mesh) {
             meshes += 1;
             vertices += child.geometry.getAttribute('position')?.count ?? 0;
         }
     });
-
     return { points, meshes, vertices };
 };
 
+// FractalAssetLoader: downloads the GLB bytes, parses, and caches both the
+// raw ArrayBuffer (for fast re-parse) and the parsed BufferGeometry (via the
+// GeometryPool). Parsed geometries avoid the GLTFLoader cost on hot paths.
+
 export class FractalAssetLoader implements IFractalAssetLoader {
-    private static readonly BYTES_PER_MEGABYTE = 1024 * 1024;
-    private static readonly MAX_CACHE_ENTRIES = 50;
-    private static readonly MAX_CACHE_BYTES = 128 * FractalAssetLoader.BYTES_PER_MEGABYTE;
-    private static cache = new Map<string, { buffer: ArrayBuffer; size: number }>();
-    private static cacheBytes = 0;
     private static sharedDracoLoader: DRACOLoader | null = null;
 
     private static createAbortError() {
@@ -53,10 +50,8 @@ export class FractalAssetLoader implements IFractalAssetLoader {
             if (!response.ok) {
                 throw new Error(`Failed to load local GLB (status ${response.status})`);
             }
-
             return response.blob();
         }
-
         return http.request<Blob>({
             method: 'GET',
             url,
@@ -73,82 +68,30 @@ export class FractalAssetLoader implements IFractalAssetLoader {
         return FractalAssetLoader.sharedDracoLoader;
     }
 
-    private static touchCacheEntry(url: string) {
-        const entry = FractalAssetLoader.cache.get(url);
-        if (!entry) {
-            return null;
-        }
-
-        FractalAssetLoader.cache.delete(url);
-        FractalAssetLoader.cache.set(url, entry);
-
-        return entry;
-    }
-
-    private static evictIfNeeded(incomingBytes = 0): void {
-        while (
-            FractalAssetLoader.cache.size >= FractalAssetLoader.MAX_CACHE_ENTRIES
-            || FractalAssetLoader.cacheBytes + incomingBytes > FractalAssetLoader.MAX_CACHE_BYTES
-        ) {
-            const oldestKey = FractalAssetLoader.cache.keys().next().value;
-            if (oldestKey !== undefined) {
-                const entry = FractalAssetLoader.cache.get(oldestKey);
-                if (entry) {
-                    FractalAssetLoader.cacheBytes = Math.max(0, FractalAssetLoader.cacheBytes - entry.size);
-                }
-                FractalAssetLoader.cache.delete(oldestKey);
-            } else {
-                break;
-            }
-        }
-    }
-
-    private static cacheBuffer(url: string, arrayBuffer: ArrayBuffer): void {
-        const size = arrayBuffer.byteLength;
-        if (size <= 0 || size > FractalAssetLoader.MAX_CACHE_BYTES) {
-            return;
-        }
-
-        const existingEntry = FractalAssetLoader.cache.get(url);
-        if (existingEntry) {
-            FractalAssetLoader.cacheBytes = Math.max(0, FractalAssetLoader.cacheBytes - existingEntry.size);
-            FractalAssetLoader.cache.delete(url);
-        }
-
-        FractalAssetLoader.evictIfNeeded(size);
-        FractalAssetLoader.cache.set(url, { buffer: arrayBuffer, size });
-        FractalAssetLoader.cacheBytes += size;
-    }
-
     private static createGlbLoader() {
         const gltfLoader = new GLTFLoader();
-
         try {
             gltfLoader.setDRACOLoader(FractalAssetLoader.getDracoLoader());
             gltfLoader.setMeshoptDecoder(MeshoptDecoder);
         } catch {
+            // Optional decoders: swallow errors and fall back to undecorated loader.
         }
-
         return gltfLoader;
     }
 
     static clearCache() {
-        FractalAssetLoader.cache.clear();
-        FractalAssetLoader.cacheBytes = 0;
+        geometryPool.clear();
     }
 
     static async preload(url: string, signal?: AbortSignal): Promise<void> {
-        if (FractalAssetLoader.cache.has(url)) return;
-
+        if (geometryPool.get(url)) return;
+        const existing = await geometryPool.readFromOpfs(url);
+        if (existing) return;
         const blob = await FractalAssetLoader.requestBlob(url, signal);
-
         if (signal?.aborted) return;
-
         const arrayBuffer = await blob.arrayBuffer();
-
         if (signal?.aborted) return;
-
-        FractalAssetLoader.cacheBuffer(url, arrayBuffer);
+        await geometryPool.writeToOpfs(url, arrayBuffer);
     }
 
     async load(
@@ -156,79 +99,70 @@ export class FractalAssetLoader implements IFractalAssetLoader {
         onProgress?: (progress: number) => void,
         signal?: AbortSignal
     ): Promise<THREE.Group> {
-        if (signal?.aborted) {
-            throw FractalAssetLoader.createAbortError();
-        }
+        if (signal?.aborted) throw FractalAssetLoader.createAbortError();
 
-        const arrayBuffer = await this.getArrayBuffer(url, onProgress, signal);
-
-        if (signal?.aborted) {
-            throw FractalAssetLoader.createAbortError();
-        }
-
-        return this.parse(arrayBuffer, signal);
-    }
-
-    private async getArrayBuffer(
-        url: string,
-        onProgress?: (progress: number) => void,
-        signal?: AbortSignal
-    ) {
-        const cachedEntry = FractalAssetLoader.touchCacheEntry(url);
-        if (cachedEntry) {
+        const cached = geometryPool.get(url);
+        if (cached) {
             onProgress?.(1);
-            debugFractal('asset-loader.cache-hit', {
-                url,
-                bytes: cachedEntry.size
-            });
-            return cachedEntry.buffer;
+            debugFractal('asset-loader.geometry-cache-hit', { url });
+            return this.wrapGeometry(cached);
         }
 
-        const blob = await FractalAssetLoader.requestBlob(url, signal);
-
-        if (signal?.aborted) {
-            throw FractalAssetLoader.createAbortError();
+        let arrayBuffer = await geometryPool.readFromOpfs(url);
+        if (!arrayBuffer) {
+            const blob = await FractalAssetLoader.requestBlob(url, signal);
+            if (signal?.aborted) throw FractalAssetLoader.createAbortError();
+            arrayBuffer = await blob.arrayBuffer();
+            if (signal?.aborted) throw FractalAssetLoader.createAbortError();
+            debugFractal('asset-loader.fetch-complete', { url, bytes: arrayBuffer.byteLength });
+            void geometryPool.writeToOpfs(url, arrayBuffer);
+        } else {
+            debugFractal('asset-loader.opfs-hit', { url, bytes: arrayBuffer.byteLength });
         }
-
         onProgress?.(1);
 
-        const arrayBuffer = await blob.arrayBuffer();
-
-        if (signal?.aborted) {
-            throw FractalAssetLoader.createAbortError();
+        const group = await this.parse(arrayBuffer, signal);
+        const geometry = this.extractRenderableGeometry(group);
+        if (geometry) {
+            geometryPool.insert(url, geometry);
         }
+        return group;
+    }
 
-        FractalAssetLoader.cacheBuffer(url, arrayBuffer);
-        debugFractal('asset-loader.fetch-complete', {
-            url,
-            bytes: arrayBuffer.byteLength
+    private wrapGeometry(geometry: THREE.BufferGeometry): THREE.Group {
+        const group = new THREE.Group();
+        // Why: the engine expects a THREE.Points; wrap the cached geometry.
+        const points = new THREE.Points(geometry.clone(), new THREE.PointsMaterial({ size: 1 }));
+        group.add(points);
+        return group;
+    }
+
+    private extractRenderableGeometry(group: THREE.Group): THREE.BufferGeometry | null {
+        let found: THREE.BufferGeometry | null = null;
+        group.traverse((child) => {
+            if (found) return;
+            if (child instanceof THREE.Points) {
+                found = child.geometry;
+            }
         });
-        return arrayBuffer;
+        return found;
     }
 
     private parse(arrayBuffer: ArrayBuffer, signal?: AbortSignal): Promise<THREE.Group> {
         return new Promise<THREE.Group>((resolve, reject) => {
             const gltfLoader = FractalAssetLoader.createGlbLoader();
             let settled = false;
-            const handleAbort = () => {
-                rejectAbort();
-            };
-
+            const handleAbort = () => { rejectAbort(); };
             const rejectAbort = () => {
-                if (settled) {
-                    return;
-                }
-
+                if (settled) return;
                 settled = true;
                 signal?.removeEventListener('abort', handleAbort);
                 reject(FractalAssetLoader.createAbortError());
             };
-
             if (signal?.aborted) {
                 rejectAbort();
                 return;
             }
-
             signal?.addEventListener('abort', handleAbort, { once: true });
 
             gltfLoader.parse(
@@ -239,38 +173,27 @@ export class FractalAssetLoader implements IFractalAssetLoader {
                         disposeObject3DResources(gltf.scene);
                         return;
                     }
-
                     settled = true;
                     signal?.removeEventListener('abort', handleAbort);
-
                     if (signal?.aborted) {
                         disposeObject3DResources(gltf.scene);
                         reject(FractalAssetLoader.createAbortError());
                         return;
                     }
-
                     debugFractal('asset-loader.parse-success', summarizeRenderableContent(gltf.scene));
                     resolve(gltf.scene);
                 },
                 (error: unknown) => {
-                    if (settled) {
-                        return;
-                    }
-
+                    if (settled) return;
                     settled = true;
                     signal?.removeEventListener('abort', handleAbort);
                     let parsedError: Error;
-                    if (error instanceof Error) {
-                        parsedError = error;
-                    } else {
-                        parsedError = new Error(String(error));
-                    }
-                    warnFractal('asset-loader.parse-failed', {
-                        message: parsedError.message
-                    });
+                    if (error instanceof Error) parsedError = error;
+                    else parsedError = new Error(String(error));
+                    warnFractal('asset-loader.parse-failed', { message: parsedError.message });
                     reject(parsedError);
                 }
             );
         });
     }
-};
+}

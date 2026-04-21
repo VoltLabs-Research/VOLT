@@ -1,6 +1,5 @@
 import {
     buildKeys,
-    createMutation,
     createQuery
 } from '@/shared/infrastructure/query';
 import {
@@ -9,7 +8,6 @@ import {
     useCanvasAccessStore,
     withAccessMode
 } from '@/modules/canvas/api/access';
-import colorCodingService from '../../api/services/color-coding';
 import type {
     ColorCodingProperties,
     ColorCodingStats,
@@ -49,5 +47,3 @@ export const colorCodingStatsQuery = createQuery<GetColorCodingStatsInputDTO, Co
     getColorCodingStatsKey,
     (params) => currentDataAccess().getColorCodingStats(params)
 );
-
-export const useApplyColorCodingMutation = createMutation(colorCodingService.apply);

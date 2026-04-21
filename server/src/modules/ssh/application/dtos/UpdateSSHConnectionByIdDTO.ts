@@ -1,5 +1,3 @@
-import { SafeSSHConnectionDTO } from '@modules/ssh/application/dtos/CreateSSHConnectionDTO';
-
 export interface UpdateSSHConnectionByIdInputDTO{
     name?: string;
     host?: string;
@@ -9,5 +7,3 @@ export interface UpdateSSHConnectionByIdInputDTO{
     sshConnectionId: string;
     teamId: string;
 };
-
-export interface UpdateSSHConnectionByIdOutputDTO extends SafeSSHConnectionDTO{}

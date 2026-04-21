@@ -15,7 +15,6 @@ import { GetPublicCanvasPreviewUseCase } from '@modules/trajectory/application/u
 import { GetPublicCanvasRasterFrameUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasRasterFrameUseCase';
 import { GetPublicCanvasTrajectoryUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasTrajectoryUseCase';
 import { ListPublicCanvasAnalysesUseCase } from '@modules/trajectory/application/use-cases/canvas/ListPublicCanvasAnalysesUseCase';
-import { GetPublicCanvasAtomsUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasAtomsUseCase';
 import { GetPublicCanvasSimulationCellUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasSimulationCellUseCase';
 import { ListPublicCanvasSceneArtifactsUseCase } from '@modules/trajectory/application/use-cases/canvas/ListPublicCanvasSceneArtifactsUseCase';
 import { GetPublicCanvasColorCodingPropertiesUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasColorCodingPropertiesUseCase';
@@ -31,6 +30,7 @@ import { GetPublicCanvasSubListingUseCase } from '@modules/trajectory/applicatio
 import { GetPublicCanvasPluginExposureGLBUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasPluginExposureGLBUseCase';
 import { GetPublicCanvasAnalysisFrameLogUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasAnalysisFrameLogUseCase';
 import { GetPublicCanvasRasterMetadataUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasRasterMetadataUseCase';
+import GetPublicCanvasAtomsBinaryController from './GetPublicCanvasAtomsBinaryController';
 import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
@@ -44,6 +44,23 @@ const withOptionalUserId = (
     userId: req.authType === AuthenticationType.User
         ? req.userId
         : undefined
+});
+
+const readAcceptEncoding = (req: AuthenticatedRequest): string | undefined => {
+    const header = req.headers['accept-encoding'];
+    if (Array.isArray(header)) {
+        return header.join(',');
+    }
+
+    return header;
+};
+
+const withGlbRequestContext = (
+    req: AuthenticatedRequest,
+    params: Record<string, unknown>
+): Record<string, unknown> => ({
+    ...withOptionalUserId(req, params),
+    acceptEncoding: readAcceptEncoding(req)
 });
 
 const GetPublicCanvasBootstrapController = createController(GetPublicCanvasBootstrapUseCase, {
@@ -95,15 +112,20 @@ const GetPublicCanvasDumpController = createPreparedDownloadStreamController(Get
 
 const GetPublicCanvasGLBController = createStreamController(GetPublicCanvasGLBUseCase, {
     validationSchema: canvasValidationSchemas.getGlb,
-    extendParams: withOptionalUserId,
+    extendParams: withGlbRequestContext,
     getHeaders: (resultValue) => {
         const headers: Record<string, string> = {
             'Content-Type': 'model/gltf-binary',
             'Content-Disposition': `attachment; filename="${resultValue.objectName}"`,
-            'Cache-Control': 'public, max-age=31536000, immutable'
+            'Cache-Control': 'public, max-age=31536000, immutable',
+            'Vary': 'Accept-Encoding'
         };
 
-        if (typeof resultValue.size === 'number' && resultValue.size > 0) {
+        if (resultValue.contentEncoding && resultValue.contentEncoding !== 'identity') {
+            headers['Content-Encoding'] = resultValue.contentEncoding;
+        }
+
+        if (resultValue.contentEncoding === 'zstd' && typeof resultValue.size === 'number' && resultValue.size > 0) {
             headers['Content-Length'] = String(resultValue.size);
         }
 
@@ -116,10 +138,6 @@ const ListPublicCanvasAnalysesController = createPaginatedController(ListPublicC
     extendParams: withOptionalUserId
 });
 
-const GetPublicCanvasAtomsController = createPaginatedController(GetPublicCanvasAtomsUseCase, {
-    validationSchema: canvasValidationSchemas.getAtoms,
-    extendParams: withOptionalUserId
-});
 
 const GetPublicCanvasSimulationCellController = createController(GetPublicCanvasSimulationCellUseCase, {
     validationSchema: canvasValidationSchemas.getSimulationCell,
@@ -218,7 +236,7 @@ const GetPublicCanvasSubListingController = createController(GetPublicCanvasSubL
 
 const GetPublicCanvasPluginExposureGLBController = createPreparedDownloadStreamController(GetPublicCanvasPluginExposureGLBUseCase, {
     validationSchema: canvasValidationSchemas.getExposureGlb,
-    extendParams: withOptionalUserId
+    extendParams: withGlbRequestContext
 });
 
 const GetPublicCanvasAnalysisFrameLogController = createController(GetPublicCanvasAnalysisFrameLogUseCase, {
@@ -240,7 +258,6 @@ const resolvedControllers = createControllerRegistry({
     dump: GetPublicCanvasDumpController,
     glb: GetPublicCanvasGLBController,
     analyses: ListPublicCanvasAnalysesController,
-    atoms: GetPublicCanvasAtomsController,
     simulationCell: GetPublicCanvasSimulationCellController,
     sceneArtifacts: ListPublicCanvasSceneArtifactsController,
     colorCodingProperties: GetPublicCanvasColorCodingPropertiesController,
@@ -262,7 +279,8 @@ const resolvedControllers = createControllerRegistry({
     subListing: GetPublicCanvasSubListingController,
     exposureGlb: GetPublicCanvasPluginExposureGLBController,
     frameLog: GetPublicCanvasAnalysisFrameLogController,
-    rasterMetadata: GetPublicCanvasRasterMetadataController
+    rasterMetadata: GetPublicCanvasRasterMetadataController,
+    atomsBinary: GetPublicCanvasAtomsBinaryController
 });
 
 export default resolvedControllers;
