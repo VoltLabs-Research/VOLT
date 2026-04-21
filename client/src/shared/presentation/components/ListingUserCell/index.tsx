@@ -1,4 +1,4 @@
-import UserInfo from '@/modules/auth/components/atoms/UserInfo';
+import UserInfo from '@/modules/auth/components/UserInfo';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
 import { resolveTeamUserOnline } from '@/modules/team/utilities/member/presence';

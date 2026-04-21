@@ -1,5 +1,4 @@
 import Button from '@/shared/presentation/components/Button';
-import Container from '@/shared/presentation/components/Container';
 import { LuPanelRight } from 'react-icons/lu';
 
 interface SidebarHeaderProps {
@@ -12,9 +11,9 @@ interface SidebarHeaderProps {
 const SidebarHeader = ({ collapsed, onToggle, controlsId, children }: SidebarHeaderProps) => {
     return (
         <header className='d-flex content-between p-1-5 sm:p-1 editor-sidebar-header-container'>
-            <Container className='d-flex column gap-05 editor-sidebar-header-content'>
+            <div className='volt-container d-flex column gap-05 editor-sidebar-header-content'>
                 {children}
-            </Container>
+            </div>
 
             <Button
                 variant='ghost'

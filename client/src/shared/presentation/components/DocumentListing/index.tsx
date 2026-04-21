@@ -7,23 +7,20 @@ import { sortData } from '@/shared/utils/sort';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import Button from '@/shared/presentation/components/Button';
-import Container from '@/shared/presentation/components/Container';
 import AsyncMenuItemWrapper from '@/shared/presentation/components/AsyncMenuItemWrapper';
 import DocumentListingGrid from '@/shared/presentation/components/DocumentListingGrid';
 import DocumentListingTable from '@/shared/presentation/components/DocumentListingTable';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import SegmentedTabs from '@/shared/presentation/components/SegmentedTabs';
-import Title from '@/shared/presentation/components/Title';
 import useDocumentListingPagination from '@/shared/presentation/hooks/use-document-listing-pagination';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-params';
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 
 import './DocumentListing.css';
-import { Skeleton } from '@mui/material';
+import Skeleton from '@/shared/presentation/components/Skeleton';
 import { motion } from 'framer-motion';
 import { ArrowDown, ArrowUp, ArrowUpDown, Check, Columns3, ExternalLink, Plus } from 'lucide-react';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
@@ -531,7 +528,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         }
 
         return (
-            <Container ref={scrollContainerRef} className='document-listing-body-container overflow-auto flex-1'>
+            <div ref={scrollContainerRef} className='volt-container document-listing-body-container overflow-auto flex-1'>
                 <motion.div
                     initial={prefersReducedMotion ? false : { opacity: 0, y: 15 }}
                     animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
@@ -563,41 +560,41 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                         compact={compact}
                     />
                 </motion.div>
-            </Container>
+            </div>
         );
     };
 
     return (
-        <Container className={`d-flex column h-max document-listing-container color-secondary gap-1 ${compact ? 'is-compact' : ''}`}>
+        <div className={`volt-container d-flex column h-max document-listing-container color-secondary gap-1 ${compact ? 'is-compact' : ''}`}>
             <span style={VISUALLY_HIDDEN_STYLES} aria-live='polite' aria-atomic='true'>
                 {sortAnnouncement}
             </span>
             {!hideHeader && (
-                <Container className={`d-flex column ${gap}`}>
-                    <Container className='d-flex column gap-1-5 document-listing-header-top-container p-2'>
-                        <Container className='d-flex content-between items-start gap-1-5 document-listing-header-row'>
-                            <Container className='document-listing-header-main d-flex gap-1 items-start'>
+                <div className={`volt-container d-flex column ${gap}`}>
+                    <div className='volt-container d-flex column gap-1-5 document-listing-header-top-container p-2'>
+                        <div className='volt-container d-flex content-between items-start gap-1-5 document-listing-header-row'>
+                            <div className='volt-container document-listing-header-main d-flex gap-1 items-start'>
                                 {isLoading && !data.length ? (
-                                    <Container className='d-flex column gap-025'>
+                                    <div className='volt-container d-flex column gap-025'>
                                         <Skeleton variant='text' width={220} height={32} />
                                         {description ? <Skeleton variant='text' width={224} height={18} /> : null}
-                                    </Container>
+                                    </div>
                                 ) : (
-                                    <Container className='document-listing-header-title-block d-flex column gap-025'>
+                                    <div className='volt-container document-listing-header-title-block d-flex column gap-025'>
                                         {typeof title === 'string' ? (
-                                            <Title className='font-size-6 font-weight-5 sm:font-size-4 color-primary'>{title}</Title>
+                                            <h3 className='volt-title font-size-6 font-weight-5 sm:font-size-4 color-primary'>{title}</h3>
                                         ) : (
                                             title
                                         )}
                                         {description ? (
-                                            <Paragraph className='document-listing-header-description font-size-1 color-muted'>
+                                            <p className='volt-text document-listing-header-description font-size-1 color-muted'>
                                                 {description}
-                                            </Paragraph>
+                                            </p>
                                         ) : null}
-                                    </Container>
+                                    </div>
                                 )}
                                 {(headerDocLink || headerMenuTrigger || columnPickerTrigger) && (
-                                    <Container className='d-flex gap-05 items-center'>
+                                    <div className='volt-container d-flex gap-05 items-center'>
                                         {headerDocLink}
                                         {columnPickerTrigger && (
                                             <Popover
@@ -653,23 +650,23 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                                                 )}
                                             </Popover>
                                         )}
-                                    </Container>
+                                    </div>
                                 )}
-                            </Container>
-                            <Container className='d-flex gap-2 items-center document-listing-header-actions'>
+                            </div>
+                            <div className='volt-container d-flex gap-2 items-center document-listing-header-actions'>
                                 {headerActions}
                                 {createNew && (
                                     <Button variant='solid' intent='brand' onClick={createNew.onCreate} leftIcon={<Plus size={18} />}>
                                         {createNew.buttonTitle}
                                     </Button>
                                 )}
-                            </Container>
-                        </Container>
-                    </Container>
+                            </div>
+                        </div>
+                    </div>
 
                     {!hideTabs && resolvedTabs.length >= 2 && (
-                        <Container>
-                            <Container className='document-listing-header-tabs-container'>
+                        <div className="volt-container">
+                            <div className='volt-container document-listing-header-tabs-container'>
                                 <SegmentedTabs
                                     tabs={resolvedTabs}
                                     activeTab={activeTabId}
@@ -677,15 +674,15 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                                     ariaLabel='Listing views'
                                     layoutId={`${persistenceKey}-tabs`}
                                 />
-                            </Container>
-                            <Container className='document-listing-header-filters-container' />
-                        </Container>
+                            </div>
+                            <div className='volt-container document-listing-header-filters-container' />
+                        </div>
                     )}
-                </Container>
+                </div>
             )}
 
             {renderContent()}
-        </Container>
+        </div>
     );
 };
 

@@ -1,8 +1,4 @@
 import Button from '@/shared/presentation/components/Button';
-import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import Title from '@/shared/presentation/components/Title';
-
 interface DeferredExplorerStateProps {
     body: string;
     ctaLabel?: string;
@@ -21,13 +17,13 @@ const DeferredExplorerState = ({
         : null;
 
     return (
-        <Container className='d-flex column gap-1 p-2 flex-1 justify-center'>
-            <Title order={4}>{title}</Title>
-            <Paragraph className='color-secondary'>
+        <div className='volt-container d-flex column gap-1 p-2 flex-1 justify-center'>
+            <h3 className="volt-title" order={4}>{title}</h3>
+            <p className='volt-text color-secondary'>
                 {body}
-            </Paragraph>
+            </p>
             {actionButton}
-        </Container>
+        </div>
     );
 };
 

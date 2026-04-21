@@ -1,3 +1,57 @@
+@property --slider-ratio {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+}
+
+@property --slider-ring-a {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+}
+
+@property --slider-ring-b {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+}
+
+@property --slider-elev {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+}
+
+@property --slider-scale {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 1;
+}
+
+@property --slider-aura-opacity {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+}
+
+@property --slider-aura-scale {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 1;
+}
+
+@property --slider-aura-intensity {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+}
+
+@property --slider-sheen-opacity {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+}
+
 .slider {
     display: inline-flex;
     width: 120px;
@@ -14,10 +68,17 @@
     border-radius: 9999px;
     border: 1px solid var(--button-border);
     background: var(--button-bg-smooth);
-    transition: border-color .15s ease, transform .2s ease;
     contain: layout paint style;
     touch-action: none;
     will-change: transform, box-shadow;
+    transform: scale(var(--slider-scale, 1));
+    transition:
+        border-color .15s ease,
+        transform .18s cubic-bezier(0.34, 1.56, 0.64, 1),
+        --slider-ring-a .2s cubic-bezier(0.16, 1, 0.3, 1),
+        --slider-ring-b .25s cubic-bezier(0.16, 1, 0.3, 1),
+        --slider-elev .2s cubic-bezier(0.16, 1, 0.3, 1),
+        --slider-scale .18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .slider__track:hover {
@@ -28,8 +89,8 @@
     outline: none;
     box-shadow:
         0 0 0 1px var(--color-border),
-        0 0 0 calc(4px + var(--ringB, 0)*8px) color-mix(in srgb, var(--focus-ring) 30%, transparent),
-        0 6px calc(20px + var(--elev, 0)*10px) rgba(0, 0, 0, .08);
+        0 0 0 calc(4px + var(--slider-ring-b, 0)*8px) color-mix(in srgb, var(--focus-ring) 30%, transparent),
+        0 6px calc(20px + var(--slider-elev, 0)*10px) rgba(0, 0, 0, .08);
 }
 
 .slider--disabled .slider__track {
@@ -39,12 +100,17 @@
 
 .slider__progress {
     transform-origin: 0% 50%;
-    transform: translateZ(0) scaleX(0);
+    transform: translateZ(0) scaleX(var(--slider-ratio, 0));
     will-change: transform;
     background: linear-gradient(180deg, color-mix(in srgb, var(--accent-blue) 78%, var(--color-contrast-high)), var(--accent-blue));
     box-shadow:
         inset 0 1px 0 color-mix(in srgb, var(--color-contrast-high) 30%, transparent),
         inset 0 -1px 0 color-mix(in srgb, var(--accent-indigo) 45%, transparent);
+    transition: --slider-ratio .1s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.slider__track[data-dragging] .slider__progress {
+    transition: none;
 }
 
 .slider__gloss {
@@ -68,7 +134,7 @@
     left: 0%;
     width: 40%;
     height: 180%;
-    transform: translate(-50%, -50%) rotate(15deg);
+    transform: translate(calc(var(--slider-ratio, 0) * 100%), -50%) rotate(15deg);
     background: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, .6) 40%, rgba(255, 255, 255, .95) 50%, rgba(255, 255, 255, .6) 60%, rgba(255, 255, 255, 0) 100%);
     opacity: 0;
     pointer-events: none;
@@ -76,18 +142,61 @@
     filter: saturate(130%) brightness(1.1);
     will-change: transform, opacity, scale;
     transform-origin: center;
+    transition:
+        --slider-ratio .1s cubic-bezier(0.33, 1, 0.68, 1),
+        opacity .15s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.slider__track[data-dragging] .slider__sheen {
+    transition: opacity .15s cubic-bezier(0.33, 1, 0.68, 1);
+    animation: slider-sheen-loop 0.55s cubic-bezier(0.33, 1, 0.68, 1) infinite;
+}
+
+@keyframes slider-sheen-loop {
+    0% {
+        opacity: 0;
+        transform: translate(calc(var(--slider-ratio, 0) * 100% - 40%), -50%) rotate(15deg) scale(0.8);
+    }
+    18% {
+        opacity: 0.6;
+        transform: translate(calc(var(--slider-ratio, 0) * 100% + 10%), -50%) rotate(15deg) scale(1.1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(calc(var(--slider-ratio, 0) * 100% + 120%), -50%) rotate(15deg) scale(0.9);
+    }
 }
 
 .slider__aura {
     inset: -25% -15%;
-    opacity: 0;
+    opacity: var(--slider-aura-opacity, 0);
     pointer-events: none;
-    filter: blur(calc(var(--aura, 0)*32px));
+    filter: blur(calc(var(--slider-aura-intensity, 0)*32px));
     background: radial-gradient(80% 120% at 0% 50%, rgba(255, 255, 255, .12), rgba(255, 255, 255, 0) 60%);
     mix-blend-mode: screen;
     z-index: 1;
+    transform: scale(var(--slider-aura-scale, 1));
     transform-origin: center;
     will-change: opacity, transform, filter;
+    transition:
+        --slider-aura-opacity .2s cubic-bezier(0.16, 1, 0.3, 1),
+        --slider-aura-scale .2s cubic-bezier(0.16, 1, 0.3, 1),
+        --slider-aura-intensity .2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.slider__aura[data-pulse] {
+    animation: slider-aura-pulse .25s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+@keyframes slider-aura-pulse {
+    0% {
+        opacity: 0.6;
+        transform: scale(1.1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1);
+    }
 }
 
 :root[data-theme='light'] .slider__aura {
@@ -162,6 +271,11 @@
     .slider__aura,
     .slider__sparkles span {
         transition: none !important;
+        animation: none !important;
+    }
+
+    .slider__track[data-dragging] .slider__sheen,
+    .slider__aura[data-pulse] {
         animation: none !important;
     }
 }

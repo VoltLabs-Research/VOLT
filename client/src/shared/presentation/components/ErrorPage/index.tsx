@@ -1,6 +1,5 @@
 import { SOURCE_LABELS } from '@/shared/utils';
 import Button from '@/shared/presentation/components/Button';
-import Container from '@/shared/presentation/components/Container';
 import './ErrorPage.css';
 import { format, isValid } from 'date-fns';
 import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
@@ -20,12 +19,12 @@ const ErrorPage = () => {
 
     return (
         <main className='error-page d-flex items-center content-center w-max'>
-            <Container className='error-page-content d-flex column gap-1-5 items-center text-center' role='alert' aria-live='assertive'>
-                <Container className='error-page-icon d-flex items-center content-center'>
+            <div className='volt-container error-page-content d-flex column gap-1-5 items-center text-center' role='alert' aria-live='assertive'>
+                <div className='volt-container error-page-icon d-flex items-center content-center'>
                     <AlertTriangle size={24} aria-hidden='true' />
-                </Container>
+                </div>
 
-                <Container className='d-flex column gap-05 text-center'>
+                <div className='volt-container d-flex column gap-05 text-center'>
                     <h1 className='font-size-3 font-weight-5 color-primary error-page-title'>
                         Something went wrong
                     </h1>
@@ -35,11 +34,11 @@ const ErrorPage = () => {
                     <p className='font-size-2 color-muted error-page-description'>
                         Head back to the dashboard to continue.
                     </p>
-                </Container>
+                </div>
 
                 {source && (
                     <section className='d-flex column gap-1 items-center w-max' aria-label='Error details'>
-                        <Container className='d-flex gap-1 items-center'>
+                        <div className='volt-container d-flex gap-1 items-center'>
                             <span className='error-page-source'>
                                 {SOURCE_LABELS[source] ?? source}
                             </span>
@@ -48,10 +47,10 @@ const ErrorPage = () => {
                                     {format(errorTimestamp, 'p')}
                                 </span>
                             )}
-                        </Container>
+                        </div>
 
                         {stack && (
-                            <Container className='d-flex column gap-05 w-max'>
+                            <div className='volt-container d-flex column gap-05 w-max'>
                                 <Button
                                     variant='ghost'
                                     intent='neutral'
@@ -68,7 +67,7 @@ const ErrorPage = () => {
                                         {stack}
                                     </pre>
                                 )}
-                            </Container>
+                            </div>
                         )}
                     </section>
                 )}
@@ -81,7 +80,7 @@ const ErrorPage = () => {
                 >
                     Back to dashboard
                 </Button>
-            </Container>
+            </div>
         </main>
     );
 };

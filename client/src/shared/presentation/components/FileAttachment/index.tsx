@@ -1,7 +1,5 @@
 import { cn } from '@/shared/utils/cn';
 import { formatSize } from '@/shared/utils/format';
-import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import './FileAttachment.css';
 import Button from '@/shared/presentation/components/Button';
@@ -77,8 +75,8 @@ const FileAttachment = ({
     };
     
     return (
-        <Container className={cn('d-flex items-center gap-075 file-attachment', `file-attachment--${variant}`, className)}>
-            <Container className={cn('d-flex flex-center f-shrink-0', showPreview && isImage ? 'file-attachment-preview' : 'file-attachment-icon')}>
+        <div className={`volt-container ${cn('d-flex items-center gap-075 file-attachment', `file-attachment--${variant}`, className)}`}>
+            <div className={`volt-container ${cn('d-flex flex-center f-shrink-0', showPreview && isImage ? 'file-attachment-preview' : 'file-attachment-icon')}`}>
                 {showPreview && isImage && fileUrl ? (
                     <img 
                         src={fileUrl} 
@@ -90,13 +88,13 @@ const FileAttachment = ({
                 ) : (
                     <IoDocumentOutline size={iconSize} className='color-muted' />
                 )}
-            </Container>
+            </div>
             
-            <Container className='d-flex column flex-1 overflow-hidden'>
-                <Container className='d-flex items-center gap-05 flex-1 overflow-hidden'>
-                    <Paragraph className='font-size-2 font-weight-5 file-attachment-name text-truncate' title={fileName}>
+            <div className='volt-container d-flex column flex-1 overflow-hidden'>
+                <div className='volt-container d-flex items-center gap-05 flex-1 overflow-hidden'>
+                    <p className='volt-text font-size-2 font-weight-5 file-attachment-name text-truncate' title={fileName}>
                         {fileName}
-                    </Paragraph>
+                    </p>
                     <Tooltip content='Copy full file name'>
                         <Button
                             variant='ghost'
@@ -111,17 +109,17 @@ const FileAttachment = ({
                             <Copy size={14} aria-hidden='true' />
                         </Button>
                     </Tooltip>
-                </Container>
-                <Container className='d-flex items-center gap-05 font-size-1'>
-                    {fileSize !== undefined && <Paragraph>{formatSize(fileSize)}</Paragraph>}
+                </div>
+                <div className='volt-container d-flex items-center gap-05 font-size-1'>
+                    {fileSize !== undefined && <p className="volt-text">{formatSize(fileSize)}</p>}
                     {timestamp && (
                         <>
-                            {fileSize !== undefined && <Paragraph>-</Paragraph>}
-                            <Paragraph>{timestamp}</Paragraph>
+                            {fileSize !== undefined && <p className="volt-text">-</p>}
+                            <p className="volt-text">{timestamp}</p>
                         </>
                     )}
-                </Container>
-            </Container>
+                </div>
+            </div>
             
             {showDownload && fileUrl && (
                 <Tooltip content='Download'>
@@ -137,7 +135,7 @@ const FileAttachment = ({
                     </a>
                 </Tooltip>
             )}
-        </Container>
+        </div>
     );
 };
 

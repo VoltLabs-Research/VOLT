@@ -1,6 +1,8 @@
 import { IBaseRepository } from '@shared/domain/port/IBaseRepository';
 import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
-import DailyActivity, { ActivityType, DailyActivityProps } from '@modules/daily-activity/domain/entities/DailyActivity';
+import { ActivityType } from '@modules/daily-activity/domain/entities/DailyActivity';
+import type DailyActivity from '@modules/daily-activity/domain/entities/DailyActivity';
+import type { DailyActivityProps } from '@modules/daily-activity/domain/entities/DailyActivity';
 
 export interface DailyActivityUserSummary {
     _id: string;

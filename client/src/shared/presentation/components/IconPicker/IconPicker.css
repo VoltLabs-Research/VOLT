@@ -117,10 +117,32 @@
 }
 
 .icon-picker-empty {
+    grid-column: 1 / -1;
     padding: 2rem 1rem;
     text-align: center;
     font-size: 0.8125rem;
     color: var(--color-text-muted);
+}
+
+.icon-picker-retry {
+    margin-left: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    border: 1px solid var(--color-border-soft);
+    background: transparent;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    border-radius: var(--radius-xs);
+    font-size: 0.75rem;
+    transition: background-color .12s ease;
+}
+
+.icon-picker-retry:hover {
+    background: var(--hover-bg);
+}
+
+.icon-picker-retry:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring);
 }
 
 .icon-picker-footer {

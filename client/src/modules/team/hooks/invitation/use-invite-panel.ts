@@ -1,7 +1,7 @@
 import useTeamInvitationData from '@/modules/team/hooks/invitation/use-team-invitation-data';
 import { useCancelInvitationMutation, useSendInvitationMutation } from '@/modules/team/hooks/invitation/queries';
 import type { TeamInvitation } from '@/modules/team/api/entities/invitation/team-invitation';
-import type { InviteButtonState } from '../../components/atoms/InviteButton';
+import type { InviteButtonState } from '../../components/InviteButton';
 import { ErrorSurface, getErrorMessage, isAccessDeniedError, isApiError, reportError } from '@/shared/errors/core';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import { zodResolver } from '@hookform/resolvers/zod';

@@ -19,7 +19,7 @@ import {
     patchInfinitePages,
     batchInvalidateQueries
 } from '@/shared/infrastructure/query/cache-utils';
-import { createMutation, buildKeys } from '@/shared/infrastructure/query';
+import { createMutation, createQuery, buildKeys } from '@/shared/infrastructure/query';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import pluginService from '../../api/services/plugin';
 import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
@@ -105,11 +105,21 @@ const savePlugin = async (input: SavePluginInputDTO): Promise<Plugin> => {
 
 // ─── Plugin queries ──────────────────────────────────────────────────────────
 
-export const buildAllPluginsQueryOptions = () => ({
-    queryKey: PLUGIN_QUERY_KEYS.allList(),
-    queryFn: fetchAllPlugins
-});
+const allPluginsQuery = createQuery<void, Plugin[]>(
+    () => PLUGIN_QUERY_KEYS.allList(),
+    fetchAllPlugins
+);
 
+export const buildAllPluginsQueryOptions = () => allPluginsQuery.buildOptions();
+
+export const useAllPluginsQuery = (
+    options?: QueryOptions<Plugin[], Plugin[]>
+) => allPluginsQuery(undefined, options as QueryOptions<Plugin[], Plugin[]> | undefined);
+
+// usePluginByIdQuery resolves its queryKey/queryFn per-call against the
+// current canvas access mode (wraps the key via withAccessMode + uses the
+// mode-specific dataAccess). Kept as raw useQuery since createQuery expects
+// a stable keyFn/queryFn pair and cannot capture mode from the module scope.
 export const buildPluginByIdQueryOptions = (params: GetPluginInputDTO) => {
     const accessState = useCanvasAccessStore.getState();
     const dataAccess = buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode: accessState.mode });
@@ -130,15 +140,6 @@ export const fetchPluginById = (
     });
 };
 
-export const useAllPluginsQuery = (
-    options?: QueryOptions<Plugin[], Plugin[]>
-) => {
-    return useQuery<Plugin[], Error, Plugin[], QueryKey>({
-        ...buildAllPluginsQueryOptions(),
-        ...options
-    });
-};
-
 export const usePluginByIdQuery = (
     params: GetPluginInputDTO,
     options?: QueryOptions<Plugin, Plugin>
@@ -151,25 +152,24 @@ export const usePluginByIdQuery = (
 
 // ─── Catalog queries ─────────────────────────────────────────────────────────
 
-export const buildPluginsQueryOptions = (params: GetPluginsInputDTO) => ({
-    queryKey: PLUGIN_QUERY_KEYS.catalogList(params),
-    queryFn: () => pluginService.getAll(params)
-});
+const pluginsQuery = createQuery<GetPluginsInputDTO, PaginatedResponse<Plugin>>(
+    (params) => PLUGIN_QUERY_KEYS.catalogList(params),
+    (params) => pluginService.getAll(params)
+);
 
-export const fetchPlugins = (params: GetPluginsInputDTO) => {
-    return queryClient.fetchQuery(buildPluginsQueryOptions(params));
-};
+export const buildPluginsQueryOptions = (params: GetPluginsInputDTO) => pluginsQuery.buildOptions(params);
+
+export const fetchPlugins = (params: GetPluginsInputDTO) => pluginsQuery.fetch(params);
 
 export const usePluginsQuery = (
     params: GetPluginsInputDTO,
     options?: QueryOptions<PaginatedResponse<Plugin>, PaginatedResponse<Plugin>>
-) => {
-    return useQuery<PaginatedResponse<Plugin>, Error, PaginatedResponse<Plugin>, QueryKey>({
-        ...buildPluginsQueryOptions(params),
-        ...options
-    });
-};
+) => pluginsQuery(params, options as QueryOptions<PaginatedResponse<Plugin>, PaginatedResponse<Plugin>> | undefined);
 
+// usePluginCatalogInfiniteQuery: consumer supplies its own getNextPageParam and
+// enabled flag. createInfiniteQuery hardcodes getNextPageParam based on the
+// server's `hasMore` field, so we keep this raw to preserve the bespoke
+// pagination contract used by the listing UI.
 export const usePluginCatalogInfiniteQuery = (
     params: { limit: number },
     options: { getNextPageParam: (lastPage: PaginatedResponse<Plugin>) => number | undefined; enabled?: boolean }
@@ -186,20 +186,17 @@ export const usePluginCatalogInfiniteQuery = (
     });
 };
 
-export const buildPluginTeamClustersQueryOptions = (params: ListPluginTeamClustersInputDTO) => ({
-    queryKey: PLUGIN_QUERY_KEYS.teamClustersList(params),
-    queryFn: () => pluginService.listTeamClusters(params)
-});
+const teamClustersQuery = createQuery<ListPluginTeamClustersInputDTO, ListPluginTeamClustersOutputDTO>(
+    (params) => PLUGIN_QUERY_KEYS.teamClustersList(params),
+    (params) => pluginService.listTeamClusters(params)
+);
+
+export const buildPluginTeamClustersQueryOptions = (params: ListPluginTeamClustersInputDTO) => teamClustersQuery.buildOptions(params);
 
 export const usePluginTeamClustersQuery = (
     params: ListPluginTeamClustersInputDTO,
     options?: QueryOptions<ListPluginTeamClustersOutputDTO, ListPluginTeamClustersOutputDTO>
-) => {
-    return useQuery<ListPluginTeamClustersOutputDTO, Error, ListPluginTeamClustersOutputDTO, QueryKey>({
-        ...buildPluginTeamClustersQueryOptions(params),
-        ...options
-    });
-};
+) => teamClustersQuery(params, options as QueryOptions<ListPluginTeamClustersOutputDTO, ListPluginTeamClustersOutputDTO> | undefined);
 
 // ─── Cache sync helpers ──────────────────────────────────────────────────────
 

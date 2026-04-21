@@ -1,6 +1,5 @@
 import { Children, isValidElement } from 'react';
 import type { ReactNode } from 'react';
-import { isRecord } from '@/shared/utils/type-guards';
 
 interface ElementWithChildrenProps {
     children?: ReactNode;

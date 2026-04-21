@@ -2,7 +2,7 @@ import {
     useTeamClustersQuery,
     useRevealTeamClusterCredentialsMutation
 } from '@/modules/cluster/hooks/team-cluster/queries';
-import { CLUSTER_CREDENTIALS_MODAL_ID } from '@/modules/cluster/components/organisms/ClusterCredentialsModal';
+import { CLUSTER_CREDENTIALS_MODAL_ID } from '@/modules/cluster/components/ClusterCredentialsModal';
 import { openModal } from '@/shared/presentation/components/Modal';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';

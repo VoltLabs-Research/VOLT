@@ -8,9 +8,14 @@ export interface NotificationProps{
     updatedAt: Date;
 };
 
-export default class Notification{
-    constructor(
-        public readonly _id: string,
-        public props: NotificationProps
-    ){}
+export interface Notification {
+    readonly _id: string;
+    props: NotificationProps;
 };
+
+export const createNotification = (_id: string, props: NotificationProps): Notification => ({
+    _id,
+    props
+});
+
+export default Notification;

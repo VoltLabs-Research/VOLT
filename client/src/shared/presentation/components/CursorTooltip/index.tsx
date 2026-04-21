@@ -3,14 +3,14 @@ import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootCont
 import './CursorTooltip.css';
 import { useFloating, offset, flip, shift, autoUpdate, FloatingPortal } from '@floating-ui/react';
 import { useEffect, useId, useRef } from 'react';
-import React from 'react';
+import type { ReactNode } from 'react';
 import type { Middleware, VirtualElement } from '@floating-ui/react';
 
 interface CursorTooltipProps {
     isOpen: boolean;
     x: number;
     y: number;
-    content?: React.ReactNode;
+    content?: ReactNode;
     className?: string;
     autoPosition?: boolean;
     interactive?: boolean;
@@ -29,7 +29,7 @@ const createVirtualCursorRect = (x: number, y: number) => ({
     height: 0
 });
 
-const CursorTooltip: React.FC<CursorTooltipProps> = ({
+const CursorTooltip = ({
     isOpen,
     x,
     y,
@@ -39,7 +39,7 @@ const CursorTooltip: React.FC<CursorTooltipProps> = ({
     interactive = false,
     offset: cursorOffset = 16,
     ariaLabel = 'Additional details'
-}) => {
+}: CursorTooltipProps) => {
     const arrowOffset = cursorOffset;
     const floatingRoot = useFloatingRoot();
     const prefersReducedMotion = usePrefersReducedMotion();

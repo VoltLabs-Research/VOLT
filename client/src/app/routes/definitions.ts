@@ -24,7 +24,7 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/dashboard',
         title: 'Dashboard',
-        loader: () => import('@/modules/dashboard/components/templates/Dashboard'),
+        loader: () => import('@/modules/dashboard/components/Dashboard'),
         index: true,
         navigation: {
             section: DashboardNavigationSection.Main,
@@ -35,7 +35,7 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/dashboard/settings/general',
         title: 'General Settings',
-        loader: () => import('@/modules/auth/components/templates/GeneralSettings'),
+        loader: () => import('@/modules/auth/components/GeneralSettings'),
         navigation: {
             section: DashboardNavigationSection.Settings,
             label: 'General'
@@ -44,7 +44,7 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/dashboard/settings/authentication',
         title: 'Authentication Settings',
-        loader: () => import('@/modules/auth/components/templates/AuthenticationSettings'),
+        loader: () => import('@/modules/auth/components/AuthenticationSettings'),
         navigation: {
             section: DashboardNavigationSection.Settings,
             label: 'Authentication'
@@ -53,7 +53,7 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/dashboard/settings/theme',
         title: 'Theme Settings',
-        loader: () => import('@/modules/auth/components/templates/ThemeSettings'),
+        loader: () => import('@/modules/auth/components/ThemeSettings'),
         navigation: {
             section: DashboardNavigationSection.Settings,
             label: 'Theme'
@@ -62,7 +62,7 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/dashboard/settings/integrations',
         title: 'Integrations Settings',
-        loader: () => import('@/modules/team/components/templates/IntegrationsSettings'),
+        loader: () => import('@/modules/team/components/IntegrationsSettings'),
         navigation: {
             section: DashboardNavigationSection.Settings,
             label: 'Integrations'
@@ -71,7 +71,7 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/dashboard/settings/sessions',
         title: 'Session Settings',
-        loader: () => import('@/modules/session/components/templates/SessionSettings'),
+        loader: () => import('@/modules/session/components/SessionSettings'),
         navigation: {
             section: DashboardNavigationSection.Settings,
             label: 'Sessions'
@@ -80,7 +80,7 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/dashboard/my-team',
         title: 'My Team',
-        loader: () => import('@/modules/team/components/templates/MyTeam'),
+        loader: () => import('@/modules/team/components/MyTeam'),
         requiredPermissions: ['team:read'],
         navigation: {
             section: DashboardNavigationSection.Secondary,
@@ -92,7 +92,7 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/dashboard/manage-roles',
         title: 'Manage Roles',
-        loader: () => import('@/modules/team/components/templates/ManageRoles'),
+        loader: () => import('@/modules/team/components/ManageRoles'),
         requiredPermissions: ['team-role:read'],
         navigation: {
             section: DashboardNavigationSection.Secondary,
@@ -104,7 +104,7 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/dashboard/secret-keys',
         title: 'Secret Keys',
-        loader: () => import('@/modules/team/components/templates/SecretKeysListing'),
+        loader: () => import('@/modules/team/components/SecretKeysListing'),
         requiredPermissions: ['team-secret-key:read'],
         navigation: {
             section: DashboardNavigationSection.Secondary,
@@ -116,61 +116,61 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/dashboard/secret-keys/metrics',
         title: 'Secret Key Metrics',
-        loader: () => import('@/modules/team/components/templates/SecretKeyMetrics'),
+        loader: () => import('@/modules/team/components/SecretKeyMetrics'),
         requiredPermissions: ['team-secret-key:read']
     },
     {
         path: '/dashboard/secret-keys/:secretKeyId',
         title: 'Secret Key',
-        loader: () => import('@/modules/team/components/templates/SecretKeyUsage'),
+        loader: () => import('@/modules/team/components/SecretKeyUsage'),
         requiredPermissions: ['team-secret-key:read']
     },
     {
         path: '/dashboard/secret-keys/:secretKeyId/usage',
         title: 'Secret Key Usage',
-        loader: () => import('@/modules/team/components/templates/SecretKeyUsage'),
+        loader: () => import('@/modules/team/components/SecretKeyUsage'),
         requiredPermissions: ['team-secret-key:read']
     },
     {
         path: '/dashboard/trajectories/list',
         title: 'Trajectories',
-        loader: () => import('@/modules/trajectory/components/templates/TrajectoriesListing'),
+        loader: () => import('@/modules/trajectory/components/TrajectoriesListing'),
         requiredPermissions: ['trajectory:read']
     },
     {
         path: '/dashboard/trajectories/artifacts',
         title: 'Trajectory Artifacts',
-        loader: () => import('@/modules/trajectory/components/templates/TrajectoryArtifactsListing'),
+        loader: () => import('@/modules/trajectory/components/TrajectoryArtifactsListing'),
         requiredPermissions: ['trajectory:read']
     },
     {
         path: '/dashboard/whiteboard/:whiteboardId',
         title: 'Whiteboard',
-        loader: () => import('@/modules/whiteboards/components/templates/WhiteboardEditorPage'),
+        loader: () => import('@/modules/whiteboards/components/WhiteboardEditorPage'),
         requiredPermissions: ['whiteboard:read']
     },
     {
         path: '/dashboard/trajectory/:trajectoryId/atoms',
         title: 'Trajectory Atoms',
-        loader: () => import('@/modules/trajectory/components/templates/PerAtomViewer'),
+        loader: () => import('@/modules/trajectory/components/PerAtomViewer'),
         requiredPermissions: ['trajectory:read']
     },
     {
         path: '/dashboard/analysis-configs/list',
         title: 'Analysis Configurations',
-        loader: () => import('@/modules/analysis/components/templates/AnalysesListing'),
+        loader: () => import('@/modules/analysis/components/AnalysesListing'),
         requiredPermissions: ['analysis:read']
     },
     {
         path: '/dashboard/simulation-cells/list',
         title: 'Simulation Cells',
-        loader: () => import('@/modules/simulation-cell/components/templates/SimulationCellsListing'),
+        loader: () => import('@/modules/simulation-cell/components/SimulationCellsListing'),
         requiredPermissions: ['simulation-cell:read']
     },
     {
         path: '/dashboard/plugins/list',
         title: 'Plugins',
-        loader: () => import('@/modules/plugin/components/listing/templates/PluginsListing'),
+        loader: () => import('@/modules/plugin/components/listing/PluginsListing'),
         requiredPermissions: ['plugin:read'],
         navigation: {
             section: DashboardNavigationSection.Secondary,
@@ -182,19 +182,19 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/plugins/builder',
         title: 'Plugin Builder',
-        loader: () => import('@/modules/plugin/components/plugin/templates/PluginBuilderPage'),
+        loader: () => import('@/modules/plugin/components/plugin/PluginBuilderPage'),
         requiredPermissions: ['plugin:create']
     },
     {
         path: '/dashboard/plugins/:pluginId/exposure/:exposureId/listing',
         title: 'Plugin Listing',
-        loader: () => import('@/modules/plugin/components/listing/templates/PluginListingPage'),
+        loader: () => import('@/modules/plugin/components/listing/PluginListingPage'),
         requiredPermissions: ['plugin:read']
     },
     {
         path: '/dashboard/trajectory/:trajectoryId/plugins/:pluginId/exposure/:exposureId/listing',
         title: 'Plugin Listing',
-        loader: () => import('@/modules/plugin/components/listing/templates/PluginListingPage'),
+        loader: () => import('@/modules/plugin/components/listing/PluginListingPage'),
         requiredPermissions: ['plugin:read', 'trajectory:read'],
         permissionMode: RoutePermissionMode.All
     },
@@ -206,37 +206,37 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/onboarding/cluster/setup',
         title: 'Cluster Setup',
-        loader: () => import('@/modules/cluster/components/templates/ClusterOnboardingPage')
+        loader: () => import('@/modules/cluster/components/ClusterOnboardingPage')
     },
     {
         path: '/dashboard/clusters',
         title: 'Clusters',
-        loader: () => import('@/modules/cluster/components/templates/ClustersListing')
+        loader: () => import('@/modules/cluster/components/ClustersListing')
     },
     {
         path: '/dashboard/clusters/:clusterId',
         title: 'Cluster Monitoring',
-        loader: () => import('@/modules/cluster/components/templates/ClusterMonitoringPage')
+        loader: () => import('@/modules/cluster/components/ClusterMonitoringPage')
     },
     {
         path: '/dashboard/clusters/:clusterId/mongo',
         title: 'Mongo Explorer',
-        loader: () => import('@/modules/cluster/components/templates/ClusterRemoteExplorerPage')
+        loader: () => import('@/modules/cluster/components/ClusterRemoteExplorerPage')
     },
     {
         path: '/dashboard/clusters/:clusterId/redis',
         title: 'Redis Explorer',
-        loader: () => import('@/modules/cluster/components/templates/ClusterRemoteExplorerPage')
+        loader: () => import('@/modules/cluster/components/ClusterRemoteExplorerPage')
     },
     {
         path: '/dashboard/clusters/:clusterId/minio',
         title: 'MinIO Explorer',
-        loader: () => import('@/modules/cluster/components/templates/ClusterRemoteExplorerPage')
+        loader: () => import('@/modules/cluster/components/ClusterRemoteExplorerPage')
     },
     {
         path: '/dashboard/containers',
         title: 'Containers',
-        loader: () => import('@/modules/container/components/templates/ContainersListing'),
+        loader: () => import('@/modules/container/components/ContainersListing'),
         requiredPermissions: ['container:read'],
         navigation: {
             section: DashboardNavigationSection.Main,
@@ -248,42 +248,42 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/dashboard/containers/new',
         title: 'Create Container',
-        loader: () => import('@/modules/container/components/templates/CreateContainer'),
+        loader: () => import('@/modules/container/components/CreateContainer'),
         requiredPermissions: ['container:create']
     },
     {
         path: '/dashboard/containers/:id',
         title: 'Container Details',
-        loader: () => import('@/modules/container/components/templates/ContainerDetailsLayout'),
+        loader: () => import('@/modules/container/components/ContainerDetailsLayout'),
         requiredPermissions: ['container:read'],
         children: [
             {
                 path: 'overview',
                 title: 'Container Overview',
-                loader: () => import('@/modules/container/components/templates/ContainerDetailsRoutes/container-overview-route'),
+                loader: () => import('@/modules/container/components/ContainerDetailsRoutes/container-overview-route'),
                 index: true
             },
             {
                 path: 'processes',
                 title: 'Container Processes',
-                loader: () => import('@/modules/container/components/templates/ContainerDetailsRoutes/container-processes-route')
+                loader: () => import('@/modules/container/components/ContainerDetailsRoutes/container-processes-route')
             },
             {
                 path: 'terminal',
                 title: 'Container Terminal',
-                loader: () => import('@/modules/container/components/templates/ContainerDetailsRoutes/container-terminal-route')
+                loader: () => import('@/modules/container/components/ContainerDetailsRoutes/container-terminal-route')
             },
             {
                 path: 'storage',
                 title: 'Container Storage',
-                loader: () => import('@/modules/container/components/templates/ContainerDetailsRoutes/container-storage-route')
+                loader: () => import('@/modules/container/components/ContainerDetailsRoutes/container-storage-route')
             }
         ]
     },
     {
         path: '/dashboard/ssh-connections',
         title: 'SSH Connections',
-        loader: () => import('@/modules/ssh/components/templates/SSHConnectionsPage'),
+        loader: () => import('@/modules/ssh/components/SSHConnectionsPage'),
         requiredPermissions: ['ssh-connection:read'],
         navigation: {
             section: DashboardNavigationSection.Secondary,
@@ -295,13 +295,13 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/dashboard/ssh-connections/:connectionId/file-explorer',
         title: 'SSH File Explorer',
-        loader: () => import('@/modules/ssh/components/templates/SSHFileExplorerPage'),
+        loader: () => import('@/modules/ssh/components/SSHFileExplorerPage'),
         requiredPermissions: ['ssh-connection:read']
     },
     {
         path: '/dashboard/messages/:chatId?',
         title: 'Messages',
-        loader: () => import('@/modules/chat/components/templates/MessagesPage'),
+        loader: () => import('@/modules/chat/components/MessagesPage'),
         navigation: {
             section: DashboardNavigationSection.Secondary,
             label: 'Messages',
@@ -311,7 +311,7 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/dashboard/ai/:conversationId?',
         title: 'AI',
-        loader: () => import('@/modules/ai/components/templates/AIPage'),
+        loader: () => import('@/modules/ai/components/AIPage'),
         requiredPermissions: ['ai-conversation:read'],
         navigation: {
             section: DashboardNavigationSection.Secondary,
@@ -323,7 +323,7 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/dashboard/latex',
         title: 'LaTeX Documents',
-        loader: () => import('@/modules/latex/components/templates/LatexDocumentsListing'),
+        loader: () => import('@/modules/latex/components/LatexDocumentsListing'),
         requiredPermissions: ['latex:read'],
         navigation: {
             section: DashboardNavigationSection.Main,
@@ -335,13 +335,13 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/dashboard/latex/:documentId',
         title: 'LaTeX Workspace',
-        loader: () => import('@/modules/latex/components/templates/LatexDocumentWorkspace'),
+        loader: () => import('@/modules/latex/components/LatexDocumentWorkspace'),
         requiredPermissions: ['latex:read']
     },
     {
         path: '/dashboard/notebooks',
         title: 'Notebooks',
-        loader: () => import('@/modules/scripting/components/templates/NotebooksListing'),
+        loader: () => import('@/modules/scripting/components/NotebooksListing'),
         requiredPermissions: ['plugin:read'],
         navigation: {
             section: DashboardNavigationSection.Main,
@@ -353,7 +353,7 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/dashboard/whiteboards',
         title: 'Whiteboards',
-        loader: () => import('@/modules/whiteboards/components/templates/WhiteboardsListing'),
+        loader: () => import('@/modules/whiteboards/components/WhiteboardsListing'),
         requiredPermissions: ['whiteboard:read'],
         navigation: {
             section: DashboardNavigationSection.Secondary,
@@ -365,12 +365,12 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/team-invitation/code/:code',
         title: 'Team Invitation',
-        loader: () => import('@/modules/team/components/templates/TeamInvitationByCode')
+        loader: () => import('@/modules/team/components/TeamInvitationByCode')
     },
     {
         path: '/team-invitation/:invitationId',
         title: 'Team Invitation',
-        loader: () => import('@/modules/team/components/templates/TeamInvitation')
+        loader: () => import('@/modules/team/components/TeamInvitation')
     }
 ];
 
@@ -378,12 +378,12 @@ export const guestRoutes: RouteConfig[] = [
     {
         path: '/auth/sign-in',
         title: 'Sign In',
-        loader: () => import('@/modules/auth/components/templates/SignIn')
+        loader: () => import('@/modules/auth/components/SignIn')
     },
     {
         path: '/auth/oauth/callback',
         title: 'Signing In',
-        loader: () => import('@/modules/auth/components/templates/OAuthCallback')
+        loader: () => import('@/modules/auth/components/OAuthCallback')
     }
 ];
 
@@ -391,16 +391,16 @@ export const optionalAuthRoutes: RouteConfig[] = [
     {
         path: '/canvas/glb',
         title: 'GLB Viewer',
-        loader: () => import('@/modules/canvas/components/templates/CanvasPage')
+        loader: () => import('@/modules/canvas/components/CanvasPage')
     },
     {
         path: '/canvas/:trajectoryId',
         title: 'Canvas',
-        loader: () => import('@/modules/canvas/components/templates/CanvasPage')
+        loader: () => import('@/modules/canvas/components/CanvasPage')
     },
     {
         path: '/canvas/:trajectoryId/workspace/:ownerId',
         title: 'Canvas',
-        loader: () => import('@/modules/canvas/components/templates/CanvasPage')
+        loader: () => import('@/modules/canvas/components/CanvasPage')
     }
 ];

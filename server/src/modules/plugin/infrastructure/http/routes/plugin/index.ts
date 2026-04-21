@@ -22,6 +22,7 @@ export default createHttpModule({
             .get(controllers.listPlugins.handle)
             .post(pluginValidation.create, controllers.create.handle);
         router.route('/:pluginId/binary')
+            .get(controllers.downloadBinary.handle)
             .patch(upload.single('file'), controllers.uploadBinary.handle)
             .delete(controllers.deleteBinary.handle);
         router.post('/:pluginId/clones', controllers.clone.handle);

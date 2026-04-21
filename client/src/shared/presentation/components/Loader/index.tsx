@@ -1,4 +1,3 @@
-import Container from '@/shared/presentation/components/Container';
 import './Loader.css';
 import { useId } from 'react';
 
@@ -35,15 +34,13 @@ const Loader = ({
     }
 
     return (
-        <Container className={`d-flex flex-center ${isFixed ? 'p-fixed inset-0' : ''} ${className}`} {...accessibilityProps}>
-            <Container className='d-flex column items-center gap-2 loader-content'>
-                <Container className='p-relative loader-visual' style={{ transform: `scale(${scale})` }}>
+        <div className={`volt-container d-flex flex-center ${isFixed ? 'p-fixed inset-0' : ''} ${className}`} {...accessibilityProps}>
+            <div className='volt-container d-flex column items-center gap-2 loader-content'>
+                <div className='volt-container p-relative loader-visual' style={{ transform: `scale(${scale})` }}>
                     {loaderItems.map((item) => (
-                        <Container
-                            key={item}
-                            className={`p-absolute Loader-Item Loader-Item-${item}`} />
+                        <div key={item} className={`volt-container p-absolute Loader-Item Loader-Item-${item}`} />
                     ))}
-                </Container>
+                </div>
 
                 {label && (
                     <span id={statusId} className='loader-label font-size-2 color-secondary text-center line-height-5'>
@@ -53,8 +50,8 @@ const Loader = ({
                 <span className='loader-reduced-motion-label'>
                     {reducedMotionLabel}
                 </span>
-            </Container>
-        </Container>
+            </div>
+        </div>
     );
 };
 

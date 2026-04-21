@@ -4,6 +4,3 @@ export * from './file';
 export * from './format';
 export * from './sort';
 export * from './user';
-export * from './desktop-contract';
-export * from './desktop-environment';
-export * from './desktop-runtime';

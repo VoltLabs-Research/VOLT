@@ -1,10 +1,9 @@
 import { updateSocketAuthToken } from '@/modules/socket/core/services/socket-auth-session';
-import { buildKeys, createMutation, createQuery, withSuccess } from '@/shared/infrastructure/query';
+import { buildKeys, createMutation, createQuery } from '@/shared/infrastructure/query';
 import { registerPreservedQueryKey } from '@/shared/utils/app-cleanup-registry';
 import service from '../api/service';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { tokenStorage } from '@/shared/auth/token-storage';
-import { useMutation } from '@tanstack/react-query';
 import type { ChangePasswordInputDTO, ChangePasswordOutputDTO } from '../api/dtos/change-password';
 import type { CheckEmailInputDTO, CheckEmailOutputDTO } from '../api/dtos/check-email';
 import type { SignInInputDTO, SignInOutputDTO } from '../api/dtos/sign-in';
@@ -12,7 +11,7 @@ import type { SignUpInputDTO, SignUpOutputDTO } from '../api/dtos/sign-up';
 import type { UpdateAvatarInputDTO } from '../api/dtos/update-avatar';
 import type { UpdateProfileInputDTO } from '../api/dtos/update-profile';
 import type { User } from '../api/entities/user';
-import type { QueryOptions, MutationOptions } from '@/shared/infrastructure/query';
+import type { QueryOptions } from '@/shared/infrastructure/query';
 
 type AuthQueryKeyMap = Record<'currentUser' | 'passwordInfo', void>;
 
@@ -52,18 +51,15 @@ export const useDeleteMeMutation = createMutation<void, void>(
     () => currentUser.clear(undefined)
 );
 
-export const useChangePasswordMutation = (options?: MutationOptions<ChangePasswordOutputDTO, ChangePasswordInputDTO>) => {
-    return useMutation({
-        ...options,
-        mutationFn: async (data) => {
-            const result = await service.changePassword(data);
-            tokenStorage.setToken(result.token);
-            return result;
-        },
-        onSuccess: withSuccess((data) => {
-            updateSocketAuthToken(data.token);
-            currentUser.set(undefined, data.user);
-            passwordInfoQuery.invalidate(undefined);
-        }, options)
-    });
-};
+export const useChangePasswordMutation = createMutation<ChangePasswordOutputDTO, ChangePasswordInputDTO>(
+    async (data) => {
+        const result = await service.changePassword(data);
+        tokenStorage.setToken(result.token);
+        return result;
+    },
+    (data) => {
+        updateSocketAuthToken(data.token);
+        currentUser.set(undefined, data.user);
+        passwordInfoQuery.invalidate(undefined);
+    }
+);

@@ -1,10 +1,8 @@
-import Container from '@/shared/presentation/components/Container';
 import getListingDisplayState from '@/shared/presentation/components/DocumentListing/listing-state';
 import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import TableRow from '@/shared/presentation/components/TableRow';
 import TableSkeletonRow from '@/shared/presentation/components/TableSkeletonRow';
-import Title from '@/shared/presentation/components/Title';
 import useInfiniteScroll from '@/shared/presentation/hooks/use-infinite-scroll';
 import './DocumentListingTable.css';
 import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -333,20 +331,9 @@ const DocumentListingTable = <T extends Identifiable>({
     ));
 
     return (
-        <Container
-            className={`d-flex column document-listing-table-container h-max ${compact ? 'is-compact' : ''}`}
-            role='grid'
-            aria-label={listingLabel}
-            aria-colcount={columns.length}
-            aria-rowcount={data.length}
-            aria-busy={isLoading || isFetchingMore}
-        >
+        <div className={`volt-container d-flex column document-listing-table-container h-max ${compact ? 'is-compact' : ''}`} role='grid' aria-label={listingLabel} aria-colcount={columns.length} aria-rowcount={data.length} aria-busy={isLoading || isFetchingMore}>
             {columns.length > 0 && shouldShowContent && (
-                <Container
-                    className='document-listing-table-header-container p-sticky top-0 d-flex'
-                    role='row'
-                    style={{ minWidth: `${minContentWidth}px`, gap: `${resolvedGap}px` }}
-                >
+                <div className='volt-container document-listing-table-header-container p-sticky top-0 d-flex' role='row' style={{ minWidth: `${minContentWidth}px`, gap: `${resolvedGap}px` }}>
                     {columns.map((col, colIdx) => {
                         const isSorted = getAriaSort(col) !== 'none';
                         const cellClassName = [
@@ -360,13 +347,7 @@ const DocumentListingTable = <T extends Identifiable>({
                             col.numeric ? 'is-numeric' : ''
                         ].filter(Boolean).join(' ');
                         return (
-                            <Container
-                                className={cellClassName}
-                                key={`header-${getColumnTitle(col)}-${colIdx}`}
-                                role='columnheader'
-                                aria-sort={getAriaSort(col)}
-                                style={columnStyles[colIdx]}
-                            >
+                            <div className={`volt-container ${cellClassName}`} key={`header-${getColumnTitle(col)}-${colIdx}`} role='columnheader' aria-sort={getAriaSort(col)} style={columnStyles[colIdx]}>
                                 {col.sortable ? (
                                     <button
                                         type='button'
@@ -374,34 +355,29 @@ const DocumentListingTable = <T extends Identifiable>({
                                         onClick={() => onCellClick(col)}
                                         aria-label={`Sort by ${getColumnTitle(col)}`}
                                     >
-                                        <Title className={`font-size-2-5 color-secondary ${col.headerTitleClassName ?? 'font-weight-5'}`}>
+                                        <h3 className={`volt-title font-size-2-5 color-secondary ${col.headerTitleClassName ?? 'font-weight-5'}`}>
                                             {getCellTitle(col)}
-                                        </Title>
+                                        </h3>
                                     </button>
                                 ) : (
-                                    <Title className={`font-size-2-5 color-secondary ${col.headerTitleClassName ?? 'font-weight-5'}`}>
+                                    <h3 className={`volt-title font-size-2-5 color-secondary ${col.headerTitleClassName ?? 'font-weight-5'}`}>
                                         {getCellTitle(col)}
-                                    </Title>
+                                    </h3>
                                 )}
-                            </Container>
+                            </div>
                         );
                     })}
-                </Container>
+                </div>
             )}
 
-            <Container
-                ref={bodyRef}
-                className='d-flex column p-relative document-listing-table-body-container flex-1'
-                role='rowgroup'
-                style={{ minWidth: shouldShowContent ? `${minContentWidth}px` : undefined }}
-            >
+            <div ref={bodyRef} className='volt-container d-flex column p-relative document-listing-table-body-container flex-1' role='rowgroup' style={{ minWidth: shouldShowContent ? `${minContentWidth}px` : undefined }}>
                 {dragAndDrop ? (
                     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
                         {rows}
                     </DndContext>
                 ) : rows}
 
-                <Container ref={sentinelRef} style={{ height: 1 }} aria-hidden='true' />
+                <div className="volt-container" ref={sentinelRef} style={{ height: 1 }} aria-hidden='true' />
 
                 {isFetchingMore && Array.from({ length: skeletonRowsCount }).map((_, i) => (
                     <TableSkeletonRow
@@ -442,8 +418,8 @@ const DocumentListingTable = <T extends Identifiable>({
                 )}
 
                 {isInitialLoading && (
-                    <Container className='document-listing-overlay-blur p-absolute inset-0'>
-                        <Container className='document-listing-infinite-skeleton-loader p-absolute inset-0 overflow-hidden d-flex column'>
+                    <div className='volt-container document-listing-overlay-blur p-absolute inset-0'>
+                        <div className='volt-container document-listing-infinite-skeleton-loader p-absolute inset-0 overflow-hidden d-flex column'>
                             {Array.from({ length: 20 }).map((_, index) => (
                                 <TableSkeletonRow
                                     key={`loading-skeleton-${index}`}
@@ -452,13 +428,13 @@ const DocumentListingTable = <T extends Identifiable>({
                                     columnGap={resolvedGap}
                                 />
                             ))}
-                        </Container>
-                    </Container>
+                        </div>
+                    </div>
                 )}
-            </Container>
+            </div>
 
-            <Container className='document-listing-table-footer-container' />
-        </Container>
+            <div className='volt-container document-listing-table-footer-container' />
+        </div>
     );
 };
 

@@ -31,13 +31,14 @@ export interface SimulationCellProps {
     updatedAt?: Date;
 };
 
-export default class SimulationCell {
-    constructor(
-        public readonly _id: string,
-        public props: SimulationCellProps
-    ) {}
-
-    get id(): string {
-        return this._id;
-    }
+export interface SimulationCell {
+    readonly _id: string;
+    props: SimulationCellProps;
 };
+
+export const createSimulationCell = (_id: string, props: SimulationCellProps): SimulationCell => ({
+    _id,
+    props
+});
+
+export default SimulationCell;

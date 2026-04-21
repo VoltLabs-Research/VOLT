@@ -20,9 +20,14 @@ export enum SessionActivityType {
     PasswordUpdate= 'password_update'
 };
 
-export default class Session {
-    constructor(
-        public readonly _id: string,
-        public props: SessionProps
-    ){}
+export interface Session {
+    readonly _id: string;
+    props: SessionProps;
 };
+
+export const createSession = (_id: string, props: SessionProps): Session => ({
+    _id,
+    props
+});
+
+export default Session;

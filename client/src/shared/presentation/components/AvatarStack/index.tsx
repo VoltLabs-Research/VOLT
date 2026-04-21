@@ -1,6 +1,4 @@
 import Avatar from '@/shared/presentation/components/Avatar';
-import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import './AvatarStack.css';
 import type { User } from '@/modules/auth/api/entities/user';
 
@@ -25,7 +23,7 @@ const AvatarStack = ({ users, maxDisplay = 3, size = 'sm', className = '' }: Ava
     const remainingCount = users.length - maxDisplay;
 
     return (
-        <Container className={`avatar-stack d-flex items-center ${className}`}>
+        <div className={`volt-container avatar-stack d-flex items-center ${className}`}>
             {displayedUsers.map((user, index) => (
                 <Avatar
                     key={user._id ?? user.id ?? index}
@@ -35,11 +33,11 @@ const AvatarStack = ({ users, maxDisplay = 3, size = 'sm', className = '' }: Ava
                 />
             ))}
             {remainingCount > 0 && (
-                <Container className={`avatar-stack-overflow avatar avatar-${size} d-flex flex-center radius-full`}>
-                    <Paragraph className='avatar-initials font-weight-6'>+{remainingCount}</Paragraph>
-                </Container>
+                <div className={`volt-container avatar-stack-overflow avatar avatar-${size} d-flex flex-center radius-full`}>
+                    <p className='volt-text avatar-initials font-weight-6'>+{remainingCount}</p>
+                </div>
             )}
-        </Container>
+        </div>
     );
 };
 

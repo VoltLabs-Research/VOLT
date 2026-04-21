@@ -3,8 +3,6 @@ import {
     useFloatingOwnerIds,
     useTopLayerRoot
 } from '@/shared/presentation/contexts/FloatingRootContext';
-import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import SearchInput from '@/shared/presentation/components/SearchInput';
 import './Select.css';
 import { useFloating, useClick, useDismiss, useRole, useListNavigation, useTypeahead, useInteractions, FloatingPortal, FloatingFocusManager, offset, flip, shift, size, autoUpdate } from '@floating-ui/react';
@@ -308,17 +306,17 @@ const Select = ({
                     onKeyDown: handleOptionKeyDown
                 })}
             >
-                <Container className='d-flex column'>
-                    <Paragraph className='font-size-2'>
+                <div className='volt-container d-flex column'>
+                    <p className='volt-text font-size-2'>
                         {option.title}
-                    </Paragraph>
+                    </p>
 
                     {option.description && (
-                        <Paragraph className='select-option-description color-muted font-size-1'>
+                        <p className='volt-text select-option-description color-muted font-size-1'>
                             {option.description}
-                        </Paragraph>
+                        </p>
                     )}
-                </Container>
+                </div>
 
                 {showSelectionIcon && isSelected && (
                     <svg
@@ -448,7 +446,7 @@ const Select = ({
 
                             {isLoading && (
                                 <div className='select-option-loading d-flex items-center content-center'>
-                                    <Paragraph className='color-muted font-size-1'>Loading…</Paragraph>
+                                    <p className='volt-text color-muted font-size-1'>Loading…</p>
                                 </div>
                             )}
                         </div>

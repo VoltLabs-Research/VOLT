@@ -7,15 +7,13 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import CloudUploadProcessor from '@modules/trajectory/infrastructure/services/trajectory/CloudUploadProcessor';
 import logger from '@shared/infrastructure/logger';
-import {
-    delayJobOnQueueScopeContention,
-    tryAcquireQueueScopeLease,
-    type QueueScopeLease
-} from './queue-scope-lease';
 import TeamClusterQueueScopeLimitsService from './TeamClusterQueueScopeLimitsService';
+import {
+    createBullScopedQueue,
+    type BullScopedQueueController
+} from '@shared/infrastructure/workers/createBullScopedQueue';
 
 import { injectable, inject } from 'tsyringe';
-import { DelayedError, Queue, Worker } from 'bullmq';
 import { v4 as uuid } from 'uuid';
 import IORedis from 'ioredis';
 
@@ -53,8 +51,7 @@ export type UploadSessionDrainCallback = (
 
 @injectable()
 export default class CloudUploadQueueService {
-    private queue: Queue | null = null;
-    private worker: Worker | null = null;
+    private controller: BullScopedQueueController<CloudUploadJobData, CloudUploadJobData> | null = null;
     private drainCallback: UploadSessionDrainCallback | null = null;
 
     constructor(
@@ -84,152 +81,116 @@ export default class CloudUploadQueueService {
      * Called on first enqueue or can be called explicitly at startup.
      */
     public start(): void {
-        if (this.queue) return;
+        if (this.controller) {
+            this.controller.start();
+            return;
+        }
 
-        const connection = createBullMQRedisConnectionOptions(getRedisConfig());
-        const concurrency = getTrajectoryBackgroundProcessorConcurrency();
-
-        this.queue = new Queue(QUEUE_NAME, {
-            connection,
-            defaultJobOptions: {
-                removeOnComplete: { count: 500 },
-                removeOnFail: { count: 200 }
-            }
-        });
-
-        this.worker = new Worker<CloudUploadJobData>(
-            QUEUE_NAME,
-            async (job) => {
-                let queueScopeLease: QueueScopeLease | null = null;
-
-                try {
-                    const { jobId, teamId, trajectoryName, timestep } = job.data;
+        this.controller = createBullScopedQueue<CloudUploadJobData, CloudUploadJobData>({
+            name: QUEUE_NAME,
+            logTag: '@cloud-upload-queue',
+            redisConnectionFactory: () => createBullMQRedisConnectionOptions(getRedisConfig()),
+            concurrency: getTrajectoryBackgroundProcessorConcurrency(),
+            scopeLease: {
+                redis: this.redis,
+                resolveConstraints: async (job) => {
                     const trajectoryId = job.data.trajectoryId.trim();
                     if (!trajectoryId) {
-                        throw new Error(`Missing trajectoryId for cloud upload job ${jobId}`);
+                        throw new Error(`Missing trajectoryId for cloud upload job ${job.data.jobId}`);
                     }
 
                     const queueScopeLimits = await this.teamClusterQueueScopeLimitsService.getLimits(
                         job.data.teamClusterId,
                         'cloudUpload'
                     );
-                    const { lease, blockingScope } = await tryAcquireQueueScopeLease(
-                        this.redis,
-                        QUEUE_NAME,
-                        [
-                            {
-                                scope: 'trajectory',
-                                scopeId: trajectoryId,
-                                limit: queueScopeLimits.maxRunningPerTrajectory
-                            },
-                            {
-                                scope: 'team',
-                                scopeId: teamId,
-                                limit: queueScopeLimits.maxRunningPerTeam
-                            }
-                        ]
-                    );
-                    queueScopeLease = lease;
-                    if (!queueScopeLease || blockingScope) {
-                        await delayJobOnQueueScopeContention(job, {
-                            queueName: QUEUE_NAME,
-                            jobId,
-                            scope: blockingScope ?? {
-                                scope: 'trajectory',
-                                scopeId: trajectoryId,
-                                limit: queueScopeLimits.maxRunningPerTrajectory
-                            }
-                        });
-                    }
-
-                    await this.publishStatus(jobId, teamId, JobStatus.Running, {
-                        trajectoryId,
-                        trajectoryName,
-                        timestep
-                    });
-
-                    await this.cloudUploadProcessor.process({
-                        trajectoryId,
-                        teamId,
-                        teamClusterId: job.data.teamClusterId,
-                        trajectoryName,
-                        timestep,
-                        frameFilePath: job.data.frameFilePath,
-                        objectKey: job.data.objectKey,
-                        contentType: job.data.contentType,
-                        contentEncoding: job.data.contentEncoding
-                    });
-
-                    return job.data;
-                } finally {
-                    if (queueScopeLease) {
-                        await queueScopeLease.release();
-                    }
+                    return [
+                        {
+                            scope: 'trajectory',
+                            scopeId: trajectoryId,
+                            limit: queueScopeLimits.maxRunningPerTrajectory
+                        },
+                        {
+                            scope: 'team',
+                            scopeId: job.data.teamId,
+                            limit: queueScopeLimits.maxRunningPerTeam
+                        }
+                    ];
                 }
             },
-            {
-                connection,
-                concurrency,
-                removeOnComplete: { count: 500 },
-                removeOnFail: { count: 200 }
-            }
-        );
+            processor: async (job) => {
+                const { jobId, teamId, trajectoryName, timestep } = job.data;
+                const trajectoryId = job.data.trajectoryId.trim();
 
-        this.worker.on('completed', async (job) => {
-            const { jobId, teamId, trajectoryId, trajectoryName, timestep } = job.data;
-
-            await this.runListenerStep('publish completed upload status', async () => {
-                await this.publishStatus(jobId, teamId, JobStatus.Completed, {
+                await this.publishStatus(jobId, teamId, JobStatus.Running, {
                     trajectoryId,
                     trajectoryName,
                     timestep
                 });
-            });
 
-            await this.runListenerStep('track successful upload timestep', async () => {
-                await this.trackSuccessfulTimestep(trajectoryId, timestep);
-            });
-            await this.runListenerStep('decrement upload session', async () => {
-                await this.decrementSession(job.data);
-            });
-        });
-
-        this.worker.on('failed', async (job, error) => {
-            if (!job) return;
-            if (error instanceof DelayedError) return;
-
-            const { jobId, teamId, trajectoryId, trajectoryName, timestep } = job.data;
-
-            logger.error(
-                {
-                    jobId,
+                await this.cloudUploadProcessor.process({
                     trajectoryId,
-                    timestep,
-                    error: error.message
-                },
-                `@cloud-upload-queue: job failed`
-            );
-
-            await this.runListenerStep('publish failed upload status', async () => {
-                await this.publishStatus(jobId, teamId, JobStatus.Failed, {
-                    trajectoryId,
+                    teamId,
+                    teamClusterId: job.data.teamClusterId,
                     trajectoryName,
                     timestep,
-                    error: error.message
+                    frameFilePath: job.data.frameFilePath,
+                    objectKey: job.data.objectKey,
+                    contentType: job.data.contentType,
+                    contentEncoding: job.data.contentEncoding
                 });
-            });
 
-            await this.runListenerStep('increment failed upload count', async () => {
-                await this.incrementFailed(job.data.trajectoryId);
-            });
-            await this.runListenerStep('decrement upload session', async () => {
-                await this.decrementSession(job.data);
-            });
+                return job.data;
+            },
+            onJobCompleted: async (job) => {
+                const { jobId, teamId, trajectoryId, trajectoryName, timestep } = job.data;
+
+                await this.runListenerStep('publish completed upload status', async () => {
+                    await this.publishStatus(jobId, teamId, JobStatus.Completed, {
+                        trajectoryId,
+                        trajectoryName,
+                        timestep
+                    });
+                });
+
+                await this.runListenerStep('track successful upload timestep', async () => {
+                    await this.trackSuccessfulTimestep(trajectoryId, timestep);
+                });
+                await this.runListenerStep('decrement upload session', async () => {
+                    await this.decrementSession(job.data);
+                });
+            },
+            onJobFailed: async (job, error) => {
+                const { jobId, teamId, trajectoryId, trajectoryName, timestep } = job.data;
+
+                logger.error(
+                    {
+                        jobId,
+                        trajectoryId,
+                        timestep,
+                        error: error.message
+                    },
+                    `@cloud-upload-queue: job failed`
+                );
+
+                await this.runListenerStep('publish failed upload status', async () => {
+                    await this.publishStatus(jobId, teamId, JobStatus.Failed, {
+                        trajectoryId,
+                        trajectoryName,
+                        timestep,
+                        error: error.message
+                    });
+                });
+
+                await this.runListenerStep('increment failed upload count', async () => {
+                    await this.incrementFailed(job.data.trajectoryId);
+                });
+                await this.runListenerStep('decrement upload session', async () => {
+                    await this.decrementSession(job.data);
+                });
+            }
         });
 
-        this.worker.on('error', (error) => {
-            logger.error(error, '@cloud-upload-queue: worker error');
-        });
+        this.controller.start();
     }
 
     /**
@@ -270,7 +231,8 @@ export default class CloudUploadQueueService {
             };
         });
 
-        await this.queue!.addBulk(
+        const handle = this.controller!.requireHandle();
+        await handle.addBulk(
             jobEntries.map(({ name, data, opts }) => ({ name, data, opts }))
         );
 
@@ -292,15 +254,9 @@ export default class CloudUploadQueueService {
      * Gracefully shuts down the worker and closes the queue connection.
      */
     public async stop(): Promise<void> {
-        if (this.worker) {
-            await this.worker.close();
-            this.worker = null;
+        if (this.controller) {
+            await this.controller.close();
         }
-        if (this.queue) {
-            await this.queue.close();
-            this.queue = null;
-        }
-        logger.info('@cloud-upload-queue: stopped');
     }
 
     // ── Session tracking ──────────────────────────────────────────────

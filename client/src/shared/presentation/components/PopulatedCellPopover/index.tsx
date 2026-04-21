@@ -1,7 +1,6 @@
 import { getModelListingRoute } from './populated-model-routes';
 import { isRecord } from '@/shared/utils/type-guards';
 import Popover from '@/shared/presentation/components/Popover';
-import Container from '@/shared/presentation/components/Container';
 import './PopulatedCellPopover.css';
 import { useMemo } from 'react';
 import { ArrowUpRight } from 'lucide-react';
@@ -145,7 +144,7 @@ const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
         };
 
         return (
-            <Container className='populated-cell-popover-header d-flex items-center content-between p-05 gap-1'>
+            <div className='volt-container populated-cell-popover-header d-flex items-center content-between p-05 gap-1'>
                 <span className='font-size-1 color-secondary'>{modelName}</span>
                 {listingRoute && (
                     <nav aria-label={`${modelName} links`}>
@@ -159,7 +158,7 @@ const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
                         </Link>
                     </nav>
                 )}
-            </Container>
+            </div>
         );
     };
 
@@ -173,21 +172,21 @@ const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
     };
 
     return (
-        <Container className='d-inline-flex' onClick={handleStopPropagation}>
+        <div className='volt-container d-inline-flex' onClick={handleStopPropagation}>
             <Popover id={popoverId} trigger={trigger} placement='bottom-start'>
                 {(close: () => void) => (
-                    <Container className='d-flex column' role='dialog' aria-label={`${modelName} details`}>
+                    <div className='volt-container d-flex column' role='dialog' aria-label={`${modelName} details`}>
                         {renderHeader(close)}
-                        <Container className='populated-cell-popover-body d-flex column'>
+                        <div className='volt-container populated-cell-popover-body d-flex column'>
                             {fields.length > 0
                                 ? <dl className='populated-cell-popover-fields m-0'>{fields.map(renderField)}</dl>
                                 : <span className='font-size-1 color-muted p-05'>No fields to display</span>
                             }
-                        </Container>
-                    </Container>
+                        </div>
+                    </div>
                 )}
             </Popover>
-        </Container>
+        </div>
     );
 };
 

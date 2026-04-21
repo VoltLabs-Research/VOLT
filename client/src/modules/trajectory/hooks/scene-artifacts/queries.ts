@@ -1,11 +1,9 @@
-import { useQueries, useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import { buildKeys } from '@/shared/infrastructure/query/create-paginated-query';
+import { useQueries } from '@tanstack/react-query';
+import { buildKeys, createQuery } from '@/shared/infrastructure/query';
 import {
     buildCanvasDataAccess,
     DEFAULT_CANVAS_ACCESS_STATE,
-    useCanvasAccessMode,
     useCanvasAccessStore,
-    useCanvasDataAccess,
     withAccessMode
 } from '@/modules/canvas/api/access';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
@@ -27,39 +25,23 @@ export const SCENE_ARTIFACTS_QUERY_KEYS = {
     sceneArtifacts: KEYS.sceneArtifacts
 } as const;
 
-export const buildSceneArtifactsQueryOptions = (params: ListSceneArtifactsInputDTO) => {
+const getSceneArtifactsKey = (params: ListSceneArtifactsInputDTO) =>
+    withAccessMode(useCanvasAccessStore.getState().mode, KEYS.sceneArtifacts(params));
+
+const fetchSceneArtifacts = (params: ListSceneArtifactsInputDTO): Promise<SceneArtifactsPage> => {
     const mode = useCanvasAccessStore.getState().mode;
     const dataAccess = buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode });
-    return {
-        queryKey: withAccessMode(mode, KEYS.sceneArtifacts(params)),
-        queryFn: () => dataAccess.listSceneArtifacts(params)
-    };
+    return dataAccess.listSceneArtifacts(params);
 };
 
-type SceneArtifactsQueryOptions = Partial<UseQueryOptions<SceneArtifactsPage, Error, SceneArtifactsPage>>;
+export const sceneArtifactsQuery = createQuery(getSceneArtifactsKey, fetchSceneArtifacts);
 
-export const sceneArtifactsQuery = (
-    params: ListSceneArtifactsInputDTO,
-    options?: SceneArtifactsQueryOptions
-) => {
-    const mode = useCanvasAccessMode();
-    const dataAccess = useCanvasDataAccess();
-
-    return useQuery<SceneArtifactsPage, Error, SceneArtifactsPage>({
-        ...options,
-        queryKey: withAccessMode(mode, KEYS.sceneArtifacts(params)),
-        queryFn: () => dataAccess.listSceneArtifacts(params)
-    });
-};
+export const buildSceneArtifactsQueryOptions = sceneArtifactsQuery.buildOptions;
 
 export const useSceneArtifactsQueries = (paramsList: ListSceneArtifactsInputDTO[]) => {
-    const mode = useCanvasAccessMode();
-    const dataAccess = useCanvasDataAccess();
-
     return useQueries({
         queries: paramsList.map((params) => ({
-            queryKey: withAccessMode(mode, KEYS.sceneArtifacts(params)),
-            queryFn: () => dataAccess.listSceneArtifacts(params),
+            ...sceneArtifactsQuery.buildOptions(params),
             staleTime: 5 * 60 * 1000,
             enabled: Boolean(params.trajectoryId),
             retry: false

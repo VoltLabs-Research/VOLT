@@ -1,6 +1,5 @@
 import FileRowSkeleton from './FileRowSkeleton';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
-import Container from '@/shared/presentation/components/Container';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import './FileExplorer.css';
 import type { ReactNode } from 'react';
@@ -106,36 +105,36 @@ const FileExplorer = ({
     };
 
     return (
-        <Container className='file-explorer d-flex column h-max overflow-hidden'>
+        <div className='volt-container file-explorer d-flex column h-max overflow-hidden'>
             <span className='file-explorer-live-region' aria-live='polite' aria-atomic='true'>
                 {stateMessage}
             </span>
             {hasHeader && (
-                <Container className='file-explorer-header d-flex content-between items-center gap-1 p-075'>
-                    <Container className='file-explorer-header-left d-flex items-center gap-05'>
+                <div className='volt-container file-explorer-header d-flex content-between items-center gap-1 p-075'>
+                    <div className='volt-container file-explorer-header-left d-flex items-center gap-05'>
                         {headerLeft}
-                    </Container>
+                    </div>
 
-                    <Container className='file-explorer-breadcrumb d-flex items-center flex-1'>
+                    <div className='volt-container file-explorer-breadcrumb d-flex items-center flex-1'>
                         {breadcrumb}
-                    </Container>
+                    </div>
 
-                    <Container className='file-explorer-header-right d-flex items-center gap-05'>
+                    <div className='volt-container file-explorer-header-right d-flex items-center gap-05'>
                         {headerRight}
-                    </Container>
-                </Container>
+                    </div>
+                </div>
             )}
 
             {columns && (
-                <Container className='file-explorer-columns'>
+                <div className='volt-container file-explorer-columns'>
                     {columns}
-                </Container>
+                </div>
             )}
 
-            <Container className='file-explorer-list flex-1 y-auto' role='list' aria-busy={isLoading || isRetrying}>
+            <div className='volt-container file-explorer-list flex-1 y-auto' role='list' aria-busy={isLoading || isRetrying}>
                 {renderContent()}
-            </Container>
-        </Container>
+            </div>
+        </div>
     );
 };
 

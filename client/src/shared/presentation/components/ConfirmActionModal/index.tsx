@@ -1,8 +1,6 @@
-import Container from '@/shared/presentation/components/Container';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal, { closeModal, openModal } from '@/shared/presentation/components/Modal';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import { ConfirmActionTone, registerConfirmActionController, setConfirmActionOpenState } from '@/shared/presentation/hooks/use-confirm';
 import './ConfirmActionModal.css';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
@@ -112,12 +110,12 @@ const ConfirmActionModal = () => {
             onClose={handleModalClose}
             footer={footer}
         >
-            <Container className='d-flex column gap-1'>
+            <div className='volt-container d-flex column gap-1'>
                 {modalState?.requireTypedText && (
                     <>
-                        <Paragraph id={typedConfirmationDescriptionId} className='font-size-2 color-secondary'>
+                        <p id={typedConfirmationDescriptionId} className='volt-text font-size-2 color-secondary'>
                             {typedConfirmationDescription}
-                        </Paragraph>
+                        </p>
                         <FormFieldRHF
                             label={typedConfirmationLabel}
                             value={typedText}
@@ -126,7 +124,7 @@ const ConfirmActionModal = () => {
                         />
                     </>
                 )}
-            </Container>
+            </div>
         </Modal>
     );
 };

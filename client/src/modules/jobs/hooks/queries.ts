@@ -2,7 +2,7 @@ import { JobStatus } from '../api/entities/job';
 import { computeGroupStatus } from '../utilities/job-group-updates';
 import { TEAM_JOBS_QUERY_KEYS } from '../utilities/query-keys';
 import service from '../api/service';
-import { createSocketQuery } from '@/shared/infrastructure/query';
+import { createSocketQuery, withSuccess } from '@/shared/infrastructure/query';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { useMutation } from '@tanstack/react-query';
 import type { FrameJobGroup, Job, TrajectoryJobGroup } from '../api/entities/job';
@@ -155,52 +155,53 @@ const markFailedJobsForRetryInTrajectory = (
     );
 };
 
-export const useRemoveRunningJobsMutation = (
-    options?: MutationOptions<RemoveRunningJobsOutputDTO, RemoveRunningJobsParams>
+interface OptimisticTrajectoryMutationConfig<TData, TVariables extends { trajectoryId: string }> {
+    mutationFn: (variables: TVariables) => Promise<TData>;
+    applyOptimisticUpdate: (groups: TrajectoryJobGroup[], trajectoryId: string) => TrajectoryJobGroup[];
+    shouldRollbackOnSuccess: (result: TData) => boolean;
+};
+
+const useOptimisticTrajectoryMutation = <TData, TVariables extends { trajectoryId: string }>(
+    config: OptimisticTrajectoryMutationConfig<TData, TVariables>,
+    options?: MutationOptions<TData, TVariables>
 ) => {
-    return useMutation<RemoveRunningJobsOutputDTO, Error, RemoveRunningJobsParams, TeamJobsMutationContext>({
+    return useMutation<TData, Error, TVariables, TeamJobsMutationContext>({
         ...options,
-        mutationFn: (params) => service.removeRunningJobs(params),
+        mutationFn: config.mutationFn,
         onMutate: async ({ trajectoryId }) => {
             const context = createTeamJobsMutationContext();
 
-            setTeamJobsGroupsQueryData(dropRemovableJobsInTrajectory(context.previousGroups, trajectoryId));
+            setTeamJobsGroupsQueryData(config.applyOptimisticUpdate(context.previousGroups, trajectoryId));
 
             return context;
         },
         onError: (_error, _variables, context) => {
             restoreTeamJobsGroupsQueryData(context);
         },
-        onSuccess: (result, _variables, context) => {
-            if (result.deletedJobs === 0 && result.deletedAnalyses === 0) {
+        onSuccess: withSuccess<TData, TVariables, TeamJobsMutationContext | undefined>((result, _variables, context) => {
+            if (config.shouldRollbackOnSuccess(result)) {
                 restoreTeamJobsGroupsQueryData(context);
             }
-        },
-        onSettled: options?.onSettled
+        }, options)
     });
+};
+
+export const useRemoveRunningJobsMutation = (
+    options?: MutationOptions<RemoveRunningJobsOutputDTO, RemoveRunningJobsParams>
+) => {
+    return useOptimisticTrajectoryMutation<RemoveRunningJobsOutputDTO, RemoveRunningJobsParams>({
+        mutationFn: (params) => service.removeRunningJobs(params),
+        applyOptimisticUpdate: dropRemovableJobsInTrajectory,
+        shouldRollbackOnSuccess: (result) => result.deletedJobs === 0 && result.deletedAnalyses === 0
+    }, options);
 };
 
 export const useRetryFailedJobsMutation = (
     options?: MutationOptions<RetryFailedJobsOutputDTO, RetryFailedJobsParams>
 ) => {
-    return useMutation<RetryFailedJobsOutputDTO, Error, RetryFailedJobsParams, TeamJobsMutationContext>({
-        ...options,
+    return useOptimisticTrajectoryMutation<RetryFailedJobsOutputDTO, RetryFailedJobsParams>({
         mutationFn: (params) => service.retryFailedJobs(params),
-        onMutate: async ({ trajectoryId }) => {
-            const context = createTeamJobsMutationContext();
-
-            setTeamJobsGroupsQueryData(markFailedJobsForRetryInTrajectory(context.previousGroups, trajectoryId));
-
-            return context;
-        },
-        onError: (_error, _variables, context) => {
-            restoreTeamJobsGroupsQueryData(context);
-        },
-        onSuccess: (result, _variables, context) => {
-            if (result.retriedFrames === 0) {
-                restoreTeamJobsGroupsQueryData(context);
-            }
-        },
-        onSettled: options?.onSettled
-    });
+        applyOptimisticUpdate: markFailedJobsForRetryInTrajectory,
+        shouldRollbackOnSuccess: (result) => result.retriedFrames === 0
+    }, options);
 };

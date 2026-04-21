@@ -1,16 +1,13 @@
 import { cn } from '@/shared/utils';
 import Button from '@/shared/presentation/components/Button';
 import CloseButton from '@/shared/presentation/components/CloseButton';
-import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import Title from '@/shared/presentation/components/Title';
 import './PanelHeader.css';
-import React from 'react';
+import type { ReactNode } from 'react';
 
 export interface PanelHeaderProps {
     title?: string;
-    icon?: React.ReactNode;
-    actions?: React.ReactNode;
+    icon?: ReactNode;
+    actions?: ReactNode;
     onClose?: () => void;
     tabs?: PanelHeaderTab[];
     variant?: 'default' | 'compact';
@@ -24,7 +21,7 @@ interface PanelHeaderTab {
     onClick?: () => void;
 };
 
-const PanelHeader: React.FC<PanelHeaderProps> = ({
+const PanelHeader = ({
     title,
     icon,
     actions,
@@ -32,7 +29,7 @@ const PanelHeader: React.FC<PanelHeaderProps> = ({
     tabs,
     variant = 'default',
     className
-}) => {
+}: PanelHeaderProps) => {
     const rootClasses = cn(
         'shared-panel-header',
         'panel-header-bordered',
@@ -56,24 +53,24 @@ const PanelHeader: React.FC<PanelHeaderProps> = ({
         return (
             <>
                 {showCompactIconTitle && (
-                    <Container className="d-flex items-center gap-05">
+                    <div className="volt-container d-flex items-center gap-05">
                         {icon && (
                             <span className="shared-panel-header-icon d-flex items-center">{icon}</span>
                         )}
                         {title && (
-                            <Paragraph className="shared-panel-header-title font-size-05 color-muted">
+                            <p className="volt-text shared-panel-header-title font-size-05 color-muted">
                                 {title}
-                            </Paragraph>
+                            </p>
                         )}
-                    </Container>
+                    </div>
                 )}
                 {showFullTitle && (
-                    <Title className="font-size-4 font-weight-6 flex-1">
+                    <h3 className="volt-title font-size-4 font-weight-6 flex-1">
                         {title}
-                    </Title>
+                    </h3>
                 )}
                 {showTabs && (
-                    <Container className="d-flex flex-1 gap-025">
+                    <div className="volt-container d-flex flex-1 gap-025">
                         {tabs!.map((tab, index) => (
                             <Button
                                 key={index}
@@ -87,20 +84,20 @@ const PanelHeader: React.FC<PanelHeaderProps> = ({
                                 {tab.label}
                             </Button>
                         ))}
-                    </Container>
+                    </div>
                 )}
             </>
         );
     };
 
     return (
-        <Container className={rootClasses}>
+        <div className={`volt-container ${rootClasses}`}>
             {renderLeft()}
-            <Container className="d-flex items-center gap-05">
+            <div className="volt-container d-flex items-center gap-05">
                 {actions}
                 {onClose && <CloseButton onClick={onClose} />}
-            </Container>
-        </Container>
+            </div>
+        </div>
     );
 };
 

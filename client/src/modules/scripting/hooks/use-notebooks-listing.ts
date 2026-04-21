@@ -1,4 +1,4 @@
-import service from '@/modules/scripting/api/service';
+import service from '@/modules/scripting/api/scripting-service';
 import {
     scriptingNotebooksQueryKey,
     useCreateScriptingNotebookMutation,
@@ -25,7 +25,7 @@ import {
     getTrajectoryIds
 } from '../utilities/notebooks';
 import { getJupyterStartErrorMessage } from '../utilities/workspace';
-import { SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID } from '../components/molecules/ScriptingNotebookDeploymentModal';
+import { SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID } from '../components/ScriptingNotebookDeploymentModal';
 import { FolderOpen, Pencil } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -39,7 +39,7 @@ import type { PaginationParams } from '@/shared/presentation/hooks/use-paginatio
 import type {
     ScriptingNotebookDeploymentModalRequest,
     ScriptingNotebookDeploymentSelection
-} from '../components/molecules/ScriptingNotebookDeploymentModal';
+} from '../components/ScriptingNotebookDeploymentModal';
 
 export interface NotebooksListingContext {
     scope: ScriptingNotebookScope;

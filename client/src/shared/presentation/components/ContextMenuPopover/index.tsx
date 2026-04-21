@@ -1,7 +1,5 @@
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
-import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import AsyncContextMenuItem from './AsyncContextMenuItem';
 import SubmenuItemWrapper from './SubmenuItemWrapper';
 import './ContextMenuPopover.css';
@@ -92,15 +90,15 @@ const ContextMenuPopover = ({
         >
             {(close) => (
                 hasCustomContent ? (
-                    <Container className={`context-menu-popover-panel context-menu-popover-panel--${size} d-flex column`}>
+                    <div className={`volt-container context-menu-popover-panel context-menu-popover-panel--${size} d-flex column`}>
                         {typeof content === 'function' ? content(close) : content}
-                    </Container>
+                    </div>
                 ) : (
                     <PopoverMenu label={menuLabel} onClose={close}>
                         {menuError && (
-                            <Paragraph className='context-menu-popover-error font-size-1 color-danger' role='status' aria-live='polite' aria-atomic='true'>
+                            <p className='volt-text context-menu-popover-error font-size-1 color-danger' role='status' aria-live='polite' aria-atomic='true'>
                                 {menuError}
-                            </Paragraph>
+                            </p>
                         )}
                         {options.map((option, index) => renderOption(option, index, close))}
                     </PopoverMenu>

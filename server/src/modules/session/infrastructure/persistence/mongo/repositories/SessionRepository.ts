@@ -87,8 +87,4 @@ export default class SessionRepository
 
         return sessionMapper.toDomain(doc);
     }
-
-    async updateActivity(sessionId: string): Promise<void> {
-        await SessionModel.findByIdAndUpdate(sessionId, { lastActivity: new Date() });
-    }
 };

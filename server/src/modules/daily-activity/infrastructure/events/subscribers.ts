@@ -1,6 +1,9 @@
 import type { SubscriberManifest } from '@shared/infrastructure/events/registerSubscribers';
-import TeamDeletedEventHandler from '@modules/daily-activity/application/events/TeamDeletedEventHandler';
-import UserDeletedEventHandler from '@modules/daily-activity/application/events/UserDeletedEventHandler';
+import {
+    deleteManyOnTeamDeletedHandler,
+    deleteManyOnUserDeletedHandler
+} from '@shared/application/events/cascadeDeleteHandlerFactories';
+import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
 import LogPluginExecutionRequestHandler from '@modules/daily-activity/application/events/LogPluginExecutionRequestHandler';
 import TrajectoryCreatedEventHandler from '@modules/daily-activity/application/events/TrajectoryCreatedEventHandler';
 import TrajectoryDeletedEventHandler from '@modules/daily-activity/application/events/TrajectoryDeletedEventHandler';
@@ -15,6 +18,9 @@ import RoleCreatedEventHandler from '@modules/daily-activity/application/events/
 import RoleDeletedEventHandler from '@modules/daily-activity/application/events/RoleDeletedEventHandler';
 import SecretKeyCreatedEventHandler from '@modules/daily-activity/application/events/SecretKeyCreatedEventHandler';
 import SecretKeyDeletedEventHandler from '@modules/daily-activity/application/events/SecretKeyDeletedEventHandler';
+
+const TeamDeletedEventHandler = deleteManyOnTeamDeletedHandler(DAILY_ACTIVITY_TOKENS.DailyActivityRepository);
+const UserDeletedEventHandler = deleteManyOnUserDeletedHandler(DAILY_ACTIVITY_TOKENS.DailyActivityRepository);
 
 export const dailyActivitySubscriberManifest: SubscriberManifest = {
     'team.deleted': TeamDeletedEventHandler,

@@ -2,6 +2,7 @@ export * from './ClonePluginDTO';
 export * from './CreatePluginDTO';
 export * from './DeleteBinaryDTO';
 export * from './DeletePluginByIdDTO';
+export * from './DownloadPluginBinaryDTO';
 export * from './ExecutePluginDTO';
 export * from './ExportPluginDTO';
 export * from './GetPluginByIdDTO';

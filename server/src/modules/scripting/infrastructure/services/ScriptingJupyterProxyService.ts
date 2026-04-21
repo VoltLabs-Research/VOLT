@@ -109,7 +109,7 @@ const METHOD_ACTION_MAP: Record<string, Action> = {
     'DELETE': Action.DELETE
 };
 
-const readCookies = (rawCookieHeader?: string): Record<string, string> => {
+const readCookies = (rawCookieHeader?: string): Record<string, string | undefined> => {
     if (!rawCookieHeader) {
         return {};
     }

@@ -33,7 +33,7 @@ export default class DeleteTeamAIIntegrationUseCase implements IUseCase<Provider
             ));
         }
 
-        const integration = await this.integrationRepository.findByTeamAndProvider(input.teamId, provider);
+        const integration = await this.integrationRepository.findOne({ team: input.teamId, provider });
 
         if (!integration) {
             return Result.fail(ApplicationError.notFound(

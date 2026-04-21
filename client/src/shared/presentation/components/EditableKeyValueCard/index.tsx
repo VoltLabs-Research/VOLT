@@ -1,8 +1,5 @@
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import Button from '@/shared/presentation/components/Button';
-import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import Title from '@/shared/presentation/components/Title';
 import './EditableKeyValueCard.css';
 import { Plus, Trash2, Settings } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
@@ -119,9 +116,9 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
                 {stateLabel}
             </span>
             {showHeader && (
-                <Container className='d-flex content-between items-center mb-1'>
-                    {title && <Title id={headingId} className='font-size-3 font-weight-6'>{title}</Title>}
-                    <Container className='d-flex gap-05'>
+                <div className='volt-container d-flex content-between items-center mb-1'>
+                    {title && <h3 id={headingId} className='volt-title font-size-3 font-weight-6'>{title}</h3>}
+                    <div className='volt-container d-flex gap-05'>
                         {alwaysEditing && addButtonPosition === 'top' && (
                             <Button variant='ghost' intent='neutral' size='sm' leftIcon={<Plus size={14} />} onClick={handleAdd}>
                                 Add
@@ -139,17 +136,17 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
                                 </Button>
                             )
                         )}
-                    </Container>
-                </Container>
+                    </div>
+                </div>
             )}
 
-            <Container className='d-flex column gap-075'>
+            <div className='volt-container d-flex column gap-075'>
                 {isEditing ? (
                     <>
                         {localItems.map((item, i) => (
-                            <Container key={i} className='editable-kv-row d-flex items-center gap-075'>
+                            <div key={i} className='volt-container editable-kv-row d-flex items-center gap-075'>
                                 {fields.map((field) => (
-                                    <Container key={field.key} className='editable-kv-field'>
+                                    <div key={field.key} className='volt-container editable-kv-field'>
                                         {showLabels && field.label && (
                                             <label className='font-size-1 color-muted' htmlFor={`editable-kv-${field.key}-${i}`}>{field.label}</label>
                                         )}
@@ -166,15 +163,15 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
                                                 field.type === 'number' ? parseInt(e.target.value) || 0 : e.target.value
                                             )}
                                         />
-                                    </Container>
+                                    </div>
                                 ))}
                                 <Button variant='ghost' intent='danger' size='sm' iconOnly aria-label={`Remove item ${i + 1}`} title={`Remove item ${i + 1}`} onClick={() => handleRemove(i)}>
                                     <Trash2 size={16} />
                                 </Button>
-                            </Container>
+                            </div>
                         ))}
                         {localItems.length === 0 && (
-                            <Paragraph className='color-muted font-size-2 text-center p-1'>{emptyMessage}</Paragraph>
+                            <p className='volt-text color-muted font-size-2 text-center p-1'>{emptyMessage}</p>
                         )}
                         {addButtonPosition === 'bottom' && (
                             <Button 
@@ -195,32 +192,32 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
                         {items.length > 0 ? (
                             renderItem ? items.map((item, i) => renderItem(item, i)) : (
                                 items.map((item, i) => (
-                                    <Container key={i} className='editable-kv-display-row d-flex gap-1'>
+                                    <div key={i} className='volt-container editable-kv-display-row d-flex gap-1'>
                                         {fields.map((field) => (
                                             <span key={field.key} className='color-secondary'>
                                                 {String(item[field.key] ?? '')}
                                             </span>
                                         ))}
-                                    </Container>
+                                    </div>
                                 ))
                             )
                         ) : (
-                            <Paragraph className='color-muted font-size-2'>{emptyMessage}</Paragraph>
+                            <p className='volt-text color-muted font-size-2'>{emptyMessage}</p>
                         )}
                     </>
                 )}
-            </Container>
+            </div>
         </>
     );
 
     if (!showCard) {
-        return <Container className={className} aria-labelledby={title ? headingId : undefined}>{content}</Container>;
+        return <div className={`volt-container ${className}`} aria-labelledby={title ? headingId : undefined}>{content}</div>;
     }
 
     return (
-        <Container className={`editable-kv-card p-1-5 ${className}`} aria-labelledby={title ? headingId : undefined}>
+        <div className={`volt-container editable-kv-card p-1-5 ${className}`} aria-labelledby={title ? headingId : undefined}>
             {content}
-        </Container>
+        </div>
     );
 };
 

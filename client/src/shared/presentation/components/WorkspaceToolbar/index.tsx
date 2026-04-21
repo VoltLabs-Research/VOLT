@@ -1,4 +1,3 @@
-import Container from '@/shared/presentation/components/Container';
 import { cn } from '@/shared/utils';
 import type { ReactNode } from 'react';
 
@@ -14,16 +13,16 @@ const WorkspaceToolbar = ({
     className
 }: WorkspaceToolbarProps) => {
     return (
-        <Container className={cn('latex-workspace__toolbar d-flex items-center content-between gap-1', className)}>
-            <Container className='d-flex items-center min-w-0'>
+        <div className={`volt-container ${cn('latex-workspace__toolbar d-flex items-center content-between gap-1', className)}`}>
+            <div className='volt-container d-flex items-center min-w-0'>
                 {title}
-            </Container>
+            </div>
             {actions ? (
-                <Container className='d-flex items-center gap-075'>
+                <div className='volt-container d-flex items-center gap-075'>
                     {actions}
-                </Container>
+                </div>
             ) : null}
-        </Container>
+        </div>
     );
 };
 
