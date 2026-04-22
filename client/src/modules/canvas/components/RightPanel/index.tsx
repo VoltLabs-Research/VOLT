@@ -374,6 +374,36 @@ const RightPanel = ({
         return null;
     }
 
+    const pluginsSection = (
+        <CollapsibleSection
+            title="Plugins"
+            icon={<Wrench size={13} />}
+            expanded={modifiersOpen}
+            onExpandedChange={setModifiersOpen}
+            className="canvas-right-dropdown"
+            headerClassName="canvas-right-dropdown-header d-flex items-center gap-05"
+            titleClassName="canvas-right-dropdown-title font-size-05 color-muted"
+            iconClassName="canvas-right-dropdown-icon"
+            bodyClassName="canvas-right-dropdown-body"
+            contentClassName="d-flex column"
+            noSpacing
+            arrowSize={13}
+            useDefaultHeaderStyles={false}
+            useDefaultTitleStyles={false}
+        >
+            <ModifiersSection
+                pluginLoading={pluginLoading}
+                modifiers={allModifiers}
+                getExecState={getExecState}
+                showAction={shouldShowAction}
+                hasContent={modifierHasContent}
+                isForeignTrajectory={isForeignTrajectory}
+                onAction={handleAction}
+                renderModifierConfig={renderModifierConfig}
+            />
+        </CollapsibleSection>
+    );
+
     return (
         <div className="volt-container d-flex h-max overflow-hidden">
             <div className="volt-container w-max h-max overflow-auto">
@@ -385,34 +415,8 @@ const RightPanel = ({
                     activeRasterContainerId={activeRasterContainerId}
                     onSetActiveRasterContainer={onSetActiveRasterContainer}
                     onUpdateRasterContainerSelection={onUpdateRasterContainerSelection}
+                    afterSceneCollection={pluginsSection}
                 />
-                <CollapsibleSection
-                    title="Plugins"
-                    icon={<Wrench size={13} />}
-                    expanded={modifiersOpen}
-                    onExpandedChange={setModifiersOpen}
-                    className="canvas-right-dropdown"
-                    headerClassName="canvas-right-dropdown-header d-flex items-center gap-05"
-                    titleClassName="canvas-right-dropdown-title font-size-05 color-muted"
-                    iconClassName="canvas-right-dropdown-icon"
-                    bodyClassName="canvas-right-dropdown-body"
-                    contentClassName="d-flex column"
-                    noSpacing
-                    arrowSize={13}
-                    useDefaultHeaderStyles={false}
-                    useDefaultTitleStyles={false}
-                >
-                    <ModifiersSection
-                        pluginLoading={pluginLoading}
-                        modifiers={allModifiers}
-                        getExecState={getExecState}
-                        showAction={shouldShowAction}
-                        hasContent={modifierHasContent}
-                        isForeignTrajectory={isForeignTrajectory}
-                        onAction={handleAction}
-                        renderModifierConfig={renderModifierConfig}
-                    />
-                </CollapsibleSection>
             </div>
         </div>
     );

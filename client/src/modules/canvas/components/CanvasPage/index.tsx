@@ -434,8 +434,13 @@ const CanvasPage = () => {
         );
     }
 
+    const rightOverlaySize = !isLocalGlbViewer && !isNarrowViewport ? rightPanel.size : 0;
+
     return (
-        <div className={`volt-container canvas-editor-root d-flex vh-max wh-max overflow-hidden p-relative${isNarrowViewport ? ' canvas-editor-root--narrow' : ''}`}>
+        <div
+            className={`volt-container canvas-editor-root d-flex vh-max wh-max overflow-hidden p-relative${isNarrowViewport ? ' canvas-editor-root--narrow' : ''}`}
+            style={{ '--canvas-right-overlay-size': `${rightOverlaySize}px` } as React.CSSProperties}
+        >
             <PreloadingOverlay />
 
             {isNarrowViewport && rightDrawerOpen && (
@@ -461,8 +466,9 @@ const CanvasPage = () => {
                     share={shareInfo}
                     contextualActions={toolbarContextualActions}
                 />
-                <div className="volt-container canvas-center-panel d-flex column flex-1 overflow-hidden min-h-0">
-                    <div className="volt-container canvas-center-viewport d-flex column flex-1 overflow-hidden p-relative" ref={viewportContainerRef as React.RefObject<HTMLDivElement>}>
+
+                <div className="volt-container canvas-editor-stage d-flex column flex-1 overflow-hidden p-relative min-h-0">
+                    <div className="volt-container canvas-center-viewport p-absolute inset-0 d-flex column overflow-hidden" ref={viewportContainerRef as React.RefObject<HTMLDivElement>}>
                         <ErrorBoundary
                             fallbackTitle='Viewport crashed'
                             fallbackDescription='The 3D viewport hit an unexpected error. Reset to recover without losing your trajectory data.'
@@ -491,16 +497,26 @@ const CanvasPage = () => {
                             containerRef={viewportContainerRef}
                         />
                     </div>
+
                     {!isLocalGlbViewer && !isScriptingWorkspace && (
                         <>
-                            <ResizeHandle
-                                direction={ResizeDirection.Vertical}
-                                isDragging={timeline.isDragging}
-                                label="Resize timeline"
-                                controls="canvas-center-timeline"
-                                {...timeline.handleProps}
-                            />
-                            <div id="canvas-center-timeline" className="volt-container canvas-center-timeline d-flex column f-shrink-0 min-h-0" style={{ height: timeline.size }}>
+                            <div
+                                className="canvas-resize-rail canvas-resize-rail--timeline p-absolute"
+                                style={{ left: 0, right: rightOverlaySize, bottom: timeline.size }}
+                            >
+                                <ResizeHandle
+                                    direction={ResizeDirection.Vertical}
+                                    isDragging={timeline.isDragging}
+                                    label="Resize timeline"
+                                    controls="canvas-center-timeline"
+                                    {...timeline.handleProps}
+                                />
+                            </div>
+                            <div
+                                id="canvas-center-timeline"
+                                className="volt-container canvas-center-timeline canvas-overlay-glass p-absolute d-flex column f-shrink-0 min-h-0"
+                                style={{ height: timeline.size }}
+                            >
                                 <Timeline
                                     sceneRef={sceneRef}
                                     trajectory={trajectory}
@@ -515,6 +531,7 @@ const CanvasPage = () => {
                         </>
                     )}
                 </div>
+
                 {!isLocalGlbViewer && showStatusBar && (
                     <StatusBar trajectory={trajectory} currentTimestep={currentTimestep} />
                 )}
@@ -522,14 +539,6 @@ const CanvasPage = () => {
 
             {!isLocalGlbViewer && (
                 <>
-                    <ResizeHandle
-                        direction={ResizeDirection.Horizontal}
-                        isDragging={rightPanel.isDragging}
-                        label="Resize right sidebar"
-                        controls="canvas-right-panel"
-                        {...rightPanel.handleProps}
-                    />
-
                     {isNarrowViewport && !rightDrawerOpen && (
                         <button
                             type='button'
@@ -542,7 +551,26 @@ const CanvasPage = () => {
                             <PanelRight size={14} aria-hidden='true' />
                         </button>
                     )}
-                    <div id="canvas-right-panel" className="volt-container canvas-right-panel-container d-flex column f-shrink-0" style={{ width: rightPanel.size }} data-drawer-open={isNarrowViewport ? (rightDrawerOpen ? 'true' : 'false') : undefined}>
+                    {!isNarrowViewport && (
+                        <div
+                            className="canvas-resize-rail canvas-resize-rail--right p-absolute"
+                            style={{ top: 0, bottom: 0, right: rightPanel.size }}
+                        >
+                            <ResizeHandle
+                                direction={ResizeDirection.Horizontal}
+                                isDragging={rightPanel.isDragging}
+                                label="Resize right sidebar"
+                                controls="canvas-right-panel"
+                                {...rightPanel.handleProps}
+                            />
+                        </div>
+                    )}
+                    <div
+                        id="canvas-right-panel"
+                        className="volt-container canvas-right-panel-container canvas-overlay-glass p-absolute d-flex column"
+                        style={{ width: rightPanel.size }}
+                        data-drawer-open={isNarrowViewport ? (rightDrawerOpen ? 'true' : 'false') : undefined}
+                    >
                         <RightPanel
                             trajectory={trajectory}
                             trajectoryId={trajectoryId}

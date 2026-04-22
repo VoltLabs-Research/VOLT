@@ -13,6 +13,10 @@
     min-width: 0;
 }
 
+.collapsible-section-title{
+    font-size: 0.8125rem;
+}
+
 .collapsible-section-trigger {
     flex: 1;
     min-width: 0;
@@ -79,6 +83,7 @@
 .collapsible-section-body {
     overflow: hidden;
     transition: none;
+    padding-left: .5rem;
 }
 
 .collapsible-section-body--static {

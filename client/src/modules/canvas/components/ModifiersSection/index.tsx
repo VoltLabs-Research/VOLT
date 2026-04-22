@@ -61,7 +61,6 @@ const ModifierPopoverItem = ({
             data-modifier-id={option.modifierId}
         >
             <div className='volt-container collapsible-section-trigger-content d-flex items-center gap-05'>
-                <span className='d-flex items-center color-muted'><option.Icon size={14} /></span>
                 <span className='font-size-1 color-secondary'>{option.title}</span>
             </div>
             {hasContent && (
@@ -136,7 +135,6 @@ const ModifiersSection = ({
                 {Array.from({ length: SKELETON_ROWS }).map((_, i) => (
                     <div key={`mod-skel-${i}`} className="volt-container canvas-section">
                         <div className="volt-container d-flex items-center gap-05 p-05">
-                            <span className="canvas-modifier-skeleton-icon" />
                             <span className="canvas-modifier-skeleton-title" />
                         </div>
                     </div>

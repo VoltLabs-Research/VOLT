@@ -6,9 +6,6 @@ export const ModifierDataSchema = new Schema({
         type: String,
         required: [true, ValidationCodes.PLUGIN_MODIFIER_NAME_REQUIRED]
     },
-    icon: {
-        type: String
-    },
     author: {
         type: String
     },

@@ -94,7 +94,6 @@ export interface IPluginReferenceValue {
 
 export interface IModifierData {
     name: string;
-    icon?: string;
     author?: string;
     license?: string;
     version?: string;

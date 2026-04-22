@@ -62,12 +62,11 @@ const renderAvatarButton = (
 
 const WorkspacePeerAvatars = ({
     peers,
-    self,
     activeOwnerId,
     onSelectPeer,
     maxDisplay = 4
 }: WorkspacePeerAvatarsProps) => {
-    if (peers.length === 0 && !self) {
+    if (peers.length === 0) {
         return null;
     }
 
@@ -76,11 +75,6 @@ const WorkspacePeerAvatars = ({
 
     return (
         <div className='volt-container workspace-peer-avatars d-flex items-center gap-025'>
-            {self && renderAvatarButton(self, {
-                isActive: self.id === activeOwnerId,
-                isSelf: true,
-                onClick: () => onSelectPeer(self.id)
-            })}
             {visible.map((peer) => renderAvatarButton(peer, {
                 isActive: peer.id === activeOwnerId,
                 isSelf: false,

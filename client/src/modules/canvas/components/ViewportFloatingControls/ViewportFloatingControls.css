@@ -1,13 +1,13 @@
 .canvas-viewport-floating-controls {
     position: absolute;
-    top: 12px;
-    right: 12px;
+    top: calc(12px + var(--canvas-header-height, 55px));
+    right: max(12px, var(--canvas-right-overlay-size, 0px));
     z-index: 3;
     padding: 4px;
-    border-radius: 999px;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    background: var(--glass-bg-secondary);
     pointer-events: auto;
+    margin-right: 0.5rem;
 }
 
 .canvas-viewport-floating-trigger {

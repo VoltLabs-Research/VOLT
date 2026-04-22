@@ -1,5 +1,5 @@
 .canvas-plugin-search-wrapper {
-    width: min(100%, 360px);
+    width: clamp(240px, 32vw, 440px);
     min-width: 0;
 }
 

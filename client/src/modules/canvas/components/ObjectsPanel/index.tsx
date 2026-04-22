@@ -45,6 +45,7 @@ interface ObjectsPanelProps {
     activeRasterContainerId?: RasterContainerId;
     onSetActiveRasterContainer?: (containerId: RasterContainerId) => void;
     onUpdateRasterContainerSelection?: (containerId: RasterContainerId, updates: Partial<RasterContainerSelection>) => void;
+    afterSceneCollection?: ReactNode;
 };
 
 const PANEL_ICON_COLOR = 'var(--color-text-secondary)';
@@ -153,12 +154,13 @@ const ObjectsPanel = ({
     rasterContainerSelections = [],
     activeRasterContainerId = 'container-1',
     onSetActiveRasterContainer,
-    onUpdateRasterContainerSelection
+    onUpdateRasterContainerSelection,
+    afterSceneCollection
 }: ObjectsPanelProps) => {
     const [sceneCollectionOpen, setSceneCollectionOpen] = useState(true);
-    const [selectedTimestepAnalysisOpen, setSelectedTimestepAnalysisOpen] = useState(true);
-    const [colorCodingOpen, setColorCodingOpen] = useState(true);
-    const [particleFilterOpen, setParticleFilterOpen] = useState(true);
+    const [selectedTimestepAnalysisOpen, setSelectedTimestepAnalysisOpen] = useState(false);
+    const [colorCodingOpen, setColorCodingOpen] = useState(false);
+    const [particleFilterOpen, setParticleFilterOpen] = useState(false);
     const [expandedColorCodingTimesteps, setExpandedColorCodingTimesteps] = useState<Set<number>>(new Set());
     const [expandedParticleFilterTimesteps, setExpandedParticleFilterTimesteps] = useState<Set<number>>(new Set());
     const [colorCodingVisibleCount, setColorCodingVisibleCount] = useState(TIMESTEP_PAGE_SIZE);
@@ -500,6 +502,8 @@ const ObjectsPanel = ({
                     />
                 )}
             </RightCollapsible>
+
+            {afterSceneCollection}
 
             {!isRasterWorkspace && hasSelectedTimestepAnalyses && (
                 <RightCollapsible

@@ -100,7 +100,7 @@ const AnalysisLogPanel = ({
 
     return (
         <div className='volt-container canvas-analysis-log-panel d-flex column flex-1 min-h-0'>
-            <div ref={scrollRef} className='volt-container canvas-analysis-log-stream y-auto scrollbar-thin flex-1 min-h-0'>
+            <div ref={scrollRef} className='volt-container canvas-analysis-log-stream y-auto flex-1 min-h-0'>
                 {helperText ? (
                     <div className='volt-container canvas-analysis-log-empty d-flex content-center items-center flex-1 min-h-0'>
                         <p className='volt-text font-size-1 color-secondary'>{helperText}</p>

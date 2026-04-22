@@ -54,6 +54,7 @@
     --material-regular-border: #1D1D20;
 
     --glass-bg: rgba(0, 0, 0, 0.2);
+    --glass-bg-secondary: rgba(22, 22, 22, 0.27);
     --glass-border: rgba(113, 113, 113, 0.06);
     --glass-blur: blur(20px) saturate(150%);
     --glass-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -138,6 +139,7 @@
     --material-regular-border: rgba(60, 60, 67, 0.08);
 
     --glass-bg: var(--material-regular);
+    --glass-bg-secondary: rgba(242, 242, 247, 0.72);
     --glass-border: var(--material-regular-border);
     --glass-blur: blur(20px) saturate(180%);
     --glass-shadow: 0 6px 18px rgba(15, 23, 42, 0.04), inset 0 0 0 0.5px rgba(255, 255, 255, 0.62);

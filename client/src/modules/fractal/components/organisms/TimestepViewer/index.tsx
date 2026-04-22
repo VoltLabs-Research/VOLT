@@ -128,12 +128,20 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
         const sceneKey = getSceneKey(scene);
         const cached = scenePositionsRef.current.get(sceneKey);
         if (cached) return cached;
-        const isFirst = scenePositionsRef.current.size === 0;
+        // Why: on a direct click (replace) the store shrinks activeScenes to [scene].
+        // The ref still holds the previous scene's key until the cleanup effect runs
+        // after render, so relying on ref.size would misclassify a replace as an
+        // "add" and apply the spawn offset. Using the live scenesToRender length
+        // keeps replace collapsing to the root position.
+        const isFirst = scenesToRender.length <= 1;
         let spawn: OptionalPosition;
         if (isFirst) {
             spawn = { x: position.x ?? 0, y: position.y ?? 0, z: position.z ?? 0 };
         } else {
-            spawn = computeSpawnPosition(camera, Array.from(scenePositionsRef.current.values()));
+            const existing = Array.from(scenePositionsRef.current.values());
+            spawn = existing.length === 0
+                ? { x: position.x ?? 0, y: position.y ?? 0, z: position.z ?? 0 }
+                : computeSpawnPosition(camera, existing);
         }
         scenePositionsRef.current.set(sceneKey, spawn);
         return spawn;
