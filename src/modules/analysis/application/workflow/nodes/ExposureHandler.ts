@@ -56,7 +56,6 @@ export class WorkflowExposureHandler implements WorkflowNodeHandler {
             nodeId: node.id,
             name: exposureData.name ?? node.id,
             results: exposureData.results ?? '',
-            iterable: exposureData.iterable,
             export: exportNode?.data.export
         };
     }

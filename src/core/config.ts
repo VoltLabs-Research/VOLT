@@ -1,11 +1,5 @@
 import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
 import type { RedisConnectionOptions } from '@/core/storage/contracts/redis-connection';
-import type {
-    TeamClusterDaemonQueueConcurrency,
-    TeamClusterDaemonQueueScopeLimits,
-    TeamClusterDaemonRuntimeConfig,
-    TeamClusterRuntimeRoleConfig
-} from '@/core/runtime/contracts/team-cluster-runtime';
 
 interface MinioConfig {
     endpoint: string;
@@ -34,19 +28,13 @@ interface JupyterConfig {
     publicBasePath: string;
 }
 
-export type DaemonRuntimeConfig = TeamClusterDaemonRuntimeConfig;
-
 export interface DaemonConfig {
     port: number;
     host: string;
     teamId?: string;
     teamClusterId: string;
     daemonPassword: string;
-    enrollmentToken?: string;
-    installedVersion: string;
     voltCloudUrl: string;
-    healthcheckPath?: string;
-    controlSocketUrl?: string;
     heartbeatIntervalMs: number;
     metricsIntervalMs: number;
     composeProjectName?: string;
@@ -165,7 +153,10 @@ export const loadConfig = (): DaemonConfig => {
         ObjectBucketName.Dumps,
         ObjectBucketName.Models,
         ObjectBucketName.Plugins,
-        ObjectBucketName.Rasterizer
+        ObjectBucketName.Rasterizer,
+        ObjectBucketName.Vtr,
+        ObjectBucketName.VtrDict,
+        ObjectBucketName.VtrBlobs
     ];
 
     const config: DaemonConfig = {
@@ -174,11 +165,7 @@ export const loadConfig = (): DaemonConfig => {
         teamId: readOptionalString('TEAM_ID') ?? readOptionalString('VOLT_TEAM_ID'),
         teamClusterId: readRequiredString('TEAM_CLUSTER_ID'),
         daemonPassword: readRequiredString('TEAM_CLUSTER_DAEMON_PASSWORD'),
-        enrollmentToken: readOptionalString('TEAM_CLUSTER_ENROLLMENT_TOKEN'),
-        installedVersion: readStringWithDefault('VOLT_CLUSTER_INSTALL_MANIFEST_VERSION', '1.0.0'),
         voltCloudUrl: readRequiredString('VOLT_CLOUD_URL').replace(/\/+$/g, ''),
-        healthcheckPath: readOptionalString('TEAM_CLUSTER_HEALTHCHECK_PATH'),
-        controlSocketUrl: readOptionalString('VOLT_CLOUD_DAEMON_SOCKET_URL'),
         heartbeatIntervalMs: readNumberWithDefault('TEAM_CLUSTER_HEARTBEAT_INTERVAL_MS', DEFAULT_HEARTBEAT_INTERVAL_MS),
         metricsIntervalMs: readNumberWithDefault('TEAM_CLUSTER_METRICS_INTERVAL_MS', DEFAULT_METRICS_INTERVAL_MS),
         composeProjectName: readOptionalString('COMPOSE_PROJECT_NAME'),

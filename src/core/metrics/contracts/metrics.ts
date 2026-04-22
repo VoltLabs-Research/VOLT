@@ -5,7 +5,7 @@ interface MemorySnapshot {
     usagePercent: number;
 }
 
-interface DiskUsageSnapshot {
+export interface DiskUsageSnapshot {
     totalBytes: number;
     freeBytes: number;
     usedBytes: number;

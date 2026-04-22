@@ -1,7 +1,8 @@
 export const EntrypointType = Object.freeze({
     Executable: 'executable',
     PythonScript: 'python-script',
-    PackagedExecutable: 'packaged-executable'
+    PackagedExecutable: 'packaged-executable',
+    Wasm: 'wasm'
 } as const);
 export type EntrypointType = typeof EntrypointType[keyof typeof EntrypointType];
 

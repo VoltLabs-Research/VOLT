@@ -11,7 +11,6 @@ import {
 import {
     ArtifactUploadCompletedEvent,
     ArtifactUploadFailedEvent,
-    ArtifactUploadQueuedEvent,
     ArtifactUploadStartedEvent
 } from '@/modules/plugin/domain/events';
 import {
@@ -57,7 +56,6 @@ const REPORT_MAP = {
     SshImportStarted: SshImportStartedEvent,
     SshImportCompleted: SshImportCompletedEvent,
     SshImportFailed: SshImportFailedEvent,
-    ArtifactUploadQueued: ArtifactUploadQueuedEvent,
     ArtifactUploadStarted: ArtifactUploadStartedEvent,
     ArtifactUploadCompleted: ArtifactUploadCompletedEvent,
     ArtifactUploadFailed: ArtifactUploadFailedEvent

@@ -8,18 +8,16 @@ import {
 import {
     ArtifactUploadCompletedEvent,
     ArtifactUploadFailedEvent,
-    ArtifactUploadQueuedEvent,
     ArtifactUploadStartedEvent,
     SceneArtifactBatchReportedEvent
 } from '@/modules/plugin/domain/events';
 
-type ArtifactUploadStatus = 'queued' | 'running' | 'completed' | 'failed';
+type ArtifactUploadStatus = 'running' | 'completed' | 'failed';
 
 export const registerPluginEventMappers = (bridge: DomainEventBridge): void => {
     registerStatusTriple<Parameters<typeof createArtifactUploadJobStatusMessage>[1], ArtifactUploadStatus>({
         bridge,
         events: {
-            queued: ArtifactUploadQueuedEvent,
             running: ArtifactUploadStartedEvent,
             completed: ArtifactUploadCompletedEvent,
             failed: ArtifactUploadFailedEvent

@@ -1,5 +1,5 @@
 import { Service } from '@/core/decorators/service';
-import { ANALYSIS_QUEUE_NAME, ARTIFACT_UPLOAD_QUEUE_NAME, SSH_IMPORT_QUEUE_NAME, TRAJECTORY_GLB_QUEUE_NAME, TRAJECTORY_RASTER_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
+import { ANALYSIS_QUEUE_NAME, ARTIFACT_UPLOAD_QUEUE_NAME, PLUGIN_WARMUP_QUEUE_NAME, SSH_IMPORT_QUEUE_NAME, TRAJECTORY_GLB_QUEUE_NAME, TRAJECTORY_RASTER_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import { RedisConnection } from '@/core/storage/infrastructure/redis/RedisConnection';
 import { Queue, Worker, type Job, type JobState } from 'bullmq';
 
@@ -22,6 +22,7 @@ type PreservedJobState = Extract<JobState, 'active' | 'waiting' | 'delayed'>;
 const KNOWN_QUEUE_NAMES = [
     ANALYSIS_QUEUE_NAME,
     ARTIFACT_UPLOAD_QUEUE_NAME,
+    PLUGIN_WARMUP_QUEUE_NAME,
     SSH_IMPORT_QUEUE_NAME,
     TRAJECTORY_RASTER_QUEUE_NAME,
     TRAJECTORY_GLB_QUEUE_NAME

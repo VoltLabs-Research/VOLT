@@ -241,7 +241,6 @@ export class WorkflowSession {
                 nodeId: node.id,
                 name: exposureData.name!,
                 results: exposureData.results!,
-                iterable: exposureData.iterable,
                 export: exportNode ? exportNode.data.export : undefined
             });
         }

@@ -69,8 +69,11 @@ class DefaultClusterObjectStore implements ClusterObjectStore {
         options?: ClusterObjectReadOptions
     ): Promise<ClusterObjectStreamResponse> => {
         if (this.isLocalOwner(ownerClusterId)) {
+            const range = options?.range;
             if (options?.skipMetadata) {
-                const stream = await this.deps.minioService.getObjectStream(bucket, objectKey);
+                const stream = range
+                    ? await this.deps.minioService.getObjectRangeStream(bucket, objectKey, range.offset, range.length)
+                    : await this.deps.minioService.getObjectStream(bucket, objectKey);
                 return {
                     metadata: {},
                     stream
@@ -79,7 +82,9 @@ class DefaultClusterObjectStore implements ClusterObjectStore {
 
             const [stat, stream] = await Promise.all([
                 this.deps.minioService.statObject(bucket, objectKey),
-                this.deps.minioService.getObjectStream(bucket, objectKey)
+                range
+                    ? this.deps.minioService.getObjectRangeStream(bucket, objectKey, range.offset, range.length)
+                    : this.deps.minioService.getObjectStream(bucket, objectKey)
             ]);
 
             return {

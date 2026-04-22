@@ -1,18 +1,11 @@
 import { TTLCache } from '@isaacs/ttlcache';
-import type { MetricsSnapshot } from '@/core/metrics/contracts/metrics';
+import type { DiskUsageSnapshot, MetricsSnapshot } from '@/core/metrics/contracts/metrics';
 import * as os from 'node:os';
 import si from 'systeminformation'
 
 interface CloudMetricsSnapshot {
     cloudLatencyMs: number | null;
     connectedToCloud: boolean;
-}
-
-interface DiskUsageSnapshot {
-    totalBytes: number;
-    freeBytes: number;
-    usedBytes: number;
-    usagePercent: number;
 }
 
 const BYTES_PER_MB = 1024 * 1024;

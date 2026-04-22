@@ -449,10 +449,6 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
         }
 
         const normalizedPath = path.posix.normalize(targetPath);
-        if (normalizedPath === '../../../infrastructure/docker') {
-            return '/';
-        }
-
         return normalizedPath.startsWith('/') ? normalizedPath : path.posix.join('/', normalizedPath);
     }
 

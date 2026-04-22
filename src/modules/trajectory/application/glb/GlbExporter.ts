@@ -9,6 +9,7 @@ import type { TrajectoryRasterQueue } from '@/modules/trajectory/application/ras
 import type { TrajectoryParser } from '@/modules/trajectory/application/parsing/TrajectoryParser';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
 import { compressFileWithZstd } from '@/support/serialization/storage-codec';
+import { withNativeProcessingTempDir } from '@/support/native-temp-dir';
 import spatialAssembler from '@voltstack/spatial-assembler';
 
 export interface GlbExporter {
@@ -45,12 +46,16 @@ export class GlbExporter {
     ) {}
 
     async preprocessTrajectory(input: any): Promise<void> {
-        await this.trajectoryParser.withDumpFile(input, async (dumpPath) => {
-            const tempGlbPath = path.join(path.dirname(dumpPath), 'model.glb');
+        await withNativeProcessingTempDir('trajectory-glb', async (tempDirectory) => {
+            const tempGlbPath = path.join(tempDirectory, 'model.glb');
             const tempCompressedGlbPath = `${tempGlbPath}.zst`;
             const modelObjectKey = this.trajectoryParser.getModelObjectKey(input.trajectoryId, input.timestep);
 
-            const parsed = this.trajectoryParser.parseTrajectory(dumpPath);
+            const parsed = await this.trajectoryParser.readFrame({
+                trajectoryId: input.trajectoryId,
+                timestep: input.timestep,
+                ownerClusterId: input.ownerClusterId
+            });
             const exported = spatialAssembler.generateGLBToFile(
                 parsed.positions,
                 parsed.types,

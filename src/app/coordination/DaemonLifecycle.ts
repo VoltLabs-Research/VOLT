@@ -14,8 +14,10 @@ import { VoltCloudConnection } from '@/modules/container/infrastructure/connecti
 import { ReverseChannelBridge } from '@/modules/container/infrastructure/reverse-channel/ReverseChannelBridge';
 import { RuntimeRoleCoordinator } from '@/app/coordination/RuntimeRoleCoordinator';
 import { RedisExplorer } from '@/modules/container/infrastructure/remote-access/RedisExplorer';
+import { PluginProcessPool } from '@/modules/plugin/application/runtime/PluginProcessPool';
 import { logger } from '@/core/logger';
 import mongoose from 'mongoose';
+
 
 @Service('daemonLifecycle')
 export class DaemonLifecycle {
@@ -34,6 +36,7 @@ export class DaemonLifecycle {
         private readonly voltCloudConnection: VoltCloudConnection,
         private readonly reverseChannelBridge: ReverseChannelBridge,
         private readonly runtimeRoleCoordinator: RuntimeRoleCoordinator,
+        private readonly pluginProcessPool: PluginProcessPool,
         // Resolving `domainEventBridge` here instantiates the bridge and
         // subscribes all registered domain-event mappers to the dispatcher.
         private readonly domainEventBridge: DomainEventBridge
@@ -69,6 +72,10 @@ export class DaemonLifecycle {
     }
 
     async start(): Promise<void> {
+        await this.startCluster();
+    }
+
+    private async startCluster(): Promise<void> {
         logger.info(`Bootstrapping cluster daemon services for teamClusterId=${this.config.teamClusterId}`);
 
         await this.commandRegistry.registerDecoratedGroups(this.container, this.reverseChannelBridge);
@@ -77,7 +84,6 @@ export class DaemonLifecycle {
 
         await this.connectInfrastructure();
 
-        // Infrastructure (Redis, Mongo, MinIO) is now up. Safe to accept inbound commands.
         this.commandRegistry.markReady();
 
         await Promise.all([
@@ -93,12 +99,15 @@ export class DaemonLifecycle {
 
         this.daemonExposureRegistry.start();
         await this.runtimeRoleCoordinator.initialize(runtimeConfig);
-        this.voltCloudConnection.emitLifecycleEvent('services-ready');
 
         logger.info(`cluster-daemon started for team cluster ${this.config.teamClusterId}`);
     }
 
     async stop(): Promise<void> {
+        await this.stopCluster();
+    }
+
+    private async stopCluster(): Promise<void> {
         this.debugSessionManager.shutdown();
 
         await this.runtimeRoleCoordinator.stopComputeWorkers();
@@ -113,6 +122,8 @@ export class DaemonLifecycle {
 
         this.voltCloudConnection.stop();
         await this.queueService.close();
+        await this.pluginProcessPool.shutdown();
         await this.disconnectInfrastructure();
     }
+
 }

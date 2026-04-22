@@ -28,9 +28,11 @@ import type { AnalysisJobExecutionData } from '@/modules/analysis/contracts/http
 import type { ArtifactUploadBatch } from '@/modules/plugin/contracts/artifact-upload';
 import type { ResultProcessorService } from '@/modules/plugin/application/exports/result-processor-service-contract';
 import type { WorkflowExecutionOptions } from '@/modules/analysis/contracts/workflow.types';
+import type { VtrReaderRegistry } from '@/modules/trajectory/application/vtr/VtrReaderRegistry';
 import ApplicationError from '@/app/coordination/ApplicationError';
 import { dir as createTempDir } from 'tmp-promise';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 
 interface WorkflowTraceContext {
     currentPluginId: string;
@@ -64,6 +66,7 @@ interface WorkflowExecutionBaseInput {
     analysisId: string;
     analysis: DaemonAnalysisDocument;
     teamId: string;
+    ownerClusterId?: string;
     rootNodeId: string;
     executionPath: string[];
     logSinkFactory?: WorkflowLogSinkFactory;
@@ -219,7 +222,17 @@ const readWorkflowTrace = (error: unknown): InlineWorkflowTraceNode[] | undefine
     return Array.isArray(details?.trace) ? details.trace : undefined;
 };
 
-const MAX_BATCH_PLUGIN_CONCURRENCY = 2;
+const resolveBatchPluginConcurrency = (): number => {
+    const raw = process.env.PLUGIN_CONCURRENCY;
+    if (raw !== undefined && /^[1-9]\d*$/.test(raw)) {
+        return Number.parseInt(raw, 10);
+    }
+
+    const cpuCount = typeof os.availableParallelism === 'function' ? os.availableParallelism() : os.cpus().length;
+    return Math.max(1, cpuCount - 1);
+};
+
+const MAX_BATCH_PLUGIN_CONCURRENCY = resolveBatchPluginConcurrency();
 
 @Service('workflowRuntime')
 export class WorkflowRuntime {
@@ -229,7 +242,8 @@ export class WorkflowRuntime {
         workflowNodeRegistry: WorkflowNodeRegistry,
         private readonly pluginBinaryCache: PluginBinaryCache,
         private readonly binaryExecutorService: BinaryExecutorService,
-        private readonly resultProcessor: ResultProcessorService
+        private readonly resultProcessor: ResultProcessorService,
+        private readonly vtrReaderRegistry: VtrReaderRegistry
     ) {
         this.nodeExecutor = new WorkflowNodeExecutor(workflowNodeRegistry);
     }
@@ -444,15 +458,18 @@ export class WorkflowRuntime {
     }
 
     private buildRuntimeExecutionOptions(input: WorkflowExecuteInput): WorkflowExecutionOptions {
-        const { binaryObjectPath, arguments: argumentsTemplate, type, requirementsFile, entrypointScript, timeout } = input.executionData.entrypoint;
+        const { binaryObjectPath, arguments: argumentsTemplate, type, requirementsFile, entrypointScript } = input.executionData.entrypoint;
+        const storageClusterId = input.executionData.identity.storageClusterId;
 
         return {
             entrypoint: {
-                defaults: { binaryObjectPath, argumentsTemplate, entrypointType: type, requirementsFile, entrypointScript, timeoutMs: timeout },
+                defaults: { binaryObjectPath, argumentsTemplate, entrypointType: type, requirementsFile, entrypointScript },
                 jobId: input.jobId,
                 outputDir: input.outputDir,
                 pluginBinaryCache: this.pluginBinaryCache,
                 binaryExecutorService: this.binaryExecutorService,
+                vtrReaderRegistry: this.vtrReaderRegistry,
+                ownerClusterId: storageClusterId,
                 includeOutputFiles: true,
                 nonZeroExitMessage: (result) => `Binary exited with code ${result.code}: ${result.stderr || result.stdout}`
             },
@@ -513,6 +530,7 @@ export class WorkflowRuntime {
             analysisId: identity.analysisId,
             analysis: { _id: identity.analysisId, pluginDisplayName: identity.pluginId },
             teamId: identity.teamId,
+            ownerClusterId: identity.storageClusterId,
             rootNodeId: ctx.node.id,
             executionPath: ctx.executionPath,
             logSinkFactory: ctx.input.logSinkFactory
@@ -647,6 +665,8 @@ export class WorkflowRuntime {
                     outputDir: nestedOutputDir,
                     pluginBinaryCache: this.pluginBinaryCache,
                     binaryExecutorService: this.binaryExecutorService,
+                    vtrReaderRegistry: this.vtrReaderRegistry,
+                    ownerClusterId: input.ownerClusterId,
                     nonZeroExitMessage: (result) => `Nested plugin ${pluginId} failed with code ${result.code}: ${result.stderr || result.stdout}`,
                     requireNonEmptyArguments: true,
                     requireEntrypointType: true,
@@ -786,18 +806,6 @@ export class WorkflowRuntime {
 
         const exposures = this.collectNestedExposureArtifacts(nestedSession);
 
-        for (const node of nestedPlugin.workflow.nodes) {
-            if (node.type === WorkflowNodeType.Export) {
-                this.appendTraceNode(trace, workflowTraceContext, {
-                    nodeId: node.id,
-                    nodeType: node.type,
-                    status: 'skipped',
-                    durationMs: 0,
-                    reason: 'Nested export nodes are not processed during inline plugin execution'
-                });
-            }
-        }
-
         return {
             output: this.createNestedExecutionResult(exposures),
             trace
@@ -808,7 +816,7 @@ export class WorkflowRuntime {
         params: NestedNodeParams,
         executionPath: string[]
     ): ExecutePluginNodeInput {
-        const { nestedPlugins, dumpTarget, trajectoryId, analysisId, teamId } = params.input;
+        const { nestedPlugins, dumpTarget, trajectoryId, analysisId, teamId, ownerClusterId } = params.input;
         const { analysis, trajectoryFrames } = params.session.context;
 
         const pluginExecutionInput: ExecutePluginNodeInput = {
@@ -821,6 +829,7 @@ export class WorkflowRuntime {
             analysisId,
             analysis,
             teamId,
+            ownerClusterId,
             node: params.node,
             workflow: params.workflow.definition,
             captureTrace: params.traceContext !== null,

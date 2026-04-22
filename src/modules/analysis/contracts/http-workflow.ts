@@ -77,7 +77,6 @@ export interface WorkflowSwitchCaseData {
 export interface WorkflowExposureData {
     name?: string;
     results?: string;
-    iterable?: string;
 }
 
 export interface WorkflowExportData {
@@ -113,7 +112,6 @@ export interface WorkflowEntrypointData {
     binaryObjectPath?: string;
     entrypointScript?: string;
     requirementsFile?: string;
-    timeout?: number;
     type?: EntrypointType;
 }
 

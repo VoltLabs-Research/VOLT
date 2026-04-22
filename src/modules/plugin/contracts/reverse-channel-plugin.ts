@@ -8,7 +8,6 @@ import type {
 } from '@/modules/plugin/domain/events';
 
 type ArtifactUploadJobStatus =
-    | 'queued'
     | 'running'
     | 'completed'
     | 'failed';

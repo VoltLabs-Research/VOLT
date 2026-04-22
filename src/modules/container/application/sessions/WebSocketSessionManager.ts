@@ -1,6 +1,15 @@
-import { BASE64_SESSION_CHUNK_PATTERN, SESSION_ATTACH_TIMEOUT_MS, WEBSOCKET_BUFFERED_AMOUNT_BYTES_CAP, WEBSOCKET_PENDING_MESSAGE_BYTES_CAP } from '@/core/reverse-channel/contracts/reverse-channel-constants';
+import { SESSION_ATTACH_TIMEOUT_MS, WEBSOCKET_BUFFERED_AMOUNT_BYTES_CAP, WEBSOCKET_PENDING_MESSAGE_BYTES_CAP } from '@/core/reverse-channel/contracts/reverse-channel-constants';
+import {
+    EnvelopeKind,
+    decodeEnvelope,
+    encodeEnvelope
+} from '@/core/reverse-channel/contracts/binary-envelope';
 import { WebSocket } from 'ws';
-import type { TeamClusterDaemonSessionAttachPayload, TeamClusterDaemonSessionDataPayload, TeamClusterDaemonSessionEndPayload, TeamClusterDaemonSessionInputPayload } from '@/contracts';
+import type { TeamClusterDaemonSessionAttachPayload, TeamClusterDaemonSessionEndPayload } from '@/contracts';
+import type {
+    BinarySessionDataPayload,
+    BinarySessionInputPayload
+} from '@/core/reverse-channel/contracts/binary-messages';
 import type { CommandResult } from '@voltstack/daemon-cluster-client';
 import { assign, createActor, createMachine, type ActorRefFrom } from 'xstate';
 
@@ -109,7 +118,7 @@ interface WebSocketSessionManagerCoordinator {
     beginSessionTransition(sessionId: string): SessionTransition | null;
     cleanupInteractiveSession(sessionId: string): void;
     clearSessionActivityIfUntracked(sessionId: string): void;
-    emitSessionData(payload: TeamClusterDaemonSessionDataPayload): void;
+    emitSessionData(payload: BinarySessionDataPayload): void;
     emitSessionEnd(payload: TeamClusterDaemonSessionEndPayload): void;
     endSessionTransition(transition: SessionTransition): void;
     touchSession(sessionId: string): void;
@@ -234,10 +243,15 @@ export class WebSocketSessionManager {
                 const onMessage = (event: ReverseChannelMessageEvent) => {
                     this.options.coordinator.touchSession(payload.sessionId);
                     this.readWebSocketMessage(event.data).then((message) => {
+                        const envelope = encodeEnvelope(
+                            0,
+                            EnvelopeKind.StreamChunk,
+                            message.data instanceof Uint8Array ? message.data : new Uint8Array(message.data)
+                        );
                         this.options.coordinator.emitSessionData({
                             type: 'session-data',
                             sessionId: payload.sessionId,
-                            chunkBase64: message.data.toString('base64'),
+                            chunk: envelope,
                             isBinary: message.isBinary
                         });
                     }).catch((error: Error) => {
@@ -330,22 +344,33 @@ export class WebSocketSessionManager {
         }
     }
 
-    handleInput(payload: TeamClusterDaemonSessionInputPayload): boolean {
+    handleInput(payload: BinarySessionInputPayload): boolean {
         const webSocketState = this.webSocketStates.get(payload.sessionId);
         if (!webSocketState) {
             return false;
         }
 
-        if (!BASE64_SESSION_CHUNK_PATTERN.test(payload.chunkBase64)) {
-            this.endSessionWithError(payload.sessionId, 'Session input is not valid base64 data');
+        const envelopeBytes = payload.chunk instanceof Uint8Array
+            ? payload.chunk
+            : new Uint8Array(payload.chunk as unknown as ArrayBufferLike);
+
+        let decoded;
+        try {
+            decoded = decodeEnvelope(envelopeBytes);
+        } catch (error) {
+            this.endSessionWithError(payload.sessionId, `Malformed websocket input envelope: ${error instanceof Error ? error.message : String(error)}`);
+            return true;
+        }
+
+        if (decoded.kind !== EnvelopeKind.StreamChunk) {
+            this.endSessionWithError(payload.sessionId, `Unexpected websocket envelope kind: ${decoded.kind}`);
             return true;
         }
 
         this.options.coordinator.touchSession(payload.sessionId);
 
-        const message = payload.isBinary
-            ? Buffer.from(payload.chunkBase64, 'base64')
-            : Buffer.from(payload.chunkBase64, 'base64').toString('utf8');
+        const rawBuffer = Buffer.from(decoded.payload.buffer, decoded.payload.byteOffset, decoded.payload.byteLength);
+        const message = payload.isBinary ? rawBuffer : rawBuffer.toString('utf8');
 
         if (webSocketState.socket.readyState === WebSocket.CONNECTING) {
             this.enqueuePendingWebSocketMessage(payload.sessionId, message);

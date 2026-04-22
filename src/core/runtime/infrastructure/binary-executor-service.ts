@@ -5,6 +5,19 @@ import type {
     ProcessExecutionLogStream
 } from '@/core/runtime/contracts/execution-log';
 import { registerProcess, unregisterProcess } from '@/core/runtime/infrastructure/process-tracker';
+import {
+    PluginProcessPool,
+    resolvePythonStubPath,
+    type PooledProcess,
+    type PooledProcessSpawnInput
+} from '@/modules/plugin/application/runtime/PluginProcessPool';
+import { SharedMemoryBridge, type SharedFramePublishInput } from '@/modules/plugin/application/runtime/SharedMemoryBridge';
+import type {
+    PluginFrameDescriptor,
+    PluginProcessRequest,
+    PluginProcessResponse
+} from '@/modules/plugin/contracts/plugin-batch';
+import { ResultCache, hashObjectStable } from '@/modules/plugin/application/cache/ResultCache';
 import { spawn } from 'node:child_process';
 
 export interface ProcessExecutionResult {
@@ -23,12 +36,44 @@ export interface ProcessExecutionInput {
     logSink?: ProcessExecutionLogSink;
 }
 
+export interface PersistentPluginInvocationInput {
+    pluginId: string;
+    pythonCommandPath: string;
+    pluginRoot: string;
+    entrypointScript: string;
+    env?: NodeJS.ProcessEnv;
+    frame?: PluginFrameDescriptor;
+    frames?: PluginFrameDescriptor[];
+    shmFramePublish?: SharedFramePublishInput;
+    shmFramePublishes?: SharedFramePublishInput[];
+    config?: Record<string, unknown>;
+    mode?: 'single' | 'batch';
+    timeoutMs?: number;
+    cache?: {
+        binaryHash: string;
+        inputFrameHash: string;
+        configHash?: string;
+    };
+}
+
+export interface PersistentPluginInvocationResult {
+    response: PluginProcessResponse;
+    cacheHit?: boolean;
+    cacheKey?: string;
+}
+
 const MAX_OUTPUT_BYTES = 10 * 1024 * 1024;
 const DEFAULT_PROCESS_EXECUTION_TIMEOUT_MS = 15 * 60 * 1000;
 const PROCESS_KILL_GRACE_PERIOD_MS = 5_000;
 
 @Service('binaryExecutorService')
 export class BinaryExecutorService {
+    constructor(
+        private readonly pluginProcessPool: PluginProcessPool,
+        private readonly sharedMemoryBridge: SharedMemoryBridge,
+        private readonly resultCache: ResultCache
+    ) {}
+
     async executeProcess({
         jobId,
         commandPath,
@@ -113,6 +158,147 @@ export class BinaryExecutorService {
                 });
             });
         });
+    }
+
+    async invokePersistentPlugin(input: PersistentPluginInvocationInput): Promise<PersistentPluginInvocationResult> {
+        const cacheDescriptor = input.cache
+            ? {
+                binaryHash: input.cache.binaryHash,
+                inputFrameHash: input.cache.inputFrameHash,
+                configHash: input.cache.configHash ?? hashObjectStable(input.config ?? {}),
+                pluginId: input.pluginId
+            }
+            : null;
+
+        if (cacheDescriptor) {
+            const cached = await this.resultCache.lookup<PluginProcessResponse>(cacheDescriptor);
+            if (cached) {
+                return { response: cached.value, cacheHit: true, cacheKey: cached.cacheKey };
+            }
+        }
+
+        const stubPath = resolvePythonStubPath();
+        const spawnInput: PooledProcessSpawnInput = {
+            pluginId: input.pluginId,
+            commandPath: input.pythonCommandPath,
+            stubPath,
+            pluginRoot: input.pluginRoot,
+            entrypointScript: input.entrypointScript,
+            env: input.env
+        };
+
+        const pooled: PooledProcess = await this.pluginProcessPool.acquire(spawnInput);
+        const releaseables: Array<() => Promise<void>> = [];
+
+        try {
+            const request = await this.buildProcessRequest(input, releaseables);
+            const response = await pooled.send(request, { timeoutMs: input.timeoutMs });
+
+            if (cacheDescriptor && response.ok) {
+                const cacheKey = await this.resultCache.store({
+                    ...cacheDescriptor,
+                    value: response
+                }).catch((error: unknown) => {
+                    logger.warn({ err: error, pluginId: input.pluginId }, '@binary-executor-service: cache store failed');
+                    return undefined;
+                });
+                return { response, cacheHit: false, cacheKey: cacheKey ?? undefined };
+            }
+
+            return { response, cacheHit: false };
+        } finally {
+            pooled.release();
+            for (const release of releaseables) {
+                try {
+                    await release();
+                } catch (error: unknown) {
+                    logger.warn({ err: error }, '@binary-executor-service: cleanup failed');
+                }
+            }
+        }
+    }
+
+    private async buildProcessRequest(
+        input: PersistentPluginInvocationInput,
+        releaseables: Array<() => Promise<void>>
+    ): Promise<PluginProcessRequest> {
+        const mode = input.mode ?? (input.frames || input.shmFramePublishes ? 'batch' : 'single');
+
+        if (mode === 'batch') {
+            const frames: PluginFrameDescriptor[] = [];
+            if (input.shmFramePublishes?.length) {
+                for (let index = 0; index < input.shmFramePublishes.length; index += 1) {
+                    const publish = input.shmFramePublishes[index]!;
+                    const baseFrame = input.frames?.[index] ?? { timestep: index, natoms: 0 };
+                    const descriptor = await this.attachPublishedFrame(baseFrame, publish, releaseables);
+                    frames.push(descriptor);
+                }
+            } else if (input.frames?.length) {
+                frames.push(...input.frames);
+            }
+            return {
+                opcode: 'process_batch',
+                frames,
+                config: input.config
+            };
+        }
+
+        let frame = input.frame;
+        if (input.shmFramePublish) {
+            frame = await this.attachPublishedFrame(
+                frame ?? { timestep: 0, natoms: 0 },
+                input.shmFramePublish,
+                releaseables
+            );
+        }
+
+        return {
+            opcode: 'process',
+            frame,
+            config: input.config
+        };
+    }
+
+    private async attachPublishedFrame(
+        baseFrame: PluginFrameDescriptor,
+        publish: SharedFramePublishInput,
+        releaseables: Array<() => Promise<void>>
+    ): Promise<PluginFrameDescriptor> {
+        const handle = await this.sharedMemoryBridge.publishFrame(publish);
+        releaseables.push(() => handle.release());
+
+        if (handle.mode === 'shm') {
+            return {
+                ...baseFrame,
+                columns: handle.bindings.map((binding) => ({
+                    ...binding,
+                    binding: {
+                        ...binding.binding,
+                        shmPath: handle.path ?? undefined
+                    }
+                }))
+            };
+        }
+
+        const inline = handle.inlinePayload;
+        if (!inline) {
+            return baseFrame;
+        }
+
+        return {
+            ...baseFrame,
+            columns: inline.columns.map((column, index) => ({
+                name: column.name,
+                dtype: column.dtype,
+                shape: column.shape,
+                binding: {
+                    kind: 'inline',
+                    dtype: column.dtype,
+                    length: column.bytes.byteLength,
+                    offset: index
+                }
+            }))
+        };
     }
 
     private appendOutputChunk(chunks: Buffer[], bufferedBytes: number, chunk: Buffer): number {

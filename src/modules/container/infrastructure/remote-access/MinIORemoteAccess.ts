@@ -91,10 +91,10 @@ export default class MinioRemoteAccess extends BaseRemoteAccess {
         const normalizedPath = normalizeExplorerPath(path);
         const parsedPath = parseMinioPath(normalizedPath);
 
-        if (!parsedPath) {
+        if (!parsedPath || !parsedPath.objectKey || !this.minioService.listBuckets().includes(parsedPath.bucket)) {
             return {
                 path,
-                title: 'MinIO',
+                title: parsedPath?.bucket ?? 'MinIO',
                 type: RemoteExplorerNodeType.Object,
                 contentType: RemoteExplorerContentType.Empty,
                 textContent: null,
@@ -103,17 +103,6 @@ export default class MinioRemoteAccess extends BaseRemoteAccess {
         }
 
         const { bucket, objectKey } = parsedPath;
-
-        if (!objectKey || !this.minioService.listBuckets().includes(bucket)) {
-            return {
-                path,
-                title: bucket,
-                type: RemoteExplorerNodeType.Object,
-                contentType: RemoteExplorerContentType.Empty,
-                textContent: null,
-                mongoDocuments: []
-            };
-        }
 
         const stream = await this.minioService.getObjectStream(bucket, objectKey);
         const chunks: Buffer[] = [];

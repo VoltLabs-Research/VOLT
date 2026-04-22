@@ -105,3 +105,11 @@ export const toCompressedDumpObjectKey = (trajectoryId: string, timestep: string
 };
 
 export const isZstdObjectKey = (objectKey: string): boolean => objectKey.endsWith('.zst');
+
+export const toVtrObjectKey = (trajectoryId: string): string => {
+    return `trajectory-${trajectoryId}/trajectory.vtr`;
+};
+
+export const toVtrDictObjectKey = (clusterId: string, version: number): string => {
+    return `${clusterId}/v${version}.dict`;
+};

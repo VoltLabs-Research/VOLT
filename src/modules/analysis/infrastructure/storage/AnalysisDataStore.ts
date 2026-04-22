@@ -13,11 +13,25 @@ interface AnalysisExecutionDataPayload {
     executionDataReference?: AnalysisExecutionDataReference;
 }
 
+export interface AnalysisDataStoreContract {
+    connect(): Promise<void>;
+    disconnect(): Promise<void>;
+    store(
+        executionData: AnalysisJobExecutionData,
+        payload?: {
+            serializedPayload?: string;
+            compressedPayload?: string;
+        }
+    ): Promise<AnalysisExecutionDataReference>;
+    resolve(payload: AnalysisExecutionDataPayload): Promise<AnalysisJobExecutionData>;
+    get(reference: AnalysisExecutionDataReference): Promise<AnalysisJobExecutionData | null>;
+}
+
 const ANALYSIS_EXECUTION_DATA_KEY_PREFIX = 'analysis:execution-data:';
 const ANALYSIS_EXECUTION_DATA_TTL_SECONDS = 604_800;
 
 @Service('analysisDataStore')
-export class AnalysisDataStore {
+export class AnalysisDataStore implements AnalysisDataStoreContract {
     private readonly client: Redis;
 
     constructor(

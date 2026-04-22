@@ -3,7 +3,6 @@ import Bottleneck from 'bottleneck';
 import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import { MetricsService } from '@/core/metrics/application/MetricsService';
-import { RuntimeEventBroker } from '@/core/reverse-channel/application/RuntimeEventBroker';
 import type { TeamClusterDaemonServerEventMessage } from '@/core/reverse-channel/contracts/server-event';
 import { RuntimeCommands } from '@/core/commands/command-names';
 import { OrchestrationAction } from '@/core/runtime/contracts/http-runtime';
@@ -14,8 +13,9 @@ import {
     ClusterDaemonClient,
     DaemonClientError
 } from '@voltstack/daemon-cluster-client';
-import type { DaemonConfig, DaemonRuntimeConfig } from '@/core/config';
-import type { RuntimeLifecycleEventType, TeamClusterDaemonMessage } from '@voltstack/daemon-cluster-client';
+import type { DaemonConfig } from '@/core/config';
+import type { TeamClusterDaemonRuntimeConfig } from '@/core/runtime/contracts/team-cluster-runtime';
+import type { TeamClusterDaemonMessage } from '@voltstack/daemon-cluster-client';
 import { TeamClusterStatus } from '@/modules/container/contracts/container-types';
 import type { ExposureSnapshotMessage } from '@/modules/container/contracts/container-types';
 
@@ -23,7 +23,6 @@ interface RuntimeLifecycleUpdateRequest {
     teamClusterId: string;
     daemonPassword: string;
     status: TeamClusterStatus;
-    installedVersion?: string;
 };
 type OutboundMessage =
     | CommandlessTeamClusterDaemonMessage
@@ -59,49 +58,28 @@ export class VoltCloudConnection {
     private readonly bufferedEventMaxQueueSize = 8192;
     private readonly bufferedEventQueue: QueuedEventMessage[] = [];
     private readonly bufferedEventDedupeKeys = new Set<string>();
-    private backgroundCommandProcessedCount = 0;
-    private backgroundCommandDroppedCount = 0;
-    private backgroundCommandTotalQueueWaitMs = 0;
-    private backgroundCommandMaxQueueWaitMs = 0;
-    private controlPlaneSummaryTimer: ReturnType<typeof setInterval> | null = null;
     private cloudLatencyProbeTimer: ReturnType<typeof setInterval> | null = null;
-    private controlPlaneMetricsDirty = false;
 
     public readonly client: ClusterDaemonClient;
 
     constructor(
         private readonly config: DaemonConfig,
         private readonly metricsService: MetricsService,
-        private readonly eventBroker: RuntimeEventBroker,
-        private readonly getRuntimeConfigSnapshot?: () => DaemonRuntimeConfig | null
+        private readonly getRuntimeConfigSnapshot?: () => TeamClusterDaemonRuntimeConfig | null
     ) {
-        const enrollmentEnabled = Boolean(
-            config.healthcheckPath
-            && config.enrollmentToken
-            && !config.daemonPassword.trim()
-        );
-
         this.client = new ClusterDaemonClient({
             serverUrl: config.voltCloudUrl,
-            controlSocketUrl: config.controlSocketUrl ?? config.voltCloudUrl,
+            controlSocketUrl: config.voltCloudUrl,
             credentials: {
                 teamClusterId: config.teamClusterId,
-                daemonPassword: config.daemonPassword,
-                enrollmentToken: config.enrollmentToken,
-                installedVersion: config.installedVersion
+                daemonPassword: config.daemonPassword
             },
-            enrollment: config.healthcheckPath
-                ? {
-                    enabled: enrollmentEnabled,
-                    url: `${config.voltCloudUrl}${config.healthcheckPath}`
-                }
-                : { enabled: false, url: '' },
+            enrollment: { enabled: false, url: '' },
             heartbeat: {
                 interval: config.heartbeatIntervalMs,
                 payloadFactory: async () => ({
                     teamClusterId: this.client.getTeamClusterId(),
                     daemonPassword: this.client.getDaemonPassword(),
-                    installedVersion: config.installedVersion,
                     runtime: this.getRuntimeConfigSnapshot?.(),
                     metrics: await this.metricsService.collectSnapshot({
                         cloudLatencyMs: this.lastCloudLatencyMs,
@@ -134,23 +112,18 @@ export class VoltCloudConnection {
                 this.connectedToCloud = true;
                 this.heartbeatFailureCount = 0;
                 this.lastHeartbeatFailureAt = null;
-                this.controlPlaneMetricsDirty = true;
-                this.emitLifecycleEvent('cloud-socket-connected', 'Outbound cloud socket connected');
                 this.drainBufferedEvents();
                 logger.info('Connected to VoltCloud');
             })
             .onDisconnected((reason) => {
                 this.connectedToCloud = false;
                 this.heartbeatFailureCount = 0;
-                this.controlPlaneMetricsDirty = true;
-                this.emitLifecycleEvent('cloud-socket-disconnected', `Outbound cloud socket disconnected (${reason})`);
+                logger.info(`Outbound cloud socket disconnected (${reason})`);
             })
             .onError((err: DaemonClientError) => {
                 if (err.message.includes('heartbeat')) {
                     this.heartbeatFailureCount += 1;
                     this.lastHeartbeatFailureAt = new Date().toISOString();
-                    this.controlPlaneMetricsDirty = true;
-                    this.emitLifecycleEvent('heartbeat-failed', err.message);
                     logger.warn(`Heartbeat failed: ${err.message} (heartbeatFailureCount=${this.heartbeatFailureCount}, socketReady=${this.client.isReady()})`);
                     return;
                 }
@@ -160,21 +133,14 @@ export class VoltCloudConnection {
     }
 
     async start(): Promise<void> {
-        this.emitLifecycleEvent('starting', 'Cluster daemon starting');
         await this.client.connect();
         this.startCloudLatencyProbe();
-        this.startControlPlaneSummaryTimer();
     }
 
     stop(): void {
         if (this.cloudLatencyProbeTimer) {
             clearInterval(this.cloudLatencyProbeTimer);
             this.cloudLatencyProbeTimer = null;
-        }
-
-        if (this.controlPlaneSummaryTimer) {
-            clearInterval(this.controlPlaneSummaryTimer);
-            this.controlPlaneSummaryTimer = null;
         }
 
         void this.backgroundCommandLimiter.stop({
@@ -244,8 +210,7 @@ export class VoltCloudConnection {
             await this.client.sendCommand('runtime.lifecycle', {
                 teamClusterId: this.client.getTeamClusterId(),
                 daemonPassword: this.client.getDaemonPassword(),
-                status: TeamClusterStatus.DeleteFailed,
-                installedVersion: this.config.installedVersion
+                status: TeamClusterStatus.DeleteFailed
             } satisfies RuntimeLifecycleUpdateRequest);
             logger.info(`Reported daemon lifecycle status to VoltCloud: status=${TeamClusterStatus.DeleteFailed}, durationMs=${Date.now() - startedAt}`);
         } catch (error) {
@@ -270,8 +235,6 @@ export class VoltCloudConnection {
         }
 
         if (this.getBackgroundCommandQueueLength() >= this.backgroundCommandMaxQueueSize) {
-            this.backgroundCommandDroppedCount += 1;
-            this.controlPlaneMetricsDirty = true;
             logger.warn(`Background server command queue is full; dropping command=${command}, dedupeKey=${dedupeKey ?? 'none'}, queueLength=${this.getBackgroundCommandQueueLength()}`);
             return Promise.resolve(undefined);
         }
@@ -293,11 +256,6 @@ export class VoltCloudConnection {
                 if (dedupeKey) {
                     this.backgroundCommandDedupeKeys.delete(dedupeKey);
                 }
-
-                this.backgroundCommandProcessedCount += 1;
-                this.backgroundCommandTotalQueueWaitMs += queueWaitMs;
-                this.backgroundCommandMaxQueueWaitMs = Math.max(this.backgroundCommandMaxQueueWaitMs, queueWaitMs);
-                this.controlPlaneMetricsDirty = true;
             }
         }).catch((error) => {
             if (dedupeKey) {
@@ -305,8 +263,6 @@ export class VoltCloudConnection {
             }
 
             if (this.isBackgroundCommandDropError(error)) {
-                this.backgroundCommandDroppedCount += 1;
-                this.controlPlaneMetricsDirty = true;
                 logger.warn(`Background server command queue is full; dropping command=${command}, dedupeKey=${dedupeKey ?? 'none'}, queueLength=${this.getBackgroundCommandQueueLength()}`);
                 return undefined;
             }
@@ -315,8 +271,8 @@ export class VoltCloudConnection {
         });
     }
 
-    async getRuntimeConfig(): Promise<DaemonRuntimeConfig> {
-        const runtimeConfig = await this.sendServerCommand<DaemonRuntimeConfig>(
+    async getRuntimeConfig(): Promise<TeamClusterDaemonRuntimeConfig> {
+        const runtimeConfig = await this.sendServerCommand<TeamClusterDaemonRuntimeConfig>(
             RuntimeCommands.ConfigGet,
             {}
         );
@@ -325,16 +281,6 @@ export class VoltCloudConnection {
         }
 
         return runtimeConfig;
-    }
-
-    emitLifecycleEvent(type: RuntimeLifecycleEventType, details?: string): void {
-        this.eventBroker.emitLifecycle({
-            type,
-            teamClusterId: this.client.getTeamClusterId(),
-            timestamp: new Date().toISOString(),
-            connectedToCloud: this.connectedToCloud,
-            details
-        });
     }
 
     private getBackgroundCommandQueueLength(): number {
@@ -384,7 +330,6 @@ export class VoltCloudConnection {
                 response.resume();
                 response.once('end', () => {
                     this.lastCloudLatencyMs = Date.now() - startedAt;
-                    this.controlPlaneMetricsDirty = true;
                     resolve();
                 });
             });
@@ -396,27 +341,10 @@ export class VoltCloudConnection {
 
             request.once('error', () => {
                 this.lastCloudLatencyMs = null;
-                this.controlPlaneMetricsDirty = true;
                 resolve();
             });
 
             request.end();
         });
-    }
-
-    private startControlPlaneSummaryTimer(): void {
-        if (this.controlPlaneSummaryTimer) {
-            return;
-        }
-
-        this.controlPlaneSummaryTimer = setInterval(() => {
-            if (!this.controlPlaneMetricsDirty) {
-                return;
-            }
-
-            this.controlPlaneMetricsDirty = false;
-        }, 60_000);
-
-        this.controlPlaneSummaryTimer.unref();
     }
 };

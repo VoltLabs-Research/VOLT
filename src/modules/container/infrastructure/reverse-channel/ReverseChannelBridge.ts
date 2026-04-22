@@ -6,20 +6,28 @@ import { logger } from '@/core/logger';
 import { REVERSE_CHANNEL } from '@/core/reverse-channel/contracts/reverse-channel-constants';
 import type {
     TeamClusterDaemonSessionAttachPayload,
-    TeamClusterDaemonSessionDataPayload,
     TeamClusterDaemonSessionEndPayload,
-    TeamClusterDaemonSessionInputPayload,
     TeamClusterDaemonSessionResizePayload,
     TeamClusterDaemonTunnelClosePayload,
-    TeamClusterDaemonTunnelDataPayload,
     TeamClusterDaemonTunnelOpenPayload,
     TeamClusterDaemonTunnelStatePayload
 } from '@voltstack/daemon-cluster-client';
 import type {
+    BinarySessionDataPayload,
+    BinarySessionInputPayload,
+    BinaryTunnelDataPayload
+} from '@/core/reverse-channel/contracts/binary-messages';
+import type {
     ReverseChannelCommandExecutor,
     ReverseChannelCommandPayloadView
 } from '@/core/reverse-channel/contracts/reverse-channel-messaging';
-import { BASE64_SESSION_CHUNK_PATTERN, SESSION_ATTACH_TIMEOUT_MS } from '@/core/reverse-channel/contracts/reverse-channel-constants';
+import { SESSION_ATTACH_TIMEOUT_MS } from '@/core/reverse-channel/contracts/reverse-channel-constants';
+import {
+    EnvelopeKind,
+    decodeEnvelope,
+    encodeEnvelope,
+    type DecodedEnvelope
+} from '@/core/reverse-channel/contracts/binary-envelope';
 import { TeamClusterServiceExposureAccessMode } from '@/core/runtime/contracts/service-exposure';
 import { TerminalSessionManager } from '@/modules/container/application/sessions/TerminalSessionManager';
 import { WebSocketSessionManager } from '@/modules/container/application/sessions/WebSocketSessionManager';
@@ -77,10 +85,10 @@ type DirectTunnelOpenPayload = {
 type InboundTunnelOpenPayload = TeamClusterDaemonTunnelOpenPayload | DirectTunnelOpenPayload;
 
 type OutboundBridgeMessage =
-    | TeamClusterDaemonSessionDataPayload
+    | BinarySessionDataPayload
     | TeamClusterDaemonSessionEndPayload
     | TeamClusterDaemonTunnelStatePayload
-    | TeamClusterDaemonTunnelDataPayload
+    | BinaryTunnelDataPayload
     | TeamClusterDaemonTunnelClosePayload;
 
 type InboundMessageHandler = (message: InboundTeamClusterDaemonMessage) => void;
@@ -115,11 +123,11 @@ export class ReverseChannelBridge {
     private readonly pendingCommands: RegisteredReverseChannelCommand[] = [];
     private voltCloudConnection: VoltCloudConnection | null = null;
     private readonly inboundMessageHandlers: Partial<Record<InboundTeamClusterDaemonMessage['type'], InboundMessageHandler>> = {
-        'session-input': (message) => this.handleSessionInput(message as TeamClusterDaemonSessionInputPayload),
+        'session-input': (message) => this.handleSessionInput(message as unknown as BinarySessionInputPayload),
         'session-resize': (message) => this.handleSessionResize(message as TeamClusterDaemonSessionResizePayload),
         'session-detach': (message) => this.handleSessionDetach(message as { sessionId: string }),
         'tunnel-open': (message) => this.handleTunnelOpen(message as unknown as InboundTunnelOpenPayload),
-        'tunnel-data': (message) => this.handleTunnelData(message as TeamClusterDaemonTunnelDataPayload),
+        'tunnel-data': (message) => this.handleTunnelData(message as unknown as BinaryTunnelDataPayload),
         'tunnel-close': (message) => this.handleTunnelClose(message as { sessionId: string })
     };
     private readonly sessionAttachHandlers: Partial<Record<TeamClusterDaemonSessionAttachPayload['kind'], SessionAttachHandler>> = {
@@ -342,7 +350,7 @@ export class ReverseChannelBridge {
         });
     }
 
-    private handleSessionInput(message: TeamClusterDaemonSessionInputPayload): void {
+    private handleSessionInput(message: BinarySessionInputPayload): void {
         if (this.terminalSessionManager.handleInput(message)) {
             return;
         }
@@ -442,10 +450,18 @@ export class ReverseChannelBridge {
         };
         const onData = (chunk: Buffer) => {
             this.touchSession(payload.sessionId);
-            const dataPayload: TeamClusterDaemonTunnelDataPayload = {
+            // Why: Socket.IO v4 serializes Uint8Array/Buffer fields as native
+            // binary attachments. We wrap in an envelope so the server can
+            // validate opId/kind before forwarding to the tunnel writer.
+            const envelope = encodeEnvelope(
+                0,
+                EnvelopeKind.StreamChunk,
+                chunk instanceof Uint8Array ? chunk : new Uint8Array(chunk)
+            );
+            const dataPayload: BinaryTunnelDataPayload = {
                 type: 'tunnel-data',
                 sessionId: payload.sessionId,
-                chunkBase64: chunk.toString('base64'),
+                chunk: envelope,
                 isBinary: payload.accessMode !== TeamClusterServiceExposureAccessMode.Http
             };
             this.emitMessage(dataPayload);
@@ -506,30 +522,53 @@ export class ReverseChannelBridge {
         });
     }
 
-    private handleTunnelData(payload: TeamClusterDaemonTunnelDataPayload): void {
+    private handleTunnelData(payload: BinaryTunnelDataPayload): void {
         const tunnelState = this.tunnelStates.get(payload.sessionId);
         if (!tunnelState) {
             this.sessionActivity.delete(payload.sessionId);
             return;
         }
 
-        if (!BASE64_SESSION_CHUNK_PATTERN.test(payload.chunkBase64)) {
+        const envelopeBytes = payload.chunk instanceof Uint8Array
+            ? payload.chunk
+            : new Uint8Array(payload.chunk as unknown as ArrayBufferLike);
+
+        let decoded: DecodedEnvelope;
+        try {
+            decoded = decodeEnvelope(envelopeBytes);
+        } catch (error) {
             this.emitTunnelState({
                 type: 'tunnel-state',
                 sessionId: payload.sessionId,
                 status: REVERSE_CHANNEL.TunnelSessionStatus.Closed,
-                error: 'Tunnel data is not valid base64 data'
+                error: `Malformed tunnel envelope: ${error instanceof Error ? error.message : String(error)}`
+            });
+            this.cleanupTunnelSession(payload.sessionId);
+            return;
+        }
+
+        if (decoded.kind !== EnvelopeKind.StreamChunk) {
+            this.emitTunnelState({
+                type: 'tunnel-state',
+                sessionId: payload.sessionId,
+                status: REVERSE_CHANNEL.TunnelSessionStatus.Closed,
+                error: `Unexpected tunnel envelope kind: ${decoded.kind}`
             });
             this.cleanupTunnelSession(payload.sessionId);
             return;
         }
 
         this.touchSession(payload.sessionId);
-        tunnelState.socket.write(Buffer.from(payload.chunkBase64, 'base64'));
+        tunnelState.socket.write(Buffer.from(decoded.payload.buffer, decoded.payload.byteOffset, decoded.payload.byteLength));
     }
 
     private emitMessage(message: OutboundBridgeMessage): void {
-        this.voltCloudConnection?.emitMessage(message);
+        // Why: the SDK's OutboundMessage type still declares legacy base64
+        // fields on tunnel-data/session-data. At runtime Socket.IO emits
+        // our replacement `chunk: Uint8Array` as a native binary attachment
+        // regardless of the TypeScript shape. Cast through `unknown` to
+        // bridge the local binary contract to the SDK nominal type.
+        this.voltCloudConnection?.emitMessage(message as unknown as Parameters<VoltCloudConnection['emitMessage']>[0]);
     }
 
     private emitTunnelState(payload: TeamClusterDaemonTunnelStatePayload): void {

@@ -5,6 +5,7 @@ import type { PluginBinaryCache } from '@/modules/plugin/application/binaries/Pl
 import type { ArtifactUploadBatch } from '@/modules/plugin/contracts/artifact-upload';
 import type { ResultProcessorService } from '@/modules/plugin/application/exports/result-processor-service-contract';
 import type { WorkflowExposureInspectionResult } from '@/modules/analysis/application/workflow/exposure-payload-reader';
+import type { VtrReaderRegistry } from '@/modules/trajectory/application/vtr/VtrReaderRegistry';
 
 import type { AnalysisJobExecutionData, DaemonAnalysisDocument } from './http-analysis';
 import type {
@@ -52,7 +53,6 @@ export interface WorkflowEntrypointConfigDefaults {
     entrypointType?: import('@/core/runtime/contracts/http-runtime').EntrypointType;
     requirementsFile?: string;
     entrypointScript?: string;
-    timeoutMs?: number;
 }
 
 export interface WorkflowPreparedEntrypointArgs {
@@ -66,6 +66,13 @@ export interface WorkflowEntrypointExecutionOptions {
     outputDir: string;
     pluginBinaryCache: PluginBinaryCache;
     binaryExecutorService: BinaryExecutorService;
+    // Why: optional dependencies enabling the persistent Python pool path.
+    // When both registry + cluster id are present and the entrypoint is a
+    // Python/packaged plugin, the handler routes through the pool + result
+    // cache + shared-memory bridge; otherwise it falls back to the legacy
+    // one-shot spawn.
+    vtrReaderRegistry?: VtrReaderRegistry;
+    ownerClusterId?: string;
     logSink?: ProcessExecutionLogSink;
     prepareArgs?: (args: string[]) => WorkflowPreparedEntrypointArgs;
     restoreOutputOnError?: boolean;
@@ -253,20 +260,6 @@ export class WorkflowGraph {
             : this.nodes.filter((node) => node.type === WorkflowNodeType.Entrypoint);
     }
 
-    findParentByType(nodeId: string, type: WorkflowNodeType): WorkflowNode | null {
-        const parentEdge = this.getParentEdges(nodeId)[0];
-        if (!parentEdge) {
-            return null;
-        }
-
-        const parentNode = this.getNode(parentEdge.source);
-        if (parentNode?.type === type) {
-            return parentNode;
-        }
-
-        return this.findParentByType(parentEdge.source, type);
-    }
-
     findAncestorByType(nodeId: string, type: WorkflowNodeType): WorkflowNode | null {
         const visited = new Set<string>();
         const queue = [nodeId];
@@ -324,31 +317,6 @@ export class WorkflowGraph {
         }
 
         return null;
-    }
-
-    findDescendantNodesOnBranch(startNodeId: string, sourceHandle: string): string[] {
-        const result: string[] = [];
-        const visited = new Set<string>();
-        const initialChildren = this.getChildNodeIds(startNodeId, sourceHandle);
-        const queue = [...initialChildren];
-
-        while (queue.length > 0) {
-            const nodeId = queue.shift();
-            if (!nodeId) {
-                continue;
-            }
-
-            if (visited.has(nodeId)) {
-                continue;
-            }
-
-            visited.add(nodeId);
-            result.push(nodeId);
-            const downstreamChildren = this.getChildNodeIds(nodeId);
-            queue.push(...downstreamChildren);
-        }
-
-        return result;
     }
 
     topologicalSort(): WorkflowNode[] {

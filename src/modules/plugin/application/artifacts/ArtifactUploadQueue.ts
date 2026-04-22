@@ -17,6 +17,16 @@ import type {
     ArtifactUploadStageInput
 } from '@/modules/plugin/contracts/artifact-upload';
 
+type ArtifactUploadJobSink = (payload: ArtifactUploadBatchJobPayload) => Promise<void>;
+
+const defaultJobSink = (queueService: QueueService): ArtifactUploadJobSink => async (payload) => {
+    await queueService.enqueue(ARTIFACT_UPLOAD_QUEUE_NAME, payload, {
+        preserveExistingJob: true,
+        removeOnComplete: 1_000,
+        removeOnFail: false
+    });
+};
+
 class DefaultArtifactUploadBatch implements ArtifactUploadBatch {
     private readonly uploads: ArtifactUploadBatchUpload[] = [];
     private nextSequence = 0;
@@ -25,7 +35,7 @@ class DefaultArtifactUploadBatch implements ArtifactUploadBatch {
     private batchDirectoryCleanup: (() => Promise<void>) | null = null;
 
     constructor(
-        private readonly queueService: QueueService,
+        private readonly jobSink: ArtifactUploadJobSink,
         private readonly context: ArtifactUploadBatchContext
     ) {}
 
@@ -72,11 +82,7 @@ class DefaultArtifactUploadBatch implements ArtifactUploadBatch {
             uploads: this.uploads
         };
 
-        await this.queueService.enqueue(ARTIFACT_UPLOAD_QUEUE_NAME, payload, {
-            preserveExistingJob: true,
-            removeOnComplete: 1_000,
-            removeOnFail: false
-        });
+        await this.jobSink(payload);
 
         this.enqueued = true;
         return {
@@ -165,9 +171,13 @@ class DefaultArtifactUploadBatch implements ArtifactUploadBatch {
 
 @Service('artifactUploadQueue')
 export class ArtifactUploadQueue {
-    constructor(private readonly queueService: QueueService) {}
+    private readonly jobSink: ArtifactUploadJobSink;
+
+    constructor(queueService: QueueService) {
+        this.jobSink = defaultJobSink(queueService);
+    }
 
     createBatch(context: ArtifactUploadBatchContext): ArtifactUploadBatch {
-        return new DefaultArtifactUploadBatch(this.queueService, context);
+        return new DefaultArtifactUploadBatch(this.jobSink, context);
     }
 }

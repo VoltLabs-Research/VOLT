@@ -17,13 +17,12 @@ interface ResolvedApplicationErrorOptions {
 }
 
 const resolveApplicationErrorOptions = (
-    input: ApplicationErrorInput,
-    legacyIsOperational: boolean
+    input: ApplicationErrorInput
 ): ResolvedApplicationErrorOptions => {
     if (typeof input === 'number' || input === undefined) {
         return {
             statusCode: input ?? 500,
-            isOperational: legacyIsOperational,
+            isOperational: true,
             headers: {}
         };
     }
@@ -47,11 +46,10 @@ export default class ApplicationError extends Error {
     constructor(
         public readonly code: string,
         public readonly message: string,
-        input: ApplicationErrorInput = 500,
-        legacyIsOperational: boolean = true
+        input: ApplicationErrorInput = 500
     ) {
         super(message);
-        const options = resolveApplicationErrorOptions(input, legacyIsOperational);
+        const options = resolveApplicationErrorOptions(input);
         this.name = 'ApplicationError';
         this.statusCode = options.statusCode;
         this.isOperational = options.isOperational;
@@ -70,14 +68,6 @@ export default class ApplicationError extends Error {
         return new ApplicationError(code, message, { ...options, statusCode: 400 });
     }
 
-    static unauthorized(
-        code: string,
-        message: string,
-        options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
-    ): ApplicationError {
-        return new ApplicationError(code, message, { ...options, statusCode: 401 });
-    }
-
     static forbidden(
         code: string,
         message: string,
@@ -94,26 +84,11 @@ export default class ApplicationError extends Error {
         return new ApplicationError(code, message, { ...options, statusCode: 404 });
     }
 
-    static conflict(
-        code: string,
-        message: string,
-        options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
-    ): ApplicationError {
-        return new ApplicationError(code, message, { ...options, statusCode: 409 });
-    }
-
     static unprocessableEntity(
         code: string,
         message: string,
         options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
     ): ApplicationError {
         return new ApplicationError(code, message, { ...options, statusCode: 422 });
-    }
-
-    static internalServerError(
-        message: string,
-        options: Omit<ApplicationErrorOptions, 'statusCode'> = {}
-    ): ApplicationError {
-        return new ApplicationError('INTERNAL_ERROR', message, { ...options, statusCode: 500 });
     }
 }

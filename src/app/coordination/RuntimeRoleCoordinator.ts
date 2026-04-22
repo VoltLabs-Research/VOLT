@@ -9,6 +9,7 @@ import type {
 } from '@/core/runtime/contracts/team-cluster-runtime';
 import type { QueueScopeLimitsRegistry } from '@/core/queues/application/QueueScopeLimitsRegistry';
 import type { ArtifactUploadWorker } from '@/modules/plugin/application/artifacts/ArtifactUploadWorker';
+import type { PluginWarmupWorker } from '@/modules/plugin/application/binaries/PluginWarmupWorker';
 import type { AnalysisWorker } from '@/modules/analysis/application/workers/AnalysisWorker';
 import type { SSHImportWorker } from '@/modules/trajectory/application/import/SSHImportWorker';
 import type { TrajectoryGlbWorker } from '@/modules/trajectory/application/glb/TrajectoryGlbWorker';
@@ -42,6 +43,7 @@ export class RuntimeRoleCoordinator {
         private readonly queueScopeLimitsRegistry: QueueScopeLimitsRegistry,
         private readonly analysisWorker: AnalysisWorker,
         private readonly artifactUploadWorker: ArtifactUploadWorker,
+        private readonly pluginWarmupWorker: PluginWarmupWorker,
         private readonly trajectoryRasterWorker: TrajectoryRasterWorker,
         private readonly trajectoryGlbWorker: TrajectoryGlbWorker,
         private readonly sshImportWorker: SSHImportWorker
@@ -133,6 +135,7 @@ export class RuntimeRoleCoordinator {
 
         this.analysisWorker.start(analysis);
         this.artifactUploadWorker.start();
+        this.pluginWarmupWorker.start();
         this.trajectoryRasterWorker.start(rasterizer);
         this.trajectoryGlbWorker.start(glbPreprocessing);
         this.sshImportWorker.start(sshImport);
@@ -148,6 +151,7 @@ export class RuntimeRoleCoordinator {
         await Promise.all([
             this.analysisWorker.stop(),
             this.artifactUploadWorker.stop(),
+            this.pluginWarmupWorker.stop(),
             this.trajectoryRasterWorker.stop(),
             this.trajectoryGlbWorker.stop(),
             this.sshImportWorker.stop()

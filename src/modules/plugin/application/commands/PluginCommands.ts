@@ -4,6 +4,8 @@ import {
     ObjectBucketName,
     VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID,
     type PluginSyncRequest,
+    type PluginWarmupRequest,
+    type PluginWarmupResponse,
     type TeamClusterDaemonPluginMongoExportPayload,
     type TeamClusterDaemonPluginMongoImportPayload,
     type TeamClusterDaemonPluginMongoPurgePayload
@@ -13,12 +15,16 @@ import type {
     PluginListingRepository,
     PluginSubListingFilter
 } from '@/modules/plugin/infrastructure/repositories/plugin-listing-repository-contract';
+import type { QueueService } from '@/core/queues/application/QueueService';
+import { PLUGIN_WARMUP_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
+import type { PluginWarmupJobPayload } from '@/modules/plugin/application/binaries/PluginWarmupWorker';
 
 @CommandGroup('plugin')
 export class PluginCommands {
     constructor(
         private readonly objectStore: ClusterObjectStore,
-        private readonly pluginListingRepository: PluginListingRepository
+        private readonly pluginListingRepository: PluginListingRepository,
+        private readonly queueService: QueueService
     ) {}
 
     @Command('sync')
@@ -37,6 +43,22 @@ export class PluginCommands {
                 objectKey: payload.objectKey
             };
         }
+    }
+
+    @Command('warmup')
+    async warmup(payload: PluginWarmupRequest): Promise<PluginWarmupResponse> {
+        const jobId = `plugin-warmup:${payload.pluginId}:${payload.expectedHash ?? payload.binaryObjectPath}`;
+        const warmupPayload: PluginWarmupJobPayload = {
+            jobId,
+            pluginId: payload.pluginId,
+            binaryObjectPath: payload.binaryObjectPath,
+            requirementsFile: payload.requirementsFile,
+            entrypointScript: payload.entrypointScript
+        };
+        const queued = await this.queueService.enqueue(PLUGIN_WARMUP_QUEUE_NAME, warmupPayload, {
+            preserveExistingJob: true
+        });
+        return { queued, jobId };
     }
 
     @Command('listings.list')

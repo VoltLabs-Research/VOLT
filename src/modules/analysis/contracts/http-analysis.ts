@@ -26,6 +26,19 @@ export interface PluginSyncRequest {
     expectedHash?: string;
 }
 
+export interface PluginWarmupRequest {
+    pluginId: string;
+    binaryObjectPath: string;
+    requirementsFile: string;
+    entrypointScript?: string;
+    expectedHash?: string;
+}
+
+export interface PluginWarmupResponse {
+    queued: boolean;
+    jobId: string;
+}
+
 interface ResolvedObjectRef {
     ownerClusterId: string;
     bucket: string;
@@ -48,7 +61,6 @@ export interface AnalysisExposureDefinition {
     nodeId: string;
     name: string;
     results: string;
-    iterable?: string;
     export?: AnalysisExposureExportDefinition;
 }
 
@@ -81,7 +93,6 @@ export interface AnalysisEntrypointSnapshot {
     binaryObjectPath: string;
     arguments: string;
     type: EntrypointType;
-    timeout?: number;
     requirementsFile?: string;
     entrypointScript?: string;
     binaryRef?: ResolvedObjectRef;

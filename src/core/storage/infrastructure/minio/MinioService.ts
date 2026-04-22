@@ -20,6 +20,7 @@ export class MinioService implements LocalClusterObjectStoreGateway {
     readonly ensureBuckets: () => Promise<void>;
     readonly listBuckets: () => string[];
     readonly getObjectStream: LocalClusterObjectStoreGateway['getObjectStream'];
+    readonly getObjectRangeStream: LocalClusterObjectStoreGateway['getObjectRangeStream'];
     readonly statObject: (bucket: string, objectKey: string) => Promise<LocalClusterObjectStat>;
     readonly putObject: (input: ScopedClusterObjectPutInput) => Promise<void>;
     readonly putObjectStream: (input: ScopedClusterObjectPutStreamInput) => Promise<void>;
@@ -48,6 +49,9 @@ export class MinioService implements LocalClusterObjectStoreGateway {
             }
         };
         this.getObjectStream = (bucket, objectKey) => this.client.getObject(bucket, objectKey);
+        this.getObjectRangeStream = (bucket, objectKey, offset, length) => (
+            this.client.getPartialObject(bucket, objectKey, offset, length)
+        );
         this.statObject = (bucket, objectKey) => this.client.statObject(bucket, objectKey);
         this.putObject = async (input) => {
             await this.client.putObject(input.bucket, input.objectKey, input.body, input.body.length, input.metadata);

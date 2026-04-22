@@ -1,18 +1,15 @@
 import { ProgressStageType } from '@voltstack/daemon-cluster-client';
 import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
-import { OrchestrationAction, EntrypointType } from '@/core/runtime/contracts/http-runtime';
+import { OrchestrationAction } from '@/core/runtime/contracts/http-runtime';
 import { ANALYSIS_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import { QueueService } from '@/core/queues/application/QueueService';
-import ApplicationError from '@/app/coordination/ApplicationError';
-import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
 import { createTraceLogContext, serializeDaemonTraceContext } from '@/core/observability/infrastructure/daemon-instrumentation';
 import { compressSerializedAnalysisExecutionData, serializeAnalysisExecutionData } from '@/support/policies/analysis-execution-data';
 import { WorkflowEngine, type WorkflowExecutionRequest } from '@/modules/analysis/application/workflow/WorkflowEngine';
-import { WorkflowSession } from '@/modules/analysis/application/workflow/WorkflowSession';
 import { RuntimeEventBroker } from '@/core/reverse-channel/application/RuntimeEventBroker';
 import { RedisConnection } from '@/core/storage/infrastructure/redis/RedisConnection';
-import { buildBatchAnalysisJob, buildItemAnalysisJob } from '@/modules/analysis/domain/jobs/analysis-job-factory';
+import { planAnalysisWorkflow } from '@/modules/analysis/application/analysis/plan-analysis-workflow';
 import { createHash } from 'node:crypto';
 
 const PLAN_CACHE_TTL_SECONDS = 600;
@@ -20,11 +17,8 @@ const PLAN_CACHE_TTL_SECONDS = 600;
 type WorkflowPlanResult = NonNullable<Awaited<ReturnType<WorkflowEngine['planExecutionStrategy']>>>;
 import type {
     AnalysisExecutionDataReference,
-    AnalysisJobExecutionData,
-    AnalysisQueueJobPayload,
     AnalysisStartRequestWithTrace,
     AnalysisStartResponse,
-    PlannedExecutionItem,
     QueuedJobNotification
 } from '@/modules/analysis/contracts/http-analysis';
 import type { AnalysisDataStore } from '@/modules/analysis/infrastructure/storage/AnalysisDataStore';
@@ -80,15 +74,6 @@ export class AnalysisDispatcher {
 
     async startAnalysis(input: AnalysisStartRequestWithTrace): Promise<AnalysisStartResponse> {
         const serializedTraceContext = serializeDaemonTraceContext(input.traceContext);
-        const workflow = input.workflow;
-        const entrypoint = workflow.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint)?.data.entrypoint;
-
-        if (!entrypoint?.binaryObjectPath || !entrypoint.arguments) {
-            throw ApplicationError.badRequest(
-                'Analysis::Start::InvalidEntrypoint',
-                'Daemon workflow entrypoint is invalid'
-            );
-        }
 
         this.eventBroker.emitProgress({
             action: OrchestrationAction.AnalysisStart,
@@ -106,75 +91,17 @@ export class AnalysisDispatcher {
         };
         const planCacheKey = this.buildPlanCacheKey(planRequest);
         const cachedPlan = await this.loadCachedPlan(planCacheKey);
-        const plan = cachedPlan ?? await this.workflowEngine.planExecutionStrategy(planRequest);
 
-        if (!plan || plan.items.length === 0) {
-            throw ApplicationError.unprocessableEntity(
-                'Analysis::Start::EmptyExecutionPlan',
-                'No items after daemon workflow planning'
-            );
-        }
+        const { executionData, jobs, plan } = await planAnalysisWorkflow({
+            input,
+            workflowEngine: this.workflowEngine,
+            serializedTraceContext,
+            cachedPlan
+        });
 
         if (!cachedPlan) {
             await this.storeCachedPlan(planCacheKey, plan);
         }
-
-        const isBatchMode = plan.batchMode === true;
-        const plannedItems = plan.items as PlannedExecutionItem[];
-
-        const factoryContext = {
-            input,
-            serializedTraceContext,
-            totalItems: plannedItems.length
-        };
-        const jobs: AnalysisQueueJobPayload[] = isBatchMode
-            ? [buildBatchAnalysisJob(factoryContext)]
-            : plannedItems.map((item, index) => {
-                const timestep = item.timestep ?? item.frame;
-                if (typeof timestep !== 'number') {
-                    throw ApplicationError.unprocessableEntity(
-                        'Analysis::Start::MissingTimestep',
-                        `Missing timestep for analysis job ${input.analysisId}-${index}`
-                    );
-                }
-
-                return buildItemAnalysisJob(factoryContext, item, index, timestep);
-            });
-
-        const executionData: AnalysisJobExecutionData = {
-            entrypoint: {
-                binaryObjectPath: entrypoint.binaryObjectPath,
-                arguments: entrypoint.arguments,
-                type: entrypoint.type ?? EntrypointType.Executable,
-                timeout: entrypoint.timeout,
-                requirementsFile: entrypoint.requirementsFile,
-                entrypointScript: entrypoint.entrypointScript
-            },
-            identity: {
-                pluginId: input.pluginId,
-                trajectoryId: input.trajectoryId,
-                analysisId: input.analysisId,
-                teamId: input.teamId,
-                computeClusterId: input.teamClusterId,
-                storageClusterId: input.analysis.storageClusterId
-            },
-            workflow: {
-                definition: workflow,
-                nestedPlugins: input.nestedPlugins,
-                pluginReferenceExecutions: input.pluginReferenceExecutions,
-                exposures: WorkflowSession.collectExposureDefinitions(workflow),
-                forEachNodeId: plan.forEachNodeId,
-                nodeOutputSnapshots: plan.nodeOutputSnapshots
-            },
-            trajectoryFrames: input.trajectoryFrames,
-            batch: plan.batchMode
-                ? {
-                    trajectoryDumps: plan.batchTrajectoryDumps ?? [],
-                    contextNodeId: plan.contextNodeId
-                }
-                : undefined,
-            traceContext: serializedTraceContext
-        };
 
         const queuePayloadBytesBefore = Buffer.byteLength(JSON.stringify({
             ...jobs[0],

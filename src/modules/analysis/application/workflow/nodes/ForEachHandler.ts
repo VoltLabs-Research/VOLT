@@ -1,6 +1,6 @@
 import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput } from '@/modules/analysis/contracts/workflow.types';
 import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
-import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '@/modules/analysis/application/workflow';
+import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '@/modules/analysis/application/workflow/NodeRegistry';
 
 interface WorkflowForEachOutput {
     items: WorkflowNodeOutput[];

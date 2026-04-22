@@ -199,14 +199,7 @@ export class DaemonExposureRegistry {
 
             return context.publishedPorts.map((containerPort) => this.createContainerExposure(context, containerPort));
         });
-        const previousSnapshotSignature = this.lastObservedSnapshotSignature;
         this.publishExposures(nextExposures);
-        const changed = this.lastObservedSnapshotSignature !== previousSnapshotSignature;
-        const cloudConnectionRestored = this.voltCloudConnection.isConnectedToCloud() && !this.lastCloudConnectionState;
-
-        if (changed || cloudConnectionRestored) {
-            return;
-        }
     }
 
     private publishExposures(containerExposures: TeamClusterServiceExposure[]): TeamClusterServiceExposure[] {

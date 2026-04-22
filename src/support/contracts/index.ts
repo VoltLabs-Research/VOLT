@@ -35,8 +35,9 @@ export * from '@/modules/trajectory/contracts/ssh-import-trajectory';
 
 export type {
     TeamClusterDaemonSessionAttachPayload,
-    TeamClusterDaemonSessionDataPayload,
     TeamClusterDaemonSessionEndPayload,
-    TeamClusterDaemonSessionInputPayload,
     TeamClusterDaemonSessionResizePayload
 } from '@voltstack/daemon-cluster-client';
+
+export * from '@/core/reverse-channel/contracts/binary-envelope';
+export * from '@/core/reverse-channel/contracts/binary-messages';

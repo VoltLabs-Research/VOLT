@@ -22,6 +22,10 @@ export interface ClusterObjectListEntry {
 
 export interface ClusterObjectReadOptions {
     skipMetadata?: boolean;
+    range?: {
+        offset: number;
+        length: number;
+    };
 }
 
 export interface ClusterObjectPutInput {
@@ -77,6 +81,7 @@ export interface LocalClusterObjectStoreGateway extends ScopedClusterObjectStore
     listBuckets(): string[];
     statObject(bucket: string, objectKey: string): Promise<LocalClusterObjectStat>;
     getObjectStream(bucket: string, objectKey: string): Promise<Readable>;
+    getObjectRangeStream(bucket: string, objectKey: string, offset: number, length: number): Promise<Readable>;
     listObjectsPage(input: LocalClusterObjectListRequest): Promise<ClusterObjectListResponse>;
     removeObject(bucket: string, objectKey: string): Promise<void>;
     deleteByPrefix(bucket: string, prefix: string): Promise<number>;

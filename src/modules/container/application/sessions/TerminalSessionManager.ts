@@ -1,9 +1,18 @@
 import { DockerRuntime } from '@/core/runtime/infrastructure/DockerRuntime';
 import { withTimeout } from '@/core/observability/infrastructure/daemon-instrumentation';
 import { REVERSE_CHANNEL } from '@/contracts';
-import { BASE64_SESSION_CHUNK_PATTERN, SESSION_ATTACH_TIMEOUT_MS } from '@/core/reverse-channel/contracts/reverse-channel-constants';
+import { SESSION_ATTACH_TIMEOUT_MS } from '@/core/reverse-channel/contracts/reverse-channel-constants';
+import {
+    EnvelopeKind,
+    decodeEnvelope,
+    encodeEnvelope
+} from '@/core/reverse-channel/contracts/binary-envelope';
 import type { RuntimeTerminalAttachment } from '@/core/runtime/infrastructure/DockerRuntime';
-import type { TeamClusterDaemonSessionAttachPayload, TeamClusterDaemonSessionDataPayload, TeamClusterDaemonSessionEndPayload, TeamClusterDaemonSessionInputPayload, TeamClusterDaemonSessionResizePayload } from '@/contracts';
+import type { TeamClusterDaemonSessionAttachPayload, TeamClusterDaemonSessionEndPayload, TeamClusterDaemonSessionResizePayload } from '@/contracts';
+import type {
+    BinarySessionDataPayload,
+    BinarySessionInputPayload
+} from '@/core/reverse-channel/contracts/binary-messages';
 import type { CommandResult } from '@voltstack/daemon-cluster-client';
 
 interface ReverseChannelTerminalState {
@@ -28,7 +37,7 @@ interface TerminalSessionManagerCoordinator {
     beginSessionTransition(sessionId: string): SessionTransition | null;
     cleanupInteractiveSession(sessionId: string): void;
     clearSessionActivityIfUntracked(sessionId: string): void;
-    emitSessionData(payload: TeamClusterDaemonSessionDataPayload): void;
+    emitSessionData(payload: BinarySessionDataPayload): void;
     emitSessionEnd(payload: TeamClusterDaemonSessionEndPayload): void;
     endSessionTransition(transition: SessionTransition): void;
     touchSession(sessionId: string): void;
@@ -104,10 +113,15 @@ export class TerminalSessionManager {
 
             const onData = (chunk: Buffer) => {
                 this.options.coordinator.touchSession(payload.sessionId);
+                const envelope = encodeEnvelope(
+                    0,
+                    EnvelopeKind.StreamChunk,
+                    chunk instanceof Uint8Array ? chunk : new Uint8Array(chunk)
+                );
                 this.options.coordinator.emitSessionData({
                     type: 'session-data',
                     sessionId: payload.sessionId,
-                    chunkBase64: chunk.toString('base64'),
+                    chunk: envelope,
                     isBinary: false
                 });
             };
@@ -157,27 +171,35 @@ export class TerminalSessionManager {
         }
     }
 
-    handleInput(payload: TeamClusterDaemonSessionInputPayload): boolean {
+    handleInput(payload: BinarySessionInputPayload): boolean {
         const terminalState = this.terminalStates.get(payload.sessionId);
         if (!terminalState) {
             return false;
         }
 
-        if (!BASE64_SESSION_CHUNK_PATTERN.test(payload.chunkBase64)) {
+        const envelopeBytes = payload.chunk instanceof Uint8Array
+            ? payload.chunk
+            : new Uint8Array(payload.chunk as unknown as ArrayBufferLike);
+
+        try {
+            const decoded = decodeEnvelope(envelopeBytes);
+            if (decoded.kind !== EnvelopeKind.StreamChunk) {
+                throw new Error(`Unexpected envelope kind: ${decoded.kind}`);
+            }
+            this.options.coordinator.touchSession(payload.sessionId);
+            terminalState.attachment.stream.write(
+                Buffer.from(decoded.payload.buffer, decoded.payload.byteOffset, decoded.payload.byteLength)
+            );
+            return true;
+        } catch (error) {
             this.options.coordinator.emitSessionEnd({
                 type: 'session-end',
                 sessionId: payload.sessionId,
-                error: 'Session input is not valid base64 data'
+                error: `Malformed terminal input envelope: ${error instanceof Error ? error.message : String(error)}`
             });
             this.cleanupSession(payload.sessionId);
             return true;
         }
-
-        const chunk = Buffer.from(payload.chunkBase64, 'base64');
-
-        this.options.coordinator.touchSession(payload.sessionId);
-        terminalState.attachment.stream.write(chunk);
-        return true;
     }
 
     handleResize(payload: TeamClusterDaemonSessionResizePayload): boolean {

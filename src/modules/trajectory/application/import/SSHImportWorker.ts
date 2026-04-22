@@ -1,7 +1,6 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { createReadStream } from 'node:fs';
 import { promisify } from 'node:util';
 import { dir as createTempDir } from 'tmp-promise';
 import { type Job } from 'bullmq';
@@ -14,10 +13,9 @@ import { createLifecycleStatusReporter } from '@/core/queues/application/create-
 import { QueueService } from '@/core/queues/application/QueueService';
 import { withJobLifecycle } from '@/core/queues/application/with-job-lifecycle';
 import { SSH_IMPORT_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
-import { MinioService } from '@/core/storage/infrastructure/minio/MinioService';
-import { ObjectBucketName } from '@/contracts';
 import type { DaemonConfig } from '@/core/config';
 import type { GlbExporter } from '@/modules/trajectory/application/glb/GlbExporter';
+import type { VtrIngestService } from '@/modules/trajectory/application/vtr/VtrIngestService';
 import { FileExtractor } from '@/modules/trajectory/infrastructure/extraction/FileExtractor';
 import { SSHConnection, type SSHConnectionConfig } from '@/modules/trajectory/infrastructure/ssh/SSHConnection';
 import { parseTrajectoryMetadata } from '@/modules/trajectory/application/parsing/TrajectoryParserFactory';
@@ -29,7 +27,6 @@ import type {
 import type { DaemonJobReporter } from '@/modules/jobs/application/reporting/DaemonJobReporter';
 import type { VoltCloudConnection } from '@/modules/container/infrastructure/connection/VoltCloudConnection';
 import { errorMessage, logAndSwallow } from '@/support/error/errorMessage';
-import { compressFileWithZstd, toCompressedDumpObjectKey } from '@/support/serialization/storage-codec';
 import type { JobIdentity } from '@/support/contracts/job-identity';
 import { mapLimited } from '@/support/concurrency/map-limited';
 
@@ -45,12 +42,12 @@ export class SSHImportWorker extends BaseWorker<SSHImportJobPayload> {
     constructor(
         private readonly config: DaemonConfig,
         queueService: QueueService,
-        private readonly minioService: MinioService,
         private readonly glbExporter: GlbExporter,
         daemonJobReporter: DaemonJobReporter,
         private readonly voltCloudConnection: VoltCloudConnection,
         private readonly sshConnection: SSHConnection,
-        private readonly fileExtractor: FileExtractor
+        private readonly fileExtractor: FileExtractor,
+        private readonly vtrIngestService: VtrIngestService
     ) {
         super({ queueService });
         this.buildStatusReporter = createLifecycleStatusReporter<JobIdentity>(
@@ -135,46 +132,45 @@ export class SSHImportWorker extends BaseWorker<SSHImportJobPayload> {
                         path.join(workdir, 'extracted')
                     );
 
-                    const frames: CompletedTrajectoryImportPayload['frames'] = await mapLimited(
+                    const parsedFrames = await mapLimited(
                         extractedFiles,
                         SSH_IMPORT_FRAME_CONCURRENCY,
                         async (file) => {
                             const metadata = await parseTrajectoryMetadata(file.path);
-                            const objectKey = toCompressedDumpObjectKey(payload.trajectoryId, metadata.timestep);
-                            const compressedPath = `${file.path}.zst`;
-
-                            try {
-                                await compressFileWithZstd(file.path, compressedPath);
-                                const stat = await fs.stat(compressedPath);
-                                await this.minioService.putObjectStream({
-                                    bucket: ObjectBucketName.Dumps,
-                                    objectKey,
-                                    stream: createReadStream(compressedPath),
-                                    size: stat.size,
-                                    metadata: {
-                                        'Content-Type': 'application/zstd',
-                                        'Content-Encoding': 'zstd'
-                                    }
-                                });
-                            } finally {
-                                await fs.unlink(compressedPath).catch(() => {});
-                            }
-
-                            await this.glbExporter.preprocessTrajectory({
-                                teamId: payload.teamId,
-                                trajectoryId: payload.trajectoryId,
-                                timestep: metadata.timestep,
-                                objectKey
-                            });
-
                             return {
                                 timestep: metadata.timestep,
                                 natoms: metadata.natoms,
                                 simulationCell: metadata.simulationCell,
-                                size: file.size
+                                size: file.size,
+                                dumpPath: file.path
                             };
                         }
                     );
+
+                    await this.vtrIngestService.ingest({
+                        trajectoryId: payload.trajectoryId,
+                        ownerClusterId: this.config.teamClusterId,
+                        frames: parsedFrames.map((frame) => ({
+                            timestep: frame.timestep,
+                            dumpPath: frame.dumpPath
+                        }))
+                    });
+
+                    const frames: CompletedTrajectoryImportPayload['frames'] = parsedFrames.map((frame) => ({
+                        timestep: frame.timestep,
+                        natoms: frame.natoms,
+                        simulationCell: frame.simulationCell,
+                        size: frame.size
+                    }));
+
+                    for (const frame of parsedFrames) {
+                        await this.glbExporter.preprocessTrajectory({
+                            teamId: payload.teamId,
+                            trajectoryId: payload.trajectoryId,
+                            timestep: frame.timestep,
+                            ownerClusterId: this.config.teamClusterId
+                        });
+                    }
 
                     const reported = await this.reportTrajectoryImport({ ...importContext, success: true, frames })
                         .catch((err: unknown) => {

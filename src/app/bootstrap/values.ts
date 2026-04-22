@@ -1,5 +1,6 @@
 import { asValue, type AwilixContainer } from 'awilix';
-import { loadConfig, type DaemonRuntimeConfig } from '@/core/config';
+import { loadConfig } from '@/core/config';
+import type { TeamClusterDaemonRuntimeConfig } from '@/core/runtime/contracts/team-cluster-runtime';
 import { MetricsService } from '@/core/metrics/application/MetricsService';
 import { ObjectGatewayTelemetry } from '@/core/observability/infrastructure/ObjectGatewayTelemetry';
 import { QueueScopeLimitsRegistry } from '@/core/queues/application/QueueScopeLimitsRegistry';
@@ -7,7 +8,7 @@ import { DirectObjectStoreClient } from '@/core/storage/infrastructure/object-st
 import { WorkflowNodeRegistry } from '@/modules/analysis/application/workflow/NodeRegistry';
 
 type RuntimeRoleCoordinator = {
-    getSnapshot(): DaemonRuntimeConfig;
+    getSnapshot(): TeamClusterDaemonRuntimeConfig;
 };
 
 export const registerBootstrapValues = (container: AwilixContainer): void => {
@@ -24,7 +25,7 @@ export const registerBootstrapValues = (container: AwilixContainer): void => {
         registry: asValue(workflowNodeRegistry),
         workflowNodeRegistry: asValue(workflowNodeRegistry),
         remoteClient: asValue(new DirectObjectStoreClient(config)),
-        getRuntimeConfigSnapshot: asValue((): DaemonRuntimeConfig | null => {
+        getRuntimeConfigSnapshot: asValue((): TeamClusterDaemonRuntimeConfig | null => {
             try {
                 return container.resolve<RuntimeRoleCoordinator>('runtimeRoleCoordinator').getSnapshot();
             } catch {
