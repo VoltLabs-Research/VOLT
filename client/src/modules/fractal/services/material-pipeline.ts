@@ -210,7 +210,7 @@ export class MaterialPipeline {
         }
         if (volume === 0) volume = numPoints * 10.0;
         const spacing = Math.pow(volume / numPoints, 1.0 / 3.0);
-        const dynamicPointScale = spacing * 1.5;
+        const dynamicPointScale = spacing * 1.75;
 
         const uniforms = createPointCloudUniforms();
         const program = sharedShaderRegistry.compile({

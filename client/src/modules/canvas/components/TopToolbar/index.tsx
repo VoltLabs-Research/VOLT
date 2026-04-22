@@ -13,6 +13,7 @@ import { memo, useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
 import useShortcutDiscovery from '@/shared/tips/use-shortcut-discovery';
+import { ChevronLeft } from 'lucide-react';
 
 import './TopToolbar.css';
 
@@ -114,7 +115,16 @@ const TopToolbar = ({
                 onChange={handlePickerChange}
             />
             <div className="volt-container canvas-toolbar-left d-flex items-center flex-1">
-                {trajectory ? (
+                <button
+                    type="button"
+                    className="canvas-toolbar-back"
+                    aria-label="Back to dashboard"
+                    title="Back to dashboard"
+                    onClick={() => navigate('/dashboard')}
+                >
+                    <ChevronLeft size={16} aria-hidden="true" />
+                </button>
+                {trajectory && (
                     <div
                         className="canvas-toolbar-logo canvas-toolbar-trajectory d-flex items-center"
                         title={trajectory.name}
@@ -125,19 +135,6 @@ const TopToolbar = ({
                             className="canvas-toolbar-trajectory-name"
                         />
                     </div>
-                ) : (
-                    <a
-                        className="canvas-toolbar-logo d-flex items-center"
-                        href="/dashboard"
-                        aria-label="Go to Volt dashboard"
-                        title="Back to Dashboard"
-                        onClick={(event) => {
-                            event.preventDefault();
-                            navigate('/dashboard');
-                        }}
-                    >
-                        <span className="canvas-toolbar-logo-mark font-size-1 color-primary font-weight-6" aria-hidden="true">VOLT</span>
-                    </a>
                 )}
 
                 <nav className="canvas-toolbar-menus px-1 d-flex gap-025 items-center" aria-label="Canvas primary navigation">

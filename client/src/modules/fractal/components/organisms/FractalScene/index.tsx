@@ -182,8 +182,29 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
             notifyZoomListeners();
         };
 
+        const handleCameraInitialUpdate = (event: Event) => {
+            const detail = (event as CustomEvent<{
+                position: [number, number, number];
+                target: [number, number, number];
+            }>).detail;
+            if (!detail) return;
+
+            initialCameraStateRef.current = {
+                position: detail.position,
+                target: detail.target
+            };
+            const controls = orbitControlsRef.current;
+            if (controls) {
+                initialDistanceRef.current = controls.object.position.distanceTo(controls.target);
+            }
+        };
+
         window.addEventListener('Volt:camera-command', handleCameraCommand);
-        return () => window.removeEventListener('Volt:camera-command', handleCameraCommand);
+        window.addEventListener('Volt:camera-initial-update', handleCameraInitialUpdate);
+        return () => {
+            window.removeEventListener('Volt:camera-command', handleCameraCommand);
+            window.removeEventListener('Volt:camera-initial-update', handleCameraInitialUpdate);
+        };
     }, [notifyZoomListeners]);
 
     useImperativeHandle(ref, () => ({

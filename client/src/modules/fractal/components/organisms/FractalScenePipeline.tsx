@@ -1,5 +1,6 @@
 import CameraRig from '@/modules/fractal/components/atoms/CameraRig';
 import CanvasGrid from '@/modules/fractal/components/atoms/CanvasGrid';
+import InitialCameraPose from '@/modules/fractal/components/atoms/InitialCameraPose';
 import ScreenshotCapture from '@/modules/fractal/components/atoms/ScreenshotCapture';
 import SlicePlaneHelper from '@/modules/fractal/components/atoms/SlicePlaneHelper';
 import DynamicEffects from '@/modules/fractal/components/molecules/DynamicEffects';
@@ -122,6 +123,7 @@ const FractalScenePipeline = ({
             <Bvh firstHitOnly>
                 {children}
             </Bvh>
+            <InitialCameraPose orbitRef={orbitRef} modelWorldBounds={modelWorldBounds} />
             <ScreenshotCapture
                 captureRequest={screenshotRequest}
                 onCaptureHandled={onScreenshotCaptureHandled ?? (() => undefined)}
