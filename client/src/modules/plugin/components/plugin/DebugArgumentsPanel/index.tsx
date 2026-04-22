@@ -113,7 +113,7 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
                 </IconButton>
             </div>
 
-            <div className='volt-container d-flex column gap-05 y-auto flex-1 min-h-0 scrollbar-thin debug-arguments-panel-body'>
+            <div className='volt-container d-flex column gap-05 y-auto flex-1 min-h-0 debug-arguments-panel-body'>
                 <ArgumentFieldsRenderer
                     arguments={configurableArgs}
                     values={debugConfig}

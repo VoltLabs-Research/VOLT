@@ -182,10 +182,6 @@ const SceneCollection = ({
                     onSelectRasterScene={onSelectRasterScene}
                 />
             ))}
-
-            {!showSectionsSkeleton && totalAnalyses === 0 && (
-                <CanvasTreeEmptyRow label='No analyses available' />
-            )}
         </div>
     );
 };

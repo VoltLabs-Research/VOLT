@@ -25,7 +25,6 @@ export interface ResolvedModifier {
     plugin: Plugin;
     pluginId: string;
     name: string;
-    icon?: string;
 };
 
 const buildPluginsById = (plugins: Plugin[]): Record<string, Plugin> => {
@@ -49,8 +48,7 @@ const usePluginSelectors = () => {
             .map((plugin) => ({
                 plugin,
                 pluginId: plugin._id,
-                name: plugin.modifier?.name || plugin._id,
-                icon: plugin.modifier?.icon
+                name: plugin.modifier?.name || plugin._id
             }));
     }, [publishedPlugins]);
 

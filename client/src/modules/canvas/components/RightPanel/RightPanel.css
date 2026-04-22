@@ -1,9 +1,6 @@
-.canvas-right-panel-container {
-    border-left: 1px solid var(--color-border-soft);
-}
-
-.canvas-right-dropdown {
-    border-bottom: 1px solid var(--color-border-soft);
+/** NOTE: little hack **/
+.canvas-objects-panel > :first-child{
+    margin-top: 8px;
 }
 
 .canvas-right-dropdown-header {
@@ -49,13 +46,6 @@
 .canvas-right-dropdown-icon {
     width: 13px;
     height: 13px;
-}
-
-.canvas-modifier-skeleton-icon {
-    width: 14px;
-    height: 14px;
-    background: var(--color-surface-2);
-    border-radius: var(--radius-xs);
 }
 
 .canvas-modifier-skeleton-title {

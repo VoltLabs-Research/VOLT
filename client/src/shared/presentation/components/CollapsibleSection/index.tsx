@@ -64,7 +64,7 @@ const CollapsibleSection = ({
     const isControlled = typeof expanded === 'boolean';
     const actualExpanded = isControlled ? expanded : isExpanded;
     const headerBaseClass = useDefaultHeaderStyles ? 'collapsible-section-header' : '';
-    const titleBaseClass = useDefaultTitleStyles ? 'collapsible-section-title font-size-3 font-weight-6 color-primary' : 'collapsible-section-title';
+    const titleBaseClass = useDefaultTitleStyles ? 'collapsible-section-title font-weight-6 color-primary' : 'collapsible-section-title';
     const bodyId = `collapsible-section-body-${reactId}`;
     const headingId = `collapsible-section-heading-${reactId}`;
     const triggerId = `collapsible-section-trigger-${reactId}`;
@@ -144,7 +144,6 @@ const CollapsibleSection = ({
                                 aria-controls={bodyId}
                             >
                                 <div className='volt-container collapsible-section-trigger-content d-flex items-center gap-05'>
-                                    {icon && <span className={`d-flex items-center ${iconClassName}`}>{icon}</span>}
                                     <span className={`${titleBaseClass} ${titleClassName}`}>{title}</span>
                                 </div>
                             </button>
@@ -165,7 +164,6 @@ const CollapsibleSection = ({
                     ) : (
                         <div className='volt-container d-flex items-center gap-05 collapsible-section-title-row'>
                             <div className='volt-container collapsible-section-trigger-content d-flex items-center gap-05'>
-                                {icon && <span className={`d-flex items-center ${iconClassName}`}>{icon}</span>}
                                 <span className={`${titleBaseClass} ${titleClassName}`}>{title}</span>
                             </div>
                             {actions}
