@@ -32,7 +32,9 @@
 }
 
 .sidebar-collapse-toggle {
-    width: 28px;
+    width: auto;
+    min-width: unset;
+    padding: 0;
     height: 28px;
     background: transparent;
     border: none;

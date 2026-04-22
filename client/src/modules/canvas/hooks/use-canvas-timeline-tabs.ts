@@ -29,7 +29,7 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
     const currentTimestep = useEditorStore((state) => state.currentTimestep);
 
     const trajectoryId = trajectory?._id;
-    const fallbackTimestep = trajectory?.frames[0]?.timestep;
+    const fallbackTimestep = trajectory?.frames?.[0]?.timestep;
     const atomPropertiesTimestep = currentTimestep ?? fallbackTimestep;
     const analysesQuery = useAnalysesByTrajectoryQuery(
         { trajectoryId: trajectoryId ?? '', page: 1, limit: 100 },

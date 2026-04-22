@@ -26,9 +26,32 @@
     pointer-events: auto;
 }
 
+.canvas-toolbar-back {
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-xs);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0.5rem;
+    cursor: pointer;
+    transition: background-color 140ms ease, color 140ms ease;
+}
+
+.canvas-toolbar-back:hover,
+.canvas-toolbar-back:focus-visible {
+    background: var(--hover-bg);
+    color: var(--color-text-primary);
+    outline: none;
+}
+
 .canvas-toolbar-trajectory {
     max-width: 260px;
-    padding: 0 1rem;
+    padding: 0 0.75rem;
     justify-content: flex-start;
 }
 
