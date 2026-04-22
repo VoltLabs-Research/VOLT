@@ -1,6 +1,68 @@
 .canvas-editor-root {
+    --canvas-header-height: 55px;
     background: var(--color-bg);
     color: var(--color-text-primary);
+}
+
+@media (max-width: 768px) {
+    .canvas-editor-root {
+        --canvas-header-height: 48px;
+    }
+}
+
+.canvas-overlay-glass {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+}
+
+.canvas-center-timeline.canvas-overlay-glass {
+    left: 0;
+    right: max(12px, var(--canvas-right-overlay-size, 0px));
+    bottom: 0;
+    overflow: hidden;
+    background: var(--glass-bg-secondary);
+}
+
+.canvas-right-panel-container.canvas-overlay-glass {
+    right: 0;
+    top: 0;
+    bottom: 0;
+    overflow: hidden;
+    background: var(--glass-bg-secondary);
+    z-index: 3;
+}
+
+.canvas-resize-rail {
+    z-index: 3;
+    pointer-events: none;
+}
+
+.canvas-resize-rail > .canvas-resize-handle {
+    pointer-events: auto;
+    margin: 0;
+}
+
+.canvas-resize-rail--timeline {
+    height: 15px;
+    transform: translateY(50%);
+}
+
+.canvas-resize-rail--timeline > .canvas-resize-handle--vertical {
+    height: 15px;
+    width: 100%;
+    margin-block: 0;
+}
+
+.canvas-resize-rail--right {
+    width: 15px;
+    transform: translateX(50%);
+}
+
+.canvas-resize-rail--right > .canvas-resize-handle--horizontal {
+    width: 15px;
+    height: 100%;
+    margin-inline: 0;
 }
 
 .canvas-panel-drawer-toggle {
@@ -39,15 +101,15 @@
         position: absolute;
         top: 0;
         bottom: 0;
+        right: 0;
         z-index: 5;
         width: min(320px, 86vw) !important;
         max-width: 86vw;
+        border-radius: 0;
         background: var(--glass-bg);
         backdrop-filter: var(--glass-blur);
         -webkit-backdrop-filter: var(--glass-blur);
         transition: transform 220ms var(--ease-standard);
-        right: 0;
-        border-left: 1px solid var(--glass-border);
         box-shadow: -8px 0 32px rgba(0, 0, 0, 0.35);
         padding-right: env(safe-area-inset-right, 0px);
     }

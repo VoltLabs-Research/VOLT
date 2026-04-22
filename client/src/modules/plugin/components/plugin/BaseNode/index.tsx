@@ -352,7 +352,7 @@ const BaseNode = ({
             )}
 
             {isExpanded && hasInspectableOutput && (
-                <div className='volt-container p-absolute center-x p-05 y-auto scrollbar-thin workflow-node-debug-output nowheel' onClick={stopPropagation}>
+                <div className='volt-container p-absolute center-x p-05 y-auto workflow-node-debug-output nowheel' onClick={stopPropagation}>
                     {debugState.status === 'failed' && (
                         <div className='volt-container p-05 radius-sm font-size-05 workflow-node-debug-error d-flex column gap-025'>
                             <div className='volt-container d-flex items-center gap-025'>
@@ -429,7 +429,7 @@ const BaseNode = ({
                             </span>
                         )}
                     </div>
-                    <pre className='m-0 p-05 y-auto scrollbar-thin workflow-node-exec-log-content'>
+                    <pre className='m-0 p-05 y-auto workflow-node-exec-log-content'>
                         {logSegments.length > 0 ? (
                             <>
                                 {logSegments.map((segment, index) => (

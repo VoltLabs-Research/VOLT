@@ -1,6 +1,6 @@
 .canvas-status-bar {
+    width: calc(100% - max(12px, var(--canvas-right-overlay-size, 0px)));
     height: 28px;
-    border-top: 1px solid var(--color-border-soft);
     padding: 0 12px;
     gap: 12px;
 }

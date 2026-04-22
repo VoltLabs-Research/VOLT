@@ -1,6 +1,5 @@
 .canvas-analysis-log-panel {
     height: 100%;
-    background: color-mix(in srgb, var(--color-surface-1) 90%, transparent);
 }
 
 .canvas-analysis-log-stream {

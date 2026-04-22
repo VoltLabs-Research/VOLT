@@ -7,7 +7,6 @@
     position: relative;
     height: 40px;
     padding: 4px 8px;
-    border-bottom: 1px solid var(--color-border-soft);
 }
 
 .canvas-timeline-tabs-region,
@@ -84,6 +83,7 @@
     min-height: 22px;
     border-bottom: 1px solid var(--color-border-soft);
     overflow-x: auto;
+    user-select: none;
     overflow-y: hidden;
     outline: none;
 }
@@ -99,7 +99,8 @@
 }
 
 .canvas-ruler-tick {
-    padding: 0 8px;
+    padding: 0 12px;
+    height: 100%;
     flex-shrink: 0;
     cursor: pointer;
 }

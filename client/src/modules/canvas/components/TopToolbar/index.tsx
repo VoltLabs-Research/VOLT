@@ -9,16 +9,10 @@ import WorkspaceTabs from '../WorkspaceTabs';
 
 import EditableTrajectoryName from '@/modules/trajectory/components/EditableTrajectoryName';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
-import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { sileo } from 'sileo';
-import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
-import Button from '@/shared/presentation/components/Button';
-import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
 import useShortcutDiscovery from '@/shared/tips/use-shortcut-discovery';
-import { HiOutlineDotsVertical } from 'react-icons/hi';
 
 import './TopToolbar.css';
 
@@ -60,7 +54,6 @@ const TopToolbar = ({
     contextualActions
 }: TopToolbarProps) => {
     const [openMenu, setOpenMenu] = useState<string | null>(null);
-    const [isSigningOut, setIsSigningOut] = useState(false);
     const navigate = useNavigate();
     const user = useCurrentUser();
     const { searchParams, updateSearchParams } = useCanvasUrlState();
@@ -70,21 +63,6 @@ const TopToolbar = ({
 
     const navigateToDashboard = useCallback(() => navigate('/dashboard'), [navigate]);
     const { fileInputRef, handlePickerChange, openFilePicker } = useTrajectoryFilePicker(navigateToDashboard);
-
-    const handleSignOut = () => {
-        try {
-            setIsSigningOut(true);
-            useAuthStore.getState().signOut();
-        } catch {
-            sileo.error({ title: 'Sign out failed', description: 'Please try again.' });
-        } finally {
-            setIsSigningOut(false);
-        }
-    };
-
-    const handleSettingsClick = () => {
-        navigate('/dashboard/settings/general');
-    };
 
     const handleToggleFullscreen = useCallback(() => {
         if (document.fullscreenElement) {
@@ -124,7 +102,7 @@ const TopToolbar = ({
         canDownloadAnalyses
     });
 
-    const canShowPeers = Boolean(onSelectWorkspacePeer && ((workspacePeers?.length ?? 0) > 0 || (!localGlbMode && selfPresence)));
+    const canShowPeers = Boolean(onSelectWorkspacePeer && (workspacePeers?.length ?? 0) > 0);
 
     return (
         <header className="canvas-top-toolbar d-flex items-stretch u-select-none">
@@ -197,17 +175,6 @@ const TopToolbar = ({
                         canManageVisibility={share.canManageVisibility}
                     />
                 )}
-                <ThemeToggleButton className="canvas-toolbar-theme-toggle" />
-                <UserMenuPopover
-                    onSettingsClick={handleSettingsClick}
-                    onSignOut={handleSignOut}
-                    isSigningOut={isSigningOut}
-                    trigger={
-                        <Button variant='ghost' intent='neutral' iconOnly aria-label='Open user menu' title='Open user menu' className="canvas-toolbar-user-trigger cursor-pointer">
-                            <HiOutlineDotsVertical size={16} />
-                        </Button>
-                    }
-                />
             </div>
         </header>
     );

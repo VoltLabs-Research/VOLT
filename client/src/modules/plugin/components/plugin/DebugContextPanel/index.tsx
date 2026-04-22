@@ -146,7 +146,7 @@ const DebugContextPanel = () => {
             </div>
 
             {isOpen && (
-                <div className='volt-container debug-context-panel-body nowheel y-auto flex-1 min-h-0 scrollbar-thin'>
+                <div className='volt-container debug-context-panel-body nowheel y-auto flex-1 min-h-0'>
                     {preForEach.map(([nodeId, output]) => renderEntry(nodeId, output))}
 
                     {forEachEntry && (

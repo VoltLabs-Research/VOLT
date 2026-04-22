@@ -201,7 +201,6 @@ const CanvasPluginSearch = () => {
                                 {results.map((option, index) => {
                                     const isActive = index === activeIndex;
                                     const optionId = `${resultsListId}-${option.modifierId}`;
-                                    const IconComp = option.Icon;
                                     return (
                                         <button
                                             key={option.modifierId}
@@ -214,9 +213,6 @@ const CanvasPluginSearch = () => {
                                             onMouseDown={(e) => e.preventDefault()}
                                             onClick={() => handleSelect(index)}
                                         >
-                                            <span className='d-flex items-center color-muted' aria-hidden='true'>
-                                                <IconComp size={14} />
-                                            </span>
                                             <span className='volt-text font-size-2 color-secondary text-truncate'>
                                                 {option.title}
                                             </span>

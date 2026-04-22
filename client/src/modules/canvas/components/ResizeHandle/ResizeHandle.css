@@ -1,9 +1,10 @@
 .canvas-resize-handle {
-    background: var(--color-border-soft);
+    background: transparent;
     box-sizing: border-box;
     position: relative;
     outline: none;
     touch-action: none;
+    z-index: 1;
 }
 
 .canvas-resize-handle--horizontal{
@@ -25,7 +26,7 @@
 }
 
 .canvas-resize-handle--active {
-    background: var(--color-border-soft);
+    background: transparent;
 }
 
 .canvas-resize-handle:focus-visible {

@@ -104,7 +104,7 @@ const FractalScenePipeline = ({
             />
             <DynamicEnvironment settings={config.environment} darkTheme={darkTheme} />
             {showGizmo && (
-                <GizmoHelper alignment='top-left' renderPriority={1} margin={[80, 70]}>
+                <GizmoHelper alignment='top-left' renderPriority={1} margin={[80, 110]}>
                     <directionalLight position={[5, 5, 5]} intensity={1} />
                     <ambientLight intensity={0.7} />
                     <GizmoViewport
