@@ -144,8 +144,8 @@
 }
 
 .canvas-raster-container-panel--active {
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
-    background: var(--color-surface-1);
 }
 
 .canvas-raster-container-panel__summary {
