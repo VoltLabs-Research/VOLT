@@ -1,4 +1,4 @@
-import Button from '@/shared/presentation/components/Button';
+import { Button } from '@/shared/presentation/primitives';
 import './EmojiPicker.css';
 
 const DEFAULT_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉', '🔥', '👏', '💯', '✨', '🙌', '💪'];
@@ -10,10 +10,10 @@ interface EmojiPickerProps {
 };
 
 const EmojiPicker = ({ onSelect, emojis = DEFAULT_EMOJIS, columns = 6 }: EmojiPickerProps) => (
-    <div className='volt-container emoji-picker' role='group' aria-label='Emoji picker'>
-        <div className='volt-container emoji-picker-grid' role='list' aria-label='Available emojis' style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
+    <div className='emoji-picker' role='group' aria-label='Emoji picker'>
+        <div className='emoji-picker-grid' role='list' aria-label='Available emojis' style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
             {emojis.map((emoji) => (
-                <div className="volt-container" key={emoji} role='listitem'>
+                <div className="" key={emoji} role='listitem'>
                     <Button
                         className='emoji-picker-option'
                         variant='ghost'

@@ -1,13 +1,12 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
+import type { GetPluginExposureGLBOutputDTO } from '@modules/plugin/application/dtos/exposure/GetPluginExposureGLBDTO';
 import { GetPluginExposureGLBUseCase } from '@modules/plugin/application/use-cases/exposure/GetPluginExposureGLBUseCase';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
-import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import type { GetPluginExposureGLBOutputDTO } from '@modules/plugin/application/dtos/exposure/GetPluginExposureGLBDTO';
 import type { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 interface GetPublicCanvasPluginExposureGLBInput {
     trajectoryId: string;
@@ -18,20 +17,20 @@ interface GetPublicCanvasPluginExposureGLBInput {
     acceptEncoding?: string;
 };
 
-@injectable()
+@Singleton()
 export class GetPublicCanvasPluginExposureGLBUseCase implements IUseCase<
     GetPublicCanvasPluginExposureGLBInput,
     GetPluginExposureGLBOutputDTO,
     ApplicationError
 > {
     constructor(
-        @inject(TrajectoryReadAccessService)
+        
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository,
+        
+        private readonly analysisRepository: AnalysisRepository,
 
-        @inject(GetPluginExposureGLBUseCase)
+        
         private readonly getPluginExposureGLBUseCase: GetPluginExposureGLBUseCase
     ) {}
 

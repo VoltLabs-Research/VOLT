@@ -1,3 +1,4 @@
+import { Button } from '@/shared/presentation/primitives';
 import RenameWhiteboardModal from '@/modules/whiteboards/components/RenameWhiteboardModal';
 import useDashboardHeaderContent from '@/modules/dashboard/hooks/use-dashboard-header-content';
 import useWhiteboardsListing, {
@@ -8,9 +9,8 @@ import useWhiteboardsListing, {
 import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
 import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
 import RenameFolderModal from '@/shared/presentation/components/RenameFolderModal';
-import { openModal } from '@/shared/presentation/components/Modal';
+import { openModal } from '@/shared/presentation/primitives';
 import { dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
-import Button from '@/shared/presentation/components/Button';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useTip from '@/shared/tips/use-tip';
 import './WhiteboardsListing.css';
@@ -40,13 +40,13 @@ const renderWhiteboardTitle: NonNullable<ColumnConfig<WhiteboardListingRow>['ren
     const hierarchyLabel = row.hierarchyTitle;
 
     return (
-        <div className='volt-container whiteboards-listing-title-cell d-flex items-center gap-075' aria-label={hierarchyLabel}>
+        <div className='whiteboards-listing-title-cell d-flex items-center gap-075' aria-label={hierarchyLabel}>
             {isWhiteboardFolder(row) && (
-                <div className='volt-container d-flex flex-center color-secondary'>
+                <div className='d-flex flex-center color-secondary'>
                     <Folder size={16} />
                 </div>
             )}
-            <div className='volt-container overflow-hidden'>
+            <div className='overflow-hidden'>
                 <span className='whiteboards-listing-title font-weight-6 color-secondary' title={title}>{title}</span>
             </div>
         </div>
@@ -108,7 +108,7 @@ const WhiteboardsListing = () => {
         globalSearchBreadcrumb
     });
 
-    const title = <h3 className='volt-title font-size-6 font-weight-5 sm:font-size-4 color-primary'>Whiteboards</h3>;
+    const title = <h3 className='font-size-6 font-weight-5 sm:font-size-4 color-primary'>Whiteboards</h3>;
 
     const createNew = {
         buttonTitle: 'New Whiteboard',

@@ -4,11 +4,10 @@ import SidebarNavigation from '@/modules/dashboard/components/SidebarNavigation'
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import TeamSelector from '@/modules/team/components/TeamSelector';
-import IconButton from '@/shared/presentation/components/IconButton';
-import { openModal } from '@/shared/presentation/components/Modal';
-import Popover from '@/shared/presentation/components/Popover';
-import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
-import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
+import { Box, IconButton, Popover } from '@/shared/presentation/primitives';
+import { openModal } from '@/shared/presentation/primitives';
+import { PopoverMenu } from '@/shared/presentation/primitives';
+import { PopoverMenuItem } from '@/shared/presentation/primitives';
 import './DashboardSidebar.css';
 import { useState } from 'react';
 import { IoAddOutline, IoCloseOutline } from 'react-icons/io5';
@@ -45,7 +44,7 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
     };
 
     return (
-        <aside className={`dashboard-sidebar ${sidebarOpen ? 'is-open' : ''} ${collapsed ? 'is-collapsed' : ''} p-fixed vh-max`}>
+        <Box as='aside' position='fixed' height='vh-max' className={`dashboard-sidebar ${sidebarOpen ? 'is-open' : ''} ${collapsed ? 'is-collapsed' : ''}`}>
             <IconButton
                 className='sidebar-close-btn p-absolute'
                 onClick={() => setSidebarOpen(false)}
@@ -57,7 +56,7 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
 
             <Brand collapsed={collapsed} onToggleCollapse={onToggleCollapse} />
 
-            <div className='volt-container sidebar-workspace'>
+            <Box className='sidebar-workspace'>
                 <TeamSelector className='sidebar-workspace-selector' />
                 <Popover
                     id='sidebar-workspace-actions'
@@ -99,7 +98,7 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
                         </PopoverMenu>
                     )}
                 </Popover>
-            </div>
+            </Box>
 
             <SidebarNavigation
                 setSidebarOpen={setSidebarOpen}
@@ -107,7 +106,7 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
                 onExpandSidebar={onExpandSidebar}
             />
 
-            <div className='volt-container sidebar-footer'>
+            <Box className='sidebar-footer'>
                 <SidebarFooterNavigation
                     setSettingsExpanded={setSettingsExpanded}
                     settingsExpanded={settingsExpanded}
@@ -120,8 +119,8 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
                     isSigningOut={isSigningOut}
                     collapsed={collapsed}
                 />
-            </div>
-        </aside>
+            </Box>
+        </Box>
     );
 };
 

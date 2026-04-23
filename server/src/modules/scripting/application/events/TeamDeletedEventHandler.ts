@@ -1,18 +1,17 @@
-import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
-import { CascadeDeleteEachOnTeamDeletedHandler } from '@shared/application/events/CascadeDeleteEachOnTeamDeletedHandler';
 import { DeleteScriptingNotebookUseCase } from '@modules/scripting/application/use-cases/DeleteScriptingNotebookUseCase';
-import TeamDeletedEvent from '@modules/team/domain/events/team/TeamDeletedEvent';
-import { inject, injectable } from 'tsyringe';
 import type ScriptingNotebook from '@modules/scripting/domain/entities/ScriptingNotebook';
-import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
+import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
+import TeamDeletedEvent from '@modules/team/domain/events/team/TeamDeletedEvent';
+import { CascadeDeleteEachOnTeamDeletedHandler } from '@shared/application/events/CascadeDeleteEachOnTeamDeletedHandler';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-@injectable()
+@Subscribe('team.deleted')
 export default class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDeletedHandler<ScriptingNotebook> {
     constructor(
-        @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository)
-        protected readonly repository: IScriptingNotebookRepository,
+        
+        protected readonly repository: ScriptingNotebookRepository,
 
-        @inject(DeleteScriptingNotebookUseCase)
+        
         private readonly deleteScriptingNotebookUseCase: DeleteScriptingNotebookUseCase
     ) {
         super();

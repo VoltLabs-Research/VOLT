@@ -2,6 +2,7 @@ import './ThemeCard.css';
 import { cn } from '@/shared/utils';
 import { Theme } from '@/shared/presentation/hooks/use-theme';
 import themeTokensStylesheet from '@/shared/presentation/assets/stylesheets/theme.css?raw';
+import { Heading, Row, Stack } from '@/shared/presentation/primitives';
 import { Check } from 'lucide-react';
 import { forwardRef } from 'react';
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
@@ -150,19 +151,19 @@ const ThemeCard = forwardRef<HTMLButtonElement, ThemeCardProps>(({
             data-theme-preview={theme}
             tabIndex={tabIndex}
         >
-            <div className={`volt-container theme-preview ${previewClassName} d-flex items-center content-center p-relative`} style={previewStyles}>
+            <Row justify='center' position='relative' className={`theme-preview ${previewClassName}`} style={previewStyles}>
                 {icon}
-            </div>
-            <div className='volt-container d-flex column gap-025 p-1'>
-                <div className='volt-container d-flex items-center content-between'>
-                    <h3 className='volt-title font-size-2 font-weight-6'>
+            </Row>
+            <Stack gap='025' p='1'>
+                <Row justify='between'>
+                    <Heading level={3} size='md' weight='bold'>
                         {label}
-                    </h3>
+                    </Heading>
                     {isSelected && (
                         <Check size={18} className='theme-card-check' aria-hidden='true' />
                     )}
-                </div>
-            </div>
+                </Row>
+            </Stack>
         </button>
     );
 });

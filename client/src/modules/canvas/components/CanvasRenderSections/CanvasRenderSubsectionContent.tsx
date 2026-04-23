@@ -1,5 +1,6 @@
 import CanvasSlider from '../CanvasSlider';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import { Stack, Row, Box, Text } from '@/shared/presentation/primitives';
 import type { Subsection } from './types';
 
 interface CanvasRenderSubsectionContentProps {
@@ -21,25 +22,25 @@ const CanvasRenderSubsectionContent = ({
     return (
         <>
             {isSubDisabled && subDisabledReason && (
-                <div className="volt-container canvas-render-disabled-reason font-size-05">
+                <Box className="canvas-render-disabled-reason font-size-05">
                     {subDisabledReason}
-                </div>
+                </Box>
             )}
-            <div className={`volt-container ${contentClassName || undefined}`}>
+            <Box className={contentClassName || undefined}>
                 {subsection.sections.map((section) => {
                     const isSectionDisabled = isSubDisabled || section.disabled === true;
                     const sectionDisabledReason = !isSubDisabled ? section.disabledReason : undefined;
 
                     return (
-                        <div key={section.key} className={`volt-container canvas-form-section d-flex column gap-05${isSectionDisabled ? ' canvas-render-disabled' : ''}`}>
+                        <Stack key={section.key} gap='05' className={`canvas-form-section${isSectionDisabled ? ' canvas-render-disabled' : ''}`}>
                             {sectionDisabledReason && (
-                                <div className="volt-container canvas-render-disabled-reason font-size-05">
+                                <Box className="canvas-render-disabled-reason font-size-05">
                                     {sectionDisabledReason}
-                                </div>
+                                </Box>
                             )}
                             {section.onToggle && (
-                                <div className="volt-container canvas-form-section-header d-flex items-center content-between" role="group" aria-label={`${section.key} toggle`}>
-                                    <span className="canvas-form-section-title font-weight-5 font-size-1">Enabled</span>
+                                <Row justify='between' className="canvas-form-section-header" role="group" aria-label={`${section.key} toggle`}>
+                                    <Text size='sm' weight='medium' className="canvas-form-section-title">Enabled</Text>
                                     <FormFieldRHF
                                         fieldValue={section.enabled}
                                         fieldKey={`${section.key}-enabled`}
@@ -47,17 +48,17 @@ const CanvasRenderSubsectionContent = ({
                                         onFieldChange={(_, next) => section.onToggle?.(Boolean(next))}
                                         variant="inline"
                                     />
-                                </div>
+                                </Row>
                             )}
-                            <div className={`volt-container d-flex column gap-05${isSectionDisabled ? ' canvas-render-disabled-content' : ''}`}>
+                            <Stack gap='05' className={isSectionDisabled ? 'canvas-render-disabled-content' : undefined}>
                                 {section.rows.map((row) => {
                                     const value = 'get' in row ? row.get() : row.value;
                                     const onChange = 'set' in row ? row.set : row.onChange;
 
                                     return (
-                                        <div key={`${section.key}-${row.label}`} className={`volt-container canvas-form-row d-flex items-center content-between gap-05 ${row.className ?? ''}`} role="group" aria-label={row.label}>
-                                            <span className="canvas-form-label font-size-1">{row.label}</span>
-                                            <div className="volt-container canvas-form-control d-flex items-center gap-02">
+                                        <Row key={`${section.key}-${row.label}`} justify='between' gap='05' className={`canvas-form-row ${row.className ?? ''}`} role="group" aria-label={row.label}>
+                                            <Text size='sm' className="canvas-form-label">{row.label}</Text>
+                                            <Row gap='02' className="canvas-form-control">
                                                 <CanvasSlider
                                                     ariaLabel={row.label}
                                                     min={row.min}
@@ -67,19 +68,19 @@ const CanvasRenderSubsectionContent = ({
                                                     onChange={onChange}
                                                     ariaValueText={String(row.format?.(value) ?? value)}
                                                 />
-                                                <span className="canvas-form-value font-size-1">
+                                                <Text size='sm' className="canvas-form-value">
                                                     {row.format?.(value) ?? value}
-                                                </span>
-                                            </div>
-                                        </div>
+                                                </Text>
+                                            </Row>
+                                        </Row>
                                     );
                                 })}
                                 {section.extras}
-                            </div>
-                        </div>
+                            </Stack>
+                        </Stack>
                     );
                 })}
-            </div>
+            </Box>
         </>
     );
 };

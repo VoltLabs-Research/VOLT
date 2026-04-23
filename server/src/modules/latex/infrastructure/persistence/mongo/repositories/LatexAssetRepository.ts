@@ -1,13 +1,14 @@
-import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import LatexAsset from '@modules/latex/domain/entities/LatexAsset';
 import latexAssetMapper from '@modules/latex/infrastructure/persistence/mongo/mappers/LatexAssetMapper';
 import LatexAssetModel from '@modules/latex/infrastructure/persistence/mongo/models/LatexAssetModel';
-import { injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+
 import type { LatexAssetProps } from '@modules/latex/domain/entities/LatexAsset';
 import type { ILatexAssetRepository } from '@modules/latex/domain/port/ILatexAssetRepository';
 import type { LatexAssetDocument } from '@modules/latex/infrastructure/persistence/mongo/models/LatexAssetModel';
 
-@injectable()
+@Singleton()
 export default class LatexAssetRepository
     extends MongooseBaseRepository<LatexAsset, LatexAssetProps, LatexAssetDocument>
     implements ILatexAssetRepository {

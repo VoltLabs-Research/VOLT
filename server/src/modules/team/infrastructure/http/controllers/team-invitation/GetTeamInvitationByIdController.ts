@@ -1,9 +1,9 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import TeamInvitationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-invitation/TeamInvitationRepository';
 import { createGetByIdController } from '@shared/infrastructure/http/controllers/createReadController';
 
 const GetTeamInvitationByIdController = createGetByIdController({
-    repositoryToken: TEAM_TOKENS.TeamInvitationRepository,
+    repositoryToken: TeamInvitationRepository,
     paramKey: 'invitationId',
     notFoundCode: ErrorCodes.TEAM_INVITATION_NOT_FOUND,
     notFoundMessage: 'TeamInvitation not found',

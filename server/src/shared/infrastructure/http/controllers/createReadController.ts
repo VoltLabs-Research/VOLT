@@ -38,7 +38,7 @@ import type { ErrorCode } from '@core/constants/error-codes';
  * Usage — `simulation-cell/GetSimulationCellByIdController.ts` becomes:
  *
  *     export default createGetByIdController({
- *         repositoryToken: SIMULATION_CELL_TOKENS.SimulationCellRepository,
+ *         repositoryToken: SimulationCellRepository,
  *         paramKey: 'simulationCellId',
  *         populate: { path: 'trajectory', select: ['name'] },
  *         notFoundCode: ErrorCodes.SIMULATION_CELL_NOT_FOUND,
@@ -49,7 +49,7 @@ import type { ErrorCode } from '@core/constants/error-codes';
  * Usage — `simulation-cell/ListSimulationCellsByTeamIdController.ts` becomes:
  *
  *     export default createListByController({
- *         repositoryToken: SIMULATION_CELL_TOKENS.SimulationCellRepository,
+ *         repositoryToken: SimulationCellRepository,
  *         paginated: true,
  *         populate: { path: 'trajectory', select: ['name'] },
  *         validationSchema: simulationCellValidationSchemas.listByTeamId,

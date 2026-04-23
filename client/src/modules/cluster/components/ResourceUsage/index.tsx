@@ -1,6 +1,6 @@
 import MetricBar from '../MetricBar';
 import './ResourceUsage.css';
-import Skeleton from '@/shared/presentation/components/Skeleton';
+import { Box, Stack, Row, Text, Heading, Skeleton } from '@/shared/presentation/primitives';
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
 
 interface ResourceUsageProps {
@@ -101,47 +101,47 @@ const ResourceUsage = ({ metrics }: ResourceUsageProps) => {
         const glow = getResourceGlow(resource);
 
         return (
-            <div key={resource.name} className='volt-container d-flex column resource-usage-item'>
-                <div className='volt-container d-flex items-center content-between mb-05'>
-                    <span className='font-size-1 color-secondary'>{resource.name}</span>
-                    <span className='font-size-2 font-weight-6' style={{ color }}>
+            <Stack key={resource.name} className='resource-usage-item'>
+                <Row justify='between' className='mb-05'>
+                    <Text size='sm' tone='secondary'>{resource.name}</Text>
+                    <Text size='md' weight='bold' style={{ color }}>
                         {resource.value}%
-                    </span>
-                </div>
+                    </Text>
+                </Row>
                 <MetricBar value={resource.value} color={color} glow={glow} />
-            </div>
+            </Stack>
         );
     };
 
     let content = (
-        <div className='volt-container d-flex column gap-1-5 resource-usage-list flex-1'>
+        <Stack gap='1-5' flex='1' className='resource-usage-list'>
             {[...Array(4)].map((_, i) => (
-                <div key={i} className='volt-container resource-usage-item'>
-                    <div className='volt-container d-flex items-center content-between resource-usage-item-header'>
+                <Box key={i} className='resource-usage-item'>
+                    <Row justify='between' className='resource-usage-item-header'>
                         <Skeleton variant='text' width={80} height={20} />
                         <Skeleton variant='text' width={40} height={20} />
-                    </div>
+                    </Row>
                     <Skeleton variant='rectangular' width='100%' height={8} style={{ borderRadius: 4, marginTop: 8 }} />
-                </div>
+                </Box>
             ))}
-        </div>
+        </Stack>
     );
 
     if (!isLoading) {
         content = (
-            <div className='volt-container d-flex column gap-1-5 resource-usage-list flex-1'>
+            <Stack gap='1-5' flex='1' className='resource-usage-list'>
                 {resources.map(renderResourceItem)}
-            </div>
+            </Stack>
         );
     }
 
     return (
-        <div className='volt-container d-flex column resource-usage h-max p-1-5 radius-lg'>
-            <div className='volt-container d-flex items-start content-between resource-usage-header mb-1-5 f-shrink-0'>
-                <h3 className='volt-title font-size-3 font-weight-6 color-primary'>Resource Usage</h3>
-            </div>
+        <Stack height='max' p='1-5' radius='lg' className='resource-usage'>
+            <Row align='start' justify='between' shrink='0' className='resource-usage-header mb-1-5'>
+                <Heading level={3} size='lg' weight='bold'>Resource Usage</Heading>
+            </Row>
             {content}
-        </div>
+        </Stack>
     );
 };
 

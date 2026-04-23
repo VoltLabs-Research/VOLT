@@ -1,9 +1,9 @@
-import { createController } from '@shared/infrastructure/http/controllers/createController';
+import DeleteAIConversationUseCase from '@modules/ai/application/use-cases/DeleteAIConversationUseCase';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import { createController } from '@shared/infrastructure/http/controllers/createController';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 
-export default createController(AI_TOKENS.DeleteAIConversationUseCase, {
+export default createController(DeleteAIConversationUseCase, {
     statusCode: HttpStatus.NoContent,
     extendParams: (req: AuthenticatedRequest, params: Record<string, unknown>) => ({
         ...params,

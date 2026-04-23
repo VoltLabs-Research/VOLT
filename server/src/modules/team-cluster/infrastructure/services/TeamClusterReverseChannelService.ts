@@ -1,16 +1,26 @@
+import { ErrorCodes } from '@core/constants/error-codes';
+import type {
+    ContainerTerminalAttachment,
+    ContainerTerminalSize
+} from '@modules/container/domain/port/IContainerService';
 import { ContainerDeploymentProgressService } from '@modules/container/infrastructure/services/ContainerDeploymentProgressService';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
 import { TeamClusterReverseTerminalExec, TeamClusterReverseTerminalStream } from '@modules/team-cluster/utilities/TeamClusterReverseTerminal';
+import {
+    TeamClusterReverseTunnelStream,
+    type TeamClusterTunnelStream
+} from '@modules/team-cluster/utilities/TeamClusterReverseTunnelStream';
+import { TeamClusterReverseWebSocketStream } from '@modules/team-cluster/utilities/teamClusterReverseWebSocket';
 import {
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
     TeamClusterDaemonResponseType,
-    TeamClusterServiceExposureAccessMode,
     TeamClusterDaemonSessionKind,
+    TeamClusterServiceExposureAccessMode,
     TeamClusterTunnelSessionStatus,
     type TeamClusterDaemonCommandMessage,
     type TeamClusterDaemonExposureSnapshotPayload,
     type TeamClusterDaemonMessage,
+    type TeamClusterDaemonRuntimeProgressPayload,
     type TeamClusterDaemonSessionAttachPayload,
     type TeamClusterDaemonSessionDataPayload,
     type TeamClusterDaemonSessionDetachPayload,
@@ -18,7 +28,6 @@ import {
     type TeamClusterDaemonSessionInputPayload,
     type TeamClusterDaemonSessionResizePayload,
     type TeamClusterDaemonSocketHeaders,
-    type TeamClusterDaemonRuntimeProgressPayload,
     type TeamClusterDaemonSocketResponsePayload,
     type TeamClusterDaemonSocketStreamPayload,
     type TeamClusterDaemonSocketStreamStatePayload,
@@ -26,29 +35,18 @@ import {
     type TeamClusterDaemonTunnelDataPayload,
     type TeamClusterDaemonTunnelStatePayload
 } from '@modules/team-cluster/utilities/teamClusterSocket';
-import {
-    TeamClusterReverseTunnelStream,
-    type TeamClusterTunnelStream
-} from '@modules/team-cluster/utilities/TeamClusterReverseTunnelStream';
-import { TeamClusterReverseWebSocketStream } from '@modules/team-cluster/utilities/teamClusterReverseWebSocket';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { ErrorCodes } from '@core/constants/error-codes';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { randomUUID } from 'node:crypto';
-import { PassThrough } from 'node:stream';
-import { inject, injectable } from 'tsyringe';
 import {
     EnvelopeKind,
     decodeEnvelope,
     encodeEnvelope,
     toUint8Array
 } from '@shared/infrastructure/types/reverseChannelBinary';
-import type {
-    ContainerTerminalAttachment,
-    ContainerTerminalSize
-} from '@modules/container/domain/port/IContainerService';
-import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import type TeamClusterExposureRegistryService from './TeamClusterExposureRegistryService';
+import { randomUUID } from 'node:crypto';
+import { PassThrough } from 'node:stream';
+import TeamClusterExposureRegistryService from './TeamClusterExposureRegistryService';
 
 type TeamClusterDaemonCommandData = Record<string, unknown> | TeamClusterDaemonSessionAttachPayload;
 
@@ -173,7 +171,7 @@ const readSelectedWebSocketProtocol = (payload: unknown): string | undefined => 
         : undefined;
 };
 
-@injectable()
+@Singleton()
 export default class TeamClusterReverseChannelService {
     private readonly daemonSocketIdsByTeamClusterId = new Map<string, string>();
     private readonly teamClusterIdsBySocketId = new Map<string, string>();
@@ -203,13 +201,13 @@ export default class TeamClusterReverseChannelService {
     private readonly streamHighWaterMark = 256 * 1024; // 256 KB
 
     constructor(
-        @inject(SOCKET_TOKENS.SocketEventEmitter)
-        private readonly socketEmitter: ISocketEmitter,
+        
+        private readonly socketEmitter: SocketIOEmitter,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterExposureRegistryService)
+        
         private readonly exposureRegistryService: TeamClusterExposureRegistryService,
 
-        @inject(ContainerDeploymentProgressService)
+        
         private readonly containerDeploymentProgressService: ContainerDeploymentProgressService
     ) {
         this.startIdleSweep();

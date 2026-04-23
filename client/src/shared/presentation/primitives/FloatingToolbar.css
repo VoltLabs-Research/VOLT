@@ -1,0 +1,22 @@
+.volt-floating-toolbar {
+    position: absolute;
+    z-index: 10;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.5rem;
+    border-radius: var(--radius-full);
+}
+
+.volt-floating-toolbar--align-center {
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.volt-floating-toolbar--align-start {
+    left: 1rem;
+}
+
+.volt-floating-toolbar--align-end {
+    right: 1rem;
+}

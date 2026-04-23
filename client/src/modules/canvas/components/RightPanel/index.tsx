@@ -19,12 +19,13 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { Wrench } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
+import { CollapsibleSection } from '@/shared/presentation/primitives';
+import { Box, Row } from '@/shared/presentation/primitives';
 import { extractTrajectoryTimesteps, normalizeSelectedTimesteps } from '../../utilities/selected-timestep-analysis';
 
 import type { ModifierOption } from '../../utilities/modifier-registry';
 import type { ComponentType, ReactNode } from 'react';
-import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { SelectOption } from '@/shared/presentation/primitives';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { PluginTeamClusterOption } from '@/modules/plugin/api/entities/plugin/team-cluster';
 import type { RasterContainerId, RasterContainerSelection } from '@/modules/raster/types/container-selection';
@@ -405,8 +406,8 @@ const RightPanel = ({
     );
 
     return (
-        <div className="volt-container d-flex h-max overflow-hidden">
-            <div className="volt-container w-max h-max overflow-auto">
+        <Row height='max' overflow='hidden'>
+            <Box width='max' height='max' overflow='auto'>
                 <ObjectsPanel
                     trajectory={trajectory}
                     onDownloadAnalysis={onDownloadAnalysis}
@@ -417,8 +418,8 @@ const RightPanel = ({
                     onUpdateRasterContainerSelection={onUpdateRasterContainerSelection}
                     afterSceneCollection={pluginsSection}
                 />
-            </div>
-        </div>
+            </Box>
+        </Row>
     );
 };
 

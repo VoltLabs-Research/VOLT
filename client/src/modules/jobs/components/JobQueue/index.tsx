@@ -1,7 +1,7 @@
 import { JobStatus } from '@/modules/jobs/api/entities/job';
 import { getJobStatusLabel } from '@/modules/jobs/utilities/job-status-label';
 import useRetryJobAnalysis from '@/modules/jobs/hooks/use-retry-job-analysis';
-import Button from '@/shared/presentation/components/Button';
+import { Box, Button, Heading, Row, Stack, Text } from '@/shared/presentation/primitives';
 import '@/modules/jobs/components/JobQueue/JobQueue.css';
 import { formatDistanceToNow } from 'date-fns';
 import { sileo } from 'sileo';
@@ -80,37 +80,37 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
     const showRetryAction = isFailed && isAnalysisJob && Boolean(analysisId);
 
     return (
-        <div className={`volt-container ${containerClass + ' d-flex content-between items-center gap-075'}`}>
+        <Row justify='between' gap='075' className={containerClass}>
             <span className='job-status-icon font-size-3' aria-hidden='true'>{statusConfig[job.status]?.icon}</span>
-            <div className='volt-container d-flex column gap-025 flex-1 min-w-0'>
-                <div className='volt-container d-flex items-center content-between gap-05 flex-wrap'>
-                    <h3 className='volt-title font-size-1 job-name font-weight-6 color-primary'>
+            <Stack gap='025' flex='1' minW='0'>
+                <Row justify='between' gap='05' wrap>
+                    <Heading level={3} size='sm' weight='bold' className='job-name'>
                         {getJobDisplayName(job)}
-                    </h3>
+                    </Heading>
                     <span className={`job-status-badge ${job.status} p-025 radius-full font-size-1`} aria-label={`Status: ${statusLabel}`}>
                         {statusLabel}
                     </span>
-                </div>
-                <div className='volt-container d-flex items-center gap-05 flex-wrap'>
-                    <p className='volt-text job-message color-secondary font-size-1 d-flex items-center gap-05'>
+                </Row>
+                <Row gap='05' wrap>
+                    <Text as='p' size='sm' tone='secondary' className='job-message d-flex items-center gap-05'>
                         {hasFrameTimestep && <span>Frame {job.timestep}</span>}
                         {hasFrameTimestep && job.timestamp && <span>&middot;</span>}
                         {job.timestamp && <span>{formatDistanceToNow(new Date(job.timestamp), { addSuffix: true })}</span>}
-                    </p>
+                    </Text>
                     {job.processingTimeMs && job.status === JobStatus.Completed && (
-                        <span className='job-meta color-muted font-size-1'>• {formatDuration(job.processingTimeMs)}</span>
+                        <Text size='sm' tone='muted' className='job-meta'>• {formatDuration(job.processingTimeMs)}</Text>
                     )}
-                </div>
+                </Row>
                 {job.error && (
-                    <p className='volt-text job-error font-size-1 mt-025'>{job.error}</p>
+                    <Text as='p' size='sm' className='job-error mt-025'>{job.error}</Text>
                 )}
-            </div>
-            <div className='volt-container d-flex items-center gap-075'>
+            </Stack>
+            <Row gap='075'>
                 {(job.progress !== undefined && job.progress > 0 && job.status === JobStatus.Running) && (
-                    <div className='volt-container job-progress-bar p-relative overflow-hidden radius-xs' aria-label={`Progress ${Math.round(job.progress)} percent`}>
-                        <div className='volt-container job-progress-fill p-absolute h-max top-0 left-0' style={{ width: `${Math.min(100, job.progress)}%` }} />
-                        <span className='job-progress-text p-absolute font-weight-6 color-primary font-size-1'>{Math.round(job.progress)}%</span>
-                    </div>
+                    <Box position='relative' overflow='hidden' radius='xs' className='job-progress-bar' aria-label={`Progress ${Math.round(job.progress)} percent`}>
+                        <Box position='absolute' height='max' top='0' left='0' className='job-progress-fill' style={{ width: `${Math.min(100, job.progress)}%` }} />
+                        <Text size='sm' weight='bold' tone='primary' className='job-progress-text p-absolute'>{Math.round(job.progress)}%</Text>
+                    </Box>
                 )}
                 {showRetryAction && (
                     <Button
@@ -124,8 +124,8 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
                         Retry
                     </Button>
                 )}
-            </div>
-        </div>
+            </Row>
+        </Row>
     );
 };
 

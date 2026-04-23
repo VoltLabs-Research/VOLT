@@ -1,12 +1,13 @@
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import si from 'systeminformation';
-import { injectable } from 'tsyringe';
+
 
 interface CpuMetricsSnapshot {
     usage: number;
     coresUsage: number[];
 }
 
-@injectable()
+@Singleton()
 export default class CpuMetricsCollector {
     async collect(): Promise<CpuMetricsSnapshot> {
         const currentLoad = await si.currentLoad();

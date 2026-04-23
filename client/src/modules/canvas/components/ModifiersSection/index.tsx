@@ -1,6 +1,6 @@
-import Button from '@/shared/presentation/components/Button';
-import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
-import EmptyState from '@/shared/presentation/components/EmptyState';
+import { Button, Stack, Row, Text } from '@/shared/presentation/primitives';
+import { ContextMenuPopover } from '@/shared/presentation/primitives';
+import { EmptyState } from '@/shared/presentation/primitives';
 import { Check, ChevronLeft, Play, X } from 'lucide-react';
 
 import { ExecState } from '../../hooks/use-plugin-execution';
@@ -60,9 +60,9 @@ const ModifierPopoverItem = ({
             aria-label={`${option.title} settings`}
             data-modifier-id={option.modifierId}
         >
-            <div className='volt-container collapsible-section-trigger-content d-flex items-center gap-05'>
-                <span className='font-size-1 color-secondary'>{option.title}</span>
-            </div>
+            <Row gap='05' className='collapsible-section-trigger-content'>
+                <Text size='sm' tone='secondary'>{option.title}</Text>
+            </Row>
             {hasContent && (
                 <span className='canvas-plugin-popover-indicator d-flex items-center color-muted' aria-hidden='true'>
                     <ChevronLeft size={13} />
@@ -72,16 +72,16 @@ const ModifierPopoverItem = ({
     );
 
     return (
-        <div className='volt-container canvas-section canvas-plugin-popover-item d-flex items-center gap-025'>
+        <Row gap='025' className='canvas-section canvas-plugin-popover-item'>
             {hasContent ? (
                 <ContextMenuPopover
                     id={`plugin-config-${option.modifierId}`}
                     trigger={trigger}
                     content={() => (
-                        <div className='volt-container canvas-plugin-popover-content d-flex column gap-075'>
+                        <Stack gap='075' className='canvas-plugin-popover-content'>
                             {renderModifierConfig(option)}
                             {option.isPlugin && showAction && (
-                                <div className='volt-container canvas-plugin-popover-footer d-flex column'>
+                                <Stack className='canvas-plugin-popover-footer'>
                                     <Button
                                         variant='solid'
                                         intent={pluginAction.intent}
@@ -94,9 +94,9 @@ const ModifierPopoverItem = ({
                                     >
                                         {execState === ExecState.Loading ? 'Executing...' : pluginAction.label}
                                     </Button>
-                                </div>
+                                </Stack>
                             )}
-                        </div>
+                        </Stack>
                     )}
                     triggerAction='click'
                     placement='left-start'
@@ -104,7 +104,7 @@ const ModifierPopoverItem = ({
                     className='context-menu-popover--plugin-config'
                 />
             ) : trigger}
-        </div>
+        </Row>
     );
 };
 
@@ -133,10 +133,10 @@ const ModifiersSection = ({
         return (
             <>
                 {Array.from({ length: SKELETON_ROWS }).map((_, i) => (
-                    <div key={`mod-skel-${i}`} className="volt-container canvas-section">
-                        <div className="volt-container d-flex items-center gap-05 p-05">
+                    <div key={`mod-skel-${i}`} className="canvas-section">
+                        <Row gap='05' p='05'>
                             <span className="canvas-modifier-skeleton-title" />
-                        </div>
+                        </Row>
                     </div>
                 ))}
             </>

@@ -1,27 +1,27 @@
-import { GetFilteredModelStreamUseCase } from '@modules/trajectory/application/use-cases/particle-filter/GetFilteredModelStreamUseCase';
-import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
 import type { GetFilteredModelStreamInputDTO } from '@modules/trajectory/application/dtos/particle-filter';
+import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
+import { GetFilteredModelStreamUseCase } from '@modules/trajectory/application/use-cases/particle-filter/GetFilteredModelStreamUseCase';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import type { StreamableOutput } from '@shared/infrastructure/http/controllers/BaseStreamController';
 
 interface GetPublicCanvasFilteredModelStreamInput extends GetFilteredModelStreamInputDTO {
     userId?: string;
 };
 
-@injectable()
+@Singleton()
 export class GetPublicCanvasFilteredModelStreamUseCase implements IUseCase<
     GetPublicCanvasFilteredModelStreamInput,
     StreamableOutput,
     ApplicationError
 > {
     constructor(
-        @inject(TrajectoryReadAccessService)
+        
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
-        @inject(GetFilteredModelStreamUseCase)
+        
         private readonly getFilteredModelStreamUseCase: GetFilteredModelStreamUseCase
     ) {}
 

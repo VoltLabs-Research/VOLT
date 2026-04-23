@@ -1,41 +1,38 @@
 import {
     ExportPluginListingDocumentsInputDTO
 } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
+import { buildListingExportColumns, enrichDaemonListingRows } from '@modules/plugin/application/use-cases/listing-row/listing-row-enrichment';
 import { resolveAnalysisComputeClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { buildListingExportColumns, enrichDaemonListingRows } from '@modules/plugin/application/use-cases/listing-row/listing-row-enrichment';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { createSerializedDownloadResponse } from '@shared/infrastructure/http/responses/download-response';
-import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 
 import { mapDaemonRow } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
 
 import { IUseCase } from '@shared/application/IUseCase';
 import { ExportType } from '@shared/domain/port/IBaseRepository';
 import { Result } from '@shared/domain/port/Result';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { inject, injectable } from 'tsyringe';
 
-import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
-import type { ListingRowData } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import type { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import type { ListingRowData } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
+import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 
 const DAEMON_PAGE_SIZE = 200;
 
-@injectable()
+@Singleton()
 export class ExportPluginListingDocumentsUseCase implements IUseCase<
     ExportPluginListingDocumentsInputDTO,
     DownloadStreamOutputDTO
 > {
     constructor(
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository,
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepository: ITrajectoryRepository,
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        
+        private readonly analysisRepository: AnalysisRepository,
+        
+        private readonly trajectoryRepository: TrajectoryRepository,
+        
         private readonly daemonClient: TeamClusterDaemonClient
     ){}
 

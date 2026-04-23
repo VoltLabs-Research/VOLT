@@ -2,11 +2,6 @@
     border: 1px solid color-mix(in srgb, var(--color-border) 85%, transparent);
 }
 
-.user-badge-info{
-    min-width: 0;
-    flex: 1;
-}
-
 .user-badge-label{
     color: var(--color-text-secondary);
 }

@@ -1,14 +1,15 @@
-import { UpdateLatexFileUseCase } from '@modules/latex/application/use-cases/UpdateLatexFileUseCase';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { UpdateLatexFileUseCase } from '@modules/latex/application/use-cases/UpdateLatexFileUseCase';
+import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
+import type { PresenceUser } from '@modules/socket/domain/port/ISocketRoomManager';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
+import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import { formatSocketValidationError } from '@modules/socket/utilities/socket-validation-error';
+import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
-import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import type { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';
-import type { ISocketRoomManager, PresenceUser } from '@modules/socket/domain/port/ISocketRoomManager';
 import type {
     LatexCloseDocumentPayload,
     LatexOpenDocumentPayload,
@@ -26,7 +27,8 @@ const PERSIST_DEBOUNCE_MS = 2_000;
 /** Key used to uniquely identify a pending save timer for a document file. */
 const buildSaveKey = (documentId: string, fileId: string): string => `${documentId}:${fileId}`;
 
-@injectable()
+@Singleton()
+@AliasOf(SOCKET_TOKENS.SocketModule)
 export default class LatexSocketModule extends BaseSocketModule {
     public readonly name = 'LatexSocketModule';
 
@@ -34,9 +36,9 @@ export default class LatexSocketModule extends BaseSocketModule {
     private readonly saveTimers = new Map<string, NodeJS.Timeout>();
 
     constructor(
-        @inject(SOCKET_TOKENS.SocketEventEmitter) emitter: ISocketEmitter,
-        @inject(SOCKET_TOKENS.SocketRoomManager) roomManager: ISocketRoomManager,
-        @inject(SOCKET_TOKENS.SocketEventRegistry) eventRegistry: ISocketEventRegistry,
+        emitter: SocketIOEmitter,
+        roomManager: SocketIORoomManager,
+        eventRegistry: SocketIOEventRegistry,
         private readonly updateFileUseCase: UpdateLatexFileUseCase
     ) {
         super(emitter, roomManager, eventRegistry);

@@ -1,6 +1,7 @@
 import { TeamClusterServiceExposureAccessMode } from '@modules/team-cluster/utilities/teamClusterSocket';
 import jwt from 'jsonwebtoken';
-import { injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+
 import type { JwtPayload, Secret, SignOptions } from 'jsonwebtoken';
 
 type DirectAccessRequesterKind = 'daemon' | 'server';
@@ -21,7 +22,7 @@ const SIGN_OPTIONS: SignOptions = {
     algorithm: 'HS256'
 };
 
-@injectable()
+@Singleton()
 export default class TeamClusterDirectAccessTokenService {
     create(secret: string, claims: TeamClusterDirectAccessTokenClaims): string {
         return jwt.sign(claims, secret as Secret, SIGN_OPTIONS);

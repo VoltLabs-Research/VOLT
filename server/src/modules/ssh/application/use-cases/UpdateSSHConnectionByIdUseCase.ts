@@ -1,32 +1,31 @@
-import { Result } from '@shared/domain/port/Result';
-import { IUseCase } from '@shared/application/IUseCase';
-import { injectable, inject } from 'tsyringe';
-import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
-import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
-import { ISSHCredentialsCipher } from '@modules/ssh/domain/port/ISSHCredentialsCipher';
-import { UpdateSSHConnectionByIdInputDTO } from '@modules/ssh/application/dtos/UpdateSSHConnectionByIdDTO';
+import { ErrorCodes } from '@core/constants/error-codes';
 import { SafeSSHConnectionDTO } from '@modules/ssh/application/dtos/CreateSSHConnectionDTO';
+import { UpdateSSHConnectionByIdInputDTO } from '@modules/ssh/application/dtos/UpdateSSHConnectionByIdDTO';
 import { SSHConnectionOwnershipService } from '@modules/ssh/application/services/SSHConnectionOwnershipService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import type SSHConnection from '@modules/ssh/domain/entities/SSHConnection';
-import type { SSHConnectionProps } from '@modules/ssh/domain/entities/SSHConnection';
 import {
     resolveSSHPersistenceError,
     toSafeSSHConnectionDTO
 } from '@modules/ssh/application/utils/ssh-error-utils';
-import { ErrorCodes } from '@core/constants/error-codes';
+import type SSHConnection from '@modules/ssh/domain/entities/SSHConnection';
+import type { SSHConnectionProps } from '@modules/ssh/domain/entities/SSHConnection';
+import SSHConnectionRepository from '@modules/ssh/infrastructure/persistence/mongo/repositories/SSHConnectionRepository';
+import SSHCredentialsCipher from '@modules/ssh/infrastructure/services/SSHCredentialsCipher';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export class UpdateSSHConnectionByIdUseCase implements IUseCase<UpdateSSHConnectionByIdInputDTO, SafeSSHConnectionDTO, ApplicationError> {
     constructor(
-        @inject(SSHConnectionOwnershipService)
+        
         private readonly sshConnectionOwnershipService: SSHConnectionOwnershipService,
 
-        @inject(SSH_TOKENS.SSHConnectionRepository)
-        private readonly sshConnRepository: ISSHConnectionRepository,
+        
+        private readonly sshConnRepository: SSHConnectionRepository,
 
-        @inject(SSH_TOKENS.SSHCredentialsCipher)
-        private readonly sshCredentialsCipher: ISSHCredentialsCipher
+        
+        private readonly sshCredentialsCipher: SSHCredentialsCipher
     ){}
 
     async execute(input: UpdateSSHConnectionByIdInputDTO): Promise<Result<SafeSSHConnectionDTO, ApplicationError>> {

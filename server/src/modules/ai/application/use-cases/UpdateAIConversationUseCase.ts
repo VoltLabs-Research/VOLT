@@ -1,13 +1,12 @@
 import { ErrorCodes } from '@core/constants/error-codes';
+import { AIConversationDTO } from '@modules/ai/application/dtos/ListAIConversationsDTO';
+import { UpdateAIConversationInputDTO } from '@modules/ai/application/dtos/UpdateAIConversationDTO';
 import type { AIConversationProps } from '@modules/ai/domain/entities/AIConversation';
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import AIConversationRepository from '@modules/ai/infrastructure/persistence/mongo/repositories/AIConversationRepository';
 import { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
-import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
-import { UpdateAIConversationInputDTO } from '@modules/ai/application/dtos/UpdateAIConversationDTO';
-import { AIConversationDTO } from '@modules/ai/application/dtos/ListAIConversationsDTO';
-import { inject, injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 interface UpdateAIConversationLookup {
     _id: string;
@@ -15,11 +14,11 @@ interface UpdateAIConversationLookup {
     userId: string;
 };
 
-@injectable()
+@Singleton()
 export default class UpdateAIConversationUseCase implements IUseCase<UpdateAIConversationInputDTO, AIConversationDTO, ApplicationError> {
     constructor(
-        @inject(AI_TOKENS.AIConversationRepository)
-        private readonly conversationRepository: IAIConversationRepository
+        
+        private readonly conversationRepository: AIConversationRepository
     ) {}
 
     async execute(input: UpdateAIConversationInputDTO): Promise<Result<AIConversationDTO, ApplicationError>> {

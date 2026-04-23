@@ -1,24 +1,25 @@
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import logger from '@shared/infrastructure/logger';
-import { injectable, inject } from 'tsyringe';
 import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import type { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';
-import type { ISocketRoomManager, PresenceUser } from '@modules/socket/domain/port/ISocketRoomManager';
+import type { PresenceUser } from '@modules/socket/domain/port/ISocketRoomManager';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
+import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
+import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
+import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 
 interface TrajectoryPresencePayload extends Record<string, unknown> {
     trajectoryId: string;
 };
 
-@injectable()
+@Singleton()
+@AliasOf(SOCKET_TOKENS.SocketModule)
 export default class TrajectoryPresenceSocketModule extends BaseSocketModule {
     public readonly name = 'TrajectoryPresenceSocketModule';
 
     constructor(
-        @inject(SOCKET_TOKENS.SocketEventEmitter) emitter: ISocketEmitter,
-        @inject(SOCKET_TOKENS.SocketRoomManager) roomManager: ISocketRoomManager,
-        @inject(SOCKET_TOKENS.SocketEventRegistry) eventRegistry: ISocketEventRegistry
+        emitter: SocketIOEmitter,
+        roomManager: SocketIORoomManager,
+        eventRegistry: SocketIOEventRegistry
     ) {
         super(emitter, roomManager, eventRegistry);
     }

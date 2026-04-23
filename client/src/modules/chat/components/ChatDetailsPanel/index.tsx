@@ -2,11 +2,10 @@ import { PresenceStatus } from '@/modules/chat/api/entities/shared/chat-events';
 import { getChatDisplayName, getChatStatusText } from '@/modules/chat/utilities/chat/chat-display';
 import ChatAvatar from '../ChatAvatar';
 import SharedFilesList from '../SharedFilesList';
-import { IoChatbubblesOutline, IoCloseOutline, IoPeopleOutline } from 'react-icons/io5';
-import Button from '@/shared/presentation/components/Button';
-import EmptyState from '@/shared/presentation/components/EmptyState';
-import IconButton from '@/shared/presentation/components/IconButton';
-import Tooltip from '@/shared/presentation/components/Tooltip';
+import { IoChatbubblesOutline, IoPeopleOutline } from 'react-icons/io5';
+import { Box, Stack, Text, Button, SectionLabel } from '@/shared/presentation/primitives';
+import { EmptyState } from '@/shared/presentation/primitives';
+import PanelHeader from '@/shared/presentation/components/PanelHeader';
 import type { Chat } from '@/modules/chat/api/entities/chat';
 import type { ChatMessage } from '@/modules/chat/api/entities/message';
 import './ChatDetailsPanel.css';
@@ -28,73 +27,62 @@ const ChatDetailsPanel = ({
 }: ChatDetailsPanelProps) => {
     if (!chat) {
         return (
-            <div className='volt-container d-flex column h-max chat-details'>
-                <div className='volt-container chat-details-header'>
-                    <p className='volt-text font-size-4 font-weight-6 color-primary'>Details</p>
-                </div>
-                <div className='volt-container d-flex flex-center flex-1'>
+            <Stack height='max' className='chat-details'>
+                <PanelHeader title='Details' />
+                <Box display='flex' flex='1' className='flex-center'>
                     <EmptyState
                         icon={<IoChatbubblesOutline size={32} />}
                         title='No chat selected'
                         description='Select a conversation to view details'
                     />
-                </div>
-            </div>
+                </Box>
+            </Stack>
         );
     }
 
     const displayName = getChatDisplayName(chat, currentUserId);
     const statusText = getChatStatusText(chat, presence);
 
-    return (
-        <div className='volt-container d-flex column h-max chat-details'>
-            <div className='volt-container d-flex items-center content-between chat-details-header'>
-                <p className='volt-text font-size-4 font-weight-6 color-primary'>
-                    {chat.isGroup ? 'Group Info' : 'Contact Info'}
-                </p>
-                {onClose && (
-                    <Tooltip content='Close details'>
-                        <IconButton
-                            size='sm'
-                            variant='ghost'
-                            className='chat-details-close-button'
-                            onClick={onClose}
-                            title='Close details'
-                            aria-label='Close details'
-                        >
-                            <IoCloseOutline size={20} />
-                        </IconButton>
-                    </Tooltip>
-                )}
-            </div>
+    let headerTitle = 'Contact Info';
+    if (chat.isGroup) {
+        headerTitle = 'Group Info';
+    }
 
-            <div className='volt-container d-flex column flex-1 y-auto chat-details-content'>
-                <div className='volt-container d-flex column items-center gap-075 text-center chat-details-section'>
-                    <ChatAvatar 
-                        chat={chat} 
-                        currentUserId={currentUserId} 
+    return (
+        <Stack height='max' className='chat-details'>
+            <PanelHeader
+                title={headerTitle}
+                onClose={onClose}
+                className='chat-details-header'
+            />
+
+            <Stack flex='1' overflow='y-auto' className='chat-details-content'>
+                <Stack align='center' gap='075' textAlign='center' className='chat-details-section'>
+                    <ChatAvatar
+                        chat={chat}
+                        currentUserId={currentUserId}
                         size='lg'
                         showStatus={!chat.isGroup}
                         isOnline={presence === PresenceStatus.Online}
                     />
-                    <p className='volt-text font-size-4 font-weight-6 color-primary'>
+                    <Text as='p' size='xl' weight='bold'>
                         {displayName}
-                    </p>
+                    </Text>
                     {statusText && (
-                        <p className='volt-text font-size-2 color-muted'>{statusText}</p>
+                        <Text as='p' size='md' tone='muted'>{statusText}</Text>
                     )}
                     {chat.isGroup && chat.groupDescription && (
-                        <p className='volt-text font-size-2 color-secondary'>
+                        <Text as='p' size='md' tone='secondary'>
                             {chat.groupDescription}
-                        </p>
+                        </Text>
                     )}
-                </div>
+                </Stack>
 
                 {chat.isGroup && (
-                    <div className='volt-container chat-details-section'>
-                        <p className='volt-text font-size-2 font-weight-6 color-secondary chat-details-section-title d-block'>
+                    <Box className='chat-details-section'>
+                        <SectionLabel className='chat-details-section-title d-block mb-075'>
                             Actions
-                        </p>
+                        </SectionLabel>
                         <Button
                             variant='ghost'
                             intent='neutral'
@@ -106,17 +94,17 @@ const ChatDetailsPanel = ({
                         >
                             Manage Group
                         </Button>
-                    </div>
+                    </Box>
                 )}
 
-                <div className='volt-container chat-details-section'>
-                    <p className='volt-text font-size-2 font-weight-6 color-secondary chat-details-section-title d-block'>
+                <Box className='chat-details-section'>
+                    <SectionLabel className='chat-details-section-title d-block mb-075'>
                         Shared Files
-                    </p>
+                    </SectionLabel>
                     <SharedFilesList messages={messages} />
-                </div>
-            </div>
-        </div>
+                </Box>
+            </Stack>
+        </Stack>
     );
 };
 

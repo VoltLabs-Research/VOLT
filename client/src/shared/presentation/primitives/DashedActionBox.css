@@ -1,0 +1,57 @@
+.volt-dashed-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border: 1px dashed var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.volt-dashed-action--block {
+    display: flex;
+    width: 100%;
+}
+
+.volt-dashed-action--size-sm {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+}
+
+.volt-dashed-action--size-md {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+}
+
+.volt-dashed-action--size-lg {
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+}
+
+.volt-dashed-action__icon {
+    display: inline-flex;
+    align-items: center;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .volt-dashed-action:hover {
+        border-color: var(--color-brand-primary);
+        color: var(--color-text-primary);
+        background: var(--hover-bg);
+    }
+}
+
+.volt-dashed-action:focus-visible {
+    outline: none;
+    border-color: var(--focus-ring);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 25%, transparent);
+}
+
+.volt-dashed-action--tone-brand {
+    color: var(--color-brand-primary);
+    border-color: var(--color-brand-primary);
+}

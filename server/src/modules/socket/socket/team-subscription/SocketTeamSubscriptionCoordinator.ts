@@ -1,6 +1,7 @@
-import { injectable } from 'tsyringe';
-import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
+
 import type { NormalizedTeamSubscription } from '@modules/socket/domain/contracts/team-subscription';
+import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 export interface TeamSubscriptionContext {
     connection: ISocketConnection;
@@ -11,7 +12,8 @@ type TeamSubscriptionHandler = (
     context: TeamSubscriptionContext
 ) => void | Promise<void>;
 
-@injectable()
+@Singleton()
+@Singleton()
 export default class SocketTeamSubscriptionCoordinator {
     private readonly handlers = new Set<TeamSubscriptionHandler>();
 

@@ -4,7 +4,7 @@ import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Modal, { resetModal } from '@/shared/presentation/components/Modal';
+import { Modal, resetModal } from '@/shared/presentation/primitives';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { useState } from 'react';
@@ -127,7 +127,7 @@ export const TeamCreatorModal = ({
                 />
 
                 {apiError && (
-                    <div className='volt-container team-creator-error radius-sm font-size-2'>
+                    <div className='team-creator-error radius-sm font-size-2'>
                         {apiError}
                     </div>
                 )}

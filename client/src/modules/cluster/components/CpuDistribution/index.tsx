@@ -1,5 +1,6 @@
 import ChartContainer from '@/shared/presentation/components/ChartContainer';
 import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
+import { Box } from '@/shared/presentation/primitives';
 import { useMemo } from 'react';
 import {
     LineChart,
@@ -73,9 +74,9 @@ const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
     if (!hasCoreData && !metrics) {
         return (
             <ChartContainer icon={Cpu} title='CPU Distribution' isLoading={!metrics}>
-                <div className='volt-container d-flex flex-center flex-1 font-size-2 color-muted'>
+                <Box display='flex' flex='1' className='flex-center font-size-2 color-muted'>
                     Waiting for data...
-                </div>
+                </Box>
             </ChartContainer>
         );
     }

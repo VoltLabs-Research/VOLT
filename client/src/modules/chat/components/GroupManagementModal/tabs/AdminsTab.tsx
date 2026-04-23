@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { MemberListItem } from '../../MemberListItem';
-import Button from '@/shared/presentation/components/Button';
+import { Stack, Text, Button } from '@/shared/presentation/primitives';
 import type { Chat } from '@/modules/chat/api/entities/chat';
 
 interface AdminsTabProps {
@@ -17,7 +17,7 @@ const AdminsTab = ({ chat, isOwner, isLoading, onToggleAdmin }: AdminsTabProps) 
         let action: ReactNode = null;
 
         if (isMemberOwner) {
-            action = <p className='volt-text member-list-item-role owner'>Owner</p>;
+            action = <Text as='p' className='member-list-item-role owner'>Owner</Text>;
         } else if (isOwner) {
             action = (
                 <Button
@@ -31,21 +31,21 @@ const AdminsTab = ({ chat, isOwner, isLoading, onToggleAdmin }: AdminsTabProps) 
                 </Button>
             );
         } else if (isMemberAdmin) {
-            action = <p className='volt-text member-list-item-role admin'>Admin</p>;
+            action = <Text as='p' className='member-list-item-role admin'>Admin</Text>;
         }
 
         return <MemberListItem key={member._id} user={member} action={action} />;
     };
 
     return (
-        <div className='volt-container d-flex column gap-1'>
-            <p className='volt-text font-size-3 font-weight-6 color-primary'>
+        <Stack gap='1'>
+            <Text as='p' size='lg' weight='bold'>
                 Administrators
-            </p>
-            <div className='volt-container d-flex column gap-025'>
+            </Text>
+            <Stack gap='025'>
                 {chat.participants.map(renderMember)}
-            </div>
-        </div>
+            </Stack>
+        </Stack>
     );
 };
 

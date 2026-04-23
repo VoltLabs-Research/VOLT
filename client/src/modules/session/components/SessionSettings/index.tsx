@@ -16,12 +16,9 @@ import SettingsSection from '@/shared/presentation/components/SettingsSection';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
 import useSessionData from '@/modules/session/hooks/use-session-data';
 import useTip from '@/shared/tips/use-tip';
-import Button from '@/shared/presentation/components/Button';
-import EmptyState from '@/shared/presentation/components/EmptyState';
-import Modal from '@/shared/presentation/components/Modal';
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
+import { EmptyState } from '@/shared/presentation/primitives';
+import { Button, ListRow, Modal, Row, Skeleton, Stack, StatusBadge, StatusDot, Text } from '@/shared/presentation/primitives';
 import { Globe, Monitor, Shield, Smartphone } from 'lucide-react';
-import Skeleton from '@/shared/presentation/components/Skeleton';
 import type { ActiveSession, LoginActivityEntry } from '@/modules/session/api/entities/session';
 import type { FC, ReactNode } from 'react';
 import './SessionSettings.css';
@@ -68,55 +65,53 @@ const SessionSettings: FC = () => {
         const DeviceIcon = isMobileUserAgent(session.userAgent) ? Smartphone : Monitor;
 
         return (
-            <li
+            <ListRow
                 key={session._id}
-                className={`session-card d-flex items-center gap-1 p-075 ${isCurrent ? 'current-session' : ''}`}
-            >
-                <div className="volt-container d-flex items-center content-center f-shrink-0 color-muted">
-                    <DeviceIcon size={20} />
-                </div>
-
-                <div className="volt-container session-card-main flex-1 d-flex column gap-025">
-                    <div className="volt-container session-card-title-row d-flex items-center gap-05 flex-wrap">
-                        <p className="volt-text font-weight-5 font-size-2">
-                            {meta.browser} on {meta.os}
-                        </p>
+                as='li'
+                className={`session-card ${isCurrent ? 'current-session' : ''}`}
+                leading={<DeviceIcon size={20} className='color-muted' />}
+                title={
+                    <Row gap='05' wrap>
+                        <span>{meta.browser} on {meta.os}</span>
                         {isCurrent && (
-                            <StatusBadge variant="brand" size="compact">Current</StatusBadge>
+                            <StatusBadge variant='brand' size='compact'>Current</StatusBadge>
                         )}
-                    </div>
-                    <div className="volt-container session-card-meta-row d-flex items-center gap-05 flex-wrap">
-                        <p className="volt-text session-ip color-muted">
+                    </Row>
+                }
+                meta={
+                    <Row gap='05' wrap>
+                        <Text as='span' tone='muted' size='sm' className='font-mono'>
                             {session.ip}
-                        </p>
-                        <p className='volt-text session-token color-muted font-size-1'>
+                        </Text>
+                        <Text as='span' tone='muted' size='sm' className='font-mono'>
                             Token {meta.tokenInfo}
-                        </p>
-                        <p className="volt-text color-muted font-size-1">
+                        </Text>
+                        <Text as='span' tone='muted' size='sm'>
                             · {formatSessionRelativeTime(session.lastActivity)}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="volt-container session-card-actions d-flex items-center gap-05 f-shrink-0">
-                    <StatusBadge
-                        variant={SESSION_ACTION_VARIANTS[session.action]}
-                        size="compact"
-                    >
-                        {SESSION_ACTION_LABELS[session.action]}
-                    </StatusBadge>
-                    {!isCurrent && (
-                        <Button
-                            variant="ghost"
-                            intent="danger"
-                            size="sm"
-                            onClick={() => openRevokeSessionModal(session)}
+                        </Text>
+                    </Row>
+                }
+                trailing={
+                    <Row gap='05' wrap justify='end' className='session-card-actions'>
+                        <StatusBadge
+                            variant={SESSION_ACTION_VARIANTS[session.action]}
+                            size='compact'
                         >
-                            Revoke
-                        </Button>
-                    )}
-                </div>
-            </li>
+                            {SESSION_ACTION_LABELS[session.action]}
+                        </StatusBadge>
+                        {!isCurrent && (
+                            <Button
+                                variant='ghost'
+                                intent='danger'
+                                size='sm'
+                                onClick={() => openRevokeSessionModal(session)}
+                            >
+                                Revoke
+                            </Button>
+                        )}
+                    </Row>
+                }
+            />
         );
     };
 
@@ -125,38 +120,34 @@ const SessionSettings: FC = () => {
         const ActionIcon = getSessionActivityIcon(activity.action);
 
         return (
-            <li
+            <ListRow
                 key={`${activity._id}-${index}`}
-                className="session-activity-row d-flex items-center gap-075 p-05 radius-md"
-            >
-                <div className="volt-container d-flex items-center content-center f-shrink-0 color-muted">
-                    <ActionIcon size={16} />
-                </div>
-
-                <div className="volt-container session-card-main flex-1 d-flex column gap-025">
-                    <p className="volt-text font-weight-5 font-size-2">
-                        {SESSION_ACTION_LABELS[activity.action]} · {browser} on {os}
-                    </p>
-                    <div className="volt-container session-card-meta-row d-flex items-center gap-05 flex-wrap">
-                        <p className="volt-text session-ip color-muted">
+                as='li'
+                className='session-activity-row'
+                leading={<ActionIcon size={16} className='color-muted' />}
+                title={`${SESSION_ACTION_LABELS[activity.action]} · ${browser} on ${os}`}
+                meta={
+                    <Row gap='05' wrap>
+                        <Text as='span' tone='muted' size='sm' className='font-mono'>
                             {activity.ip}
-                        </p>
-                        <p className="volt-text color-muted font-size-1">
+                        </Text>
+                        <Text as='span' tone='muted' size='sm'>
                             · {formatSessionRelativeTime(activity.createdAt)}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="volt-container d-flex items-center gap-05 f-shrink-0">
-                    <div className={`volt-container activity-dot ${activity.success ? 'success' : 'failed'}`} />
-                    <StatusBadge
-                        variant={activity.success ? 'success' : 'danger'}
-                        size="compact"
-                    >
-                        {activity.success ? 'Success' : 'Failed'}
-                    </StatusBadge>
-                </div>
-            </li>
+                        </Text>
+                    </Row>
+                }
+                trailing={
+                    <Row gap='05'>
+                        <StatusDot tone={activity.success ? 'success' : 'danger'} size='sm' />
+                        <StatusBadge
+                            variant={activity.success ? 'success' : 'danger'}
+                            size='compact'
+                        >
+                            {activity.success ? 'Success' : 'Failed'}
+                        </StatusBadge>
+                    </Row>
+                }
+            />
         );
     };
 
@@ -177,14 +168,14 @@ const SessionSettings: FC = () => {
     let sessionsContent: ReactNode;
     if (loadingSessions) {
         sessionsContent = Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="volt-container d-flex items-center gap-1 p-075">
+            <Row key={i} gap='1' p='075'>
                 <Skeleton variant="circular" width={36} height={36} />
-                <div className="volt-container flex-1 d-flex column gap-025">
+                <Stack flex='1' gap='025'>
                     <Skeleton variant="text" width="40%" height={20} />
                     <Skeleton variant="text" width="25%" height={16} />
-                </div>
+                </Stack>
                 <Skeleton variant="rounded" width={60} height={28} />
-            </div>
+            </Row>
         ));
     } else if (sessions.length === 0) {
         sessionsContent = (
@@ -201,14 +192,14 @@ const SessionSettings: FC = () => {
     let activityContent: ReactNode;
     if (loadingActivity) {
         activityContent = Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="volt-container d-flex items-center gap-1 p-05">
+            <Row key={i} gap='1' p='05'>
                 <Skeleton variant="circular" width={6} height={6} />
-                <div className="volt-container flex-1 d-flex column gap-025">
+                <Stack flex='1' gap='025'>
                     <Skeleton variant="text" width="35%" height={18} />
                     <Skeleton variant="text" width="20%" height={14} />
-                </div>
+                </Stack>
                 <Skeleton variant="rounded" width={50} height={22} />
-            </div>
+            </Row>
         ));
     } else if (activities.length === 0) {
         activityContent = (
@@ -274,11 +265,11 @@ const SessionSettings: FC = () => {
                 }
             >
                 {revokeTarget && (
-                    <p className="volt-text font-size-2 color-muted p-1-5">
+                    <Text as='p' size='md' tone='muted' className='p-1-5'>
                         Are you sure you want to revoke the session from{' '}
                         <strong>{parseSessionUserAgent(revokeTarget.userAgent).browser}</strong> on{' '}
                         <strong>{parseSessionUserAgent(revokeTarget.userAgent).os}</strong> ({revokeTarget.ip})?
-                    </p>
+                    </Text>
                 )}
             </Modal>
 
@@ -307,10 +298,10 @@ const SessionSettings: FC = () => {
                     </>
                 }
             >
-                <p className="volt-text font-size-2 p-1-5 color-muted">
+                <Text as='p' size='md' tone='muted' className='p-1-5'>
                     Are you sure you want to revoke {otherSessionsCount} other{' '}
                     {otherSessionsCount === 1 ? 'session' : 'sessions'}? This action cannot be undone.
-                </p>
+                </Text>
             </Modal>
         </SettingsPage>
     );

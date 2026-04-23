@@ -1,3 +1,4 @@
+import { Button } from '@/shared/presentation/primitives';
 import { ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import {
     coerceArgumentInputValue,
@@ -11,15 +12,14 @@ import {
 } from '@/modules/plugin/utilities/plugin/argument-values';
 import { getVisibleArguments } from '@/modules/plugin/utilities/plugin/argument-visibility';
 import PluginConfigField from '@/modules/plugin/components/plugin/PluginConfigField';
-import Button from '@/shared/presentation/components/Button';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
+import { CollapsibleSection } from '@/shared/presentation/primitives';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Select from '@/shared/presentation/components/Select';
+import { Select } from '@/shared/presentation/primitives';
 import { Plus } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF';
-import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { SelectOption } from '@/shared/presentation/primitives';
 
 interface ArgumentFieldsRendererProps {
     arguments: IArgumentDefinition[];
@@ -222,12 +222,12 @@ const ArgumentFieldsRenderer = ({
             const items = getListArgumentValue(argument, argumentValue);
 
             return (
-                <div key={fieldKey} className='volt-container d-flex column gap-05'>
-                    <p className='volt-text canvas-form-label'>
+                <div key={fieldKey} className='d-flex column gap-05'>
+                    <p className='canvas-form-label'>
                         {argument.label || argument.argument}
                     </p>
                     {items.length > 0 ? items.map(renderListItem(argument, items, fieldKey)) : (
-                        <p className='volt-text font-size-1 color-muted'>No items added.</p>
+                        <p className='font-size-1 color-muted'>No items added.</p>
                     )}
                     <Button
                         variant='outline'
@@ -252,8 +252,8 @@ const ArgumentFieldsRenderer = ({
             }));
 
             return (
-                <div key={fieldKey} className='volt-container d-flex column gap-05'>
-                    <p className='volt-text canvas-form-label'>
+                <div key={fieldKey} className='d-flex column gap-05'>
+                    <p className='canvas-form-label'>
                         {argument.label || argument.argument}
                     </p>
                     <Select
@@ -287,7 +287,7 @@ const ArgumentFieldsRenderer = ({
         const fieldConfig = getPrimitiveFieldConfig(argument, argumentValue, resolvedFrameOptions);
 
         return (
-            <div key={fieldKey} className='volt-container d-flex column gap-05'>
+            <div key={fieldKey} className='d-flex column gap-05'>
                 {allowTemplateReferenceMode && (
                     <FormFieldRHF
                         label='Use reference'
@@ -334,14 +334,14 @@ const ArgumentFieldsRenderer = ({
 
     if (!visibleArgumentDefinitions.length) {
         return (
-            <p className='volt-text font-size-1 color-muted'>
+            <p className='font-size-1 color-muted'>
                 {emptyMessage}
             </p>
         );
     }
 
     return (
-        <div className='volt-container d-flex column gap-05'>
+        <div className='d-flex column gap-05'>
             {visibleArgumentDefinitions.map(renderArgument)}
         </div>
     );

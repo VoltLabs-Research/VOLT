@@ -1,19 +1,18 @@
 import { SystemRoleNames, SystemRoles } from '@core/constants/system-roles';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { GetMyTeamPermissionsInputDTO, GetMyTeamPermissionsOutputDTO } from '@modules/team/application/dtos/team/GetMyTeamPermissionsDTO';
-import { getTeamMemberRolePermissions, isPopulatedTeamMemberRole } from '@modules/team/domain/entities/team-member/TeamMember';
 import type { TeamMemberProps } from '@modules/team/domain/entities/team-member/TeamMember';
-import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
+import { getTeamMemberRolePermissions, isPopulatedTeamMemberRole } from '@modules/team/domain/entities/team-member/TeamMember';
+import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable, inject } from 'tsyringe';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export default class GetMyTeamPermissionsUseCase implements IUseCase<GetMyTeamPermissionsInputDTO, GetMyTeamPermissionsOutputDTO, ApplicationError> {
     constructor(
-        @inject(TEAM_TOKENS.TeamMemberRepository)
-        private readonly teamMemberRepository: ITeamMemberRepository
+        
+        private readonly teamMemberRepository: TeamMemberRepository
     ) {}
 
     private getPermissions(memberRole: TeamMemberProps['role']): string[] {

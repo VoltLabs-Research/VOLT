@@ -1,6 +1,6 @@
-import Popover from '@/shared/presentation/components/Popover';
+import { Popover } from '@/shared/presentation/primitives';
 import DynamicIcon from '@/shared/presentation/components/DynamicIcon';
-import Loader from '@/shared/presentation/components/Loader';
+import { Loader } from '@/shared/presentation/primitives';
 import { ICON_LIB_LOADERS } from '@/shared/presentation/components/DynamicIcon/loaders';
 import { ChevronDown, Search } from 'lucide-react';
 import { useEffect, useId, useMemo, useState } from 'react';

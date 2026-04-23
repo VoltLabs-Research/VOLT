@@ -1,9 +1,10 @@
 import TrajectoryFrameModel, {
     TrajectoryFrameLean
 } from '@modules/trajectory/infrastructure/persistence/mongo/models/trajectory/TrajectoryFrameModel';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import mongoose from 'mongoose';
-import { injectable } from 'tsyringe';
+
 
 import type { TrajectoryFrame, TrajectoryFrameSimulationCellEmbed } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 
@@ -65,7 +66,7 @@ const mapLean = (doc: TrajectoryFrameLeanWithPopulatedCell): TrajectoryFrame => 
         : doc.simulationCell.toString()
 });
 
-@injectable()
+@Singleton()
 export default class TrajectoryFrameRepository {
     async getFrames(trajectoryId: string, options: GetFramesOptions = {}): Promise<TrajectoryFrame[]> {
         const filter: Record<string, unknown> = {

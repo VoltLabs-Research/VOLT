@@ -3,6 +3,7 @@ import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCellPopover';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
+import { Row } from '@/shared/presentation/primitives';
 import './SimulationCellsListing.css';
 import { Box } from 'lucide-react';
 import type { SimulationCell } from '@/modules/simulation-cell/api/entities/simulation-cell';
@@ -33,7 +34,7 @@ const renderPeriodicBoundary: NonNullable<ColumnConfig<SimulationCell>['render']
     const axes = getPeriodicBoundaryAxes(row);
 
     return (
-        <div className='volt-container d-flex gap-05 flex-wrap'>
+        <Row gap='05' wrap>
             {axes.map((axis) => (
                 <span
                     key={axis.axis}
@@ -42,7 +43,7 @@ const renderPeriodicBoundary: NonNullable<ColumnConfig<SimulationCell>['render']
                     {axis.axis}: {axis.enabled ? 'Periodic' : 'Open'}
                 </span>
             ))}
-        </div>
+        </Row>
     );
 };
 

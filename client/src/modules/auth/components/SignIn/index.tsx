@@ -1,6 +1,11 @@
 import './SignIn.css';
 import { signInSchema } from './validation-schema';
-import { useCheckEmailMutation, useSignInMutation, useSignUpMutation } from '@/modules/auth/hooks/queries';
+import {
+    useCheckEmailMutation,
+    useOAuthProvidersQuery,
+    useSignInMutation,
+    useSignUpMutation
+} from '@/modules/auth/hooks/queries';
 import {
     clearPostAuthDestination,
     getPostAuthRedirectPath,
@@ -11,7 +16,8 @@ import EmailStep from '../EmailStep';
 import PasswordStep from '../PasswordStep';
 import RegisterStep from '../RegisterStep';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import Stepper from '@/shared/presentation/components/Stepper';
+import { Stack } from '@/shared/presentation/primitives';
+import { Stepper } from '@/shared/presentation/primitives';
 import useStepper from '@/shared/presentation/hooks/use-stepper';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { buildBackendUrl } from '@/app/core/http/utilities/backend-origin';
@@ -20,7 +26,8 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import type { FormEvent } from 'react';
-import type { StepTitles } from '@/shared/presentation/components/Stepper';
+import type { OAuthProviderKey } from '@/modules/auth/api/dtos/oauth-providers';
+import type { StepTitles } from '@/shared/presentation/primitives';
 import type { SignInForm } from './validation-schema';
 
 enum SignInStep {
@@ -50,6 +57,8 @@ const SignInTemplate = () => {
     const checkEmail = useCheckEmailMutation();
     const signIn = useSignInMutation();
     const signUp = useSignUpMutation();
+    const oauthProvidersQuery = useOAuthProvidersQuery();
+    const availableProviders = oauthProvidersQuery.data?.providers ?? [];
     const markAuthenticated = useAuthStore((state) => state.markAuthenticated);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -73,7 +82,7 @@ const SignInTemplate = () => {
         });
     };
 
-    const handleOAuthRedirect = (provider: string) => {
+    const handleOAuthRedirect = (provider: OAuthProviderKey) => {
         const next = getNextDestination();
         const callbackUrl = new URL(buildBackendUrl(`/api/auth/${provider}`));
         callbackUrl.searchParams.set('next', next);
@@ -198,7 +207,8 @@ const SignInTemplate = () => {
                 control={control}
                 isLoading={isSubmitting || formState.isSubmitting}
                 onSubmit={handleSubmit}
-                onOAuth={handleOAuthRedirect} />
+                onOAuth={handleOAuthRedirect}
+                availableProviders={availableProviders} />
             )
     }, {
         key: SignInStep.Password,
@@ -227,24 +237,24 @@ const SignInTemplate = () => {
         : [steps[0], steps[1]];
 
     return (
-        <main className='sign-in-page'>
-            <section className='sign-in-form-shell d-flex column content-center p-1-5' aria-labelledby='sign-in-form-title'>
-                <div className='volt-container d-flex column gap-2 sign-in-form-section w-max'>
+        <main className='sign-in-page screen-vh'>
+            <section className='sign-in-form-shell screen-vh d-flex column content-center p-1-5' aria-labelledby='sign-in-form-title'>
+                <Stack gap='2' width='max' className='sign-in-form-section'>
                     <header className='d-flex column gap-05'>
-                        <h1 id='sign-in-form-title' className='volt-title sign-in-form-title'>{title}</h1>
-                        <p className="volt-text">{subtitle}</p>
+                        <h1 id='sign-in-form-title' className='sign-in-form-title'>{title}</h1>
+                        <p>{subtitle}</p>
                     </header>
 
                     <Stepper
                         steps={signInSteps}
                         activeStep={step} />
 
-                    <p className='volt-text sign-in-consent text-center'>
+                    <p className='sign-in-consent text-center'>
                         By continuing with email or a social provider, you agree to our{' '}
                         <span className='sign-in-legal-text'>Terms</span> and{' '}
                         <span className='sign-in-legal-text'>Privacy Policy</span>.
                     </p>
-                </div>
+                </Stack>
             </section>
         </main>
     );

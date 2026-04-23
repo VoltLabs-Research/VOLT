@@ -2,31 +2,29 @@ import 'reflect-metadata';
 import './core/config/env';
 import './shared/infrastructure/logging/installOutputDuplicateGuard';
 
-import { registerAllDependencies } from './core/bootstrap/register-deps';
-import { startTempStorageLifecycle } from './core/bootstrap/start-temp-storage-lifecycle';
-import { backfillTeamClusterQueueConcurrency } from './core/bootstrap/backfill-team-cluster-queue-concurrency';
-import { initializeMinio } from './core/config/minio';
-import { initializeRedis } from './core/config/redis';
-import { registerAllSubscribers } from './core/events/registerAllSubscribers';
-import { SOCKET_TOKENS } from './modules/socket/infrastructure/di/SocketTokens';
-import { ScriptingJupyterProxyService } from './modules/scripting/infrastructure/services/ScriptingJupyterProxyService';
-import { TEAM_CLUSTER_TOKENS } from './modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import { TRAJECTORY_TOKENS } from './modules/trajectory/infrastructure/di/TrajectoryTokens';
-import ClusterTransferRunner from './modules/team-cluster/infrastructure/services/ClusterTransferRunner';
-import TrajectoryCloneRunner from './modules/trajectory/infrastructure/services/trajectory/TrajectoryCloneRunner';
-import { httpErrorMiddleware } from './shared/infrastructure/http/middleware/error';
-import logger from './shared/infrastructure/logger';
-import mongoConnector from './shared/infrastructure/utilities/mongo-connector';
-import { readNumberEnv } from './shared/infrastructure/utilities/env';
-import { writeUpgradeError } from './shared/infrastructure/utilities/proxy-relay';
-import app from './core/config/express';
-import apiDocsRouter from './core/config/api-docs';
-import SocketGateway from './modules/socket/socket/SocketGateway';
 import http from 'http';
 import { createHttpTerminator, type HttpTerminator } from 'http-terminator';
-import { container } from 'tsyringe';
-import type { ISocketModule } from './modules/socket/domain/port/ISocketModule';
 import type { Duplex } from 'node:stream';
+import { container } from 'tsyringe';
+import { backfillTeamClusterQueueConcurrency } from './core/bootstrap/backfill-team-cluster-queue-concurrency';
+import { registerAllDependencies } from './core/bootstrap/register-deps';
+import { startTempStorageLifecycle } from './core/bootstrap/start-temp-storage-lifecycle';
+import apiDocsRouter from './core/config/api-docs';
+import app from './core/config/express';
+import { initializeMinio } from './core/config/minio';
+import { initializeRedis } from './core/config/redis';
+import { ScriptingJupyterProxyService } from './modules/scripting/infrastructure/services/ScriptingJupyterProxyService';
+import type { ISocketModule } from './modules/socket/domain/port/ISocketModule';
+import { SOCKET_TOKENS } from './modules/socket/infrastructure/di/SocketTokens';
+import SocketGateway from './modules/socket/socket/SocketGateway';
+import ClusterTransferRunner from './modules/team-cluster/infrastructure/services/ClusterTransferRunner';
+import TrajectoryCloneRunner from './modules/trajectory/infrastructure/services/trajectory/TrajectoryCloneRunner';
+import { flushPendingSubscriptions } from './shared/infrastructure/events/Subscribe';
+import { httpErrorMiddleware } from './shared/infrastructure/http/middleware/error';
+import logger from './shared/infrastructure/logger';
+import { readNumberEnv } from './shared/infrastructure/utilities/env';
+import mongoConnector from './shared/infrastructure/utilities/mongo-connector';
+import { writeUpgradeError } from './shared/infrastructure/utilities/proxy-relay';
 
 const SERVER_PORT = readNumberEnv('SERVER_PORT', 8000);
 const SERVER_HOST = process.env.SERVER_HOST || '0.0.0.0';
@@ -35,8 +33,6 @@ const SERVER_KEEP_ALIVE_TIMEOUT = readNumberEnv('SERVER_KEEP_ALIVE_TIMEOUT', 180
 const SERVER_HEADERS_TIMEOUT = readNumberEnv('SERVER_HEADERS_TIMEOUT', SERVER_KEEP_ALIVE_TIMEOUT);
 const SERVER_SHUTDOWN_GRACE_PERIOD = readNumberEnv('SERVER_SHUTDOWN_GRACE_PERIOD', 1000);
 const SERVER_SHUTDOWN_FORCE_EXIT_TIMEOUT = readNumberEnv('SERVER_SHUTDOWN_FORCE_EXIT_TIMEOUT', 5000);
-
-registerAllDependencies();
 
 let activeTerminator: HttpTerminator | null = null;
 let activeSocketGateway: SocketGateway | null = null;
@@ -113,6 +109,8 @@ process.on('uncaughtException', (error: Error) => {
 });
 
 const startServer = async () => {
+    await registerAllDependencies();
+
     await startTempStorageLifecycle();
 
     const { default: mountHttpRoutes } = await import('./core/bootstrap/mount-http-routes');
@@ -181,11 +179,11 @@ const startServer = async () => {
 
             await backfillTeamClusterQueueConcurrency();
 
-            await registerAllSubscribers();
+            await flushPendingSubscriptions();
 
-            activeSocketGateway = container.resolve<SocketGateway>(SOCKET_TOKENS.SocketGateway);
-            activeClusterTransferRunner = container.resolve<ClusterTransferRunner>(TEAM_CLUSTER_TOKENS.ClusterTransferRunner);
-            activeTrajectoryCloneRunner = container.resolve<TrajectoryCloneRunner>(TRAJECTORY_TOKENS.TrajectoryCloneRunner);
+            activeSocketGateway = container.resolve(SocketGateway);
+            activeClusterTransferRunner = container.resolve(ClusterTransferRunner);
+            activeTrajectoryCloneRunner = container.resolve(TrajectoryCloneRunner);
             const socketModules = container.resolveAll<ISocketModule>(SOCKET_TOKENS.SocketModule);
             for (const module of socketModules) {
                 activeSocketGateway.register(module);

@@ -9,6 +9,7 @@ import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import { Box, Stack } from '@/shared/presentation/primitives';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ContainerAction } from '../../api/dtos/update-container';
 import ContainerDetailsSkeleton from '../ContainerDetailsSkeleton';
@@ -177,7 +178,7 @@ const ContainerDetailsLayout = () => {
 
     if(!container || !outletContext){
         return (
-            <div className='volt-container d-flex flex-center h-max'>
+            <Box className='flex-center' display='flex' height='max'>
                 <RecoveryState
                     title='Container not found'
                     description={isError && error instanceof Error ? error.message : 'The requested container could not be loaded.'}
@@ -185,12 +186,12 @@ const ContainerDetailsLayout = () => {
                     retryLabel='Go back'
                     onRetry={() => navigate('/dashboard/containers')}
                 />
-            </div>
+            </Box>
         );
     }
 
     return (
-        <div className='volt-container container-details-layout d-flex column'>
+        <Stack className='container-details-layout'>
             <ContainerDetailsHeader
                 container={container}
                 onBack={handleBack}
@@ -199,10 +200,10 @@ const ContainerDetailsLayout = () => {
                 contextualActions={headerActions}
             />
 
-            <div className='volt-container container-details-content-area flex-1 d-flex column'>
+            <Stack className='container-details-content-area' flex='1'>
                 <Outlet context={outletContext} />
-            </div>
-        </div>
+            </Stack>
+        </Stack>
     );
 };
 

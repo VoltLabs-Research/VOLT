@@ -52,5 +52,4 @@ export interface RouteGroup {
     protected: RouteConfig[];
     guest: RouteConfig[];
     optionalAuth: RouteConfig[];
-    dashboardLayout?: ComponentType;
 };

@@ -2,11 +2,10 @@ import { useContainerFilesQuery, useContainerFileContentQuery } from '../../hook
 import { useRemoteExplorer } from '@/shared/api/remote-explorer';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { IoFolderOutline, IoDocumentOutline, IoArrowBack } from 'react-icons/io5';
-import Button from '@/shared/presentation/components/Button';
 import FileExplorer from '@/shared/presentation/components/FileExplorer';
 import FileExplorerRow from '@/shared/presentation/components/FileExplorer/FileExplorerRow';
-import Tooltip from '@/shared/presentation/components/Tooltip';
 import RefreshButton from '@/shared/presentation/components/RefreshButton';
+import { Button, Row, Stack, Text, Tooltip } from '@/shared/presentation/primitives';
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { ContainerFile } from '@/modules/container/api/entities/container-file';
@@ -93,15 +92,15 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
 
     if(viewingFile && fileContent !== undefined && fileContent !== null){
         return (
-            <div className='volt-container d-flex column h-max gap-1'>
-                <div className='volt-container d-flex items-center gap-1 container-file-viewer-header'>
+            <Stack height='max' gap='1'>
+                <Row className='container-file-viewer-header' gap='1'>
                     <Button variant='ghost' intent='neutral' size='sm' leftIcon={<IoArrowBack />} onClick={closeFileViewer}>
                         Back
                     </Button>
                     <span>{viewingFile}</span>
-                </div>
+                </Row>
                 <pre className='container-file-content overflow-auto flex-1 p-1'>{fileContent}</pre>
-            </div>
+            </Stack>
         );
     }
 
@@ -112,15 +111,15 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
         }).title;
 
         return (
-            <div className='volt-container d-flex column h-max gap-1'>
-                <div className='volt-container d-flex items-center gap-1 container-file-viewer-header'>
+            <Stack height='max' gap='1'>
+                <Row className='container-file-viewer-header' gap='1'>
                     <Button variant='ghost' intent='neutral' size='sm' leftIcon={<IoArrowBack />} onClick={closeFileViewer}>
                         Back
                     </Button>
                     <span>{viewingFile}</span>
-                </div>
-                <p className='volt-text container-file-empty-folder'>{message}</p>
-            </div>
+                </Row>
+                <Text as='p' className='container-file-empty-folder'>{message}</Text>
+            </Stack>
         );
     }
 
@@ -137,14 +136,14 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
 
     const explorerHeaderLeft = useMemo(() => {
         return (
-            <div className='volt-container d-flex items-center gap-1 flex-1'>
+            <Row gap='1' flex='1'>
                 <Tooltip content='Go to Parent Directory' placement='bottom'>
                     <Button variant='ghost' intent='neutral' iconOnly size='sm' aria-label='Go to parent directory' title='Go to parent directory' onClick={explorer.goUp} disabled={explorer.isAtRoot}>
                         <IoArrowBack />
                     </Button>
                 </Tooltip>
                 <span className='container-file-current-path'>{explorer.cwd}</span>
-            </div>
+            </Row>
         );
     }, [explorer.cwd, explorer.goUp, explorer.isAtRoot]);
 

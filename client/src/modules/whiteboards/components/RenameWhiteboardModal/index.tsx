@@ -1,4 +1,4 @@
-import Modal, { closeModal } from '@/shared/presentation/components/Modal';
+import { Modal, closeModal } from '@/shared/presentation/primitives';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import { RENAME_WHITEBOARD_MODAL_ID } from '@/modules/whiteboards/hooks/use-whiteboards-listing';
@@ -89,7 +89,7 @@ const RenameWhiteboardModal = ({
             onClose={handleClose}
             footer={footer}
         >
-            <div className='volt-container p-1-5'>
+            <div className='p-1-5'>
                 <FormFieldRHF
                     label='Whiteboard title'
                     placeholder='Enter whiteboard title'

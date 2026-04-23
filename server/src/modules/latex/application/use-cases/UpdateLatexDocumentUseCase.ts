@@ -1,17 +1,16 @@
-import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
 import type { UpdateLatexDocumentInputDTO, UpdateLatexDocumentOutputDTO } from '@modules/latex/application/dtos/UpdateLatexDocumentDTO';
+import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
-@injectable()
+@Singleton()
 export class UpdateLatexDocumentUseCase implements IUseCase<UpdateLatexDocumentInputDTO, UpdateLatexDocumentOutputDTO, ApplicationError> {
     constructor(
-        @inject(LATEX_TOKENS.LatexDocumentRepository)
-        private readonly latexDocumentRepository: ILatexDocumentRepository
+        
+        private readonly latexDocumentRepository: LatexDocumentRepository
     ) {}
 
     async execute(input: UpdateLatexDocumentInputDTO): Promise<Result<UpdateLatexDocumentOutputDTO, ApplicationError>> {

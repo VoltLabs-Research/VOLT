@@ -1,20 +1,18 @@
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import { TeamClusterServiceExposureAccessMode } from '@modules/team-cluster/utilities/teamClusterSocket';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { inject, injectable } from 'tsyringe';
-import type { Duplex, Readable as NodeReadable } from 'node:stream';
-import { buffer } from 'node:stream/consumers';
-import http from 'node:http';
 import {
     TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER,
     TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
     TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
 } from '@shared/infrastructure/contracts/team-cluster';
-import TeamClusterDirectAccessTokenService from './TeamClusterDirectAccessTokenService';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import http from 'node:http';
+import type { Duplex, Readable as NodeReadable } from 'node:stream';
+import { buffer } from 'node:stream/consumers';
+import TeamClusterDirectAccessTokenService from './TeamClusterDirectAccessTokenService';
 
 type ObjectGatewayOperationName =
     | 'list'
@@ -77,6 +75,7 @@ interface TeamClusterObjectGatewayPutBufferRequest extends TeamClusterObjectGate
 
 interface TeamClusterObjectGatewayReadOptions {
     skipMetadata?: boolean;
+    rangeHeader?: string;
 }
 
 interface ObjectGatewayJsonListResponse {
@@ -252,7 +251,7 @@ const mapStatusToApplicationError = (statusCode: number, code: string, message: 
     return new ApplicationError(code, message, statusCode >= 400 ? statusCode : 500);
 };
 
-@injectable()
+@Singleton()
 export default class TeamClusterObjectGatewayClient {
     private readonly cachedTokens = new Map<string, CachedAccessToken>();
     private readonly pendingTokens = new Map<string, Promise<CachedAccessToken>>();
@@ -261,16 +260,16 @@ export default class TeamClusterObjectGatewayClient {
     private readonly pendingSessionCreations = new Map<string, number>();
 
     constructor(
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
+        
+        private readonly teamClusterRepository: TeamClusterRepository,
 
-        @inject(DaemonCredentialGuard)
+        
         private readonly daemonCredentialGuard: DaemonCredentialGuard,
 
-        @inject(TeamClusterDirectAccessTokenService)
+        
         private readonly directAccessTokenService: TeamClusterDirectAccessTokenService
     ) {}
 
@@ -788,13 +787,21 @@ export default class TeamClusterObjectGatewayClient {
     }
 
     private buildReadHeaders(options?: TeamClusterObjectGatewayReadOptions): Record<string, string> | undefined {
-        if (!options?.skipMetadata) {
+        if (!options?.skipMetadata && !options?.rangeHeader) {
             return undefined;
         }
 
-        return {
-            [TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER]: '1'
-        };
+        const headers: Record<string, string> = {};
+
+        if (options?.skipMetadata) {
+            headers[TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER] = '1';
+        }
+
+        if (options?.rangeHeader) {
+            headers.range = options.rangeHeader;
+        }
+
+        return headers;
     }
 }
 

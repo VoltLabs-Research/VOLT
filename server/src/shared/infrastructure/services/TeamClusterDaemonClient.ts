@@ -1,18 +1,16 @@
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import type { ContainerTerminalAttachment } from '@modules/container/domain/port/IContainerService';
+import type { TeamClusterReverseChannelStreamAttachment, TeamClusterTunnelOpenRequest } from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
 import TeamClusterReverseChannelService from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
-import { TeamClusterDaemonResponseType, TeamClusterServiceExposureAccessMode } from '@modules/team-cluster/utilities/teamClusterSocket';
+import type { TeamClusterTunnelStream } from '@modules/team-cluster/utilities/TeamClusterReverseTunnelStream';
 import { TeamClusterReverseWebSocketStream } from '@modules/team-cluster/utilities/teamClusterReverseWebSocket';
+import { TeamClusterDaemonResponseType, TeamClusterServiceExposureAccessMode } from '@modules/team-cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { getHttpRequestContext } from '@shared/infrastructure/http/request-context';
 import logger from '@shared/infrastructure/logger';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
-import { inject, injectable } from 'tsyringe';
 import type { Readable } from 'node:stream';
-import type { TeamClusterTunnelOpenRequest } from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
-import type { TeamClusterReverseChannelStreamAttachment } from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
-import type { TeamClusterTunnelStream } from '@modules/team-cluster/utilities/TeamClusterReverseTunnelStream';
-import type { ContainerTerminalAttachment } from '@modules/container/domain/port/IContainerService';
 
 interface TeamClusterDaemonResponseEnvelope<T> {
     status: 'success';
@@ -127,7 +125,7 @@ const readPayloadBytes = (payload?: Record<string, unknown>): number | undefined
     }
 };
 
-@injectable()
+@Singleton()
 export default class TeamClusterDaemonClient {
     private static readonly TIMEOUT_BY_CLASS: Record<NonNullable<TeamClusterDaemonCommandOptions['timeoutClass']>, number> = {
         default: 30_000,
@@ -136,7 +134,7 @@ export default class TeamClusterDaemonClient {
     };
 
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterReverseChannelService)
+        
         private readonly teamClusterReverseChannelService: TeamClusterReverseChannelService
     ) {}
 

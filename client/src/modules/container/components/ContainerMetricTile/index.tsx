@@ -1,5 +1,6 @@
 import { Area, AreaChart, ResponsiveContainer, YAxis } from 'recharts';
 import { useId, useMemo } from 'react';
+import { Box, Row, StatCard } from '@/shared/presentation/primitives';
 import './ContainerMetricTile.css';
 
 export interface MetricSecondaryStat {
@@ -47,19 +48,11 @@ const ContainerMetricTile = ({
 
     const hasHistory = history.length > 0;
     const stateClass = isLoading || !hasHistory ? 'container-metric-tile--idle' : '';
+    const displayValue = hasHistory ? value : idleHint;
 
-    return (
-        <div className={`volt-container container-metric-tile d-flex column gap-05 ${stateClass}`}>
-            <div className='volt-container d-flex items-baseline content-between gap-05'>
-                <span className='container-metric-tile-label'>{label}</span>
-                {badge && <span className='container-metric-tile-badge'>{badge}</span>}
-            </div>
-
-            <span className='container-metric-tile-value' aria-label={`${label} ${hasHistory ? value : idleHint}`}>
-                {hasHistory ? value : idleHint}
-            </span>
-
-            <div className='volt-container container-metric-tile-sparkline' aria-hidden='true'>
+    const footer = (
+        <>
+            <Box className='container-metric-tile-sparkline' aria-hidden='true'>
                 <ResponsiveContainer width='100%' height={SPARKLINE_HEIGHT}>
                     <AreaChart
                         data={sparklineData}
@@ -84,10 +77,10 @@ const ContainerMetricTile = ({
                         />
                     </AreaChart>
                 </ResponsiveContainer>
-            </div>
+            </Box>
 
             {secondary && secondary.length > 0 && (
-                <div className='volt-container container-metric-tile-secondary d-flex items-center flex-wrap'>
+                <Row className='container-metric-tile-secondary' wrap>
                     {secondary.map((stat, index) => (
                         <span key={stat.label} className='d-flex items-center'>
                             {index > 0 && <span className='container-metric-tile-secondary-dot' aria-hidden='true'>·</span>}
@@ -96,9 +89,21 @@ const ContainerMetricTile = ({
                             </span>
                         </span>
                     ))}
-                </div>
+                </Row>
             )}
-        </div>
+        </>
+    );
+
+    return (
+        <StatCard
+            className={`container-metric-tile ${stateClass}`}
+            label={label}
+            value={<span aria-label={`${label} ${displayValue}`}>{displayValue}</span>}
+            trend={badge ? <span className='container-metric-tile-badge'>{badge}</span> : undefined}
+            footer={footer}
+            surface='soft'
+            tabular
+        />
     );
 };
 

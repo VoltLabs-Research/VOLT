@@ -1,5 +1,5 @@
 import { InvitationRow } from '../InvitationRow';
-import EmptyState from '@/shared/presentation/components/EmptyState';
+import { EmptyState } from '@/shared/presentation/primitives';
 import type { TeamInvitation } from '@/modules/team/api/entities/invitation/team-invitation';
 import './InvitationsList.css';
 
@@ -20,8 +20,8 @@ export const InvitationsList = ({
 
     if(isLoading) {
         return (
-            <div className='volt-container invitations-list-loading d-flex items-center content-center'>
-                <p className='volt-text color-secondary font-size-2 text-center p-1'>
+            <div className='invitations-list-loading d-flex items-center content-center'>
+                <p className='color-secondary font-size-2 text-center p-1'>
                     Loading invitations...
                 </p>
             </div>
@@ -39,8 +39,8 @@ export const InvitationsList = ({
     }
 
     return (
-        <div className='volt-container invitations-list y-auto f-shrink-0'>
-            <div className='volt-container d-flex column gap-05'>
+        <div className='invitations-list y-auto f-shrink-0'>
+            <div className='d-flex column gap-05'>
                 {safeInvitations.map((invitation) => (
                     <InvitationRow
                         key={invitation._id}

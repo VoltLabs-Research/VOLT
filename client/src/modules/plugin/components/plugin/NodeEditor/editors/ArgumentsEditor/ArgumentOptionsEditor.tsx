@@ -1,6 +1,5 @@
-import Button from '@/shared/presentation/components/Button';
-import EmptyState from '@/shared/presentation/components/EmptyState';
-import IconButton from '@/shared/presentation/components/IconButton';
+import { Button, IconButton } from '@/shared/presentation/primitives';
+import { EmptyState } from '@/shared/presentation/primitives';
 import { Plus, Trash2 } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 
@@ -61,7 +60,7 @@ const OptionRow = ({
                 value={option.key}
                 onChange={(event) => onKeyChange(event.currentTarget.value)}
                 placeholder={KEY_PLACEHOLDER}
-                className={`argument-options-input argument-options-input--key font-size-2 flex-1${hasError ? ' has-error' : ''}`}
+                className={`argument-options-input argument-options-input--key font-mono font-size-2 flex-1${hasError ? ' has-error' : ''}`}
                 aria-label={`Option ${index + 1} key`}
                 aria-invalid={hasError}
                 title={errorTitle}
@@ -136,12 +135,12 @@ const ArgumentOptionsEditor = ({
 
     if (options.length === 0) {
         return (
-            <div className='volt-container argument-options-editor d-flex column gap-075'>
+            <div className='argument-options-editor d-flex column gap-075'>
                 <EmptyState
                     title='No options defined'
                     description='Add options to populate the select.'
                 />
-                <div className='volt-container d-flex items-center content-center gap-05'>
+                <div className='d-flex items-center content-center gap-05'>
                     <Button
                         variant='solid'
                         intent='brand'
@@ -157,11 +156,11 @@ const ArgumentOptionsEditor = ({
     }
 
     return (
-        <div className='volt-container argument-options-editor d-flex column gap-075'>
-            <div className='volt-container argument-options-grid d-flex items-center' aria-hidden='true'>
-                <span className='argument-options-grid__header font-size-05 color-muted flex-1'>Key</span>
+        <div className='argument-options-editor d-flex column gap-075'>
+            <div className='argument-options-grid d-flex items-center' aria-hidden='true'>
+                <span className='argument-options-grid__header text-eyebrow flex-1'>Key</span>
                 <span className='argument-options-grid__gap' />
-                <span className='argument-options-grid__header font-size-05 color-muted flex-1'>Label</span>
+                <span className='argument-options-grid__header text-eyebrow flex-1'>Label</span>
                 <span className='argument-options-grid__spacer--action' />
             </div>
 
@@ -185,7 +184,7 @@ const ArgumentOptionsEditor = ({
                 })}
             </ul>
 
-            <div className='volt-container argument-options-footer d-flex column gap-05'>
+            <div className='argument-options-footer d-flex column gap-05'>
                 <Button
                     variant='outline'
                     intent='neutral'

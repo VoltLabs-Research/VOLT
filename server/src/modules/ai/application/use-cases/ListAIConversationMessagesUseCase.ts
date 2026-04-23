@@ -1,14 +1,13 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import { AIMessageDTO, ListAIConversationMessagesInputDTO } from '@modules/ai/application/dtos/ListAIConversationMessagesDTO';
+import AIConversationRepository from '@modules/ai/infrastructure/persistence/mongo/repositories/AIConversationRepository';
+import AIMessageRepository from '@modules/ai/infrastructure/persistence/mongo/repositories/AIMessageRepository';
+import AIMessageDTOMapper from '@modules/ai/utilities/AIMessageDTOMapper';
 import { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Result } from '@shared/domain/port/Result';
-import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
-import { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRepository';
-import { AIMessageDTO, ListAIConversationMessagesInputDTO } from '@modules/ai/application/dtos/ListAIConversationMessagesDTO';
 import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import AIMessageDTOMapper from '@modules/ai/utilities/AIMessageDTOMapper';
-import { inject, injectable } from 'tsyringe';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 interface ListAIConversationMessagesLookup {
     _id: string;
@@ -16,16 +15,16 @@ interface ListAIConversationMessagesLookup {
     userId: string;
 };
 
-@injectable()
+@Singleton()
 export default class ListAIConversationMessagesUseCase implements IUseCase<ListAIConversationMessagesInputDTO, PaginatedResult<AIMessageDTO>, ApplicationError> {
     constructor(
-        @inject(AI_TOKENS.AIConversationRepository)
-        private readonly conversationRepository: IAIConversationRepository,
+        
+        private readonly conversationRepository: AIConversationRepository,
 
-        @inject(AI_TOKENS.AIMessageRepository)
-        private readonly messageRepository: IAIMessageRepository,
+        
+        private readonly messageRepository: AIMessageRepository,
 
-        @inject(AI_TOKENS.AIMessageDTOMapper)
+        
         private readonly messageDTOMapper: AIMessageDTOMapper
     ) {}
 

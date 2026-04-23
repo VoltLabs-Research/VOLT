@@ -1,10 +1,10 @@
+import type { GetSimulationCellByTrajectoryOutputDTO } from '@modules/simulation-cell/application/dtos/GetSimulationCellByTrajectoryDTO';
 import GetSimulationCellByTrajectoryUseCase from '@modules/simulation-cell/application/use-cases/GetSimulationCellByTrajectoryUseCase';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
-import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
-import type { GetSimulationCellByTrajectoryOutputDTO } from '@modules/simulation-cell/application/dtos/GetSimulationCellByTrajectoryDTO';
 import type { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 interface GetPublicCanvasSimulationCellInput {
     trajectoryId: string;
@@ -12,17 +12,17 @@ interface GetPublicCanvasSimulationCellInput {
     userId?: string;
 };
 
-@injectable()
+@Singleton()
 export class GetPublicCanvasSimulationCellUseCase implements IUseCase<
     GetPublicCanvasSimulationCellInput,
     GetSimulationCellByTrajectoryOutputDTO,
     ApplicationError
 > {
     constructor(
-        @inject(TrajectoryReadAccessService)
+        
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
-        @inject(GetSimulationCellByTrajectoryUseCase)
+        
         private readonly getSimulationCellByTrajectoryUseCase: GetSimulationCellByTrajectoryUseCase
     ) {}
 

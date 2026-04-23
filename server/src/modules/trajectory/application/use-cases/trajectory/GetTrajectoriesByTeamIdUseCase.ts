@@ -1,24 +1,22 @@
-import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { GetTrajectoriesByTeamIdInputDTO, GetTrajectoriesByTeamIdOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoriesByTeamIdDTO';
 import { resolveTrajectoryPreviewAvailability } from '@modules/trajectory/utilities/trajectory/resolve-trajectory-preview-availability';
-import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 
-import { injectable, inject } from 'tsyringe';
+import { injectable } from 'tsyringe';
 
-import type { IRasterStorage } from '@modules/raster/domain/port/IRasterStorage';
+import { RasterStorageService } from '@modules/raster/infrastructure/services/RasterStorageService';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 
 @injectable()
 export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTrajectoriesByTeamIdInputDTO, GetTrajectoriesByTeamIdOutputDTO, ApplicationError> {
     constructor(
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepo: ITrajectoryRepository,
-        @inject(RASTER_TOKENS.RasterStorage)
-        private readonly rasterStorage: IRasterStorage
+        
+        private readonly trajectoryRepo: TrajectoryRepository,
+        
+        private readonly rasterStorage: RasterStorageService
     ) {}
 
     async execute(input: GetTrajectoriesByTeamIdInputDTO): Promise<Result<GetTrajectoriesByTeamIdOutputDTO, ApplicationError>> {

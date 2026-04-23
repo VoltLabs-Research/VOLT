@@ -1,24 +1,22 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import { GroupAdminAction, UpdateGroupAdminsInputDTO, UpdateGroupAdminsOutputDTO } from '@modules/chat/application/dtos/chat/UpdateGroupAdminsDTO';
-import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import ChatRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/chat/ChatRepository';
 import { isParticipant } from '@modules/chat/utilities/chat/isParticipant';
 import { resolveGroupChat } from '@modules/chat/utilities/chat/resolveGroupChat';
-import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
-import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
-import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
+import { IUseCase } from '@shared/application/IUseCase';
+import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
+import { Result } from '@shared/domain/port/Result';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export class UpdateGroupAdminsUseCase implements IUseCase<UpdateGroupAdminsInputDTO, UpdateGroupAdminsOutputDTO, ApplicationError> {
     constructor(
-        @inject(CHAT_TOKENS.ChatRepository)
-        private chatRepo: IChatRepository,
-        @inject(SOCKET_TOKENS.SocketEmitter)
-        private socketEmitter: ISocketEmitter
+        
+        private chatRepo: ChatRepository,
+        
+        private socketEmitter: SocketIOEmitter
     ){}
 
     async execute(input: UpdateGroupAdminsInputDTO): Promise<Result<UpdateGroupAdminsOutputDTO, ApplicationError>> {

@@ -209,6 +209,11 @@ export const protectedRoutes: RouteConfig[] = [
         loader: () => import('@/modules/cluster/components/ClusterOnboardingPage')
     },
     {
+        path: '/onboarding/cluster/provisioning',
+        title: 'Provisioning Demo',
+        loader: () => import('@/modules/onboarding/components/templates/DemoProvisioningPage')
+    },
+    {
         path: '/dashboard/clusters',
         title: 'Clusters',
         loader: () => import('@/modules/cluster/components/ClustersListing')
@@ -258,7 +263,7 @@ export const protectedRoutes: RouteConfig[] = [
         requiredPermissions: ['container:read'],
         children: [
             {
-                path: 'overview',
+                path: '',
                 title: 'Container Overview',
                 loader: () => import('@/modules/container/components/ContainerDetailsRoutes/container-overview-route'),
                 index: true
@@ -390,17 +395,14 @@ export const guestRoutes: RouteConfig[] = [
 export const optionalAuthRoutes: RouteConfig[] = [
     {
         path: '/canvas/glb',
-        title: 'GLB Viewer',
         loader: () => import('@/modules/canvas/components/CanvasPage')
     },
     {
         path: '/canvas/:trajectoryId',
-        title: 'Canvas',
         loader: () => import('@/modules/canvas/components/CanvasPage')
     },
     {
         path: '/canvas/:trajectoryId/workspace/:ownerId',
-        title: 'Canvas',
         loader: () => import('@/modules/canvas/components/CanvasPage')
     }
 ];

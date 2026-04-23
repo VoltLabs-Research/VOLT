@@ -624,7 +624,6 @@
     padding: 0.5rem;
     font-size: 0.75rem;
     line-height: 1.5;
-    font-family: monospace;
     color: var(--color-text-secondary);
     max-height: 100%;
     scrollbar-width: thin;

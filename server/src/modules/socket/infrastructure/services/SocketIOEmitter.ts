@@ -1,13 +1,14 @@
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { Server, Socket } from 'socket.io';
-import { injectable } from 'tsyringe';
+
 import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import logger from '@shared/infrastructure/logger';
 import type { ISocketEmitterRuntime } from '@modules/socket/infrastructure/contracts/ISocketEmitterRuntime';
+import logger from '@shared/infrastructure/logger';
 
 /**
  * Handles all event emission through the Socket.IO server.
  */
-@injectable()
+@Singleton()
 export default class SocketIOEmitter implements ISocketEmitter, ISocketEmitterRuntime{
     private io?: Server;
     private sockets: Map<string, Socket> = new Map();

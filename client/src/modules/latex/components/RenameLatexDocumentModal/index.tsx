@@ -1,6 +1,7 @@
-import Modal, { closeModal } from '@/shared/presentation/components/Modal';
+import { Modal, closeModal } from '@/shared/presentation/primitives';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
+import { Box } from '@/shared/presentation/primitives';
 import { RENAME_LATEX_DOCUMENT_MODAL_ID } from '@/modules/latex/hooks/use-latex-documents-listing';
 import { useCallback, useEffect, useState } from 'react';
 import type { ModalFooterAction } from '@/shared/presentation/components/ModalFooterActions';
@@ -79,7 +80,7 @@ const RenameLatexDocumentModal = ({ document, onSubmit, onClose }: RenameLatexDo
             onClose={handleClose}
             footer={footer}
         >
-            <div className='volt-container p-1-5'>
+            <Box p='1-5'>
                 <FormFieldRHF
                     label='Document title'
                     placeholder='Enter document title'
@@ -89,7 +90,7 @@ const RenameLatexDocumentModal = ({ document, onSubmit, onClose }: RenameLatexDo
                     inputProps={inputProps}
                     error={error}
                 />
-            </div>
+            </Box>
         </Modal>
     );
 };

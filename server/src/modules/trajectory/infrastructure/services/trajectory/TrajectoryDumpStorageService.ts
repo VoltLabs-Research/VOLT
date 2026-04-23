@@ -2,24 +2,24 @@ import { SYS_BUCKETS } from '@core/config/minio';
 import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
-import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import {
     buildTrajectoryDumpObjectName,
     createZstdDecompressionStream
 } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 import { IStorageService } from '@shared/domain/port/IStorageService';
-import { ITempFileService } from '@shared/domain/port/ITempFileService';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
+import TempFileService from '@shared/infrastructure/services/TempFileService';
 import { createReadStream, createWriteStream } from 'node:fs';
-import { Readable } from 'node:stream';
-import { pipeline } from 'node:stream/promises';
-import { injectable, inject } from 'tsyringe';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
+import { inject } from 'tsyringe';
 
-@injectable()
+@Singleton()
 export default class TrajectoryDumpStorageService implements ITrajectoryDumpStorageService {
     private static readonly CACHE_TTL_MS = 30 * 60 * 1000;
     private readonly cacheDir: string;
@@ -29,13 +29,13 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
 
-        @inject(SHARED_TOKENS.TempFileService)
-        private readonly tempFileService: ITempFileService,
+        
+        private readonly tempFileService: TempFileService,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepo: ITrajectoryRepository,
+        
+        private readonly trajectoryRepo: TrajectoryRepository,
 
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
+        
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {
         this.cacheDir = this.tempFileService.getDirPath('trajectory-cache');

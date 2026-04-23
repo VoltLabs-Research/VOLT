@@ -104,7 +104,7 @@ const FileUploaderContainer = ({
     const dragMessage = isDraggingOver ? 'Drop files to upload them.' : '';
 
     const dropZone = (
-        <div ref={dropRef} onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDropZoneDragLeave} className={`volt-container ${containerClasses}`} aria-label='File upload drop zone' role='region' aria-live='polite' aria-atomic='true'>
+        <div ref={dropRef} onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDropZoneDragLeave} className={containerClasses} aria-label='File upload drop zone' role='region' aria-live='polite' aria-atomic='true'>
             <span className='file-uploader-live-region'>{dragMessage}</span>
         </div>
     );

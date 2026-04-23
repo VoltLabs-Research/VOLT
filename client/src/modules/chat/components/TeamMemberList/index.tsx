@@ -1,6 +1,6 @@
 import { cn } from '@/shared/utils';
 import { IoCheckmark } from 'react-icons/io5';
-import Avatar from '@/shared/presentation/components/Avatar';
+import { Box, ListRow, Row, Stack, Text, Avatar } from '@/shared/presentation/primitives';
 import type { User } from '@/modules/auth/api/entities/user';
 import './TeamMemberList.css';
 
@@ -17,45 +17,42 @@ const TeamMemberList = ({ members, selectedIds, currentUserId, onToggle }: TeamM
     const renderMember = (member: User) => {
         const isSelected = selectedIds.includes(member._id);
 
+        const leading = (
+            <Row gap='05'>
+                <Box display='flex' shrink='0' transition='normal' className='flex-center team-member-item-checkbox'>
+                    {isSelected && <IoCheckmark size={14} className='color-white' />}
+                </Box>
+                <Avatar user={member} size='sm' />
+            </Row>
+        );
+
         return (
-            <button
-                type='button'
+            <ListRow
                 key={member._id}
-                className={cn('d-flex items-center gap-075 list-item-hoverable team-member-item', isSelected && 'selected')}
+                leading={leading}
+                title={`${member.firstName} ${member.lastName}`}
+                subtitle={member.email}
                 role='checkbox'
                 aria-checked={isSelected}
+                selected={isSelected}
                 onClick={() => onToggle(member._id)}
-            >
-                <div className='volt-container d-flex flex-center team-member-item-checkbox transition-normal f-shrink-0'>
-                    {isSelected && <IoCheckmark size={14} className='color-white' />}
-                </div>
-
-                <Avatar user={member} size='sm' />
-
-                <div className='volt-container d-flex column flex-1 team-member-item-info'>
-                    <p className='volt-text font-size-3 font-weight-5 color-primary team-member-item-name text-truncate'>
-                        {member.firstName} {member.lastName}
-                    </p>
-                    <p className='volt-text font-size-2 color-muted team-member-item-email text-truncate'>
-                        {member.email}
-                    </p>
-                </div>
-            </button>
+                className={cn('team-member-item', isSelected && 'selected')}
+            />
         );
     };
 
     if (filteredMembers.length === 0) {
         return (
-            <div className='volt-container d-flex flex-center p-2 text-center'>
-                <p className='volt-text font-size-2 color-muted'>No team members available</p>
-            </div>
+            <Box display='flex' p='2' textAlign='center' className='flex-center'>
+                <Text as='p' size='md' tone='muted'>No team members available</Text>
+            </Box>
         );
     }
 
     return (
-        <div className='volt-container d-flex column gap-025 y-auto team-member-list'>
+        <Stack gap='025' overflow='y-auto' className='team-member-list'>
             {filteredMembers.map(renderMember)}
-        </div>
+        </Stack>
     );
 };
 

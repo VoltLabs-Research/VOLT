@@ -1,3 +1,4 @@
+import { CloseButton } from '@/shared/presentation/primitives';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReactFlow, useViewport } from '@xyflow/react';
@@ -7,7 +8,6 @@ import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import NodeEditor from '@/modules/plugin/components/plugin/NodeEditor';
 import DynamicIcon from '@/shared/presentation/components/DynamicIcon';
-import CloseButton from '@/shared/presentation/components/CloseButton';
 const PANEL_WIDTH = 400;
 const PANEL_MARGIN = 16;
 const PANEL_MIN_HEIGHT = 220;
@@ -107,11 +107,11 @@ const FloatingNodePanel = () => {
                     key={liveSelectedNode.id}
                     onClick={(event) => event.stopPropagation()}
                 >
-                    <div className='volt-container d-flex items-center gap-075 floating-node-panel-header p-1'>
-                        <div className='volt-container d-flex flex-center floating-node-panel-icon radius-sm color-secondary'>
+                    <div className='d-flex items-center gap-075 floating-node-panel-header p-1'>
+                        <div className='d-flex flex-center floating-node-panel-icon radius-sm color-secondary'>
                             <DynamicIcon iconName={config.icon} />
                         </div>
-                        <h3 className='volt-title font-size-3 font-weight-6 flex-1'>
+                        <h3 className='font-size-3 font-weight-6 flex-1'>
                             {config.label}
                         </h3>
                         <CloseButton onClick={handleClose} />

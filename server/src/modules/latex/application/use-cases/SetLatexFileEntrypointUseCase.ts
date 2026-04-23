@@ -1,13 +1,12 @@
-import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
-import type { SetLatexFileEntrypointInputDTO } from '@modules/latex/application/dtos/SetLatexFileEntrypointDTO';
 import type { LatexFileDTO } from '@modules/latex/application/dtos/LatexFileDTO';
+import type { SetLatexFileEntrypointInputDTO } from '@modules/latex/application/dtos/SetLatexFileEntrypointDTO';
+import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
+import LatexFileRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexFileRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
-import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 /**
  * Sets the entrypoint for a LaTeX document.
@@ -16,14 +15,14 @@ import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFile
  * before marking the target file as the new entrypoint. This guarantees
  * exactly one entrypoint per document at all times.
  */
-@injectable()
+@Singleton()
 export class SetLatexFileEntrypointUseCase implements IUseCase<SetLatexFileEntrypointInputDTO, LatexFileDTO, ApplicationError> {
     constructor(
-        @inject(LATEX_TOKENS.LatexDocumentRepository)
-        private readonly latexDocumentRepository: ILatexDocumentRepository,
+        
+        private readonly latexDocumentRepository: LatexDocumentRepository,
 
-        @inject(LATEX_TOKENS.LatexFileRepository)
-        private readonly latexFileRepository: ILatexFileRepository
+        
+        private readonly latexFileRepository: LatexFileRepository
     ) {}
 
     async execute(input: SetLatexFileEntrypointInputDTO): Promise<Result<LatexFileDTO, ApplicationError>> {

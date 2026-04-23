@@ -1,12 +1,12 @@
+import type { ExtractedFile, IFileExtractorService, UploadedFile } from '@shared/domain/port/IFileExtractorService';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import logger from '@shared/infrastructure/logger';
 import { createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
-import { injectable } from 'tsyringe';
-import unzipper from 'unzipper';
 import pLimit from 'p-limit';
-import logger from '@shared/infrastructure/logger';
-import type { ExtractedFile, IFileExtractorService, UploadedFile } from '@shared/domain/port/IFileExtractorService';
+import unzipper from 'unzipper';
 
 /**
  * How many ZIP entries to decompress in parallel.
@@ -42,7 +42,7 @@ const resolvePathWithinBase = (baseDir: string, targetPath: string): string | nu
     return resolvedTarget;
 };
 
-@injectable()
+@Singleton()
 export default class FileExtractorService implements IFileExtractorService {
     /**
      * Extracts uploaded files (single or ZIP) to a working directory.

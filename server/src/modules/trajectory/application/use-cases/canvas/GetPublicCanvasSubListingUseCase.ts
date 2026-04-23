@@ -1,13 +1,12 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
+import type { GetSubListingOutputDTO } from '@modules/plugin/application/dtos/listing-row/GetSubListingDTO';
 import { GetSubListingUseCase } from '@modules/plugin/application/use-cases/listing-row/GetSubListingUseCase';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
-import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import type { GetSubListingOutputDTO } from '@modules/plugin/application/dtos/listing-row/GetSubListingDTO';
 import type { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 interface GetPublicCanvasSubListingInput {
     trajectoryId: string;
@@ -20,19 +19,19 @@ interface GetPublicCanvasSubListingInput {
     userId?: string;
 };
 
-@injectable()
+@Singleton()
 export class GetPublicCanvasSubListingUseCase implements IUseCase<
     GetPublicCanvasSubListingInput,
     GetSubListingOutputDTO
 > {
     constructor(
-        @inject(TrajectoryReadAccessService)
+        
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository,
+        
+        private readonly analysisRepository: AnalysisRepository,
 
-        @inject(GetSubListingUseCase)
+        
         private readonly getSubListingUseCase: GetSubListingUseCase
     ) {}
 

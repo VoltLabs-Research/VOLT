@@ -1,10 +1,9 @@
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import type { ITempStorageLifecycleService } from '@shared/domain/port/ITempStorageLifecycleService';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
+import TempFileService from '@shared/infrastructure/services/TempFileService';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { ITempFileService } from '@shared/domain/port/ITempFileService';
-import type { ITempStorageLifecycleService } from '@shared/domain/port/ITempStorageLifecycleService';
 
 interface TempStoragePolicyMatcher {
     value: string;
@@ -40,15 +39,15 @@ const toMilliseconds = (value: number | bigint): number => {
 /**
  * Manages startup and periodic cleanup for known temp-storage producers.
  */
-@injectable()
+@Singleton()
 export default class TempStorageLifecycleService implements ITempStorageLifecycleService {
     private readonly tempRootPath: string;
     private readonly policies: TempStorageCleanupPolicy[];
     private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
     constructor(
-        @inject(SHARED_TOKENS.TempFileService)
-        private readonly tempFileService: ITempFileService
+        
+        private readonly tempFileService: TempFileService
     ) {
         this.tempRootPath = this.tempFileService.rootPath;
         this.policies = [

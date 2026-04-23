@@ -1,27 +1,27 @@
+import { SYS_BUCKETS } from '@core/config/minio';
+import { ErrorCodes } from '@core/constants/error-codes';
+import type { RasterFrameResult } from '@modules/raster/domain/port/IRasterFrameReader';
 import {
     getAnalysisRasterFrameObjectName,
     getAnalysisRasterPreviewsPrefix,
     getRasterFrameObjectName,
     getTrajectoryRasterPreviewsPrefix
 } from '@modules/raster/utilities/raster-storage-paths';
-import { SYS_BUCKETS } from '@core/config/minio';
-import { ErrorCodes } from '@core/constants/error-codes';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
-import type { RasterFrameResult } from '@modules/raster/domain/port/IRasterFrameReader';
-import type { IRasterStorage } from '@modules/raster/domain/port/IRasterStorage';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import logger from '@shared/infrastructure/logger';
+import { inject } from 'tsyringe';
 
-@injectable()
-export class RasterStorageService implements IRasterStorage {
+@Singleton()
+export class RasterStorageService {
     constructor(
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
 
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
+        
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 

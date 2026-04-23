@@ -1,9 +1,9 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import { createGetByIdController } from '@shared/infrastructure/http/controllers/createReadController';
 
 const GetTeamMemberByIdController = createGetByIdController({
-    repositoryToken: TEAM_TOKENS.TeamMemberRepository,
+    repositoryToken: TeamMemberRepository,
     paramKey: 'teamMemberId',
     notFoundCode: ErrorCodes.TEAM_MEMBER_NOT_FOUND,
     notFoundMessage: 'TeamMember not found'

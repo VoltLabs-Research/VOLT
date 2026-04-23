@@ -5,7 +5,7 @@ import useParticleFilter, {
     FilterAction,
     FilterOperator
 } from '../../hooks/use-particle-filter';
-import Button from '@/shared/presentation/components/Button';
+import { Button, Stack, Row, Text } from '@/shared/presentation/primitives';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { ParticleFilterCombinator } from '@/modules/trajectory/api/dtos/particle-filter';
 
@@ -82,9 +82,9 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
         const isRemovable = conditions.length > 1;
 
         return (
-            <div key={condition.id} className='volt-container canvas-filter-condition d-flex column gap-05'>
-                <div className='volt-container d-flex items-center content-between gap-05'>
-                    <span className='font-size-05 color-text-secondary'>Condition {index + 1}</span>
+            <Stack key={condition.id} gap='05' className='canvas-filter-condition'>
+                <Row justify='between' gap='05'>
+                    <Text size='xs' className='color-text-secondary'>Condition {index + 1}</Text>
                     {isRemovable && (
                         <Button
                             variant='solid'
@@ -97,7 +97,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
                             Remove
                         </Button>
                     )}
-                </div>
+                </Row>
 
                 <FormFieldRHF
                     fieldKey={`property-${condition.id}`}
@@ -138,7 +138,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
                     inputProps={{ inputMode: 'decimal' }}
                     variant='canvas'
                 />
-            </div>
+            </Stack>
         );
     };
 
@@ -148,13 +148,13 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
         }
 
         return (
-            <div className='volt-container canvas-filter-panel d-flex column gap-05'>
-                <div className='volt-container canvas-filter-preview radius-sm d-flex column gap-05'>
-                    <div className='volt-container d-flex content-between'>
+            <Stack gap='05' className='canvas-filter-panel'>
+                <Stack gap='05' radius='sm' className='canvas-filter-preview'>
+                    <Row justify='between'>
                         <span>Selection</span>
                         <span className='color-primary'>{percentage}% of total</span>
-                    </div>
-                </div>
+                    </Row>
+                </Stack>
 
                 <FormFieldRHF
                     fieldKey='action'
@@ -166,9 +166,9 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
                     variant='canvas'
                 />
 
-                {error && <div className='volt-container canvas-filter-error font-size-05'>{error}</div>}
+                {error && <div className='canvas-filter-error font-size-05'>{error}</div>}
 
-                <div className='volt-container d-flex column gap-025'>
+                <Stack gap='025'>
                     <Button
                         isLoading={isApplying}
                         variant='solid'
@@ -194,13 +194,13 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
                     >
                         Cancel
                     </Button>
-                </div>
-            </div>
+                </Stack>
+            </Stack>
         );
     };
 
     return (
-        <div className='volt-container canvas-filter-panel d-flex column gap-05'>
+        <Stack gap='05' className='canvas-filter-panel'>
             {!previewResult && (
                 <>
                     <FormFieldRHF
@@ -213,9 +213,9 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
                         variant='canvas'
                     />
 
-                    <div className='volt-container d-flex column gap-05'>
+                    <Stack gap='05'>
                         {conditions.map(renderConditionRow)}
-                    </div>
+                    </Stack>
 
                     <Button
                         variant='solid'
@@ -229,7 +229,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
                         Add Condition
                     </Button>
 
-                    {error && <div className='volt-container canvas-filter-error font-size-05'>{error}</div>}
+                    {error && <div className='canvas-filter-error font-size-05'>{error}</div>}
 
                     <Button
                         isLoading={isLoadingPreview}
@@ -248,7 +248,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
             )}
 
             {renderPreviewSection()}
-        </div>
+        </Stack>
     );
 };
 

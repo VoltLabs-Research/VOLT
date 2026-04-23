@@ -1,29 +1,29 @@
-import { getTrajectoryStorageCleanupTargets } from '@modules/trajectory/utilities/trajectory/storage-cleanup-prefixes';
-import type { TrajectoryStorageCleanupTarget } from '@modules/trajectory/utilities/trajectory/storage-cleanup-prefixes';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import ClusterTransferJobRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/ClusterTransferJobRepository';
+import StoragePlacementRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/StoragePlacementRepository';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import TrajectoryDeletedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryDeletedEvent';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
+import type { TrajectoryStorageCleanupTarget } from '@modules/trajectory/utilities/trajectory/storage-cleanup-prefixes';
+import { getTrajectoryStorageCleanupTargets } from '@modules/trajectory/utilities/trajectory/storage-cleanup-prefixes';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
-import type ClusterTransferJobRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/ClusterTransferJobRepository';
-import type StoragePlacementRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/StoragePlacementRepository';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import logger from '@shared/infrastructure/logger';
+import { inject } from 'tsyringe';
 
-@injectable()
+@Subscribe('trajectory.deleted')
 export default class TrajectoryDeletedStorageCleanupEventHandler implements IEventHandler<TrajectoryDeletedEvent> {
     constructor(
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
 
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
+        
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
 
-        @inject(TEAM_CLUSTER_TOKENS.StoragePlacementRepository)
+        
         private readonly storagePlacementRepository: StoragePlacementRepository,
 
-        @inject(TEAM_CLUSTER_TOKENS.ClusterTransferJobRepository)
+        
         private readonly clusterTransferJobRepository: ClusterTransferJobRepository
     ) {}
 

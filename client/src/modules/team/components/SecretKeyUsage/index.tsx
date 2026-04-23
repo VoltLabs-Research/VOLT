@@ -1,13 +1,12 @@
+import { AsyncBoundary, Button, Skeleton, StatCard, Tag } from '@/shared/presentation/primitives';
 import { createTooltipRenderer } from '@/modules/team/components/secret-key/shared/chart-tooltip-renderer';
 import { CHART_COLORS } from '@/modules/team/utilities/secret-key/chart-helpers';
 import useSecretKeyUsage from '@/modules/team/hooks/secret-key/use-secret-key-usage';
 import ChartContainer from '@/shared/presentation/components/ChartContainer';
 import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
-import Button from '@/shared/presentation/components/Button';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { formatDistanceToNow } from 'date-fns';
-import Skeleton from '@/shared/presentation/components/Skeleton';
 import { ArrowLeft, Activity, BarChart3, PieChart as PieChartIcon, List, Clock, Zap, CheckCircle, Hash } from 'lucide-react';
 import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -151,65 +150,72 @@ export default function SecretKeyUsage() {
         navigate(-1);
     };
 
-    if (isLoading) {
-        return (
-            <div className='volt-container secret-key-page vh-max color-primary'>
-                <div className='volt-container secret-key-page-main d-flex column gap-2 w-max'>
-                    <div className='volt-container d-flex items-center gap-1'>
-                        <Skeleton variant='circular' width={24} height={24} />
-                        <Skeleton variant='text' width={300} height={32} />
-                    </div>
-                    <div className='volt-container secret-key-page-cards gap-1'>
-                        {[...Array(4)].map((_, i) => (
-                            <div key={i} className='volt-container secret-key-page-card radius-lg transition-normal'>
-                                <Skeleton variant='text' width={100} height={16} />
-                                <Skeleton variant='rectangular' width={80} height={40} style={{ borderRadius: 4, marginTop: '0.5rem' }} />
-                            </div>
-                        ))}
-                    </div>
-                    <div className='volt-container secret-key-page-charts'>
-                        {[...Array(4)].map((_, i) => (
-                            <Skeleton key={i} variant='rectangular' width='100%' height={300} style={{ borderRadius: 8 }} />
-                        ))}
-                    </div>
+    const loadingView = (
+        <div className='secret-key-page vh-max color-primary'>
+            <div className='secret-key-page-main d-flex column gap-2 w-max'>
+                <div className='d-flex items-center gap-1'>
+                    <Skeleton variant='circular' width={24} height={24} />
+                    <Skeleton variant='text' width={300} height={32} />
+                </div>
+                <div className='secret-key-page-cards gap-1'>
+                    {[...Array(4)].map((_, i) => (
+                        <div key={i} className='secret-key-page-card radius-lg transition-normal'>
+                            <Skeleton variant='text' width={100} height={16} />
+                            <Skeleton variant='rectangular' width={80} height={40} style={{ borderRadius: 4, marginTop: '0.5rem' }} />
+                        </div>
+                    ))}
+                </div>
+                <div className='secret-key-page-charts'>
+                    {[...Array(4)].map((_, i) => (
+                        <Skeleton key={i} variant='rectangular' width='100%' height={300} style={{ borderRadius: 8 }} />
+                    ))}
                 </div>
             </div>
-        );
-    }
+        </div>
+    );
 
-    if (error && !usage) {
-        return (
-            <div className='volt-container secret-key-page vh-max color-primary'>
-                <div className='volt-container secret-key-page-main d-flex column gap-2 w-max'>
-                    <div className='volt-container d-flex items-center gap-1'>
-                        {backButton(handleBack)}
-                        <h3 className='volt-title font-size-5 font-weight-6'>Key Usage</h3>
-                    </div>
-                    <RecoveryState
-                        title='Unable to load usage data'
-                        description={error instanceof Error ? error.message : 'Something went wrong while loading usage data for this key.'}
-                        tone={RecoveryStateTone.Error}
-                        retryLabel='Try again'
-                        onRetry={() => refetch()}
-                    />
+    const errorView = (err: unknown) => (
+        <div className='secret-key-page vh-max color-primary'>
+            <div className='secret-key-page-main d-flex column gap-2 w-max'>
+                <div className='d-flex items-center gap-1'>
+                    {backButton(handleBack)}
+                    <h3 className='font-size-5 font-weight-6'>Key Usage</h3>
                 </div>
+                <RecoveryState
+                    title='Unable to load usage data'
+                    description={err instanceof Error ? err.message : 'Something went wrong while loading usage data for this key.'}
+                    tone={RecoveryStateTone.Error}
+                    retryLabel='Try again'
+                    onRetry={() => refetch()}
+                />
             </div>
-        );
-    }
+        </div>
+    );
 
-    if (!usage) {
-        return (
-            <div className='volt-container secret-key-page vh-max color-primary'>
-                <div className='volt-container secret-key-page-main d-flex column gap-2 w-max'>
-                    <div className='volt-container d-flex items-center gap-1'>
-                        {backButton(handleBack)}
-                        <h3 className='volt-title font-size-5 font-weight-6'>Key Usage</h3>
-                    </div>
-                    <div className='volt-container d-flex flex-center p-3'>
-                        <p className='volt-text color-muted font-size-3'>No usage data available for this key.</p>
-                    </div>
+    const emptyView = (
+        <div className='secret-key-page vh-max color-primary'>
+            <div className='secret-key-page-main d-flex column gap-2 w-max'>
+                <div className='d-flex items-center gap-1'>
+                    {backButton(handleBack)}
+                    <h3 className='font-size-5 font-weight-6'>Key Usage</h3>
+                </div>
+                <div className='d-flex flex-center p-3'>
+                    <p className='color-muted font-size-3'>No usage data available for this key.</p>
                 </div>
             </div>
+        </div>
+    );
+
+    if (isLoading || (error && !usage) || !usage) {
+        return (
+            <AsyncBoundary
+                state={{ loading: isLoading, error: error && !usage ? error : undefined, empty: !usage }}
+                loading={loadingView}
+                error={errorView}
+                empty={emptyView}
+            >
+                {null}
+            </AsyncBoundary>
         );
     }
 
@@ -240,33 +246,31 @@ export default function SecretKeyUsage() {
     ];
 
     return (
-        <div className='volt-container secret-key-page vh-max color-primary'>
-            <div className='volt-container secret-key-page-main d-flex column gap-2 w-max'>
-                <div className='volt-container d-flex column gap-05'>
-                    <div className='volt-container d-flex items-center gap-1'>
+        <div className='secret-key-page vh-max color-primary'>
+            <div className='secret-key-page-main d-flex column gap-2 w-max'>
+                <div className='d-flex column gap-05'>
+                    <div className='d-flex items-center gap-1'>
                         {backButton(handleBack)}
-                        <h3 className='volt-title font-size-5 font-weight-6'>{maskedName}</h3>
+                        <h3 className='font-size-5 font-weight-6'>{maskedName}</h3>
                     </div>
-                    <p className='volt-text color-muted font-size-2' style={{ marginLeft: '2rem' }}>
+                    <p className='color-muted font-size-2' style={{ marginLeft: '2rem' }}>
                         {usage.stats.totalRequests.toLocaleString()} total requests
                     </p>
                 </div>
 
-                <div className='volt-container secret-key-page-cards gap-1'>
+                <div className='secret-key-page-cards gap-1'>
                     {cards.map((card) => (
-                        <div key={card.title} className='volt-container secret-key-page-card radius-lg transition-normal glass-bg'>
-                            <div className='volt-container d-flex items-center gap-05 mb-075'>
-                                <card.icon className='color-muted-foreground' style={{ width: 16, height: 16 }} />
-                                <span className='font-size-2 color-secondary'>{card.title}</span>
-                            </div>
-                            <span className={`secret-key-page-card-value ${card.smallText ? 'font-size-4' : 'font-size-6'} font-weight-6 color-primary`}>
-                                {card.value}
-                            </span>
-                        </div>
+                        <StatCard
+                            key={card.title}
+                            icon={<card.icon size={16} />}
+                            label={card.title}
+                            value={card.value}
+                            className={`glass-bg${card.smallText ? ' secret-key-page-card--small' : ''}`}
+                        />
                     ))}
                 </div>
 
-                <div className='volt-container secret-key-page-charts'>
+                <div className='secret-key-page-charts'>
                     <ChartContainer
                         icon={Activity}
                         title='Hourly Requests'
@@ -387,7 +391,7 @@ export default function SecretKeyUsage() {
                             { label: 'Shown', value: Math.min(usage.recentRequests.length, 20) }
                         ]}
                     >
-                        <div className="volt-container" style={{ overflowX: 'auto', maxHeight: 250 }}>
+                        <div className='x-auto' style={{ maxHeight: 250 }}>
                             <table className='secret-key-page-table'>
                                 <thead>
                                     <tr>
@@ -402,17 +406,19 @@ export default function SecretKeyUsage() {
                                     {usage.recentRequests.slice(0, 20).map((req, i) => (
                                         <tr key={i}>
                                             <td>
-                                                <span
-                                                    className='secret-key-usage-method-badge'
+                                                <Tag
+                                                    size='xs'
+                                                    shape='square'
+                                                    className='secret-key-usage-method-badge font-mono'
                                                     style={{
                                                         color: METHOD_COLORS[req.method] || 'var(--color-text-muted)',
                                                         background: `color-mix(in srgb, ${METHOD_COLORS[req.method] || 'var(--color-text-muted)'} 12%, transparent)`
                                                     }}
                                                 >
                                                     {req.method}
-                                                </span>
+                                                </Tag>
                                             </td>
-                                            <td className='font-family-mono font-size-1 color-secondary text-truncate' style={{ maxWidth: 200 }} title={req.path}>
+                                            <td className='font-mono font-size-1 color-secondary text-truncate' style={{ maxWidth: 200 }} title={req.path}>
                                                 {req.path}
                                             </td>
                                             <td>
@@ -420,7 +426,7 @@ export default function SecretKeyUsage() {
                                                     {req.statusCode}
                                                 </span>
                                             </td>
-                                            <td className='font-family-mono font-size-1 color-muted'>
+                                            <td className='font-mono font-size-1 color-muted'>
                                                 {req.responseTime.toFixed(0)}ms
                                             </td>
                                             <td className='font-size-1 color-muted'>

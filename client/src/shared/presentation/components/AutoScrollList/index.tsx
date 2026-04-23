@@ -157,7 +157,7 @@ const AutoScrollList = <T,>({
 
     if (isLoading && items.length === 0) {
         return (
-            <div className={`volt-container ${joinClasses(listClassName, loadingClassName)}`} role='status' aria-live='polite' aria-atomic='true'>
+            <div className={joinClasses(listClassName, loadingClassName)} role='status' aria-live='polite' aria-atomic='true'>
                 {renderLoading}
             </div>
         );
@@ -165,14 +165,14 @@ const AutoScrollList = <T,>({
 
     if (items.length === 0) {
         return (
-            <div className={`volt-container ${joinClasses('d-flex flex-center flex-1', className, emptyClassName)}`} role='status' aria-live='polite' aria-atomic='true'>
+            <div className={joinClasses('d-flex flex-center flex-1', className, emptyClassName)} role='status' aria-live='polite' aria-atomic='true'>
                 {renderEmpty}
             </div>
         );
     }
 
     return (
-        <div ref={containerRef} className={`volt-container ${listClassName}`} onScroll={handleScroll} role='log' aria-live='polite' aria-relevant='additions text' aria-atomic='false' aria-busy={isLoading} aria-label='Auto-updating content'>
+        <div ref={containerRef} className={listClassName} onScroll={handleScroll} role='log' aria-live='polite' aria-relevant='additions text' aria-atomic='false' aria-busy={isLoading} aria-label='Auto-updating content'>
             {hasMore ? loadMoreIndicator : null}
             {items.map((item, index) => (
                 <Fragment key={getItemKey ? getItemKey(item, index) : index}>
@@ -180,7 +180,7 @@ const AutoScrollList = <T,>({
                 </Fragment>
             ))}
             {renderAfter}
-            <div ref={bottomRef} className='volt-container auto-scroll-list-anchor' aria-hidden={hasItems} />
+            <div ref={bottomRef} className='auto-scroll-list-anchor' aria-hidden={hasItems} />
         </div>
     );
 };

@@ -15,7 +15,7 @@ const FormSection = ({ title, description, children, className = '' }: FormSecti
         <section className={rootClassName}>
             {(title || description) && (
                 <header className='form-section-header'>
-                    {title && <h3 className='form-section-title'>{title}</h3>}
+                    {title && <h3 className='form-section-title text-eyebrow'>{title}</h3>}
                     {description && <p className='form-section-description'>{description}</p>}
                 </header>
             )}

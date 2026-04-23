@@ -2,9 +2,7 @@ import usePluginResults from '../../hooks/use-plugin-results';
 
 import PluginAtomsTable from '@/modules/plugin/components/listing/PluginAtomsTable';
 import PluginExposureTable from '@/modules/plugin/components/listing/PluginExposureTable';
-import Button from '@/shared/presentation/components/Button';
-import IconButton from '@/shared/presentation/components/IconButton';
-import Tooltip from '@/shared/presentation/components/Tooltip';
+import { Button, IconButton, Tooltip, Surface, Row, Box, Heading, Text } from '@/shared/presentation/primitives';
 
 import './PluginResultsViewer.css';
 
@@ -23,10 +21,10 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
     const resolvedTeamId = teamId ?? undefined;
 
     return (
-        <div className="volt-container canvas-results-viewer glass-bg d-flex column p-absolute right-1 bottom-1 w-max overflow-hidden">
-            <div className="volt-container canvas-results-header d-flex items-center content-between panel-header-bordered">
-                <h3 className="volt-title font-size-1">{title}</h3>
-                <div className="volt-container d-flex items-center gap-05">
+        <Surface variant='glass' display='flex' direction='column' position='absolute' right='1' bottom='1' width='max' overflow='hidden' className="canvas-results-viewer">
+            <Row justify='between' className="canvas-results-header panel-header-bordered">
+                <Heading level={3} size='sm'>{title}</Heading>
+                <Row gap='05'>
                     {!isEmpty && (
                         <Tooltip content="Download as XLSX">
                             <Button
@@ -45,16 +43,16 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                     <IconButton variant="ghost" size="sm" onClick={close} aria-label="Close results">
                         ×
                     </IconButton>
-                </div>
-            </div>
+                </Row>
+            </Row>
 
             {isEmpty ? (
-                <div className="volt-container d-flex items-center content-center p-05">
-                    <span className="color-muted font-size-1">No listings available for this analysis</span>
-                </div>
+                <Row justify='center' p='05'>
+                    <Text size='sm' tone='muted'>No listings available for this analysis</Text>
+                </Row>
             ) : (
                 <>
-                    <div className="volt-container canvas-results-tabs d-flex items-center overflow-auto" role="tablist">
+                    <Row overflow='auto' className="canvas-results-tabs" role="tablist">
                         {tabs.map((label, index) => (
                             <Button
                                 key={label}
@@ -70,9 +68,9 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                                 {label}
                             </Button>
                         ))}
-                    </div>
+                    </Row>
 
-                    <div className="volt-container canvas-results-content overflow-auto">
+                    <Box overflow='auto' className="canvas-results-content">
                         {activeExposureName && (
                             <PluginExposureTable
                                 key={`${activeExposureName}-${analysisId}`}
@@ -91,10 +89,10 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                                 analysisId={analysisId}
                             />
                         )}
-                    </div>
+                    </Box>
                 </>
             )}
-        </div>
+        </Surface>
     );
 };
 

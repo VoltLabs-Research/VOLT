@@ -1,6 +1,7 @@
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import useUpdateTrajectory from '@/modules/trajectory/hooks/trajectory/use-update-trajectory';
 import EditableTag from '@/shared/presentation/components/EditableTag';
+import { Text } from '@/shared/presentation/primitives';
 import { useCallback } from 'react';
 
 interface EditableTrajectoryNameProps {
@@ -27,9 +28,9 @@ export default function EditableTrajectoryName({
 
     if (!user) {
         return (
-            <p className={`volt-text editable-name ${className}`} title={name}>
+            <Text as='p' className={`editable-name ${className}`} title={name}>
                 {name}
-            </p>
+            </Text>
         );
     }
 

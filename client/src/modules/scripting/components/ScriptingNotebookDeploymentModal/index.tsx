@@ -1,7 +1,8 @@
 import ClusterResourceSelectionPanel from '@/modules/container/components/ClusterResourceSelectionPanel';
 import useTeamClusterResourceSelection from '@/modules/container/hooks/use-team-cluster-resource-selection';
-import Modal, { closeModal } from '@/shared/presentation/components/Modal';
+import { Modal, closeModal } from '@/shared/presentation/primitives';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
+import { Text } from '@/shared/presentation/primitives';
 import {
     clampScriptingNotebookContainerResources,
     getDefaultScriptingNotebookContainerResources
@@ -120,9 +121,9 @@ const ScriptingNotebookDeploymentModal = ({
         >
             <div className='p-1-5 d-flex column gap-1'>
                 {request?.notebook && (
-                    <p className='volt-text font-size-2 color-secondary'>
+                    <Text as='p' size='md' tone='secondary'>
                         Notebook: {request.notebook.title || 'Untitled Notebook'}
-                    </p>
+                    </Text>
                 )}
                 <ClusterResourceSelectionPanel
                     teamClusters={teamClusters}

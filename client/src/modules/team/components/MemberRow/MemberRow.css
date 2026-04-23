@@ -1,9 +1,5 @@
 .member-row {
     background: var(--color-surface-2);
-    transition: background 0.2s ease;
-    border: 1px solid transparent;
-    width: 100%;
-    text-align: left;
 }
 
 .member-row:hover {
@@ -13,12 +9,4 @@
 .member-row:focus-visible {
     outline: none;
     border-color: var(--accent-blue);
-}
-
-.member-role-badge {
-    padding: 0.25rem 0.5rem;
-    background: var(--color-surface-3);
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--color-text-secondary);
 }

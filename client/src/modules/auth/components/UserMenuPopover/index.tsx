@@ -1,9 +1,8 @@
 import './UserMenuPopover.css';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import UserInfo from '@/modules/auth/components/UserInfo';
-import Avatar from '@/shared/presentation/components/Avatar';
-import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
-import Popover from '@/shared/presentation/components/Popover';
+import { PopoverMenuItem } from '@/shared/presentation/primitives';
+import { Avatar, Popover } from '@/shared/presentation/primitives';
 import { HiOutlineDotsVertical } from 'react-icons/hi';
 import { IoCloseOutline, IoSettingsOutline } from 'react-icons/io5';
 import type { ReactNode } from 'react';
@@ -28,7 +27,7 @@ const UserMenuPopover = ({ onSettingsClick, onSignOut, isSigningOut = false, tri
     const defaultTrigger = (
         <button className='user-menu-trigger cursor-pointer'>
             <UserInfo user={user} className='f-grow-1' />
-            <div className='volt-container user-menu-icon color-muted'>
+            <div className='f-shrink-0 color-muted'>
                 <HiOutlineDotsVertical size={16} />
             </div>
         </button>

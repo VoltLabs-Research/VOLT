@@ -4,14 +4,13 @@ import {
 } from '@modules/team-cluster/application/dtos/RegenerateTeamClusterEnrollmentTokenDTO';
 import { requireOwnedTeamCluster } from '@modules/team-cluster/application/utilities/team-cluster-ownership';
 import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import { createEnrollmentToken, hashEnrollmentToken } from '@modules/team-cluster/utilities/enrollmentToken';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
 
 const WAITING_STATUSES = new Set<TeamClusterStatus>([
     TeamClusterStatus.WaitingForConnection,
@@ -20,13 +19,13 @@ const WAITING_STATUSES = new Set<TeamClusterStatus>([
     TeamClusterStatus.Disconnected
 ]);
 
-@injectable()
+@Singleton()
 export default class RegenerateTeamClusterEnrollmentTokenUseCase
     implements IUseCase<RegenerateTeamClusterEnrollmentTokenInputDTO, RegenerateTeamClusterEnrollmentTokenOutputDTO, ApplicationError> {
 
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository
+        
+        private readonly teamClusterRepository: TeamClusterRepository
     ){}
 
     async execute(

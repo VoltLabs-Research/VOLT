@@ -4,7 +4,6 @@ import { isSameScene } from '@/modules/canvas/utilities/scene-identity';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import {
-    CanvasTreeEmptyRow,
     CanvasTreeRow,
     CanvasTreeSkeletonRows,
     MaybeContextMenu
@@ -16,6 +15,7 @@ import {
 } from '../../utilities/tree-menus';
 
 import { Atom, Box } from 'lucide-react';
+import { Stack } from '@/shared/presentation/primitives';
 import type { AnalysisSectionData } from '../../hooks/use-canvas-sidebar-scene';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { CanvasAnalysisStatusEntry } from '../../utilities/analysis-status';
@@ -139,7 +139,7 @@ const SceneCollection = ({
     );
 
     return (
-        <div className="volt-container canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label="Scene hierarchy">
+        <Stack gap='025' overflow='auto' className="canvas-tree-container" role="tree" aria-label="Scene hierarchy">
             {showDefaultScene && (
                 <MaybeContextMenu enabled={!isRasterSelectionMode} id='canvas-ctx-default-scene' options={defaultSceneOptions}>
                     {trajectoryRow}
@@ -182,7 +182,7 @@ const SceneCollection = ({
                     onSelectRasterScene={onSelectRasterScene}
                 />
             ))}
-        </div>
+        </Stack>
     );
 };
 

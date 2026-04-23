@@ -1,11 +1,11 @@
+import { toTeamClusterDTO } from '@modules/team-cluster/application/dtos/TeamClusterDTO';
 import {
     UpdateTeamClusterQueueConcurrencyInputDTO,
     UpdateTeamClusterQueueConcurrencyOutputDTO
 } from '@modules/team-cluster/application/dtos/UpdateTeamClusterQueueConcurrencyDTO';
-import { toTeamClusterDTO } from '@modules/team-cluster/application/dtos/TeamClusterDTO';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { requireOwnedTeamCluster } from '@modules/team-cluster/application/utilities/team-cluster-ownership';
 import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -14,24 +14,22 @@ import {
     ChannelCommands,
     type TeamClusterDaemonQueueConcurrencyApplyPayload
 } from '@shared/infrastructure/contracts/team-cluster';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
-@injectable()
+@Singleton()
 export default class UpdateTeamClusterQueueConcurrencyUseCase
     implements IUseCase<UpdateTeamClusterQueueConcurrencyInputDTO, UpdateTeamClusterQueueConcurrencyOutputDTO, ApplicationError> {
 
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
+        
+        private readonly teamClusterRepository: TeamClusterRepository,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterLifecycleService)
+        
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
 
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 

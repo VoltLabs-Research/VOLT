@@ -12,9 +12,9 @@ interface ChartTooltipProps {
 };
 
 const ChartTooltip = ({ title, items }: ChartTooltipProps) => (
-    <div className='volt-container chart-tooltip' role='tooltip'>
+    <div className='chart-tooltip' role='tooltip'>
         {title && (
-            <p className='volt-text chart-tooltip-title font-size-2 font-weight-6 color-primary'>
+            <p className='chart-tooltip-title font-size-2 font-weight-6 color-primary'>
                 {title}
             </p>
         )}

@@ -1,12 +1,10 @@
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import logger from '@shared/infrastructure/logger';
-import { container } from 'tsyringe';
 import type { ITempStorageLifecycleService } from '@shared/domain/port/ITempStorageLifecycleService';
+import logger from '@shared/infrastructure/logger';
+import TempStorageLifecycleService from '@shared/infrastructure/services/TempStorageLifecycleService';
+import { container } from 'tsyringe';
 
 export const startTempStorageLifecycle = async (
-    tempStorageLifecycleService: ITempStorageLifecycleService = container.resolve(
-        SHARED_TOKENS.TempStorageLifecycleService
-    )
+    tempStorageLifecycleService: ITempStorageLifecycleService = container.resolve(TempStorageLifecycleService)
 ): Promise<void> => {
     try {
         await tempStorageLifecycleService.start();

@@ -1,16 +1,16 @@
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { ValidateWorkflowInputDTO, ValidateWorkflowOutputDTO } from '@modules/plugin/application/dtos/plugin/ValidateWorkflowDTO';
-import { IWorkflowValidatorService, WorkflowValidationMode } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
+import { WorkflowValidationMode } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
+import { WorkflowValidatorService } from '@modules/plugin/infrastructure/services/plugin/WorkflowValidatorService';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
 
-@injectable()
+@Singleton()
 export class ValidateWorkflowUseCase implements IUseCase<ValidateWorkflowInputDTO, ValidateWorkflowOutputDTO> {
     constructor(
-        @inject(PLUGIN_TOKENS.WorkflowValidatorService)
-        private readonly validatorService: IWorkflowValidatorService
+        
+        private readonly validatorService: WorkflowValidatorService
     ){}
 
     async execute(input: ValidateWorkflowInputDTO): Promise<Result<ValidateWorkflowOutputDTO>> {

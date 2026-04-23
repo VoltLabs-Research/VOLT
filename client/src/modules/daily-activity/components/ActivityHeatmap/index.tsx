@@ -1,6 +1,7 @@
 import useActivityHeatmap from '@/modules/daily-activity/hooks/use-activity-heatmap';
 import ActivityTooltipContent from '@/modules/daily-activity/components/ActivityTooltipContent';
-import CursorTooltip from '@/shared/presentation/components/CursorTooltip';
+import { CursorTooltip } from '@/shared/presentation/primitives';
+import { Stack, Box, Row, Text } from '@/shared/presentation/primitives';
 import 'react-calendar-heatmap/dist/styles.css';
 import React from 'react';
 import CalendarHeatmap from 'react-calendar-heatmap';
@@ -47,9 +48,9 @@ const ActivityHeatmap = ({ data, range = 365 }: ActivityHeatmapProps) => {
     } = useActivityHeatmap({ data, range });
 
     return (
-        <div className='volt-container activity-heatmap-root d-flex column gap-075 h-max' role='group' aria-label='Daily activity heatmap'>
-            <div className='volt-container activity-heatmap-scroller'>
-                <div className='volt-container activity-heatmap-container h-max'>
+        <Stack gap='075' height='max' className='activity-heatmap-root' role='group' aria-label='Daily activity heatmap'>
+            <Box className='activity-heatmap-scroller'>
+                <Box height='max' className='activity-heatmap-container'>
                     <CalendarHeatmap
                         startDate={startDate}
                         endDate={today}
@@ -79,17 +80,17 @@ const ActivityHeatmap = ({ data, range = 365 }: ActivityHeatmapProps) => {
                             });
                         }}
                     />
-                </div>
-            </div>
-            <div className='volt-container activity-heatmap-legend d-flex items-center gap-075 flex-wrap'>
+                </Box>
+            </Box>
+            <Row gap='075' wrap className='activity-heatmap-legend'>
                 {legendItems.map((item) => (
-                    <div key={item.className} className='volt-container activity-heatmap-legend-item d-flex items-center gap-05'>
+                    <Row key={item.className} gap='05' className='activity-heatmap-legend-item'>
                         <span className={`activity-heatmap-legend-swatch ${item.className}`} aria-hidden='true' />
-                        <span className='font-size-1 color-secondary'>{item.label}</span>
-                    </div>
+                        <Text size='sm' tone='secondary'>{item.label}</Text>
+                    </Row>
                 ))}
-            </div>
-            <span className='activity-heatmap-helper font-size-1 color-muted'>Focus or hover a day to inspect activity details.</span>
+            </Row>
+            <Text size='sm' tone='muted' className='activity-heatmap-helper'>Focus or hover a day to inspect activity details.</Text>
             <CursorTooltip
                 isOpen={tooltipOpen}
                 x={tooltipPos.x}
@@ -103,7 +104,7 @@ const ActivityHeatmap = ({ data, range = 365 }: ActivityHeatmapProps) => {
                     />
                 )}
             />
-        </div>
+        </Stack>
     );
 };
 

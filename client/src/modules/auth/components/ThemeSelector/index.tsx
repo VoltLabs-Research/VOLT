@@ -76,7 +76,7 @@ const ThemeSelector = () => {
     };
 
     return (
-        <div className='volt-container theme-selector-grid gap-1' role='radiogroup' aria-label='Theme selector'>
+        <div className='theme-selector-grid gap-1' role='radiogroup' aria-label='Theme selector'>
             {options.map((option, index) => (
                 <ThemeCard
                     key={option.theme}

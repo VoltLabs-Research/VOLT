@@ -1,18 +1,17 @@
 import TeamRole, { TeamRoleProps } from '@modules/team/domain/entities/team-role/TeamRole';
-import { ITeamRoleRepository } from '@modules/team/domain/port/team-role/ITeamRoleRepository';
 import teamRoleMapper from '@modules/team/infrastructure/persistence/mongo/mappers/team-role/TeamRoleMapper';
 import TeamRoleModel, { TeamRoleDocument } from '@modules/team/infrastructure/persistence/mongo/models/team-role/TeamRoleModel';
 import { FindOptions, PaginatedResult, PaginationOptions } from '@shared/domain/port/IBaseRepository';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import { Types } from 'mongoose';
-import { injectable } from 'tsyringe';
+
 
 type TeamRoleFilter = Record<string, unknown>;
 
-@injectable()
+@Singleton()
 export default class TeamRoleRepository
-    extends MongooseBaseRepository<TeamRole, TeamRoleProps, TeamRoleDocument>
-    implements ITeamRoleRepository {
+    extends MongooseBaseRepository<TeamRole, TeamRoleProps, TeamRoleDocument> {
 
     constructor() {
         super(TeamRoleModel, teamRoleMapper);

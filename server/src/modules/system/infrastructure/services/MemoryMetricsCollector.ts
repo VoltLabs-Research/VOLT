@@ -1,10 +1,11 @@
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import os from 'os';
-import { injectable } from 'tsyringe';
+
 import type { MemoryMetrics } from '@modules/system/domain/value-objects/SystemMetrics';
 
 const BYTES_PER_GB = 1024 ** 3;
 
-@injectable()
+@Singleton()
 export default class MemoryMetricsCollector {
     collect(): MemoryMetrics {
         const total = os.totalmem();

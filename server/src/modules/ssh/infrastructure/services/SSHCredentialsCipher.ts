@@ -1,9 +1,9 @@
-import { injectable } from 'tsyringe';
-import { encrypt, decrypt } from '@shared/infrastructure/utilities/crypto';
-import { ISSHCredentialsCipher } from '@modules/ssh/domain/port/ISSHCredentialsCipher';
 
-@injectable()
-export default class SSHCredentialsCipher implements ISSHCredentialsCipher {
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { decrypt, encrypt } from '@shared/infrastructure/utilities/crypto';
+
+@Singleton()
+export default class SSHCredentialsCipher {
     async encrypt(value: string): Promise<string> {
         return encrypt(value);
     }

@@ -1,36 +1,34 @@
-import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
-import { resolveSystemMetricsIdentity } from '@modules/system/utilities/resolveSystemMetricsIdentity';
-import CpuMetricsCollector from './CpuMetricsCollector';
-import ClusterMetricsAggregator from './ClusterMetricsAggregator';
-import MemoryMetricsCollector from './MemoryMetricsCollector';
-import DiskMetricsCollector from './DiskMetricsCollector';
-import NetworkMetricsCollector from './NetworkMetricsCollector';
-import MongoMetricsCollector from './MongoMetricsCollector';
-import ServiceHealthPinger from './ServiceHealthPinger';
-import os from 'node:os';
-import { inject, injectable } from 'tsyringe';
-import type { IMetricsService } from '@modules/system/domain/port/IMetricsService';
-import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
 import type { SystemMetrics, SystemStatus } from '@modules/system/domain/value-objects/SystemMetrics';
+import SystemMetricsRedisRepository from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisRepository';
+import { resolveSystemMetricsIdentity } from '@modules/system/utilities/resolveSystemMetricsIdentity';
+import os from 'node:os';
+import { injectable } from 'tsyringe';
+import ClusterMetricsAggregator from './ClusterMetricsAggregator';
+import CpuMetricsCollector from './CpuMetricsCollector';
+import DiskMetricsCollector from './DiskMetricsCollector';
+import MemoryMetricsCollector from './MemoryMetricsCollector';
+import MongoMetricsCollector from './MongoMetricsCollector';
+import NetworkMetricsCollector from './NetworkMetricsCollector';
+import ServiceHealthPinger from './ServiceHealthPinger';
 
 @injectable()
-export default class MetricsCollector implements IMetricsService {
+export default class MetricsCollector {
     constructor(
-        @inject(SYSTEM_TOKENS.CpuMetricsCollector)
+        
         private readonly cpuCollector: CpuMetricsCollector,
-        @inject(SYSTEM_TOKENS.MemoryMetricsCollector)
+        
         private readonly memoryCollector: MemoryMetricsCollector,
-        @inject(SYSTEM_TOKENS.DiskMetricsCollector)
+        
         private readonly diskCollector: DiskMetricsCollector,
-        @inject(SYSTEM_TOKENS.NetworkMetricsCollector)
+        
         private readonly networkCollector: NetworkMetricsCollector,
-        @inject(SYSTEM_TOKENS.MongoMetricsCollector)
+        
         private readonly mongoCollector: MongoMetricsCollector,
-        @inject(SYSTEM_TOKENS.ServiceHealthPinger)
+        
         private readonly healthPinger: ServiceHealthPinger,
-        @inject(SYSTEM_TOKENS.SystemMetricsRepository)
-        private readonly metricsRepository: ISystemMetricsRepository,
-        @inject(SYSTEM_TOKENS.ClusterMetricsAggregator)
+        
+        private readonly metricsRepository: SystemMetricsRedisRepository,
+        
         private readonly clusterAggregator: ClusterMetricsAggregator
     ) {}
 

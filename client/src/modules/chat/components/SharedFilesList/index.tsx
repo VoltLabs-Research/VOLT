@@ -1,6 +1,7 @@
 import { ChatMessageType } from '@/modules/chat/api/entities/message';
 import { formatDistanceToNow } from 'date-fns';
 import FileAttachment from '@/shared/presentation/components/FileAttachment';
+import { Box, Stack, Text } from '@/shared/presentation/primitives';
 import type { ChatMessage } from '@/modules/chat/api/entities/message';
 import './SharedFilesList.css';
 
@@ -15,14 +16,14 @@ const SharedFilesList = ({ messages }: SharedFilesListProps) => {
 
     if (fileMessages.length === 0) {
         return (
-            <div className='volt-container d-flex flex-center p-2 text-center'>
-                <p className='volt-text font-size-2 color-muted'>No shared files yet</p>
-            </div>
+            <Box display='flex' p='2' textAlign='center' className='flex-center'>
+                <Text as='p' size='md' tone='muted'>No shared files yet</Text>
+            </Box>
         );
     }
 
     return (
-        <div className='volt-container d-flex column gap-025 y-auto shared-files-list'>
+        <Stack gap='025' overflow='y-auto' className='shared-files-list'>
             {fileMessages.map((message) => (
                 <FileAttachment
                     key={message._id}
@@ -37,7 +38,7 @@ const SharedFilesList = ({ messages }: SharedFilesListProps) => {
                     className='shared-file-item'
                 />
             ))}
-        </div>
+        </Stack>
     );
 };
 

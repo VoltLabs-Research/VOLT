@@ -1,23 +1,22 @@
 import { ExportListingRowsByAnalysisIdInputDTO } from '@modules/plugin/application/dtos/listing-row/GetListingRowsByAnalysisIdDTO';
 import { AnalysisListingExportCatalogService } from '@modules/plugin/application/services/listing-row/AnalysisListingExportCatalogService';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
 
 import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
-import type { IListingRowsExportPresenter } from '@modules/plugin/domain/port/listing-row/IListingRowsExportPresenter';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { ListingRowsExportPresenter } from '@modules/plugin/infrastructure/http/presenters/listing-row/ListingRowsExportPresenter';
 
-@injectable()
+@Singleton()
 export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
     ExportListingRowsByAnalysisIdInputDTO,
     DownloadStreamOutputDTO
 > {
     constructor(
-        @inject(PLUGIN_TOKENS.ListingRowsExportPresenter)
-        private readonly listingRowsExportPresenter: IListingRowsExportPresenter,
-        @inject(AnalysisListingExportCatalogService)
+        
+        private readonly listingRowsExportPresenter: ListingRowsExportPresenter,
+        
         private readonly analysisListingExportCatalogService: AnalysisListingExportCatalogService
     ) {}
 

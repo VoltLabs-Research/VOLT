@@ -1,21 +1,18 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
-import type DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
 import type {
     IRasterJobEnqueuer,
     RasterJobEnqueueResult,
     RasterTriggerConfig
 } from '@modules/raster/domain/port/IRasterJobEnqueuer';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
+import DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import logger from '@shared/infrastructure/logger';
+import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
 interface RasterizeTrajectoryCommandPayload extends Record<string, unknown> {
     trajectoryId: string;
@@ -24,19 +21,19 @@ interface RasterizeTrajectoryCommandPayload extends Record<string, unknown> {
     config?: RasterTriggerConfig;
 };
 
-@injectable()
+@Singleton()
 export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
     constructor(
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepository: ITrajectoryRepository,
+        
+        private readonly trajectoryRepository: TrajectoryRepository,
 
-        @inject(TeamClusterSelectionService)
+        
         private readonly teamClusterSelectionService: TeamClusterSelectionService,
 
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
 
-        @inject(TEAM_CLUSTER_TOKENS.DaemonAnalysisCompletionService)
+        
         private readonly daemonAnalysisCompletionService: DaemonAnalysisCompletionService
     ) {}
 

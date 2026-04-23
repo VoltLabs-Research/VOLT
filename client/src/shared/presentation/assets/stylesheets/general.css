@@ -3,29 +3,77 @@
     margin: 0;
 }
 
+.mt-025 {
+    margin-top: 0.25rem;
+}
+
+.mt-05 {
+    margin-top: 0.5rem;
+}
+
+.mt-075 {
+    margin-top: 0.75rem;
+}
+
 .mt-1 {
     margin-top: 1rem;
 }
 
-.mt-05{
-    margin-top: 0.5rem;
+.mt-1-5 {
+    margin-top: 1.5rem;
+}
+
+.mt-2 {
+    margin-top: 2rem;
 }
 
 .mt-3 {
     margin-top: 3rem;
 }
 
+.mb-0 {
+    margin-bottom: 0;
+}
+
+.mb-025 {
+    margin-bottom: 0.25rem;
+}
+
+.mb-05 {
+    margin-bottom: 0.5rem;
+}
+
+.mb-075 {
+    margin-bottom: 0.75rem;
+}
+
+.mb-1 {
+    margin-bottom: 1rem;
+}
+
 .mb-1-5 {
     margin-bottom: 1.5rem;
+}
+
+.mb-2 {
+    margin-bottom: 2rem;
 }
 
 .mb-3 {
     margin-bottom: 3rem;
 }
 
-.mx-auto{
+.mx-auto {
     margin-left: auto;
     margin-right: auto;
+}
+
+.mr-auto {
+    margin-right: auto;
+}
+
+.ml-auto {
+    margin-left: auto;
 }
 
 /** Padding */
@@ -83,6 +131,10 @@
 }
 
 /** Gap **/
+.gap-0 {
+    gap: 0;
+}
+
 .gap-01 {
     gap: .1rem;
 }
@@ -241,6 +293,14 @@
     display: flex;
 }
 
+.d-inline-flex {
+    display: inline-flex;
+}
+
+.items-baseline {
+    align-items: baseline;
+}
+
 .flex-1 {
     flex: 1;
 }
@@ -393,6 +453,43 @@
     line-height: 1.5;
 }
 
+.leading-tight {
+    line-height: 1.2;
+}
+
+.leading-snug {
+    line-height: 1.35;
+}
+
+.leading-normal {
+    line-height: 1.4;
+}
+
+.leading-relaxed {
+    line-height: 1.6;
+}
+
+.text-uppercase {
+    text-transform: uppercase;
+}
+
+.text-eyebrow {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+}
+
+.tabular-nums {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum', 'lnum';
+}
+
+.font-mono {
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
 /** Border **/
 .b-soft{
     border: 1px solid var(--color-border-soft);
@@ -459,6 +556,15 @@
     50% { opacity: 0.4; }
 }
 
+.animate-pulse {
+    animation: animate-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes animate-pulse-glow {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+    50% { opacity: 0.8; box-shadow: 0 0 0 4px currentColor; }
+}
+
 @keyframes animate-spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
@@ -495,6 +601,23 @@
 
 .cursor-pointer {
     cursor: pointer;
+}
+
+.screen-vh {
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+.sr-only {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 /** Transitions **/

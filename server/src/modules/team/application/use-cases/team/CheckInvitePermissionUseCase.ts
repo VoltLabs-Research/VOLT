@@ -1,19 +1,18 @@
 import { Action } from '@core/constants/permissions';
 import { Resource } from '@core/constants/resources';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { CheckInvitePermissionInputDTO, CheckInvitePermissionOutputDTO } from '@modules/team/application/dtos/team/CheckInvitePermissionDTO';
 import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/team-member/TeamMember';
-import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
+import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable, inject } from 'tsyringe';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export default class CheckInvitePermissionUseCase implements IUseCase<CheckInvitePermissionInputDTO, CheckInvitePermissionOutputDTO, ApplicationError>{
     constructor(
-        @inject(TEAM_TOKENS.TeamMemberRepository)
-        private teamMemberRepository: ITeamMemberRepository
+        
+        private teamMemberRepository: TeamMemberRepository
     ){}
 
     async execute(input: CheckInvitePermissionInputDTO): Promise<Result<CheckInvitePermissionOutputDTO, ApplicationError>>{

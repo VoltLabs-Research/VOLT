@@ -1,26 +1,24 @@
 import { redis } from '@core/config/redis';
-import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
 import type { SystemMetrics } from '@modules/system/domain/value-objects/SystemMetrics';
 import {
     deserializeSystemMetrics,
     serializeSystemMetrics
 } from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisMapper';
 import { resolveSystemMetricsIdentity } from '@modules/system/utilities/resolveSystemMetricsIdentity';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { injectable } from 'tsyringe';
+
 
 const ACTIVE_CLUSTERS_KEY = 'active_clusters';
 
-@injectable()
-export default class SystemMetricsRedisRepository implements ISystemMetricsRepository {
-    private readonly metricsHistoryKey: string;
-    private readonly metricsTTL: number;
+@Singleton()
+export default class SystemMetricsRedisRepository {
+    private readonly metricsHistoryKey = 'metrics-history';
+    private readonly metricsTTL = 60;
     private readonly clusterId: string;
 
-    constructor(metricsKey: string = 'metrics-history', ttl: number = 60) {
+    constructor() {
         this.clusterId = resolveSystemMetricsIdentity().clusterId;
-        this.metricsHistoryKey = metricsKey;
-        this.metricsTTL = ttl;
     }
 
     private getMetricsKey(clusterId: string = this.clusterId): string {

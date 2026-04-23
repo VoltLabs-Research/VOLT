@@ -6,6 +6,7 @@ import useSceneInteraction from '../../hooks/use-scene-interaction';
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import { Surface, Stack } from '@/shared/presentation/primitives';
 
 import './ExposureSettingsWidget.css';
 
@@ -40,8 +41,8 @@ const ExposureSettingsWidget = () => {
     if (!exposureSettingsScene) return null;
 
     return (
-        <div style={{ bottom: '1rem', right: '1rem', top: 'auto', left: 'auto' }} className={`volt-container canvas-widget glass-bg canvas-exposure-widget ${isSceneInteracting ? 'is-dimmed' : ''}`}>
-            <div className="volt-container d-flex column gap-05">
+        <Surface variant='glass' style={{ bottom: '1rem', right: '1rem', top: 'auto', left: 'auto' }} className={`canvas-widget canvas-exposure-widget ${isSceneInteracting ? 'is-dimmed' : ''}`}>
+            <Stack gap='05'>
                 <FormFieldRHF
                     fieldKey="sceneOpacity"
                     label="Opacity"
@@ -50,8 +51,8 @@ const ExposureSettingsWidget = () => {
                     onFieldChange={(_, value) => setSceneOpacity(sceneKey, Number(value))}
                     inputProps={{ type: 'range', min: 0, max: 1, step: 0.01 }}
                 />
-            </div>
-        </div>
+            </Stack>
+        </Surface>
     );
 };
 

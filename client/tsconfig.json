@@ -21,6 +21,5 @@
             "@/*": ["src/*"]
         }
     },
-    "include": ["src"],
-    "exclude": ["src/shared/presentation/components/DeferredExplorerState"]
+    "include": ["src"]
 }

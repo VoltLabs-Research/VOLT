@@ -1,24 +1,23 @@
 import type { MoveTrajectoryInputDTO, MoveTrajectoryOutputDTO } from '@modules/trajectory/application/dtos/trajectory/MoveTrajectoryDTO';
+import type { TrajectoryProps } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import type TrajectoryFolder from '@modules/trajectory/domain/entities/trajectory/TrajectoryFolder';
 import type { TrajectoryFolderProps } from '@modules/trajectory/domain/entities/trajectory/TrajectoryFolder';
-import type { TrajectoryProps } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
-import type { ITrajectoryFolderRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFolderRepository';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import TrajectoryFolderRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFolderRepository';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import { MoveCatalogItemUseCase } from '@shared/application/catalog/MoveCatalogItemUseCase';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { inject, injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
-@injectable()
+@Singleton()
 export default class MoveTrajectoryUseCase
     extends MoveCatalogItemUseCase<MoveTrajectoryInputDTO, TrajectoryFolder, TrajectoryFolderProps, TrajectoryProps>
     implements IUseCase<MoveTrajectoryInputDTO, MoveTrajectoryOutputDTO, ApplicationError> {
     constructor(
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        trajectoryRepository: ITrajectoryRepository,
-        @inject(TRAJECTORY_TOKENS.TrajectoryFolderRepository)
-        trajectoryFolderRepository: ITrajectoryFolderRepository
+        
+        trajectoryRepository: TrajectoryRepository,
+        
+        trajectoryFolderRepository: TrajectoryFolderRepository
     ) {
         super(trajectoryRepository, trajectoryFolderRepository, {
             folderLabel: 'Trajectory folder',

@@ -1,5 +1,5 @@
 import './Brand.css';
-import IconButton from '@/shared/presentation/components/IconButton';
+import { Box, Heading, IconButton, IconFrame } from '@/shared/presentation/primitives';
 import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
 
 interface BrandProps {
@@ -8,9 +8,9 @@ interface BrandProps {
 };
 
 const Brand = ({ collapsed = false, onToggleCollapse }: BrandProps) => {
-    let brandContent = <h3 className='volt-title sidebar-brand-title color-primary'>Volt</h3>;
+    let brandContent = <Heading level={3} size='lg' weight='medium' tone='primary' className='sidebar-brand-title'>Volt</Heading>;
     if (collapsed) {
-        brandContent = <div className='volt-container sidebar-brand-icon d-flex flex-center radius-full'>V</div>;
+        brandContent = <IconFrame size='sm' shape='circle' className='sidebar-brand-icon'>V</IconFrame>;
     }
 
     let collapseIcon = <GoSidebarCollapse size={16} />;
@@ -19,7 +19,7 @@ const Brand = ({ collapsed = false, onToggleCollapse }: BrandProps) => {
     }
 
     return (
-        <div className={`volt-container sidebar-brand ${collapsed ? 'is-collapsed' : ''}`}>
+        <Box className={`sidebar-brand ${collapsed ? 'is-collapsed' : ''}`}>
             {brandContent}
 
             {onToggleCollapse && (
@@ -32,7 +32,7 @@ const Brand = ({ collapsed = false, onToggleCollapse }: BrandProps) => {
                     {collapseIcon}
                 </IconButton>
             )}
-        </div>
+        </Box>
     );
 };
 

@@ -1,29 +1,29 @@
-import { PreviewParticleFilterUseCase } from '@modules/trajectory/application/use-cases/particle-filter/PreviewParticleFilterUseCase';
-import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
 import type {
     PreviewParticleFilterInputDTO,
     PreviewParticleFilterOutputDTO
 } from '@modules/trajectory/application/dtos/particle-filter';
+import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
+import { PreviewParticleFilterUseCase } from '@modules/trajectory/application/use-cases/particle-filter/PreviewParticleFilterUseCase';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 interface GetPublicCanvasParticleFilterPreviewInput extends PreviewParticleFilterInputDTO {
     userId?: string;
 };
 
-@injectable()
+@Singleton()
 export class GetPublicCanvasParticleFilterPreviewUseCase implements IUseCase<
     GetPublicCanvasParticleFilterPreviewInput,
     PreviewParticleFilterOutputDTO,
     ApplicationError
 > {
     constructor(
-        @inject(TrajectoryReadAccessService)
+        
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
-        @inject(PreviewParticleFilterUseCase)
+        
         private readonly previewParticleFilterUseCase: PreviewParticleFilterUseCase
     ) {}
 

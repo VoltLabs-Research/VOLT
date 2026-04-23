@@ -10,7 +10,7 @@ import { debugFractal } from '@/modules/fractal/utilities/debug-log';
 import { getFrameBoxBounds, getTrajectoryFrameByTimestep, hasFrameBoxBounds } from '@/modules/fractal/utilities/frame-box-bounds';
 import { getRenderableScenes } from '@/modules/fractal/utilities/scene-utils';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import Loader from '@/shared/presentation/components/Loader';
+import { Loader, Stack, Box, Row } from '@/shared/presentation/primitives';
 import { useMemo, useCallback, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -191,22 +191,22 @@ const Viewport = ({
     const autoFitKeyOverride = trajectory?._id ?? null;
 
     return (
-        <div className="volt-container canvas-viewport d-flex column flex-1 overflow-hidden p-relative min-h-0">
-            <div className="volt-container canvas-viewport-body flex-1 p-relative min-h-0">
+        <Stack flex='1' overflow='hidden' position='relative' minH='0' className="canvas-viewport">
+            <Box flex='1' position='relative' minH='0' className="canvas-viewport-body">
                 {!bodyContent && isLoading && (
-                    <div className="volt-container canvas-viewport-loading d-flex items-center content-center p-absolute inset-0">
+                    <Row justify='center' position='absolute' inset='0' className="canvas-viewport-loading">
                         <Loader scale={0.5} />
-                    </div>
+                    </Row>
                 )}
 
                 {bodyContent && (
-                    <div className="volt-container canvas-viewport-body-content d-flex flex-1 min-h-0 p-relative w-max h-max">
+                    <Box display='flex' flex='1' minH='0' position='relative' width='max' height='max' className="canvas-viewport-body-content">
                         {bodyContent}
-                    </div>
+                    </Box>
                 )}
 
                 {renderScene && sceneConfig && (
-                    <div className="volt-container p-relative w-max h-max" style={bodyContent ? { display: 'none' } : undefined}>
+                    <Box position='relative' width='max' height='max' style={bodyContent ? { display: 'none' } : undefined}>
                         <FractalScene
                             ref={sceneRef}
                             config={sceneConfig}
@@ -248,14 +248,14 @@ const Viewport = ({
                                 />
                             )}
                         </FractalScene>
-                    </div>
+                    </Box>
                 )}
 
-                {!hideGradient && <div className="volt-container canvas-viewport-gradient p-absolute inset-0" />}
+                {!hideGradient && <Box position='absolute' inset='0' className="canvas-viewport-gradient" />}
 
                 {showSceneActions && <ViewportFloatingControls />}
-            </div>
-        </div>
+            </Box>
+        </Stack>
     );
 };
 

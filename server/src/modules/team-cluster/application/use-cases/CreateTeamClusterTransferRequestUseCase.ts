@@ -3,18 +3,17 @@ import {
     CreateTeamClusterTransferRequestInputDTO,
     CreateTeamClusterTransferRequestOutputDTO
 } from '@modules/team-cluster/application/dtos/CreateTeamClusterTransferRequestDTO';
+import ClusterTransferCoordinator from '@modules/team-cluster/application/services/ClusterTransferCoordinator';
+import StoragePlacementService from '@modules/team-cluster/application/services/StoragePlacementService';
 import { requireOwnedTeamCluster } from '@modules/team-cluster/application/utilities/team-cluster-ownership';
+import type ClusterTransferJob from '@modules/team-cluster/domain/entities/ClusterTransferJob';
 import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import ClusterTransferRunner from '@modules/team-cluster/infrastructure/services/ClusterTransferRunner';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
-import type ClusterTransferCoordinator from '@modules/team-cluster/application/services/ClusterTransferCoordinator';
-import type ClusterTransferJob from '@modules/team-cluster/domain/entities/ClusterTransferJob';
-import type StoragePlacementService from '@modules/team-cluster/application/services/StoragePlacementService';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export default class CreateTeamClusterTransferRequestUseCase implements IUseCase<
@@ -23,16 +22,16 @@ export default class CreateTeamClusterTransferRequestUseCase implements IUseCase
     ApplicationError
 > {
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
+        
+        private readonly teamClusterRepository: TeamClusterRepository,
 
-        @inject(TEAM_CLUSTER_TOKENS.StoragePlacementService)
+        
         private readonly storagePlacementService: StoragePlacementService,
 
-        @inject(TEAM_CLUSTER_TOKENS.ClusterTransferCoordinator)
+        
         private readonly clusterTransferCoordinator: ClusterTransferCoordinator,
 
-        @inject(TEAM_CLUSTER_TOKENS.ClusterTransferRunner)
+        
         private readonly clusterTransferRunner: ClusterTransferRunner
     ) {}
 

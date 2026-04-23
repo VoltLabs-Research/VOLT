@@ -7,13 +7,13 @@ import {
 } from '@/modules/latex/utilities/workspace-dnd';
 import { joinWorkspacePath, normalizeWorkspaceFolderPath } from '@/modules/latex/utilities/workspace';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
+import { ContextMenuPopover } from '@/shared/presentation/primitives';
 import FileExplorer from '@/shared/presentation/components/FileExplorer';
-import IconButton from '@/shared/presentation/components/IconButton';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
-import Popover from '@/shared/presentation/components/Popover';
-import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
-import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
+import { Popover } from '@/shared/presentation/primitives';
+import { PopoverMenu } from '@/shared/presentation/primitives';
+import { PopoverMenuItem } from '@/shared/presentation/primitives';
+import { IconButton, Row, Stack, Text } from '@/shared/presentation/primitives';
 import FileTreeNode from './FileTreeNode';
 import WorkspaceEntryInput from './WorkspaceEntryInput';
 import { DndContext, PointerSensor, pointerWithin, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
@@ -110,11 +110,11 @@ const RootDropLane = ({
     }
 
     return (
-        <div ref={setNodeRef} className={`volt-container ${cn(
+        <div ref={setNodeRef} className={cn(
                 'latex-workspace__root-drop-lane d-flex items-center',
                 fillAvailableSpace && 'is-fill-area',
                 (isOver || isExternallyActive) && 'is-root-drop-target'
-            )}`} aria-hidden='true' onDragOver={onExternalDragOver} onDragLeave={onExternalDragLeave} onDrop={(event) => {
+            )} aria-hidden='true' onDragOver={onExternalDragOver} onDragLeave={onExternalDragLeave} onDrop={(event) => {
                 void onExternalDrop(event);
             }}>
             <span className='latex-workspace__root-drop-lane-line' />
@@ -526,7 +526,7 @@ const LatexFilePanel = ({
     ]);
 
     const panelActions = (
-        <div className='volt-container d-flex items-center gap-05'>
+        <Row gap='05'>
             <Popover
                 id='latex-workspace-upload-popover'
                 trigger={(
@@ -569,7 +569,7 @@ const LatexFilePanel = ({
             </Popover>
             {newFolderAction}
             {newFileAction}
-        </div>
+        </Row>
     );
 
     const isWorkspaceEmpty = files.length === 0
@@ -585,7 +585,7 @@ const LatexFilePanel = ({
     const shouldShowBottomRootDropLane = shouldShowRootDropLanes && !isWorkspaceEmpty;
 
     return (
-        <div id='latex-file-panel' className='volt-container latex-workspace__files d-flex column' style={{ width }}>
+        <Stack id='latex-file-panel' className='latex-workspace__files' style={{ width }}>
             <PanelHeader
                 variant='compact'
                 icon={<span className='d-flex items-center color-muted'>{FOLDER_ICON}</span>}
@@ -630,10 +630,10 @@ const LatexFilePanel = ({
                         options={rootMenuOptions}
                         shouldOpenOnContextMenu={shouldOpenRootContextMenu}
                         trigger={(
-                            <div className={`volt-container ${cn(
-                                    'latex-workspace__tree-surface d-flex column flex-1 min-h-0',
+                            <Stack flex='1' minH='0' className={cn(
+                                    'latex-workspace__tree-surface',
                                     isWorkspaceEmpty && 'is-empty'
-                                )}`} onDragOver={(event) => handleExternalFilesDragOver(ROOT_DROP_DATA.folderPath, event)} onDragLeave={(event) => handleExternalFilesDragLeave(ROOT_DROP_DATA.folderPath, event)} onDrop={(event) => {
+                                )} onDragOver={(event) => handleExternalFilesDragOver(ROOT_DROP_DATA.folderPath, event)} onDragLeave={(event) => handleExternalFilesDragLeave(ROOT_DROP_DATA.folderPath, event)} onDrop={(event) => {
                                     void handleExternalFilesDrop(ROOT_DROP_DATA.folderPath, event);
                                 }}>
                                 <RootDropLane
@@ -678,19 +678,19 @@ const LatexFilePanel = ({
                                 />
 
                                 {isWorkspaceEmpty && (
-                                    <div className='volt-container latex-workspace__tree-empty-state d-flex column items-center content-center gap-05'>
-                                        <p className='volt-text color-primary'>No files yet</p>
-                                        <p className='volt-text latex-workspace__tree-empty-copy color-muted'>
+                                    <Stack align='center' justify='center' gap='05' className='latex-workspace__tree-empty-state'>
+                                        <Text as='p' tone='primary'>No files yet</Text>
+                                        <Text as='p' tone='muted' className='latex-workspace__tree-empty-copy'>
                                             Drag files here, create a file, or right-click for project actions.
-                                        </p>
-                                    </div>
+                                        </Text>
+                                    </Stack>
                                 )}
-                            </div>
+                            </Stack>
                         )}
                     />
                 </DndContext>
             </FileExplorer>
-        </div>
+        </Stack>
     );
 };
 

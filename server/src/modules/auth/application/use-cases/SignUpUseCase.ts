@@ -1,34 +1,33 @@
-import { SignUpInputDTO, SignUpOutputDTO } from '@modules/auth/application/dtos/SignUpDTO';
+import { ErrorCodes } from '@core/constants/error-codes';
 import { toPersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import AuthSessionService from '@modules/auth/infrastructure/services/AuthSessionService';
+import { SignUpInputDTO, SignUpOutputDTO } from '@modules/auth/application/dtos/SignUpDTO';
 import User, { UserRole } from '@modules/auth/domain/entities/User';
 import UserCreatedEvent from '@modules/auth/domain/events/UserCreatedEvent';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { ErrorCodes } from '@core/constants/error-codes';
+import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
+import AuthSessionService from '@modules/auth/infrastructure/services/AuthSessionService';
+import AvatarService from '@modules/auth/infrastructure/services/AvatarService';
+import BcryptPasswordHasher from '@modules/auth/infrastructure/services/BcryptPasswordHasher';
 import { SessionActivityType } from '@modules/session/domain/entities/Session';
+import type { IUseCase } from '@shared/application/IUseCase';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { IEventBus } from '@shared/application/events/IEventBus';
 import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
-import type { IAvatarService } from '@modules/auth/domain/port/IAvatarService';
-import type { IPasswordHasher } from '@modules/auth/domain/port/IPasswordHasher';
-import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
-import type { IUseCase } from '@shared/application/IUseCase';
-import type { IEventBus } from '@shared/application/events/IEventBus';
 
 @injectable()
 export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOutputDTO, ApplicationError> {
     constructor(
-        @inject(AUTH_TOKENS.UserRepository)
-        private readonly userRepository: IUserRepository,
-        @inject(AUTH_TOKENS.PasswordHasher)
-        private readonly passwordHasher: IPasswordHasher,
-        @inject(AUTH_TOKENS.AuthSessionService)
+        
+        private readonly userRepository: UserRepository,
+        
+        private readonly passwordHasher: BcryptPasswordHasher,
+        
         private readonly authSessionService: AuthSessionService,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
-        @inject(AUTH_TOKENS.AvatarService)
-        private readonly avatarService: IAvatarService
+        
+        private readonly avatarService: AvatarService
     ) {}
 
     async execute(input: SignUpInputDTO): Promise<Result<SignUpOutputDTO, ApplicationError>> {

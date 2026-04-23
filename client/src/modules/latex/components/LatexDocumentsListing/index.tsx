@@ -10,11 +10,10 @@ import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
 import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
 import RenameFolderModal from '@/shared/presentation/components/RenameFolderModal';
 import { dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
-import { openModal } from '@/shared/presentation/components/Modal';
-import Button from '@/shared/presentation/components/Button';
+import { openModal } from '@/shared/presentation/primitives';
+import { Box, Button, Heading, Row } from '@/shared/presentation/primitives';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useTip from '@/shared/tips/use-tip';
-import './LatexDocumentsListing.css';
 import { Folder, Pencil, Trash2, Upload } from 'lucide-react';
 import { useMemo } from 'react';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
@@ -34,16 +33,16 @@ const renderDocumentTitle: NonNullable<ColumnConfig<LatexListingRow>['render']> 
     }
 
     return (
-        <div className='volt-container d-flex items-center gap-075'>
+        <Row gap='075'>
             {isLatexFolder(row) && (
-                <div className='volt-container d-flex flex-center color-secondary'>
+                <Box display='flex' className='flex-center color-secondary'>
                     <Folder size={16} />
-                </div>
+                </Box>
             )}
-            <div className='volt-container overflow-hidden'>
+            <Box overflow='hidden'>
                 <span className='font-weight-6 color-secondary'>{title}</span>
-            </div>
-        </div>
+            </Box>
+        </Row>
     );
 };
 
@@ -103,7 +102,7 @@ const LatexDocumentsListing = () => {
         globalSearchBreadcrumb
     });
 
-    const title = <h3 className='volt-title font-size-6 font-weight-5 sm:font-size-4 color-primary'>LaTeX Documents</h3>;
+    const title = <Heading level={3} size='3xl' weight='medium' className='sm:font-size-4'>LaTeX Documents</Heading>;
 
     const createNew = {
         buttonTitle: 'New Document',

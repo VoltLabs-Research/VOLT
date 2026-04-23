@@ -1,13 +1,14 @@
-import { injectable } from 'tsyringe';
+
+import type { DiskMetrics, DiskOperations } from '@modules/system/domain/value-objects/SystemMetrics';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import si from 'systeminformation';
-import type { DiskMetrics, DiskOperations } from '@modules/system/domain/value-objects/SystemMetrics';
 
 const BYTES_PER_GB = 1024 ** 3;
 const BYTES_PER_MB = 1024 * 1024;
 const DISK_USAGE_CACHE_TTL_MS = 10_000;
 
-@injectable()
+@Singleton()
 export default class DiskMetricsCollector {
     private cachedUsage: {
         expiresAt: number;

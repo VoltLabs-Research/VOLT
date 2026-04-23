@@ -9,8 +9,6 @@
     --onboarding-layout-overlay-z-index: 1;
     --onboarding-layout-chrome-z-index: 2;
     position: relative;
-    height: 100vh;
-    height: 100dvh;
     background: var(--color-bg);
     overflow: hidden;
 }

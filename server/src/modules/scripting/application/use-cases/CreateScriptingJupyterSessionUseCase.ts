@@ -1,27 +1,27 @@
-import { buildScriptingNotebookPath, DEFAULT_SCRIPTING_NOTEBOOK_TITLE } from '@modules/scripting/application/utilities/build-scripting-notebook';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import {
     CreateScriptingJupyterSessionInputDTO,
     CreateScriptingJupyterSessionOutputDTO
 } from '@modules/scripting/application/dtos/CreateScriptingJupyterSessionDTO';
-import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
-import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import pRetry from 'p-retry';
-import { inject, injectable } from 'tsyringe';
-import type { IScriptingSessionLock } from '@modules/scripting/domain/port/IScriptingSessionLock';
-import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
-import type {
-    IScriptingSessionOrchestrator,
-    ScriptingSessionStartInput
-} from '@modules/scripting/domain/port/IScriptingSessionOrchestrator';
+import { buildScriptingNotebookPath, DEFAULT_SCRIPTING_NOTEBOOK_TITLE } from '@modules/scripting/application/utilities/build-scripting-notebook';
+import type ScriptingNotebook from '@modules/scripting/domain/entities/ScriptingNotebook';
 import type {
     ScriptingNotebookContainerResources,
     ScriptingNotebookProps
 } from '@modules/scripting/domain/entities/ScriptingNotebook';
-import type ScriptingNotebook from '@modules/scripting/domain/entities/ScriptingNotebook';
+import type { IScriptingSessionLock } from '@modules/scripting/domain/port/IScriptingSessionLock';
+import type {
+    ScriptingSessionStartInput
+} from '@modules/scripting/domain/port/IScriptingSessionOrchestrator';
+import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
+import { DaemonScriptingSessionOrchestrator } from '@modules/scripting/infrastructure/services/DaemonScriptingSessionOrchestrator';
+import { RedisScriptingSessionLock } from '@modules/scripting/infrastructure/services/RedisScriptingSessionLock';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import pRetry from 'p-retry';
 
 const LOCK_TTL_MS = 90_000;
 const LOCK_BUSY_WAIT_ATTEMPTS = 5;
@@ -82,19 +82,19 @@ const selectExistingTrajectoryNotebook = (
     })[0] || null;
 };
 
-@injectable()
+@Singleton()
 export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScriptingJupyterSessionInputDTO, CreateScriptingJupyterSessionOutputDTO, ApplicationError> {
     constructor(
-        @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository)
-        private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
+        
+        private readonly scriptingNotebookRepository: ScriptingNotebookRepository,
 
-        @inject(SCRIPTING_TOKENS.ScriptingSessionOrchestrator)
-        private readonly scriptingSessionOrchestrator: IScriptingSessionOrchestrator,
+        
+        private readonly scriptingSessionOrchestrator: DaemonScriptingSessionOrchestrator,
 
-        @inject(SCRIPTING_TOKENS.ScriptingSessionLock)
-        private readonly scriptingSessionLock: IScriptingSessionLock,
+        
+        private readonly scriptingSessionLock: RedisScriptingSessionLock,
 
-        @inject(TeamClusterSelectionService)
+        
         private readonly teamClusterSelectionService: TeamClusterSelectionService
     ) {}
 

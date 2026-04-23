@@ -1,18 +1,17 @@
-import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
-import { CascadeDeleteEachOnTeamDeletedHandler } from '@shared/application/events/CascadeDeleteEachOnTeamDeletedHandler';
 import { DeleteContainerUseCase } from '@modules/container/application/use-cases/DeleteContainerUseCase';
-import TeamDeletedEvent from '@modules/team/domain/events/team/TeamDeletedEvent';
-import { inject, injectable } from 'tsyringe';
 import type { Container } from '@modules/container/domain/entities/Container';
-import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
+import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
+import TeamDeletedEvent from '@modules/team/domain/events/team/TeamDeletedEvent';
+import { CascadeDeleteEachOnTeamDeletedHandler } from '@shared/application/events/CascadeDeleteEachOnTeamDeletedHandler';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-@injectable()
+@Subscribe('team.deleted')
 export default class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDeletedHandler<Container> {
     constructor(
-        @inject(CONTAINER_TOKENS.ContainerRepository)
-        protected readonly repository: IContainerRepository,
+        
+        protected readonly repository: ContainerRepository,
 
-        @inject(DeleteContainerUseCase)
+        
         private readonly deleteContainerUseCase: DeleteContainerUseCase
     ) {
         super();

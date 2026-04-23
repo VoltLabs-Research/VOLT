@@ -1,20 +1,18 @@
-import { inject, injectable } from 'tsyringe';
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import type { ITokenService } from '@modules/auth/domain/port/ITokenService';
-import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
-import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';
-import type { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
+import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
+import JwtTokenService from '@modules/auth/infrastructure/services/JwtTokenService';
+import SessionRepository from '@modules/session/infrastructure/persistence/mongo/repositories/SessionRepository';
 import type { ISocketAuthenticationResult, ISocketConnectionUser } from '@modules/socket/domain/port/ISocketModule';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
-@injectable()
+@Singleton()
 export default class AuthenticateSocketConnectionUseCase {
     constructor(
-        @inject(AUTH_TOKENS.UserRepository)
-        private readonly userRepository: IUserRepository,
-        @inject(AUTH_TOKENS.TokenService)
-        private readonly tokenService: ITokenService,
-        @inject(SESSION_TOKENS.SessionRepository)
-        private readonly sessionRepository: ISessionRepository
+        
+        private readonly userRepository: UserRepository,
+        
+        private readonly tokenService: JwtTokenService,
+        
+        private readonly sessionRepository: SessionRepository
     ) {}
 
     async execute(token?: string): Promise<ISocketAuthenticationResult> {

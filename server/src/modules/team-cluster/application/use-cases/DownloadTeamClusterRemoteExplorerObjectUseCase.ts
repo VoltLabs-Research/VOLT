@@ -1,19 +1,18 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import {
     DownloadTeamClusterRemoteExplorerObjectInputDTO,
     DownloadTeamClusterRemoteExplorerObjectOutputDTO
 } from '@modules/team-cluster/application/dtos/DownloadTeamClusterRemoteExplorerObjectDTO';
 import { TeamClusterRemoteAccessTargetDTO } from '@modules/team-cluster/application/dtos/TeamClusterRemoteAccessDTO';
 import { preflightRemoteExplorerAccess } from '@modules/team-cluster/application/utilities/remote-explorer-access';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import RemoteExplorerDaemonGateway from '@modules/team-cluster/infrastructure/services/RemoteExplorerDaemonGateway';
 import TeamClusterRemoteAccessSessionService from '@modules/team-cluster/infrastructure/services/TeamClusterRemoteAccessSessionService';
-import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { ErrorCodes } from '@core/constants/error-codes';
 import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
+import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
+import { injectable } from 'tsyringe';
 
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
 
 /**
@@ -63,13 +62,13 @@ export default class DownloadTeamClusterRemoteExplorerObjectUseCase implements I
     ApplicationError
 > {
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
+        
+        private readonly teamClusterRepository: TeamClusterRepository,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRemoteAccessSessionService)
+        
         private readonly sessionService: TeamClusterRemoteAccessSessionService,
 
-        @inject(TEAM_CLUSTER_TOKENS.RemoteExplorerDaemonGateway)
+        
         private readonly remoteExplorerDaemonGateway: RemoteExplorerDaemonGateway
     ) {}
 

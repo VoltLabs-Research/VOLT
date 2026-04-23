@@ -1,5 +1,6 @@
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import useSlicePlane from '../../hooks/use-slice-plane';
+import { Stack, Row, Text } from '@/shared/presentation/primitives';
 
 const SlicePlane = () => {
     const {
@@ -16,11 +17,11 @@ const SlicePlane = () => {
     } = useSlicePlane();
 
     return (
-        <div className="volt-container canvas-slice-plane d-flex column gap-05">
-            <div className="volt-container d-flex items-center content-between gap-05">
-                <span className="font-size-05 color-muted">Coordinates</span>
-                <span className="font-size-05 color-secondary">Cartesian Coordinates</span>
-            </div>
+        <Stack gap='05' className="canvas-slice-plane">
+            <Row justify='between' gap='05'>
+                <Text size='xs' tone='muted'>Coordinates</Text>
+                <Text size='xs' tone='secondary'>Cartesian Coordinates</Text>
+            </Row>
 
             <FormFieldRHF
                 fieldKey="slice-plane-enabled"
@@ -88,7 +89,7 @@ const SlicePlane = () => {
                 onFieldChange={handleVisualizePlaneChange}
                 variant="canvas"
             />
-        </div>
+        </Stack>
     );
 };
 

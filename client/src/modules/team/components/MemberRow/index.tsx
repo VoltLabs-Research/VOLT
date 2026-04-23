@@ -1,8 +1,7 @@
+import { Avatar, ListRow, Popover, Tag } from '@/shared/presentation/primitives';
 import type { TeamMember } from '@/modules/team/api/entities/member/team-member';
-import Avatar from '@/shared/presentation/components/Avatar';
-import Popover from '@/shared/presentation/components/Popover';
-import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
-import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
+import { PopoverMenu } from '@/shared/presentation/primitives';
+import { PopoverMenuItem } from '@/shared/presentation/primitives';
 import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { formatDistanceToNow } from 'date-fns';
 import { MessageCircle, UserMinus } from 'lucide-react';
@@ -44,43 +43,40 @@ export const MemberRow = ({
             id={`member-menu-${member._id}`}
             triggerAction='contextmenu'
             trigger={
-                <button
-                    type='button'
-                    className='member-row radius-sm d-flex items-center content-between gap-1 p-1 w-max'
+                <ListRow
+                    as='button'
+                    className='member-row'
                     aria-haspopup='menu'
                     aria-label={`Open actions for ${member.user.firstName} ${member.user.lastName}`}
-                >
-                    <div className='volt-container d-flex items-center gap-1'>
+                    leading={
                         <Avatar
                             src={member.user.avatar}
                             alt={`${member.user.firstName} ${member.user.lastName}`}
                             size='md'
                         />
-                        <div className='volt-container d-flex column'>
-                            <p className='volt-text font-weight-5 color-primary d-flex items-center gap-025'>
-                                {member.user.firstName} {member.user.lastName}
-                                {isCurrentUser && (
-                                    <span className='color-secondary font-weight-4'>(You)</span>
-                                )}
-                            </p>
-                            <p className='volt-text font-size-2 color-secondary'>
-                                {member.user.email}
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className='volt-container d-flex items-center gap-1'>
-                        <div className='volt-container member-role-badge radius-sm'>
-                            {isOwner ? 'Owner' : member.role.name}
-                        </div>
-
+                    }
+                    title={
+                        <span className='d-flex items-center gap-025'>
+                            {member.user.firstName} {member.user.lastName}
+                            {isCurrentUser && (
+                                <span className='color-secondary font-weight-4'>(You)</span>
+                            )}
+                        </span>
+                    }
+                    subtitle={member.user.email}
+                    trailing={
+                        <>
+                            <Tag size='sm' className='member-role-badge'>
+                                {isOwner ? 'Owner' : member.role.name}
+                            </Tag>
                             {member.joinedAt && (
-                                <p className='volt-text font-size-1 color-tertiary'>
+                                <p className='font-size-1 color-tertiary'>
                                     Joined {formatDistanceToNow(new Date(member.joinedAt), { addSuffix: true })}
                                 </p>
                             )}
-                    </div>
-                </button>
+                        </>
+                    }
+                />
             }
         >
             {(close) => (

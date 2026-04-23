@@ -1,28 +1,28 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import TeamDeletedEvent from '@modules/team/domain/events/team/TeamDeletedEvent';
-import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
-import { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
-import { ITeamRoleRepository } from '@modules/team/domain/port/team-role/ITeamRoleRepository';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
+import TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-role/TeamRoleRepository';
+import TeamRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team/TeamRepository';
 import { IEventBus } from '@shared/application/events/IEventBus';
-import { injectable, inject } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { inject } from 'tsyringe';
 
 const logMembershipWarning = (context: Record<string, string>, message: string) => {
     console.warn('[TeamMembershipService]', message, context);
 };
 
-@injectable()
+@Singleton()
 export default class TeamMembershipService {
     constructor(
-        @inject(TEAM_TOKENS.TeamRoleRepository)
-        private readonly teamRoleRepository: ITeamRoleRepository,
+        
+        private readonly teamRoleRepository: TeamRoleRepository,
 
-        @inject(TEAM_TOKENS.TeamRepository)
-        private readonly teamRepository: ITeamRepository,
+        
+        private readonly teamRepository: TeamRepository,
 
-        @inject(TEAM_TOKENS.TeamMemberRepository)
-        private readonly teamMemberRepository: ITeamMemberRepository,
+        
+        private readonly teamMemberRepository: TeamMemberRepository,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus

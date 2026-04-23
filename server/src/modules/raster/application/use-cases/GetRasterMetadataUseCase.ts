@@ -1,19 +1,18 @@
-import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
 import type {
     GetRasterMetadataInputDTO,
     GetRasterMetadataOutputDTO
 } from '@modules/raster/application/dtos/GetRasterMetadataDTO';
-import type { IRasterMetadataReader } from '@modules/raster/domain/port/IRasterMetadataReader';
+import { RasterMetadataService } from '@modules/raster/infrastructure/services/RasterMetadataService';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export class GetRasterMetadataUseCase implements IUseCase<GetRasterMetadataInputDTO, GetRasterMetadataOutputDTO, ApplicationError> {
     constructor(
-        @inject(RASTER_TOKENS.RasterMetadataReader) private readonly rasterMetadataReader: IRasterMetadataReader
+        private readonly rasterMetadataReader: RasterMetadataService
     ) {}
 
     async execute(input: GetRasterMetadataInputDTO): Promise<Result<GetRasterMetadataOutputDTO, ApplicationError>> {

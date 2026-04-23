@@ -1,22 +1,16 @@
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
-import { IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
-import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
-import { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
+import DailyActivityRepository from '@modules/daily-activity/infrastructure/persistence/mongo/repositories/DailyActivityRepository';
+import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
 import { ListTeamMembersByTeamIdInputDTO, ListTeamMembersByTeamIdOutputDTO, TeamMemberStatsProps } from '@modules/team/application/dtos/team-member/ListTeamMembersByTeamIdDTO';
+import { getTeamMemberUserId, isPopulatedTeamMemberUser } from '@modules/team/domain/entities/team-member/TeamMember';
+import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import TeamPresenceService from '@modules/team/infrastructure/services/team-member/TeamPresenceService';
-import { isPopulatedTeamMemberUser, getTeamMemberUserId } from '@modules/team/domain/entities/team-member/TeamMember';
-import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/WhiteboardTokens';
-import { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import WhiteboardRepository from '@modules/whiteboards/infrastructure/persistence/mongo/repositories/WhiteboardRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable, inject } from 'tsyringe';
+import { injectable } from 'tsyringe';
 
 interface TeamMemberFilter {
     team: string;
@@ -25,25 +19,25 @@ interface TeamMemberFilter {
 @injectable()
 export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeamMembersByTeamIdInputDTO, ListTeamMembersByTeamIdOutputDTO, ApplicationError> {
     constructor(
-        @inject(TEAM_TOKENS.TeamMemberRepository)
-        private readonly teamMemberRepository: ITeamMemberRepository,
+        
+        private readonly teamMemberRepository: TeamMemberRepository,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepository: ITrajectoryRepository,
+        
+        private readonly trajectoryRepository: TrajectoryRepository,
 
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository,
+        
+        private readonly analysisRepository: AnalysisRepository,
 
-        @inject(LATEX_TOKENS.LatexDocumentRepository)
-        private readonly latexDocumentRepository: ILatexDocumentRepository,
+        
+        private readonly latexDocumentRepository: LatexDocumentRepository,
 
-        @inject(WHITEBOARD_TOKENS.WhiteboardRepository)
-        private readonly whiteboardRepository: IWhiteboardRepository,
+        
+        private readonly whiteboardRepository: WhiteboardRepository,
 
-        @inject(DAILY_ACTIVITY_TOKENS.DailyActivityRepository)
-        private readonly dailyActivityRepository: IDailyActivityRepository,
+        
+        private readonly dailyActivityRepository: DailyActivityRepository,
 
-        @inject(TEAM_TOKENS.TeamPresenceService)
+        
         private readonly teamPresenceService: TeamPresenceService
     ) {}
 

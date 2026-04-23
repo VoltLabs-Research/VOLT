@@ -1,20 +1,18 @@
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
-import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
-import { buildJupyterProxyBasePath, buildJupyterProxyUrl } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
-import { JupyterNotebookService } from '@modules/scripting/infrastructure/services/JupyterNotebookService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
 import type {
     DefaultNotebookTemplateContext,
     IScriptingSessionOrchestrator,
     ScriptingSessionStartInput,
     ScriptingSessionStartResult
 } from '@modules/scripting/domain/port/IScriptingSessionOrchestrator';
-import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
+import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
+import { JupyterNotebookService } from '@modules/scripting/infrastructure/services/JupyterNotebookService';
+import { buildJupyterProxyBasePath, buildJupyterProxyUrl } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import logger from '@shared/infrastructure/logger';
+import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
 type NotebookContainerStage = 'creating' | 'starting' | 'ready';
 
@@ -52,19 +50,19 @@ const getNotebookTeamClusterId = (teamCluster: string | null | undefined): strin
     return teamCluster ?? null;
 };
 
-@injectable()
+@Singleton()
 export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrchestrator {
     constructor(
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
 
-        @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository)
-        private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
+        
+        private readonly scriptingNotebookRepository: ScriptingNotebookRepository,
 
-        @inject(TeamClusterSelectionService)
+        
         private readonly teamClusterSelectionService: TeamClusterSelectionService,
 
-        @inject(JupyterNotebookService)
+        
         private readonly notebookService: JupyterNotebookService
     ) {}
 

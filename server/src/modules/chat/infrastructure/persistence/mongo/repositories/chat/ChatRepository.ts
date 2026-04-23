@@ -1,15 +1,16 @@
-import chatMapper from '@modules/chat/infrastructure/persistence/mongo/mappers/chat/ChatMapper';
+import type { ChatProps } from '@modules/chat/domain/entities/chat/Chat';
+import Chat from '@modules/chat/domain/entities/chat/Chat';
 import ChatDeletedEvent from '@modules/chat/domain/events/ChatDeletedEvent';
-import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
+import type { IChatRepository, PersistedChatDTO } from '@modules/chat/domain/port/chat/IChatRepository';
+import chatMapper from '@modules/chat/infrastructure/persistence/mongo/mappers/chat/ChatMapper';
+import type { ChatDocument } from '@modules/chat/infrastructure/persistence/mongo/models/chat/ChatModel';
 import ChatModel from '@modules/chat/infrastructure/persistence/mongo/models/chat/ChatModel';
+import type { IEventBus } from '@shared/application/events/IEventBus';
+import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-import Chat from '@modules/chat/domain/entities/chat/Chat';
-import { injectable, inject } from 'tsyringe';
-import type { ChatProps } from '@modules/chat/domain/entities/chat/Chat';
-import type { IChatRepository, PersistedChatDTO } from '@modules/chat/domain/port/chat/IChatRepository';
-import type { ChatDocument } from '@modules/chat/infrastructure/persistence/mongo/models/chat/ChatModel';
-import type { IEventBus } from '@shared/application/events/IEventBus';
+import { inject } from 'tsyringe';
 
 interface FindOrCreateChatParticipantsFilter {
     $all: [string, string];
@@ -21,7 +22,7 @@ interface FindOrCreateChatFilter {
     isGroup: false;
 };
 
-@injectable()
+@Singleton()
 export default class ChatRepository
     extends MongooseBaseRepository<Chat, ChatProps, ChatDocument>
     implements IChatRepository {

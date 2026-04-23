@@ -3,10 +3,8 @@ import {
     getPerformancePresetLabel,
     PERFORMANCE_PRESET_OPTIONS
 } from '@/shared/domain/rendering/performance';
-import Button from '@/shared/presentation/components/Button';
-import Popover from '@/shared/presentation/components/Popover';
-import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
-import Tooltip from '@/shared/presentation/components/Tooltip';
+import { Button, Popover, Tooltip } from '@/shared/presentation/primitives';
+import { PopoverMenu } from '@/shared/presentation/primitives';
 import { Gauge } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -27,7 +25,7 @@ const PerformanceMenuPopover = ({ compact = false }: PerformanceMenuPopoverProps
             id="viewport-performance"
             noPadding
             trigger={compact ? (
-                <span className="canvas-viewport-floating-trigger">
+                <span className='d-inline-flex flex-center'>
                     <Tooltip content={`Performance: ${presetLabel}`} placement="bottom">
                         <Button
                             variant="ghost"

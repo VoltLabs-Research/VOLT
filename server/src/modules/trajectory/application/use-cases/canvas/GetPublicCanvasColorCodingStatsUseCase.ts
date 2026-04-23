@@ -1,29 +1,29 @@
-import { GetColorCodingStatsUseCase } from '@modules/trajectory/application/use-cases/color-coding/GetColorCodingStatsUseCase';
-import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
 import type {
     GetColorCodingStatsInputDTO,
     GetColorCodingStatsOutputDTO
 } from '@modules/trajectory/application/dtos/color-coding';
+import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
+import { GetColorCodingStatsUseCase } from '@modules/trajectory/application/use-cases/color-coding/GetColorCodingStatsUseCase';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 interface GetPublicCanvasColorCodingStatsInput extends GetColorCodingStatsInputDTO {
     userId?: string;
 };
 
-@injectable()
+@Singleton()
 export class GetPublicCanvasColorCodingStatsUseCase implements IUseCase<
     GetPublicCanvasColorCodingStatsInput,
     GetColorCodingStatsOutputDTO,
     ApplicationError
 > {
     constructor(
-        @inject(TrajectoryReadAccessService)
+        
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
-        @inject(GetColorCodingStatsUseCase)
+        
         private readonly getColorCodingStatsUseCase: GetColorCodingStatsUseCase
     ) {}
 

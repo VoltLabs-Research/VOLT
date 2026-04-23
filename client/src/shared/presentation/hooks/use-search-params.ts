@@ -1,4 +1,4 @@
-export type SearchParamUpdates = Record<string, string | number | boolean | null | undefined>;
+type SearchParamUpdates = Record<string, string | number | boolean | null | undefined>;
 
 export const applySearchParamUpdates = (
     searchParams: URLSearchParams,

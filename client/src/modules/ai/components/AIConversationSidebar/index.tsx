@@ -1,10 +1,8 @@
 import { matchesQuery } from '@/shared/utils/matches-query';
-import EmptyState from '@/shared/presentation/components/EmptyState';
-import IconButton from '@/shared/presentation/components/IconButton';
+import { EmptyState } from '@/shared/presentation/primitives';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import SearchInput from '@/shared/presentation/components/SearchInput';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
-import Tooltip from '@/shared/presentation/components/Tooltip';
+import { Box, Stack, Row, Text, IconButton, SearchInput, Tooltip } from '@/shared/presentation/primitives';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import { formatDistanceToNow } from 'date-fns';
 import { useMemo, useState } from 'react';
@@ -108,9 +106,9 @@ const AIConversationSidebar = ({
 
     const renderConversationTitle = (conversation: AIConversation) => {
         let content: ReactNode = (
-            <p className='volt-text font-size-2 font-weight-5 color-primary ai-conversation-title'>
+            <Text as='p' size='md' weight='medium' tone='primary' className='ai-conversation-title'>
                 {conversation.title || 'Untitled conversation'}
-            </p>
+            </Text>
         );
 
         if (editingConversationId === conversation._id) {
@@ -154,10 +152,10 @@ const AIConversationSidebar = ({
                 className={itemClassName}
                 onClick={() => onSelectConversation(conversation._id)}
             >
-                <div className='volt-container d-flex items-center content-between gap-05'>
+                <Row justify='between' gap='05'>
                     {renderConversationTitle(conversation)}
 
-                    <div className='volt-container d-flex items-center gap-025 ai-conversation-item-actions'>
+                    <Row gap='025' className='ai-conversation-item-actions'>
                         <Tooltip content={renameTooltip}>
                             <IconButton
                                 aria-label={`Rename conversation ${conversation.title}`}
@@ -181,12 +179,12 @@ const AIConversationSidebar = ({
                                 <IoTrashOutline size={14} />
                             </IconButton>
                         </Tooltip>
-                    </div>
-                </div>
+                    </Row>
+                </Row>
 
-                <p className='volt-text font-size-1 color-muted'>
+                <Text as='p' size='sm' tone='muted'>
                     {formatDistanceToNow(new Date(conversation.lastMessageAt || conversation.updatedAt), { addSuffix: true })}
-                </p>
+                </Text>
             </button>
         );
     };
@@ -195,7 +193,7 @@ const AIConversationSidebar = ({
 
     if (isLoading) {
         listContent = Array.from({ length: 6 }).map((_, index) => (
-            <div key={index} className='volt-container ai-conversation-item-skeleton' />
+            <Box key={index} className='ai-conversation-item-skeleton animate-pulse' />
         ));
     } else if (filteredConversations.length === 0) {
         let title = 'No conversations yet';
@@ -222,8 +220,8 @@ const AIConversationSidebar = ({
     }
 
     return (
-        <div className='volt-container d-flex column h-max ai-conversation-sidebar'>
-            <div className='volt-container d-flex column gap-075 ai-conversation-sidebar-header'>
+        <Stack height='max' className='ai-conversation-sidebar'>
+            <Stack gap='075' className='ai-conversation-sidebar-header panel-header-bordered'>
                 <SearchInput
                     placeholder='Search conversations...'
                     value={query}
@@ -249,12 +247,12 @@ const AIConversationSidebar = ({
                         tone={RecoveryStateTone.Error}
                     />
                 )}
-            </div>
+            </Stack>
 
-            <div className='volt-container d-flex column flex-1 y-auto ai-conversation-sidebar-list'>
+            <Stack flex='1' overflow='y-auto' className='ai-conversation-sidebar-list'>
                 {listContent}
-            </div>
-        </div>
+            </Stack>
+        </Stack>
     );
 };
 

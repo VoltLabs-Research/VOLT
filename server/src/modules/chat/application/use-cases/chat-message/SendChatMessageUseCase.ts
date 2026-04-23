@@ -1,25 +1,23 @@
 import { SendChatMessageInputDTO, SendChatMessageOutputDTO } from '@modules/chat/application/dtos/chat-message/SendChatMessageDTO';
-import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import ChatMessageRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/chat-message/ChatMessageRepository';
+import ChatRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/chat/ChatRepository';
 import { resolveAccessibleChat } from '@modules/chat/utilities/chat/resolveAccessibleChat';
-import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
-import type { IChatMessageRepository } from '@modules/chat/domain/port/chat-message/IChatMessageRepository';
-import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
-import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
+import { IUseCase } from '@shared/application/IUseCase';
+import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
-@injectable()
+@Singleton()
 export class SendChatMessageUseCase implements IUseCase<SendChatMessageInputDTO, SendChatMessageOutputDTO, ApplicationError> {
     constructor(
-        @inject(CHAT_TOKENS.ChatMessageRepository)
-        private messageRepo: IChatMessageRepository,
-        @inject(CHAT_TOKENS.ChatRepository)
-        private chatRepo: IChatRepository,
-        @inject(SOCKET_TOKENS.SocketEventEmitter)
-        private socketEmitter: ISocketEmitter
+        
+        private messageRepo: ChatMessageRepository,
+        
+        private chatRepo: ChatRepository,
+        
+        private socketEmitter: SocketIOEmitter
     ){}
 
     async execute(input: SendChatMessageInputDTO): Promise<Result<SendChatMessageOutputDTO, ApplicationError>> {

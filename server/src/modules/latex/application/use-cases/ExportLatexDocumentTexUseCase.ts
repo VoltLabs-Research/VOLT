@@ -1,27 +1,26 @@
-import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
+import type { ExportLatexDocumentInputDTO, ExportLatexDocumentOutputDTO } from '@modules/latex/application/dtos/ExportLatexDocumentDTO';
+import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
+import LatexFileRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexFileRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import {
     createDownloadStreamResponse,
     sanitizeDownloadName
 } from '@shared/infrastructure/http/responses/download-response';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
 import { Readable } from 'node:stream';
-import type { ExportLatexDocumentInputDTO, ExportLatexDocumentOutputDTO } from '@modules/latex/application/dtos/ExportLatexDocumentDTO';
-import type { IUseCase } from '@shared/application/IUseCase';
-import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
-import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
 
 /** Exports the entrypoint LatexFile as a downloadable `.tex` file. */
-@injectable()
+@Singleton()
 export class ExportLatexDocumentTexUseCase implements IUseCase<ExportLatexDocumentInputDTO, ExportLatexDocumentOutputDTO, ApplicationError> {
     constructor(
-        @inject(LATEX_TOKENS.LatexDocumentRepository)
-        private readonly latexDocumentRepository: ILatexDocumentRepository,
+        
+        private readonly latexDocumentRepository: LatexDocumentRepository,
 
-        @inject(LATEX_TOKENS.LatexFileRepository)
-        private readonly latexFileRepository: ILatexFileRepository
+        
+        private readonly latexFileRepository: LatexFileRepository
     ) {}
 
     async execute(input: ExportLatexDocumentInputDTO): Promise<Result<ExportLatexDocumentOutputDTO, ApplicationError>> {

@@ -1,5 +1,4 @@
-import Button from '@/shared/presentation/components/Button';
-import Loader from '@/shared/presentation/components/Loader';
+import { Button, Loader, Row, Stack, Text } from '@/shared/presentation/primitives';
 import { AlertCircle, Download, FileText, ZoomIn, ZoomOut } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
@@ -20,10 +19,10 @@ const MAX_SCALE = 2.4;
 const SCALE_STEP = 0.2;
 
 const PDF_LOADING_PLACEHOLDER = (
-    <div className='volt-container latex-preview__empty d-flex column flex-center items-center gap-1'>
+    <Stack align='center' gap='1' className='latex-preview__empty flex-center'>
         <Loader scale={0.5} isFixed={false} />
-        <p className='volt-text color-muted font-size-1'>Loading PDF preview…</p>
-    </div>
+        <Text as='p' size='sm' tone='muted'>Loading PDF preview…</Text>
+    </Stack>
 );
 
 const LatexPdfViewer = ({
@@ -113,15 +112,15 @@ const LatexPdfViewer = ({
     }, [numPages, pdfUrl, scale]);
 
     const toolbar = (
-        <div className='volt-container latex-pdf-toolbar d-flex items-center content-between gap-05'>
-            <div className='volt-container latex-pdf-toolbar__group d-flex items-center gap-05'>
+        <Row justify='between' gap='05' className='latex-pdf-toolbar'>
+            <Row gap='05' className='latex-pdf-toolbar__group'>
                 <span className='latex-pdf-toolbar__meta'>
                     Page {pageNumber}{numPages ? ` / ${numPages}` : ''}
                 </span>
                 <span className='latex-pdf-toolbar__hint'>Scroll to browse pages</span>
-            </div>
+            </Row>
 
-            <div className='volt-container latex-pdf-toolbar__group d-flex items-center gap-05'>
+            <Row gap='05' className='latex-pdf-toolbar__group'>
                 <Button
                     variant='ghost'
                     intent='neutral'
@@ -164,69 +163,69 @@ const LatexPdfViewer = ({
                         {downloadLabel}
                     </Button>
                 )}
-            </div>
-        </div>
+            </Row>
+        </Row>
     );
 
     if (isLoading && !pdfUrl) {
         return (
-            <div className='volt-container latex-preview__empty d-flex column flex-center items-center gap-2'>
+            <Stack align='center' gap='2' className='latex-preview__empty flex-center'>
                 <Loader scale={0.5} isFixed={false} />
-                <p className='volt-text color-muted font-size-1'>Compiling document…</p>
-            </div>
+                <Text as='p' size='sm' tone='muted'>Compiling document…</Text>
+            </Stack>
         );
     }
 
     if (error) {
         return (
-            <div className='volt-container latex-compile-error d-flex column gap-05 p-1 overflow-y-auto'>
-                <div className='volt-container d-flex items-center gap-05'>
+            <Stack gap='05' p='1' overflow='y-auto' className='latex-compile-error'>
+                <Row gap='05'>
                     <AlertCircle size={14} className='color-error' />
                     <span className='font-size-1 color-error latex-compile-error__title'>
                         Compilation failed
                     </span>
-                </div>
-                <pre className='latex-compile-error__log font-size-1 color-secondary'>
+                </Row>
+                <pre className='latex-compile-error__log font-mono font-size-1 color-secondary'>
                     {error}
                 </pre>
-            </div>
+            </Stack>
         );
     }
 
     if (pdfError) {
         return (
-            <div className='volt-container latex-compile-error d-flex column gap-05 p-1 overflow-y-auto'>
-                <div className='volt-container d-flex items-center gap-05'>
+            <Stack gap='05' p='1' overflow='y-auto' className='latex-compile-error'>
+                <Row gap='05'>
                     <AlertCircle size={14} className='color-error' />
                     <span className='font-size-1 color-error latex-compile-error__title'>
                         PDF preview unavailable
                     </span>
-                </div>
-                <pre className='latex-compile-error__log font-size-1 color-secondary'>
+                </Row>
+                <pre className='latex-compile-error__log font-mono font-size-1 color-secondary'>
                     {pdfError}
                 </pre>
-            </div>
+            </Stack>
         );
     }
 
     if (!pdfUrl) {
         return (
-            <div className='volt-container latex-preview__empty d-flex column flex-center items-center gap-05 p-2'>
+            <Stack align='center' gap='05' p='2' className='latex-preview__empty flex-center'>
                 <FileText size={28} className='color-muted' />
-                <p className='volt-text latex-preview__empty-text color-muted text-center'>
+                <Text as='p' tone='muted' align='center' className='latex-preview__empty-text'>
                     Waiting for the first successful compile.
-                </p>
-                <p className='volt-text latex-preview__empty-text color-muted text-center'>
+                </Text>
+                <Text as='p' tone='muted' align='center' className='latex-preview__empty-text'>
                     Changes compile automatically in the background.
-                </p>
-            </div>
+                </Text>
+            </Stack>
         );
     }
 
     return (
-        <div className='volt-container latex-pdf-shell d-flex column flex-1 min-h-0 position-relative'>
+        <Stack flex='1' minH='0' className='latex-pdf-shell position-relative'>
             {toolbar}
-            <div ref={stageRef} className='volt-container latex-pdf-stage d-flex column flex-1 min-h-0'>
+            <div ref={stageRef} className='latex-pdf-stage d-flex column flex-1 min-h-0'>
                 <Document
                     key={pdfUrl}
                     file={pdfUrl}
@@ -240,7 +239,7 @@ const LatexPdfViewer = ({
                         const nextPageNumber = index + 1;
 
                         return (
-                            <div key={`${pdfUrl}-page-${nextPageNumber}`} ref={setPageRef(index)} className='volt-container latex-pdf-page-shell' data-page-number={nextPageNumber}>
+                            <div key={`${pdfUrl}-page-${nextPageNumber}`} ref={setPageRef(index)} className='latex-pdf-page-shell' data-page-number={nextPageNumber}>
                                 <Page
                                     pageNumber={nextPageNumber}
                                     scale={scale}
@@ -254,7 +253,7 @@ const LatexPdfViewer = ({
                     })}
                 </Document>
             </div>
-        </div>
+        </Stack>
     );
 };
 

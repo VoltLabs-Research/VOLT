@@ -1,7 +1,7 @@
 import { getTeamClusterRemoteAccessDescription, getTeamClusterRemoteAccessLabel } from '@/modules/cluster/utilities/team-cluster-remote-access';
+import { Stack, Text, Modal, closeModal } from '@/shared/presentation/primitives';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Modal, { closeModal } from '@/shared/presentation/components/Modal';
 import { useState } from 'react';
 import type { TeamClusterRemoteAccessTarget } from '@/modules/cluster/api/entities/team-cluster-remote-access';
 
@@ -81,10 +81,10 @@ const ClusterRemoteAccessModal = ({
             footer={footer}
             onClose={onDismiss}
         >
-            <div className='volt-container d-flex column gap-1 p-1-5'>
-                <p className='volt-text font-size-2 color-secondary'>
+            <Stack gap='1' p='1-5'>
+                <Text as='p' size='md' tone='secondary'>
                     Remote access is sensitive. Confirm your password before opening this cluster resource.
-                </p>
+                </Text>
                 <FormFieldRHF
                     label='Password'
                     type='password'
@@ -98,7 +98,7 @@ const ClusterRemoteAccessModal = ({
                     }}
                     inputProps={{ onKeyDown: handleKeyDown }}
                 />
-            </div>
+            </Stack>
         </Modal>
     );
 };

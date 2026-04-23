@@ -1,14 +1,15 @@
-import Button from '@/shared/presentation/components/Button';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import GoogleIcon from '@/shared/presentation/components/icons/GoogleIcon';
 import MicrosoftIcon from '@/shared/presentation/components/icons/MicrosoftIcon';
+import { Button, Row, Stack } from '@/shared/presentation/primitives';
 import { Github, Mail } from 'lucide-react';
 import type { FormEventHandler, ReactNode } from 'react';
 import type { Control } from 'react-hook-form';
+import type { OAuthProviderKey } from '@/modules/auth/api/dtos/oauth-providers';
 import type { SignInForm } from '../SignIn/validation-schema';
 
 interface OAuthProvider {
-    key: string;
+    key: OAuthProviderKey;
     label: string;
     icon: ReactNode;
 };
@@ -17,7 +18,8 @@ interface EmailStepProps {
     control: Control<SignInForm>;
     isLoading: boolean;
     onSubmit: FormEventHandler<HTMLFormElement>;
-    onOAuth: (provider: string) => void;
+    onOAuth: (provider: OAuthProviderKey) => void;
+    availableProviders: OAuthProviderKey[];
 };
 
 const oauthProviders: OAuthProvider[] = [{
@@ -34,27 +36,39 @@ const oauthProviders: OAuthProvider[] = [{
     icon: <MicrosoftIcon />
 }];
 
-const EmailStep = ({ control, isLoading, onSubmit, onOAuth }: EmailStepProps) => (
-    <div className='volt-container d-flex column gap-1'>
-        <div className='volt-container d-flex column gap-1'>
-            {oauthProviders.map(({ key, label, icon }) => (
-                <Button
-                    key={key}
-                    variant='outline'
-                    intent='neutral'
-                    block
-                    leftIcon={icon}
-                    onClick={() => onOAuth(key)}>
-                    Continue with {label}
-                </Button>
-            ))}
-        </div>
+const EmailStep = ({ control, isLoading, onSubmit, onOAuth, availableProviders }: EmailStepProps) => {
+    const visibleProviders = oauthProviders.filter((provider) => availableProviders.includes(provider.key));
+    const hasOAuth = visibleProviders.length > 0;
 
-        <div className='volt-container d-flex items-center sign-in-divider font-size-1'>
-            <span>Or continue with email</span>
-        </div>
+    return (
+    <Stack gap='1'>
+        {hasOAuth && (
+            <>
+                <Stack gap='1'>
+                    {visibleProviders.map(({ key, label, icon }) => (
+                        <Button
+                            key={key}
+                            variant='outline'
+                            intent='neutral'
+                            block
+                            leftIcon={icon}
+                            onClick={() => onOAuth(key)}>
+                            Continue with {label}
+                        </Button>
+                    ))}
+                </Stack>
 
-        <form onSubmit={onSubmit} className='d-flex column gap-1'>
+                <Row className='sign-in-divider text-eyebrow'>
+                    <span>Or continue with email</span>
+                </Row>
+            </>
+        )}
+
+        <Stack
+            as='form'
+            gap='1'
+            {...({ onSubmit } as React.FormHTMLAttributes<HTMLFormElement>)}
+        >
             <FormFieldRHF
                 name='email'
                 control={control}
@@ -82,8 +96,9 @@ const EmailStep = ({ control, isLoading, onSubmit, onOAuth }: EmailStepProps) =>
             >
                 Continue with Email
             </Button>
-        </form>
-    </div>
-);
+        </Stack>
+    </Stack>
+    );
+};
 
 export default EmailStep;

@@ -9,27 +9,25 @@ import {
 } from '@modules/container/infrastructure/utilities/container-port-proxy';
 import { TeamClusterServiceExposureAccessMode } from '@modules/team-cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { LocalRelayPortAllocator } from '@shared/infrastructure/services/LocalRelayPortAllocator';
+import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { writeUpgradeError } from '@shared/infrastructure/utilities/proxy-relay';
 import {
     readRelayHostValue,
     readRelayPortRangeValue,
     resolveRelayAdvertisedHost
 } from '@shared/infrastructure/utilities/relay-network';
-import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { parse as parseCookie, serialize as serializeCookie } from 'cookie';
 import httpProxy from 'http-proxy';
-import { inject, injectable } from 'tsyringe';
 import { randomBytes } from 'node:crypto';
-import http from 'node:http';
 import type {
     IncomingMessage,
-    RequestOptions,
     ServerResponse
 } from 'node:http';
+import http from 'node:http';
 import type { Duplex } from 'node:stream';
+import { injectable } from 'tsyringe';
 
 interface CreateContainerPortProxyRelaySessionInput {
     teamId: string;
@@ -103,10 +101,10 @@ export class ContainerPortProxyRelayService {
     });
 
     constructor(
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
 
-        @inject(ContainerPortProxyAccessTokenService)
+        
         private readonly accessTokenService: ContainerPortProxyAccessTokenService
     ) {}
 

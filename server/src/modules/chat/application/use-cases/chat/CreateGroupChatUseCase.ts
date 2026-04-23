@@ -1,30 +1,27 @@
-import { CreateGroupChatInputDTO, CreateGroupChatOutputDTO } from '@modules/chat/application/dtos/chat/CreateGroupChatDTO';
-import { ensureTeamMembersExist } from '@modules/chat/utilities/chat/ensureTeamMembersExist';
-import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
+import { CreateGroupChatInputDTO, CreateGroupChatOutputDTO } from '@modules/chat/application/dtos/chat/CreateGroupChatDTO';
+import ChatRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/chat/ChatRepository';
+import { ensureTeamMembersExist } from '@modules/chat/utilities/chat/ensureTeamMembersExist';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
+import TeamRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team/TeamRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
-import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
-import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
-import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
+import { IUseCase } from '@shared/application/IUseCase';
+import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
+import { Result } from '@shared/domain/port/Result';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export class CreateGroupChatUseCase implements IUseCase<CreateGroupChatInputDTO, CreateGroupChatOutputDTO, ApplicationError> {
     constructor(
-        @inject(CHAT_TOKENS.ChatRepository)
-        private chatRepo: IChatRepository,
-        @inject(TEAM_TOKENS.TeamRepository)
-        private teamRepo: ITeamRepository,
-        @inject(TEAM_TOKENS.TeamMemberRepository)
-        private teamMemberRepo: ITeamMemberRepository,
-        @inject(SOCKET_TOKENS.SocketEmitter)
-        private socketEmitter: ISocketEmitter
+        
+        private chatRepo: ChatRepository,
+        
+        private teamRepo: TeamRepository,
+        
+        private teamMemberRepo: TeamMemberRepository,
+        
+        private socketEmitter: SocketIOEmitter
     ){}
 
     async execute(input: CreateGroupChatInputDTO): Promise<Result<CreateGroupChatOutputDTO, ApplicationError>> {

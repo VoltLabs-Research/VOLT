@@ -1,9 +1,9 @@
 import { createController } from '@shared/infrastructure/http/controllers/createController';
-import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
+import GetSimulationCellByTrajectoryUseCase from '@modules/simulation-cell/application/use-cases/GetSimulationCellByTrajectoryUseCase';
 import { simulationCellValidationSchemas } from '@modules/simulation-cell/infrastructure/http/validation/simulation-cell-schemas';
 
 const GetSimulationCellByTrajectoryController = createController(
-    SIMULATION_CELL_TOKENS.GetSimulationCellByTrajectoryUseCase,
+    GetSimulationCellByTrajectoryUseCase,
     { validationSchema: simulationCellValidationSchemas.getByTrajectory }
 );
 

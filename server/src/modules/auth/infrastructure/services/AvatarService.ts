@@ -1,13 +1,14 @@
 import { SYS_BUCKETS } from '@core/config/minio';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
-import crypto from 'node:crypto';
-import Identicon from 'identicon.js';
-import sharp from 'sharp';
 import type { AvatarResult, IAvatarService } from '@modules/auth/domain/port/IAvatarService';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import logger from '@shared/infrastructure/logger';
 import type { IdenticonOptions } from 'identicon.js';
+import Identicon from 'identicon.js';
+import crypto from 'node:crypto';
+import sharp from 'sharp';
+import { inject } from 'tsyringe';
 
 interface LoggerErrorContext {
     err: unknown;
@@ -15,7 +16,7 @@ interface LoggerErrorContext {
     id: string;
 }
 
-@injectable()
+@Singleton()
 export default class AvatarService implements IAvatarService {
     private readonly AVATAR_SIZE_PX = 420;
     private readonly COMPRESSION_QUALITY_PCT = 80;

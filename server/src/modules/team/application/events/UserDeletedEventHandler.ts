@@ -1,14 +1,13 @@
 import UserDeletedEvent from '@modules/auth/domain/events/UserDeletedEvent';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
+import TeamRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team/TeamRepository';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
-import { injectable, inject } from 'tsyringe';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-@injectable()
+@Subscribe('user.deleted')
 export default class UserDeletedEventHandler implements IEventHandler<UserDeletedEvent>{
     constructor(
-        @inject(TEAM_TOKENS.TeamRepository)
-        private readonly teamRepository: ITeamRepository
+        
+        private readonly teamRepository: TeamRepository
     ){}
 
     async handle(event: UserDeletedEvent): Promise<void> {

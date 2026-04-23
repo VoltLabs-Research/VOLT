@@ -8,6 +8,7 @@ import DangerZone from '@/shared/presentation/components/DangerZone';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSection from '@/shared/presentation/components/SettingsSection';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
+import { Stack } from '@/shared/presentation/primitives';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
@@ -79,7 +80,7 @@ const GeneralSettings = () => {
                     title="Profile"
                     description="Update your personal information and profile picture" />
 
-                <div className="volt-container d-flex column gap-1">
+                <Stack gap='1'>
                     <AvatarUpload
                         avatarUrl={user?.avatar || null}
                         isUploading={isUploadingAvatar}
@@ -88,7 +89,7 @@ const GeneralSettings = () => {
                     <ProfileForm
                         initialValues={profileInitialValues}
                         onUpdate={handleProfileUpdate} />
-                </div>
+                </Stack>
             </SettingsSection>
 
             <DangerZone

@@ -1,22 +1,21 @@
-import type TrajectoryFolder from '@modules/trajectory/domain/entities/trajectory/TrajectoryFolder';
-import Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
-import type { TrajectoryFolderProps } from '@modules/trajectory/domain/entities/trajectory/TrajectoryFolder';
-import type { TrajectoryProps } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
-import type { ITrajectoryFolderRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFolderRepository';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import DeleteTrajectoryByIdUseCase from '@modules/trajectory/application/use-cases/trajectory/DeleteTrajectoryByIdUseCase';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import type { TrajectoryProps } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
+import Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
+import type TrajectoryFolder from '@modules/trajectory/domain/entities/trajectory/TrajectoryFolder';
+import type { TrajectoryFolderProps } from '@modules/trajectory/domain/entities/trajectory/TrajectoryFolder';
+import TrajectoryFolderRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFolderRepository';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import { DeleteCatalogFolderUseCase } from '@shared/application/catalog/DeleteCatalogFolderUseCase';
-import { inject, injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
-@injectable()
+@Singleton()
 export default class DeleteTrajectoryFolderUseCase extends DeleteCatalogFolderUseCase<TrajectoryFolder, TrajectoryFolderProps, Trajectory, TrajectoryProps> {
     constructor(
-        @inject(TRAJECTORY_TOKENS.TrajectoryFolderRepository)
-        trajectoryFolderRepository: ITrajectoryFolderRepository,
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        trajectoryRepository: ITrajectoryRepository,
-        @inject(DeleteTrajectoryByIdUseCase)
+        
+        trajectoryFolderRepository: TrajectoryFolderRepository,
+        
+        trajectoryRepository: TrajectoryRepository,
+        
         deleteTrajectoryByIdUseCase: DeleteTrajectoryByIdUseCase
     ) {
         super(

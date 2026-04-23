@@ -1,18 +1,17 @@
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import AIConversationRepository from '@modules/ai/infrastructure/persistence/mongo/repositories/AIConversationRepository';
+import AIMessageRepository from '@modules/ai/infrastructure/persistence/mongo/repositories/AIMessageRepository';
 import UserDeletedEvent from '@modules/auth/domain/events/UserDeletedEvent';
-import { inject, injectable } from 'tsyringe';
-import type { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
-import type { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRepository';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-@injectable()
+@Subscribe('user.deleted')
 export default class UserDeletedEventHandler implements IEventHandler<UserDeletedEvent> {
     constructor(
-        @inject(AI_TOKENS.AIConversationRepository)
-        private readonly conversationRepository: IAIConversationRepository,
+        
+        private readonly conversationRepository: AIConversationRepository,
 
-        @inject(AI_TOKENS.AIMessageRepository)
-        private readonly messageRepository: IAIMessageRepository
+        
+        private readonly messageRepository: AIMessageRepository
     ) {}
 
     async handle(event: UserDeletedEvent): Promise<void> {

@@ -1,11 +1,12 @@
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import mongoose from 'mongoose';
-import { injectable } from 'tsyringe';
+
 import { redis } from '@core/config/redis';
 import type { ResponseTimes } from '@modules/system/domain/value-objects/SystemMetrics';
 
 const HEALTH_CHECK_CACHE_TTL_MS = 5_000;
 
-@injectable()
+@Singleton()
 export default class ServiceHealthPinger {
     private cachedResponseTimes: {
         expiresAt: number;

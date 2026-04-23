@@ -1,7 +1,7 @@
+import { Modal } from '@/shared/presentation/primitives';
 import { useMemo, useCallback } from 'react';
 import { useSubListingInfiniteQuery } from '@/modules/plugin/hooks/listing/queries';
 import PluginCompactTable, { type ColumnConfig } from '@/modules/plugin/components/listing/PluginCompactTable';
-import Modal from '@/shared/presentation/components/Modal';
 import { SUB_LISTING_MODAL_ID } from '@/modules/plugin/hooks/listing/use-plugin-listing';
 import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
 import type { PluginSubListingParams } from '@/modules/plugin/hooks/listing/use-plugin-sub-listing';

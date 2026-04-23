@@ -1,20 +1,19 @@
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { GetColorCodingStatsInputDTO, GetColorCodingStatsOutputDTO } from '@modules/trajectory/application/dtos/color-coding';
 import { ValidatedServiceUseCase } from '@modules/trajectory/application/use-cases/shared/ValidatedServiceUseCase';
 import { IColorCodingService } from '@modules/trajectory/domain/port/color-coding/IColorCodingService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
-import { injectable, inject } from 'tsyringe';
+import ColorCodingService from '@modules/trajectory/infrastructure/services/color-coding/ColorCodingService';
 
-@injectable()
+@Singleton()
 export class GetColorCodingStatsUseCase extends ValidatedServiceUseCase<
     GetColorCodingStatsInputDTO,
     GetColorCodingStatsOutputDTO,
     IColorCodingService
 > {
     constructor(
-        @inject(TRAJECTORY_TOKENS.ColorCodingService)
-        private readonly colorCodingService: IColorCodingService
+        
+        private readonly colorCodingService: ColorCodingService
     ) {
         super(
             colorCodingService,

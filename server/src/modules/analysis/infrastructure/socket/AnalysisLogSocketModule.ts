@@ -1,22 +1,20 @@
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import {
+import { ErrorCodes } from '@core/constants/error-codes';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
+import AnalysisExecutionLogService, {
     ANALYSIS_LOG_SOCKET_EVENTS,
     getAnalysisLogRoom,
     type AnalysisLogChunkEventPayload
 } from '@modules/analysis/infrastructure/services/AnalysisExecutionLogService';
+import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
+import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import { formatSocketValidationError } from '@modules/socket/utilities/socket-validation-error';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { inject, singleton } from 'tsyringe';
+import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod/v4';
-import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import type { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';
-import type { ISocketRoomManager } from '@modules/socket/domain/port/ISocketRoomManager';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import type AnalysisExecutionLogService from '@modules/analysis/infrastructure/services/AnalysisExecutionLogService';
 
 const subscribeSchema = z.object({
     analysisId: z.string().trim().min(1),
@@ -32,19 +30,20 @@ const unsubscribeSchema = z.object({
 type SubscribePayload = z.infer<typeof subscribeSchema>;
 type UnsubscribePayload = z.infer<typeof unsubscribeSchema>;
 
-@singleton()
+@Singleton()
+@AliasOf(SOCKET_TOKENS.SocketModule)
 export default class AnalysisLogSocketModule extends BaseSocketModule {
     public readonly name = 'AnalysisLogSocketModule';
 
     constructor(
-        @inject(SOCKET_TOKENS.SocketEventEmitter) emitter: ISocketEmitter,
-        @inject(SOCKET_TOKENS.SocketRoomManager) roomManager: ISocketRoomManager,
-        @inject(SOCKET_TOKENS.SocketEventRegistry) eventRegistry: ISocketEventRegistry,
-        @inject(SOCKET_TOKENS.TeamSubscriptionCoordinator)
+        emitter: SocketIOEmitter,
+        roomManager: SocketIORoomManager,
+        eventRegistry: SocketIOEventRegistry,
+        
         private readonly teamSubscriptionCoordinator: SocketTeamSubscriptionCoordinator,
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository,
-        @inject(ANALYSIS_TOKENS.AnalysisExecutionLogService)
+        
+        private readonly analysisRepository: AnalysisRepository,
+        
         private readonly analysisExecutionLogService: AnalysisExecutionLogService
     ) {
         super(emitter, roomManager, eventRegistry);

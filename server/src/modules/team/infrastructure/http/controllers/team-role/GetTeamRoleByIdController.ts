@@ -1,9 +1,9 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-role/TeamRoleRepository';
 import { createGetByIdController } from '@shared/infrastructure/http/controllers/createReadController';
 
 const GetTeamRoleByIdController = createGetByIdController({
-    repositoryToken: TEAM_TOKENS.TeamRoleRepository,
+    repositoryToken: TeamRoleRepository,
     paramKey: 'roleId',
     notFoundCode: ErrorCodes.TEAM_ROLE_NOT_FOUND,
     notFoundMessage: 'TeamRole not found'

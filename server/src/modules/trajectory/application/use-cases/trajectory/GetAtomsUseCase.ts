@@ -1,27 +1,25 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import {
     resolveAnalysisComputeClusterId,
     resolveTrajectoryStorageClusterId
 } from '@modules/team-cluster/application/utilities/cluster-location';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { resolveTrajectoryNativeClusterContext } from '@modules/trajectory/utilities/team-cluster/resolve-trajectory-native-cluster-context';
-import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import { Result } from '@shared/domain/port/Result';
 
 import { normalizeAnalysisId } from '@modules/trajectory/utilities/trajectory/modifier-data';
-import { injectable, inject } from 'tsyringe';
+import { injectable } from 'tsyringe';
 
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import type {
     AtomColumn,
     GetAtomsColumnarInputDTO,
     GetAtomsColumnarOutputDTO
 } from '@modules/trajectory/application/dtos/trajectory/GetAtomsDTO';
-import type { ITrajectoryReader } from '@modules/trajectory/domain/port/trajectory/ITrajectoryReader';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import TrajectoryReader from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryReader';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 
 const ID_PROPERTY_NAME = 'id';
 const TYPE_PROPERTY_NAME = 'type';
@@ -42,16 +40,16 @@ const buildUint32Column = (name: string, values: readonly number[]): AtomColumn 
 @injectable()
 export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAtomsColumnarOutputDTO, ApplicationError> {
     constructor(
-        @inject(TRAJECTORY_TOKENS.TrajectoryReader)
-        private readonly trajectoryReader: ITrajectoryReader,
+        
+        private readonly trajectoryReader: TrajectoryReader,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepository: ITrajectoryRepository,
+        
+        private readonly trajectoryRepository: TrajectoryRepository,
 
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository,
+        
+        private readonly analysisRepository: AnalysisRepository,
 
-        @inject(TeamClusterSelectionService)
+        
         private readonly teamClusterSelectionService: TeamClusterSelectionService
     ) {}
 

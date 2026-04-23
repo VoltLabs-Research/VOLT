@@ -1,10 +1,9 @@
 import { COMMON_REACTIONS } from '@/modules/chat/api/entities/shared/chat-constants';
 import { IoHappyOutline, IoEllipsisVerticalOutline, IoCreateOutline, IoTrashOutline } from 'react-icons/io5';
 import EmojiPicker from '@/shared/presentation/components/EmojiPicker';
-import IconButton from '@/shared/presentation/components/IconButton';
-import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
-import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
-import Popover from '@/shared/presentation/components/Popover';
+import { Box, IconButton, Popover } from '@/shared/presentation/primitives';
+import { PopoverMenuItem } from '@/shared/presentation/primitives';
+import { PopoverMenu } from '@/shared/presentation/primitives';
 import './MessageControls.css';
 
 interface MessageControlsProps {
@@ -55,7 +54,7 @@ const MessageControls = ({ messageId, isOwn, onReact, onEdit, onDelete }: Messag
     );
 
     return (
-        <div className='volt-container d-flex gap-025 message-controls'>
+        <Box display='flex' gap='025' className='message-controls'>
             <Popover
                 id={`reactions-${messageId}`}
                 trigger={
@@ -79,7 +78,7 @@ const MessageControls = ({ messageId, isOwn, onReact, onEdit, onDelete }: Messag
                     {renderOptionsMenu}
                 </Popover>
             )}
-        </div>
+        </Box>
     );
 };
 

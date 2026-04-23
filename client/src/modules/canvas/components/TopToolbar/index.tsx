@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
 import useShortcutDiscovery from '@/shared/tips/use-shortcut-discovery';
 import { ChevronLeft } from 'lucide-react';
+import { Row } from '@/shared/presentation/primitives';
 
 import './TopToolbar.css';
 
@@ -114,7 +115,7 @@ const TopToolbar = ({
                 hidden
                 onChange={handlePickerChange}
             />
-            <div className="volt-container canvas-toolbar-left d-flex items-center flex-1">
+            <Row flex='1' className="canvas-toolbar-left">
                 <button
                     type="button"
                     className="canvas-toolbar-back"
@@ -149,13 +150,13 @@ const TopToolbar = ({
                 </nav>
 
                 <WorkspaceTabs disableAuxWorkspaces={localGlbMode} />
-            </div>
+            </Row>
 
-            <div className="volt-container canvas-toolbar-center d-flex items-center content-center flex-1">
+            <Row justify='center' flex='1' className="canvas-toolbar-center">
                 <CanvasPluginSearch />
-            </div>
+            </Row>
 
-            <div className="volt-container canvas-toolbar-info d-flex items-center gap-025 flex-1 content-end">
+            <Row gap='025' flex='1' justify='end' className="canvas-toolbar-info">
                 {contextualActions}
                 {canShowPeers && onSelectWorkspacePeer && (
                     <WorkspacePeerAvatars
@@ -172,7 +173,7 @@ const TopToolbar = ({
                         canManageVisibility={share.canManageVisibility}
                     />
                 )}
-            </div>
+            </Row>
         </header>
     );
 };

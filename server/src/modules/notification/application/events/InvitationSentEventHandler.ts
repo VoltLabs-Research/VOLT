@@ -1,12 +1,12 @@
 import { CreateNotificationUseCase } from '@modules/notification/application/use-cases';
-import { inject, injectable } from 'tsyringe';
 import type { InvitationSentIntegrationEvent } from '@shared/application/contracts/events/InvitationSentIntegrationEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-@injectable()
+@Subscribe('invitation.sent')
 export default class InvitationSentEventHandler implements IEventHandler<InvitationSentIntegrationEvent>{
     constructor(
-        @inject(CreateNotificationUseCase)
+        
         private readonly createNotificationUseCase: CreateNotificationUseCase
     ){}
 

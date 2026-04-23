@@ -1,26 +1,23 @@
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
+import BcryptPasswordHasher from '@modules/auth/infrastructure/services/BcryptPasswordHasher';
 import {
     DeleteTeamClusterByIdInputDTO,
     DeleteTeamClusterByIdOutputDTO
 } from '@modules/team-cluster/application/dtos/DeleteTeamClusterByIdDTO';
 import { requireOwnedTeamCluster } from '@modules/team-cluster/application/utilities/team-cluster-ownership';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
 import { assertConfirmedPassword } from '@modules/team-cluster/utilities/assertConfirmedPassword';
 import { buildManualTeamClusterUninstallCommand } from '@modules/team-cluster/utilities/installRoot';
-import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { inject, injectable } from 'tsyringe';
-import type { IPasswordHasher } from '@modules/auth/domain/port/IPasswordHasher';
-import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import type { TeamClusterDaemonSemanticCommandResult } from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import { injectable } from 'tsyringe';
 
 const shouldRequireManualUninstall = (status: TeamClusterStatus, installedVersion: string | null, daemonPort: number | null): boolean => {
     if (status === TeamClusterStatus.WaitingForConnection) {
@@ -33,19 +30,19 @@ const shouldRequireManualUninstall = (status: TeamClusterStatus, installedVersio
 @injectable()
 export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeamClusterByIdInputDTO, DeleteTeamClusterByIdOutputDTO, ApplicationError> {
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
+        
+        private readonly teamClusterRepository: TeamClusterRepository,
 
-        @inject(AUTH_TOKENS.UserRepository)
-        private readonly userRepository: IUserRepository,
+        
+        private readonly userRepository: UserRepository,
 
-        @inject(AUTH_TOKENS.PasswordHasher)
-        private readonly passwordHasher: IPasswordHasher,
+        
+        private readonly passwordHasher: BcryptPasswordHasher,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterLifecycleService)
+        
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
 
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ){}
 

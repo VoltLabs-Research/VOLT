@@ -1,6 +1,6 @@
-import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
+import { ContextMenuPopover } from '@/shared/presentation/primitives';
 import EditableTag from '@/shared/presentation/components/EditableTag';
-import IconButton from '@/shared/presentation/components/IconButton';
+import { Row, Stack, IconButton } from '@/shared/presentation/primitives';
 import WorkspaceEntryInput from './WorkspaceEntryInput';
 import WorkspaceTreeRow from './WorkspaceTreeRow';
 import {
@@ -353,7 +353,7 @@ const FolderTreeNode = ({
                             zIndex: isDragging ? 3 : undefined
                         }}
                         trailing={(
-                            <div className='volt-container d-flex items-center gap-025'>
+                            <Row gap='025'>
                                 <IconButton
                                     variant='ghost'
                                     size='sm'
@@ -380,7 +380,7 @@ const FolderTreeNode = ({
                                 >
                                     <Plus size={12} />
                                 </IconButton>
-                            </div>
+                            </Row>
                         )}
                         {...attributes}
                         {...listeners}
@@ -390,7 +390,7 @@ const FolderTreeNode = ({
                 size='sm'
             />
             {isExpanded && (
-                <div className='volt-container d-flex column' role='group'>
+                <Stack role='group'>
                     {node.children.map(renderChild)}
                     {newFolderTargetFolder === node.folderPath && (
                         <WorkspaceEntryInput
@@ -410,7 +410,7 @@ const FolderTreeNode = ({
                             onCancel={onCancelNewFile}
                         />
                     )}
-                </div>
+                </Stack>
             )}
         </>
     );

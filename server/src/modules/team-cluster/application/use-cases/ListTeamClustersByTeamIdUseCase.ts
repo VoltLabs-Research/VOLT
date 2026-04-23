@@ -1,17 +1,16 @@
+import type { ClusterTransferJobDTO } from '@modules/team-cluster/application/dtos/ClusterTransferJobDTO';
+import { toClusterTransferJobDTO } from '@modules/team-cluster/application/dtos/ClusterTransferJobDTO';
 import {
     ListTeamClustersInputDTO,
     ListTeamClustersOutputDTO
 } from '@modules/team-cluster/application/dtos/ListTeamClustersDTO';
-import { toClusterTransferJobDTO } from '@modules/team-cluster/application/dtos/ClusterTransferJobDTO';
 import { toTeamClusterDTO } from '@modules/team-cluster/application/dtos/TeamClusterDTO';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import ClusterTransferJobRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/ClusterTransferJobRepository';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
-import type ClusterTransferJobRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/ClusterTransferJobRepository';
-import type { ClusterTransferJobDTO } from '@modules/team-cluster/application/dtos/ClusterTransferJobDTO';
+import { injectable } from 'tsyringe';
 
 interface ListTeamClustersFilter extends Record<string, unknown> {
     team: string;
@@ -20,10 +19,10 @@ interface ListTeamClustersFilter extends Record<string, unknown> {
 @injectable()
 export default class ListTeamClustersByTeamIdUseCase implements IUseCase<ListTeamClustersInputDTO, ListTeamClustersOutputDTO, ApplicationError> {
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
+        
+        private readonly teamClusterRepository: TeamClusterRepository,
 
-        @inject(TEAM_CLUSTER_TOKENS.ClusterTransferJobRepository)
+        
         private readonly clusterTransferJobRepository: ClusterTransferJobRepository
     ){}
 

@@ -2,12 +2,9 @@ import { IoAttachOutline, IoHappyOutline, IoPaperPlaneOutline, IoDocumentOutline
 import { useId, useState } from 'react';
 import useFilePreview from '@/modules/chat/hooks/use-file-preview';
 import { formatSize } from '@/shared/utils/format';
-import Button from '@/shared/presentation/components/Button';
+import { Box, Stack, Row, Text, Button, IconButton, Popover, Tooltip } from '@/shared/presentation/primitives';
 import EmojiPicker from '@/shared/presentation/components/EmojiPicker';
 import useTip from '@/shared/tips/use-tip';
-import IconButton from '@/shared/presentation/components/IconButton';
-import Popover from '@/shared/presentation/components/Popover';
-import Tooltip from '@/shared/presentation/components/Tooltip';
 import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react';
 import './ChatInput.css';
 
@@ -79,9 +76,9 @@ const ChatInput = ({ disabled, isSending = false, onTyping, onSendText, onSendFi
         }
 
         return (
-            <div className='volt-container d-flex flex-center chat-file-preview-icon f-shrink-0'>
+            <Box display='flex' shrink='0' className='flex-center chat-file-preview-icon'>
                 <IoDocumentOutline size={20} className='color-muted' />
-            </div>
+            </Box>
         );
     };
 
@@ -90,35 +87,35 @@ const ChatInput = ({ disabled, isSending = false, onTyping, onSendText, onSendFi
     );
 
     const renderFilePreview = (item: typeof previews[number], index: number) => (
-        <div key={index} className='volt-container d-flex items-center gap-075 chat-file-preview-item'>
+        <Row key={index} gap='075' className='chat-file-preview-item'>
             {renderFilePreviewMedia(index)}
-            <div className='volt-container d-flex column flex-1 overflow-hidden'>
-                <p className='volt-text font-size-2 font-weight-5 color-primary chat-file-preview-name'>
+            <Stack flex='1' overflow='hidden'>
+                <Text as='p' size='md' weight='medium' className='chat-file-preview-name'>
                     {item.file.name}
-                </p>
-                <p className='volt-text font-size-2 color-muted'>
+                </Text>
+                <Text as='p' size='md' tone='muted'>
                     {formatSize(item.file.size)}
-                </p>
-            </div>
+                </Text>
+            </Stack>
             <IconButton size='sm' variant='ghost' onClick={() => removeFile(index)} title={`Remove ${item.file.name}`} aria-label={`Remove ${item.file.name}`}>
                 <IoCloseOutline size={16} />
             </IconButton>
-        </div>
+        </Row>
     );
 
     return (
         <form onSubmit={handleSend} className='chat-input-container'>
             {previews.length > 0 && (
-                <div className='volt-container d-flex column gap-05 y-auto chat-file-previews'>
+                <Stack gap='05' overflow='y-auto' className='chat-file-previews'>
                     {previews.map(renderFilePreview)}
-                </div>
+                </Stack>
             )}
 
-            <label htmlFor={textareaId} className='chat-input-visually-hidden'>
+            <label htmlFor={textareaId} className='sr-only'>
                 Message
             </label>
 
-            <div className='volt-container d-flex items-center gap-05 chat-input-wrapper'>
+            <Row gap='05' className='chat-input-wrapper'>
                 <input type='file' ref={inputRef} onChange={handleFileInput} multiple hidden />
 
                 <Tooltip content='Attach file'>
@@ -165,11 +162,11 @@ const ChatInput = ({ disabled, isSending = false, onTyping, onSendText, onSendFi
                         <IoPaperPlaneOutline size={18} />
                     </Button>
                 </Tooltip>
-            </div>
+            </Row>
 
-            <p id={statusId} className='volt-text chat-input-status font-size-2 color-muted' role='status' aria-live='polite'>
+            <Text as='p' id={statusId} size='md' tone='muted' className='chat-input-status' role='status' aria-live='polite'>
                 {isPending ? 'Sending message…' : ''}
-            </p>
+            </Text>
         </form>
     );
 };

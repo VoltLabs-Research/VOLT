@@ -5,6 +5,7 @@ import useFrameProperties from '@/modules/trajectory/hooks/particle-filter/use-f
 import { buildPropertyOptions, resolvePropertySelection } from '@/modules/trajectory/hooks/particle-filter/use-property-selector.utilities';
 import { uniqueValuesQuery } from '@/modules/trajectory/hooks/particle-filter/queries';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
+import particleFilterService from '@/modules/trajectory/api/services/particle-filter';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sileo } from 'sileo';
 import { useCanvasDataAccess } from '@/modules/canvas/api/access';
@@ -430,6 +431,14 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
         setError(null);
         setIsApplying(true);
         try {
+            await particleFilterService.applyAction({
+                trajectoryId,
+                analysisId,
+                timestep: currentTimestep,
+                action,
+                combinator: previewResult.request.combinator,
+                conditions: previewResult.request.conditions
+            });
             setActiveScene(toScene(analysisId, action, previewResult.request));
             setPreviewResult(null);
         } catch (applyError: unknown) {

@@ -1,15 +1,14 @@
-import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import type LatexFolder from '@modules/latex/domain/entities/LatexFolder';
 import type { LatexFolderProps } from '@modules/latex/domain/entities/LatexFolder';
-import type { ILatexFolderRepository } from '@modules/latex/domain/port/ILatexFolderRepository';
+import LatexFolderRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexFolderRepository';
 import { ListCatalogFoldersUseCase } from '@shared/application/catalog/ListCatalogFoldersUseCase';
-import { inject, injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
-@injectable()
+@Singleton()
 export class ListLatexFoldersUseCase extends ListCatalogFoldersUseCase<LatexFolder, LatexFolderProps> {
     constructor(
-        @inject(LATEX_TOKENS.LatexFolderRepository)
-        latexFolderRepository: ILatexFolderRepository
+        
+        latexFolderRepository: LatexFolderRepository
     ) {
         super(latexFolderRepository);
     }

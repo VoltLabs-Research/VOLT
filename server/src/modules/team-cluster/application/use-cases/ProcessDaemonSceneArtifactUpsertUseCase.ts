@@ -1,27 +1,25 @@
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import {
     resolveAnalysisComputeClusterId,
     resolveAnalysisStorageClusterId,
     resolveTrajectoryStorageClusterId
 } from '@modules/team-cluster/application/utilities/cluster-location';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import SceneArtifactBatchUpsertedEvent, {
     SceneArtifactBatchUpsertedArtifact
 } from '@modules/trajectory/domain/events/scene-artifacts/SceneArtifactBatchUpsertedEvent';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
+import { inject } from 'tsyringe';
 
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import type { IEventBus } from '@shared/application/events/IEventBus';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import type { SceneArtifactParams, SceneArtifactSourceType, SceneArtifactStatus } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
-import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import type { IEventBus } from '@shared/application/events/IEventBus';
 
 export interface ProcessDaemonSceneArtifactUpsertInputDTO {
     teamClusterId: string;
@@ -62,24 +60,24 @@ interface PreparedSceneArtifactUpsertEntry {
     };
 }
 
-@injectable()
+@Singleton()
 export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase<
     ProcessDaemonSceneArtifactUpsertInputDTO,
     ProcessDaemonSceneArtifactUpsertOutputDTO,
     ApplicationError
 > {
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterLifecycleService)
+        
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
 
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository,
+        
+        private readonly analysisRepository: AnalysisRepository,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepository: ITrajectoryRepository,
+        
+        private readonly trajectoryRepository: TrajectoryRepository,
 
-        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository)
-        private readonly sceneArtifactRepository: ISceneArtifactRepository,
+        
+        private readonly sceneArtifactRepository: SceneArtifactRepository,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus

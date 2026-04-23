@@ -6,9 +6,8 @@ import AIFloatingAssistantPanel from '@/modules/ai/components/AIFloatingAssistan
 import NotificationsPopover from '@/modules/notification/components/NotificationsPopover';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
-import IconButton from '@/shared/presentation/components/IconButton';
+import { Box, Row, IconButton, Tooltip } from '@/shared/presentation/primitives';
 import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
-import Tooltip from '@/shared/presentation/components/Tooltip';
 import { IoMenuOutline } from 'react-icons/io5';
 import { GoPersonAdd } from 'react-icons/go';
 
@@ -38,7 +37,7 @@ const DashboardHeader = ({
     }
 
     return (
-        <header className='dashboard-top-header p-sticky gap-1 d-flex items-center top-0'>
+        <Row as='header' position='sticky' gap='1' top='0' className='dashboard-top-header'>
             <IconButton
                 className='mobile-sidebar-trigger radius-xs'
                 onClick={() => setSidebarOpen(true)}
@@ -46,22 +45,22 @@ const DashboardHeader = ({
                 <IoMenuOutline size={20} />
             </IconButton>
 
-            <div className='volt-container dashboard-header-left d-flex items-center flex-1'>
+            <Row flex='1' className='dashboard-header-left'>
                 <HeaderBreadcrumbs />
-            </div>
+            </Row>
 
-            <div className='volt-container dashboard-header-center d-flex content-center'>
+            <Box display='flex' justify='center' className='dashboard-header-center'>
                 <GlobalSearch contextBreadcrumb={globalSearchBreadcrumb} />
-            </div>
+            </Box>
 
-            <div className='volt-container dashboard-header-right gap-05 d-flex items-center flex-1 content-end'>
+            <Row gap='05' flex='1' justify='end' className='dashboard-header-right'>
                 {inviteAction}
 
                 <ThemeToggleButton className='dashboard-theme-toggle' />
                 <AIFloatingAssistantPanel />
                 <NotificationsPopover />
-            </div>
-        </header>
+            </Row>
+        </Row>
     );
 };
 

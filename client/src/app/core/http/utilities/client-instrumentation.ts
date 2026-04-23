@@ -165,7 +165,7 @@ class InstrumentedHttpClient implements HttpClient {
     }
 }
 
-export const getClientTraceId = (): string => {
+const getClientTraceId = (): string => {
     if (!clientTraceId) {
         clientTraceId = createTraceId();
     }

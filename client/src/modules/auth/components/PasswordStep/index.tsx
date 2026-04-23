@@ -1,6 +1,6 @@
 import UserBadge from '../UserBadge';
-import Button from '@/shared/presentation/components/Button';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import { Button, Stack } from '@/shared/presentation/primitives';
 import { ArrowLeft, Lock } from 'lucide-react';
 import type { FormEventHandler } from 'react';
 import type { Control } from 'react-hook-form';
@@ -15,13 +15,17 @@ interface PasswordStepProps {
 };
 
 const PasswordStep = ({ email, control, isLoading, onSubmit, onBack }: PasswordStepProps) => (
-    <div className='volt-container d-flex column gap-1'>
+    <Stack gap='1'>
         <UserBadge
             label='Logging in as'
             email={email}
             onChangeClick={onBack} />
 
-        <form onSubmit={onSubmit} className='d-flex column gap-1'>
+        <Stack
+            as='form'
+            gap='1'
+            {...({ onSubmit } as React.FormHTMLAttributes<HTMLFormElement>)}
+        >
             <FormFieldRHF
                 name='password'
                 control={control}
@@ -59,8 +63,8 @@ const PasswordStep = ({ email, control, isLoading, onSubmit, onBack }: PasswordS
             >
                 Back
             </Button>
-        </form>
-    </div>
+        </Stack>
+    </Stack>
 );
 
 export default PasswordStep;

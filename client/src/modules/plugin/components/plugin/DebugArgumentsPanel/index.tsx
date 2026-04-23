@@ -1,3 +1,4 @@
+import { Button, IconButton } from '@/shared/presentation/primitives';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
@@ -7,12 +8,10 @@ import {
     collectVisibleDefaultArgumentValues,
     getUserConfigurableArguments
 } from '@/modules/plugin/utilities/plugin/argument-values';
-import Button from '@/shared/presentation/components/Button';
-import IconButton from '@/shared/presentation/components/IconButton';
 import { X, Play, Settings2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo } from 'react';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
-import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { SelectOption } from '@/shared/presentation/primitives';
 import './DebugArgumentsPanel.css';
 
 interface DebugArgumentsPanelProps {
@@ -96,11 +95,11 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
     if (!showArgumentsPanel) return null;
 
     return (
-        <div className='volt-container p-absolute z-10 center-x panel-floating radius-md overflow-hidden d-flex column debug-arguments-panel glass-bg'>
-            <div className='volt-container d-flex content-between items-center f-shrink-0 debug-arguments-panel-header'>
-                <div className='volt-container d-flex items-center gap-05'>
+        <div className='p-absolute z-10 center-x panel-floating radius-md overflow-hidden d-flex column debug-arguments-panel glass-bg'>
+            <div className='d-flex content-between items-center f-shrink-0 debug-arguments-panel-header'>
+                <div className='d-flex items-center gap-05'>
                     <Settings2 size={14} />
-                    <p className='volt-text font-size-2 font-weight-6'>
+                    <p className='font-size-2 font-weight-6'>
                         Debug Arguments
                     </p>
                 </div>
@@ -113,7 +112,7 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
                 </IconButton>
             </div>
 
-            <div className='volt-container d-flex column gap-05 y-auto flex-1 min-h-0 debug-arguments-panel-body'>
+            <div className='d-flex column gap-05 y-auto flex-1 min-h-0 debug-arguments-panel-body'>
                 <ArgumentFieldsRenderer
                     arguments={configurableArgs}
                     values={debugConfig}
@@ -123,7 +122,7 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
                 />
             </div>
 
-            <div className='volt-container f-shrink-0 debug-arguments-panel-footer'>
+            <div className='f-shrink-0 debug-arguments-panel-footer'>
                 <Button
                     variant='outline'
                     intent='white'

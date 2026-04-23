@@ -3,12 +3,10 @@ import { formatClusterTimestamp } from '@/modules/cluster/utilities/format-clust
 import { TeamClusterRemoteAccessTarget } from '@/modules/cluster/api/entities/team-cluster-remote-access';
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
 import MetricBars from '@/modules/cluster/components/MetricBars';
-import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
+import { ContextMenuPopover } from '@/shared/presentation/primitives';
 import './ServerTable.css';
-import Button from '@/shared/presentation/components/Button';
 import RefreshButton from '@/shared/presentation/components/RefreshButton';
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
-import Skeleton from '@/shared/presentation/components/Skeleton';
+import { Box, Stack, Row, Text, Heading, Button, StatusBadge, Skeleton } from '@/shared/presentation/primitives';
 import { useMemo, useCallback } from 'react';
 import { Database, FolderOpen, KeyRound, MoreHorizontal, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -36,27 +34,27 @@ interface ColumnDef {
 
 const renderMetricValue = (value: number | null): ReactNode => {
     if (value === null) {
-        return <p className='volt-text font-size-1 color-muted'>--</p>;
+        return <Text as='p' size='sm' tone='muted'>--</Text>;
     }
 
     return (
-        <div className='volt-container d-flex items-center gap-05'>
+        <Row gap='05'>
             <MetricBars percentage={value} />
-            <p className='volt-text font-size-1 color-muted'>{value}%</p>
-        </div>
+            <Text as='p' size='sm' tone='muted'>{value}%</Text>
+        </Row>
     );
 };
 
 const renderDiskValue = (row: ServerRow): ReactNode => {
     if (row.diskUsagePercent === null || row.diskFree === null) {
-        return <p className='volt-text font-size-1 color-muted'>--</p>;
+        return <Text as='p' size='sm' tone='muted'>--</Text>;
     }
 
     return (
-        <div className='volt-container d-flex items-center gap-05'>
+        <Row gap='05'>
             <MetricBars percentage={row.diskUsagePercent} />
-            <p className='volt-text font-size-1 color-muted'>{row.diskFree.toFixed(1)}GB Available</p>
-        </div>
+            <Text as='p' size='sm' tone='muted'>{row.diskFree.toFixed(1)}GB Available</Text>
+        </Row>
     );
 };
 
@@ -65,12 +63,12 @@ const COLUMNS: ColumnDef[] = [
         key: 'id',
         header: 'Cluster',
         render: (row) => (
-            <div className='volt-container d-flex column gap-025'>
-                <div className='volt-container d-flex items-center gap-05'>
-                    <p className='volt-text font-size-2 color-primary'>{row.name}</p>
-                </div>
-                <p className='volt-text font-size-1 color-muted font-family-mono'>{row.id}</p>
-            </div>
+            <Stack gap='025'>
+                <Row gap='05'>
+                    <Text as='p' size='md' tone='primary'>{row.name}</Text>
+                </Row>
+                <Text as='p' size='sm' tone='muted' className='font-family-mono'>{row.id}</Text>
+            </Stack>
         )
     },
     {
@@ -95,21 +93,21 @@ const COLUMNS: ColumnDef[] = [
         key: 'installedVersion',
         header: 'Version',
         render: (row) => (
-            <p className='volt-text font-size-2 color-secondary'>{row.installedVersion ?? '--'}</p>
+            <Text as='p' size='md' tone='secondary'>{row.installedVersion ?? '--'}</Text>
         )
     },
     {
         key: 'lastHeartbeatAt',
         header: 'Last Heartbeat',
         render: (row) => (
-            <p className='volt-text font-size-1 color-secondary'>{formatClusterTimestamp(row.lastHeartbeatAt)}</p>
+            <Text as='p' size='sm' tone='secondary'>{formatClusterTimestamp(row.lastHeartbeatAt)}</Text>
         )
     },
     {
         key: 'daemonPort',
         header: 'Daemon Port',
         render: (row) => (
-            <p className='volt-text font-size-2 color-secondary font-family-mono'>{row.daemonPort ?? '--'}</p>
+            <Text as='p' size='md' tone='secondary' className='font-family-mono'>{row.daemonPort ?? '--'}</Text>
         )
     },
     {
@@ -130,17 +128,17 @@ const COLUMNS: ColumnDef[] = [
     {
         key: 'network',
         header: 'Network',
-        render: (row) => <p className='volt-text font-size-2 color-secondary'>{row.network}</p>
+        render: (row) => <Text as='p' size='md' tone='secondary'>{row.network}</Text>
     },
     {
         key: 'analysisCount',
         header: 'Computed Analyzes',
-        render: (row) => <p className='volt-text font-size-2 color-secondary'>{row.analysisCount ?? '--'}</p>
+        render: (row) => <Text as='p' size='md' tone='secondary'>{row.analysisCount ?? '--'}</Text>
     },
     {
         key: 'uptime',
         header: 'Uptime',
-        render: (row) => <p className='volt-text font-size-2 font-weight-5 color-secondary'>{row.uptime}</p>
+        render: (row) => <Text as='p' size='md' weight='medium' tone='secondary'>{row.uptime}</Text>
     }
 ];
 
@@ -259,16 +257,16 @@ const ServerTable = ({
     };
 
     return (
-        <div className='volt-container server-table-container p-1-5'>
-            <div className='volt-container d-flex items-center content-between server-table-header mb-1-5'>
-                <div className='volt-container d-flex items-center gap-075'>
-                    <div className='volt-container server-table-title-bar' />
-                    <h3 className='volt-title font-size-3 font-weight-6 color-primary'>Clusters</h3>
-                </div>
+        <Box p='1-5' className='server-table-container'>
+            <Row justify='between' className='server-table-header mb-1-5'>
+                <Row gap='075'>
+                    <Box className='server-table-title-bar' />
+                    <Heading level={3} size='lg' weight='bold'>Clusters</Heading>
+                </Row>
                 <RefreshButton size='sm' />
-            </div>
+            </Row>
 
-            <div className='volt-container server-table-wrapper'>
+            <Box className='server-table-wrapper'>
                 <table className='table' aria-label='Clusters table'>
                     <thead>
                         <tr>
@@ -282,8 +280,8 @@ const ServerTable = ({
                         {isLoading ? renderSkeletonRows() : rows.map(renderRow)}
                     </tbody>
                 </table>
-            </div>
-        </div>
+            </Box>
+        </Box>
     );
 };
 

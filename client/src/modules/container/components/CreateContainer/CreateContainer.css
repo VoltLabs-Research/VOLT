@@ -3,45 +3,6 @@
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
 }
 
-.create-container-template-card {
-    border: 1px solid var(--color-border-soft);
-    background: var(--color-surface-1);
-    text-align: left;
-}
-
-.create-container-template-card:hover {
-    border-color: var(--color-brand-primary);
-}
-
-.create-container-template-card.selected {
-    border-color: var(--color-brand-primary);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-primary) 35%, transparent);
-}
-
-.create-container-template-card:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px var(--focus-ring);
-}
-
-.create-container-template-icon {
-    width: 56px;
-    height: 56px;
-    background: var(--color-surface-2);
-}
-
-.create-container-template-card-header {
-    width: 100%;
-}
-
-.create-container-template-selection-pill {
-    padding: 0.25rem 0.5rem;
-    border: 1px solid color-mix(in srgb, var(--color-brand-primary) 20%, var(--color-border-soft));
-    background: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-surface-1));
-    color: var(--color-brand-primary);
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
 .create-container-step-copy {
     max-width: 46rem;
 }
@@ -166,35 +127,6 @@
     background: color-mix(in srgb, var(--color-surface-1) 94%, var(--color-surface-2));
 }
 
-.create-container-review-item {
-    display: grid;
-    grid-template-columns: minmax(7rem, 8rem) minmax(0, 1fr);
-    gap: 0.75rem 1rem;
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid var(--color-border-soft);
-    align-items: start;
-}
-
-.create-container-review-item:last-child {
-    border-bottom: none;
-}
-
-.create-container-label {
-    flex: 0 0 8rem;
-    max-width: 100%;
-    font-size: 0.875rem;
-}
-
-.create-container-value {
-    min-width: 0;
-    max-width: 100%;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-    font-size: 0.95rem;
-    color: var(--color-text-primary);
-    text-align: right;
-}
-
 @media (max-width: 768px) {
     .create-container-templates-grid,
     .create-container-config-grid {
@@ -213,21 +145,5 @@
 
     .create-container-step-actions > * {
         width: 100%;
-    }
-
-    .create-container-review-item {
-        grid-template-columns: 1fr;
-        padding: 0.875rem 1rem;
-    }
-
-    .create-container-label,
-    .create-container-value {
-        text-align: left;
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .create-container-template-card {
-        transition: none;
     }
 }

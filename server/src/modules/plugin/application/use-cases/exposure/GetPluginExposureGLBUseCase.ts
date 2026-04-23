@@ -2,29 +2,28 @@ import {
     GetPluginExposureGLBInputDTO,
     GetPluginExposureGLBOutputDTO
 } from '@modules/plugin/application/dtos/exposure/GetPluginExposureGLBDTO';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { resolveSceneArtifactStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { Result } from '@shared/domain/port/Result';
-import { injectable, inject } from 'tsyringe';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import { Result } from '@shared/domain/port/Result';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { inject } from 'tsyringe';
 
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import type { SceneArtifactProps } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
-import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
+import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
+import { getClusterGlbStream, getLocalGlbStream } from '@modules/trajectory/utilities/storage/glb-stream-resolution';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type { Readable } from 'node:stream';
-import { getClusterGlbStream, getLocalGlbStream } from '@modules/trajectory/utilities/storage/glb-stream-resolution';
 
-@injectable()
+@Singleton()
 export class GetPluginExposureGLBUseCase implements IUseCase<
     GetPluginExposureGLBInputDTO,
     GetPluginExposureGLBOutputDTO,
@@ -33,11 +32,11 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
     constructor(
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository,
-        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository)
-        private readonly sceneArtifactRepository: ISceneArtifactRepository,
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
+        
+        private readonly analysisRepository: AnalysisRepository,
+        
+        private readonly sceneArtifactRepository: SceneArtifactRepository,
+        
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 

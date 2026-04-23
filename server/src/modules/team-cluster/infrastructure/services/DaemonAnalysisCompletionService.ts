@@ -1,22 +1,21 @@
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import type Analysis from '@modules/analysis/domain/entities/Analysis';
+import AnalysisStatusChangedEvent from '@modules/analysis/domain/events/AnalysisStatusChangedEvent';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
+import AnalysisExecutionLogService from '@modules/analysis/infrastructure/services/AnalysisExecutionLogService';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
-import AnalysisStatusChangedEvent from '@modules/analysis/domain/events/AnalysisStatusChangedEvent';
 import { resolveAnalysisComputeClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import type { IEventBus } from '@shared/application/events/IEventBus';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import IORedis from 'ioredis';
-import logger from '@shared/infrastructure/logger';
-import { injectable, inject } from 'tsyringe';
-import type Analysis from '@modules/analysis/domain/entities/Analysis';
-import type AnalysisExecutionLogService from '@modules/analysis/infrastructure/services/AnalysisExecutionLogService';
 import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
+import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
+import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { IEventBus } from '@shared/application/events/IEventBus';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import logger from '@shared/infrastructure/logger';
+import IORedis from 'ioredis';
+import { inject } from 'tsyringe';
 
 const ANALYSIS_QUEUE_TYPE = 'analysis_processing';
 const RASTER_QUEUE_TYPE = 'trajectory_rasterization';
@@ -180,7 +179,7 @@ interface ResolvedAnalysisOwnership extends ResolvedTrajectoryOwnership {
     analysis: Analysis;
 };
 
-@injectable()
+@Singleton()
 export default class DaemonAnalysisCompletionService {
     constructor(
         @inject(SHARED_TOKENS.RedisClient)
@@ -189,14 +188,14 @@ export default class DaemonAnalysisCompletionService {
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
 
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepo: IAnalysisRepository,
+        
+        private readonly analysisRepo: AnalysisRepository,
 
-        @inject(ANALYSIS_TOKENS.AnalysisExecutionLogService)
+        
         private readonly analysisExecutionLogService: AnalysisExecutionLogService,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepo: ITrajectoryRepository
+        
+        private readonly trajectoryRepo: TrajectoryRepository
     ) {}
 
     /**

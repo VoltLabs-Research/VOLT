@@ -1,10 +1,9 @@
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
-import { injectable, inject } from 'tsyringe';
 import type {
     TeamClusterQueueScopeLimitProps,
     TeamClusterQueueScopeLimitsProps
 } from '@modules/team-cluster/domain/entities/TeamCluster';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 export type TeamClusterScopedQueueLimitKey =
     | 'analysisProcessing'
@@ -13,11 +12,11 @@ export type TeamClusterScopedQueueLimitKey =
     | 'cloudUpload'
     | 'trajectoryCompression';
 
-@injectable()
+@Singleton()
 export default class TeamClusterQueueScopeLimitsService {
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository
+        
+        private readonly teamClusterRepository: TeamClusterRepository
     ) {}
 
     async getLimits(

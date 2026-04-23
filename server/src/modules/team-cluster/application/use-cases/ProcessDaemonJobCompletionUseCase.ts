@@ -1,11 +1,10 @@
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import type DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
-import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
+import DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
+import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 type RasterJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
 type GlbJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
@@ -183,18 +182,18 @@ interface ProcessDaemonJobCompletionOutputDTO {
     acknowledged: boolean;
 };
 
-@injectable()
+@Singleton()
 export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
     ProcessDaemonJobCompletionInputDTO,
     ProcessDaemonJobCompletionOutputDTO,
     ApplicationError
 > {
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterLifecycleService)
+        
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
 
-        @inject(TEAM_CLUSTER_TOKENS.DaemonAnalysisCompletionService)
-        private readonly daemonAnalysisCompletionService: DaemonAnalysisCompletionService & DaemonJobCompletionService
+        
+        private readonly daemonAnalysisCompletionService: DaemonAnalysisCompletionService
     ) {}
 
     async execute(

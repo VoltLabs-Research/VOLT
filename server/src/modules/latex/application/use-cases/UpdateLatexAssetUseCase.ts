@@ -1,27 +1,26 @@
-import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { Result } from '@shared/domain/port/Result';
-import { sanitizeAssetPath } from '@modules/latex/application/utilities/sanitize-asset-path';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
 import type { UpdateLatexAssetInputDTO, UpdateLatexAssetOutputDTO } from '@modules/latex/application/dtos/UpdateLatexAssetDTO';
+import { sanitizeAssetPath } from '@modules/latex/application/utilities/sanitize-asset-path';
+import LatexAssetRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexAssetRepository';
+import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
-import type { ILatexAssetRepository } from '@modules/latex/domain/port/ILatexAssetRepository';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 /**
  * Updates the virtual path of a LaTeX asset (i.e., moves it to a folder).
  *
  * Only the `path` metadata is mutated; the underlying storage object is unchanged.
  */
-@injectable()
+@Singleton()
 export class UpdateLatexAssetUseCase implements IUseCase<UpdateLatexAssetInputDTO, UpdateLatexAssetOutputDTO, ApplicationError> {
     constructor(
-        @inject(LATEX_TOKENS.LatexDocumentRepository)
-        private readonly latexDocumentRepository: ILatexDocumentRepository,
+        
+        private readonly latexDocumentRepository: LatexDocumentRepository,
 
-        @inject(LATEX_TOKENS.LatexAssetRepository)
-        private readonly latexAssetRepository: ILatexAssetRepository
+        
+        private readonly latexAssetRepository: LatexAssetRepository
     ) {}
 
     async execute(input: UpdateLatexAssetInputDTO): Promise<Result<UpdateLatexAssetOutputDTO, ApplicationError>> {

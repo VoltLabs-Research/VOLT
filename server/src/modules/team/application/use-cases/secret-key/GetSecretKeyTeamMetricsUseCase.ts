@@ -1,12 +1,11 @@
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { GetSecretKeyTeamMetricsInputDTO, GetSecretKeyTeamMetricsOutputDTO } from '@modules/team/application/dtos/secret-key/GetSecretKeyTeamMetricsDTO';
+import SecretKeyRepository from '@modules/team/infrastructure/persistence/mongo/repositories/secret-key/SecretKeyRepository';
+import SecretKeyUsageLogRepository from '@modules/team/infrastructure/persistence/mongo/repositories/secret-key/SecretKeyUsageLogRepository';
 import SecretKeyUsageMetricsMapper from '@modules/team/infrastructure/services/secret-key/SecretKeyUsageMetricsMapper';
-import { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
-import { ISecretKeyUsageLogRepository } from '@modules/team/domain/port/secret-key/ISecretKeyUsageLogRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable, inject } from 'tsyringe';
+import { injectable } from 'tsyringe';
 
 const MAX_KEYS_PER_TEAM = 500;
 
@@ -36,13 +35,13 @@ export default class GetSecretKeyTeamMetricsUseCase
     implements IUseCase<GetSecretKeyTeamMetricsInputDTO, GetSecretKeyTeamMetricsOutputDTO, ApplicationError> {
 
     constructor(
-        @inject(TEAM_TOKENS.SecretKeyRepository)
-        private readonly secretKeyRepo: ISecretKeyRepository,
+        
+        private readonly secretKeyRepo: SecretKeyRepository,
 
-        @inject(TEAM_TOKENS.SecretKeyUsageLogRepository)
-        private readonly usageLogRepo: ISecretKeyUsageLogRepository,
+        
+        private readonly usageLogRepo: SecretKeyUsageLogRepository,
 
-        @inject(TEAM_TOKENS.SecretKeyUsageMetricsMapper)
+        
         private readonly metricsMapper: SecretKeyUsageMetricsMapper
     ) {}
 

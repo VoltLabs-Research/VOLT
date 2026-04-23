@@ -1,27 +1,27 @@
-import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
-import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';
+import type { SubscribeToTeamSocketPayload } from '@modules/socket/domain/contracts/team-subscription';
 import { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import { ISocketRoomManager } from '@modules/socket/domain/port/ISocketRoomManager';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
+import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
+import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import TeamJobsService from './TeamJobsService';
-import { inject, singleton } from 'tsyringe';
-import type { SubscribeToTeamSocketPayload } from '@modules/socket/domain/contracts/team-subscription';
 
-@singleton()
+@Singleton()
+@AliasOf(SOCKET_TOKENS.SocketModule)
 export default class TeamJobsSocketModule extends BaseSocketModule {
     public readonly name = 'TeamJobsSocketModule';
     private unsubscribeFromTeamSubscription?: () => void;
 
     constructor(
-        @inject(SOCKET_TOKENS.SocketEventEmitter) emitter: ISocketEmitter,
-        @inject(SOCKET_TOKENS.SocketRoomManager) roomManager: ISocketRoomManager,
-        @inject(SOCKET_TOKENS.SocketEventRegistry) eventRegistry: ISocketEventRegistry,
-        @inject(TEAM_TOKENS.TeamJobsService) private readonly teamJobsService: TeamJobsService,
-        @inject(SOCKET_TOKENS.TeamSubscriptionCoordinator)
+        emitter: SocketIOEmitter,
+        roomManager: SocketIORoomManager,
+        eventRegistry: SocketIOEventRegistry,
+        private readonly teamJobsService: TeamJobsService,
+        
         private readonly teamSubscriptionService: SocketTeamSubscriptionCoordinator
     ) {
         super(emitter, roomManager, eventRegistry);

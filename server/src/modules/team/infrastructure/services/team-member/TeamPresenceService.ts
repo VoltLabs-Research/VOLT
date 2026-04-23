@@ -1,4 +1,5 @@
-import { injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+
 
 interface TeamPresenceSession {
     teamId: string;
@@ -31,7 +32,7 @@ export interface AttachTeamPresenceResult {
     detachedSession: DetachedTeamPresenceSession | null;
 };
 
-@injectable()
+@Singleton()
 export default class TeamPresenceService {
     private readonly sessionsByConnection = new Map<string, TeamPresenceSession>();
     private readonly presenceByTeam = new Map<string, Map<string, TeamPresenceState>>();

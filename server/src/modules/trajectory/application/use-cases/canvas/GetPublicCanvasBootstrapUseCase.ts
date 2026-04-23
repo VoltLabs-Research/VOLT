@@ -1,20 +1,18 @@
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { PublicCanvasAccessMode } from '@modules/trajectory/application/dtos/canvas/GetPublicCanvasBootstrapDTO';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
-import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
+import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import type {
     GetPublicCanvasBootstrapInputDTO,
     GetPublicCanvasBootstrapOutputDTO,
     PublicCanvasBootstrapTrajectoryDTO
 } from '@modules/trajectory/application/dtos/canvas/GetPublicCanvasBootstrapDTO';
-import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
-import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
 import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import type { TrajectoryFrame } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
+import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
 
 const toBootstrapTrajectory = (trajectory: Trajectory, frames: TrajectoryFrame[]): PublicCanvasBootstrapTrajectoryDTO => {
@@ -33,21 +31,21 @@ const toBootstrapTrajectory = (trajectory: Trajectory, frames: TrajectoryFrame[]
     };
 };
 
-@injectable()
+@Singleton()
 export class GetPublicCanvasBootstrapUseCase implements IUseCase<
     GetPublicCanvasBootstrapInputDTO,
     GetPublicCanvasBootstrapOutputDTO,
     ApplicationError
 > {
     constructor(
-        @inject(TrajectoryReadAccessService)
+        
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
-        @inject(TEAM_TOKENS.TeamMemberRepository)
-        private readonly teamMemberRepository: ITeamMemberRepository,
+        
+        private readonly teamMemberRepository: TeamMemberRepository,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository)
-        private readonly trajectoryFrameRepository: ITrajectoryFrameRepository
+        
+        private readonly trajectoryFrameRepository: TrajectoryFrameRepository
     ) {}
 
     async execute(

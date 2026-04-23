@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
-import EmptyState from '@/shared/presentation/components/EmptyState';
+import { EmptyState } from '@/shared/presentation/primitives';
 import MessageListSkeleton from '../MessageListSkeleton';
 import AutoScrollList from '@/shared/presentation/components/AutoScrollList';
+import { Box, Text } from '@/shared/presentation/primitives';
 import type { ChatMessage } from '@/modules/chat/api/entities/message';
 import './MessageList.css';
 
@@ -18,9 +19,9 @@ const MessageList = ({ messages, isLoading, hasMore, onLoadMore, renderMessage }
 
     if (hasMore && isLoading) {
         loadMoreIndicator = (
-            <div className='volt-container d-flex flex-center p-1'>
-                <p className='volt-text font-size-2 color-muted'>Loading more...</p>
-            </div>
+            <Box display='flex' p='1' className='flex-center'>
+                <Text as='p' size='md' tone='muted'>Loading more...</Text>
+            </Box>
         );
     }
 

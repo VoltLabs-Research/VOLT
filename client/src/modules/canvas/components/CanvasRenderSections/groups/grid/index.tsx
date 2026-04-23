@@ -1,5 +1,6 @@
 import { row, PRESETS, checkbox, colorField, gridPosRows, gridRotRows } from '../../../CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { Box } from '@/shared/presentation/primitives';
 
 import { useMemo } from 'react';
 import { IoGridOutline } from 'react-icons/io5';
@@ -22,20 +23,20 @@ const useGridGroup = (): RenderGroup => {
                     row(PRESETS.fadeStrength, () => s.fadeStrength, (v: number) => s.setGrid({ fadeStrength: v }))
                 ],
                 extras: (
-                    <div className="volt-container canvas-render-grid">
+                    <Box className="canvas-render-grid">
                         {checkbox('enabled', 'Enabled', s.enabled, (v: boolean) => s.setGrid({ enabled: v }))}
                         {checkbox('infiniteGrid', 'Infinite Grid', s.infiniteGrid, (v: boolean) => s.setGrid({ infiniteGrid: v }))}
-                    </div>
+                    </Box>
                 )
             },
             appearance: {
                 key: 'appearance', title: 'Colors', enabled: true,
                 rows: [],
                 extras: (
-                    <div className="volt-container canvas-render-grid">
+                    <Box className="canvas-render-grid">
                         {colorField('sectionColor', 'Section Color', s.sectionColor, (v: string) => s.setGrid({ sectionColor: v }))}
                         {colorField('cellColor', 'Cell Color', s.cellColor, (v: string) => s.setGrid({ cellColor: v }))}
-                    </div>
+                    </Box>
                 )
             },
             transform: {

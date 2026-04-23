@@ -1,4 +1,4 @@
-import { cn } from '@/shared/utils';
+import { Stack } from '@/shared/presentation/primitives';
 import type { ReactNode } from 'react';
 
 export interface SettingsSectionProps {
@@ -6,21 +6,11 @@ export interface SettingsSectionProps {
     className?: string;
 };
 
-const SettingsSection = ({ children, className = '' }: SettingsSectionProps) => {
-    const classes = cn(
-        'd-flex',
-        'b-soft',
-        'column',
-        'gap-1',
-        'p-1-5',
-        'radius-md',
-        className
-    );
-
+const SettingsSection = ({ children, className }: SettingsSectionProps) => {
     return (
-        <div className={`volt-container ${classes}`}>
+        <Stack border='soft' gap='1' p='1-5' radius='md' className={className}>
             {children}
-        </div>
+        </Stack>
     );
 };
 

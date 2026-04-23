@@ -2,8 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { IoClose } from 'react-icons/io5';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 import { useSocketTerminalSession } from '@/modules/socket/core/hooks/use-socket-terminal-session';
-import Button from '@/shared/presentation/components/Button';
-import Tooltip from '@/shared/presentation/components/Tooltip';
+import { Box, Button, Row, Stack, Tooltip } from '@/shared/presentation/primitives';
 import Terminal from '@/shared/presentation/components/Terminal';
 import type { TerminalHandle } from '@/shared/presentation/components/Terminal';
 import './ContainerTerminal.css';
@@ -69,31 +68,31 @@ export const ContainerTerminal = ({ container, onClose, embedded = false, append
     }, [appendOutput?.id, appendOutput?.data]);
 
     const content = (
-        <div className={`volt-container d-flex column overflow-hidden container-terminal-window ${embedded ? 'embedded' : ''}`}>
+        <Stack className={`container-terminal-window ${embedded ? 'embedded' : ''}`} overflow='hidden'>
             {!embedded && (
-                <div className='volt-container d-flex content-between items-center container-terminal-header'>
-                    <div className='volt-container d-flex items-center gap-05 container-terminal-title'>
+                <Row className='container-terminal-header' justify='between'>
+                    <Row className='container-terminal-title' gap='05'>
                         <span>root@{container.name}:~</span>
-                    </div>
+                    </Row>
                     <Tooltip content='Close Terminal' placement='bottom'>
                         <Button variant='ghost' intent='neutral' iconOnly size='sm' aria-label='Close terminal' title='Close terminal' onClick={onClose}>
                             <IoClose size={20} />
                         </Button>
                     </Tooltip>
-                </div>
+                </Row>
             )}
-            <div className='volt-container flex-1 overflow-hidden p-relative container-terminal-body'>
+            <Box className='container-terminal-body p-relative' flex='1' overflow='hidden'>
                 <Terminal ref={terminalRef} onData={handleTerminalData} />
-            </div>
-        </div>
+            </Box>
+        </Stack>
     );
 
     if (embedded) return content;
 
     return (
-        <div className='volt-container p-fixed inset-0 d-flex items-center content-center container-terminal-overlay' role='dialog' aria-modal='true' aria-label={`Terminal for ${container.name}`}>
+        <Box className='container-terminal-overlay p-fixed' display='flex' inset='0' align='center' justify='center' role='dialog' aria-modal='true' aria-label={`Terminal for ${container.name}`}>
             {content}
-        </div>
+        </Box>
     );
 };
 

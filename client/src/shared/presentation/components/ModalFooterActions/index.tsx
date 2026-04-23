@@ -1,5 +1,5 @@
-import Button from '@/shared/presentation/components/Button';
-import type { ButtonProps } from '@/shared/presentation/components/Button';
+import { Button } from '@/shared/presentation/primitives';
+import type { ButtonProps } from '@/shared/presentation/primitives';
 import type { ReactNode } from 'react';
 
 export interface ModalFooterAction extends Omit<ButtonProps, 'children'> {

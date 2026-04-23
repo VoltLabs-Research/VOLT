@@ -1,5 +1,5 @@
-import Button from '@/shared/presentation/components/Button';
-import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
+import { Button, Text } from '@/shared/presentation/primitives';
+import { ContextMenuPopover } from '@/shared/presentation/primitives';
 import { RefreshCw } from 'lucide-react';
 
 import type { ReactNode } from 'react';
@@ -64,7 +64,7 @@ interface MaybeContextMenuProps {
 
 export const MaybeContextMenu = ({ enabled, id, options, children }: MaybeContextMenuProps) => {
     if (!enabled) return <>{children}</>;
-    return <ContextMenuPopover id={id} trigger={<div className="volt-container">{children}</div>} options={options} size='sm' />;
+    return <ContextMenuPopover id={id} trigger={<div>{children}</div>} options={options} size='sm' />;
 };
 
 interface CanvasTreeSkeletonRowsProps {
@@ -78,9 +78,9 @@ export const CanvasTreeSkeletonRows = ({ count, compact, indent = 'base' }: Canv
     return (
         <>
             {Array.from({ length: count }).map((_, i) => (
-                <div key={`canvas-tree-skel-${i}`} className={`volt-container canvas-tree-item d-flex items-center gap-05 color-secondary ${INDENT_CLASSES[indent]}`}>
+                <div key={`canvas-tree-skel-${i}`} className={`canvas-tree-item d-flex items-center gap-05 color-secondary ${INDENT_CLASSES[indent]}`}>
                     <span className="canvas-tree-spacer" />
-                    <div className={`volt-container canvas-tree-skeleton${compact ? ' canvas-tree-skeleton--compact' : ''}`} />
+                    <div className={`canvas-tree-skeleton${compact ? ' canvas-tree-skeleton--compact' : ''}`} />
                 </div>
             ))}
         </>
@@ -93,8 +93,8 @@ interface CanvasTreeEmptyRowProps {
 }
 
 export const CanvasTreeEmptyRow = ({ label, indent = 'base' }: CanvasTreeEmptyRowProps) => (
-    <div className={`volt-container canvas-tree-item d-flex items-center gap-05 color-secondary ${INDENT_CLASSES[indent]}`}>
-        <span className="color-muted font-size-1">{label}</span>
+    <div className={`canvas-tree-item d-flex items-center gap-05 color-secondary ${INDENT_CLASSES[indent]}`}>
+        <Text size='sm' tone='muted'>{label}</Text>
     </div>
 );
 
@@ -115,8 +115,8 @@ interface AnalysisTreeRetryRowProps {
 }
 
 export const AnalysisTreeRetryRow = ({ onRetry, indent = 'lg' }: AnalysisTreeRetryRowProps) => (
-    <div className={`volt-container canvas-tree-item d-flex items-center gap-05 color-secondary ${INDENT_CLASSES[indent]}`}>
-        <span className="color-muted font-size-1">Failed to load models</span>
+    <div className={`canvas-tree-item d-flex items-center gap-05 color-secondary ${INDENT_CLASSES[indent]}`}>
+        <Text size='sm' tone='muted'>Failed to load models</Text>
         <span className="flex-1" />
         <Button variant='ghost' intent='neutral' size='sm' onClick={onRetry} aria-label='Retry loading models'>
             <RefreshCw style={{ width: 12, height: 12 }} />

@@ -1,21 +1,21 @@
-import { getRedisConfig, createBullMQRedisConnectionOptions } from '@core/config/redis';
+import { createBullMQRedisConnectionOptions, getRedisConfig } from '@core/config/redis';
 import { getTrajectoryBackgroundProcessorConcurrency } from '@core/config/trajectory';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { IEventBus } from '@shared/application/events/IEventBus';
 import CloudUploadProcessor from '@modules/trajectory/infrastructure/services/trajectory/CloudUploadProcessor';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-import TeamClusterQueueScopeLimitsService from './TeamClusterQueueScopeLimitsService';
 import {
     createBullScopedQueue,
     type BullScopedQueueController
 } from '@shared/infrastructure/workers/createBullScopedQueue';
+import TeamClusterQueueScopeLimitsService from './TeamClusterQueueScopeLimitsService';
 
-import { injectable, inject } from 'tsyringe';
-import { v4 as uuid } from 'uuid';
 import IORedis from 'ioredis';
+import { inject } from 'tsyringe';
+import { v4 as uuid } from 'uuid';
 
 import type { JobStatusChangedValue } from '@modules/jobs/domain/events/JobStatusChangedEvent';
 
@@ -49,16 +49,16 @@ export type UploadSessionDrainCallback = (
     successfulTimesteps: number[]
 ) => Promise<void>;
 
-@injectable()
+@Singleton()
 export default class CloudUploadQueueService {
     private controller: BullScopedQueueController<CloudUploadJobData, CloudUploadJobData> | null = null;
     private drainCallback: UploadSessionDrainCallback | null = null;
 
     constructor(
-        @inject(TRAJECTORY_TOKENS.CloudUploadProcessor)
+        
         private readonly cloudUploadProcessor: CloudUploadProcessor,
 
-        @inject(TRAJECTORY_TOKENS.TeamClusterQueueScopeLimitsService)
+        
         private readonly teamClusterQueueScopeLimitsService: TeamClusterQueueScopeLimitsService,
 
         @inject(SHARED_TOKENS.EventBus)

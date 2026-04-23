@@ -1,18 +1,17 @@
-import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
+import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
+import { DaemonScriptingSessionOrchestrator } from '@modules/scripting/infrastructure/services/DaemonScriptingSessionOrchestrator';
 import TrajectoryDeletedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryDeletedEvent';
-import { inject, injectable } from 'tsyringe';
-import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
-import type { IScriptingSessionOrchestrator } from '@modules/scripting/domain/port/IScriptingSessionOrchestrator';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-@injectable()
+@Subscribe('trajectory.deleted')
 export default class TrajectoryDeletedEventHandler implements IEventHandler<TrajectoryDeletedEvent> {
     constructor(
-        @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository)
-        private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
+        
+        private readonly scriptingNotebookRepository: ScriptingNotebookRepository,
 
-        @inject(SCRIPTING_TOKENS.ScriptingSessionOrchestrator)
-        private readonly scriptingSessionOrchestrator: IScriptingSessionOrchestrator
+        
+        private readonly scriptingSessionOrchestrator: DaemonScriptingSessionOrchestrator
     ) {}
 
     async handle(event: TrajectoryDeletedEvent): Promise<void> {

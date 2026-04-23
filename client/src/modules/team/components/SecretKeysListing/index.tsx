@@ -1,6 +1,7 @@
+import { Button } from '@/shared/presentation/primitives';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
-import { openModal } from '@/shared/presentation/components/Modal';
+import { openModal } from '@/shared/presentation/primitives';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import { dateColumn, statusColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
@@ -11,7 +12,6 @@ import useSecretKeysListing from '@/modules/team/hooks/secret-key/use-secret-key
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import useTip from '@/shared/tips/use-tip';
-import Button from '@/shared/presentation/components/Button';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import { PiKeyLight } from 'react-icons/pi';
 import { RiBarChartLine, RiFileCopyLine, RiLineChartLine, RiShieldKeyholeLine } from 'react-icons/ri';

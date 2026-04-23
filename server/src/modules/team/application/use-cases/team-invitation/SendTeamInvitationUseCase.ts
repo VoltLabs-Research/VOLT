@@ -1,40 +1,38 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
 import { SendTeamInvitationInputDTO, SendTeamInvitationOutputDTO } from '@modules/team/application/dtos/team-invitation/SendTeamInvitationDTO';
 import TeamInvitation, { TeamInvitationStatus } from '@modules/team/domain/entities/team-invitation/TeamInvitation';
 import InvitationSentEvent from '@modules/team/domain/events/team-invitation/InvitationSentEvent';
-import { ITeamInvitationRepository } from '@modules/team/domain/port/team-invitation/ITeamInvitationRepository';
-import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
-import { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
-import { ITeamRoleRepository } from '@modules/team/domain/port/team-role/ITeamRoleRepository';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import TeamInvitationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-invitation/TeamInvitationRepository';
+import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
+import TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-role/TeamRoleRepository';
+import TeamRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team/TeamRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { Result } from '@shared/domain/port/Result';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import crypto from 'crypto';
-import { injectable, inject } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvitationInputDTO, SendTeamInvitationOutputDTO, ApplicationError> {
     constructor(
-        @inject(TEAM_TOKENS.TeamInvitationRepository)
-        private readonly invitationRepository: ITeamInvitationRepository,
+        
+        private readonly invitationRepository: TeamInvitationRepository,
 
-        @inject(TEAM_TOKENS.TeamRepository)
-        private readonly teamRepository: ITeamRepository,
+        
+        private readonly teamRepository: TeamRepository,
 
-        @inject(AUTH_TOKENS.UserRepository)
-        private readonly userRepository: IUserRepository,
+        
+        private readonly userRepository: UserRepository,
 
-        @inject(TEAM_TOKENS.TeamRoleRepository)
-        private readonly teamRoleRepository: ITeamRoleRepository,
+        
+        private readonly teamRoleRepository: TeamRoleRepository,
 
-        @inject(TEAM_TOKENS.TeamMemberRepository)
-        private readonly teamMemberRepository: ITeamMemberRepository,
+        
+        private readonly teamMemberRepository: TeamMemberRepository,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus

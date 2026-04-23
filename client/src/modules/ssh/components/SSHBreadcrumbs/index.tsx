@@ -38,15 +38,15 @@ const SSHBreadcrumbs = ({ cwd, onNavigate }: SSHBreadcrumbsProps) => {
     const breadcrumbs = buildBreadcrumbs(cwd);
 
     return (
-        <nav className='ssh-breadcrumbs' aria-label='Current directory path' title={cwd}>
-            <ol className='ssh-breadcrumbs-list d-flex items-center gap-025'>
+        <nav className='ssh-breadcrumbs min-w-0' aria-label='Current directory path' title={cwd}>
+            <ol className='ssh-breadcrumbs-list d-flex items-center gap-025 min-w-0'>
                 {breadcrumbs.map((crumb, index) => {
                     const isCurrentPage = index === breadcrumbs.length - 1;
                     const label = truncateBreadcrumbLabel(crumb.name);
 
                     return (
-                        <li key={`${index}-${crumb.path}`} className='ssh-breadcrumbs-item d-flex items-center gap-025'>
-                            {index > 0 && <span className='ssh-breadcrumbs-separator color-muted'>/</span>}
+                        <li key={`${index}-${crumb.path}`} className='ssh-breadcrumbs-item d-flex items-center gap-025 min-w-0'>
+                            {index > 0 && <span className='ssh-breadcrumbs-separator color-muted f-shrink-0'>/</span>}
                             {isCurrentPage ? (
                                 <span className='ssh-breadcrumbs-current font-weight-5' aria-current='page' title={crumb.name}>
                                     {label}

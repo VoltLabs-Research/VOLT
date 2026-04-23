@@ -1,11 +1,9 @@
-import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { TeamMetricsSnapshot } from '@modules/trajectory/domain/contracts/trajectory';
-import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { ITeamMetricsQueryService } from '@modules/trajectory/domain/port/trajectory/ITeamMetricsQueryService';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
-import { inject, injectable } from 'tsyringe';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 
 const MAX_QUERY_LIMIT = 10000;
 const ROLLING_WEEKS = 12;
@@ -79,14 +77,14 @@ const toMonthChange = (current: number, previous: number): number => {
     return Math.round(((current - previous) / previous) * 100);
 };
 
-@injectable()
+@Singleton()
 export default class TeamMetricsQueryService implements ITeamMetricsQueryService {
     constructor(
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepo: ITrajectoryRepository,
+        
+        private readonly trajectoryRepo: TrajectoryRepository,
 
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepo: IAnalysisRepository
+        
+        private readonly analysisRepo: AnalysisRepository
     ) {}
 
     async getTeamMetrics(teamId: string): Promise<TeamMetricsSnapshot> {

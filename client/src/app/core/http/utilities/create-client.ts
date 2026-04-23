@@ -4,7 +4,7 @@ import { buildBackendUrl } from './backend-origin';
 import { VoltClient, dynamicToken } from '@voltstack/voltclient';
 import type { VoltClientOptions } from '@voltstack/voltclient';
 
-export type CreateApiClientOptions = VoltClientOptions;
+type CreateApiClientOptions = VoltClientOptions;
 
 const getStoredToken = (): string | null => {
     return tokenStorage.getToken();

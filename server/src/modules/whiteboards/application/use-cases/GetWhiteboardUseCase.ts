@@ -1,17 +1,16 @@
-import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/WhiteboardTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
-import type { IUseCase } from '@shared/application/IUseCase';
-import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
 import type { GetWhiteboardInputDTO, GetWhiteboardOutputDTO } from '@modules/whiteboards/application/dtos/GetWhiteboardDTO';
+import WhiteboardRepository from '@modules/whiteboards/infrastructure/persistence/mongo/repositories/WhiteboardRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
-@injectable()
+@Singleton()
 export class GetWhiteboardUseCase implements IUseCase<GetWhiteboardInputDTO, GetWhiteboardOutputDTO, ApplicationError> {
     constructor(
-        @inject(WHITEBOARD_TOKENS.WhiteboardRepository)
-        private readonly whiteboardRepository: IWhiteboardRepository
+        
+        private readonly whiteboardRepository: WhiteboardRepository
     ) {}
 
     async execute(input: GetWhiteboardInputDTO): Promise<Result<GetWhiteboardOutputDTO, ApplicationError>> {

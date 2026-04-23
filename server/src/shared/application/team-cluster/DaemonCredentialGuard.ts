@@ -1,11 +1,10 @@
 import TeamCluster from '@modules/team-cluster/domain/entities/TeamCluster';
-import type { ITeamClusterCredentialsCipher } from '@modules/team-cluster/domain/port/ITeamClusterCredentialsCipher';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
+import TeamClusterCredentialsCipher from '@modules/team-cluster/infrastructure/services/TeamClusterCredentialsCipher';
 import { hashEnrollmentToken } from '@modules/team-cluster/utilities/enrollmentToken';
 import { secureCompare } from '@modules/team-cluster/utilities/secureCompare';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 export interface DecryptedTeamClusterServiceCredentials {
     minioUsername: string;
@@ -17,14 +16,14 @@ export interface DecryptedTeamClusterServiceCredentials {
     daemonPassword: string;
 }
 
-@injectable()
+@Singleton()
 export default class DaemonCredentialGuard {
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
+        
+        private readonly teamClusterRepository: TeamClusterRepository,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterCredentialsCipher)
-        private readonly teamClusterCredentialsCipher: ITeamClusterCredentialsCipher
+        
+        private readonly teamClusterCredentialsCipher: TeamClusterCredentialsCipher
     ) {}
 
     async requireByDaemonPassword(teamClusterId: string, daemonPassword: string): Promise<TeamCluster> {

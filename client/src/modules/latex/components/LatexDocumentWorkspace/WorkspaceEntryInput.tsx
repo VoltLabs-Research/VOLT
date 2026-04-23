@@ -1,3 +1,4 @@
+import { Row } from '@/shared/presentation/primitives';
 import { useCallback, useId, useState } from 'react';
 import type { ReactNode } from 'react';
 
@@ -38,7 +39,7 @@ const WorkspaceEntryInput = ({
     }, [onCancel, onConfirm, value]);
 
     return (
-        <div className='volt-container latex-workspace__new-file-input d-flex items-center gap-05 p-025'>
+        <Row gap='05' p='025' className='latex-workspace__new-file-input'>
             <span className='color-muted d-flex items-center f-shrink-0'>{icon}</span>
             <label htmlFor={inputId} className='latex-workspace__sr-only'>
                 {label}
@@ -54,7 +55,7 @@ const WorkspaceEntryInput = ({
                 onKeyDown={handleKeyDown}
                 onBlur={onCancel}
             />
-        </div>
+        </Row>
     );
 };
 

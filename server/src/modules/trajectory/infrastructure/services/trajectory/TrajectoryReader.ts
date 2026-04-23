@@ -1,18 +1,17 @@
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
-import { inject, injectable } from 'tsyringe';
 
-import type { ITrajectoryReader } from '@modules/trajectory/domain/port/trajectory/ITrajectoryReader';
 import type { AtomPageResult } from '@modules/trajectory/domain/contracts/trajectory';
-import type TrajectoryNativeDaemonService from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
+import type { ITrajectoryReader } from '@modules/trajectory/domain/port/trajectory/ITrajectoryReader';
+import TrajectoryNativeDaemonService from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
 import { buildTrajectoryDumpObjectName } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 
-@injectable()
+@Singleton()
 export default class TrajectoryReader implements ITrajectoryReader {
     constructor(
-        @inject(TRAJECTORY_TOKENS.TrajectoryNativeDaemonService)
+        
         private readonly trajectoryNativeDaemonService: TrajectoryNativeDaemonService
     ) {}
 

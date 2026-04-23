@@ -1,23 +1,22 @@
-import { Server, Socket } from 'socket.io';
-import { inject, injectable } from 'tsyringe';
-import { ISocketRoomManager, PresenceUser } from '@modules/socket/domain/port/ISocketRoomManager';
 import { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import logger from '@shared/infrastructure/logger';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import type { ISocketConnectionMapper } from '@modules/socket/infrastructure/contracts/ISocketConnectionMapper';
+import { ISocketRoomManager, PresenceUser } from '@modules/socket/domain/port/ISocketRoomManager';
 import type { ISocketRoomManagerRuntime } from '@modules/socket/infrastructure/contracts/ISocketRoomManagerRuntime';
+import SocketConnectionMapper from '@modules/socket/utilities/SocketConnectionMapper';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import logger from '@shared/infrastructure/logger';
+import { Server, Socket } from 'socket.io';
 
 /**
  * Handles room management and presence collection.
  */
-@injectable()
+@Singleton()
 export default class SocketIORoomManager implements ISocketRoomManager, ISocketRoomManagerRuntime{
     private io?: Server;
     private sockets: Map<string, Socket> = new Map();
 
     constructor(
-        @inject(SOCKET_TOKENS.SocketConnectionMapper)
-        private readonly socketMapper: ISocketConnectionMapper
+        
+        private readonly socketMapper: SocketConnectionMapper
     ){}
 
     /**

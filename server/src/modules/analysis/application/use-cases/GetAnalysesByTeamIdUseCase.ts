@@ -1,20 +1,18 @@
+import { GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysesByTeamIdDTO';
+import type { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
+import { extractPluginId } from '@modules/analysis/infrastructure/services/AnalysisPluginDisplayNameService';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { IUseCase } from '@shared/application/IUseCase';
 import {
     COMPUTE_CLUSTER_POPULATE,
     STORAGE_CLUSTER_POPULATE,
     TRAJECTORY_POPULATE,
     USER_POPULATE
 } from '@shared/application/PopulatePresets';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysesByTeamIdDTO';
-import { extractPluginId } from '@modules/analysis/infrastructure/services/AnalysisPluginDisplayNameService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
-import type { IUseCase } from '@shared/application/IUseCase';
-import type { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import { injectable } from 'tsyringe';
 
 interface TeamAnalysesFilter extends Partial<AnalysisProps> {
     team: string;
@@ -27,11 +25,11 @@ interface AnalysisSort extends Record<string, 1 | -1> {
 @injectable()
 export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO, ApplicationError> {
     constructor(
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private analysisRepo: IAnalysisRepository,
+        
+        private analysisRepo: AnalysisRepository,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private trajectoryRepo: ITrajectoryRepository
+        
+        private trajectoryRepo: TrajectoryRepository
     ) {}
 
     async execute(input: GetAnalysesByTeamIdInputDTO): Promise<Result<GetAnalysesByTeamIdOutputDTO, ApplicationError>> {

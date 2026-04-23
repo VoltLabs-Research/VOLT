@@ -4,8 +4,7 @@ import { triggerShortcutAction } from '../../utilities/shortcut-actions';
 import formatKeyName from '../../utilities/format-key-name';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Modal, { closeModal, openModal } from '@/shared/presentation/components/Modal';
-import SearchInput from '@/shared/presentation/components/SearchInput';
+import { Modal, closeModal, openModal, SearchInput, Stack, Row, Text } from '@/shared/presentation/primitives';
 
 import type { Shortcut } from '../../stores/use-keyboard-shortcuts-store';
 
@@ -122,7 +121,7 @@ const CommandPalette = () => {
             width='560px'
             onClose={() => useCommandPaletteStore.getState().close()}
         >
-            <div className='volt-container d-flex column gap-05 p-075' onKeyDown={handleKeyDown}>
+            <Stack gap='05' p='075' onKeyDown={handleKeyDown}>
                 <SearchInput
                     ref={inputRef}
                     id='canvas-command-palette-input'
@@ -141,7 +140,7 @@ const CommandPalette = () => {
                     className='canvas-command-palette__list d-flex column gap-025'
                 >
                     {filteredItems.length === 0 && (
-                        <li className='canvas-command-palette__empty font-size-2 color-secondary'>No commands match "{query}"</li>
+                        <Text as='li' size='md' tone='secondary' className='canvas-command-palette__empty'>No commands match "{query}"</Text>
                     )}
                     {filteredItems.map((item, index) => (
                         <li
@@ -154,22 +153,22 @@ const CommandPalette = () => {
                             onMouseEnter={() => setActiveIndex(index)}
                             onClick={() => runCommand(item)}
                         >
-                            <div className='volt-container d-flex column gap-025'>
-                                <span className='font-size-2 color-primary'>{item.label}</span>
-                                <span className='font-size-05 color-muted'>{item.category}</span>
-                            </div>
-                            <div className='volt-container d-flex items-center gap-025'>
+                            <Stack gap='025'>
+                                <Text size='md' tone='primary'>{item.label}</Text>
+                                <Text size='xs' tone='muted'>{item.category}</Text>
+                            </Stack>
+                            <Row gap='025'>
                                 {item.keys.map((key, keyIndex) => (
-                                    <span key={key} className='d-flex items-center gap-025'>
-                                        {keyIndex > 0 && <span className='font-size-05 color-secondary'>+</span>}
-                                        <kbd className='canvas-command-palette__key font-size-05'>{formatKeyName(key)}</kbd>
-                                    </span>
+                                    <Row key={key} gap='025' as='span'>
+                                        {keyIndex > 0 && <Text size='xs' tone='secondary'>+</Text>}
+                                        <kbd className='canvas-command-palette__key font-mono font-size-05'>{formatKeyName(key)}</kbd>
+                                    </Row>
                                 ))}
-                            </div>
+                            </Row>
                         </li>
                     ))}
                 </ul>
-            </div>
+            </Stack>
         </Modal>
     );
 };

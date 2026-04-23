@@ -1,31 +1,30 @@
-import { buildScriptingNotebookPath, DEFAULT_SCRIPTING_NOTEBOOK_TITLE } from '@modules/scripting/application/utilities/build-scripting-notebook';
-import { toScriptingNotebookDTO } from '@modules/scripting/application/utilities/to-scripting-notebook-dto';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import {
     CreateScriptingNotebookInputDTO,
     CreateScriptingNotebookOutputDTO
 } from '@modules/scripting/application/dtos/CreateScriptingNotebookDTO';
-import { JupyterNotebookService } from '@modules/scripting/infrastructure/services/JupyterNotebookService';
-import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { randomUUID } from 'node:crypto';
-import { inject, injectable } from 'tsyringe';
-import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
+import { buildScriptingNotebookPath, DEFAULT_SCRIPTING_NOTEBOOK_TITLE } from '@modules/scripting/application/utilities/build-scripting-notebook';
+import { toScriptingNotebookDTO } from '@modules/scripting/application/utilities/to-scripting-notebook-dto';
 import type { ScriptingNotebookProps } from '@modules/scripting/domain/entities/ScriptingNotebook';
+import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
+import { JupyterNotebookService } from '@modules/scripting/infrastructure/services/JupyterNotebookService';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { randomUUID } from 'node:crypto';
 
-@injectable()
+@Singleton()
 export class CreateScriptingNotebookUseCase implements IUseCase<CreateScriptingNotebookInputDTO, CreateScriptingNotebookOutputDTO, ApplicationError> {
     constructor(
-        @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository)
-        private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
+        
+        private readonly scriptingNotebookRepository: ScriptingNotebookRepository,
 
-        @inject(JupyterNotebookService)
+        
         private readonly jupyterNotebookService: JupyterNotebookService,
 
-        @inject(TeamClusterSelectionService)
+        
         private readonly teamClusterSelectionService: TeamClusterSelectionService
     ) {}
 

@@ -1,23 +1,22 @@
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import TeamClusterObjectGatewayClient, {
     TeamClusterObjectGatewayHeadResponse
 } from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import VoltServerObjectGatewayService from '@modules/team-cluster/infrastructure/services/VoltServerObjectGatewayService';
-import { VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@shared/infrastructure/contracts/team-cluster';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
 import {
     TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER,
     TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER,
     TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
     TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH,
-    TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
+    TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER, VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID
 } from '@shared/infrastructure/contracts/team-cluster';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
-import { container } from 'tsyringe';
-import { pipeline } from 'node:stream/promises';
 import type { Request, Response } from 'express';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import { pipeline } from 'node:stream/promises';
+import { container } from 'tsyringe';
 
 const objectGatewayClient = (): TeamClusterObjectGatewayClient => {
     return container.resolve(TeamClusterObjectGatewayClient);
@@ -32,7 +31,7 @@ const daemonCredentialGuard = (): DaemonCredentialGuard => {
 };
 
 const teamClusterRepository = (): ITeamClusterRepository => {
-    return container.resolve(TEAM_CLUSTER_TOKENS.TeamClusterRepository);
+    return container.resolve(TeamClusterRepository);
 };
 
 const readHeader = (request: Request, headerName: string): string | undefined => {
@@ -202,6 +201,25 @@ const applyResponseHeaders = (
     }
 };
 
+const applyPassthroughStreamHeaders = (
+    streamHeaders: Record<string, string> | undefined,
+    response: Response
+): void => {
+    if (!streamHeaders) {
+        return;
+    }
+
+    const acceptRanges = streamHeaders['accept-ranges'];
+    if (acceptRanges) {
+        response.setHeader('accept-ranges', acceptRanges);
+    }
+
+    const contentRange = streamHeaders['content-range'];
+    if (contentRange) {
+        response.setHeader('content-range', contentRange);
+    }
+};
+
 const sendError = (response: Response, error: unknown): void => {
     const message = error instanceof Error ? error.message : 'Unexpected object store proxy error';
     const code = error instanceof Error && 'code' in error && typeof error.code === 'string'
@@ -365,14 +383,21 @@ export default createHttpModule({
 
                 if (request.method === 'GET') {
                     const skipMetadata = readBooleanHeader(request, TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER);
+                    const rangeHeader = readHeader(request, 'range');
                     const streamResponse = await objectGatewayClient().getStream(
                         resolvedRoute.ownerClusterId,
                         resolvedRoute.bucket,
                         resolvedRoute.objectKey,
-                        skipMetadata ? { skipMetadata: true } : undefined
+                        skipMetadata || rangeHeader
+                            ? {
+                                ...(skipMetadata ? { skipMetadata: true } : {}),
+                                ...(rangeHeader ? { rangeHeader } : {})
+                            }
+                            : undefined
                     );
                     applyResponseHeaders(streamResponse, response);
-                    response.status(200);
+                    applyPassthroughStreamHeaders(streamResponse.headers, response);
+                    response.status(streamResponse.headers['content-range'] ? 206 : 200);
                     await pipeline(streamResponse.stream, response);
                     return;
                 }

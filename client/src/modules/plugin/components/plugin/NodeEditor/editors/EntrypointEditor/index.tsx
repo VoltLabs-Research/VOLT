@@ -1,4 +1,4 @@
-import Button from '@/shared/presentation/components/Button';
+import { Button } from '@/shared/presentation/primitives';
 import FormSection from '@/shared/presentation/components/FormSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
@@ -103,7 +103,7 @@ const EntrypointEditor = ({ node }: EditorProps) => {
     return (
         <>
             <FormSection title={binarySectionTitle}>
-                <div className='volt-container d-flex column gap-05 binary-upload-container'>
+                <div className='d-flex column gap-05 binary-upload-container'>
                     <input
                         ref={fileInputRef}
                         type='file'
@@ -112,8 +112,8 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                     />
 
                     {watchedBinaryObjectPath ? (
-                        <div className='volt-container d-flex items-center content-between binary-uploaded'>
-                            <div className='volt-container d-flex items-center gap-05 binary-file-info'>
+                        <div className='d-flex items-center content-between binary-uploaded'>
+                            <div className='d-flex items-center gap-05 binary-file-info'>
                                 <TbFile size={20} />
                                 <span className='binary-filename overflow-hidden font-size-2 font-weight-5'>
                                     {watchedBinaryFileName || watchedBinary}
@@ -143,17 +143,17 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                     )}
 
                     {!currentPluginId && (
-                        <p className='volt-text binary-upload-hint font-size-1'>
+                        <p className='binary-upload-hint font-size-1'>
                             Save the plugin first (Ctrl+S) to enable binary upload
                         </p>
                     )}
 
                     {uploadError && (
-                        <p className='volt-text binary-upload-error font-size-1'>{uploadError}</p>
+                        <p className='binary-upload-error font-size-1'>{uploadError}</p>
                     )}
 
                     {isUploading && (
-                        <div className='volt-container binary-upload-progress w-max overflow-hidden'>
+                        <div className='binary-upload-progress w-max overflow-hidden'>
                             <div
                                 className='binary-upload-progress-bar h-max'
                                 style={{ width: `${uploadProgress}%` }}
@@ -196,17 +196,17 @@ const EntrypointEditor = ({ node }: EditorProps) => {
 
             {watchedEntrypointType === EntrypointType.PYTHON_SCRIPT && (
                 <FormSection title='Requirements File'>
-                    <div className='volt-container d-flex column gap-05'>
-                        <p className='volt-text entrypoint-requirements-hint font-size-1 color-secondary'>
+                    <div className='d-flex column gap-05'>
+                        <p className='entrypoint-requirements-hint font-size-1 color-secondary'>
                             Define the Python dependencies to install into the cached virtual environment.
                         </p>
-                        <div className='volt-container entrypoint-requirements-editor'>
+                        <div className='entrypoint-requirements-editor'>
                             <Editor
                                 height='180px'
                                 language='plaintext'
                                 value={watchedRequirementsFile}
                                 theme={monacoTheme}
-                                loading={<div className='volt-container p-1 color-secondary'>Loading editor...</div>}
+                                loading={<div className='p-1 color-secondary'>Loading editor...</div>}
                                 options={monacoOptions}
                                 onChange={(value) => {
                                     form.setValue('requirementsFile', value ?? '', { shouldDirty: true });

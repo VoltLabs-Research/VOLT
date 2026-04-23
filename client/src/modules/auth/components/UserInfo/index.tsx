@@ -1,6 +1,6 @@
 import './UserInfo.css';
 import { cn } from '@/shared/utils';
-import Avatar from '@/shared/presentation/components/Avatar';
+import { Avatar, Row, Text } from '@/shared/presentation/primitives';
 import type { User } from '@/modules/auth/api/entities/user';
 import type { ReactNode } from 'react';
 
@@ -27,23 +27,23 @@ const UserInfo = ({
     className 
 }: UserInfoProps) => {
     return (
-        <div className={`volt-container ${cn('d-flex gap-075 w-max items-center content-between', `user-info-${variant}`, className)}`}>
-            <Avatar 
-                user={user} 
-                size='sm' 
+        <Row gap='075' width='max' justify='between' className={cn(`user-info-${variant}`, className)}>
+            <Avatar
+                user={user}
+                size='sm'
                 showStatus={showStatus}
                 isOnline={isOnline}
             />
-            <div className='volt-container user-info-details'>
-                <p className='volt-text user-info-name overflow-hidden font-size-2 font-weight-6 color-primary'>
+            <div className='user-info-details flex-1 min-w-0'>
+                <Text as='p' size='md' weight='bold' tone='primary' className='user-info-name overflow-hidden'>
                     {user?.firstName} {user?.lastName}
                     {suffix}
-                </p>
-                <p className='volt-text user-info-email overflow-hidden font-size-1 color-muted'>
+                </Text>
+                <Text as='p' size='sm' tone='muted' className='user-info-email overflow-hidden'>
                     {user?.email}
-                </p>
+                </Text>
             </div>
-        </div>
+        </Row>
     );
 };
 

@@ -1,20 +1,20 @@
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { DeletePluginByIdInputDTO } from '@modules/plugin/application/dtos/plugin/DeletePluginByIdDTO';
-import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import PluginDeletedEvent from '@modules/plugin/domain/events/PluginDeletedEvent';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { ErrorCodes } from '@core/constants/error-codes';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable, inject } from 'tsyringe';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { inject } from 'tsyringe';
 
-@injectable()
+@Singleton()
 export class DeletePluginByIdUseCase implements IUseCase<DeletePluginByIdInputDTO, null, ApplicationError> {
     constructor(
-        @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository,
+        private pluginRepository: PluginRepository,
         @inject(SHARED_TOKENS.EventBus) private eventBus: IEventBus
     ){}
 

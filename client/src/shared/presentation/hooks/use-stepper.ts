@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 
-export interface UseStepperOptions<K extends string>{
+interface UseStepperOptions<K extends string>{
     steps: K[];
 };
 

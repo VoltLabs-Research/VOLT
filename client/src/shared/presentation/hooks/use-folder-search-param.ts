@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-params';
 
-export const FOLDER_ID_SEARCH_PARAM = 'folderId';
+const FOLDER_ID_SEARCH_PARAM = 'folderId';
 
 interface UseFolderSearchParamReturn {
     currentFolderId: string | null;

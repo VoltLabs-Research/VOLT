@@ -5,6 +5,7 @@ import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
 import useTrajectoryPreview from '@/modules/trajectory/hooks/trajectory/use-trajectory-preview';
 import SimulationCardFooter from '../SimulationCardFooter';
 import SimulationCardUsers from '../SimulationCardUsers';
+import { Row } from '@/shared/presentation/primitives';
 import { PiAtomThin } from 'react-icons/pi';
 import { useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
@@ -117,7 +118,7 @@ export default function SimulationCard({
             aria-label={disablePrimaryInteraction ? undefined : cardAriaLabel}
             aria-busy={isProcessing}
         >
-            <div className='volt-container d-flex flex-center overflow-hidden p-relative w-max cover-container radius-md'>
+            <Row overflow='hidden' position='relative' width='max' radius='md' className='flex-center cover-container'>
                 {previewBlobUrl ? (
                     <img
                         className='w-max h-max cover-image'
@@ -125,11 +126,11 @@ export default function SimulationCard({
                         alt={`Preview of ${trajectory.name}`}
                     />
                 ) : (
-                    <div className='volt-container d-flex flex-center w-max h-max color-muted font-size-5-5'>
+                    <Row width='max' height='max' className='flex-center color-muted font-size-5-5'>
                         <PiAtomThin />
-                    </div>
+                    </Row>
                 )}
-            </div>
+            </Row>
 
             <SimulationCardFooter
                 trajectoryId={trajectory._id}

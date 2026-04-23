@@ -1,17 +1,16 @@
-import { LAST_EDITED_BY_POPULATE } from '@shared/application/PopulatePresets';
-import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/WhiteboardTokens';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
-import type { IUseCase } from '@shared/application/IUseCase';
-import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
 import type { ListWhiteboardsInputDTO, ListWhiteboardsOutputDTO } from '@modules/whiteboards/application/dtos/ListWhiteboardsDTO';
+import WhiteboardRepository from '@modules/whiteboards/infrastructure/persistence/mongo/repositories/WhiteboardRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { IUseCase } from '@shared/application/IUseCase';
+import { LAST_EDITED_BY_POPULATE } from '@shared/application/PopulatePresets';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
-@injectable()
+@Singleton()
 export class ListWhiteboardsUseCase implements IUseCase<ListWhiteboardsInputDTO, ListWhiteboardsOutputDTO, ApplicationError> {
     constructor(
-        @inject(WHITEBOARD_TOKENS.WhiteboardRepository)
-        private readonly whiteboardRepository: IWhiteboardRepository
+        
+        private readonly whiteboardRepository: WhiteboardRepository
     ) {}
 
     async execute(input: ListWhiteboardsInputDTO): Promise<Result<ListWhiteboardsOutputDTO, ApplicationError>> {

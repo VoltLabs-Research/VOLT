@@ -1,14 +1,13 @@
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { resolveAnalysisStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
-import { Result } from '@shared/domain/port/Result';
+import type { DeleteAnalysisByIdInputDTO } from '@modules/analysis/application/dtos/DeleteAnalysisByIdDTO';
 import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
+import { resolveAnalysisStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { IEventBus } from '@shared/application/events/IEventBus';
+import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import type { IEventBus } from '@shared/application/events/IEventBus';
-import type { DeleteAnalysisByIdInputDTO } from '@modules/analysis/application/dtos/DeleteAnalysisByIdDTO';
 
 interface DeleteAnalysisByIdOutputDTO {
     success: boolean;
@@ -17,8 +16,8 @@ interface DeleteAnalysisByIdOutputDTO {
 @injectable()
 export default class DeleteAnalysisByIdUseCase {
     constructor(
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly repository: IAnalysisRepository,
+        
+        private readonly repository: AnalysisRepository,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus

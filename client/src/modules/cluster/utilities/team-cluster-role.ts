@@ -1,6 +1,6 @@
 import type { TeamCluster, TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
-import type { SelectOption } from '@/shared/presentation/components/Select';
-import type { StatusBadgeProps } from '@/shared/presentation/components/StatusBadge';
+import type { SelectOption } from '@/shared/presentation/primitives';
+import type { StatusBadgeProps } from '@/shared/presentation/primitives';
 
 export interface TeamClusterRoleOption extends SelectOption {
     value: TeamClusterRole;

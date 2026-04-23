@@ -1,34 +1,32 @@
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
-import StoragePlacementService from '@modules/team-cluster/application/services/StoragePlacementService';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { ExecutePluginInputDTO } from '@modules/plugin/application/dtos/plugin/ExecutePluginDTO';
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
-import { IPluginExecutionRouter } from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
-import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
-import { IWorkflowValidatorService, WorkflowValidationMode } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import PluginExecutionRequestEvent from '@modules/plugin/domain/events/PluginExecutionRequestEvent';
-import PluginDisplayNameResolver from '@modules/plugin/utilities/plugin/PluginDisplayNameResolver';
-import { sanitizeVisibleArgumentConfig } from '@modules/plugin/utilities/plugin/argument-visibility';
+import { WorkflowValidationMode } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import { PluginDependencyResolverService } from '@modules/plugin/infrastructure/services/plugin/PluginDependencyResolverService';
+import { sanitizeVisibleArgumentConfig } from '@modules/plugin/utilities/plugin/argument-visibility';
+import PluginDisplayNameResolver from '@modules/plugin/utilities/plugin/PluginDisplayNameResolver';
+import StoragePlacementService from '@modules/team-cluster/application/services/StoragePlacementService';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { ErrorCodes } from '@core/constants/error-codes';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import AnalysisCreatedEvent from '@modules/analysis/domain/events/AnalysisCreatedEvent';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
+import type { ArgumentDefinition } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
+import type { WorkflowNode } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
+import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
+import PluginExecutionRouter from '@modules/plugin/infrastructure/services/plugin/PluginExecutionRouter';
+import { WorkflowValidatorService } from '@modules/plugin/infrastructure/services/plugin/WorkflowValidatorService';
 import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
-import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import AnalysisCreatedEvent from '@modules/analysis/domain/events/AnalysisCreatedEvent';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
-import type { ArgumentDefinition } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
-import type { WorkflowNode } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
+import { inject } from 'tsyringe';
 
 interface ExecutePluginOutputDTO {
     analysisId: string;
@@ -110,37 +108,37 @@ const createAnalysisConfig = (
     };
 };
 
-@injectable()
+@Singleton()
 export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, ExecutePluginOutputDTO, ApplicationError> {
     constructor(
-        @inject(PLUGIN_TOKENS.PluginRepository)
-        private pluginRepo: IPluginRepository,
+        
+        private pluginRepo: PluginRepository,
 
         @inject(SHARED_TOKENS.EventBus)
         private eventBus: IEventBus,
 
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private analysisRepo: IAnalysisRepository,
+        
+        private analysisRepo: AnalysisRepository,
 
-        @inject(TeamClusterSelectionService)
+        
         private readonly teamClusterSelectionService: TeamClusterSelectionService,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private trajectoryRepo: ITrajectoryRepository,
+        
+        private trajectoryRepo: TrajectoryRepository,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository)
-        private trajectoryFrameRepo: ITrajectoryFrameRepository,
+        
+        private trajectoryFrameRepo: TrajectoryFrameRepository,
 
-        @inject(PLUGIN_TOKENS.PluginExecutionRouter)
-        private readonly pluginExecutionRouter: IPluginExecutionRouter,
+        
+        private readonly pluginExecutionRouter: PluginExecutionRouter,
 
-        @inject(PLUGIN_TOKENS.WorkflowValidatorService)
-        private readonly workflowValidator: IWorkflowValidatorService,
+        
+        private readonly workflowValidator: WorkflowValidatorService,
 
-        @inject(PLUGIN_TOKENS.PluginDependencyResolverService)
+        
         private readonly pluginDependencyResolverService: PluginDependencyResolverService,
 
-        @inject(TEAM_CLUSTER_TOKENS.StoragePlacementService)
+        
         private readonly storagePlacementService: StoragePlacementService
     ){}
 

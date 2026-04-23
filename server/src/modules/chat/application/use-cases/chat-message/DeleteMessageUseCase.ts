@@ -1,21 +1,19 @@
-import { DeleteMessageInputDTO } from '@modules/chat/application/dtos/chat-message/DeleteMessageDTO';
-import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { DeleteMessageInputDTO } from '@modules/chat/application/dtos/chat-message/DeleteMessageDTO';
+import ChatMessageRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/chat-message/ChatMessageRepository';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
-import type { IChatMessageRepository } from '@modules/chat/domain/port/chat-message/IChatMessageRepository';
-import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
-@injectable()
+@Singleton()
 export class DeleteMessageUseCase implements IUseCase<DeleteMessageInputDTO, null, ApplicationError> {
     constructor(
-        @inject(CHAT_TOKENS.ChatMessageRepository)
-        private messageRepo: IChatMessageRepository,
-        @inject(SOCKET_TOKENS.SocketEventEmitter)
-        private socketEmitter: ISocketEmitter
+        
+        private messageRepo: ChatMessageRepository,
+        
+        private socketEmitter: SocketIOEmitter
     ){}
 
     async execute(input: DeleteMessageInputDTO): Promise<Result<null, ApplicationError>> {

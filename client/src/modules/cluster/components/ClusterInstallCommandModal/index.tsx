@@ -1,6 +1,5 @@
-import './ClusterInstallCommandModal.css';
 import CopyableField from '@/shared/presentation/components/CopyableField';
-import Modal from '@/shared/presentation/components/Modal';
+import { Stack, Row, Text, Modal, StatusDot } from '@/shared/presentation/primitives';
 import { buildClusterInstallCommand } from '@/modules/cluster/utilities/build-cluster-install-command';
 
 export const CLUSTER_INSTALL_COMMAND_MODAL_ID = 'cluster-install-command-modal';
@@ -21,19 +20,19 @@ const ClusterInstallCommandModal = ({ clusterId, enrollmentToken }: ClusterInsta
             title='Install command'
             description='This command installs the Volt Cluster Daemon, enabling Volt servers to communicate with the machine and use it as a compute resource.'
         >
-            <div className='volt-container d-flex column gap-1 p-1'>
+            <Stack gap='1' p='1'>
                 <CopyableField
                     value={installCommand}
                     successMessage='Install command copied'
                 />
 
-                <div className='volt-container d-flex items-center gap-05'>
-                    <span className='cluster-install-command-status-dot' />
-                    <p className='volt-text font-size-2 color-secondary'>
+                <Row gap='05'>
+                    <StatusDot tone='warning' pulse glow />
+                    <Text as='p' size='md' tone='secondary'>
                         Waiting for connection
-                    </p>
-                </div>
-            </div>
+                    </Text>
+                </Row>
+            </Stack>
         </Modal>
     );
 };

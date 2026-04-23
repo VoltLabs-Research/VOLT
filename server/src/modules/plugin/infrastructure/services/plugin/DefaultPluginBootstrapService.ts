@@ -1,8 +1,7 @@
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { STATIC_ROOT } from '@core/config/paths';
-import { inject, injectable } from 'tsyringe';
 import logger from '@shared/infrastructure/logger';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -11,15 +10,15 @@ import type {
     DefaultPluginBootstrapResult,
     IDefaultPluginBootstrapService
 } from '@modules/plugin/domain/port/plugin/IDefaultPluginBootstrapService';
-import type { IPluginStorageService } from '@modules/plugin/domain/port/plugin/IPluginStorageService';
+import PluginStorageService from '@modules/plugin/infrastructure/services/plugin/PluginStorageService';
 
 const DEFAULT_PLUGINS_PATH = path.join(STATIC_ROOT, 'default/plugins');
 
-@injectable()
+@Singleton()
 export class DefaultPluginBootstrapService implements IDefaultPluginBootstrapService {
     constructor(
-        @inject(PLUGIN_TOKENS.PluginStorageService)
-        private readonly pluginStorageService: IPluginStorageService
+        
+        private readonly pluginStorageService: PluginStorageService
     ) {}
 
     async importDefaultPluginsForTeam(

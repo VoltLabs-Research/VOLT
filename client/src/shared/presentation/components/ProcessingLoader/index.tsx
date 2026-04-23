@@ -1,4 +1,4 @@
-import Loader from '@/shared/presentation/components/Loader';
+import { Loader, Row, Stack, Text } from '@/shared/presentation/primitives';
 import './ProcessingLoader.css';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 
@@ -27,17 +27,17 @@ const ProcessingLoader = ({
         : message;
 
     return (
-        <div className={`volt-container d-flex items-center gap-075 processing-loader-container ${className}`} role='status' aria-live='polite' aria-atomic='true'>
+        <Row gap='075' className={`processing-loader-container ${className}`} role='status' aria-live='polite' aria-atomic='true'>
             <Loader scale={0.6} isFixed={false} className='f-shrink-0' reducedMotionLabel={statusMessage} />
-            <div className='volt-container d-flex column gap-035 flex-1'>
-                <p className='volt-text processing-loader-text overflow-hidden color-secondary' title={message}>{message}</p>
+            <Stack gap='035' flex='1'>
+                <Text as='p' tone='secondary' className='processing-loader-text overflow-hidden' title={message}>{message}</Text>
                 {showProgress && completionRate > 0 && (
-                    <div className='volt-container w-max overflow-hidden processing-loader-progress-bar' role='progressbar' aria-label='Processing progress' aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progressPercentage)}>
-                        <div className='volt-container processing-loader-progress-fill h-max' style={{ width: `${progressPercentage}%`, transition: prefersReducedMotion ? 'none' : undefined }} />
+                    <div className='w-max overflow-hidden processing-loader-progress-bar' role='progressbar' aria-label='Processing progress' aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progressPercentage)}>
+                        <div className='processing-loader-progress-fill h-max' style={{ width: `${progressPercentage}%`, transition: prefersReducedMotion ? 'none' : undefined }} />
                     </div>
                 )}
-            </div>
-        </div>
+            </Stack>
+        </Row>
     );
 };
 

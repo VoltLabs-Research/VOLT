@@ -1,21 +1,22 @@
+import { Stack, Row, Box } from '@/shared/presentation/primitives';
 import './ChatListSkeleton.css';
 interface ChatListSkeletonProps {
     count?: number;
 };
 
 const ChatListSkeleton = ({ count = 5 }: ChatListSkeletonProps) => (
-    <div className='volt-container d-flex column gap-05'>
+    <Stack gap='05'>
         {Array.from({ length: count }).map((_, i) => (
-            <div key={i} className='volt-container d-flex items-center gap-075 chat-skeleton-item'>
-                <div className='volt-container chat-skeleton-avatar' />
-                <div className='volt-container d-flex column gap-025 flex-1'>
-                    <div className='volt-container chat-skeleton-line chat-skeleton-line-wide' />
-                    <div className='volt-container chat-skeleton-line chat-skeleton-line-narrow' />
-                </div>
-                <div className='volt-container chat-skeleton-dot' />
-            </div>
+            <Row key={i} gap='075' className='chat-skeleton-item'>
+                <Box className='chat-skeleton-avatar' />
+                <Stack gap='025' flex='1'>
+                    <Box className='chat-skeleton-line chat-skeleton-line-wide' />
+                    <Box className='chat-skeleton-line chat-skeleton-line-narrow' />
+                </Stack>
+                <Box className='chat-skeleton-dot' />
+            </Row>
         ))}
-    </div>
+    </Stack>
 );
 
 export default ChatListSkeleton;

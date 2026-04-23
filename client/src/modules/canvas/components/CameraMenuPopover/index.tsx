@@ -1,8 +1,7 @@
 import useCameraGroup from '../CanvasRenderSections/groups/camera';
 import CanvasRenderSubsectionContent from '../CanvasRenderSections/CanvasRenderSubsectionContent';
-import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
-import Button from '@/shared/presentation/components/Button';
-import Tooltip from '@/shared/presentation/components/Tooltip';
+import { ContextMenuPopover } from '@/shared/presentation/primitives';
+import { Button, Tooltip } from '@/shared/presentation/primitives';
 import { Settings } from 'lucide-react';
 import { useMemo } from 'react';
 import type { MenuOption } from '@/shared/presentation/types/menu';
@@ -33,7 +32,7 @@ const CameraMenuPopover = ({ compact = false }: CameraMenuPopoverProps) => {
         <ContextMenuPopover
             id="viewport-camera-menu"
             trigger={compact ? (
-                <span className="canvas-viewport-floating-trigger">
+                <span className='d-inline-flex flex-center'>
                     <Tooltip content="Camera" placement="bottom">
                         <Button
                             variant="ghost"

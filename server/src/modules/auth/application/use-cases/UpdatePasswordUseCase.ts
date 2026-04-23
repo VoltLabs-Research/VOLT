@@ -1,24 +1,23 @@
-import { UpdatePasswordInputDTO, UpdatePasswordOutputDTO } from '@modules/auth/application/dtos/UpdatePasswordDTO';
-import { toPersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import AuthSessionService from '@modules/auth/infrastructure/services/AuthSessionService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { toPersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
+import { UpdatePasswordInputDTO, UpdatePasswordOutputDTO } from '@modules/auth/application/dtos/UpdatePasswordDTO';
+import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
+import AuthSessionService from '@modules/auth/infrastructure/services/AuthSessionService';
+import BcryptPasswordHasher from '@modules/auth/infrastructure/services/BcryptPasswordHasher';
 import { SessionActivityType } from '@modules/session/domain/entities/Session';
-import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
-import type { IPasswordHasher } from '@modules/auth/domain/port/IPasswordHasher';
-import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export default class UpdatePasswordUseCase implements IUseCase<UpdatePasswordInputDTO, UpdatePasswordOutputDTO, ApplicationError> {
     constructor(
-        @inject(AUTH_TOKENS.UserRepository)
-        private readonly userRepository: IUserRepository,
-        @inject(AUTH_TOKENS.PasswordHasher)
-        private readonly passwordHasher: IPasswordHasher,
-        @inject(AUTH_TOKENS.AuthSessionService)
+        
+        private readonly userRepository: UserRepository,
+        
+        private readonly passwordHasher: BcryptPasswordHasher,
+        
         private readonly authSessionService: AuthSessionService
     ) {}
 

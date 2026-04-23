@@ -1,7 +1,7 @@
 import { getFrameGroupStatusLabel } from '@/modules/jobs/utilities/job-status-label';
 import { FrameJobGroupStatus } from '@/modules/jobs/api/entities/job';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
+import { Heading, Row, Stack, StatusBadge, Text } from '@/shared/presentation/primitives';
 import { formatDistanceToNow } from 'date-fns';
 import { motion } from 'framer-motion';
 import { IoChevronForward } from 'react-icons/io5';
@@ -100,16 +100,16 @@ const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
             aria-label={`${group.trajectoryName}. ${statusLabel}. ${summaryLabel}`}
             {...buttonProps}
         >
-            <div className='volt-container d-flex w-max items-center content-between gap-05 p-1'>
-                <div className='volt-container d-flex column gap-05'>
-                    <h3 className={`volt-title font-size-1 font-weight-6 color-primary job-group-name text-truncate ${nameToneClassName}`}>
+            <Row width='max' justify='between' gap='05' p='1'>
+                <Stack gap='05'>
+                    <Heading level={3} size='sm' weight='bold' truncate className={`job-group-name ${nameToneClassName}`}>
                         {group.trajectoryName}
-                    </h3>
-                    <p className='volt-text font-size-1 color-secondary'>
+                    </Heading>
+                    <Text as='p' size='sm' tone='secondary'>
                         {summaryLabel}
-                    </p>
-                </div>
-                <div className='volt-container d-flex items-center gap-1'>
+                    </Text>
+                </Stack>
+                <Row gap='1'>
                     {statusPresentation === 'badge' && (
                         <StatusBadge status={group.overallStatus} size='compact'>
                             {statusLabel}
@@ -123,8 +123,8 @@ const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
                     >
                         <IoChevronForward />
                     </motion.i>
-                </div>
-            </div>
+                </Row>
+            </Row>
         </button>
     );
 });

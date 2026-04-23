@@ -5,13 +5,7 @@
 }
 
 .member-list-item-button {
-    width: 100%;
     min-height: 3rem;
-    padding: 0.75rem;
-    border: 1px solid transparent;
-    border-radius: var(--radius-md);
-    background: transparent;
-    text-align: left;
 }
 
 .member-list-item-button:focus-visible {

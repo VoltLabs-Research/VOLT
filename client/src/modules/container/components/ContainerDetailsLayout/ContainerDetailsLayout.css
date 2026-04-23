@@ -12,23 +12,9 @@
     line-height: 1;
 }
 
-.container-details-status-badge::before {
-    content: '';
-    display: block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: currentColor;
-}
-
 .container-details-status-badge.running {
     color: var(--status-success);
     border: 1px solid var(--status-success-border);
-}
-
-.container-details-status-badge.running::before {
-    box-shadow: 0 0 8px var(--status-success);
-    animation: animate-pulse 2s infinite;
 }
 
 .container-details-status-badge.exited {
@@ -57,10 +43,4 @@
 
 .container-details-placeholder-state svg {
     opacity: 0.5;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .container-details-status-badge.running::before {
-        animation: none;
-    }
 }

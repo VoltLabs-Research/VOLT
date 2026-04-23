@@ -1,10 +1,10 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { createGetByIdController } from '@shared/infrastructure/http/controllers/createReadController';
-import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
 import { simulationCellValidationSchemas } from '@modules/simulation-cell/infrastructure/http/validation/simulation-cell-schemas';
+import SimulationCellRepository from '@modules/simulation-cell/infrastructure/persistence/mongo/repositories/SimulationCellRepository';
+import { createGetByIdController } from '@shared/infrastructure/http/controllers/createReadController';
 
 const GetSimulationCellByIdController = createGetByIdController({
-    repositoryToken: SIMULATION_CELL_TOKENS.SimulationCellRepository,
+    repositoryToken: SimulationCellRepository,
     paramKey: 'simulationCellId',
     notFoundCode: ErrorCodes.SIMULATION_CELL_NOT_FOUND,
     notFoundMessage: 'SimulationCell not found',

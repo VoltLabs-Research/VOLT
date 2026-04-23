@@ -1,13 +1,12 @@
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import TeamMembershipService from '@modules/team/infrastructure/services/team/TeamMembershipService';
 import TeamMemberLeaveEvent from '@modules/team/domain/events/team-member/TeamMemberLeaveEvent';
+import TeamMembershipService from '@modules/team/infrastructure/services/team/TeamMembershipService';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
-import { injectable, inject } from 'tsyringe';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-@injectable()
+@Subscribe('team-member.left')
 export default class TeamMemberLeaveEventHandler implements IEventHandler<TeamMemberLeaveEvent>{
     constructor(
-        @inject(TEAM_TOKENS.TeamMembershipService)
+        
         private readonly teamMembershipService: TeamMembershipService
     ){}
 

@@ -1,19 +1,17 @@
-.canvas-viewport-floating-controls {
-    position: absolute;
+.canvas-viewport-floating-controls.canvas-viewport-floating-controls {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
     top: calc(12px + var(--canvas-header-height, 55px));
     right: max(12px, var(--canvas-right-overlay-size, 0px));
+    left: auto;
+    top: 4rem !important;
     z-index: 3;
     padding: 4px;
     border-radius: 12px;
     background: var(--glass-bg-secondary);
     pointer-events: auto;
     margin-right: 0.5rem;
-}
-
-.canvas-viewport-floating-trigger {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .canvas-viewport-floating-btn {

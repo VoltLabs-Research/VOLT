@@ -2,8 +2,7 @@ import CanvasRenderSubsectionContent from './CanvasRenderSubsectionContent';
 import useCanvasRenderGroups from './useCanvasRenderGroups';
 
 import { memo, useMemo, useState } from 'react';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
-
+import { CollapsibleSection } from '@/shared/presentation/primitives';
 import './CanvasRenderSections.css';
 
 interface CanvasRenderSectionsProps {

@@ -1,11 +1,12 @@
-import { ISceneArtifactRepository, TeamSceneArtifactFilters } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
-import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import SceneArtifact, { SceneArtifactProps } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
+import { ISceneArtifactRepository, TeamSceneArtifactFilters } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
 import SceneArtifactMapper from '@modules/trajectory/infrastructure/persistence/mongo/mappers/scene-artifacts/SceneArtifactMapper';
 import SceneArtifactModel, { SceneArtifactDocument } from '@modules/trajectory/infrastructure/persistence/mongo/models/scene-artifacts/SceneArtifactModel';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import mongoose from 'mongoose';
 
-import { injectable } from 'tsyringe';
+
 import type { PaginatedResult, PaginationOptions } from '@shared/domain/port/IBaseRepository';
 import type { PipelineStage } from 'mongoose';
 
@@ -17,7 +18,7 @@ interface CountResult {
     total: number;
 };
 
-@injectable()
+@Singleton()
 export default class SceneArtifactRepository
     extends MongooseBaseRepository<SceneArtifact, SceneArtifactProps, SceneArtifactDocument>
     implements ISceneArtifactRepository {

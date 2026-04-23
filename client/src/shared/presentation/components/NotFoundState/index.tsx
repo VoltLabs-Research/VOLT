@@ -1,4 +1,4 @@
-import Button from '@/shared/presentation/components/Button';
+import { Button, Heading, Row, Stack, Text } from '@/shared/presentation/primitives';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import './NotFoundState.css';
 import { SearchX } from 'lucide-react';
@@ -13,24 +13,24 @@ const NotFoundState = () => {
 
     return (
         <section aria-labelledby={headingId} className='not-found-state d-flex items-center content-center vh-max w-max'>
-            <div className='volt-container not-found-state-content d-flex column gap-1-5 items-center text-center'>
-                <div className='volt-container not-found-state-icon d-flex items-center content-center'>
+            <Stack align='center' gap='1-5' textAlign='center' className='not-found-state-content'>
+                <Row justify='center' className='not-found-state-icon'>
                     <SearchX size={24} />
-                </div>
+                </Row>
 
-                <div className='volt-container d-flex column gap-05 text-center'>
-                    <h1 id={headingId} className='volt-title font-size-3 font-weight-5 color-primary'>
+                <Stack gap='05' textAlign='center'>
+                    <Heading level={1} id={headingId}>
                         Page not found
-                    </h1>
-                    <p className='volt-text font-size-2 color-secondary line-height-5'>
+                    </Heading>
+                    <Text as='p' size='md' tone='secondary' lineHeight='5'>
                         The page you were looking for is unavailable or may have moved.
-                    </p>
-                    <p className='volt-text font-size-2 color-muted'>
+                    </Text>
+                    <Text as='p' size='md' tone='muted'>
                         You can go back or return to the dashboard.
-                    </p>
-                </div>
+                    </Text>
+                </Stack>
 
-                <div className='volt-container d-flex gap-075 items-center mt-05'>
+                <Row gap='075' mt='05'>
                     <Button
                         variant='ghost'
                         intent='neutral'
@@ -47,8 +47,8 @@ const NotFoundState = () => {
                     >
                         Go to dashboard
                     </Button>
-                </div>
-            </div>
+                </Row>
+            </Stack>
         </section>
     );
 };

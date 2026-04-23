@@ -105,33 +105,33 @@ const FileExplorer = ({
     };
 
     return (
-        <div className='volt-container file-explorer d-flex column h-max overflow-hidden'>
-            <span className='file-explorer-live-region' aria-live='polite' aria-atomic='true'>
+        <div className='file-explorer d-flex column h-max overflow-hidden'>
+            <span className='sr-only' aria-live='polite' aria-atomic='true'>
                 {stateMessage}
             </span>
             {hasHeader && (
-                <div className='volt-container file-explorer-header d-flex content-between items-center gap-1 p-075'>
-                    <div className='volt-container file-explorer-header-left d-flex items-center gap-05'>
+                <div className='file-explorer-header d-flex content-between items-center gap-1 p-075'>
+                    <div className='file-explorer-header-left d-flex items-center gap-05'>
                         {headerLeft}
                     </div>
 
-                    <div className='volt-container file-explorer-breadcrumb d-flex items-center flex-1'>
+                    <div className='file-explorer-breadcrumb d-flex items-center flex-1'>
                         {breadcrumb}
                     </div>
 
-                    <div className='volt-container file-explorer-header-right d-flex items-center gap-05'>
+                    <div className='file-explorer-header-right d-flex items-center gap-05'>
                         {headerRight}
                     </div>
                 </div>
             )}
 
             {columns && (
-                <div className='volt-container file-explorer-columns'>
+                <div className='file-explorer-columns'>
                     {columns}
                 </div>
             )}
 
-            <div className='volt-container file-explorer-list flex-1 y-auto' role='list' aria-busy={isLoading || isRetrying}>
+            <div className='file-explorer-list flex-1 y-auto' role='list' aria-busy={isLoading || isRetrying}>
                 {renderContent()}
             </div>
         </div>

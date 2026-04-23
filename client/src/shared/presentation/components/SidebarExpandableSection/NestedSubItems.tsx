@@ -1,4 +1,4 @@
-import Button from '@/shared/presentation/components/Button';
+import { Button } from '@/shared/presentation/primitives';
 import '@/shared/presentation/components/SidebarSubItems/SidebarSubItems.css';
 import { useEffect, useId, useState } from 'react';
 import { IoChevronDown } from 'react-icons/io5';
@@ -21,7 +21,7 @@ const NestedSubItems = ({ item, childSelected }: NestedSubItemsProps) => {
     }, [childSelected]);
 
     return (
-        <div className='volt-container sidebar-nested-section'>
+        <div className='sidebar-nested-section'>
             <Button
                 variant='ghost'
                 intent='neutral'

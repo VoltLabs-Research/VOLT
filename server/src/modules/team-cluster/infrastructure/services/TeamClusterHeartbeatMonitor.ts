@@ -1,19 +1,18 @@
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
-import { readNumberEnv } from '@shared/infrastructure/utilities/env';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
+import { readNumberEnv } from '@shared/infrastructure/utilities/env';
 
 const TEAM_CLUSTER_HEARTBEAT_TIMEOUT_MS = readNumberEnv('TEAM_CLUSTER_HEARTBEAT_TIMEOUT_MS', 60_000);
 const TEAM_CLUSTER_HEARTBEAT_SWEEP_INTERVAL_MS = readNumberEnv('TEAM_CLUSTER_HEARTBEAT_SWEEP_INTERVAL_MS', 15_000);
 const TEAM_CLUSTER_DELETE_TIMEOUT_MS = readNumberEnv('TEAM_CLUSTER_DELETE_TIMEOUT_MS', 120_000);
 
-@injectable()
+@Singleton()
 export default class TeamClusterHeartbeatMonitor {
     private interval?: NodeJS.Timeout;
 
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterLifecycleService)
+        
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService
     ){}
 

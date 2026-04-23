@@ -73,13 +73,13 @@ export const TeamInvitePanel = ({
     ];
 
     return (
-        <div className='volt-container team-invite-panel d-flex column'>
+        <div className='team-invite-panel d-flex column'>
             <PanelHeader
                 tabs={tabs}
                 onClose={onClose}
             />
 
-            <div className='volt-container team-invite-content d-flex column flex-1 y-auto'>
+            <div className='team-invite-content d-flex column flex-1 y-auto'>
                 {activeTab === InviteTab.Share ? (
                     <>
                         <InvitationEmailInput

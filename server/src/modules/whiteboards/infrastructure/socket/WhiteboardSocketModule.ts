@@ -1,14 +1,14 @@
-import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/WhiteboardTokens';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import WhiteboardRealtimeStateService from '@modules/whiteboards/infrastructure/services/WhiteboardRealtimeStateService';
+import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
 
 import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import type { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';
-import type { ISocketRoomManager, PresenceUser } from '@modules/socket/domain/port/ISocketRoomManager';
+import type { PresenceUser } from '@modules/socket/domain/port/ISocketRoomManager';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
+import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
 
 interface SubscribePayload extends Record<string, unknown> {
     whiteboardId: string;
@@ -23,15 +23,16 @@ interface WhiteboardPatchPayload extends Record<string, unknown> {
     elementOrder?: string[];
 };
 
-@injectable()
+@Singleton()
+@AliasOf(SOCKET_TOKENS.SocketModule)
 export default class WhiteboardSocketModule extends BaseSocketModule {
     public readonly name = 'WhiteboardSocketModule';
 
     constructor(
-        @inject(SOCKET_TOKENS.SocketEventEmitter) emitter: ISocketEmitter,
-        @inject(SOCKET_TOKENS.SocketRoomManager) roomManager: ISocketRoomManager,
-        @inject(SOCKET_TOKENS.SocketEventRegistry) eventRegistry: ISocketEventRegistry,
-        @inject(WHITEBOARD_TOKENS.WhiteboardRealtimeStateService)
+        emitter: SocketIOEmitter,
+        roomManager: SocketIORoomManager,
+        eventRegistry: SocketIOEventRegistry,
+        
         private readonly realtimeStateService: WhiteboardRealtimeStateService
     ) {
         super(emitter, roomManager, eventRegistry);

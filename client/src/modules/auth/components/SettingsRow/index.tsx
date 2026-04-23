@@ -1,5 +1,6 @@
 import './SettingsRow.css';
 import { cn } from '@/shared/utils';
+import { Row, Stack, Text } from '@/shared/presentation/primitives';
 import type { ReactNode } from 'react';
 
 export interface SettingsRowProps {
@@ -44,38 +45,40 @@ const SettingsRow = ({
 }: SettingsRowProps) => {
     const classes = cn(
         'settings-row',
-        'd-flex',
-        'items-center',
-        'gap-075',
-        'p-05',
-        'radius-md',
-        onClick && 'clickable cursor-pointer',
+        onClick && 'clickable',
         className
     );
 
     return (
-        <div className={`volt-container ${classes}`} onClick={onClick}>
+        <Row
+            gap='075'
+            p='05'
+            radius='md'
+            cursor={onClick ? 'pointer' : undefined}
+            className={classes}
+            onClick={onClick}
+        >
             {icon && (
-                <div className="volt-container d-flex items-center content-center f-shrink-0 font-size-4 color-muted">
+                <Row justify='center' shrink='0' className='font-size-4 color-muted'>
                     {icon}
-                </div>
+                </Row>
             )}
-            <div className="volt-container flex-1 d-flex column gap-025 settings-row-content">
-                <p className="volt-text font-weight-5 font-size-2">
+            <Stack flex='1' gap='025' className='min-w-0'>
+                <Text as='p' weight='medium' size='md'>
                     {title}
-                </p>
+                </Text>
                 {description && (
-                    <p className="volt-text color-muted font-size-1">
+                    <Text as='p' tone='muted' size='sm'>
                         {description}
-                    </p>
+                    </Text>
                 )}
-            </div>
+            </Stack>
             {rightContent && (
-                <div className="volt-container settings-row-right d-flex items-center f-shrink-0">
+                <Row shrink='0' className='settings-row-right'>
                     {rightContent}
-                </div>
+                </Row>
             )}
-        </div>
+        </Row>
     );
 };
 

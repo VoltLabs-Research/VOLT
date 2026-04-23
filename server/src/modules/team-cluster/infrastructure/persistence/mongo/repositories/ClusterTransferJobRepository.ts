@@ -2,9 +2,10 @@ import type ClusterTransferJob from '@modules/team-cluster/domain/entities/Clust
 import type { ClusterTransferJobProps, ClusterTransferJobState } from '@modules/team-cluster/domain/entities/ClusterTransferJob';
 import clusterTransferJobMapper from '@modules/team-cluster/infrastructure/persistence/mongo/mappers/ClusterTransferJobMapper';
 import ClusterTransferJobModel, { ClusterTransferJobDocument } from '@modules/team-cluster/infrastructure/persistence/mongo/models/ClusterTransferJobModel';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import type { UpdateQuery } from 'mongoose';
-import { injectable } from 'tsyringe';
+
 
 const OPEN_TRANSFER_JOB_STATES: ClusterTransferJobState[] = [
     'queued',
@@ -15,7 +16,7 @@ const OPEN_TRANSFER_JOB_STATES: ClusterTransferJobState[] = [
     'cleaning'
 ];
 
-@injectable()
+@Singleton()
 export default class ClusterTransferJobRepository
     extends MongooseBaseRepository<ClusterTransferJob, ClusterTransferJobProps, ClusterTransferJobDocument> {
 

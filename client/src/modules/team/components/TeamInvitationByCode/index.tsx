@@ -1,3 +1,4 @@
+import { Button } from '@/shared/presentation/primitives';
 import './TeamInvitationByCode.css';
 import '../TeamInvitation/TeamInvitation.css';
 import {
@@ -9,7 +10,6 @@ import { refreshSocketSession } from '@/modules/socket/core/services/socket-auth
 import { useJoinByCodeMutation, usePreviewJoinByCodeQuery } from '@/modules/team/hooks/team/queries';
 import { switchSelectedTeam } from '@/modules/team/stores/team/use-team-store';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import Button from '@/shared/presentation/components/Button';
 import { AlertCircle, CheckCircle, LoaderCircle, ShieldCheck, Users, XCircle } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -110,13 +110,13 @@ const TeamInvitationByCodeTemplate = () => {
 
     if (previewQuery.isLoading) {
         return (
-            <div className='volt-container team-invitation-page w-max vh-max d-flex items-center content-center'>
-                <div className='volt-container team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
-                    <div className='volt-container team-invitation-by-code-icon team-invitation-by-code-icon-loading'>
+            <div className='team-invitation-page w-max vh-max d-flex items-center content-center'>
+                <div className='team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
+                    <div className='team-invitation-by-code-icon team-invitation-by-code-icon-loading'>
                         <LoaderCircle size={48} className='team-invitation-by-code-spinner' />
                     </div>
-                    <h3 className='volt-title font-size-4 font-weight-6'>Reviewing invite...</h3>
-                    <p className='volt-text color-secondary'>
+                    <h3 className='font-size-4 font-weight-6'>Reviewing invite...</h3>
+                    <p className='color-secondary'>
                         We are checking the invite details before you join the team.
                     </p>
                 </div>
@@ -126,13 +126,13 @@ const TeamInvitationByCodeTemplate = () => {
 
     if (status === TeamInvitationByCodeStatus.Joining) {
         return (
-            <div className='volt-container team-invitation-page w-max vh-max d-flex items-center content-center'>
-                <div className='volt-container team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
-                    <div className='volt-container team-invitation-by-code-icon team-invitation-by-code-icon-loading'>
+            <div className='team-invitation-page w-max vh-max d-flex items-center content-center'>
+                <div className='team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
+                    <div className='team-invitation-by-code-icon team-invitation-by-code-icon-loading'>
                         <LoaderCircle size={48} className='team-invitation-by-code-spinner' />
                     </div>
-                    <h3 className='volt-title font-size-4 font-weight-6'>Joining team...</h3>
-                    <p className='volt-text color-secondary'>
+                    <h3 className='font-size-4 font-weight-6'>Joining team...</h3>
+                    <p className='color-secondary'>
                         We are confirming your membership and preparing your workspace.
                     </p>
                 </div>
@@ -142,26 +142,26 @@ const TeamInvitationByCodeTemplate = () => {
 
     if (status === TeamInvitationByCodeStatus.AlreadyMember) {
         return (
-            <div className='volt-container team-invitation-page w-max vh-max d-flex items-center content-center'>
-                <div className='volt-container team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
-                    <div className='volt-container team-invitation-badge radius-full d-flex items-center gap-05'>
+            <div className='team-invitation-page w-max vh-max d-flex items-center content-center'>
+                <div className='team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
+                    <div className='team-invitation-badge radius-full d-flex items-center gap-05'>
                         <Users size={20} />
                         <span>Already joined</span>
                     </div>
-                    <h3 className='volt-title font-size-4 font-weight-6'>You are already in this team</h3>
+                    <h3 className='font-size-4 font-weight-6'>You are already in this team</h3>
                     {preview && (
-                        <div className='volt-container team-invitation-details radius-md d-flex items-start gap-1 wrap'>
-                            <div className='volt-container team-invitation-detail d-flex column'>
+                        <div className='team-invitation-details radius-md d-flex items-start gap-1 wrap'>
+                            <div className='team-invitation-detail d-flex column'>
                                 <span className='team-invitation-detail-label'>Team</span>
                                 <span className='team-invitation-detail-value'>{preview.teamName}</span>
                             </div>
-                            <div className='volt-container team-invitation-detail d-flex column'>
+                            <div className='team-invitation-detail d-flex column'>
                                 <span className='team-invitation-detail-label'>Owner</span>
                                 <span className='team-invitation-detail-value'>{preview.ownerName}</span>
                             </div>
                         </div>
                     )}
-                    <p className='volt-text color-secondary'>
+                    <p className='color-secondary'>
                         {joinErrorMessage || 'You already have access to this team. Continue to your dashboard when you are ready.'}
                     </p>
                     <Button
@@ -179,16 +179,16 @@ const TeamInvitationByCodeTemplate = () => {
 
     if (status === TeamInvitationByCodeStatus.Error) {
         return (
-            <div className='volt-container team-invitation-page w-max vh-max d-flex items-center content-center'>
-                <div className='volt-container team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
-                    <div className='volt-container team-invitation-icon-error'>
+            <div className='team-invitation-page w-max vh-max d-flex items-center content-center'>
+                <div className='team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
+                    <div className='team-invitation-icon-error'>
                         <XCircle size={48} />
                     </div>
-                    <h3 className='volt-title font-size-4 font-weight-6'>Could not join this team</h3>
-                    <p className='volt-text color-secondary'>
+                    <h3 className='font-size-4 font-weight-6'>Could not join this team</h3>
+                    <p className='color-secondary'>
                         {joinErrorMessage || previewErrorMessage || 'This invite link is invalid or has expired.'}
                     </p>
-                    <div className='volt-container team-invitation-error radius-sm d-flex items-center gap-025'>
+                    <div className='team-invitation-error radius-sm d-flex items-center gap-025'>
                         <AlertCircle size={16} />
                         Please ask for a new invite link or try again later.
                     </div>
@@ -205,32 +205,32 @@ const TeamInvitationByCodeTemplate = () => {
     }
 
     return (
-        <div className='volt-container team-invitation-page w-max vh-max d-flex items-center content-center'>
-            <div className='volt-container team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
-                <div className='volt-container team-invitation-by-code-icon team-invitation-by-code-icon-ready'>
+        <div className='team-invitation-page w-max vh-max d-flex items-center content-center'>
+            <div className='team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
+                <div className='team-invitation-by-code-icon team-invitation-by-code-icon-ready'>
                     <ShieldCheck size={40} />
                 </div>
-                <h3 className='volt-title font-size-4 font-weight-6'>Join this team?</h3>
-                <p className='volt-text color-secondary'>
+                <h3 className='font-size-4 font-weight-6'>Join this team?</h3>
+                <p className='color-secondary'>
                     Review the invite details below, then confirm to join this workspace.
                 </p>
                 {preview && (
-                    <div className='volt-container team-invitation-details radius-md d-flex items-start gap-1 wrap'>
-                        <div className='volt-container team-invitation-detail d-flex column'>
+                    <div className='team-invitation-details radius-md d-flex items-start gap-1 wrap'>
+                        <div className='team-invitation-detail d-flex column'>
                             <span className='team-invitation-detail-label'>Team</span>
                             <span className='team-invitation-detail-value'>{preview.teamName}</span>
                         </div>
-                        <div className='volt-container team-invitation-detail d-flex column'>
+                        <div className='team-invitation-detail d-flex column'>
                             <span className='team-invitation-detail-label'>Owner</span>
                             <span className='team-invitation-detail-value'>{preview.ownerName}</span>
                         </div>
-                        <div className='volt-container team-invitation-detail d-flex column'>
+                        <div className='team-invitation-detail d-flex column'>
                             <span className='team-invitation-detail-label'>Invite code</span>
                             <span className='team-invitation-detail-value'>{normalizedCode}</span>
                         </div>
                     </div>
                 )}
-                <div className='volt-container team-invitation-actions d-flex items-center gap-075'>
+                <div className='team-invitation-actions d-flex items-center gap-075'>
                     <Button variant='ghost' intent='neutral' onClick={handleNavigateToNextDestination}>
                         Cancel
                     </Button>

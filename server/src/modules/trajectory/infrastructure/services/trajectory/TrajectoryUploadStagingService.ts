@@ -1,17 +1,16 @@
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import type { TrajectoryUploadFile } from '@modules/trajectory/domain/port/trajectory/ITrajectoryBackgroundProcessor';
 import type { ITrajectoryUploadStagingService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryUploadStagingService';
-import type { ITempFileService } from '@shared/domain/port/ITempFileService';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import logger from '@shared/infrastructure/logger';
+import TempFileService from '@shared/infrastructure/services/TempFileService';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
-@injectable()
+@Singleton()
 export default class TrajectoryUploadStagingService implements ITrajectoryUploadStagingService {
     constructor(
-        @inject(SHARED_TOKENS.TempFileService)
-        private readonly tempFileService: ITempFileService
+        
+        private readonly tempFileService: TempFileService
     ) {}
 
     public async stageUploads(trajectoryId: string, files: TrajectoryUploadFile[]): Promise<TrajectoryUploadFile[]> {

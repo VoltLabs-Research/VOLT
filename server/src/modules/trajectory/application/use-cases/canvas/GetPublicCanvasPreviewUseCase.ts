@@ -1,16 +1,17 @@
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { createHash } from 'node:crypto';
 
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { getTrajectoryRasterPreviewsPrefix } from '@modules/raster/utilities/raster-storage-paths';
 import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
-import { getTrajectoryRasterPreviewsPrefix } from '@modules/raster/utilities/raster-storage-paths';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import { Result } from '@shared/domain/port/Result';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 
-import { injectable, inject } from 'tsyringe';
+import { inject } from 'tsyringe';
 
 import type { GetTrajectoryPreviewOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryPreviewDTO';
 import type { IUseCase } from '@shared/application/IUseCase';
@@ -21,20 +22,20 @@ interface GetPublicCanvasPreviewInput {
     userId?: string;
 };
 
-@injectable()
+@Singleton()
 export class GetPublicCanvasPreviewUseCase implements IUseCase<
     GetPublicCanvasPreviewInput,
     GetTrajectoryPreviewOutputDTO,
     ApplicationError
 > {
     constructor(
-        @inject(TrajectoryReadAccessService)
+        
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
 
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
+        
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 

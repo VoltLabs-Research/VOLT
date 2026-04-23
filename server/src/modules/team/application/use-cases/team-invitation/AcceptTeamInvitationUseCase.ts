@@ -1,32 +1,31 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SystemRoleNames } from '@core/constants/system-roles';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { AcceptTeamInvitationInputDTO, AcceptTeamInvitationOutputDTO } from '@modules/team/application/dtos/team-invitation/AcceptTeamInvitationDTO';
-import { ITeamInvitationRepository } from '@modules/team/domain/port/team-invitation/ITeamInvitationRepository';
-import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
-import { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
-import { ITeamRoleRepository } from '@modules/team/domain/port/team-role/ITeamRoleRepository';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import TeamInvitationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-invitation/TeamInvitationRepository';
+import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
+import TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-role/TeamRoleRepository';
+import TeamRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team/TeamRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable, inject } from 'tsyringe';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamInvitationInputDTO, AcceptTeamInvitationOutputDTO, ApplicationError> {
     constructor(
-        @inject(TEAM_TOKENS.TeamInvitationRepository)
-        private readonly invitationRepository: ITeamInvitationRepository,
+        
+        private readonly invitationRepository: TeamInvitationRepository,
 
-        @inject(TEAM_TOKENS.TeamMemberRepository)
-        private readonly teamMemberRepository: ITeamMemberRepository,
+        
+        private readonly teamMemberRepository: TeamMemberRepository,
 
-        @inject(TEAM_TOKENS.TeamRepository)
-        private readonly teamRepository: ITeamRepository,
+        
+        private readonly teamRepository: TeamRepository,
 
-        @inject(TEAM_TOKENS.TeamRoleRepository)
-        private readonly teamRoleRepository: ITeamRoleRepository,
+        
+        private readonly teamRoleRepository: TeamRoleRepository,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus

@@ -1,7 +1,7 @@
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 
 import { useShallow } from 'zustand/react/shallow';
-import Loader from '@/shared/presentation/components/Loader';
+import { Loader, Row, Stack, Heading, Text } from '@/shared/presentation/primitives';
 import './PreloadingOverlay.css';
 
 const PreloadingOverlay = () => {
@@ -14,15 +14,15 @@ const PreloadingOverlay = () => {
     if (!isPreloading) return null;
 
     return (
-        <div className="volt-container canvas-preload-overlay d-flex items-center content-center p-absolute inset-0">
-            <div className="volt-container canvas-preload-card d-flex column items-center gap-05 radius-lg">
+        <Row justify='center' position='absolute' inset='0' className="canvas-preload-overlay">
+            <Stack align='center' gap='05' radius='lg' className="canvas-preload-card">
                 <Loader scale={0.7} />
-                <h3 className="volt-title font-size-2" style={{ marginTop: '7rem' }}>Setting up your scene...</h3>
-                <p className="volt-text font-size-1 color-secondary">
+                <Heading level={3} size='md' style={{ marginTop: '7rem' }}>Setting up your scene...</Heading>
+                <Text as='p' size='sm' tone='secondary'>
                     {Math.round(progress * 100)}% loaded
-                </p>
-            </div>
-        </div>
+                </Text>
+            </Stack>
+        </Row>
     );
 };
 

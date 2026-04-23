@@ -1,19 +1,19 @@
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { ImportPluginInputDTO, ImportPluginOutputDTO } from '@modules/plugin/application/dtos/plugin/ImportPluginDTO';
-import { mapPluginToPersistedDTO } from '@modules/plugin/utilities/mappers/plugin/mapPluginToPersistedDTO';
-import { IPluginStorageService } from '@modules/plugin/domain/port/plugin/IPluginStorageService';
 import PluginCreatedEvent from '@modules/plugin/domain/events/PluginCreatedEvent';
+import { mapPluginToPersistedDTO } from '@modules/plugin/utilities/mappers/plugin/mapPluginToPersistedDTO';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import PluginStorageService from '@modules/plugin/infrastructure/services/plugin/PluginStorageService';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { inject } from 'tsyringe';
 
-@injectable()
+@Singleton()
 export class ImportPluginUseCase implements IUseCase<ImportPluginInputDTO, ImportPluginOutputDTO> {
     constructor(
-        @inject(PLUGIN_TOKENS.PluginStorageService) private storageService: IPluginStorageService,
+        private storageService: PluginStorageService,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ){}
 
