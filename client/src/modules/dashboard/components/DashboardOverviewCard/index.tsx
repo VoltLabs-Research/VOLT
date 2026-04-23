@@ -1,6 +1,7 @@
 import './DashboardOverviewCard.css';
 import TinyLineChart from '../TinyLineChart';
 import DashboardCard from '@/modules/dashboard/components/DashboardCard';
+import { Box, Stack, Row, Text, IconFrame } from '@/shared/presentation/primitives';
 import { useNavigate } from 'react-router';
 import { FaArrowDownLong, FaArrowUpLong } from 'react-icons/fa6';
 import { GoArrowRight } from 'react-icons/go';
@@ -42,30 +43,30 @@ const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
                     onClick={handleClick}
                     aria-label={`Open ${card.name}`}
                 >
-                    <div className='volt-container d-flex column gap-1 p-relative z-5'>
-                        <div className='volt-container d-flex items-center gap-075'>
-                            <div className='volt-container dashboard-stat-card-icon d-flex flex-center radius-md'>
+                    <Stack gap='1' position='relative' zIndex='5'>
+                        <Row gap='075'>
+                            <IconFrame size='md' className='dashboard-stat-card-icon'>
                                 {icon}
-                            </div>
-                            <span className='font-size-2 font-weight-5'>{card.name}</span>
-                        </div>
+                            </IconFrame>
+                            <Text size='md' weight='medium'>{card.name}</Text>
+                        </Row>
 
-                        <div className='volt-container d-flex items-end gap-075'>
+                        <Row align='end' gap='075'>
                             <span className='dashboard-stat-value'>{card.count}</span>
-                            <div className={`volt-container dashboard-stat-trend d-flex items-center gap-025 ${up ? 'up' : 'down'}`} style={{ marginBottom: '0.3rem' }}>
+                            <Row gap='025' className={`dashboard-stat-trend ${up ? 'up' : 'down'}`} style={{ marginBottom: '0.3rem' }}>
                                 {trendIcon}
                                 <span>{Math.abs(card.lastMonthStatus ?? 0)}%</span>
-                            </div>
-                        </div>
+                            </Row>
+                        </Row>
 
-                        <span className='font-size-1 color-muted'>vs last month</span>
-                    </div>
+                        <Text size='sm' tone='muted'>vs last month</Text>
+                    </Stack>
 
-                    <div className='volt-container dashboard-stat-navigate p-absolute top-1 right-1'>
+                    <Box position='absolute' top='1' right='1' className='dashboard-stat-navigate'>
                         <GoArrowRight />
-                    </div>
+                    </Box>
 
-                    <div className='volt-container dashboard-stat-sparkline p-absolute bottom-0 right-0'>
+                    <Box position='absolute' bottom='0' right='0' className='dashboard-stat-sparkline'>
                         <TinyLineChart
                             lineColor={lineColor || '#30d158'}
                             pData={card.series}
@@ -74,30 +75,30 @@ const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
                             width={160}
                             height={60}
                         />
-                    </div>
+                    </Box>
                 </button>
             ) : (
                 <>
-                    <div className='volt-container d-flex column gap-1 p-relative z-5 dashboard-stat-card-content'>
-                        <div className='volt-container d-flex items-center gap-075'>
-                            <div className='volt-container dashboard-stat-card-icon d-flex flex-center radius-md'>
+                    <Stack gap='1' position='relative' zIndex='5' className='dashboard-stat-card-content'>
+                        <Row gap='075'>
+                            <IconFrame size='md' className='dashboard-stat-card-icon'>
                                 {icon}
-                            </div>
-                            <span className='font-size-2 font-weight-5'>{card.name}</span>
-                        </div>
+                            </IconFrame>
+                            <Text size='md' weight='medium'>{card.name}</Text>
+                        </Row>
 
-                        <div className='volt-container d-flex items-end gap-075'>
+                        <Row align='end' gap='075'>
                             <span className='dashboard-stat-value'>{card.count}</span>
-                            <div className={`volt-container dashboard-stat-trend d-flex items-center gap-025 ${up ? 'up' : 'down'}`} style={{ marginBottom: '0.3rem' }}>
+                            <Row gap='025' className={`dashboard-stat-trend ${up ? 'up' : 'down'}`} style={{ marginBottom: '0.3rem' }}>
                                 {trendIcon}
                                 <span>{Math.abs(card.lastMonthStatus ?? 0)}%</span>
-                            </div>
-                        </div>
+                            </Row>
+                        </Row>
 
-                        <span className='font-size-1 color-muted'>vs last month</span>
-                    </div>
+                        <Text size='sm' tone='muted'>vs last month</Text>
+                    </Stack>
 
-                    <div className='volt-container dashboard-stat-sparkline p-absolute bottom-0 right-0'>
+                    <Box position='absolute' bottom='0' right='0' className='dashboard-stat-sparkline'>
                         <TinyLineChart
                             lineColor={lineColor || '#30d158'}
                             pData={card.series}
@@ -106,7 +107,7 @@ const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
                             width={160}
                             height={60}
                         />
-                    </div>
+                    </Box>
                 </>
             )}
         </DashboardCard>

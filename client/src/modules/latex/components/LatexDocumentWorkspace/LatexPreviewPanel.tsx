@@ -1,3 +1,4 @@
+import { Stack } from '@/shared/presentation/primitives';
 import { memo } from 'react';
 import LatexPdfViewer from './LatexPdfViewer';
 
@@ -18,16 +19,16 @@ const LatexPreviewPanel = ({
     onExportPdf,
     width
 }: LatexPreviewPanelProps) => (
-    <div id={panelId} className='volt-container latex-workspace__preview d-flex column' style={{ width }} aria-label='PDF preview panel'>
-        <div className='volt-container latex-preview__content d-flex column flex-1 min-h-0'>
+    <Stack id={panelId} className='latex-workspace__preview' style={{ width }} aria-label='PDF preview panel'>
+        <Stack flex='1' minH='0' className='latex-preview__content'>
             <LatexPdfViewer
                 pdfUrl={compiledPdfUrl}
                 isLoading={isCompiling}
                 error={compileError}
                 onDownload={compiledPdfUrl ? onExportPdf : undefined}
             />
-        </div>
-    </div>
+        </Stack>
+    </Stack>
 );
 
 export default memo(LatexPreviewPanel);

@@ -1,12 +1,12 @@
+import type { DeleteOptions, ITempFileService, TempFileOptions } from '@shared/domain/port/ITempFileService';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import logger from '@shared/infrastructure/logger';
 import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import logger from '@shared/infrastructure/logger';
-import { injectable } from 'tsyringe';
 import { v4 } from 'uuid';
-import type { DeleteOptions, ITempFileService, TempFileOptions } from '@shared/domain/port/ITempFileService';
 
-@injectable()
+@Singleton()
 export default class TempFileService implements ITempFileService{
     private readonly TEMP_DIR: string;
     

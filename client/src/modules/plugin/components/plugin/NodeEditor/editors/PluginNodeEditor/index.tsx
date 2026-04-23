@@ -26,7 +26,7 @@ import type {
 import type { PluginTeamClusterOption } from '@/modules/plugin/api/entities/plugin/team-cluster';
 import type { EditorProps } from '../types';
 import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF';
-import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { SelectOption } from '@/shared/presentation/primitives';
 
 const EXECUTION_MODE_OPTIONS = [{
     value: PluginNodeExecutionMode.MANUAL,
@@ -247,8 +247,8 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
     const renderArgumentReferenceConfiguration = () => {
         if (!selectedArgumentDefinition) {
             return (
-                <div className="volt-container">
-                    <p className='volt-text font-size-1 color-muted'>
+                <div >
+                    <p className='font-size-1 color-muted'>
                         Select a plugin reference argument to configure runtime execution.
                     </p>
                 </div>
@@ -257,8 +257,8 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
 
         if (selectedArgumentDefinition.showPluginConfiguration) {
             return (
-                <div className='volt-container d-flex column gap-05'>
-                    <p className='volt-text font-size-1 color-muted'>
+                <div className='d-flex column gap-05'>
+                    <p className='font-size-1 color-muted'>
                         Runtime execution will use the plugin configuration provided by the user through the selected argument.
                     </p>
                     <PluginExecutionConfigFields
@@ -280,8 +280,8 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
 
         if (referencedCandidatePluginIds.length === 0) {
             return (
-                <div className="volt-container">
-                    <p className='volt-text font-size-1 color-muted'>
+                <div >
+                    <p className='font-size-1 color-muted'>
                         This argument does not expose any candidate plugins for manual configuration.
                     </p>
                 </div>
@@ -289,8 +289,8 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
         }
 
         return (
-            <div className='volt-container d-flex column gap-05'>
-                <p className='volt-text font-size-1 color-muted'>
+            <div className='d-flex column gap-05'>
+                <p className='font-size-1 color-muted'>
                     Manual fallback configuration will be used for whichever referenced plugin the user selects.
                 </p>
                 {referencedCandidatePluginIds.map((pluginId) => {
@@ -356,7 +356,7 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
                             onFieldChange={handlePluginChange}
                         />
                         {selectedPlugin && (
-                            <p className='volt-text font-size-1 color-muted'>
+                            <p className='font-size-1 color-muted'>
                                 {selectedPlugin.modifier?.description?.trim() || 'Published plugin selected for inline execution.'}
                             </p>
                         )}
@@ -373,7 +373,7 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
                             onFieldChange={handleArgumentReferenceChange}
                         />
                         {selectedArgumentDefinition && (
-                            <p className='volt-text font-size-1 color-muted'>
+                            <p className='font-size-1 color-muted'>
                                 {selectedArgumentDefinition.multipleSelection
                                     ? 'This argument can resolve one or more plugins at runtime.'
                                     : 'This argument resolves a single plugin at runtime.'}
@@ -402,8 +402,8 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
                             allowTemplateReferenceMode
                         />
                     ) : (
-                        <div className="volt-container">
-                            <p className='volt-text font-size-1 color-muted'>
+                        <div >
+                            <p className='font-size-1 color-muted'>
                                 Select a published plugin to configure inline execution.
                             </p>
                         </div>

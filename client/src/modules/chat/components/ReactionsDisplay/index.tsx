@@ -1,3 +1,4 @@
+import { Box } from '@/shared/presentation/primitives';
 import { cn } from '@/shared/utils';
 import type { ChatReaction } from '@/modules/chat/api/entities/message';
 import './ReactionsDisplay.css';
@@ -27,7 +28,7 @@ const ReactionsDisplay = ({ reactions = [], currentUserId, onToggle }: Reactions
     };
 
     return (
-        <div className='volt-container d-flex flex-wrap gap-025 chat-reactions-display'>
+        <Box display='flex' wrap gap='025' className='chat-reactions-display'>
             {validReactions.map((reaction) => (
                 <button
                     key={reaction.emoji}
@@ -43,7 +44,7 @@ const ReactionsDisplay = ({ reactions = [], currentUserId, onToggle }: Reactions
                     {reaction.emoji} {reaction.users.length}
                 </button>
             ))}
-        </div>
+        </Box>
     );
 };
 

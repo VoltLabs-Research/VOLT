@@ -1,6 +1,6 @@
 import './DashboardOperationsCard.css';
 import DashboardCard from '@/modules/dashboard/components/DashboardCard';
-import SegmentedTabs from '@/shared/presentation/components/SegmentedTabs';
+import { Box, Stack, Row, Text, SegmentedTabs, Loader, AsyncBoundary } from '@/shared/presentation/primitives';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
 import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
 import { getClusterLiveMetricsStatus } from '@/modules/cluster/utilities/cluster-live-metrics-status';
@@ -10,8 +10,7 @@ import StatusCounts from '@/modules/canvas/components/StatusCounts';
 import useJobStatusCounts from '@/modules/canvas/hooks/use-job-status-counts';
 import JobsHistoryViewer from '@/modules/jobs/components/JobsHistoryViewer';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import EmptyState from '@/shared/presentation/components/EmptyState';
-import Loader from '@/shared/presentation/components/Loader';
+import { EmptyState } from '@/shared/presentation/primitives';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import { useCallback, useMemo, useState } from 'react';
 import { HiOutlineServerStack } from 'react-icons/hi2';
@@ -174,10 +173,10 @@ const DashboardOperationsCard = () => {
 
     const headerSummary = activeTab === 'clusters'
         ? (
-            <span className='font-size-1 color-muted'>
+            <Text size='sm' tone='muted'>
                 {orderedClusters.length} cluster{orderedClusters.length === 1 ? '' : 's'}
                 {!isConnected && orderedClusters.length > 0 ? ' · live metrics offline' : ''}
-            </span>
+            </Text>
         )
         : (
             <StatusCounts
@@ -187,43 +186,39 @@ const DashboardOperationsCard = () => {
             />
         );
 
-    const renderClusters = (): ReactNode => {
-        if (teamClustersQuery.isLoading && teamClusters.length === 0) {
-            return (
-                <div className='volt-container dashboard-operations-panel d-flex flex-center'>
-                    <Loader scale={0.4} />
-                </div>
-            );
-        }
+    const clustersLoadingState = (
+        <Box display='flex' className='dashboard-operations-panel flex-center'>
+            <Loader scale={0.4} />
+        </Box>
+    );
 
-        if (teamClustersQuery.error && teamClusters.length === 0) {
-            const errorMessage = teamClustersQuery.error instanceof Error
-                ? teamClustersQuery.error.message
-                : 'We could not load the team clusters right now.';
+    const clustersEmptyState = (
+        <RecoveryState
+            title='No clusters connected yet'
+            description='Connect a storage server or compute node to monitor runtime health and live workload activity here.'
+            tone={RecoveryStateTone.Info}
+            className='dashboard-card-state'
+        />
+    );
 
-            return (
-                <RecoveryState
-                    title='Unable to load clusters'
-                    description={errorMessage}
-                    tone={RecoveryStateTone.Error}
-                    className='dashboard-card-state'
-                />
-            );
-        }
-
-        if (!orderedClusters.length) {
-            return (
-                <RecoveryState
-                    title='No clusters connected yet'
-                    description='Connect a storage server or compute node to monitor runtime health and live workload activity here.'
-                    tone={RecoveryStateTone.Info}
-                    className='dashboard-card-state'
-                />
-            );
-        }
+    const renderClustersError = (err: unknown): ReactNode => {
+        const errorMessage = err instanceof Error
+            ? err.message
+            : 'We could not load the team clusters right now.';
 
         return (
-            <div className='volt-container dashboard-operations-panel dashboard-operations-cluster-list y-auto d-flex column'>
+            <RecoveryState
+                title='Unable to load clusters'
+                description={errorMessage}
+                tone={RecoveryStateTone.Error}
+                className='dashboard-card-state'
+            />
+        );
+    };
+
+    const renderClustersList = (): ReactNode => {
+        return (
+            <Stack overflow='y-auto' className='dashboard-operations-panel dashboard-operations-cluster-list'>
                 {orderedClusters.map((teamCluster) => {
                     const liveMetrics = metricsByClusterId.get(teamCluster._id) ?? null;
                     const liveMetricsStatus = getClusterLiveMetricsStatus({
@@ -250,22 +245,22 @@ const DashboardOperationsCard = () => {
                         : undefined;
 
                     return (
-                        <div key={teamCluster._id} className='volt-container dashboard-operations-cluster-item d-flex column'>
-                            <div className='volt-container dashboard-operations-cluster-head d-flex items-center content-between gap-1'>
-                                <div className='volt-container d-flex column gap-025 min-w-0'>
-                                    <span className='font-size-2 color-primary font-weight-6 text-truncate'>
+                        <Stack key={teamCluster._id} className='dashboard-operations-cluster-item'>
+                            <Row justify='between' gap='1' className='dashboard-operations-cluster-head'>
+                                <Stack gap='025' minW='0'>
+                                    <Text size='md' tone='primary' weight='bold' truncate>
                                         {teamCluster.name}
-                                    </span>
-                                    <span className='font-size-1 color-muted'>
+                                    </Text>
+                                    <Text size='sm' tone='muted'>
                                         {ROLE_LABELS[teamCluster.roleConfig.effectiveRole]}
-                                    </span>
-                                </div>
+                                    </Text>
+                                </Stack>
 
                                 <span className={getClusterStatusClassName(liveMetricsStatus.variant)}>
                                     <span className='dashboard-operations-cluster-status-dot' aria-hidden='true' />
                                     {liveMetricsStatus.label}
                                 </span>
-                            </div>
+                            </Row>
 
                             {liveMetrics
                                 ? (
@@ -279,7 +274,7 @@ const DashboardOperationsCard = () => {
                                             size='sm'
                                         />
 
-                                        <div className='volt-container dashboard-operations-cluster-tab-panel d-flex column'>
+                                        <Stack className='dashboard-operations-cluster-tab-panel'>
                                             {activeMetric === 'cpu' && (
                                                 <>
                                                     <ClusterProgressMetric
@@ -330,24 +325,24 @@ const DashboardOperationsCard = () => {
                                                     latencyLabel={latencyLabel}
                                                 />
                                             )}
-                                        </div>
+                                        </Stack>
                                     </>
                                 )
                                 : (
-                                    <span className='font-size-1 color-muted dashboard-operations-cluster-unavailable'>
+                                    <Text size='sm' tone='muted' className='dashboard-operations-cluster-unavailable'>
                                         {liveMetricsStatus.label}
-                                    </span>
+                                    </Text>
                                 )}
-                        </div>
+                        </Stack>
                     );
                 })}
-            </div>
+            </Stack>
         );
     };
 
     const renderJobs = (): ReactNode => {
         return (
-            <div className='volt-container dashboard-operations-panel d-flex column flex-1 min-h-0'>
+            <Stack flex='1' minH='0' className='dashboard-operations-panel'>
                 <JobsHistoryViewer
                     variant='embedded'
                     displayMode='full'
@@ -355,13 +350,13 @@ const DashboardOperationsCard = () => {
                     groupStatusPresentation='trajectory-name'
                     emptyState={jobsEmptyState}
                 />
-            </div>
+            </Stack>
         );
     };
 
     return (
         <DashboardCard className='dashboard-operations-card d-flex column' overflowHidden={true}>
-            <div className='volt-container dashboard-tabbed-card-header'>
+            <Box className='dashboard-tabbed-card-header'>
                 <SegmentedTabs
                     tabs={DASHBOARD_OPERATIONS_TABS}
                     activeTab={activeTab}
@@ -370,9 +365,22 @@ const DashboardOperationsCard = () => {
                 />
 
                 {headerSummary}
-            </div>
+            </Box>
 
-            {activeTab === 'clusters' ? renderClusters() : renderJobs()}
+            {activeTab === 'clusters' ? (
+                <AsyncBoundary
+                    state={{
+                        loading: teamClustersQuery.isLoading && teamClusters.length === 0,
+                        error: teamClustersQuery.error && teamClusters.length === 0 ? teamClustersQuery.error : undefined,
+                        empty: orderedClusters.length === 0
+                    }}
+                    loading={clustersLoadingState}
+                    error={renderClustersError}
+                    empty={clustersEmptyState}
+                >
+                    {renderClustersList()}
+                </AsyncBoundary>
+            ) : renderJobs()}
         </DashboardCard>
     );
 };

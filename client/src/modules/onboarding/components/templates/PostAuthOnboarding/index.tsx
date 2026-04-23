@@ -5,6 +5,7 @@ import {
 } from '@/modules/auth/services/post-auth-destination-storage';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
 import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluster-usable';
+import { isDemoClusterFeatureEnabled } from '@/modules/cluster/utilities/demo-feature';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
@@ -13,9 +14,8 @@ import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
 import { switchSelectedTeam } from '@/modules/team/stores/team/use-team-store';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import Button from '@/shared/presentation/components/Button';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Loader from '@/shared/presentation/components/Loader';
+import { Button, Heading, Loader, Stack, Text } from '@/shared/presentation/primitives';
 import { sileo } from 'sileo';
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
@@ -70,6 +70,9 @@ const PostAuthOnboarding = () => {
         }
 
         if (step === OnboardingStep.Cluster) {
+            if (isDemoClusterFeatureEnabled()) {
+                return <Navigate to='/onboarding/cluster/provisioning' replace />;
+            }
             return <Navigate to={getClusterOnboardingRedirectPath(next)} replace />;
         }
     }
@@ -132,18 +135,18 @@ const PostAuthOnboarding = () => {
     };
 
     let content: ReactNode = (
-        <div className='volt-container post-auth-onboarding-shell d-flex column gap-2'>
+        <Stack gap='2' className='post-auth-onboarding-shell'>
             <form className='post-auth-onboarding-content d-flex column gap-2' onSubmit={handleSubmit}>
-                <div className='volt-container d-flex column gap-1 text-center'>
-                    <h1 className='volt-title font-size-6 font-weight-6'>
+                <Stack gap='1' textAlign='center'>
+                    <Heading level={1} size='3xl' weight='bold'>
                         {stepState.title}
-                    </h1>
-                    <p className='volt-text post-auth-onboarding-description color-secondary'>
+                    </Heading>
+                    <Text as='p' tone='secondary' className='post-auth-onboarding-description'>
                         {stepState.description}
-                    </p>
-                </div>
+                    </Text>
+                </Stack>
 
-                <div className='volt-container d-flex column gap-1'>
+                <Stack gap='1'>
                     <FormFieldRHF
                         label='Team name'
                         placeholder='e.g., Research Lab'
@@ -156,7 +159,7 @@ const PostAuthOnboarding = () => {
                             }
                         }}
                     />
-                </div>
+                </Stack>
 
                 <Button
                     variant='solid'
@@ -170,14 +173,14 @@ const PostAuthOnboarding = () => {
                     Create Team & Continue
                 </Button>
             </form>
-        </div>
+        </Stack>
     );
 
     if (isLoading) {
         content = (
-            <div className='volt-container post-auth-onboarding-loading d-flex column items-center content-center gap-1'>
+            <Stack align='center' justify='center' gap='1' className='post-auth-onboarding-loading'>
                 <Loader scale={0.6} isFixed={false} announce label='Loading onboarding' />
-            </div>
+            </Stack>
         );
     }
 

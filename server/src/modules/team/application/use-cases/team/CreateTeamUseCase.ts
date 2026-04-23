@@ -1,34 +1,32 @@
 import { SystemRoleNames, SystemRoles } from '@core/constants/system-roles';
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
 import { CreateTeamInputDTO, CreateTeamOutputDTO } from '@modules/team/application/dtos/team/CreateTeamDTO';
-import TeamCreatedEvent from '@modules/team/domain/events/team/TeamCreatedEvent';
 import TeamRole from '@modules/team/domain/entities/team-role/TeamRole';
-import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
-import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
-import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
-import type { ITeamRoleRepository } from '@modules/team/domain/port/team-role/ITeamRoleRepository';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import TeamCreatedEvent from '@modules/team/domain/events/team/TeamCreatedEvent';
+import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
+import TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-role/TeamRoleRepository';
+import TeamRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team/TeamRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable, inject } from 'tsyringe';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export default class CreateTeamUseCase implements IUseCase<CreateTeamInputDTO, CreateTeamOutputDTO, ApplicationError> {
     constructor(
-        @inject(TEAM_TOKENS.TeamRepository)
-        private readonly teamRepository: ITeamRepository,
+        
+        private readonly teamRepository: TeamRepository,
 
-        @inject(TEAM_TOKENS.TeamRoleRepository)
-        private readonly teamRoleRepository: ITeamRoleRepository,
+        
+        private readonly teamRoleRepository: TeamRoleRepository,
 
-        @inject(TEAM_TOKENS.TeamMemberRepository)
-        private readonly teamMemberRepository: ITeamMemberRepository,
+        
+        private readonly teamMemberRepository: TeamMemberRepository,
 
-        @inject(AUTH_TOKENS.UserRepository)
-        private readonly userRepository: IUserRepository,
+        
+        private readonly userRepository: UserRepository,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus

@@ -1,9 +1,9 @@
-import Select from '@/shared/presentation/components/Select';
-import Tooltip from '@/shared/presentation/components/Tooltip';
+import { Select, VisuallyHidden } from '@/shared/presentation/primitives';
+import { Stack, Row, Text, Tooltip } from '@/shared/presentation/primitives';
 import { useId } from 'react';
 import { IoAddOutline, IoArrowUpOutline } from 'react-icons/io5';
-import type { CSSProperties, KeyboardEvent } from 'react';
-import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { KeyboardEvent } from 'react';
+import type { SelectOption } from '@/shared/presentation/primitives';
 import './AIComposer.css';
 
 interface AIComposerProps {
@@ -16,18 +16,6 @@ interface AIComposerProps {
     onChange: (message: string) => void;
     onModelChange: (model: string) => void;
     onSend: () => void;
-};
-
-const VISUALLY_HIDDEN_STYLES: CSSProperties = {
-    position: 'absolute',
-    width: '1px',
-    height: '1px',
-    padding: 0,
-    margin: '-1px',
-    overflow: 'hidden',
-    clip: 'rect(0, 0, 0, 0)',
-    whiteSpace: 'nowrap',
-    border: 0
 };
 
 const AIComposer = ({
@@ -71,22 +59,22 @@ const AIComposer = ({
     }
 
     return (
-        <div className='volt-container d-flex column gap-05 ai-composer'>
+        <Stack gap='05' className='ai-composer'>
             {error && (
-                <p className='volt-text font-size-1 color-danger' role='alert' aria-live='assertive'>
+                <Text as='p' size='sm' className='color-danger' role='alert' aria-live='assertive'>
                     {error}
-                </p>
+                </Text>
             )}
 
-            <label id={inputLabelId} htmlFor={inputId} style={VISUALLY_HIDDEN_STYLES}>
+            <label id={inputLabelId} htmlFor={inputId} className='sr-only'>
                 Message to Volt AI
             </label>
 
-            <span id={statusId} style={VISUALLY_HIDDEN_STYLES} aria-live='polite' aria-atomic='true'>
+            <VisuallyHidden id={statusId} aria-live='polite' aria-atomic='true'>
                 {statusMessage}
-            </span>
+            </VisuallyHidden>
 
-            <div className='volt-container d-flex items-center gap-05 ai-composer-input-wrapper'>
+            <Row gap='05' className='ai-composer-input-wrapper'>
                 <Tooltip content='Attachments coming soon'>
                     <button
                         type='button'
@@ -136,8 +124,8 @@ const AIComposer = ({
                         <IoArrowUpOutline size={18} />
                     </button>
                 </Tooltip>
-            </div>
-        </div>
+            </Row>
+        </Stack>
     );
 };
 

@@ -76,7 +76,7 @@ const syncThemeColorMeta = (): void => {
 };
 
 /** Applies the resolved theme contract during app bootstrap. */
-export const initializeTheme = (): void => {
+const initializeTheme = (): void => {
     applyTheme(getEffectiveTheme(resolvePreference()));
 };
 

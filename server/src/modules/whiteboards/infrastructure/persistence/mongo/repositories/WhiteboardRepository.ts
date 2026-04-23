@@ -1,14 +1,15 @@
-import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import Whiteboard from '@modules/whiteboards/domain/entities/Whiteboard';
 import whiteboardMapper from '@modules/whiteboards/infrastructure/persistence/mongo/mappers/WhiteboardMapper';
 import WhiteboardModel from '@modules/whiteboards/infrastructure/persistence/mongo/models/WhiteboardModel';
-import { injectable } from 'tsyringe';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+
 import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
 import type { IWhiteboardRepository, WhiteboardPaginationOptions } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
 import type { WhiteboardDocument } from '@modules/whiteboards/infrastructure/persistence/mongo/models/WhiteboardModel';
+import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 
-@injectable()
+@Singleton()
 export default class WhiteboardRepository
     extends MongooseBaseRepository<Whiteboard, WhiteboardProps, WhiteboardDocument>
     implements IWhiteboardRepository {

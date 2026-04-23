@@ -1,16 +1,14 @@
+import { Modal, resetModal } from '@/shared/presentation/primitives';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import CopyableField from '@/shared/presentation/components/CopyableField';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Modal from '@/shared/presentation/components/Modal';
 import useCreateSecretKey from '@/modules/team/hooks/secret-key/use-create-secret-key';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamRoleData from '@/modules/team/hooks/role/use-team-role-data';
-import { resetModal } from '@/shared/presentation/components/Modal';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import './SecretKeyCreationModal.css';
 
 export const SECRET_KEY_CREATION_MODAL_ID = 'secret-key-creation-modal';
 const SECRET_KEY_CREATION_FORM_ID = 'secret-key-creation-form';
@@ -126,7 +124,7 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
                 />
             }
         >
-            <div className='volt-container p-1-5'>
+            <div className='p-1-5'>
                 <form id={SECRET_KEY_CREATION_FORM_ID} className='d-flex column gap-1-5' onSubmit={handleFormSubmit}>
                     {generatedKey ? (
                         <>

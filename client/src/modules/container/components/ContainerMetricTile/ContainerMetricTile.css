@@ -1,30 +1,11 @@
 .container-metric-tile {
     min-width: 0;
-    padding: 0;
-}
-
-.container-metric-tile-label {
-    color: var(--color-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-size: 0.6875rem;
-    font-weight: 600;
 }
 
 .container-metric-tile-badge {
     color: var(--color-text-muted);
     font-variant-numeric: tabular-nums;
     font-size: 0.75rem;
-}
-
-.container-metric-tile-value {
-    font-size: 1.875rem;
-    font-weight: 500;
-    line-height: 1.1;
-    letter-spacing: -0.03em;
-    color: var(--color-text-primary);
-    font-variant-numeric: tabular-nums;
-    font-feature-settings: 'tnum' on, 'lnum' on;
 }
 
 .container-metric-tile-sparkline {
@@ -47,7 +28,7 @@
     margin: 0 0.4rem;
 }
 
-.container-metric-tile--idle .container-metric-tile-value {
+.container-metric-tile--idle .volt-stat-card__value {
     color: var(--color-text-muted);
     font-weight: 400;
 }

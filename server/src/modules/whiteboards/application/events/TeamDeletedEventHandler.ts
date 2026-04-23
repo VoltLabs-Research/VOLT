@@ -1,18 +1,17 @@
-import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/WhiteboardTokens';
-import { CascadeDeleteEachOnTeamDeletedHandler } from '@shared/application/events/CascadeDeleteEachOnTeamDeletedHandler';
-import { DeleteWhiteboardUseCase } from '@modules/whiteboards/application/use-cases/DeleteWhiteboardUseCase';
 import TeamDeletedEvent from '@modules/team/domain/events/team/TeamDeletedEvent';
-import { inject, injectable } from 'tsyringe';
+import { DeleteWhiteboardUseCase } from '@modules/whiteboards/application/use-cases/DeleteWhiteboardUseCase';
 import type Whiteboard from '@modules/whiteboards/domain/entities/Whiteboard';
-import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
+import WhiteboardRepository from '@modules/whiteboards/infrastructure/persistence/mongo/repositories/WhiteboardRepository';
+import { CascadeDeleteEachOnTeamDeletedHandler } from '@shared/application/events/CascadeDeleteEachOnTeamDeletedHandler';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-@injectable()
+@Subscribe('team.deleted')
 export default class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDeletedHandler<Whiteboard> {
     constructor(
-        @inject(WHITEBOARD_TOKENS.WhiteboardRepository)
-        protected readonly repository: IWhiteboardRepository,
+        
+        protected readonly repository: WhiteboardRepository,
 
-        @inject(DeleteWhiteboardUseCase)
+        
         private readonly deleteWhiteboardUseCase: DeleteWhiteboardUseCase
     ) {
         super();

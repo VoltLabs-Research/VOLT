@@ -1,12 +1,11 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import { DeleteAIConversationInputDTO } from '@modules/ai/application/dtos/DeleteAIConversationDTO';
+import AIConversationRepository from '@modules/ai/infrastructure/persistence/mongo/repositories/AIConversationRepository';
+import AIMessageRepository from '@modules/ai/infrastructure/persistence/mongo/repositories/AIMessageRepository';
 import { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
-import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
-import { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRepository';
-import { DeleteAIConversationInputDTO } from '@modules/ai/application/dtos/DeleteAIConversationDTO';
-import { inject, injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 interface DeleteAIConversationLookup {
     _id: string;
@@ -14,14 +13,14 @@ interface DeleteAIConversationLookup {
     userId: string;
 };
 
-@injectable()
+@Singleton()
 export default class DeleteAIConversationUseCase implements IUseCase<DeleteAIConversationInputDTO, null, ApplicationError> {
     constructor(
-        @inject(AI_TOKENS.AIConversationRepository)
-        private readonly conversationRepository: IAIConversationRepository,
+        
+        private readonly conversationRepository: AIConversationRepository,
 
-        @inject(AI_TOKENS.AIMessageRepository)
-        private readonly messageRepository: IAIMessageRepository
+        
+        private readonly messageRepository: AIMessageRepository
     ) {}
 
     async execute(input: DeleteAIConversationInputDTO): Promise<Result<null, ApplicationError>> {

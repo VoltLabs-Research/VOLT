@@ -1,9 +1,7 @@
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import JwtTokenService from '@modules/auth/infrastructure/services/JwtTokenService';
 import { SessionActivityType } from '@modules/session/domain/entities/Session';
-import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';
-import { inject, injectable } from 'tsyringe';
-import type { ITokenService } from '@modules/auth/domain/port/ITokenService';
-import type { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
+import SessionRepository from '@modules/session/infrastructure/persistence/mongo/repositories/SessionRepository';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 export interface CreateSessionInput {
     userId: string;
@@ -12,13 +10,13 @@ export interface CreateSessionInput {
     activityType: SessionActivityType;
 }
 
-@injectable()
+@Singleton()
 export default class AuthSessionService {
     constructor(
-        @inject(AUTH_TOKENS.TokenService)
-        private readonly tokenService: ITokenService,
-        @inject(SESSION_TOKENS.SessionRepository)
-        private readonly sessionRepository: ISessionRepository
+        
+        private readonly tokenService: JwtTokenService,
+        
+        private readonly sessionRepository: SessionRepository
     ) {}
 
     async createSessionWithToken(input: CreateSessionInput): Promise<string> {

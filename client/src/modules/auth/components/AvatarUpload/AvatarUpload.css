@@ -31,7 +31,3 @@
     color: var(--color-contrast-high);
     opacity: 0;
 }
-
-.avatar-file-input {
-    display: none;
-}

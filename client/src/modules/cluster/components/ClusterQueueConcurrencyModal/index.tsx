@@ -1,8 +1,7 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import Button from '@/shared/presentation/components/Button';
+import { Stack, Row, Text, Heading, Button, Modal, closeModal } from '@/shared/presentation/primitives';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Modal, { closeModal } from '@/shared/presentation/components/Modal';
 import { useEffect, useState } from 'react';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type {
@@ -356,11 +355,11 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
             )}
             onClose={handleClose}
         >
-            <div className='volt-container d-flex column gap-1 p-1-5'>
-                <div className='volt-container d-flex column gap-05'>
-                    <h3 className='volt-title font-size-2 font-weight-5 color-secondary'>Worker concurrency</h3>
-                    <div className='volt-container d-flex items-center gap-075 flex-wrap'>
-                        <p className='volt-text font-size-1 color-muted'>Use the recommended preset to auto-fill balanced high-throughput limits.</p>
+            <Stack gap='1' p='1-5'>
+                <Stack gap='05'>
+                    <Heading level={3} size='md' weight='medium' tone='secondary'>Worker concurrency</Heading>
+                    <Row gap='075' wrap>
+                        <Text as='p' size='sm' tone='muted'>Use the recommended preset to auto-fill balanced high-throughput limits.</Text>
                         <Button
                             variant='outline'
                             intent='brand'
@@ -370,11 +369,11 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
                         >
                             Apply recommended
                         </Button>
-                    </div>
-                </div>
-                <div className='volt-container d-flex column gap-1'>
+                    </Row>
+                </Stack>
+                <Stack gap='1'>
                     {QUEUE_FIELDS.map((field) => (
-                        <div key={field.key} className='volt-container d-flex column gap-025'>
+                        <Stack key={field.key} gap='025'>
                             <FormFieldRHF
                                 label={field.label}
                                 type='number'
@@ -386,19 +385,19 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
                                     inputMode: 'numeric'
                                 }}
                             />
-                            <p className='volt-text font-size-1 color-muted'>{field.description}</p>
-                        </div>
+                            <Text as='p' size='sm' tone='muted'>{field.description}</Text>
+                        </Stack>
                     ))}
-                </div>
-                <div className='volt-container d-flex column gap-05 mt-05'>
-                    <h3 className='volt-title font-size-2 font-weight-5 color-secondary'>Execution scope limits</h3>
-                </div>
-                <div className='volt-container d-flex column gap-1'>
+                </Stack>
+                <Stack gap='05' mt='05'>
+                    <Heading level={3} size='md' weight='medium' tone='secondary'>Execution scope limits</Heading>
+                </Stack>
+                <Stack gap='1'>
                     {QUEUE_SCOPE_FIELDS.map((field) => (
-                        <div key={field.key} className='volt-container d-flex column gap-05'>
-                            <h3 className='volt-title font-size-2 font-weight-5 color-secondary'>{field.label}</h3>
-                            <p className='volt-text font-size-1 color-muted'>{field.description}</p>
-                            <div className='volt-container d-flex items-start gap-1 flex-wrap'>
+                        <Stack key={field.key} gap='05'>
+                            <Heading level={3} size='md' weight='medium' tone='secondary'>{field.label}</Heading>
+                            <Text as='p' size='sm' tone='muted'>{field.description}</Text>
+                            <Row align='start' gap='1' wrap>
                                 <FormFieldRHF
                                     label='Max per trajectory'
                                     type='number'
@@ -421,14 +420,14 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
                                         inputMode: 'numeric'
                                     }}
                                 />
-                            </div>
-                        </div>
+                            </Row>
+                        </Stack>
                     ))}
-                </div>
+                </Stack>
                 {error && (
-                    <p className='volt-text font-size-2 color-danger'>{error}</p>
+                    <Text as='p' size='md' className='color-danger'>{error}</Text>
                 )}
-            </div>
+            </Stack>
         </Modal>
     );
 };

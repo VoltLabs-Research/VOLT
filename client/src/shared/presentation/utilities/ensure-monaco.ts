@@ -133,7 +133,7 @@ const buildMonacoTheme = (theme: VisualTheme): Monaco.editor.IStandaloneThemeDat
 };
 
 /** Registers the Volt Monaco light and dark themes. */
-export const registerMonacoThemes = (monaco: typeof Monaco): void => {
+const registerMonacoThemes = (monaco: typeof Monaco): void => {
     registerMonacoTheme(monaco, Theme.Light);
     registerMonacoTheme(monaco, Theme.Dark);
 };
@@ -144,7 +144,7 @@ export const getMonacoThemeName = (theme: Theme): MonacoThemeName => {
 };
 
 /** Registers the Volt Monaco theme that matches the active application theme. */
-export const registerMonacoTheme = (monaco: typeof Monaco, theme: VisualTheme): void => {
+const registerMonacoTheme = (monaco: typeof Monaco, theme: VisualTheme): void => {
     monaco.editor.defineTheme(getMonacoThemeName(theme), buildMonacoTheme(theme));
 };
 
@@ -152,7 +152,7 @@ export const registerMonacoTheme = (monaco: typeof Monaco, theme: VisualTheme): 
  * Defers Monaco bootstrap until an editor route mounts, keeping the worker
  * graph out of the main application entry chunk.
  */
-export const ensureMonaco = (): Promise<typeof Monaco> => {
+const ensureMonaco = (): Promise<typeof Monaco> => {
     if (monacoSetupPromise) {
         return monacoSetupPromise;
     }

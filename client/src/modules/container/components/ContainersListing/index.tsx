@@ -7,12 +7,11 @@ import useContainersListing, {
 import type { ContainerListingRow } from '@/modules/container/utilities/listing';
 import { isContainerFolderRow } from '@/modules/container/utilities/listing';
 import useDashboardHeaderContent from '@/modules/dashboard/hooks/use-dashboard-header-content';
-import Button from '@/shared/presentation/components/Button';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
 import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
 import RenameFolderModal from '@/shared/presentation/components/RenameFolderModal';
-import { openModal } from '@/shared/presentation/components/Modal';
+import { Box, Button, Heading, Row, openModal } from '@/shared/presentation/primitives';
 import { clusterColumn, dateColumn } from '@/shared/presentation/utilities/column-presets';
 import useTip from '@/shared/tips/use-tip';
 import { formatSize } from '@/shared/utils/format';
@@ -22,16 +21,16 @@ import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/
 
 const renderName: NonNullable<ColumnConfig<ContainerListingRow>['render']> = (value, row) => {
     return (
-        <div className='volt-container d-flex items-center gap-075'>
+        <Row gap='075'>
             {isContainerFolderRow(row) && (
-                <div className='volt-container d-flex flex-center color-secondary'>
+                <Box className='d-flex flex-center color-secondary'>
                     <Folder size={16} />
-                </div>
+                </Box>
             )}
-            <div className='volt-container overflow-hidden'>
+            <Box overflow='hidden'>
                 <span className='font-weight-6 color-secondary'>{String(value)}</span>
-            </div>
-        </div>
+            </Box>
+        </Row>
     );
 };
 
@@ -149,7 +148,7 @@ const ContainersListing = () => {
     return (
         <>
             <DocumentListing<ContainerListingRow, { folderId: string | null }>
-                title={<h3 className='volt-title font-size-6 font-weight-5 sm:font-size-4 color-primary'>Containers</h3>}
+                title={<Heading level={3} size='3xl' weight='medium' className='sm:font-size-4'>Containers</Heading>}
                 queryKey={queryKey}
                 columns={columns}
                 context={context}

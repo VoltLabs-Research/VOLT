@@ -1,20 +1,19 @@
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { inject, injectable } from 'tsyringe';
-import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
 import type { TeamClusterDaemonExecutionLogSegment } from '@modules/team-cluster/utilities/teamClusterSocket';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 export interface PluginDebugSessionRegistryEntry {
     socketId: string;
     teamClusterId: string;
 }
 
-@injectable()
+@Singleton()
 export default class PluginDebugSessionRegistryService {
     private readonly sessions = new Map<string, PluginDebugSessionRegistryEntry>();
 
     constructor(
-        @inject(SOCKET_TOKENS.SocketEventEmitter)
-        private readonly emitter: ISocketEmitter
+        
+        private readonly emitter: SocketIOEmitter
     ) {}
 
     registerSession(sessionId: string, entry: PluginDebugSessionRegistryEntry): void {

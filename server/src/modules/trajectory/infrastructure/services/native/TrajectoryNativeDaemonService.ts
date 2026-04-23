@@ -1,13 +1,12 @@
-import { inject, injectable } from 'tsyringe';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
-import { createZstdDecompressionStream } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 import type { FrameMetadata } from '@modules/trajectory/domain/contracts/trajectory';
+import { createZstdDecompressionStream } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
-import { Readable } from 'node:stream';
 import { toUint8Array } from '@shared/infrastructure/types/reverseChannelBinary';
+import { Readable } from 'node:stream';
 
 interface TrajectoryNativeRequest {
     teamClusterId: string;
@@ -79,13 +78,13 @@ interface TrajectoryNativeFilterPreviewResponse {
     totalAtoms: number;
 };
 
-@injectable()
+@Singleton()
 export default class TrajectoryNativeDaemonService {
     constructor(
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
 
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
+        
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 

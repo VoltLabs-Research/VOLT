@@ -1,11 +1,12 @@
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import mongoose from 'mongoose';
-import { injectable } from 'tsyringe';
-import logger from '@shared/infrastructure/logger';
+
 import type { MongoDBMetrics } from '@modules/system/domain/value-objects/SystemMetrics';
+import logger from '@shared/infrastructure/logger';
 
 const MONGO_METRICS_CACHE_TTL_MS = 5_000;
 
-@injectable()
+@Singleton()
 export default class MongoMetricsCollector {
     private cachedMetrics: {
         expiresAt: number;

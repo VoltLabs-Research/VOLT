@@ -6,6 +6,7 @@ import PasswordChangeForm from '@/modules/auth/components/PasswordChangeForm';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSection from '@/shared/presentation/components/SettingsSection';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
+import { Stack } from '@/shared/presentation/primitives';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ChangePasswordInputDTO } from '@/modules/auth/api/dtos/change-password';
@@ -42,7 +43,7 @@ const AuthenticationSettings = () => {
                     title="Password"
                     description="Manage your password and security settings" />
 
-                <div className="volt-container d-flex column gap-1">
+                <Stack gap='1'>
                     <PasswordStatusRow
                         passwordInfo={passwordInfo ?? null}
                         isFormOpen={isPasswordFormOpen}
@@ -53,7 +54,7 @@ const AuthenticationSettings = () => {
                         isOpen={isPasswordFormOpen}
                         onSubmit={handleChangePassword}
                         onCancel={() => setIsPasswordFormOpen(false)} />
-                </div>
+                </Stack>
             </SettingsSection>
 
             <SettingsSection>

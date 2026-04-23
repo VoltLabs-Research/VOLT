@@ -1,13 +1,13 @@
 import { SYS_BUCKETS } from '@core/config/minio';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import type { TeamClusterDaemonExecutionLogSegment } from '@modules/team-cluster/utilities/teamClusterSocket';
+import type { IStorageService } from '@shared/domain/port/IStorageService';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-import { Buffer } from 'node:buffer';
-import { inject, injectable } from 'tsyringe';
 import type IORedis from 'ioredis';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
-import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import type { TeamClusterDaemonExecutionLogSegment } from '@modules/team-cluster/utilities/teamClusterSocket';
+import { Buffer } from 'node:buffer';
+import { inject } from 'tsyringe';
 
 export const ANALYSIS_LOG_SOCKET_EVENTS = {
     SUBSCRIBE: 'subscribe_to_analysis_log',
@@ -126,7 +126,7 @@ export const getAnalysisLogRoom = (analysisId: string, timestep: number): string
     return `analysis-log:${analysisId}:${timestep}`;
 };
 
-@injectable()
+@Singleton()
 export default class AnalysisExecutionLogService {
     constructor(
         @inject(SHARED_TOKENS.RedisClient)
@@ -135,8 +135,8 @@ export default class AnalysisExecutionLogService {
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
 
-        @inject(SOCKET_TOKENS.SocketEventEmitter)
-        private readonly emitter: ISocketEmitter
+        
+        private readonly emitter: SocketIOEmitter
     ) {}
 
     async markFrameRunning(input: MarkFrameRunningInput): Promise<void> {

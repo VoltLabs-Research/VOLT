@@ -1,22 +1,22 @@
-import { getRedisConfig, createBullMQRedisConnectionOptions } from '@core/config/redis';
+import { createBullMQRedisConnectionOptions, getRedisConfig } from '@core/config/redis';
 import { getTrajectoryCompressionQueueConcurrency } from '@core/config/trajectory';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import CompressionProcessor from './CompressionProcessor';
-import TeamClusterQueueScopeLimitsService from './TeamClusterQueueScopeLimitsService';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import {
     createBullScopedQueue,
     type BullScopedQueueController
 } from '@shared/infrastructure/workers/createBullScopedQueue';
+import CompressionProcessor from './CompressionProcessor';
+import TeamClusterQueueScopeLimitsService from './TeamClusterQueueScopeLimitsService';
 
-import { injectable, inject } from 'tsyringe';
-import { v4 as uuid } from 'uuid';
-import IORedis from 'ioredis';
 import type { JobStatusChangedValue } from '@modules/jobs/domain/events/JobStatusChangedEvent';
+import IORedis from 'ioredis';
+import { inject } from 'tsyringe';
+import { v4 as uuid } from 'uuid';
 
 const QUEUE_NAME = 'trajectory_compression';
 const QUEUE_TYPE = 'trajectory_compression';
@@ -46,16 +46,16 @@ export type CompressionSessionDrainCallback = (
     successfulJobs: CompressionJobData[]
 ) => Promise<void>;
 
-@injectable()
+@Singleton()
 export default class CompressionQueueService {
     private controller: BullScopedQueueController<CompressionJobData, CompressionJobData> | null = null;
     private drainCallback: CompressionSessionDrainCallback | null = null;
 
     constructor(
-        @inject(TRAJECTORY_TOKENS.CompressionProcessor)
+        
         private readonly compressionProcessor: CompressionProcessor,
 
-        @inject(TRAJECTORY_TOKENS.TeamClusterQueueScopeLimitsService)
+        
         private readonly teamClusterQueueScopeLimitsService: TeamClusterQueueScopeLimitsService,
 
         @inject(SHARED_TOKENS.EventBus)

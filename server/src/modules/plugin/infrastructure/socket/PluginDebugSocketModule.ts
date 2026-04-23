@@ -1,34 +1,29 @@
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { ChannelCommands, VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@shared/infrastructure/contracts/team-cluster';
-import { PluginDependencyResolverService } from '@modules/plugin/infrastructure/services/plugin/PluginDependencyResolverService';
-import PluginDebugSessionRegistryService from '@modules/plugin/infrastructure/services/PluginDebugSessionRegistryService';
-import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import logger from '@shared/infrastructure/logger';
-import { injectable, inject } from 'tsyringe';
-import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import type { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';
-import type { ISocketRoomManager } from '@modules/socket/domain/port/ISocketRoomManager';
-import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import type SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
-import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
-import { sanitizeVisibleArgumentConfig } from '@modules/plugin/utilities/plugin/argument-visibility';
+import Plugin, { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import Workflow, { type WorkflowProps } from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
-import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import type { PluginReferenceExecutionRequest } from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
-import type {
-    IWorkflowValidatorService
-} from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import {
     WorkflowValidationMode
 } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
-import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import Plugin, { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
+import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
+import { PluginDependencyResolverService } from '@modules/plugin/infrastructure/services/plugin/PluginDependencyResolverService';
+import { WorkflowValidatorService } from '@modules/plugin/infrastructure/services/plugin/WorkflowValidatorService';
+import PluginDebugSessionRegistryService from '@modules/plugin/infrastructure/services/PluginDebugSessionRegistryService';
+import { sanitizeVisibleArgumentConfig } from '@modules/plugin/utilities/plugin/argument-visibility';
+import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
+import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
+import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
+import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
+import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
+import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import { ChannelCommands, VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@shared/infrastructure/contracts/team-cluster';
+import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
+import logger from '@shared/infrastructure/logger';
+import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
 // --- Payload types from the client ---
 
@@ -122,33 +117,34 @@ const createRuntimePlugin = (plugin: Plugin, workflow: WorkflowProps): Plugin =>
     status: plugin.props.status ?? PluginStatus.Draft
 });
 
-@injectable()
+@Singleton()
+@AliasOf(SOCKET_TOKENS.SocketModule)
 export default class PluginDebugSocketModule extends BaseSocketModule {
     public readonly name = 'PluginDebugSocketModule';
 
     constructor(
-        @inject(SOCKET_TOKENS.SocketEventEmitter) emitter: ISocketEmitter,
-        @inject(SOCKET_TOKENS.SocketRoomManager) roomManager: ISocketRoomManager,
-        @inject(SOCKET_TOKENS.SocketEventRegistry) eventRegistry: ISocketEventRegistry,
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        emitter: SocketIOEmitter,
+        roomManager: SocketIORoomManager,
+        eventRegistry: SocketIOEventRegistry,
+        
         private readonly daemonClient: TeamClusterDaemonClient,
-        @inject(SOCKET_TOKENS.TeamSubscriptionCoordinator)
+        
         private readonly teamSubscriptionCoordinator: SocketTeamSubscriptionCoordinator,
-        @inject(PLUGIN_TOKENS.PluginRepository)
-        private readonly pluginRepository: IPluginRepository,
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepository: ITrajectoryRepository,
+        
+        private readonly pluginRepository: PluginRepository,
+        
+        private readonly trajectoryRepository: TrajectoryRepository,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository)
-        private readonly trajectoryFrameRepository: ITrajectoryFrameRepository,
-        @inject(TeamClusterSelectionService)
+        
+        private readonly trajectoryFrameRepository: TrajectoryFrameRepository,
+        
         private readonly teamClusterSelectionService: TeamClusterSelectionService,
-        @inject(PLUGIN_TOKENS.PluginDebugSessionRegistryService)
+        
         private readonly pluginDebugSessionRegistry: PluginDebugSessionRegistryService,
-        @inject(PLUGIN_TOKENS.PluginDependencyResolverService)
+        
         private readonly pluginDependencyResolverService: PluginDependencyResolverService,
-        @inject(PLUGIN_TOKENS.WorkflowValidatorService)
-        private readonly workflowValidator: IWorkflowValidatorService
+        
+        private readonly workflowValidator: WorkflowValidatorService
     ) {
         super(emitter, roomManager, eventRegistry);
     }

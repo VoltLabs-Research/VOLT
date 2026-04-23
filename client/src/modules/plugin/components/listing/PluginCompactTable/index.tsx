@@ -1,8 +1,8 @@
+import { Skeleton } from '@/shared/presentation/primitives';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import Skeleton from '@/shared/presentation/components/Skeleton';
 import { List } from 'react-window';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
+import { ContextMenuPopover } from '@/shared/presentation/primitives';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import { formatUnknownValue } from '@/shared/utils/format';

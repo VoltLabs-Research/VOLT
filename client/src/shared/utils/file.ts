@@ -15,11 +15,6 @@ export const base64ToBlob = (base64: string, fallbackMime: string = 'image/png')
     return new Blob([arrayBuffer], { type: mimeString });
 };
 
-export const base64ToBlobUrl = (base64: string, fallbackMime?: string): string => {
-    const blob = base64ToBlob(base64, fallbackMime);
-    return URL.createObjectURL(blob);
-};
-
 interface BuildFileFormDataEntry {
     name: string;
     file: File;

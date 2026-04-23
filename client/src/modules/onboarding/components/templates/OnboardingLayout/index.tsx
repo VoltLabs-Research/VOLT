@@ -5,14 +5,13 @@ import { JoinTeamModal } from '@/modules/team/components/JoinTeamModal';
 import { switchSelectedTeam } from '@/modules/team/stores/team/use-team-store';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import NotificationsPopover from '@/modules/notification/components/NotificationsPopover';
-import { openModal } from '@/shared/presentation/components/Modal';
-import Button from '@/shared/presentation/components/Button';
+import { Button, openModal } from '@/shared/presentation/primitives';
 import type { ReactNode } from 'react';
 import type { JoinByInviteCodeOutputDTO } from '@/modules/team/api/dtos/team/join-by-invite-code';
 
 interface OnboardingLayoutProps {
     children: ReactNode;
-    onSettingsClick: () => void;
+    onSettingsClick?: () => void;
     onSignOut: () => void;
     isSigningOut?: boolean;
     leftSlot?: ReactNode;
@@ -42,19 +41,19 @@ const OnboardingLayout = ({
     }
 
     return (
-        <div className='volt-container onboarding-layout'>
+        <div className='onboarding-layout screen-vh'>
             <main className={contentClassNames.join(' ')}>
                 {children}
             </main>
 
             {overlay && (
-                <div className='volt-container onboarding-layout__overlay'>
+                <div className='onboarding-layout__overlay'>
                     {overlay}
                 </div>
             )}
 
             {leftSlot && (
-                <div className='volt-container onboarding-layout__left-slot'>
+                <div className='onboarding-layout__left-slot'>
                     {leftSlot}
                 </div>
             )}
@@ -70,16 +69,16 @@ const OnboardingLayout = ({
             </Button>
 
             {user && (
-                <div className='volt-container onboarding-layout__user-menu'>
+                <div className='onboarding-layout__user-menu'>
                     <UserMenuPopover
-                        onSettingsClick={onSettingsClick}
+                        onSettingsClick={onSettingsClick ?? (() => {})}
                         onSignOut={onSignOut}
                         isSigningOut={isSigningOut}
                     />
                 </div>
             )}
 
-            <div className='volt-container onboarding-layout__notifications'>
+            <div className='onboarding-layout__notifications'>
                 <NotificationsPopover />
             </div>
 

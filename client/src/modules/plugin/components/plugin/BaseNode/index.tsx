@@ -1,5 +1,6 @@
 import JsonTree from '@/modules/plugin/components/plugin/JsonTree';
 import DynamicIcon from '@/shared/presentation/components/DynamicIcon';
+import { Box, Row, Stack, Tag, Text } from '@/shared/presentation/primitives';
 import { DebugNodeStatus, usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import type { DebugTraceNode } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import type { INodeData } from '@/modules/plugin/api/entities/plugin/workflow';
@@ -84,81 +85,81 @@ const DebugExecutionTraceTree = ({
     }
 
     return (
-        <div className={`volt-container workflow-node-trace-tree workflow-node-trace-tree--depth-${depth}`}>
+        <Box className={`workflow-node-trace-tree workflow-node-trace-tree--depth-${depth}`}>
             {nodes.map((node) => {
                 const hasDetails = Boolean(node.output || node.error || node.reason || (node.children?.length ?? 0) > 0);
                 const isExpanded = expandedTraceIds.has(node.traceId);
 
                 return (
-                    <div key={node.traceId} className={`volt-container workflow-node-trace-item workflow-node-trace-item--${node.status}`}>
-                        <div className={`volt-container workflow-node-trace-row d-flex items-start content-between gap-05 ${hasDetails ? 'cursor-pointer' : ''}`} onClick={() => {
+                    <Box key={node.traceId} className={`workflow-node-trace-item workflow-node-trace-item--${node.status}`}>
+                        <Row align='start' justify='between' gap='05' className={`workflow-node-trace-row ${hasDetails ? 'cursor-pointer' : ''}`} onClick={() => {
                                 if (hasDetails) {
                                     onToggleTraceNode(node.traceId);
                                 }
                             }}>
-                            <div className='volt-container d-flex items-start gap-035'>
+                            <Row align='start' gap='035'>
                                 <span className={`workflow-node-trace-status workflow-node-trace-status--${node.status}`}>
                                     {node.status === 'completed' && <CheckCircle2 size={11} />}
                                     {node.status === 'skipped' && <SkipForward size={11} />}
                                     {node.status === 'error' && <AlertCircle size={11} />}
                                 </span>
-                                <div className='volt-container d-flex column gap-02'>
-                                    <p className='volt-text workflow-node-trace-title'>{resolveTraceNodeLabel(node)}</p>
-                                    <p className='volt-text workflow-node-trace-meta color-muted'>
+                                <Stack gap='02'>
+                                    <Text as='p' className='workflow-node-trace-title'>{resolveTraceNodeLabel(node)}</Text>
+                                    <Text as='p' tone='muted' className='workflow-node-trace-meta'>
                                         {node.pluginId ? `${node.pluginId} · ` : ''}{node.nodeId}
-                                    </p>
-                                </div>
-                            </div>
+                                    </Text>
+                                </Stack>
+                            </Row>
 
-                            <div className='volt-container d-flex items-center gap-035'>
+                            <Row gap='035'>
                                 <span className='workflow-node-trace-duration'>
                                     {formatTraceDuration(node.durationMs)}
                                 </span>
                                 {hasDetails && (
                                     isExpanded ? <ChevronDown size={11} /> : <ChevronRight size={11} />
                                 )}
-                            </div>
-                        </div>
+                            </Row>
+                        </Row>
 
                         {isExpanded && (
-                            <div className='volt-container workflow-node-trace-details d-flex column gap-035'>
+                            <Stack gap='035' className='workflow-node-trace-details'>
                                 {node.error && (
-                                    <div className='volt-container workflow-node-trace-message workflow-node-trace-message--error'>
-                                        <p className='volt-text font-size-1'>{node.error}</p>
+                                    <Box className='workflow-node-trace-message workflow-node-trace-message--error'>
+                                        <Text as='p' size='sm'>{node.error}</Text>
                                         {node.stack && (
                                             <pre className='m-0 workflow-node-debug-stack'>{node.stack}</pre>
                                         )}
-                                    </div>
+                                    </Box>
                                 )}
 
                                 {node.reason && !node.error && (
-                                    <div className='volt-container workflow-node-trace-message workflow-node-trace-message--skipped'>
-                                        <p className='volt-text font-size-1'>{node.reason}</p>
-                                    </div>
+                                    <Box className='workflow-node-trace-message workflow-node-trace-message--skipped'>
+                                        <Text as='p' size='sm'>{node.reason}</Text>
+                                    </Box>
                                 )}
 
                                 {node.output && (
-                                    <div className='volt-container workflow-node-trace-json'>
+                                    <Box className='workflow-node-trace-json'>
                                         <JsonTree data={node.output} defaultExpanded={false} />
-                                    </div>
+                                    </Box>
                                 )}
 
                                 {Array.isArray(node.children) && node.children.length > 0 && (
-                                    <div className='volt-container workflow-node-trace-children'>
+                                    <Box className='workflow-node-trace-children'>
                                         <DebugExecutionTraceTree
                                             nodes={node.children}
                                             expandedTraceIds={expandedTraceIds}
                                             onToggleTraceNode={onToggleTraceNode}
                                             depth={depth + 1}
                                         />
-                                    </div>
+                                    </Box>
                                 )}
-                            </div>
+                            </Stack>
                         )}
-                    </div>
+                    </Box>
                 );
             })}
-        </div>
+        </Box>
     );
 };
 
@@ -275,26 +276,38 @@ const BaseNode = ({
     }
 
     return (
-        <div className={`volt-container p-relative workflow-node-wrapper ${durationLabel || statusLabel ? 'workflow-node-wrapper--has-badge' : ''}`}>
+        <Box position='relative' className={`workflow-node-wrapper ${durationLabel || statusLabel ? 'workflow-node-wrapper--has-badge' : ''}`}>
             {durationLabel && (
-                <span className='p-absolute top-0 center-x radius-full font-weight-6 workflow-node-overhead-badge workflow-node-overhead-badge--completed'>
+                <Tag
+                    size='xs'
+                    tone='success'
+                    className='p-absolute top-0 center-x font-weight-6 workflow-node-overhead-badge workflow-node-overhead-badge--completed'
+                >
                     {durationLabel}
-                </span>
+                </Tag>
             )}
 
             {statusLabel === 'failed' && (
-                <span className='p-absolute top-0 center-x radius-full font-weight-6 workflow-node-overhead-badge workflow-node-overhead-badge--failed'>
+                <Tag
+                    size='xs'
+                    tone='danger'
+                    className='p-absolute top-0 center-x font-weight-6 workflow-node-overhead-badge workflow-node-overhead-badge--failed'
+                >
                     Error
-                </span>
+                </Tag>
             )}
 
             {statusLabel === 'skipped' && (
-                <span className='p-absolute top-0 center-x radius-full font-weight-6 workflow-node-overhead-badge workflow-node-overhead-badge--skipped'>
+                <Tag
+                    size='xs'
+                    tone='neutral'
+                    className='p-absolute top-0 center-x font-weight-6 workflow-node-overhead-badge workflow-node-overhead-badge--skipped'
+                >
                     Skipped
-                </span>
+                </Tag>
             )}
 
-            <div className={`volt-container p-relative b-soft radius-sm workflow-node glass-bg ${selected ? 'workflow-node--selected' : ''} ${debugClass}`}>
+            <Box position='relative' border='soft' radius='sm' className={`workflow-node glass-bg ${selected ? 'workflow-node--selected' : ''} ${debugClass}`}>
                 {handleDefinitions.map((handleDefinition) => {
                     const placement = resolveNodeHandlePlacement(data as INodeData | undefined, handleDefinition);
 
@@ -310,25 +323,25 @@ const BaseNode = ({
                     );
                 })}
 
-                <div className='volt-container d-flex items-center gap-1'>
+                <Row gap='1'>
                     <span className='d-flex items-center content-center workflow-node-icon'>
                         <DynamicIcon iconName={config.icon} />
                     </span>
-                    <div className='volt-container d-flex column gap-02 f-1'>
-                        <h3 className="volt-title">{nodeTitle ?? config.label}</h3>
+                    <Stack gap='02' className='f-1'>
+                        <h3>{nodeTitle ?? config.label}</h3>
                         {description && (
-                            <p className='volt-text color-muted overflow-hidden workflow-node-description'>
+                            <Text as='p' tone='muted' className='overflow-hidden workflow-node-description'>
                                 {description}
-                            </p>
+                            </Text>
                         )}
-                    </div>
-                </div>
+                    </Stack>
+                </Row>
 
                 {children}
-            </div>
+            </Box>
 
             {showDebugActions && (
-                <div className='volt-container p-absolute center-x items-center workflow-node-btn-group'>
+                <Box position='absolute' className='center-x items-center workflow-node-btn-group'>
                     {hasInspectableOutput && (
                         <button
                             className={`b-soft radius-full cursor-pointer font-weight-6 workflow-node-data-btn ${isExpanded ? 'workflow-node-data-btn--active' : ''}`}
@@ -348,87 +361,87 @@ const BaseNode = ({
                             Execution Log
                         </button>
                     )}
-                </div>
+                </Box>
             )}
 
             {isExpanded && hasInspectableOutput && (
-                <div className='volt-container p-absolute center-x p-05 y-auto workflow-node-debug-output nowheel' onClick={stopPropagation}>
+                <Box position='absolute' p='05' overflow='y-auto' className='center-x workflow-node-debug-output nowheel' onClick={stopPropagation}>
                     {debugState.status === 'failed' && (
-                        <div className='volt-container p-05 radius-sm font-size-05 workflow-node-debug-error d-flex column gap-025'>
-                            <div className='volt-container d-flex items-center gap-025'>
+                        <Stack p='05' radius='sm' gap='025' className='font-size-05 workflow-node-debug-error'>
+                            <Row gap='025'>
                                 <AlertCircle size={12} />
-                                <p className='volt-text font-size-1 font-weight-6'>Error</p>
-                            </div>
-                            <p className='volt-text font-size-1'>{debugState.error}</p>
+                                <Text as='p' size='sm' weight='bold'>Error</Text>
+                            </Row>
+                            <Text as='p' size='sm'>{debugState.error}</Text>
                             {debugState.stack && (
                                 <pre className='m-0 workflow-node-debug-stack'>{debugState.stack}</pre>
                             )}
 
                             {hasNestedTrace && (
-                                <div className='volt-container workflow-node-trace-panel d-flex column gap-035'>
-                                    <p className='volt-text font-size-1 font-weight-6'>Nested Execution</p>
+                                <Stack gap='035' className='workflow-node-trace-panel'>
+                                    <Text as='p' size='sm' weight='bold'>Nested Execution</Text>
                                     <DebugExecutionTraceTree
                                         nodes={nestedTrace}
                                         expandedTraceIds={expandedTraceIds}
                                         onToggleTraceNode={toggleTraceNode}
                                     />
-                                </div>
+                                </Stack>
                             )}
-                        </div>
+                        </Stack>
                     )}
 
                     {debugState.status === 'skipped' && (
-                        <div className='volt-container p-05 radius-sm font-size-05 workflow-node-debug-skipped d-flex column gap-035'>
-                            <div className='volt-container d-flex items-center gap-025'>
+                        <Stack p='05' radius='sm' gap='035' className='font-size-05 workflow-node-debug-skipped'>
+                            <Row gap='025'>
                                 <SkipForward size={12} />
-                                <p className='volt-text font-size-1'>{debugState.reason || 'Skipped'}</p>
-                            </div>
+                                <Text as='p' size='sm'>{debugState.reason || 'Skipped'}</Text>
+                            </Row>
 
                             {hasNestedTrace && (
-                                <div className='volt-container workflow-node-trace-panel d-flex column gap-035'>
-                                    <p className='volt-text font-size-1 font-weight-6'>Nested Execution</p>
+                                <Stack gap='035' className='workflow-node-trace-panel'>
+                                    <Text as='p' size='sm' weight='bold'>Nested Execution</Text>
                                     <DebugExecutionTraceTree
                                         nodes={nestedTrace}
                                         expandedTraceIds={expandedTraceIds}
                                         onToggleTraceNode={toggleTraceNode}
                                     />
-                                </div>
+                                </Stack>
                             )}
-                        </div>
+                        </Stack>
                     )}
 
                     {debugState.status === 'completed' && (
-                        <div className='volt-container workflow-node-debug-tree font-size-05 line-height-5 d-flex column gap-05'>
+                        <Stack gap='05' className='workflow-node-debug-tree font-size-05 line-height-5'>
                             {hasNestedTrace && (
-                                <div className='volt-container workflow-node-trace-panel d-flex column gap-035'>
-                                    <p className='volt-text font-size-1 font-weight-6'>Nested Execution</p>
+                                <Stack gap='035' className='workflow-node-trace-panel'>
+                                    <Text as='p' size='sm' weight='bold'>Nested Execution</Text>
                                     <DebugExecutionTraceTree
                                         nodes={nestedTrace}
                                         expandedTraceIds={expandedTraceIds}
                                         onToggleTraceNode={toggleTraceNode}
                                     />
-                                </div>
+                                </Stack>
                             )}
 
                             {debugState.output && (
                                 <JsonTree data={debugState.output} defaultExpanded={true} />
                             )}
-                        </div>
+                        </Stack>
                     )}
-                </div>
+                </Box>
             )}
 
             {showLog && hasLog && (
-                <div className='volt-container p-absolute center-x overflow-hidden z-5 workflow-node-exec-log nowheel' onClick={stopPropagation}>
-                    <div className='volt-container color-secondary workflow-node-exec-log-header d-flex items-center gap-025'>
+                <Box position='absolute' overflow='hidden' zIndex='5' className='center-x workflow-node-exec-log nowheel' onClick={stopPropagation}>
+                    <Row gap='025' className='color-secondary workflow-node-exec-log-header'>
                         <Terminal size={10} />
-                        <p className='volt-text font-size-1 font-weight-6'>Execution Log</p>
+                        <Text as='p' size='sm' weight='bold'>Execution Log</Text>
                         {exitCode !== undefined && (
                             <span className={`radius-full font-weight-6 workflow-node-exec-log-exit ${exitCode === 0 ? 'workflow-node-exec-log-exit--ok' : 'workflow-node-exec-log-exit--fail'}`}>
                                 exit {exitCode}
                             </span>
                         )}
-                    </div>
+                    </Row>
                     <pre className='m-0 p-05 y-auto workflow-node-exec-log-content'>
                         {logSegments.length > 0 ? (
                             <>
@@ -455,9 +468,9 @@ const BaseNode = ({
                             </>
                         )}
                     </pre>
-                </div>
+                </Box>
             )}
-        </div>
+        </Box>
     );
 };
 

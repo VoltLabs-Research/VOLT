@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { format, formatDistanceStrict } from 'date-fns';
 import EditableKeyValueCard from '@/shared/presentation/components/EditableKeyValueCard';
-import Button from '@/shared/presentation/components/Button';
+import { Box, Button, Heading, KeyValueList, KeyValueRow, Row, Stack, Text } from '@/shared/presentation/primitives';
 import { formatSize } from '@/shared/utils/format';
 import ContainerMetricTile from '../ContainerMetricTile';
 import ContainerInspectorList from '../ContainerInspectorList';
@@ -141,8 +141,8 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
     }));
 
     return (
-        <div className='volt-container container-overview d-flex column'>
-            <div className='volt-container container-overview-metrics'>
+        <Stack className='container-overview'>
+            <Box className='container-overview-metrics'>
                 <ContainerMetricTile
                     label='CPU'
                     value={cpuValue}
@@ -180,16 +180,16 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                         { label: 'Tx', value: stats.network ? formatSize(stats.network.tx) : '0 B' }
                     ]}
                 />
-            </div>
+            </Box>
 
             <hr className='container-overview-divider' />
 
-            <div className='volt-container container-overview-inspector'>
+            <Box className='container-overview-inspector'>
                 <ContainerInspectorList title='Information' rows={inspectorRows} />
 
-                <div className='volt-container container-overview-inspector-side'>
-                    <div className='volt-container d-flex column'>
-                        <h3 className='volt-title container-overview-section-title'>Environment Variables</h3>
+                <Box className='container-overview-inspector-side'>
+                    <Stack>
+                        <Heading level={3} className='container-overview-section-title'>Environment Variables</Heading>
                         <EditableKeyValueCard<EnvVariableFormItem>
                             items={envItems}
                             fields={[
@@ -202,16 +202,15 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                             showCard={false}
                             className='d-flex column'
                             renderItem={(item, i) => (
-                                <div key={i} className='volt-container container-overview-env-row d-flex items-center content-between'>
-                                    <span className='container-overview-env-key'>{item.key}</span>
-                                    <span className='container-overview-env-value'>{item.value}</span>
-                                </div>
+                                <KeyValueList key={i}>
+                                    <KeyValueRow label={item.key} value={item.value} />
+                                </KeyValueList>
                             )}
                         />
-                    </div>
+                    </Stack>
 
-                    <div className='volt-container d-flex column'>
-                        <h3 className='volt-title container-overview-section-title'>Port Bindings</h3>
+                    <Stack>
+                        <Heading level={3} className='container-overview-section-title'>Port Bindings</Heading>
                         <EditableKeyValueCard<PortMappingFormItem>
                             items={portItems}
                             fields={[
@@ -230,44 +229,48 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                                 const accessiblePort = container.accessiblePorts?.find((port) => port.private === item.private);
                                 const canOpen = accessiblePort?.browserAccessible && accessiblePort.status === 'available';
 
+                                const portLabel = (
+                                    <Row gap='05'>
+                                        <span className='tabular-nums'>{item.private}/tcp</span>
+                                        {resolvedPublicPort !== null && (
+                                            <>
+                                                <span className='color-muted'>→</span>
+                                                <span className='tabular-nums color-muted'>{resolvedPublicPort}</span>
+                                            </>
+                                        )}
+                                    </Row>
+                                );
+
+                                let portAction: React.ReactNode = null;
+                                if (canOpen) {
+                                    portAction = (
+                                        <Button
+                                            variant='ghost'
+                                            intent='brand'
+                                            size='sm'
+                                            onClick={() => openPort(container._id, item.private)}
+                                            isLoading={openingPort === item.private}
+                                        >
+                                            Open
+                                        </Button>
+                                    );
+                                } else if (accessiblePort?.status === 'unavailable') {
+                                    portAction = <Text size='sm' tone='muted'>Unavailable</Text>;
+                                } else {
+                                    portAction = <Text size='sm' tone='muted'>TCP only</Text>;
+                                }
+
                                 return (
-                                    <div key={i} className='volt-container container-overview-port-row d-flex content-between items-center'>
-                                        <div className='volt-container d-flex gap-075 items-center'>
-                                            <span className='container-overview-port-label'>{item.private}/tcp</span>
-                                            {resolvedPublicPort !== null && (
-                                                <div className='volt-container d-flex gap-05 items-center'>
-                                                    <span className='color-muted'>→</span>
-                                                    <span className='container-overview-port-mapping'>{resolvedPublicPort}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className='volt-container d-flex gap-05 items-center'>
-                                            {canOpen && (
-                                                <Button
-                                                    variant='ghost'
-                                                    intent='brand'
-                                                    size='sm'
-                                                    onClick={() => openPort(container._id, item.private)}
-                                                    isLoading={openingPort === item.private}
-                                                >
-                                                    Open
-                                                </Button>
-                                            )}
-                                            {!canOpen && accessiblePort?.status === 'unavailable' && (
-                                                <span className='font-size-1 color-muted'>Unavailable</span>
-                                            )}
-                                            {!canOpen && accessiblePort?.status !== 'unavailable' && (
-                                                <span className='font-size-1 color-muted'>TCP only</span>
-                                            )}
-                                        </div>
-                                    </div>
+                                    <KeyValueList key={i}>
+                                        <KeyValueRow label={portLabel} value='' action={portAction} />
+                                    </KeyValueList>
                                 );
                             }}
                         />
-                    </div>
-                </div>
-            </div>
-        </div>
+                    </Stack>
+                </Box>
+            </Box>
+        </Stack>
     );
 };
 

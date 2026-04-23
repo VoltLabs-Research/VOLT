@@ -1,22 +1,21 @@
-import { Result } from '@shared/domain/port/Result';
-import { IUseCase } from '@shared/application/IUseCase';
-import { injectable, inject } from 'tsyringe';
-import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
+import { ErrorCodes } from '@core/constants/error-codes';
 import { TestSSHConnectionByIdInputDTO, TestSSHConnectionByIdOutputDTO } from '@modules/ssh/application/dtos/TestSSHConnectionByIdDTO';
 import { SSHConnectionOwnershipService } from '@modules/ssh/application/services/SSHConnectionOwnershipService';
-import { ISSHConnectionService } from '@modules/ssh/domain/port/ISSHConnectionService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { resolveSSHServiceError } from '@modules/ssh/application/utils/ssh-error-utils';
-import { ErrorCodes } from '@core/constants/error-codes';
+import SSHConnectionService from '@modules/ssh/infrastructure/services/SSHConnectionService';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export class TestSSHConnectionByIdUseCase implements IUseCase<TestSSHConnectionByIdInputDTO, TestSSHConnectionByIdOutputDTO, ApplicationError> {
     constructor(
-        @inject(SSHConnectionOwnershipService)
+        
         private readonly sshConnectionOwnershipService: SSHConnectionOwnershipService,
 
-        @inject(SSH_TOKENS.SSHConnectionService)
-        private readonly sshConnService: ISSHConnectionService
+        
+        private readonly sshConnService: SSHConnectionService
     ){}
 
     async execute(input: TestSSHConnectionByIdInputDTO): Promise<Result<TestSSHConnectionByIdOutputDTO, ApplicationError>> {

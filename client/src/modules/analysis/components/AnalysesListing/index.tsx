@@ -5,7 +5,7 @@ import { dateColumn, userColumn } from '@/shared/presentation/utilities/column-p
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import useRetryFailedFrames from '@/modules/analysis/hooks/use-retry-failed-frames';
 import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCellPopover';
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
+import { StatusBadge } from '@/shared/presentation/primitives';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import { RiRefreshLine } from 'react-icons/ri';

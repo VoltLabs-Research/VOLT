@@ -1,15 +1,14 @@
 import Plugin, { PluginProps } from '@modules/plugin/domain/entities/plugin/Plugin';
-import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
-import PluginModel, { PluginDocument } from '@modules/plugin/infrastructure/persistence/mongo/models/plugin/PluginModel';
 import pluginMapper from '@modules/plugin/infrastructure/persistence/mongo/mappers/plugin/PluginMapper';
+import PluginModel, { PluginDocument } from '@modules/plugin/infrastructure/persistence/mongo/models/plugin/PluginModel';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-import { injectable } from 'tsyringe';
 
-@injectable()
+
+@Singleton()
 export default class PluginRepository
-    extends MongooseBaseRepository<Plugin, PluginProps, PluginDocument>
-    implements IPluginRepository {
+    extends MongooseBaseRepository<Plugin, PluginProps, PluginDocument> {
     constructor() {
         super(PluginModel, pluginMapper);
     }

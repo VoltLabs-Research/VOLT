@@ -4,7 +4,7 @@ import { resolveRangedTimesteps } from '@/modules/canvas/utilities/timeline-rang
 import { SkipBack, Rewind, Play, FastForward, SkipForward, Pause } from 'lucide-react';
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import Button from '@/shared/presentation/components/Button';
+import { Button, Row } from '@/shared/presentation/primitives';
 import './TransportControls.css';
 
 interface TransportControlsProps {
@@ -68,7 +68,7 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
     ]), [isPlaying, handleTogglePlay, jumpToStart, prevFrame, nextFrame, jumpToEnd]);
 
     return (
-        <div className="volt-container canvas-transport-controls d-flex items-center">
+        <Row className="canvas-transport-controls">
             {buttons.map((btn) => (
                 <Button
                     key={btn.label}
@@ -85,7 +85,7 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
                     <btn.Icon style={{ width: 13, height: 13 }} />
                 </Button>
             ))}
-        </div>
+        </Row>
     );
 };
 

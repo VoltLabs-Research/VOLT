@@ -1,11 +1,10 @@
 import './DashboardActivityCard.css';
 import DashboardCard from '@/modules/dashboard/components/DashboardCard';
-import SegmentedTabs from '@/shared/presentation/components/SegmentedTabs';
+import { Box, Stack, Text, SegmentedTabs, Skeleton, AsyncBoundary, Timeline, TimelineItem } from '@/shared/presentation/primitives';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
 import { ACTIVITY_ACCENT, ACTIVITY_ICON } from '@/modules/daily-activity/utilities/activity-mappings';
-import EmptyState from '@/shared/presentation/components/EmptyState';
+import { EmptyState } from '@/shared/presentation/primitives';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import Skeleton from '@/shared/presentation/components/Skeleton';
 import { Activity as ActivityIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import {
@@ -235,53 +234,43 @@ const DashboardActivityCard = () => {
         );
     };
 
-    const renderLoadingState = (): ReactNode => {
-        if (activeTab === 'in-app-activity') {
-            return <div className='volt-container dashboard-activity-chart-surface d-flex flex-center' />;
-        }
-
-        return (
-            <div className='volt-container dashboard-activity-list flex-1 min-h-0 y-auto d-flex column'>
+    const loadingState: ReactNode = activeTab === 'in-app-activity'
+        ? <Box display='flex' className='dashboard-activity-chart-surface flex-center' />
+        : (
+            <Timeline className='dashboard-activity-list' style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
                 {Array.from({ length: 10 }, (_, index) => (
-                    <div key={index} className='volt-container dashboard-activity-timeline-item'>
-                        <div className='volt-container dashboard-activity-timeline-dot-col'>
-                            <Skeleton variant='rounded' width={20} height={20} style={{ borderRadius: 'var(--radius-md)' }} />
-                            {index < 3 && <span className='dashboard-activity-timeline-line' />}
-                        </div>
-                        <div className='volt-container dashboard-activity-timeline-content w-max'>
-                            <Skeleton variant='text' width='70%' height={12} />
-                            <Skeleton variant='text' width='40%' height={10} style={{ marginTop: '4px' }} />
-                        </div>
-                    </div>
+                    <TimelineItem
+                        key={index}
+                        connector={index < 3}
+                        icon={<Skeleton variant='rounded' width={16} height={16} style={{ borderRadius: 'var(--radius-md)' }} />}
+                    >
+                        <Skeleton variant='text' width='70%' height={12} />
+                        <Skeleton variant='text' width='40%' height={10} style={{ marginTop: '4px' }} />
+                    </TimelineItem>
                 ))}
-            </div>
+            </Timeline>
         );
-    };
 
-    const renderAccessDeniedState = (): ReactNode => {
-        return (
-            <RecoveryState
-                title='Access denied'
-                description={accessDeniedMessage ?? 'You do not have permission to view activity.'}
-                tone={RecoveryStateTone.AccessDenied}
-                className='dashboard-card-state'
-            />
-        );
-    };
+    const accessDeniedState: ReactNode = (
+        <RecoveryState
+            title='Access denied'
+            description={accessDeniedMessage ?? 'You do not have permission to view activity.'}
+            tone={RecoveryStateTone.AccessDenied}
+            className='dashboard-card-state'
+        />
+    );
 
-    const renderErrorState = (): ReactNode => {
-        return (
-            <RecoveryState
-                title='Unable to load activity'
-                description={error || 'Unknown error'}
-                tone={RecoveryStateTone.Error}
-                onRetry={() => {
-                    fetchActivity().catch(() => undefined);
-                }}
-                className='dashboard-card-state'
-            />
-        );
-    };
+    const renderError = (errValue: unknown): ReactNode => (
+        <RecoveryState
+            title='Unable to load activity'
+            description={typeof errValue === 'string' ? errValue : 'Unknown error'}
+            tone={RecoveryStateTone.Error}
+            onRetry={() => {
+                fetchActivity().catch(() => undefined);
+            }}
+            className='dashboard-card-state'
+        />
+    );
 
     const renderTimeline = (): ReactNode => {
         if (!hasTimelineEntries) {
@@ -296,33 +285,26 @@ const DashboardActivityCard = () => {
         }
 
         return (
-            <div className='volt-container dashboard-activity-list flex-1 min-h-0 y-auto d-flex column'>
+            <Timeline className='dashboard-activity-list' style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
                 {timelineEntries.map((entry, index) => (
-                    <div key={`${entry.timestamp}-${index}`} className='volt-container dashboard-activity-timeline-item'>
-                        <div className='volt-container dashboard-activity-timeline-dot-col'>
-                            <span
-                                className='dashboard-activity-timeline-dot d-flex flex-center radius-md'
-                                style={{ color: ACTIVITY_ACCENT[entry.type] }}
-                            >
-                                {ACTIVITY_ICON[entry.type]}
-                            </span>
-                            {index < timelineEntries.length - 1 && <span className='dashboard-activity-timeline-line' />}
-                        </div>
-                        <div className='volt-container dashboard-activity-timeline-content'>
-                            <span className='font-size-2 color-primary'>
-                                <strong className='font-weight-5' style={{ textTransform: 'capitalize' }}>
-                                    {entry.userName}
-                                </strong>
-                                {' '}
-                                <span className='color-secondary'>{entry.description}</span>
-                            </span>
-                            <span className='font-size-1 color-muted'>
-                                {formatRelativeTime(entry.timestamp)}
-                            </span>
-                        </div>
-                    </div>
+                    <TimelineItem
+                        key={`${entry.timestamp}-${index}`}
+                        connector={index < timelineEntries.length - 1}
+                        icon={<span style={{ color: ACTIVITY_ACCENT[entry.type], display: 'inline-flex' }}>{ACTIVITY_ICON[entry.type]}</span>}
+                    >
+                        <Text size='md' tone='primary'>
+                            <strong className='font-weight-5' style={{ textTransform: 'capitalize' }}>
+                                {entry.userName}
+                            </strong>
+                            {' '}
+                            <Text tone='secondary'>{entry.description}</Text>
+                        </Text>
+                        <Text size='sm' tone='muted'>
+                            {formatRelativeTime(entry.timestamp)}
+                        </Text>
+                    </TimelineItem>
                 ))}
-            </div>
+            </Timeline>
         );
     };
 
@@ -339,8 +321,8 @@ const DashboardActivityCard = () => {
         }
 
         return (
-            <div className='volt-container dashboard-activity-panel d-flex gap-05 column flex-1 min-h-0'>
-                <div className='volt-container dashboard-activity-chart-surface'>
+            <Stack gap='05' flex='1' minH='0' className='dashboard-activity-panel'>
+                <Box className='dashboard-activity-chart-surface'>
                     <ResponsiveContainer width='100%' height={250}>
                         <RadarChart
                             data={inAppActivity.radarData}
@@ -376,49 +358,48 @@ const DashboardActivityCard = () => {
                             />
                         </RadarChart>
                     </ResponsiveContainer>
-                </div>
+                </Box>
 
-                <div className='volt-container dashboard-activity-summary'>
-                    <div className='volt-container dashboard-activity-summary-item'>
-                        <span className='font-size-3 color-primary font-weight-6'>{formatMinutes(inAppActivity.totalMinutes)}</span>
-                        <span className='font-size-1 color-muted'>Total time</span>
-                    </div>
-                    <div className='volt-container dashboard-activity-summary-item'>
-                        <span className='font-size-3 color-primary font-weight-6'>{inAppActivity.totalActions}</span>
-                        <span className='font-size-1 color-muted'>Actions</span>
-                    </div>
-                    <div className='volt-container dashboard-activity-summary-item dashboard-activity-summary-item-end'>
-                        <span className='font-size-2 color-primary font-weight-5'>{inAppActivity.peakDay}</span>
-                        <span className='font-size-1 color-muted'>Peak day</span>
-                    </div>
-                </div>
-            </div>
+                <Box className='dashboard-activity-summary'>
+                    <Box className='dashboard-activity-summary-item'>
+                        <Text size='lg' tone='primary' weight='bold'>{formatMinutes(inAppActivity.totalMinutes)}</Text>
+                        <Text size='sm' tone='muted'>Total time</Text>
+                    </Box>
+                    <Box className='dashboard-activity-summary-item'>
+                        <Text size='lg' tone='primary' weight='bold'>{inAppActivity.totalActions}</Text>
+                        <Text size='sm' tone='muted'>Actions</Text>
+                    </Box>
+                    <Box className='dashboard-activity-summary-item dashboard-activity-summary-item-end'>
+                        <Text size='md' tone='primary' weight='medium'>{inAppActivity.peakDay}</Text>
+                        <Text size='sm' tone='muted'>Peak day</Text>
+                    </Box>
+                </Box>
+            </Stack>
         );
     };
 
-    let content = activeTab === 'activity' ? renderTimeline() : renderInAppActivity();
-
-    if (accessDenied) {
-        content = renderAccessDeniedState();
-    } else if (error) {
-        content = renderErrorState();
-    } else if (isLoading) {
-        content = renderLoadingState();
-    }
+    const content = activeTab === 'activity' ? renderTimeline() : renderInAppActivity();
 
     return (
         <DashboardCard className='dashboard-activity-card d-flex column'>
-            <div className='volt-container dashboard-tabbed-card-header'>
+            <Box className='dashboard-tabbed-card-header'>
                 <SegmentedTabs
                     tabs={DASHBOARD_ACTIVITY_TABS}
                     activeTab={activeTab}
                     onChange={setActiveTab}
                     ariaLabel='Dashboard activity views'
                 />
-                <span className='font-size-1 color-muted'>{tabDescription}</span>
-            </div>
+                <Text size='sm' tone='muted'>{tabDescription}</Text>
+            </Box>
 
-            {content}
+            <AsyncBoundary
+                state={{ loading: isLoading, error: error || undefined, accessDenied }}
+                loading={loadingState}
+                error={renderError}
+                accessDenied={accessDeniedState}
+            >
+                {content}
+            </AsyncBoundary>
         </DashboardCard>
     );
 };

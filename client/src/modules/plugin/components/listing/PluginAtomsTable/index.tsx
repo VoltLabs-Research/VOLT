@@ -30,6 +30,8 @@ const getTypeColor = (t?: number): string => {
 
 const ATOMS_PAGE_SIZE = 100;
 
+const BASE_ATOM_COLUMN_KEYS = new Set(['id', 'type', 'x', 'y', 'z']);
+
 const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId, onDataReady }: PluginAtomsTableProps) => {
     const currentTimestep = useEditorStore((state) => state.currentTimestep);
 
@@ -95,12 +97,14 @@ const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId, onDataReady }:
             { key: 'z', title: 'Z', width: 100, render: (value: unknown) => formatAtomValue(value, 3) }
         ];
 
-        const extra = properties.map((prop) => ({
-            key: prop,
-            title: prop,
-            width: 120,
-            render: (value: unknown) => formatAtomValue(value, 4)
-        }));
+        const extra = properties
+            .filter((prop) => !BASE_ATOM_COLUMN_KEYS.has(prop))
+            .map((prop) => ({
+                key: prop,
+                title: prop,
+                width: 120,
+                render: (value: unknown) => formatAtomValue(value, 4)
+            }));
 
         return [...base, ...extra];
     }, [properties]);

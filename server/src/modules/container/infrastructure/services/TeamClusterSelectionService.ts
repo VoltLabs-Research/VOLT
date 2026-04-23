@@ -1,10 +1,10 @@
-import { inject, injectable } from 'tsyringe';
+import { injectable } from 'tsyringe';
 import { ClusterRoleAwareSelectionService } from './ClusterRoleAwareSelectionService';
 
 @injectable()
 export class TeamClusterSelectionService {
     constructor(
-        @inject(ClusterRoleAwareSelectionService)
+        
         private readonly clusterRoleAwareSelectionService: ClusterRoleAwareSelectionService
     ) {}
 

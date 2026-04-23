@@ -1,16 +1,16 @@
-import { SendFileMessageInputDTO } from '@modules/chat/application/dtos/chat-message/SendFileMessageDTO';
 import { PersistedChatMessageDTO } from '@modules/chat/application/dtos/chat-message/SendChatMessageDTO';
+import { SendFileMessageInputDTO } from '@modules/chat/application/dtos/chat-message/SendFileMessageDTO';
 import { ChatMessageMetadata, ChatMessageType } from '@modules/chat/domain/entities/chat-message/ChatMessage';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SendChatMessageUseCase } from './SendChatMessageUseCase';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
 
-@injectable()
+@Singleton()
 export class SendFileMessageUseCase implements IUseCase<SendFileMessageInputDTO, PersistedChatMessageDTO, ApplicationError> {
     constructor(
-        @inject(SendChatMessageUseCase)
+        
         private sendChatMessage: SendChatMessageUseCase
     ){}
 

@@ -1,9 +1,10 @@
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import { CreateContainerUseCase } from '@modules/container/application/use-cases/CreateContainerUseCase';
 import { AITool } from '@shared/application/ai/AITool';
-import { inject, injectable } from 'tsyringe';
+import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
-@injectable()
+@CollectionMember(AI_TOKENS.AITool)
 export class CreateContainerAITool extends AITool {
     readonly name = 'create_container';
     readonly description = 'Create a new Docker container.';
@@ -19,7 +20,7 @@ export class CreateContainerAITool extends AITool {
     });
 
     constructor(
-        @inject(CreateContainerUseCase)
+        
         protected readonly useCase: CreateContainerUseCase
     ) {
         super();

@@ -1,12 +1,12 @@
-import { injectable } from 'tsyringe';
-import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+
+import AIMessage, { AIMessageProps } from '@modules/ai/domain/entities/AIMessage';
 import { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRepository';
 import aiMessageMapper from '@modules/ai/infrastructure/persistence/mongo/mappers/AIMessageMapper';
-import { AIMessageDocument } from '@modules/ai/infrastructure/persistence/mongo/models/AIMessageModel';
-import AIMessage, { AIMessageProps } from '@modules/ai/domain/entities/AIMessage';
-import AIMessageModel from '@modules/ai/infrastructure/persistence/mongo/models/AIMessageModel';
+import AIMessageModel, { AIMessageDocument } from '@modules/ai/infrastructure/persistence/mongo/models/AIMessageModel';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 
-@injectable()
+@Singleton()
 export default class AIMessageRepository
     extends MongooseBaseRepository<AIMessage, AIMessageProps, AIMessageDocument>
     implements IAIMessageRepository {

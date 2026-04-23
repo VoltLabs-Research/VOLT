@@ -1,23 +1,21 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
+import SimulationCellRepository from '@modules/simulation-cell/infrastructure/persistence/mongo/repositories/SimulationCellRepository';
 import StoragePlacementService from '@modules/team-cluster/application/services/StoragePlacementService';
 import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
+import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
 import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
-import type { IEventBus } from '@shared/application/events/IEventBus';
-import type { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { inject } from 'tsyringe';
 
 interface ImportedFrameInput {
     timestep: number;
@@ -42,23 +40,23 @@ interface ProcessDaemonTrajectoryImportOutputDTO {
     acknowledged: boolean;
 };
 
-@injectable()
+@Singleton()
 export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
     ProcessDaemonTrajectoryImportInputDTO,
     ProcessDaemonTrajectoryImportOutputDTO,
     ApplicationError
 > {
     constructor(
-        @inject(SHARED_TOKENS.DaemonCredentialGuard)
+        
         private readonly daemonCredentialGuard: DaemonCredentialGuard,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepository: ITrajectoryRepository,
+        
+        private readonly trajectoryRepository: TrajectoryRepository,
 
-        @inject(SIMULATION_CELL_TOKENS.SimulationCellRepository)
-        private readonly simulationCellRepository: ISimulationCellRepository,
+        
+        private readonly simulationCellRepository: SimulationCellRepository,
 
-        @inject(TEAM_CLUSTER_TOKENS.StoragePlacementService)
+        
         private readonly storagePlacementService: StoragePlacementService,
 
         @inject(SHARED_TOKENS.EventBus)

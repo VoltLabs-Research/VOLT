@@ -1,3 +1,4 @@
+import { Button, Tooltip } from '@/shared/presentation/primitives';
 import PaletteItem from '@/modules/plugin/components/plugin/PaletteItem';
 import PluginBuilderCanvas from '@/modules/plugin/components/plugin/PluginBuilderCanvas';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
@@ -5,10 +6,8 @@ import type { IModifierData } from '@/modules/plugin/api/entities/plugin/workflo
 import useSaveWorkflow from '@/modules/plugin/hooks/plugin/use-save-workflow';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
-import Button from '@/shared/presentation/components/Button';
 import EditableTag from '@/shared/presentation/components/EditableTag';
 import Sidebar from '@/shared/presentation/components/Sidebar';
-import Tooltip from '@/shared/presentation/components/Tooltip';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
 import useTip from '@/shared/tips/use-tip';
@@ -197,7 +196,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
             id: 'Palette',
             name: 'Palette',
             Component: () => (
-                <div className='volt-container d-flex column gap-1-5 plugin-builder-palette-list-container p-2'>
+                <div className='d-flex column gap-1-5 plugin-builder-palette-list-container p-2'>
                     {nodeTypesList.map((config) => (
                         <PaletteItem config={config} onDragStart={onDragStart} onAdd={handleAddNode} key={config.type} />
                     ))}
@@ -207,13 +206,13 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
     ], [onDragStart, handleAddNode]);
 
     return (
-        <div className='volt-container wh-max vh-max'>
+        <div className='wh-max vh-max'>
             <Sidebar
                 tags={SIDEBAR_TAGS}
                 activeTag='Palette'
             >
                 <Sidebar.Header>
-                    <div className='volt-container d-flex items-center gap-075'>
+                    <div className='d-flex items-center gap-075'>
                         <Tooltip content='Back' placement='right'>
                             <Button
                                 variant='ghost'

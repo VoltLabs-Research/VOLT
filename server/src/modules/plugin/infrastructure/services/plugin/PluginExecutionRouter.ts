@@ -1,22 +1,5 @@
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import {
-    ChannelCommands,
-    VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID
-} from '@shared/infrastructure/contracts/team-cluster';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { isStorageObjectNotFoundError } from '@shared/infrastructure/utilities/storage-errors';
-import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
-import zlib from 'node:zlib';
-import { promisify } from 'node:util';
-import type IORedis from 'ioredis';
-
-const gzipAsync = promisify(zlib.gzip);
-
-const DISPATCH_SECTION_CACHE_TTL_SECONDS = 600;
 import type Analysis from '@modules/analysis/domain/entities/Analysis';
 import type Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
 import type {
@@ -24,9 +7,26 @@ import type {
     PluginReferenceExecutionRequest,
     RoutePluginExecutionInput
 } from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
-import type DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
+import DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
-import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import {
+    ChannelCommands,
+    VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID
+} from '@shared/infrastructure/contracts/team-cluster';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import logger from '@shared/infrastructure/logger';
+import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import { isStorageObjectNotFoundError } from '@shared/infrastructure/utilities/storage-errors';
+import type IORedis from 'ioredis';
+import { promisify } from 'node:util';
+import zlib from 'node:zlib';
+import { inject } from 'tsyringe';
+
+const gzipAsync = promisify(zlib.gzip);
+
+const DISPATCH_SECTION_CACHE_TTL_SECONDS = 600;
 
 interface DaemonPluginSyncResponse {
     synced: boolean;
@@ -229,16 +229,16 @@ const encodeDispatchSection = async <T>(value: T): Promise<EncodedDispatchSectio
     };
 };
 
-@injectable()
+@Singleton()
 export default class PluginExecutionRouter implements IPluginExecutionRouter {
     constructor(
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
 
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
 
-        @inject(TEAM_CLUSTER_TOKENS.DaemonAnalysisCompletionService)
+        
         private readonly daemonAnalysisCompletionService: DaemonAnalysisCompletionService,
 
         @inject(SHARED_TOKENS.RedisClient)

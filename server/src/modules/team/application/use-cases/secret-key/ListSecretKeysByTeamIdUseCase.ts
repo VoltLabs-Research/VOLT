@@ -1,16 +1,15 @@
-import { ROLE_POPULATE, USER_POPULATE } from '@shared/application/PopulatePresets';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { ListSecretKeysByTeamIdInputDTO, ListSecretKeysByTeamIdOutputDTO, SecretKeyListItemDTO } from '@modules/team/application/dtos/secret-key/ListSecretKeysByTeamIdDTO';
-import { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
+import SecretKeyRepository from '@modules/team/infrastructure/persistence/mongo/repositories/secret-key/SecretKeyRepository';
 import { IUseCase } from '@shared/application/IUseCase';
+import { ROLE_POPULATE, USER_POPULATE } from '@shared/application/PopulatePresets';
 import { Result } from '@shared/domain/port/Result';
-import { injectable, inject } from 'tsyringe';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export default class ListSecretKeysByTeamIdUseCase implements IUseCase<ListSecretKeysByTeamIdInputDTO, ListSecretKeysByTeamIdOutputDTO> {
     constructor(
-        @inject(TEAM_TOKENS.SecretKeyRepository)
-        private readonly secretKeyRepository: ISecretKeyRepository
+        
+        private readonly secretKeyRepository: SecretKeyRepository
     ) {}
 
     async execute(input: ListSecretKeysByTeamIdInputDTO): Promise<Result<ListSecretKeysByTeamIdOutputDTO>> {

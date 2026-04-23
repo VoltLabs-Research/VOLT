@@ -1,27 +1,26 @@
 import { UpdateContainerInputDTO, UpdateContainerOutputDTO } from '@modules/container/application/dtos/UpdateContainerDTO';
 import ContainerUpdatedEvent from '@modules/container/domain/events/ContainerUpdatedEvent';
-import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
-import { ContainerOwnershipService } from '@modules/container/infrastructure/services/ContainerOwnershipService';
-import { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { inject, injectable } from 'tsyringe';
 import type {
     ContainerEnvironmentVariable,
     ContainerPortMapping,
     RuntimeContainerInfo
 } from '@modules/container/domain/port/IContainerService';
-import type { ITeamClusterContainerRuntimeService } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
+import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
+import { ContainerOwnershipService } from '@modules/container/infrastructure/services/ContainerOwnershipService';
+import { DaemonContainerRuntimeService } from '@modules/container/infrastructure/services/DaemonContainerRuntimeService';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO, UpdateContainerOutputDTO> {
     constructor(
-        @inject(CONTAINER_TOKENS.ContainerRepository) private repository: IContainerRepository,
-        @inject(CONTAINER_TOKENS.ContainerRuntimeService) private containerRuntimeService: ITeamClusterContainerRuntimeService,
-        @inject(ContainerOwnershipService) private ownershipService: ContainerOwnershipService,
+        private repository: ContainerRepository,
+        private containerRuntimeService: DaemonContainerRuntimeService,
+        private ownershipService: ContainerOwnershipService,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ) {}
 

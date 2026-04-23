@@ -1,9 +1,10 @@
 import { UseModifierBaseOptions } from './use-modifier-base';
 import useModifierBase from './use-modifier-base';
 import { parseNumericInput } from '../utilities/parse-numeric-input';
-import { isAccessDeniedError } from '@/shared/errors/core';
+import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { colorCodingStatsQuery } from '@/modules/trajectory/hooks/color-coding/queries';
 import { COLORMAP_NAMES, type ColormapName } from '@/modules/fractal/services/colormaps';
+import colorCodingService from '@/modules/trajectory/api/services/color-coding';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 
 import type { ColorCodingScene } from '@/modules/fractal/api/entities/scene';
@@ -88,24 +89,43 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
     }, [statsQuery.data, syncEndValue, syncStartValue]);
 
     const applyColorCoding = useCallback(async () => {
+        if (!trajectoryId || currentTimestep === undefined || !property) return;
+
         setIsApplying(true);
         try {
+            await colorCodingService.apply({
+                trajectoryId,
+                analysisId,
+                timestep: currentTimestep,
+                payload: {
+                    property,
+                    startValue,
+                    endValue,
+                    gradient,
+                    ...(exposureId ? { exposureId } : {})
+                }
+            });
+
             setActiveScene({
                 analysisId,
                 endValue: String(endValue),
                 exposureId: exposureId ?? '',
                 gradient,
-                property: property ?? '',
+                property,
                 source: 'color-coding',
                 startValue: String(startValue),
                 sceneType: 'color-coding'
             } as ColorCodingScene);
         } catch (error: unknown) {
             if (isAccessDeniedError(error)) return;
+            reportError(error, {
+                surface: ErrorSurface.Toast,
+                fallbackTitle: 'Failed to apply color coding'
+            });
         } finally {
             setIsApplying(false);
         }
-    }, [property, gradient, startValue, endValue, analysisId, exposureId, setActiveScene]);
+    }, [trajectoryId, currentTimestep, property, gradient, startValue, endValue, analysisId, exposureId, setActiveScene]);
 
     useEffect(() => {
         if (!symmetricRange) return;

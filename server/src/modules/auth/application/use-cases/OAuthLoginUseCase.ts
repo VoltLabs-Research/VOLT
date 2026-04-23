@@ -1,21 +1,20 @@
 import { OAuthLoginInputDTO, OAuthLoginOutputDTO } from '@modules/auth/application/dtos/OAuthLoginDTO';
 import { toPersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
 import AuthSessionService from '@modules/auth/infrastructure/services/AuthSessionService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { SessionActivityType } from '@modules/session/domain/entities/Session';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import generateRandomName from '@shared/infrastructure/utilities/generate-random-name';
-import { inject, injectable } from 'tsyringe';
-import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
-import type { IUseCase } from '@shared/application/IUseCase';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export default class OAuthLoginUseCase implements IUseCase<OAuthLoginInputDTO, OAuthLoginOutputDTO, ApplicationError>{
     constructor(
-        @inject(AUTH_TOKENS.UserRepository)
-        private readonly userRepository: IUserRepository,
-        @inject(AUTH_TOKENS.AuthSessionService)
+        
+        private readonly userRepository: UserRepository,
+        
         private readonly authSessionService: AuthSessionService
     ) {}
 

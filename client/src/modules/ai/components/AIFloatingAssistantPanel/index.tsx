@@ -1,33 +1,21 @@
 import AIComposer from '@/modules/ai/components/AIComposer';
 import AIConversationThread from '@/modules/ai/components/AIConversationThread';
 import useAIPage from '@/modules/ai/hooks/use-ai-page';
-import EmptyState from '@/shared/presentation/components/EmptyState';
-import IconButton from '@/shared/presentation/components/IconButton';
+import { EmptyState, VisuallyHidden } from '@/shared/presentation/primitives';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import Tooltip from '@/shared/presentation/components/Tooltip';
+import PanelHeader from '@/shared/presentation/components/PanelHeader';
+import { Box, Row, Surface, IconButton, Tooltip } from '@/shared/presentation/primitives';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { IoAddOutline, IoCloseOutline, IoExpandOutline, IoSparklesOutline } from 'react-icons/io5';
+import { IoAddOutline, IoExpandOutline, IoSparklesOutline } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
-import type { SelectOption } from '@/shared/presentation/components/Select';
-import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject } from 'react';
+import type { SelectOption } from '@/shared/presentation/primitives';
+import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject } from 'react';
 import './AIFloatingAssistantPanel.css';
 
 interface AIFloatingAssistantPanelContentProps {
     onClose: () => void;
     triggerRef: RefObject<HTMLButtonElement | null>;
-};
-
-const VISUALLY_HIDDEN_STYLES: CSSProperties = {
-    position: 'absolute',
-    width: '1px',
-    height: '1px',
-    padding: 0,
-    margin: '-1px',
-    overflow: 'hidden',
-    clip: 'rect(0, 0, 0, 0)',
-    whiteSpace: 'nowrap',
-    border: 0
 };
 
 const getFocusableElements = (container: HTMLElement | null): HTMLElement[] => {
@@ -247,75 +235,70 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
 
     if (accessDenied) {
         content = (
-            <div className='volt-container d-flex flex-center flex-1'>
+            <Box display='flex' flex='1' className='flex-center'>
                 <RecoveryState
                     title='Access denied'
                     description={accessDeniedMessage ?? 'You do not have permission to use the AI assistant.'}
                     tone={RecoveryStateTone.AccessDenied}
                 />
-            </div>
+            </Box>
         );
     } else if (!selectedTeam?._id) {
         content = (
-            <div className='volt-container d-flex flex-center flex-1'>
+            <Box display='flex' flex='1' className='flex-center'>
                 <EmptyState
                     title='No team selected'
                     description='Select a team to use the AI assistant.'
                 />
-            </div>
+            </Box>
         );
     } else if (noProviderConfigured) {
         content = (
-            <div className='volt-container d-flex flex-center flex-1'>
+            <Box display='flex' flex='1' className='flex-center'>
                 <EmptyState
                     title='No AI provider configured'
                     description='Enable at least one provider with a valid API key in team integrations.'
                     buttonText='Open integrations'
                     buttonOnClick={() => navigate('/dashboard/settings/integrations')}
                 />
-            </div>
+            </Box>
         );
     }
 
+    const headerActions = (
+        <Row gap='025'>
+            <Tooltip content='New conversation' placement='top'>
+                <IconButton
+                    aria-label='Start new conversation'
+                    onClick={() => handleCreateConversation().catch(console.warn)}
+                    disabled={noProviderConfigured || isProviderCatalogLoading}
+                >
+                    <IoAddOutline size={16} />
+                </IconButton>
+            </Tooltip>
+
+            <Tooltip content='Open full AI page' placement='top'>
+                <IconButton aria-label='Open full AI page' onClick={openAIPage}>
+                    <IoExpandOutline size={16} />
+                </IconButton>
+            </Tooltip>
+        </Row>
+    );
+
     return (
-        <div ref={panelRef} className='volt-container ai-floating-assistant glass-bg p-fixed bottom-1 right-1 z-20 d-flex column' role='dialog' aria-modal='false' aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1} onKeyDown={handlePanelKeyDown}>
-            <div className='volt-container d-flex items-center content-between ai-floating-assistant-header'>
-                <div className='volt-container d-flex column gap-025'>
-                    <p id={titleId} className='volt-text font-size-2 font-weight-6 color-primary'>
-                        {/** YOUR RESEARCH ASSISTANT */}
-                    </p>
-                    <span id={descriptionId} style={VISUALLY_HIDDEN_STYLES}>
-                        Floating assistant dialog. Press Escape to close. Tab moves between controls inside the dialog.
-                    </span>
-                </div>
-
-                <div className='volt-container d-flex items-center gap-025'>
-                    <Tooltip content='New conversation' placement='top'>
-                        <IconButton
-                            aria-label='Start new conversation'
-                            onClick={() => handleCreateConversation().catch(console.warn)}
-                            disabled={noProviderConfigured || isProviderCatalogLoading}
-                        >
-                            <IoAddOutline size={16} />
-                        </IconButton>
-                    </Tooltip>
-
-                    <Tooltip content='Open full AI page' placement='top'>
-                        <IconButton aria-label='Open full AI page' onClick={openAIPage}>
-                            <IoExpandOutline size={16} />
-                        </IconButton>
-                    </Tooltip>
-
-                    <Tooltip content='Close assistant' placement='top'>
-                        <IconButton aria-label='Close assistant' onClick={onClose}>
-                            <IoCloseOutline size={16} />
-                        </IconButton>
-                    </Tooltip>
-                </div>
-            </div>
+        <Surface ref={panelRef} variant='glass' display='flex' direction='column' position='fixed' bottom='1' right='1' zIndex='20' className='ai-floating-assistant' role='dialog' aria-modal='false' aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1} onKeyDown={handlePanelKeyDown}>
+            <VisuallyHidden id={titleId}>Volt AI assistant</VisuallyHidden>
+            <VisuallyHidden id={descriptionId}>
+                Floating assistant dialog. Press Escape to close. Tab moves between controls inside the dialog.
+            </VisuallyHidden>
+            <PanelHeader
+                actions={headerActions}
+                onClose={onClose}
+                className='ai-floating-assistant-header'
+            />
 
             {providerCatalogError && (
-                <div className='volt-container ai-floating-assistant-alert'>
+                <Box className='ai-floating-assistant-alert'>
                     <RecoveryState
                         title='Unable to load AI providers'
                         description={providerCatalogError}
@@ -324,11 +307,11 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
                             loadProviderCatalog().catch(() => undefined);
                         }}
                     />
-                </div>
+                </Box>
             )}
 
             {conversationsError && (
-                <div className='volt-container ai-floating-assistant-alert'>
+                <Box className='ai-floating-assistant-alert'>
                     <RecoveryState
                         title='Unable to load conversations'
                         description={conversationsError}
@@ -337,11 +320,11 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
                             loadConversations().catch(() => undefined);
                         }}
                     />
-                </div>
+                </Box>
             )}
 
             {content}
-        </div>
+        </Surface>
     );
 };
 

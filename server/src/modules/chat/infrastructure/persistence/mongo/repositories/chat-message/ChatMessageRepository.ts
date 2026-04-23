@@ -1,8 +1,9 @@
+import ChatMessage from '@modules/chat/domain/entities/chat-message/ChatMessage';
 import chatMessageMapper from '@modules/chat/infrastructure/persistence/mongo/mappers/chat-message/ChatMessageMapper';
 import ChatMessageModel from '@modules/chat/infrastructure/persistence/mongo/models/chat-message/ChatMessageModel';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-import ChatMessage from '@modules/chat/domain/entities/chat-message/ChatMessage';
-import { injectable } from 'tsyringe';
+
 import type { ChatMessageProps } from '@modules/chat/domain/entities/chat-message/ChatMessage';
 import type { IChatMessageRepository } from '@modules/chat/domain/port/chat-message/IChatMessageRepository';
 import type { ChatMessageDocument } from '@modules/chat/infrastructure/persistence/mongo/models/chat-message/ChatMessageModel';
@@ -20,7 +21,7 @@ interface MarkMessagesAsReadUpdate {
     };
 };
 
-@injectable()
+@Singleton()
 export default class ChatMessageRepository
     extends MongooseBaseRepository<ChatMessage, ChatMessageProps, ChatMessageDocument>
     implements IChatMessageRepository {

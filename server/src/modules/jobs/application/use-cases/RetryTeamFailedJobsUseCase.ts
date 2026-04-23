@@ -1,16 +1,15 @@
-import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
-import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
 import type { RetryTeamFailedJobsInputDTO, RetryTeamFailedJobsOutputDTO } from '@modules/jobs/application/dtos/RetryTeamFailedJobsDTO';
-import type { ITeamJobMaintenanceService } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
+import TeamJobMaintenanceService from '@modules/jobs/infrastructure/services/TeamJobMaintenanceService';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
-@injectable()
+@Singleton()
 export default class RetryTeamFailedJobsUseCase implements IUseCase<RetryTeamFailedJobsInputDTO, RetryTeamFailedJobsOutputDTO, ApplicationError> {
     constructor(
-        @inject(JOBS_TOKENS.TeamJobMaintenanceService)
-        private readonly teamJobMaintenanceService: ITeamJobMaintenanceService
+        
+        private readonly teamJobMaintenanceService: TeamJobMaintenanceService
     ) {}
 
     async execute(input: RetryTeamFailedJobsInputDTO): Promise<Result<RetryTeamFailedJobsOutputDTO, ApplicationError>> {

@@ -10,6 +10,12 @@ import {
 import { TeamCreatorModal } from '@/modules/team/components/TeamCreatorModal';
 import { JoinTeamModal } from '@/modules/team/components/JoinTeamModal';
 import PageTransition from '@/shared/presentation/components/PageTransition';
+import { Box } from '@/shared/presentation/primitives';
+import DemoExpirationBanner from '@/modules/cluster/components/DemoExpirationBanner';
+import DemoWelcomeModal from '@/modules/cluster/components/DemoWelcomeModal';
+import { useDemoClusterStore } from '@/modules/cluster/stores/use-demo-cluster-store';
+import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
+import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
@@ -52,6 +58,22 @@ const DashboardLayout = () => {
     const { teams } = useTeamData();
     const location = useLocation();
     const navigate = useNavigate();
+    const selectedTeamId = useSelectedTeamId();
+    const setDemoFromCluster = useDemoClusterStore((state) => state.setFromCluster);
+    const clearDemo = useDemoClusterStore((state) => state.clear);
+    const demoTeamClustersQuery = useTeamClustersQuery(selectedTeamId ?? '', {
+        enabled: Boolean(selectedTeamId)
+    });
+
+    useEffect(() => {
+        const clusters = demoTeamClustersQuery.data?.data ?? [];
+        const demoCluster = clusters.find((cluster) => cluster.isDemo) ?? null;
+        if (demoCluster) {
+            setDemoFromCluster(demoCluster);
+        } else {
+            clearDemo();
+        }
+    }, [demoTeamClustersQuery.data, setDemoFromCluster, clearDemo]);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [headerHiddenOverride, setHeaderHiddenOverride] = useState(false);
     const [globalSearchBreadcrumb, setGlobalSearchBreadcrumb] = useState<DashboardGlobalSearchBreadcrumb | null>(null);
@@ -142,12 +164,12 @@ const DashboardLayout = () => {
     }), []);
 
     return (
-        <main className={`dashboard-main d-flex vh-max ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
+        <Box as='main' display='flex' height='vh-max' className={`dashboard-main ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
             <TeamCreatorModal isRequired={teams.length === 0} />
             <JoinTeamModal />
 
             {/* Sidebar Overlay for Mobile */}
-            <div className={`volt-container sidebar-overlay ${sidebarOpen ? 'is-open' : ''} p-fixed inset-0`} onClick={() => setSidebarOpen(false)} />
+            <Box position='fixed' inset='0' className={`sidebar-overlay ${sidebarOpen ? 'is-open' : ''}`} onClick={() => setSidebarOpen(false)} />
 
             <DashboardSidebar
                 sidebarOpen={sidebarOpen}
@@ -157,7 +179,8 @@ const DashboardLayout = () => {
                 onExpandSidebar={expandSidebar}
             />
 
-            <div className='volt-container dashboard-content-wrapper'>
+            <Box className='dashboard-content-wrapper'>
+                <DemoExpirationBanner />
                 {!headerHidden && (
                     <DashboardHeader
                         setSidebarOpen={setSidebarOpen}
@@ -165,15 +188,16 @@ const DashboardLayout = () => {
                     />
                 )}
 
-                <div className='volt-container dashboard-content-main flex-1 min-h-0 y-auto'>
+                <Box flex='1' minH='0' overflow='y-auto' className='dashboard-content-main'>
                     <TrajectoryUploaderContainer>
                         <PageTransition key={getPageTransitionKey(location.pathname)}>
                             <Outlet context={outletContext} />
                         </PageTransition>
                     </TrajectoryUploaderContainer>
-                </div>
-            </div>
-        </main>
+                </Box>
+                <DemoWelcomeModal />
+            </Box>
+        </Box>
     );
 };
 

@@ -1,34 +1,31 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import Analysis from '@modules/analysis/domain/entities/Analysis';
+import Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
-import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import {
     resolveAnalysisComputeClusterId,
     resolveAnalysisStorageClusterId
 } from '@modules/team-cluster/application/utilities/cluster-location';
-import { IAtomPropertiesService, ExposureAtomConfig, AnalysisAllAtomsResult } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import Analysis from '@modules/analysis/domain/entities/Analysis';
-import Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
+import { AnalysisAllAtomsResult, ExposureAtomConfig, IAtomPropertiesService } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
-import { injectable, inject } from 'tsyringe';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
+import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
 
-@injectable()
+@Singleton()
 export default class AtomPropertiesService implements IAtomPropertiesService {
     constructor(
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        
         private readonly daemonClient: TeamClusterDaemonClient,
 
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository,
+        
+        private readonly analysisRepository: AnalysisRepository,
 
-        @inject(PLUGIN_TOKENS.PluginRepository)
-        private readonly pluginRepository: IPluginRepository
+        
+        private readonly pluginRepository: PluginRepository
     ) { }
 
     async getModifierPerAtomProps(analysisId: string, timestep?: string): Promise<Record<string, string[]>> {

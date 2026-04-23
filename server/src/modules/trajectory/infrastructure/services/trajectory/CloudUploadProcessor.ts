@@ -1,11 +1,11 @@
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
+import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { isRetryableTeamClusterTransportError } from '@modules/team-cluster/infrastructure/services/TeamClusterTransportError';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { createWorkerFailureEnvelope, getWorkerFailureErrorMessage } from '@shared/infrastructure/workers/WorkerFailureEnvelope';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { injectable, inject } from 'tsyringe';
+import { createWorkerFailureEnvelope, getWorkerFailureErrorMessage } from '@shared/infrastructure/workers/WorkerFailureEnvelope';
 import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import { Readable } from 'node:stream';
@@ -34,11 +34,11 @@ interface TeamClusterObjectStoreClient {
     }): Promise<void>;
 }
 
-@injectable()
+@Singleton()
 export default class CloudUploadProcessor {
     constructor(
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
-        private readonly objectGatewayClient: TeamClusterObjectStoreClient
+        
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 
     async process(task: CloudUploadTask): Promise<void> {

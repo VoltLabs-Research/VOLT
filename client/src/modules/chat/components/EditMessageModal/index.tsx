@@ -1,7 +1,6 @@
-import { closeModal } from '@/shared/presentation/components/Modal';
+import { Box, Modal, closeModal } from '@/shared/presentation/primitives';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Modal from '@/shared/presentation/components/Modal';
 import type { KeyboardEvent } from 'react';
 import './EditMessageModal.css';
 
@@ -86,8 +85,8 @@ const EditMessageModal = ({ messageId, initialContent, onSave, onClose }: EditMe
                 />
             }
         >
-            <div className='volt-container edit-message-modal-content'>
-                <label htmlFor={EDIT_MESSAGE_TEXTAREA_ID} className='edit-message-visually-hidden'>
+            <Box className='edit-message-modal-content'>
+                <label htmlFor={EDIT_MESSAGE_TEXTAREA_ID} className='sr-only'>
                     Edit message
                 </label>
                 <textarea
@@ -100,7 +99,7 @@ const EditMessageModal = ({ messageId, initialContent, onSave, onClose }: EditMe
                     placeholder='Enter your message...'
                     rows={3}
                 />
-            </div>
+            </Box>
         </Modal>
     );
 };

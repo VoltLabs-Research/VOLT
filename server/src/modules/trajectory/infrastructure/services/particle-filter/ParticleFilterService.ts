@@ -1,35 +1,34 @@
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
-import { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
-import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
-import { IAtomPropertiesService } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
+import { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 import {
     IParticleFilterService,
     ParticleFilterCombinator,
     ParticleFilterCondition,
     ParticleFilterRequest
 } from '@modules/trajectory/domain/port/particle-filter/IParticleFilterService';
-import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
-import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
-import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { getLocalGlbStream } from '@modules/trajectory/utilities/storage/glb-stream-resolution';
-import { buildParticleFilterObjectName } from '@modules/trajectory/utilities/trajectory/minio-path-builder';
-import { normalizeAnalysisId } from '@modules/trajectory/utilities/trajectory/modifier-data';
-import { resolveTrajectoryNativeClusterContext } from '@modules/trajectory/utilities/team-cluster/resolve-trajectory-native-cluster-context';
+import TrajectoryNativeDaemonService from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
 import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
 import { resolveSceneArtifactStorageCluster } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-storage-cluster';
-import { IStorageService } from '@shared/domain/port/IStorageService';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import TrajectoryNativeDaemonService from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
+import { getLocalGlbStream } from '@modules/trajectory/utilities/storage/glb-stream-resolution';
+import { resolveTrajectoryNativeClusterContext } from '@modules/trajectory/utilities/team-cluster/resolve-trajectory-native-cluster-context';
+import { buildParticleFilterObjectName } from '@modules/trajectory/utilities/trajectory/minio-path-builder';
+import { normalizeAnalysisId } from '@modules/trajectory/utilities/trajectory/modifier-data';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import { IStorageService } from '@shared/domain/port/IStorageService';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
+import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import AtomPropertiesService from '@modules/trajectory/infrastructure/services/trajectory/AtomPropertiesService';
+import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryDumpStorageService';
 import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
-import { injectable, inject } from 'tsyringe';
+import { inject } from 'tsyringe';
 
 const buildDumpNotFoundError = (): ApplicationError => {
     return ApplicationError.notFound(
@@ -57,31 +56,31 @@ const buildPluginPropertyUnavailableError = (
     );
 };
 
-@injectable()
+@Singleton()
 export default class ParticleFilterService implements IParticleFilterService {
     constructor(
-        @inject(TRAJECTORY_TOKENS.AtomPropertiesService)
-        private readonly atomProps: IAtomPropertiesService,
+        
+        private readonly atomProps: AtomPropertiesService,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryDumpStorageService)
-        private readonly dumpStorage: ITrajectoryDumpStorageService,
+        
+        private readonly dumpStorage: TrajectoryDumpStorageService,
 
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
 
-        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository)
-        private readonly sceneArtifactRepository: ISceneArtifactRepository,
+        
+        private readonly sceneArtifactRepository: SceneArtifactRepository,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepository: ITrajectoryRepository,
+        
+        private readonly trajectoryRepository: TrajectoryRepository,
 
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository,
+        
+        private readonly analysisRepository: AnalysisRepository,
 
-        @inject(TeamClusterSelectionService)
+        
         private readonly teamClusterSelectionService: TeamClusterSelectionService,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryNativeDaemonService)
+        
         private readonly trajectoryNativeDaemonService: TrajectoryNativeDaemonService
     ) { }
 

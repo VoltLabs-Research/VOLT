@@ -1,20 +1,19 @@
-import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
-import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { Result } from '@shared/domain/port/Result';
-import { injectable, inject } from 'tsyringe';
 import type {
     GetSimulationCellByTrajectoryInputDTO,
     GetSimulationCellByTrajectoryOutputDTO
 } from '@modules/simulation-cell/application/dtos/GetSimulationCellByTrajectoryDTO';
 import type { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
-import type { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
+import SimulationCellRepository from '@modules/simulation-cell/infrastructure/persistence/mongo/repositories/SimulationCellRepository';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
+import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
+import { Result } from '@shared/domain/port/Result';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export default class GetSimulationCellByTrajectoryUseCase {
     constructor(
-        @inject(SIMULATION_CELL_TOKENS.SimulationCellRepository)
-        private readonly repository: ISimulationCellRepository
+        
+        private readonly repository: SimulationCellRepository
     ) {}
 
     async execute(

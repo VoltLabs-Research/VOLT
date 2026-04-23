@@ -1,3 +1,10 @@
+import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
+import {
+    AnalysisListingExportOptionDTO,
+    AnalysisSubListingExportOptionDTO,
+    GetAnalysisListingExportOptionsOutputDTO
+} from '@modules/plugin/application/dtos/listing-row/GetAnalysisListingExportOptionsDTO';
 import {
     AnalysisListingExportData,
     AnalysisSubListingExportData,
@@ -5,28 +12,18 @@ import {
     ExportListingRowsByAnalysisIdOutputDTO,
     ListingRowByAnalysisData
 } from '@modules/plugin/application/dtos/listing-row/GetListingRowsByAnalysisIdDTO';
-import {
-    AnalysisListingExportOptionDTO,
-    AnalysisSubListingExportOptionDTO,
-    GetAnalysisListingExportOptionsOutputDTO
-} from '@modules/plugin/application/dtos/listing-row/GetAnalysisListingExportOptionsDTO';
-import { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
+import { enrichDaemonListingRows } from '@modules/plugin/application/use-cases/listing-row/listing-row-enrichment';
+import { Exporter } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ExportNode';
 import { resolveAnalysisComputeClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { enrichDaemonListingRows } from '@modules/plugin/application/use-cases/listing-row/listing-row-enrichment';
-import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { Exporter } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ExportNode';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { ExportType } from '@shared/domain/port/IBaseRepository';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { inject, injectable } from 'tsyringe';
 
-import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
+import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 
 interface ListingAggregation {
     listingId: string;
@@ -110,16 +107,16 @@ export const buildAnalysisSubListingSelectionId = (
 
 const EMPTY_SELECTION_SENTINEL = '__volt_empty_selection__';
 
-@injectable()
+@Singleton()
 export class AnalysisListingExportCatalogService {
     constructor(
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository,
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepository: ITrajectoryRepository,
-        @inject(PLUGIN_TOKENS.PluginRepository)
-        private readonly pluginRepository: IPluginRepository,
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        
+        private readonly analysisRepository: AnalysisRepository,
+        
+        private readonly trajectoryRepository: TrajectoryRepository,
+        
+        private readonly pluginRepository: PluginRepository,
+        
         private readonly daemonClient: TeamClusterDaemonClient
     ) {}
 

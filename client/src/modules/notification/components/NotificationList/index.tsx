@@ -1,8 +1,8 @@
 import './NotificationList.css';
 import NotificationItem from '../NotificationItem';
 import { useCallback, useEffect, useRef } from 'react';
-import Skeleton from '@/shared/presentation/components/Skeleton';
-import EmptyState from '@/shared/presentation/components/EmptyState';
+import { Box, Stack, Skeleton } from '@/shared/presentation/primitives';
+import { EmptyState } from '@/shared/presentation/primitives';
 import type { Notification } from '@/modules/notification/api/entities/notification';
 
 interface NotificationListProps {
@@ -44,14 +44,14 @@ const NotificationList = ({
 
     if (isLoading && notifications.length === 0) {
         return (
-            <div className='volt-container d-flex column gap-05 p-05'>
+            <Stack gap='05' p='05'>
                 {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={`notif-skel-${i}`} className='volt-container notification-item notification-item-skeleton list-item-hoverable p-075 radius-sm'>
+                    <Box key={`notif-skel-${i}`} className='notification-item notification-item-skeleton list-item-hoverable p-075 radius-sm'>
                         <Skeleton variant='text' width='60%' height={20} />
                         <Skeleton variant='text' width='90%' height={16} />
-                    </div>
+                    </Box>
                 ))}
-            </div>
+            </Stack>
         );
     }
 
@@ -74,10 +74,10 @@ const NotificationList = ({
             ))}
             {isLoading && (
                 <li className='notification-row'>
-                    <div className='volt-container notification-item notification-item-skeleton list-item-hoverable p-075 radius-sm'>
+                    <Box className='notification-item notification-item-skeleton list-item-hoverable p-075 radius-sm'>
                         <Skeleton variant='text' width='60%' height={20} />
                         <Skeleton variant='text' width='90%' height={16} />
-                    </div>
+                    </Box>
                 </li>
             )}
         </ul>

@@ -1,6 +1,6 @@
 import { formatDistanceToNow } from 'date-fns';
 import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCellPopover';
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
+import { StatusBadge } from '@/shared/presentation/primitives';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import type { User } from '@/modules/auth/api/entities/user';
 import type { ReactNode } from 'react';
@@ -42,11 +42,6 @@ interface EnumColumnOptions<TRow> {
     size?: 'default' | 'compact';
     resolveValue?: (value: unknown, row: TRow) => string;
     resolveLabel?: (value: string) => string;
-};
-
-interface TitleWithIconColumnOptions {
-    width?: number;
-    sortable?: boolean;
 };
 
 export function dateColumn<TRow = unknown>(
@@ -218,41 +213,6 @@ export function populatedNameColumn<TRow = unknown>(
         },
         skeleton: { variant: 'text', width: options?.width ?? 140 }
     };
-}
-
-export function titleWithIconColumn<TRow = unknown>(
-    key: string,
-    label: string,
-    icon: ReactNode,
-    resolveTitle: (row: TRow) => string,
-    options?: TitleWithIconColumnOptions
-): ColumnConfig<TRow> {
-    return {
-        key,
-        title: label,
-        sortable: options?.sortable ?? true,
-        render: (_value: unknown, row: TRow) => (
-            <div className='volt-container d-flex items-center gap-075'>
-                <div className='volt-container d-flex flex-center color-secondary'>
-                    {icon}
-                </div>
-                <span className='font-weight-6 color-secondary text-truncate'>{resolveTitle(row)}</span>
-            </div>
-        ),
-        skeleton: { variant: 'text', width: options?.width ?? 180 }
-    };
-}
-
-/**
- * Renders any value as a StatusBadge.
- * Use this helper in custom column renderers for enum fields
- * that need a consistent badge appearance.
- */
-export function renderEnumField(value: unknown, label?: string): ReactNode {
-    const raw = String(value ?? '');
-    return label
-        ? <StatusBadge status={raw}>{label}</StatusBadge>
-        : <StatusBadge status={raw} />;
 }
 
 /**

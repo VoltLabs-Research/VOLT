@@ -1,20 +1,18 @@
+import { GetPluginExposureExportUseCase } from '@modules/plugin/application/use-cases/exposure/GetPluginExposureExportUseCase';
 import {
     DownloadTrajectoryAnalysesInputDTO,
     DownloadTrajectoryAnalysesOutputDTO
 } from '@modules/trajectory/application/dtos/trajectory/DownloadTrajectoryAnalysesDTO';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { GetPluginExposureExportUseCase } from '@modules/plugin/application/use-cases/exposure/GetPluginExposureExportUseCase';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import { createZipDownloadResponse, sanitizeDownloadName } from '@shared/infrastructure/http/responses/download-response';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
+import { createZipDownloadResponse, sanitizeDownloadName } from '@shared/infrastructure/http/responses/download-response';
+import { injectable } from 'tsyringe';
 
-import type { IUseCase } from '@shared/application/IUseCase';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import type Analysis from '@modules/analysis/domain/entities/Analysis';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import type { IUseCase } from '@shared/application/IUseCase';
 
 const ANALYSIS_STATUS_COMPLETED = 'completed';
 
@@ -44,13 +42,13 @@ export default class DownloadTrajectoryAnalysesUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepository: ITrajectoryRepository,
+        
+        private readonly trajectoryRepository: TrajectoryRepository,
 
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository,
+        
+        private readonly analysisRepository: AnalysisRepository,
 
-        @inject(GetPluginExposureExportUseCase)
+        
         private readonly getPluginExposureExportUseCase: GetPluginExposureExportUseCase
     ) {}
 

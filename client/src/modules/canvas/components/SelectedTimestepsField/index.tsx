@@ -1,7 +1,8 @@
-import Select from '@/shared/presentation/components/Select';
+import { Select } from '@/shared/presentation/primitives';
 import '@/shared/presentation/components/FormFieldRHF/FormField.css';
+import { Row } from '@/shared/presentation/primitives';
 import { useMemo, useCallback } from 'react';
-import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { SelectOption } from '@/shared/presentation/primitives';
 
 interface SelectedTimestepsFieldProps {
     availableTimesteps: number[];
@@ -37,11 +38,11 @@ const SelectedTimestepsField = ({
     }, []);
 
     return (
-        <div className='volt-container form-field-canvas d-flex content-between items-center gap-1'>
+        <Row justify='between' gap='1' className='form-field-canvas'>
             <span className='canvas-form-label'>
                 Selected Timesteps
             </span>
-            <div className='volt-container d-flex items-center render-input-container w-max content-end p-relative'>
+            <Row justify='end' width='max' position='relative' className='render-input-container'>
                 <Select
                     isMulti
                     options={options}
@@ -54,8 +55,8 @@ const SelectedTimestepsField = ({
                     placeholder='All'
                     className='form-field-canvas-select labeled-input'
                 />
-            </div>
-        </div>
+            </Row>
+        </Row>
     );
 };
 

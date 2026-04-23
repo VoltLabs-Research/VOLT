@@ -1,17 +1,16 @@
 import AIComposer from '@/modules/ai/components/AIComposer';
 import AIConversationThread from '@/modules/ai/components/AIConversationThread';
 import useAIPage from '@/modules/ai/hooks/use-ai-page';
-import EmptyState from '@/shared/presentation/components/EmptyState';
-import IconButton from '@/shared/presentation/components/IconButton';
+import { EmptyState } from '@/shared/presentation/primitives';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import Tooltip from '@/shared/presentation/components/Tooltip';
-import Select from '@/shared/presentation/components/Select';
+import { Select } from '@/shared/presentation/primitives';
+import { Box, IconButton, Row, Stack, Tooltip } from '@/shared/presentation/primitives';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { IoAddOutline, IoCloseOutline, IoExpandOutline } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
 import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
-import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { SelectOption } from '@/shared/presentation/primitives';
 import type { ReactNode } from 'react';
 
 interface LatexAIPanelProps {
@@ -213,40 +212,40 @@ const LatexAIPanel = ({ documentId, documentTitle, files, width, height, onClose
 
     if (accessDenied) {
         content = (
-            <div className='volt-container d-flex flex-center flex-1'>
+            <Box display='flex' flex='1' className='flex-center'>
                 <RecoveryState
                     title='Access denied'
                     description={accessDeniedMessage ?? 'You do not have permission to use the AI assistant.'}
                     tone={RecoveryStateTone.AccessDenied}
                 />
-            </div>
+            </Box>
         );
     } else if (!selectedTeam?._id) {
         content = (
-            <div className='volt-container d-flex flex-center flex-1'>
+            <Box display='flex' flex='1' className='flex-center'>
                 <EmptyState
                     title='No team selected'
                     description='Select a team to use the AI assistant.'
                 />
-            </div>
+            </Box>
         );
     } else if (noProviderConfigured) {
         content = (
-            <div className='volt-container d-flex flex-center flex-1'>
+            <Box display='flex' flex='1' className='flex-center'>
                 <EmptyState
                     title='No AI provider configured'
                     description='Enable at least one provider with a valid API key in team integrations.'
                     buttonText='Open integrations'
                     buttonOnClick={() => navigate('/dashboard/settings/integrations')}
                 />
-            </div>
+            </Box>
         );
     }
 
     return (
-        <div id='latex-ai-panel' className='volt-container latex-ai-panel d-flex column' style={{ width, height }}>
-            <div className='volt-container latex-ai-panel__header d-flex items-center content-between'>
-                <div className='volt-container d-flex items-center gap-025 flex-1 min-w-0'>
+        <Stack id='latex-ai-panel' className='latex-ai-panel' style={{ width, height }}>
+            <Row justify='between' className='latex-ai-panel__header'>
+                <Row gap='025' flex='1' minW='0'>
                     <Tooltip content='New conversation' placement='top'>
                         <IconButton
                             variant='ghost'
@@ -273,17 +272,17 @@ const LatexAIPanel = ({ documentId, documentTitle, files, width, height, onClose
                             <IoExpandOutline size={16} />
                         </IconButton>
                     </Tooltip>
-                </div>
+                </Row>
 
                 <Tooltip content='Close AI panel' placement='top'>
                     <IconButton variant='ghost' size='sm' onClick={onClose}>
                         <IoCloseOutline size={16} />
                     </IconButton>
                 </Tooltip>
-            </div>
+            </Row>
 
             {providerCatalogError && (
-                <div className='volt-container latex-ai-panel__alert'>
+                <Box className='latex-ai-panel__alert'>
                     <RecoveryState
                         title='Unable to load AI providers'
                         description={providerCatalogError}
@@ -292,11 +291,11 @@ const LatexAIPanel = ({ documentId, documentTitle, files, width, height, onClose
                             loadProviderCatalog().catch(() => undefined);
                         }}
                     />
-                </div>
+                </Box>
             )}
 
             {conversationsError && (
-                <div className='volt-container latex-ai-panel__alert'>
+                <Box className='latex-ai-panel__alert'>
                     <RecoveryState
                         title='Unable to load conversations'
                         description={conversationsError}
@@ -305,11 +304,11 @@ const LatexAIPanel = ({ documentId, documentTitle, files, width, height, onClose
                             loadConversations().catch(() => undefined);
                         }}
                     />
-                </div>
+                </Box>
             )}
 
             {content}
-        </div>
+        </Stack>
     );
 };
 

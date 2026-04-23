@@ -5,7 +5,8 @@ import { TRAJECTORY_QUERY_KEYS, trajectoryAtomsQuery } from '@/modules/trajector
 import formatAtomValue from '@/modules/trajectory/shared/format-atom-value';
 import { atomsToAoS } from '@/modules/trajectory/utilities/decode-atoms-binary';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
-import Select from '@/shared/presentation/components/Select';
+import { Select } from '@/shared/presentation/primitives';
+import { Row, Text } from '@/shared/presentation/primitives';
 import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-params';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
@@ -13,7 +14,7 @@ import AtomTypeBadge from '../AtomTypeBadge';
 import type { AtomData } from '@/modules/trajectory/api/dtos/trajectory';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
-import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { SelectOption } from '@/shared/presentation/primitives';
 
 interface PerAtomViewerContext {
     trajectoryId: string;
@@ -48,6 +49,8 @@ const COORDINATE_SKELETON: ColumnSkeletonConfig = {
 };
 
 const EMPTY_PROPERTIES: string[] = [];
+
+const BASE_ATOM_COLUMN_KEYS = new Set(['id', 'type', 'x', 'y', 'z']);
 
 const renderAtomTypeBadge = (value: unknown) => {
     if (typeof value !== 'string' && typeof value !== 'number') {
@@ -184,8 +187,8 @@ export default function PerAtomViewer() {
             }
         ];
 
-        const uniqueProperties = [...new Set(properties)];
-        for (const prop of uniqueProperties) {
+        const extraProperties = [...new Set(properties)].filter((prop) => !BASE_ATOM_COLUMN_KEYS.has(prop));
+        for (const prop of extraProperties) {
             baseCols.push({
                 key: prop,
                 title: prop,
@@ -211,8 +214,8 @@ export default function PerAtomViewer() {
         }
 
         return (
-            <div className='volt-container d-flex items-center gap-075'>
-                <p className='volt-text font-size-1 color-muted'>Timestep</p>
+            <Row gap='075'>
+                <Text as='p' size='sm' tone='muted'>Timestep</Text>
                 <Select
                     isEditable
                     options={timestepOptions}
@@ -224,7 +227,7 @@ export default function PerAtomViewer() {
                     title='Select timestep'
                     aria-label='Select timestep'
                 />
-            </div>
+            </Row>
         );
     }, [handleTimestepChange, timestep, timestepOptions]);
 

@@ -8,16 +8,6 @@
     width: 100%;
 }
 
-.sidebar-nav-section-title {
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 0.5rem 0.75rem;
-    margin-bottom: 0.25rem;
-    font-size: 0.65rem;
-    color: var(--color-text-muted);
-    font-weight: 500;
-}
-
 /* Divider */
 .sidebar-divider {
     margin: 0.75rem 0;

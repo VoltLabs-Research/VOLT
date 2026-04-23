@@ -6,8 +6,7 @@ import GeneralTab from './tabs/GeneralTab';
 import MembersTab from './tabs/MembersTab';
 import { cn } from '@/shared/utils';
 import { toggleSelection } from '@/shared/utils/selection';
-import Button from '@/shared/presentation/components/Button';
-import Modal from '@/shared/presentation/components/Modal';
+import { Box, Row, Text, Button, Modal } from '@/shared/presentation/primitives';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import type { User } from '@/modules/auth/api/entities/user';
 import type { Chat } from '@/modules/chat/api/entities/chat';
@@ -166,7 +165,7 @@ const GroupManagementModal = ({
 
     return (
         <Modal id='group-management-modal' title='Group Settings' width='600px'>
-            <div className='volt-container d-flex gap-05 group-management-tabs' role='tablist' aria-label='Group settings sections'>
+            <Row gap='05' className='group-management-tabs' role='tablist' aria-label='Group settings sections'>
                 {TABS.map((tab, index) => (
                     <Button
                         key={tab.id}
@@ -188,12 +187,12 @@ const GroupManagementModal = ({
                         onKeyDown={(event) => handleTabKeyDown(event, index)}
                     >
                         {tab.icon}
-                        <p className='volt-text font-size-2'>{tab.label}</p>
+                        <Text as='p' size='md'>{tab.label}</Text>
                     </Button>
                 ))}
-            </div>
+            </Row>
 
-            <div id={getTabPanelId(activeTab)} role='tabpanel' aria-labelledby={getTabButtonId(activeTab)} tabIndex={0} className='volt-container group-management-content'>
+            <Box id={getTabPanelId(activeTab)} role='tabpanel' aria-labelledby={getTabButtonId(activeTab)} tabIndex={0} className='group-management-content'>
                 {activeTab === Tab.General && (
                     <GeneralTab
                         chat={chat}
@@ -229,7 +228,7 @@ const GroupManagementModal = ({
                         onToggleAdmin={handleToggleAdmin}
                     />
                 )}
-            </div>
+            </Box>
         </Modal>
     );
 };

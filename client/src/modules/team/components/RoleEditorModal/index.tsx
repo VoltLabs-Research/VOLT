@@ -1,6 +1,6 @@
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Modal, { closeModal, openModal } from '@/shared/presentation/components/Modal';
+import { Modal, closeModal, openModal } from '@/shared/presentation/primitives';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import WarningZone from '@/shared/presentation/components/WarningZone';
 import type { TeamRole } from '@/modules/team/api/entities/role/team-role';
@@ -126,7 +126,7 @@ export const RoleEditorModal = ({
             className='role-editor-modal'
             footer={footer}
         >
-            <div className='volt-container p-2 d-flex column gap-2'>
+            <div className='p-2 d-flex column gap-2'>
                 {isSystemRole && (
                     <WarningZone
                         icon={<IoWarningOutline size={18} />}
@@ -145,13 +145,13 @@ export const RoleEditorModal = ({
 
                 <fieldset className='role-editor-fieldset d-flex column gap-1'>
                     <legend className='role-editor-legend'>
-                        <h3 className='volt-title font-size-3 color-secondary font-weight-6'>Permissions</h3>
+                        <h3 className='font-size-3 color-secondary font-weight-6'>Permissions</h3>
                     </legend>
 
-                    <div className='volt-container role-editor-permissions-grid'>
-                        <div className='volt-container role-editor-grid-header'>Resource</div>
+                    <div className='role-editor-permissions-grid'>
+                        <div className='role-editor-grid-header'>Resource</div>
                         {actions.map((action) => (
-                            <div key={action.key} className='volt-container role-editor-grid-header text-center'>
+                            <div key={action.key} className='role-editor-grid-header text-center'>
                                 {action.label}
                             </div>
                         ))}
@@ -173,7 +173,7 @@ export const RoleEditorModal = ({
                                         {resource.label}
                                     </button>
                                     {actions.map((action) => (
-                                        <div key={`${resource.key}-${action.key}`} className='volt-container role-editor-grid-cell'>
+                                        <div key={`${resource.key}-${action.key}`} className='role-editor-grid-cell'>
                                             <input
                                                 type='checkbox'
                                                 checked={isPermissionChecked(resource.key, action.key)}

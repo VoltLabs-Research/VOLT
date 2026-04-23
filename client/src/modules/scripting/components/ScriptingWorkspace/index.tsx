@@ -2,8 +2,7 @@ import ScriptingNotebookDeploymentModal from '@/modules/scripting/components/Scr
 import useScriptingWorkspace from '@/modules/scripting/hooks/use-scripting-workspace';
 import useTip from '@/shared/tips/use-tip';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
-import Button from '@/shared/presentation/components/Button';
-import Loader from '@/shared/presentation/components/Loader';
+import { AsyncBoundary, Box, Button, Heading, Loader, Stack, Text } from '@/shared/presentation/primitives';
 import './ScriptingWorkspace.css';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
@@ -28,26 +27,26 @@ const renderWorkspaceState = ({
     liveMode,
     children
 }: WorkspaceStateProps) => (
-    <div className='volt-container scripting-workspace__empty d-flex column items-center content-center gap-1 flex-1 p-2 text-center' role={liveMode === 'alert' ? 'alert' : 'status'} aria-live={liveMode === 'alert' ? 'assertive' : 'polite'} aria-atomic='true'>
+    <Stack align='center' justify='center' gap='1' flex='1' p='2' textAlign='center' className='scripting-workspace__empty' role={liveMode === 'alert' ? 'alert' : 'status'} aria-live={liveMode === 'alert' ? 'assertive' : 'polite'} aria-atomic='true'>
         <Loader scale={0.6} isFixed={false} />
-        <div className='volt-container d-flex column items-center gap-05 scripting-workspace__content'>
-            <h2 className='volt-title font-size-3 font-weight-5 color-primary'>
+        <Stack align='center' gap='05' className='scripting-workspace__content'>
+            <Heading level={2} size='lg' weight='medium'>
                 {title}
-            </h2>
-            <p className='volt-text color-secondary scripting-workspace__description'>
+            </Heading>
+            <Text as='p' tone='secondary' className='scripting-workspace__description'>
                 {description}
-            </p>
-        </div>
+            </Text>
+        </Stack>
         {children}
-    </div>
+    </Stack>
 );
 
 const renderWorkspaceShell = (content: ReactNode, isBusy = false) => (
-    <div className='volt-container scripting-workspace d-flex column flex-1 min-h-0' aria-busy={isBusy}>
-        <div className='volt-container scripting-workspace__panel d-flex flex-1 min-h-0 p-relative'>
+    <Stack flex='1' minH='0' className='scripting-workspace' aria-busy={isBusy}>
+        <Box display='flex' flex='1' minH='0' position='relative' className='scripting-workspace__panel'>
             {content}
-        </div>
-    </div>
+        </Box>
+    </Stack>
 );
 
 const getContainerStagePendingTitle = (stage: NotebookContainerStage | null): string => {
@@ -98,81 +97,81 @@ const ScriptingWorkspace = ({ trajectoryId, notebookId, onJupyterUrlChange }: Sc
         };
     }, [jupyterUrl, onJupyterUrlChange]);
 
-    if (isLoading) {
-        return renderWorkspaceShell(renderWorkspaceState({
-            title: 'Loading scripting workspace',
-            description: 'Fetching notebooks and preparing your workspace.',
+    const loadingView = renderWorkspaceShell(renderWorkspaceState({
+        title: 'Loading scripting workspace',
+        description: 'Fetching notebooks and preparing your workspace.',
+        liveMode: 'status'
+    }), true);
+
+    const accessDeniedView = renderWorkspaceShell(
+        <AccessDenied description={accessDeniedMessage} showBack={false} className='w-full h-full' />
+    );
+
+    const isDeploymentRequired = Boolean(deploymentRequiredMessage);
+    const errorValue = error || deploymentRequiredMessage;
+    const errorView = () => renderWorkspaceShell(renderWorkspaceState({
+        title: isDeploymentRequired
+            ? activeNotebook
+                ? 'Notebook deployment required'
+                : 'Create notebook workspace'
+            : 'Unable to start the notebook workspace',
+        description: deploymentRequiredMessage || error || '',
+        liveMode: 'alert',
+        children: !isStartingJupyter ? (
+            <Button
+                variant='outline'
+                intent='neutral'
+                size='sm'
+                shape='rounded'
+                onClick={retryStartJupyter}
+            >
+                {isDeploymentRequired ? 'Configure notebook' : 'Retry starting Jupyter'}
+            </Button>
+        ) : undefined
+    }));
+
+    let contentView: ReactNode;
+    if (jupyterUrl) {
+        contentView = renderWorkspaceShell(
+            <Box display='flex' flex='1' position='relative' className='scripting-workspace__notebook-view'>
+                <iframe src={jupyterUrl} title='Volt scripting notebook workspace' className='scripting-workspace__iframe' />
+            </Box>
+        );
+    } else {
+        const pendingTitle = isStartingJupyter
+            ? getContainerStagePendingTitle(containerStage)
+            : 'Preparing scripting workspace';
+        const pendingDescription = isStartingJupyter
+            ? getContainerStagePendingDescription(containerStage)
+            : activeNotebook
+                ? 'Opening the selected notebook in Jupyter. This can take a moment.'
+                : 'No notebook is selected yet. Opening the shared Jupyter workspace for this trajectory.';
+
+        contentView = renderWorkspaceShell(renderWorkspaceState({
+            title: pendingTitle,
+            description: pendingDescription,
             liveMode: 'status'
         }), true);
     }
 
-    if (accessDenied) {
-        return renderWorkspaceShell(
-            <AccessDenied description={accessDeniedMessage} showBack={false} className='w-full h-full' />
-        );
-    }
+    const shouldRenderDeploymentModal = !isLoading && !accessDenied && !jupyterUrl;
 
-    if (jupyterUrl) {
-        return renderWorkspaceShell(
-            <div className='volt-container scripting-workspace__notebook-view p-relative d-flex flex-1'>
-                <iframe src={jupyterUrl} title='Volt scripting notebook workspace' className='scripting-workspace__iframe' />
-            </div>
-        );
-    }
-
-    if (error || deploymentRequiredMessage) {
-        const isDeploymentRequired = Boolean(deploymentRequiredMessage);
-
-        return (
-            <>
-                {renderWorkspaceShell(renderWorkspaceState({
-                    title: isDeploymentRequired
-                        ? activeNotebook
-                            ? 'Notebook deployment required'
-                            : 'Create notebook workspace'
-                        : 'Unable to start the notebook workspace',
-                    description: deploymentRequiredMessage || error || '',
-                    liveMode: 'alert',
-                    children: !isStartingJupyter ? (
-                        <Button
-                            variant='outline'
-                            intent='neutral'
-                            size='sm'
-                            shape='rounded'
-                            onClick={retryStartJupyter}
-                        >
-                            {isDeploymentRequired ? 'Configure notebook' : 'Retry starting Jupyter'}
-                        </Button>
-                    ) : undefined
-                }))}
+    return (
+        <>
+            <AsyncBoundary
+                state={{ loading: isLoading, error: errorValue, accessDenied }}
+                loading={loadingView}
+                error={errorView}
+                accessDenied={accessDeniedView}
+            >
+                {contentView}
+            </AsyncBoundary>
+            {shouldRenderDeploymentModal && (
                 <ScriptingNotebookDeploymentModal
                     request={deploymentModalRequest}
                     onClose={handleDeploymentModalClose}
                 />
-            </>
-        );
-    }
-
-    const pendingTitle = isStartingJupyter
-        ? getContainerStagePendingTitle(containerStage)
-        : 'Preparing scripting workspace';
-    const pendingDescription = isStartingJupyter
-        ? getContainerStagePendingDescription(containerStage)
-        : activeNotebook
-            ? 'Opening the selected notebook in Jupyter. This can take a moment.'
-            : 'No notebook is selected yet. Opening the shared Jupyter workspace for this trajectory.';
-
-    return (
-        <>
-            {renderWorkspaceShell(renderWorkspaceState({
-                title: pendingTitle,
-                description: pendingDescription,
-                liveMode: 'status'
-            }), true)}
-            <ScriptingNotebookDeploymentModal
-                request={deploymentModalRequest}
-                onClose={handleDeploymentModalClose}
-            />
+            )}
         </>
     );
 };

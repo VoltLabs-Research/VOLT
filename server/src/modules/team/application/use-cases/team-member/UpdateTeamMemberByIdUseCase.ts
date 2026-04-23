@@ -1,14 +1,13 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import type { TeamMemberProps } from '@modules/team/domain/entities/team-member/TeamMember';
+import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { Result } from '@shared/domain/port/Result';
-import { injectable, inject } from 'tsyringe';
-import type { TeamMemberProps } from '@modules/team/domain/entities/team-member/TeamMember';
-import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import type { FindOptions } from '@shared/domain/port/IBaseRepository';
 import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
+import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
+import { Result } from '@shared/domain/port/Result';
+import { injectable } from 'tsyringe';
 
 interface UpdateTeamMemberByIdInput {
     teamMemberId: string;
@@ -19,8 +18,8 @@ interface UpdateTeamMemberByIdInput {
 @injectable()
 export default class UpdateTeamMemberByIdUseCase implements IUseCase<UpdateTeamMemberByIdInput, PersistedOutput<TeamMemberProps>, ApplicationError> {
     constructor(
-        @inject(TEAM_TOKENS.TeamMemberRepository)
-        private readonly repository: ITeamMemberRepository
+        
+        private readonly repository: TeamMemberRepository
     ) {}
 
     async execute(input: UpdateTeamMemberByIdInput): Promise<Result<PersistedOutput<TeamMemberProps>, ApplicationError>> {

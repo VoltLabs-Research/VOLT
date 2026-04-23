@@ -12,7 +12,7 @@ import { ARGUMENT_TYPE_OPTIONS } from '@/modules/plugin/utilities/plugin/node-re
 import ArgumentOptionsEditor from './ArgumentOptionsEditor';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import FormSection from '@/shared/presentation/components/FormSection';
-import Select from '@/shared/presentation/components/Select';
+import { DashedActionBox, Select, Tag } from '@/shared/presentation/primitives';
 import { ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type {
@@ -20,7 +20,7 @@ import type {
     IArgumentOption,
     IArgumentVisibilityCondition
 } from '@/modules/plugin/api/entities/plugin/workflow';
-import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { SelectOption } from '@/shared/presentation/primitives';
 import type { ChangeEvent } from 'react';
 
 interface ArgumentDefinitionSectionProps {
@@ -497,7 +497,7 @@ const ArgumentDefinitionSection = ({
                                 <span className={`argument-row-title ${argumentLabel ? '' : 'argument-row-title--placeholder'}`}>
                                     {displayLabel}
                                 </span>
-                                <span className='argument-row-type-badge'>{typeBadge}</span>
+                                <Tag size='xs' className='argument-row-type-badge'>{typeBadge}</Tag>
                             </button>
                             <button
                                 type='button'
@@ -665,7 +665,7 @@ const ArgumentDefinitionSection = ({
 
                                 {argument.type === ArgumentType.SELECT && (
                                     <>
-                                        <h4 className='argument-row-subheading'>Options</h4>
+                                        <h4 className='argument-row-subheading text-eyebrow'>Options</h4>
                                         <div className='argument-row-subblock'>
                                             <ArgumentOptionsEditor
                                                 options={argument.options ?? []}
@@ -677,7 +677,7 @@ const ArgumentDefinitionSection = ({
 
                                 {argument.type === ArgumentType.LIST && (
                                     <>
-                                        <h4 className='argument-row-subheading'>Nested Arguments</h4>
+                                        <h4 className='argument-row-subheading text-eyebrow'>Nested Arguments</h4>
                                         <div className='argument-row-subblock argument-row-nested'>
                                             <ArgumentDefinitionSection
                                                 arguments={argument.listArguments ?? []}
@@ -692,9 +692,9 @@ const ArgumentDefinitionSection = ({
 
                                 {isPluginReferenceArgumentType(argument.type) && (
                                     <>
-                                        <h4 className='argument-row-subheading'>Allowed Plugins</h4>
+                                        <h4 className='argument-row-subheading text-eyebrow'>Allowed Plugins</h4>
                                         <div className='argument-row-subblock'>
-                                            <div className='volt-container d-flex column gap-05'>
+                                            <div className='d-flex column gap-05'>
                                                 <Select
                                                     id={`plugin-reference-filter-${level}-${index}`}
                                                     options={allowedPluginOptions}
@@ -743,14 +743,14 @@ const ArgumentDefinitionSection = ({
                 );
             })}
 
-            <button
-                type='button'
+            <DashedActionBox
+                icon={<Plus size={14} aria-hidden='true' />}
+                label='Add Argument'
+                size='sm'
+                block
                 className='add-argument-button'
                 onClick={handleAddArgument}
-            >
-                <Plus size={14} aria-hidden='true' />
-                Add Argument
-            </button>
+            />
         </div>
     );
 };

@@ -1,20 +1,21 @@
-import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import TeamJobsService, { type TeamJobSummary } from '@modules/team/socket/team/TeamJobsService';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import logger from '@shared/infrastructure/logger';
-import type IORedis from 'ioredis';
-import { inject, injectable } from 'tsyringe';
+import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
 import type {
     ITeamJobMaintenanceService,
     RemoveTeamJobsResult,
     RetryTeamJobsResult,
     TeamClusterFailureDetail
 } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
-import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import TeamJobsService, { type TeamJobSummary } from '@modules/team/socket/team/TeamJobsService';
+import TrajectoryBackgroundProcessor from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryBackgroundProcessor';
 import type { IEventBus } from '@shared/application/events/IEventBus';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import logger from '@shared/infrastructure/logger';
+import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import type IORedis from 'ioredis';
+import { inject } from 'tsyringe';
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const TOMBSTONE_TTL_SECONDS = 600;
@@ -35,10 +36,10 @@ interface PartitionedJobs {
     localJobs: TeamJobSummary[];
 };
 
-@injectable()
+@Singleton()
 export default class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
     constructor(
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
 
         @inject(SHARED_TOKENS.RedisClient)
@@ -47,8 +48,11 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
 
-        @inject(TEAM_TOKENS.TeamJobsService)
-        private readonly teamJobsService: TeamJobsService
+        
+        private readonly teamJobsService: TeamJobsService,
+
+        
+        private readonly trajectoryBackgroundProcessor: TrajectoryBackgroundProcessor
     ) {}
 
     async removeJobs(teamId: string, jobIds: string[]): Promise<RemoveTeamJobsResult> {
@@ -184,21 +188,25 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
                 );
                 const affectedSet = new Set(response.affectedJobIds ?? []);
                 const retriedJobs = clusterJobs.filter((job) => affectedSet.has(job.jobId));
+                const missingJobs = clusterJobs.filter((job) => !affectedSet.has(job.jobId));
+                const recoveredJobIds = await this.requeueMissingGlbJobs(teamId, missingJobs);
+                const recoveredJobs = missingJobs.filter((job) => recoveredJobIds.has(job.jobId));
+                const confirmedJobs = [...retriedJobs, ...recoveredJobs];
 
-                if (retriedJobs.length !== clusterJobs.length) {
+                if (confirmedJobs.length !== clusterJobs.length) {
                     clusterFailures.push({
                         teamClusterId,
                         requestedJobs: clusterJobs.length,
-                        affectedJobs: retriedJobs.length,
+                        affectedJobs: confirmedJobs.length,
                         reason: 'partial-confirmation',
-                        message: `Cluster confirmed ${retriedJobs.length} of ${clusterJobs.length} requested job retries`
+                        message: `Cluster confirmed or recovered ${confirmedJobs.length} of ${clusterJobs.length} requested job retries`
                     });
                 }
 
-                if (retriedJobs.length > 0) {
+                if (confirmedJobs.length > 0) {
                     affectedClusters += 1;
                 }
-                retriedFrames += retriedJobs.length;
+                retriedFrames += confirmedJobs.length;
 
                 await Promise.all(retriedJobs.map(async (job) => {
                     await this.resetRetriedDaemonJobState(job);
@@ -221,6 +229,57 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
             affectedClusters,
             clusterFailures
         };
+    }
+
+    private async requeueMissingGlbJobs(teamId: string, jobs: TeamJobSummary[]): Promise<Set<string>> {
+        const groupedByTrajectory = new Map<string, TeamJobSummary[]>();
+
+        for (const job of jobs) {
+            if (
+                job.queueType !== 'trajectory_glb_conversion'
+                || !job.trajectoryId
+                || typeof job.timestep !== 'number'
+            ) {
+                continue;
+            }
+
+            const bucket = groupedByTrajectory.get(job.trajectoryId) ?? [];
+            bucket.push(job);
+            groupedByTrajectory.set(job.trajectoryId, bucket);
+        }
+
+        const recoveredJobIds = new Set<string>();
+
+        for (const [trajectoryId, trajectoryJobs] of groupedByTrajectory.entries()) {
+            const timesteps = [
+                ...new Set(
+                    trajectoryJobs
+                        .map((job) => job.timestep)
+                        .filter((value): value is number => typeof value === 'number')
+                )
+            ];
+
+            try {
+                await Promise.all(trajectoryJobs.map(async (job) => {
+                    await this.resetRetriedDaemonJobState(job);
+                    await this.publishRetriedDaemonJob(job);
+                }));
+
+                const requeuedJobIds = await this.trajectoryBackgroundProcessor.requeueGlbPreprocessing({
+                    teamId,
+                    trajectoryId,
+                    timesteps
+                });
+
+                for (const jobId of requeuedJobIds) {
+                    recoveredJobIds.add(jobId);
+                }
+            } catch (error) {
+                logger.warn(error, `[TeamJobMaintenanceService] Failed to requeue persisted GLB jobs for trajectory ${trajectoryId}`);
+            }
+        }
+
+        return recoveredJobIds;
     }
 
     private async resolveJobs(teamId: string, jobIds: string[]): Promise<TeamJobSummary[]> {

@@ -1,7 +1,6 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import Button from '@/shared/presentation/components/Button';
+import { Button, Modal, Row, Stack, Text, closeModal } from '@/shared/presentation/primitives';
 import FolderBreadcrumbs from '@/shared/presentation/components/FolderBreadcrumbs';
-import Modal, { closeModal } from '@/shared/presentation/components/Modal';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import useFolderBreadcrumbs from '@/shared/presentation/hooks/use-folder-breadcrumbs';
@@ -175,25 +174,25 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
             onClose={handleModalClose}
             footer={<ModalFooterActions primary={primaryAction} secondary={secondaryAction} />}
         >
-            <div className='volt-container d-flex column gap-1 p-1-5'>
+            <Stack gap='1' p='1-5'>
                 <FolderBreadcrumbs items={breadcrumbs} onNavigate={setActiveFolderId} />
 
-                <div className='volt-container d-flex items-center gap-075'>
+                <Row gap='075'>
                     {activeFolderId ? <FolderOpen size={16} /> : <Home size={16} />}
-                    <p className='volt-text font-size-2 color-secondary'>Current destination: {locationLabel}</p>
-                </div>
+                    <Text as='p' size='md' tone='secondary'>Current destination: {locationLabel}</Text>
+                </Row>
 
                 {isCurrentDestination && (
-                    <p className='volt-text font-size-2 color-muted'>This {itemLabel.toLowerCase()} is already in this location.</p>
+                    <Text as='p' size='md' tone='muted'>This {itemLabel.toLowerCase()} is already in this location.</Text>
                 )}
 
                 {submitError && (
-                    <p className='volt-text font-size-2 color-danger' role='status' aria-live='polite' aria-atomic='true'>
+                    <Text as='p' size='md' className='color-danger' role='status' aria-live='polite' aria-atomic='true'>
                         {submitError}
-                    </p>
+                    </Text>
                 )}
 
-                <div className='volt-container d-flex column gap-075'>
+                <Stack gap='075'>
                     <Button
                         variant='soft'
                         intent='neutral'
@@ -207,7 +206,7 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
                     </Button>
 
                     {isLoading && (
-                        <p className='volt-text font-size-2 color-muted'>Loading folders...</p>
+                        <Text as='p' size='md' tone='muted'>Loading folders...</Text>
                     )}
 
                     {!isLoading && error && (
@@ -221,7 +220,7 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
                     )}
 
                     {!isLoading && !error && folders.length === 0 && (
-                        <p className='volt-text font-size-2 color-muted'>No folders are available here.</p>
+                        <Text as='p' size='md' tone='muted'>No folders are available here.</Text>
                     )}
 
                     {!isLoading && !error && folders.map((folder) => (
@@ -238,8 +237,8 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
                             {folder.title}
                         </Button>
                     ))}
-                </div>
-            </div>
+                </Stack>
+            </Stack>
         </Modal>
     );
 }

@@ -1,6 +1,6 @@
-import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
+import { ContextMenuPopover } from '@/shared/presentation/primitives';
 import EditableTag from '@/shared/presentation/components/EditableTag';
-import Select from '@/shared/presentation/components/Select';
+import { Select } from '@/shared/presentation/primitives';
 import { EditableType } from '@/shared/presentation/components/DocumentListingTable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
@@ -217,7 +217,7 @@ const TableRow = <T extends Identifiable>({
                     col.numeric ? 'is-numeric' : ''
                 ].filter(Boolean).join(' ');
                 return (
-                    <div className={`volt-container ${cellClassName}`} data-label={columnTitle} key={`cell-${columnTitle}-${colIdx}`} title={title} role='gridcell' aria-label={title ? `${columnTitle}: ${title}` : `${columnTitle}: no value`} style={columnStyles[colIdx]}>
+                    <div className={`${cellClassName}`} data-label={columnTitle} key={`cell-${columnTitle}-${colIdx}`} title={title} role='gridcell' aria-label={title ? `${columnTitle}: ${title}` : `${columnTitle}: no value`} style={columnStyles[colIdx]}>
                         {colIdx === 0 && draggableId ? (
                             <span className='document-listing-cell-content'>
                                 {renderDragHandle()}

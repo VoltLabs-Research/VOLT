@@ -11,7 +11,7 @@ import { useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import React from 'react';
 import type { CSSProperties } from 'react';
 import type { MenuOption } from '@/shared/presentation/types/menu';
-import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { SelectOption } from '@/shared/presentation/primitives';
 import type { DragEndEvent } from '@dnd-kit/core';
 
 const DEFAULT_MIN_COLUMN_WIDTH = 140;
@@ -331,9 +331,9 @@ const DocumentListingTable = <T extends Identifiable>({
     ));
 
     return (
-        <div className={`volt-container d-flex column document-listing-table-container h-max ${compact ? 'is-compact' : ''}`} role='grid' aria-label={listingLabel} aria-colcount={columns.length} aria-rowcount={data.length} aria-busy={isLoading || isFetchingMore}>
+        <div className={`d-flex column document-listing-table-container h-max ${compact ? 'is-compact' : ''}`} role='grid' aria-label={listingLabel} aria-colcount={columns.length} aria-rowcount={data.length} aria-busy={isLoading || isFetchingMore}>
             {columns.length > 0 && shouldShowContent && (
-                <div className='volt-container document-listing-table-header-container p-sticky top-0 d-flex' role='row' style={{ minWidth: `${minContentWidth}px`, gap: `${resolvedGap}px` }}>
+                <div className='document-listing-table-header-container p-sticky top-0 d-flex' role='row' style={{ minWidth: `${minContentWidth}px`, gap: `${resolvedGap}px` }}>
                     {columns.map((col, colIdx) => {
                         const isSorted = getAriaSort(col) !== 'none';
                         const cellClassName = [
@@ -347,7 +347,7 @@ const DocumentListingTable = <T extends Identifiable>({
                             col.numeric ? 'is-numeric' : ''
                         ].filter(Boolean).join(' ');
                         return (
-                            <div className={`volt-container ${cellClassName}`} key={`header-${getColumnTitle(col)}-${colIdx}`} role='columnheader' aria-sort={getAriaSort(col)} style={columnStyles[colIdx]}>
+                            <div className={cellClassName} key={`header-${getColumnTitle(col)}-${colIdx}`} role='columnheader' aria-sort={getAriaSort(col)} style={columnStyles[colIdx]}>
                                 {col.sortable ? (
                                     <button
                                         type='button'
@@ -355,12 +355,12 @@ const DocumentListingTable = <T extends Identifiable>({
                                         onClick={() => onCellClick(col)}
                                         aria-label={`Sort by ${getColumnTitle(col)}`}
                                     >
-                                        <h3 className={`volt-title font-size-2-5 color-secondary ${col.headerTitleClassName ?? 'font-weight-5'}`}>
+                                        <h3 className={`font-size-2-5 color-secondary ${col.headerTitleClassName ?? 'font-weight-5'}`}>
                                             {getCellTitle(col)}
                                         </h3>
                                     </button>
                                 ) : (
-                                    <h3 className={`volt-title font-size-2-5 color-secondary ${col.headerTitleClassName ?? 'font-weight-5'}`}>
+                                    <h3 className={`font-size-2-5 color-secondary ${col.headerTitleClassName ?? 'font-weight-5'}`}>
                                         {getCellTitle(col)}
                                     </h3>
                                 )}
@@ -370,14 +370,14 @@ const DocumentListingTable = <T extends Identifiable>({
                 </div>
             )}
 
-            <div ref={bodyRef} className='volt-container d-flex column p-relative document-listing-table-body-container flex-1' role='rowgroup' style={{ minWidth: shouldShowContent ? `${minContentWidth}px` : undefined }}>
+            <div ref={bodyRef} className='d-flex column p-relative document-listing-table-body-container flex-1' role='rowgroup' style={{ minWidth: shouldShowContent ? `${minContentWidth}px` : undefined }}>
                 {dragAndDrop ? (
                     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
                         {rows}
                     </DndContext>
                 ) : rows}
 
-                <div className="volt-container" ref={sentinelRef} style={{ height: 1 }} aria-hidden='true' />
+                <div ref={sentinelRef} style={{ height: 1 }} aria-hidden='true' />
 
                 {isFetchingMore && Array.from({ length: skeletonRowsCount }).map((_, i) => (
                     <TableSkeletonRow
@@ -418,8 +418,8 @@ const DocumentListingTable = <T extends Identifiable>({
                 )}
 
                 {isInitialLoading && (
-                    <div className='volt-container document-listing-overlay-blur p-absolute inset-0'>
-                        <div className='volt-container document-listing-infinite-skeleton-loader p-absolute inset-0 overflow-hidden d-flex column'>
+                    <div className='document-listing-overlay-blur p-absolute inset-0'>
+                        <div className='document-listing-infinite-skeleton-loader p-absolute inset-0 overflow-hidden d-flex column'>
                             {Array.from({ length: 20 }).map((_, index) => (
                                 <TableSkeletonRow
                                     key={`loading-skeleton-${index}`}
@@ -433,7 +433,7 @@ const DocumentListingTable = <T extends Identifiable>({
                 )}
             </div>
 
-            <div className='volt-container document-listing-table-footer-container' />
+            <div className='document-listing-table-footer-container' />
         </div>
     );
 };

@@ -5,16 +5,16 @@ import {
     getUserConfigurableArguments
 } from '@/modules/plugin/utilities/plugin/argument-values';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
+import { CollapsibleSection } from '@/shared/presentation/primitives';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Select from '@/shared/presentation/components/Select';
+import { Select } from '@/shared/presentation/primitives';
 import { useCallback, useMemo } from 'react';
 import type {
     IArgumentDefinition,
     IPluginReferenceSelection
 } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF';
-import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { SelectOption } from '@/shared/presentation/primitives';
 
 interface PluginConfigFieldProps {
     argument: IArgumentDefinition;
@@ -115,13 +115,13 @@ const PluginConfigField = ({
     }, [pluginReferenceValue.selections, updateSelections]);
 
     return (
-        <div className='volt-container d-flex column gap-05'>
-            <p className='volt-text canvas-form-label'>
+        <div className='d-flex column gap-05'>
+            <p className='canvas-form-label'>
                 {argument.label || argument.argument}
             </p>
             {argument.multipleSelection ? (
-                <div className='volt-container d-flex column gap-05'>
-                    <p className='volt-text canvas-form-label'>Referenced Plugins</p>
+                <div className='d-flex column gap-05'>
+                    <p className='canvas-form-label'>Referenced Plugins</p>
                     <Select
                         id={`${fieldKey}-plugins-select`}
                         options={pluginOptions}
@@ -161,7 +161,7 @@ const PluginConfigField = ({
 
                 if (selectedPluginArguments.length === 0) {
                     return (
-                        <p key={`${selection.pluginId}-${index}`} className='volt-text font-size-1 color-muted'>
+                        <p key={`${selection.pluginId}-${index}`} className='font-size-1 color-muted'>
                             {getSelectionTitle(selection, pluginOptions)} has no configurable arguments.
                         </p>
                     );
@@ -188,12 +188,12 @@ const PluginConfigField = ({
             })}
 
             {selectedPluginIds.length > 0 && !argument.showPluginConfiguration && (
-                <p className='volt-text font-size-1 color-muted'>
+                <p className='font-size-1 color-muted'>
                     Plugin configuration will be resolved later by the plugin node or workflow runtime.
                 </p>
             )}
             {selectedPluginIds.length === 0 && (
-                <p className='volt-text font-size-1 color-muted'>
+                <p className='font-size-1 color-muted'>
                     Select {argument.multipleSelection ? 'one or more plugins' : 'a plugin'} to continue.
                 </p>
             )}

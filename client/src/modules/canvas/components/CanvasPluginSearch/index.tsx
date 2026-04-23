@@ -1,7 +1,7 @@
 import { buildCanvasModifierOptions } from '../../utilities/modifier-registry';
 import { useCanvasFocusStore } from '../../stores/use-canvas-focus-store';
-import EmptyState from '@/shared/presentation/components/EmptyState';
-import SearchInput from '@/shared/presentation/components/SearchInput';
+import { EmptyState } from '@/shared/presentation/primitives';
+import { SearchInput, Surface, Text } from '@/shared/presentation/primitives';
 import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { autoUpdate, flip, FloatingPortal, offset, shift, useDismiss, useFloating, useInteractions } from '@floating-ui/react';
@@ -180,9 +180,12 @@ const CanvasPluginSearch = () => {
 
             {isOpen && (
                 <FloatingPortal root={floatingRoot}>
-                    <div
+                    <Surface
+                        variant='glass'
+                        radius='md'
+                        overflow='y-auto'
                         ref={refs.setFloating}
-                        className='canvas-plugin-search-results glass-bg panel-floating radius-md y-auto'
+                        className='canvas-plugin-search-results panel-floating'
                         style={floatingStyles}
                         {...getFloatingProps()}
                     >
@@ -213,15 +216,15 @@ const CanvasPluginSearch = () => {
                                             onMouseDown={(e) => e.preventDefault()}
                                             onClick={() => handleSelect(index)}
                                         >
-                                            <span className='volt-text font-size-2 color-secondary text-truncate'>
+                                            <Text size='md' tone='secondary' truncate>
                                                 {option.title}
-                                            </span>
+                                            </Text>
                                         </button>
                                     );
                                 })}
                             </div>
                         )}
-                    </div>
+                    </Surface>
                 </FloatingPortal>
             )}
         </div>

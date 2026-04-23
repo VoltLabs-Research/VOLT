@@ -1,13 +1,11 @@
 import Team, { TeamProps } from '@modules/team/domain/entities/team/Team';
-import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
-import { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import teamMapper from '@modules/team/infrastructure/persistence/mongo/mappers/team/TeamMapper';
 import TeamModel, { TeamDocument } from '@modules/team/infrastructure/persistence/mongo/models/team/TeamModel';
-import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
+import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import type { PersistedEntityOutput } from '@shared/domain/persisted/to-persisted-entity';
+import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-import { injectable, inject } from 'tsyringe';
 
 interface TeamMembersPushUpdate {
     $push: {
@@ -39,14 +37,13 @@ interface TeamMembershipIdFilter {
     };
 };
 
-@injectable()
+@Singleton()
 export default class TeamRepository
-    extends MongooseBaseRepository<Team, TeamProps, TeamDocument>
-    implements ITeamRepository {
+    extends MongooseBaseRepository<Team, TeamProps, TeamDocument> {
 
     constructor(
-        @inject(TEAM_TOKENS.TeamMemberRepository)
-        private readonly teamMemberRepository: ITeamMemberRepository
+        
+        private readonly teamMemberRepository: TeamMemberRepository
     ) {
         super(TeamModel, teamMapper);
     }

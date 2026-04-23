@@ -1,7 +1,6 @@
-import Button from '@/shared/presentation/components/Button';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Modal, { closeModal } from '@/shared/presentation/components/Modal';
+import { Stack, Row, Text, Heading, Button, Modal, closeModal } from '@/shared/presentation/primitives';
 import { useEffect, useState } from 'react';
 import { sileo } from 'sileo';
 import './ClusterCredentialsModal.css';
@@ -97,12 +96,12 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
                 />
             )}
         >
-            <div className='volt-container d-flex column gap-1 p-1-5'>
+            <Stack gap='1' p='1-5'>
                 {!credentials && (
                     <>
-                        <p className='volt-text font-size-2 color-secondary'>
+                        <Text as='p' size='md' tone='secondary'>
                             Only reveal credentials when you need to inspect or repair the cluster services directly.
-                        </p>
+                        </Text>
                         <FormFieldRHF
                             label='Password'
                             type='password'
@@ -120,28 +119,28 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
 
                 {credentials && (
                     <>
-                        <div className='volt-container cluster-credentials-warning d-flex column gap-05 p-1 radius-md' role='status' aria-live='polite'>
-                            <h3 className='volt-title font-size-2 font-weight-6 color-primary'>Sensitive credentials</h3>
-                            <p className='volt-text font-size-2 color-secondary'>Copy these only into secure tools. Anyone with these values can access cluster services directly.</p>
+                        <Stack gap='05' p='1' radius='md' className='cluster-credentials-warning' role='status' aria-live='polite'>
+                            <Heading level={3} size='md' weight='bold'>Sensitive credentials</Heading>
+                            <Text as='p' size='md' tone='secondary'>Copy these only into secure tools. Anyone with these values can access cluster services directly.</Text>
                             <label className='d-flex items-start gap-05 cluster-credentials-acknowledgement'>
                                 <input
                                     type='checkbox'
                                     checked={hasAcknowledgedSensitiveCopy}
                                     onChange={(event) => setHasAcknowledgedSensitiveCopy(event.target.checked)}
                                 />
-                                <span className='font-size-2 color-secondary'>I understand these credentials are sensitive and should not be pasted into chat, tickets, or shared docs.</span>
+                                <Text size='md' tone='secondary'>I understand these credentials are sensitive and should not be pasted into chat, tickets, or shared docs.</Text>
                             </label>
-                        </div>
+                        </Stack>
 
                         {services.map((service) => (
-                            <div key={service.label} className='volt-container cluster-credentials-card d-flex column gap-025 p-1 radius-md'>
-                                <h3 className='volt-title font-size-2 font-weight-6 color-primary'>{service.label}</h3>
-                                <p className='volt-text font-size-1 color-secondary'>Port: {service.port ?? 'Not assigned'}</p>
+                            <Stack key={service.label} gap='025' p='1' radius='md' className='cluster-credentials-card'>
+                                <Heading level={3} size='md' weight='bold'>{service.label}</Heading>
+                                <Text as='p' size='sm' tone='secondary'>Port: {service.port ?? 'Not assigned'}</Text>
                                 {'username' in service && service.username && (
-                                    <p className='volt-text font-size-1 color-secondary'>Username: {service.username}</p>
+                                    <Text as='p' size='sm' tone='secondary'>Username: {service.username}</Text>
                                 )}
-                                <div className='volt-container d-flex items-center content-between gap-05'>
-                                    <p className='volt-text font-family-mono font-size-1 color-primary'>Password: {service.password}</p>
+                                <Row justify='between' gap='05'>
+                                    <Text as='p' size='sm' tone='primary' className='font-family-mono'>Password: {service.password}</Text>
                                     <Button
                                         variant='ghost'
                                         intent='neutral'
@@ -151,12 +150,12 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
                                     >
                                         Copy
                                     </Button>
-                                </div>
-                            </div>
+                                </Row>
+                            </Stack>
                         ))}
                     </>
                 )}
-            </div>
+            </Stack>
         </Modal>
     );
 };

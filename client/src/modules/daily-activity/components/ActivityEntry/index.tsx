@@ -1,5 +1,6 @@
 import './ActivityEntry.css';
 import { ACTIVITY_ICON, ACTIVITY_ACCENT } from '@/modules/daily-activity/utilities/activity-mappings';
+import { Box } from '@/shared/presentation/primitives';
 import type { ActivityItem } from '@/modules/daily-activity/api/entities/daily-activity';
 import type { FC, ReactNode } from 'react';
 
@@ -10,17 +11,17 @@ interface ActivityEntryProps {
 };
 
 const ActivityEntry: FC<ActivityEntryProps> = ({ type, children, className = '' }) => (
-    <div className={`volt-container ${`activity-entry ${className}`.trim()}`}>
+    <Box className={`activity-entry d-flex items-start gap-05 ${className}`.trim()}>
         <span
-            className='activity-entry-dot d-flex flex-center radius-md'
+            className='activity-entry-dot d-flex flex-center radius-md f-shrink-0'
             style={{ color: ACTIVITY_ACCENT[type] }}
         >
             {ACTIVITY_ICON[type]}
         </span>
-        <div className='volt-container activity-entry-content'>
+        <Box className='activity-entry-content d-flex column min-w-0'>
             {children}
-        </div>
-    </div>
+        </Box>
+    </Box>
 );
 
 export default ActivityEntry;

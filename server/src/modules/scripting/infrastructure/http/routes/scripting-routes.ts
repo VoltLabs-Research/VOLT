@@ -1,20 +1,19 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import { Resource } from '@core/constants/resources';
+import scriptingControllers from '@modules/scripting/infrastructure/http/controllers';
+import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
+import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
+import { buildJupyterProxyUrl, clearJupyterProxyAccessCookie, setJupyterProxyAccessCookie } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
-import { buildJupyterProxyUrl, clearJupyterProxyAccessCookie, setJupyterProxyAccessCookie } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
-import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
-import { ErrorCodes } from '@core/constants/error-codes';
-import scriptingControllers from '@modules/scripting/infrastructure/http/controllers';
-import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
+import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { container } from 'tsyringe';
 import type { NextFunction, Response } from 'express';
+import { container } from 'tsyringe';
 
-const scriptingNotebookRepository = container.resolve<IScriptingNotebookRepository>(SCRIPTING_TOKENS.ScriptingNotebookRepository);
+const scriptingNotebookRepository = container.resolve(ScriptingNotebookRepository);
 const scriptingJupyterAccessTokenService = container.resolve(ScriptingJupyterAccessTokenService);
 const teamClusterDaemonClient = container.resolve(TeamClusterDaemonClient);
 

@@ -109,16 +109,16 @@ const DebugContextPanel = () => {
     const renderEntry = (nodeId: string, output: DebugContextOutput) => {
         const isExpanded = expandedKeys.has(nodeId);
         return (
-            <div key={nodeId} className='volt-container debug-context-entry'>
-                <div className='volt-container debug-context-row d-flex items-center content-between gap-05 cursor-pointer' onClick={() => toggleKey(nodeId)}>
-                    <div className='volt-container d-flex column'>
-                        <p className='volt-text debug-context-label'>{getNodeLabel(nodeId)}</p>
-                        <p className='volt-text debug-context-id color-muted'>{nodeId}</p>
+            <div key={nodeId} className='debug-context-entry'>
+                <div className='debug-context-row d-flex items-center content-between gap-05 cursor-pointer' onClick={() => toggleKey(nodeId)}>
+                    <div className='d-flex column'>
+                        <p className='debug-context-label'>{getNodeLabel(nodeId)}</p>
+                        <p className='debug-context-id color-muted'>{nodeId}</p>
                     </div>
                     <Chevron expanded={isExpanded} />
                 </div>
                 {isExpanded && (
-                    <div className='volt-container debug-context-tree'>
+                    <div className='debug-context-tree'>
                         <JsonTree data={output} defaultExpanded={true} />
                     </div>
                 )}
@@ -135,10 +135,10 @@ const DebugContextPanel = () => {
     }
 
     return (
-        <div className='volt-container debug-context-panel glass-bg p-absolute d-flex column panel-floating top-1 right-1 z-10'>
-            <div className='volt-container debug-context-row debug-context-panel-header d-flex items-center content-between gap-05 cursor-pointer u-select-none' onClick={() => setIsOpen((v) => !v)}>
+        <div className='debug-context-panel glass-bg p-absolute d-flex column panel-floating top-1 right-1 z-10'>
+            <div className='debug-context-row debug-context-panel-header d-flex items-center content-between gap-05 cursor-pointer u-select-none' onClick={() => setIsOpen((v) => !v)}>
                 <Braces size={12} />
-                <p className='volt-text debug-context-panel-title d-flex items-center gap-035 f-1 font-size-05 font-weight-6'>
+                <p className='debug-context-panel-title d-flex items-center gap-035 f-1 font-size-05 font-weight-6'>
                     Context
                     <span className='debug-context-panel-count radius-full font-weight-6'>{entries.length}</span>
                 </p>
@@ -146,17 +146,17 @@ const DebugContextPanel = () => {
             </div>
 
             {isOpen && (
-                <div className='volt-container debug-context-panel-body nowheel y-auto flex-1 min-h-0'>
+                <div className='debug-context-panel-body nowheel y-auto flex-1 min-h-0'>
                     {preForEach.map(([nodeId, output]) => renderEntry(nodeId, output))}
 
                     {forEachEntry && (
-                        <div className='volt-container debug-context-entry'>
-                            <div className='volt-container debug-context-row d-flex items-center content-between gap-05 cursor-pointer' onClick={() => toggleKey(forEachGroupKey)}>
-                                <div className='volt-container d-flex items-center gap-05'>
+                        <div className='debug-context-entry'>
+                            <div className='debug-context-row d-flex items-center content-between gap-05 cursor-pointer' onClick={() => toggleKey(forEachGroupKey)}>
+                                <div className='d-flex items-center gap-05'>
                                     <Repeat size={10} className='color-muted' />
-                                    <div className='volt-container d-flex column'>
-                                        <p className='volt-text debug-context-label'>{getNodeLabel(forEachEntry[0])}</p>
-                                        <p className='volt-text debug-context-id color-muted'>
+                                    <div className='d-flex column'>
+                                        <p className='debug-context-label'>{getNodeLabel(forEachEntry[0])}</p>
+                                        <p className='debug-context-id color-muted'>
                                             {iterationCount} iteration{iterationCount !== 1 ? 's' : ''}
                                         </p>
                                     </div>
@@ -165,15 +165,15 @@ const DebugContextPanel = () => {
                             </div>
 
                             {expandedKeys.has(forEachGroupKey) && (
-                                <div className='volt-container debug-context-nested'>
-                                    <div className='volt-container debug-context-entry'>
-                                        <div className='volt-container debug-context-row d-flex items-center content-between gap-05 cursor-pointer' onClick={() => toggleKey(iterationKey)}>
-                                            <p className='volt-text debug-context-label'>Iteration {currentIndex}</p>
+                                <div className='debug-context-nested'>
+                                    <div className='debug-context-entry'>
+                                        <div className='debug-context-row d-flex items-center content-between gap-05 cursor-pointer' onClick={() => toggleKey(iterationKey)}>
+                                            <p className='debug-context-label'>Iteration {currentIndex}</p>
                                             <Chevron expanded={expandedKeys.has(iterationKey)} size={10} />
                                         </div>
 
                                         {expandedKeys.has(iterationKey) && (
-                                            <div className='volt-container debug-context-nested'>
+                                            <div className='debug-context-nested'>
                                                 {postForEach.map(([nodeId, output]) => renderEntry(nodeId, output))}
                                             </div>
                                         )}

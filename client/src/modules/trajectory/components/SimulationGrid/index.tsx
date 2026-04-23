@@ -13,6 +13,7 @@ import FolderBreadcrumbs from '@/shared/presentation/components/FolderBreadcrumb
 import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
 import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
+import { Box } from '@/shared/presentation/primitives';
 import { Download, Upload } from 'lucide-react';
 import { useEffect, useCallback, useMemo, useState } from 'react';
 import type { TrajectoryListingRow } from '@/modules/trajectory/utilities/listing';
@@ -157,9 +158,9 @@ export default function SimulationGrid() {
                 onChange={handlePickerChange}
             />
             {shouldShowBreadcrumbs && (
-                <div className='volt-container dashboard-simulations-breadcrumbs'>
+                <Box className='dashboard-simulations-breadcrumbs'>
                     <FolderBreadcrumbs items={breadcrumbs} onNavigate={navigateToFolder} />
-                </div>
+                </Box>
             )}
             <DocumentListing<SimulationGridItem, { folderId: string | null }>
                 title='Trajectories'

@@ -1,5 +1,4 @@
-import Skeleton from '@/shared/presentation/components/Skeleton';
-
+import { Skeleton } from '@/shared/presentation/primitives';
 interface JobSkeletonProps {
     n?: number;
 };

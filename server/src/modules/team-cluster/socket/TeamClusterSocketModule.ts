@@ -1,43 +1,40 @@
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import type AnalysisExecutionLogService from '@modules/analysis/infrastructure/services/AnalysisExecutionLogService';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import AnalysisExecutionLogService from '@modules/analysis/infrastructure/services/AnalysisExecutionLogService';
 import PluginDebugSessionRegistryService from '@modules/plugin/infrastructure/services/PluginDebugSessionRegistryService';
+import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
+import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
+import { formatSocketValidationError } from '@modules/socket/utilities/socket-validation-error';
 import CompleteTeamClusterDeletionUseCase from '@modules/team-cluster/application/use-cases/CompleteTeamClusterDeletionUseCase';
 import ProcessDaemonJobCompletionUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonJobCompletionUseCase';
+import type { ProcessDaemonSceneArtifactUpsertInputDTO } from '@modules/team-cluster/application/use-cases/ProcessDaemonSceneArtifactUpsertUseCase';
 import ProcessDaemonSceneArtifactUpsertUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonSceneArtifactUpsertUseCase';
 import ProcessDaemonTrajectoryImportUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonTrajectoryImportUseCase';
 import RecordTeamClusterHeartbeatUseCase from '@modules/team-cluster/application/use-cases/RecordTeamClusterHeartbeatUseCase';
 import UpdateTeamClusterLifecycleUseCase from '@modules/team-cluster/application/use-cases/UpdateTeamClusterLifecycleUseCase';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import TeamClusterHeartbeatMonitor from '@modules/team-cluster/infrastructure/services/TeamClusterHeartbeatMonitor';
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
 import TeamClusterReverseChannelService from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
-import { formatSocketValidationError } from '@modules/socket/utilities/socket-validation-error';
 import {
-    getTeamClusterRoom,
     ChannelCommands,
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
     TEAM_CLUSTER_DAEMON_REGISTERED_EVENT,
     TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
     TEAM_CLUSTER_SUBSCRIPTION_EVENT,
+    getTeamClusterRoom,
     type TeamClusterDaemonCommandMessage,
     type TeamClusterDaemonMessage,
     type TeamClusterDaemonRegisterPayload,
 } from '@modules/team-cluster/utilities/teamClusterSocket';
-import { inject, singleton } from 'tsyringe';
-import { z } from 'zod/v4';
-import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import type { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';
-import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import type { ISocketRoomManager } from '@modules/socket/domain/port/ISocketRoomManager';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
-import type { ProcessDaemonSceneArtifactUpsertInputDTO } from '@modules/team-cluster/application/use-cases/ProcessDaemonSceneArtifactUpsertUseCase';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type { Result } from '@shared/domain/port/Result';
+import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
+import { z } from 'zod/v4';
 
 interface SubscribeToTeamClusterSocketPayload {
     teamClusterIds: string[];
@@ -52,47 +49,48 @@ const daemonRegisterPayloadSchema = z.object({
     daemonPassword: z.string().trim().min(1)
 }).strict();
 
-@singleton()
+@Singleton()
+@AliasOf(SOCKET_TOKENS.SocketModule)
 export default class TeamClusterSocketModule extends BaseSocketModule {
     public readonly name = 'TeamClusterSocketModule';
 
     constructor(
-        @inject(SOCKET_TOKENS.SocketEventEmitter) emitter: ISocketEmitter,
-        @inject(SOCKET_TOKENS.SocketRoomManager) roomManager: ISocketRoomManager,
-        @inject(SOCKET_TOKENS.SocketEventRegistry) eventRegistry: ISocketEventRegistry,
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterHeartbeatMonitor)
+        emitter: SocketIOEmitter,
+        roomManager: SocketIORoomManager,
+        eventRegistry: SocketIOEventRegistry,
+        
         private readonly teamClusterHeartbeatMonitor: TeamClusterHeartbeatMonitor,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterLifecycleService)
+        
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterReverseChannelService)
+        
         private readonly teamClusterReverseChannelService: TeamClusterReverseChannelService,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
-        @inject(UpdateTeamClusterLifecycleUseCase)
+        
+        private readonly teamClusterRepository: TeamClusterRepository,
+        
         private readonly updateTeamClusterLifecycleUseCase: UpdateTeamClusterLifecycleUseCase,
 
-        @inject(RecordTeamClusterHeartbeatUseCase)
+        
         private readonly recordTeamClusterHeartbeatUseCase: RecordTeamClusterHeartbeatUseCase,
 
-        @inject(CompleteTeamClusterDeletionUseCase)
+        
         private readonly completeTeamClusterDeletionUseCase: CompleteTeamClusterDeletionUseCase,
 
-        @inject(ProcessDaemonJobCompletionUseCase)
+        
         private readonly processDaemonJobCompletionUseCase: ProcessDaemonJobCompletionUseCase,
 
-        @inject(ProcessDaemonSceneArtifactUpsertUseCase)
+        
         private readonly processDaemonSceneArtifactUpsertUseCase: ProcessDaemonSceneArtifactUpsertUseCase,
 
-        @inject(ProcessDaemonTrajectoryImportUseCase)
+        
         private readonly processDaemonTrajectoryImportUseCase: ProcessDaemonTrajectoryImportUseCase,
 
-        @inject(ANALYSIS_TOKENS.AnalysisExecutionLogService)
+        
         private readonly analysisExecutionLogService: AnalysisExecutionLogService,
 
-        @inject(PLUGIN_TOKENS.PluginDebugSessionRegistryService)
+        
         private readonly pluginDebugSessionRegistry: PluginDebugSessionRegistryService
     ) {
         super(emitter, roomManager, eventRegistry);

@@ -23,9 +23,6 @@
 .argument-options-grid__header {
     min-width: 0;
     padding-left: 0.5rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-weight: 600;
 }
 
 .argument-options-list {
@@ -86,10 +83,6 @@
 
 .argument-options-input.has-error {
     border-color: var(--color-danger, #ef4444);
-}
-
-.argument-options-input--key {
-    font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
 }
 
 .argument-options-row__remove {

@@ -1,14 +1,13 @@
-import { injectable, inject } from 'tsyringe';
+import { GetSystemStatsOutputDTO } from '@modules/system/application/dtos';
+import MetricsCollector from '@modules/system/infrastructure/services/MetricsCollectorService';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { IMetricsService } from '@modules/system/domain/port/IMetricsService';
-import { GetSystemStatsOutputDTO } from '@modules/system/application/dtos';
-import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export class GetSystemStatsUseCase implements IUseCase<void, GetSystemStatsOutputDTO> {
     constructor(
-        @inject(SYSTEM_TOKENS.MetricsService) private metricsService: IMetricsService
+        private metricsService: MetricsCollector
     ){}
 
     async execute(): Promise<Result<GetSystemStatsOutputDTO>> {

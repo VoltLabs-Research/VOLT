@@ -1,26 +1,26 @@
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import StoragePlacementService from '@modules/team-cluster/application/services/StoragePlacementService';
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
-import { IWorkflowValidatorService, WorkflowValidationMode } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import Workflow, { WorkflowProps } from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
-import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { BinaryUploadResult, IPluginStorageService, PluginImportResult } from '@modules/plugin/domain/port/plugin/IPluginStorageService';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { WorkflowValidationMode } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
+import StoragePlacementService from '@modules/team-cluster/application/services/StoragePlacementService';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
+import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
+import { WorkflowValidatorService } from '@modules/plugin/infrastructure/services/plugin/WorkflowValidatorService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IStorageService } from '@shared/domain/port/IStorageService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import logger from '@shared/infrastructure/logger';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import archiver from 'archiver';
-import logger from '@shared/infrastructure/logger';
-import path from 'node:path';
 import { createHash } from 'node:crypto';
+import path from 'node:path';
 import { PassThrough, Readable } from 'node:stream';
-import { inject, injectable } from 'tsyringe';
+import { inject } from 'tsyringe';
 import unzipper from 'unzipper';
 import { v4 } from 'uuid';
 
@@ -44,20 +44,20 @@ const computeSha256 = (buffer: Buffer): string => {
     return createHash('sha256').update(buffer).digest('hex');
 };
 
-@injectable()
+@Singleton()
 export default class PluginStorageService implements IPluginStorageService {
     constructor(
-        @inject(PLUGIN_TOKENS.PluginRepository)
-        private pluginRepo: IPluginRepository,
+        
+        private pluginRepo: PluginRepository,
 
-        @inject(TEAM_CLUSTER_TOKENS.StoragePlacementService)
+        
         private readonly storagePlacementService: StoragePlacementService,
 
         @inject(SHARED_TOKENS.StorageService)
         private storageService: IStorageService,
 
-        @inject(PLUGIN_TOKENS.WorkflowValidatorService)
-        private readonly workflowValidator: IWorkflowValidatorService
+        
+        private readonly workflowValidator: WorkflowValidatorService
     ){}
 
     private async persistWorkflow(pluginId: string, workflow: Workflow): Promise<void> {

@@ -1,15 +1,16 @@
 import { formatNetworkSpeedWithUnit } from '@/modules/cluster/utilities/format-network';
 import './MetricsCards.css';
 import { Cpu, MemoryStick, Activity, TrendingUp, TrendingDown } from 'lucide-react';
-import Skeleton from '@/shared/presentation/components/Skeleton';
+import { Box, StatCard } from '@/shared/presentation/primitives';
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
+import type { ReactNode } from 'react';
 
 interface MetricsCardsProps {
     metrics: ClusterMetrics | null;
 };
 
 interface MetricCardItem {
-    icon: typeof Cpu;
+    icon: ReactNode;
     title: string;
     value: string;
     unit?: string;
@@ -20,10 +21,10 @@ interface MetricCardItem {
 
 const renderTrendIcon = (trendUp: boolean) => {
     if (trendUp) {
-        return <TrendingUp className='metric-card-trend-icon' />;
+        return <TrendingUp size={14} />;
     }
 
-    return <TrendingDown className='metric-card-trend-icon' />;
+    return <TrendingDown size={14} />;
 };
 
 const MetricsCards = ({ metrics }: MetricsCardsProps) => {
@@ -31,25 +32,15 @@ const MetricsCards = ({ metrics }: MetricsCardsProps) => {
 
     if(isLoading){
         return (
-            <div className='volt-container metrics-cards gap-1'>
+            <Box gap='1' className='metrics-cards'>
                 {[...Array(4)].map((_, i) => (
-                    <div key={i} className='volt-container metric-card radius-lg'>
-                        <div className='volt-container d-flex items-start content-between mb-075'>
-                            <div className='volt-container d-flex items-center gap-05'>
-                                <Skeleton variant='circular' width={16} height={16} />
-                                <Skeleton variant='text' width={120} height={20} />
-                            </div>
-                        </div>
-                        <div className='volt-container d-flex column gap-05'>
-                            <Skeleton variant='rectangular' width={100} height={48} style={{ borderRadius: 4 }} />
-                            <div className='volt-container d-flex items-center content-between'>
-                                <Skeleton variant='text' width={100} height={16} />
-                                <Skeleton variant='text' width={80} height={16} />
-                            </div>
-                        </div>
-                    </div>
+                    <StatCard
+                        key={i}
+                        label=''
+                        state='loading'
+                    />
                 ))}
-            </div>
+            </Box>
         );
     }
 
@@ -65,7 +56,7 @@ const MetricsCards = ({ metrics }: MetricsCardsProps) => {
     const incomingFormatted = formatNetworkSpeedWithUnit(metrics.network.incoming);
     const cards: MetricCardItem[] = [
         {
-            icon: Cpu,
+            icon: <Cpu size={16} />,
             title: 'CPU Load',
             value: `${cpuUsage.toFixed(1)}%`,
             trend: `${metrics.cpu.cores} cores`,
@@ -73,7 +64,7 @@ const MetricsCards = ({ metrics }: MetricsCardsProps) => {
             subtitle: `Load: ${metrics.cpu.loadAvg[0].toFixed(2)}`
         },
         {
-            icon: MemoryStick,
+            icon: <MemoryStick size={16} />,
             title: 'Memory Usage',
             value: `${metrics.memory.usagePercent}%`,
             trend: `${metrics.memory.used.toFixed(1)}GB / ${metrics.memory.total.toFixed(1)}GB`,
@@ -81,7 +72,7 @@ const MetricsCards = ({ metrics }: MetricsCardsProps) => {
             subtitle: `Free: ${metrics.memory.free.toFixed(1)}GB`
         },
         {
-            icon: Activity,
+            icon: <Activity size={16} />,
             title: 'Network Traffic',
             value: networkFormatted.value,
             unit: networkFormatted.unit,
@@ -92,41 +83,26 @@ const MetricsCards = ({ metrics }: MetricsCardsProps) => {
     ];
 
     return (
-        <div className='volt-container metrics-cards gap-1'>
+        <Box gap='1' className='metrics-cards'>
             {cards.map((card) => (
-                <div key={card.title} className='volt-container metric-card radius-lg'>
-                    <div className='volt-container d-flex items-start content-between mb-075'>
-                        <div className='volt-container d-flex items-center gap-05'>
-                            <card.icon className='metric-card-icon color-muted' />
-                            <span className='metric-card-title font-size-2 color-secondary'>
-                                {card.title}
-                            </span>
-                        </div>
-                    </div>
-                    <div className='volt-container d-flex column gap-05'>
-                        <div className='volt-container d-flex items-baseline gap-05'>
-                            <span className='metric-card-value font-size-6 font-weight-6 color-primary'>
-                                {card.value}
-                            </span>
-                            {card.unit && (
-                                <span className='metric-card-unit font-size-2 font-weight-5 color-muted'>
-                                    {card.unit}
-                                </span>
-                            )}
-                        </div>
-                        <div className='volt-container d-flex items-center content-between'>
-                            <span className='metric-card-subtitle font-size-1 color-secondary'>
-                                {card.subtitle}
-                            </span>
-                            <span className={`d-flex items-center metric-card-trend font-size-1 gap-025 ${card.trendUp ? 'metric-card-trend-positive' : 'metric-card-trend-negative'}`}>
+                <StatCard
+                    key={card.title}
+                    icon={card.icon}
+                    label={card.title}
+                    value={card.value}
+                    unit={card.unit}
+                    footer={(
+                        <div className='d-flex items-center content-between gap-05'>
+                            <span className='color-secondary font-size-1'>{card.subtitle}</span>
+                            <span className={`d-flex items-center gap-025 font-size-1 ${card.trendUp ? 'metric-card-trend-positive' : 'metric-card-trend-negative'}`}>
                                 {renderTrendIcon(card.trendUp)}
                                 {card.trend}
                             </span>
                         </div>
-                    </div>
-                </div>
+                    )}
+                />
             ))}
-        </div>
+        </Box>
     );
 };
 

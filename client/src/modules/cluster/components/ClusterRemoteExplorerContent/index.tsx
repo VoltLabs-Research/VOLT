@@ -6,12 +6,10 @@ import { useRemoteExplorer } from '@/shared/api/remote-explorer';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
-import Button from '@/shared/presentation/components/Button';
+import { Box, Stack, Row, Text, Button, IconButton, SearchInput } from '@/shared/presentation/primitives';
 import FileExplorer from '@/shared/presentation/components/FileExplorer';
 import FileExplorerRow from '@/shared/presentation/components/FileExplorer/FileExplorerRow';
-import IconButton from '@/shared/presentation/components/IconButton';
 import RefreshButton from '@/shared/presentation/components/RefreshButton';
-import SearchInput from '@/shared/presentation/components/SearchInput';
 import { decode } from '@msgpack/msgpack';
 import { Database, Download, FileJson, FolderOpen, HardDrive, Package, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -381,41 +379,41 @@ const ClusterRemoteExplorerContent = ({
     const detailContent = useMemo(() => {
         if (isNodeLoading) {
             return (
-                <div className='volt-container cluster-remote-explorer-empty d-flex items-center content-center'>
-                    <p className='volt-text font-size-2 color-secondary'>Loading resource details...</p>
-                </div>
+                <Row justify='center' className='cluster-remote-explorer-empty'>
+                    <Text as='p' size='md' tone='secondary'>Loading resource details...</Text>
+                </Row>
             );
         }
 
         if (nodeError) {
             return (
-                <div className='volt-container cluster-remote-explorer-empty d-flex items-center content-center'>
-                    <p className='volt-text font-size-2 color-secondary'>{nodeError}</p>
-                </div>
+                <Row justify='center' className='cluster-remote-explorer-empty'>
+                    <Text as='p' size='md' tone='secondary'>{nodeError}</Text>
+                </Row>
             );
         }
 
         if (!selectedEntry || !node) {
             return (
-                <div className='volt-container cluster-remote-explorer-empty d-flex items-center content-center'>
-                    <p className='volt-text font-size-2 color-secondary'>Select an entry to inspect its details.</p>
-                </div>
+                <Row justify='center' className='cluster-remote-explorer-empty'>
+                    <Text as='p' size='md' tone='secondary'>Select an entry to inspect its details.</Text>
+                </Row>
             );
         }
 
         if (msgpackError) {
             return (
-                <div className='volt-container cluster-remote-explorer-empty d-flex items-center content-center'>
-                    <p className='volt-text font-size-2 color-secondary'>{msgpackError}</p>
-                </div>
+                <Row justify='center' className='cluster-remote-explorer-empty'>
+                    <Text as='p' size='md' tone='secondary'>{msgpackError}</Text>
+                </Row>
             );
         }
 
         if (msgpackDecoded) {
             return (
-                <div className='volt-container cluster-remote-explorer-detail-body p-1 radius-md overflow-auto flex-1'>
+                <Box p='1' radius='md' overflow='auto' flex='1' className='cluster-remote-explorer-detail-body'>
                     <JsonTree data={msgpackDecoded} />
-                </div>
+                </Box>
             );
         }
 
@@ -425,16 +423,16 @@ const ClusterRemoteExplorerContent = ({
 
         if (node.contentType === TeamClusterRemoteExplorerContentType.Text) {
             return (
-                <div className='volt-container cluster-remote-explorer-detail-body p-1 radius-md overflow-auto flex-1'>
+                <Box p='1' radius='md' overflow='auto' flex='1' className='cluster-remote-explorer-detail-body'>
                     <pre className='cluster-remote-explorer-detail-pre'>{node.textContent}</pre>
-                </div>
+                </Box>
             );
         }
 
         return (
-            <div className='volt-container cluster-remote-explorer-empty d-flex items-center content-center'>
-                <p className='volt-text font-size-2 color-secondary'>This entry does not expose a preview.</p>
-            </div>
+            <Row justify='center' className='cluster-remote-explorer-empty'>
+                <Text as='p' size='md' tone='secondary'>This entry does not expose a preview.</Text>
+            </Row>
         );
     }, [isNodeLoading, nodeError, node, selectedEntry, msgpackDecoded, msgpackError]);
 
@@ -442,8 +440,8 @@ const ClusterRemoteExplorerContent = ({
     const SelectedEntryIcon = selectedEntry ? getEntryIcon(selectedEntry) : Database;
 
     return (
-        <div className='volt-container cluster-remote-explorer-layout'>
-            <div className='volt-container cluster-remote-explorer-panel cluster-remote-explorer-main radius-md overflow-hidden'>
+        <Box className='cluster-remote-explorer-layout'>
+            <Box radius='md' overflow='hidden' className='cluster-remote-explorer-panel cluster-remote-explorer-main'>
                 <FileExplorer
                     headerLeft={headerLeft}
                     headerRight={headerRight}
@@ -463,10 +461,10 @@ const ClusterRemoteExplorerContent = ({
                 >
                     {filteredEntries.map(renderEntryRow)}
                 </FileExplorer>
-            </div>
+            </Box>
 
             {shouldShowFloatingDetail && selectedEntry && (
-                <div className='volt-container cluster-remote-explorer-detail radius-lg' role='region' aria-label={`Details for ${selectedEntry.name}`}>
+                <Box radius='lg' className='cluster-remote-explorer-detail' role='region' aria-label={`Details for ${selectedEntry.name}`}>
                     <IconButton
                         className='cluster-remote-explorer-detail-close'
                         onClick={() => setIsDetailsVisible(false)}
@@ -478,22 +476,22 @@ const ClusterRemoteExplorerContent = ({
                         <X size={14} />
                     </IconButton>
 
-                    <div className='volt-container cluster-remote-explorer-detail-summary d-flex items-center gap-075'>
-                        <div className='volt-container cluster-remote-explorer-detail-icon d-flex flex-center f-shrink-0'>
+                    <Row gap='075' className='cluster-remote-explorer-detail-summary'>
+                        <Box display='flex' shrink='0' className='cluster-remote-explorer-detail-icon flex-center'>
                             <SelectedEntryIcon size={16} />
-                        </div>
-                        <div className='volt-container d-flex column gap-025 flex-1 min-w-0'>
-                            <p className='volt-text font-size-2 font-weight-5 color-primary text-truncate' title={selectedEntry.name}>
+                        </Box>
+                        <Stack gap='025' flex='1' minW='0'>
+                            <Text as='p' size='md' weight='medium' tone='primary' truncate title={selectedEntry.name}>
                                 {selectedEntry.name}
-                            </p>
-                            <p className='volt-text font-size-1 color-muted text-truncate cluster-remote-explorer-detail-path' title={selectedEntry.path}>
+                            </Text>
+                            <Text as='p' size='sm' tone='muted' truncate className='cluster-remote-explorer-detail-path' title={selectedEntry.path}>
                                 {selectedEntry.path}
-                            </p>
-                        </div>
-                    </div>
+                            </Text>
+                        </Stack>
+                    </Row>
 
-                    <div className='volt-container cluster-remote-explorer-detail-expanded d-flex column gap-075'>
-                        <div className='volt-container cluster-remote-explorer-detail-actions d-flex gap-05'>
+                    <Stack gap='075' className='cluster-remote-explorer-detail-expanded'>
+                        <Box display='flex' gap='05' className='cluster-remote-explorer-detail-actions'>
                             <Button
                                 variant='outline'
                                 intent='white'
@@ -526,12 +524,12 @@ const ClusterRemoteExplorerContent = ({
                                     {msgpackDecoded ? 'Re-decode MsgPack' : 'Decode MsgPack'}
                                 </Button>
                             )}
-                        </div>
+                        </Box>
                         {detailContent}
-                    </div>
-                </div>
+                    </Stack>
+                </Box>
             )}
-        </div>
+        </Box>
     );
 };
 

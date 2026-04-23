@@ -1,5 +1,4 @@
-import Button from '@/shared/presentation/components/Button';
-import Popover from '@/shared/presentation/components/Popover';
+import { Button, Popover } from '@/shared/presentation/primitives';
 import TrajectorySharePanel from '@/modules/canvas/components/TrajectorySharePanel';
 
 interface TrajectorySharePanelPopoverProps {

@@ -1,16 +1,16 @@
-import { Result } from '@shared/domain/port/Result';
-import { IUseCase } from '@shared/application/IUseCase';
-import { injectable, inject } from 'tsyringe';
-import { GetSSHConnectionByIdInputDTO } from '@modules/ssh/application/dtos/GetSSHConnectionByIdDTO';
 import { SafeSSHConnectionDTO } from '@modules/ssh/application/dtos/CreateSSHConnectionDTO';
+import { GetSSHConnectionByIdInputDTO } from '@modules/ssh/application/dtos/GetSSHConnectionByIdDTO';
 import { SSHConnectionOwnershipService } from '@modules/ssh/application/services/SSHConnectionOwnershipService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { toSafeSSHConnectionDTO } from '@modules/ssh/application/utils/ssh-error-utils';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export class GetSSHConnectionByIdUseCase implements IUseCase<GetSSHConnectionByIdInputDTO, SafeSSHConnectionDTO, ApplicationError> {
     constructor(
-        @inject(SSHConnectionOwnershipService)
+        
         private readonly sshConnectionOwnershipService: SSHConnectionOwnershipService
     ){}
 

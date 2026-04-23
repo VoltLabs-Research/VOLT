@@ -8,7 +8,7 @@ import type {
 } from '@/modules/plugin/api/entities/plugin/workflow';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import { isRecord } from '@/shared/utils/type-guards';
-import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { SelectOption } from '@/shared/presentation/primitives';
 
 export interface NodeHandleDefinition {
     id: string;

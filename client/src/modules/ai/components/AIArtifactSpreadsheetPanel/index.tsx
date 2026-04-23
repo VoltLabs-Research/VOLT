@@ -1,9 +1,9 @@
 import { resolveTabularPayload } from '@/modules/ai/utilities/message-artifacts';
 import { base64ToBlob, triggerBrowserDownload } from '@/shared/utils';
-import IconButton from '@/shared/presentation/components/IconButton';
-import Tooltip from '@/shared/presentation/components/Tooltip';
+import { Box, Stack, Row, Text, IconButton, Tooltip, VisuallyHidden } from '@/shared/presentation/primitives';
+import PanelHeader from '@/shared/presentation/components/PanelHeader';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { IoCheckmarkOutline, IoClipboardOutline, IoCloseOutline } from 'react-icons/io5';
+import { IoCheckmarkOutline, IoClipboardOutline } from 'react-icons/io5';
 import { PiFileCsv, PiFileXls } from 'react-icons/pi';
 import { sileo } from 'sileo';
 import * as XLSX from 'xlsx';
@@ -20,18 +20,6 @@ interface AIArtifactSpreadsheetPanelProps {
 interface CellAddress {
     row: number;
     col: number;
-};
-
-const VISUALLY_HIDDEN_STYLES: CSSProperties = {
-    position: 'absolute',
-    width: '1px',
-    height: '1px',
-    padding: 0,
-    margin: '-1px',
-    overflow: 'hidden',
-    clip: 'rect(0, 0, 0, 0)',
-    whiteSpace: 'nowrap',
-    border: 0
 };
 
 const stringifyValue = (value: unknown): string => {
@@ -70,7 +58,6 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
     const feedbackTimeoutRef = useRef<number | null>(null);
     const instructionsId = useId();
     const statusId = useId();
-    const titleId = useId();
 
     const columns = useMemo(() => table?.columns ?? [], [table]);
     const rows = useMemo(() => table?.rows ?? [], [table]);
@@ -382,73 +369,70 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
         );
     };
 
+    const toolbarActions = (
+        <Row gap='025' className='ai-artifact-spreadsheet-toolbar'>
+            <Tooltip content={copyTooltip}>
+                <IconButton
+                    aria-label='Copy table to clipboard'
+                    onClick={handleCopyToClipboard}
+                    className='ai-sheet-toolbar-btn'
+                >
+                    {copyIcon}
+                </IconButton>
+            </Tooltip>
+
+            <Tooltip content='Download CSV'>
+                <IconButton
+                    aria-label='Download CSV'
+                    onClick={handleDownloadCSV}
+                    className='ai-sheet-toolbar-btn'
+                >
+                    <PiFileCsv size={15} />
+                </IconButton>
+            </Tooltip>
+
+            <Tooltip content='Download Excel'>
+                <IconButton
+                    aria-label='Download Excel'
+                    onClick={handleDownloadXLSX}
+                    className='ai-sheet-toolbar-btn'
+                >
+                    <PiFileXls size={15} />
+                </IconButton>
+            </Tooltip>
+
+            <Box className='ai-sheet-toolbar-divider' />
+        </Row>
+    );
+
     return (
-        <div className='volt-container d-flex column ai-artifact-spreadsheet-panel' style={panelStyle} aria-labelledby={titleId}>
-            <div className='volt-container d-flex items-center content-between gap-05 ai-artifact-spreadsheet-header'>
-                <div className='volt-container d-flex column gap-025' style={{ minWidth: 0 }}>
-                    <p id={titleId} className='volt-text font-size-2 font-weight-6 color-primary text-ellipsis'>
-                        {artifact.title}
-                    </p>
-                    <p className='volt-text font-size-1 color-muted'>
-                        {rows.length} rows · {columns.length} columns
-                        {hasEdits && ' · edited'}
-                    </p>
-                    <p id={instructionsId} className='volt-text font-size-1 color-muted'>
-                        Enter or F2 edits the selected cell. Arrow keys move between cells. Tab and Shift+Tab move while editing.
-                    </p>
-                    {artifact.summary && (
-                        <p className='volt-text font-size-1 color-muted text-ellipsis'>
-                            {artifact.summary}
-                        </p>
-                    )}
-                </div>
+        <Stack className='ai-artifact-spreadsheet-panel' style={panelStyle} aria-label={artifact.title}>
+            <PanelHeader
+                title={artifact.title}
+                actions={toolbarActions}
+                onClose={onClose}
+            />
 
-                <div className='volt-container d-flex items-center gap-025 ai-artifact-spreadsheet-toolbar'>
-                    <Tooltip content={copyTooltip}>
-                        <IconButton
-                            aria-label='Copy table to clipboard'
-                            onClick={handleCopyToClipboard}
-                            className='ai-sheet-toolbar-btn'
-                        >
-                            {copyIcon}
-                        </IconButton>
-                    </Tooltip>
+            <Stack gap='025' p='075' className='ai-artifact-spreadsheet-meta'>
+                <Text as='p' size='sm' tone='muted'>
+                    {rows.length} rows · {columns.length} columns
+                    {hasEdits && ' · edited'}
+                </Text>
+                <Text as='p' id={instructionsId} size='sm' tone='muted'>
+                    Enter or F2 edits the selected cell. Arrow keys move between cells. Tab and Shift+Tab move while editing.
+                </Text>
+                {artifact.summary && (
+                    <Text as='p' size='sm' tone='muted' className='text-ellipsis'>
+                        {artifact.summary}
+                    </Text>
+                )}
+            </Stack>
 
-                    <Tooltip content='Download CSV'>
-                        <IconButton
-                            aria-label='Download CSV'
-                            onClick={handleDownloadCSV}
-                            className='ai-sheet-toolbar-btn'
-                        >
-                            <PiFileCsv size={15} />
-                        </IconButton>
-                    </Tooltip>
-
-                    <Tooltip content='Download Excel'>
-                        <IconButton
-                            aria-label='Download Excel'
-                            onClick={handleDownloadXLSX}
-                            className='ai-sheet-toolbar-btn'
-                        >
-                            <PiFileXls size={15} />
-                        </IconButton>
-                    </Tooltip>
-
-                    <div className='volt-container ai-sheet-toolbar-divider' />
-
-                    <Tooltip content='Close panel'>
-                        <IconButton aria-label='Close spreadsheet panel' onClick={onClose} className='ai-sheet-toolbar-btn'>
-                            <IoCloseOutline size={18} />
-                        </IconButton>
-                    </Tooltip>
-                </div>
-            </div>
-
-            <span id={statusId} style={VISUALLY_HIDDEN_STYLES} aria-live='polite' aria-atomic='true'>
+            <VisuallyHidden id={statusId} aria-live='polite' aria-atomic='true'>
                 {statusMessage}
-            </span>
+            </VisuallyHidden>
 
-            <div className='volt-container ai-artifact-spreadsheet-body x-auto y-auto'>
+            <Box className='ai-artifact-spreadsheet-body x-auto y-auto'>
                 <table
                     className='ai-artifact-spreadsheet-table'
                     role='grid'
@@ -478,8 +462,8 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                         ))}
                     </tbody>
                 </table>
-            </div>
-        </div>
+            </Box>
+        </Stack>
     );
 };
 

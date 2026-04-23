@@ -1,9 +1,10 @@
 import UserCreatedEvent from '@modules/auth/domain/events/UserCreatedEvent';
 import CreateNotificationUseCase from '@modules/notification/application/use-cases/CreateNotificationUseCase';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
-import { injectable, inject, delay } from 'tsyringe';
+import { inject, delay } from 'tsyringe';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-@injectable()
+@Subscribe('user.created')
 export default class UserCreatedEventHandler implements IEventHandler<UserCreatedEvent> {
     constructor(
         @inject(delay(() => CreateNotificationUseCase))

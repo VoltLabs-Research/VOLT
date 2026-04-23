@@ -1,6 +1,7 @@
 import useJobStatusCounts from '../../hooks/use-job-status-counts';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
 import StatusCounts from '../StatusCounts';
+import { Stack, Box } from '@/shared/presentation/primitives';
 
 import { Activity } from 'lucide-react';
 import JobsHistoryViewer from '@/modules/jobs/components/JobsHistoryViewer';
@@ -18,7 +19,7 @@ const TexturesPanel = ({ trajectory }: TexturesPanelProps) => {
     const statusCounts = useJobStatusCounts(trajectory?._id);
 
     return (
-        <div className="volt-container canvas-textures-panel d-flex column min-h-0 overflow-hidden">
+        <Stack minH='0' overflow='hidden' className="canvas-textures-panel">
             <PanelHeader
                 icon={<Activity style={{ width: 13, height: 13, color: EVENTS_ICON_COLOR }} />}
                 title="Events"
@@ -32,7 +33,7 @@ const TexturesPanel = ({ trajectory }: TexturesPanelProps) => {
                 }
             />
 
-            <div className="volt-container canvas-events-body flex-1 overflow-auto min-h-0">
+            <Box flex='1' overflow='auto' minH='0' className="canvas-events-body">
                 <JobsHistoryViewer
                     trajectoryId={trajectory?._id}
                     hideAfterComplete={false}
@@ -40,8 +41,8 @@ const TexturesPanel = ({ trajectory }: TexturesPanelProps) => {
                     displayMode="children-only"
                     autoSelectAnalysis={false}
                 />
-            </div>
-        </div>
+            </Box>
+        </Stack>
     );
 };
 

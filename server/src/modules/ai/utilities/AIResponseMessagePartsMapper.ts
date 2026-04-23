@@ -1,5 +1,6 @@
 import type { AIConversationMessageParts } from '@modules/ai/domain/contracts/AIConversationMessage';
-import { injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+
 import { asRecord, isRecord } from '@shared/infrastructure/utilities/type-guards';
 
 interface AIResponseMessagePartsMappingResult {
@@ -7,7 +8,7 @@ interface AIResponseMessagePartsMappingResult {
     textContent: string;
 };
 
-@injectable()
+@Singleton()
 export default class AIResponseMessagePartsMapper {
     /**
      * Merges new assistant response parts into an existing set of parts.

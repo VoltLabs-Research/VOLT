@@ -1,5 +1,4 @@
-import IconButton from '@/shared/presentation/components/IconButton';
-import Tooltip from '@/shared/presentation/components/Tooltip';
+import { IconButton, Tooltip } from '@/shared/presentation/primitives';
 import { Theme, useTheme } from '@/shared/presentation/hooks/use-theme';
 import { Moon, Sun } from 'lucide-react';
 

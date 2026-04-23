@@ -82,19 +82,19 @@ const CodeEditor = ({
     };
 
     return (
-        <div className={`volt-container code-editor-wrapper d-flex column h-max gap-05 ${className} ${error ? 'has-error' : ''}`}>
+        <div className={`code-editor-wrapper d-flex column h-max gap-05 ${className} ${error ? 'has-error' : ''}`}>
             {label && (
                 <label htmlFor={editorId} id={labelId} className='code-editor-label font-size-2 font-weight-5 color-primary'>
                     {label}
                 </label>
             )}
             {description && (
-                <p id={descriptionId} className='volt-text code-editor-description font-size-1 color-secondary'>
+                <p id={descriptionId} className='code-editor-description font-size-1 color-secondary'>
                     {description}
                 </p>
             )}
 
-            <div className='volt-container p-relative overflow-hidden code-editor-container d-flex column' style={{ height: editorHeight }}>
+            <div className='p-relative overflow-hidden code-editor-container d-flex column' style={{ height: editorHeight }}>
                 <textarea
                     id={editorId}
                     name={name}
@@ -113,7 +113,7 @@ const CodeEditor = ({
             </div>
 
             {error && (
-                <p id={errorId} role='status' aria-live='polite' aria-atomic='true' className='volt-text code-editor-error font-size-1'>
+                <p id={errorId} role='status' aria-live='polite' aria-atomic='true' className='code-editor-error font-size-1'>
                     {error}
                 </p>
             )}

@@ -68,17 +68,17 @@ const DocumentListingGrid = <T extends { _id: string },>({
     });
 
     const content = shouldShowContent && data.map((item, index) => (
-        <div key={item._id} className='volt-container document-listing-grid-item'>
+        <div key={item._id} className='document-listing-grid-item'>
             {renderItem(item, index)}
         </div>
     ));
 
     return (
-        <div ref={containerRef} className={`volt-container document-listing-grid ${className}`}>
+        <div ref={containerRef} className={`document-listing-grid ${className}`}>
             {isInitialLoading && renderSkeleton?.()}
 
             {shouldShowEmptyState && (
-                <div className='volt-container document-listing-grid-empty flex-center'>  
+                <div className='document-listing-grid-empty flex-center'>
                     <RecoveryState
                         icon={emptyIcon ? emptyIcon : <FileText size={26} strokeWidth={1.5} />}
                         title={emptyTitle}
@@ -91,7 +91,7 @@ const DocumentListingGrid = <T extends { _id: string },>({
             )}
 
             {shouldShowErrorState && (
-                <div className='volt-container document-listing-grid-empty flex-center'>
+                <div className='document-listing-grid-empty flex-center'>
                     <RecoveryState
                         title="Couldn't load these items"
                         description={errorMessage ?? 'Try again in a moment.'}
@@ -104,7 +104,7 @@ const DocumentListingGrid = <T extends { _id: string },>({
             )}
 
             {shouldShowAccessDeniedState && (
-                <div className='volt-container document-listing-grid-empty flex-center'>
+                <div className='document-listing-grid-empty flex-center'>
                     <RecoveryState
                         title='Access denied'
                         description={errorMessage ?? "You don't have permission to view these items."}
@@ -117,7 +117,7 @@ const DocumentListingGrid = <T extends { _id: string },>({
 
             {isFetchingMore && renderSkeleton?.()}
 
-            <div className="volt-container" ref={sentinelRef} style={{ height: 1 }} />
+            <div ref={sentinelRef} style={{ height: 1 }} />
         </div>
     );
 };

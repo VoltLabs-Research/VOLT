@@ -1,17 +1,16 @@
-import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
-import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { FindActivityByTeamIdInputDTO } from '@modules/daily-activity/application/dtos/FindActivityByTeamIdDTO';
 import type { PersistedDailyActivityDTO } from '@modules/daily-activity/application/dtos/PersistedDailyActivityDTO';
-import type { IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
+import DailyActivityRepository from '@modules/daily-activity/infrastructure/persistence/mongo/repositories/DailyActivityRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
-@injectable()
+@Singleton()
 export default class FindActivityByTeamIdUseCase implements IUseCase<FindActivityByTeamIdInputDTO, PersistedDailyActivityDTO[], ApplicationError>{
     constructor(
-        @inject(DAILY_ACTIVITY_TOKENS.DailyActivityRepository)
-        private dailyActivityRepository: IDailyActivityRepository
+        
+        private dailyActivityRepository: DailyActivityRepository
     ){}
 
     async execute(input: FindActivityByTeamIdInputDTO): Promise<Result<PersistedDailyActivityDTO[], ApplicationError>> {

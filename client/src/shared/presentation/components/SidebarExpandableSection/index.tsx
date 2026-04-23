@@ -1,4 +1,4 @@
-import Button from '@/shared/presentation/components/Button';
+import { Button } from '@/shared/presentation/primitives';
 import './SidebarExpandableSection.css';
 import '@/shared/presentation/components/SidebarSubItems/SidebarSubItems.css';
 import NestedSubItems from './NestedSubItems';
@@ -84,7 +84,7 @@ const SidebarExpandableSection = forwardRef<HTMLDivElement, SidebarExpandableSec
     };
 
     return (
-        <div ref={ref} className='volt-container sidebar-expandable-section'>
+        <div ref={ref} className='sidebar-expandable-section'>
             <Button
                 variant='ghost'
                 intent='neutral'
@@ -94,7 +94,7 @@ const SidebarExpandableSection = forwardRef<HTMLDivElement, SidebarExpandableSec
                 aria-expanded={expanded}
                 aria-controls={subItemsId}
             >
-                <div className='volt-container sidebar-nav-icon font-size-4'>
+                <div className='sidebar-nav-icon font-size-4'>
                     <Icon />
                 </div>
                 <span className='sidebar-nav-label text-truncate'>{label}</span>

@@ -1,3 +1,4 @@
+import { Box } from '@/shared/presentation/primitives';
 import './MetricBar.css';
 interface MetricBarProps {
     value: number;
@@ -17,7 +18,7 @@ const MetricBar = ({
     const filledSegments = Math.floor((value / maxValue) * segments);
 
     return (
-        <div className='volt-container d-flex gap-0125 metric-bar radius-full overflow-hidden'>
+        <Box display='flex' radius='full' overflow='hidden' className='gap-0125 metric-bar'>
             {Array.from({ length: segments }).map((_, i) => (
                 <div
                     key={i}
@@ -30,7 +31,7 @@ const MetricBar = ({
                     }}
                 />
             ))}
-        </div>
+        </Box>
     );
 };
 

@@ -1,8 +1,8 @@
+import { Button } from '@/shared/presentation/primitives';
 import { useCallback, useMemo } from 'react';
 import type { ChangeEvent } from 'react';
 import type { Node } from '@xyflow/react';
-import Button from '@/shared/presentation/components/Button';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
+import { CollapsibleSection } from '@/shared/presentation/primitives';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import usePluginBuilderStore from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import type { INodeData, NodeConnectorSide } from '@/modules/plugin/api/entities/plugin/workflow';
@@ -88,11 +88,11 @@ const ConnectorLayoutEditor = ({ node }: ConnectorLayoutEditorProps) => {
                 const placement = resolveNodeHandlePlacement(nodeData, handleDefinition);
 
                 return (
-                    <div key={handleDefinition.id} className='volt-container b-soft radius-sm' style={{
+                    <div key={handleDefinition.id} className='b-soft radius-sm' style={{
                             padding: '0.75rem',
                             marginTop: index === 0 ? 0 : '0.75rem'
                         }}>
-                        <div className='volt-container d-flex items-center content-between gap-05' style={{ marginBottom: '0.75rem' }}>
+                        <div className='d-flex items-center content-between gap-05' style={{ marginBottom: '0.75rem' }}>
                             <strong>{handleDefinition.label}</strong>
                             <Button
                                 variant='outline'

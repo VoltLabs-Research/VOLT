@@ -3,14 +3,15 @@ import PerformanceMenuPopover from '../PerformanceMenuPopover';
 import RenderMenuPopover from '../RenderMenuPopover';
 import ScreenshotMenuPopover from '../ScreenshotMenuPopover';
 import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
+import { FloatingToolbar } from '@/shared/presentation/primitives';
 
 import './ViewportFloatingControls.css';
 
 const ViewportFloatingControls = () => {
     return (
-        <div
-            className="volt-container canvas-viewport-floating-controls d-flex column items-center gap-025"
-            role="toolbar"
+        <FloatingToolbar
+            align='end'
+            className="canvas-viewport-floating-controls"
             aria-label="Viewport controls"
         >
             <RenderMenuPopover compact />
@@ -18,7 +19,7 @@ const ViewportFloatingControls = () => {
             <ScreenshotMenuPopover compact />
             <PerformanceMenuPopover compact />
             <ThemeToggleButton className="canvas-viewport-floating-btn" />
-        </div>
+        </FloatingToolbar>
     );
 };
 

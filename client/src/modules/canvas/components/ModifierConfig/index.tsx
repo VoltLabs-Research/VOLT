@@ -1,3 +1,4 @@
+import { Stack } from '@/shared/presentation/primitives';
 import type { ReactNode } from 'react';
 
 interface ModifierConfigProps {
@@ -5,9 +6,9 @@ interface ModifierConfigProps {
 };
 
 const ModifierConfig = ({ children }: ModifierConfigProps) => (
-    <div className='volt-container d-flex column gap-05'>
+    <Stack gap='05'>
         {children}
-    </div>
+    </Stack>
 );
 
 export default ModifierConfig;

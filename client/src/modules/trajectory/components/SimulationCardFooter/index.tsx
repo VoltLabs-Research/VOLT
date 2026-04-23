@@ -5,11 +5,9 @@ import { useTriggerRasterizationMutation } from '@/modules/raster/hooks/queries'
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { trajectoryQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import useTeamJobsStore from '@/modules/jobs/stores/use-team-jobs-store';
-import IconButton from '@/shared/presentation/components/IconButton';
-import Loader from '@/shared/presentation/components/Loader';
-import Popover from '@/shared/presentation/components/Popover';
-import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
-import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
+import { IconButton, Loader, Popover, Stack, Row, Text } from '@/shared/presentation/primitives';
+import { PopoverMenu } from '@/shared/presentation/primitives';
+import { PopoverMenuItem } from '@/shared/presentation/primitives';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { formatDistanceToNow } from 'date-fns';
@@ -267,29 +265,29 @@ export default function SimulationCardFooter({
     );
 
     return (
-        <div className='volt-container simulation-card-footer z-10 p-1-5 d-flex items-center gap-05 p-absolute bottom-0 left-0 right-0'>
-            <div className='volt-container d-flex column gap-05 flex-1'>
+        <Row gap='05' zIndex='10' p='1-5' position='absolute' bottom='0' left='0' right='0' className='simulation-card-footer'>
+            <Stack gap='05' flex='1'>
                 <EditableTrajectoryName
                     trajectoryId={trajectoryId}
                     name={name}
                     className='simulation-card-title font-size-3 color-primary font-weight-5 text-truncate'
                     allowSingleClickPropagation
                 />
-                <div className='volt-container simulation-card-status d-flex items-center gap-075 color-secondary font-size-2'>
+                <Row gap='075' className='simulation-card-status color-secondary font-size-2'>
                     {isProcessing ? (
                         <>
                             <Loader scale={0.4} isFixed={false} className='simulation-card-status-loader f-shrink-0' />
-                            <p className='volt-text simulation-card-status-text' title={processingMessage}>
+                            <Text as='p' className='simulation-card-status-text' title={processingMessage}>
                                 {processingMessage}
-                            </p>
+                            </Text>
                         </>
                     ) : (
-                        <p className='volt-text simulation-card-status-text' title={updatedLabel}>
+                        <Text as='p' className='simulation-card-status-text' title={updatedLabel}>
                             {updatedLabel}
-                        </p>
+                        </Text>
                     )}
-                </div>
-            </div>
+                </Row>
+            </Stack>
 
             <Popover
                 id={`simulation-card-popover-${trajectoryId}`}
@@ -308,6 +306,6 @@ export default function SimulationCardFooter({
                     ))}
                 </PopoverMenu>
             </Popover>
-        </div>
+        </Row>
     );
 }

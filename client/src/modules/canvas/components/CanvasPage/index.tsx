@@ -46,11 +46,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 import ScriptingWorkspace from '@/modules/scripting/components/ScriptingWorkspace';
-import Button from '@/shared/presentation/components/Button';
-import EmptyState from '@/shared/presentation/components/EmptyState';
+import { EmptyState } from '@/shared/presentation/primitives';
 import ErrorBoundary from '@/shared/presentation/components/ErrorBoundary';
-import { openModal } from '@/shared/presentation/components/Modal';
-import Tooltip from '@/shared/presentation/components/Tooltip';
+import { Button, Tooltip, openModal, Row, Box, Stack } from '@/shared/presentation/primitives';
 import useTip from '@/shared/tips/use-tip';
 
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
@@ -380,7 +378,7 @@ const CanvasPage = () => {
 
     const toolbarContextualActions = (canDownloadAnalysisListing || scriptingHeaderAction)
         ? (
-            <div className="volt-container d-flex items-center gap-05">
+            <Row gap='05'>
                 {canDownloadAnalysisListing && (
                     <Tooltip content="Download analysis listings">
                         <Button
@@ -398,19 +396,19 @@ const CanvasPage = () => {
                     </Tooltip>
                 )}
                 {scriptingHeaderAction}
-            </div>
+            </Row>
         )
         : null;
 
     let viewportBodyContent = undefined;
     if (isLocalGlbViewer && !forcedGlbUrl) {
         viewportBodyContent = (
-            <div className="volt-container d-flex items-center content-center w-max h-max">
+            <Row justify='center' width='max' height='max'>
                 <EmptyState
                     title='Drop a GLB file to preview'
                     description='Use the global dashboard dropzone to open a local GLB viewer.'
                 />
-            </div>
+            </Row>
         );
     } else if (isScriptingWorkspace) {
         viewportBodyContent = (
@@ -437,8 +435,13 @@ const CanvasPage = () => {
     const rightOverlaySize = !isLocalGlbViewer && !isNarrowViewport ? rightPanel.size : 0;
 
     return (
-        <div
-            className={`volt-container canvas-editor-root d-flex vh-max wh-max overflow-hidden p-relative${isNarrowViewport ? ' canvas-editor-root--narrow' : ''}`}
+        <Box
+            display='flex'
+            height='vh-max'
+            width='vw-max'
+            overflow='hidden'
+            position='relative'
+            className={`canvas-editor-root${isNarrowViewport ? ' canvas-editor-root--narrow' : ''}`}
             style={{ '--canvas-right-overlay-size': `${rightOverlaySize}px` } as React.CSSProperties}
         >
             <PreloadingOverlay />
@@ -452,7 +455,7 @@ const CanvasPage = () => {
                 />
             )}
 
-            <div className="volt-container canvas-editor-main d-flex column flex-1 overflow-hidden p-relative min-h-0">
+            <Stack flex='1' overflow='hidden' position='relative' minH='0' className="canvas-editor-main">
                 <TopToolbar
                     trajectory={trajectory}
                     canExport={canExportTrajectory}
@@ -467,8 +470,8 @@ const CanvasPage = () => {
                     contextualActions={toolbarContextualActions}
                 />
 
-                <div className="volt-container canvas-editor-stage d-flex column flex-1 overflow-hidden p-relative min-h-0">
-                    <div className="volt-container canvas-center-viewport p-absolute inset-0 d-flex column overflow-hidden" ref={viewportContainerRef as React.RefObject<HTMLDivElement>}>
+                <Stack flex='1' overflow='hidden' position='relative' minH='0' className="canvas-editor-stage">
+                    <Box display='flex' direction='column' position='absolute' inset='0' overflow='hidden' className="canvas-center-viewport" ref={viewportContainerRef as React.RefObject<HTMLDivElement>}>
                         <ErrorBoundary
                             fallbackTitle='Viewport crashed'
                             fallbackDescription='The 3D viewport hit an unexpected error. Reset to recover without losing your trajectory data.'
@@ -496,7 +499,7 @@ const CanvasPage = () => {
                             cursors={workspaceCursors}
                             containerRef={viewportContainerRef}
                         />
-                    </div>
+                    </Box>
 
                     {!isLocalGlbViewer && !isScriptingWorkspace && (
                         <>
@@ -512,9 +515,12 @@ const CanvasPage = () => {
                                     {...timeline.handleProps}
                                 />
                             </div>
-                            <div
+                            <Stack
                                 id="canvas-center-timeline"
-                                className="volt-container canvas-center-timeline canvas-overlay-glass p-absolute d-flex column f-shrink-0 min-h-0"
+                                position='absolute'
+                                shrink='0'
+                                minH='0'
+                                className="canvas-center-timeline canvas-overlay-glass"
                                 style={{ height: timeline.size }}
                             >
                                 <Timeline
@@ -527,15 +533,15 @@ const CanvasPage = () => {
                                     onTabChange={handleTimelineTabChange}
                                     onDownloadExposureListing={handleDownloadExposureListing}
                                 />
-                            </div>
+                            </Stack>
                         </>
                     )}
-                </div>
+                </Stack>
 
                 {!isLocalGlbViewer && showStatusBar && (
                     <StatusBar trajectory={trajectory} currentTimestep={currentTimestep} />
                 )}
-            </div>
+            </Stack>
 
             {!isLocalGlbViewer && (
                 <>
@@ -565,9 +571,10 @@ const CanvasPage = () => {
                             />
                         </div>
                     )}
-                    <div
+                    <Stack
                         id="canvas-right-panel"
-                        className="volt-container canvas-right-panel-container canvas-overlay-glass p-absolute d-flex column"
+                        position='absolute'
+                        className="canvas-right-panel-container canvas-overlay-glass"
                         style={{ width: rightPanel.size }}
                         data-drawer-open={isNarrowViewport ? (rightDrawerOpen ? 'true' : 'false') : undefined}
                     >
@@ -583,7 +590,7 @@ const CanvasPage = () => {
                             onSetActiveRasterContainer={setActiveRasterContainerId}
                             onUpdateRasterContainerSelection={handleUpdateRasterContainerSelection}
                         />
-                    </div>
+                    </Stack>
                 </>
             )}
             {!isLocalGlbViewer && showWidgets && resultsPluginId && analysisId && (
@@ -603,7 +610,7 @@ const CanvasPage = () => {
             <ShortcutFeedback />
             <ExposureSettingsWidget />
 
-        </div>
+        </Box>
     );
 };
 

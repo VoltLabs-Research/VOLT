@@ -1,40 +1,38 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
+import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
 import UpdateUserActivityUseCase from '@modules/daily-activity/application/use-cases/UpdateUserActivityUseCase';
-import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
+import type { SubscribeToTeamSocketPayload, TeamScopedSocketPayload } from '@modules/socket/domain/contracts/team-subscription';
+import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
+import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
+import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import { formatSocketValidationError } from '@modules/socket/utilities/socket-validation-error';
 import { teamScopedSocketPayloadSchema } from '@modules/socket/utilities/team-subscription-schemas';
 import TeamPresenceService, { DetachedTeamPresenceSession } from '@modules/team/infrastructure/services/team-member/TeamPresenceService';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { inject, singleton } from 'tsyringe';
-import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
-import type { SubscribeToTeamSocketPayload, TeamScopedSocketPayload } from '@modules/socket/domain/contracts/team-subscription';
-import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import type { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';
-import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import type { ISocketRoomManager } from '@modules/socket/domain/port/ISocketRoomManager';
 
-@singleton()
+@Singleton()
+@AliasOf(SOCKET_TOKENS.SocketModule)
 export default class TeamPresenceSocketModule extends BaseSocketModule {
     public readonly name = 'TeamPresenceSocketModule';
 
     private unsubscribeFromTeamSubscription?: () => void;
 
     constructor(
-        @inject(SOCKET_TOKENS.SocketEventEmitter) emitter: ISocketEmitter,
-        @inject(SOCKET_TOKENS.SocketRoomManager) roomManager: ISocketRoomManager,
-        @inject(SOCKET_TOKENS.SocketEventRegistry) eventRegistry: ISocketEventRegistry,
-        @inject(TEAM_TOKENS.TeamPresenceService)
+        emitter: SocketIOEmitter,
+        roomManager: SocketIORoomManager,
+        eventRegistry: SocketIOEventRegistry,
+        
         private readonly teamPresenceService: TeamPresenceService,
-        @inject(AUTH_TOKENS.UserRepository)
-        private readonly userRepository: IUserRepository,
-        @inject(DAILY_ACTIVITY_TOKENS.UpdateUserActivityUseCase)
+        
+        private readonly userRepository: UserRepository,
+        
         private readonly updateUserActivityUseCase: UpdateUserActivityUseCase,
-        @inject(SOCKET_TOKENS.TeamSubscriptionCoordinator)
+        
         private readonly teamSubscriptionService: SocketTeamSubscriptionCoordinator
     ) {
         super(emitter, roomManager, eventRegistry);

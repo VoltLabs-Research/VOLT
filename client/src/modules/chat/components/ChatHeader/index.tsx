@@ -2,9 +2,7 @@ import { PresenceStatus } from '@/modules/chat/api/entities/shared/chat-events';
 import { getChatDisplayName, getChatStatusText } from '@/modules/chat/utilities/chat/chat-display';
 import ChatAvatar from '../ChatAvatar';
 import { IoArrowBackOutline, IoInformationCircleOutline } from 'react-icons/io5';
-import IconButton from '@/shared/presentation/components/IconButton';
-import Tooltip from '@/shared/presentation/components/Tooltip';
-import StatusDot from '@/shared/presentation/components/StatusDot';
+import { Row, Stack, Text, IconButton, Tooltip, StatusDot } from '@/shared/presentation/primitives';
 import type { Chat } from '@/modules/chat/api/entities/chat';
 import './ChatHeader.css';
 
@@ -30,8 +28,8 @@ const ChatHeader = ({
     const infoLabel = isDetailsOpen ? 'Hide chat details' : 'Show chat details';
 
     return (
-        <div className='volt-container d-flex items-center content-between chat-header'>
-            <div className='volt-container d-flex items-center gap-1'>
+        <Row justify='between' className='chat-header'>
+            <Row gap='1'>
                 {onBackClick && (
                     <Tooltip content='Back to conversations'>
                         <IconButton
@@ -49,22 +47,22 @@ const ChatHeader = ({
 
                 <ChatAvatar chat={chat} currentUserId={currentUserId} size='sm' />
 
-                <div className='volt-container d-flex column'>
-                    <p className='volt-text font-size-3 font-weight-6 color-primary'>
+                <Stack>
+                    <Text as='p' size='lg' weight='bold'>
                         {displayName}
-                    </p>
+                    </Text>
                     {statusText && (
-                        <div className='volt-container d-flex items-center gap-05 chat-header-status'>
+                        <Row gap='05' className='chat-header-status'>
                             {!chat.isGroup && (
                                 <StatusDot isOnline={presence === PresenceStatus.Online} />
                             )}
-                            <p className='volt-text font-size-2 color-muted'>{statusText}</p>
-                        </div>
+                            <Text as='p' size='md' tone='muted'>{statusText}</Text>
+                        </Row>
                     )}
-                </div>
-            </div>
+                </Stack>
+            </Row>
 
-            <div className='volt-container d-flex items-center gap-05'>
+            <Row gap='05'>
                 {onInfoClick && (
                     <Tooltip content={infoLabel}>
                         <IconButton
@@ -79,8 +77,8 @@ const ChatHeader = ({
                         </IconButton>
                     </Tooltip>
                 )}
-            </div>
-        </div>
+            </Row>
+        </Row>
     );
 };
 

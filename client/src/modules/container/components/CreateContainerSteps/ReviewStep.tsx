@@ -1,8 +1,8 @@
 import ReviewItem from '../ReviewItem';
-import Button from '@/shared/presentation/components/Button';
 import ProcessingLoader from '@/shared/presentation/components/ProcessingLoader';
+import { Box, Button, Heading, KeyValueList, Row, Stack, Text } from '@/shared/presentation/primitives';
 import { formatDistanceToNow } from 'date-fns';
-import { Box } from 'lucide-react';
+import { Box as BoxIcon } from 'lucide-react';
 import { getMaskedCustomFieldValue, mergeContainerEnvVariables } from '../../hooks/use-create-container-form';
 import type { ContainerConfig } from '../../hooks/use-create-container-form';
 import type { Team } from '@/modules/team/api/entities/team/team';
@@ -59,29 +59,31 @@ const ReviewStep = ({
         portsDisplay = config.ports.map((p) => `${p.private}:${p.public === undefined ? 'Auto' : p.public}`).join(', ');
     }
 
-    const leftIcon = !isLoading ? <Box size={18} /> : undefined;
+    const leftIcon = !isLoading ? <BoxIcon size={18} /> : undefined;
 
     return (
-        <div className='volt-container create-container-step d-flex column gap-2'>
-            <div className='volt-container d-flex column gap-05'>
-                <h3 className='volt-title font-size-5 font-weight-6'>Review & Deploy</h3>
-                <p className='volt-text font-size-3 color-secondary create-container-step-copy'>Confirm the deployment details before creating the container.</p>
-            </div>
+        <Stack className='create-container-step' gap='2'>
+            <Stack gap='05'>
+                <Heading level={3} size='xl' weight='bold'>Review & Deploy</Heading>
+                <Text as='p' size='lg' tone='secondary' className='create-container-step-copy'>Confirm the deployment details before creating the container.</Text>
+            </Stack>
 
-            <div className='volt-container create-container-review-card radius-md overflow-hidden'>
-                <ReviewItem label='Name' value={config.name} />
-                <ReviewItem label='Team' value={selectedTeamName} />
-                <ReviewItem label='Cluster' value={selectedClusterName} />
-                <ReviewItem label='Image' value={selectedImage} />
-                <ReviewItem label='Image source' value={imageSource} />
-                <ReviewItem label='CPU' value={`${config.cpus} vCPU`} />
-                <ReviewItem label='Memory' value={`${config.memory} MB`} />
-                <ReviewItem label='Ports' value={portsDisplay} />
-                <ReviewItem label='Environment' value={environmentDisplay} />
-                {customFieldsDisplay && <ReviewItem label='Template settings' value={customFieldsDisplay} />}
-                <ReviewItem label='Docker access' value={dockerAccessLabel} />
-                {draftLastSavedAt ? <ReviewItem label='Draft saved' value={formatDistanceToNow(new Date(draftLastSavedAt), { addSuffix: true })} /> : null}
-            </div>
+            <Box className='create-container-review-card' radius='md' overflow='hidden' p='1'>
+                <KeyValueList>
+                    <ReviewItem label='Name' value={config.name} />
+                    <ReviewItem label='Team' value={selectedTeamName} />
+                    <ReviewItem label='Cluster' value={selectedClusterName} />
+                    <ReviewItem label='Image' value={selectedImage} />
+                    <ReviewItem label='Image source' value={imageSource} />
+                    <ReviewItem label='CPU' value={`${config.cpus} vCPU`} />
+                    <ReviewItem label='Memory' value={`${config.memory} MB`} />
+                    <ReviewItem label='Ports' value={portsDisplay} />
+                    <ReviewItem label='Environment' value={environmentDisplay} />
+                    {customFieldsDisplay && <ReviewItem label='Template settings' value={customFieldsDisplay} />}
+                    <ReviewItem label='Docker access' value={dockerAccessLabel} />
+                    {draftLastSavedAt ? <ReviewItem label='Draft saved' value={formatDistanceToNow(new Date(draftLastSavedAt), { addSuffix: true })} /> : null}
+                </KeyValueList>
+            </Box>
 
             <ProcessingLoader
                 isVisible={isLoading && !!deployProgressMessage}
@@ -89,7 +91,7 @@ const ReviewStep = ({
                 className='mt-1'
             />
 
-            <div className='volt-container d-flex content-end gap-1 create-container-step-actions mt-3'>
+            <Row className='create-container-step-actions' justify='end' gap='1' mt='3'>
                 <Button variant='outline' intent='neutral' onClick={onBack}>Back</Button>
                 <Button
                     variant='solid'
@@ -100,8 +102,8 @@ const ReviewStep = ({
                 >
                     {!isLoading && 'Deploy container'}
                 </Button>
-            </div>
-        </div>
+            </Row>
+        </Stack>
     );
 };
 

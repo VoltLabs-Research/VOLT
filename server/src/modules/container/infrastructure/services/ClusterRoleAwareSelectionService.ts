@@ -1,4 +1,3 @@
-import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
 import {
     HARD_STORAGE_LIMIT_PCT,
     SOFT_STORAGE_ASSIGNMENT_PENALTY,
@@ -8,14 +7,13 @@ import {
     resolveEffectiveCapabilitiesFromRoleConfig,
     TeamClusterStatus
 } from '@modules/team-cluster/domain/entities/TeamCluster';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
+import { injectable } from 'tsyringe';
 
-import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
 import type { SystemMetrics } from '@modules/system/domain/value-objects/SystemMetrics';
+import SystemMetricsRedisRepository from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisRepository';
 import type TeamCluster from '@modules/team-cluster/domain/entities/TeamCluster';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 
 type SelectionCapability = 'compute' | 'storage';
 
@@ -116,11 +114,11 @@ const supportsCapability = (
 @injectable()
 export class ClusterRoleAwareSelectionService {
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
+        
+        private readonly teamClusterRepository: TeamClusterRepository,
 
-        @inject(SYSTEM_TOKENS.SystemMetricsRepository)
-        private readonly systemMetricsRepository: ISystemMetricsRepository
+        
+        private readonly systemMetricsRepository: SystemMetricsRedisRepository
     ) {}
 
     async resolveStorageCluster(

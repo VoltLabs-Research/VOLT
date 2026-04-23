@@ -22,8 +22,7 @@ import {
     lineSettingsOption,
     transparencyOption
 } from '../../utilities/tree-menus';
-import Button from '@/shared/presentation/components/Button';
-import Tooltip from '@/shared/presentation/components/Tooltip';
+import { Button, Tooltip } from '@/shared/presentation/primitives';
 import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, normalizeCanvasAnalysisStatus } from '../../utilities/analysis-status';
 import { useMemo } from 'react';
 
@@ -113,7 +112,7 @@ const AnalysisTreeNode = ({
                     </div>
                 )}
                 {hasConfig ? (
-                    <pre className='canvas-tree-config-tooltip__json'>{formattedUserConfig}</pre>
+                    <pre className='canvas-tree-config-tooltip__json font-mono tabular-nums'>{formattedUserConfig}</pre>
                 ) : (
                     <div className='canvas-tree-config-tooltip__empty'>No execution config captured for this analysis.</div>
                 )}
@@ -144,7 +143,7 @@ const AnalysisTreeNode = ({
     ];
 
     const analysisRow = (
-        <div className={`volt-container canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary u-select-none canvas-tree-item--indent ${isSelectedAnalysis ? 'selected' : ''} ${isAnalysisInProgress ? 'is-disabled' : 'cursor-pointer'}`} onClick={handleSelectAnalysis} role="treeitem" aria-selected={isSelectedAnalysis} aria-disabled={isAnalysisInProgress} tabIndex={isAnalysisInProgress ? -1 : 0}>
+        <div className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary u-select-none canvas-tree-item--indent ${isSelectedAnalysis ? 'selected' : ''} ${isAnalysisInProgress ? 'is-disabled' : 'cursor-pointer'}`} onClick={handleSelectAnalysis} role="treeitem" aria-selected={isSelectedAnalysis} aria-disabled={isAnalysisInProgress} tabIndex={isAnalysisInProgress ? -1 : 0}>
             <Button
                 variant='ghost'
                 intent='neutral'

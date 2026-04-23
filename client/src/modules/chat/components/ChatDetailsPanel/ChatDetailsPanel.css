@@ -3,15 +3,6 @@
     background: var(--color-bg);
 }
 
-.chat-details-close-button {
-    display: none;
-}
-
-.chat-details-header {
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--color-border-soft);
-}
-
 .chat-details-content {
     padding: 1.5rem;
 }
@@ -32,16 +23,8 @@
     border-bottom: none;
 }
 
-.chat-details-section-title {
-    margin-bottom: 0.75rem;
-}
-
 @media (max-width: 1024px) {
     .chat-details {
         border-left: none;
-    }
-
-    .chat-details-close-button {
-        display: inline-flex;
     }
 }

@@ -1,11 +1,12 @@
-import { injectable } from 'tsyringe';
+
+import type { NetworkMetrics } from '@modules/system/domain/value-objects/SystemMetrics';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import si from 'systeminformation';
-import type { NetworkMetrics } from '@modules/system/domain/value-objects/SystemMetrics';
 
 const BYTES_PER_KB = 1024;
 
-@injectable()
+@Singleton()
 export default class NetworkMetricsCollector {
     async collect(): Promise<NetworkMetrics> {
         try {

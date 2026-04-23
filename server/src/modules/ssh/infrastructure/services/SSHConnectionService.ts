@@ -1,19 +1,17 @@
-import { ISSHConnectionService, SSHFileEntry, DownloadProgress } from '@modules/ssh/domain/port/ISSHConnectionService';
+import { ErrorCodes } from '@core/constants/error-codes';
 import SSHConnection from '@modules/ssh/domain/entities/SSHConnection';
-import { Client, SFTPWrapper } from 'ssh2';
+import { DownloadProgress, ISSHConnectionService, SSHFileEntry } from '@modules/ssh/domain/port/ISSHConnectionService';
+import SSHCredentialsCipher from '@modules/ssh/infrastructure/services/SSHCredentialsCipher';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import logger from '@shared/infrastructure/logger';
+import { createHash } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
-import { pipeline } from 'node:stream/promises';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { createHash } from 'node:crypto';
-import { injectable, inject } from 'tsyringe';
-import logger from '@shared/infrastructure/logger';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { ErrorCodes } from '@core/constants/error-codes';
-import type { ErrorCode } from '@core/constants/error-codes';
-import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
-import { ISSHCredentialsCipher } from '@modules/ssh/domain/port/ISSHCredentialsCipher';
+import { pipeline } from 'node:stream/promises';
 import pRetry from 'p-retry';
+import { Client, SFTPWrapper } from 'ssh2';
 
 interface CachedConnection {
     client: Client;
@@ -37,7 +35,7 @@ interface SSH2Connection {
     sftp: SFTPWrapper;
 };
 
-@injectable()
+@Singleton()
 export default class SSHConnectionService implements ISSHConnectionService {
     private connections: Map<string, CachedConnection> = new Map();
     private connectionPromises: Map<string, Promise<SSH2Connection>> = new Map();
@@ -52,8 +50,8 @@ export default class SSHConnectionService implements ISSHConnectionService {
     private readonly STREAM_HIGH_WATER_MARK = 1024 * 1024;
 
     constructor(
-        @inject(SSH_TOKENS.SSHCredentialsCipher)
-        private readonly sshCredentialsCipher: ISSHCredentialsCipher
+        
+        private readonly sshCredentialsCipher: SSHCredentialsCipher
     ) {
         setInterval(() => this.cleanupIdleConnections(), 1000 * 60);
     }

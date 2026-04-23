@@ -1,12 +1,12 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import { CreateContainerPortProxySessionInputDTO, CreateContainerPortProxySessionOutputDTO } from '@modules/container/application/dtos/GetContainerByIdDTO';
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
-import { ContainerOwnershipService } from '@modules/container/infrastructure/services/ContainerOwnershipService';
 import { ContainerAccessiblePortResolver } from '@modules/container/infrastructure/services/ContainerAccessiblePortResolver';
+import { ContainerOwnershipService } from '@modules/container/infrastructure/services/ContainerOwnershipService';
 import { ContainerPortProxyRelayService } from '@modules/container/infrastructure/services/ContainerPortProxyRelayService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { ErrorCodes } from '@core/constants/error-codes';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export class CreateContainerPortProxySessionUseCase implements IUseCase<
@@ -14,13 +14,13 @@ export class CreateContainerPortProxySessionUseCase implements IUseCase<
     CreateContainerPortProxySessionOutputDTO
 > {
     constructor(
-        @inject(ContainerOwnershipService)
+        
         private readonly ownershipService: ContainerOwnershipService,
 
-        @inject(ContainerAccessiblePortResolver)
+        
         private readonly accessiblePortResolver: ContainerAccessiblePortResolver,
 
-        @inject(ContainerPortProxyRelayService)
+        
         private readonly relayService: ContainerPortProxyRelayService
     ) {}
 

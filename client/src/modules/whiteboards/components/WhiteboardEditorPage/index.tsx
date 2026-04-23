@@ -1,3 +1,4 @@
+import { Button } from '@/shared/presentation/primitives';
 import useWhiteboardEditor from '@/modules/whiteboards/hooks/use-whiteboard-editor';
 import useWhiteboardPresence from '@/modules/whiteboards/hooks/use-whiteboard-presence';
 import useWhiteboardSync from '@/modules/whiteboards/hooks/use-whiteboard-sync';
@@ -6,7 +7,6 @@ import { extractWhiteboardImageFiles } from '@/modules/whiteboards/utilities/whi
 import useDashboardWorkspaceChrome from '@/modules/dashboard/hooks/use-dashboard-workspace-chrome';
 import { filterPersistableAppState } from '@/modules/whiteboards/utilities/whiteboards';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
-import Button from '@/shared/presentation/components/Button';
 import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
 import type { ChangeEvent, ClipboardEvent, ComponentProps, CSSProperties, DragEvent, ReactNode } from 'react';
@@ -155,7 +155,7 @@ const createIdleCallbackHandle = (onIdle: () => void): IdleCallbackHandle => {
 };
 
 const renderLoadingShell = (): ReactNode => (
-    <div className='volt-container whiteboard-editor-loading d-flex items-center justify-center p-1'>
+    <div className='whiteboard-editor-loading d-flex items-center justify-center p-1'>
         <div style={loadingShellStyles.root} role='status' aria-live='polite' aria-label='Loading whiteboard workspace'>
             <div className='d-flex column gap-1 h-100'>
                 <div className='d-flex items-center justify-between gap-1' style={loadingShellStyles.toolbar}>
@@ -472,7 +472,7 @@ const WhiteboardEditorPage = () => {
     } as unknown as ExcalidrawProps['initialData'];
 
     return (
-        <div className='volt-container whiteboard-editor-root'>
+        <div className='whiteboard-editor-root'>
             <span className='whiteboard-presence-live-region' aria-live='polite' aria-atomic='true'>
                 {announcement?.message ?? ''}
             </span>

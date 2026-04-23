@@ -1,14 +1,11 @@
-import { injectable } from 'tsyringe';
+
 import type { IPasswordHasher } from '@modules/auth/domain/port/IPasswordHasher';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import bcrypt from 'bcryptjs';
 
-@injectable()
+@Singleton()
 export default class BcryptPasswordHasher implements IPasswordHasher {
-    private readonly saltRounds: number;
-
-    constructor(saltRounds: number = 12) {
-        this.saltRounds = saltRounds;
-    }
+    private readonly saltRounds = 12;
 
     public async hash(password: string): Promise<string> {
         return bcrypt.hash(password, this.saltRounds);

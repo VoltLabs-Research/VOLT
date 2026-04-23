@@ -2,12 +2,11 @@ import {
     GenerateTeamClusterInstallManifestInputDTO,
     GenerateTeamClusterInstallManifestOutputDTO
 } from '@modules/team-cluster/application/dtos/GenerateTeamClusterInstallManifestDTO';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterInstallManifestService from '@modules/team-cluster/infrastructure/services/TeamClusterInstallManifestService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export default class GenerateTeamClusterInstallManifestUseCase implements IUseCase<
@@ -16,7 +15,7 @@ export default class GenerateTeamClusterInstallManifestUseCase implements IUseCa
     ApplicationError
 > {
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterInstallManifestService)
+        
         private readonly teamClusterInstallManifestService: TeamClusterInstallManifestService
     ){}
 

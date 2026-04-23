@@ -1,13 +1,12 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
-import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
 import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
-import type { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
+import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
+import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryDumpStorageService';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 
 interface GetPublicCanvasDumpInput {
     trajectoryId: string;
@@ -17,18 +16,18 @@ interface GetPublicCanvasDumpInput {
 
 type GetPublicCanvasDumpOutput = DownloadStreamOutputDTO;
 
-@injectable()
+@Singleton()
 export class GetPublicCanvasDumpUseCase implements IUseCase<
     GetPublicCanvasDumpInput,
     GetPublicCanvasDumpOutput,
     ApplicationError
 > {
     constructor(
-        @inject(TrajectoryReadAccessService)
+        
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryDumpStorageService)
-        private readonly trajectoryDumpStorageService: ITrajectoryDumpStorageService
+        
+        private readonly trajectoryDumpStorageService: TrajectoryDumpStorageService
     ) {}
 
     async execute(input: GetPublicCanvasDumpInput): Promise<Result<GetPublicCanvasDumpOutput, ApplicationError>> {

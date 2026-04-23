@@ -1,17 +1,17 @@
-import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
-import { IEventBus } from '@shared/application/events/IEventBus';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import Trajectory, { TrajectoryFrame, TrajectoryProps } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryDeletedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryDeletedEvent';
-import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
+import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import trajectoryMapper from '@modules/trajectory/infrastructure/persistence/mongo/mappers/trajectory/TrajectoryMapper';
 import TrajectoryModel, { TrajectoryDocument } from '@modules/trajectory/infrastructure/persistence/mongo/models/trajectory/TrajectoryModel';
+import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 
-import { injectable, inject } from 'tsyringe';
 import mongoose from 'mongoose';
+import { inject } from 'tsyringe';
 
 const extractFrames = <T extends { frames?: TrajectoryFrame[] } | undefined>(
     data: T
@@ -30,7 +30,7 @@ const extractFrames = <T extends { frames?: TrajectoryFrame[] } | undefined>(
     };
 };
 
-@injectable()
+@Singleton()
 export default class TrajectoryRepository
     extends MongooseBaseRepository<Trajectory, TrajectoryProps, TrajectoryDocument>
     implements ITrajectoryRepository {
@@ -39,7 +39,7 @@ export default class TrajectoryRepository
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository)
+        
         private readonly trajectoryFrameRepository: TrajectoryFrameRepository
     ) {
         super(TrajectoryModel, trajectoryMapper);

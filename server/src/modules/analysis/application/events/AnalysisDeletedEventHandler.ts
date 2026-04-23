@@ -1,32 +1,30 @@
 import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
-import type IORedis from 'ioredis';
+import AnalysisExecutionLogService from '@modules/analysis/infrastructure/services/AnalysisExecutionLogService';
+import TeamJobMaintenanceService from '@modules/jobs/infrastructure/services/TeamJobMaintenanceService';
+import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
-import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
-import type AnalysisExecutionLogService from '@modules/analysis/infrastructure/services/AnalysisExecutionLogService';
-import type { ITeamJobMaintenanceService } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import logger from '@shared/infrastructure/logger';
+import type IORedis from 'ioredis';
+import { inject } from 'tsyringe';
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 
-@injectable()
+@Subscribe('analysis.deleted')
 export default class AnalysisDeletedEventHandler implements IEventHandler<AnalysisDeletedEvent> {
     constructor(
         @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis,
 
-        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository)
-        private readonly sceneArtifactRepository: ISceneArtifactRepository,
+        
+        private readonly sceneArtifactRepository: SceneArtifactRepository,
 
-        @inject(ANALYSIS_TOKENS.AnalysisExecutionLogService)
+        
         private readonly analysisExecutionLogService: AnalysisExecutionLogService,
 
-        @inject(JOBS_TOKENS.TeamJobMaintenanceService)
-        private readonly teamJobMaintenanceService: ITeamJobMaintenanceService
+        
+        private readonly teamJobMaintenanceService: TeamJobMaintenanceService
     ) {}
 
     async handle(event: AnalysisDeletedEvent): Promise<void> {

@@ -1,10 +1,9 @@
-import { Socket } from 'socket.io';
-import { inject, injectable } from 'tsyringe';
 import { ISocketEventRegistry, SocketEventHandler } from '@modules/socket/domain/port/ISocketEventRegistry';
 import { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import type { ISocketConnectionMapper } from '@modules/socket/infrastructure/contracts/ISocketConnectionMapper';
 import type { ISocketEventRegistryRuntime } from '@modules/socket/infrastructure/contracts/ISocketEventRegistryRuntime';
+import SocketConnectionMapper from '@modules/socket/utilities/SocketConnectionMapper';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { Socket } from 'socket.io';
 
 /**
  * Handles event registration and provides connection abstraction.
@@ -15,14 +14,14 @@ import type { ISocketEventRegistryRuntime } from '@modules/socket/infrastructure
  * MaxListenersExceededWarning that would otherwise fire when > 10
  * modules each attach their own listener.
  */
-@injectable()
+@Singleton()
 export default class SocketIOEventRegistry implements ISocketEventRegistry, ISocketEventRegistryRuntime{
     private sockets: Map<string, Socket> = new Map();
     private disconnectHandlers: Map<string, Array<(connection: ISocketConnection) => void | Promise<void>>> = new Map();
 
     constructor(
-        @inject(SOCKET_TOKENS.SocketConnectionMapper)
-        private readonly socketMapper: ISocketConnectionMapper
+        
+        private readonly socketMapper: SocketConnectionMapper
     ){}
 
     /**

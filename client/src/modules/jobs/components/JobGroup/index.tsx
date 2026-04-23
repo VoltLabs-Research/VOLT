@@ -2,6 +2,7 @@ import { frameGroupStatusClassNames } from '@/modules/jobs/utilities/frame-group
 import useJobGroupActions from '@/modules/jobs/hooks/use-job-group-actions';
 import FrameGroup from '@/modules/jobs/components/FrameGroup';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
+import { Box } from '@/shared/presentation/primitives';
 import JobGroupHeader from './JobGroupHeader';
 import JobGroupMenu from './JobGroupMenu';
 import '@/modules/jobs/components/JobGroup/JobGroup.css';
@@ -44,7 +45,7 @@ const JobGroup = ({ group, defaultExpanded = false, statusPresentation = 'badge'
     ));
 
     return (
-        <div className='volt-container job-group' role='listitem'>
+        <Box className='job-group' role='listitem'>
             <JobGroupMenu
                 trajectoryId={group.trajectoryId}
                 loadingAction={loadingAction}
@@ -80,7 +81,7 @@ const JobGroup = ({ group, defaultExpanded = false, statusPresentation = 'badge'
                     )}
                 </AnimatePresence>
             )}
-        </div>
+        </Box>
     );
 };
 

@@ -4,6 +4,7 @@ import ChatSidebar from '../ChatSidebar';
 import CreateGroupModal from '../CreateGroupModal';
 import GroupManagementModal from '../GroupManagementModal';
 import ChatDetailsPanel from '../ChatDetailsPanel';
+import { Box } from '@/shared/presentation/primitives';
 import { cn } from '@/shared/utils';
 import { useParams } from 'react-router-dom';
 import useTip from '@/shared/tips/use-tip';
@@ -53,11 +54,11 @@ const MessagesPage = () => {
     });
 
     return (
-        <div className={`volt-container ${cn(
-                'd-flex h-max messages-page',
+        <Box display='flex' height='max' className={cn(
+                'messages-page',
                 chatId && 'messages-page--chat-open',
                 showDetails && currentChat && 'messages-page--details-open'
-            )}`}>
+            )}>
             <ChatSidebar
                 chats={chats}
                 currentChatId={chatId}
@@ -115,7 +116,7 @@ const MessagesPage = () => {
                 onUpdateAdmins={handleUpdateAdmins}
                 onLeaveGroup={leaveGroup}
             />
-        </div>
+        </Box>
     );
 };
 

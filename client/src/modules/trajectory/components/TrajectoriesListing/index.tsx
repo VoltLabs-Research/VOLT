@@ -10,10 +10,8 @@ import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
 import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
 import RenameFolderModal from '@/shared/presentation/components/RenameFolderModal';
-import Button from '@/shared/presentation/components/Button';
-import { openModal } from '@/shared/presentation/components/Modal';
+import { Button, Row, Box, Heading, StatusBadge, Text, openModal } from '@/shared/presentation/primitives';
 import { clusterColumn, dateColumn } from '@/shared/presentation/utilities/column-presets';
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import useTip from '@/shared/tips/use-tip';
 import { formatNumber, formatSize } from '@/shared/utils/format';
 import { Folder, Pencil, Trash2 } from 'lucide-react';
@@ -26,16 +24,16 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
         title: 'Name',
         sortable: true,
         render: (value, row) => (
-            <div className='volt-container d-flex items-center gap-075'>
+            <Row gap='075'>
                 {isTrajectoryFolderRow(row) && (
-                    <div className='volt-container d-flex flex-center color-secondary'>
+                    <Row className='flex-center color-secondary'>
                         <Folder size={16} />
-                    </div>
+                    </Row>
                 )}
-                <div className='volt-container overflow-hidden min-w-0'>
+                <Box overflow='hidden' minW='0'>
                     <span className='font-weight-6 color-secondary'>{String(value)}</span>
-                </div>
-            </div>
+                </Box>
+            </Row>
         ),
         skeleton: { variant: 'text', width: 160 }
     },
@@ -61,7 +59,7 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
         key: 'status',
         title: 'Status',
         render: (value, row) => isTrajectoryFolderRow(row)
-            ? <span className='font-size-2 color-muted'>-</span>
+            ? <Text size='md' tone='muted'>-</Text>
             : <StatusBadge status={String(value)} />,
         skeleton: { variant: 'rounded', width: 90, height: 24 }
     },
@@ -134,7 +132,7 @@ export default function TrajectoriesListing() {
     return (
         <>
             <DocumentListing<TrajectoryListingRow, { folderId: string | null }>
-                title={<h3 className='volt-title font-size-6 font-weight-5 sm:font-size-4 color-primary'>Trajectories</h3>}
+                title={<Heading level={3} size='3xl' weight='medium' tone='primary' className='sm:font-size-4'>Trajectories</Heading>}
                 queryKey={queryKey}
                 columns={COLUMNS}
                 context={context}

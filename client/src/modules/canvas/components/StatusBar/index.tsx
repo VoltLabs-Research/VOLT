@@ -1,5 +1,6 @@
 import useAnalysisActivitySummary from '../../hooks/use-analysis-activity-summary';
 import { formatSize } from '@/shared/utils/format';
+import { Row, Box } from '@/shared/presentation/primitives';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { ReactNode } from 'react';
 
@@ -19,16 +20,16 @@ interface StatusBarProps {
 };
 
 const StatusGroup = ({ items }: { items: StatusItem[] }) => (
-    <div className="volt-container canvas-status-group d-flex items-center gap-05">
+    <Row gap='05' className="canvas-status-group">
         {items.map(({ key, label, value, title, className }, i) => (
-            <div key={key} className="volt-container canvas-status-item d-flex items-center gap-05">
-                {i > 0 && <div className="volt-container canvas-status-divider" />}
+            <Row key={key} gap='05' className="canvas-status-item">
+                {i > 0 && <div className="canvas-status-divider" />}
                 <span className={`canvas-status-item-text font-size-1 color-muted ${className ?? ''}`.trim()} title={title}>
                     {label}{label && ': '}{value}
                 </span>
-            </div>
+            </Row>
         ))}
-    </div>
+    </Row>
 );
 
 const StatusBar = ({ trajectory, currentTimestep }: StatusBarProps) => {
@@ -93,13 +94,13 @@ const StatusBar = ({ trajectory, currentTimestep }: StatusBarProps) => {
     ];
 
     return (
-        <div className="volt-container canvas-status-bar d-flex items-center content-between">
-            <div className="volt-container canvas-status-main d-flex items-center gap-05">
-                <div className="volt-container canvas-live-dot radius-full f-shrink-0" />
+        <Row justify='between' className="canvas-status-bar">
+            <Row gap='05' className="canvas-status-main">
+                <Box radius='full' shrink='0' className="canvas-live-dot" />
                 <StatusGroup items={left} />
-            </div>
+            </Row>
             <StatusGroup items={right} />
-        </div>
+        </Row>
     );
 };
 

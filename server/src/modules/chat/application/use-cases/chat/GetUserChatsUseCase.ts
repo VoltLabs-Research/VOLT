@@ -1,17 +1,16 @@
-import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { GetUserChatsInputDTO } from '@modules/chat/application/dtos/chat/GetUserChatsDTO';
 import { PersistedChatDTO } from '@modules/chat/domain/port/chat/IChatRepository';
+import ChatRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/chat/ChatRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
-import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export class GetUserChatsUseCase implements IUseCase<GetUserChatsInputDTO, PersistedChatDTO[], ApplicationError> {
     constructor(
-        @inject(CHAT_TOKENS.ChatRepository)
-        private chatRepo: IChatRepository,
+        
+        private chatRepo: ChatRepository,
     ){}
 
     async execute(input: GetUserChatsInputDTO): Promise<Result<PersistedChatDTO[], ApplicationError>> {

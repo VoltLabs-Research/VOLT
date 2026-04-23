@@ -1,13 +1,11 @@
 import PluginPublishedEvent from '@modules/plugin/domain/events/PluginPublishedEvent';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-import { ChannelCommands, VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@shared/infrastructure/contracts/team-cluster';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
+import { ChannelCommands, VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@shared/infrastructure/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';
-import { injectable, inject } from 'tsyringe';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
-import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
 interface PluginWarmupCommandPayload extends Record<string, unknown> {
     pluginId: string;
@@ -23,14 +21,14 @@ interface PluginWarmupCommandResponse {
     jobId: string;
 }
 
-@injectable()
+@Subscribe('plugin.published')
 export default class PluginPublishedEventHandler implements IEventHandler<PluginPublishedEvent> {
     constructor(
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository
+        
+        private readonly teamClusterRepository: TeamClusterRepository
     ){}
 
     async handle(event: PluginPublishedEvent): Promise<void> {

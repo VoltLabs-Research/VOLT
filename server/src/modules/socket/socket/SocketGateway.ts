@@ -1,25 +1,24 @@
-import http from 'http';
-import Redis from 'ioredis';
-import { Server, Socket } from 'socket.io';
-import { createAdapter } from '@socket.io/redis-adapter';
 import { createRedisClient } from '@core/config/redis';
-import { inject, injectable } from 'tsyringe';
-import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import { ISocketRoomManager } from '@modules/socket/domain/port/ISocketRoomManager';
-import { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import logger from '@shared/infrastructure/logger';
-import { ISocketModule } from '@modules/socket/domain/port/ISocketModule';
-import AuthenticateSocketConnectionUseCase from '@modules/socket/application/use-cases/AuthenticateSocketConnectionUseCase';
-import { TRACE_ID_HEADER } from '@shared/infrastructure/http/middleware/request-context';
-import { collectAllowedClientOrigins } from '@shared/infrastructure/utilities/client-origins';
-import type { ISocketAuthenticationResult, ISocketConnectionData, ISocketConnectionUser } from '@modules/socket/domain/port/ISocketModule';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { randomUUID } from 'node:crypto';
-import type { ISocketConnectionMapper } from '@modules/socket/infrastructure/contracts/ISocketConnectionMapper';
+import AuthenticateSocketConnectionUseCase from '@modules/socket/application/use-cases/AuthenticateSocketConnectionUseCase';
+import type { ISocketAuthenticationResult, ISocketConnectionData, ISocketConnectionUser } from '@modules/socket/domain/port/ISocketModule';
+import { ISocketModule } from '@modules/socket/domain/port/ISocketModule';
 import type { ISocketEmitterRuntime } from '@modules/socket/infrastructure/contracts/ISocketEmitterRuntime';
 import type { ISocketEventRegistryRuntime } from '@modules/socket/infrastructure/contracts/ISocketEventRegistryRuntime';
 import type { ISocketRoomManagerRuntime } from '@modules/socket/infrastructure/contracts/ISocketRoomManagerRuntime';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
+import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
+import SocketConnectionMapper from '@modules/socket/utilities/SocketConnectionMapper';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { TRACE_ID_HEADER } from '@shared/infrastructure/http/middleware/request-context';
+import logger from '@shared/infrastructure/logger';
+import { collectAllowedClientOrigins } from '@shared/infrastructure/utilities/client-origins';
+import { createAdapter } from '@socket.io/redis-adapter';
+import http from 'http';
+import Redis from 'ioredis';
+import { randomUUID } from 'node:crypto';
+import { Server, Socket } from 'socket.io';
 
 interface SocketConnectionRuntimeData extends ISocketConnectionData {
     traceId?: string;
@@ -44,7 +43,7 @@ interface AuthenticatedSocket extends Socket{
  * Central gateway that creates and holds the Socket.IO server instance.
  * Attaches Redis adapter for multi-node setups and registers feature modules.
  */
-@injectable()
+@Singleton()
 export default class SocketGateway{
     private io?: Server;
     private adapterPub?: Redis;
@@ -58,28 +57,28 @@ export default class SocketGateway{
     private pingInterval = 25_000;
 
     constructor(
-        @inject(SOCKET_TOKENS.SocketEventEmitter)
-        private socketEmitter: ISocketEmitter,
+        
+        private socketEmitter: SocketIOEmitter,
 
-        @inject(SOCKET_TOKENS.SocketRoomManager)
-        private socketRoomManager: ISocketRoomManager,
+        
+        private socketRoomManager: SocketIORoomManager,
 
-        @inject(SOCKET_TOKENS.SocketEventRegistry)
-        private socketEventRegistry: ISocketEventRegistry,
+        
+        private socketEventRegistry: SocketIOEventRegistry,
 
-        @inject(SOCKET_TOKENS.AuthenticateSocketConnectionUseCase)
+        
         private authenticateSocketConnectionUseCase: AuthenticateSocketConnectionUseCase,
 
-        @inject(SOCKET_TOKENS.SocketConnectionMapper)
-        private socketMapper: ISocketConnectionMapper
+        
+        private socketMapper: SocketConnectionMapper
     ){}
 
     static inject = [
-        SOCKET_TOKENS.SocketEventEmitter,
-        SOCKET_TOKENS.SocketRoomManager,
-        SOCKET_TOKENS.SocketEventRegistry,
-        SOCKET_TOKENS.AuthenticateSocketConnectionUseCase,
-        SOCKET_TOKENS.SocketConnectionMapper
+        SocketIOEmitter,
+        SocketIORoomManager,
+        SocketIOEventRegistry,
+        AuthenticateSocketConnectionUseCase,
+        SocketConnectionMapper
     ];
 
     /**

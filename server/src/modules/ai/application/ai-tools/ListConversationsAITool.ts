@@ -1,11 +1,11 @@
-import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import ListAIConversationsUseCase from '@modules/ai/application/use-cases/ListAIConversationsUseCase';
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
 import { AITool } from '@shared/application/ai/AITool';
-import { inject, injectable } from 'tsyringe';
+import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
-@injectable()
+@CollectionMember(AI_TOKENS.AITool)
 export class ListConversationsAITool extends AITool {
     readonly name = 'list_conversations';
     readonly description = 'List all AI conversations for the current user.';
@@ -15,7 +15,7 @@ export class ListConversationsAITool extends AITool {
     });
 
     constructor(
-        @inject(AI_TOKENS.ListAIConversationsUseCase)
+        
         protected readonly useCase: ListAIConversationsUseCase
     ) {
         super();

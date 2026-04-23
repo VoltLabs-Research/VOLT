@@ -1,4 +1,4 @@
-import Button from '@/shared/presentation/components/Button';
+import { Button, Heading, Row, Stack, Surface, Text } from '@/shared/presentation/primitives';
 import type { ReactNode } from 'react';
 
 interface DangerZoneProps{
@@ -17,16 +17,16 @@ const DangerZone = ({
     onAction
 }: DangerZoneProps) => {
     return (
-        <div className='volt-container zone-danger p-1' role='region' aria-label={title}>
-            <div className='volt-container d-flex items-center content-between gap-1'>
-                <div className='volt-container d-flex column gap-025'>
-                    <h2 className='volt-title font-size-2 font-weight-6'>
+        <Surface variant='danger' p='1' role='region' aria-label={title}>
+            <Row justify='between' gap='1'>
+                <Stack gap='025'>
+                    <Heading level={2} size='md' weight='bold'>
                         {title}
-                    </h2>
-                    <p className='volt-text color-muted font-size-1'>
+                    </Heading>
+                    <Text as='p' tone='muted' size='sm'>
                         {description}
-                    </p>
-                </div>
+                    </Text>
+                </Stack>
                 <Button
                     intent='danger'
                     variant='outline'
@@ -36,8 +36,8 @@ const DangerZone = ({
                 >
                     {actionLabel}
                 </Button>
-            </div>
-        </div>
+            </Row>
+        </Surface>
     );
 };
 

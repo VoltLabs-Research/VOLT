@@ -1,9 +1,8 @@
 import { useKeyboardShortcutsStore } from '../../stores/use-keyboard-shortcuts-store';
 import formatKeyName from '../../utilities/format-key-name';
 
-import { closeModal, openModal } from '@/shared/presentation/components/Modal';
+import { Modal, closeModal, openModal, Stack, Row, Heading, Text } from '@/shared/presentation/primitives';
 import { useMemo, useEffect } from 'react';
-import Modal from '@/shared/presentation/components/Modal';
 import type { Shortcut } from '../../stores/use-keyboard-shortcuts-store';
 
 import './KeyboardShortcutsPanel.css';
@@ -37,28 +36,28 @@ const KeyboardShortcutsPanel = () => {
             className="canvas-shortcuts-modal"
             width="720px"
         >
-            <div className="volt-container d-flex column gap-1 p-1-5">
+            <Stack gap='1' p='1-5'>
                 {groupedShortcuts.map(({ category, shortcuts }) => (
-                    <div key={category} className="volt-container d-flex column gap-05">
-                        <h3 className="volt-title canvas-shortcuts-category font-size-05">{category.charAt(0).toUpperCase() + category.slice(1)}</h3>
-                        <div className="volt-container d-flex column gap-025">
+                    <Stack key={category} gap='05'>
+                        <Heading level={3} size='xs' className="canvas-shortcuts-category text-uppercase">{category.charAt(0).toUpperCase() + category.slice(1)}</Heading>
+                        <Stack gap='025'>
                             {shortcuts.map((shortcut: Shortcut) => (
-                                <div key={shortcut.id} className="volt-container canvas-shortcut-row d-flex items-center content-between u-select-none">
-                                    <span className="font-size-1 color-primary">{shortcut.description}</span>
-                                    <div className="volt-container canvas-shortcut-keys d-flex items-center gap-025">
+                                <Row key={shortcut.id} justify='between' selectNone className="canvas-shortcut-row">
+                                    <Text size='sm' tone='primary'>{shortcut.description}</Text>
+                                    <Row gap='025' className="canvas-shortcut-keys">
                                         {shortcut.keys.map((key, i) => (
-                                            <span key={key} className="d-flex items-center gap-025">
-                                                {i > 0 && <span className="font-size-1 color-secondary">+</span>}
+                                            <Row key={key} gap='025' as='span'>
+                                                {i > 0 && <Text size='sm' tone='secondary'>+</Text>}
                                                 <kbd className="canvas-shortcut-key font-size-05">{formatKeyName(key)}</kbd>
-                                            </span>
+                                            </Row>
                                         ))}
-                                    </div>
-                                </div>
+                                    </Row>
+                                </Row>
                             ))}
-                        </div>
-                    </div>
+                        </Stack>
+                    </Stack>
                 ))}
-            </div>
+            </Stack>
         </Modal>
     );
 };

@@ -1,19 +1,19 @@
-import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { Result } from '@shared/domain/port/Result';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { sanitizeAssetPath } from '@modules/latex/application/utilities/sanitize-asset-path';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
-import { v4 } from 'uuid';
-import path from 'node:path';
-import type { UploadLatexAssetInputDTO, UploadLatexAssetOutputDTO } from '@modules/latex/application/dtos/UploadLatexAssetDTO';
-import type { IUseCase } from '@shared/application/IUseCase';
-import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
-import type { ILatexAssetRepository } from '@modules/latex/domain/port/ILatexAssetRepository';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type { LatexAssetDTO } from '@modules/latex/application/dtos/LatexAssetDTO';
+import type { UploadLatexAssetInputDTO, UploadLatexAssetOutputDTO } from '@modules/latex/application/dtos/UploadLatexAssetDTO';
+import { sanitizeAssetPath } from '@modules/latex/application/utilities/sanitize-asset-path';
+import LatexAssetRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexAssetRepository';
+import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { IUseCase } from '@shared/application/IUseCase';
+import type { IStorageService } from '@shared/domain/port/IStorageService';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import path from 'node:path';
+import { inject } from 'tsyringe';
+import { v4 } from 'uuid';
 
 const MAX_ASSET_SIZE = 50 * 1024 * 1024;
 
@@ -22,14 +22,14 @@ const MAX_ASSET_SIZE = 50 * 1024 * 1024;
  * and persists metadata. Returns the list of successfully uploaded assets along
  * with a count of any files that could not be processed.
  */
-@injectable()
+@Singleton()
 export class UploadLatexAssetUseCase implements IUseCase<UploadLatexAssetInputDTO, UploadLatexAssetOutputDTO, ApplicationError> {
     constructor(
-        @inject(LATEX_TOKENS.LatexDocumentRepository)
-        private readonly latexDocumentRepository: ILatexDocumentRepository,
+        
+        private readonly latexDocumentRepository: LatexDocumentRepository,
 
-        @inject(LATEX_TOKENS.LatexAssetRepository)
-        private readonly latexAssetRepository: ILatexAssetRepository,
+        
+        private readonly latexAssetRepository: LatexAssetRepository,
 
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService

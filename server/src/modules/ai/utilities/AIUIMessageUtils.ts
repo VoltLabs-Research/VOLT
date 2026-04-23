@@ -1,13 +1,14 @@
 import type { AIConversationMessage } from '@modules/ai/domain/contracts/AIConversationMessage';
 import { AIConversationMessageRole } from '@modules/ai/domain/contracts/AIConversationMessage';
-import { injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+
 
 type AITextPart = {
     type: 'text';
     text: string;
 } & Record<string, unknown>;
 
-@injectable()
+@Singleton()
 export default class AIUIMessageUtils {
     private isTextPart(part: unknown): part is AITextPart {
         return typeof part === 'object'

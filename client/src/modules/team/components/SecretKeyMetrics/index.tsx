@@ -1,3 +1,4 @@
+import { AsyncBoundary, Skeleton, StatCard } from '@/shared/presentation/primitives';
 import { useMemo } from 'react';
 import {
     AreaChart,
@@ -11,14 +12,12 @@ import {
     ResponsiveContainer
 } from 'recharts';
 import { Activity, Clock, Globe, Key } from 'lucide-react';
-import Skeleton from '@/shared/presentation/components/Skeleton';
 import ChartContainer from '@/shared/presentation/components/ChartContainer';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import useSecretKeyTeamMetrics from '@/modules/team/hooks/secret-key/use-secret-key-team-metrics';
 import { CHART_COLORS } from '@/modules/team/utilities/secret-key/chart-helpers';
 import { createTooltipRenderer } from '@/modules/team/components/secret-key/shared/chart-tooltip-renderer';
 import '../secret-key/shared/SecretKeyShared.css';
-import './SecretKeyMetrics.css';
 
 const renderAreaTooltip = createTooltipRenderer('date', 'Requests', CHART_COLORS.requests);
 const renderBarTooltip = createTooltipRenderer('endpoint', 'Requests', CHART_COLORS.endpoints);
@@ -47,65 +46,72 @@ export default function SecretKeyMetrics() {
         return metrics.topEndpoints.length;
     }, [metrics?.topEndpoints]);
 
-    if(isLoading){
-        return (
-            <div className='volt-container secret-key-page vh-max color-primary'>
-                <div className='volt-container secret-key-page-main d-flex column gap-2 w-max'>
-                    <div className='volt-container d-flex column gap-05'>
-                        <Skeleton variant='text' width={240} height={32} />
-                        <Skeleton variant='text' width={160} height={20} />
-                    </div>
-                    <div className='volt-container secret-key-page-cards gap-1'>
-                        {[...Array(4)].map((_, i) => (
-                            <div key={i} className='volt-container secret-key-page-card radius-lg transition-normal'>
-                                <div className='volt-container d-flex items-center gap-05 mb-075'>
-                                    <Skeleton variant='circular' width={16} height={16} />
-                                    <Skeleton variant='text' width={120} height={20} />
-                                </div>
-                                <Skeleton variant='rectangular' width={100} height={48} style={{ borderRadius: 4 }} />
+    const loadingView = (
+        <div className='secret-key-page vh-max color-primary'>
+            <div className='secret-key-page-main d-flex column gap-2 w-max'>
+                <div className='d-flex column gap-05'>
+                    <Skeleton variant='text' width={240} height={32} />
+                    <Skeleton variant='text' width={160} height={20} />
+                </div>
+                <div className='secret-key-page-cards gap-1'>
+                    {[...Array(4)].map((_, i) => (
+                        <div key={i} className='secret-key-page-card radius-lg transition-normal'>
+                            <div className='d-flex items-center gap-05 mb-075'>
+                                <Skeleton variant='circular' width={16} height={16} />
+                                <Skeleton variant='text' width={120} height={20} />
                             </div>
-                        ))}
-                    </div>
-                    <div className='volt-container secret-key-page-charts'>
-                        <Skeleton variant='rectangular' width='100%' height={340} style={{ borderRadius: 8 }} />
-                        <Skeleton variant='rectangular' width='100%' height={340} style={{ borderRadius: 8 }} />
-                    </div>
+                            <Skeleton variant='rectangular' width={100} height={48} style={{ borderRadius: 4 }} />
+                        </div>
+                    ))}
+                </div>
+                <div className='secret-key-page-charts'>
+                    <Skeleton variant='rectangular' width='100%' height={340} style={{ borderRadius: 8 }} />
+                    <Skeleton variant='rectangular' width='100%' height={340} style={{ borderRadius: 8 }} />
                 </div>
             </div>
-        );
-    }
+        </div>
+    );
 
-    if(error && !metrics){
-        return (
-            <div className='volt-container secret-key-page vh-max color-primary'>
-                <div className='volt-container secret-key-page-main d-flex column gap-2 w-max'>
-                    <div className='volt-container d-flex column gap-05'>
-                        <h3 className='volt-title font-size-5 font-weight-6 color-primary'>Secret Key Metrics</h3>
-                    </div>
-                    <RecoveryState
-                        title='Unable to load metrics'
-                        description={error instanceof Error ? error.message : 'Something went wrong while loading secret key metrics.'}
-                        tone={RecoveryStateTone.Error}
-                        retryLabel='Try again'
-                        onRetry={() => refetch()}
-                    />
+    const errorView = (err: unknown) => (
+        <div className='secret-key-page vh-max color-primary'>
+            <div className='secret-key-page-main d-flex column gap-2 w-max'>
+                <div className='d-flex column gap-05'>
+                    <h3 className='font-size-5 font-weight-6 color-primary'>Secret Key Metrics</h3>
                 </div>
+                <RecoveryState
+                    title='Unable to load metrics'
+                    description={err instanceof Error ? err.message : 'Something went wrong while loading secret key metrics.'}
+                    tone={RecoveryStateTone.Error}
+                    retryLabel='Try again'
+                    onRetry={() => refetch()}
+                />
             </div>
-        );
-    }
+        </div>
+    );
 
-    if(!metrics){
-        return (
-            <div className='volt-container secret-key-page vh-max color-primary'>
-                <div className='volt-container secret-key-page-main d-flex column gap-2 w-max'>
-                    <div className='volt-container d-flex column gap-05'>
-                        <h3 className='volt-title font-size-5 font-weight-6 color-primary'>Secret Key Metrics</h3>
-                    </div>
-                    <div className='volt-container d-flex flex-center p-3'>
-                        <p className='volt-text color-muted font-size-3'>No metrics data available yet.</p>
-                    </div>
+    const emptyView = (
+        <div className='secret-key-page vh-max color-primary'>
+            <div className='secret-key-page-main d-flex column gap-2 w-max'>
+                <div className='d-flex column gap-05'>
+                    <h3 className='font-size-5 font-weight-6 color-primary'>Secret Key Metrics</h3>
+                </div>
+                <div className='d-flex flex-center p-3'>
+                    <p className='color-muted font-size-3'>No metrics data available yet.</p>
                 </div>
             </div>
+        </div>
+    );
+
+    if (isLoading || (error && !metrics) || !metrics) {
+        return (
+            <AsyncBoundary
+                state={{ loading: isLoading, error: error && !metrics ? error : undefined, empty: !metrics }}
+                loading={loadingView}
+                error={errorView}
+                empty={emptyView}
+            >
+                {null}
+            </AsyncBoundary>
         );
     }
 
@@ -135,35 +141,29 @@ export default function SecretKeyMetrics() {
     ];
 
     return (
-        <div className='volt-container secret-key-page vh-max color-primary'>
-            <div className='volt-container secret-key-page-main d-flex column gap-2 w-max'>
-                <div className='volt-container d-flex column gap-05'>
-                    <h3 className='volt-title font-size-5 font-weight-6 color-primary'>Secret Key Metrics</h3>
-                    <p className='volt-text font-size-2 color-secondary'>
+        <div className='secret-key-page vh-max color-primary'>
+            <div className='secret-key-page-main d-flex column gap-2 w-max'>
+                <div className='d-flex column gap-05'>
+                    <h3 className='font-size-5 font-weight-6 color-primary'>Secret Key Metrics</h3>
+                    <p className='font-size-2 color-secondary'>
                         {metrics.overview.totalRequests.toLocaleString()} total requests across {metrics.totalKeys} keys
                     </p>
                 </div>
 
-                <div className='volt-container secret-key-page-cards gap-1'>
+                <div className='secret-key-page-cards gap-1'>
                     {cards.map((card) => (
-                        <div key={card.title} className='volt-container secret-key-page-card radius-lg transition-normal glass-bg'>
-                            <div className='volt-container d-flex items-center gap-05 mb-075'>
-                                <card.icon className='color-muted-foreground' style={{ width: 16, height: 16 }} />
-                                <span className='font-size-2 color-secondary'>{card.title}</span>
-                            </div>
-                            <div className='volt-container d-flex items-baseline gap-05'>
-                                <span className='secret-key-page-card-value font-size-6 font-weight-6 color-primary'>
-                                    {card.value}
-                                </span>
-                                {card.unit && (
-                                    <span className='font-size-2 font-weight-5 color-muted'>{card.unit}</span>
-                                )}
-                            </div>
-                        </div>
+                        <StatCard
+                            key={card.title}
+                            icon={<card.icon size={16} />}
+                            label={card.title}
+                            value={card.value}
+                            unit={card.unit}
+                            className='glass-bg'
+                        />
                     ))}
                 </div>
 
-                <div className='volt-container secret-key-page-charts'>
+                <div className='secret-key-page-charts'>
                     <ChartContainer
                         icon={Activity}
                         title='Requests Over Time'
@@ -249,9 +249,9 @@ export default function SecretKeyMetrics() {
                     </ChartContainer>
                 </div>
 
-                <div className='volt-container d-flex column p-1-5 radius-lg glass-bg'>
-                    <h3 className='volt-title font-size-3 font-weight-6 color-primary mb-1-5'>Per-Key Breakdown</h3>
-                    <div className="volt-container" style={{ overflowX: 'auto' }}>
+                <div className='d-flex column p-1-5 radius-lg glass-bg'>
+                    <h3 className='font-size-3 font-weight-6 color-primary mb-1-5'>Per-Key Breakdown</h3>
+                    <div className='x-auto'>
                         <table className='secret-key-page-table'>
                             <thead>
                                 <tr>
@@ -267,14 +267,14 @@ export default function SecretKeyMetrics() {
                                 {metrics.perKey.map((key) => (
                                     <tr key={key.secretKeyId}>
                                         <td>
-                                            <div className='volt-container d-flex column'>
+                                            <div className='d-flex column'>
                                                 <span className='font-weight-5 color-primary'>{key.name}</span>
-                                                <span className='font-size-1 font-family-mono color-muted'>{key.keyPrefix}...</span>
+                                                <span className='font-size-1 font-mono color-muted'>{key.keyPrefix}...</span>
                                             </div>
                                         </td>
                                         <td className='color-secondary'>{key.roleName}</td>
-                                        <td className='font-family-mono color-primary'>{key.totalRequests.toLocaleString()}</td>
-                                        <td className='font-family-mono color-secondary'>{Math.round(key.avgResponseTime)} ms</td>
+                                        <td className='font-mono color-primary'>{key.totalRequests.toLocaleString()}</td>
+                                        <td className='font-mono color-secondary'>{Math.round(key.avgResponseTime)} ms</td>
                                         <td className='color-secondary'>
                                             {key.lastRequestAt
                                                 ? new Date(key.lastRequestAt).toLocaleDateString()

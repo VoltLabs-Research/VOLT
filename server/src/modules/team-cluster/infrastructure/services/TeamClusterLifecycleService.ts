@@ -1,24 +1,22 @@
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import { toTeamClusterDTO, TeamClusterDTO } from '@modules/team-cluster/application/dtos/TeamClusterDTO';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import type { SystemMetrics } from '@modules/system/domain/value-objects/SystemMetrics';
+import SystemMetricsRedisRepository from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisRepository';
+import { TeamClusterDTO, toTeamClusterDTO } from '@modules/team-cluster/application/dtos/TeamClusterDTO';
 import TeamCluster, {
     TeamClusterRuntimeRoleConfigProps,
     TeamClusterStatus
 } from '@modules/team-cluster/domain/entities/TeamCluster';
 import FirstTeamClusterConnectedEvent from '@modules/team-cluster/domain/events/FirstTeamClusterConnectedEvent';
+import type { TeamClusterLifecycleUpdatePreconditions } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import { getTeamClusterRoom, TEAM_CLUSTER_LIFECYCLE_EVENT } from '@modules/team-cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
-import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
-import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
-import type { SystemMetrics } from '@modules/system/domain/value-objects/SystemMetrics';
-import type { TeamClusterLifecycleUpdatePreconditions } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import logger from '@shared/infrastructure/logger';
+import { inject } from 'tsyringe';
 
 const BYTES_PER_GB = 1024 ** 3;
 const TEAM_CLUSTER_ALLOWED_TRANSITIONS: Record<TeamClusterStatus, ReadonlySet<TeamClusterStatus>> = {
@@ -159,23 +157,23 @@ interface TeamClusterLifecycleEventPayload {
     timestamp: string;
 };
 
-@injectable()
+@Singleton()
 export default class TeamClusterLifecycleService {
     constructor(
-        @inject(SHARED_TOKENS.DaemonCredentialGuard)
+        
         private readonly daemonCredentialGuard: DaemonCredentialGuard,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
+        
+        private readonly teamClusterRepository: TeamClusterRepository,
 
-        @inject(SOCKET_TOKENS.SocketEmitter)
-        private readonly socketEmitter: ISocketEmitter,
+        
+        private readonly socketEmitter: SocketIOEmitter,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
 
-        @inject(SYSTEM_TOKENS.SystemMetricsRepository)
-        private readonly systemMetricsRepository: ISystemMetricsRepository
+        
+        private readonly systemMetricsRepository: SystemMetricsRedisRepository
     ){}
 
     async processHealthcheck(teamClusterId: string, enrollmentToken: string, installedVersion?: string): Promise<{

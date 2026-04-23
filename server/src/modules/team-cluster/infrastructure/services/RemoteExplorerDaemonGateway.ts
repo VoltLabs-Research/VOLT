@@ -1,8 +1,7 @@
 import { TeamClusterRemoteAccessTargetDTO } from '@modules/team-cluster/application/dtos/TeamClusterRemoteAccessDTO';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { inject, injectable } from 'tsyringe';
 
 import type {
     TeamClusterRemoteExplorerEntryDTO,
@@ -16,10 +15,10 @@ interface RemoteExplorerDaemonRequest {
     path: string;
 };
 
-@injectable()
+@Singleton()
 export default class RemoteExplorerDaemonGateway {
     constructor(
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 

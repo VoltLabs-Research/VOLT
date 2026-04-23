@@ -4,14 +4,14 @@ import {
     useTopLayerRoot
 } from '@/shared/presentation/contexts/FloatingRootContext';
 import { cn } from '@/shared/utils';
-import LiquidToggle from '@/shared/presentation/components/LiquidToggle';
-import Select from '@/shared/presentation/components/Select';
+import { LiquidToggle } from '@/shared/presentation/primitives';
+import { Select } from '@/shared/presentation/primitives';
 import './FormField.css';
 import { useFloating, useDismiss, useInteractions, FloatingPortal, offset, flip, shift, size, autoUpdate } from '@floating-ui/react';
 import { AlertCircle } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, useCallback, useId } from 'react';
 import { Controller } from 'react-hook-form';
-import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { SelectOption } from '@/shared/presentation/primitives';
 import type { ChangeEvent, InputHTMLAttributes, KeyboardEvent, ReactNode, RefCallback } from 'react';
 import type { Control, FieldValues, Path } from 'react-hook-form';
 
@@ -501,7 +501,7 @@ const DefaultRenderer = ({
     };
 
     return (
-        <div className='volt-container form-field-container d-flex column gap-05 w-max'>
+        <div className='form-field-container d-flex column gap-05 w-max'>
             {label && (
                 <label
                     id={ids.labelId}
@@ -512,17 +512,17 @@ const DefaultRenderer = ({
                 </label>
             )}
 
-            <div className='volt-container p-relative'>
+            <div className='p-relative'>
                 {renderField()}
                 {icon && (
-                    <div className='volt-container form-field-icon p-absolute d-flex flex-center'>
+                    <div className='form-field-icon p-absolute d-flex flex-center'>
                         {icon}
                     </div>
                 )}
             </div>
 
             {error && (
-                <div id={ids.errorId} role='status' aria-live='polite' aria-atomic='true' className='volt-container d-flex items-center gap-025 form-field-error font-size-1'>
+                <div id={ids.errorId} role='status' aria-live='polite' aria-atomic='true' className='d-flex items-center gap-025 form-field-error font-size-1'>
                     <AlertCircle size={12} />
                     <span>{error}</span>
                 </div>
@@ -900,7 +900,7 @@ const InlineCanvasRenderer = ({
     }
 
     return (
-        <div className={`volt-container ${containerClass} ${loadingClass}`}>
+        <div className={`${containerClass} ${loadingClass}`}>
             {hasLabel && (
                 <label
                     id={ids.labelId}
@@ -910,13 +910,13 @@ const InlineCanvasRenderer = ({
                     {label}
                 </label>
             )}
-            <div ref={autocompleteRefs.setReference} className='volt-container d-flex items-center render-input-container w-max content-end p-relative'>
+            <div ref={autocompleteRefs.setReference} className='d-flex items-center render-input-container w-max content-end p-relative'>
                 {renderInlineField()}
             </div>
 
             {autocompleteOpen && (
                 <FloatingPortal root={floatingRoot}>
-                    <div ref={autocompleteRefs.setFloating} className='volt-container form-field-autocomplete-menu d-flex column' data-floating-owner-ids={floatingOwnerIdsAttribute} style={autocompleteFloatingStyles} {...getAutocompleteFloatingProps()}>
+                    <div ref={autocompleteRefs.setFloating} className='form-field-autocomplete-menu d-flex column' data-floating-owner-ids={floatingOwnerIdsAttribute} style={autocompleteFloatingStyles} {...getAutocompleteFloatingProps()}>
                         {filteredAutocompleteOptions.map((option, index) => (
                             <button
                                 type='button'
@@ -938,7 +938,7 @@ const InlineCanvasRenderer = ({
             )}
 
             {error && (
-                <div id={ids.errorId} role='status' aria-live='polite' aria-atomic='true' className='volt-container d-flex items-center gap-025 form-field-error font-size-1'>
+                <div id={ids.errorId} role='status' aria-live='polite' aria-atomic='true' className='d-flex items-center gap-025 form-field-error font-size-1'>
                     <AlertCircle size={12} />
                     <span>{error}</span>
                 </div>

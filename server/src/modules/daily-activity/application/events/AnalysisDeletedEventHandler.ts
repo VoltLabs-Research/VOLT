@@ -1,15 +1,14 @@
-import { ActivityType } from '@modules/daily-activity/domain/entities/DailyActivity';
-import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
-import { inject, injectable } from 'tsyringe';
 import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
-import type { IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
+import { ActivityType } from '@modules/daily-activity/domain/entities/DailyActivity';
+import DailyActivityRepository from '@modules/daily-activity/infrastructure/persistence/mongo/repositories/DailyActivityRepository';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-@injectable()
+@Subscribe('analysis.deleted')
 export default class AnalysisDeletedEventHandler implements IEventHandler<AnalysisDeletedEvent> {
     constructor(
-        @inject(DAILY_ACTIVITY_TOKENS.DailyActivityRepository)
-        private activityRepo: IDailyActivityRepository
+        
+        private activityRepo: DailyActivityRepository
     ) {}
 
     async handle(event: AnalysisDeletedEvent): Promise<void> {

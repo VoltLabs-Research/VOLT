@@ -1,7 +1,7 @@
-import EmptyState from '@/shared/presentation/components/EmptyState';
+import { EmptyState } from '@/shared/presentation/primitives';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
-import Slider from '@/shared/presentation/components/Slider';
+import { Box, Row, Slider, Stack, Text } from '@/shared/presentation/primitives';
 import './ClusterResourceSelectionPanel.css';
 import { Cpu, HardDrive, ServerCog } from 'lucide-react';
 import { MIN_CLUSTER_CPU, MIN_CLUSTER_MEMORY_MB } from '@/modules/container/utilities/resource-allocation';
@@ -95,8 +95,8 @@ const ClusterResourceSelectionPanel = ({
     const maxMemory = clusterResourceLimits?.maxMemoryMB ?? MIN_CLUSTER_MEMORY_MB;
 
     return (
-        <div className='volt-container cluster-resource-selection-grid'>
-            <div className='volt-container cluster-resource-selection-card radius-md d-flex column gap-1 p-1-5'>
+        <Box className='cluster-resource-selection-grid'>
+            <Stack className='cluster-resource-selection-card' radius='md' gap='1' p='1-5'>
                 <SettingsSectionHeader
                     title={clusterTitle}
                     description={clusterDescription}
@@ -113,9 +113,9 @@ const ClusterResourceSelectionPanel = ({
                     error={clusterFieldError}
                     disabled={!isTeamSelected || teamClusters.length === 0}
                 />
-            </div>
+            </Stack>
 
-            <div className='volt-container cluster-resource-selection-card radius-md d-flex column gap-1 p-1-5'>
+            <Stack className='cluster-resource-selection-card' radius='md' gap='1' p='1-5'>
                 <SettingsSectionHeader
                     title={resourcesTitle}
                     description={resourcesDescription}
@@ -151,15 +151,15 @@ const ClusterResourceSelectionPanel = ({
                 ) : (
                     <>
                         {resourceStatusMessage && (
-                            <p className='volt-text font-size-2 color-secondary'>{resourceStatusMessage}</p>
+                            <Text as='p' size='md' tone='secondary'>{resourceStatusMessage}</Text>
                         )}
-                        <div className='volt-container cluster-resource-selection-row radius-sm p-1 mb-075'>
-                            <div className='volt-container d-flex content-between items-center mb-075'>
+                        <Box className='cluster-resource-selection-row mb-075' radius='sm' p='1'>
+                            <Row className='mb-075' justify='between'>
                                 <span className='d-flex items-center gap-05 font-size-2 font-weight-5 color-secondary'>
                                     <Cpu size={16} /> CPU
                                 </span>
                                 <span className='cluster-resource-selection-value radius-full font-weight-6'>{cpus} vCPU</span>
-                            </div>
+                            </Row>
                             <Slider
                                 min={MIN_CLUSTER_CPU}
                                 max={maxCpu}
@@ -167,18 +167,18 @@ const ClusterResourceSelectionPanel = ({
                                 value={cpus}
                                 onChange={onCpusChange}
                             />
-                            <div className='volt-container d-flex content-between font-size-1 color-muted'>
+                            <Box className='d-flex content-between font-size-1 color-muted'>
                                 <span>{MIN_CLUSTER_CPU} vCPU</span>
                                 <span>{maxCpu} vCPU</span>
-                            </div>
-                        </div>
-                        <div className='volt-container cluster-resource-selection-row radius-sm p-1'>
-                            <div className='volt-container d-flex content-between items-center mb-075'>
+                            </Box>
+                        </Box>
+                        <Box className='cluster-resource-selection-row' radius='sm' p='1'>
+                            <Row className='mb-075' justify='between'>
                                 <span className='d-flex items-center gap-05 font-size-2 font-weight-5 color-secondary'>
                                     <HardDrive size={16} /> Memory
                                 </span>
                                 <span className='cluster-resource-selection-value radius-full font-weight-6'>{memoryMB} MB</span>
-                            </div>
+                            </Row>
                             <Slider
                                 min={MIN_CLUSTER_MEMORY_MB}
                                 max={maxMemory}
@@ -186,15 +186,15 @@ const ClusterResourceSelectionPanel = ({
                                 value={memoryMB}
                                 onChange={onMemoryChange}
                             />
-                            <div className='volt-container d-flex content-between font-size-1 color-muted'>
+                            <Box className='d-flex content-between font-size-1 color-muted'>
                                 <span>{MIN_CLUSTER_MEMORY_MB} MB</span>
                                 <span>{maxMemory} MB</span>
-                            </div>
-                        </div>
+                            </Box>
+                        </Box>
                     </>
                 )}
-            </div>
-        </div>
+            </Stack>
+        </Box>
     );
 };
 

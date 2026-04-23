@@ -1,38 +1,36 @@
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
+import BcryptPasswordHasher from '@modules/auth/infrastructure/services/BcryptPasswordHasher';
 import {
     CreateTeamClusterRemoteAccessSessionInputDTO,
     CreateTeamClusterRemoteAccessSessionOutputDTO
 } from '@modules/team-cluster/application/dtos/CreateTeamClusterRemoteAccessSessionDTO';
 import { requireOwnedTeamCluster } from '@modules/team-cluster/application/utilities/team-cluster-ownership';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import TeamClusterRemoteAccessSessionService from '@modules/team-cluster/infrastructure/services/TeamClusterRemoteAccessSessionService';
 import { assertConfirmedPassword } from '@modules/team-cluster/utilities/assertConfirmedPassword';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
-import type { IPasswordHasher } from '@modules/auth/domain/port/IPasswordHasher';
-import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 
-@injectable()
+@Singleton()
 export default class CreateTeamClusterRemoteAccessSessionUseCase implements IUseCase<
     CreateTeamClusterRemoteAccessSessionInputDTO,
     CreateTeamClusterRemoteAccessSessionOutputDTO,
     ApplicationError
 > {
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
+        
+        private readonly teamClusterRepository: TeamClusterRepository,
 
-        @inject(AUTH_TOKENS.UserRepository)
-        private readonly userRepository: IUserRepository,
+        
+        private readonly userRepository: UserRepository,
 
-        @inject(AUTH_TOKENS.PasswordHasher)
-        private readonly passwordHasher: IPasswordHasher,
+        
+        private readonly passwordHasher: BcryptPasswordHasher,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRemoteAccessSessionService)
+        
         private readonly sessionService: TeamClusterRemoteAccessSessionService
     ) {}
 

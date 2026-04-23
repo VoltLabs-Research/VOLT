@@ -156,22 +156,6 @@
     box-shadow: 0 0 8px color-mix(in srgb, var(--status-success) 35%, transparent);
 }
 
-.canvas-timeline-sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-}
-
-.canvas-simcell-value--mono {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-}
-
 @media (max-width: 900px) {
     .canvas-timeline-header {
         height: auto;

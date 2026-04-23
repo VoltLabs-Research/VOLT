@@ -1,5 +1,5 @@
 import ProcessingLoader from '@/shared/presentation/components/ProcessingLoader';
-import Skeleton from '@/shared/presentation/components/Skeleton';
+import { Skeleton, Box, Row } from '@/shared/presentation/primitives';
 
 interface SimulationSkeletonCardProps {
     n?: number;
@@ -20,27 +20,27 @@ export default function SimulationSkeletonCard({ n = 1, progress, status }: Simu
         }
 
         return (
-            <div className='volt-container simulation-container loading p-relative w-max overflow-hidden cursor-pointer'>
+            <Box position='relative' width='max' overflow='hidden' cursor='pointer' className='simulation-container loading'>
                 <Skeleton variant='rounded' width='100%' height={200} />
-                <div className='volt-container p-absolute' style={{ bottom: '1.5rem', left: '1.5rem', zIndex: 10 }}>
-                    <div className='volt-container d-flex items-center gap-05'>
+                <Box position='absolute' style={{ bottom: '1.5rem', left: '1.5rem', zIndex: 10 }}>
+                    <Row gap='05'>
                         <ProcessingLoader
                             isVisible={true}
                             message={message}
                             className='text-white'
                         />
-                    </div>
-                </div>
-            </div>
+                    </Row>
+                </Box>
+            </Box>
         );
     }
 
     return (
         <>
             {Array.from({ length: n }).map((_, index) => (
-                <div className='volt-container simulation-container loading p-relative w-max overflow-hidden cursor-pointer' key={index}>
+                <Box position='relative' width='max' overflow='hidden' cursor='pointer' className='simulation-container loading' key={index}>
                     <Skeleton variant='rounded' width='100%' height={200} />
-                </div>
+                </Box>
             ))}
         </>
     );

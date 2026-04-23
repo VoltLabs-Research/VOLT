@@ -6,6 +6,7 @@ import queryClient from '@/shared/infrastructure/query/query-client';
 import { tokenStorage } from '@/shared/auth/token-storage';
 import type { ChangePasswordInputDTO, ChangePasswordOutputDTO } from '../api/dtos/change-password';
 import type { CheckEmailInputDTO, CheckEmailOutputDTO } from '../api/dtos/check-email';
+import type { GetAvailableOAuthProvidersOutputDTO } from '../api/dtos/oauth-providers';
 import type { SignInInputDTO, SignInOutputDTO } from '../api/dtos/sign-in';
 import type { SignUpInputDTO, SignUpOutputDTO } from '../api/dtos/sign-up';
 import type { UpdateAvatarInputDTO } from '../api/dtos/update-avatar';
@@ -13,7 +14,7 @@ import type { UpdateProfileInputDTO } from '../api/dtos/update-profile';
 import type { User } from '../api/entities/user';
 import type { QueryOptions } from '@/shared/infrastructure/query';
 
-type AuthQueryKeyMap = Record<'currentUser' | 'passwordInfo', void>;
+type AuthQueryKeyMap = Record<'currentUser' | 'passwordInfo' | 'oauthProviders', void>;
 
 export const KEYS = buildKeys<AuthQueryKeyMap>('auth');
 
@@ -21,8 +22,11 @@ registerPreservedQueryKey(KEYS.currentUser()[0] as string);
 
 const currentUser = createQuery(KEYS.currentUser, () => service.getMe({}));
 export const passwordInfoQuery = createQuery(KEYS.passwordInfo, () => service.getPasswordInfo({}));
+const oauthProviders = createQuery(KEYS.oauthProviders, () => service.getAvailableOAuthProviders({}));
 
 export const useCurrentUserQuery = (options?: QueryOptions<User>) => currentUser(undefined, { staleTime: Infinity, ...options });
+export const useOAuthProvidersQuery = (options?: QueryOptions<GetAvailableOAuthProvidersOutputDTO>) =>
+    oauthProviders(undefined, { staleTime: Infinity, ...options });
 export const fetchCurrentUser = () => currentUser.fetch(undefined, { staleTime: 0 });
 export const clearCurrentUserQueryData = async () => {
     await queryClient.cancelQueries({ queryKey: KEYS.currentUser() });

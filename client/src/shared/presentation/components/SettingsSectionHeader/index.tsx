@@ -1,5 +1,6 @@
 import './SettingsSectionHeader.css';
 import { cn } from '@/shared/utils';
+import { Stack, Text } from '@/shared/presentation/primitives';
 import type { ReactNode } from 'react';
 
 export interface SettingsSectionHeaderProps {
@@ -22,18 +23,18 @@ const SettingsSectionHeader = ({
 
     return (
         <header className={classes}>
-            <div className='volt-container flex-1 d-flex column gap-025'>
-                <HeadingTag className='volt-title font-size-3 font-weight-6'>
+            <Stack flex='1' gap='025'>
+                <HeadingTag className='font-size-3 font-weight-6'>
                     {title}
                 </HeadingTag>
                 {description && (
-                    <p className='volt-text color-muted font-size-2'>
+                    <Text as='p' tone='muted' size='md'>
                         {description}
-                    </p>
+                    </Text>
                 )}
-            </div>
+            </Stack>
             {action && (
-                <div className='volt-container f-shrink-0'>
+                <div className='f-shrink-0'>
                     {action}
                 </div>
             )}

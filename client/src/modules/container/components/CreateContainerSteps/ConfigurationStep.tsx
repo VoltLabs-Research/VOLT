@@ -1,8 +1,8 @@
-import Button from '@/shared/presentation/components/Button';
 import ClusterResourceSelectionPanel from '@/modules/container/components/ClusterResourceSelectionPanel';
 import EditableKeyValueCard from '@/shared/presentation/components/EditableKeyValueCard';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
+import { Box, Button, Heading, Row, Stack, Text } from '@/shared/presentation/primitives';
 import { getCustomFieldValidationError } from '../../hooks/use-create-container-form';
 import { ContainerTemplateCustomFieldType } from '../../api/entities/container-template';
 import type { ContainerConfig } from '../../hooks/use-create-container-form';
@@ -12,6 +12,7 @@ import type { FieldConfig } from '@/shared/presentation/components/EditableKeyVa
 import type { SelectOption } from '@/shared/presentation/components/FormFieldRHF';
 import type { Team } from '@/modules/team/api/entities/team/team';
 import type { TeamClusterOption } from '@/modules/container/api/entities/team-cluster-option';
+import { useDemoClusterStore } from '@/modules/cluster/stores/use-demo-cluster-store';
 
 interface PortMappingFormItem extends Record<string, unknown> {
     private: number;
@@ -143,7 +144,7 @@ const renderCustomFieldsSection = (
         const fieldError = getCustomFieldValidationError(customField, fieldValue) ?? undefined;
 
         return (
-            <div key={customField.id} className='volt-container d-flex column gap-05'>
+            <Stack key={customField.id} gap='05'>
                 <FormFieldRHF
                     label={customField.label}
                     name={customField.id}
@@ -160,23 +161,23 @@ const renderCustomFieldsSection = (
                     className='w-full'
                 />
                 {customField.description && (
-                    <p className='volt-text font-size-2 color-muted'>{customField.description}</p>
+                    <Text as='p' size='md' tone='muted'>{customField.description}</Text>
                 )}
-            </div>
+            </Stack>
         );
     };
 
     return (
-        <div className='volt-container create-container-config-card full-width radius-md d-flex column gap-1 p-1-5'>
+        <Stack className='create-container-config-card full-width' radius='md' gap='1' p='1-5'>
             <SettingsSectionHeader
                 title='Template settings'
                 description='These options come from the selected template.'
                 className='create-container-config-section-header mb-1 pb-075'
             />
-            <div className='volt-container d-flex column gap-1'>
+            <Stack gap='1'>
                 {customFields.map(renderCustomField)}
-            </div>
-        </div>
+            </Stack>
+        </Stack>
     );
 };
 
@@ -195,6 +196,7 @@ const ConfigurationStep = ({
     onBack,
     onNext
 }: ConfigurationStepProps) => {
+    const isDemoCluster = useDemoClusterStore((state) => state.isDemo);
     const portItems: PortMappingFormItem[] = config.ports.map(getPortMappingFormItem);
     const envItems: EnvVariableFormItem[] = config.env.map((item) => ({
         key: item.key,
@@ -214,21 +216,21 @@ const ConfigurationStep = ({
     const remainingItemsLabel = `${requiredRemainingCount} required item${requiredRemainingCount === 1 ? '' : 's'} remaining before review.`;
 
     return (
-        <div className='volt-container create-container-step d-flex column gap-2'>
-            <div className='volt-container d-flex column gap-05'>
-                <h3 className='volt-title font-size-5 font-weight-6'>Configuration</h3>
-                <p className='volt-text font-size-3 color-secondary create-container-step-copy'>Fill in the required deployment details, then adjust optional settings only if needed.</p>
-            </div>
+        <Stack className='create-container-step' gap='2'>
+            <Stack gap='05'>
+                <Heading level={3} size='xl' weight='bold'>Configuration</Heading>
+                <Text as='p' size='lg' tone='secondary' className='create-container-step-copy'>Fill in the required deployment details, then adjust optional settings only if needed.</Text>
+            </Stack>
 
-            <div className='volt-container create-container-config-grid gap-1-5 mt-1-5'>
-                <div className='volt-container create-container-config-card full-width radius-md d-flex column gap-1 p-1-5'>
+            <Box className='create-container-config-grid gap-1-5 mt-1-5'>
+                <Stack className='create-container-config-card full-width' radius='md' gap='1' p='1-5'>
                     <SettingsSectionHeader
                         title='Deployment details'
                         description='These fields are required before you can continue to review.'
                         className='create-container-config-section-header mb-1 pb-075'
                     />
-                    <div className='volt-container create-container-deployment-fields'>
-                        <div className='volt-container create-container-deployment-name'>
+                    <Box className='create-container-deployment-fields'>
+                        <Box className='create-container-deployment-name'>
                             <FormFieldRHF
                                 label='Name'
                                 placeholder='my-container-app'
@@ -237,8 +239,8 @@ const ConfigurationStep = ({
                                 error={!config.name.trim() ? 'A container name is required before review.' : undefined}
                                 className='w-full'
                             />
-                        </div>
-                        <div className='volt-container create-container-deployment-selects d-flex gap-1 column'>
+                        </Box>
+                        <Stack className='create-container-deployment-selects' gap='1'>
                             <FormFieldRHF
                                 fieldType='select'
                                 label='Team'
@@ -250,9 +252,9 @@ const ConfigurationStep = ({
                                 error={teamFieldError}
                                 disabled={teams.length === 0}
                             />
-                        </div>
-                    </div>
-                </div>
+                        </Stack>
+                    </Box>
+                </Stack>
 
                 <ClusterResourceSelectionPanel
                     teamClusters={teamClusters}
@@ -269,7 +271,7 @@ const ConfigurationStep = ({
                     clusterDescription='Choose where this container will be deployed.'
                 />
 
-                <div className='volt-container create-container-config-card radius-md d-flex column gap-1 p-1-5'>
+                <Stack className='create-container-config-card' radius='md' gap='1' p='1-5'>
                     <SettingsSectionHeader
                         title='Network'
                         description='Optional public port mappings.'
@@ -284,9 +286,9 @@ const ConfigurationStep = ({
                         createEmpty={() => ({ private: 80 })}
                         emptyMessage='No port mappings added.'
                     />
-                </div>
+                </Stack>
 
-                <div className='volt-container create-container-config-card radius-md d-flex column gap-1 p-1-5'>
+                <Stack className='create-container-config-card' radius='md' gap='1' p='1-5'>
                     <SettingsSectionHeader
                         title='Environment variables'
                         description='Optional runtime values for the container.'
@@ -301,11 +303,11 @@ const ConfigurationStep = ({
                         createEmpty={() => ({ key: '', value: '' })}
                         emptyMessage='No environment variables added.'
                     />
-                </div>
+                </Stack>
 
                 {renderCustomFieldsSection(config.customFields, config.customFieldValues, onConfigChange)}
 
-                <div className='volt-container create-container-config-card full-width radius-md d-flex column gap-1 p-1-5'>
+                <Stack className='create-container-config-card full-width' radius='md' gap='1' p='1-5'>
                     <SettingsSectionHeader
                         title='Advanced'
                         description='Enable only when the image needs direct access to the host Docker socket.'
@@ -316,8 +318,10 @@ const ConfigurationStep = ({
                         fieldType='checkbox'
                         label='Docker socket access'
                         name='mountDockerSocket'
-                        value={config.mountDockerSocket}
+                        value={isDemoCluster ? false : config.mountDockerSocket}
+                        disabled={isDemoCluster}
                         onChange={(event) => {
+                            if (isDemoCluster) return;
                             if (!hasValueChangeTarget(event.target)) {
                                 return;
                             }
@@ -330,20 +334,24 @@ const ConfigurationStep = ({
                             onConfigChange('mountDockerSocket', inputValue === 'true');
                         }}
                     />
-                    <p className='volt-text font-size-2 color-muted'>Mounts /var/run/docker.sock inside the container.</p>
-                </div>
-            </div>
+                    <Text as='p' size='md' tone='muted'>
+                        {isDemoCluster
+                            ? 'Disabled in demo mode — connect your own cluster to enable this option.'
+                            : 'Mounts /var/run/docker.sock inside the container.'}
+                    </Text>
+                </Stack>
+            </Box>
 
-            <div className='volt-container create-container-step-actions d-flex items-center content-between gap-1 mt-2'>
-                <p className='volt-text font-size-2 color-secondary'>
+            <Row className='create-container-step-actions mt-2' justify='between' gap='1'>
+                <Text as='p' size='md' tone='secondary'>
                     {canProceed ? 'Required fields complete. Continue when you are ready.' : remainingItemsLabel}
-                </p>
-                <div className='volt-container d-flex gap-1 create-container-step-actions-buttons'>
+                </Text>
+                <Row className='create-container-step-actions-buttons' gap='1'>
                     <Button variant='outline' intent='neutral' onClick={onBack}>Back</Button>
                     <Button variant='solid' intent='brand' onClick={onNext} disabled={!canProceed}>Continue to review</Button>
-                </div>
-            </div>
-        </div>
+                </Row>
+            </Row>
+        </Stack>
     );
 };
 

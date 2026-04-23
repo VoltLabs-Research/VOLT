@@ -9,9 +9,9 @@ import { NEW_TRAJECTORY_FOLDER_MODAL_ID } from '@/modules/trajectory/hooks/traje
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import SimulationGrid from '@/modules/trajectory/components/SimulationGrid';
-import Button from '@/shared/presentation/components/Button';
-import EmptyState from '@/shared/presentation/components/EmptyState';
-import { openModal } from '@/shared/presentation/components/Modal';
+import { Box, Row, Heading, Button } from '@/shared/presentation/primitives';
+import { EmptyState } from '@/shared/presentation/primitives';
+import { openModal } from '@/shared/presentation/primitives';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
@@ -80,26 +80,26 @@ const DashboardPage = () => {
     // /home/rodyherrera/Desktop/voltlabs-ecosystem/app/Volt/client/src/modules/onboarding/components/templates/PostAuthOnboarding/index.tsx
     if (!selectedTeam) {
         return (
-            <div className='volt-container dashboard-bento'>
-                <div className='volt-container dashboard-bottom-row'>
+            <Box className='dashboard-bento'>
+                <Box className='dashboard-bottom-row'>
                     <EmptyState
                         icon={<HiOutlineServerStack size={20} />}
                         title='Create your first team'
                         description='Use the team creation dialog to finish setup and unlock the dashboard.'
                         className='w-max'
                     />
-                </div>
-            </div>
+                </Box>
+            </Box>
         );
     }
 
     return (
-        <div className='volt-container dashboard-bento'>
+        <Box className='dashboard-bento'>
             {statCards}
 
-            <div className='volt-container dashboard-simulations-section'>
-                <div className='volt-container dashboard-simulations-header d-flex items-center content-between gap-1'>
-                    <h3 className='volt-title font-size-4 color-primary font-weight-5'>Trajectories</h3>
+            <Box className='dashboard-simulations-section'>
+                <Row justify='between' gap='1' className='dashboard-simulations-header'>
+                    <Heading level={3} size='xl' weight='medium' tone='primary'>Trajectories</Heading>
                     {canCreateTrajectoryFolders && (
                         <Button
                             variant='ghost'
@@ -113,16 +113,16 @@ const DashboardPage = () => {
                             New folder
                         </Button>
                     )}
-                </div>
+                </Row>
                 <SimulationGrid />
-            </div>
+            </Box>
 
-            <div className='volt-container dashboard-insights-row'>
+            <Box className='dashboard-insights-row'>
                 <DashboardOperationsCard />
                 <DashboardActivityCard />
                 <DashboardTeamPresence />
-            </div>
-        </div>
+            </Box>
+        </Box>
     );
 };
 

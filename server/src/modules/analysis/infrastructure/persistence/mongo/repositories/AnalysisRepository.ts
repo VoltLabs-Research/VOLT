@@ -1,13 +1,14 @@
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-import { injectable } from 'tsyringe';
-import AnalysisModel from '@modules/analysis/infrastructure/persistence/mongo/models/AnalysisModel';
-import Analysis from '@modules/analysis/domain/entities/Analysis';
-import analysisMapper from '@modules/analysis/infrastructure/persistence/mongo/mappers/AnalysisMapper';
-import mongoose from 'mongoose';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+
 import type { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
+import Analysis from '@modules/analysis/domain/entities/Analysis';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import analysisMapper from '@modules/analysis/infrastructure/persistence/mongo/mappers/AnalysisMapper';
 import type { AnalysisDocument } from '@modules/analysis/infrastructure/persistence/mongo/models/AnalysisModel';
+import AnalysisModel from '@modules/analysis/infrastructure/persistence/mongo/models/AnalysisModel';
 import type { FilterQuery } from 'mongoose';
+import mongoose from 'mongoose';
 
 interface CompletedFramesAggregationItem {
     _id: string | null;
@@ -31,7 +32,7 @@ interface CompletedFramesMatchStage {
     };
 };
 
-@injectable()
+@Singleton()
 export default class AnalysisRepository
     extends MongooseBaseRepository<Analysis, AnalysisProps, AnalysisDocument>
     implements IAnalysisRepository {

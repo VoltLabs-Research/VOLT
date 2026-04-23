@@ -1,6 +1,5 @@
 import { cn } from '@/shared/utils';
-import Button from '@/shared/presentation/components/Button';
-import CloseButton from '@/shared/presentation/components/CloseButton';
+import { Button, CloseButton, Row, Text } from '@/shared/presentation/primitives';
 import './PanelHeader.css';
 import type { ReactNode } from 'react';
 
@@ -53,24 +52,24 @@ const PanelHeader = ({
         return (
             <>
                 {showCompactIconTitle && (
-                    <div className="volt-container d-flex items-center gap-05">
+                    <Row gap='05'>
                         {icon && (
                             <span className="shared-panel-header-icon d-flex items-center">{icon}</span>
                         )}
                         {title && (
-                            <p className="volt-text shared-panel-header-title font-size-05 color-muted">
+                            <Text as='p' size='xs' tone='muted' className={cn('shared-panel-header-title', variant === 'compact' && 'text-eyebrow')}>
                                 {title}
-                            </p>
+                            </Text>
                         )}
-                    </div>
+                    </Row>
                 )}
                 {showFullTitle && (
-                    <h3 className="volt-title font-size-4 font-weight-6 flex-1">
+                    <h3 className="font-size-4 font-weight-6 flex-1">
                         {title}
                     </h3>
                 )}
                 {showTabs && (
-                    <div className="volt-container d-flex flex-1 gap-025">
+                    <div className="d-flex flex-1 gap-025">
                         {tabs!.map((tab, index) => (
                             <Button
                                 key={index}
@@ -91,12 +90,12 @@ const PanelHeader = ({
     };
 
     return (
-        <div className={`volt-container ${rootClasses}`}>
+        <div className={rootClasses}>
             {renderLeft()}
-            <div className="volt-container d-flex items-center gap-05">
+            <Row gap='05'>
                 {actions}
                 {onClose && <CloseButton onClick={onClose} />}
-            </div>
+            </Row>
         </div>
     );
 };

@@ -1,4 +1,4 @@
-import LiquidToggle from '@/shared/presentation/components/LiquidToggle';
+import { LiquidToggle, Row, Stack, Heading, Text } from '@/shared/presentation/primitives';
 import { CANVAS_QUERY_KEYS } from '@/modules/canvas/hooks/queries';
 import { TRAJECTORY_QUERY_KEYS, trajectoryQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
@@ -70,15 +70,15 @@ const TrajectoryVisibilityToggle = ({
     const descriptionId = `trajectory-visibility-description-${trajectoryId}`;
 
     return (
-        <div className='volt-container d-flex items-center content-between gap-1'>
-            <div className='volt-container d-flex column gap-025 flex-1'>
-                <h4 id={labelId} className='volt-title font-size-1 font-weight-5 color-primary'>
+        <Row justify='between' gap='1'>
+            <Stack gap='025' flex='1'>
+                <Heading level={4} id={labelId} size='sm' weight='medium' tone='primary'>
                     Public visibility
-                </h4>
-                <p id={descriptionId} className='volt-text font-size-05 color-tertiary'>
+                </Heading>
+                <Text as='p' id={descriptionId} size='xs' className='color-tertiary'>
                     Anyone with the link can view this trajectory.
-                </p>
-            </div>
+                </Text>
+            </Stack>
             <LiquidToggle
                 pressed={effectivePublic}
                 onChange={handleChange}
@@ -86,7 +86,7 @@ const TrajectoryVisibilityToggle = ({
                 aria-labelledby={labelId}
                 aria-describedby={descriptionId}
             />
-        </div>
+        </Row>
     );
 };
 

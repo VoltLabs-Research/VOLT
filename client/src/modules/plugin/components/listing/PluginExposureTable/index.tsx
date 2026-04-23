@@ -11,7 +11,7 @@ import useDeletePluginListingAnalyses from '@/modules/plugin/hooks/listing/use-d
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
-import { openModal } from '@/shared/presentation/components/Modal';
+import { openModal } from '@/shared/presentation/primitives';
 import type { ReactNode } from 'react';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';

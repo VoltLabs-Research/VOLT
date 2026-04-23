@@ -1,6 +1,4 @@
-import Button from '@/shared/presentation/components/Button';
-import Loader from '@/shared/presentation/components/Loader';
-import Tooltip from '@/shared/presentation/components/Tooltip';
+import { Button, Loader, Tooltip } from '@/shared/presentation/primitives';
 import { RefreshCw } from 'lucide-react';
 
 interface RefreshButtonProps {

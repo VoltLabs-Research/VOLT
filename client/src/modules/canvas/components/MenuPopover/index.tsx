@@ -1,7 +1,5 @@
-import Button from '@/shared/presentation/components/Button';
-import Popover from '@/shared/presentation/components/Popover';
-import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
-
+import { Button, Popover } from '@/shared/presentation/primitives';
+import { PopoverMenu } from '@/shared/presentation/primitives';
 import type { MenuConfig, MenuItem } from '../TopToolbarMenus';
 
 import { MenuItemType } from '../TopToolbarMenus';
@@ -30,7 +28,7 @@ const renderMenuItemShortcut = (item: MenuItem) => {
 
 const createMenuItemRenderer = (close: () => void) => (item: MenuItem, index: number) => {
     if (item.type === MenuItemType.Separator) {
-        return <div key={index} className="volt-container canvas-menu-separator" role="separator" aria-orientation="horizontal" />;
+        return <div key={index} className="canvas-menu-separator" role="separator" aria-orientation="horizontal" />;
     }
 
     const handleClick = () => {

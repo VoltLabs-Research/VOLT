@@ -1,5 +1,6 @@
 import type { TrajectoryFolderRow } from '@/modules/trajectory/utilities/listing';
 import { ChevronRight, Folder } from 'lucide-react';
+import { Stack, Heading, Row } from '@/shared/presentation/primitives';
 import { useCallback, useRef } from 'react';
 import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react';
 import './SimulationFolderCard.css';
@@ -81,22 +82,22 @@ export default function SimulationFolderCard({ folder, onOpen }: SimulationFolde
             role='button'
             aria-label={`Open folder ${folder.title}`}
         >
-            <div className='volt-container simulation-folder-card__content d-flex column gap-1-5 h-max'>
-                <div className='volt-container simulation-folder-card__icon d-flex flex-center'>
+            <Stack gap='1-5' height='max' className='simulation-folder-card__content'>
+                <Row className='simulation-folder-card__icon flex-center'>
                     <Folder size={28} strokeWidth={1.75} />
-                </div>
+                </Row>
 
-                <div className='volt-container d-flex column gap-05 flex-1'>
-                    <h3 className='volt-title font-size-4 font-weight-5 color-primary text-truncate'>
+                <Stack gap='05' flex='1'>
+                    <Heading level={3} size='xl' weight='medium' truncate>
                         {folder.title}
-                    </h3>
-                </div>
+                    </Heading>
+                </Stack>
 
-                <div className='volt-container simulation-folder-card__footer d-flex items-center gap-05 color-secondary font-size-2'>
+                <Row gap='05' className='simulation-folder-card__footer color-secondary font-size-2'>
                     <span>Open folder</span>
                     <ChevronRight size={14} strokeWidth={2} />
-                </div>
-            </div>
+                </Row>
+            </Stack>
         </article>
     );
 }

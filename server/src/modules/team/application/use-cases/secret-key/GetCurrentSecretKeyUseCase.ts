@@ -1,17 +1,16 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { GetCurrentSecretKeyInputDTO, GetCurrentSecretKeyOutputDTO } from '@modules/team/application/dtos/secret-key/GetCurrentSecretKeyDTO';
+import SecretKeyRepository from '@modules/team/infrastructure/persistence/mongo/repositories/secret-key/SecretKeyRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
-import type { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export default class GetCurrentSecretKeyUseCase implements IUseCase<GetCurrentSecretKeyInputDTO, GetCurrentSecretKeyOutputDTO, ApplicationError> {
     constructor(
-        @inject(TEAM_TOKENS.SecretKeyRepository)
-        private readonly secretKeyRepository: ISecretKeyRepository
+        
+        private readonly secretKeyRepository: SecretKeyRepository
     ) {}
 
     async execute(input: GetCurrentSecretKeyInputDTO): Promise<Result<GetCurrentSecretKeyOutputDTO, ApplicationError>> {

@@ -1,5 +1,5 @@
 import { cn } from '@/shared/utils';
-import Tooltip from '@/shared/presentation/components/Tooltip';
+import { Tooltip } from '@/shared/presentation/primitives';
 import { Copy } from 'lucide-react';
 import { sileo } from 'sileo';
 import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
@@ -62,7 +62,7 @@ const FileExplorerRow = ({
 
     const content = (
         <>
-            <div className='volt-container file-explorer-row-name'>
+            <div className='file-explorer-row-name'>
                 <span className='file-explorer-row-icon' aria-hidden='true'>{icon}</span>
                 <span className='file-explorer-row-text' title={name}>{name}</span>
                 <Tooltip content='Copy full file name'>
@@ -84,14 +84,14 @@ const FileExplorerRow = ({
 
     if (!isInteractive) {
         return (
-            <div className={`volt-container ${rowClassName}`} role='listitem' aria-label={rowLabel}>
+            <div className={`${rowClassName}`} role='listitem' aria-label={rowLabel}>
                 {content}
             </div>
         );
     }
 
     return (
-        <div className={`volt-container ${rowClassName}`} onClick={handleClick} onDoubleClick={handleDoubleClick} onKeyDown={handleKeyDown} aria-label={rowLabel} role='listitem' tabIndex={0} aria-selected={isSelected}>
+        <div className={`${rowClassName}`} onClick={handleClick} onDoubleClick={handleDoubleClick} onKeyDown={handleKeyDown} aria-label={rowLabel} role='listitem' tabIndex={0} aria-selected={isSelected}>
             {content}
         </div>
     );

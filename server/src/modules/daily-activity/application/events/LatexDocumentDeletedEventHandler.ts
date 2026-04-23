@@ -1,15 +1,14 @@
 import { ActivityType } from '@modules/daily-activity/domain/entities/DailyActivity';
-import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
-import { inject, injectable } from 'tsyringe';
+import DailyActivityRepository from '@modules/daily-activity/infrastructure/persistence/mongo/repositories/DailyActivityRepository';
 import LatexDocumentDeletedEvent from '@modules/latex/domain/events/LatexDocumentDeletedEvent';
-import type { IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-@injectable()
+@Subscribe('latex-document.deleted')
 export default class LatexDocumentDeletedEventHandler implements IEventHandler<LatexDocumentDeletedEvent> {
     constructor(
-        @inject(DAILY_ACTIVITY_TOKENS.DailyActivityRepository)
-        private activityRepo: IDailyActivityRepository
+        
+        private activityRepo: DailyActivityRepository
     ) {}
 
     async handle(event: LatexDocumentDeletedEvent): Promise<void> {

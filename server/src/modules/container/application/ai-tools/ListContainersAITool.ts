@@ -1,17 +1,18 @@
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
 import { ListContainersUseCase } from '@modules/container/application/use-cases/ListContainersUseCase';
 import { AITool } from '@shared/application/ai/AITool';
-import { inject, injectable } from 'tsyringe';
+import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
-import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
 
-@injectable()
+@CollectionMember(AI_TOKENS.AITool)
 export class ListContainersAITool extends AITool {
     readonly name = 'list_containers';
     readonly description = 'List all Docker containers in the team.';
     readonly parameters = z.object({ page: z.number().optional().default(1), limit: z.number().optional().default(50) });
 
     constructor(
-        @inject(ListContainersUseCase)
+        
         protected readonly useCase: ListContainersUseCase
     ) {
         super();

@@ -2,11 +2,12 @@ import type StoragePlacement from '@modules/team-cluster/domain/entities/Storage
 import type { StoragePlacementProps } from '@modules/team-cluster/domain/entities/StoragePlacement';
 import storagePlacementMapper from '@modules/team-cluster/infrastructure/persistence/mongo/mappers/StoragePlacementMapper';
 import StoragePlacementModel, { StoragePlacementDocument } from '@modules/team-cluster/infrastructure/persistence/mongo/models/StoragePlacementModel';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import type { UpdateQuery } from 'mongoose';
-import { injectable } from 'tsyringe';
 
-@injectable()
+
+@Singleton()
 export default class StoragePlacementRepository
     extends MongooseBaseRepository<StoragePlacement, StoragePlacementProps, StoragePlacementDocument> {
 

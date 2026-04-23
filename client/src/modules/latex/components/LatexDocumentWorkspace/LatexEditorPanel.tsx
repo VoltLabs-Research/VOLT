@@ -1,8 +1,6 @@
-import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
-import IconButton from '@/shared/presentation/components/IconButton';
-import Loader from '@/shared/presentation/components/Loader';
-import Button from '@/shared/presentation/components/Button';
+import { ContextMenuPopover } from '@/shared/presentation/primitives';
 import WarningZone from '@/shared/presentation/components/WarningZone';
+import { Box, Button, IconButton, Loader, Row, Stack, Text } from '@/shared/presentation/primitives';
 import { applyMonacoTheme, getMonacoThemeName } from '@/shared/presentation/utilities/ensure-monaco';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
 import Editor from '@monaco-editor/react';
@@ -16,8 +14,7 @@ import type { LatexEditorGroupId, LatexFileEntry, LatexWorkspaceSelection, Latex
 import { getAssetDisplayName, isWorkspaceImageFile, isWorkspacePdfFile, isWorkspaceTextLikeFile } from '@/modules/latex/utilities/workspace';
 import LatexPdfViewer from './LatexPdfViewer';
 import type { MenuOption } from '@/shared/presentation/types/menu';
-import EmptyState from '@/shared/presentation/components/EmptyState';
-
+import { EmptyState } from '@/shared/presentation/primitives';
 interface LatexEditorPanelProps {
     groupId: LatexEditorGroupId;
     isGroupActive: boolean;
@@ -360,11 +357,11 @@ const LatexEditorPanel = ({
         if (!activeAsset) return renderEmpty();
 
         return (
-            <div className='volt-container h-100 d-flex column flex-center items-center gap-1 p-2 text-center'>
+            <Stack align='center' gap='1' p='2' textAlign='center' className='h-100 flex-center'>
                 <FileText size={28} className='color-muted' />
-                <p className='volt-text color-muted'>
+                <Text as='p' tone='muted'>
                     This file can&apos;t be previewed inline.
-                </p>
+                </Text>
                 <Button
                     variant='ghost'
                     intent='brand'
@@ -375,7 +372,7 @@ const LatexEditorPanel = ({
                     <Download size={14} />
                     Open file
                 </Button>
-            </div>
+            </Stack>
         );
     };
 
@@ -394,13 +391,13 @@ const LatexEditorPanel = ({
 
         if (activeAssetKind === AssetKind.Image) {
             return (
-                <div className='volt-container h-max d-flex flex-center items-center p-1 overflow-auto'>
+                <Row height='max' p='1' overflow='auto' className='flex-center'>
                     <img
                         src={activeAsset.url}
                         alt={headerTitle}
                         className='mw-max mh-max object-contain'
                     />
-                </div>
+                </Row>
             );
         }
 
@@ -414,9 +411,9 @@ const LatexEditorPanel = ({
 
         if (!isMonacoReady) {
             return (
-                <div className='volt-container h-100 d-flex align-center justify-center'>
+                <Box display='flex' className='h-100 align-center justify-center'>
                     <Loader scale={0.6} isFixed={false} />
-                </div>
+                </Box>
             );
         }
 
@@ -447,7 +444,7 @@ const LatexEditorPanel = ({
     };
 
     const headerActions = (
-        <div className='volt-container d-flex items-center gap-025'>
+        <Row gap='025'>
             {!isSplitView && activeTabItem && onSplitDown && (
                 <IconButton
                     variant='ghost'
@@ -472,7 +469,7 @@ const LatexEditorPanel = ({
                     <X size={14} />
                 </IconButton>
             )}
-        </div>
+        </Row>
     );
 
     const shouldShowTabsHeader = tabItems.length > 0
@@ -493,13 +490,13 @@ const LatexEditorPanel = ({
                 options={tabMenuOptions}
                 size='sm'
                 trigger={(
-                    <div className={`volt-container ${[
+                    <div className={[
                             'latex-editor-tab d-flex items-center',
                             tab.isActive ? 'is-active' : '',
                             draggedTabKey === tab.key ? 'is-dragging' : '',
                             isDropBefore ? 'is-drop-before' : '',
                             isDropAfter ? 'is-drop-after' : ''
-                        ].filter(Boolean).join(' ')}`} draggable onDragStart={(event) => handleTabDragStart(event, tab)} onDragOver={(event) => handleTabDragOver(event, tab)} onDrop={(event) => handleTabDrop(event, tab)} onDragEnd={clearTabDragState}>
+                        ].filter(Boolean).join(' ')} draggable onDragStart={(event) => handleTabDragStart(event, tab)} onDragOver={(event) => handleTabDragOver(event, tab)} onDrop={(event) => handleTabDrop(event, tab)} onDragEnd={clearTabDragState}>
                         <button
                             type='button'
                             id={tabId}
@@ -534,38 +531,38 @@ const LatexEditorPanel = ({
     };
 
     return (
-        <div className={`volt-container ${[
-                'latex-workspace__editor-group d-flex column flex-1 min-h-0',
+        <Stack flex='1' minH='0' className={[
+                'latex-workspace__editor-group',
                 isGroupActive ? 'is-active' : ''
-            ].filter(Boolean).join(' ')}`} onMouseDownCapture={() => onFocusGroup()}>
+            ].filter(Boolean).join(' ')} onMouseDownCapture={() => onFocusGroup()}>
             {shouldShowTabsHeader && (
-                <div className='volt-container latex-editor-tabs__header d-flex items-center content-between gap-05 p-05'>
-                    <div className={`volt-container ${[
-                            'latex-editor-tabs d-flex items-center gap-05 overflow-auto flex-1',
+                <Row justify='between' gap='05' p='05' className='latex-editor-tabs__header'>
+                    <Row gap='05' overflow='auto' flex='1' className={[
+                            'latex-editor-tabs',
                             dropIndicator?.targetKey === null && dropIndicator?.position === 'end' ? 'is-drop-at-end' : ''
-                        ].filter(Boolean).join(' ')}`} role='tablist' aria-label={groupId === 'primary' ? 'Open LaTeX files in the top editor group' : 'Open LaTeX files in the bottom editor group'} onDragOver={handleTabStripDragOver} onDrop={handleTabStripDrop} onDragEnd={clearTabDragState}>
+                        ].filter(Boolean).join(' ')} role='tablist' aria-label={groupId === 'primary' ? 'Open LaTeX files in the top editor group' : 'Open LaTeX files in the bottom editor group'} onDragOver={handleTabStripDragOver} onDrop={handleTabStripDrop} onDragEnd={clearTabDragState}>
                         {tabItems.map(renderTab)}
-                    </div>
+                    </Row>
                     {headerActions}
-                </div>
+                </Row>
             )}
             {activeFile && hasPendingRemoteUpdate && (
-                <div className='volt-container d-flex items-center content-between gap-1 p-075'>
+                <Row justify='between' gap='1' p='075'>
                     <WarningZone message={`A collaborator updated ${activeFile.name}. Apply the remote version or keep editing your local draft.`} />
-                    <div className='volt-container d-flex items-center gap-05'>
+                    <Row gap='05'>
                         <Button variant='ghost' intent='neutral' size='sm' onClick={onDismissRemoteUpdate}>
                             Keep mine
                         </Button>
                         <Button variant='solid' intent='brand' size='sm' onClick={onApplyRemoteUpdate}>
                             Apply remote
                         </Button>
-                    </div>
-                </div>
+                    </Row>
+                </Row>
             )}
-            <div ref={containerRef} id={activeSelection ? `latex-editor-panel-${groupId}-${getSelectionKey(activeSelection)}` : undefined} role='tabpanel' aria-labelledby={activeSelection ? `latex-editor-tab-${groupId}-${getSelectionKey(activeSelection)}` : undefined} className='volt-container latex-workspace__editor-inner flex-1 min-h-0'>
+            <Box ref={containerRef} id={activeSelection ? `latex-editor-panel-${groupId}-${getSelectionKey(activeSelection)}` : undefined} role='tabpanel' aria-labelledby={activeSelection ? `latex-editor-tab-${groupId}-${getSelectionKey(activeSelection)}` : undefined} flex='1' minH='0' className='latex-workspace__editor-inner'>
                 {renderContent()}
-            </div>
-        </div>
+            </Box>
+        </Stack>
     );
 };
 

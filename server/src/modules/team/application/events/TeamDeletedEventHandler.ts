@@ -1,34 +1,33 @@
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import TeamDeletedEvent from '@modules/team/domain/events/team/TeamDeletedEvent';
+import TeamAIIntegrationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/ai-integration/TeamAIIntegrationRepository';
+import SecretKeyRepository from '@modules/team/infrastructure/persistence/mongo/repositories/secret-key/SecretKeyRepository';
+import SecretKeyUsageLogRepository from '@modules/team/infrastructure/persistence/mongo/repositories/secret-key/SecretKeyUsageLogRepository';
+import TeamInvitationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-invitation/TeamInvitationRepository';
+import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
+import TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-role/TeamRoleRepository';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
-import { injectable, inject } from 'tsyringe';
-import type { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
-import type { ISecretKeyUsageLogRepository } from '@modules/team/domain/port/secret-key/ISecretKeyUsageLogRepository';
-import type { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ai-integration/ITeamAIIntegrationRepository';
-import type { ITeamInvitationRepository } from '@modules/team/domain/port/team-invitation/ITeamInvitationRepository';
-import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
-import type { ITeamRoleRepository } from '@modules/team/domain/port/team-role/ITeamRoleRepository';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-@injectable()
+@Subscribe('team.deleted')
 export default class TeamDeletedEventHandler implements IEventHandler<TeamDeletedEvent>{
     constructor(
-        @inject(TEAM_TOKENS.TeamMemberRepository)
-        private readonly teamMemberRepository: ITeamMemberRepository,
+        
+        private readonly teamMemberRepository: TeamMemberRepository,
 
-        @inject(TEAM_TOKENS.TeamRoleRepository)
-        private readonly teamRoleRepository: ITeamRoleRepository,
+        
+        private readonly teamRoleRepository: TeamRoleRepository,
 
-        @inject(TEAM_TOKENS.TeamInvitationRepository)
-        private readonly teamInvitationRepository: ITeamInvitationRepository,
+        
+        private readonly teamInvitationRepository: TeamInvitationRepository,
 
-        @inject(TEAM_TOKENS.SecretKeyRepository)
-        private readonly secretKeyRepository: ISecretKeyRepository,
+        
+        private readonly secretKeyRepository: SecretKeyRepository,
 
-        @inject(TEAM_TOKENS.SecretKeyUsageLogRepository)
-        private readonly secretKeyUsageLogRepository: ISecretKeyUsageLogRepository,
+        
+        private readonly secretKeyUsageLogRepository: SecretKeyUsageLogRepository,
 
-        @inject(TEAM_TOKENS.TeamAIIntegrationRepository)
-        private readonly teamAIIntegrationRepository: ITeamAIIntegrationRepository
+        
+        private readonly teamAIIntegrationRepository: TeamAIIntegrationRepository
     ){}
 
     async handle(event: TeamDeletedEvent): Promise<void>{

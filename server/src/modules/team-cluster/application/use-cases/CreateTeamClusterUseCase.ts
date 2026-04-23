@@ -1,4 +1,4 @@
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
 import {
     CreateTeamClusterInputDTO,
     CreateTeamClusterOutputDTO
@@ -10,17 +10,15 @@ import TeamCluster, {
     DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS,
     TeamClusterStatus
 } from '@modules/team-cluster/domain/entities/TeamCluster';
-import type { ITeamClusterCredentialsCipher } from '@modules/team-cluster/domain/port/ITeamClusterCredentialsCipher';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
+import TeamClusterCredentialsCipher from '@modules/team-cluster/infrastructure/services/TeamClusterCredentialsCipher';
 import { createEnrollmentToken, hashEnrollmentToken } from '@modules/team-cluster/utilities/enrollmentToken';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
-import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import crypto from 'node:crypto';
+import { injectable } from 'tsyringe';
 
 interface MongoDuplicateKeyError {
     code?: number;
@@ -47,14 +45,14 @@ const createServiceCredentials = (serviceName: string): GeneratedServiceCredenti
 @injectable()
 export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClusterInputDTO, CreateTeamClusterOutputDTO, ApplicationError> {
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
+        
+        private readonly teamClusterRepository: TeamClusterRepository,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterCredentialsCipher)
-        private readonly teamClusterCredentialsCipher: ITeamClusterCredentialsCipher,
+        
+        private readonly teamClusterCredentialsCipher: TeamClusterCredentialsCipher,
 
-        @inject(AUTH_TOKENS.UserRepository)
-        private readonly userRepository: IUserRepository
+        
+        private readonly userRepository: UserRepository
     ){}
 
     async execute(input: CreateTeamClusterInputDTO): Promise<Result<CreateTeamClusterOutputDTO, ApplicationError>> {

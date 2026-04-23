@@ -1,28 +1,25 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import { AddUsersToGroupInputDTO, AddUsersToGroupOutputDTO } from '@modules/chat/application/dtos/chat/AddUsersToGroupDTO';
+import ChatRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/chat/ChatRepository';
 import { ensureTeamMembersExist } from '@modules/chat/utilities/chat/ensureTeamMembersExist';
 import { resolveGroupChat } from '@modules/chat/utilities/chat/resolveGroupChat';
-import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
-import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
-import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
+import { IUseCase } from '@shared/application/IUseCase';
+import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
+import { Result } from '@shared/domain/port/Result';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export class AddUsersToGroupUseCase implements IUseCase<AddUsersToGroupInputDTO, AddUsersToGroupOutputDTO, ApplicationError> {
     constructor(
-        @inject(CHAT_TOKENS.ChatRepository)
-        private chatRepo: IChatRepository,
-        @inject(TEAM_TOKENS.TeamMemberRepository)
-        private teamMemberRepo: ITeamMemberRepository,
-        @inject(SOCKET_TOKENS.SocketEmitter)
-        private socketEmitter: ISocketEmitter
+        
+        private chatRepo: ChatRepository,
+        
+        private teamMemberRepo: TeamMemberRepository,
+        
+        private socketEmitter: SocketIOEmitter
     ){}
 
     async execute(input: AddUsersToGroupInputDTO): Promise<Result<AddUsersToGroupOutputDTO, ApplicationError>> {

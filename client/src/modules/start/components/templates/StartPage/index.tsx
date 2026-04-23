@@ -6,8 +6,8 @@ import { useRef } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import UserInfo from '@/modules/auth/components/UserInfo';
-import Button from '@/shared/presentation/components/Button';
-import EmptyState from '@/shared/presentation/components/EmptyState';
+import { Button } from '@/shared/presentation/primitives';
+import { EmptyState } from '@/shared/presentation/primitives';
 import useTip from '@/shared/tips/use-tip';
 
 export default function StartPage() {

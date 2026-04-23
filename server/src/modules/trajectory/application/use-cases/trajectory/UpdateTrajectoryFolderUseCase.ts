@@ -1,15 +1,14 @@
 import type TrajectoryFolder from '@modules/trajectory/domain/entities/trajectory/TrajectoryFolder';
 import type { TrajectoryFolderProps } from '@modules/trajectory/domain/entities/trajectory/TrajectoryFolder';
-import type { ITrajectoryFolderRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFolderRepository';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import TrajectoryFolderRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFolderRepository';
 import { UpdateCatalogFolderUseCase } from '@shared/application/catalog/UpdateCatalogFolderUseCase';
-import { inject, injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
-@injectable()
+@Singleton()
 export default class UpdateTrajectoryFolderUseCase extends UpdateCatalogFolderUseCase<TrajectoryFolder, TrajectoryFolderProps> {
     constructor(
-        @inject(TRAJECTORY_TOKENS.TrajectoryFolderRepository)
-        trajectoryFolderRepository: ITrajectoryFolderRepository
+        
+        trajectoryFolderRepository: TrajectoryFolderRepository
     ) {
         super(trajectoryFolderRepository, { folderLabel: 'Trajectory folder' });
     }

@@ -1,16 +1,15 @@
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { DefaultPluginBootstrapService } from '@modules/plugin/infrastructure/services/plugin/DefaultPluginBootstrapService';
 import FirstTeamClusterConnectedEvent from '@modules/team-cluster/domain/events/FirstTeamClusterConnectedEvent';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
-import type { IDefaultPluginBootstrapService } from '@modules/plugin/domain/port/plugin/IDefaultPluginBootstrapService';
 
-@injectable()
+@Subscribe('team-cluster.first-connected')
 export default class FirstTeamClusterConnectedEventHandler implements IEventHandler<FirstTeamClusterConnectedEvent> {
     constructor(
-        @inject(PLUGIN_TOKENS.DefaultPluginBootstrapService)
-        private readonly defaultPluginBootstrapService: IDefaultPluginBootstrapService
+        
+        private readonly defaultPluginBootstrapService: DefaultPluginBootstrapService
     ){}
 
     async handle(event: FirstTeamClusterConnectedEvent): Promise<void> {

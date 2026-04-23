@@ -3,7 +3,7 @@ import PluginClusterField from '@/modules/canvas/components/PluginClusterField';
 import SelectedTimestepsField from '@/modules/canvas/components/SelectedTimestepsField';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF';
-import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { SelectOption } from '@/shared/presentation/primitives';
 
 interface PluginExecutionConfigFieldsProps {
     argumentsDefinitions: IArgumentDefinition[];
@@ -39,7 +39,7 @@ const PluginExecutionConfigFields = ({
     const hasTeamClusterOptions = teamClusterOptions.length > 0;
 
     let clusterField = (
-        <p className='volt-text font-size-1 color-muted'>
+        <p className='font-size-1 color-muted'>
             {noClustersMessage}
         </p>
     );
@@ -56,7 +56,7 @@ const PluginExecutionConfigFields = ({
     }
 
     return (
-        <div className='volt-container d-flex column gap-05'>
+        <div className='d-flex column gap-05'>
             {argumentsDefinitions.length > 0 && (
                 <ArgumentFieldsRenderer
                     arguments={argumentsDefinitions}
