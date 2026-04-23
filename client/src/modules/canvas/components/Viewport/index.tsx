@@ -1,4 +1,5 @@
 import { setSceneInteracting } from '../../hooks/use-scene-interaction';
+import PlaybackTicker from '../PlaybackTicker';
 import ViewportFloatingControls from '../ViewportFloatingControls';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { useLocalGlbStore } from '@/modules/canvas/stores/use-local-glb-store';
@@ -109,6 +110,8 @@ const Viewport = ({
         setModelLoadingState: s.setModelLoadingState,
         setIsPointCloudScene: s.setIsPointCloudScene
     })));
+    const isPreloading = useEditorStore((s) => s.isPreloading);
+    const preloadProgress = useEditorStore((s) => s.preloadProgress);
 
     const currentFrame = useMemo(() => {
         return getTrajectoryFrameByTimestep(trajectory, currentTimestep);
@@ -199,6 +202,17 @@ const Viewport = ({
                     </Row>
                 )}
 
+                {!bodyContent && isPreloading && (
+                    <Row justify='center' position='absolute' inset='0' className="canvas-viewport-loading">
+                        <Loader
+                            scale={0.5}
+                            isFixed={false}
+                            announce
+                            label={`Preloading frames ${Math.round((preloadProgress ?? 0) * 100)}%`}
+                        />
+                    </Row>
+                )}
+
                 {bodyContent && (
                     <Box display='flex' flex='1' minH='0' position='relative' width='max' height='max' className="canvas-viewport-body-content">
                         {bodyContent}
@@ -218,6 +232,7 @@ const Viewport = ({
                             screenshotComposition={screenshotComposition}
                             onScreenshotCaptureHandled={() => useScreenshotStore.getState().clearPendingRequest()}
                         >
+                            <PlaybackTicker />
                             {localGlbMode && forcedGlbUrl && (
                                 <LocalGlbViewer
                                     url={forcedGlbUrl}
