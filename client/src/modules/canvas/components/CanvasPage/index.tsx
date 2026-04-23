@@ -235,8 +235,7 @@ const CanvasPage = () => {
         initialSize: 65,
         minSize: 60,
         maxSize: 360,
-        growPositive: false,
-        storageKey: 'volt:canvas:timeline-size'
+        growPositive: false
     });
 
     const handleTimelineTabChange = useCallback((tab: string) => {
