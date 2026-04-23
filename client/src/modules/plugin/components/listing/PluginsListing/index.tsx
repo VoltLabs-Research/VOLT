@@ -1,3 +1,4 @@
+import { Button } from '@/shared/presentation/primitives';
 import { RiEditLine, RiFileCopyLine, RiDownloadLine, RiUploadLine, RiCheckLine, RiDraftLine, RiForbidLine } from 'react-icons/ri';
 import { fetchPlugins, PLUGIN_QUERY_KEYS, useClonePluginMutation, useUpdatePluginMutation } from '@/modules/plugin/hooks/plugin/queries';
 import useDeletePlugin from '@/modules/plugin/hooks/plugin/use-delete-plugin';
@@ -7,7 +8,6 @@ import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { PluginStatus } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import { runAction } from '@/shared/presentation/actions/run-action';
-import Button from '@/shared/presentation/components/Button';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import useTip from '@/shared/tips/use-tip';

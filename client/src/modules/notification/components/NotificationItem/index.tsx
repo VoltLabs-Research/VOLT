@@ -1,3 +1,4 @@
+import { Row, Text } from '@/shared/presentation/primitives';
 import './NotificationItem.css';
 import { useNavigate } from 'react-router-dom';
 import type { Notification } from '@/modules/notification/api/entities/notification';
@@ -25,14 +26,14 @@ const NotificationItem = ({ notification, onClose }: NotificationItemProps) => {
                 className={`notification-item list-item-hoverable p-075 cursor-pointer radius-sm ${notification.read ? 'is-read' : 'is-unread'}`}
                 onClick={handleClick}
             >
-                <span className='notification-item-header d-flex items-center content-between gap-05'>
-                    <span className='notification-item-title font-weight-6 color-primary font-size-2'>
+                <Row as='span' justify='between' gap='05' className='notification-item-header'>
+                    <Text as='span' size='md' weight='bold' className='notification-item-title'>
                         {notification.title}
-                    </span>
-                </span>
-                <span className='notification-item-content color-secondary font-size-1 mt-025'>
+                    </Text>
+                </Row>
+                <Text as='span' size='sm' tone='secondary' className='notification-item-content mt-025'>
                     {notification.content}
-                </span>
+                </Text>
             </button>
         </li>
     );

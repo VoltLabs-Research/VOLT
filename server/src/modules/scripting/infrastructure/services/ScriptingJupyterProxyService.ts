@@ -1,9 +1,8 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import { Action } from '@core/constants/permissions';
 import { Resource } from '@core/constants/resources';
-import { ErrorCodes } from '@core/constants/error-codes';
-import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/team-member/TeamMember';
-import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
+import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
 import {
     buildJupyterProxyBasePath,
     JUPYTER_PROXY_ACCESS_TOKEN_COOKIE_NAME,
@@ -12,14 +11,18 @@ import {
     matchJupyterProxyPath,
     setJupyterProxyAccessCookie
 } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
+import type { TeamClusterReverseWebSocketStream } from '@modules/team-cluster/utilities/teamClusterReverseWebSocket';
 import {
     TeamClusterServiceExposureAccessMode
 } from '@modules/team-cluster/utilities/teamClusterSocket';
-import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/team-member/TeamMember';
+import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
+import type { TeamClusterDaemonNotebookRuntime } from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { collectAllowedClientOrigins } from '@shared/infrastructure/utilities/client-origins';
 import {
     normalizeWebSocketCloseCode,
@@ -28,18 +31,12 @@ import {
 } from '@shared/infrastructure/utilities/proxy-relay';
 import { buildWebSocketProtocolList } from '@shared/infrastructure/utilities/websocket-protocols';
 import { parse as parseCookie } from 'cookie';
-import httpProxy from 'http-proxy';
-import { inject, injectable } from 'tsyringe';
-import { WebSocketServer, WebSocket } from 'ws';
-import http from 'node:http';
-import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
-import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
-import type { TeamClusterReverseWebSocketStream } from '@modules/team-cluster/utilities/teamClusterReverseWebSocket';
-import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import type { TeamClusterDaemonNotebookRuntime } from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { Request, Response } from 'express';
+import httpProxy from 'http-proxy';
 import type { IncomingHttpHeaders, IncomingMessage } from 'node:http';
+import http from 'node:http';
 import { Duplex, Readable } from 'node:stream';
+import { WebSocket, WebSocketServer } from 'ws';
 
 interface ProxyableRequest extends Request {
     rawBody?: Buffer;
@@ -158,7 +155,7 @@ const pruneExpiredCacheEntries = <T extends { expiresAt: number }>(cache: Map<st
     }
 };
 
-@injectable()
+@Singleton()
 export class ScriptingJupyterProxyService {
     private readonly jupyterNativeToken = readJupyterNativeToken();
     private readonly authorizedProxyContextCache = new Map<string, AuthorizedProxyCacheEntry>();
@@ -167,16 +164,16 @@ export class ScriptingJupyterProxyService {
     private readonly httpProxySessionSweepTimer = this.startHttpProxySessionSweep();
 
     constructor(
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
 
-        @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository)
-        private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
+        
+        private readonly scriptingNotebookRepository: ScriptingNotebookRepository,
 
-        @inject(TEAM_TOKENS.TeamMemberRepository)
-        private readonly teamMemberRepository: ITeamMemberRepository,
+        
+        private readonly teamMemberRepository: TeamMemberRepository,
 
-        @inject(ScriptingJupyterAccessTokenService)
+        
         private readonly accessTokenService: ScriptingJupyterAccessTokenService
     ) {}
 

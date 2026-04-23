@@ -1,5 +1,6 @@
 import { getChatDisplayName } from '@/modules/chat/utilities/chat/chat-display';
 import ChatAvatar from '../ChatAvatar';
+import { Stack, Row, Text, ListRow } from '@/shared/presentation/primitives';
 import { cn } from '@/shared/utils';
 import { formatDistanceToNow } from 'date-fns';
 import type { Chat } from '@/modules/chat/api/entities/chat';
@@ -15,40 +16,42 @@ interface ChatListItemProps {
 const ChatListItem = ({ chat, currentUserId, isActive, onClick }: ChatListItemProps) => {
     const displayName = getChatDisplayName(chat, currentUserId);
 
+    const content = (
+        <Stack gap='025' flex='1' overflow='hidden'>
+            <Row justify='between' gap='05'>
+                <Text as='p' size='lg' weight='bold' truncate className='chat-list-item-name'>
+                    {displayName}
+                </Text>
+                {chat.lastMessageAt && (
+                    <Text as='p' size='md' tone='muted' className='chat-list-item-time'>
+                        {formatDistanceToNow(new Date(chat.lastMessageAt), { addSuffix: false })}
+                    </Text>
+                )}
+            </Row>
+
+            {chat.lastMessage && (
+                <Text as='p' size='md' tone='secondary' truncate className='chat-list-item-preview'>
+                    {chat.lastMessage.content}
+                </Text>
+            )}
+
+            {chat.isGroup && (
+                <Text as='p' size='md' tone='muted'>
+                    {chat.participants.length} members
+                </Text>
+            )}
+        </Stack>
+    );
+
     return (
-        <button
-            type='button'
-            className={cn('d-flex items-center gap-075 list-item-hoverable chat-list-item', isActive && 'active')}
-            aria-current={isActive ? 'page' : undefined}
+        <ListRow
+            leading={<ChatAvatar chat={chat} currentUserId={currentUserId} size='sm' />}
+            meta={content}
+            selected={isActive}
             onClick={onClick}
-        >
-            <ChatAvatar chat={chat} currentUserId={currentUserId} size='sm' className='f-shrink-0' />
-
-            <div className='volt-container d-flex column gap-025 flex-1 overflow-hidden'>
-                <div className='volt-container d-flex items-center content-between gap-05'>
-                    <p className='volt-text font-size-3 font-weight-6 color-primary chat-list-item-name text-truncate'>
-                        {displayName}
-                    </p>
-                    {chat.lastMessageAt && (
-                        <p className='volt-text font-size-2 color-muted chat-list-item-time'>
-                            {formatDistanceToNow(new Date(chat.lastMessageAt), { addSuffix: false })}
-                        </p>
-                    )}
-                </div>
-
-                {chat.lastMessage && (
-                    <p className='volt-text font-size-2 color-secondary chat-list-item-preview text-truncate'>
-                        {chat.lastMessage.content}
-                    </p>
-                )}
-
-                {chat.isGroup && (
-                    <p className='volt-text font-size-2 color-muted'>
-                        {chat.participants.length} members
-                    </p>
-                )}
-            </div>
-        </button>
+            aria-current={isActive ? 'page' : undefined}
+            className={cn('chat-list-item', isActive && 'active')}
+        />
     );
 };
 

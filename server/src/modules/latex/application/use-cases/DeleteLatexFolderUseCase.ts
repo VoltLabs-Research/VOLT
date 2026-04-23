@@ -1,22 +1,21 @@
-import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
+import { DeleteLatexDocumentUseCase } from '@modules/latex/application/use-cases/DeleteLatexDocumentUseCase';
+import type { LatexDocumentProps } from '@modules/latex/domain/entities/LatexDocument';
 import LatexDocument from '@modules/latex/domain/entities/LatexDocument';
 import type LatexFolder from '@modules/latex/domain/entities/LatexFolder';
 import type { LatexFolderProps } from '@modules/latex/domain/entities/LatexFolder';
-import type { LatexDocumentProps } from '@modules/latex/domain/entities/LatexDocument';
-import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
-import type { ILatexFolderRepository } from '@modules/latex/domain/port/ILatexFolderRepository';
-import { DeleteLatexDocumentUseCase } from '@modules/latex/application/use-cases/DeleteLatexDocumentUseCase';
+import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
+import LatexFolderRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexFolderRepository';
 import { DeleteCatalogFolderUseCase } from '@shared/application/catalog/DeleteCatalogFolderUseCase';
-import { inject, injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
-@injectable()
+@Singleton()
 export class DeleteLatexFolderUseCase extends DeleteCatalogFolderUseCase<LatexFolder, LatexFolderProps, LatexDocument, LatexDocumentProps> {
     constructor(
-        @inject(LATEX_TOKENS.LatexFolderRepository)
-        latexFolderRepository: ILatexFolderRepository,
-        @inject(LATEX_TOKENS.LatexDocumentRepository)
-        latexDocumentRepository: ILatexDocumentRepository,
-        @inject(DeleteLatexDocumentUseCase)
+        
+        latexFolderRepository: LatexFolderRepository,
+        
+        latexDocumentRepository: LatexDocumentRepository,
+        
         deleteLatexDocumentUseCase: DeleteLatexDocumentUseCase
     ) {
         super(

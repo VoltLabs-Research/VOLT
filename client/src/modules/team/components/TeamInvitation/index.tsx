@@ -1,3 +1,4 @@
+import { Button } from '@/shared/presentation/primitives';
 import { useAcceptInvitationMutation, useInvitationDetailsQuery, useRejectInvitationMutation } from '@/modules/team/hooks/invitation/queries';
 import {
     getOnboardingRedirectPath,
@@ -7,7 +8,6 @@ import {
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { runAction } from '@/shared/presentation/actions/run-action';
-import Button from '@/shared/presentation/components/Button';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { AlertCircle, CheckCircle, Clock, Mail, XCircle } from 'lucide-react';
 import { useState } from 'react';
@@ -113,9 +113,9 @@ export default function TeamInvitationTemplate() {
 
     if(loading){
         return (
-            <div className='volt-container team-invitation-page w-max vh-max d-flex items-center content-center'>
-                <div className='volt-container team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
-                    <p className='volt-text color-secondary'>Loading invitation...</p>
+            <div className='team-invitation-page w-max vh-max d-flex items-center content-center'>
+                <div className='team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
+                    <p className='color-secondary'>Loading invitation...</p>
                 </div>
             </div>
         );
@@ -123,13 +123,13 @@ export default function TeamInvitationTemplate() {
 
     if(displayError || !invitation || !invitation.team || !invitation.invitedBy){
         return (
-            <div className='volt-container team-invitation-page w-max vh-max d-flex items-center content-center'>
-                <div className='volt-container team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
-                    <div className='volt-container team-invitation-icon-error'>
+            <div className='team-invitation-page w-max vh-max d-flex items-center content-center'>
+                <div className='team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
+                    <div className='team-invitation-icon-error'>
                         <XCircle size={48} />
                     </div>
-                    <h3 className='volt-title font-size-4 font-weight-6'>Invalid Invitation</h3>
-                    <p className='volt-text color-secondary'>
+                    <h3 className='font-size-4 font-weight-6'>Invalid Invitation</h3>
+                    <p className='color-secondary'>
                         {displayError || 'This invitation is not valid or has expired'}
                     </p>
                     <Button
@@ -149,13 +149,13 @@ export default function TeamInvitationTemplate() {
 
     if(isExpired){
         return (
-            <div className='volt-container team-invitation-page w-max vh-max d-flex items-center content-center'>
-                <div className='volt-container team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
-                    <div className='volt-container team-invitation-icon-warning'>
+            <div className='team-invitation-page w-max vh-max d-flex items-center content-center'>
+                <div className='team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
+                    <div className='team-invitation-icon-warning'>
                         <Clock size={48} />
                     </div>
-                    <h3 className='volt-title font-size-4 font-weight-6'>Invitation Expired</h3>
-                    <p className='volt-text color-secondary'>
+                    <h3 className='font-size-4 font-weight-6'>Invitation Expired</h3>
+                    <p className='color-secondary'>
                         This invitation expired on {expiresAt.toLocaleString()}
                     </p>
                     <Button
@@ -171,41 +171,41 @@ export default function TeamInvitationTemplate() {
     }
 
     return (
-        <div className='volt-container team-invitation-page w-max vh-max d-flex items-center content-center'>
-            <div className='volt-container team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
-                <div className='volt-container team-invitation-badge radius-full d-flex items-center gap-05'>
+        <div className='team-invitation-page w-max vh-max d-flex items-center content-center'>
+            <div className='team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
+                <div className='team-invitation-badge radius-full d-flex items-center gap-05'>
                     <CheckCircle size={20} />
                     <span>You've been invited!</span>
                 </div>
 
-                <h3 className='volt-title font-size-5 font-weight-6'>{invitation.team.name}</h3>
+                <h3 className='font-size-5 font-weight-6'>{invitation.team.name}</h3>
 
-                <p className='volt-text color-secondary'>
+                <p className='color-secondary'>
                     You've been invited to join this team
                 </p>
 
-                <p className='volt-text font-size-2 color-tertiary'>
+                <p className='font-size-2 color-tertiary'>
                     Invited by {invitation.invitedBy.firstName} {invitation.invitedBy.lastName}
                 </p>
 
-                <div className='volt-container team-invitation-details radius-md d-flex gap-1 flex-wrap content-center'>
-                    <div className='volt-container team-invitation-detail text-center'>
+                <div className='team-invitation-details radius-md d-flex gap-1 flex-wrap content-center'>
+                    <div className='team-invitation-detail text-center'>
                         <span className='team-invitation-detail-label'>Email</span>
-                        <p className='volt-text team-invitation-detail-value d-flex items-center gap-025'>
+                        <p className='team-invitation-detail-value d-flex items-center gap-025'>
                             <Mail size={14} />
                             {invitation.email}
                         </p>
                     </div>
-                    <div className='volt-container team-invitation-detail text-center'>
+                    <div className='team-invitation-detail text-center'>
                         <span className='team-invitation-detail-label'>Invited</span>
-                        <p className='volt-text team-invitation-detail-value d-flex items-center gap-025'>
+                        <p className='team-invitation-detail-value d-flex items-center gap-025'>
                             <Clock size={14} />
                             {new Date(invitation.createdAt).toLocaleDateString()}
                         </p>
                     </div>
-                    <div className='volt-container team-invitation-detail text-center'>
+                    <div className='team-invitation-detail text-center'>
                         <span className='team-invitation-detail-label'>Expires</span>
-                        <p className='volt-text team-invitation-detail-value'>
+                        <p className='team-invitation-detail-value'>
                             {expiresAt.toLocaleString(undefined, {
                                 month: 'short',
                                 day: 'numeric',
@@ -215,7 +215,7 @@ export default function TeamInvitationTemplate() {
                     </div>
                 </div>
 
-                <div className='volt-container team-invitation-actions d-flex gap-1 w-max'>
+                <div className='team-invitation-actions d-flex gap-1 w-max'>
                     <Button
                         variant='solid'
                         intent='brand'
@@ -240,7 +240,7 @@ export default function TeamInvitationTemplate() {
                 </div>
 
                 {error && (
-                    <div className='volt-container team-invitation-error radius-sm d-flex items-center gap-025'>
+                    <div className='team-invitation-error radius-sm d-flex items-center gap-025'>
                         <AlertCircle size={16} />
                         {error}
                     </div>

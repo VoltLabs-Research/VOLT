@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { KeyValueRow } from '@/shared/presentation/primitives';
 
 interface ReviewItemProps {
     label: string;
@@ -6,11 +7,8 @@ interface ReviewItemProps {
     valueClassName?: string;
 };
 
-const ReviewItem = ({ label, value, valueClassName = '' }: ReviewItemProps) => (
-    <div className='volt-container create-container-review-item'>
-        <span className='create-container-label color-secondary font-size-2'>{label}</span>
-        <span className={`create-container-value font-weight-5 ${valueClassName}`}>{value}</span>
-    </div>
+const ReviewItem = ({ label, value, valueClassName }: ReviewItemProps) => (
+    <KeyValueRow label={label} value={value} className={valueClassName} />
 );
 
 export default ReviewItem;

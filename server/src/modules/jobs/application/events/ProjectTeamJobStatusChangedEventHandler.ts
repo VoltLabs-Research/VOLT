@@ -1,20 +1,19 @@
 import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
-import TeamJobProjectionService from '@modules/jobs/infrastructure/services/TeamJobProjectionService';
-import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { IEventHandler } from '@shared/application/events/IEventHandler';
-import logger from '@shared/infrastructure/logger';
-import { injectable, inject } from 'tsyringe';
 import type { TeamJobSnapshot } from '@modules/jobs/infrastructure/projections/TeamJobSnapshot';
+import TeamJobProjectionService from '@modules/jobs/infrastructure/services/TeamJobProjectionService';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import { IEventHandler } from '@shared/application/events/IEventHandler';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import logger from '@shared/infrastructure/logger';
 
-@injectable()
+@Subscribe('job.status.changed')
 export default class ProjectTeamJobStatusChangedEventHandler implements IEventHandler<JobStatusChangedEvent> {
     constructor(
-        @inject(TeamJobProjectionService)
+        
         private readonly teamJobProjectionService: TeamJobProjectionService,
 
-        @inject(SOCKET_TOKENS.SocketEmitter)
-        private readonly socketEmitter: ISocketEmitter
+        
+        private readonly socketEmitter: SocketIOEmitter
     ) {}
 
     async handle(event: JobStatusChangedEvent): Promise<void> {

@@ -1,6 +1,7 @@
-import { injectable } from 'tsyringe';
+
 import type { KeyUsageAnalytics, TeamUsageAnalytics } from '@modules/team/domain/contracts/secret-key/SecretKeyUsageAnalytics';
 import type { KeyUsageMetrics, TeamUsageMetrics } from '@modules/team/domain/contracts/secret-key/SecretKeyUsageMetrics';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 interface TeamMetricsDailySeries {
     labels: string[];
@@ -11,7 +12,7 @@ interface TeamMetricsDailySeries {
 const calcSuccessRate = (success: number, total: number): number =>
     total > 0 ? Math.round((success / total) * 1000) / 10 : 0;
 
-@injectable()
+@Singleton()
 export default class SecretKeyUsageMetricsMapper {
     toTeamMetrics(analytics: TeamUsageAnalytics): TeamUsageMetrics {
         const dateSet = new Set<string>();

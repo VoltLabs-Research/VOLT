@@ -1,6 +1,7 @@
-import { AI_PROVIDERS, AI_PROVIDER_NAMES, AI_PROVIDER_DESCRIPTIONS } from '@modules/ai/domain/contracts/AIProviders';
+import { AI_PROVIDERS, AI_PROVIDER_DESCRIPTIONS, AI_PROVIDER_NAMES } from '@modules/ai/domain/contracts/AIProviders';
 import { TeamAIProvider } from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
-import { injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+
 
 export interface TeamAIProviderMetadata {
     id: TeamAIProvider;
@@ -28,7 +29,7 @@ const buildTeamAIProviderCatalog = (): Map<TeamAIProvider, TeamAIProviderMetadat
     return new Map(entries);
 };
 
-@injectable()
+@Singleton()
 export default class TeamAIProviderCatalog {
     private readonly catalog = buildTeamAIProviderCatalog();
 

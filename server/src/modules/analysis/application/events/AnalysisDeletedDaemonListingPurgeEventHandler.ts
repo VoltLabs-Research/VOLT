@@ -1,19 +1,18 @@
 import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
-import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import logger from '@shared/infrastructure/logger';
+import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
 type DaemonListingDocumentType = 'listing' | 'sub-listing';
 
 const DAEMON_LISTING_DOCUMENT_TYPES: DaemonListingDocumentType[] = ['listing', 'sub-listing'];
 
-@injectable()
+@Subscribe('analysis.deleted')
 export default class AnalysisDeletedDaemonListingPurgeEventHandler implements IEventHandler<AnalysisDeletedEvent> {
     constructor(
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 

@@ -9,7 +9,3 @@
     border-top: 1px solid var(--color-border-soft);
 }
 
-.canvas-render-menu-submenu-title {
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-}

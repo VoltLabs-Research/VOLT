@@ -1,17 +1,16 @@
-import { GetPasswordInfoInputDTO, GetPasswordInfoOutputDTO } from '@modules/auth/application/dtos/GetPasswordInfoDTO';
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
-import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
+import { GetPasswordInfoInputDTO, GetPasswordInfoOutputDTO } from '@modules/auth/application/dtos/GetPasswordInfoDTO';
+import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export default class GetPasswordInfoUseCase implements IUseCase<GetPasswordInfoInputDTO, GetPasswordInfoOutputDTO, ApplicationError> {
     constructor(
-        @inject(AUTH_TOKENS.UserRepository)
-        private readonly userRepository: IUserRepository
+        
+        private readonly userRepository: UserRepository
     ) {}
 
     async execute(input: GetPasswordInfoInputDTO): Promise<Result<GetPasswordInfoOutputDTO, ApplicationError>> {

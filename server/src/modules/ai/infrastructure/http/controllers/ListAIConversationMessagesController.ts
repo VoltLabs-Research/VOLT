@@ -1,5 +1,5 @@
+import ListAIConversationMessagesUseCase from '@modules/ai/application/use-cases/ListAIConversationMessagesUseCase';
 import { createPaginatedController } from '@shared/infrastructure/http/controllers/createController';
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import { z } from 'zod';
 
 const listAIConversationMessagesRequestSchema = z.object({
@@ -10,7 +10,7 @@ const listAIConversationMessagesRequestSchema = z.object({
     limit: z.coerce.number().int().min(1).max(200).optional()
 });
 
-export default createPaginatedController(AI_TOKENS.ListAIConversationMessagesUseCase, {
+export default createPaginatedController(ListAIConversationMessagesUseCase, {
     validationSchema: {
         params: listAIConversationMessagesRequestSchema.pick({ teamId: true, conversationId: true }),
         query: listAIConversationMessagesRequestSchema.pick({ page: true, limit: true }),

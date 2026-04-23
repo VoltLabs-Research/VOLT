@@ -9,8 +9,8 @@ import TypingIndicator from '../TypingIndicator';
 import { PresenceStatus } from '@/modules/chat/api/entities/shared/chat-events';
 import { useState, useCallback } from 'react';
 import { IoChatbubblesOutline } from 'react-icons/io5';
-import EmptyState from '@/shared/presentation/components/EmptyState';
-import { openModal } from '@/shared/presentation/components/Modal';
+import { EmptyState } from '@/shared/presentation/primitives';
+import { Box, Stack, openModal } from '@/shared/presentation/primitives';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import type { Chat } from '@/modules/chat/api/entities/chat';
 import type { ChatMessage } from '@/modules/chat/api/entities/message';
@@ -93,13 +93,13 @@ const ChatArea = ({
 
     if (!chat) {
         return (
-            <div className='volt-container d-flex flex-center h-max chat-area chat-area-empty'>
+            <Box display='flex' height='max' className='flex-center chat-area chat-area-empty'>
                 <EmptyState
                     icon={<IoChatbubblesOutline size={32} />}
                     title='Welcome to Messages'
                     description='Select a conversation or start a new chat'
                 />
-            </div>
+            </Box>
         );
     }
 
@@ -123,7 +123,7 @@ const ChatArea = ({
     );
 
     return (
-        <div className='volt-container d-flex column h-max chat-area'>
+        <Stack height='max' className='chat-area'>
             <ChatHeader
                 chat={chat}
                 currentUserId={currentUserId}
@@ -157,7 +157,7 @@ const ChatArea = ({
                 onSave={handleEditSave}
                 onClose={handleEditClose}
             />
-        </div>
+        </Stack>
     );
 };
 

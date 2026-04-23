@@ -2,12 +2,13 @@ import SecretKeyUsageLog, { SecretKeyUsageLogProps } from '@modules/team/domain/
 import { ISecretKeyUsageLogRepository, LogRequestInput } from '@modules/team/domain/port/secret-key/ISecretKeyUsageLogRepository';
 import secretKeyUsageLogMapper from '@modules/team/infrastructure/persistence/mongo/mappers/secret-key/SecretKeyUsageLogMapper';
 import SecretKeyUsageLogModel, { SecretKeyUsageLogDocument } from '@modules/team/infrastructure/persistence/mongo/models/secret-key/SecretKeyUsageLogModel';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import mongoose from 'mongoose';
-import { injectable } from 'tsyringe';
-import type { PipelineStage } from 'mongoose';
+
 import type { KeyUsageAnalytics, TeamUsageAnalytics } from '@modules/team/domain/contracts/secret-key/SecretKeyUsageAnalytics';
 import type { KeyUsageMetrics, TeamUsageMetrics } from '@modules/team/domain/contracts/secret-key/SecretKeyUsageMetrics';
+import type { PipelineStage } from 'mongoose';
 
 interface TeamMetricsOverviewRow {
     totalRequests: number;
@@ -173,7 +174,7 @@ const endpointPipelineStages = (limit?: number): FacetStage[] => {
     return stages;
 };
 
-@injectable()
+@Singleton()
 export default class SecretKeyUsageLogRepository
     extends MongooseBaseRepository<SecretKeyUsageLog, SecretKeyUsageLogProps, SecretKeyUsageLogDocument>
     implements ISecretKeyUsageLogRepository {

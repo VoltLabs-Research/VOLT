@@ -1,26 +1,26 @@
-import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import { SYS_BUCKETS } from '@core/config/minio';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { inject, injectable } from 'tsyringe';
 import type LatexDocumentDeletedEvent from '@modules/latex/domain/events/LatexDocumentDeletedEvent';
+import LatexAssetRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexAssetRepository';
+import LatexFileRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexFileRepository';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
-import type { ILatexAssetRepository } from '@modules/latex/domain/port/ILatexAssetRepository';
-import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { inject } from 'tsyringe';
 
 /**
  * Cascades cleanup when a LaTeX document is deleted:
  * - Removes all asset files from MinIO and purges asset metadata.
  * - Deletes all LatexFile records associated with the document.
  */
-@injectable()
+@Subscribe('latex-document.deleted')
 export default class LatexDocumentDeletedEventHandler implements IEventHandler<LatexDocumentDeletedEvent> {
     constructor(
-        @inject(LATEX_TOKENS.LatexAssetRepository)
-        private readonly latexAssetRepository: ILatexAssetRepository,
+        
+        private readonly latexAssetRepository: LatexAssetRepository,
 
-        @inject(LATEX_TOKENS.LatexFileRepository)
-        private readonly latexFileRepository: ILatexFileRepository,
+        
+        private readonly latexFileRepository: LatexFileRepository,
 
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService

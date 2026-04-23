@@ -1,20 +1,19 @@
-import { DeleteAccountInputDTO, DeleteAccountOutputDTO } from '@modules/auth/application/dtos/DeleteAccountDTO';
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import UserDeletedEvent from '@modules/auth/domain/events/UserDeletedEvent';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { DeleteAccountInputDTO, DeleteAccountOutputDTO } from '@modules/auth/application/dtos/DeleteAccountDTO';
+import UserDeletedEvent from '@modules/auth/domain/events/UserDeletedEvent';
+import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
+import type { IUseCase } from '@shared/application/IUseCase';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { IEventBus } from '@shared/application/events/IEventBus';
 import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
-import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
-import type { IUseCase } from '@shared/application/IUseCase';
-import type { IEventBus } from '@shared/application/events/IEventBus';
 
 @injectable()
 export default class DeleteAccountUseCase implements IUseCase<DeleteAccountInputDTO, DeleteAccountOutputDTO, ApplicationError>{
     constructor(
-        @inject(AUTH_TOKENS.UserRepository)
-        private readonly userRepository: IUserRepository,
+        
+        private readonly userRepository: UserRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}

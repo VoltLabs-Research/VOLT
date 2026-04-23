@@ -1,13 +1,12 @@
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { Result } from '@shared/domain/port/Result';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
-import { injectable, inject } from 'tsyringe';
 
 import type { ListTrajectorySceneArtifactsInputDTO } from '@modules/trajectory/application/dtos/scene-artifacts/ListTrajectorySceneArtifactsDTO';
-import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
-import type { SceneArtifactProps } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 import type SceneArtifact from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
+import type { SceneArtifactProps } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
+import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 
@@ -91,11 +90,11 @@ const projectRenderableExposures = (artifacts: SceneArtifact[]) => {
         .filter((item): item is NonNullable<typeof item> => item !== null);
 };
 
-@injectable()
+@Singleton()
 export class ListTrajectorySceneArtifactsUseCase implements IUseCase<ListTrajectorySceneArtifactsInputDTO, PaginatedResult<unknown>, ApplicationError> {
     constructor(
-        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository)
-        private readonly sceneArtifactRepository: ISceneArtifactRepository
+        
+        private readonly sceneArtifactRepository: SceneArtifactRepository
     ) {}
 
     async execute(input: ListTrajectorySceneArtifactsInputDTO) {

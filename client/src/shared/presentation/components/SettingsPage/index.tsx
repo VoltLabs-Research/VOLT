@@ -1,3 +1,4 @@
+import { Heading, Stack } from '@/shared/presentation/primitives';
 import './SettingsPage.css';
 import { useId } from 'react';
 import type { ReactNode } from 'react';
@@ -11,14 +12,14 @@ const SettingsPage = ({ title, children }: SettingsPageProps) => {
     const titleId = useId();
 
     return (
-        <section className='settings-page-container d-flex column gap-3 p-2' aria-labelledby={titleId}>
-            <h1 id={titleId} className='volt-title font-size-5 font-weight-6'>
+        <Stack as='section' gap='3' p='2' className='settings-page-container' aria-labelledby={titleId}>
+            <Heading level={1} size='2xl' weight='bold' id={titleId}>
                 {title}
-            </h1>
-            <div className='volt-container settings-page-content d-flex column gap-3'>
+            </Heading>
+            <Stack gap='3' className='settings-page-content'>
                 {children}
-            </div>
-        </section>
+            </Stack>
+        </Stack>
     );
 };
 

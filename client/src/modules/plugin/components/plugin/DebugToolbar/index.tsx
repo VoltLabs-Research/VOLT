@@ -1,3 +1,4 @@
+import { Button, Loader, Tooltip } from '@/shared/presentation/primitives';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import DebugArgumentsPanel from '@/modules/plugin/components/plugin/DebugArgumentsPanel';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
@@ -6,10 +7,7 @@ import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin
 import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import { isUserConfigurableArgument } from '@/modules/plugin/utilities/plugin/argument-values';
 import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
-import Button from '@/shared/presentation/components/Button';
-import Loader from '@/shared/presentation/components/Loader';
-import Select from '@/shared/presentation/components/Select';
-import Tooltip from '@/shared/presentation/components/Tooltip';
+import { Select } from '@/shared/presentation/primitives';
 import { Bug, FastForward, Play, Square, StepForward } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
@@ -121,11 +119,11 @@ const DebugToolbar = () => {
     const completedCount = Object.values(nodeStates).filter((s) => s.status === 'completed').length;
 
     return (
-        <div className='volt-container p-absolute z-10 d-flex column items-center top-1 center-x debug-toolbar-wrapper'>
-            <div className='volt-container d-flex items-center gap-05 panel-floating radius-full debug-toolbar glass-bg'>
-                <div className='volt-container d-flex items-center gap-05'>
+        <div className='p-absolute z-10 d-flex column items-center top-1 center-x debug-toolbar-wrapper'>
+            <div className='d-flex items-center gap-05 panel-floating radius-full debug-toolbar glass-bg'>
+                <div className='d-flex items-center gap-05'>
                     <Bug size={14} className='color-secondary' />
-                    <p className='volt-text font-size-2 color-secondary font-weight-6'>Debug</p>
+                    <p className='font-size-2 color-secondary font-weight-6'>Debug</p>
                 </div>
 
                 <hr className='volt-divider volt-divider--vertical debug-toolbar-divider' />
@@ -151,7 +149,7 @@ const DebugToolbar = () => {
 
                 <hr className='volt-divider volt-divider--vertical debug-toolbar-divider' />
 
-                <div className='volt-container d-flex items-center gap-025'>
+                <div className='d-flex items-center gap-025'>
                     <Tooltip content={canStart ? (hasConfigurableArgs ? 'Configure arguments & start' : 'Start debug (single frame)') : 'Select trajectory & frame first'} placement='bottom'>
                         <Button
                             variant='ghost'
@@ -209,11 +207,11 @@ const DebugToolbar = () => {
             {isDebugging && (
                 <>
                     <hr className='volt-divider volt-divider--vertical debug-toolbar-divider' />
-                    <div className='volt-container d-flex items-center gap-05 debug-toolbar-status'>
+                    <div className='d-flex items-center gap-05 debug-toolbar-status'>
                         {isPaused && currentNodeLabel && (
                             <>
                                 <span className='debug-toolbar-status-dot debug-toolbar-status-dot--paused radius-full f-shrink-0' />
-                                <p className='volt-text font-size-2'>
+                                <p className='font-size-2'>
                                     Paused at: {currentNodeLabel} ({currentNodeIndex + 1}/{totalNodes})
                                 </p>
                             </>
@@ -221,7 +219,7 @@ const DebugToolbar = () => {
                         {!isPaused && (
                             <>
                                 <span className='debug-toolbar-status-dot debug-toolbar-status-dot--running radius-full f-shrink-0' />
-                                <p className='volt-text font-size-2 color-secondary'>
+                                <p className='font-size-2 color-secondary'>
                                     Running... {completedCount}/{totalNodes}
                                 </p>
                             </>
@@ -233,14 +231,14 @@ const DebugToolbar = () => {
             <DebugArgumentsPanel onStart={handleStartFromPanel} canStart={canStart} />
 
             {!isDebugging && (totalDuration !== null || sessionError) && (
-                <div className='volt-container text-center mt-1 debug-toolbar-below-status'>
+                <div className='text-center mt-1 debug-toolbar-below-status'>
                     {totalDuration !== null && totalDuration >= 0 && (
-                        <p className='volt-text font-size-2 debug-toolbar-status--completed'>
+                        <p className='font-size-2 debug-toolbar-status--completed'>
                             Completed in {totalDuration < 1000 ? `${totalDuration}ms` : `${(totalDuration / 1000).toFixed(1)}s`}
                         </p>
                     )}
                     {sessionError && (
-                        <p className='volt-text font-size-2 debug-toolbar-status--error'>
+                        <p className='font-size-2 debug-toolbar-status--error'>
                             {sessionError}
                         </p>
                     )}

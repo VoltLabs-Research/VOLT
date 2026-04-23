@@ -1,15 +1,14 @@
 import SecretKey, { SecretKeyProps } from '@modules/team/domain/entities/secret-key/SecretKey';
-import { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
 import secretKeyMapper from '@modules/team/infrastructure/persistence/mongo/mappers/secret-key/SecretKeyMapper';
 import SecretKeyModel, { SecretKeyDocument } from '@modules/team/infrastructure/persistence/mongo/models/secret-key/SecretKeyModel';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import crypto from 'node:crypto';
-import { injectable } from 'tsyringe';
 
-@injectable()
+
+@Singleton()
 export default class SecretKeyRepository
-    extends MongooseBaseRepository<SecretKey, SecretKeyProps, SecretKeyDocument>
-    implements ISecretKeyRepository {
+    extends MongooseBaseRepository<SecretKey, SecretKeyProps, SecretKeyDocument> {
 
     constructor() {
         super(SecretKeyModel, secretKeyMapper);

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import Avatar from '@/shared/presentation/components/Avatar';
+import { Avatar, ListRow, Text } from '@/shared/presentation/primitives';
 import { cn } from '@/shared/utils';
 import type { User } from '@/modules/auth/api/entities/user';
 import './MemberListItem.css';
@@ -16,39 +16,29 @@ interface MemberListItemProps {
 
 export const MemberListItem = ({ user, role, action, onClick, className }: MemberListItemProps) => {
     const fullName = `${user.firstName} ${user.lastName}`;
-    const content = (
-        <>
-            <Avatar user={user} size='sm' />
-            <div className='volt-container d-flex column flex-1'>
-                <p className='volt-text font-size-3 font-weight-5 color-primary'>
-                    {fullName}
-                </p>
-            </div>
-            {role && (
-                <p className={`volt-text ${cn('member-list-item-role font-size-2', role)}`}>
-                    {role.charAt(0).toUpperCase() + role.slice(1)}
-                </p>
-            )}
-            {action}
-        </>
-    );
 
-    if (onClick) {
-        return (
-            <button
-                type='button'
-                className={cn('d-flex items-center gap-075 list-item-hoverable member-list-item member-list-item-button', className)}
-                onClick={onClick}
-            >
-                {content}
-            </button>
+    let trailing: ReactNode = null;
+    if (role || action) {
+        trailing = (
+            <>
+                {role && (
+                    <Text as='p' size='md' className={cn('member-list-item-role', role)}>
+                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                    </Text>
+                )}
+                {action}
+            </>
         );
     }
 
     return (
-        <div className={`volt-container ${cn('d-flex items-center gap-075 list-item-hoverable member-list-item', className)}`}>
-            {content}
-        </div>
+        <ListRow
+            leading={<Avatar user={user} size='sm' />}
+            title={fullName}
+            trailing={trailing}
+            onClick={onClick}
+            className={cn('member-list-item', onClick && 'member-list-item-button', className)}
+        />
     );
 };
 

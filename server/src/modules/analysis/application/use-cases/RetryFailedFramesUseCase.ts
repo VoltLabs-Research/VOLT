@@ -1,27 +1,24 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import TeamJobsService from '@modules/team/socket/team/TeamJobsService';
-import { Result } from '@shared/domain/port/Result';
 import { RetryFailedFramesInputDTO, RetryFailedFramesOutputDTO } from '@modules/analysis/application/dtos/RetryFailedFramesDTO';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
+import TeamJobMaintenanceService from '@modules/jobs/infrastructure/services/TeamJobMaintenanceService';
+import TeamJobsService from '@modules/team/socket/team/TeamJobsService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import type { ITeamJobMaintenanceService } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
+import { Result } from '@shared/domain/port/Result';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export default class RetryFailedFramesUseCase implements IUseCase<RetryFailedFramesInputDTO, RetryFailedFramesOutputDTO, ApplicationError> {
     constructor(
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository,
+        
+        private readonly analysisRepository: AnalysisRepository,
 
-        @inject(TEAM_TOKENS.TeamJobsService)
+        
         private readonly teamJobsService: TeamJobsService,
 
-        @inject(JOBS_TOKENS.TeamJobMaintenanceService)
-        private readonly teamJobMaintenanceService: ITeamJobMaintenanceService
+        
+        private readonly teamJobMaintenanceService: TeamJobMaintenanceService
     ) {}
 
     async execute(input: RetryFailedFramesInputDTO): Promise<Result<RetryFailedFramesOutputDTO, ApplicationError>> {

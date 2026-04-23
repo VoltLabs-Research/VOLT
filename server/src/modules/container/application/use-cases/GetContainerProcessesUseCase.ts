@@ -1,17 +1,16 @@
 import { GetContainerProcessesInputDTO, GetContainerProcessesOutputDTO } from '@modules/container/application/dtos/GetContainerProcessesDTO';
-import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import { ContainerOwnershipService } from '@modules/container/infrastructure/services/ContainerOwnershipService';
-import type { ITeamClusterContainerRuntimeService } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
+import { DaemonContainerRuntimeService } from '@modules/container/infrastructure/services/DaemonContainerRuntimeService';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export class GetContainerProcessesUseCase implements IUseCase<GetContainerProcessesInputDTO, GetContainerProcessesOutputDTO> {
     constructor(
-        @inject(CONTAINER_TOKENS.ContainerRuntimeService) private containerRuntimeService: ITeamClusterContainerRuntimeService,
-        @inject(ContainerOwnershipService) private ownershipService: ContainerOwnershipService
+        private containerRuntimeService: DaemonContainerRuntimeService,
+        private ownershipService: ContainerOwnershipService
     ) {}
 
     async execute(input: GetContainerProcessesInputDTO): Promise<Result<GetContainerProcessesOutputDTO>> {

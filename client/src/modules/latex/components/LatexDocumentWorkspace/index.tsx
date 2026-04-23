@@ -1,13 +1,11 @@
 import useLatexWorkspace from '@/modules/latex/hooks/use-latex-workspace';
 import useDashboardWorkspaceChrome from '@/modules/dashboard/hooks/use-dashboard-workspace-chrome';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
-import Avatar from '@/shared/presentation/components/Avatar';
-import Button from '@/shared/presentation/components/Button';
 import EditableTag from '@/shared/presentation/components/EditableTag';
-import EmptyState from '@/shared/presentation/components/EmptyState';
-import Loader from '@/shared/presentation/components/Loader';
+import { EmptyState } from '@/shared/presentation/primitives';
 import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
 import WorkspaceToolbar from '@/shared/presentation/components/WorkspaceToolbar';
+import { Avatar, Box, Button, Loader, Row, SaveStatusIndicator, Skeleton, Stack } from '@/shared/presentation/primitives';
 import '@/shared/presentation/styles/resize-handle.css';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
@@ -16,7 +14,6 @@ import LatexFilePanel from './LatexFilePanel';
 import LatexPreviewPanel from './LatexPreviewPanel';
 import './LatexDocumentWorkspace.css';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import Skeleton from '@/shared/presentation/components/Skeleton';
 import { Download, FileArchive, FileText, FolderUp, Play, Sparkles } from 'lucide-react';
 import { IoSparklesOutline } from 'react-icons/io5';
 import { useParams } from 'react-router-dom';
@@ -490,21 +487,21 @@ const LatexDocumentWorkspace = () => {
 
     if (isLoading) {
         return (
-            <div className='volt-container latex-workspace d-flex column'>
-                <div className='volt-container latex-workspace__toolbar d-flex items-center content-between gap-1'>
-                    <div className='volt-container d-flex column gap-025'>
+            <Stack className='latex-workspace'>
+                <Row justify='between' gap='1' className='latex-workspace__toolbar'>
+                    <Stack gap='025'>
                         <LoadingSkeleton width='13rem' height='1rem' />
                         <LoadingSkeleton width='18rem' height='0.875rem' />
-                    </div>
-                    <div className='volt-container d-flex items-center gap-075'>
+                    </Stack>
+                    <Row gap='075'>
                         <LoadingSkeleton width='6.5rem' height='2rem' borderRadius='999px' />
                         <LoadingSkeleton width='7.5rem' height='2rem' borderRadius='999px' />
                         <LoadingSkeleton width='5.5rem' height='2rem' borderRadius='999px' />
-                    </div>
-                </div>
+                    </Row>
+                </Row>
 
-                <div className='volt-container latex-workspace__layout d-flex flex-1 min-h-0'>
-                    <div className='volt-container d-flex column gap-1 min-h-0' style={{
+                <Box display='flex' flex='1' minH='0' className='latex-workspace__layout'>
+                    <Stack gap='1' minH='0' style={{
                             width: panelWidths.files,
                             padding: '1rem',
                             borderRight: '1px solid var(--color-border-primary, rgba(127, 127, 127, 0.2))'
@@ -519,14 +516,14 @@ const LatexDocumentWorkspace = () => {
                                 background: 'var(--color-surface-tertiary, rgba(127, 127, 127, 0.18))'
                             }}
                         />)}
-                    </div>
+                    </Stack>
 
-                    <div className='volt-container latex-workspace__main-content d-flex column flex-1 min-w-0'>
-                        <div className='volt-container d-flex column gap-1 flex-1 min-h-0' style={{ padding: '1.5rem' }}>
+                    <Stack flex='1' minW='0' className='latex-workspace__main-content'>
+                        <Stack gap='1' flex='1' minH='0' style={{ padding: '1.5rem' }}>
                             <LoadingSkeleton width='11rem' height='1rem' />
                             <LoadingSkeleton width='100%' height='2.5rem' borderRadius='0.85rem' />
                             <LoadingSkeleton width='100%' height='100%' borderRadius='1rem' />
-                            <div className='volt-container d-flex column gap-075 w-max' style={{ maxWidth: '42rem' }}>
+                            <Stack gap='075' width='max' style={{ maxWidth: '42rem' }}>
                                 {LOADING_EDITOR_BLOCKS.map((block) => <div
                                     key={block.key}
                                     style={{
@@ -536,11 +533,11 @@ const LatexDocumentWorkspace = () => {
                                         background: 'var(--color-surface-tertiary, rgba(127, 127, 127, 0.18))'
                                     }}
                                 />)}
-                            </div>
-                        </div>
+                            </Stack>
+                        </Stack>
 
                         {isAIPanelOpen && (
-                            <div id='latex-ai-panel' className='volt-container latex-ai-panel d-flex column gap-075' style={{
+                            <Stack id='latex-ai-panel' gap='075' className='latex-ai-panel' style={{
                                     height: panelWidths.ai,
                                     padding: '1rem',
                                     borderTop: '1px solid var(--color-border-primary, rgba(127, 127, 127, 0.2))'
@@ -562,11 +559,11 @@ const LatexDocumentWorkspace = () => {
                                         background: 'var(--color-surface-tertiary, rgba(127, 127, 127, 0.18))'
                                     }}
                                 />
-                            </div>
+                            </Stack>
                         )}
-                    </div>
+                    </Stack>
 
-                    <div className='volt-container d-flex column gap-1 min-h-0' style={{
+                    <Stack gap='1' minH='0' style={{
                             width: panelWidths.preview,
                             padding: '1rem',
                             borderLeft: '1px solid var(--color-border-primary, rgba(127, 127, 127, 0.2))'
@@ -581,9 +578,9 @@ const LatexDocumentWorkspace = () => {
                                 background: 'var(--color-surface-tertiary, rgba(127, 127, 127, 0.18))'
                             }}
                         />)}
-                    </div>
-                </div>
-            </div>
+                    </Stack>
+                </Box>
+            </Stack>
         );
     }
 
@@ -683,7 +680,7 @@ const LatexDocumentWorkspace = () => {
     ));
 
     return (
-        <div className='volt-container latex-workspace d-flex column'>
+        <Stack className='latex-workspace'>
             <WorkspaceToolbar
                 title={(
                     <EditableTag
@@ -699,14 +696,22 @@ const LatexDocumentWorkspace = () => {
                     <>
                         <ThemeToggleButton className='latex-workspace__theme-toggle' />
                         {collaboratorAvatars.length > 0 && (
-                            <div className='volt-container latex-workspace__collaborators d-flex items-center'>
+                            <Row className='latex-workspace__collaborators'>
                                 {collaboratorAvatars}
-                            </div>
+                            </Row>
                         )}
                         {isDirty && <span className='latex-workspace__dirty-dot' title='Unsaved changes' />}
-                        <span className='latex-workspace__status-text color-muted' aria-live='polite'>
-                            {isSaving ? 'Saving…' : isDirty ? 'Unsaved changes' : 'Saved'}
-                        </span>
+                        {isDirty && !isSaving ? (
+                            <span className='latex-workspace__status-text color-muted' aria-live='polite'>
+                                Unsaved changes
+                            </span>
+                        ) : (
+                            <SaveStatusIndicator
+                                status={isSaving ? 'saving' : 'saved'}
+                                hideIdle={false}
+                                className='latex-workspace__status-text color-muted'
+                            />
+                        )}
                         {writeWithAIButton}
                         {compileButton}
                         {exportTexButton}
@@ -723,9 +728,9 @@ const LatexDocumentWorkspace = () => {
                 {compileStatusMessage}
             </div>
 
-            <div className='volt-container latex-workspace__layout d-flex flex-1 min-h-0'>
+            <Box display='flex' flex='1' minH='0' className='latex-workspace__layout'>
                 {shouldShowWorkspaceOnboarding ? (
-                    <div className='volt-container latex-workspace__empty-layout d-flex flex-1 items-center content-center p-2'>
+                    <Box display='flex' flex='1' align='center' justify='center' p='2' className='latex-workspace__empty-layout'>
                         <input
                             ref={fileInputRef}
                             type='file'
@@ -746,13 +751,13 @@ const LatexDocumentWorkspace = () => {
                             {...({ webkitdirectory: '', directory: '' } as Record<string, string>)}
                         />
 
-                        <div className='volt-container latex-workspace__empty-shell d-flex column items-center gap-1'>
+                        <Stack align='center' gap='1' className='latex-workspace__empty-shell'>
                             <EmptyState
                                 title='Start your LaTeX project'
                                 description='Create a starter .tex file from a template or upload an existing project folder to begin working.'
                                 icon={<FileText size={28} />}
                             />
-                            <div className='volt-container d-flex items-center gap-075'>
+                            <Row gap='075'>
                                 <Button
                                     variant='ghost'
                                     intent='neutral'
@@ -776,9 +781,9 @@ const LatexDocumentWorkspace = () => {
                                 >
                                     Upload Project
                                 </Button>
-                            </div>
-                        </div>
-                    </div>
+                            </Row>
+                        </Stack>
+                    </Box>
                 ) : (
                     <>
                         <LatexFilePanel
@@ -828,9 +833,9 @@ const LatexDocumentWorkspace = () => {
                             <span className='latex-drag-handle__grip volt-resize-handle__grip volt-resize-handle__grip--horizontal' aria-hidden='true' />
                         </div>
 
-                        <div className='volt-container latex-workspace__main-content d-flex column flex-1 min-w-0'>
-                            <div ref={editorStackRef} className='volt-container latex-workspace__editor-stack d-flex column flex-1 min-h-0'>
-                                <div className='volt-container latex-workspace__editor-group-shell d-flex column min-h-0' style={isEditorSplit ? { height: panelWidths.editorTop, flex: '0 0 auto' } : { flex: '1 1 0%' }}>
+                        <Stack flex='1' minW='0' className='latex-workspace__main-content'>
+                            <div ref={editorStackRef} className='latex-workspace__editor-stack d-flex column flex-1 min-h-0'>
+                                <Stack minH='0' className='latex-workspace__editor-group-shell' style={isEditorSplit ? { height: panelWidths.editorTop, flex: '0 0 auto' } : { flex: '1 1 0%' }}>
                                     <LatexEditorPanel
                                         groupId='primary'
                                         isGroupActive={activeEditorGroupId === 'primary'}
@@ -866,7 +871,7 @@ const LatexDocumentWorkspace = () => {
                                         onSplitDown={handleSplitEditorDown}
                                         onDuplicateTabToOtherGroup={(tab) => handleDuplicateTabToOtherGroup('primary', tab)}
                                     />
-                                </div>
+                                </Stack>
 
                                 {isEditorSplit && secondaryEditorGroup && (
                                     <>
@@ -887,7 +892,7 @@ const LatexDocumentWorkspace = () => {
                                             <span className='latex-drag-handle__grip volt-resize-handle__grip volt-resize-handle__grip--vertical' aria-hidden='true' />
                                         </div>
 
-                                        <div className='volt-container latex-workspace__editor-group-shell d-flex column flex-1 min-h-0'>
+                                        <Stack flex='1' minH='0' className='latex-workspace__editor-group-shell'>
                                             <LatexEditorPanel
                                                 groupId='secondary'
                                                 isGroupActive={activeEditorGroupId === 'secondary'}
@@ -922,7 +927,7 @@ const LatexDocumentWorkspace = () => {
                                                 onDuplicateTabToOtherGroup={(tab) => handleDuplicateTabToOtherGroup('secondary', tab)}
                                                 onCloseGroup={handleCloseSecondaryEditorGroup}
                                             />
-                                        </div>
+                                        </Stack>
                                     </>
                                 )}
                             </div>
@@ -948,9 +953,9 @@ const LatexDocumentWorkspace = () => {
                                         <span className='latex-drag-handle__grip volt-resize-handle__grip volt-resize-handle__grip--vertical' aria-hidden='true' />
                                     </div>
                                     <Suspense fallback={
-                                        <div id='latex-ai-panel' className='volt-container latex-ai-panel d-flex column flex-center items-center' style={{ height: panelWidths.ai }}>
+                                        <Stack id='latex-ai-panel' align='center' className='latex-ai-panel flex-center' style={{ height: panelWidths.ai }}>
                                             <Loader scale={0.5} isFixed={false} />
-                                        </div>
+                                        </Stack>
                                     }>
                                         <LatexAIPanel
                                             documentId={documentId}
@@ -962,7 +967,7 @@ const LatexDocumentWorkspace = () => {
                                     </Suspense>
                                 </>
                             )}
-                        </div>
+                        </Stack>
 
                         <div
                             className='latex-drag-handle'
@@ -993,8 +998,8 @@ const LatexDocumentWorkspace = () => {
                         />
                     </>
                 )}
-            </div>
-        </div>
+            </Box>
+        </Stack>
     );
 };
 

@@ -1,0 +1,20 @@
+.demo-welcome-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 1rem;
+}
+
+.demo-welcome-modal-card {
+    background: var(--surface-1, #ffffff);
+    color: var(--foreground, #111827);
+    border-radius: 16px;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
+    padding: 1.75rem;
+    max-width: 480px;
+    width: 100%;
+}

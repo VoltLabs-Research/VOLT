@@ -1,21 +1,10 @@
 .chat-list-item {
-    width: 100%;
     min-height: 3rem;
-    padding: 0.75rem;
-    border: 1px solid transparent;
-    border-radius: var(--radius-md);
-    background: transparent;
-    text-align: left;
-    cursor: pointer;
 }
 
 .chat-list-item:focus-visible {
     outline: none;
     box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
-}
-
-.chat-list-item.active {
-    border-color: var(--color-border-soft);
 }
 
 .chat-list-item-avatar-group {

@@ -1,9 +1,4 @@
 import {
-    createZipArchiveStream,
-    createZipDownloadResponse,
-    sanitizeDownloadName
-} from '@shared/infrastructure/http/responses/download-response';
-import {
     groupAnalysisFilesByTimestep,
     listAnalysisFiles,
     type AnalysisFileRef,
@@ -11,18 +6,22 @@ import {
 } from '@modules/plugin/utilities/exposure/analysis-file-collection';
 import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import {
+    createZipArchiveStream,
+    createZipDownloadResponse,
+    sanitizeDownloadName
+} from '@shared/infrastructure/http/responses/download-response';
 
-import { ErrorCodes } from '@core/constants/error-codes';
 import { SYS_BUCKETS } from '@core/config/minio';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { inject, injectable } from 'tsyringe';
+import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { finished } from 'node:stream/promises';
+import { inject } from 'tsyringe';
 
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type { Archiver } from 'archiver';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import type { PassThrough } from 'node:stream';
 
 import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
@@ -30,6 +29,7 @@ import type {
     IPluginExposureExportService,
     PluginExposureExportParams
 } from '@modules/plugin/domain/port/exposure/IPluginExposureExportService';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 
 interface PrefixCollectionConfig {
     bucket: string;
@@ -43,16 +43,16 @@ const sortAnalysisFilesByObjectName = (left: AnalysisFileRef, right: AnalysisFil
     return left.objectName.localeCompare(right.objectName);
 };
 
-@injectable()
+@Singleton()
 export class PluginExposureExportService implements IPluginExposureExportService {
     constructor(
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepository: ITrajectoryRepository,
+        
+        private readonly trajectoryRepository: TrajectoryRepository,
 
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
+        
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 

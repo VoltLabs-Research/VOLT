@@ -1,7 +1,8 @@
 import JobSkeleton from '@/modules/jobs/components/JobSkeleton';
 import JobGroup from '@/modules/jobs/components/JobGroup';
 import FrameGroup from '@/modules/jobs/components/FrameGroup';
-import EmptyState from '@/shared/presentation/components/EmptyState';
+import { EmptyState } from '@/shared/presentation/primitives';
+import { Stack } from '@/shared/presentation/primitives';
 import { Inbox } from 'lucide-react';
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
@@ -75,9 +76,9 @@ const JobsHistory = ({
     }
 
     return (
-        <div className='volt-container d-flex column gap-05 h-max' role='list'>
+        <Stack gap='05' height='max' role='list'>
             {content}
-        </div>
+        </Stack>
     );
 };
 

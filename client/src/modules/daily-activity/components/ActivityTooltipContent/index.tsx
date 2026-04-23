@@ -1,4 +1,5 @@
 import ActivityEntry from '@/modules/daily-activity/components/ActivityEntry';
+import { Stack, Text } from '@/shared/presentation/primitives';
 import type { DailyActivityHeatmapDetailEntry } from '@/modules/daily-activity/api/entities/daily-activity';
 import { useMemo } from 'react';
 import type { FC } from 'react';
@@ -20,33 +21,33 @@ const ActivityTooltipContent: FC<ActivityTooltipContentProps> = ({ activity, dat
 
     if (!activity.length) {
         return (
-            <div className='volt-container d-flex column gap-05 activity-tooltip-content'>
-                <span className='font-size-2 font-weight-5 color-primary'>{dateLabel}</span>
-                <span className='color-secondary font-size-2'>No recorded activity for this day.</span>
-            </div>
+            <Stack gap='05' className='activity-tooltip-content'>
+                <Text size='md' weight='medium' tone='primary'>{dateLabel}</Text>
+                <Text tone='secondary' size='md'>No recorded activity for this day.</Text>
+            </Stack>
         );
     }
 
     return (
-        <div className='volt-container d-flex column gap-1 y-scroll activity-tooltip-content'>
-            <div className='volt-container d-flex column gap-025'>
-                <span className='font-size-2 font-weight-5 color-primary'>{dateLabel}</span>
-                <span className='font-size-1 color-secondary'>
+        <Stack gap='1' overflow='y-scroll' className='activity-tooltip-content'>
+            <Stack gap='025'>
+                <Text size='md' weight='medium' tone='primary'>{dateLabel}</Text>
+                <Text size='sm' tone='secondary'>
                     {activity.length.toLocaleString()} events · {minutesOnline.toLocaleString()} minutes online · score {score.toLocaleString()}
-                </span>
-            </div>
+                </Text>
+            </Stack>
             {activity.map((item, index) => (
                 <ActivityEntry
                     key={`${item.createdAt}-${index}`}
                     type={item.type}
                 >
-                    <span className='font-size-1 color-secondary'>
+                    <Text size='sm' tone='secondary'>
                         {item.userDisplayName} · {timeFormatter.format(new Date(item.createdAt))}
-                    </span>
-                    <span className='font-size-2 color-primary'>{item.description}</span>
+                    </Text>
+                    <Text size='md' tone='primary'>{item.description}</Text>
                 </ActivityEntry>
             ))}
-        </div>
+        </Stack>
     );
 };
 

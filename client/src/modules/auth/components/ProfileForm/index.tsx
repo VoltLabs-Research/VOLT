@@ -1,6 +1,6 @@
 import { profileSchema } from './validation-schema';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Loader from '@/shared/presentation/components/Loader';
+import { InlineStatus, Loader, Stack } from '@/shared/presentation/primitives';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -127,33 +127,37 @@ const ProfileForm = ({
 
     if (saveState === ProfileSaveState.Saving) {
         saveFeedback = (
-            <div className='volt-container d-flex items-center gap-05 color-muted font-size-1' role='status' aria-live='polite' aria-atomic='true'>
-                <Loader scale={0.6} isFixed={false} />
+            <InlineStatus tone='muted' icon={<Loader scale={0.6} isFixed={false} />}>
                 Saving changes...
-            </div>
+            </InlineStatus>
         );
     }
 
     if (saveState === ProfileSaveState.Saved) {
         saveFeedback = (
-            <div className='volt-container d-flex items-center gap-05 font-size-1' role='status' aria-live='polite' aria-atomic='true'>
-                <CheckCircle2 size={14} className='color-success' />
-                <span>Changes saved</span>
-            </div>
+            <InlineStatus tone='muted' icon={<CheckCircle2 size={14} className='color-success' />}>
+                Changes saved
+            </InlineStatus>
         );
     }
 
     if (saveState === ProfileSaveState.Error) {
         saveFeedback = (
-            <div className='volt-container d-flex items-center gap-05 font-size-1 color-danger' role='alert' aria-live='assertive' aria-atomic='true'>
-                <AlertCircle size={14} />
-                <span>Could not save changes. We will retry after your next edit.</span>
-            </div>
+            <InlineStatus tone='danger' severity='alert' live='assertive' icon={<AlertCircle size={14} />}>
+                Could not save changes. We will retry after your next edit.
+            </InlineStatus>
         );
     }
 
     return (
-        <form className='d-flex column gap-1' onSubmit={(event) => event.preventDefault()} noValidate>
+        <Stack
+            as='form'
+            gap='1'
+            {...({
+                onSubmit: (event: React.FormEvent<HTMLFormElement>) => event.preventDefault(),
+                noValidate: true
+            } as React.FormHTMLAttributes<HTMLFormElement>)}
+        >
             <FormFieldRHF
                 name='fullName'
                 control={control}
@@ -184,7 +188,7 @@ const ProfileForm = ({
             />
 
             {saveFeedback}
-        </form>
+        </Stack>
     );
 };
 

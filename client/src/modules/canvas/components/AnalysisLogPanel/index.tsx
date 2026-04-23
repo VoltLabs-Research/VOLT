@@ -1,4 +1,5 @@
 import useAnalysisFrameLog from '@/modules/canvas/hooks/use-analysis-frame-log';
+import { Box, Stack, Row, Text } from '@/shared/presentation/primitives';
 import { format, isValid } from 'date-fns';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -99,14 +100,14 @@ const AnalysisLogPanel = ({
     }, [activityStatus, error, isLoading, live, segments.length]);
 
     return (
-        <div className='volt-container canvas-analysis-log-panel d-flex column flex-1 min-h-0'>
-            <div ref={scrollRef} className='volt-container canvas-analysis-log-stream y-auto flex-1 min-h-0'>
+        <Stack flex='1' minH='0' className='canvas-analysis-log-panel'>
+            <Box ref={scrollRef} overflow='y-auto' flex='1' minH='0' className='canvas-analysis-log-stream'>
                 {helperText ? (
-                    <div className='volt-container canvas-analysis-log-empty d-flex content-center items-center flex-1 min-h-0'>
-                        <p className='volt-text font-size-1 color-secondary'>{helperText}</p>
-                    </div>
+                    <Row justify='center' flex='1' minH='0' className='canvas-analysis-log-empty'>
+                        <Text as='p' size='sm' tone='secondary'>{helperText}</Text>
+                    </Row>
                 ) : (
-                    <pre className='canvas-analysis-log-terminal m-0'>
+                    <pre className='canvas-analysis-log-terminal font-mono m-0'>
                         {segments.map((segment, index) => (
                             <span
                                 key={`${segment.occurredAt}-${index}`}
@@ -118,8 +119,8 @@ const AnalysisLogPanel = ({
                         ))}
                     </pre>
                 )}
-            </div>
-        </div>
+            </Box>
+        </Stack>
     );
 };
 

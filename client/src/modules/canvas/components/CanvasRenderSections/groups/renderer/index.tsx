@@ -8,6 +8,8 @@ import {
     ToneMappingMode
 } from '@/shared/domain/rendering/renderer';
 
+import { Box } from '@/shared/presentation/primitives';
+
 import { useMemo } from 'react';
 import { MdTune } from 'react-icons/md';
 import { useShallow } from 'zustand/react/shallow';
@@ -41,13 +43,13 @@ const useRendererGroup = (): RenderGroup => {
                 })
             ],
             extras: (
-                <div className='volt-container canvas-render-grid'>
+                <Box className='canvas-render-grid'>
                     {selectField('toneMapping', runtime.toneMapping, (value) => {
                         if (isEnumValue(value, ToneMappingMode)) {
                             setRuntime({ toneMapping: value });
                         }
                     }, 'Tone Mapping', RENDERER_TONE_MAPPING_OPTIONS)}
-                </div>
+                </Box>
             )
         };
 
@@ -57,14 +59,14 @@ const useRendererGroup = (): RenderGroup => {
             enabled: true,
             rows: [],
             extras: (
-                <div className='volt-container canvas-render-grid'>
+                <Box className='canvas-render-grid'>
                     {checkbox('shadowEnabled', 'Enable Shadows', runtime.shadowEnabled, (value) => setRuntime({ shadowEnabled: value }))}
                     {selectField('shadowType', runtime.shadowType, (value) => {
                         if (isEnumValue(value, ShadowType)) {
                             setRuntime({ shadowType: value });
                         }
                     }, 'Shadow Type', RENDERER_SHADOW_TYPE_OPTIONS)}
-                </div>
+                </Box>
             )
         };
 

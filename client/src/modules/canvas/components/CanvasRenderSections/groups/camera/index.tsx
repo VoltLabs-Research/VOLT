@@ -10,8 +10,8 @@ import {
 import { useMemo } from 'react';
 import { MdCameraAlt } from 'react-icons/md';
 import { useShallow } from 'zustand/react/shallow';
-import Button from '@/shared/presentation/components/Button';
-import Select from '@/shared/presentation/components/Select';
+import { Select } from '@/shared/presentation/primitives';
+import { Button, Box } from '@/shared/presentation/primitives';
 import { updateVec3Value } from '../../utilities';
 
 import type { RenderGroup } from '../../types';
@@ -38,7 +38,7 @@ const useCameraGroup = (): RenderGroup => {
             enabled: true,
             rows: [],
             extras: (
-                <div className='volt-container canvas-render-grid'>
+                <Box className='canvas-render-grid'>
                     <Select
                         value={type}
                         onChange={(value: string) => {
@@ -52,7 +52,7 @@ const useCameraGroup = (): RenderGroup => {
                     <Button variant='ghost' intent='canvas' shape='rounded' size='sm' className='font-size-05' onClick={reset} style={{ justifySelf: 'start' }}>
                         Reset Camera
                     </Button>
-                </div>
+                </Box>
             )
         };
 

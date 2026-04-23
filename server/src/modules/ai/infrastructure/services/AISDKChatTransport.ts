@@ -1,14 +1,3 @@
-import {
-    convertToModelMessages,
-    modelMessageSchema,
-    stepCountIs,
-    streamText
-} from 'ai';
-import type {
-    LanguageModel,
-    ModelMessage,
-    ToolSet
-} from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createCerebras } from '@ai-sdk/cerebras';
 import { createCohere } from '@ai-sdk/cohere';
@@ -21,23 +10,32 @@ import { createMistral } from '@ai-sdk/mistral';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createTogetherAI } from '@ai-sdk/togetherai';
 import { createXai } from '@ai-sdk/xai';
-import type { Response } from 'express';
-import { createOllama } from 'ollama-ai-provider-v2';
-import type { AIChatFinishEvent, AIChatReplyStream, GenerateAIChatReplyInput, IAIChatTransport } from '@modules/ai/domain/port/IAIChatTransport';
+import { ErrorCodes } from '@core/constants/error-codes';
 import type { AIConversationMessage, AIConversationMessagePart } from '@modules/ai/domain/contracts/AIConversationMessage';
 import { AIConversationMessageRole } from '@modules/ai/domain/contracts/AIConversationMessage';
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import { AIProvider, AI_PROVIDERS } from '@modules/ai/domain/contracts/AIProviders';
-import AIToolService from '@modules/ai/infrastructure/services/AIToolService';
 import type { AIMessageToolCall, AIMessageToolResult } from '@modules/ai/domain/entities/AIMessage';
-import type { ITeamAIIntegrationSecretCipher } from '@modules/team/domain/port/ai-integration/ITeamAIIntegrationSecretCipher';
-import type { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ai-integration/ITeamAIIntegrationRepository';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { ErrorCodes } from '@core/constants/error-codes';
+import type { AIChatFinishEvent, AIChatReplyStream, GenerateAIChatReplyInput, IAIChatTransport } from '@modules/ai/domain/port/IAIChatTransport';
+import AIToolService from '@modules/ai/infrastructure/services/AIToolService';
+import TeamAIIntegrationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/ai-integration/TeamAIIntegrationRepository';
+import TeamAIIntegrationSecretCipher from '@modules/team/infrastructure/security/ai-integration/TeamAIIntegrationSecretCipher';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { isRecord } from '@shared/infrastructure/utilities/type-guards';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
+import type {
+    LanguageModel,
+    ModelMessage,
+    ToolSet
+} from 'ai';
+import {
+    convertToModelMessages,
+    modelMessageSchema,
+    stepCountIs,
+    streamText
+} from 'ai';
+import type { Response } from 'express';
+import { createOllama } from 'ollama-ai-provider-v2';
 import { z } from 'zod';
 
 type ProviderFactoryProvider = Exclude<AIProvider, AIProvider.Ollama>;
@@ -124,17 +122,17 @@ class AISDKReplyStream implements AIChatReplyStream {
     }
 };
 
-@injectable()
+@Singleton()
 export default class AISDKChatTransport implements IAIChatTransport {
     constructor(
-        @inject(AI_TOKENS.AIToolService)
+        
         private readonly toolService: AIToolService,
 
-        @inject(TEAM_TOKENS.TeamAIIntegrationRepository)
-        private readonly integrationRepo: ITeamAIIntegrationRepository,
+        
+        private readonly integrationRepo: TeamAIIntegrationRepository,
 
-        @inject(TEAM_TOKENS.TeamAIIntegrationSecretCipher)
-        private readonly secretCipher: ITeamAIIntegrationSecretCipher
+        
+        private readonly secretCipher: TeamAIIntegrationSecretCipher
     ) {}
 
     async generateReplyStream(input: GenerateAIChatReplyInput): Promise<AIChatReplyStream> {

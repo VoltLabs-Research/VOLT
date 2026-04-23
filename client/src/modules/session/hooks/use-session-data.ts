@@ -5,7 +5,7 @@ import {
     useRevokeSessionMutation
 } from './queries';
 import { tokenStorage } from '@/shared/auth/token-storage';
-import { closeModal, openModal } from '@/shared/presentation/components/Modal';
+import { closeModal, openModal } from '@/shared/presentation/primitives';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useMemo, useState } from 'react';
 import type { ActiveSession } from '../api/entities/session';

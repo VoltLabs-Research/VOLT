@@ -1,3 +1,4 @@
+import { StatusBadge } from '@/shared/presentation/primitives';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useCreateTeamRoleMutation, useDeleteTeamRoleMutation, useUpdateTeamRoleMutation } from '@/modules/team/hooks/role/queries';
@@ -8,7 +9,6 @@ import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-conf
 import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import useTip from '@/shared/tips/use-tip';
 import useTeamRolesListing from '@/modules/team/hooks/role/use-team-roles-listing';
@@ -50,7 +50,7 @@ const COLUMNS: ColumnConfig<TeamRole>[] = [
         key: 'name',
         title: 'Role Name',
         render: (_value, role) => (
-            <div className='volt-container d-flex items-center gap-1'>
+            <div className='d-flex items-center gap-1'>
                 <IoShieldCheckmarkOutline size={18} className='color-secondary' />
                 <span className='font-weight-5 color-secondary'>{role.name}</span>
             </div>
@@ -212,7 +212,7 @@ export default function ManageRolesTemplate() {
     }, [canDelete, canRead, canUpdate, getMenuOptions, getSelectionActionOptions]);
 
     return (
-        <div className='volt-container manage-roles-page h-max'>
+        <div className='manage-roles-page h-max'>
             <DocumentListing<TeamRole>
                 title='Manage Roles'
                 queryKey={queryKey}

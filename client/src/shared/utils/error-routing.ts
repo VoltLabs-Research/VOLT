@@ -1,4 +1,4 @@
-export type ErrorSource = 'render' | 'window' | 'promise';
+type ErrorSource = 'render' | 'window' | 'promise';
 
 const ERROR_PATH = '/error';
 const MAX_STACK_LENGTH = 2000;

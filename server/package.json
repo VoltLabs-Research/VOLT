@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "start": "export NODE_OPTIONS='--max-old-space-size=8192' && npx tsx src/server.ts",
+    "start": "export NODE_OPTIONS='--max-old-space-size=8192' && node -r ts-node/register/transpile-only -r tsconfig-paths/register src/server.ts",
     "build": "npm run openapi:bundle && tsc -p tsconfig.json && tsx tools/copy-openapi-artifact.ts",
     "contracts:parity": "node ../../tools/check-contract-parity.js",
     "openapi:lint": "redocly lint src/core/docs/openapi/root.yaml",

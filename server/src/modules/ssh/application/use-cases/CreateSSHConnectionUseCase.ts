@@ -1,29 +1,28 @@
-import { Result } from '@shared/domain/port/Result';
-import { IUseCase } from '@shared/application/IUseCase';
-import { CreateSSHConnectionInputDTO, SafeSSHConnectionDTO } from '@modules/ssh/application/dtos/CreateSSHConnectionDTO';
-import { injectable, inject } from 'tsyringe';
-import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
-import { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
-import { ISSHCredentialsCipher } from '@modules/ssh/domain/port/ISSHCredentialsCipher';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import SSHConnection from '@modules/ssh/domain/entities/SSHConnection';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { IEventBus } from '@shared/application/events/IEventBus';
-import SSHConnectionCreatedEvent from '@modules/ssh/domain/events/SSHConnectionCreatedEvent';
+import { CreateSSHConnectionInputDTO, SafeSSHConnectionDTO } from '@modules/ssh/application/dtos/CreateSSHConnectionDTO';
 import {
     resolveSSHPersistenceError,
     toSafeSSHConnectionDTO
 } from '@modules/ssh/application/utils/ssh-error-utils';
+import SSHConnection from '@modules/ssh/domain/entities/SSHConnection';
+import SSHConnectionCreatedEvent from '@modules/ssh/domain/events/SSHConnectionCreatedEvent';
+import SSHConnectionRepository from '@modules/ssh/infrastructure/persistence/mongo/repositories/SSHConnectionRepository';
+import SSHCredentialsCipher from '@modules/ssh/infrastructure/services/SSHCredentialsCipher';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export class CreateSSHConnectionUseCase implements IUseCase<CreateSSHConnectionInputDTO, SafeSSHConnectionDTO, ApplicationError> {
     constructor(
-        @inject(SSH_TOKENS.SSHConnectionRepository)
-        private sshConnectionRepo: ISSHConnectionRepository,
+        
+        private sshConnectionRepo: SSHConnectionRepository,
 
-        @inject(SSH_TOKENS.SSHCredentialsCipher)
-        private readonly sshCredentialsCipher: ISSHCredentialsCipher,
+        
+        private readonly sshCredentialsCipher: SSHCredentialsCipher,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus

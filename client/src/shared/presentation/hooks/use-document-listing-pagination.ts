@@ -10,7 +10,7 @@ import type { InfiniteData, QueryKey } from '@tanstack/react-query';
 /**
  * Props for useDocumentListingPagination hook.
  */
-export interface UseDocumentListingPaginationProps<T extends { _id: string }, TContext = Record<string, never>> {
+interface UseDocumentListingPaginationProps<T extends { _id: string }, TContext = Record<string, never>> {
     queryKey: QueryKey;
     fetchData: (params: PaginationParams & TContext) => Promise<PaginatedResponse<T>>;
     transformData?: (data: T[]) => T[];
@@ -22,7 +22,7 @@ export interface UseDocumentListingPaginationProps<T extends { _id: string }, TC
 /**
  * Return type for useDocumentListingPagination hook.
  */
-export interface UseDocumentListingPaginationReturn<T extends { _id: string }> {
+interface UseDocumentListingPaginationReturn<T extends { _id: string }> {
     data: T[];
     isLoading: boolean;
     isFetchingMore: boolean;

@@ -1,29 +1,29 @@
-import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/WhiteboardTokens';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { CreateWhiteboardInputDTO, CreateWhiteboardOutputDTO } from '@modules/whiteboards/application/dtos/CreateWhiteboardDTO';
 import Whiteboard from '@modules/whiteboards/domain/entities/Whiteboard';
 import WhiteboardCreatedEvent from '@modules/whiteboards/domain/events/WhiteboardCreatedEvent';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { inject, injectable } from 'tsyringe';
+import WhiteboardFolderRepository from '@modules/whiteboards/infrastructure/persistence/mongo/repositories/WhiteboardFolderRepository';
+import WhiteboardRepository from '@modules/whiteboards/infrastructure/persistence/mongo/repositories/WhiteboardRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import type { IWhiteboardFolderRepository } from '@modules/whiteboards/domain/port/IWhiteboardFolderRepository';
-import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
-import type { CreateWhiteboardInputDTO, CreateWhiteboardOutputDTO } from '@modules/whiteboards/application/dtos/CreateWhiteboardDTO';
+import { Result } from '@shared/domain/port/Result';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
 const EMPTY_STATE = Buffer.from(JSON.stringify({ revision: 0, elements: [], appState: {} }));
 
-@injectable()
+@Singleton()
 export class CreateWhiteboardUseCase implements IUseCase<CreateWhiteboardInputDTO, CreateWhiteboardOutputDTO, ApplicationError> {
     constructor(
-        @inject(WHITEBOARD_TOKENS.WhiteboardRepository)
-        private readonly whiteboardRepository: IWhiteboardRepository,
+        
+        private readonly whiteboardRepository: WhiteboardRepository,
 
-        @inject(WHITEBOARD_TOKENS.WhiteboardFolderRepository)
-        private readonly whiteboardFolderRepository: IWhiteboardFolderRepository,
+        
+        private readonly whiteboardFolderRepository: WhiteboardFolderRepository,
 
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,

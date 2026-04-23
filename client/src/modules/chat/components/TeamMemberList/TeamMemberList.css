@@ -3,14 +3,7 @@
 }
 
 .team-member-item {
-    width: 100%;
     min-height: 3rem;
-    padding: 0.75rem;
-    border: 1px solid transparent;
-    border-radius: var(--radius-md);
-    background: transparent;
-    text-align: left;
-    cursor: pointer;
 }
 
 .team-member-item:focus-visible {
@@ -19,7 +12,6 @@
 }
 
 .team-member-item.selected {
-    background: var(--color-surface-2);
     border-color: var(--accent-blue);
 }
 
@@ -39,8 +31,4 @@
 .team-member-item.selected .team-member-item-checkbox {
     background: var(--accent-blue);
     border-color: var(--accent-blue);
-}
-
-.team-member-item-info {
-    min-width: 0;
 }

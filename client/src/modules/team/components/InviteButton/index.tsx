@@ -1,4 +1,4 @@
-import Button from '@/shared/presentation/components/Button';
+import { Button } from '@/shared/presentation/primitives';
 import { Check, X } from 'lucide-react';
 
 export type InviteButtonState = 'idle' | 'success' | 'error';

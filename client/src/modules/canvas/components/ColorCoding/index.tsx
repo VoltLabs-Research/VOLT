@@ -3,8 +3,8 @@ import useColorCoding from '../../hooks/use-color-coding';
 import GradientPreview from '../GradientPreview';
 
 import { memo } from 'react';
-import Button from '@/shared/presentation/components/Button';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import { Button, Stack } from '@/shared/presentation/primitives';
 
 interface SelectOption {
     value: string;
@@ -128,8 +128,8 @@ const ColorCodingForm = ({
     ];
 
     return (
-        <div className="volt-container canvas-color-coding d-flex column gap-05">
-            <div className="volt-container d-flex column gap-05">
+        <Stack gap='05' className="canvas-color-coding">
+            <Stack gap='05'>
                 {selectFields.map((field) => (
                     <FormFieldRHF
                         key={field.key}
@@ -173,8 +173,8 @@ const ColorCodingForm = ({
                         variant="canvas"
                     />
                 ))}
-            </div>
-        </div>
+            </Stack>
+        </Stack>
     );
 };
 
@@ -206,7 +206,7 @@ const ColorCoding = ({ trajectoryId, analysisId, currentTimestep }: ColorCodingP
     });
 
     return (
-        <div className="volt-container d-flex column gap-05">
+        <Stack gap='05'>
             <ColorCodingForm
                 propertyValue={propertyValue}
                 propertyOptions={propertyOptions}
@@ -238,7 +238,7 @@ const ColorCoding = ({ trajectoryId, analysisId, currentTimestep }: ColorCodingP
             >
                 Apply Color Coding
             </Button>
-        </div>
+        </Stack>
     );
 };
 

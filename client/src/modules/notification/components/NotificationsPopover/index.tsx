@@ -1,10 +1,10 @@
 import useNotificationData from '../../hooks/use-notification-data';
 import NotificationBadge from '../NotificationBadge';
 import NotificationList from '../NotificationList';
-import IconButton from '@/shared/presentation/components/IconButton';
-import Popover from '@/shared/presentation/components/Popover';
+import { Row, IconButton, Popover } from '@/shared/presentation/primitives';
+import PanelHeader from '@/shared/presentation/components/PanelHeader';
 import useTip from '@/shared/tips/use-tip';
-import { IoCloseOutline, IoNotificationsOutline } from 'react-icons/io5';
+import { IoNotificationsOutline } from 'react-icons/io5';
 import type { MouseEvent } from 'react';
 import './NotificationsPopover.css';
 
@@ -39,13 +39,6 @@ const NotificationsPopover = () => {
         markAllAsRead();
     };
 
-    const createCloseHandler = (closePopover: () => void) => {
-        return (event: MouseEvent<HTMLButtonElement>) => {
-            event.stopPropagation();
-            closePopover();
-        };
-    };
-
     const trigger = (
         <IconButton
             className='notification-trigger p-relative'
@@ -59,33 +52,33 @@ const NotificationsPopover = () => {
         </IconButton>
     );
 
+    const renderHeaderActions = () => {
+        if (unreadCount <= 0) {
+            return null;
+        }
+
+        return (
+            <Row gap='025'>
+                <button
+                    type='button'
+                    className='notifications-header-action color-muted'
+                    onClick={handleMarkAllAsRead}
+                    disabled={isMarkingAllAsRead}
+                >
+                    {isMarkingAllAsRead ? 'Marking…' : 'Mark all as read'}
+                </button>
+            </Row>
+        );
+    };
+
     const renderPopoverContent = (closePopover: () => void) => (
         <>
-            <div className='volt-container notifications-header d-flex items-center content-between gap-05 p-075 color-primary'>
-                <h2 className='volt-title font-size-2 font-weight-6'>Notifications</h2>
-                <div className='volt-container d-flex items-center gap-025'>
-                    {unreadCount > 0 && (
-                        <button
-                            type='button'
-                            className='notifications-header-action color-muted'
-                            onClick={handleMarkAllAsRead}
-                            disabled={isMarkingAllAsRead}
-                        >
-                            {isMarkingAllAsRead ? 'Marking…' : 'Mark all as read'}
-                        </button>
-                    )}
-                    <IconButton
-                        className='notifications-close color-muted'
-                        variant='ghost'
-                        size='sm'
-                        aria-label='Close notifications'
-                        title='Close notifications'
-                        onClick={createCloseHandler(closePopover)}
-                    >
-                        <IoCloseOutline size={18} />
-                    </IconButton>
-                </div>
-            </div>
+            <PanelHeader
+                title='Notifications'
+                actions={renderHeaderActions()}
+                onClose={closePopover}
+                className='notifications-header'
+            />
             <NotificationList
                 notifications={notifications}
                 isLoading={isLoading}

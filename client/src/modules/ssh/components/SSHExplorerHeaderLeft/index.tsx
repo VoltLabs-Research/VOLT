@@ -1,5 +1,4 @@
-import Button from '@/shared/presentation/components/Button';
-import Tooltip from '@/shared/presentation/components/Tooltip';
+import { Button, Tooltip } from '@/shared/presentation/primitives';
 import { LuArrowLeft, LuArrowUp } from 'react-icons/lu';
 
 interface SSHExplorerHeaderLeftProps {
@@ -34,7 +33,7 @@ const SSHExplorerHeaderLeft = ({ connectionName, cwd, onBack, onGoUp }: SSHExplo
                 </Button>
             </Tooltip>
             {connectionName && (
-                <h1 className='volt-title font-size-3 font-weight-5 m-l-05'>{connectionName}</h1>
+                <h1 className='font-size-3 font-weight-5 m-l-05'>{connectionName}</h1>
             )}
         </>
     );

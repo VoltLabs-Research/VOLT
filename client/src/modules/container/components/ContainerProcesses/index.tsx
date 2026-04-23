@@ -5,8 +5,8 @@ import './ContainerProcesses.css';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import RefreshButton from '@/shared/presentation/components/RefreshButton';
-import Table from '@/shared/presentation/components/Table';
-import type { Column } from '@/shared/presentation/components/Table';
+import { Stack, Table } from '@/shared/presentation/primitives';
+import type { Column } from '@/shared/presentation/primitives';
 
 interface ContainerProcessesProps {
     containerId: string;
@@ -106,21 +106,21 @@ const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {
 
     if(accessDenied){
         return (
-            <div className='volt-container d-flex column flex-center h-max gap-1 p-2'>
+            <Stack className='flex-center' height='max' gap='1' p='2'>
                 <RecoveryState
                     title='Access denied'
                     description={accessDeniedMessage ?? 'You do not have permission to view running processes.'}
                     tone={RecoveryStateTone.AccessDenied}
                     className='w-max'
                 />
-            </div>
+            </Stack>
         );
     }
 
     if(isError && mappedProcesses.length === 0){
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch processes';
         return (
-            <div className='volt-container d-flex column flex-center h-max gap-1 p-2 text-center color-muted'>
+            <Stack className='flex-center color-muted' height='max' gap='1' p='2' textAlign='center'>
                 <RecoveryState
                     title='Unable to load running processes'
                     description={errorMessage}
@@ -130,12 +130,12 @@ const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {
                     }}
                     className='w-max'
                 />
-            </div>
+            </Stack>
         );
     }
 
     return (
-        <div className='volt-container container-processes-container d-flex column'>
+        <Stack className='container-processes-container'>
             <Table
                 columns={COLUMNS}
                 data={mappedProcesses}
@@ -143,7 +143,7 @@ const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {
                 isLoading={isLoading && mappedProcesses.length === 0}
                 skeletonRows={8}
             />
-        </div>
+        </Stack>
     );
 };
 

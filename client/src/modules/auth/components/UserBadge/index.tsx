@@ -1,5 +1,5 @@
 import './UserBadge.css';
-import Button from '@/shared/presentation/components/Button';
+import { Button, Row, Stack, Text } from '@/shared/presentation/primitives';
 import { CheckCircle2 } from 'lucide-react';
 
 interface UserBadgeProps{
@@ -9,22 +9,22 @@ interface UserBadgeProps{
 };
 
 const UserBadge = ({ label, email, onChangeClick }: UserBadgeProps) => (
-    <div className='volt-container user-badge radius-md p-1 d-flex content-between items-center gap-1'>
-        <div className='volt-container d-flex items-center gap-075 user-badge-info'>
+    <Row radius='md' p='1' justify='between' gap='1' className='user-badge'>
+        <Row gap='075' flex='1' className='min-w-0'>
             <CheckCircle2 size={18} className='f-shrink-0 user-badge-status-icon' />
-            <div className='volt-container d-flex column'>
-                <span className='font-size-1 user-badge-label'>{label}</span>
-                <span className='font-size-2 font-weight-5 user-badge-email text-truncate'>{email}</span>
-            </div>
-        </div>
-        
+            <Stack>
+                <Text size='sm' className='user-badge-label'>{label}</Text>
+                <Text size='md' weight='medium' truncate className='user-badge-email'>{email}</Text>
+            </Stack>
+        </Row>
+
         <Button
             variant='ghost'
             intent='neutral'
             onClick={onChangeClick}>
             Change
         </Button>
-    </div>
+    </Row>
 );
 
 export default UserBadge;

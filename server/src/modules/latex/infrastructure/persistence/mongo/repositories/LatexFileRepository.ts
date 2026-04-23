@@ -1,13 +1,14 @@
-import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import LatexFile from '@modules/latex/domain/entities/LatexFile';
 import latexFileMapper from '@modules/latex/infrastructure/persistence/mongo/mappers/LatexFileMapper';
 import LatexFileModel from '@modules/latex/infrastructure/persistence/mongo/models/LatexFileModel';
-import { injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+
 import type { LatexFileProps } from '@modules/latex/domain/entities/LatexFile';
 import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
 import type { LatexFileDocument } from '@modules/latex/infrastructure/persistence/mongo/models/LatexFileModel';
 
-@injectable()
+@Singleton()
 export default class LatexFileRepository
     extends MongooseBaseRepository<LatexFile, LatexFileProps, LatexFileDocument>
     implements ILatexFileRepository {

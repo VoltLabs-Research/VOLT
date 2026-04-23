@@ -18,7 +18,8 @@ import {
 import { ChevronDown, ChevronRight, Filter, Layers, Palette } from 'lucide-react';
 import type { ComponentProps, ComponentType, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
+import { CollapsibleSection } from '@/shared/presentation/primitives';
+import { Stack } from '@/shared/presentation/primitives';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { CanvasWorkspace } from '@/modules/canvas/hooks/use-canvas-url-state';
 import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
@@ -425,9 +426,9 @@ const ObjectsPanel = ({
 
         if (timesteps.length === 0) {
             return (
-                <div className="volt-container canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label={ariaLabel}>
+                <Stack gap='025' overflow='auto' className="canvas-tree-container" role="tree" aria-label={ariaLabel}>
                     <CanvasTreeEmptyRow label={sceneArtifactsLoading ? 'Loading...' : 'No models generated'} />
-                </div>
+                </Stack>
             );
         }
 
@@ -435,7 +436,7 @@ const ObjectsPanel = ({
         const hiddenCount = Math.max(0, timesteps.length - visibleCount);
 
         return (
-            <div className="volt-container canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label={ariaLabel}>
+            <Stack gap='025' overflow='auto' className="canvas-tree-container" role="tree" aria-label={ariaLabel}>
                 {visibleTimesteps.map((timestep) => {
                     const timestepArtifacts = artifactsByTimestep.get(timestep) ?? [];
                     const isExpanded = expandedSet.has(timestep);
@@ -443,7 +444,7 @@ const ObjectsPanel = ({
                     const groupId = `${menuIdPrefix}-group-${timestep}`;
 
                     return (
-                        <div key={timestep} className="volt-container canvas-tree-group" role="treeitem" aria-expanded={isExpanded} aria-level={1}>
+                        <div key={timestep} className="canvas-tree-group" role="treeitem" aria-expanded={isExpanded} aria-level={1}>
                             <button
                                 type="button"
                                 id={groupId}
@@ -476,12 +477,12 @@ const ObjectsPanel = ({
                         Show {Math.min(TIMESTEP_PAGE_SIZE, hiddenCount)} more timesteps ({hiddenCount} hidden)
                     </button>
                 )}
-            </div>
+            </Stack>
         );
     }, [renderArtifactTreeItem, sceneArtifactsLoading]);
 
     return (
-        <div className="volt-container canvas-objects-panel d-flex column min-h-0 overflow-auto">
+        <Stack minH='0' overflow='auto' className="canvas-objects-panel">
             <RightCollapsible
                 title="Scene Collection"
                 icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
@@ -489,9 +490,9 @@ const ObjectsPanel = ({
                 onExpandedChange={setSceneCollectionOpen}
             >
                 {isRasterWorkspace ? (
-                    <div className="volt-container canvas-raster-container-panels d-flex column gap-05">
+                    <Stack gap='05' className="canvas-raster-container-panels">
                         {rasterContainerSelections.map(renderRasterContainerPanel)}
-                    </div>
+                    </Stack>
                 ) : (
                     <SceneCollection
                         {...(sharedSceneCollectionProps as ComponentProps<typeof SceneCollection>)}
@@ -558,7 +559,7 @@ const ObjectsPanel = ({
                     onShowMore: () => setParticleFilterVisibleCount((current) => current + TIMESTEP_PAGE_SIZE)
                 })}
             </RightCollapsible>
-        </div>
+        </Stack>
     );
 };
 

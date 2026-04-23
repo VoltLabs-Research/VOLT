@@ -1,18 +1,16 @@
 import { GetGuestIdentityInputDTO, GetGuestIdentityOutputDTO } from '@modules/auth/application/dtos/GetGuestIdentityDTO';
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import AvatarService from '@modules/auth/infrastructure/services/AvatarService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { ErrorCodes } from '@core/constants/error-codes';
+import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import crypto from 'node:crypto';
-import { inject, injectable } from 'tsyringe';
-import type { IAvatarService } from '@modules/auth/domain/port/IAvatarService';
-import type { IUseCase } from '@shared/application/IUseCase';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export default class GetGuestIdentityUseCase implements IUseCase<GetGuestIdentityInputDTO, GetGuestIdentityOutputDTO, ApplicationError>{
     constructor(
-        @inject(AUTH_TOKENS.AvatarService)
-        private readonly avatarService: IAvatarService
+        
+        private readonly avatarService: AvatarService
     ) {}
 
     async execute(input: GetGuestIdentityInputDTO): Promise<Result<GetGuestIdentityOutputDTO, ApplicationError>>{

@@ -1,6 +1,6 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Modal, { closeModal } from '@/shared/presentation/components/Modal';
+import { Box, Modal, closeModal } from '@/shared/presentation/primitives';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import { useCallback, useState } from 'react';
 import type { InputHTMLAttributes } from 'react';
@@ -117,7 +117,7 @@ const NewFolderModal = ({
             onClose={handleModalClose}
             footer={<ModalFooterActions primary={primaryAction} secondary={secondaryAction} />}
         >
-            <div className='volt-container p-1-5'>
+            <Box p='1-5'>
                 <FormFieldRHF
                     label={fieldLabel}
                     placeholder={placeholder}
@@ -127,7 +127,7 @@ const NewFolderModal = ({
                     inputProps={inputProps}
                     error={error}
                 />
-            </div>
+            </Box>
         </Modal>
     );
 };

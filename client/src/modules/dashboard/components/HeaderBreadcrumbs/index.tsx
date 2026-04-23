@@ -1,4 +1,5 @@
 import './HeaderBreadcrumbs.css';
+import { Row } from '@/shared/presentation/primitives';
 import { useMemo } from 'react';
 import { IoChevronForward } from 'react-icons/io5';
 import { Link, useLocation } from 'react-router-dom';
@@ -62,18 +63,18 @@ const HeaderBreadcrumbs = () => {
     };
 
     return (
-        <nav className='breadcrumb-nav d-flex items-center gap-05 font-size-2' aria-label='Dashboard breadcrumbs'>
+        <Row as='nav' gap='05' className='breadcrumb-nav font-size-2' aria-label='Dashboard breadcrumbs'>
             <Link to='/dashboard' className='breadcrumb-item breadcrumb-link color-secondary'>
                 Dashboard
             </Link>
 
             {breadcrumbs.map((breadcrumb, index) => (
-                <div key={`${breadcrumb.label}-${index}`} className='volt-container d-flex items-center gap-05'>
+                <Row key={`${breadcrumb.label}-${index}`} gap='05'>
                     <IoChevronForward className='breadcrumb-separator color-text-muted' size={14} />
                     {renderBreadcrumb(breadcrumb)}
-                </div>
+                </Row>
             ))}
-        </nav>
+        </Row>
     );
 };
 

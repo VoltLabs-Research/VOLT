@@ -1,6 +1,6 @@
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Modal, { closeModal } from '@/shared/presentation/components/Modal';
+import { Box, Stack, Text, Modal, closeModal } from '@/shared/presentation/primitives';
 import { useState } from 'react';
 import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
@@ -77,12 +77,12 @@ const DeleteClusterModal = ({ teamCluster, onDelete, onClose }: DeleteClusterMod
                 />
             )}
         >
-            <div className='volt-container d-flex column gap-1 p-1-5'>
+            <Stack gap='1' p='1-5'>
                 {!result && (
                     <>
-                        <p className='volt-text font-size-2 color-secondary'>
+                        <Text as='p' size='md' tone='secondary'>
                             Confirm your password to continue with the uninstall and delete flow.
-                        </p>
+                        </Text>
                         <FormFieldRHF
                             label='Password'
                             type='password'
@@ -99,17 +99,17 @@ const DeleteClusterModal = ({ teamCluster, onDelete, onClose }: DeleteClusterMod
                 )}
                 {result?.manualUninstallRequired && (
                     <>
-                        <p className='volt-text font-size-2 color-secondary'>
+                        <Text as='p' size='md' tone='secondary'>
                             {result.message}
-                        </p>
+                        </Text>
                         {result.manualUninstallCommand && (
-                            <div className='volt-container p-1 radius-md bg-page font-family-mono font-size-1 overflow-auto'>
+                            <Box p='1' radius='md' overflow='auto' className='bg-page font-family-mono font-size-1'>
                                 {result.manualUninstallCommand}
-                            </div>
+                            </Box>
                         )}
                     </>
                 )}
-            </div>
+            </Stack>
         </Modal>
     );
 };

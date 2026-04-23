@@ -1,9 +1,10 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { injectable } from 'tsyringe';
-import jwt from 'jsonwebtoken';
-import type { SignOptions, Secret } from 'jsonwebtoken';
-import type { StringValue } from 'ms';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+
 import type { ITokenService, TokenPayload } from '@modules/auth/domain/port/ITokenService';
+import type { Secret, SignOptions } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
+import type { StringValue } from 'ms';
 
 const isStringValue = (value: string): value is StringValue => {
     return /^\d+(?:\.\d+)?(?:\s?(?:years?|yrs?|y|weeks?|w|days?|d|hours?|hrs?|h|minutes?|mins?|m|seconds?|secs?|s|milliseconds?|msecs?|ms))?$/i.test(value);
@@ -53,7 +54,7 @@ const getSecretKey = (): Secret => {
     return key;
 };
 
-@injectable()
+@Singleton()
 export default class JwtTokenService implements ITokenService {
     private readonly secret: Secret = getSecretKey();
     private readonly expiresIn = getExpiresIn();

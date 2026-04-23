@@ -1,14 +1,14 @@
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import CanvasWorkspaceRealtimeStateService from '@modules/trajectory/infrastructure/services/canvas/CanvasWorkspaceRealtimeStateService';
+import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
 
 import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import type { ISocketEventRegistry } from '@modules/socket/domain/port/ISocketEventRegistry';
-import type { ISocketRoomManager, PresenceUser } from '@modules/socket/domain/port/ISocketRoomManager';
+import type { PresenceUser } from '@modules/socket/domain/port/ISocketRoomManager';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
+import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
 
 interface TrajectoryRoomPayload extends Record<string, unknown> {
     trajectoryId: string;
@@ -48,15 +48,16 @@ interface ConnectionContext {
 const LOBBY_PREFIX = 'trajectory-canvas-lobby';
 const WORKSPACE_PREFIX = 'trajectory-canvas-workspace';
 
-@injectable()
+@Singleton()
+@AliasOf(SOCKET_TOKENS.SocketModule)
 export default class CanvasWorkspaceSocketModule extends BaseSocketModule {
     public readonly name = 'CanvasWorkspaceSocketModule';
 
     constructor(
-        @inject(SOCKET_TOKENS.SocketEventEmitter) emitter: ISocketEmitter,
-        @inject(SOCKET_TOKENS.SocketRoomManager) roomManager: ISocketRoomManager,
-        @inject(SOCKET_TOKENS.SocketEventRegistry) eventRegistry: ISocketEventRegistry,
-        @inject(TRAJECTORY_TOKENS.CanvasWorkspaceRealtimeStateService)
+        emitter: SocketIOEmitter,
+        roomManager: SocketIORoomManager,
+        eventRegistry: SocketIOEventRegistry,
+        
         private readonly realtimeState: CanvasWorkspaceRealtimeStateService
     ) {
         super(emitter, roomManager, eventRegistry);

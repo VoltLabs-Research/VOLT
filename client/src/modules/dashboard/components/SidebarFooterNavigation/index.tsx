@@ -6,7 +6,7 @@ import { useLocation, useNavigate } from 'react-router';
 import { TbBook } from 'react-icons/tb';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import SidebarExpandableSection from '@/shared/presentation/components/SidebarExpandableSection';
-import Tooltip from '@/shared/presentation/components/Tooltip';
+import { Box, Tooltip } from '@/shared/presentation/primitives';
 
 interface SidebarFooterNavigationProps {
     setSettingsExpanded: (status: boolean) => void;
@@ -35,7 +35,7 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collap
 
     if (collapsed) {
         return (
-            <div className='volt-container sidebar-footer-nav'>
+            <Box className='sidebar-footer-nav'>
                 <Tooltip content='Settings' placement='right'>
                     <SidebarNavItem
                         label='Settings'
@@ -52,12 +52,12 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collap
                         onClick={handleOpenDocs}
                     />
                 </Tooltip>
-            </div>
+            </Box>
         );
     }
 
     return (
-        <div className='volt-container sidebar-footer-nav'>
+        <Box className='sidebar-footer-nav'>
             <SidebarExpandableSection
                 label='Settings'
                 icon={settingsActive ? IoSettings : IoSettingsOutline}
@@ -72,7 +72,7 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collap
                 icon={TbBook}
                 onClick={handleOpenDocs}
             />
-        </div>
+        </Box>
     );
 };
 

@@ -1,3 +1,4 @@
+import { StatusBadge } from '@/shared/presentation/primitives';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import useChatActions from '@/modules/chat/hooks/chat/use-chat-actions';
 import { useRemoveTeamMemberMutation, useUpdateTeamMemberMutation } from '@/modules/team/hooks/member/queries';
@@ -15,8 +16,7 @@ import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import useTeamRoleData from '@/modules/team/hooks/role/use-team-role-data';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import EditableTag from '@/shared/presentation/components/EditableTag';
-import Select from '@/shared/presentation/components/Select';
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
+import { Select } from '@/shared/presentation/primitives';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
@@ -137,7 +137,7 @@ export default function MyTeamTemplate() {
 
     const headerContent = useMemo(() => {
         return (
-            <div className='volt-container d-flex items-center gap-1'>
+            <div className='d-flex items-center gap-1'>
                 {canInvite ? (
                     <EditableTag
                         as='h1'
@@ -200,7 +200,7 @@ export default function MyTeamTemplate() {
                 return isOnline ? (
                     <StatusBadge status='online' size='compact'>Online</StatusBadge>
                 ) : (
-                    <div className='volt-container d-flex column'>
+                    <div className='d-flex column'>
                         <StatusBadge status='offline' size='compact'>Offline</StatusBadge>
                         <span className='color-muted font-size-2'>
                             {lastSeenAt
@@ -258,7 +258,7 @@ export default function MyTeamTemplate() {
     }, [canInvite, getMenuOptions, getSelectionActionOptions]);
 
     return (
-        <div className='volt-container my-team-page h-max'>
+        <div className='my-team-page h-max'>
             <DocumentListing<TeamMemberStats>
                 title={headerContent}
                 queryKey={queryKey}

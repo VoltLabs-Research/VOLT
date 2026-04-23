@@ -15,7 +15,7 @@ import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
-import { closeModal, openModal } from '@/shared/presentation/components/Modal';
+import { closeModal, openModal } from '@/shared/presentation/primitives';
 import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import useFolderedListing, { type FolderedListingContext } from '@/shared/presentation/hooks/use-foldered-listing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';

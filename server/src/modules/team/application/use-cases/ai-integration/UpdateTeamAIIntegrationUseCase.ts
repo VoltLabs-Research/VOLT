@@ -1,29 +1,28 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { UpdateTeamAIIntegrationInputDTO, UpdateTeamAIIntegrationOutputDTO } from '@modules/team/application/dtos/ai-integration/UpdateTeamAIIntegrationDTO';
 import TeamAIIntegrationUpdatedEvent from '@modules/team/domain/events/ai-integration/TeamAIIntegrationUpdatedEvent';
-import type { ITeamAIIntegrationSecretCipher } from '@modules/team/domain/port/ai-integration/ITeamAIIntegrationSecretCipher';
-import { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ai-integration/ITeamAIIntegrationRepository';
+import TeamAIIntegrationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/ai-integration/TeamAIIntegrationRepository';
+import TeamAIIntegrationSecretCipher from '@modules/team/infrastructure/security/ai-integration/TeamAIIntegrationSecretCipher';
 import TeamAIProviderCatalog from '@modules/team/infrastructure/services/ai-integration/TeamAIProviderCatalog';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable, inject } from 'tsyringe';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { inject, injectable } from 'tsyringe';
 import { toTeamAIIntegrationItemDTO } from './toTeamAIIntegrationItemDTO';
 
 @injectable()
 export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTeamAIIntegrationInputDTO, UpdateTeamAIIntegrationOutputDTO, ApplicationError> {
     constructor(
-        @inject(TEAM_TOKENS.TeamAIIntegrationRepository)
-        private readonly integrationRepository: ITeamAIIntegrationRepository,
+        
+        private readonly integrationRepository: TeamAIIntegrationRepository,
 
-        @inject(TEAM_TOKENS.TeamAIProviderCatalog)
+        
         private readonly providerCatalog: TeamAIProviderCatalog,
 
-        @inject(TEAM_TOKENS.TeamAIIntegrationSecretCipher)
-        private readonly secretCipher: ITeamAIIntegrationSecretCipher,
+        
+        private readonly secretCipher: TeamAIIntegrationSecretCipher,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus

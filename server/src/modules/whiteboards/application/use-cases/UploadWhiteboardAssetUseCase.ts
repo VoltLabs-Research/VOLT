@@ -1,21 +1,21 @@
-import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/WhiteboardTokens';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { inject, injectable } from 'tsyringe';
-import { v4 as uuidv4 } from 'uuid';
-import type { IUseCase } from '@shared/application/IUseCase';
-import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type { UploadWhiteboardAssetInputDTO, UploadWhiteboardAssetOutputDTO } from '@modules/whiteboards/application/dtos/UploadWhiteboardAssetDTO';
+import WhiteboardRepository from '@modules/whiteboards/infrastructure/persistence/mongo/repositories/WhiteboardRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { IUseCase } from '@shared/application/IUseCase';
+import type { IStorageService } from '@shared/domain/port/IStorageService';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { inject } from 'tsyringe';
+import { v4 as uuidv4 } from 'uuid';
 
-@injectable()
+@Singleton()
 export class UploadWhiteboardAssetUseCase implements IUseCase<UploadWhiteboardAssetInputDTO, UploadWhiteboardAssetOutputDTO, ApplicationError> {
     constructor(
-        @inject(WHITEBOARD_TOKENS.WhiteboardRepository)
-        private readonly whiteboardRepository: IWhiteboardRepository,
+        
+        private readonly whiteboardRepository: WhiteboardRepository,
 
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService

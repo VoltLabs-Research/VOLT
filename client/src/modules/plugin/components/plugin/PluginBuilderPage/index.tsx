@@ -3,7 +3,7 @@ import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin
 import useLoadPlugin from '@/modules/plugin/hooks/plugin/use-load-plugin';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
-import Loader from '@/shared/presentation/components/Loader';
+import { Box, Loader } from '@/shared/presentation/primitives';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import { useNavigate } from 'react-router';
 import { useSearchParams } from 'react-router-dom';
@@ -15,9 +15,9 @@ const PluginBuilder = lazy(() => import('@/modules/plugin/components/plugin/Plug
 const ReactFlowProvider = lazy(() => import('@xyflow/react').then((module) => ({ default: module.ReactFlowProvider })));
 
 const BuilderSkeleton = () => (
-    <div className='volt-container d-flex items-center justify-center wh-max vh-max'>
+    <Box display='flex' align='center' className='justify-center wh-max vh-max'>
         <Loader scale={0.8} />
-    </div>
+    </Box>
 );
 
 const PluginBuilderPage = () => {
@@ -58,13 +58,13 @@ const PluginBuilderPage = () => {
     }, [clearWorkflow]);
 
     const bottomSidebarContent = useMemo(() => (
-        <div className='volt-container editor-sidebar-user-avatar-wrapper p-1-5'>
+        <Box p='1-5' className='editor-sidebar-user-avatar-wrapper'>
             <UserMenuPopover
                 onSettingsClick={handleSettingsClick}
                 onSignOut={handleSignOut}
                 isSigningOut={isSigningOut}
             />
-        </div>
+        </Box>
     ), [handleSettingsClick, handleSignOut, isSigningOut]);
 
     if (accessDenied) {

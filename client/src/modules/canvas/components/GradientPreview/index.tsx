@@ -1,4 +1,5 @@
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
+import { Box, Row } from '@/shared/presentation/primitives';
 import { useState, useRef } from 'react';
 
 import './GradientPreview.css';
@@ -66,19 +67,19 @@ const GradientPreview = ({ gradient, startValue, endValue }: GradientPreviewProp
     const gradientStyle = GRADIENT_CSS[gradient];
 
     return (
-        <div className="volt-container canvas-gradient-preview w-max">
-            <div ref={barRef} className="volt-container canvas-gradient-bar radius-sm p-relative cursor-pointer" style={{ background: gradientStyle }} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} onClick={handleClick}>
+        <Box width='max' className="canvas-gradient-preview">
+            <Box ref={barRef} radius='sm' position='relative' cursor='pointer' className="canvas-gradient-bar" style={{ background: gradientStyle }} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} onClick={handleClick}>
                 {tooltipValue !== null && (
-                    <div className="volt-container canvas-gradient-tooltip p-absolute radius-sm font-size-05" style={{ left: tooltipX }}>
+                    <Box position='absolute' radius='sm' className="canvas-gradient-tooltip font-size-05" style={{ left: tooltipX }}>
                         {tooltipValue}
-                    </div>
+                    </Box>
                 )}
-            </div>
-            <div className="volt-container canvas-gradient-labels d-flex content-between font-size-05">
+            </Box>
+            <Row justify='between' className="canvas-gradient-labels font-size-05">
                 <span>{formatValue(startValue)}</span>
                 <span>{formatValue(endValue)}</span>
-            </div>
-        </div>
+            </Row>
+        </Box>
     );
 };
 

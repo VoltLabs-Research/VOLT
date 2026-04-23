@@ -190,9 +190,9 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
 
     if (connectionQuery.isLoading) {
         return (
-            <div className='volt-container d-flex column gap-075 p-2 flex-1 justify-center'>
+            <div className='d-flex column gap-075 p-2 flex-1 justify-center'>
                 <div className='font-size-3 font-weight-6'>Preparing SSH explorer</div>
-                <p className='volt-text color-secondary'>
+                <p className='color-secondary'>
                     We are restoring the connection context and the last visited folder.
                 </p>
             </div>
@@ -213,7 +213,7 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
             onRetry={explorer.refresh}
             emptyMessage='No files found in this directory'
         >
-            <p className='volt-text font-size-1 color-secondary p-075' role='status' aria-live='polite'>
+            <p className='font-size-1 color-secondary p-075' role='status' aria-live='polite'>
                 {helperCopy}. The current folder stays in the URL so you can reload or share this exact location.
             </p>
             {explorerRows.map((entry) => (

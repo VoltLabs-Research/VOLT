@@ -2,9 +2,8 @@ import './GlobalSearch.css';
 import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 import useDashboardGlobalSearch from '@/modules/dashboard/hooks/use-dashboard-global-search';
 import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
-import EmptyState from '@/shared/presentation/components/EmptyState';
-import Loader from '@/shared/presentation/components/Loader';
-import SearchInput from '@/shared/presentation/components/SearchInput';
+import { Box, Stack, Row, Text, Loader, SearchInput } from '@/shared/presentation/primitives';
+import { EmptyState } from '@/shared/presentation/primitives';
 import useTip from '@/shared/tips/use-tip';
 import { FloatingPortal } from '@floating-ui/react';
 import { useId, useMemo, useState } from 'react';
@@ -107,12 +106,12 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
         }
 
         return (
-            <div className='volt-container global-search-breadcrumb d-flex items-center gap-05 font-size-2'>
+            <Row gap='05' className='global-search-breadcrumb font-size-2'>
                 {contextBreadcrumb.items.map((item, index) => {
                     const isCurrent = index === contextBreadcrumb.items.length - 1;
 
                     return (
-                        <div key={item.id ?? 'root'} className='volt-container d-flex items-center gap-05'>
+                        <Row key={item.id ?? 'root'} gap='05'>
                             {index > 0 && <IoChevronForward size={12} className='color-muted' aria-hidden='true' />}
                             <button
                                 type='button'
@@ -121,10 +120,10 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
                             >
                                 {item.title}
                             </button>
-                        </div>
+                        </Row>
                     );
                 })}
-            </div>
+            </Row>
         );
     }, [contextBreadcrumb]);
 
@@ -134,12 +133,12 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
         const optionId = `${resultsListId}-${sectionKey}-${item.id}`;
 
         return (
-            <div key={item.id} id={optionId} role='option' aria-selected={isActive} tabIndex={-1} onClick={() => handleSelect(item)} onMouseDown={(event) => event.preventDefault()} title={item.subtitle ? `${item.title} - ${item.subtitle}` : item.title} aria-label={item.subtitle ? `${item.title}. ${item.subtitle}` : item.title} className={`volt-container global-search-item list-item-hoverable radius-sm d-flex column items-start gap-025 w-max cursor-pointer${isActive ? ' global-search-item--active' : ''}`}>
-                <p className='volt-text font-size-2 font-weight-5 text-truncate w-max' title={item.title}>{item.title}</p>
+            <Stack align='start' gap='025' width='max' radius='sm' cursor='pointer' key={item.id} id={optionId} role='option' aria-selected={isActive} tabIndex={-1} onClick={() => handleSelect(item)} onMouseDown={(event) => event.preventDefault()} title={item.subtitle ? `${item.title} - ${item.subtitle}` : item.title} aria-label={item.subtitle ? `${item.title}. ${item.subtitle}` : item.title} className={`global-search-item list-item-hoverable${isActive ? ' global-search-item--active' : ''}`}>
+                <Text as='p' size='md' weight='medium' truncate className='w-max' title={item.title}>{item.title}</Text>
                 {item.subtitle ? (
-                    <p className='volt-text font-size-1 color-muted text-truncate w-max' title={item.subtitle}>{item.subtitle}</p>
+                    <Text as='p' size='sm' tone='muted' truncate className='w-max' title={item.subtitle}>{item.subtitle}</Text>
                 ) : null}
-            </div>
+            </Stack>
         );
     };
 
@@ -152,20 +151,20 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
         }
 
         return (
-            <div key={key} className='volt-container global-search-section' role='group' aria-labelledby={`${resultsListId}-${key}-label`}>
-                <div id={`${resultsListId}-${key}-label`} className='volt-container global-search-section-header d-flex items-center gap-05 p-075 font-size-3 color-muted'>
+            <Box key={key} className='global-search-section' role='group' aria-labelledby={`${resultsListId}-${key}-label`}>
+                <Row gap='05' p='075' id={`${resultsListId}-${key}-label`} className='global-search-section-header font-size-3 color-muted'>
                     <span aria-hidden='true'>{icon}</span>
-                    <p className='volt-text font-size-1 font-weight-5'>{title}</p>
-                </div>
-                <div className='volt-container global-search-section-items d-flex column gap-025'>
+                    <Text as='p' size='sm' weight='medium'>{title}</Text>
+                </Row>
+                <Stack gap='025' className='global-search-section-items'>
                     {items.map((item) => renderItem(key, item))}
-                </div>
-            </div>
+                </Stack>
+            </Box>
         );
     };
 
     return (
-        <div className='volt-container global-search-wrapper w-max' ref={refs.setReference} {...getReferenceProps()}>
+        <Box width='max' className='global-search-wrapper' ref={refs.setReference} {...getReferenceProps()}>
             <SearchInput
                 id={searchInputId}
                 placeholder='Search…'
@@ -191,28 +190,28 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
 
             {showResults && (
                 <FloatingPortal root={floatingRoot}>
-                    <div ref={refs.setFloating} className='volt-container global-search-results glass-bg panel-floating radius-md y-auto' aria-busy={isLoading} style={floatingStyles} {...getFloatingProps()}>
-                        <p className='volt-text global-search-status' role='status' aria-live='polite' aria-atomic='true'>
+                    <Box radius='md' overflow='y-auto' ref={refs.setFloating} className='global-search-results glass-bg panel-floating' aria-busy={isLoading} style={floatingStyles} {...getFloatingProps()}>
+                        <Text as='p' className='sr-only' role='status' aria-live='polite' aria-atomic='true'>
                             {isLoading ? 'Searching…' : totalResults === 0 ? 'No results found.' : `${totalResults} result${totalResults === 1 ? '' : 's'} available.`}
-                        </p>
+                        </Text>
 
                         {isLoading && (
-                            <div className='volt-container global-search-loading p-2'>
+                            <Box p='2' className='global-search-loading'>
                                 <Loader scale={0.5} isFixed={false} announce />
-                            </div>
+                            </Box>
                         )}
 
                         {!isLoading && totalResults === 0 && <EmptyState title='No results found' description='' announce />}
 
                         {!isLoading && totalResults > 0 && (
-                            <div id={resultsListId} role='listbox' aria-label='Global search results' className='volt-container global-search-results-list d-flex column'>
+                            <Stack id={resultsListId} role='listbox' aria-label='Global search results' className='global-search-results-list'>
                                 {SECTIONS.map(renderSection)}
-                            </div>
+                            </Stack>
                         )}
-                    </div>
+                    </Box>
                 </FloatingPortal>
             )}
-        </div>
+        </Box>
     );
 };
 

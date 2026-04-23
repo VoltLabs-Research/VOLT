@@ -1,5 +1,5 @@
-import Button from '@/shared/presentation/components/Button';
-import SegmentedTabs from '@/shared/presentation/components/SegmentedTabs';
+import { Box, Button, Heading, Row, SegmentedTabs, Stack, StatusDot } from '@/shared/presentation/primitives';
+import type { StatusDotTone } from '@/shared/presentation/primitives';
 import { ArrowLeft, ExternalLink, Play, RefreshCw, Square } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -10,7 +10,7 @@ import { getPrimaryAccessiblePort } from '@/modules/container/utilities/get-prim
 import { ContainerAction } from '@/modules/container/api/dtos/update-container';
 import type { ReactNode } from 'react';
 import type { Container as ContainerEntity } from '@/modules/container/api/entities/container';
-import type { SegmentedTabOption } from '@/shared/presentation/components/SegmentedTabs';
+import type { SegmentedTabOption } from '@/shared/presentation/primitives';
 import './ContainerDetailsHeader.css';
 
 type ContainerDetailsTabId = 'overview' | 'processes' | 'terminal' | 'storage';
@@ -63,6 +63,14 @@ const ContainerDetailsHeader = ({
     const primaryAccessiblePort = getPrimaryAccessiblePort(container.accessiblePorts);
     const isRunning = container.status === 'running';
 
+    const statusTone: StatusDotTone = container.status === 'running'
+        ? 'success'
+        : container.status === 'exited'
+            ? 'danger'
+            : container.status === 'created'
+                ? 'info'
+                : 'neutral';
+
     const createdRelative = useMemo(
         () => formatDistanceToNow(new Date(container.createdAt), { addSuffix: true }),
         [container.createdAt]
@@ -75,8 +83,8 @@ const ContainerDetailsHeader = ({
     };
 
     return (
-        <div className='volt-container container-details-header d-flex column'>
-            <div className='volt-container d-flex items-center gap-05'>
+        <Stack className='container-details-header'>
+            <Row gap='05'>
                 <Button
                     className='container-details-header-back'
                     variant='ghost'
@@ -87,28 +95,29 @@ const ContainerDetailsHeader = ({
                 >
                     Back
                 </Button>
-            </div>
+            </Row>
 
-            <div className='volt-container container-details-header-top d-flex items-start content-between mt-05'>
-                <div className='volt-container container-details-header-identity d-flex column gap-025'>
-                    <div className='volt-container d-flex items-center gap-075 flex-wrap'>
-                        <h1 className='volt-title container-details-header-name font-size-4 font-weight-6'>
+            <Row className='container-details-header-top' align='start' justify='between' mt='05'>
+                <Stack className='container-details-header-identity' gap='025'>
+                    <Row gap='075' wrap>
+                        <Heading level={1} className='container-details-header-name' size='xl' weight='bold'>
                             {container.name}
-                        </h1>
+                        </Heading>
                         <span
                             className={`container-details-status-badge ${container.status} d-flex items-center gap-035 font-size-1 font-weight-5`}
                         >
+                            <StatusDot tone={statusTone} pulse={isRunning} glow={isRunning} />
                             {container.status}
                         </span>
-                    </div>
-                    <div className='volt-container container-details-header-meta d-flex items-center flex-wrap'>
+                    </Row>
+                    <Row className='container-details-header-meta' wrap>
                         <span className='container-details-header-meta-image'>{container.image}</span>
                         <span className='container-details-header-meta-dot' aria-hidden='true'>·</span>
                         <span>Created {createdRelative}</span>
-                    </div>
-                </div>
+                    </Row>
+                </Stack>
 
-                <div className='volt-container container-details-header-actions d-flex items-center gap-05'>
+                <Row className='container-details-header-actions' gap='05'>
                     {contextualActions}
                     {canUpdate && isRunning && (
                         <>
@@ -158,10 +167,10 @@ const ContainerDetailsHeader = ({
                             Open :{primaryAccessiblePort.private}
                         </Button>
                     )}
-                </div>
-            </div>
+                </Row>
+            </Row>
 
-            <div className='volt-container container-details-header-tabs-row d-flex'>
+            <Box className='container-details-header-tabs-row' display='flex'>
                 <SegmentedTabs<ContainerDetailsTabId>
                     tabs={TABS}
                     activeTab={activeTab}
@@ -169,8 +178,8 @@ const ContainerDetailsHeader = ({
                     ariaLabel='Container sections'
                     size='sm'
                 />
-            </div>
-        </div>
+            </Box>
+        </Stack>
     );
 };
 

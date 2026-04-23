@@ -1,46 +1,43 @@
-import { Result } from '@shared/domain/port/Result';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import TeamCluster, { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
-import TrajectoryCreatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryCreatedEvent';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { IUseCase } from '@shared/application/IUseCase';
-import { injectable, inject } from 'tsyringe';
-import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
+import { ErrorCodes } from '@core/constants/error-codes';
 import { ImportTrajectoryFromSSHInputDTO } from '@modules/ssh/application/dtos/ImportTrajectoryFromSSHInputDTO';
 import { ImportTrajectoryFromSSHOutputDTO } from '@modules/ssh/application/dtos/ImportTrajectoryFromSSHOutputDTO';
 import { SSHConnectionOwnershipService } from '@modules/ssh/application/services/SSHConnectionOwnershipService';
+import TeamCluster, { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
+import DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
+import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
+import TrajectoryCreatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryCreatedEvent';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import logger from '@shared/infrastructure/logger';
-import { v4 } from 'uuid';
-import { ErrorCodes } from '@core/constants/error-codes';
-import type DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import logger from '@shared/infrastructure/logger';
+import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import { inject, injectable } from 'tsyringe';
+import { v4 } from 'uuid';
 
 @injectable()
 export default class ImportTrajectoryFromSSHUseCase implements IUseCase<ImportTrajectoryFromSSHInputDTO, ImportTrajectoryFromSSHOutputDTO, ApplicationError>{
     constructor(
-        @inject(SSHConnectionOwnershipService)
+        
         private readonly sshConnectionOwnershipService: SSHConnectionOwnershipService,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
+        
+        private readonly teamClusterRepository: TeamClusterRepository,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepository: ITrajectoryRepository,
+        
+        private readonly trajectoryRepository: TrajectoryRepository,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
 
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
 
-        @inject(TEAM_CLUSTER_TOKENS.DaemonAnalysisCompletionService)
+        
         private readonly daemonAnalysisCompletionService: DaemonAnalysisCompletionService
     ){}
 

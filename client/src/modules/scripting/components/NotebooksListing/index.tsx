@@ -9,7 +9,6 @@ import DocumentListing, {
     type ColumnConfig,
     type DocumentListingTab
 } from '@/shared/presentation/components/DocumentListing';
-import './NotebooksListing.css';
 import { useCallback, useMemo, useState } from 'react';
 import type { NotebooksListingContext } from '@/modules/scripting/hooks/use-notebooks-listing';
 import type {
@@ -57,7 +56,7 @@ const renderTrajectoryDetails: NonNullable<ColumnConfig<NotebookDocument>['rende
     const populated = (!trajectory || typeof trajectory === 'string') ? null : trajectory as unknown as Record<string, unknown>;
     return (
         <PopulatedCellPopover document={populated} modelName='Trajectory'>
-            <span className='font-size-2 color-secondary notebooks-listing-trajectory'>{getTrajectoryLabel(trajectory)}</span>
+            <span className='font-size-2 color-secondary font-mono'>{getTrajectoryLabel(trajectory)}</span>
         </PopulatedCellPopover>
     );
 };

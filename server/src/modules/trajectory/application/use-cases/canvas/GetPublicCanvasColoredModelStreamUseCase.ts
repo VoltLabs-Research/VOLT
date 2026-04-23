@@ -1,27 +1,27 @@
-import { GetColoredModelStreamUseCase } from '@modules/trajectory/application/use-cases/color-coding/GetColoredModelStreamUseCase';
-import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
 import type { GetColoredModelStreamInputDTO } from '@modules/trajectory/application/dtos/color-coding';
+import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
+import { GetColoredModelStreamUseCase } from '@modules/trajectory/application/use-cases/color-coding/GetColoredModelStreamUseCase';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import type { StreamableOutput } from '@shared/infrastructure/http/controllers/BaseStreamController';
 
 interface GetPublicCanvasColoredModelStreamInput extends GetColoredModelStreamInputDTO {
     userId?: string;
 };
 
-@injectable()
+@Singleton()
 export class GetPublicCanvasColoredModelStreamUseCase implements IUseCase<
     GetPublicCanvasColoredModelStreamInput,
     StreamableOutput,
     ApplicationError
 > {
     constructor(
-        @inject(TrajectoryReadAccessService)
+        
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
-        @inject(GetColoredModelStreamUseCase)
+        
         private readonly getColoredModelStreamUseCase: GetColoredModelStreamUseCase
     ) {}
 

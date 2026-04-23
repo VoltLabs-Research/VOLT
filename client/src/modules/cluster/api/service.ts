@@ -1,5 +1,5 @@
 import { defineServiceModule } from '@/shared/api/service-module';
-import { download, get, paginated, patch, post } from '@/app/core/http/utilities/create-service';
+import { download, get, paginated, patch, post, del } from '@/app/core/http/utilities/create-service';
 import socketService from '@/modules/socket/core/services/socket-service';
 import type { ClusterHistoryMetric, ClusterMetrics } from './entities/cluster-metrics';
 import type {
@@ -49,6 +49,14 @@ import type {
     UpdateTeamClusterRoleInputDTO,
     UpdateTeamClusterRoleOutputDTO
 } from './dtos/team-cluster/update-team-cluster-role';
+import type {
+    ProvisionDemoTeamClusterInputDTO,
+    ProvisionDemoTeamClusterOutputDTO,
+    GetDemoTeamClusterStatusInputDTO,
+    GetDemoTeamClusterStatusOutputDTO,
+    DeleteDemoTeamClusterInputDTO,
+    DeleteDemoTeamClusterOutputDTO
+} from './dtos/team-cluster/demo-team-cluster';
 
 export const CLUSTER_SOCKET_EVENTS = {
     metricsAll: 'metrics:all',
@@ -139,6 +147,15 @@ const teamClusterEndpoints = {
     ),
     updateRole: patch<UpdateTeamClusterRoleInputDTO, UpdateTeamClusterRoleOutputDTO>(
         '/:teamId/clusters/:teamClusterId/role'
+    ),
+    provisionDemo: post<ProvisionDemoTeamClusterInputDTO, ProvisionDemoTeamClusterOutputDTO>(
+        '/:teamId/clusters/demo'
+    ),
+    getDemoStatus: get<GetDemoTeamClusterStatusInputDTO, GetDemoTeamClusterStatusOutputDTO>(
+        '/:teamId/clusters/demo/status'
+    ),
+    deleteDemo: del<DeleteDemoTeamClusterInputDTO, DeleteDemoTeamClusterOutputDTO>(
+        '/:teamId/clusters/demo'
     )
 };
 

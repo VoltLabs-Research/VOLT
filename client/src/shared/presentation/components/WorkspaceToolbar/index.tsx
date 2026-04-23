@@ -1,4 +1,5 @@
 import { cn } from '@/shared/utils';
+import { Row } from '@/shared/presentation/primitives';
 import type { ReactNode } from 'react';
 
 interface WorkspaceToolbarProps {
@@ -13,16 +14,16 @@ const WorkspaceToolbar = ({
     className
 }: WorkspaceToolbarProps) => {
     return (
-        <div className={`volt-container ${cn('latex-workspace__toolbar d-flex items-center content-between gap-1', className)}`}>
-            <div className='volt-container d-flex items-center min-w-0'>
+        <Row justify='between' gap='1' className={cn('latex-workspace__toolbar', className)}>
+            <Row minW='0'>
                 {title}
-            </div>
+            </Row>
             {actions ? (
-                <div className='volt-container d-flex items-center gap-075'>
+                <Row gap='075'>
                     {actions}
-                </div>
+                </Row>
             ) : null}
-        </div>
+        </Row>
     );
 };
 

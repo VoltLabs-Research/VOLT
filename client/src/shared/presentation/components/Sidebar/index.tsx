@@ -137,21 +137,21 @@ const Sidebar = ({
             animate={{ width: collapsed ? collapsedWidth : expandedWidth }}
             transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 300, damping: 30 }}
         >
-            <div className='volt-container editor-sidebar-container glass-bg b-none d-flex column glass-bg content-between overflow-hidden w-max h-max'>
-                <div id={`${sidebarId}-content`} className='volt-container editor-sidebar-top-container'>
+            <div className='editor-sidebar-container glass-bg b-none d-flex column glass-bg content-between overflow-hidden w-max h-max'>
+                <div id={`${sidebarId}-content`} className='editor-sidebar-top-container'>
                     {headerElement}
 
                     {overrideContent ? (
-                        <div className="volt-container">{overrideContent}</div>
+                        <div className="">{overrideContent}</div>
                     ) : (
                         <>
                             {tags.length > 1 && (
-                                <div className='volt-container p-1-5 editor-sidebar-tabs-region'>
-                                    <div className='volt-container editor-sidebar-tabs-wrapper p-relative'>
+                                <div className='p-1-5 editor-sidebar-tabs-region'>
+                                    <div className='editor-sidebar-tabs-wrapper p-relative'>
                                         {canScrollLeft && (
                                             <div className='editor-sidebar-tabs-fade editor-sidebar-tabs-fade--left' aria-hidden='true' />
                                         )}
-                                            <div ref={tabsContainerRef} className='volt-container d-flex p-05 content-between editor-sidebar-options-container scrollbar-none' role='tablist' aria-label='Sidebar sections'>
+                                            <div ref={tabsContainerRef} className='d-flex p-05 content-between editor-sidebar-options-container scrollbar-none' role='tablist' aria-label='Sidebar sections'>
                                                 {tags.map((tag) => {
                                                     const isSelected = tag.id === activeTagId;
 

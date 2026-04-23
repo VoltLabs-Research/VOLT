@@ -11,9 +11,8 @@ import type {
     RuntimeContainerSummary
 } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { inject, injectable } from 'tsyringe';
+import { injectable } from 'tsyringe';
 
 type ContainerRuntimeAction = 'start' | 'stop' | 'restart';
 
@@ -38,7 +37,7 @@ export class DaemonContainerRuntimeService implements ITeamClusterContainerRunti
     private readonly pendingProcesses = new Map<string, Promise<ContainerProcessInfo[]>>();
 
     constructor(
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 

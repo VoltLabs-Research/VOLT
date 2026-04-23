@@ -2,21 +2,20 @@ import {
     ProcessTeamClusterHealthcheckInputDTO,
     ProcessTeamClusterHealthcheckOutputDTO
 } from '@modules/team-cluster/application/dtos/ProcessTeamClusterHealthcheckDTO';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
-@injectable()
+@Singleton()
 export default class ProcessTeamClusterHealthcheckUseCase implements IUseCase<
     ProcessTeamClusterHealthcheckInputDTO,
     ProcessTeamClusterHealthcheckOutputDTO,
     ApplicationError
 > {
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterLifecycleService)
+        
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService
     ){}
 

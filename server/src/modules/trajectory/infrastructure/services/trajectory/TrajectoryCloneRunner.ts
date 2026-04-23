@@ -1,17 +1,16 @@
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import TrajectoryCloneCoordinator from '@modules/trajectory/application/services/TrajectoryCloneCoordinator';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
-import type TrajectoryCloneCoordinator from '@modules/trajectory/application/services/TrajectoryCloneCoordinator';
 
 const CLONE_RUNNER_INTERVAL_MS = 15_000;
 
-@injectable()
+@Singleton()
 export default class TrajectoryCloneRunner {
     private interval: ReturnType<typeof setInterval> | null = null;
     private running = false;
 
     constructor(
-        @inject(TRAJECTORY_TOKENS.TrajectoryCloneCoordinator)
+        
         private readonly cloneCoordinator: TrajectoryCloneCoordinator
     ) {}
 

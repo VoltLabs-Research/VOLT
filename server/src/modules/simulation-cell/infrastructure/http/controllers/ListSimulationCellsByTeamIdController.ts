@@ -1,10 +1,10 @@
-import { createListByController } from '@shared/infrastructure/http/controllers/createReadController';
-import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
-import { simulationCellValidationSchemas } from '@modules/simulation-cell/infrastructure/http/validation/simulation-cell-schemas';
 import type { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
+import { simulationCellValidationSchemas } from '@modules/simulation-cell/infrastructure/http/validation/simulation-cell-schemas';
+import SimulationCellRepository from '@modules/simulation-cell/infrastructure/persistence/mongo/repositories/SimulationCellRepository';
+import { createListByController } from '@shared/infrastructure/http/controllers/createReadController';
 
 const ListSimulationCellsByTeamIdController = createListByController({
-    repositoryToken: SIMULATION_CELL_TOKENS.SimulationCellRepository,
+    repositoryToken: SimulationCellRepository,
     paginated: true,
     populate: { path: 'trajectory', select: ['name'] },
     validationSchema: simulationCellValidationSchemas.listByTeamId,

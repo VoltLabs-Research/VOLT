@@ -1,21 +1,21 @@
-import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
+import type { ExportLatexDocumentInputDTO, ExportLatexDocumentOutputDTO } from '@modules/latex/application/dtos/ExportLatexDocumentDTO';
+import { sanitizeAssetPath } from '@modules/latex/application/utilities/sanitize-asset-path';
+import LatexAssetRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexAssetRepository';
+import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
+import LatexFileRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexFileRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { IUseCase } from '@shared/application/IUseCase';
+import type { IStorageService } from '@shared/domain/port/IStorageService';
 import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import {
     createZipDownloadResponse,
     sanitizeDownloadName
 } from '@shared/infrastructure/http/responses/download-response';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { sanitizeAssetPath } from '@modules/latex/application/utilities/sanitize-asset-path';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
-import type { ExportLatexDocumentInputDTO, ExportLatexDocumentOutputDTO } from '@modules/latex/application/dtos/ExportLatexDocumentDTO';
-import type { IUseCase } from '@shared/application/IUseCase';
-import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
-import type { ILatexAssetRepository } from '@modules/latex/domain/port/ILatexAssetRepository';
-import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
+import { inject } from 'tsyringe';
 
 /**
  * Exports a LaTeX document as a `.zip` archive.
@@ -23,17 +23,17 @@ import type { IStorageService } from '@shared/domain/port/IStorageService';
  * Includes all LatexFile records (respecting their `path` prefix) plus
  * all associated assets fetched from object storage.
  */
-@injectable()
+@Singleton()
 export class ExportLatexDocumentZipUseCase implements IUseCase<ExportLatexDocumentInputDTO, ExportLatexDocumentOutputDTO, ApplicationError> {
     constructor(
-        @inject(LATEX_TOKENS.LatexDocumentRepository)
-        private readonly latexDocumentRepository: ILatexDocumentRepository,
+        
+        private readonly latexDocumentRepository: LatexDocumentRepository,
 
-        @inject(LATEX_TOKENS.LatexAssetRepository)
-        private readonly latexAssetRepository: ILatexAssetRepository,
+        
+        private readonly latexAssetRepository: LatexAssetRepository,
 
-        @inject(LATEX_TOKENS.LatexFileRepository)
-        private readonly latexFileRepository: ILatexFileRepository,
+        
+        private readonly latexFileRepository: LatexFileRepository,
 
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService

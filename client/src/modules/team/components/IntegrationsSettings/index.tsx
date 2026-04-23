@@ -1,3 +1,4 @@
+import { Button, LiquidToggle, Skeleton } from '@/shared/presentation/primitives';
 import { invalidateTeamAIIntegrationsQuery, useTeamAIIntegrationsQuery } from '@/modules/team/hooks/ai-integration/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
@@ -5,19 +6,16 @@ import useCreateTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-
 import useDeleteTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-delete-team-ai-integration';
 import useTeamAIIntegrationsSocketSync from '@/modules/team/hooks/ai-integration/use-team-ai-integrations-socket-sync';
 import useUpdateTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-update-team-ai-integration';
-import Button from '@/shared/presentation/components/Button';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import LiquidToggle from '@/shared/presentation/components/LiquidToggle';
-import Modal, { openModal } from '@/shared/presentation/components/Modal';
+import { Modal, openModal } from '@/shared/presentation/primitives';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import Select from '@/shared/presentation/components/Select';
+import { Select } from '@/shared/presentation/primitives';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSection from '@/shared/presentation/components/SettingsSection';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
 import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
-import Skeleton from '@/shared/presentation/components/Skeleton';
 import { Settings2, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { IoAddOutline } from 'react-icons/io5';
@@ -31,7 +29,7 @@ import type {
     TeamAIIntegration,
     TeamAIModelMetadata
 } from '@/modules/team/api/entities/ai-integration/team-ai-integration';
-import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { SelectOption } from '@/shared/presentation/primitives';
 import type { FormEvent, KeyboardEvent } from 'react';
 import './IntegrationsSettings.css';
 
@@ -269,12 +267,12 @@ export default function IntegrationsSettings() {
         const modelSummary = isDefault ? `${model.id} · default` : model.id;
 
         return (
-            <div key={model.id} className='volt-container integrations-model-item d-flex items-center content-between gap-05'>
-                <div className='volt-container d-flex column' style={{ minWidth: 0 }}>
-                    <p className='volt-text font-size-2 color-primary text-truncate' title={model.name}>
+            <div key={model.id} className='integrations-model-item d-flex items-center content-between gap-05'>
+                <div className='d-flex column' style={{ minWidth: 0 }}>
+                    <p className='font-size-2 color-primary text-truncate' title={model.name}>
                         {model.name}
                     </p>
-                    <p className='volt-text font-size-1 color-muted text-truncate' title={modelSummary}>
+                    <p className='font-size-1 color-muted text-truncate' title={modelSummary}>
                         {modelSummary}
                     </p>
                 </div>
@@ -408,15 +406,15 @@ export default function IntegrationsSettings() {
                 />
 
                 {!teamId ? (
-                    <p className='volt-text font-size-2 color-muted'>
+                    <p className='font-size-2 color-muted'>
                         Select a team to manage integrations.
                     </p>
                 ) : isLoading ? (
-                    <div className='volt-container integrations-provider-list'>
+                    <div className='integrations-provider-list'>
                         {Array.from({ length: 3 }).map((_, index) => (
-                            <div key={index} className='volt-container integrations-provider-row d-flex items-center content-between gap-1'>
+                            <div key={index} className='integrations-provider-row d-flex items-center content-between gap-1'>
                                 <Skeleton variant='text' width={100} height={20} />
-                                <div className='volt-container d-flex items-center gap-025'>
+                                <div className='d-flex items-center gap-025'>
                                     <Skeleton variant='circular' width={24} height={24} />
                                     <Skeleton variant='circular' width={24} height={24} />
                                 </div>
@@ -432,27 +430,27 @@ export default function IntegrationsSettings() {
                         onRetry={() => invalidateTeamAIIntegrationsQuery(teamId)}
                     />
                 ) : configuredIntegrations.length === 0 ? (
-                    <div className='volt-container integrations-empty-state'>
-                        <p className='volt-text font-size-2 color-muted'>
+                    <div className='integrations-empty-state'>
+                        <p className='font-size-2 color-muted'>
                             No providers configured yet.
                         </p>
                     </div>
                 ) : (
-                    <div className='volt-container integrations-provider-list'>
+                    <div className='integrations-provider-list'>
                         {configuredIntegrations.map((integration) => (
-                            <div key={integration.provider} className='volt-container integrations-provider-row d-flex items-center content-between gap-1'>
-                                <div className='volt-container d-flex column gap-025' style={{ minWidth: 0 }}>
-                                    <p className='volt-text font-size-2 font-weight-5 color-primary'>
+                            <div key={integration.provider} className='integrations-provider-row d-flex items-center content-between gap-1'>
+                                <div className='d-flex column gap-025' style={{ minWidth: 0 }}>
+                                    <p className='font-size-2 font-weight-5 color-primary'>
                                         {integration.providerName}
                                     </p>
-                                    <p className='volt-text font-size-1 color-muted text-truncate' title={integration.defaultModel ?? 'No default model selected'}>
+                                    <p className='font-size-1 color-muted text-truncate' title={integration.defaultModel ?? 'No default model selected'}>
                                         {integration.defaultModel
                                             ? `Default model: ${integration.defaultModel}`
                                             : 'No default model selected'}
                                     </p>
                                 </div>
 
-                                <div className='volt-container integrations-provider-row-actions d-flex items-center gap-025'>
+                                <div className='integrations-provider-row-actions d-flex items-center gap-025'>
                                     <Button
                                         size='sm'
                                         variant='ghost'
@@ -511,9 +509,9 @@ export default function IntegrationsSettings() {
                 )}
             >
                 <form id={TEAM_AI_INTEGRATION_FORM_ID} className='p-1-5' onSubmit={handleIntegrationFormSubmit}>
-                    <div className='volt-container d-flex column gap-1'>
+                    <div className='d-flex column gap-1'>
                         {!editingProvider ? (
-                            <div className='volt-container d-flex column gap-05'>
+                            <div className='d-flex column gap-05'>
                                 <label id={providerLabelId} className='font-size-2 font-weight-5 color-secondary'>Provider</label>
                                 <Select
                                     options={providerSelectOptions}
@@ -525,9 +523,9 @@ export default function IntegrationsSettings() {
                                 />
                             </div>
                         ) : (
-                            <div className='volt-container d-flex column gap-025'>
-                                <p className='volt-text font-size-1 color-muted'>Provider</p>
-                                <p className='volt-text font-size-3 font-weight-5 color-primary'>
+                            <div className='d-flex column gap-025'>
+                                <p className='font-size-1 color-muted'>Provider</p>
+                                <p className='font-size-3 font-weight-5 color-primary'>
                                     {integrationsByProvider.get(editingProvider)?.providerName || editingProvider}
                                 </p>
                             </div>
@@ -555,11 +553,11 @@ export default function IntegrationsSettings() {
                             />
                         )}
 
-                        <div className='volt-container d-flex column gap-05'>
-                            <p className='volt-text font-size-2 font-weight-5 color-secondary'>
+                        <div className='d-flex column gap-05'>
+                            <p className='font-size-2 font-weight-5 color-secondary'>
                                 Models
                             </p>
-                            <div className='volt-container d-flex gap-05 integrations-add-model-row'>
+                            <div className='d-flex gap-05 integrations-add-model-row'>
                                 <FormFieldRHF
                                     label='Model ID'
                                     placeholder='Model ID (e.g. gpt-4o)'
@@ -585,13 +583,13 @@ export default function IntegrationsSettings() {
                                 </Button>
                             </div>
                             {modalEnabledModels.length > 0 && (
-                                <div className='volt-container integrations-model-checklist'>
+                                <div className='integrations-model-checklist'>
                                     {modalEnabledModels.map(renderModelItem)}
                                 </div>
                             )}
                         </div>
                         
-                        <div className='volt-container d-flex column gap-05'>
+                        <div className='d-flex column gap-05'>
                             <label id={defaultModelLabelId} className='font-size-2 font-weight-5 color-secondary'>Default model</label>
                             <Select
                                 options={modalModelOptions}
@@ -603,8 +601,8 @@ export default function IntegrationsSettings() {
                             />
                         </div>
 
-                        <div className='volt-container d-flex items-center content-between gap-05 integrations-modal-toggle'>
-                            <p className='volt-text font-size-2 color-muted'>Enabled</p>
+                        <div className='d-flex items-center content-between gap-05 integrations-modal-toggle'>
+                            <p className='font-size-2 color-muted'>Enabled</p>
                             <LiquidToggle pressed={modalEnabled} onChange={setModalEnabled} />
                         </div>
                     </div>

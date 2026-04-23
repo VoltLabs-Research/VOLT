@@ -1,17 +1,16 @@
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import ClusterTransferCoordinator from '@modules/team-cluster/application/services/ClusterTransferCoordinator';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
-import type ClusterTransferCoordinator from '@modules/team-cluster/application/services/ClusterTransferCoordinator';
 
 const TRANSFER_RUNNER_INTERVAL_MS = 30_000;
 
-@injectable()
+@Singleton()
 export default class ClusterTransferRunner {
     private interval: ReturnType<typeof setInterval> | null = null;
     private running = false;
 
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.ClusterTransferCoordinator)
+        
         private readonly clusterTransferCoordinator: ClusterTransferCoordinator
     ) {}
 

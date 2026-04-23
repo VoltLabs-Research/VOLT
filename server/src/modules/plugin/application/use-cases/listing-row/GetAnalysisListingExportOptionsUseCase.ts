@@ -1,17 +1,17 @@
 import { GetAnalysisListingExportOptionsInputDTO, GetAnalysisListingExportOptionsOutputDTO } from '@modules/plugin/application/dtos/listing-row/GetAnalysisListingExportOptionsDTO';
 import { AnalysisListingExportCatalogService } from '@modules/plugin/application/services/listing-row/AnalysisListingExportCatalogService';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
 
-@injectable()
+@Singleton()
 export class GetAnalysisListingExportOptionsUseCase implements IUseCase<
     GetAnalysisListingExportOptionsInputDTO,
     GetAnalysisListingExportOptionsOutputDTO
 > {
     constructor(
-        @inject(AnalysisListingExportCatalogService)
+        
         private readonly analysisListingExportCatalogService: AnalysisListingExportCatalogService
     ) {}
 

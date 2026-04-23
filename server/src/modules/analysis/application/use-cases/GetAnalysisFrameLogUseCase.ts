@@ -1,27 +1,26 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
-import type { IUseCase } from '@shared/application/IUseCase';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import type AnalysisExecutionLogService from '@modules/analysis/infrastructure/services/AnalysisExecutionLogService';
 import type {
     GetAnalysisFrameLogInputDTO,
     GetAnalysisFrameLogOutputDTO
 } from '@modules/analysis/application/dtos/GetAnalysisFrameLogDTO';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
+import AnalysisExecutionLogService from '@modules/analysis/infrastructure/services/AnalysisExecutionLogService';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
-@injectable()
+@Singleton()
 export default class GetAnalysisFrameLogUseCase implements IUseCase<
     GetAnalysisFrameLogInputDTO,
     GetAnalysisFrameLogOutputDTO,
     ApplicationError
 > {
     constructor(
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository,
+        
+        private readonly analysisRepository: AnalysisRepository,
 
-        @inject(ANALYSIS_TOKENS.AnalysisExecutionLogService)
+        
         private readonly analysisExecutionLogService: AnalysisExecutionLogService
     ) {}
 

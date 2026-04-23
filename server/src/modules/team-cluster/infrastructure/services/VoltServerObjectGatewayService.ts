@@ -1,16 +1,16 @@
 import { SYS_BUCKETS } from '@core/config/minio';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import type StoragePlacementRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/StoragePlacementRepository';
+import StoragePlacementRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/StoragePlacementRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { FileMetadata, IStorageService } from '@shared/domain/port/IStorageService';
 import {
     TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
     VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID
 } from '@shared/infrastructure/contracts/team-cluster';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { isStorageObjectNotFoundError } from '@shared/infrastructure/utilities/storage-errors';
-import { inject, injectable } from 'tsyringe';
-import type { IStorageService, FileMetadata } from '@shared/domain/port/IStorageService';
 import type { Readable } from 'node:stream';
+import { inject } from 'tsyringe';
 
 interface ServerObjectHeadResponse {
     contentLength?: number;
@@ -49,10 +49,10 @@ const toHeadResponse = (stat: FileMetadata): ServerObjectHeadResponse => {
     };
 };
 
-@injectable()
+@Singleton()
 export default class VoltServerObjectGatewayService {
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.StoragePlacementRepository)
+        
         private readonly storagePlacementRepository: StoragePlacementRepository,
 
         @inject(SHARED_TOKENS.StorageService)

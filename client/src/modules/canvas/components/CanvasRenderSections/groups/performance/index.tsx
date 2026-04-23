@@ -6,7 +6,8 @@ import {
     PERFORMANCE_PRESET_OPTIONS,
     POWER_PREFERENCE_OPTIONS
 } from '@/shared/domain/rendering/performance';
-import Select from '@/shared/presentation/components/Select';
+import { Select } from '@/shared/presentation/primitives';
+import { Box } from '@/shared/presentation/primitives';
 import { useMemo } from 'react';
 import { MdSpeed } from 'react-icons/md';
 import { useShallow } from 'zustand/react/shallow';
@@ -32,7 +33,7 @@ const usePerformanceGroup = (): RenderGroup => {
                     enabled: true,
                     rows: [],
                     extras: (
-                        <div className='volt-container canvas-render-grid'>
+                        <Box className='canvas-render-grid'>
                             <Select
                                 value={performanceSettings.preset}
                                 onChange={(value: string) => {
@@ -48,7 +49,7 @@ const usePerformanceGroup = (): RenderGroup => {
                                     rendererSettings.setCreate({ powerPreference: value });
                                 }
                             }, 'GPU Power', POWER_PREFERENCE_OPTIONS)}
-                        </div>
+                        </Box>
                     )
                 }]
             }

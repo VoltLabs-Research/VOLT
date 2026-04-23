@@ -1,5 +1,6 @@
 import useTrajectoryPresence from '@/modules/trajectory/hooks/trajectory/use-trajectory-presence';
-import AvatarStack from '@/shared/presentation/components/AvatarStack';
+import { AvatarStack } from '@/shared/presentation/primitives';
+import { Box } from '@/shared/presentation/primitives';
 import './SimulationCardUsers.css';
 
 interface SimulationCardUsersProps {
@@ -16,8 +17,8 @@ export default function SimulationCardUsers({ trajectoryId, maxDisplay = 3 }: Si
     }
 
     return (
-        <div className='volt-container simulation-card-users p-absolute' title={viewersLabel} aria-label={viewersLabel}>
+        <Box position='absolute' className='simulation-card-users' title={viewersLabel} aria-label={viewersLabel}>
             <AvatarStack users={users} maxDisplay={maxDisplay} size='xs' />
-        </div>
+        </Box>
     );
 }

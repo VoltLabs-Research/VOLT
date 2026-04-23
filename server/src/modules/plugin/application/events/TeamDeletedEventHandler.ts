@@ -1,19 +1,18 @@
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-import { CascadeDeleteEachOnTeamDeletedHandler } from '@shared/application/events/CascadeDeleteEachOnTeamDeletedHandler';
 import { DeletePluginByIdUseCase } from '@modules/plugin/application/use-cases/plugin/DeletePluginByIdUseCase';
-import { injectable, inject } from 'tsyringe';
+import { CascadeDeleteEachOnTeamDeletedHandler } from '@shared/application/events/CascadeDeleteEachOnTeamDeletedHandler';
 
 import type Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
-import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
+import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
 
-@injectable()
+@Subscribe('team.deleted')
 export default class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDeletedHandler<Plugin> {
     constructor(
-        @inject(PLUGIN_TOKENS.PluginRepository)
-        protected readonly repository: IPluginRepository,
+        
+        protected readonly repository: PluginRepository,
 
-        @inject(DeletePluginByIdUseCase)
+        
         private readonly deletePluginByIdUseCase: DeletePluginByIdUseCase
     ) {
         super();

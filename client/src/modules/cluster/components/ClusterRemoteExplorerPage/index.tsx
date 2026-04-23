@@ -2,8 +2,7 @@ import ClusterRemoteAccessModal, { CLUSTER_REMOTE_ACCESS_MODAL_ID } from '@/modu
 import useClusterRemoteAccessPage from '@/modules/cluster/hooks/use-cluster-remote-access-page';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
 import { TeamClusterRemoteAccessTarget } from '@/modules/cluster/api/entities/team-cluster-remote-access';
-import { openModal } from '@/shared/presentation/components/Modal';
-import Loader from '@/shared/presentation/components/Loader';
+import { Stack, Text, Loader, openModal } from '@/shared/presentation/primitives';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import { lazy, Suspense, useEffect, useMemo } from 'react';
@@ -74,12 +73,12 @@ const ClusterRemoteExplorerPage = () => {
 
     if (!vm.cluster) {
         return (
-            <div className='volt-container d-flex column gap-075 p-2 flex-1 justify-center'>
+            <Stack gap='075' p='2' flex='1' className='justify-center'>
                 <div className='font-size-3 font-weight-6'>Preparing cluster explorer</div>
-                <p className='volt-text color-secondary'>
+                <Text as='p' tone='secondary'>
                     Restoring cluster access context and remote explorer session.
-                </p>
-            </div>
+                </Text>
+            </Stack>
         );
     }
 
@@ -100,7 +99,7 @@ const ClusterRemoteExplorerPage = () => {
     }
 
     return (
-        <div className='volt-container d-flex column flex-1 overflow-hidden vh-max p-1'>
+        <Stack flex='1' overflow='hidden' p='1' className='vh-max'>
             <Suspense fallback={<Loader scale={0.5} isFixed={false} />}>
                 <ClusterRemoteExplorerContent
                     teamCluster={vm.cluster}
@@ -111,7 +110,7 @@ const ClusterRemoteExplorerPage = () => {
                     downloadObject={clusterManagement.downloadRemoteExplorerObject}
                 />
             </Suspense>
-        </div>
+        </Stack>
     );
 };
 

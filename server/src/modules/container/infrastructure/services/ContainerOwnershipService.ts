@@ -1,15 +1,14 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import { Container } from '@modules/container/domain/entities/Container';
-import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
+import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export class ContainerOwnershipService {
     constructor(
-        @inject(CONTAINER_TOKENS.ContainerRepository)
-        private readonly repository: IContainerRepository
+        
+        private readonly repository: ContainerRepository
     ) {}
 
     async getOwnedByTeam(containerId: string, teamId: string): Promise<Container> {

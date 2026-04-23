@@ -1,12 +1,11 @@
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { GetAnalysesByTrajectoryIdInputDTO, GetAnalysesByTrajectoryIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysesByTrajectoryIdDTO';
+import type { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import { extractPluginId } from '@modules/analysis/infrastructure/services/AnalysisPluginDisplayNameService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { Result } from '@shared/domain/port/Result';
+import { injectable } from 'tsyringe';
 
 interface TrajectoryAnalysesFilter extends Partial<AnalysisProps> {
     trajectory: string;
@@ -20,8 +19,8 @@ interface AnalysisSort extends Record<string, 1 | -1> {
 @injectable()
 export class GetAnalysesByTrajectoryIdUseCase implements IUseCase<GetAnalysesByTrajectoryIdInputDTO, GetAnalysesByTrajectoryIdOutputDTO, ApplicationError> {
     constructor(
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository
+        
+        private readonly analysisRepository: AnalysisRepository
     ) {}
 
     async execute(input: GetAnalysesByTrajectoryIdInputDTO): Promise<Result<GetAnalysesByTrajectoryIdOutputDTO, ApplicationError>> {

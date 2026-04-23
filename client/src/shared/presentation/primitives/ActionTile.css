@@ -1,0 +1,42 @@
+.volt-action-tile {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-lg);
+    color: var(--color-text-primary);
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .volt-action-tile:hover {
+        border-color: var(--color-border-strong);
+        background: var(--color-surface-2);
+    }
+    .volt-action-tile:hover .volt-action-tile__cta {
+        color: var(--color-text-primary);
+        transform: translateX(2px);
+    }
+}
+
+.volt-action-tile:focus-visible {
+    outline: none;
+    border-color: var(--focus-ring);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 25%, transparent);
+}
+
+.volt-action-tile:active {
+    transform: translateY(1px);
+}
+
+.volt-action-tile__cta {
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+    transition: color 0.15s ease, transform 0.2s var(--ease-standard);
+}

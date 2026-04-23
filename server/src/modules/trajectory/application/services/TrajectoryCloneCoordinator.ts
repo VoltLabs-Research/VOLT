@@ -3,24 +3,23 @@ import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import JobStatusChangedEvent, { type JobStatusChangedValue } from '@modules/jobs/domain/events/JobStatusChangedEvent';
 import StoragePlacementService from '@modules/team-cluster/application/services/StoragePlacementService';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import TrajectoryCloneJob, { TrajectoryCloneJobProps, TrajectoryCloneJobState } from '@modules/trajectory/domain/entities/trajectory/TrajectoryCloneJob';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
+import TrajectoryCloneJob, { TrajectoryCloneJobProps, TrajectoryCloneJobState } from '@modules/trajectory/domain/entities/trajectory/TrajectoryCloneJob';
 import TrajectoryCloneJobRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryCloneJobRepository';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import {
     buildTrajectoryDumpObjectName
 } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
-import { VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@shared/infrastructure/contracts/team-cluster';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
-import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
+import { VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@shared/infrastructure/contracts/team-cluster';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import logger from '@shared/infrastructure/logger';
 import type { Readable } from 'node:stream';
+import { inject } from 'tsyringe';
 
 const isLocalCluster = (clusterId: string | null | undefined): boolean => {
     return !clusterId || clusterId === VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID;
@@ -71,22 +70,22 @@ const getCloneJobMessage = (job: TrajectoryCloneJob): string => {
     }
 };
 
-@injectable()
+@Singleton()
 export default class TrajectoryCloneCoordinator {
     constructor(
-        @inject(TRAJECTORY_TOKENS.TrajectoryCloneJobRepository)
+        
         private readonly cloneJobRepository: TrajectoryCloneJobRepository,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepository: ITrajectoryRepository,
+        
+        private readonly trajectoryRepository: TrajectoryRepository,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository)
-        private readonly trajectoryFrameRepository: ITrajectoryFrameRepository,
+        
+        private readonly trajectoryFrameRepository: TrajectoryFrameRepository,
 
-        @inject(TEAM_CLUSTER_TOKENS.StoragePlacementService)
+        
         private readonly storagePlacementService: StoragePlacementService,
 
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
+        
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
 
         @inject(SHARED_TOKENS.StorageService)

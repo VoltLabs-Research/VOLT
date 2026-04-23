@@ -1,5 +1,6 @@
 import useSimulationCell from '@/modules/simulation-cell/hooks/use-simulation-cell';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
+import { Box, Row, Stack, Text } from '@/shared/presentation/primitives';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { ReactNode } from 'react';
 
@@ -27,11 +28,11 @@ const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewP
 
     if (isLoading || !cell) {
         return (
-            <div className="volt-container d-flex items-center content-center p-1">
-                <span className="color-muted font-size-1">
+            <Row justify='center' p='1'>
+                <Text size='sm' tone='muted'>
                     {isLoading ? 'Loading simulation cell...' : 'No simulation cell data available'}
-                </span>
-            </div>
+                </Text>
+            </Row>
         );
     }
 
@@ -57,31 +58,31 @@ const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewP
         {
             title: 'Cell Vectors',
             visible: !!vectors && vectors.length > 0,
-            rows: (vectors ?? []).map((v, i) => [`V${i + 1}`, `[${v.map((n) => n.toFixed(3)).join(', ')}]`, 'canvas-simcell-value--mono'])
+            rows: (vectors ?? []).map((v, i) => [`V${i + 1}`, `[${v.map((n) => n.toFixed(3)).join(', ')}]`, 'font-mono'])
         },
         {
             title: 'Cell Origin',
             visible: !!origin,
-            rows: origin ? [['Origin', `[${origin.map((n) => n.toFixed(3)).join(', ')}]`, 'canvas-simcell-value--mono']] : []
+            rows: origin ? [['Origin', `[${origin.map((n) => n.toFixed(3)).join(', ')}]`, 'font-mono']] : []
         }
     ];
 
     return (
-        <div className="volt-container p-1">
-            <div className="volt-container d-flex items-start gap-1-5">
+        <Box p='1'>
+            <Row align='start' gap='1-5'>
                 {columns.filter((col) => col.visible !== false).map((col) => (
-                    <div key={col.title} className="volt-container d-flex column" style={{ minWidth: 140 }}>
-                        <span className="font-size-05 color-muted">{col.title}</span>
+                    <Stack key={col.title} style={{ minWidth: 140 }}>
+                        <Text size='xs' tone='muted'>{col.title}</Text>
                         {col.rows.map(([label, value, valueClass]) => (
-                            <div key={label} className="volt-container d-flex items-center content-between font-size-1 color-secondary gap-1">
-                                <span className="color-muted">{label}</span>
+                            <Row key={label} justify='between' gap='1' className="font-size-1 color-secondary">
+                                <Text tone='muted'>{label}</Text>
                                 <span className={valueClass}>{value}</span>
-                            </div>
+                            </Row>
                         ))}
-                    </div>
+                    </Stack>
                 ))}
-            </div>
-        </div>
+            </Row>
+        </Box>
     );
 };
 

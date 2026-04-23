@@ -1,6 +1,4 @@
 .sign-in-page{
-    min-height: 100vh;
-    min-height: 100dvh;
     background: var(--color-bg);
 }
 
@@ -11,8 +9,6 @@
 }
 
 .sign-in-form-shell{
-    min-height: 100vh;
-    min-height: 100dvh;
     background: var(--color-bg);
     position: relative;
 }
@@ -25,9 +21,6 @@
 }
 
 .sign-in-divider{
-    color: var(--color-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
     margin: 1.25rem 0 0.25rem;
 }
 

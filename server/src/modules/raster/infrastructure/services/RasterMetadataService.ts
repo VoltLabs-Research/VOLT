@@ -1,27 +1,21 @@
-import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
+import { ErrorCodes } from '@core/constants/error-codes';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
+import type {
+    RasterAnalysisMetadata,
+    RasterFrameMetadata, RasterMetadata, RasterTrajectoryMetadata
+} from '@modules/raster/domain/entities/RasterMetadata';
 import { RasterMetadataStatus } from '@modules/raster/domain/entities/RasterMetadata';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { RasterStorageService } from '@modules/raster/infrastructure/services/RasterStorageService';
+import { parseAnalysisRasterFrameKey, parseRasterTimestep } from '@modules/raster/utilities/raster-storage-paths';
 import {
     resolveAnalysisStorageClusterId,
     resolveTrajectoryStorageClusterId
 } from '@modules/team-cluster/application/utilities/cluster-location';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { ErrorCodes } from '@core/constants/error-codes';
+import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
-import { parseAnalysisRasterFrameKey, parseRasterTimestep } from '@modules/raster/utilities/raster-storage-paths';
-import type { IRasterMetadataReader } from '@modules/raster/domain/port/IRasterMetadataReader';
-import type { IRasterStorage } from '@modules/raster/domain/port/IRasterStorage';
-import type { RasterMetadata } from '@modules/raster/domain/entities/RasterMetadata';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import type {
-    RasterAnalysisMetadata,
-    RasterFrameMetadata,
-    RasterTrajectoryMetadata
-} from '@modules/raster/domain/entities/RasterMetadata';
 
 interface RasterFramesByTimestep {
     [timestep: number]: Set<string>;
@@ -32,20 +26,20 @@ interface ResolvedTrajectoryRasterMetadata {
     trajectory: RasterTrajectoryMetadata | null;
 };
 
-@injectable()
-export class RasterMetadataService implements IRasterMetadataReader {
+@Singleton()
+export class RasterMetadataService {
     constructor(
-        @inject(RASTER_TOKENS.RasterStorage)
-        private readonly rasterStorage: IRasterStorage,
+        
+        private readonly rasterStorage: RasterStorageService,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepository: ITrajectoryRepository,
+        
+        private readonly trajectoryRepository: TrajectoryRepository,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository)
-        private readonly trajectoryFrameRepository: ITrajectoryFrameRepository,
+        
+        private readonly trajectoryFrameRepository: TrajectoryFrameRepository,
 
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository
+        
+        private readonly analysisRepository: AnalysisRepository
     ) {}
 
     async getRasterMetadata(trajectoryId: string, teamId: string): Promise<RasterMetadata | null> {

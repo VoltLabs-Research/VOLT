@@ -1,33 +1,31 @@
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
-import TeamDeletedEvent from '@modules/team/domain/events/team/TeamDeletedEvent';
+import ClusterTransferJobRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/ClusterTransferJobRepository';
+import StoragePlacementRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/StoragePlacementRepository';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
+import TeamDeletedEvent from '@modules/team/domain/events/team/TeamDeletedEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
-import type ClusterTransferJobRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/ClusterTransferJobRepository';
-import type StoragePlacementRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/StoragePlacementRepository';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import logger from '@shared/infrastructure/logger';
+import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
-@injectable()
+@Subscribe('team.deleted')
 export default class TeamDeletedEventHandler implements IEventHandler<TeamDeletedEvent> {
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
+        
+        private readonly teamClusterRepository: TeamClusterRepository,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterLifecycleService)
+        
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
 
-        @inject(TEAM_CLUSTER_TOKENS.StoragePlacementRepository)
+        
         private readonly storagePlacementRepository: StoragePlacementRepository,
 
-        @inject(TEAM_CLUSTER_TOKENS.ClusterTransferJobRepository)
+        
         private readonly clusterTransferJobRepository: ClusterTransferJobRepository,
 
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
+        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 

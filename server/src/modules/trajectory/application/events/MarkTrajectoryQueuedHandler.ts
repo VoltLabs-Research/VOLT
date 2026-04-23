@@ -1,20 +1,20 @@
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import PluginExecutionRequestEvent from '@modules/plugin/domain/events/PluginExecutionRequestEvent';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
-import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
-import PluginExecutionRequestEvent from '@modules/plugin/domain/events/PluginExecutionRequestEvent';
-import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 import logger from '@shared/infrastructure/logger';
 
-import { injectable, inject } from 'tsyringe';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import { inject } from 'tsyringe';
 
-@injectable()
+@Subscribe('PluginExecutionRequest')
 export class MarkTrajectoryQueuedHandler implements IEventHandler<PluginExecutionRequestEvent>{
     constructor(
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepo: ITrajectoryRepository,
+        
+        private readonly trajectoryRepo: TrajectoryRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ){}

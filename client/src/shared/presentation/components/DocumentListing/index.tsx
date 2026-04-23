@@ -6,21 +6,18 @@ import type { SortConfig } from '@/shared/domain/sorting/types';
 import { sortData } from '@/shared/utils/sort';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 import queryClient from '@/shared/infrastructure/query/query-client';
-import Button from '@/shared/presentation/components/Button';
-import AsyncMenuItemWrapper from '@/shared/presentation/components/AsyncMenuItemWrapper';
+import { Button, Heading, Popover, Row, SegmentedTabs, Skeleton, Stack, Text } from '@/shared/presentation/primitives';
+import { AsyncMenuItemWrapper } from '@/shared/presentation/primitives';
 import DocumentListingGrid from '@/shared/presentation/components/DocumentListingGrid';
 import DocumentListingTable from '@/shared/presentation/components/DocumentListingTable';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
-import Popover from '@/shared/presentation/components/Popover';
-import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
-import SegmentedTabs from '@/shared/presentation/components/SegmentedTabs';
+import { PopoverMenu } from '@/shared/presentation/primitives';
 import useDocumentListingPagination from '@/shared/presentation/hooks/use-document-listing-pagination';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-params';
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 
 import './DocumentListing.css';
-import Skeleton from '@/shared/presentation/components/Skeleton';
 import { motion } from 'framer-motion';
 import { ArrowDown, ArrowUp, ArrowUpDown, Check, Columns3, ExternalLink, Plus } from 'lucide-react';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
@@ -528,7 +525,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         }
 
         return (
-            <div ref={scrollContainerRef} className='volt-container document-listing-body-container overflow-auto flex-1'>
+            <div ref={scrollContainerRef} className='document-listing-body-container overflow-auto flex-1'>
                 <motion.div
                     initial={prefersReducedMotion ? false : { opacity: 0, y: 15 }}
                     animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
@@ -565,36 +562,36 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     };
 
     return (
-        <div className={`volt-container d-flex column h-max document-listing-container color-secondary gap-1 ${compact ? 'is-compact' : ''}`}>
+        <Stack height='max' gap='1' className={`document-listing-container color-secondary ${compact ? 'is-compact' : ''}`}>
             <span style={VISUALLY_HIDDEN_STYLES} aria-live='polite' aria-atomic='true'>
                 {sortAnnouncement}
             </span>
             {!hideHeader && (
-                <div className={`volt-container d-flex column ${gap}`}>
-                    <div className='volt-container d-flex column gap-1-5 document-listing-header-top-container p-2'>
-                        <div className='volt-container d-flex content-between items-start gap-1-5 document-listing-header-row'>
-                            <div className='volt-container document-listing-header-main d-flex gap-1 items-start'>
+                <div className={`d-flex column ${gap}`}>
+                    <Stack gap='1-5' p='2' className='document-listing-header-top-container'>
+                        <Row justify='between' align='start' gap='1-5' className='document-listing-header-row'>
+                            <Row gap='1' align='start' className='document-listing-header-main'>
                                 {isLoading && !data.length ? (
-                                    <div className='volt-container d-flex column gap-025'>
+                                    <Stack gap='025'>
                                         <Skeleton variant='text' width={220} height={32} />
                                         {description ? <Skeleton variant='text' width={224} height={18} /> : null}
-                                    </div>
+                                    </Stack>
                                 ) : (
-                                    <div className='volt-container document-listing-header-title-block d-flex column gap-025'>
+                                    <Stack gap='025' className='document-listing-header-title-block'>
                                         {typeof title === 'string' ? (
-                                            <h3 className='volt-title font-size-6 font-weight-5 sm:font-size-4 color-primary'>{title}</h3>
+                                            <Heading level={3} size='3xl' weight='medium' className='sm:font-size-4'>{title}</Heading>
                                         ) : (
                                             title
                                         )}
                                         {description ? (
-                                            <p className='volt-text document-listing-header-description font-size-1 color-muted'>
+                                            <Text as='p' size='sm' tone='muted' className='document-listing-header-description'>
                                                 {description}
-                                            </p>
+                                            </Text>
                                         ) : null}
-                                    </div>
+                                    </Stack>
                                 )}
                                 {(headerDocLink || headerMenuTrigger || columnPickerTrigger) && (
-                                    <div className='volt-container d-flex gap-05 items-center'>
+                                    <Row gap='05'>
                                         {headerDocLink}
                                         {columnPickerTrigger && (
                                             <Popover
@@ -650,23 +647,23 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                                                 )}
                                             </Popover>
                                         )}
-                                    </div>
+                                    </Row>
                                 )}
-                            </div>
-                            <div className='volt-container d-flex gap-2 items-center document-listing-header-actions'>
+                            </Row>
+                            <Row gap='2' className='document-listing-header-actions'>
                                 {headerActions}
                                 {createNew && (
                                     <Button variant='solid' intent='brand' onClick={createNew.onCreate} leftIcon={<Plus size={18} />}>
                                         {createNew.buttonTitle}
                                     </Button>
                                 )}
-                            </div>
-                        </div>
-                    </div>
+                            </Row>
+                        </Row>
+                    </Stack>
 
                     {!hideTabs && resolvedTabs.length >= 2 && (
-                        <div className="volt-container">
-                            <div className='volt-container document-listing-header-tabs-container'>
+                        <div>
+                            <div className='document-listing-header-tabs-container'>
                                 <SegmentedTabs
                                     tabs={resolvedTabs}
                                     activeTab={activeTabId}
@@ -675,14 +672,14 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                                     layoutId={`${persistenceKey}-tabs`}
                                 />
                             </div>
-                            <div className='volt-container document-listing-header-filters-container' />
+                            <div className='document-listing-header-filters-container' />
                         </div>
                     )}
                 </div>
             )}
 
             {renderContent()}
-        </div>
+        </Stack>
     );
 };
 

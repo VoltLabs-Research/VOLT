@@ -1,7 +1,6 @@
-import Popover from '@/shared/presentation/components/Popover';
+import { Button, Popover, Stack, Text, Box } from '@/shared/presentation/primitives';
 import { applyMonacoTheme, getMonacoThemeName } from '@/shared/presentation/utilities/ensure-monaco';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
-import Button from '@/shared/presentation/components/Button';
 import Editor from '@monaco-editor/react';
 import { RiCodeSSlashLine } from 'react-icons/ri';
 import { useEffect, useMemo, useState } from 'react';
@@ -50,16 +49,16 @@ const AnalysisConfigPreview = ({ analysis }: AnalysisConfigPreviewProps) => {
             noPadding
             className='overflow-hidden'
         >
-            <div className='volt-container d-flex column' style={{ width: '32rem', maxWidth: '80vw' }} onClick={(event) => event.stopPropagation()}>
-                <div className='volt-container p-1 border-bottom border-subtle'>
-                    <span className='font-size-2 font-weight-6 color-primary'>Analysis Config</span>
-                </div>
+            <Stack style={{ width: '32rem', maxWidth: '80vw' }} onClick={(event) => event.stopPropagation()}>
+                <Box p='1' className='border-bottom border-subtle'>
+                    <Text size='md' weight='bold' tone='primary'>Analysis Config</Text>
+                </Box>
                 <Editor
                     height='20rem'
                     language='json'
                     value={formattedConfig}
                     theme={monacoTheme}
-                    loading={<div className='volt-container p-1 color-secondary'>Loading editor...</div>}
+                    loading={<Box p='1' className='color-secondary'>Loading editor...</Box>}
                     options={{
                         readOnly: true,
                         minimap: { enabled: false },
@@ -70,7 +69,7 @@ const AnalysisConfigPreview = ({ analysis }: AnalysisConfigPreviewProps) => {
                         automaticLayout: true
                     }}
                 />
-            </div>
+            </Stack>
         </Popover>
     );
 };

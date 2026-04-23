@@ -1,6 +1,7 @@
-import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureStatus } from '@modules/team-cluster/utilities/teamClusterSocket';
 import type { TeamClusterServiceExposure } from '@modules/team-cluster/utilities/teamClusterSocket';
-import { injectable } from 'tsyringe';
+import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureStatus } from '@modules/team-cluster/utilities/teamClusterSocket';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+
 import { EventEmitter } from 'node:events';
 
 interface ExposureRegistryChangeEvent {
@@ -12,7 +13,7 @@ const buildRegistryKey = (teamClusterId: string, exposureId: string): string => 
     return `${teamClusterId}:${exposureId}`;
 };
 
-@injectable()
+@Singleton()
 export default class TeamClusterExposureRegistryService {
     private readonly exposuresByRegistryKey = new Map<string, TeamClusterServiceExposure>();
     private readonly registryKeysByTeamClusterId = new Map<string, Set<string>>();

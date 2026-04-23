@@ -9,10 +9,10 @@ import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluste
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
-import Button from '@/shared/presentation/components/Button';
+import { Box, Stack, Row, Text, Heading, Button, Modal, SelectableCard, StatusDot, closeModal, openModal } from '@/shared/presentation/primitives';
+import type { StatusDotTone } from '@/shared/presentation/primitives';
 import CopyableField from '@/shared/presentation/components/CopyableField';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Modal, { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import { sileo } from 'sileo';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ChevronRight } from 'lucide-react';
@@ -56,9 +56,9 @@ const OnboardingStepContent = ({
             : 'enter-right';
 
     return (
-        <div className={`volt-container cluster-onboarding-step d-flex column items-center ${stateClassName} ${className}`} aria-hidden={!isActive} inert={!isActive}>
+        <Stack align='center' className={`cluster-onboarding-step ${stateClassName} ${className}`} aria-hidden={!isActive} inert={!isActive}>
             {children}
-        </div>
+        </Stack>
     );
 };
 
@@ -219,7 +219,7 @@ const ClusterOnboardingPage = () => {
                     Dashboard
                 </Button>
                 <ChevronRight size={14} className='cluster-onboarding-breadcrumb-separator' />
-                <p className='volt-text font-size-2 color-secondary' aria-current='page'>Add new cluster</p>
+                <Text as='p' size='md' tone='secondary' aria-current='page'>Add new cluster</Text>
             </nav>
         );
     }
@@ -253,14 +253,14 @@ const ClusterOnboardingPage = () => {
                 onSignOut={handleSignOut}
                 isSigningOut={isSigningOut}
             >
-                <div className='volt-container cluster-onboarding-success-content d-flex column gap-1 items-center content-center' role='status' aria-live='polite' aria-atomic='true'>
-                    <h1 className='volt-title cluster-onboarding-success-title font-weight-6 color-primary'>
+                <Stack align='center' justify='center' gap='1' className='cluster-onboarding-success-content' role='status' aria-live='polite' aria-atomic='true'>
+                    <Heading level={1} weight='bold' className='cluster-onboarding-success-title'>
                         {successMessage}
-                    </h1>
-                    <p className='volt-text color-secondary'>
+                    </Heading>
+                    <Text as='p' tone='secondary'>
                         Redirecting you to your workspace.
-                    </p>
-                </div>
+                    </Text>
+                </Stack>
             </OnboardingLayout>
         );
     }
@@ -274,65 +274,48 @@ const ClusterOnboardingPage = () => {
             overlay={overlay}
         >
             <>
-                <div className='volt-container cluster-onboarding-center'>
+                <Box className='cluster-onboarding-center'>
                     <OnboardingStepContent step={OnboardingStep.Type} activeStep={step} className='gap-3'>
-                        <div className='volt-container d-flex column gap-1 items-center'>
-                            <div className='volt-container d-flex column gap-075 items-center'>
-                                <h2 className='volt-title cluster-onboarding-title font-size-6 font-weight-6 color-primary'>
+                        <Stack align='center' gap='1'>
+                            <Stack align='center' gap='075'>
+                                <Heading level={2} size='3xl' weight='bold' className='cluster-onboarding-title'>
                                     Connect a cluster
-                                </h2>
-                            </div>
-                            <p className='volt-text cluster-onboarding-description font-size-2-5 color-secondary'>
+                                </Heading>
+                            </Stack>
+                            <Text as='p' tone='secondary' className='cluster-onboarding-description font-size-2-5'>
                                 Clusters provide the compute capacity used to run simulations and analyses in Volt. You can connect more later.
-                            </p>
-                        </div>
+                            </Text>
+                        </Stack>
 
-                        <div className='volt-container cluster-onboarding-cards'>
-                            <button
-                                type='button'
-                                className='cluster-onboarding-card d-flex column gap-075 items-center'
-                                onClick={() => handleSelectType(ClusterType.Computer)}
-                            >
-                                <div className='volt-container cluster-onboarding-card-icon d-flex items-center content-center'>
-                                    <HiOutlineComputerDesktop size={20} />
-                                </div>
-                                <h3 className='volt-title font-size-3 font-weight-6 color-primary'>
-                                    Use my computer
-                                    <br />
-                                    (Useful to start)
-                                </h3>
-                                <p className='volt-text font-size-2 color-secondary cluster-onboarding-card-copy'>
-                                    Use your own computer as a cluster.
-                                </p>
-                            </button>
-
-                            <button
-                                type='button'
-                                className='cluster-onboarding-card d-flex column gap-075 items-center'
-                                onClick={() => handleSelectType(ClusterType.Server)}
-                            >
-                                <div className='volt-container cluster-onboarding-card-icon d-flex items-center content-center'>
-                                    <HiOutlineServerStack size={20} />
-                                </div>
-                                <div className='volt-container d-flex items-center gap-05'>
-                                    <h3 className='volt-title font-size-3 font-weight-6 color-primary'>I have a server</h3>
-                                </div>
-                                <p className='volt-text font-size-2 color-secondary cluster-onboarding-card-copy'>
-                                    Using a server as a cluster enables smoother collaboration across your team.
-                                </p>
-                            </button>
-                        </div>
+                        <Box className='cluster-onboarding-cards'>
+                            <SelectableCard
+                                title={<>Use my computer<br />(Useful to start)</>}
+                                description='Use your own computer as a cluster.'
+                                icon={<HiOutlineComputerDesktop size={20} />}
+                                selected={clusterType === ClusterType.Computer}
+                                onSelect={() => handleSelectType(ClusterType.Computer)}
+                                selectionRole='radio'
+                            />
+                            <SelectableCard
+                                title='I have a server'
+                                description='Using a server as a cluster enables smoother collaboration across your team.'
+                                icon={<HiOutlineServerStack size={20} />}
+                                selected={clusterType === ClusterType.Server}
+                                onSelect={() => handleSelectType(ClusterType.Server)}
+                                selectionRole='radio'
+                            />
+                        </Box>
                     </OnboardingStepContent>
 
                     <OnboardingStepContent step={OnboardingStep.Name} activeStep={step} className='gap-1-5'>
                         <form className='cluster-onboarding-form d-flex column gap-1-5 items-center' onSubmit={handleSubmit}>
-                            <div className='volt-container d-flex column gap-075 items-center'>
-                                <h3 className='volt-title cluster-onboarding-title font-size-5 font-weight-6 color-primary'>
+                            <Stack align='center' gap='075'>
+                                <Heading level={3} size='2xl' weight='bold' className='cluster-onboarding-title'>
                                     Let's name your cluster
-                                </h3>
-                            </div>
+                                </Heading>
+                            </Stack>
 
-                            <div className='volt-container cluster-onboarding-name-input'>
+                            <Box className='cluster-onboarding-name-input'>
                                 <FormFieldRHF
                                     label='Cluster name'
                                     placeholder='e.g., Research Lab Cluster'
@@ -345,7 +328,7 @@ const ClusterOnboardingPage = () => {
                                         }
                                     }}
                                 />
-                            </div>
+                            </Box>
 
                             <Button
                                 className='cluster-onboarding-continue-btn'
@@ -360,28 +343,32 @@ const ClusterOnboardingPage = () => {
                             </Button>
                         </form>
                     </OnboardingStepContent>
-                </div>
+                </Box>
 
                 <Modal
                     id={INSTALL_MODAL_ID}
                     title={`Copy & Paste in your ${targetLabel}`}
                     description='This command installs the Volt Cluster Daemon, enabling Volt servers to communicate with the machine and use it as a compute resource.'
                 >
-                    <div className='volt-container d-flex column gap-1 p-1'>
+                    <Stack gap='1' p='1'>
                         <CopyableField
                             value={installCommand}
                             successMessage='Install command copied'
                         />
 
-                        <div className='volt-container cluster-onboarding-status-row d-flex items-center gap-075' role='status' aria-live='polite' aria-atomic='true'>
-                            <div className='volt-container d-flex items-center gap-05'>
-                                <span className={`cluster-onboarding-status-dot variant-${statusVariant}`} />
-                                <p className='volt-text font-size-2 color-secondary'>
+                        <Row gap='075' className='cluster-onboarding-status-row' role='status' aria-live='polite' aria-atomic='true'>
+                            <Row gap='05'>
+                                <StatusDot
+                                    tone={statusVariant === 'inactive' ? 'neutral' : (statusVariant as StatusDotTone)}
+                                    pulse={statusVariant !== 'inactive'}
+                                    glow={statusVariant !== 'inactive'}
+                                />
+                                <Text as='p' size='md' tone='secondary'>
                                     {statusLabel}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                                </Text>
+                            </Row>
+                        </Row>
+                    </Stack>
                 </Modal>
 
                 <DeleteClusterModal

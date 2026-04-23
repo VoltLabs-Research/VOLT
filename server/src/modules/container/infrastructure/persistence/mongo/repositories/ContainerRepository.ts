@@ -1,20 +1,20 @@
-import { Container } from '@modules/container/domain/entities/Container';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { ContainerModel } from '@modules/container/infrastructure/persistence/mongo/models/ContainerModel';
-import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import { Container } from '@modules/container/domain/entities/Container';
 import containerMapper from '@modules/container/infrastructure/persistence/mongo/mappers/ContainerMapper';
-import { injectable } from 'tsyringe';
+import { ContainerModel } from '@modules/container/infrastructure/persistence/mongo/models/ContainerModel';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import { Transient } from '@shared/infrastructure/di/decorators';
+import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+
 import type { IContainerProps } from '@modules/container/domain/entities/Container';
-import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
-import type { FindOptions } from '@shared/domain/port/IBaseRepository';
 import type { IContainer as IContainerDoc } from '@modules/container/infrastructure/persistence/mongo/models/ContainerModel';
+import type { FindOptions } from '@shared/domain/port/IBaseRepository';
 
 const PLACEHOLDER_INTERNAL_IP = '0.0.0.0';
 const PLACEHOLDER_PUBLIC_PORT = 0;
 
-@injectable()
-export class ContainerRepository extends MongooseBaseRepository<Container, IContainerProps, IContainerDoc> implements IContainerRepository {
+@Transient()
+export class ContainerRepository extends MongooseBaseRepository<Container, IContainerProps, IContainerDoc> {
     constructor() {
         super(ContainerModel, containerMapper);
     }

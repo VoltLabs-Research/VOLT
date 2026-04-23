@@ -4,11 +4,10 @@ import {
     getTeamMemberRolePermissions,
     isPopulatedTeamMemberRole
 } from '@modules/team/domain/entities/team-member/TeamMember';
-import { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import { AuthenticationType } from '@shared/infrastructure/http/middleware/authentication';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import { AuthenticationType } from '@shared/infrastructure/http/middleware/authentication';
 import {
     HttpRequestTeamContextSource,
     setHttpRequestContextTeam,
@@ -16,8 +15,8 @@ import {
 } from '@shared/infrastructure/http/request-context';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
-import { container } from 'tsyringe';
 import type { NextFunction, Response } from 'express';
+import { container } from 'tsyringe';
 
 interface TeamMembershipFilter {
     user: string;
@@ -137,7 +136,7 @@ export const checkTeamMembership = async (req: AuthenticatedRequest, res: Respon
         );
     }
 
-    const repository = container.resolve<ITeamMemberRepository>(TEAM_TOKENS.TeamMemberRepository);
+    const repository = container.resolve(TeamMemberRepository);
     const filter: TeamMembershipFilter = {
         user: userId,
         team: teamId

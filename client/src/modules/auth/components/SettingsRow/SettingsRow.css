@@ -6,10 +6,6 @@
     background: var(--hover-bg);
 }
 
-.settings-row-content {
-    min-width: 0;
-}
-
 @media (max-width: 640px) {
     .settings-row {
         flex-wrap: wrap;

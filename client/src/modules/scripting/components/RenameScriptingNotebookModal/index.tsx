@@ -1,6 +1,7 @@
-import Modal, { closeModal } from '@/shared/presentation/components/Modal';
+import { Modal, closeModal } from '@/shared/presentation/primitives';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
+import { Text } from '@/shared/presentation/primitives';
 import { RENAME_SCRIPTING_NOTEBOOK_MODAL_ID } from '@/modules/scripting/hooks/use-notebooks-listing';
 import { useCallback, useEffect, useState } from 'react';
 import type { ModalFooterAction } from '@/shared/presentation/components/ModalFooterActions';
@@ -104,9 +105,9 @@ const RenameScriptingNotebookModal = ({
         >
             <form className='p-1-5 d-flex column gap-075' onSubmit={handleFormSubmit}>
                 {notebook && (
-                    <p className='volt-text font-size-1 color-secondary text-truncate'>
+                    <Text as='p' size='sm' tone='secondary' truncate>
                         Current name: {notebook.title || 'Untitled notebook'}
-                    </p>
+                    </Text>
                 )}
                 <FormFieldRHF
                     label='Notebook title'
@@ -117,9 +118,9 @@ const RenameScriptingNotebookModal = ({
                     inputProps={inputProps}
                     error={error}
                 />
-                <p className='volt-text font-size-1 color-muted'>
+                <Text as='p' size='sm' tone='muted'>
                     Use up to 120 characters.
-                </p>
+                </Text>
             </form>
         </Modal>
     );

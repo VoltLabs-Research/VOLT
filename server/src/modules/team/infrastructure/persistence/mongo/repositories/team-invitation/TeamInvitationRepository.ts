@@ -1,14 +1,13 @@
-import { ITeamInvitationRepository } from '@modules/team/domain/port/team-invitation/ITeamInvitationRepository';
 import TeamInvitation, { TeamInvitationProps, TeamInvitationStatus } from '@modules/team/domain/entities/team-invitation/TeamInvitation';
-import TeamInvitationModel, { TeamInvitationDocument } from '@modules/team/infrastructure/persistence/mongo/models/team-invitation/TeamInvitationModel';
 import teamInvitationMapper from '@modules/team/infrastructure/persistence/mongo/mappers/team-invitation/TeamInvitationMapper';
+import TeamInvitationModel, { TeamInvitationDocument } from '@modules/team/infrastructure/persistence/mongo/models/team-invitation/TeamInvitationModel';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-import { injectable } from 'tsyringe';
 
-@injectable()
+
+@Singleton()
 export default class TeamInvitationRepository
-    extends MongooseBaseRepository<TeamInvitation, TeamInvitationProps, TeamInvitationDocument>
-    implements ITeamInvitationRepository{
+    extends MongooseBaseRepository<TeamInvitation, TeamInvitationProps, TeamInvitationDocument>{
     
     constructor(){
         super(TeamInvitationModel, teamInvitationMapper);

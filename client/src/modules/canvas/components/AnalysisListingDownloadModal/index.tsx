@@ -1,7 +1,6 @@
 import { useAnalysisListingExportOptionsQuery } from '@/modules/plugin/hooks/listing/queries';
-import Modal, { closeModal } from '@/shared/presentation/components/Modal';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import LiquidToggle from '@/shared/presentation/components/LiquidToggle';
+import { Modal, closeModal, LiquidToggle, Stack, Row, Text } from '@/shared/presentation/primitives';
 import './AnalysisListingDownloadModal.css';
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -167,11 +166,11 @@ const AnalysisListingDownloadModal = ({
         value: boolean,
         onChange: (nextValue: boolean) => void
     ) => (
-        <div key={rowKey} className='volt-container analysis-listing-download-modal__option-row d-flex content-between items-center gap-1'>
-            <p id={`${fieldKey}-label`} className='volt-text analysis-listing-download-modal__option-label font-size-1 color-primary'>
+        <Row key={rowKey} justify='between' gap='1' className='analysis-listing-download-modal__option-row'>
+            <Text as='p' id={`${fieldKey}-label`} size='sm' tone='primary' className='analysis-listing-download-modal__option-label'>
                 {label}
-            </p>
-            <div className='volt-container analysis-listing-download-modal__option-toggle'>
+            </Text>
+            <div className='analysis-listing-download-modal__option-toggle'>
                 <LiquidToggle
                     id={`${fieldKey}-toggle`}
                     pressed={value}
@@ -179,7 +178,7 @@ const AnalysisListingDownloadModal = ({
                     aria-labelledby={`${fieldKey}-label`}
                 />
             </div>
-        </div>
+        </Row>
     );
 
     const isLoading = optionsQuery.isLoading && !optionsQuery.data;
@@ -212,27 +211,27 @@ const AnalysisListingDownloadModal = ({
                 />
             )}
         >
-            <div className='volt-container analysis-listing-download-modal d-flex column gap-1 p-1-5'>
+            <Stack gap='1' p='1-5' className='analysis-listing-download-modal'>
                 {isLoading && (
-                    <p className='volt-text font-size-1 color-secondary'>
+                    <Text as='p' size='sm' tone='secondary'>
                         Loading available listings and sublistings...
-                    </p>
+                    </Text>
                 )}
 
                 {hasError && (
-                    <p className='volt-text font-size-1 color-danger'>
+                    <Text as='p' size='sm' className='color-danger'>
                         Failed to load export options for this analysis.
-                    </p>
+                    </Text>
                 )}
 
                 {!isLoading && !hasError && optionsData && (
                     <>
                         {!hasAvailableOptions ? (
-                            <p className='volt-text analysis-listing-download-modal__empty font-size-1 color-muted'>
+                            <Text as='p' size='sm' tone='muted' className='analysis-listing-download-modal__empty'>
                                 This analysis does not expose downloadable CSV files.
-                            </p>
+                            </Text>
                         ) : (
-                            <div className='volt-container analysis-listing-download-modal__options d-flex column gap-05'>
+                            <Stack gap='05' className='analysis-listing-download-modal__options'>
                                 {optionsData.hasConfig && renderOptionRow(
                                     'analysis-download-config',
                                     'analysis-download-config',
@@ -258,11 +257,11 @@ const AnalysisListingDownloadModal = ({
                                         (next) => toggleSubListing(subListing.name, next)
                                     )
                                 ))}
-                            </div>
+                            </Stack>
                         )}
                     </>
                 )}
-            </div>
+            </Stack>
         </Modal>
     );
 };

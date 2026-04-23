@@ -7,7 +7,7 @@ import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-
 import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
 import SidebarExpandableSection from '@/shared/presentation/components/SidebarExpandableSection';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
-import Tooltip from '@/shared/presentation/components/Tooltip';
+import { Box, Tooltip } from '@/shared/presentation/primitives';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useMemo } from 'react';
@@ -230,7 +230,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
         const Icon = selected ? iconPair.active : iconPair.inactive;
 
         const content = (
-            <div className='volt-container sidebar-nav-item-wrapper'>
+            <Box className='sidebar-nav-item-wrapper'>
                 <SidebarNavItem
                     label={item.label}
                     icon={Icon}
@@ -238,7 +238,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
                     onClick={onClick}
                     disabled={!isAllowed}
                 />
-            </div>
+            </Box>
         );
 
         const tooltipContent = isAllowed

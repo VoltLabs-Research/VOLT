@@ -1,4 +1,4 @@
-import Button from '@/shared/presentation/components/Button';
+import { Stack, Box, Button } from '@/shared/presentation/primitives';
 import DangerZone from '@/shared/presentation/components/DangerZone';
 import { IoExitOutline } from 'react-icons/io5';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
@@ -26,7 +26,7 @@ const GeneralTab = ({
     onSave,
     onLeave
 }: GeneralTabProps) => (
-    <div className='volt-container d-flex column gap-1'>
+    <Stack gap='1'>
         <FormFieldRHF
             label='Group Name'
             value={groupName}
@@ -42,7 +42,7 @@ const GeneralTab = ({
             disabled={!canEdit}
         />
         {canEdit && (
-            <div className='volt-container d-flex content-end'>
+            <Box display='flex' justify='end'>
                 <Button
                     variant='solid'
                     intent='brand'
@@ -52,7 +52,7 @@ const GeneralTab = ({
                 >
                     Save Changes
                 </Button>
-            </div>
+            </Box>
         )}
 
         <DangerZone
@@ -62,7 +62,7 @@ const GeneralTab = ({
             actionIcon={<IoExitOutline />}
             onAction={onLeave}
         />
-    </div>
+    </Stack>
 );
 
 export default GeneralTab;

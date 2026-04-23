@@ -1,7 +1,7 @@
+import { Button } from '@/shared/presentation/primitives';
 import { useTestSSHConnectionMutation } from '@/modules/ssh/hooks/queries';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import Button from '@/shared/presentation/components/Button';
 import { useId, useState } from 'react';
 import { TbCheck, TbX } from 'react-icons/tb';
 import type { ReactNode } from 'react';
@@ -53,7 +53,7 @@ const SSHConnectionTestButton = ({ connectionId, disabled }: SSHConnectionTestBu
         }
 
         testResultContent = (
-            <div id={statusId} className={`volt-container d-flex items-center gap-05 font-size-2 ${testResultClassName}`} role='status' aria-live='polite' aria-atomic='true'>
+            <div id={statusId} className={`d-flex items-center gap-05 font-size-2 ${testResultClassName}`} role='status' aria-live='polite' aria-atomic='true'>
                 {testResultIcon && <span aria-hidden='true'>{testResultIcon}</span>}
                 <span>{testResultMessage}</span>
             </div>
@@ -109,7 +109,7 @@ const SSHConnectionTestButton = ({ connectionId, disabled }: SSHConnectionTestBu
     };
 
     return (
-        <div className='volt-container d-flex items-center gap-1'>
+        <div className='d-flex items-center gap-1'>
             <Button
                 type='button'
                 variant='outline'

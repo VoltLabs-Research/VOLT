@@ -1,18 +1,17 @@
-import { NOTIFICATION_TOKENS } from '@modules/notification/infrastructure/di/NotificationTokens';
 import type { GetMyNotificationsInputDTO, GetMyNotificationsOutputDTO } from '@modules/notification/application/dtos';
-import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
-import type { INotificationRepository } from '@modules/notification/domain/port/INotificationRepository';
+import NotificationRepository from '@modules/notification/infrastructure/persistence/mongo/repositories/NotificationRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
+import { Result } from '@shared/domain/port/Result';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export default class GetMyNotificationsUseCase
     implements IUseCase<GetMyNotificationsInputDTO, GetMyNotificationsOutputDTO, ApplicationError> {
 
     constructor(
-        @inject(NOTIFICATION_TOKENS.NotificationRepository)
-        private notificationRepo: INotificationRepository
+        
+        private notificationRepo: NotificationRepository
     ){}
 
     async execute(input: GetMyNotificationsInputDTO): Promise<Result<GetMyNotificationsOutputDTO, ApplicationError>> {

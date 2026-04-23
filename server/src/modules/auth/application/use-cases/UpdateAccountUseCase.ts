@@ -1,22 +1,21 @@
-import { UpdateAccountInputDTO, UpdateAccountOutputDTO } from '@modules/auth/application/dtos/UpdateAccountDTO';
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import User from '@modules/auth/domain/entities/User';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
+import { UpdateAccountInputDTO, UpdateAccountOutputDTO } from '@modules/auth/application/dtos/UpdateAccountDTO';
 import type { UserProps } from '@modules/auth/domain/entities/User';
-import type { IAvatarService } from '@modules/auth/domain/port/IAvatarService';
-import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
+import User from '@modules/auth/domain/entities/User';
+import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
+import AvatarService from '@modules/auth/infrastructure/services/AvatarService';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export default class UpdateAccountUseCase implements IUseCase<UpdateAccountInputDTO, UpdateAccountOutputDTO, ApplicationError>{
     constructor(
-        @inject(AUTH_TOKENS.UserRepository)
-        private readonly userRepository: IUserRepository,
-        @inject(AUTH_TOKENS.AvatarService)
-        private readonly avatarService: IAvatarService
+        
+        private readonly userRepository: UserRepository,
+        
+        private readonly avatarService: AvatarService
     ) {}
 
     async execute(input: UpdateAccountInputDTO): Promise<Result<UpdateAccountOutputDTO, ApplicationError>>{

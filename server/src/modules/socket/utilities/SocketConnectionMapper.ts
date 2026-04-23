@@ -1,10 +1,10 @@
-import { injectable } from 'tsyringe';
-import type { Socket } from 'socket.io';
-import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import type { ISocketConnectionMapper } from '@modules/socket/infrastructure/contracts/ISocketConnectionMapper';
 
-@injectable()
-export default class SocketConnectionMapper implements ISocketConnectionMapper {
+import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import type { Socket } from 'socket.io';
+
+@Singleton()
+export default class SocketConnectionMapper {
     toDomain(connection: unknown): ISocketConnection {
         const socket = connection as Socket & {
             user?: ISocketConnection['user'] | null;

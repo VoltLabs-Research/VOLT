@@ -1,7 +1,7 @@
+import { Button } from '@/shared/presentation/primitives';
 import { useCallback } from 'react';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
+import { CollapsibleSection } from '@/shared/presentation/primitives';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Button from '@/shared/presentation/components/Button';
 import { Plus } from 'lucide-react';
 import useNodeCollectionForm from '@/modules/plugin/hooks/plugin/use-node-collection-form';
 import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node-reference-autocomplete';
@@ -99,7 +99,7 @@ const IfStatementEditor = ({ node }: EditorProps) => {
                 </CollapsibleSection>
             ))}
 
-            <div className="volt-container" style={{ marginTop: conditions.length > 0 ? '0.5rem' : 0 }}>
+            <div  style={{ marginTop: conditions.length > 0 ? '0.5rem' : 0 }}>
                 <Button
                     variant='outline'
                     intent='neutral'

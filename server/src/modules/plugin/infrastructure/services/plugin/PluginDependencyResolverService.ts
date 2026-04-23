@@ -1,12 +1,11 @@
 import Plugin, { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
-import { ArgumentType } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
 import type { ArgumentDefinition } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
+import { ArgumentType } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
-import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
+import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
 import { isArgumentVisible } from '@modules/plugin/utilities/plugin/argument-visibility';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
-import { injectable, inject } from 'tsyringe';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 
 interface PluginDependencyTraversalResult {
     dependencies: Plugin[];
@@ -105,11 +104,11 @@ const collectArgumentPluginReferenceExecutions = (
     }
 };
 
-@injectable()
+@Singleton()
 export class PluginDependencyResolverService {
     constructor(
-        @inject(PLUGIN_TOKENS.PluginRepository)
-        private readonly pluginRepository: IPluginRepository
+        
+        private readonly pluginRepository: PluginRepository
     ) {}
 
     async collectTransitivePublishedDependencies(plugin: Plugin): Promise<PluginDependencyTraversalResult> {

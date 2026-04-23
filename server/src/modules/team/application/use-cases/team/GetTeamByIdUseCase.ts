@@ -1,14 +1,13 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import type { TeamProps } from '@modules/team/domain/entities/team/Team';
+import TeamRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team/TeamRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { Result } from '@shared/domain/port/Result';
-import { injectable, inject } from 'tsyringe';
-import type { TeamProps } from '@modules/team/domain/entities/team/Team';
-import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
 import type { FindOptions } from '@shared/domain/port/IBaseRepository';
 import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
+import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
+import { Result } from '@shared/domain/port/Result';
+import { injectable } from 'tsyringe';
 
 interface GetTeamByIdInput {
     teamId: string;
@@ -18,8 +17,8 @@ interface GetTeamByIdInput {
 @injectable()
 export default class GetTeamByIdUseCase implements IUseCase<GetTeamByIdInput, PersistedOutput<TeamProps>, ApplicationError> {
     constructor(
-        @inject(TEAM_TOKENS.TeamRepository)
-        private readonly repository: ITeamRepository
+        
+        private readonly repository: TeamRepository
     ) {}
 
     async execute(input: GetTeamByIdInput): Promise<Result<PersistedOutput<TeamProps>, ApplicationError>> {

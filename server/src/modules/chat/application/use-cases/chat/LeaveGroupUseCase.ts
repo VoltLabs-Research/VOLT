@@ -1,22 +1,20 @@
-import { LeaveGroupInputDTO } from '@modules/chat/application/dtos/chat/LeaveGroupDTO';
-import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { resolveGroupChat } from '@modules/chat/utilities/chat/resolveGroupChat';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { LeaveGroupInputDTO } from '@modules/chat/application/dtos/chat/LeaveGroupDTO';
+import ChatRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/chat/ChatRepository';
+import { resolveGroupChat } from '@modules/chat/utilities/chat/resolveGroupChat';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
-import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
-import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export class LeaveGroupUseCase implements IUseCase<LeaveGroupInputDTO, null, ApplicationError> {
     constructor(
-        @inject(CHAT_TOKENS.ChatRepository)
-        private chatRepo: IChatRepository,
-        @inject(SOCKET_TOKENS.SocketEmitter)
-        private socketEmitter: ISocketEmitter
+        
+        private chatRepo: ChatRepository,
+        
+        private socketEmitter: SocketIOEmitter
     ){}
 
     async execute(input: LeaveGroupInputDTO): Promise<Result<null, ApplicationError>> {

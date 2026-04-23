@@ -1,18 +1,17 @@
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { CascadeDeleteEachOnTeamDeletedHandler } from '@shared/application/events/CascadeDeleteEachOnTeamDeletedHandler';
-import DeleteTrajectoryByIdUseCase from '@modules/trajectory/application/use-cases/trajectory/DeleteTrajectoryByIdUseCase';
 import TeamDeletedEvent from '@modules/team/domain/events/team/TeamDeletedEvent';
+import DeleteTrajectoryByIdUseCase from '@modules/trajectory/application/use-cases/trajectory/DeleteTrajectoryByIdUseCase';
 import Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
-import { inject, injectable } from 'tsyringe';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import { CascadeDeleteEachOnTeamDeletedHandler } from '@shared/application/events/CascadeDeleteEachOnTeamDeletedHandler';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-@injectable()
+@Subscribe('team.deleted')
 export default class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDeletedHandler<Trajectory> {
     constructor(
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        protected readonly repository: ITrajectoryRepository,
+        
+        protected readonly repository: TrajectoryRepository,
 
-        @inject(DeleteTrajectoryByIdUseCase)
+        
         private readonly deleteTrajectoryByIdUseCase: DeleteTrajectoryByIdUseCase
     ) {
         super();

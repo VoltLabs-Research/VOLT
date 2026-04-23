@@ -1,4 +1,5 @@
 import './DashboardCard.css';
+import { Box } from '@/shared/presentation/primitives';
 import type { HTMLAttributes, ReactNode } from 'react';
 
 interface DashboardCardProps extends HTMLAttributes<HTMLDivElement> {
@@ -35,9 +36,9 @@ const DashboardCard = ({
     }
 
     return (
-        <div className={`volt-container ${classNames.join(' ')}`} {...props}>
+        <Box className={classNames.join(' ')} {...props}>
             {children}
-        </div>
+        </Box>
     );
 };
 

@@ -66,38 +66,6 @@
     width: 100%;
 }
 
-.cluster-onboarding-card {
-    width: 100%;
-    padding: 1.25rem;
-    border: 1px solid var(--color-border-soft);
-    border-radius: var(--radius-lg);
-    background: var(--color-surface-1);
-    cursor: pointer;
-    text-align: center;
-    transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.cluster-onboarding-card:focus-visible {
-    outline: none;
-    border-color: var(--focus-ring);
-    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
-    background: var(--color-surface-2);
-}
-
-.cluster-onboarding-card:hover {
-    border-color: var(--color-brand-primary);
-    background: var(--color-surface-2);
-}
-
-.cluster-onboarding-card-icon {
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: var(--radius-md);
-    color: var(--color-brand-primary);
-    background: color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
-    flex-shrink: 0;
-}
-
 .cluster-onboarding-name-input {
     width: 100%;
 }
@@ -113,40 +81,6 @@
 .cluster-onboarding-status-row {
     flex-wrap: wrap;
     row-gap: 0.5rem;
-}
-
-.cluster-onboarding-status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    animation: cluster-onboarding-pulse 1.5s ease-in-out infinite;
-}
-
-.cluster-onboarding-status-dot.variant-success {
-    background: var(--status-success);
-    box-shadow: 0 0 6px var(--status-success);
-}
-
-.cluster-onboarding-status-dot.variant-warning {
-    background: var(--status-warning);
-    box-shadow: 0 0 6px var(--status-warning);
-}
-
-.cluster-onboarding-status-dot.variant-danger {
-    background: var(--status-error);
-    box-shadow: 0 0 6px var(--status-error);
-}
-
-.cluster-onboarding-status-dot.variant-inactive {
-    background: var(--color-text-muted);
-    box-shadow: none;
-    animation: none;
-}
-
-@keyframes cluster-onboarding-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
 }
 
 .cluster-onboarding-success-content {
@@ -216,7 +150,6 @@
 
 @media (prefers-reduced-motion: reduce) {
     .cluster-onboarding-step,
-    .cluster-onboarding-card,
     .cluster-onboarding-success-title {
         transition: none;
         animation: none;
@@ -228,9 +161,5 @@
     .cluster-onboarding-step.enter-right {
         transform: none;
         filter: none;
-    }
-
-    .cluster-onboarding-status-dot {
-        animation: none;
     }
 }

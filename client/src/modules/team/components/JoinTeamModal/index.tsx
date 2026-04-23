@@ -4,7 +4,7 @@ import { runAction } from '@/shared/presentation/actions/run-action';
 import { useState } from 'react';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Modal, { resetModal } from '@/shared/presentation/components/Modal';
+import { Modal, resetModal } from '@/shared/presentation/primitives';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { joinTeamSchema } from './validation-schema';
@@ -100,7 +100,7 @@ export const JoinTeamModal = ({
                 />
 
                 {apiError && (
-                    <div className='volt-container team-creator-error radius-sm font-size-2'>
+                    <div className='team-creator-error radius-sm font-size-2'>
                         {apiError}
                     </div>
                 )}

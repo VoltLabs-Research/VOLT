@@ -1,4 +1,5 @@
 import CanvasRenderSubsectionContent from '../CanvasRenderSections/CanvasRenderSubsectionContent';
+import { Stack, SectionLabel } from '@/shared/presentation/primitives';
 import type { RenderGroup } from '../CanvasRenderSections/types';
 
 interface RenderGroupSubmenuContentProps {
@@ -10,18 +11,16 @@ const RenderGroupSubmenuContent = ({ group }: RenderGroupSubmenuContentProps) =>
     const showSubsectionLabels = visibleSubsections.length > 1;
 
     return (
-        <div className="volt-container canvas-render-menu-submenu d-flex column">
+        <Stack className="canvas-render-menu-submenu">
             {visibleSubsections.map((subsection, index) => (
-                <div key={`${group.id}-${subsection.label}-${index}`} className="volt-container canvas-render-menu-submenu-section d-flex column gap-05">
+                <Stack key={`${group.id}-${subsection.label}-${index}`} gap='05' className="canvas-render-menu-submenu-section">
                     {showSubsectionLabels && (
-                        <span className="canvas-render-menu-submenu-title font-size-05 font-weight-6 color-muted">
-                            {subsection.label}
-                        </span>
+                        <SectionLabel>{subsection.label}</SectionLabel>
                     )}
                     <CanvasRenderSubsectionContent subsection={subsection} className="canvas-render-menu-submenu-body" />
-                </div>
+                </Stack>
             ))}
-        </div>
+        </Stack>
     );
 };
 

@@ -1,11 +1,10 @@
-import Skeleton from '@/shared/presentation/components/Skeleton';
-
+import { Skeleton } from '@/shared/presentation/primitives';
 interface FileRowSkeletonProps {
     className?: string;
 };
 
 const FileRowSkeleton = ({ className = 'file-explorer-row' }: FileRowSkeletonProps) => (
-    <div className={`volt-container ${className}`}>
+    <div className={`${className}`}>
         <Skeleton variant='circular' width={18} height={18} />
         <Skeleton variant='text' width='60%' height={20} />
         <Skeleton variant='text' width={60} height={18} />

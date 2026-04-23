@@ -1,8 +1,7 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Modal, { closeModal } from '@/shared/presentation/components/Modal';
-import Select from '@/shared/presentation/components/Select';
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
+import { Stack, Row, Text, Heading, Modal, StatusBadge, closeModal } from '@/shared/presentation/primitives';
+import { Select } from '@/shared/presentation/primitives';
 import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import {
     describeTeamClusterDraining,
@@ -97,31 +96,31 @@ const ClusterRoleModal = ({ teamCluster, onSave, onClose }: ClusterRoleModalProp
             )}
             onClose={handleClose}
         >
-            <div className='volt-container d-flex column gap-1 p-1-5'>
-                <div className='volt-container d-flex column gap-05'>
-                    <h3 className='volt-title font-size-2 font-weight-5 color-secondary'>Cluster scheduling role</h3>
-                    <p className='volt-text font-size-2 color-secondary'>{saveMessage}</p>
-                </div>
+            <Stack gap='1' p='1-5'>
+                <Stack gap='05'>
+                    <Heading level={3} size='md' weight='medium' tone='secondary'>Cluster scheduling role</Heading>
+                    <Text as='p' size='md' tone='secondary'>{saveMessage}</Text>
+                </Stack>
                 {teamCluster && (
-                    <div className='volt-container d-flex column gap-075 p-1 radius-md bg-page'>
-                        <div className='volt-container d-flex items-center gap-05 flex-wrap'>
-                            <p className='volt-text font-size-1 color-muted'>Desired</p>
+                    <Stack gap='075' p='1' radius='md' className='bg-page'>
+                        <Row gap='05' wrap>
+                            <Text as='p' size='sm' tone='muted'>Desired</Text>
                             <StatusBadge variant={getTeamClusterRoleBadgeVariant(teamCluster.roleConfig.desiredRole)} size='compact'>
                                 {getTeamClusterRoleLabel(teamCluster.roleConfig.desiredRole)}
                             </StatusBadge>
-                            <p className='volt-text font-size-1 color-muted'>Effective</p>
+                            <Text as='p' size='sm' tone='muted'>Effective</Text>
                             <StatusBadge variant={getTeamClusterRoleBadgeVariant(teamCluster.roleConfig.effectiveRole)} size='compact'>
                                 {getTeamClusterRoleLabel(teamCluster.roleConfig.effectiveRole)}
                             </StatusBadge>
-                        </div>
+                        </Row>
                         {isTransitionPending && (
-                            <p className='volt-text font-size-1 color-warning'>
+                            <Text as='p' size='sm' className='color-warning'>
                                 {drainingSummary
                                     ? `${drainingSummary}. Effective role is still converging.`
                                     : 'The daemon is still converging to the desired role.'}
-                            </p>
+                            </Text>
                         )}
-                    </div>
+                    </Stack>
                 )}
                 <Select
                     options={TEAM_CLUSTER_ROLE_OPTIONS}
@@ -135,24 +134,24 @@ const ClusterRoleModal = ({ teamCluster, onSave, onClose }: ClusterRoleModalProp
                     placeholder='Select a role...'
                     disabled={isSubmitting}
                 />
-                <div className='volt-container d-flex column gap-05 p-1 radius-md bg-page'>
-                    <div className='volt-container d-flex items-center gap-05 flex-wrap'>
-                        <p className='volt-text font-size-1 color-muted'>Selected role</p>
+                <Stack gap='05' p='1' radius='md' className='bg-page'>
+                    <Row gap='05' wrap>
+                        <Text as='p' size='sm' tone='muted'>Selected role</Text>
                         <StatusBadge variant={getTeamClusterRoleBadgeVariant(selectedRole)} size='compact'>
                             {getTeamClusterRoleLabel(selectedRole)}
                         </StatusBadge>
-                    </div>
-                    <p className='volt-text font-size-2 color-secondary'>
+                    </Row>
+                    <Text as='p' size='md' tone='secondary'>
                         {getTeamClusterRoleDescription(selectedRole)}
-                    </p>
-                    <p className='volt-text font-size-1 color-muted'>
+                    </Text>
+                    <Text as='p' size='sm' tone='muted'>
                         {getTeamClusterRoleSummary(selectedRole)}
-                    </p>
-                </div>
+                    </Text>
+                </Stack>
                 {error && (
-                    <p className='volt-text font-size-2 color-danger'>{error}</p>
+                    <Text as='p' size='md' className='color-danger'>{error}</Text>
                 )}
-            </div>
+            </Stack>
         </Modal>
     );
 };

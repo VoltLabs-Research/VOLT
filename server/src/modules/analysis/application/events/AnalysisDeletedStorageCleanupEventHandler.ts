@@ -1,29 +1,29 @@
-import { getAnalysisStorageCleanupTargets } from '@modules/analysis/utilities/storage-cleanup-prefixes';
-import type { AnalysisStorageCleanupTarget } from '@modules/analysis/utilities/storage-cleanup-prefixes';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
+import type { AnalysisStorageCleanupTarget } from '@modules/analysis/utilities/storage-cleanup-prefixes';
+import { getAnalysisStorageCleanupTargets } from '@modules/analysis/utilities/storage-cleanup-prefixes';
+import ClusterTransferJobRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/ClusterTransferJobRepository';
+import StoragePlacementRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/StoragePlacementRepository';
+import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
-import type ClusterTransferJobRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/ClusterTransferJobRepository';
-import type StoragePlacementRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/StoragePlacementRepository';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import logger from '@shared/infrastructure/logger';
+import { inject } from 'tsyringe';
 
-@injectable()
+@Subscribe('analysis.deleted')
 export default class AnalysisDeletedStorageCleanupEventHandler implements IEventHandler<AnalysisDeletedEvent> {
     constructor(
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
 
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient)
+        
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
 
-        @inject(TEAM_CLUSTER_TOKENS.StoragePlacementRepository)
+        
         private readonly storagePlacementRepository: StoragePlacementRepository,
 
-        @inject(TEAM_CLUSTER_TOKENS.ClusterTransferJobRepository)
+        
         private readonly clusterTransferJobRepository: ClusterTransferJobRepository
     ) {}
 

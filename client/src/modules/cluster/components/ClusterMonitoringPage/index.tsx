@@ -3,7 +3,7 @@ import ClustersEmptyState from '@/modules/cluster/components/ClustersEmptyState'
 import MetricsCards from '@/modules/cluster/components/MetricsCards';
 import useClusterMonitoringPage from '@/modules/cluster/hooks/use-cluster-monitoring-page';
 import { getClusterMetricsRecoveryState } from '@/modules/cluster/utilities/cluster-live-metrics-status';
-import Loader from '@/shared/presentation/components/Loader';
+import { Box, Stack, Loader } from '@/shared/presentation/primitives';
 import RecoveryState from '@/shared/presentation/components/RecoveryState';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
@@ -39,14 +39,14 @@ const createIdleCallbackHandle = (onIdle: () => void, timeoutMs: number): IdleCa
 };
 
 const renderDeferredVisualizationsFallback = () => (
-    <div className='volt-container d-flex items-center justify-center p-2' style={{ minHeight: '18rem' }}>
+    <Box display='flex' align='center' justify='center' p='2' style={{ minHeight: '18rem' }}>
         <Loader
             scale={0.35}
             isFixed={false}
             label='Loading live charts'
             announce
             reducedMotionLabel='Loading live charts' />
-    </div>
+    </Box>
 );
 
 const ClusterMonitoringPage = () => {
@@ -106,8 +106,8 @@ const ClusterMonitoringPage = () => {
     const shouldShowProgressiveVisualizationLoader = hasRenderableMetrics && !shouldRenderVisualizations;
 
     return (
-        <div className='volt-container clusters-page vh-max color-primary'>
-            <div className='volt-container clusters-main d-flex column gap-1-5 w-max'>
+        <Box className='clusters-page vh-max color-primary'>
+            <Stack gap='1-5' width='max' className='clusters-main'>
                 {vm.isLoading && !vm.hasClusters && (
                     <Loader scale={0.5} isFixed={false} />
                 )}
@@ -130,28 +130,28 @@ const ClusterMonitoringPage = () => {
 
                         {shouldRenderVisualizations && (
                             <Suspense fallback={renderDeferredVisualizationsFallback()}>
-                                <div className='volt-container clusters-grid-equal'>
+                                <Box className='clusters-grid-equal'>
                                     <ResourceUsage metrics={vm.metrics} />
                                     <CpuDistribution history={vm.history} metrics={vm.metrics} />
-                                </div>
+                                </Box>
 
-                                <div className='volt-container clusters-grid'>
-                                    <div className='volt-container clusters-grid-main'>
+                                <Box className='clusters-grid'>
+                                    <Box className='clusters-grid-main'>
                                         <NetworkChart
                                             data={networkData}
                                             isLoading={!vm.metrics}
                                             calculateDelta={false}
                                             title='Network Traffic'
                                             height={300} />
-                                    </div>
+                                    </Box>
                                     <DiskOperations history={vm.history} metrics={vm.metrics} />
-                                </div>
+                                </Box>
                             </Suspense>
                         )}
                     </>
                 )}
-            </div>
-        </div>
+            </Stack>
+        </Box>
     );
 };
 

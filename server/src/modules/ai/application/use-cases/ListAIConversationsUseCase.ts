@@ -1,23 +1,22 @@
+import { AIConversationDTO, ListAIConversationsInputDTO } from '@modules/ai/application/dtos/ListAIConversationsDTO';
 import type { AIConversationProps } from '@modules/ai/domain/entities/AIConversation';
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import AIConversationRepository from '@modules/ai/infrastructure/persistence/mongo/repositories/AIConversationRepository';
 import { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Result } from '@shared/domain/port/Result';
-import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
-import { AIConversationDTO, ListAIConversationsInputDTO } from '@modules/ai/application/dtos/ListAIConversationsDTO';
 import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import { inject, injectable } from 'tsyringe';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 interface ListAIConversationsFilter extends Partial<AIConversationProps> {
     teamId: string;
     userId: string;
 };
 
-@injectable()
+@Singleton()
 export default class ListAIConversationsUseCase implements IUseCase<ListAIConversationsInputDTO, PaginatedResult<AIConversationDTO>, ApplicationError> {
     constructor(
-        @inject(AI_TOKENS.AIConversationRepository)
-        private readonly conversationRepository: IAIConversationRepository
+        
+        private readonly conversationRepository: AIConversationRepository
     ) {}
 
     async execute(input: ListAIConversationsInputDTO): Promise<Result<PaginatedResult<AIConversationDTO>, ApplicationError>> {

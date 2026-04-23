@@ -1,9 +1,9 @@
 import { getTeamClusterStatusLabel } from '@/modules/cluster/utilities/team-cluster-status';
-import Button from '@/shared/presentation/components/Button';
-import Select from '@/shared/presentation/components/Select';
+import { Row, Text, Button } from '@/shared/presentation/primitives';
+import { Select } from '@/shared/presentation/primitives';
 import { useMemo } from 'react';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
-import type { SelectOption } from '@/shared/presentation/components/Select';
+import type { SelectOption } from '@/shared/presentation/primitives';
 
 interface ClusterSelectorProps {
     clusters: TeamCluster[];
@@ -21,11 +21,11 @@ const ClusterSelector = ({ clusters, selectedClusterId, onClusterChange }: Clust
     }, [clusters]);
 
     return (
-        <div className='volt-container d-flex items-center content-end mb-1 flex-wrap gap-1'>
-            <div className='volt-container d-flex items-center gap-1'>
-                <p className='volt-text font-size-2 color-muted-foreground'>
+        <Row justify='end' wrap gap='1' className='mb-1'>
+            <Row gap='1'>
+                <Text as='p' size='md' tone='muted-foreground'>
                     Viewing Cluster:
-                </p>
+                </Text>
                 <Select
                     options={options}
                     value={selectedClusterId}
@@ -33,14 +33,14 @@ const ClusterSelector = ({ clusters, selectedClusterId, onClusterChange }: Clust
                     placeholder='No clusters yet'
                     disabled={!options.length}
                 />
-            </div>
+            </Row>
 
-            <div className='volt-container d-flex items-start content-end mb-1 flex-wrap gap-1'>
+            <Row align='start' justify='end' wrap gap='1' className='mb-1'>
                 <Button variant='solid' shape='pill' size='sm' intent='brand' to='/onboarding/cluster/setup'>
                     Add New Cluster
                 </Button>
-            </div>
-        </div>
+            </Row>
+        </Row>
     );
 };
 

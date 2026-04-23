@@ -1,0 +1,23 @@
+.demo-expiration-banner {
+    background: var(--accent-blue, #2563eb);
+    color: #ffffff;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.demo-expiration-banner-text {
+    color: #ffffff;
+    font-weight: 500;
+}
+
+.demo-expiration-banner-cta {
+    color: #ffffff;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.demo-expiration-banner-cta:hover {
+    opacity: 0.9;
+}

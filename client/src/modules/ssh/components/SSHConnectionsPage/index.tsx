@@ -7,7 +7,7 @@ import {
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
-import { openModal } from '@/shared/presentation/components/Modal';
+import { openModal } from '@/shared/presentation/primitives';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import SSHConnectionModal, { SSH_CONNECTION_MODAL_ID } from '../SSHConnectionModal';
 import { LuFolderOpen } from 'react-icons/lu';

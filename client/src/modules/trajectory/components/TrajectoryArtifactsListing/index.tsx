@@ -1,6 +1,7 @@
 import sceneArtifactService from '@/modules/trajectory/api/services/scene-artifacts';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
+import { Text } from '@/shared/presentation/primitives';
 import { dateColumn, enumColumn, populatedNameColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
 import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
@@ -25,7 +26,7 @@ const COLUMNS: ColumnConfig<SceneArtifact>[] = [
         key: 'displayName',
         title: 'Display Name',
         sortable: true,
-        render: (value) => <span className='font-size-2 color-secondary'>{String(value)}</span>,
+        render: (value) => <Text size='md' tone='secondary'>{String(value)}</Text>,
         skeleton: { variant: 'text', width: 180 }
     },
     enumColumn<SceneArtifact>('sourceType', 'Source', { sortable: true, width: 120 }),
@@ -35,7 +36,7 @@ const COLUMNS: ColumnConfig<SceneArtifact>[] = [
         key: 'timestep',
         title: 'Timestep',
         sortable: true,
-        render: (value) => <span className='font-size-2 color-secondary'>{String(value)}</span>,
+        render: (value) => <Text size='md' tone='secondary'>{String(value)}</Text>,
         skeleton: { variant: 'text', width: 80 }
     },
     statusColumn<SceneArtifact>('status', 'Status', { sortable: true, width: 90 }),

@@ -1,12 +1,10 @@
 import FrameCombobox from '../FrameCombobox';
 import TransportControls from '../TransportControls';
 
-import { Atom, Box, Gauge, ZoomIn } from 'lucide-react';
-import Button from '@/shared/presentation/components/Button';
-import Popover from '@/shared/presentation/components/Popover';
-import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
-import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
-
+import { Atom, Box as BoxIcon, Gauge, ZoomIn } from 'lucide-react';
+import { Button, Popover, Row, Text } from '@/shared/presentation/primitives';
+import { PopoverMenu } from '@/shared/presentation/primitives';
+import { PopoverMenuItem } from '@/shared/presentation/primitives';
 import type { DownloadPluginListingParams } from '../../hooks/use-download-plugin-listing';
 import type { ReactNode } from 'react';
 
@@ -68,7 +66,7 @@ export const CORE_TABS: TimelineTabOption[] = [
     {
         id: TimelineTab.SimulationCell,
         label: 'Simulation Cell',
-        icon: <Box style={{ width: 12, height: 12 }} />
+        icon: <BoxIcon style={{ width: 12, height: 12 }} />
     },
     {
         id: TimelineTab.Timeline,
@@ -221,30 +219,30 @@ const TimelineHeader = ({
     };
 
     return (
-        <div className="volt-container canvas-timeline-header d-flex items-center w-max">
-            <div className="volt-container canvas-timeline-tabs-region d-flex items-center">
-                <div className="volt-container canvas-timeline-tabs scrollbar-none d-flex items-center" role="tablist" aria-label="Timeline tabs">
+        <Row width='max' className="canvas-timeline-header">
+            <Row className="canvas-timeline-tabs-region">
+                <Row className="canvas-timeline-tabs scrollbar-none" role="tablist" aria-label="Timeline tabs">
                     {resolvedTabs.map(renderResolvedTab)}
-                </div>
+                </Row>
                 {helperText ? (
-                    <span className="canvas-timeline-helper font-size-1 color-secondary" aria-live="polite">
+                    <Text size='sm' tone='secondary' className="canvas-timeline-helper" aria-live="polite">
                         {helperText}
-                    </span>
+                    </Text>
                 ) : null}
-            </div>
+            </Row>
 
-            <div className="volt-container canvas-timeline-controls-region d-flex items-center content-center">
-                <div className="volt-container canvas-timeline-controls-center d-flex items-center content-center">
+            <Row justify='center' className="canvas-timeline-controls-region">
+                <Row justify='center' className="canvas-timeline-controls-center">
                     <TransportControls
                         trajectoryId={trajectoryId}
                         currentTimestep={currentTimestep}
                         availableTimesteps={availableTimesteps}
                     />
-                </div>
-            </div>
+                </Row>
+            </Row>
 
-            <div className="volt-container canvas-timeline-frame-region d-flex items-center content-end">
-                <div className="volt-container canvas-timeline-frame-info d-flex items-center gap-05 content-end">
+            <Row justify='end' className="canvas-timeline-frame-region">
+                <Row gap='05' justify='end' className="canvas-timeline-frame-info">
                     {frameOptions.map((frame) => (
                         <FrameCombobox
                             key={frame.title}
@@ -255,7 +253,7 @@ const TimelineHeader = ({
                         />
                     ))}
 
-                    <div className="volt-container canvas-viewport-divider f-shrink-0" />
+                    <div className="canvas-viewport-divider f-shrink-0" />
 
                     <Popover
                         id="timeline-speed"
@@ -302,9 +300,9 @@ const TimelineHeader = ({
                             </PopoverMenu>
                         )}
                     </Popover>
-                </div>
-            </div>
-        </div>
+                </Row>
+            </Row>
+        </Row>
     );
 };
 

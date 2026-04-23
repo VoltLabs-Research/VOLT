@@ -1,17 +1,15 @@
-import { SessionActivityType } from '@modules/session/domain/entities/Session';
 import type Session from '@modules/session/domain/entities/Session';
+import type { SessionProps } from '@modules/session/domain/entities/Session';
+import { SessionActivityType } from '@modules/session/domain/entities/Session';
 import sessionMapper from '@modules/session/infrastructure/persistence/mongo/mappers/SessionMapper';
+import type { SessionDocument } from '@modules/session/infrastructure/persistence/mongo/models/SessionModel';
 import SessionModel from '@modules/session/infrastructure/persistence/mongo/models/SessionModel';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import { injectable } from 'tsyringe';
-import type { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
-import type { SessionProps } from '@modules/session/domain/entities/Session';
-import type { SessionDocument } from '@modules/session/infrastructure/persistence/mongo/models/SessionModel';
 
 @injectable()
 export default class SessionRepository
-    extends MongooseBaseRepository<Session, SessionProps, SessionDocument>
-    implements ISessionRepository{
+    extends MongooseBaseRepository<Session, SessionProps, SessionDocument>{
 
     constructor(){
         super(SessionModel, sessionMapper);

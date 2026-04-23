@@ -2,7 +2,7 @@ import { canAccessByPermissions } from '@/modules/team/utilities/team/permission
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
-import Loader from '@/shared/presentation/components/Loader';
+import { Loader } from '@/shared/presentation/primitives';
 import PageTransition from '@/shared/presentation/components/PageTransition';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';

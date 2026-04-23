@@ -1,9 +1,10 @@
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import type { TeamJobSnapshot, TeamJobStatus } from '@modules/jobs/infrastructure/projections/TeamJobSnapshot';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
 import IORedis from 'ioredis';
+import { inject } from 'tsyringe';
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const SAFE_FALLBACK_GROUP_TIMESTAMP = '1970-01-01T00:00:00.000Z';
@@ -54,7 +55,7 @@ export interface TeamJobsInitialPayload {
     groups: TrajectoryJobGroup[];
 };
 
-@injectable()
+@Singleton()
 export default class TeamJobsService {
     constructor(
         @inject(SHARED_TOKENS.RedisClient)

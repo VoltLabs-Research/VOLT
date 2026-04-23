@@ -1,12 +1,10 @@
 import TeamCluster from '@modules/team-cluster/domain/entities/TeamCluster';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import { createTeamClusterDaemonBuildContextArchiveBase64 } from '@modules/team-cluster/infrastructure/services/install-manifest/TeamClusterDaemonBuildContextArchive';
 import {
     DaemonDistributionMode,
     getTeamClusterDaemonDistributionMode,
     readTeamClusterDaemonManifestFiles
 } from '@modules/team-cluster/infrastructure/services/install-manifest/TeamClusterDaemonManifestSource';
-import { createTeamClusterDaemonBuildContextArchiveBase64 } from '@modules/team-cluster/infrastructure/services/install-manifest/TeamClusterDaemonBuildContextArchive';
 import {
     buildTeamClusterInstallManifestFiles,
     sanitizeComposeProjectName,
@@ -16,24 +14,24 @@ import {
 import { normalizeTeamClusterInstallRoot } from '@modules/team-cluster/utilities/installRoot';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import path from 'node:path';
-import { inject, injectable } from 'tsyringe';
 
 import type {
     TeamClusterInstallManifestDTO,
     TeamClusterInstallManifestFileDTO,
     TeamClusterInstallManifestPortsDTO
 } from '@modules/team-cluster/application/dtos/GenerateTeamClusterInstallManifestDTO';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 
-@injectable()
+@Singleton()
 export default class TeamClusterInstallManifestService {
     constructor(
-        @inject(SHARED_TOKENS.DaemonCredentialGuard)
+        
         private readonly daemonCredentialGuard: DaemonCredentialGuard,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository
+        
+        private readonly teamClusterRepository: TeamClusterRepository
     ){}
 
     async generateInstallManifest(

@@ -1,13 +1,10 @@
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import type { ClusterSystemMetrics } from '@modules/system/domain/value-objects/SystemMetrics';
-import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
+import SystemMetricsRedisRepository from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisRepository';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import mongoose from 'mongoose';
-import { inject, injectable } from 'tsyringe';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 
 const STALE_CLUSTER_THRESHOLD_MS = 15_000;
 const ANALYSIS_COUNTS_CACHE_TTL_MS = 10_000;
@@ -18,7 +15,7 @@ interface ClusterMetricIdentity {
     teamClusterId: string | null;
 };
 
-@injectable()
+@Singleton()
 export default class ClusterMetricsAggregator {
     private readonly clusterIdentityCache = new Map<string, {
         expiresAt: number;
@@ -31,12 +28,12 @@ export default class ClusterMetricsAggregator {
     private pendingAnalysisCounts: Promise<Record<string, number>> | null = null;
 
     constructor(
-        @inject(SYSTEM_TOKENS.SystemMetricsRepository)
-        private readonly metricsRepository: ISystemMetricsRepository,
-        @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository,
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository
+        
+        private readonly metricsRepository: SystemMetricsRedisRepository,
+        
+        private readonly analysisRepository: AnalysisRepository,
+        
+        private readonly teamClusterRepository: TeamClusterRepository
     ) {}
 
     private async resolveClusterMetricIdentities(activeClusterIds: string[]): Promise<ClusterMetricIdentity[]> {

@@ -3,9 +3,10 @@ import {
     TeamClusterRemoteAccessTargetDTO
 } from '@modules/team-cluster/application/dtos/TeamClusterRemoteAccessDTO';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { InMemoryAbsoluteExpiryStore } from '@shared/infrastructure/services/InMemoryAbsoluteExpiryStore';
 import { randomUUID } from 'node:crypto';
-import { injectable } from 'tsyringe';
+
 
 interface CreateRemoteAccessSessionParams {
     userId: string;
@@ -38,7 +39,7 @@ const isExpiredSession = (session: StoredRemoteAccessSession): boolean => {
     return getRemoteAccessSessionExpiresAt(session) <= Date.now();
 };
 
-@injectable()
+@Singleton()
 export default class TeamClusterRemoteAccessSessionService {
     private readonly sessions = new InMemoryAbsoluteExpiryStore<string, StoredRemoteAccessSession>({
         getExpiresAt: getRemoteAccessSessionExpiresAt,

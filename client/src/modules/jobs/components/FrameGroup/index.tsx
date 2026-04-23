@@ -2,6 +2,7 @@ import { frameGroupStatusClassNames } from '@/modules/jobs/utilities/frame-group
 import { getFrameGroupStatusLabel } from '@/modules/jobs/utilities/job-status-label';
 import JobQueue from '@/modules/jobs/components/JobQueue';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
+import { Box, Row, Text } from '@/shared/presentation/primitives';
 import { AnimatePresence, motion } from 'framer-motion';
 import { IoChevronForward } from 'react-icons/io5';
 import { useEffect, useId, useMemo, useState } from 'react';
@@ -36,7 +37,7 @@ const FrameGroup = ({ frame }: FrameGroupProps) => {
     }, [containsTransferJobs]);
 
     return (
-        <div className='volt-container frame-job-group'>
+        <Box className='frame-job-group'>
             <button
                 type='button'
                 className={`frame-job-group-header ${statusClassName} frame-job-group-toggle u-select-none`}
@@ -44,9 +45,9 @@ const FrameGroup = ({ frame }: FrameGroupProps) => {
                 aria-expanded={isExpanded}
                 aria-controls={contentId}
             >
-                <div className='volt-container d-flex items-center content-between w-max'>
-                    <p className='volt-text font-size-1 color-secondary'>{label}</p>
-                    <div className='volt-container d-flex items-center gap-05'>
+                <Row justify='between' width='max'>
+                    <Text as='p' size='sm' tone='secondary'>{label}</Text>
+                    <Row gap='05'>
                         <span className={`frame-status-badge ${statusClassName} font-weight-6`} aria-label={`Status: ${statusLabel}`}>
                             {statusLabel}
                         </span>
@@ -58,8 +59,8 @@ const FrameGroup = ({ frame }: FrameGroupProps) => {
                         >
                             <IoChevronForward />
                         </motion.i>
-                    </div>
-                </div>
+                    </Row>
+                </Row>
             </button>
             {prefersReducedMotion ? (
                 isExpanded ? <div id={contentId}>{jobs}</div> : null
@@ -78,7 +79,7 @@ const FrameGroup = ({ frame }: FrameGroupProps) => {
                     )}
                 </AnimatePresence>
             )}
-        </div>
+        </Box>
     );
 };
 

@@ -1,13 +1,14 @@
+import { toCsvContent } from '@modules/plugin/utilities/listing-row/csv';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import {
     createSerializedDownloadResponse,
     createZipDownloadResponse,
     sanitizeDownloadName
 } from '@shared/infrastructure/http/responses/download-response';
-import { toCsvContent } from '@modules/plugin/utilities/listing-row/csv';
 
 import { ExportType } from '@shared/domain/port/IBaseRepository';
 import { Readable } from 'node:stream';
-import { injectable } from 'tsyringe';
+
 
 import type {
     AnalysisListingExportData,
@@ -15,7 +16,6 @@ import type {
     ExportListingRowsByAnalysisIdOutputDTO
 } from '@modules/plugin/application/dtos/listing-row/GetListingRowsByAnalysisIdDTO';
 import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
-import type { IListingRowsExportPresenter } from '@modules/plugin/domain/port/listing-row/IListingRowsExportPresenter';
 
 /**
  * Converts a snake_case or hyphen-separated name to Title-Case with hyphens.
@@ -32,8 +32,8 @@ const titleCaseName = (name: string): string => {
         .join('-');
 };
 
-@injectable()
-export class ListingRowsExportPresenter implements IListingRowsExportPresenter {
+@Singleton()
+export class ListingRowsExportPresenter {
     private rootDir(analysisId: string): string {
         return `AnalysisID-${analysisId}`;
     }

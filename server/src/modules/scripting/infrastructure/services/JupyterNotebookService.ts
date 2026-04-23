@@ -2,7 +2,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { mergeScriptingNotebookContents } from '@modules/scripting/application/utilities/build-scripting-notebook';
 import { resolveServerBaseUrl } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
-import { injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+
 import type {
     DefaultNotebookTemplateContext
 } from '@modules/scripting/domain/port/IScriptingSessionOrchestrator';
@@ -19,7 +20,7 @@ const OVITO_NOTEBOOK_TEMPLATE_PATH = path.join(
     'ovito-usage-example.ipynb'
 );
 
-@injectable()
+@Singleton()
 export class JupyterNotebookService {
     async resolveNotebookTemplateContent(context: DefaultNotebookTemplateContext): Promise<Record<string, unknown>> {
         const [defaultTemplateRaw, ovitoTemplateRaw] = await Promise.all([

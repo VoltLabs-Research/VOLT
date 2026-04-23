@@ -4,7 +4,7 @@ import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { useMemo } from 'react';
 import { MdRotateLeft } from 'react-icons/md';
 import { useShallow } from 'zustand/react/shallow';
-import Button from '@/shared/presentation/components/Button';
+import { Button, Box } from '@/shared/presentation/primitives';
 import type { RenderGroup } from '../../types';
 
 const useOrbitGroup = (): RenderGroup => {
@@ -16,7 +16,7 @@ const useOrbitGroup = (): RenderGroup => {
                 key: 'general', title: 'Controls', enabled: true,
                 rows: [],
                 extras: (
-                    <div className="volt-container canvas-render-grid">
+                    <Box className="canvas-render-grid">
                         {checkboxGrid([
                             { key: 'enabled', label: 'Enabled', value: s.enabled, onChange: (v: boolean) => s.set({ enabled: v }) },
                             { key: 'autoRotate', label: 'Auto Rotate', value: s.autoRotate, onChange: (v: boolean) => s.set({ autoRotate: v }) },
@@ -28,7 +28,7 @@ const useOrbitGroup = (): RenderGroup => {
                         <Button variant="ghost" intent="canvas" shape="rounded" size="sm" className="font-size-05" onClick={() => s.reset()} style={{ justifySelf: 'start' }}>
                             Reset Orbit
                         </Button>
-                    </div>
+                    </Box>
                 )
             },
             speeds: {

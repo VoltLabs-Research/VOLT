@@ -1,9 +1,9 @@
+import { SegmentedTabs } from '@/shared/presentation/primitives';
 import { useState } from 'react';
 import type { FC } from 'react';
 import type { Node } from '@xyflow/react';
 import { Trash2 } from 'lucide-react';
 import DangerZone from '@/shared/presentation/components/DangerZone';
-import SegmentedTabs from '@/shared/presentation/components/SegmentedTabs';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import ModifierEditor from './editors/ModifierEditor';
@@ -60,7 +60,7 @@ const NodeEditor = ({ node }: NodeEditorProps) => {
 
     return (
         <>
-            <div className='volt-container floating-node-panel-tabs'>
+            <div className='floating-node-panel-tabs'>
                 <SegmentedTabs
                     tabs={SECTION_TABS}
                     activeTab={activeSection}
@@ -72,12 +72,12 @@ const NodeEditor = ({ node }: NodeEditorProps) => {
                 />
             </div>
 
-            <div className='volt-container floating-node-panel-body'>
+            <div className='floating-node-panel-body'>
                 {activeSection === 'details' && (
                     EditorComponent ? (
                         <EditorComponent node={node} />
                     ) : (
-                        <p className='volt-text font-size-2 color-muted'>
+                        <p className='font-size-2 color-muted'>
                             No editor available for this node type.
                         </p>
                     )
@@ -88,7 +88,7 @@ const NodeEditor = ({ node }: NodeEditorProps) => {
                 )}
             </div>
 
-            <div className='volt-container floating-node-panel-footer'>
+            <div className='floating-node-panel-footer'>
                 <DangerZone
                     title='Delete Node'
                     description='Remove this node and its connections'

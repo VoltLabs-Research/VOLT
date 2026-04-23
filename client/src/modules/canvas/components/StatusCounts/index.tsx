@@ -1,5 +1,5 @@
 import { Clock, Play, Check } from 'lucide-react';
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
+import { StatusBadge, Row } from '@/shared/presentation/primitives';
 
 import type { ComponentType } from 'react';
 
@@ -18,14 +18,14 @@ const BADGES: { key: string; variant: 'warning' | 'active' | 'success'; Icon: Co
 ];
 
 const StatusCounts = (props: StatusCountsProps) => (
-    <div className="volt-container d-flex items-center gap-05">
+    <Row gap='05'>
         {BADGES.map(({ key, variant, Icon, countKey }) => (
             <StatusBadge key={key} variant={variant} size="compact" className="d-flex items-center">
                 <Icon style={ICON_STYLE} />
                 <span>{props[countKey]}</span>
             </StatusBadge>
         ))}
-    </div>
+    </Row>
 );
 
 export default StatusCounts;

@@ -1,3 +1,4 @@
+import { Row, Surface } from '@/shared/presentation/primitives';
 import type { ReactNode } from 'react';
 
 interface WarningZoneProps {
@@ -12,10 +13,10 @@ const WarningZone = ({
     className = ''
 }: WarningZoneProps) => {
     return (
-        <div className={`volt-container zone-warning d-flex items-center gap-05 font-size-2 ${className}`} role='status' aria-live='polite'>
-            {icon && <div className='volt-container d-flex items-center content-center f-shrink-0'>{icon}</div>}
-            <div className='volt-container flex-1'>{message}</div>
-        </div>
+        <Surface variant='warning' display='flex' align='center' gap='05' className={`font-size-2 ${className}`} role='status' aria-live='polite'>
+            {icon && <Row justify='center' shrink='0'>{icon}</Row>}
+            <div className='flex-1'>{message}</div>
+        </Surface>
     );
 };
 

@@ -4,10 +4,8 @@ import { useRegenerateTeamClusterEnrollmentTokenMutation } from '@/modules/clust
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
 import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluster-waiting';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import Button from '@/shared/presentation/components/Button';
-import IconButton from '@/shared/presentation/components/IconButton';
-import { openModal } from '@/shared/presentation/components/Modal';
-import Tooltip from '@/shared/presentation/components/Tooltip';
+import { Box, Stack, Row, Text, Button, IconButton, StatusDot, Tooltip, openModal } from '@/shared/presentation/primitives';
+import type { StatusDotTone } from '@/shared/presentation/primitives';
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -49,18 +47,22 @@ const ClusterListPanel = ({ clusters, onDelete }: ClusterListPanelProps) => {
         const canConnect = isTeamClusterWaiting(cluster.status);
 
         return (
-            <div key={cluster._id} className='volt-container cluster-list-panel-row d-flex items-center gap-05'>
-                <div className='volt-container d-flex column gap-025 flex-1 min-w-0'>
-                    <p className='volt-text cluster-list-panel-name font-size-2 color-primary font-weight-5 text-truncate' title={cluster.name}>
+            <Row key={cluster._id} gap='05' className='cluster-list-panel-row'>
+                <Stack gap='025' flex='1' minW='0'>
+                    <Text as='p' size='md' tone='primary' weight='medium' truncate className='cluster-list-panel-name' title={cluster.name}>
                         {cluster.name}
-                    </p>
-                    <div className='volt-container d-flex items-center gap-05'>
-                        <span className={`cluster-list-panel-dot variant-${variant}`} />
-                        <p className='volt-text font-size-1 color-secondary'>{label}</p>
-                    </div>
-                </div>
+                    </Text>
+                    <Row gap='05'>
+                        <StatusDot
+                            tone={variant === 'inactive' ? 'neutral' : (variant as StatusDotTone)}
+                            pulse={variant !== 'inactive'}
+                            glow={variant !== 'inactive'}
+                        />
+                        <Text as='p' size='sm' tone='secondary'>{label}</Text>
+                    </Row>
+                </Stack>
 
-                <div className='volt-container d-flex items-center gap-025 flex-shrink-0'>
+                <Row gap='025' className='flex-shrink-0'>
                     {canConnect && (
                         <Button
                             variant='ghost'
@@ -82,25 +84,25 @@ const ClusterListPanel = ({ clusters, onDelete }: ClusterListPanelProps) => {
                             <Trash2 size={14} />
                         </IconButton>
                     </Tooltip>
-                </div>
-            </div>
+                </Row>
+            </Row>
         );
     };
 
     return (
-        <div className='volt-container cluster-list-panel'>
-            <div className='volt-container cluster-list-panel-header'>
-                <p className='volt-text font-size-2 font-weight-6 color-primary'>Your clusters</p>
-            </div>
-            <div className='volt-container cluster-list-panel-list'>
+        <Box className='cluster-list-panel'>
+            <Box className='cluster-list-panel-header'>
+                <Text as='p' size='md' weight='bold' tone='primary'>Your clusters</Text>
+            </Box>
+            <Box className='cluster-list-panel-list'>
                 {clusters.map(renderRow)}
-            </div>
+            </Box>
 
             <ClusterInstallCommandModal
                 clusterId={installClusterId}
                 enrollmentToken={installToken}
             />
-        </div>
+        </Box>
     );
 };
 

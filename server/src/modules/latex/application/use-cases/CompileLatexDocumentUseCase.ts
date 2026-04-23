@@ -1,44 +1,44 @@
-import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { Result } from '@shared/domain/port/Result';
-import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import {
     getDocumentCompileWorkDirSegment,
     prepareWorkDir,
     runCompiler,
     withDocumentCompileLock
 } from '@modules/latex/application/ai-tools/compile-helpers';
+import type { CompileLatexDocumentInputDTO, CompileLatexDocumentOutputDTO } from '@modules/latex/application/dtos/CompileLatexDocumentDTO';
+import LatexAssetRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexAssetRepository';
+import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
+import LatexFileRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexFileRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
+import type { IUseCase } from '@shared/application/IUseCase';
+import type { IStorageService } from '@shared/domain/port/IStorageService';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
+import TempFileService from '@shared/infrastructure/services/TempFileService';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { Readable } from 'node:stream';
-import type { CompileLatexDocumentInputDTO, CompileLatexDocumentOutputDTO } from '@modules/latex/application/dtos/CompileLatexDocumentDTO';
-import type { IUseCase } from '@shared/application/IUseCase';
-import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
-import type { ILatexAssetRepository } from '@modules/latex/domain/port/ILatexAssetRepository';
-import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
-import type { ITempFileService } from '@shared/domain/port/ITempFileService';
+import { inject } from 'tsyringe';
 
-@injectable()
+@Singleton()
 export class CompileLatexDocumentUseCase implements IUseCase<CompileLatexDocumentInputDTO, CompileLatexDocumentOutputDTO, ApplicationError> {
     constructor(
-        @inject(LATEX_TOKENS.LatexDocumentRepository)
-        private readonly latexDocumentRepository: ILatexDocumentRepository,
+        
+        private readonly latexDocumentRepository: LatexDocumentRepository,
 
-        @inject(LATEX_TOKENS.LatexAssetRepository)
-        private readonly latexAssetRepository: ILatexAssetRepository,
+        
+        private readonly latexAssetRepository: LatexAssetRepository,
 
-        @inject(LATEX_TOKENS.LatexFileRepository)
-        private readonly latexFileRepository: ILatexFileRepository,
+        
+        private readonly latexFileRepository: LatexFileRepository,
 
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
 
-        @inject(SHARED_TOKENS.TempFileService)
-        private readonly tempFileService: ITempFileService
+        
+        private readonly tempFileService: TempFileService
     ) {}
 
     async execute(input: CompileLatexDocumentInputDTO): Promise<Result<CompileLatexDocumentOutputDTO, ApplicationError>> {

@@ -1,10 +1,10 @@
-import { GetAtomsUseCase } from '@modules/trajectory/application/use-cases/trajectory/GetAtomsUseCase';
-import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
 import type { GetAtomsColumnarOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetAtomsDTO';
+import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
+import { GetAtomsUseCase } from '@modules/trajectory/application/use-cases/trajectory/GetAtomsUseCase';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 interface GetPublicCanvasAtomsInput {
     trajectoryId: string;
@@ -15,17 +15,17 @@ interface GetPublicCanvasAtomsInput {
     userId?: string;
 };
 
-@injectable()
+@Singleton()
 export class GetPublicCanvasAtomsUseCase implements IUseCase<
     GetPublicCanvasAtomsInput,
     GetAtomsColumnarOutputDTO,
     ApplicationError
 > {
     constructor(
-        @inject(TrajectoryReadAccessService)
+        
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
-        @inject(GetAtomsUseCase)
+        
         private readonly getAtomsUseCase: GetAtomsUseCase
     ) {}
 

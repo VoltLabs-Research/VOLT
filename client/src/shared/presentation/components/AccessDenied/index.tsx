@@ -1,4 +1,4 @@
-import Button from '@/shared/presentation/components/Button';
+import { Button, Heading, Row, Stack, Text } from '@/shared/presentation/primitives';
 import './AccessDenied.css';
 import { ShieldOff } from 'lucide-react';
 import { useId } from 'react';
@@ -21,21 +21,21 @@ const AccessDenied = ({
 }: AccessDeniedProps) => {
     const navigate = useNavigate();
     const headingId = useId();
-    const HeadingTag = headingLevel;
+    const level = Number(headingLevel.slice(1)) as 1 | 2 | 3;
 
     return (
-        <section aria-labelledby={headingId} className={`access-denied-container d-flex items-center content-center w-max h-max ${className || ''}`}>
-            <div className='volt-container text-center d-flex column gap-1-5 items-center access-denied-content'>
-                <div className='volt-container d-flex content-center items-center access-denied-icon'>
+        <Row as='section' aria-labelledby={headingId} justify='center' width='max' height='max' className={`access-denied-container ${className || ''}`}>
+            <Stack align='center' gap='1-5' textAlign='center' className='access-denied-content'>
+                <Row justify='center' className='access-denied-icon'>
                     <ShieldOff size={24} />
-                </div>
+                </Row>
 
-                <div className='volt-container d-flex column gap-05 text-center'>
-                    <HeadingTag id={headingId} className='volt-title font-size-3 font-weight-5 color-primary'>
+                <Stack gap='05' textAlign='center'>
+                    <Heading level={level} id={headingId}>
                         {title}
-                    </HeadingTag>
-                    <span className='font-size-2 color-secondary line-height-5'>{description}</span>
-                </div>
+                    </Heading>
+                    <Text size='md' tone='secondary' lineHeight='5'>{description}</Text>
+                </Stack>
 
                 {showBack && (
                     <Button
@@ -48,8 +48,8 @@ const AccessDenied = ({
                         Go back
                     </Button>
                 )}
-            </div>
-        </section>
+            </Stack>
+        </Row>
     );
 };
 

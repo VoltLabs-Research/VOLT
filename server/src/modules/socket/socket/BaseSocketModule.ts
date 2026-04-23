@@ -1,16 +1,16 @@
-import { inject } from 'tsyringe';
-import { ISocketModule, ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import { ISocketRoomManager, PresenceUser } from '@modules/socket/domain/port/ISocketRoomManager';
-import { ISocketEventRegistry, SocketEventHandler } from '@modules/socket/domain/port/ISocketEventRegistry';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import type { ErrorCode } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import { SocketEventHandler } from '@modules/socket/domain/port/ISocketEventRegistry';
+import { ISocketConnection, ISocketModule } from '@modules/socket/domain/port/ISocketModule';
+import { PresenceUser } from '@modules/socket/domain/port/ISocketRoomManager';
+import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
+import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
 import {
     createSocketErrorEnvelope,
     createSocketErrorEnvelopeFromApplicationError,
     type SocketErrorEnvelope
 } from '@modules/socket/utilities/socket-error-envelope';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 
 /**
  * Each module can hook into the lifecycle and register its own handlers.
@@ -19,14 +19,14 @@ export default abstract class BaseSocketModule implements ISocketModule{
     public abstract readonly name: string;
 
     constructor(
-        @inject(SOCKET_TOKENS.SocketEventEmitter)
-        protected readonly emitter: ISocketEmitter,
         
-        @inject(SOCKET_TOKENS.SocketRoomManager)
-        protected readonly roomManager: ISocketRoomManager,
+        protected readonly emitter: SocketIOEmitter,
+        
+        
+        protected readonly roomManager: SocketIORoomManager,
 
-        @inject(SOCKET_TOKENS.SocketEventRegistry)
-        protected readonly eventRegistry: ISocketEventRegistry
+        
+        protected readonly eventRegistry: SocketIOEventRegistry
     ){}
 
     /**

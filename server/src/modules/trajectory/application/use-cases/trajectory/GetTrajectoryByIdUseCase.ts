@@ -1,18 +1,16 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { resolveTrajectoryPreviewAvailability } from '@modules/trajectory/utilities/trajectory/resolve-trajectory-preview-availability';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 
-import { injectable, inject } from 'tsyringe';
+import { injectable } from 'tsyringe';
 
+import { RasterStorageService } from '@modules/raster/infrastructure/services/RasterStorageService';
 import type { GetTrajectoryByIdOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryByIdDTO';
-import type { IRasterStorage } from '@modules/raster/domain/port/IRasterStorage';
-import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import type { FindOptions } from '@shared/domain/port/IBaseRepository';
 
 interface GetTrajectoryByIdInput {
@@ -23,12 +21,12 @@ interface GetTrajectoryByIdInput {
 @injectable()
 export default class GetTrajectoryByIdUseCase implements IUseCase<GetTrajectoryByIdInput, GetTrajectoryByIdOutputDTO, ApplicationError> {
     constructor(
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly repository: ITrajectoryRepository,
-        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository)
-        private readonly frameRepository: ITrajectoryFrameRepository,
-        @inject(RASTER_TOKENS.RasterStorage)
-        private readonly rasterStorage: IRasterStorage
+        
+        private readonly repository: TrajectoryRepository,
+        
+        private readonly frameRepository: TrajectoryFrameRepository,
+        
+        private readonly rasterStorage: RasterStorageService
     ) {}
 
     async execute(input: GetTrajectoryByIdInput): Promise<Result<GetTrajectoryByIdOutputDTO, ApplicationError>> {

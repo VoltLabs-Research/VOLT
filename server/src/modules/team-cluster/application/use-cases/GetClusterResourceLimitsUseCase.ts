@@ -1,28 +1,26 @@
+import SystemMetricsRedisRepository from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisRepository';
 import {
     GetClusterResourceLimitsInputDTO,
     GetClusterResourceLimitsOutputDTO
 } from '@modules/team-cluster/application/dtos/GetClusterResourceLimitsDTO';
 import { requireOwnedTeamCluster } from '@modules/team-cluster/application/utilities/team-cluster-ownership';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
-import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 const MB_PER_GB = 1024;
 
-@injectable()
+@Singleton()
 export default class GetClusterResourceLimitsUseCase
     implements IUseCase<GetClusterResourceLimitsInputDTO, GetClusterResourceLimitsOutputDTO, ApplicationError> {
 
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
-        @inject(SYSTEM_TOKENS.SystemMetricsRepository)
-        private readonly systemMetricsRepository: ISystemMetricsRepository
+        
+        private readonly teamClusterRepository: TeamClusterRepository,
+        
+        private readonly systemMetricsRepository: SystemMetricsRedisRepository
     ){}
 
     async execute(

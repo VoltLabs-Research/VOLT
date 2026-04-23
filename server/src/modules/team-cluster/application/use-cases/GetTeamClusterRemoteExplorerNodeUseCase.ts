@@ -3,30 +3,29 @@ import {
     GetTeamClusterRemoteExplorerNodeOutputDTO
 } from '@modules/team-cluster/application/dtos/GetTeamClusterRemoteExplorerNodeDTO';
 import { preflightRemoteExplorerAccess } from '@modules/team-cluster/application/utilities/remote-explorer-access';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import RemoteExplorerDaemonGateway from '@modules/team-cluster/infrastructure/services/RemoteExplorerDaemonGateway';
 import TeamClusterRemoteAccessSessionService from '@modules/team-cluster/infrastructure/services/TeamClusterRemoteAccessSessionService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 
-@injectable()
+@Singleton()
 export default class GetTeamClusterRemoteExplorerNodeUseCase implements IUseCase<
     GetTeamClusterRemoteExplorerNodeInputDTO,
     GetTeamClusterRemoteExplorerNodeOutputDTO,
     ApplicationError
 > {
     constructor(
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
+        
+        private readonly teamClusterRepository: TeamClusterRepository,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRemoteAccessSessionService)
+        
         private readonly sessionService: TeamClusterRemoteAccessSessionService,
 
-        @inject(TEAM_CLUSTER_TOKENS.RemoteExplorerDaemonGateway)
+        
         private readonly remoteExplorerDaemonGateway: RemoteExplorerDaemonGateway
     ) {}
 

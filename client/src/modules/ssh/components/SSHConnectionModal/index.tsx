@@ -4,7 +4,7 @@ import { createSSHConnectionSchema, defaultValues } from '@/modules/ssh/utilitie
 import SSHConnectionTestButton from '@/modules/ssh/components/SSHConnectionTestButton';
 import SSHConnectionForm from '@/modules/ssh/components/SSHConnectionForm';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Modal, { resetModal } from '@/shared/presentation/components/Modal';
+import { Modal, resetModal } from '@/shared/presentation/primitives';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';

@@ -1,14 +1,12 @@
 import type { ReactNode } from 'react';
 import { useState, useMemo } from 'react';
 import { IoPersonAddOutline, IoPeopleOutline } from 'react-icons/io5';
-import EmptyState from '@/shared/presentation/components/EmptyState';
+import { EmptyState } from '@/shared/presentation/primitives';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import ChatListSkeleton from '../ChatListSkeleton';
 import ChatListItem from '../ChatListItem';
 import TeamMemberList from '../TeamMemberList';
-import IconButton from '@/shared/presentation/components/IconButton';
-import SearchInput from '@/shared/presentation/components/SearchInput';
-import Tooltip from '@/shared/presentation/components/Tooltip';
+import { Stack, Row, Text, IconButton, SearchInput, Tooltip } from '@/shared/presentation/primitives';
 import { matchesQuery } from '@/shared/utils/matches-query';
 import type { User } from '@/modules/auth/api/entities/user';
 import type { Chat } from '@/modules/chat/api/entities/chat';
@@ -103,11 +101,11 @@ const ChatSidebar = ({
     }
 
     return (
-        <div className='volt-container d-flex column h-max chat-sidebar'>
-            <div className='volt-container d-flex column gap-075 chat-sidebar-header'>
-                <div className='volt-container d-flex items-center content-between'>
-                    <p className='volt-text font-size-5 font-weight-6 color-primary'>Messages</p>
-                    <div className='volt-container d-flex items-center gap-025'>
+        <Stack height='max' className='chat-sidebar'>
+            <Stack gap='075' className='chat-sidebar-header'>
+                <Row justify='between'>
+                    <Text as='p' size='2xl' weight='bold'>Messages</Text>
+                    <Row gap='025'>
                         <Tooltip content={newChatTooltip}>
                             <IconButton
                                 size='sm'
@@ -132,34 +130,34 @@ const ChatSidebar = ({
                                 <IoPeopleOutline size={18} />
                             </IconButton>
                         </Tooltip>
-                    </div>
-                </div>
+                    </Row>
+                </Row>
 
                 <SearchInput
                     placeholder='Search conversations...'
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
-            </div>
+            </Stack>
 
             {showTeamMembers && availableTeamMembers.length > 0 && (
-                <div className='volt-container d-flex column p-1'>
-                    <p className='volt-text font-size-2 font-weight-6 color-secondary chat-sidebar-section-title'>
+                <Stack p='1'>
+                    <Text as='p' size='md' weight='bold' tone='secondary' className='chat-sidebar-section-title'>
                         Team Members
-                    </p>
+                    </Text>
                     <TeamMemberList
                         members={teamMembers}
                         selectedIds={[]}
                         currentUserId={currentUserId}
                         onToggle={handleMemberSelect}
                     />
-                </div>
+                </Stack>
             )}
 
-            <div className='volt-container d-flex column flex-1 y-auto chat-sidebar-list'>
+            <Stack flex='1' overflow='y-auto' className='chat-sidebar-list'>
                 {chatListContent}
-            </div>
-        </div>
+            </Stack>
+        </Stack>
     );
 };
 

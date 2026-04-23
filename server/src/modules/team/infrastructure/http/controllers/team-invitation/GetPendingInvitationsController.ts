@@ -1,10 +1,10 @@
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { TeamInvitationStatus } from '@modules/team/domain/entities/team-invitation/TeamInvitation';
-import { createListByController } from '@shared/infrastructure/http/controllers/createReadController';
 import type { TeamInvitationProps } from '@modules/team/domain/entities/team-invitation/TeamInvitation';
+import { TeamInvitationStatus } from '@modules/team/domain/entities/team-invitation/TeamInvitation';
+import TeamInvitationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-invitation/TeamInvitationRepository';
+import { createListByController } from '@shared/infrastructure/http/controllers/createReadController';
 
 const GetPendingInvitationsController = createListByController({
-    repositoryToken: TEAM_TOKENS.TeamInvitationRepository,
+    repositoryToken: TeamInvitationRepository,
     paginated: true,
     populate: {
         path: 'invitedUser'

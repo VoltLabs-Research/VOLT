@@ -1,4 +1,4 @@
-import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
+import { ContextMenuPopover } from '@/shared/presentation/primitives';
 import { BookOpen, Braces, FileCode, Home, PlugZap } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -65,7 +65,7 @@ const GlobalContextMenu = ({ children }: GlobalContextMenuProps) => {
             options={menuOptions}
             shouldOpenOnContextMenu={shouldOpenOnContextMenu}
             trigger={(
-                <div className='volt-container d-flex column flex-1 min-h-0'>
+                <div className='d-flex column flex-1 min-h-0'>
                     {children}
                 </div>
             )}

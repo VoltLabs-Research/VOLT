@@ -1,26 +1,26 @@
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import {
     DownloadPluginBinaryInputDTO,
     DownloadPluginBinaryOutputDTO
 } from '@modules/plugin/application/dtos/plugin/DownloadPluginBinaryDTO';
-import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { IStorageService } from '@shared/domain/port/IStorageService';
 import { Result } from '@shared/domain/port/Result';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 import { isStorageObjectNotFoundError } from '@shared/infrastructure/utilities/storage-errors';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { injectable, inject } from 'tsyringe';
+import { inject } from 'tsyringe';
 
-@injectable()
+@Singleton()
 export class DownloadPluginBinaryUseCase implements IUseCase<DownloadPluginBinaryInputDTO, DownloadPluginBinaryOutputDTO, ApplicationError> {
     constructor(
-        @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository,
+        private pluginRepository: PluginRepository,
         @inject(SHARED_TOKENS.StorageService) private storageService: IStorageService
     ){}
 

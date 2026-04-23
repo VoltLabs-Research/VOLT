@@ -98,6 +98,8 @@ export interface TeamCluster {
     roleConfig: TeamClusterRuntimeRoleConfig;
     effectiveCapabilities: TeamClusterEffectiveCapabilities;
     activeTransfers?: ClusterTransferJob[];
+    isDemo: boolean;
+    demoExpiresAt: Date | string | null;
     createdAt: Date | string;
     updatedAt: Date | string;
 };

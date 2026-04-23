@@ -1,5 +1,5 @@
-import logger from '@shared/infrastructure/logger';
-import { injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+
 import { spawn } from 'node:child_process';
 
 export interface CompressionTask {
@@ -37,7 +37,7 @@ const awaitProcessExit = async (child: ReturnType<typeof spawn>): Promise<void> 
     });
 };
 
-@injectable()
+@Singleton()
 export default class CompressionProcessor {
     async process(task: CompressionTask): Promise<void> {
         const child = spawn('zstd', [

@@ -1,12 +1,11 @@
-import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { Result } from '@shared/domain/port/Result';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
 import type { CreateLatexFileInputDTO, CreateLatexFileOutputDTO } from '@modules/latex/application/dtos/CreateLatexFileDTO';
+import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
+import LatexFileRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexFileRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
-import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
+import { Result } from '@shared/domain/port/Result';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 /**
  * Creates a new LatexFile within a document.
@@ -14,14 +13,14 @@ import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFile
  * If `isEntrypoint` is true, the existing entrypoint is cleared atomically
  * before the new file is set as entrypoint.
  */
-@injectable()
+@Singleton()
 export class CreateLatexFileUseCase implements IUseCase<CreateLatexFileInputDTO, CreateLatexFileOutputDTO, ApplicationError> {
     constructor(
-        @inject(LATEX_TOKENS.LatexDocumentRepository)
-        private readonly latexDocumentRepository: ILatexDocumentRepository,
+        
+        private readonly latexDocumentRepository: LatexDocumentRepository,
 
-        @inject(LATEX_TOKENS.LatexFileRepository)
-        private readonly latexFileRepository: ILatexFileRepository
+        
+        private readonly latexFileRepository: LatexFileRepository
     ) {}
 
     async execute(input: CreateLatexFileInputDTO): Promise<Result<CreateLatexFileOutputDTO, ApplicationError>> {

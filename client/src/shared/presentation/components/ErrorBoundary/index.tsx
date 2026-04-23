@@ -1,4 +1,4 @@
-import Button from '@/shared/presentation/components/Button';
+import { Button } from '@/shared/presentation/primitives';
 import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle } from 'lucide-react';
@@ -49,25 +49,25 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     render() {
         if (this.state.hasError) {
             return (
-                <div className='volt-container d-flex items-center content-center w-max h-max p-2'>
-                    <div className='volt-container d-flex column items-center text-center gap-1-5' role='alert' aria-live='assertive'>
-                        <div className='volt-container d-flex items-center content-center'>
+                <div className='d-flex items-center content-center w-max h-max p-2'>
+                    <div className='d-flex column items-center text-center gap-1-5' role='alert' aria-live='assertive'>
+                        <div className='d-flex items-center content-center'>
                             <AlertTriangle size={28} aria-hidden='true' />
                         </div>
-                        <div className='volt-container d-flex column gap-05 items-center'>
-                            <h2 className='volt-title font-size-3 font-weight-6 color-primary'>
+                        <div className='d-flex column gap-05 items-center'>
+                            <h2 className='font-size-3 font-weight-6 color-primary'>
                                 {this.props.fallbackTitle ?? 'Something went wrong'}
                             </h2>
-                            <p className='volt-text font-size-2 color-secondary line-height-5'>
+                            <p className='font-size-2 color-secondary line-height-5'>
                                 {this.props.fallbackDescription ?? 'The interface hit an unexpected issue. Try again or reload the page.'}
                             </p>
                             {this.state.error?.message && (
-                                <p className='volt-text font-size-1 color-muted line-height-5'>
+                                <p className='font-size-1 color-muted line-height-5'>
                                     {this.state.error.message}
                                 </p>
                             )}
                         </div>
-                        <div className='volt-container d-flex items-center gap-075'>
+                        <div className='d-flex items-center gap-075'>
                             <Button variant='ghost' intent='neutral' size='sm' onClick={this.handleReset}>
                                 Try again
                             </Button>

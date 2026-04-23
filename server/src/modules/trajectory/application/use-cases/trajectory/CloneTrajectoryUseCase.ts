@@ -1,65 +1,64 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { ClusterRoleAwareSelectionService } from '@modules/container/infrastructure/services/ClusterRoleAwareSelectionService';
 import StoragePlacementService from '@modules/team-cluster/application/services/StoragePlacementService';
+import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import { resolveEffectiveCapabilitiesFromRoleConfig, TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
-import TrajectoryCloneCoordinator from '@modules/trajectory/application/services/TrajectoryCloneCoordinator';
-import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
 import {
     CloneTrajectoryInputDTO,
     CloneTrajectoryOutputDTO
 } from '@modules/trajectory/application/dtos/trajectory/CloneTrajectoryDTO';
+import TrajectoryCloneCoordinator from '@modules/trajectory/application/services/TrajectoryCloneCoordinator';
+import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import { createTrajectoryCloneJobProps } from '@modules/trajectory/domain/entities/trajectory/TrajectoryCloneJob';
-import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import type { IUseCase } from '@shared/application/IUseCase';
-import { IEventBus } from '@shared/application/events/IEventBus';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TrajectoryCreatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryCreatedEvent';
-import { Result } from '@shared/domain/port/Result';
+import type { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { Result } from '@shared/domain/port/Result';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 
-import { inject, injectable } from 'tsyringe';
-import type TrajectoryCloneJobRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryCloneJobRepository';
-import type TrajectoryCloneRunner from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryCloneRunner';
-import type { ITeamClusterRepository } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
-import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
+import TrajectoryCloneJobRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryCloneJobRepository';
+import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import TrajectoryCloneRunner from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryCloneRunner';
+import { inject } from 'tsyringe';
 
-@injectable()
+@Singleton()
 export default class CloneTrajectoryUseCase implements IUseCase<
     CloneTrajectoryInputDTO,
     CloneTrajectoryOutputDTO,
     ApplicationError
 > {
     constructor(
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepository: ITrajectoryRepository,
+        
+        private readonly trajectoryRepository: TrajectoryRepository,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository)
-        private readonly trajectoryFrameRepository: ITrajectoryFrameRepository,
+        
+        private readonly trajectoryFrameRepository: TrajectoryFrameRepository,
 
-        @inject(TrajectoryReadAccessService)
+        
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryCloneJobRepository)
+        
         private readonly cloneJobRepository: TrajectoryCloneJobRepository,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryCloneCoordinator)
+        
         private readonly cloneCoordinator: TrajectoryCloneCoordinator,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryCloneRunner)
+        
         private readonly cloneRunner: TrajectoryCloneRunner,
 
-        @inject(TEAM_CLUSTER_TOKENS.StoragePlacementService)
+        
         private readonly storagePlacementService: StoragePlacementService,
 
-        @inject(TEAM_CLUSTER_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
+        
+        private readonly teamClusterRepository: TeamClusterRepository,
 
-        @inject(ClusterRoleAwareSelectionService)
+        
         private readonly clusterSelectionService: ClusterRoleAwareSelectionService,
 
         @inject(SHARED_TOKENS.EventBus)

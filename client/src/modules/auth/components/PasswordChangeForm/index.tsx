@@ -1,8 +1,8 @@
 import './PasswordChangeForm.css';
 import { passwordChangeSchema } from './validation-schema';
-import Button from '@/shared/presentation/components/Button';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import WarningZone from '@/shared/presentation/components/WarningZone';
+import { Box, Button } from '@/shared/presentation/primitives';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, Lock, Key } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -140,7 +140,7 @@ const PasswordChangeForm = ({
                     className='password-form-error' />
             )}
 
-            <div className='volt-container d-flex gap-075 flex-wrap'>
+            <Box display='flex' gap='075' wrap>
                 <Button
                     type='submit'
                     intent='brand'
@@ -156,7 +156,7 @@ const PasswordChangeForm = ({
                 >
                     Cancel
                 </Button>
-            </div>
+            </Box>
         </form>
     );
 };

@@ -1,5 +1,5 @@
 import './ChartContainer.css';
-import Skeleton from '@/shared/presentation/components/Skeleton';
+import { Skeleton } from '@/shared/presentation/primitives';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -47,8 +47,8 @@ const ChartContainer = ({
         const skeletonHeight = emphasis === 'primary' ? 28 : 18;
 
         return (
-            <div key={stat.label} className='volt-container d-flex column gap-025'>
-                <span className='chart-stat-label font-size-1 color-muted'>
+            <div key={stat.label} className='d-flex column gap-025'>
+                <span className='chart-stat-label text-eyebrow font-size-1'>
                     {stat.label}
                 </span>
                 {statsLoading ? (
@@ -63,16 +63,16 @@ const ChartContainer = ({
     };
 
     return (
-        <div className='volt-container d-flex h-max column p-1-5 chart-container radius-lg sm:p-1'>
-            <div className='volt-container d-flex content-between mb-1-5 sm:column sm:gap-1'>
-                <div className='volt-container d-flex items-center gap-075'>
+        <div className='d-flex h-max column p-1-5 chart-container radius-lg sm:p-1'>
+            <div className='d-flex content-between mb-1-5 sm:column sm:gap-1'>
+                <div className='d-flex items-center gap-075'>
                     {renderIcon()}
-                    <h3 className='volt-title font-size-3 chart-title font-weight-6 color-primary'>
+                    <h3 className='font-size-3 chart-title font-weight-6 color-primary'>
                         {title}
                     </h3>
                 </div>
                 {stats && (
-                    <div className='volt-container d-flex items-end gap-1-5 flex-wrap sm:w-max sm:gap-1'>
+                    <div className='d-flex items-end gap-1-5 flex-wrap sm:w-max sm:gap-1'>
                         {stats.map(renderStat)}
                     </div>
                 )}

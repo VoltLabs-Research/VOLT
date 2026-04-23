@@ -16,6 +16,7 @@ import { memo, useMemo, useCallback, useState, useRef, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import PluginAtomsTable from '@/modules/plugin/components/listing/PluginAtomsTable';
 import PluginExposureListingPanel from '@/modules/plugin/components/listing/PluginExposureListingPanel';
+import { Stack, Box } from '@/shared/presentation/primitives';
 import type { TimelineTabOption } from '../TimelineHeader';
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
@@ -422,7 +423,7 @@ const Timeline = ({
     }, [currentFrame, rangedTimesteps, setCurrentTimestep]);
 
     return (
-        <div className="volt-container canvas-timeline d-flex column overflow-hidden min-h-0">
+        <Stack overflow='hidden' minH='0' className="canvas-timeline">
             <TimelineHeader
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
@@ -447,7 +448,7 @@ const Timeline = ({
             />
 
             {activeTab === 'timeline' && (
-                <div className='volt-container p-relative'>
+                <Box position='relative'>
                     <TimelineRuler
                         rulerRef={rulerRef}
                         ticks={ticks}
@@ -462,26 +463,26 @@ const Timeline = ({
                         onWheel={handleRulerWheel}
                         onKeyDown={handleRulerKeyDown}
                     />
-                </div>
+                </Box>
             )}
 
             {activeTab === 'particles' && trajectory?._id && (
-                <div className="volt-container canvas-timeline-body flex-1 p-relative overflow-hidden min-h-0">
+                <Box flex='1' position='relative' overflow='hidden' minH='0' className="canvas-timeline-body">
                     <PluginAtomsTable
                         trajectoryId={trajectory._id}
                         analysisId={analysisId}
                     />
-                </div>
+                </Box>
             )}
 
             {activeTab === 'simulation-cell' && (
-                <div className="volt-container canvas-timeline-body flex-1 p-relative overflow-hidden min-h-0">
+                <Box flex='1' position='relative' overflow='hidden' minH='0' className="canvas-timeline-body">
                     <SimulationCellView trajectory={trajectory} currentTimestep={currentTimestep} />
-                </div>
+                </Box>
             )}
 
             {activeTab === TimelineTab.Log && analysisId && (
-                <div className="volt-container canvas-timeline-body flex-1 p-relative overflow-hidden min-h-0">
+                <Box flex='1' position='relative' overflow='hidden' minH='0' className="canvas-timeline-body">
                     <AnalysisLogPanel
                         analysisId={analysisId}
                         timestep={currentFrame}
@@ -489,11 +490,11 @@ const Timeline = ({
                         live={isLiveLogFrame}
                         activityStatus={analysisFrameStatus}
                     />
-                </div>
+                </Box>
             )}
 
             {activeExposureId && trajectory?._id && pluginId && selectedTeamId && (
-                <div className="volt-container canvas-timeline-body flex-1 p-relative overflow-hidden min-h-0">
+                <Box flex='1' position='relative' overflow='hidden' minH='0' className="canvas-timeline-body">
                     {/* Reuse the dashboard listing flow so row actions keep the exact analysis/exposure/timestep context. */}
                     <PluginExposureListingPanel
                         key={`${pluginId}:${analysisId ?? 'default'}:${trajectory._id}:${activeExposureId}`}
@@ -505,9 +506,9 @@ const Timeline = ({
                         showTrajectoryColumn={false}
                         compact
                     />
-                </div>
+                </Box>
             )}
-        </div>
+        </Stack>
     );
 };
 

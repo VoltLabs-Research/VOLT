@@ -9,8 +9,8 @@ import {
 import { resolveTabularPayload } from '@/modules/ai/utilities/message-artifacts';
 import { isRecord } from '@/shared/utils/type-guards';
 import AutoScrollList from '@/shared/presentation/components/AutoScrollList';
-import Button from '@/shared/presentation/components/Button';
 import RecoveryState from '@/shared/presentation/components/RecoveryState';
+import { Box, Stack, Row, Text, Button, VisuallyHidden, SectionLabel, ThinkingDots, StatusDot } from '@/shared/presentation/primitives';
 import { isToolUIPart } from 'ai';
 import { IoExpandOutline } from 'react-icons/io5';
 import { memo, useMemo } from 'react';
@@ -19,7 +19,7 @@ import ReactMarkdown from 'react-markdown';
 import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
 import type { ParsedMarkdownTable } from '@/modules/ai/utilities/message-content';
 import type { UIMessage } from 'ai';
-import type { ComponentPropsWithoutRef, CSSProperties, ReactNode } from 'react';
+import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 import './AIConversationThread.css';
 
 interface ToolApprovalResponseParams {
@@ -177,13 +177,9 @@ const normalizeToolPart = (
 };
 
 const renderThinkingBubble = () => (
-    <div className='volt-container ai-message-bubble is-assistant ai-thinking-bubble'>
-        <div className='volt-container d-flex items-center gap-025 ai-thinking-indicator' aria-label='Assistant is thinking'>
-            <span className='ai-thinking-dot' />
-            <span className='ai-thinking-dot' />
-            <span className='ai-thinking-dot' />
-        </div>
-    </div>
+    <Box className='ai-message-bubble is-assistant ai-thinking-bubble'>
+        <ThinkingDots label='Assistant is thinking' />
+    </Box>
 );
 
 const renderInlineArtifact = (artifact: AIMessageArtifact) => {
@@ -209,7 +205,7 @@ const renderInlineArtifact = (artifact: AIMessageArtifact) => {
         }
 
         let imageContent: ReactNode = (
-            <p className='volt-text font-size-1 color-muted'>Image artifact is unavailable.</p>
+            <Text as='p' size='sm' tone='muted'>Image artifact is unavailable.</Text>
         );
 
         if (imageUrl) {
@@ -227,29 +223,25 @@ const renderInlineArtifact = (artifact: AIMessageArtifact) => {
         }
 
         return (
-            <div key={key} className='volt-container d-flex column gap-05 ai-inline-artifact-card'>
-                <p className='volt-text font-size-1 text-uppercase color-muted'>
-                    {artifact.title}
-                </p>
+            <Stack key={key} gap='05' className='ai-inline-artifact-card'>
+                <SectionLabel>{artifact.title}</SectionLabel>
                 {summary && (
-                    <p className='volt-text font-size-1 color-muted'>{summary}</p>
+                    <Text as='p' size='sm' tone='muted'>{summary}</Text>
                 )}
                 {imageContent}
-            </div>
+            </Stack>
         );
     }
 
     const payloadText = stringifyArtifactValue(artifact.payload);
     return (
-        <div key={key} className='volt-container d-flex column gap-05 ai-inline-artifact-card'>
-            <p className='volt-text font-size-1 text-uppercase color-muted'>
-                {artifact.title}
-            </p>
+        <Stack key={key} gap='05' className='ai-inline-artifact-card'>
+            <SectionLabel>{artifact.title}</SectionLabel>
             {summary && (
-                <p className='volt-text font-size-1 color-muted'>{summary}</p>
+                <Text as='p' size='sm' tone='muted'>{summary}</Text>
             )}
-            <p className='volt-text font-size-1 ai-inline-artifact-payload'>{payloadText}</p>
-        </div>
+            <Text as='p' size='sm' className='ai-inline-artifact-payload'>{payloadText}</Text>
+        </Stack>
     );
 };
 
@@ -308,18 +300,6 @@ interface AIMessageItemProps {
     onOpenTableArtifact?: (artifact: AIMessageArtifact) => void;
     activeTableArtifactId?: string | null;
     addToolApprovalResponse?: (params: ToolApprovalResponseParams) => void;
-};
-
-const VISUALLY_HIDDEN_STYLES: CSSProperties = {
-    position: 'absolute',
-    width: '1px',
-    height: '1px',
-    padding: 0,
-    margin: '-1px',
-    overflow: 'hidden',
-    clip: 'rect(0, 0, 0, 0)',
-    whiteSpace: 'nowrap',
-    border: 0
 };
 
 const resolveImagePayload = (artifact: AIMessageArtifact): AIArtifactImagePayload | null => {
@@ -456,23 +436,21 @@ const AIMessageItem = memo(({
         }
 
         return (
-            <div key={artifact.id} className={`volt-container ${artifactCardClassName}`}>
-                <div className='volt-container d-flex items-center content-between gap-05'>
-                    <p className='volt-text font-size-1 text-uppercase color-muted'>
-                        {artifact.title}
-                    </p>
-                    <p className='volt-text font-size-1 color-muted'>
+            <Box key={artifact.id} className={artifactCardClassName}>
+                <Row justify='between' gap='05'>
+                    <SectionLabel>{artifact.title}</SectionLabel>
+                    <Text as='p' size='sm' tone='muted'>
                         {tablePayload.rows.length} rows · {tablePayload.columns.length} columns
-                    </p>
-                </div>
+                    </Text>
+                </Row>
 
                 {artifact.summary && (
-                    <p className='volt-text font-size-1 color-muted'>
+                    <Text as='p' size='sm' tone='muted'>
                         {artifact.summary}
-                    </p>
+                    </Text>
                 )}
 
-                <div className='volt-container x-auto ai-table-artifact-preview-scroll'>
+                <Box overflow='x-auto' className='ai-table-artifact-preview-scroll'>
                     <table className='ai-table-artifact-preview'>
                         <thead>
                             <tr>
@@ -493,23 +471,23 @@ const AIMessageItem = memo(({
                             ))}
                         </tbody>
                     </table>
-                </div>
+                </Box>
 
                 {hasMoreRows && (
-                    <p className='volt-text font-size-1 color-muted'>
+                    <Text as='p' size='sm' tone='muted'>
                         +{tablePayload.rows.length - previewRows.length} more rows
-                    </p>
+                    </Text>
                 )}
 
                 {onOpenTableArtifact && (
-                    <div className='volt-container d-flex content-end'>
+                    <Box display='flex' justify='end'>
                         <OpenSpreadsheetButton
                             isActive={isActive}
                             onClick={createOpenArtifactHandler(artifact)}
                         />
-                    </div>
+                    </Box>
                 )}
-            </div>
+            </Box>
         );
     };
 
@@ -539,18 +517,25 @@ const AIMessageItem = memo(({
             actionLabel = 'AI requested action for tool: ';
         }
 
+        let dotTone: 'warning' | 'success' | 'danger' = 'warning';
+        if (actionState === 'approved') {
+            dotTone = 'success';
+        } else if (actionState === 'rejected' || actionState === 'failed' || actionState === 'output-denied') {
+            dotTone = 'danger';
+        }
+
         return (
-            <div key={`${toolCallId}-${index}`} className={`volt-container ai-action-request-card ${statusClass}`}>
-                <div className='volt-container d-flex items-center gap-05 ai-action-request-header'>
-                    <span className='ai-action-request-dot' />
-                    <p className='volt-text font-size-1 color-muted'>
+            <Box key={`${toolCallId}-${index}`} className={`ai-action-request-card ${statusClass}`}>
+                <Row gap='05' className='ai-action-request-header'>
+                    <StatusDot tone={dotTone} size='sm' />
+                    <Text as='p' size='sm' tone='muted'>
                         {actionLabel}
                         {toolInvocation.toolName}
-                    </p>
-                </div>
+                    </Text>
+                </Row>
 
                 {isApprovalRequested && addToolApprovalResponse && (
-                    <div className='volt-container d-flex items-center gap-025 ai-action-request-controls'>
+                    <Row gap='025' className='ai-action-request-controls'>
                         <button
                             type='button'
                             className='ai-action-request-btn is-approve'
@@ -565,17 +550,17 @@ const AIMessageItem = memo(({
                         >
                             Reject
                         </button>
-                    </div>
+                    </Row>
                 )}
 
                 {isExecuting && (
-                    <div className='volt-container d-flex items-center gap-025 ai-action-request-controls'>
-                        <p className='volt-text font-size-1 color-muted'>
+                    <Row gap='025' className='ai-action-request-controls'>
+                        <Text as='p' size='sm' tone='muted'>
                             Running...
-                        </p>
-                    </div>
+                        </Text>
+                    </Row>
                 )}
-            </div>
+            </Box>
         );
     };
 
@@ -592,16 +577,16 @@ const AIMessageItem = memo(({
 
         if (segment.type === 'reasoning') {
             segmentElements.push(
-                <div key={`seg-${segIdx}`} className='volt-container ai-message-reasoning'>
-                    <p className='volt-text font-size-1 text-uppercase color-muted ai-message-reasoning-label'>
+                <Box key={`seg-${segIdx}`} className='ai-message-reasoning'>
+                    <SectionLabel className='ai-message-reasoning-label d-block'>
                         Thinking
-                    </p>
-                    <div className='volt-container font-size-1 ai-message-text ai-message-markdown'>
+                    </SectionLabel>
+                    <Box className='font-size-1 ai-message-text ai-message-markdown'>
                         <ReactMarkdown remarkPlugins={REMARK_PLUGINS}>
                             {segment.content}
                         </ReactMarkdown>
-                    </div>
-                </div>
+                    </Box>
+                </Box>
             );
             segIdx++;
             continue;
@@ -609,13 +594,13 @@ const AIMessageItem = memo(({
 
         if (segment.type === 'text') {
             segmentElements.push(
-                <div key={`seg-${segIdx}`} className={`volt-container ai-message-bubble ${bubbleVariant}`}>
-                    <div className='volt-container font-size-2-5 ai-message-text ai-message-markdown'>
+                <Box key={`seg-${segIdx}`} className={`ai-message-bubble ${bubbleVariant}`}>
+                    <Box className='font-size-2-5 ai-message-text ai-message-markdown'>
                         <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={mdComponents}>
                             {segment.content}
                         </ReactMarkdown>
-                    </div>
-                </div>
+                    </Box>
+                </Box>
             );
             segIdx++;
             continue;
@@ -632,9 +617,9 @@ const AIMessageItem = memo(({
                 segIdx++;
             }
             segmentElements.push(
-                <div key={`seg-${groupStart}`} className='volt-container d-flex column gap-05 ai-action-request-list'>
+                <Stack key={`seg-${groupStart}`} gap='05' className='ai-action-request-list'>
                     {tools.map(renderToolInvocation)}
-                </div>
+                </Stack>
             );
             continue;
         }
@@ -650,9 +635,9 @@ const AIMessageItem = memo(({
                 segIdx++;
             }
             segmentElements.push(
-                <div key={`seg-${groupStart}`} className='volt-container d-flex column gap-05 ai-message-artifact-list'>
+                <Stack key={`seg-${groupStart}`} gap='05' className='ai-message-artifact-list'>
                     {artifacts.map(renderTableArtifact)}
-                </div>
+                </Stack>
             );
             continue;
         }
@@ -667,9 +652,9 @@ const AIMessageItem = memo(({
             className={`d-flex column gap-025 ai-message-row ${bubbleVariant}`}
             aria-label={`${messageLabel} message ${messageIndex + 1} of ${totalMessages}`}
         >
-            <span style={VISUALLY_HIDDEN_STYLES}>
+            <VisuallyHidden>
                 {messageLabel}
-            </span>
+            </VisuallyHidden>
             {segmentElements}
             {showThinkingBubble && renderThinkingBubble()}
         </article>
@@ -804,21 +789,21 @@ const AIConversationThread = ({
         let starterContent: ReactNode = null;
         if (starterInput) {
             starterContent = (
-                <div className='volt-container ai-thread-starter-input'>
+                <Box className='ai-thread-starter-input'>
                     {starterInput}
-                </div>
+                </Box>
             );
         }
 
         return (
-            <div className='volt-container d-flex flex-center flex-1 ai-thread-starter'>
-                <div className='volt-container d-flex column items-center gap-2 ai-thread-starter-content'>
-                    <p className='volt-text font-size-6 font-weight-5 color-primary ai-thread-starter-title'>
+            <Box display='flex' flex='1' className='flex-center ai-thread-starter'>
+                <Stack align='center' gap='2' className='ai-thread-starter-content'>
+                    <Text as='p' size='3xl' weight='medium' tone='primary' className='ai-thread-starter-title'>
                         Ready when you are.
-                    </p>
+                    </Text>
                     {starterContent}
-                </div>
-            </div>
+                </Stack>
+            </Box>
         );
     };
 
@@ -844,23 +829,23 @@ const AIConversationThread = ({
         }
 
         return (
-            <div className='volt-container d-flex flex-center flex-1 ai-thread-empty'>
+            <Box display='flex' flex='1' className='flex-center ai-thread-empty'>
                 <RecoveryState
                     title='Failed to load conversation'
                     description={error}
                     retryLabel={retryButtonText}
                     onRetry={onRetry}
                 />
-            </div>
+            </Box>
         );
     }
 
     let renderAfter: ReactNode = null;
     if (showStandaloneTyping) {
         renderAfter = (
-            <div className='volt-container d-flex column gap-025 ai-message-row is-assistant'>
+            <Stack gap='025' className='ai-message-row is-assistant'>
                 {renderThinkingBubble()}
-            </div>
+            </Stack>
         );
     }
 
@@ -879,22 +864,21 @@ const AIConversationThread = ({
                 autoScrollDependency={autoScrollDependency}
                 autoScrollDependencyEnabled={isResponding || showStandaloneTyping}
                 renderLoading={Array.from({ length: 4 }).map((_, index) => (
-                    <div key={index} className='volt-container ai-message-skeleton' />
+                    <Box key={index} className='ai-message-skeleton animate-pulse' />
                 ))}
                 renderEmpty={renderPromptStarter()}
                 renderAfter={renderAfter}
                 renderItem={renderMessageItem}
             />
 
-            <span
-                style={VISUALLY_HIDDEN_STYLES}
+            <VisuallyHidden
                 role='log'
                 aria-live='polite'
                 aria-relevant='additions text'
                 aria-atomic='false'
             >
                 {isResponding ? 'Assistant is responding.' : `Loaded ${normalizedMessages.length} messages.`}
-            </span>
+            </VisuallyHidden>
         </section>
     );
 };

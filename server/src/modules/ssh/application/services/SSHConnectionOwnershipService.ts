@@ -1,21 +1,20 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import SSHConnection from '@modules/ssh/domain/entities/SSHConnection';
-import type { ISSHConnectionRepository } from '@modules/ssh/domain/port/ISSHConnectionRepository';
-import { SSH_TOKENS } from '@modules/ssh/infrastructure/di/SSHTokens';
+import SSHConnectionRepository from '@modules/ssh/infrastructure/persistence/mongo/repositories/SSHConnectionRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 enum SSHConnectionLoadMode {
     Plain = 'plain',
     WithCredentials = 'with-credentials'
 };
 
-@injectable()
+@Singleton()
 export class SSHConnectionOwnershipService {
     constructor(
-        @inject(SSH_TOKENS.SSHConnectionRepository)
-        private readonly repository: ISSHConnectionRepository
+        
+        private readonly repository: SSHConnectionRepository
     ){}
 
     async getOwnedByTeam(sshConnectionId: string, teamId: string): Promise<Result<SSHConnection, ApplicationError>> {

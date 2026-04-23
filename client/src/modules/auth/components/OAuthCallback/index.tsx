@@ -6,7 +6,7 @@ import {
     resolvePostAuthDestination
 } from '@/modules/auth/services/post-auth-destination-storage';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
-import Loader from '@/shared/presentation/components/Loader';
+import { Box, Heading, Loader, Row, Text } from '@/shared/presentation/primitives';
 import { motion } from 'framer-motion';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { sileo } from 'sileo';
@@ -86,18 +86,18 @@ const OAuthCallbackTemplate = () => {
     }, [markAuthenticated, navigate]);
 
     return (
-        <div className='volt-container d-flex items-center content-center oauth-callback-container p-relative vh-max overflow-hidden'>
-            <div className='volt-container p-absolute inset-0 overflow-hidden'>
-                <div className='volt-container oauth-background-blob radius-full oauth-blob-blue p-absolute w-50' />
-                <div className='volt-container oauth-background-blob radius-full oauth-blob-purple p-absolute' />
-            </div>
+        <Row justify='center' position='relative' height='vh-max' overflow='hidden' className='oauth-callback-container'>
+            <Box position='absolute' inset='0' overflow='hidden'>
+                <Box position='absolute' radius='full' width='50' className='oauth-background-blob oauth-blob-blue' />
+                <Box position='absolute' radius='full' className='oauth-background-blob oauth-blob-purple' />
+            </Box>
 
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className='oauth-card glass-bg radius-2xl p-relative w-max text-center p-2'
             >
-                <div className='volt-container d-flex items-center content-center mb-1-5 oauth-status-icon'>
+                <Row justify='center' className='mb-1-5 oauth-status-icon'>
                     {status === 'loading' && (
                         <Loader scale={0.6} isFixed={false} />
                     )}
@@ -129,18 +129,18 @@ const OAuthCallbackTemplate = () => {
                             <XCircle size={48} className='oauth-icon-error' />
                         </motion.div>
                     )}
-                </div>
+                </Row>
 
                 <motion.div
                     key={status}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                 >
-                    <h3 className='volt-title oauth-title font-size-5'>
+                    <Heading level={3} size='2xl' weight='bold' tone='primary' className='oauth-title'>
                         {status === 'loading' && 'Authenticating...'}
                         {status === 'success' && 'Successfully Authenticated!'}
                         {status === 'error' && 'Authentication Failed'}
-                    </h3>
+                    </Heading>
                 </motion.div>
 
                 <motion.div
@@ -149,14 +149,14 @@ const OAuthCallbackTemplate = () => {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.1 }}
                 >
-                    <p className='volt-text color-secondary'>
+                    <Text as='p' tone='secondary'>
                         {status === 'loading' && 'Please wait while we verify your credentials.'}
                         {status === 'success' && 'Redirecting you to setup...'}
                         {status === 'error' && 'Something went wrong. Redirecting to login...'}
-                    </p>
+                    </Text>
                 </motion.div>
             </motion.div>
-        </div>
+        </Row>
     );
 };
 

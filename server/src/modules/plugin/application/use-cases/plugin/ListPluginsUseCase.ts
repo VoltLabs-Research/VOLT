@@ -1,17 +1,16 @@
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { ListPluginsInputDTO, ListPluginsOutputDTO } from '@modules/plugin/application/dtos/plugin/ListPluginsDTO';
-import { mapPluginToPersistedDTO } from '@modules/plugin/utilities/mappers/plugin/mapPluginToPersistedDTO';
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
-import { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
+import { mapPluginToPersistedDTO } from '@modules/plugin/utilities/mappers/plugin/mapPluginToPersistedDTO';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
+import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable, inject } from 'tsyringe';
 
-@injectable()
+@Singleton()
 export class ListPluginsUseCase implements IUseCase<ListPluginsInputDTO, ListPluginsOutputDTO> {
     constructor(
-        @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository
+        private pluginRepository: PluginRepository
     ){}
 
     async execute(input: ListPluginsInputDTO): Promise<Result<ListPluginsOutputDTO>> {

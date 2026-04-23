@@ -1,9 +1,10 @@
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { inject, injectable } from 'tsyringe';
+import { inject } from 'tsyringe';
 import type IORedis from 'ioredis';
 import type { JobStatusChangedEventPayload } from '@modules/jobs/domain/events/JobStatusChangedEvent';
 import type { TeamJobSnapshot } from '@modules/jobs/infrastructure/projections/TeamJobSnapshot';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 const STATUS_TTL_SECONDS = 86400;
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
@@ -106,7 +107,19 @@ const resolveProjectedStatus = (
     };
 };
 
-@injectable()
+const resolveProjectedError = (
+    previousError: TeamJobSnapshot['error'] | undefined,
+    incomingStatus: JobStatusChangedEventPayload['status'],
+    incomingError: JobStatusChangedEventPayload['error']
+): TeamJobSnapshot['error'] => {
+    if (incomingStatus !== JobStatus.Failed) {
+        return undefined;
+    }
+
+    return incomingError ?? previousError;
+};
+
+@Singleton()
 export default class TeamJobProjectionService {
     constructor(
         @inject(SHARED_TOKENS.RedisClient)
@@ -162,7 +175,7 @@ export default class TeamJobProjectionService {
                 createdAt: previousSnapshot?.createdAt ?? timestamp,
                 name: name ?? previousSnapshot?.name,
                 message: message ?? previousSnapshot?.message,
-                error: error ?? previousSnapshot?.error,
+                error: resolveProjectedError(previousSnapshot?.error, status, error),
                 analysisId: analysisId ?? previousSnapshot?.analysisId,
                 trajectoryId: trajectoryId ?? previousSnapshot?.trajectoryId,
                 trajectoryName,

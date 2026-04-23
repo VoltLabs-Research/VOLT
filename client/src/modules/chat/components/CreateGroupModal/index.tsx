@@ -2,7 +2,7 @@ import TeamMemberList from '../TeamMemberList';
 import { useState } from 'react';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Modal from '@/shared/presentation/components/Modal';
+import { Stack, Text, Modal } from '@/shared/presentation/primitives';
 import { toggleSelection } from '@/shared/utils/selection';
 import type { User } from '@/modules/auth/api/entities/user';
 
@@ -61,7 +61,7 @@ const CreateGroupModal = ({ teamMembers, currentUserId, onCreateGroup }: CreateG
                 />
             )}
         >
-            <div className='volt-container d-flex column gap-1 p-2'>
+            <Stack gap='1' p='2'>
                 <FormFieldRHF
                     label='Group Name'
                     value={groupName}
@@ -76,19 +76,19 @@ const CreateGroupModal = ({ teamMembers, currentUserId, onCreateGroup }: CreateG
                     placeholder='Enter description (optional)'
                 />
 
-                <div className='volt-container d-flex column gap-05'>
-                    <p className='volt-text font-size-2 font-weight-6 color-secondary'>
+                <Stack gap='05'>
+                    <Text as='p' size='md' weight='bold' tone='secondary'>
                         Select Members ({selectedMembers.length} selected)
-                    </p>
+                    </Text>
                     <TeamMemberList
                         members={teamMembers}
                         selectedIds={selectedMembers}
                         currentUserId={currentUserId}
                         onToggle={handleToggleMember}
                     />
-                </div>
+                </Stack>
 
-            </div>
+            </Stack>
         </Modal>
     );
 };

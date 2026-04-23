@@ -1,41 +1,39 @@
 import { getTrajectoryBackgroundProcessorConcurrency } from '@core/config/trajectory';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
-import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
-import { TEAM_CLUSTER_TOKENS } from '@modules/team-cluster/infrastructure/di/TeamClusterTokens';
 import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
-import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { normalizeTrajectoryWorkerFailure } from '@modules/trajectory/utilities/trajectory/trajectory-worker-failure';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
+import Trajectory, { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/trajectory/TrajectoryParserFactory';
 import CloudUploadQueueService from '@modules/trajectory/infrastructure/services/trajectory/CloudUploadQueueService';
 import CompressionQueueService, { CompressionJobData } from '@modules/trajectory/infrastructure/services/trajectory/CompressionQueueService';
+import { normalizeTrajectoryWorkerFailure } from '@modules/trajectory/utilities/trajectory/trajectory-worker-failure';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 
-import { injectable, inject } from 'tsyringe';
 import IORedis from 'ioredis';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import pLimit from 'p-limit';
+import { inject } from 'tsyringe';
 
 import type { ErrorCode } from '@core/constants/error-codes';
-import type DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
-import type { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
+import SimulationCellRepository from '@modules/simulation-cell/infrastructure/persistence/mongo/repositories/SimulationCellRepository';
+import DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
 import type { ITrajectoryBackgroundProcessor, ProcessorContext, TrajectoryUploadFile } from '@modules/trajectory/domain/port/trajectory/ITrajectoryBackgroundProcessor';
-import type { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
-import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import type { ITrajectoryUploadStagingService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryUploadStagingService';
+import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryDumpStorageService';
+import TrajectoryUploadStagingService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryUploadStagingService';
+import { buildTrajectoryDumpObjectName } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { ExtractedFile } from '@shared/domain/port/IFileExtractorService';
-import type { IFileExtractorService } from '@shared/domain/port/IFileExtractorService';
-import type { ITempFileService } from '@shared/domain/port/ITempFileService';
-import { buildTrajectoryDumpObjectName } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
+import FileExtractorService from '@shared/infrastructure/services/FileExtractorService';
+import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import TempFileService from '@shared/infrastructure/services/TempFileService';
 
 type ParsedFrame = {
     timestep: number;
@@ -78,6 +76,12 @@ interface GlbFrameDescriptor {
     ownerClusterId: string;
 };
 
+interface RequeueGlbPreprocessingInput {
+    trajectoryId: string;
+    teamId: string;
+    timesteps?: number[];
+}
+
 const chunkItems = <T>(items: T[], chunkSize: number): T[][] => {
     if (items.length === 0) {
         return [];
@@ -92,55 +96,92 @@ const chunkItems = <T>(items: T[], chunkSize: number): T[][] => {
     return chunks;
 };
 
-@injectable()
+@Singleton()
 export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgroundProcessor {
     private readonly concurrency = getTrajectoryBackgroundProcessorConcurrency();
     private drainCallbackRegistered = false;
     private compressionDrainCallbackRegistered = false;
 
     constructor(
-        @inject(SHARED_TOKENS.TempFileService)
-        private readonly tempFileService: ITempFileService,
+        
+        private readonly tempFileService: TempFileService,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepo: ITrajectoryRepository,
+        
+        private readonly trajectoryRepo: TrajectoryRepository,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository)
-        private readonly trajectoryFrameRepo: ITrajectoryFrameRepository,
+        
+        private readonly trajectoryFrameRepo: TrajectoryFrameRepository,
 
-        @inject(SIMULATION_CELL_TOKENS.SimulationCellRepository)
-        private readonly simulationCellRepo: ISimulationCellRepository,
+        
+        private readonly simulationCellRepo: SimulationCellRepository,
 
-        @inject(TRAJECTORY_TOKENS.CloudUploadQueueService)
+        
         private readonly cloudUploadQueueService: CloudUploadQueueService,
 
-        @inject(TRAJECTORY_TOKENS.CompressionQueueService)
+        
         private readonly compressionQueueService: CompressionQueueService,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
 
-        @inject(SHARED_TOKENS.FileExtractorService)
-        private readonly extractor: IFileExtractorService,
+        
+        private readonly extractor: FileExtractorService,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryUploadStagingService)
-        private readonly uploadStagingService: ITrajectoryUploadStagingService,
+        
+        private readonly uploadStagingService: TrajectoryUploadStagingService,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryDumpStorageService)
-        private readonly dumpStorage: ITrajectoryDumpStorageService,
+        
+        private readonly dumpStorage: TrajectoryDumpStorageService,
 
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient)
-        private readonly teamClusterDaemonClient: TeamClusterCommandClient,
+        
+        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
 
-        @inject(TeamClusterSelectionService)
+        
         private readonly teamClusterSelectionService: TeamClusterSelectionService,
 
         @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis,
 
-        @inject(TEAM_CLUSTER_TOKENS.DaemonAnalysisCompletionService)
+        
         private readonly daemonAnalysisCompletionService: DaemonAnalysisCompletionService
     ){}
+
+    async requeueGlbPreprocessing(input: RequeueGlbPreprocessingInput): Promise<string[]> {
+        const trajectory = await this.trajectoryRepo.findById(input.trajectoryId);
+        if (!trajectory) {
+            throw ApplicationError.notFound(
+                ErrorCodes.RESOURCE_NOT_FOUND,
+                `Trajectory ${input.trajectoryId} not found`
+            );
+        }
+
+        const persistedFrames = await this.trajectoryFrameRepo.getFrames(input.trajectoryId);
+        if (persistedFrames.length === 0) {
+            logger.warn(`@trajectory-background-processor: requeue skipped — no persisted frames trajectoryId=${input.trajectoryId}`);
+            return [];
+        }
+
+        const requestedTimesteps = input.timesteps && input.timesteps.length > 0
+            ? new Set(input.timesteps)
+            : null;
+
+        const frames = persistedFrames
+            .filter((frame) => requestedTimesteps?.has(frame.timestep) ?? true)
+            .map((frame) => ({
+                timestep: frame.timestep,
+                natoms: frame.natoms,
+                simulationCell: frame.simulationCell
+            }));
+
+        if (frames.length === 0) {
+            logger.warn(`@trajectory-background-processor: requeue skipped — no matching persisted frames trajectoryId=${input.trajectoryId}`);
+            return [];
+        }
+
+        await this.enqueueGlbPreprocessing(frames, trajectory, input.teamId);
+
+        return frames.map((frame) => `trajectory-glb:${input.trajectoryId}:${frame.timestep}`);
+    }
 
     /**
      * Registers the drain callback on CloudUploadQueueService (idempotent).

@@ -1,4 +1,4 @@
-import Button from '@/shared/presentation/components/Button';
+import { Button } from '@/shared/presentation/primitives';
 import type { ReactNode } from 'react';
 
 interface PanelAction {
@@ -16,7 +16,7 @@ export const PanelFooter = ({ actions }: PanelFooterProps) => {
     if(!actions || actions.length === 0) return null;
 
     return (
-        <div className='volt-container panel-footer-bordered d-flex gap-05 content-between f-shrink-0' style={{ marginTop: 'auto' }}>
+        <div className='panel-footer-bordered d-flex gap-05 content-between f-shrink-0' style={{ marginTop: 'auto' }}>
             {actions.map((action, index) => (
                 <Button
                     key={index}

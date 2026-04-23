@@ -1,3 +1,4 @@
+import { Stack, Row, Box, Text } from '@/shared/presentation/primitives';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import type { ReactNode } from 'react';
 
@@ -25,8 +26,8 @@ const DashboardClusterHealthGauge = ({ label, percent, icon, detail }: Dashboard
     const color = getGaugeColor(clamped);
 
     return (
-        <div className='volt-container cluster-gauge d-flex column items-center gap-05'>
-            <div className='volt-container cluster-gauge-ring p-relative d-flex flex-center'>
+        <Stack align='center' gap='05' className='cluster-gauge'>
+            <Box display='flex' position='relative' className='cluster-gauge-ring flex-center'>
                 <svg width={68} height={68} viewBox='0 0 68 68'>
                     <circle
                         cx='34'
@@ -50,19 +51,19 @@ const DashboardClusterHealthGauge = ({ label, percent, icon, detail }: Dashboard
                         className={prefersReducedMotion ? '' : 'cluster-gauge-progress'}
                     />
                 </svg>
-                <div className='volt-container cluster-gauge-center p-absolute d-flex flex-center'>
-                    <span className='font-size-2 font-weight-6 color-primary'>
+                <Box display='flex' position='absolute' className='cluster-gauge-center flex-center'>
+                    <Text size='md' weight='bold' tone='primary'>
                         {Math.round(clamped)}%
-                    </span>
-                </div>
-            </div>
+                    </Text>
+                </Box>
+            </Box>
 
-            <div className='volt-container d-flex items-center gap-025'>
-                <span className='cluster-gauge-icon color-muted'>{icon}</span>
-                <span className='font-size-1 font-weight-5 color-primary'>{label}</span>
-            </div>
-            <span className='font-size-1 color-muted cluster-gauge-detail'>{detail}</span>
-        </div>
+            <Row gap='025'>
+                <Text className='cluster-gauge-icon' tone='muted'>{icon}</Text>
+                <Text size='sm' weight='medium' tone='primary'>{label}</Text>
+            </Row>
+            <Text size='sm' tone='muted' className='cluster-gauge-detail'>{detail}</Text>
+        </Stack>
     );
 };
 

@@ -1,9 +1,10 @@
 import TrajectoryCloneJob, { TrajectoryCloneJobProps, TrajectoryCloneJobState } from '@modules/trajectory/domain/entities/trajectory/TrajectoryCloneJob';
 import trajectoryCloneJobMapper from '@modules/trajectory/infrastructure/persistence/mongo/mappers/trajectory/TrajectoryCloneJobMapper';
 import TrajectoryCloneJobModel, { TrajectoryCloneJobDocument } from '@modules/trajectory/infrastructure/persistence/mongo/models/trajectory/TrajectoryCloneJobModel';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import type { UpdateQuery } from 'mongoose';
-import { injectable } from 'tsyringe';
+
 
 const OPEN_CLONE_JOB_STATES: TrajectoryCloneJobState[] = [
     'queued',
@@ -11,7 +12,7 @@ const OPEN_CLONE_JOB_STATES: TrajectoryCloneJobState[] = [
     'copying'
 ];
 
-@injectable()
+@Singleton()
 export default class TrajectoryCloneJobRepository
     extends MongooseBaseRepository<TrajectoryCloneJob, TrajectoryCloneJobProps, TrajectoryCloneJobDocument> {
 

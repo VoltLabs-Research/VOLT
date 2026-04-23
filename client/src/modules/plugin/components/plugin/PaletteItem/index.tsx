@@ -21,13 +21,13 @@ const PaletteItem = ({ config, onDragStart, onAdd }: PaletteItemProps) => {
     };
 
     return (
-        <div className='volt-container d-flex gap-1-5 items-center cursor-pointer' draggable={!alreadyExists} onDragStart={alreadyExists ? undefined : (e) => onDragStart(e, config.type)} onClick={handleClick} style={alreadyExists ? { opacity: 0.4, pointerEvents: 'none' } : undefined}>
-            <div className="volt-container">
+        <div className='d-flex gap-1-5 items-center cursor-pointer' draggable={!alreadyExists} onDragStart={alreadyExists ? undefined : (e) => onDragStart(e, config.type)} onClick={handleClick} style={alreadyExists ? { opacity: 0.4, pointerEvents: 'none' } : undefined}>
+            <div >
                 <DynamicIcon iconName={config.icon} />
             </div>
-            <div className='volt-container d-flex column gap-05'>
-                <h3 className="volt-title">{config.label}</h3>
-                <p className='volt-text color-muted'>{config.description}</p>
+            <div className='d-flex column gap-05'>
+                <h3 >{config.label}</h3>
+                <p className='color-muted'>{config.description}</p>
             </div>
         </div>
     );

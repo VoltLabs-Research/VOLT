@@ -1,6 +1,7 @@
 import TemplateCard from '../TemplateCard';
 import { CONTAINER_TEMPLATES } from '../../services/container-templates';
 import { Server } from 'lucide-react';
+import { Box, Stack, Heading, Text } from '@/shared/presentation/primitives';
 
 interface ImageSelectionStepProps {
     selectedTemplate: string | null;
@@ -20,13 +21,13 @@ const ImageSelectionStep = ({
     const customImageDescription = customImage || 'Pull any image from Docker Hub.';
 
     return (
-        <div className='volt-container create-container-step d-flex column gap-2'>
-            <div className='volt-container d-flex column gap-05'>
-                <h3 className='volt-title font-size-5 font-weight-6'>Choose an image</h3>
-                <p className='volt-text font-size-3 color-secondary create-container-step-copy'>Select one starter image or continue with a custom Docker Hub image.</p>
-            </div>
+        <Stack className='create-container-step' gap='2'>
+            <Stack gap='05'>
+                <Heading level={3} size='xl' weight='bold'>Choose an image</Heading>
+                <Text as='p' size='lg' tone='secondary' className='create-container-step-copy'>Select one starter image or continue with a custom Docker Hub image.</Text>
+            </Stack>
 
-            <div className='volt-container create-container-templates-grid gap-1' role='radiogroup' aria-label='Container image templates'>
+            <Box className='create-container-templates-grid gap-1' role='radiogroup' aria-label='Container image templates'>
                 {CONTAINER_TEMPLATES.map((template) => (
                     <TemplateCard
                         key={template.id}
@@ -45,18 +46,18 @@ const ImageSelectionStep = ({
                     onClick={onCustomImageClick}
                     variant='custom'
                 />
-            </div>
+            </Box>
 
             {customImage && (
-                <div className='volt-container d-flex column gap-025 p-1 radius-sm create-container-image-preview'>
-                    <p className='volt-text font-size-2 color-secondary'>Custom image preview</p>
-                    <p className='volt-text font-size-2 color-primary font-weight-5'>{customImage}</p>
-                    <p className={`volt-text font-size-2 ${customImageError ? 'color-danger' : 'color-secondary'}`}>
+                <Stack className='create-container-image-preview' gap='025' p='1' radius='sm'>
+                    <Text as='p' size='md' tone='secondary'>Custom image preview</Text>
+                    <Text as='p' size='md' tone='primary' weight='medium'>{customImage}</Text>
+                    <Text as='p' size='md' className={customImageError ? 'color-danger' : 'color-secondary'}>
                         {customImageError ?? 'Volt will pull this image directly from the registry when you deploy.'}
-                    </p>
-                </div>
+                    </Text>
+                </Stack>
             )}
-        </div>
+        </Stack>
     );
 };
 

@@ -1,16 +1,14 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { CreateContainerInputDTO, CreateContainerOutputDTO } from '@modules/container/application/dtos/CreateContainerDTO';
-import type { ContainerPortMapping, RuntimeContainerInfo } from '@modules/container/domain/port/IContainerService';
-import type { IContainerFolderRepository } from '@modules/container/domain/port/IContainerFolderRepository';
 import ContainerCreatedEvent from '@modules/container/domain/events/ContainerCreatedEvent';
-import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
-import type { ITeamClusterContainerRuntimeService } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
-import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import type { ContainerPortMapping, RuntimeContainerInfo } from '@modules/container/domain/port/IContainerService';
+import { ContainerFolderRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerFolderRepository';
+import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
+import { DaemonContainerRuntimeService } from '@modules/container/infrastructure/services/DaemonContainerRuntimeService';
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
-import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
-import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
-import { IEventBus } from '@shared/application/events/IEventBus';
+import SystemMetricsRedisRepository from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
@@ -21,11 +19,11 @@ const MB_PER_GB = 1024;
 @injectable()
 export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO, CreateContainerOutputDTO> {
     constructor(
-        @inject(CONTAINER_TOKENS.ContainerRepository) private repository: IContainerRepository,
-        @inject(CONTAINER_TOKENS.ContainerFolderRepository) private readonly folderRepository: IContainerFolderRepository,
-        @inject(CONTAINER_TOKENS.ContainerRuntimeService) private containerRuntimeService: ITeamClusterContainerRuntimeService,
-        @inject(TeamClusterSelectionService) private readonly teamClusterSelectionService: TeamClusterSelectionService,
-        @inject(SYSTEM_TOKENS.SystemMetricsRepository) private readonly systemMetricsRepository: ISystemMetricsRepository,
+        private repository: ContainerRepository,
+        private readonly folderRepository: ContainerFolderRepository,
+        private containerRuntimeService: DaemonContainerRuntimeService,
+        private readonly teamClusterSelectionService: TeamClusterSelectionService,
+        private readonly systemMetricsRepository: SystemMetricsRedisRepository,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ) {}
 

@@ -1,9 +1,9 @@
 import { SYS_BUCKETS } from '@core/config/minio';
-import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/WhiteboardTokens';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { inject, injectable } from 'tsyringe';
+import { inject } from 'tsyringe';
 
-import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
+import WhiteboardRepository from '@modules/whiteboards/infrastructure/persistence/mongo/repositories/WhiteboardRepository';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 
 type WhiteboardElement = Record<string, unknown>;
@@ -164,14 +164,14 @@ const areStringArraysEqual = (left: string[], right: string[]): boolean => {
     return true;
 };
 
-@injectable()
+@Singleton()
 export default class WhiteboardRealtimeStateService {
     private readonly rooms = new Map<string, WhiteboardRoomState>();
     private readonly pendingLoads = new Map<string, Promise<WhiteboardRoomState | null>>();
 
     constructor(
-        @inject(WHITEBOARD_TOKENS.WhiteboardRepository)
-        private readonly whiteboardRepository: IWhiteboardRepository,
+        
+        private readonly whiteboardRepository: WhiteboardRepository,
 
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService

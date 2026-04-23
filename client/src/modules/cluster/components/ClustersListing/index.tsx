@@ -24,8 +24,7 @@ import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluste
 import { TEAM_CLUSTER_SOCKET_EVENTS } from '@/modules/cluster/api/service/endpoints/team-cluster-socket-events';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import MetricBars from '@/modules/cluster/components/MetricBars';
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
-import { openModal } from '@/shared/presentation/components/Modal';
+import { Stack, Row, Text, StatusBadge, openModal } from '@/shared/presentation/primitives';
 import { ArrowRightLeft, Database, FolderOpen, KeyRound, Monitor, Settings2, TerminalSquare, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -37,27 +36,27 @@ import '@/modules/cluster/components/ServerTable/ServerTable.css';
 
 const renderMetricValue = (value: number | null): ReactNode => {
     if (value === null) {
-        return <p className='volt-text font-size-1 color-muted'>--</p>;
+        return <Text as='p' size='sm' tone='muted'>--</Text>;
     }
 
     return (
-        <div className='volt-container d-flex items-center gap-05'>
+        <Row gap='05'>
             <MetricBars percentage={value} />
-            <p className='volt-text font-size-1 color-muted'>{value}%</p>
-        </div>
+            <Text as='p' size='sm' tone='muted'>{value}%</Text>
+        </Row>
     );
 };
 
 const renderDiskValue = (row: ServerRow): ReactNode => {
     if (row.diskUsagePercent === null || row.diskFree === null) {
-        return <p className='volt-text font-size-1 color-muted'>--</p>;
+        return <Text as='p' size='sm' tone='muted'>--</Text>;
     }
 
     return (
-        <div className='volt-container d-flex items-center gap-05'>
+        <Row gap='05'>
             <MetricBars percentage={row.diskUsagePercent} />
-            <p className='volt-text font-size-1 color-muted'>{row.diskFree.toFixed(1)}GB Available</p>
-        </div>
+            <Text as='p' size='sm' tone='muted'>{row.diskFree.toFixed(1)}GB Available</Text>
+        </Row>
     );
 };
 
@@ -135,9 +134,9 @@ const ClustersListing = () => {
             sortable: true,
             width: 240,
             render: (_, row) => (
-                <div className='volt-container d-flex items-center gap-05'>
-                    <p className='volt-text font-size-2 color-secondary'>{row.name}</p>
-                </div>
+                <Row gap='05'>
+                    <Text as='p' size='md' tone='secondary'>{row.name}</Text>
+                </Row>
             )
         },
         {
@@ -161,16 +160,16 @@ const ClustersListing = () => {
                 const drainingSummary = describeTeamClusterDraining(row.teamCluster);
 
                 return (
-                    <div className='volt-container d-flex column gap-025'>
+                    <Stack gap='025'>
                         <StatusBadge variant={getTeamClusterRoleBadgeVariant(row.desiredRole)} size='compact'>
                             {getTeamClusterRoleLabel(row.desiredRole)}
                         </StatusBadge>
-                        <p className={`volt-text font-size-1 ${isTransitionPending ? 'color-warning' : 'color-muted'}`}>
+                        <Text as='p' size='sm' className={isTransitionPending ? 'color-warning' : 'color-muted'}>
                             {isTransitionPending
                                 ? `${drainingSummary ? `${drainingSummary}, ` : ''}effective ${getTeamClusterRoleLabel(row.effectiveRole)}`
                                 : getTeamClusterRoleSummary(row.desiredRole)}
-                        </p>
-                    </div>
+                        </Text>
+                    </Stack>
                 );
             }
         },
@@ -211,7 +210,7 @@ const ClustersListing = () => {
             title: 'Last Heartbeat',
             sortable: true,
             width: 180,
-            render: (_, row) => <p className='volt-text font-size-1 color-secondary'>{formatClusterTimestamp(row.lastHeartbeatAt)}</p>
+            render: (_, row) => <Text as='p' size='sm' tone='secondary'>{formatClusterTimestamp(row.lastHeartbeatAt)}</Text>
         }
     ], []);
 

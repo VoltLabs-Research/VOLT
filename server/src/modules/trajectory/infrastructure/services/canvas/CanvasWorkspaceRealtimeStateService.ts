@@ -1,7 +1,8 @@
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import IORedis from 'ioredis';
-import { inject, injectable } from 'tsyringe';
+import { inject } from 'tsyringe';
 
 type WorkspaceStatePatch = Record<string, unknown>;
 
@@ -23,7 +24,7 @@ const KEY_PREFIX = 'canvas:workspace';
 const INDEX_PREFIX = 'canvas:workspace:index';
 const TTL_SECONDS = 60 * 60;
 
-@injectable()
+@Singleton()
 export default class CanvasWorkspaceRealtimeStateService {
     constructor(
         @inject(SHARED_TOKENS.RedisClient)

@@ -1,6 +1,5 @@
 import './AtomTypeBadge.css';
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
-
+import { StatusBadge } from '@/shared/presentation/primitives';
 interface AtomTypeBadgeProps {
     type: number | string;
 };

@@ -1,6 +1,5 @@
+import { IconButton, Popover } from '@/shared/presentation/primitives';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
-import IconButton from '@/shared/presentation/components/IconButton';
-import Popover from '@/shared/presentation/components/Popover';
 import { TeamInvitePanel } from '@/modules/team/components/TeamInvitePanel';
 import { GoPersonAdd } from 'react-icons/go';
 

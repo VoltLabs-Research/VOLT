@@ -5,7 +5,7 @@ import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
 import type { ComponentType } from 'react';
 import type { MenuIconProps, MenuOption } from '@/shared/presentation/types/menu';
 
-export interface ActionConfig<T = unknown> {
+interface ActionConfig<T = unknown> {
     label?: string;
     icon?: ComponentType<MenuIconProps>;
     handler: (payload: { item: T; selectedItems: T[] }) => void | Promise<void>;
@@ -15,11 +15,11 @@ export interface ActionConfig<T = unknown> {
     requiredPermission?: string;
 };
 
-export interface UseListingActionsConfig<T = unknown> {
+interface UseListingActionsConfig<T = unknown> {
     actions: Record<string, ActionConfig<T>>;
 };
 
-export interface UseListingActionsReturn<T = unknown> {
+interface UseListingActionsReturn<T = unknown> {
     handleAction: (actionKey: string, item: T, selectedItems: T[]) => Promise<void>;
     getMenuOptions: (item: T, selectedItems: T[]) => MenuOption[];
     executeAction: (actionKey: string, item: T, selectedItems: T[]) => Promise<void>;

@@ -2,15 +2,12 @@ import useCreateContainerForm, { getCustomImageValidationError } from '../../hoo
 import { ImageSelectionStep, ConfigurationStep, ReviewStep } from '../CreateContainerSteps';
 import useStepper from '@/shared/presentation/hooks/use-stepper';
 import useTip from '@/shared/tips/use-tip';
-import Button from '@/shared/presentation/components/Button';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Modal from '@/shared/presentation/components/Modal';
-import { closeModal, openModal } from '@/shared/presentation/components/Modal';
-import Stepper from '@/shared/presentation/components/Stepper';
+import { Button, Heading, Modal, Row, Stack, Stepper, Text, closeModal, openModal } from '@/shared/presentation/primitives';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { StepIndicator } from '@/shared/presentation/components/Stepper';
+import type { StepIndicator } from '@/shared/presentation/primitives';
 import './CreateContainer.css';
 
 enum StepKey {
@@ -155,15 +152,15 @@ const CreateContainer = () => {
     ];
 
     return (
-        <div className='volt-container d-flex column create-container-page h-max overflow-hidden'>
-            <div className='volt-container d-flex items-center gap-1-5 create-container-header p-1-5 f-shrink-0'>
+        <Stack className='create-container-page' height='max' overflow='hidden'>
+            <Row className='create-container-header' gap='1-5' p='1-5' shrink='0'>
                 <Button variant='ghost' intent='neutral' iconOnly aria-label='Back to containers' title='Back to containers' onClick={() => navigate('/dashboard/containers')}>
                     <ArrowLeft size={20} />
                 </Button>
-                <div className='volt-container d-flex column gap-02'>
-                    <h3 className='volt-title font-size-5 font-weight-6'>Create New Container</h3>
-                </div>
-            </div>
+                <Stack className='gap-02'>
+                    <Heading level={3} size='xl' weight='bold'>Create New Container</Heading>
+                </Stack>
+            </Row>
 
             <Stepper
                 steps={steps}
@@ -185,7 +182,7 @@ const CreateContainer = () => {
                     </>
                 }
             >
-                <div className='volt-container d-flex column gap-075 p-1-5'>
+                <Stack gap='075' p='1-5'>
                     <FormFieldRHF
                         label='Docker image'
                         placeholder='e.g., nginx:latest, mysql:8.0'
@@ -194,10 +191,10 @@ const CreateContainer = () => {
                         error={tempCustomImageError ?? undefined}
                         autoFocus
                     />
-                    <p className='volt-text font-size-2 color-secondary'>Use a full Docker image reference. Tags are recommended so deployments stay predictable.</p>
-                </div>
+                    <Text as='p' size='md' tone='secondary'>Use a full Docker image reference. Tags are recommended so deployments stay predictable.</Text>
+                </Stack>
             </Modal>
-        </div>
+        </Stack>
     );
 };
 
