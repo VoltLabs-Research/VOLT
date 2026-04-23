@@ -44,6 +44,9 @@ export interface DaemonConfig {
     redis: RedisConnectionOptions;
     jupyter: JupyterConfig;
     allowedBuckets: ObjectBucketName[];
+    isDemo: boolean;
+    bucketPrefix: string;
+    redisKeyPrefix: string;
 }
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 10_000;
@@ -126,11 +129,13 @@ export const loadConfig = (): DaemonConfig => {
         secretKey: readRequiredString('MINIO_SECRET_KEY'),
         useSSL: readBooleanWithDefault('MINIO_USE_SSL', false)
     };
+    const redisKeyPrefix = readStringWithDefault('REDIS_KEY_PREFIX', '');
     const redis: RedisConnectionOptions = {
         host: readRequiredString('REDIS_HOST'),
         port: readNumberWithDefault('REDIS_PORT', 6379),
         username: readOptionalString('REDIS_USERNAME'),
-        password: readOptionalString('REDIS_PASSWORD')
+        password: readOptionalString('REDIS_PASSWORD'),
+        keyPrefix: redisKeyPrefix || undefined
     };
     const jupyter: JupyterConfig = {
         image: readStringWithDefault('JUPYTER_IMAGE', DEFAULT_JUPYTER_IMAGE),
@@ -174,7 +179,10 @@ export const loadConfig = (): DaemonConfig => {
         mongodbUri: readRequiredString('MONGODB_URI'),
         redis,
         jupyter,
-        allowedBuckets
+        allowedBuckets,
+        isDemo: readBooleanWithDefault('IS_DEMO', false),
+        bucketPrefix: readStringWithDefault('BUCKET_PREFIX', ''),
+        redisKeyPrefix
     };
 
     return config;

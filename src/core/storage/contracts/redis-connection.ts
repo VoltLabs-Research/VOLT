@@ -3,4 +3,5 @@ export interface RedisConnectionOptions {
     port: number;
     username?: string;
     password?: string;
+    keyPrefix?: string;
 }

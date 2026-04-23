@@ -41,7 +41,8 @@ export class AnalysisDataStore implements AnalysisDataStoreContract {
             host: config.redis.host,
             port: config.redis.port,
             username: config.redis.username,
-            password: config.redis.password
+            password: config.redis.password,
+            keyPrefix: config.redis.keyPrefix
         };
 
         this.client = new Redis({

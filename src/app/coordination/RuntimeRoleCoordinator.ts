@@ -108,6 +108,7 @@ export class RuntimeRoleCoordinator {
         this.snapshot.roleConfig = {
             ...structuredClone(this.snapshot.roleConfig),
             desiredRole: nextRoleConfig.desiredRole,
+            effectiveRole: nextRoleConfig.desiredRole,
             runtimeVersion: nextRoleConfig.runtimeVersion,
             draining: { compute: false, storage: false },
             lastAppliedAt: new Date().toISOString()

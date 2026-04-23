@@ -27,6 +27,12 @@ interface ObjectGatewayRouteParams {
     bucket: string;
 }
 
+interface ObjectByteRange {
+    start: number;
+    end: number;
+    length: number;
+}
+
 const OBJECT_GATEWAY_API_BASE_PATH = '/internal/object-gateway/v1';
 const OBJECT_GATEWAY_BUCKETS_PATH = `${OBJECT_GATEWAY_API_BASE_PATH}/buckets/`;
 const OBJECT_GATEWAY_EXPOSURE_ID = 'daemon:object-gateway';
@@ -38,6 +44,56 @@ const MINIO_METADATA_HEADER_PREFIX = 'x-amz-meta-';
 const LOOPBACK_HOST = '127.0.0.1';
 
 const OBJECT_COLLECTION_ROUTE = `${OBJECT_GATEWAY_BUCKETS_PATH}:bucket/objects`;
+
+const parseRangeHeader = (value: string | undefined, objectSize: number): ObjectByteRange | null => {
+    if (!value) {
+        return null;
+    }
+
+    const match = value.match(/^bytes=(\d*)-(\d*)$/i);
+    if (!match) {
+        throw new ApplicationError('ObjectGateway::InvalidRange', 'Range header must use the form bytes=start-end', 416);
+    }
+
+    const [, rawStart, rawEnd] = match;
+
+    if (!rawStart && !rawEnd) {
+        throw new ApplicationError('ObjectGateway::InvalidRange', 'Range header must include a start or end offset', 416);
+    }
+
+    if (!rawStart) {
+        const suffixLength = Number(rawEnd);
+        if (!Number.isInteger(suffixLength) || suffixLength <= 0) {
+            throw new ApplicationError('ObjectGateway::InvalidRange', 'Range suffix length must be a positive integer', 416);
+        }
+
+        const boundedLength = Math.min(suffixLength, objectSize);
+        return {
+            start: Math.max(0, objectSize - boundedLength),
+            end: objectSize - 1,
+            length: boundedLength
+        };
+    }
+
+    const start = Number(rawStart);
+    const requestedEnd = rawEnd ? Number(rawEnd) : objectSize - 1;
+
+    if (!Number.isInteger(start) || start < 0 || !Number.isInteger(requestedEnd) || requestedEnd < start) {
+        throw new ApplicationError('ObjectGateway::InvalidRange', 'Range header contains invalid byte offsets', 416);
+    }
+
+    if (start >= objectSize) {
+        throw new ApplicationError('ObjectGateway::RangeNotSatisfiable', 'Range start exceeds object size', 416);
+    }
+
+    const end = Math.min(requestedEnd, objectSize - 1);
+
+    return {
+        start,
+        end,
+        length: end - start + 1
+    };
+};
 
 export class ObjectGatewayServer {
     private readonly app = express();
@@ -352,20 +408,26 @@ export class ObjectGatewayServer {
     ): Promise<void> {
         const skipMetadataHeader = request.get(TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER);
         const skipMetadata = skipMetadataHeader === '1' || skipMetadataHeader === 'true';
-        const [stat, stream] = skipMetadata
-            ? [null, await this.readObjectStream(bucket, objectKey)] as const
-            : await Promise.all([
-                this.readObjectStat(bucket, objectKey),
-                this.readObjectStream(bucket, objectKey)
-            ]);
+        const rangeHeader = request.get('range') ?? undefined;
+        const stat = skipMetadata && !rangeHeader
+            ? null
+            : await this.readObjectStat(bucket, objectKey);
+        const range = stat
+            ? parseRangeHeader(rangeHeader, stat.size)
+            : null;
+        const stream = await this.readObjectStream(bucket, objectKey, range);
 
         if (stat) {
-            this.writeObjectHeaders(response, stat);
+            if (range) {
+                this.writePartialObjectHeaders(response, stat, range, !skipMetadata);
+            } else {
+                this.writeObjectHeaders(response, stat);
+            }
         }
 
-        response.status(200);
+        response.status(range ? 206 : 200);
         let bytesOut = 0;
-        let statusCode = 200;
+        let statusCode = range ? 206 : 200;
 
         await new Promise<void>((resolve, reject) => {
             const handleFinish = (): void => {
@@ -465,8 +527,16 @@ export class ObjectGatewayServer {
         }
     }
 
-    private async readObjectStream(bucket: string, objectKey: string): Promise<Readable> {
+    private async readObjectStream(
+        bucket: string,
+        objectKey: string,
+        range?: ObjectByteRange | null
+    ): Promise<Readable> {
         try {
+            if (range) {
+                return await this.objectStore.getObjectRangeStream(bucket, objectKey, range.start, range.length);
+            }
+
             return await this.objectStore.getObjectStream(bucket, objectKey);
         } catch (error) {
             if (error instanceof Error && 'code' in error && (error.code === 'NotFound' || error.code === 'NoSuchKey')) {
@@ -542,6 +612,41 @@ export class ObjectGatewayServer {
                 );
             }
         }
+    }
+
+    private writePartialObjectHeaders(
+        response: Response,
+        stat: LocalClusterObjectStat,
+        range: ObjectByteRange,
+        includeMetadata: boolean
+    ): void {
+        if (includeMetadata) {
+            this.writeObjectHeaders(response, stat);
+        } else {
+            const sourceMetadata = stat.metaData as Record<string, string>;
+            const contentType = sourceMetadata['content-type'];
+            const contentEncoding = sourceMetadata['content-encoding'];
+
+            if (contentType) {
+                response.setHeader('content-type', contentType);
+            }
+
+            if (contentEncoding) {
+                response.setHeader('content-encoding', contentEncoding);
+            }
+
+            if (stat.etag) {
+                response.setHeader('etag', stat.etag);
+            }
+
+            if (stat.lastModified) {
+                response.setHeader('last-modified', stat.lastModified.toUTCString());
+            }
+        }
+
+        response.setHeader('accept-ranges', 'bytes');
+        response.setHeader('content-length', String(range.length));
+        response.setHeader('content-range', `bytes ${range.start}-${range.end}/${stat.size}`);
     }
 
     private writeJson(response: Response, statusCode: number, payload: object): number {

@@ -141,13 +141,22 @@ export class DirectObjectStoreClient implements RemoteClusterObjectStoreGateway 
         objectKey: string,
         options?: ClusterObjectReadOptions
     ): Promise<ClusterObjectStreamResponse> {
-        const headers = options && options.skipMetadata
-            ? { [TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER]: '1' }
-            : undefined;
+        const headers: Record<string, string> = {};
+        if (options?.skipMetadata) {
+            headers[TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER] = '1';
+        }
+        // Why: VTR reader fetches frame chunks via byte ranges. Without a Range
+        // header the proxy returns the full object and the caller decompresses
+        // the VTR magic header as if it were a zstd chunk, yielding
+        // ZSTD_error_prefix_unknown. Forward the range so MinIO honors it.
+        if (options?.range) {
+            const { offset, length } = options.range;
+            headers['Range'] = `bytes=${offset}-${offset + length - 1}`;
+        }
 
         const response = await this.fetch(this.buildObjectPath(ownerClusterId, bucket, objectKey), {
             method: 'GET',
-            headers
+            headers: Object.keys(headers).length > 0 ? headers : undefined
         });
 
         if (!response.body) {

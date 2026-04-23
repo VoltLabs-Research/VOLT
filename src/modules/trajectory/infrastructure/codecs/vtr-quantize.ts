@@ -15,7 +15,7 @@ export const quantizePositionsInt16 = (
     positions: Float32Array,
     atomCount: number,
     bbox: readonly [number, number, number, number, number, number]
-): Int16Ar  ray => {
+): Int16Array => {
     const out = new Int16Array(atomCount * 3);
     const spanX = bbox[3] - bbox[0];
     const spanY = bbox[4] - bbox[1];

@@ -34,7 +34,16 @@ export const buildVtrRemoteSource = ({
                 skipMetadata: true,
                 range: { offset, length }
             });
-            return streamToUint8Array(response.stream);
+            const buf = await streamToUint8Array(response.stream);
+            // Why: when the VoltCloud reverse tunnel strips the HTTP Range header
+            // we still receive the full object. Slice client-side so the VTR
+            // reader gets exactly the requested bytes. If the upstream honored
+            // the range (buf.length === length) this is a no-op.
+            if (buf.length === length) return buf;
+            if (buf.length >= offset + length) return buf.subarray(offset, offset + length);
+            // Partial but smaller than expected — return what we have, reader
+            // will surface the mismatch as a proper decode error.
+            return buf;
         },
         fetchFull: async () => {
             const response = await objectStore.getStream(ownerClusterId, bucket, objectKey, {

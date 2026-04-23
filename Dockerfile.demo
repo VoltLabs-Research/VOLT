@@ -1,0 +1,5 @@
+FROM volt-dev-storage-daemon:latest
+WORKDIR /app
+COPY src ./src
+COPY tsconfig.json ./
+CMD ["npm", "run", "dev"]

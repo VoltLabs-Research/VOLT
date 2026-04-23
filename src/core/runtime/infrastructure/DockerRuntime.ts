@@ -1,9 +1,10 @@
 import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import type { ContainerAction } from '@/modules/container/contracts/http-container';
-import { VOLT_MANAGED_CONTAINER_LABEL_KEY, VOLT_MANAGED_CONTAINER_LABEL_VALUE } from '@/core/runtime/contracts/runtime-container';
+import { TEAM_CLUSTER_ID_LABEL_KEY, VOLT_MANAGED_CONTAINER_LABEL_KEY, VOLT_MANAGED_CONTAINER_LABEL_VALUE } from '@/core/runtime/contracts/runtime-container';
 import { ProgressStageType } from '@voltstack/daemon-cluster-client';
 import { withTimeout } from '@/core/observability/infrastructure/daemon-instrumentation';
+import type { DaemonConfig } from '@/core/config';
 import type { DaemonTraceContext } from '@/core/observability/infrastructure/daemon-instrumentation';
 import type { RuntimeEventBroker } from '@/core/reverse-channel/application/RuntimeEventBroker';
 import type { CreateContainerRequest } from '@/modules/container/contracts/http-container';
@@ -73,24 +74,61 @@ const DEFAULT_DOCKER_EXEC_TIMEOUT_MS = 120_000;
 @Service('dockerRuntime')
 export class DockerRuntime {
     private readonly docker: Docker;
+    private readonly tenantLabel: string;
 
-    constructor(private readonly eventBroker: RuntimeEventBroker) {
-        this.docker = new Docker({
-            socketPath: '/var/run/docker.sock',
-            timeout: 60_000
-        });
+    constructor(
+        private readonly eventBroker: RuntimeEventBroker,
+        private readonly config: DaemonConfig
+    ) {
+        const socketPath = process.env.DOCKER_HOST
+            ? undefined
+            : '/var/run/docker.sock';
+        const dockerHost = process.env.DOCKER_HOST;
+
+        if (dockerHost && dockerHost.startsWith('tcp://')) {
+            const url = new URL(dockerHost);
+            this.docker = new Docker({
+                host: url.hostname,
+                port: Number(url.port || 2375),
+                timeout: 60_000
+            });
+        } else {
+            this.docker = new Docker({
+                socketPath: socketPath ?? '/var/run/docker.sock',
+                timeout: 60_000
+            });
+        }
+        this.tenantLabel = this.config.teamClusterId;
+    }
+
+    private mergeTenantFilter(filters?: DockerContainerFilter): DockerContainerFilter {
+        const tenantSelector = `${TEAM_CLUSTER_ID_LABEL_KEY}=${this.tenantLabel}`;
+        const existingLabels = filters?.label ?? [];
+        if (existingLabels.includes(tenantSelector)) {
+            return filters ?? { label: [tenantSelector] };
+        }
+        return {
+            ...filters,
+            label: [...existingLabels, tenantSelector]
+        };
     }
 
     readonly listContainers = (all: boolean = true, filters?: DockerContainerFilter): Promise<Docker.ContainerInfo[]> => {
-        if (!filters) {
-            return this.docker.listContainers({ all });
-        }
-
+        const scopedFilters = this.mergeTenantFilter(filters);
         return this.docker.listContainers({
             all,
-            filters: JSON.stringify(filters)
+            filters: JSON.stringify(scopedFilters)
         });
     };
+
+    private async assertTenantOwnership(containerId: string): Promise<Docker.ContainerInspectInfo> {
+        const info = await this.docker.getContainer(containerId).inspect();
+        const labelValue = info.Config?.Labels?.[TEAM_CLUSTER_ID_LABEL_KEY];
+        if (labelValue !== this.tenantLabel) {
+            throw new Error(`Container ${containerId} is not owned by this tenant`);
+        }
+        return info;
+    }
 
     private getPortsFromRequest(input: CreateContainerRequest){
         const exposedPorts: Record<string, Record<string, never>> = {};
@@ -146,6 +184,7 @@ export class DockerRuntime {
             Cmd: input.cmd,
             Labels: {
                 [VOLT_MANAGED_CONTAINER_LABEL_KEY]: VOLT_MANAGED_CONTAINER_LABEL_VALUE,
+                [TEAM_CLUSTER_ID_LABEL_KEY]: this.tenantLabel,
                 ...input.labels
             },
             ExposedPorts: exposedPorts,
@@ -178,15 +217,17 @@ export class DockerRuntime {
         return inspectedContainer;
     }
 
-    readonly getContainer = (containerId: string): Promise<Docker.ContainerInspectInfo> => {
-        return this.docker.getContainer(containerId).inspect();
+    readonly getContainer = async (containerId: string): Promise<Docker.ContainerInspectInfo> => {
+        return this.assertTenantOwnership(containerId);
     };
 
     readonly startContainer = async (containerId: string): Promise<void> => {
+        await this.assertTenantOwnership(containerId);
         await this.docker.getContainer(containerId).start();
     };
 
     async applyContainerAction(containerId: string, action: ContainerAction): Promise<Docker.ContainerInspectInfo> {
+        await this.assertTenantOwnership(containerId);
         const container = this.docker.getContainer(containerId);
 
         if (action === 'start') {
@@ -205,14 +246,17 @@ export class DockerRuntime {
     }
 
     readonly deleteContainer = async (containerId: string): Promise<void> => {
+        await this.assertTenantOwnership(containerId);
         await this.docker.getContainer(containerId).remove({ force: true, v: true });
     };
 
-    readonly getContainerStats = (containerId: string): Promise<Docker.ContainerStats> => {
+    readonly getContainerStats = async (containerId: string): Promise<Docker.ContainerStats> => {
+        await this.assertTenantOwnership(containerId);
         return this.docker.getContainer(containerId).stats({ stream: false });
     };
 
     readonly getContainerProcesses = async (containerId: string): Promise<string[][]> => {
+        await this.assertTenantOwnership(containerId);
         const result = await this.docker.getContainer(containerId).top({ ps_args: '-o pid,comm,nlwp,user,rss,pcpu,args' }) as DockerTopProcessesResult;
         return result.Processes;
     };
@@ -222,6 +266,7 @@ export class DockerRuntime {
         directoryPath: string,
         options?: DockerExecOptions
     ): Promise<RuntimeContainerFileEntry[]> => {
+        await this.assertTenantOwnership(containerId);
         const normalizedDirectoryPath = this.normalizeContainerPath(directoryPath);
 
         try {
@@ -257,7 +302,8 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
         }
     };
 
-    readonly readContainerFile = (containerId: string, filePath: string, options?: DockerExecOptions): Promise<string> => {
+    readonly readContainerFile = async (containerId: string, filePath: string, options?: DockerExecOptions): Promise<string> => {
+        await this.assertTenantOwnership(containerId);
         const normalizedPath = this.normalizeContainerPath(filePath);
         return this.execute(containerId, ['sh', '-c', 'cat -- "$1"', '--', normalizedPath], undefined, options);
     };
@@ -268,12 +314,14 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
         content: string,
         options?: DockerExecOptions
     ): Promise<void> => {
+        await this.assertTenantOwnership(containerId);
         const normalizedPath = this.normalizeContainerPath(filePath);
         await this.execute(containerId, ['mkdir', '-p', '--', path.posix.dirname(normalizedPath)], undefined, options);
         await this.execute(containerId, ['tee', '--', normalizedPath], content, options);
     };
 
     async attachTerminal(containerId: string): Promise<RuntimeTerminalAttachment> {
+        await this.assertTenantOwnership(containerId);
         const container = this.docker.getContainer(containerId);
         const dockerExec = await container.exec({
             AttachStdin: true,

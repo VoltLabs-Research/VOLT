@@ -16,6 +16,7 @@ import type {
 @Service('minioService')
 export class MinioService implements LocalClusterObjectStoreGateway {
     private readonly client: Client;
+    private readonly bucketPrefix: string;
     private static readonly SAFE_LIST_PAGE_SIZE = 200;
     readonly ensureBuckets: () => Promise<void>;
     readonly listBuckets: () => string[];
@@ -38,30 +39,39 @@ export class MinioService implements LocalClusterObjectStoreGateway {
             secretKey: config.minio.secretKey
         });
 
+        this.bucketPrefix = this.config.bucketPrefix ?? '';
+
         this.listBuckets = () => [...this.config.allowedBuckets];
         this.ensureBuckets = async () => {
             for (const bucket of this.listBuckets()) {
-                const exists = await this.client.bucketExists(bucket);
+                const resolvedBucket = this.resolveBucket(bucket);
+                const exists = await this.client.bucketExists(resolvedBucket);
                 if (!exists) {
-                    await this.client.makeBucket(bucket);
-                    logger.info(`Created MinIO bucket: ${bucket}`);
+                    await this.client.makeBucket(resolvedBucket);
+                    logger.info(`Created MinIO bucket: ${resolvedBucket}`);
                 }
             }
         };
-        this.getObjectStream = (bucket, objectKey) => this.client.getObject(bucket, objectKey);
+        this.getObjectStream = (bucket, objectKey) => this.client.getObject(this.resolveBucket(bucket), objectKey);
         this.getObjectRangeStream = (bucket, objectKey, offset, length) => (
-            this.client.getPartialObject(bucket, objectKey, offset, length)
+            this.client.getPartialObject(this.resolveBucket(bucket), objectKey, offset, length)
         );
-        this.statObject = (bucket, objectKey) => this.client.statObject(bucket, objectKey);
+        this.statObject = (bucket, objectKey) => this.client.statObject(this.resolveBucket(bucket), objectKey);
         this.putObject = async (input) => {
-            await this.client.putObject(input.bucket, input.objectKey, input.body, input.body.length, input.metadata);
+            await this.client.putObject(this.resolveBucket(input.bucket), input.objectKey, input.body, input.body.length, input.metadata);
         };
         this.putObjectStream = async (input) => {
-            await this.client.putObject(input.bucket, input.objectKey, input.stream, input.size, input.metadata);
+            await this.client.putObject(this.resolveBucket(input.bucket), input.objectKey, input.stream, input.size, input.metadata);
         };
         this.removeObject = async (bucket, objectKey) => {
-            await this.client.removeObject(bucket, objectKey);
+            await this.client.removeObject(this.resolveBucket(bucket), objectKey);
         };
+    }
+
+    private resolveBucket(bucket: string): string {
+        if (!this.bucketPrefix) return bucket;
+        if (bucket.startsWith(this.bucketPrefix)) return bucket;
+        return `${this.bucketPrefix}${bucket}`;
     }
 
     async listObjects(bucket: string, prefix: string, maxKeys?: number): Promise<string[]> {
@@ -77,7 +87,7 @@ export class MinioService implements LocalClusterObjectStoreGateway {
             }
 
             const result = await this.client.listObjectsV2Query(
-                bucket,
+                this.resolveBucket(bucket),
                 prefix,
                 continuationToken,
                 '',
@@ -117,7 +127,7 @@ export class MinioService implements LocalClusterObjectStoreGateway {
 
         while (collectedObjects.length < maxKeys) {
             const result = await this.client.listObjectsV2Query(
-                input.bucket,
+                this.resolveBucket(input.bucket),
                 input.prefix,
                 continuationToken,
                 '',
@@ -170,16 +180,17 @@ export class MinioService implements LocalClusterObjectStoreGateway {
             }
         };
 
+        const resolvedBucket = this.resolveBucket(bucket);
         const submitBatch = async (keys: string[]): Promise<void> => {
             deletedCount += keys.length;
-            const task = this.client.removeObjects(bucket, keys).then(() => undefined);
+            const task = this.client.removeObjects(resolvedBucket, keys).then(() => undefined);
             inFlight.push(task);
             await drainInFlight(1);
         };
 
         do {
             const result = await this.client.listObjectsV2Query(
-                bucket,
+                this.resolveBucket(bucket),
                 prefix,
                 continuationToken,
                 '',
