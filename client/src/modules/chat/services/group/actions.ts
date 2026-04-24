@@ -6,13 +6,8 @@ import type { NavigateFunction } from 'react-router-dom';
 import type { Chat } from '../../api/entities/chat';
 import type { CreateGroupChatDTO, UpdateGroupAdminsDTO, UpdateGroupInfoDTO } from '../../api/dtos/group';
 
-interface SocketLike {
-    emit: (event: string, payload?: unknown) => unknown;
-};
-
 interface GroupActionDependencies {
     queryClient: QueryClient;
-    socket: SocketLike;
     navigate: NavigateFunction;
 };
 

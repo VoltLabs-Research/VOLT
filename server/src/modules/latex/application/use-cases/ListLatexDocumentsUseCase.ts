@@ -17,21 +17,12 @@ export class ListLatexDocumentsUseCase implements IUseCase<ListLatexDocumentsInp
         const page = Math.max(1, input.page ?? 1);
         const limit = Math.max(1, Math.min(500, input.limit ?? 500));
 
-        let folderId: string | null | 'all';
-        if (!input.folderId) {
-            folderId = 'all';
-        } else if (input.folderId === 'root') {
-            folderId = null;
-        } else {
-            folderId = input.folderId;
-        }
-
         const filter: Record<string, unknown> = { team: input.teamId };
         if (input.search) {
             filter.title = { $regex: input.search, $options: 'i' };
         }
-        if (folderId !== 'all') {
-            filter.folder = folderId;
+        if (input.folderId) {
+            filter.folder = input.folderId === 'root' ? null : input.folderId;
         }
 
         const result = await this.latexDocumentRepository.findAll({

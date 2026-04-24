@@ -38,6 +38,7 @@ interface ScriptingSessionStatusResponse {
 
 interface ScriptingSessionStatusResult {
     runtimeNotebookId?: string;
+    accessToken?: string;
     response: ScriptingSessionStatusResponse;
 };
 
@@ -111,7 +112,8 @@ const getScriptingSessionStatusInput = (
 });
 
 const readScriptingSessionStatus = async (
-    input: ScriptingSessionStatusInput
+    input: ScriptingSessionStatusInput,
+    userId: string
 ): Promise<ScriptingSessionStatusResult> => {
     const notebook = await scriptingNotebookRepository.findByTeamAndNotebookId(input.teamId, input.notebookId);
 
@@ -135,15 +137,22 @@ const readScriptingSessionStatus = async (
         };
     }
 
+    const accessToken = scriptingJupyterAccessTokenService.create({
+        teamId: input.teamId,
+        runtimeNotebookId: notebook.props.runtimeNotebookId,
+        userId
+    });
     const jupyterUrl = buildJupyterProxyUrl({
         teamId: input.teamId,
         runtimeNotebookId: notebook.props.runtimeNotebookId,
-        notebookPath: notebook.props.notebookPath
+        notebookPath: notebook.props.notebookPath,
+        accessToken
     });
 
     if (!notebook.props.teamCluster) {
         return {
             runtimeNotebookId: notebook.props.runtimeNotebookId,
+            accessToken,
             response: {
                 notebookId: notebook._id,
                 jupyter: {
@@ -162,6 +171,7 @@ const readScriptingSessionStatus = async (
 
     return {
         runtimeNotebookId: notebook.props.runtimeNotebookId,
+        accessToken,
         response: {
             notebookId: notebook._id,
             jupyter: {
@@ -187,19 +197,13 @@ const handleScriptingSessionStatus = async (
         }
 
         const input = getScriptingSessionStatusInput(req.params);
-        const status = await readScriptingSessionStatus(input);
+        const status = await readScriptingSessionStatus(input, req.userId);
 
-        if (status.runtimeNotebookId && status.response.jupyter.url) {
-            const accessToken = scriptingJupyterAccessTokenService.create({
-                teamId: input.teamId,
-                runtimeNotebookId: status.runtimeNotebookId,
-                userId: req.userId
-            });
-
+        if (status.runtimeNotebookId && status.accessToken) {
             setJupyterProxyAccessCookie(
                 req,
                 res,
-                accessToken,
+                status.accessToken,
                 input.teamId,
                 status.runtimeNotebookId,
                 scriptingJupyterAccessTokenService.getCookieMaxAgeMs()

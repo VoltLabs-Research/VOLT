@@ -44,5 +44,4 @@ export interface RasterSceneFrame {
     analysisId: string | null;
     scope: RasterFrameScope;
     imageUrl: string | null;
-    isUnavailable: boolean;
 };

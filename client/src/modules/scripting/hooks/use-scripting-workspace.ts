@@ -6,7 +6,6 @@ import {
 } from './queries';
 import {
     JUPYTER_SESSION_TIMEOUT_MESSAGE,
-    normalizeScriptingJupyterUrl,
     startAndWaitForReadyScriptingSession
 } from '../utilities/jupyter-session';
 import { hasNotebookDeploymentConfiguration } from '../utilities/notebooks';
@@ -208,7 +207,7 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
 
             if (!result.timedOut && result.session.jupyter.ready) {
                 setContainerStage('ready');
-                setJupyterUrl(normalizeScriptingJupyterUrl(result.session.jupyter.url));
+                setJupyterUrl(result.session.jupyter.url);
                 sileo.success({ title: 'Jupyter session ready' });
                 return;
             }

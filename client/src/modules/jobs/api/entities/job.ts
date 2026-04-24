@@ -5,7 +5,7 @@ export interface JobMetadata {
     [key: string]: JobMetadataPrimitive | JobMetadata;
 };
 
-export type JobMetadataValue = JobMetadataPrimitive | JobMetadata;
+type JobMetadataValue = JobMetadataPrimitive | JobMetadata;
 
 export interface Job {
     jobId: string;

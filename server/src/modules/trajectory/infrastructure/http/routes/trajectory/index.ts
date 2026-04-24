@@ -26,13 +26,8 @@ export default createHttpModule({
         router.get('/:trajectoryId/preview', trajectoryValidation.getPreview, controllers.getPreview.handle);
         router.get('/:trajectoryId/analyses/download', trajectoryValidation.downloadTrajectoryAnalyses, controllers.downloadTrajectoryAnalyses.handle);
         router.get('/:trajectoryId/download', trajectoryValidation.downloadTrajectory, controllers.downloadTrajectory.handle);
-        // Why: binary transferables — response body is the F2.S4 wire format
-        // (see GetAtomsBinaryController). The legacy JSON endpoint was removed
-        // to force clients onto the columnar pipeline without a transition
-        // window.
         router.get('/:trajectoryId/frame/:timestep/atoms', controllers.getAtomsBinary.handle);
         router.get('/:trajectoryId/scene-artifacts', trajectoryValidation.getSceneArtifacts, controllers.getSceneArtifacts.handle);
-        router.get('/:trajectoryId/glb/:timestep/:analysisId', trajectoryValidation.getGLB, controllers.getGLB.handle);
         router.patch('/:trajectoryId/folder', trajectoryValidation.move, controllers.move.handle);
         router.route('/:trajectoryId')
             .get(trajectoryValidation.getById, controllers.getById.handle)

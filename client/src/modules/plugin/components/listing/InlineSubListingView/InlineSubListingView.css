@@ -1,0 +1,56 @@
+.plugin-inline-sub-listing {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.plugin-inline-sub-listing__header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    border-bottom: 1px solid var(--color-border-soft);
+    flex: 0 0 auto;
+}
+
+.plugin-inline-sub-listing__tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.2rem;
+    overflow-x: auto;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.plugin-inline-sub-listing__tab {
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    border: 0;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 120ms ease, color 120ms ease;
+}
+
+.plugin-inline-sub-listing__tab:hover {
+    background-color: var(--hover-bg);
+    color: var(--color-text-primary);
+}
+
+.plugin-inline-sub-listing__tab--active {
+    background-color: color-mix(in srgb, var(--color-accent, var(--color-primary, #6366f1)) 14%, transparent);
+    color: var(--color-text-primary);
+}
+
+.plugin-inline-sub-listing__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}

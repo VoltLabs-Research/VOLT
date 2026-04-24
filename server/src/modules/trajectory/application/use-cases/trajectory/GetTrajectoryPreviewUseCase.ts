@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 
+import sharp from 'sharp';
+
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { getTrajectoryRasterPreviewsPrefix } from '@modules/raster/utilities/raster-storage-paths';
@@ -15,6 +17,9 @@ import { inject, injectable } from 'tsyringe';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
+
+const DASHBOARD_PREVIEW_MAX_WIDTH = 960;
+const DASHBOARD_PREVIEW_MAX_HEIGHT = 540;
 
 @injectable()
 export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajectoryPreviewInputDTO, GetTrajectoryPreviewOutputDTO, ApplicationError> {
@@ -55,7 +60,7 @@ export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajecto
             if (key.endsWith('.png')) {
                 try {
                     const buffer = await this.storageService.getBuffer(SYS_BUCKETS.RASTERIZER, key);
-                    return Result.ok(this.createPreviewOutput(buffer));
+                    return Result.ok(await this.createPreviewOutput(buffer));
                 } catch {
                     // Continue to next preview if this one fails
                     continue;
@@ -97,11 +102,22 @@ export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajecto
         return this.createPreviewOutput(buffer);
     }
 
-    private createPreviewOutput(buffer: Buffer): GetTrajectoryPreviewOutputDTO {
-        const etag = `"${createHash('sha256').update(buffer).digest('hex')}"`;
+    // Why: rasters are generated at 4K for the canvas workspace; the dashboard
+    // card thumbnail only renders at ~200px tall, so downscale before base64
+    // to keep payloads and browser decode cost small.
+    private async createPreviewOutput(buffer: Buffer): Promise<GetTrajectoryPreviewOutputDTO> {
+        const resized = await sharp(buffer)
+            .resize(DASHBOARD_PREVIEW_MAX_WIDTH, DASHBOARD_PREVIEW_MAX_HEIGHT, {
+                fit: 'inside',
+                withoutEnlargement: true
+            })
+            .png({ compressionLevel: 9 })
+            .toBuffer();
+
+        const etag = `"${createHash('sha256').update(resized).digest('hex')}"`;
 
         return {
-            base64: `data:image/png;base64,${buffer.toString('base64')}`,
+            base64: `data:image/png;base64,${resized.toString('base64')}`,
             etag
         };
     }

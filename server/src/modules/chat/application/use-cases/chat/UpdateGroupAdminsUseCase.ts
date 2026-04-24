@@ -3,7 +3,6 @@ import { GroupAdminAction, UpdateGroupAdminsInputDTO, UpdateGroupAdminsOutputDTO
 import ChatRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/chat/ChatRepository';
 import { isParticipant } from '@modules/chat/utilities/chat/isParticipant';
 import { resolveGroupChat } from '@modules/chat/utilities/chat/resolveGroupChat';
-import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
@@ -13,10 +12,8 @@ import { injectable } from 'tsyringe';
 @injectable()
 export class UpdateGroupAdminsUseCase implements IUseCase<UpdateGroupAdminsInputDTO, UpdateGroupAdminsOutputDTO, ApplicationError> {
     constructor(
-        
-        private chatRepo: ChatRepository,
-        
-        private socketEmitter: SocketIOEmitter
+
+        private chatRepo: ChatRepository
     ){}
 
     async execute(input: UpdateGroupAdminsInputDTO): Promise<Result<UpdateGroupAdminsOutputDTO, ApplicationError>> {
@@ -64,13 +61,6 @@ export class UpdateGroupAdminsUseCase implements IUseCase<UpdateGroupAdminsInput
                 'Chat not found'
             ));
         }
-
-        this.socketEmitter.emitToRoom(`chat-${chatId}`, 'group_admins_updated', {
-            chatId,
-            action,
-            targetUserIds: validUsers,
-            updatedBy: userId
-        });
 
         return Result.ok(toPersistedEntity(updatedChat));
     }

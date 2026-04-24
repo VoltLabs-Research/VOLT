@@ -15,7 +15,6 @@ import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import {
     JUPYTER_SESSION_PENDING_MESSAGE,
     JUPYTER_SESSION_TIMEOUT_MESSAGE,
-    normalizeScriptingJupyterUrl,
     startAndWaitForReadyScriptingSession
 } from '../utilities/jupyter-session';
 import {
@@ -225,7 +224,7 @@ const useNotebooksListing = () => {
                 return;
             }
 
-            notebookTab.location.replace(normalizeScriptingJupyterUrl(result.session.jupyter.url));
+            notebookTab.location.replace(result.session.jupyter.url);
         } catch (error: unknown) {
             notebookTab.close();
 

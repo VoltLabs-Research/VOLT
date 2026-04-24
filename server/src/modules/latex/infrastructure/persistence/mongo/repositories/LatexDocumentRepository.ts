@@ -5,9 +5,8 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 
 import type { LatexDocumentProps } from '@modules/latex/domain/entities/LatexDocument';
-import type { ILatexDocumentRepository, LatexDocumentPaginationOptions } from '@modules/latex/domain/port/ILatexDocumentRepository';
+import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import type { LatexDocumentDocument } from '@modules/latex/infrastructure/persistence/mongo/models/LatexDocumentModel';
-import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 
 @Singleton()
 export default class LatexDocumentRepository
@@ -16,34 +15,6 @@ export default class LatexDocumentRepository
 
     constructor() {
         super(LatexDocumentModel, latexDocumentMapper);
-    }
-
-    async findAllByTeam(teamId: string, options: LatexDocumentPaginationOptions): Promise<PaginatedResult<LatexDocument>> {
-        const page = options.page ?? 1;
-        const limit = options.limit ?? 100;
-        const skip = (page - 1) * limit;
-
-        const filter: Record<string, unknown> = { team: teamId };
-        if (options.search) {
-            filter.title = { $regex: options.search, $options: 'i' };
-        }
-
-        if (options.folderId !== undefined && options.folderId !== 'all') {
-            filter.folder = options.folderId;
-        }
-
-        const [docs, total] = await Promise.all([
-            this.model.find(filter).skip(skip).limit(limit).sort({ updatedAt: -1 }).exec(),
-            this.model.countDocuments(filter)
-        ]);
-
-        return {
-            data: docs.map((doc) => this.mapper.toDomain(doc)),
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            limit
-        };
     }
 
     async findByTeamAndDocumentId(teamId: string, documentId: string): Promise<LatexDocument | null> {

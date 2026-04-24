@@ -39,33 +39,6 @@ const DEFAULT_JUPYTER_SESSION_TIMEOUT_MS = 120_000;
 export const JUPYTER_SESSION_PENDING_MESSAGE = 'Jupyter is still starting. Please wait a moment.';
 export const JUPYTER_SESSION_TIMEOUT_MESSAGE = 'Jupyter is still starting. Please retry in a moment.';
 
-/**
- * Normalizes absolute backend Jupyter URLs to a same-origin proxy path during development.
- */
-export const normalizeScriptingJupyterUrl = (url: string): string => {
-    if (!import.meta.env.DEV || typeof window === 'undefined') {
-        return url;
-    }
-
-    let parsedUrl: URL;
-
-    try {
-        parsedUrl = new URL(url);
-    } catch {
-        return url;
-    }
-
-    if (parsedUrl.origin === window.location.origin) {
-        return url;
-    }
-
-    if (!parsedUrl.pathname.startsWith('/api/jupyter/')) {
-        return url;
-    }
-
-    return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
-};
-
 const sleep = async (delayMs: number): Promise<void> => {
     await new Promise((resolve) => setTimeout(resolve, delayMs));
 };

@@ -236,12 +236,8 @@ paths:
     $ref: paths/trajectories/by-teamid__by-trajectoryid__preview.yaml
   /api/trajectories/{teamId}/{trajectoryId}/download:
     $ref: paths/trajectories/by-teamid__by-trajectoryid__download.yaml
-  /api/trajectories/{teamId}/{trajectoryId}/atoms:
-    $ref: paths/trajectories/by-teamid__by-trajectoryid__atoms.yaml
   /api/trajectories/{teamId}/{trajectoryId}/scene-artifacts:
     $ref: paths/trajectories/by-teamid__by-trajectoryid__scene-artifacts.yaml
-  /api/trajectories/{teamId}/{trajectoryId}/glb/{timestep}/{analysisId}:
-    $ref: paths/trajectories/by-teamid__by-trajectoryid__glb__by-timestep__by-analysisid.yaml
   /api/trajectories/{teamId}/{trajectoryId}/folder:
     $ref: paths/trajectories/by-teamid__by-trajectoryid__folder.yaml
   /api/trajectories/{teamId}/{trajectoryId}:
@@ -346,8 +342,6 @@ paths:
     $ref: paths/ssh/connections__by-teamid__by-sshconnectionid__files.yaml
   /api/ssh/connections/{teamId}/{sshConnectionId}/connection-tests:
     $ref: paths/ssh/connections__by-teamid__by-sshconnectionid__connection-tests.yaml
-  /api/ssh/connections/{teamId}/{sshConnectionId}/imports:
-    $ref: paths/ssh/connections__by-teamid__by-sshconnectionid__imports.yaml
   /api/latex/{teamId}/documents:
     $ref: paths/latex/by-teamid__documents.yaml
   /api/latex/{teamId}/import:
@@ -402,8 +396,6 @@ paths:
     $ref: paths/notifications/index.yaml
   /api/notifications/read-status:
     $ref: paths/notifications/read-status.yaml
-  /api/system/stats:
-    $ref: paths/system/stats.yaml
   /api/system/rbac:
     $ref: paths/system/rbac.yaml
   /api/teams/{teamId}/members:
@@ -704,8 +696,6 @@ components:
       $ref: components/schemas/ssh.yaml#/CreateSSHConnectionRequest
     UpdateSSHConnectionRequest:
       $ref: components/schemas/ssh.yaml#/UpdateSSHConnectionRequest
-    ImportTrajectoryFromSSHRequest:
-      $ref: components/schemas/ssh.yaml#/ImportTrajectoryFromSSHRequest
     SSHFile:
       $ref: components/schemas/ssh.yaml#/SSHFile
     SSHConnectionTestResult:

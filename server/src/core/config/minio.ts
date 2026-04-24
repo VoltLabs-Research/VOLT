@@ -8,6 +8,7 @@ export interface MinioClientConfig {
     useSSL: boolean;
     accessKey?: string;
     secretKey?: string;
+    publicUrl?: string;
 };
 
 let minioClient: Client | null = null;
@@ -31,7 +32,8 @@ export const getMinioConfig = (): MinioClientConfig => {
         port: readNumberEnv('MINIO_PORT', useSSL ? 443 : 9000),
         useSSL,
         accessKey: process.env.MINIO_ACCESS_KEY,
-        secretKey: process.env.MINIO_SECRET_KEY
+        secretKey: process.env.MINIO_SECRET_KEY,
+        publicUrl: process.env.MINIO_PUBLIC_URL
     };
 };
 

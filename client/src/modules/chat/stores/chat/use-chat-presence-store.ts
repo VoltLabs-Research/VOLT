@@ -11,8 +11,6 @@ interface ChatPresenceState {
 
 interface ChatPresenceActions {
     setTypingUser: (typing: TypingUser) => void;
-    clearTypingUser: (chatId: string, userId: string) => void;
-    setUserPresence: (userId: string, presence: Presence) => void;
     setUsersPresence: (presenceMap: Record<string, Presence>) => void;
     reset: () => void;
 };
@@ -36,16 +34,6 @@ export const useChatPresenceStore = create<ChatPresenceStore>((set) => ({
         }
         return { typingUsers: filtered };
     }),
-
-    clearTypingUser: (chatId, userId) => set((state) => ({
-        typingUsers: state.typingUsers.filter(
-            (t) => !(t.chatId === chatId && t.userId === userId)
-        )
-    })),
-
-    setUserPresence: (userId, presence) => set((state) => ({
-        userPresence: { ...state.userPresence, [userId]: presence }
-    })),
 
     setUsersPresence: (presenceMap) => set((state) => ({
         userPresence: { ...state.userPresence, ...presenceMap }

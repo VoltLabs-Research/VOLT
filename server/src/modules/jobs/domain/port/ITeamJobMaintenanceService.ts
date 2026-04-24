@@ -20,7 +20,6 @@ export interface RetryTeamJobsResult {
 };
 
 export interface ITeamJobMaintenanceService {
-    removeJobs(teamId: string, jobIds: string[]): Promise<RemoveTeamJobsResult>;
     retryJobs(teamId: string, jobIds: string[]): Promise<RetryTeamJobsResult>;
     removeJobsForAnalysis(teamId: string, analysisId: string): Promise<RemoveTeamJobsResult>;
     removeJobsForTrajectory(teamId: string, trajectoryId: string): Promise<RemoveTeamJobsResult>;

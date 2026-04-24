@@ -11,13 +11,12 @@ import GetTrajectoriesByTeamIdUseCase from '@modules/trajectory/application/use-
 import GetTrajectoryByIdUseCase from '@modules/trajectory/application/use-cases/trajectory/GetTrajectoryByIdUseCase';
 import GetTrajectoryFolderUseCase from '@modules/trajectory/application/use-cases/trajectory/GetTrajectoryFolderUseCase';
 import CloneTrajectoryController from './CloneTrajectoryController';
-import GetTrajectoryGLBController from './GetTrajectoryGLBController';
+import GetAtomsBinaryController from './GetAtomsBinaryController';
 import GetTrajectoryPreviewController from './GetTrajectoryPreviewController';
 import ListTrajectoryFoldersUseCase from '@modules/trajectory/application/use-cases/trajectory/ListTrajectoryFoldersUseCase';
 import MoveTrajectoryUseCase from '@modules/trajectory/application/use-cases/trajectory/MoveTrajectoryUseCase';
 import UpdateTrajectoryByIdUseCase from '@modules/trajectory/application/use-cases/trajectory/UpdateTrajectoryByIdUseCase';
 import UpdateTrajectoryFolderUseCase from '@modules/trajectory/application/use-cases/trajectory/UpdateTrajectoryFolderUseCase';
-import GetAtomsBinaryController from './GetAtomsBinaryController';
 import DownloadSampleSimulationsController from './DownloadSampleSimulationsController';
 import DownloadTrajectoryAnalysesController from './DownloadTrajectoryAnalysesController';
 import DownloadTrajectoryController from './DownloadTrajectoryController';
@@ -63,7 +62,6 @@ const MoveTrajectoryController = createController(MoveTrajectoryUseCase);
 const ListTrajectoryFoldersController = createPaginatedController(ListTrajectoryFoldersUseCase);
 const ListSampleSimulationsController = createController(ListSampleSimulationsUseCase);
 const resolvedControllers = createControllerRegistry({
-    getGLB: GetTrajectoryGLBController,
     getPreview: GetTrajectoryPreviewController,
     getSceneArtifacts: GetTrajectorySceneArtifactsController,
     listTeamSceneArtifacts: ListTeamSceneArtifactsController,

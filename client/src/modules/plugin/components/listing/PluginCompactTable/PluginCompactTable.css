@@ -1,0 +1,175 @@
+.plugin-compact-table-row--interactive {
+    cursor: pointer;
+    transition: background-color 120ms ease;
+}
+
+.plugin-compact-table-row--interactive:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--color-accent, var(--color-primary, #6366f1));
+}
+
+.plugin-compact-table-row--selected {
+    background-color: color-mix(in srgb, var(--color-accent, var(--color-primary, #6366f1)) 12%, transparent);
+}
+
+.plugin-compact-table-row--selected:hover {
+    background-color: color-mix(in srgb, var(--color-accent, var(--color-primary, #6366f1)) 18%, transparent);
+}
+
+.plugin-cell-empty {
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+.plugin-cell-number,
+.plugin-cell-integer,
+.plugin-cell-date,
+.plugin-cell-string {
+    font-variant-numeric: tabular-nums;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.plugin-cell-number {
+    color: var(--color-text-primary);
+    font-feature-settings: 'tnum', 'lnum';
+}
+
+.plugin-cell-integer {
+    color: var(--color-text-secondary);
+}
+
+.plugin-cell-bool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.plugin-cell-bool--true {
+    color: var(--color-success, #16a34a);
+    background-color: color-mix(in srgb, var(--color-success, #16a34a) 14%, transparent);
+}
+
+.plugin-cell-bool--false {
+    color: var(--color-danger, #dc2626);
+    background-color: color-mix(in srgb, var(--color-danger, #dc2626) 12%, transparent);
+}
+
+.plugin-cell-vector {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.125rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-feature-settings: 'tnum', 'lnum';
+    color: var(--color-text-secondary);
+}
+
+.plugin-cell-vector__bracket {
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
+.plugin-cell-vector__sep {
+    color: var(--color-text-muted);
+    margin-right: 0.125rem;
+}
+
+.plugin-cell-vector__component {
+    color: var(--color-text-primary);
+}
+
+.plugin-cell-points {
+    color: var(--color-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.plugin-cell-array {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--color-text-secondary);
+}
+
+.plugin-cell-array__count {
+    color: var(--color-text-muted);
+    font-size: 0.6875rem;
+}
+
+.plugin-cell-array__range {
+    color: var(--color-text-primary);
+}
+
+.plugin-cell-matrix {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.3rem;
+    color: var(--color-text-secondary);
+}
+
+.plugin-cell-matrix__dims {
+    color: var(--color-text-primary);
+    font-weight: 500;
+}
+
+.plugin-cell-matrix__label {
+    color: var(--color-text-muted);
+    font-size: 0.6875rem;
+}
+
+.plugin-cell-object {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.125rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--color-text-secondary);
+    font-feature-settings: 'tnum', 'lnum';
+}
+
+.plugin-cell-object__brace {
+    color: var(--color-text-muted);
+}
+
+.plugin-cell-object__key {
+    color: var(--color-text-tertiary);
+}
+
+.plugin-cell-object__colon {
+    color: var(--color-text-muted);
+    margin-right: 0.2rem;
+}
+
+.plugin-cell-object__sep {
+    color: var(--color-text-muted);
+    margin-right: 0.2rem;
+}
+
+.plugin-cell-object__value {
+    color: var(--color-text-primary);
+}
+
+.plugin-cell-object__overflow {
+    color: var(--color-text-muted);
+    font-size: 0.6875rem;
+    margin-left: 0.1rem;
+}
+
+.plugin-cell-fallback {
+    color: var(--color-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

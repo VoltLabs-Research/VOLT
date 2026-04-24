@@ -12,7 +12,6 @@ interface JobsHistoryProps {
     trajectoryId?: string;
     queueFilter?: string;
     groups: TJG[];
-    isConnected: boolean;
     isLoading: boolean;
     displayMode?: 'full' | 'children-only';
     groupStatusPresentation?: 'badge' | 'trajectory-name';

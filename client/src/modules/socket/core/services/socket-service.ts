@@ -7,7 +7,7 @@ import type { ISocketService } from './contracts/socket-service';
 
 type SocketAuth = Record<string, unknown>;
 
-export class SocketUnavailableError extends Error {
+class SocketUnavailableError extends Error {
     code = 'Socket::Unavailable';
 
     constructor(message: string, readonly cause?: unknown) {
@@ -196,11 +196,11 @@ const getInitialAuth = (): Record<string, unknown> => {
     }
 };
 
-export const socketTransport = new SocketIOAdapter(getBackendOrigin(), {
+const socketTransport = new SocketIOAdapter(getBackendOrigin(), {
     auth: getInitialAuth(),
     autoConnect: false
 });
 
-export const socketService = new SocketService(socketTransport, getInitialAuth);
+const socketService = new SocketService(socketTransport, getInitialAuth);
 
 export default socketService;

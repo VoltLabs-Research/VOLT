@@ -6,16 +6,11 @@ import type { CheckEmailInputDTO, CheckEmailOutputDTO } from './dtos/check-email
 import type { EmptyParams } from '@/app/core/http/utilities/create-service';
 import type { GetAvailableOAuthProvidersOutputDTO } from './dtos/oauth-providers';
 import type { GetPasswordInfoOutputDTO } from './dtos/password-info';
-import type { GuestIdentity } from './entities/guest-identity';
 import type { SignInInputDTO, SignInOutputDTO } from './dtos/sign-in';
 import type { SignUpInputDTO, SignUpOutputDTO } from './dtos/sign-up';
 import type { UpdateAvatarInputDTO } from './dtos/update-avatar';
 import type { UpdateProfileInputDTO } from './dtos/update-profile';
 import type { User } from './entities/user';
-
-interface GuestIdentityParams {
-    seed: string;
-};
 
 type UpdateMeInput = UpdateProfileInputDTO | UpdateAvatarInputDTO;
 
@@ -52,7 +47,6 @@ const endpoints = {
     }),
     checkEmail: get<CheckEmailInputDTO, CheckEmailOutputDTO>('/emails/:email/availability'),
     getAvailableOAuthProviders: get<EmptyParams, GetAvailableOAuthProvidersOutputDTO>('/oauth/providers'),
-    getGuestIdentity: get<GuestIdentityParams, GuestIdentity>('/guest-identity'),
     getPasswordInfo: get<EmptyParams, GetPasswordInfoOutputDTO>('/password/info'),
     changePassword: patch<ChangePasswordInputDTO, ChangePasswordOutputDTO>('/me/password')
 };
