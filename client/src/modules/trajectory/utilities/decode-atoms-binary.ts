@@ -31,6 +31,7 @@ const createTypedArrayView = (
  * ArrayBuffer — no per-row materialization, no JSON parsing.
  *
  * Format (little-endian):
+ *   [u32 total][u32 page][u32 limit][u32 totalPages]
  *   [u32 count][u32 propsCount]
  *   for each prop: [u8 nameLen][bytes name utf-8][u8 dtypeId][u32 byteLen]
  *   [u32 headerPadLen][padLen zero bytes]
@@ -43,6 +44,14 @@ export const decodeAtomsBinary = (buffer: ArrayBuffer): GetAtomsOutputDTO => {
     const view = new DataView(buffer);
     let offset = 0;
 
+    const total = view.getUint32(offset, true);
+    offset += 4;
+    const page = view.getUint32(offset, true);
+    offset += 4;
+    const limit = view.getUint32(offset, true);
+    offset += 4;
+    const totalPages = view.getUint32(offset, true);
+    offset += 4;
     const count = view.getUint32(offset, true);
     offset += 4;
     const propsCount = view.getUint32(offset, true);
@@ -100,14 +109,10 @@ export const decodeAtomsBinary = (buffer: ArrayBuffer): GetAtomsOutputDTO => {
 
     return {
         count,
-        // Why: totals / pagination live in response headers because the body is
-        // pure data. Consumers that need pagination metadata should read them
-        // from the HTTP layer — decodeAtomsBinary provides zero-allocation
-        // access to the payload only.
-        total: count,
-        page: 1,
-        limit: count,
-        totalPages: 1,
+        total,
+        page,
+        limit,
+        totalPages,
         propertyNames: columns.map((column) => column.name),
         columns,
         getColumn: (name: string) => columnsByName.get(name)

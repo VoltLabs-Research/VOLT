@@ -8,9 +8,6 @@ import { resolveSystemMetricsIdentity } from '@modules/system/utilities/resolveS
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 
-
-const ACTIVE_CLUSTERS_KEY = 'active_clusters';
-
 @Singleton()
 export default class SystemMetricsRedisRepository {
     private readonly metricsHistoryKey = 'metrics-history';
@@ -37,7 +34,6 @@ export default class SystemMetricsRedisRepository {
             const clusterId = metrics.teamClusterId ?? this.clusterId;
 
             await redis.zadd(this.getMetricsKey(clusterId), timestamp, metricsJson);
-            await redis.zadd(ACTIVE_CLUSTERS_KEY, timestamp, clusterId);
         } catch (error: unknown) {
             logger.error(`Error saving to Redis: ${error}`);
         }
@@ -98,29 +94,6 @@ export default class SystemMetricsRedisRepository {
         } catch (error: unknown) {
             logger.error(`Error cleaning old metrics: ${error}`);
             return 0;
-        }
-    }
-
-    async listActiveClusterIds(cutoffTime: number): Promise<string[]> {
-        try {
-            if (!redis) return [];
-
-            try {
-                await redis.zremrangebyscore(ACTIVE_CLUSTERS_KEY, '-inf', cutoffTime);
-            } catch (error: unknown) {
-                const message = error instanceof Error ? error.message : '';
-                if (message.includes('WRONGTYPE')) {
-                    logger.warn('Detected legacy active_clusters Set type. Resetting to Sorted Set.');
-                    await redis.del(ACTIVE_CLUSTERS_KEY);
-                } else {
-                    throw error;
-                }
-            }
-
-            return redis.zrange(ACTIVE_CLUSTERS_KEY, 0, -1);
-        } catch (error: unknown) {
-            logger.error(`Error listing active clusters from Redis: ${error}`);
-            return [];
         }
     }
 

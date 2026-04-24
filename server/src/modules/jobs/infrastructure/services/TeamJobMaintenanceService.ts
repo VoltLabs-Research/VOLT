@@ -61,6 +61,10 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         }
 
         const targetJobs = await this.resolveJobs(teamId, jobIds);
+        return this.removeResolvedJobs(teamId, targetJobs);
+    }
+
+    private async removeResolvedJobs(teamId: string, targetJobs: TeamJobSummary[]): Promise<RemoveTeamJobsResult> {
         if (targetJobs.length === 0) {
             return this.emptyRemoveResult();
         }
@@ -118,48 +122,36 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
     }
 
     async removeJobsForAnalysis(teamId: string, analysisId: string): Promise<RemoveTeamJobsResult> {
-        const jobIds = await this.collectJobIdsMatching(teamId, (job) => job.analysisId === analysisId);
-        if (jobIds.length === 0) {
-            return this.emptyRemoveResult();
-        }
-
-        return this.removeJobs(teamId, jobIds);
+        const targetJobs = await this.collectJobsMatching(teamId, (job) => job.analysisId === analysisId);
+        return this.removeResolvedJobs(teamId, targetJobs);
     }
 
     async removeJobsForTrajectory(teamId: string, trajectoryId: string): Promise<RemoveTeamJobsResult> {
-        const jobIds = await this.collectJobIdsMatching(
+        const targetJobs = await this.collectJobsMatching(
             teamId,
             (job) => job.trajectoryId === trajectoryId && REMOVABLE_STATUSES.has(job.status)
         );
-        if (jobIds.length === 0) {
-            return this.emptyRemoveResult();
-        }
-
-        return this.removeJobs(teamId, jobIds);
+        return this.removeResolvedJobs(teamId, targetJobs);
     }
 
     async retryFailedJobsForTrajectory(teamId: string, trajectoryId: string): Promise<RetryTeamJobsResult> {
-        const jobIds = await this.collectJobIdsMatching(
+        const targetJobs = await this.collectJobsMatching(
             teamId,
             (job) => job.trajectoryId === trajectoryId && job.status === JobStatus.Failed
         );
-        if (jobIds.length === 0) {
-            return this.emptyRetryResult();
-        }
-
-        return this.retryJobs(teamId, jobIds);
+        return this.retryResolvedJobs(teamId, targetJobs);
     }
 
-    private async collectJobIdsMatching(
+    private async collectJobsMatching(
         teamId: string,
         predicate: (job: TeamJobSummary) => boolean
-    ): Promise<string[]> {
+    ): Promise<TeamJobSummary[]> {
         if (!teamId) {
             return [];
         }
 
         const jobs = await this.teamJobsService.getFlatTeamJobs(teamId);
-        return jobs.filter(predicate).map((job) => job.jobId);
+        return jobs.filter(predicate);
     }
 
     async retryJobs(teamId: string, jobIds: string[]): Promise<RetryTeamJobsResult> {
@@ -168,6 +160,14 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         }
 
         const targetJobs = await this.resolveJobs(teamId, jobIds);
+        return this.retryResolvedJobs(teamId, targetJobs);
+    }
+
+    private async retryResolvedJobs(teamId: string, targetJobs: TeamJobSummary[]): Promise<RetryTeamJobsResult> {
+        if (targetJobs.length === 0) {
+            return this.emptyRetryResult();
+        }
+
         const { daemonJobs } = this.partitionByBackingSource(targetJobs);
 
         if (daemonJobs.length === 0) {

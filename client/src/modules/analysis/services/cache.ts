@@ -19,21 +19,11 @@ interface FindCachedAnalysisByIdInput {
 };
 
 const getTrajectoryParams = (queryKey: readonly unknown[]): GetAnalysesByTrajectoryParams | undefined => {
-    const candidate = queryKey[2];
+    const candidate = queryKey[2] as Partial<GetAnalysesByTrajectoryParams> | undefined;
 
-    if (!candidate || typeof candidate !== 'object') {
-        return undefined;
-    }
-
-    if (!('trajectoryId' in candidate) || typeof candidate.trajectoryId !== 'string') {
-        return undefined;
-    }
-
-    if (!('page' in candidate) || typeof candidate.page !== 'number') {
-        return undefined;
-    }
-
-    if (!('limit' in candidate) || typeof candidate.limit !== 'number') {
+    if (typeof candidate?.trajectoryId !== 'string'
+        || typeof candidate.page !== 'number'
+        || typeof candidate.limit !== 'number') {
         return undefined;
     }
 
@@ -47,37 +37,36 @@ const getTrajectoryParams = (queryKey: readonly unknown[]): GetAnalysesByTraject
 export const upsertAnalysisCaches = (analysis: Analysis): void => {
     analysisQuery.cache.upsert(analysis);
 
+    const analysisTrajectoryId = analysis.trajectory?._id;
+
     queryClient.getQueriesData<PaginatedResponse<Analysis>>({
         queryKey: KEYS.byTrajectory()
     }).forEach(([queryKey, page]) => {
         if (!page) return;
         const params = getTrajectoryParams(queryKey);
-        const isFirstPage = (page.pagination?.page ?? 1) === 1;
-        const belongsToTrajectory = params?.trajectoryId === analysis.trajectory?._id;
-        const exists = page.data.some((a) => a._id === analysis._id);
+        if (params?.trajectoryId !== analysisTrajectoryId) return;
 
+        const exists = page.data.some((a) => a._id === analysis._id);
         if (exists) {
             queryClient.setQueryData<PaginatedResponse<Analysis>>(queryKey, {
                 ...page,
-                data: page.data.map((a) => {
-                    if (a._id !== analysis._id) {
-                        return a;
-                    }
-
-                    return { ...a, ...analysis };
-                })
+                data: page.data.map((a) => a._id === analysis._id ? { ...a, ...analysis } : a)
             });
-        } else if (belongsToTrajectory && isFirstPage) {
-            queryClient.setQueryData<PaginatedResponse<Analysis>>(queryKey, {
-                ...page,
-                data: [analysis, ...page.data].slice(0, page.pagination.limit),
-                pagination: {
-                    ...page.pagination,
-                    total: page.pagination.total + 1,
-                    totalPages: Math.ceil((page.pagination.total + 1) / page.pagination.limit)
-                }
-            });
+            return;
         }
+
+        const isFirstPage = (page.pagination?.page ?? 1) === 1;
+        if (!isFirstPage) return;
+
+        queryClient.setQueryData<PaginatedResponse<Analysis>>(queryKey, {
+            ...page,
+            data: [analysis, ...page.data].slice(0, page.pagination.limit),
+            pagination: {
+                ...page.pagination,
+                total: page.pagination.total + 1,
+                totalPages: Math.ceil((page.pagination.total + 1) / page.pagination.limit)
+            }
+        });
     });
 };
 

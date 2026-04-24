@@ -3,7 +3,6 @@ import SystemMetricsRedisRepository from '@modules/system/infrastructure/persist
 import { resolveSystemMetricsIdentity } from '@modules/system/utilities/resolveSystemMetricsIdentity';
 import os from 'node:os';
 import { injectable } from 'tsyringe';
-import ClusterMetricsAggregator from './ClusterMetricsAggregator';
 import CpuMetricsCollector from './CpuMetricsCollector';
 import DiskMetricsCollector from './DiskMetricsCollector';
 import MemoryMetricsCollector from './MemoryMetricsCollector';
@@ -27,9 +26,7 @@ export default class MetricsCollector {
         
         private readonly healthPinger: ServiceHealthPinger,
         
-        private readonly metricsRepository: SystemMetricsRedisRepository,
-        
-        private readonly clusterAggregator: ClusterMetricsAggregator
+        private readonly metricsRepository: SystemMetricsRedisRepository
     ) {}
 
     private determineStatus(cpuUsage: number, memoryUsage: number, diskUsage: number): SystemStatus {
@@ -93,13 +90,5 @@ export default class MetricsCollector {
 
     async cleanExpiredHistory(): Promise<number> {
         return this.metricsRepository.deleteExpired();
-    }
-
-    async getClusterAnalysisCounts(): Promise<Record<string, number>> {
-        return this.clusterAggregator.getClusterAnalysisCounts();
-    }
-
-    async getAllClustersMetrics() {
-        return this.clusterAggregator.getAllClustersMetrics();
     }
 }

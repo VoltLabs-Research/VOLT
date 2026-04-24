@@ -64,8 +64,3 @@ export interface SystemMetrics {
     uptime: number;
     mongodb: MongoDBMetrics | null;
 }
-
-export interface ClusterSystemMetrics extends SystemMetrics {
-    clusterId: string;
-    analysisCount: number;
-}

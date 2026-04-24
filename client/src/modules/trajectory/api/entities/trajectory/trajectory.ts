@@ -22,6 +22,9 @@ export interface Trajectory extends BaseEntity {
     folder: string | null;
     analysis: Analysis[];
     frames: TimestepInfo[];
+    framesCount?: number;
+    atoms?: number;
+    firstTimestep?: number;
     stats: TrajectoryStats;
     hasPreview?: boolean;
     preview?: string;
