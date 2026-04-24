@@ -11,7 +11,6 @@ import logger from '@shared/infrastructure/logger';
 @Singleton()
 export default class SystemMetricsRedisRepository {
     private readonly metricsHistoryKey = 'metrics-history';
-    private readonly metricsTTL = 60;
     private readonly clusterId: string;
 
     constructor() {
@@ -39,29 +38,6 @@ export default class SystemMetricsRedisRepository {
         }
     }
 
-    async getLatest(): Promise<SystemMetrics | null> {
-        try {
-            if (!redis) {
-                logger.warn('Redis not available');
-                return null;
-            }
-
-            const metrics = await redis.zrevrange(this.getMetricsKey(), 0, 0);
-            if (metrics && metrics.length > 0) {
-                return deserializeSystemMetrics(metrics[0]);
-            }
-
-            return null;
-        } catch (error: unknown) {
-            logger.error(`Error reading latest from Redis: ${error}`);
-            return null;
-        }
-    }
-
-    async getHistory(minutes: number = 5): Promise<SystemMetrics[]> {
-        return this.getHistoryByClusterId(this.clusterId, minutes);
-    }
-
     async getHistoryByClusterId(clusterId: string, minutes: number = 5): Promise<SystemMetrics[]> {
         try {
             if (!redis) {
@@ -76,24 +52,6 @@ export default class SystemMetricsRedisRepository {
         } catch (error: unknown) {
             logger.error(`Error reading from Redis: ${error}`);
             return [];
-        }
-    }
-
-    async deleteExpired(): Promise<number> {
-        try {
-            if (!redis) return 0;
-
-            const cutoffTime = Date.now() - (this.metricsTTL * 1000);
-            const removed = await redis.zremrangebyscore(this.getMetricsKey(), '-inf', cutoffTime);
-
-            if (removed > 0) {
-                logger.info(`Cleaned ${removed} old metrics from Redis`);
-            }
-
-            return removed;
-        } catch (error: unknown) {
-            logger.error(`Error cleaning old metrics: ${error}`);
-            return 0;
         }
     }
 

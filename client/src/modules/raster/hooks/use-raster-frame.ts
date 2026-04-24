@@ -137,8 +137,7 @@ export const useRasterFrame = ({
             model: model ?? null,
             analysisId: analysisId ?? null,
             scope,
-            imageUrl,
-            isUnavailable: Boolean(error)
+            imageUrl
         };
     }, [analysisId, canFetchFrame, error, frameQuery.data, imageUrl, model, scope, timestep]);
 

@@ -1,0 +1,38 @@
+.plugin-sub-listings-page {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+}
+
+.plugin-sub-listings-page__listing {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.plugin-sub-listings-page__detail {
+    flex: 0 0 clamp(320px, 38%, 520px);
+    min-height: 0;
+    border-left: 1px solid var(--color-border-soft);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 900px) {
+    .plugin-sub-listings-page {
+        flex-direction: column;
+    }
+
+    .plugin-sub-listings-page__detail {
+        flex: 0 0 45%;
+        border-left: 0;
+        border-top: 1px solid var(--color-border-soft);
+    }
+}

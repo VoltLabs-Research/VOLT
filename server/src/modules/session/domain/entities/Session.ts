@@ -7,14 +7,12 @@ export interface SessionProps {
     lastActivity: Date;
     action: SessionActivityType;
     success: boolean;
-    failureReason?: string;
     createdAt: Date;
     updatedAt: Date;
 };
 
 export enum SessionActivityType {
     Login = 'login',
-    Logout = 'logout',
     FailedLogin = 'failed_login',
     OAuthLogin = 'oauth_login',
     PasswordUpdate= 'password_update'

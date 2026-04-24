@@ -1,5 +1,6 @@
 .scripting-workspace {
     height: 100%;
+    padding-top: var(--canvas-header-height, 0px);
 }
 
 .scripting-workspace__panel {

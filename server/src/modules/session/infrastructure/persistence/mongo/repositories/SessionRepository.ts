@@ -30,10 +30,6 @@ export default class SessionRepository
         return docs.map((doc) => this.mapper.toDomain(doc));
     }
 
-    async deactivateByToken(token: string): Promise<void> {
-        await SessionModel.findOneAndUpdate({ token }, { isActive: false });
-    }
-
     async deactivateAllExcept(userId: string, currentToken: string): Promise<number> {
         const result = await SessionModel.updateMany(
             {
@@ -41,15 +37,6 @@ export default class SessionRepository
                 token: { $ne: currentToken },
                 isActive: true
             },
-            { isActive: false }
-        );
-
-        return result.modifiedCount;
-    }
-
-    async deactivateAll(userId: string): Promise<number> {
-        const result = await SessionModel.updateMany(
-            { user: userId, isActive: true },
             { isActive: false }
         );
 

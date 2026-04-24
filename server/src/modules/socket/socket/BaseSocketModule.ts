@@ -7,10 +7,8 @@ import SocketIOEventRegistry from '@modules/socket/infrastructure/services/Socke
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
 import {
     createSocketErrorEnvelope,
-    createSocketErrorEnvelopeFromApplicationError,
     type SocketErrorEnvelope
 } from '@modules/socket/utilities/socket-error-envelope';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 
 /**
  * Each module can hook into the lifecycle and register its own handlers.
@@ -52,18 +50,6 @@ export default abstract class BaseSocketModule implements ISocketModule{
      */
     protected async joinRoom(socketId: string, room: string): Promise<void>{
         await this.roomManager.join(socketId, room);
-    }
-
-    protected async switchRoom(
-        socketId: string,
-        room: string,
-        previousRoom?: string
-    ): Promise<void> {
-        if (previousRoom && previousRoom !== room) {
-            await this.leaveRoom(socketId, previousRoom);
-        }
-
-        await this.joinRoom(socketId, room);
     }
 
     /**
@@ -123,25 +109,12 @@ export default abstract class BaseSocketModule implements ISocketModule{
         return createSocketErrorEnvelope(code, details);
     }
 
-    protected createApplicationErrorEnvelope(
-        error: ApplicationError
-    ): SocketErrorEnvelope {
-        return createSocketErrorEnvelopeFromApplicationError(error);
-    }
-
     protected emitErrorToSocket(
         socketId: string,
         code: ErrorCode | string,
         details?: string
     ): void {
         this.emitToSocket(socketId, 'error', this.createErrorEnvelope(code, details));
-    }
-
-    protected emitApplicationErrorToSocket(
-        socketId: string,
-        error: ApplicationError
-    ): void {
-        this.emitToSocket(socketId, 'error', this.createApplicationErrorEnvelope(error));
     }
 
     /**
@@ -161,21 +134,6 @@ export default abstract class BaseSocketModule implements ISocketModule{
      */
     protected broadcast(event: string, data: unknown): void{
         this.emitter.broadcast(event, data);
-    }
-
-    protected emitErrorToRoom(
-        room: string,
-        code: ErrorCode | string,
-        details?: string
-    ): void {
-        this.emitToRoom(room, 'error', this.createErrorEnvelope(code, details));
-    }
-
-    protected broadcastError(
-        code: ErrorCode | string,
-        details?: string
-    ): void {
-        this.broadcast('error', this.createErrorEnvelope(code, details));
     }
 
     /**

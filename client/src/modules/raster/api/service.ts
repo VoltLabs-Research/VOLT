@@ -1,11 +1,9 @@
 import { defineServiceModule } from '@/shared/api/service-module';
-import { download, get, post } from '@/app/core/http/utilities/create-service';
-import type { GetRasterFrameParams } from '@/modules/raster/api/dtos/get-raster-frame';
+import { get, post } from '@/app/core/http/utilities/create-service';
 import type {
     GetRasterMetadataParams,
     GetRasterMetadataResponse
 } from '@/modules/raster/api/dtos/get-raster-metadata';
-import type { GetTrajectoryRasterFrameParams } from '@/modules/raster/api/dtos/get-trajectory-raster-frame';
 import type {
     TriggerRasterizationParams,
     TriggerRasterizationResponse
@@ -23,9 +21,7 @@ const endpoints = {
             return { config };
         }
     }),
-    getMetadata: get<GetRasterMetadataParams, GetRasterMetadataResponse>('/:trajectoryId/metadata'),
-    getTrajectoryFrame: download<GetTrajectoryRasterFrameParams>('GET', '/:trajectoryId/frames/:timestep'),
-    getFrame: download<GetRasterFrameParams>('GET', '/:trajectoryId/frames/:timestep/:analysisId/:model')
+    getMetadata: get<GetRasterMetadataParams, GetRasterMetadataResponse>('/:trajectoryId/metadata')
 };
 
 export default defineServiceModule({

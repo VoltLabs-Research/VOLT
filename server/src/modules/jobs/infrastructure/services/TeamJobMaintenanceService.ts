@@ -55,15 +55,6 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         private readonly trajectoryBackgroundProcessor: TrajectoryBackgroundProcessor
     ) {}
 
-    async removeJobs(teamId: string, jobIds: string[]): Promise<RemoveTeamJobsResult> {
-        if (jobIds.length === 0) {
-            return this.emptyRemoveResult();
-        }
-
-        const targetJobs = await this.resolveJobs(teamId, jobIds);
-        return this.removeResolvedJobs(teamId, targetJobs);
-    }
-
     private async removeResolvedJobs(teamId: string, targetJobs: TeamJobSummary[]): Promise<RemoveTeamJobsResult> {
         if (targetJobs.length === 0) {
             return this.emptyRemoveResult();

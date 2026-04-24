@@ -13,7 +13,6 @@ type TeamSubscriptionHandler = (
 ) => void | Promise<void>;
 
 @Singleton()
-@Singleton()
 export default class SocketTeamSubscriptionCoordinator {
     private readonly handlers = new Set<TeamSubscriptionHandler>();
 

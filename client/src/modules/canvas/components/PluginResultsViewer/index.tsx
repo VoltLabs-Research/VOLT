@@ -87,7 +87,8 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                                 trajectoryId={trajectoryId}
                                 analysisId={analysisId}
                                 teamId={resolvedTeamId}
-                                compact
+                                compact={true}
+                                inlineSubListings={true}
                             />
                         )}
                         {isAtomsTab && trajectoryId && (

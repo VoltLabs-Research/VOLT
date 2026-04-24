@@ -12,6 +12,7 @@ interface BuildJupyterProxyUrlInput {
     runtimeNotebookId: string;
     notebookPath?: string;
     daemonPath?: string;
+    accessToken?: string;
 };
 
 interface JupyterProxyPathMatch {
@@ -70,6 +71,10 @@ export const buildJupyterProxyUrl = (input: BuildJupyterProxyUrlInput): string =
         `${buildJupyterProxyBasePath(input.teamId, input.runtimeNotebookId)}${proxyTargetPath}`,
         resolveServerBaseUrl()
     );
+
+    if (input.accessToken) {
+        proxyUrl.searchParams.set(JUPYTER_PROXY_ACCESS_TOKEN_QUERY_PARAM, input.accessToken);
+    }
 
     return proxyUrl.toString();
 };

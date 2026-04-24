@@ -70,7 +70,7 @@ const useChatData = () => {
         invalidateChatsQuery(queryClient).catch(() => undefined);
     }, [queryClient]);
 
-    const loadMoreMessages = useCallback((_chatId?: string, _currentPage?: number): void => {
+    const loadMoreMessages = useCallback((): void => {
         if (!messagesQuery.isFetchingNextPage && messagesQuery.hasNextPage) {
             messagesQuery.fetchNextPage().catch(() => undefined);
         }

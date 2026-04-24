@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
 import type { ChatLastMessage } from '../../api/entities/chat';
 import type { ChatMessage } from '../../api/entities/message';
-import type { TypingUser, MessagesReadEvent } from '../../api/entities/shared/chat-events';
+import type { TypingUser } from '../../api/entities/shared/chat-events';
 
 interface NewMessageEvent {
     chatId: string;
@@ -75,11 +75,6 @@ const useChatSocket = ({ currentChatId, addMessage, updateMessage }: UseChatSock
     useSocketEvent<ReactionUpdatedEvent>(CHAT_SOCKET_EVENTS.REACTION_UPDATED, ({ chatId, message }) => {
         if (chatId === currentChatId) {
             updateMessage(message._id, { reactions: message.reactions });
-        }
-    });
-
-    useSocketEvent<MessagesReadEvent>(CHAT_SOCKET_EVENTS.MESSAGES_READ, ({ chatId }) => {
-        if (chatId === currentChatId) {
         }
     });
 

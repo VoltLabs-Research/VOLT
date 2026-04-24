@@ -64,7 +64,6 @@ const KEYS = buildKeys<{
         atomsInfinite: void;
         perAtom: void;
         samples: void;
-        metrics: void;
         folder: GetTrajectoryFolderParams;
         folders: ListTrajectoryFoldersParams;
     }>(BASE_KEY);
@@ -174,18 +173,12 @@ export const TRAJECTORY_QUERY_KEYS = {
     trajectories: trajectoryQuery.QUERY_KEYS.lists,
     trajectoriesInfinite: trajectoryQuery.QUERY_KEYS.infiniteLists,
     trajectoriesList: trajectoryQuery.QUERY_KEYS.list,
-    trajectoriesInfiniteList: (params: GetTrajectoriesInputDTO) => [...trajectoryQuery.QUERY_KEYS.infiniteLists(), stripTrajectoryPage(params)] as const,
     debugTrajectories: KEYS.debug,
     simulationGrid: KEYS.simulationGrid,
     trajectory: KEYS.detail,
-    trajectoryById: KEYS.detail,
     preview: KEYS.preview,
-    previewByTrajectory: KEYS.preview,
     atoms: KEYS.atoms,
-    atomsList: KEYS.atoms,
     perAtom: KEYS.perAtom,
-    samples: KEYS.samples(),
-    metrics: KEYS.metrics(),
     ...TRAJECTORY_MODULE_QUERY_KEYS
 } as const;
 

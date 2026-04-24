@@ -203,10 +203,10 @@ const CanvasPage = () => {
     const [rightDrawerOpen, setRightDrawerOpen] = useState(false);
 
     useEffect(() => {
-        if (!isNarrowViewport) {
+        if (!isNarrowViewport || isScriptingWorkspace) {
             setRightDrawerOpen(false);
         }
-    }, [isNarrowViewport]);
+    }, [isNarrowViewport, isScriptingWorkspace]);
 
     useEffect(() => {
         if (!isLocalGlbViewer) {
@@ -477,7 +477,7 @@ const CanvasPage = () => {
         return undefined;
     })();
 
-    const rightOverlaySize = !isLocalGlbViewer && !isNarrowViewport ? rightPanel.size : 0;
+    const rightOverlaySize = !isLocalGlbViewer && !isNarrowViewport && !isScriptingWorkspace ? rightPanel.size : 0;
 
     if (accessDenied) {
         return (
@@ -571,7 +571,7 @@ const CanvasPage = () => {
                                 bodyContent={viewportBodyContent}
                                 hideGradient={isScriptingWorkspace || isRasterWorkspace || showNoFramesState}
                                 renderScene={!isScriptingWorkspace && !isRasterWorkspace && !showNoFramesState}
-                                showSceneActions={!isRasterWorkspace && !showNoFramesState}
+                                showSceneActions={!isRasterWorkspace && !isScriptingWorkspace && !showNoFramesState}
                             />
                         </ErrorBoundary>
                         <WorkspaceCursorsOverlay
@@ -622,7 +622,7 @@ const CanvasPage = () => {
                 )}
             </Stack>
 
-            {!isLocalGlbViewer && (
+            {!isLocalGlbViewer && !isScriptingWorkspace && (
                 <>
                     {isNarrowViewport && !rightDrawerOpen && (
                         <button

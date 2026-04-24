@@ -1,36 +1,5 @@
-import { useEffect, useState } from 'react';
+import useMedia from '@/shared/presentation/hooks/use-media';
 
 const REDUCED_MOTION_MEDIA_QUERY = '(prefers-reduced-motion: reduce)';
 
-const getPrefersReducedMotion = (): boolean => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-        return false;
-    }
-
-    return window.matchMedia(REDUCED_MOTION_MEDIA_QUERY).matches;
-};
-
-export const usePrefersReducedMotion = (): boolean => {
-    const [prefersReducedMotion, setPrefersReducedMotion] = useState(getPrefersReducedMotion);
-
-    useEffect(() => {
-        if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-            return;
-        }
-
-        const mediaQueryList = window.matchMedia(REDUCED_MOTION_MEDIA_QUERY);
-
-        const handleChange = (event: MediaQueryListEvent) => {
-            setPrefersReducedMotion(event.matches);
-        };
-
-        setPrefersReducedMotion(mediaQueryList.matches);
-        mediaQueryList.addEventListener('change', handleChange);
-
-        return () => {
-            mediaQueryList.removeEventListener('change', handleChange);
-        };
-    }, []);
-
-    return prefersReducedMotion;
-};
+export const usePrefersReducedMotion = (): boolean => useMedia(REDUCED_MOTION_MEDIA_QUERY);

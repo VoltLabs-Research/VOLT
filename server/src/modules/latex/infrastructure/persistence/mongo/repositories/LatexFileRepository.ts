@@ -32,13 +32,6 @@ export default class LatexFileRepository
         return doc ? this.mapper.toDomain(doc) : null;
     }
 
-    async findEntrypointByDocument(documentId: string): Promise<LatexFile | null> {
-        const doc = await this.model
-            .findOne({ document: documentId, isEntrypoint: true })
-            .exec();
-        return doc ? this.mapper.toDomain(doc) : null;
-    }
-
     /**
      * Atomically clears `isEntrypoint` from all files in the document
      * before setting a new entrypoint. Call this inside `SetLatexFileEntrypointUseCase`.

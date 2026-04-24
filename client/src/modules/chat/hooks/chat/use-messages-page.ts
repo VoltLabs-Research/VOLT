@@ -33,7 +33,6 @@ const useMessagesPage = (chatId?: string) => {
         messages,
         currentChatId,
         hasMore: hasMoreMessages,
-        page: currentPage,
         fetchChats,
         resetState,
         selectChat,
@@ -141,9 +140,9 @@ const useMessagesPage = (chatId?: string) => {
 
     const handleLoadMore = useCallback(() => {
         if (chatId && hasMoreMessages) {
-            loadMoreMessages(chatId, currentPage);
+            loadMoreMessages();
         }
-    }, [chatId, currentPage, hasMoreMessages, loadMoreMessages]);
+    }, [chatId, hasMoreMessages, loadMoreMessages]);
 
     const handleCreateGroup = useCallback(async (name: string, description: string, memberIds: string[]) => {
         if (!selectedTeam) return;
