@@ -5,6 +5,7 @@ import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
+import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -43,6 +44,7 @@ const ContainerDetailsLayout = () => {
     const { id } = useParams<ContainerDetailsRouteParams>();
     const { pathname } = useLocation();
     const navigate = useNavigate();
+    const prefersReducedMotion = usePrefersReducedMotion();
     const [headerActions, setHeaderActions] = useState<ReactNode>(null);
 
     const updateContainerMutation = containerQuery.useUpdateMutation();
@@ -202,10 +204,10 @@ const ContainerDetailsLayout = () => {
 
             <Stack className='container-details-content-area' flex='1'>
                 <motion.div
-                    key={location.pathname}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+                    key={pathname}
+                    initial={prefersReducedMotion ? false : { opacity: 0 }}
+                    animate={prefersReducedMotion ? undefined : { opacity: 1 }}
+                    transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
                     style={{ height: '100%' }}
                 >
                     <Outlet context={outletContext} />

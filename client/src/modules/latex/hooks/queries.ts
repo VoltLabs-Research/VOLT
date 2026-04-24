@@ -48,18 +48,14 @@ interface LatexQueryKeys extends Record<string, unknown> {
 const KEYS = buildKeys<LatexQueryKeys>('latex');
 
 export const latexDocumentsQueryKey = KEYS.documents;
-export const latexDocumentQueryKey = KEYS.document;
-export const latexAssetsQueryKey = KEYS.assets;
-export const latexFilesQueryKey = KEYS.files;
 
 export const latexDocumentsQuery = createQuery(KEYS.documents, service.listDocuments);
 export const latexDocumentQuery = createQuery(KEYS.document, service.getDocument);
 export const latexAssetsQuery = createQuery(KEYS.assets, service.listAssets);
 export const latexFilesQuery = createQuery(KEYS.files, service.listFiles);
 
-export const invalidateLatexDocumentsQuery = () => queryClient.invalidateQueries({ queryKey: KEYS.documents() });
-export const invalidateLatexDocumentQuery = (params: GetLatexDocumentParams) => latexDocumentQuery.invalidate(params);
-export const invalidateLatexAssetsQuery = (params: ListLatexAssetsParams) => latexAssetsQuery.invalidate(params);
+const invalidateLatexDocumentsQuery = () => queryClient.invalidateQueries({ queryKey: KEYS.documents() });
+const invalidateLatexAssetsQuery = (params: ListLatexAssetsParams) => latexAssetsQuery.invalidate(params);
 export const invalidateLatexFilesQuery = (params: ListLatexFilesParams) => latexFilesQuery.invalidate(params);
 
 const latexFolderQueries = createFolderResourceQueries<
@@ -83,12 +79,8 @@ const latexFolderQueries = createFolderResourceQueries<
     listingQueryKeys: [KEYS.documents()]
 });
 
-export const latexFoldersQueryKey = latexFolderQueries.foldersQueryKey;
-export const latexFolderQueryKey = latexFolderQueries.folderQueryKey;
 export const latexFoldersQuery = latexFolderQueries.foldersQuery;
 export const latexFolderQuery = latexFolderQueries.folderQuery;
-export const invalidateLatexFoldersQuery = latexFolderQueries.invalidateFoldersQuery;
-export const invalidateLatexFolderQuery = latexFolderQueries.invalidateFolderQuery;
 export const useCreateLatexFolderMutation = latexFolderQueries.useCreateFolderMutation;
 export const useUpdateLatexFolderMutation = latexFolderQueries.useUpdateFolderMutation;
 export const useDeleteLatexFolderMutation = latexFolderQueries.useDeleteFolderMutation;

@@ -5,11 +5,9 @@ import {
 import {
     formatSessionRelativeTime,
     getSessionActivityIcon,
-    getSessionTokenInfo,
     isMobileUserAgent,
     parseSessionUserAgent,
-    SESSION_ACTION_LABELS,
-    SESSION_ACTION_VARIANTS
+    SESSION_ACTION_LABELS
 } from '@/modules/session/utilities';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSection from '@/shared/presentation/components/SettingsSection';
@@ -17,26 +15,19 @@ import SettingsSectionHeader from '@/shared/presentation/components/SettingsSect
 import useSessionData from '@/modules/session/hooks/use-session-data';
 import useTip from '@/shared/tips/use-tip';
 import { EmptyState } from '@/shared/presentation/primitives';
-import { Button, ListRow, Modal, Row, Skeleton, Stack, StatusBadge, StatusDot, Text } from '@/shared/presentation/primitives';
-import { Globe, Monitor, Shield, Smartphone } from 'lucide-react';
+import { Button, Modal, Skeleton, Text } from '@/shared/presentation/primitives';
+import { Clock, Monitor, Shield, Smartphone } from 'lucide-react';
+import { SessionActivityType } from '@/modules/session/api/entities/session';
 import type { ActiveSession, LoginActivityEntry } from '@/modules/session/api/entities/session';
 import type { FC, ReactNode } from 'react';
 import './SessionSettings.css';
 
-interface SessionRowMeta {
-    browser: string;
-    os: string;
-    tokenInfo: string;
-};
-
-const getSessionRowMeta = (session: ActiveSession): SessionRowMeta => {
-    const { browser, os } = parseSessionUserAgent(session.userAgent);
-
-    return {
-        browser,
-        os,
-        tokenInfo: getSessionTokenInfo(session.token).shortValue
-    };
+const getActivityIconToneClass = (action: SessionActivityType, success: boolean): string => {
+    if (!success) return 'session-row__icon--danger';
+    if (action === SessionActivityType.OAuthLogin) return 'session-row__icon--brand';
+    if (action === SessionActivityType.PasswordUpdate) return 'session-row__icon--warning';
+    if (action === SessionActivityType.Login) return 'session-row__icon--success';
+    return 'session-row__icon--muted';
 };
 
 const SessionSettings: FC = () => {
@@ -61,128 +52,101 @@ const SessionSettings: FC = () => {
 
     const renderSession = (session: ActiveSession) => {
         const isCurrent = isCurrentSession(session);
-        const meta = getSessionRowMeta(session);
+        const { browser, os } = parseSessionUserAgent(session.userAgent);
         const DeviceIcon = isMobileUserAgent(session.userAgent) ? Smartphone : Monitor;
 
         return (
-            <ListRow
-                key={session._id}
-                as='li'
-                className={`session-card ${isCurrent ? 'current-session' : ''}`}
-                leading={<DeviceIcon size={20} className='color-muted' />}
-                title={
-                    <Row gap='05' wrap>
-                        <span>{meta.browser} on {meta.os}</span>
-                        {isCurrent && (
-                            <StatusBadge variant='brand' size='compact'>Current</StatusBadge>
-                        )}
-                    </Row>
-                }
-                meta={
-                    <Row gap='05' wrap>
-                        <Text as='span' tone='muted' size='sm' className='font-mono'>
-                            {session.ip}
-                        </Text>
-                        <Text as='span' tone='muted' size='sm' className='font-mono'>
-                            Token {meta.tokenInfo}
-                        </Text>
-                        <Text as='span' tone='muted' size='sm'>
-                            · {formatSessionRelativeTime(session.lastActivity)}
-                        </Text>
-                    </Row>
-                }
-                trailing={
-                    <Row gap='05' wrap justify='end' className='session-card-actions'>
-                        <StatusBadge
-                            variant={SESSION_ACTION_VARIANTS[session.action]}
-                            size='compact'
-                        >
-                            {SESSION_ACTION_LABELS[session.action]}
-                        </StatusBadge>
-                        {!isCurrent && (
-                            <Button
-                                variant='ghost'
-                                intent='danger'
-                                size='sm'
-                                onClick={() => openRevokeSessionModal(session)}
-                            >
-                                Revoke
-                            </Button>
-                        )}
-                    </Row>
-                }
-            />
+            <li key={session._id} className='session-row'>
+                <DeviceIcon size={16} className='session-row__icon session-row__icon--muted' />
+                <div className='session-row__body'>
+                    <span className='session-row__title'>{browser} on {os}</span>
+                    <span className='session-row__line'>{session.ip}</span>
+                    <span className={`session-row__line${isCurrent ? ' session-row__line--brand' : ''}`}>
+                        {isCurrent ? 'Current session' : formatSessionRelativeTime(session.lastActivity)}
+                    </span>
+                </div>
+                {!isCurrent && (
+                    <Button
+                        variant='ghost'
+                        intent='danger'
+                        size='sm'
+                        onClick={() => openRevokeSessionModal(session)}
+                        className='session-row__action'
+                    >
+                        Revoke
+                    </Button>
+                )}
+            </li>
         );
     };
 
     const renderActivity = (activity: LoginActivityEntry, index: number) => {
         const { browser, os } = parseSessionUserAgent(activity.userAgent);
         const ActionIcon = getSessionActivityIcon(activity.action);
+        const toneClass = getActivityIconToneClass(activity.action, activity.success);
+        const actionLabel = activity.success
+            ? SESSION_ACTION_LABELS[activity.action]
+            : 'Failed sign-in';
+        const ariaLabel = `${actionLabel} · ${browser} on ${os} · ${activity.ip}`;
 
         return (
-            <ListRow
-                key={`${activity._id}-${index}`}
-                as='li'
-                className='session-activity-row'
-                leading={<ActionIcon size={16} className='color-muted' />}
-                title={`${SESSION_ACTION_LABELS[activity.action]} · ${browser} on ${os}`}
-                meta={
-                    <Row gap='05' wrap>
-                        <Text as='span' tone='muted' size='sm' className='font-mono'>
-                            {activity.ip}
-                        </Text>
-                        <Text as='span' tone='muted' size='sm'>
-                            · {formatSessionRelativeTime(activity.createdAt)}
-                        </Text>
-                    </Row>
-                }
-                trailing={
-                    <Row gap='05'>
-                        <StatusDot tone={activity.success ? 'success' : 'danger'} size='sm' />
-                        <StatusBadge
-                            variant={activity.success ? 'success' : 'danger'}
-                            size='compact'
-                        >
-                            {activity.success ? 'Success' : 'Failed'}
-                        </StatusBadge>
-                    </Row>
-                }
-            />
+            <li key={`${activity._id}-${index}`} className='session-row' aria-label={ariaLabel}>
+                <ActionIcon size={16} className={`session-row__icon ${toneClass}`} />
+                <div className='session-row__body'>
+                    <span className='session-row__title'>{browser} on {os}</span>
+                    <span className='session-row__line'>{activity.ip}</span>
+                    <span className='session-row__line'>
+                        {formatSessionRelativeTime(activity.createdAt)}
+                    </span>
+                </div>
+            </li>
         );
     };
+
+    const renderRowSkeleton = (key: string) => (
+        <li key={key} className='session-row'>
+            <Skeleton variant='rounded' width={16} height={16} />
+            <div className='session-row__body'>
+                <Skeleton variant='text' width='45%' height={14} />
+                <Skeleton variant='text' width='30%' height={12} />
+                <Skeleton variant='text' width='25%' height={12} />
+            </div>
+        </li>
+    );
 
     let activeSessionsAction: ReactNode;
     if (otherSessionsCount > 0) {
         activeSessionsAction = (
             <Button
-                variant="soft"
-                intent="danger"
-                size="sm"
+                variant='ghost'
+                intent='danger'
+                size='sm'
                 onClick={openRevokeAllSessionsModal}
             >
-                Revoke All Others
+                Revoke all others
             </Button>
         );
     }
 
+    const renderList = (content: ReactNode, isEmptyState: boolean) => (
+        <div className={`session-list-viewport${isEmptyState ? ' session-list-viewport--empty' : ''}`}>
+            <ul className='session-list'>
+                {content}
+            </ul>
+        </div>
+    );
+
     let sessionsContent: ReactNode;
+    let sessionsEmpty = false;
     if (loadingSessions) {
-        sessionsContent = Array.from({ length: 3 }).map((_, i) => (
-            <Row key={i} gap='1' p='075'>
-                <Skeleton variant="circular" width={36} height={36} />
-                <Stack flex='1' gap='025'>
-                    <Skeleton variant="text" width="40%" height={20} />
-                    <Skeleton variant="text" width="25%" height={16} />
-                </Stack>
-                <Skeleton variant="rounded" width={60} height={28} />
-            </Row>
-        ));
+        sessionsContent = Array.from({ length: 2 }).map((_, i) => renderRowSkeleton(`s-${i}`));
     } else if (sessions.length === 0) {
+        sessionsEmpty = true;
         sessionsContent = (
             <EmptyState
-                icon={<Shield size={32} />}
-                title="No active sessions"
-                description="There are no active sessions for your account."
+                icon={<Shield size={24} />}
+                title='No active sessions'
+                description='There are no active sessions for your account.'
             />
         );
     } else {
@@ -190,23 +154,16 @@ const SessionSettings: FC = () => {
     }
 
     let activityContent: ReactNode;
+    let activityEmpty = false;
     if (loadingActivity) {
-        activityContent = Array.from({ length: 4 }).map((_, i) => (
-            <Row key={i} gap='1' p='05'>
-                <Skeleton variant="circular" width={6} height={6} />
-                <Stack flex='1' gap='025'>
-                    <Skeleton variant="text" width="35%" height={18} />
-                    <Skeleton variant="text" width="20%" height={14} />
-                </Stack>
-                <Skeleton variant="rounded" width={50} height={22} />
-            </Row>
-        ));
+        activityContent = Array.from({ length: 3 }).map((_, i) => renderRowSkeleton(`a-${i}`));
     } else if (activities.length === 0) {
+        activityEmpty = true;
         activityContent = (
             <EmptyState
-                icon={<Globe size={32} />}
-                title="No login activity"
-                description="No recent login attempts found."
+                icon={<Clock size={24} />}
+                title='No login activity'
+                description='No recent login attempts found.'
             />
         );
     } else {
@@ -214,52 +171,45 @@ const SessionSettings: FC = () => {
     }
 
     return (
-        <SettingsPage title="Session Management">
+        <SettingsPage title='Session Management'>
             <SettingsSection>
                 <SettingsSectionHeader
-                    title="Active Sessions"
-                    description="Devices currently signed in to your account"
+                    title='Active Sessions'
+                    description='Devices currently signed in to your account'
                     action={activeSessionsAction}
                 />
-
-                <ul className='session-list d-flex column gap-075'>
-                    {sessionsContent}
-                </ul>
+                {renderList(sessionsContent, sessionsEmpty)}
             </SettingsSection>
 
             <SettingsSection>
                 <SettingsSectionHeader
-                    title="Login Activity"
-                    description="Recent login attempts on your account"
-                    action={undefined}
+                    title='Login Activity'
+                    description='Recent login attempts on your account'
                 />
-
-                <ul className='session-list d-flex column gap-075'>
-                    {activityContent}
-                </ul>
+                {renderList(activityContent, activityEmpty)}
             </SettingsSection>
 
             <Modal
                 id={REVOKE_MODAL_ID}
-                title="Revoke Session"
-                description="This will sign out the device associated with this session."
+                title='Revoke Session'
+                description='This will sign out the device associated with this session.'
                 footer={
                     <>
                         <Button
-                            variant="ghost"
-                            size="sm"
+                            variant='ghost'
+                            size='sm'
                             onClick={closeRevokeSessionModal}
                         >
                             Cancel
                         </Button>
                         <Button
-                            variant="solid"
-                            intent="danger"
-                            size="sm"
+                            variant='solid'
+                            intent='danger'
+                            size='sm'
                             onClick={revokeSession}
                             isLoading={isRevoking}
                         >
-                            Revoke Session
+                            Revoke session
                         </Button>
                     </>
                 }
@@ -275,25 +225,25 @@ const SessionSettings: FC = () => {
 
             <Modal
                 id={REVOKE_ALL_MODAL_ID}
-                title="Revoke All Other Sessions"
-                description="This will sign out all devices except your current session."
+                title='Revoke All Other Sessions'
+                description='This will sign out all devices except your current session.'
                 footer={
                     <>
                         <Button
-                            variant="ghost"
-                            size="sm"
+                            variant='ghost'
+                            size='sm'
                             onClick={closeRevokeAllSessionsModal}
                         >
                             Cancel
                         </Button>
                         <Button
-                            variant="solid"
-                            intent="danger"
-                            size="sm"
+                            variant='solid'
+                            intent='danger'
+                            size='sm'
                             onClick={revokeAllOtherSessions}
                             isLoading={isRevoking}
                         >
-                            Revoke All Others
+                            Revoke all others
                         </Button>
                     </>
                 }
