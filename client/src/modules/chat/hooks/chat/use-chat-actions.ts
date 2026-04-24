@@ -1,10 +1,9 @@
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 import { useGetOrCreateChatMutation } from './queries';
 import { getOrCreateChatAction } from '../../services/chat/actions';
-
+import { useNavigate } from 'react-router-dom';
 const useChatActions = () => {
     const navigate = useNavigate();
     const socket = useSocket();

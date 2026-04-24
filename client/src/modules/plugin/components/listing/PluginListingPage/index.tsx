@@ -5,9 +5,8 @@ import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTrajectorySelector from '@/modules/trajectory/hooks/trajectory/use-trajectory-selector';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import './PluginListingPage.css';
-
 const PluginListingPage = () => {
     const params = useParams();
     const pluginId = params.pluginId ?? '';

@@ -8,9 +8,8 @@ import SettingsSection from '@/shared/presentation/components/SettingsSection';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
 import { Stack } from '@/shared/presentation/primitives';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import type { ChangePasswordInputDTO } from '@/modules/auth/api/dtos/change-password';
-
+import { useNavigate } from 'react-router-dom';
 const AuthenticationSettings = () => {
     const navigate = useNavigate();
     const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);

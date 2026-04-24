@@ -1,5 +1,4 @@
 import { useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { RiDeleteBin6Line, RiEyeLine, RiTableLine } from 'react-icons/ri';
 import {
     fetchPluginListing,
@@ -10,7 +9,7 @@ import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationRes
 import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
 import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
 import type { PluginSubListingParams } from './use-plugin-sub-listing';
-
+import { useNavigate } from 'react-router-dom';
 export const SUB_LISTING_MODAL_ID = 'sub-listing-modal';
 
 interface UsePluginListingParams {

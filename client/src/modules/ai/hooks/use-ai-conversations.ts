@@ -9,10 +9,9 @@ import {
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import type { AIConversation } from '@/modules/ai/api/entities/ai-conversation';
 import type { CreateAIConversationParams } from '@/modules/ai/api/dtos/create-ai-conversation';
-
+import { useNavigate } from 'react-router-dom';
 interface UseAIConversationsOptions {
     navigateOnConversationChange?: boolean;
     onConversationChange?: (conversationId?: string) => void;

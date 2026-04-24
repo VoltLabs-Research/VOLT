@@ -3,7 +3,7 @@ import { containerQuery } from './queries';
 import useTeamClusterResourceSelection from './use-team-cluster-resource-selection';
 import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTeamsQuery } from '@/modules/team/hooks/team/queries';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { showPromise } from '@/shared/presentation/hooks/toast';
@@ -19,7 +19,6 @@ import type { TeamClusterOption } from '../api/entities/team-cluster-option';
 import type { Team } from '@/modules/team/api/entities/team/team';
 import { v4 as uuidv4 } from 'uuid';
 import { MIN_CLUSTER_CPU, MIN_CLUSTER_MEMORY_MB, clampClusterResourceValue } from '../utilities/resource-allocation';
-
 export type { EnvVariable } from '../api/entities/env-variable';
 export type { PortMapping } from '../api/entities/port-mapping';
 

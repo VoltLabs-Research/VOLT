@@ -18,10 +18,9 @@ import { PiDotsThreeVerticalBold } from 'react-icons/pi';
 import { RxTrash } from 'react-icons/rx';
 import { useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
 import type { TrajectoryJobGroup } from '@/modules/jobs/api/entities/job';
 import './SimulationCardFooter.css';
-
+import { useNavigate } from 'react-router-dom';
 interface SimulationCardFooterProps {
     trajectoryId: string;
     name: string;

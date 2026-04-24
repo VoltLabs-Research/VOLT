@@ -3,10 +3,9 @@ import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
 import { resolveClusterMetricId } from '@/modules/cluster/utilities/resolve-cluster-metric-id';
 import { resolveSelectedClusterId } from '@/modules/cluster/utilities/resolve-selected-cluster-id';
 import { useEffect, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
 import type { ClusterPageState } from '@/modules/cluster/hooks/use-cluster-page-state';
-
 export interface ClusterMonitoringPageViewModel extends ClusterPageState {
     metrics: ClusterMetrics | null;
     history: ClusterMetrics[];

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button, Heading, Row, Stack, Text } from '@/shared/presentation/primitives';
 import './DemoWelcomeModal.css';
-
 interface DemoLocationState {
     justProvisionedDemo?: boolean;
 };

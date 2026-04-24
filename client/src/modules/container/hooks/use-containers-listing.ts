@@ -34,10 +34,9 @@ import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationRes
 import { sileo } from 'sileo';
 import { Box, FolderInput, FolderOpen, Pencil, Play, RotateCcw, Square, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { RiTerminalLine } from 'react-icons/ri';
 import { ContainerAction } from '../api/dtos/update-container';
-
+import { useNavigate } from 'react-router-dom';
 export const NEW_CONTAINER_FOLDER_MODAL_ID = 'new-container-folder-modal';
 export const RENAME_CONTAINER_FOLDER_MODAL_ID = 'rename-container-folder-modal';
 export const MOVE_CONTAINER_MODAL_ID = 'move-container-modal';

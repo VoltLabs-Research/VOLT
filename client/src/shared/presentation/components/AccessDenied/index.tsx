@@ -3,7 +3,6 @@ import './AccessDenied.css';
 import { ShieldOff } from 'lucide-react';
 import { useId } from 'react';
 import { useNavigate } from 'react-router-dom';
-
 interface AccessDeniedProps {
     title?: string;
     description?: string;

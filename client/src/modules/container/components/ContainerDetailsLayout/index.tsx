@@ -10,7 +10,8 @@ import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Box, Stack } from '@/shared/presentation/primitives';
-import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Outlet, useLocation, useParams, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { ContainerAction } from '../../api/dtos/update-container';
 import ContainerDetailsSkeleton from '../ContainerDetailsSkeleton';
 import ContainerDetailsHeader from '../ContainerDetailsHeader';
@@ -20,7 +21,6 @@ import type { EnvVariable } from '@/modules/container/api/entities/env-variable'
 import type { PortMapping } from '@/modules/container/api/entities/port-mapping';
 import type { ContainerDetailsContext } from '../../hooks/use-container-details-context';
 import './ContainerDetailsLayout.css';
-
 interface ContainerDetailsRouteParams extends Record<string, string | undefined> {
     id: string;
 };
@@ -201,7 +201,15 @@ const ContainerDetailsLayout = () => {
             />
 
             <Stack className='container-details-content-area' flex='1'>
-                <Outlet context={outletContext} />
+                <motion.div
+                    key={location.pathname}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+                    style={{ height: '100%' }}
+                >
+                    <Outlet context={outletContext} />
+                </motion.div>
             </Stack>
         </Stack>
     );

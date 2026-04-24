@@ -3,11 +3,10 @@ import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queri
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { TeamClusterRemoteAccessTarget } from '@/modules/cluster/api/entities/team-cluster-remote-access';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type { TeamClusterRemoteAccessSession } from '@/modules/cluster/api/entities/team-cluster-remote-access';
-
 interface ClusterRemoteAccessRouteParams extends Record<string, string | undefined> {
     clusterId: string;
 };

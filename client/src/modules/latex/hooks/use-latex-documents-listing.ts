@@ -25,7 +25,6 @@ import { createCrudToastOptions } from '@/shared/presentation/toast-options';
 import { FOLDER_LIST_LIMIT, ROOT_FOLDER_ID } from '@/shared/presentation/constants/foldered-listing';
 import { FileText, FolderInput, FolderOpen, Pencil, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { createEmptyDocumentsResponse, getDeleteConfirmationMessage } from '../utilities/documents';
 import {
     createLatexDocumentRow,
@@ -39,7 +38,7 @@ import type { LatexDocument } from '@/modules/latex/api/entities/latex-document'
 import type { LatexFolder } from '@/modules/latex/api/entities/latex-folder';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { LatexListingRow } from '@/modules/latex/utilities/listing';
-
+import { useNavigate } from 'react-router-dom';
 type LatexDocumentsListingDragAndDropConfig = DocumentListingDragAndDropConfig<LatexListingRow>;
 
 interface LatexMoveTarget {
