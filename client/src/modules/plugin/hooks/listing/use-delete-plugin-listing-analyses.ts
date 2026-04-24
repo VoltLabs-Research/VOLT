@@ -2,9 +2,12 @@ import { useCallback } from 'react';
 import { analysisQuery } from '@/modules/analysis/hooks/queries';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { createCrudToastOptions } from '@/shared/presentation/toast-options';
 import { sileo } from 'sileo';
 import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
 import { isAccessDeniedError } from '@/shared/errors/core';
+
+const DELETE_ANALYSIS_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Analysis' });
 
 const useDeletePluginListingAnalyses = () => {
     const deleteAnalysisMutation = analysisQuery.useDeleteMutation();
@@ -28,11 +31,7 @@ const useDeletePluginListingAnalyses = () => {
 
         try {
             await Promise.all(analysisIds.map((analysisId) =>
-                showPromise(deleteAnalysisMutation.mutateAsync(analysisId), {
-                    loading: { title: 'Deleting analysis...' },
-                    success: { title: 'Analysis deleted' },
-                    error: { title: 'Failed to delete analysis' }
-                })
+                showPromise(deleteAnalysisMutation.mutateAsync(analysisId), DELETE_ANALYSIS_TOAST)
             ));
         } catch(error: unknown) {
             if (isAccessDeniedError(error)) return;

@@ -2,6 +2,7 @@ import SceneArtifact, { SceneArtifactProps } from '@modules/trajectory/domain/en
 import { ISceneArtifactRepository, TeamSceneArtifactFilters } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
 import SceneArtifactMapper from '@modules/trajectory/infrastructure/persistence/mongo/mappers/scene-artifacts/SceneArtifactMapper';
 import SceneArtifactModel, { SceneArtifactDocument } from '@modules/trajectory/infrastructure/persistence/mongo/models/scene-artifacts/SceneArtifactModel';
+import { STORAGE_CLUSTER_POPULATE } from '@shared/application/PopulatePresets';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import mongoose from 'mongoose';
@@ -118,15 +119,9 @@ export default class SceneArtifactRepository
             {
                 path: 'trajectory',
                 select: ['name', 'storageClusterId'],
-                populate: {
-                    path: 'storageClusterId',
-                    select: ['name']
-                }
+                populate: STORAGE_CLUSTER_POPULATE
             },
-            {
-                path: 'storageClusterId',
-                select: ['name']
-            }
+            STORAGE_CLUSTER_POPULATE
         ]).exec();
 
         const orderById = new Map(ids.map((id, index) => [id.toString(), index]));

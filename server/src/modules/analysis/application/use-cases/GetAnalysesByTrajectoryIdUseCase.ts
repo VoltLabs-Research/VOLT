@@ -4,6 +4,7 @@ import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mon
 import { extractPluginId } from '@modules/analysis/infrastructure/services/AnalysisPluginDisplayNameService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
+import { TRAJECTORY_POPULATE } from '@shared/application/PopulatePresets';
 import { Result } from '@shared/domain/port/Result';
 import { injectable } from 'tsyringe';
 
@@ -38,7 +39,7 @@ export class GetAnalysesByTrajectoryIdUseCase implements IUseCase<GetAnalysesByT
         const analyses = await this.analysisRepository.findAll({
             filter,
             populate: [
-                { path: 'trajectory', select: ['name'] },
+                TRAJECTORY_POPULATE,
                 { path: 'plugin' }
             ],
             page: input.page,

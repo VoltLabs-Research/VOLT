@@ -1,12 +1,13 @@
 import type { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
 import { simulationCellValidationSchemas } from '@modules/simulation-cell/infrastructure/http/validation/simulation-cell-schemas';
 import SimulationCellRepository from '@modules/simulation-cell/infrastructure/persistence/mongo/repositories/SimulationCellRepository';
+import { TRAJECTORY_POPULATE } from '@shared/application/PopulatePresets';
 import { createListByController } from '@shared/infrastructure/http/controllers/createReadController';
 
 const ListSimulationCellsByTeamIdController = createListByController({
     repositoryToken: SimulationCellRepository,
     paginated: true,
-    populate: { path: 'trajectory', select: ['name'] },
+    populate: TRAJECTORY_POPULATE,
     validationSchema: simulationCellValidationSchemas.listByTeamId,
     defaultLimit: 10,
     filterBuilder: (params) => {

@@ -15,22 +15,32 @@ import { useAnalysesByTrajectoryQuery, analysisQuery } from '@/modules/analysis/
 import { findCachedAnalysisById, updateAnalysisStatusCaches, upsertAnalysisFromSocketPayload } from '@/modules/analysis/services/cache';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import queryClient from '@/shared/infrastructure/query/query-client';
-import { SCENE_ARTIFACTS_QUERY_KEYS } from '@/modules/trajectory/hooks/scene-artifacts/queries';
+import { invalidateSceneArtifacts } from '@/modules/trajectory/hooks/scene-artifacts/queries';
 import { SOCKET_ANALYSIS_EVENTS } from '@/modules/socket/analysis/constants/analysis-socket-events';
 import { SOCKET_SCENE_ARTIFACT_EVENTS } from '@/modules/socket/trajectory/constants/scene-artifact-socket-events';
 import { SOCKET_TEAM_EVENTS } from '@/modules/socket/team/constants/team-socket-events';
 import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
 import { useCanvasCanCollaborate } from '@/modules/canvas/api/access';
+import useRetryFailedFrames from '@/modules/analysis/hooks/use-retry-failed-frames';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import { usePendingPluginExecutionsStore } from '../stores/use-pending-plugin-executions-store';
 
 import type { ExposureEntry } from './use-exposure-manager';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+
+const formatFrameProgress = (completed?: number, total?: number): string | undefined => {
+    if (typeof total !== 'number' || total <= 0) {
+        return undefined;
+    }
+    const safeCompleted = typeof completed === 'number' && completed >= 0 ? completed : 0;
+    return `${safeCompleted} of ${total} frames`;
+};
 
 export interface AnalysisSectionData {
     analysis: Analysis;
@@ -73,6 +83,9 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
     const { exposureEntries, getEntry, loadExposuresForAnalysis, resetEntries } = useExposureManager({ trajectoryId });
     const { pluginsById } = usePluginSelectors();
+    const retryFailedFrames = useRetryFailedFrames();
+    const analysisConfigIdRef = useRef<string | undefined>(analysisConfigId);
+    useEffect(() => { analysisConfigIdRef.current = analysisConfigId; }, [analysisConfigId]);
 
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
     const [searchQuery, setSearchQuery] = useState('');
@@ -130,6 +143,26 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         resetEntries();
     }, [trajectoryId, resetEntries]);
 
+    // Drop in-flight plugin toasts tied to the previous trajectory so they
+    // don't linger when the user navigates to a different canvas.
+    useEffect(() => {
+        if (!trajectoryId) {
+            return;
+        }
+        return () => {
+            const { entries } = usePendingPluginExecutionsStore.getState();
+            Object.values(entries).forEach((entry) => {
+                if (entry.trajectoryId !== trajectoryId) {
+                    return;
+                }
+                if (entry.toastId) {
+                    sileo.dismiss(entry.toastId);
+                }
+                usePendingPluginExecutionsStore.getState().remove(entry.analysisId);
+            });
+        };
+    }, [trajectoryId]);
+
     const deleteAnalysisMutation = analysisQuery.useDeleteMutation();
 
     const handleAnalysisCreated = useCallback((data: Record<string, unknown>) => {
@@ -177,18 +210,123 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
     const handleAnalysisStatusChanged = useCallback((update: Record<string, unknown>) => {
         patchStatusFromSocket(update);
-        if (update.status === AnalysisStatus.Completed) {
-            const pluginName = (update.pluginDisplayName as string | undefined)
-                ?? (resolvedAnalyses.find((a) => a._id === update.analysisId)?.pluginDisplayName ?? 'Analysis');
-            sileo.success({ title: `${pluginName} completed`, description: 'Artifacts are ready in Scene Collection.' });
+
+        const analysisId = typeof update.analysisId === 'string' ? update.analysisId : undefined;
+        if (!analysisId) {
+            return;
         }
-    }, [patchStatusFromSocket, resolvedAnalyses]);
+
+        const resolvedPluginName = (update.pluginDisplayName as string | undefined)
+            ?? (resolvedAnalyses.find((a) => a._id === analysisId)?.pluginDisplayName);
+        const completedFrames = typeof update.completedFrames === 'number' ? update.completedFrames : undefined;
+        const totalFrames = typeof update.totalFrames === 'number' ? update.totalFrames : undefined;
+        const failedFrames = typeof update.failedFrames === 'number' ? update.failedFrames : undefined;
+
+        const pendingStore = usePendingPluginExecutionsStore.getState();
+        const pending = pendingStore.get(analysisId);
+        const pluginName = pending?.pluginName ?? resolvedPluginName ?? 'Analysis';
+        const status = update.status;
+
+        if (status === AnalysisStatus.Running) {
+            if (!pending) {
+                return;
+            }
+
+            if (pending.toastId) {
+                sileo.dismiss(pending.toastId);
+            }
+
+            const description = formatFrameProgress(completedFrames, totalFrames) ?? 'Running on the cluster…';
+            const nextToastId = sileo.show({
+                type: 'loading',
+                title: `${pluginName} running`,
+                description,
+                duration: null
+            });
+
+            pendingStore.update(analysisId, {
+                toastId: nextToastId,
+                completedFrames,
+                totalFrames
+            });
+            return;
+        }
+
+        if (status === AnalysisStatus.Completed) {
+            if (pending) {
+                const entry = pendingStore.remove(analysisId);
+                if (entry?.toastId) {
+                    sileo.dismiss(entry.toastId);
+                }
+
+                const currentSelectedAnalysisId = analysisConfigIdRef.current;
+                const canAutoSelect = Boolean(entry?.autoSelect)
+                    && (!currentSelectedAnalysisId || currentSelectedAnalysisId === analysisId);
+
+                if (canAutoSelect) {
+                    if (entry?.timestep !== undefined) {
+                        setCurrentTimestep(entry.timestep);
+                    }
+                    setAnalysisId(analysisId, { replace: true });
+                    sileo.success({
+                        title: `${pluginName} completed`,
+                        description: 'Analysis selected — results are ready in Scene Collection.'
+                    });
+                    return;
+                }
+
+                sileo.success({
+                    title: `${pluginName} completed`,
+                    description: 'Artifacts are ready in Scene Collection.',
+                    button: {
+                        title: 'View',
+                        onClick: () => {
+                            if (entry?.timestep !== undefined) {
+                                setCurrentTimestep(entry.timestep);
+                            }
+                            setAnalysisId(analysisId, { replace: true });
+                        }
+                    }
+                });
+                return;
+            }
+
+            sileo.success({
+                title: `${pluginName} completed`,
+                description: 'Artifacts are ready in Scene Collection.'
+            });
+            return;
+        }
+
+        if (status === AnalysisStatus.Failed) {
+            const entry = pendingStore.remove(analysisId);
+            if (entry?.toastId) {
+                sileo.dismiss(entry.toastId);
+            }
+
+            const description = typeof failedFrames === 'number' && failedFrames > 0
+                ? `${failedFrames} frame${failedFrames === 1 ? '' : 's'} failed. Retry to re-run the failed frames.`
+                : 'The analysis failed. Retry to re-run the failed frames.';
+
+            sileo.error({
+                title: `${pluginName} failed`,
+                description,
+                duration: 8000,
+                button: {
+                    title: 'Retry',
+                    onClick: () => {
+                        void retryFailedFrames(analysisId);
+                    }
+                }
+            });
+        }
+    }, [patchStatusFromSocket, resolvedAnalyses, retryFailedFrames, setAnalysisId, setCurrentTimestep]);
 
     const handleSceneArtifactUpserted = useCallback((update: Record<string, unknown>) => {
         if (!trajectoryId || update.trajectoryId !== trajectoryId) {
             return;
         }
-        void queryClient.invalidateQueries({ queryKey: SCENE_ARTIFACTS_QUERY_KEYS.sceneArtifacts() });
+        void invalidateSceneArtifacts();
     }, [trajectoryId]);
 
     const canCollaborate = useCanvasCanCollaborate();

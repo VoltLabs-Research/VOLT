@@ -56,13 +56,13 @@ const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     { event: 'whiteboard.deleted', queryKeys: [whiteboardsQueryKey()] }
 ];
 
-const DELETE_WHITEBOARD_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Whiteboard', success: 'Whiteboard deleted successfully', error: 'Failed to delete whiteboard' });
-const CREATE_WHITEBOARD_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Whiteboard', success: 'Whiteboard created successfully', error: 'Failed to create whiteboard' });
-const CREATE_FOLDER_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Folder', success: 'Folder created successfully', error: 'Failed to create folder' });
-const RENAME_WHITEBOARD_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Whiteboard', success: 'Whiteboard renamed successfully', error: 'Failed to rename whiteboard' });
-const RENAME_FOLDER_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Folder', success: 'Folder renamed successfully', error: 'Failed to rename folder' });
-const DELETE_FOLDER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Folder', success: 'Folder deleted successfully', error: 'Failed to delete folder' });
-const MOVE_WHITEBOARD_TOAST = createCrudToastOptions({ action: 'Moving', subject: 'Whiteboard', success: 'Whiteboard moved successfully', error: 'Failed to move whiteboard' });
+const DELETE_WHITEBOARD_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Whiteboard', success: 'Whiteboard deleted successfully' });
+const CREATE_WHITEBOARD_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Whiteboard', success: 'Whiteboard created successfully' });
+const CREATE_FOLDER_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Folder', success: 'Folder created successfully' });
+const RENAME_WHITEBOARD_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Whiteboard', success: 'Whiteboard renamed successfully' });
+const RENAME_FOLDER_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Folder', success: 'Folder renamed successfully' });
+const DELETE_FOLDER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Folder', success: 'Folder deleted successfully' });
+const MOVE_WHITEBOARD_TOAST = createCrudToastOptions({ action: 'Moving', subject: 'Whiteboard', success: 'Whiteboard moved successfully' });
 
 const fetchWhiteboards = (params: PaginationParams & FolderedListingContext): Promise<PaginatedResponse<Whiteboard>> => {
     return whiteboardsQuery.fetch({

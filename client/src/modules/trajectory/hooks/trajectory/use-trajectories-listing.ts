@@ -23,8 +23,8 @@ import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-conf
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import type { MenuOption } from '@/shared/presentation/types/menu';
-import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
-import type { PromiseToastOptions } from '@/shared/presentation/toast-options';
+import { createCrudToastOptions } from '@/shared/presentation/toast-options';
+import { FOLDER_LIST_LIMIT, ROOT_FOLDER_ID } from '@/shared/presentation/constants/foldered-listing';
 import { FolderInput, FolderOpen, Pencil, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { RiTableLine } from 'react-icons/ri';
@@ -39,18 +39,15 @@ import {
     useUpdateTrajectoryFolderMutation
 } from './queries';
 import { useNavigate } from 'react-router-dom';
-const ROOT_FOLDER_ID = 'root';
-const FOLDER_LIST_LIMIT = 500;
-
 export const NEW_TRAJECTORY_FOLDER_MODAL_ID = 'new-trajectory-folder-modal';
 export const RENAME_TRAJECTORY_FOLDER_MODAL_ID = 'rename-trajectory-folder-modal';
 export const MOVE_TRAJECTORY_MODAL_ID = 'move-trajectory-modal';
 
-const DELETE_TRAJECTORY_TOAST: PromiseToastOptions = createPromiseToastOptions({
-    loading: 'Deleting trajectory...',
-    success: 'Trajectory deleted',
-    error: 'Failed to delete trajectory'
-});
+const DELETE_TRAJECTORY_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Trajectory' });
+const CREATE_FOLDER_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Folder', success: 'Folder created successfully' });
+const RENAME_FOLDER_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Folder', success: 'Folder renamed successfully' });
+const DELETE_FOLDER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Folder', success: 'Folder deleted successfully' });
+const MOVE_TRAJECTORY_TOAST = createCrudToastOptions({ action: 'Moving', subject: 'Trajectory', success: 'Trajectory moved successfully' });
 
 interface TrajectoryMoveTarget {
     _id: string;
@@ -148,23 +145,11 @@ const useTrajectoriesListing = () => {
         onFetchErrorTitle: 'Failed to fetch trajectories',
         invalidFolderMessage: 'This trajectory folder no longer exists. Showing Root instead.',
         createFolder,
-        createFolderToast: {
-            loading: { title: 'Creating folder...' },
-            success: { title: 'Folder created successfully' },
-            error: { title: 'Failed to create folder' }
-        },
+        createFolderToast: CREATE_FOLDER_TOAST,
         updateFolder,
-        renameFolderToast: {
-            loading: { title: 'Renaming folder...' },
-            success: { title: 'Folder renamed successfully' },
-            error: { title: 'Failed to rename folder' }
-        },
+        renameFolderToast: RENAME_FOLDER_TOAST,
         deleteFolder,
-        deleteFolderToast: {
-            loading: { title: 'Deleting folder...' },
-            success: { title: 'Folder deleted successfully' },
-            error: { title: 'Failed to delete folder' }
-        },
+        deleteFolderToast: DELETE_FOLDER_TOAST,
         getDeleteFolderConfirm: (folder) => ({
             title: `Delete "${folder.title}"? Nested folders and all trajectories inside them will be deleted recursively.`,
             description: 'This permanently deletes the folder tree and every trajectory contained in it.'
@@ -211,11 +196,7 @@ const useTrajectoriesListing = () => {
             return;
         }
 
-        await showPromise(moveTrajectory({ trajectoryId: movingTrajectory._id, folderId }), {
-            loading: { title: 'Moving trajectory...' },
-            success: { title: 'Trajectory moved successfully' },
-            error: { title: 'Failed to move trajectory' }
-        });
+        await showPromise(moveTrajectory({ trajectoryId: movingTrajectory._id, folderId }), MOVE_TRAJECTORY_TOAST);
     }, [moveTrajectory, movingTrajectory]);
 
     const handleTrajectoryRowDragEnd = useCallback(async (
@@ -230,11 +211,7 @@ const useTrajectoriesListing = () => {
             return;
         }
 
-        await showPromise(moveTrajectory({ trajectoryId: activeItem._id, folderId: overItem._id }), {
-            loading: { title: 'Moving trajectory...' },
-            success: { title: 'Trajectory moved successfully' },
-            error: { title: 'Failed to move trajectory' }
-        });
+        await showPromise(moveTrajectory({ trajectoryId: activeItem._id, folderId: overItem._id }), MOVE_TRAJECTORY_TOAST);
     }, [moveTrajectory]);
 
     const handleDeleteTrajectories = useCallback(async (targets: Trajectory[]) => {

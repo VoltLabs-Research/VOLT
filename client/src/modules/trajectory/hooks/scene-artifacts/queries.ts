@@ -1,5 +1,6 @@
 import { useQueries } from '@tanstack/react-query';
 import { buildKeys, createQuery } from '@/shared/infrastructure/query';
+import queryClient from '@/shared/infrastructure/query/query-client';
 import {
     buildCanvasDataAccess,
     DEFAULT_CANVAS_ACCESS_STATE,
@@ -35,6 +36,16 @@ const fetchSceneArtifacts = (params: ListSceneArtifactsInputDTO): Promise<SceneA
 };
 
 export const sceneArtifactsQuery = createQuery(getSceneArtifactsKey, fetchSceneArtifacts);
+
+// Why: the stored query key is prefixed by `withAccessMode` (canvas-access/<mode>/...)
+// so invalidating with the bare `SCENE_ARTIFACTS_QUERY_KEYS.sceneArtifacts()` key
+// fails the prefix match and nothing refetches.
+export const invalidateSceneArtifacts = (): Promise<void> => {
+    const mode = useCanvasAccessStore.getState().mode;
+    return queryClient.invalidateQueries({
+        queryKey: withAccessMode(mode, SCENE_ARTIFACTS_QUERY_KEYS.sceneArtifacts())
+    });
+};
 
 export const buildSceneArtifactsQueryOptions = sceneArtifactsQuery.buildOptions;
 

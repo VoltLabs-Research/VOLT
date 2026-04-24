@@ -11,6 +11,7 @@ import { ScriptingNotebookScope } from '@/modules/scripting/api/entities/scripti
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { createCrudToastOptions } from '@/shared/presentation/toast-options';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import {
     JUPYTER_SESSION_PENDING_MESSAGE,
@@ -57,11 +58,7 @@ const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     { event: 'notebook.deleted', queryKeys: [scriptingNotebooksQueryKey()] }
 ];
 
-const DELETE_NOTEBOOK_TOAST = {
-    loading: { title: 'Deleting notebook...' },
-    success: { title: 'Notebook deleted successfully' },
-    error: { title: 'Failed to delete notebook' }
-};
+const DELETE_NOTEBOOK_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Notebook', success: 'Notebook deleted successfully' });
 
 const CREATE_NOTEBOOK_TOAST = {
     loading: { title: 'Creating notebook...' },
@@ -72,17 +69,9 @@ const CREATE_NOTEBOOK_TOAST = {
     error: { title: 'Failed to create notebook' }
 };
 
-const RENAME_NOTEBOOK_TOAST = {
-    loading: { title: 'Renaming notebook...' },
-    success: { title: 'Notebook renamed successfully' },
-    error: { title: 'Failed to rename notebook' }
-};
+const RENAME_NOTEBOOK_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Notebook', success: 'Notebook renamed successfully' });
 
-const SAVE_NOTEBOOK_DEPLOYMENT_TOAST = {
-    loading: { title: 'Saving notebook deployment...' },
-    success: { title: 'Notebook deployment saved successfully' },
-    error: { title: 'Failed to save notebook deployment' }
-};
+const SAVE_NOTEBOOK_DEPLOYMENT_TOAST = createCrudToastOptions({ action: 'Saving', subject: 'notebook deployment', success: 'Notebook deployment saved successfully' });
 
 const resolveScope = (scope?: ScriptingNotebookScope): ScriptingNotebookScope => {
     return scope || DEFAULT_NOTEBOOK_SCOPE;

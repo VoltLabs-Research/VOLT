@@ -1,5 +1,6 @@
 import SidebarBottom from '@/shared/presentation/components/SidebarBottom';
 import SidebarHeader from '@/shared/presentation/components/SidebarHeader';
+import useMedia from '@/shared/presentation/hooks/use-media';
 import './Sidebar.css';
 import '@/shared/presentation/components/SidebarTab/SidebarTab.css';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -40,44 +41,30 @@ const Sidebar = ({
     keepMounted = false
 }: SidebarProps) => {
     const [collapsed, setCollapsed] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(false);
     const tabsContainerRef = useRef<HTMLDivElement>(null);
     const prefersReducedMotion = useReducedMotion();
     const sidebarId = useId();
+    const isMobile = useMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`);
 
     const checkOverflow = useCallback(() => {
         const container = tabsContainerRef.current;
         if (!container) return;
-        
+
         const { scrollLeft, scrollWidth, clientWidth } = container;
         setCanScrollLeft(scrollLeft > 0);
         setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 1);
     }, []);
 
     useEffect(() => {
-        const mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`);
+        if (!collapsible) {
+            setCollapsed(false);
+            return;
+        }
 
-        const handleMediaChange = (event: MediaQueryListEvent | MediaQueryList) => {
-            const nextIsMobile = event.matches;
-            setIsMobile(nextIsMobile);
-
-            if (!collapsible) {
-                setCollapsed(false);
-                return;
-            }
-
-            setCollapsed(nextIsMobile);
-        };
-
-        handleMediaChange(mediaQuery);
-        mediaQuery.addEventListener('change', handleMediaChange);
-
-        return () => {
-            mediaQuery.removeEventListener('change', handleMediaChange);
-        };
-    }, [collapsible]);
+        setCollapsed(isMobile);
+    }, [collapsible, isMobile]);
 
     useEffect(() => {
         if (isMobile && collapsible) {
