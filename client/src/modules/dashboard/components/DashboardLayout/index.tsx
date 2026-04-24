@@ -17,6 +17,7 @@ import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queri
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import useTip from '@/shared/tips/use-tip';
+import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -59,6 +60,7 @@ const DashboardLayout = () => {
     const { teams } = useTeamData();
     const location = useLocation();
     const navigate = useNavigate();
+    const prefersReducedMotion = usePrefersReducedMotion();
     const selectedTeamId = useSelectedTeamId();
     const setDemoFromCluster = useDemoClusterStore((state) => state.setFromCluster);
     const clearDemo = useDemoClusterStore((state) => state.clear);
@@ -193,9 +195,9 @@ const DashboardLayout = () => {
                     <TrajectoryUploaderContainer>
                         <motion.div
                             key={getOutletTransitionKey(location.pathname)}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+                            initial={prefersReducedMotion ? false : { opacity: 0 }}
+                            animate={prefersReducedMotion ? undefined : { opacity: 1 }}
+                            transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
                             style={{ height: '100%' }}
                         >
                             <Outlet context={outletContext} />

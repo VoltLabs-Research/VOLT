@@ -1,14 +1,10 @@
 import { SessionActivityType } from '../api/entities/session';
-import { Globe, KeyRound, LogIn } from 'lucide-react';
+import { Globe, KeyRound, LogIn, LogOut } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface SessionUserAgentInfo {
     browser: string;
     os: string;
-};
-
-interface SessionTokenInfo {
-    shortValue: string;
 };
 
 const MOBILE_USER_AGENT_PATTERN = /Android|iPhone|iPad|iPod|Mobile/i;
@@ -70,36 +66,17 @@ export const formatSessionRelativeTime = (dateValue: string | null | undefined):
     return new Date(dateValue).toLocaleDateString();
 };
 
-export const getSessionTokenInfo = (token: string | null | undefined): SessionTokenInfo => {
-    const normalizedToken = normalizeSessionString(token);
-
-    if (normalizedToken.length <= 8) {
-        return { shortValue: normalizedToken || 'Unavailable' };
-    }
-
-    return {
-        shortValue: `${normalizedToken.slice(0, 4)}…${normalizedToken.slice(-4)}`
-    };
-};
-
 export const SESSION_ACTION_LABELS: Record<SessionActivityType, string> = {
-    [SessionActivityType.Login]: 'Login',
-    [SessionActivityType.Logout]: 'Logout',
-    [SessionActivityType.FailedLogin]: 'Failed',
-    [SessionActivityType.OAuthLogin]: 'OAuth',
-    [SessionActivityType.PasswordUpdate]: 'Password Update'
-};
-
-export const SESSION_ACTION_VARIANTS: Record<SessionActivityType, 'success' | 'danger' | 'warning' | 'brand' | 'neutral'> = {
-    [SessionActivityType.Login]: 'success',
-    [SessionActivityType.Logout]: 'neutral',
-    [SessionActivityType.FailedLogin]: 'danger',
-    [SessionActivityType.OAuthLogin]: 'brand',
-    [SessionActivityType.PasswordUpdate]: 'warning'
+    [SessionActivityType.Login]: 'Signed in',
+    [SessionActivityType.Logout]: 'Signed out',
+    [SessionActivityType.FailedLogin]: 'Failed sign-in',
+    [SessionActivityType.OAuthLogin]: 'Signed in with OAuth',
+    [SessionActivityType.PasswordUpdate]: 'Password changed'
 };
 
 export const getSessionActivityIcon = (action: SessionActivityType): LucideIcon => {
     if (action === SessionActivityType.OAuthLogin) return Globe;
     if (action === SessionActivityType.PasswordUpdate) return KeyRound;
+    if (action === SessionActivityType.Logout) return LogOut;
     return LogIn;
 };

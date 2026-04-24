@@ -73,30 +73,6 @@ export const patchInfinitePages = <T extends WithId>(
     );
 };
 
-/**
- * Prepend an entity to the first page of all infinite queries matching a key prefix.
- */
-export const prependToFirstInfinitePage = <T extends WithId>(
-    keyPrefix: QueryKey,
-    entity: T
-): void => {
-    queryClient.setQueriesData<InfiniteData<PaginatedResponse<T>>>(
-        { queryKey: keyPrefix },
-        (current) => {
-            if (!current || current.pages.length === 0) return current;
-            const firstPage = current.pages[0];
-            const exists = firstPage.data.some((e) => e._id === entity._id);
-            if (exists) return current;
-            const pages = [...current.pages];
-            pages[0] = {
-                ...firstPage,
-                data: [entity, ...firstPage.data].slice(0, firstPage.pagination.limit),
-                pagination: adjustPagination(firstPage.pagination, 1)
-            };
-            return { ...current, pages, pageParams: current.pageParams };
-        }
-    );
-};
 
 /**
  * Invalidate multiple query key prefixes in parallel.
