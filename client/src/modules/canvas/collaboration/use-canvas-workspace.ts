@@ -7,10 +7,8 @@ import {
 } from './shared-state';
 import { create } from 'zustand';
 import { useCallback, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-
 import type { SharedCanvasState } from './shared-state';
-
+import { useNavigate } from 'react-router-dom';
 export interface WorkspacePresenceUser {
     id: string;
     firstName?: string;

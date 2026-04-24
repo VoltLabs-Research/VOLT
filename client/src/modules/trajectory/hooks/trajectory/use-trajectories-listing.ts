@@ -27,7 +27,6 @@ import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import type { PromiseToastOptions } from '@/shared/presentation/toast-options';
 import { FolderInput, FolderOpen, Pencil, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { RiTableLine } from 'react-icons/ri';
 import useTrajectoryFilePicker from './use-trajectory-file-picker';
 import {
@@ -39,7 +38,7 @@ import {
     useMoveTrajectoryMutation,
     useUpdateTrajectoryFolderMutation
 } from './queries';
-
+import { useNavigate } from 'react-router-dom';
 const ROOT_FOLDER_ID = 'root';
 const FOLDER_LIST_LIMIT = 500;
 

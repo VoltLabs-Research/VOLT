@@ -14,7 +14,6 @@ import {
 } from '@/modules/cluster/hooks/team-cluster/queries';
 import { sileo } from 'sileo';
 import { reportError, ErrorSurface } from '@/shared/errors/core';
-
 const POLL_INTERVAL_MS = 1500;
 const POLL_TIMEOUT_MS = 120_000;
 

@@ -12,14 +12,13 @@ import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import SSHConnectionModal, { SSH_CONNECTION_MODAL_ID } from '../SSHConnectionModal';
 import { LuFolderOpen } from 'react-icons/lu';
 import { RiEditLine, RiWifiLine } from 'react-icons/ri';
-import { useNavigate } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import type { GetSSHConnectionsInputDTO } from '@/modules/ssh/api/dtos/get-ssh-connections';
 import type { SSHConnection } from '@/modules/ssh/api/entities/ssh-connection';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
-
+import { useNavigate } from 'react-router-dom';
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     { event: 'ssh-connection.created', queryKeys: [sshConnectionsQueryKey()] },
     { event: 'ssh-connection.deleted', queryKeys: [sshConnectionsQueryKey()] }

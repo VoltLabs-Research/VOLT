@@ -5,9 +5,7 @@ import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import { Box, Loader } from '@/shared/presentation/primitives';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
-import { useNavigate } from 'react-router';
-import { useSearchParams } from 'react-router-dom';
-
+import { useSearchParams, useNavigate } from 'react-router-dom';
 // Why: ReactFlow (~200 KB gz), Monaco (~1 MB gz), and the builder/canvas graph
 // only load when a user opens `/plugins/builder`. The dashboard route chunk
 // stays lean for first-paint workflows that never touch the builder.

@@ -7,7 +7,6 @@ import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import { lazy, Suspense, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-
 interface SegmentTargetMapping {
     segment: string;
     target: TeamClusterRemoteAccessTarget;

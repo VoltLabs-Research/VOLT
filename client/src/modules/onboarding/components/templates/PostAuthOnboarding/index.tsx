@@ -20,7 +20,6 @@ import { sileo } from 'sileo';
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import type { FormEvent, ReactNode } from 'react';
-
 interface OnboardingStepState {
     title: string;
     description: string;

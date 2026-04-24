@@ -1,10 +1,9 @@
 import { useStartAccessedPagesStore } from '../stores/use-start-accessed-pages-store';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { fadeToBlack } from '@/shared/presentation/utilities/page-transition';
 import type { MouseEvent } from 'react';
-
+import { useNavigate } from 'react-router-dom';
 const IFRAME_W = 1280;
 const IFRAME_H = 800;
 const TILT_MAX = 8;

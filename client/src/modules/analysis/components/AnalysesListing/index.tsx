@@ -10,13 +10,12 @@ import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import { RiRefreshLine } from 'react-icons/ri';
 import { FlaskConical } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import './AnalysesListing.css';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
-
+import { useNavigate } from 'react-router-dom';
 const renderTrajectoryName: NonNullable<ColumnConfig<Analysis>['render']> = (_value, row) => {
     const trajectory = row.trajectory as unknown as Record<string, unknown> | null;
     return (

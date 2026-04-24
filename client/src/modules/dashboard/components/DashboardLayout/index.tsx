@@ -9,7 +9,6 @@ import {
 } from '@/modules/dashboard/utilities/layout-events';
 import { TeamCreatorModal } from '@/modules/team/components/TeamCreatorModal';
 import { JoinTeamModal } from '@/modules/team/components/JoinTeamModal';
-import PageTransition from '@/shared/presentation/components/PageTransition';
 import { Box } from '@/shared/presentation/primitives';
 import DemoExpirationBanner from '@/modules/cluster/components/DemoExpirationBanner';
 import DemoWelcomeModal from '@/modules/cluster/components/DemoWelcomeModal';
@@ -20,6 +19,7 @@ import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { sileo } from 'sileo';
 import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
 import type { DashboardHeaderContext } from '@/modules/dashboard/hooks/use-dashboard-header-context';
@@ -29,6 +29,22 @@ interface DashboardLocationState {
     fromNotFound?: boolean;
 };
 
+// Sibling routes under these prefixes share a persistent nested layout
+// (e.g. tabs under /dashboard/containers/:id). Collapsing them to one key
+// keeps the outlet mounted across tab switches — the nested layout fades
+// its own child instead.
+const NESTED_LAYOUT_PATH_PATTERNS: ReadonlyArray<RegExp> = [
+    /^\/dashboard\/containers\/[^/]+/
+];
+
+const getOutletTransitionKey = (pathname: string): string => {
+    for (const pattern of NESTED_LAYOUT_PATH_PATTERNS) {
+        const match = pathname.match(pattern);
+        if (match) return match[0];
+    }
+    return pathname;
+};
+
 const isDashboardLocationState = (state: unknown): state is DashboardLocationState => {
     return typeof state === 'object'
         && state !== null
@@ -36,21 +52,6 @@ const isDashboardLocationState = (state: unknown): state is DashboardLocationSta
 };
 
 const SIDEBAR_COLLAPSED_KEY = 'volt:sidebar-collapsed';
-
-// Routes whose nested children should share the same PageTransition key.
-// Navigating between siblings under these prefixes keeps the parent layout
-// mounted instead of remounting on every sub-path change.
-const NESTED_LAYOUT_PATH_PATTERNS: ReadonlyArray<RegExp> = [
-    /^\/dashboard\/containers\/[^/]+/
-];
-
-const getPageTransitionKey = (pathname: string): string => {
-    for (const pattern of NESTED_LAYOUT_PATH_PATTERNS) {
-        const match = pathname.match(pattern);
-        if (match) return match[0];
-    }
-    return pathname;
-};
 
 const DashboardLayout = () => {
     useGlobalSocketCacheSync();
@@ -190,9 +191,15 @@ const DashboardLayout = () => {
 
                 <Box flex='1' minH='0' overflow='y-auto' className='dashboard-content-main'>
                     <TrajectoryUploaderContainer>
-                        <PageTransition key={getPageTransitionKey(location.pathname)}>
+                        <motion.div
+                            key={getOutletTransitionKey(location.pathname)}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+                            style={{ height: '100%' }}
+                        >
                             <Outlet context={outletContext} />
-                        </PageTransition>
+                        </motion.div>
                     </TrajectoryUploaderContainer>
                 </Box>
                 <DemoWelcomeModal />

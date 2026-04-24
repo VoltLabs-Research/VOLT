@@ -12,9 +12,8 @@ import { switchSelectedTeam } from '@/modules/team/stores/team/use-team-store';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { AlertCircle, CheckCircle, LoaderCircle, ShieldCheck, Users, XCircle } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import type { Params } from 'react-router-dom';
-
 interface TeamInvitationByCodeRouteParams extends Params {
     code: string;
 };

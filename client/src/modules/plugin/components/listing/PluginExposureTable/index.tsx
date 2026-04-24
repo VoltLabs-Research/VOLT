@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { RiDeleteBin6Line, RiEyeLine, RiTableLine } from 'react-icons/ri';
 import DocumentListing, { type ColumnConfig as ListingColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import PluginCompactTable, { type ColumnConfig } from '@/modules/plugin/components/listing/PluginCompactTable';
@@ -16,7 +15,7 @@ import type { ReactNode } from 'react';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
 import '@/modules/plugin/components/listing/PluginExposureTable/PluginExposureTable.css';
-
+import { useNavigate } from 'react-router-dom';
 export interface PluginExposureTableProps {
     pluginId: string;
     exposureName?: string;

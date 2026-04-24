@@ -1,10 +1,9 @@
 import { ContextMenuPopover } from '@/shared/presentation/primitives';
 import { BookOpen, Braces, FileCode, Home, PlugZap } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import type { MouseEvent, ReactNode } from 'react';
 import type { MenuOption } from '@/shared/presentation/types/menu';
-
+import { useNavigate } from 'react-router-dom';
 interface GlobalContextMenuProps {
     children: ReactNode;
 };

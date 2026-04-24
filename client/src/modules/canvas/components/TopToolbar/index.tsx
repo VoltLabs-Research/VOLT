@@ -10,7 +10,6 @@ import WorkspaceTabs from '../WorkspaceTabs';
 import EditableTrajectoryName from '@/modules/trajectory/components/EditableTrajectoryName';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { memo, useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
 import useShortcutDiscovery from '@/shared/tips/use-shortcut-discovery';
 import { ChevronLeft } from 'lucide-react';
@@ -21,7 +20,7 @@ import './TopToolbar.css';
 import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
 import type { ReactNode } from 'react';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
-
+import { useNavigate } from 'react-router-dom';
 interface TopToolbarShareInfo {
     trajectoryId: string;
     isPublic: boolean;

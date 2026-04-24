@@ -1,8 +1,7 @@
 import { Row, Text } from '@/shared/presentation/primitives';
 import './NotificationItem.css';
-import { useNavigate } from 'react-router-dom';
 import type { Notification } from '@/modules/notification/api/entities/notification';
-
+import { useNavigate } from 'react-router-dom';
 interface NotificationItemProps {
     notification: Notification;
     onClose: () => void;

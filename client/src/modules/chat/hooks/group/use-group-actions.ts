@@ -8,7 +8,6 @@ import {
 } from './queries';
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
 import useSocket from '@/modules/socket/core/hooks/use-socket';
 import {
     addUsersToGroupAction,
@@ -19,7 +18,7 @@ import {
     updateGroupInfoAction
 } from '../../services/group/actions';
 import type { CreateGroupChatDTO, UpdateGroupAdminsDTO, UpdateGroupInfoDTO } from '../../api/dtos/group';
-
+import { useNavigate } from 'react-router-dom';
 const useGroupActions = () => {
     const navigate = useNavigate();
     const socket = useSocket();

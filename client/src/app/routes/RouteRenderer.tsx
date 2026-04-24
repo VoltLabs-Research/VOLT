@@ -3,7 +3,6 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import { Loader } from '@/shared/presentation/primitives';
-import PageTransition from '@/shared/presentation/components/PageTransition';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import DashboardLayout from '@/modules/dashboard/components/DashboardLayout';
@@ -24,12 +23,6 @@ const lazyRouteCache = new Map<RouteLoader, LazyExoticComponent<ComponentType>>(
 const DASHBOARD_ROUTE_PREFIX = '/dashboard';
 const dashboardProtectedRoutes = protectedRoutes.filter((route) => route.path.startsWith(DASHBOARD_ROUTE_PREFIX));
 const nonDashboardProtectedRoutes = protectedRoutes.filter((route) => !route.path.startsWith(DASHBOARD_ROUTE_PREFIX));
-
-const wrapWithPageTransition = (Component: ElementType) => (
-    <PageTransition>
-        <Component />
-    </PageTransition>
-);
 
 const resolveRouteComponent = (route: RouteConfig): ElementType => {
     if (route.component) {
@@ -99,20 +92,20 @@ const RoutePermissionGuard = ({ route, children }: RoutePermissionGuardProps) =>
     return <>{children}</>;
 };
 
-const renderRouteElement = (route: RouteConfig, withTransition = true) => {
+const renderRouteElement = (route: RouteConfig) => {
     const Component = resolveRouteComponent(route);
 
     return (
         <RoutePermissionGuard route={route}>
             <Suspense fallback={<Loader scale={0.6} label='Loading workspace…' announce />}>
-                {withTransition ? wrapWithPageTransition(Component) : <Component />}
+                <Component />
             </Suspense>
         </RoutePermissionGuard>
     );
 };
 
-const renderRouteWithChildren = (route: RouteConfig, withTransition = true) => {
-    const routeElement = renderRouteElement(route, withTransition);
+const renderRouteWithChildren = (route: RouteConfig) => {
+    const routeElement = renderRouteElement(route);
 
     if(route.children && route.children.length > 0){
         return (
@@ -126,13 +119,13 @@ const renderRouteWithChildren = (route: RouteConfig, withTransition = true) => {
                         <Route
                             key={child.path}
                             index
-                            element={renderRouteElement(child, withTransition)}
+                            element={renderRouteElement(child)}
                         />
                     ) : (
                         <Route
                             key={child.path}
                             path={child.path}
-                            element={renderRouteElement(child, withTransition)}
+                            element={renderRouteElement(child)}
                         />
                     )
                 ))}
@@ -159,7 +152,7 @@ export const renderProtectedRoutes = () => {
         <Route element={<ProtectedRoute mode={RouteMode.Protected} />}>
             {nonDashboardProtectedRoutes.map((route) => renderRouteWithChildren(route))}
             <Route path={DASHBOARD_ROUTE_PREFIX} element={<DashboardLayout />}>
-                {dashboardProtectedRoutes.map((route) => renderRouteWithChildren(route, false))}
+                {dashboardProtectedRoutes.map((route) => renderRouteWithChildren(route))}
             </Route>
         </Route>
     );
