@@ -123,7 +123,6 @@ interface ObjectGatewayHttpSessionEntry {
 const OBJECT_GATEWAY_EXPOSURE_ID = 'daemon:object-gateway';
 const OBJECT_GATEWAY_EXPOSURE_NAME = 'object-gateway';
 const OBJECT_GATEWAY_BASE_PATH = '/internal/object-gateway/v1';
-const OBJECT_METADATA_HEADER_PREFIX = 'x-object-meta-';
 const DEFAULT_LIST_LIMIT = 100;
 const TOKEN_EXPIRY_SAFETY_WINDOW_MS = 5_000;
 const TOKEN_TTL_SECONDS = 5 * 60;
@@ -780,17 +779,13 @@ export default class TeamClusterObjectGatewayClient {
         }
 
         for (const [key, value] of Object.entries(request.metadata ?? {})) {
-            headers[`${OBJECT_METADATA_HEADER_PREFIX}${key.toLowerCase()}`] = value;
+            headers[`${TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX}${key.toLowerCase()}`] = value;
         }
 
         return headers;
     }
 
     private buildReadHeaders(options?: TeamClusterObjectGatewayReadOptions): Record<string, string> | undefined {
-        if (!options?.skipMetadata && !options?.rangeHeader) {
-            return undefined;
-        }
-
         const headers: Record<string, string> = {};
 
         if (options?.skipMetadata) {
@@ -801,7 +796,7 @@ export default class TeamClusterObjectGatewayClient {
             headers.range = options.rangeHeader;
         }
 
-        return headers;
+        return Object.keys(headers).length > 0 ? headers : undefined;
     }
 }
 

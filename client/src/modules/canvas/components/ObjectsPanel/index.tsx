@@ -59,6 +59,11 @@ const PARTICLE_FILTER_ACTION_LABELS = {
     highlight: 'Color Selection'
 } as const;
 
+const CONTEXT_MENU_ID_PREFIX = {
+    colorCoding: 'canvas-ctx-color-coding',
+    particleFilter: 'canvas-ctx-particle-filter'
+} as const;
+
 const COLLAPSIBLE_PRESET = {
     className: 'canvas-right-dropdown',
     headerClassName: 'canvas-right-dropdown-header d-flex items-center gap-05',
@@ -226,21 +231,33 @@ const ObjectsPanel = ({
     }, [setCurrentTimestep]);
 
     useEffect(() => {
-        if (particleFilterTimesteps.length === 0) {
-            setExpandedParticleFilterTimesteps(new Set());
-            return;
-        }
-
-        setExpandedParticleFilterTimesteps((current) => new Set([...current].filter((t) => particleFilterTimesteps.includes(t))));
+        setExpandedParticleFilterTimesteps((current) => {
+            if (current.size === 0) return current;
+            if (particleFilterTimesteps.length === 0) return new Set();
+            const available = new Set(particleFilterTimesteps);
+            let changed = false;
+            const next = new Set<number>();
+            for (const timestep of current) {
+                if (available.has(timestep)) next.add(timestep);
+                else changed = true;
+            }
+            return changed ? next : current;
+        });
     }, [particleFilterTimesteps]);
 
     useEffect(() => {
-        if (colorCodingTimesteps.length === 0) {
-            setExpandedColorCodingTimesteps(new Set());
-            return;
-        }
-
-        setExpandedColorCodingTimesteps((current) => new Set([...current].filter((t) => colorCodingTimesteps.includes(t))));
+        setExpandedColorCodingTimesteps((current) => {
+            if (current.size === 0) return current;
+            if (colorCodingTimesteps.length === 0) return new Set();
+            const available = new Set(colorCodingTimesteps);
+            let changed = false;
+            const next = new Set<number>();
+            for (const timestep of current) {
+                if (available.has(timestep)) next.add(timestep);
+                else changed = true;
+            }
+            return changed ? next : current;
+        });
     }, [colorCodingTimesteps]);
 
     const handleSelectRasterScene = useCallback((scene: RasterSelectableScene, label: string) => {
@@ -384,16 +401,24 @@ const ObjectsPanel = ({
         );
     }, [activeScene, getArtifactMenuOptions, onSelectScene, syncArtifactTimestep]);
 
-    const toggleTimestepSetter = (setter: React.Dispatch<React.SetStateAction<Set<number>>>) =>
-        (timestep: number) => setter((current) => {
-            const next = new Set(current);
-            if (next.has(timestep)) next.delete(timestep);
-            else next.add(timestep);
-            return next;
-        });
+    const toggleExpandedTimestep = (
+        setter: React.Dispatch<React.SetStateAction<Set<number>>>,
+        timestep: number
+    ): void => setter((current) => {
+        const next = new Set(current);
+        if (next.has(timestep)) next.delete(timestep);
+        else next.add(timestep);
+        return next;
+    });
 
-    const toggleParticleFilterTimestep = useCallback(toggleTimestepSetter(setExpandedParticleFilterTimesteps), []);
-    const toggleColorCodingTimestep = useCallback(toggleTimestepSetter(setExpandedColorCodingTimesteps), []);
+    const toggleParticleFilterTimestep = useCallback(
+        (timestep: number) => toggleExpandedTimestep(setExpandedParticleFilterTimesteps, timestep),
+        []
+    );
+    const toggleColorCodingTimestep = useCallback(
+        (timestep: number) => toggleExpandedTimestep(setExpandedColorCodingTimesteps, timestep),
+        []
+    );
 
     const artifactsByTimestep = useMemo(() => {
         const colorIndex = new Map<number, SceneArtifact[]>();
@@ -534,7 +559,7 @@ const ObjectsPanel = ({
                     expandedSet: expandedColorCodingTimesteps,
                     toggleTimestep: toggleColorCodingTimestep,
                     icon: Palette,
-                    menuIdPrefix: 'canvas-ctx-color-coding',
+                    menuIdPrefix: CONTEXT_MENU_ID_PREFIX.colorCoding,
                     ariaLabel: 'Color Coding hierarchy',
                     visibleCount: colorCodingVisibleCount,
                     onShowMore: () => setColorCodingVisibleCount((current) => current + TIMESTEP_PAGE_SIZE)
@@ -553,7 +578,7 @@ const ObjectsPanel = ({
                     expandedSet: expandedParticleFilterTimesteps,
                     toggleTimestep: toggleParticleFilterTimestep,
                     icon: Filter,
-                    menuIdPrefix: 'canvas-ctx-particle-filter',
+                    menuIdPrefix: CONTEXT_MENU_ID_PREFIX.particleFilter,
                     ariaLabel: 'Particle Filter hierarchy',
                     visibleCount: particleFilterVisibleCount,
                     onShowMore: () => setParticleFilterVisibleCount((current) => current + TIMESTEP_PAGE_SIZE)

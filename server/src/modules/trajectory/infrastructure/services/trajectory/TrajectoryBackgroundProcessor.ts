@@ -183,10 +183,6 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         return frames.map((frame) => `trajectory-glb:${input.trajectoryId}:${frame.timestep}`);
     }
 
-    /**
-     * Registers the drain callback on CloudUploadQueueService (idempotent).
-     * When all upload jobs for a trajectory settle, this triggers GLB preprocessing.
-     */
     private registerUploadDrainCallback(): void {
         if (this.drainCallbackRegistered) return;
         this.drainCallbackRegistered = true;
@@ -317,9 +313,6 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         );
     }
 
-    /**
-     * Entry point for trajectory background processing.
-     */
     public async process(
         trajectoryId: string,
         files: TrajectoryUploadFile[],
@@ -378,9 +371,6 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         }
     }
 
-    /**
-     * Creates an isolated working directory for trajectory processing.
-     */
     private async createContext(trajectoryId: string): Promise<ProcessorContext>{
         const workingDir = this.tempFileService.getDirPath(`trajectory-uploads/${trajectoryId}`);
         const incomingDir = path.join(workingDir, 'incoming');
@@ -393,10 +383,6 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         };
     }
 
-    /**
-     * Removes temporary resources created during processing.
-     * Cleanup failures are intentionally ignored.
-     */
     private async cleanup(ctx: ProcessorContext){
         await this.tempFileService.delete(ctx.workingDir, {
             recursive: true,
@@ -404,9 +390,6 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         }).catch(() => {});
     }
 
-    /**
-     * Loads a trajectory by id or throws if not found.
-     */
     private async loadTrajectory(trajectoryId: string){
         const trajectory = await this.trajectoryRepo.findById(trajectoryId);
         if(!trajectory){
@@ -419,9 +402,6 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         return trajectory;
     }
 
-    /**
-     * Ensures at lesat one valid frame exists.
-     */
     private ensureValidFrames(frames: ParsedFrame[]){
         if(frames.length === 0){
             throw ApplicationError.badRequest(
@@ -467,10 +447,6 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         return [...byTimestep.values()].sort((a, b) => (a.timestep as number) - (b.timestep as number));
     }
 
-    /**
-     * Attempts to parse a single trajectory frame.
-     * Failures are logged and result in a skipped frame.
-     */
     private async parseFrame(
         trajectoryId: string,
         teamId: string,
@@ -546,10 +522,6 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         return cachePath;
     }
 
-    /**
-     * Attempts to persist a simulation cell.
-     * Failure is tolerated and results in a null reference.
-     */
     private async createSimulationCell(
         trajectoryId: string,
         teamId: string,
@@ -571,9 +543,6 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         }
     }
 
-    /**
-     * Persists trajectory frames and statistics.
-     */
     private async persistTrajectory(
         trajectoryId: string,
         frames: ParsedFrame[]
@@ -590,9 +559,6 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         });
     }
 
-    /**
-     * Dispatches all background jobs for a trajectory.
-     */
     private async dispatchJobs(
         frames: ParsedFrame[],
         trajectory: Trajectory,
@@ -627,9 +593,6 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         })));
     }
 
-    /**
-     * Updates trajectory status and emits a domain event.
-     */
     private async updateStatus(
         trajectoryId: string,
         teamId: string,
@@ -648,9 +611,6 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         }));
     }
 
-    /**
-     * Dispatches cloud upload jobs via BullMQ queue for crash recovery and per-file visibility.
-     */    
     private async dispatchCloudUploadJobs(
         jobs: CompressionJobData[]
     ): Promise<void>{

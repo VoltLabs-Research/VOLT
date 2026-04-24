@@ -52,6 +52,12 @@ export interface TrajectoryProps {
      * pass the list around (clone source snapshot, daemon dispatch payload).
      */
     frames?: TrajectoryFrame[];
+    // Transient summary fields populated by listing use cases that cannot
+    // afford to hydrate the full `frames[]` payload per row (20 rows × N
+    // frames would re-introduce the 1 MB responses the F2.S6 refactor avoided).
+    framesCount?: number;
+    atoms?: number;
+    firstTimestep?: number;
     analysis?: string[];
     rasterSceneViews: number;
     hasPreview?: boolean;
@@ -68,10 +74,5 @@ export default class Trajectory {
 
     get id(): string {
         return this._id;
-    }
-
-    updateStatus(status: TrajectoryStatus | string): void {
-        this.props.status = status as TrajectoryStatus;
-        this.props.updatedAt = new Date();
     }
 };

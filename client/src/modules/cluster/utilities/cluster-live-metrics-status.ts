@@ -5,7 +5,7 @@ import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metr
 export enum ClusterLiveMetricsLabel {
     Healthy = 'Active',
     Warning = 'Warning',
-    Critical = 'Failed',
+    Critical = 'Critical',
     WaitingForLiveMetrics = 'Pending',
     MetricsUnavailable = 'Paused'
 };

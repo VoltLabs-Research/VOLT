@@ -384,16 +384,14 @@ export default createHttpModule({
                 if (request.method === 'GET') {
                     const skipMetadata = readBooleanHeader(request, TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER);
                     const rangeHeader = readHeader(request, 'range');
+                    const readOptions: { skipMetadata?: boolean; rangeHeader?: string } = {};
+                    if (skipMetadata) readOptions.skipMetadata = true;
+                    if (rangeHeader) readOptions.rangeHeader = rangeHeader;
                     const streamResponse = await objectGatewayClient().getStream(
                         resolvedRoute.ownerClusterId,
                         resolvedRoute.bucket,
                         resolvedRoute.objectKey,
-                        skipMetadata || rangeHeader
-                            ? {
-                                ...(skipMetadata ? { skipMetadata: true } : {}),
-                                ...(rangeHeader ? { rangeHeader } : {})
-                            }
-                            : undefined
+                        Object.keys(readOptions).length > 0 ? readOptions : undefined
                     );
                     applyResponseHeaders(streamResponse, response);
                     applyPassthroughStreamHeaders(streamResponse.headers, response);

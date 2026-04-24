@@ -9,14 +9,17 @@ import { injectable } from 'tsyringe';
 
 import { RasterStorageService } from '@modules/raster/infrastructure/services/RasterStorageService';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
 
 @injectable()
 export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTrajectoriesByTeamIdInputDTO, GetTrajectoriesByTeamIdOutputDTO, ApplicationError> {
     constructor(
-        
+
         private readonly trajectoryRepo: TrajectoryRepository,
-        
-        private readonly rasterStorage: RasterStorageService
+
+        private readonly rasterStorage: RasterStorageService,
+
+        private readonly trajectoryFrameRepo: TrajectoryFrameRepository
     ) {}
 
     async execute(input: GetTrajectoriesByTeamIdInputDTO): Promise<Result<GetTrajectoriesByTeamIdOutputDTO, ApplicationError>> {
@@ -49,7 +52,16 @@ export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTraje
             limit
         });
 
+        const summaries = await this.trajectoryFrameRepo.getListingSummariesByTrajectoryIds(
+            results.data.map((trajectory) => trajectory.id)
+        );
+
         const data = await Promise.all(results.data.map(async (trajectory) => {
+            const summary = summaries.get(trajectory.id);
+            trajectory.props.framesCount = summary?.framesCount ?? 0;
+            trajectory.props.atoms = summary?.atoms ?? 0;
+            trajectory.props.firstTimestep = summary?.firstTimestep;
+
             const persistedTrajectory = toPersistedOutput(trajectory);
 
             return resolveTrajectoryPreviewAvailability(

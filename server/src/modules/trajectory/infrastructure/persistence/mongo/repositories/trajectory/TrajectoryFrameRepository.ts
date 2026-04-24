@@ -95,6 +95,41 @@ export default class TrajectoryFrameRepository {
         return TrajectoryFrameModel.countDocuments({ trajectoryId: toObjectId(trajectoryId) }).exec();
     }
 
+    async getListingSummariesByTrajectoryIds(
+        trajectoryIds: string[]
+    ): Promise<Map<string, { framesCount: number; atoms: number; firstTimestep: number }>> {
+        const summaries = new Map<string, { framesCount: number; atoms: number; firstTimestep: number }>();
+        if (trajectoryIds.length === 0) return summaries;
+
+        const rows = await TrajectoryFrameModel.aggregate<{
+            _id: mongoose.Types.ObjectId;
+            framesCount: number;
+            atoms: number;
+            firstTimestep: number;
+        }>([
+            { $match: { trajectoryId: { $in: trajectoryIds.map(toObjectId) } } },
+            { $sort: { trajectoryId: 1, timestep: 1 } },
+            {
+                $group: {
+                    _id: '$trajectoryId',
+                    framesCount: { $sum: 1 },
+                    atoms: { $first: '$natoms' },
+                    firstTimestep: { $first: '$timestep' }
+                }
+            }
+        ]).exec();
+
+        for (const row of rows) {
+            summaries.set(row._id.toString(), {
+                framesCount: row.framesCount,
+                atoms: row.atoms,
+                firstTimestep: row.firstTimestep
+            });
+        }
+
+        return summaries;
+    }
+
     async insertFrames(trajectoryId: string, frames: TrajectoryFrame[]): Promise<void> {
         if (frames.length === 0) return;
 

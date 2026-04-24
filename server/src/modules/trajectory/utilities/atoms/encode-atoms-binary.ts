@@ -17,6 +17,7 @@ const DTYPE_BYTES: Record<AtomColumnDType, number> = {
 
 /**
  * Wire format (little-endian throughout):
+ *   [u32 total][u32 page][u32 limit][u32 totalPages]
  *   [u32 count]
  *   [u32 propsCount]
  *   for each prop:
@@ -36,7 +37,7 @@ export const encodeAtomsBinary = (result: GetAtomsColumnarOutputDTO): Buffer => 
     const columns = result.columns;
     const nameBuffers = columns.map((column) => Buffer.from(column.name, 'utf8'));
 
-    let headerSize = 4 /* count */ + 4 /* propsCount */;
+    let headerSize = 16 /* pagination */ + 4 /* count */ + 4 /* propsCount */;
     let dataSize = 0;
 
     for (let i = 0; i < columns.length; i += 1) {
@@ -65,6 +66,14 @@ export const encodeAtomsBinary = (result: GetAtomsColumnarOutputDTO): Buffer => 
 
     const envelope = Buffer.alloc(envelopeSize);
     let offset = 0;
+    envelope.writeUInt32LE(result.total, offset);
+    offset += 4;
+    envelope.writeUInt32LE(result.page, offset);
+    offset += 4;
+    envelope.writeUInt32LE(result.limit, offset);
+    offset += 4;
+    envelope.writeUInt32LE(result.totalPages, offset);
+    offset += 4;
     envelope.writeUInt32LE(result.count, offset);
     offset += 4;
     envelope.writeUInt32LE(columns.length, offset);

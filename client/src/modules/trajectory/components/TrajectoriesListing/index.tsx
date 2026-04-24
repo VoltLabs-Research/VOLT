@@ -40,13 +40,13 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
     {
         key: 'atoms',
         title: 'Atoms',
-        render: (_value, row) => formatNumber(isTrajectoryFolderRow(row) ? 0 : row.frames?.[0]?.natoms ?? 0),
+        render: (_value, row) => formatNumber(isTrajectoryFolderRow(row) ? 0 : row.atoms ?? 0),
         skeleton: { variant: 'text', width: 70 }
     },
     {
         key: 'framesCount',
         title: 'Frames',
-        render: (_value, row) => formatNumber(isTrajectoryFolderRow(row) ? 0 : row.frames?.length ?? 0),
+        render: (_value, row) => formatNumber(isTrajectoryFolderRow(row) ? 0 : row.framesCount ?? 0),
         skeleton: { variant: 'text', width: 70 }
     },
     {

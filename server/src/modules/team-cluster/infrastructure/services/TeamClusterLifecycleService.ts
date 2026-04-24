@@ -9,6 +9,10 @@ import TeamCluster, {
 import FirstTeamClusterConnectedEvent from '@modules/team-cluster/domain/events/FirstTeamClusterConnectedEvent';
 import type { TeamClusterLifecycleUpdatePreconditions } from '@modules/team-cluster/domain/port/ITeamClusterRepository';
 import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
+import {
+    TEAM_CLUSTER_METRICS_ALL_EVENT,
+    toTeamClusterClientMetrics
+} from '@modules/team-cluster/utilities/teamClusterMetricsSocket';
 import { getTeamClusterRoom, TEAM_CLUSTER_LIFECYCLE_EVENT } from '@modules/team-cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
@@ -256,9 +260,13 @@ export default class TeamClusterLifecycleService {
         }
 
         if (metrics) {
-            void this.systemMetricsRepository.save(this.toSystemMetrics(updatedTeamCluster.id, metrics)).catch((error: unknown) => {
+            const systemMetrics = this.toSystemMetrics(updatedTeamCluster.id, metrics);
+
+            void this.systemMetricsRepository.save(systemMetrics).catch((error: unknown) => {
                 logger.warn(`Failed to persist system metrics snapshot after heartbeat acknowledgement teamClusterId=${updatedTeamCluster.id}`);
             });
+
+            this.emitMetricsUpdate(updatedTeamCluster, systemMetrics);
         }
 
         return toTeamClusterDTO(updatedTeamCluster);
@@ -548,6 +556,14 @@ export default class TeamClusterLifecycleService {
             getTeamClusterRoom(teamCluster.id),
             TEAM_CLUSTER_LIFECYCLE_EVENT,
             payload
+        );
+    }
+
+    private emitMetricsUpdate(teamCluster: TeamCluster, metrics: SystemMetrics): void {
+        this.socketEmitter.emitToRoom(
+            getTeamClusterRoom(teamCluster.id),
+            TEAM_CLUSTER_METRICS_ALL_EVENT,
+            [toTeamClusterClientMetrics(teamCluster, metrics)]
         );
     }
 };
