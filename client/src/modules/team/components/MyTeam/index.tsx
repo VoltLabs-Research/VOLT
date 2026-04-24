@@ -3,7 +3,8 @@ import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import useChatActions from '@/modules/chat/hooks/chat/use-chat-actions';
 import { useRemoveTeamMemberMutation, useUpdateTeamMemberMutation } from '@/modules/team/hooks/member/queries';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
-import { useUpdateTeamMutation } from '@/modules/team/hooks/team/queries';
+import { useLeaveTeamMutation, useUpdateTeamMutation } from '@/modules/team/hooks/team/queries';
+import { resetTeamScopedApplicationState, useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
 import { resolveTeamUserOnline } from '@/modules/team/utilities/member/presence';
 import { runAction } from '@/shared/presentation/actions/run-action';
@@ -12,6 +13,7 @@ import ActivityHeatmap from '@/modules/daily-activity/components/ActivityHeatmap
 import ListingUserCell from '@/shared/presentation/components/ListingUserCell';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
 import useTeamMembersListing from '@/modules/team/hooks/member/use-team-members-listing';
+import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import useTeamRoleData from '@/modules/team/hooks/role/use-team-role-data';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
@@ -21,7 +23,7 @@ import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { formatDistanceToNow } from 'date-fns';
-import { IoChatbubbleOutline, IoPersonRemoveOutline } from 'react-icons/io5';
+import { IoChatbubbleOutline, IoExitOutline, IoPersonRemoveOutline } from 'react-icons/io5';
 import { useCallback, useMemo } from 'react';
 import type { TeamMemberStats } from '@/modules/team/api/entities/member/team-member';
 import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
@@ -51,6 +53,12 @@ const getRemoveMemberToastOptions = (member: TeamMemberStats) => createPromiseTo
     loading: `Removing ${member.user.firstName}...`,
     success: `${member.user.firstName} removed from team`,
     error: `Failed to remove ${member.user.firstName}`
+});
+
+const leaveTeamToastOptions = createPromiseToastOptions({
+    loading: 'Leaving team...',
+    success: 'Left team successfully',
+    error: 'Failed to leave team'
 });
 
 const formatTrackedMinutes = (minutes: number): string => {
@@ -83,9 +91,11 @@ export default function MyTeamTemplate() {
     const onlineUserIds = useTeamPresenceStore((state) => state.onlineUserIds);
     const hasPresenceSnapshot = useTeamPresenceStore((state) => state.hasPresenceSnapshot);
 
+    const { teams } = useTeamData();
     const updateTeamMutation = useUpdateTeamMutation();
     const updateTeamMemberMutation = useUpdateTeamMemberMutation();
     const removeTeamMemberMutation = useRemoveTeamMemberMutation();
+    const leaveTeamMutation = useLeaveTeamMutation();
     const { activityData } = useDailyActivityData();
 
     const handleSaveTeamName = useCallback(async (newName: string) => {
@@ -126,6 +136,31 @@ export default function MyTeamTemplate() {
             });
         }
     }, [selectedTeam._id, removeTeamMemberMutation, confirm]);
+
+    const handleLeaveTeam = useCallback(async () => {
+        const isConfirmed = await confirm({
+            title: `Leave ${selectedTeam.name}?`,
+            description: 'You will lose access to this team until someone invites you again.',
+            confirmText: 'Leave team',
+            cancelText: 'Stay',
+            tone: ConfirmActionTone.Danger
+        });
+        if (!isConfirmed) return;
+
+        await runAction({
+            action: () => leaveTeamMutation.mutateAsync({ teamId: selectedTeam._id }),
+            toast: leaveTeamToastOptions,
+            afterSuccess: () => {
+                const state = useTeamStore.getState();
+                if (state.selectedTeamId !== selectedTeam._id) return;
+
+                const remainingTeams = teams.filter((team) => team._id !== selectedTeam._id);
+                const nextTeam = remainingTeams[0] ?? null;
+                resetTeamScopedApplicationState();
+                state.setSelectedTeamId(nextTeam?._id ?? null);
+            }
+        });
+    }, [selectedTeam._id, selectedTeam.name, leaveTeamMutation, teams]);
 
     const roleOptions = useMemo(() => {
         return roles.map((role) => ({
@@ -243,6 +278,13 @@ export default function MyTeamTemplate() {
                     return handleRemoveMembers(targets);
                 },
                 requiredPermission: canInvite ? undefined : 'team-invitation:create'
+            },
+            leave: {
+                label: 'Leave team',
+                icon: IoExitOutline,
+                variant: 'danger',
+                scope: 'item',
+                handler: () => handleLeaveTeam()
             }
         }
     });
@@ -252,10 +294,20 @@ export default function MyTeamTemplate() {
             return [];
         }
 
-        return selectedMembers.length > 1
-            ? getSelectionActionOptions(member, selectedMembers)
-            : getMenuOptions(member, selectedMembers);
-    }, [canInvite, getMenuOptions, getSelectionActionOptions]);
+        if (selectedMembers.length > 1) {
+            return getSelectionActionOptions(member, selectedMembers)
+                .filter((option) => option.label !== 'Leave team');
+        }
+
+        const isSelf = currentUser?._id === member.user._id;
+        const options = getMenuOptions(member, selectedMembers);
+
+        if (isSelf) {
+            return options.filter((option) => option.label === 'Leave team');
+        }
+
+        return options.filter((option) => option.label !== 'Leave team');
+    }, [canInvite, currentUser?._id, getMenuOptions, getSelectionActionOptions]);
 
     return (
         <div className='my-team-page h-max'>

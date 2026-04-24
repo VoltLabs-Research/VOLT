@@ -26,9 +26,8 @@ const requireAdminUser = (req: AuthenticatedRequest, res: Response, next: NextFu
 export default createHttpModule({
     basePath: '/api/system',
     protected: true,
-    middleware: requireAdminUser,
     routes: (router) => {
-        router.get('/stats', controllers.getSystemStats.handle);
+        router.get('/stats', requireAdminUser, controllers.getSystemStats.handle);
         router.get('/rbac', controllers.getRbacConfig.handle);
     }
 });

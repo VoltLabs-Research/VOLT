@@ -17,13 +17,4 @@ export type {
     InfiniteQueryOptions
 } from './create-paginated-query';
 
-export {
-    upsertEntityInList,
-    removeEntityFromList,
-    patchPaginatedPage,
-    patchInfinitePages,
-    prependToFirstInfinitePage,
-    batchInvalidateQueries
-} from './cache-utils';
-
 export { default as queryClient } from './query-client';
