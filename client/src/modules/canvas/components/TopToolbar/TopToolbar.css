@@ -26,29 +26,6 @@
     pointer-events: auto;
 }
 
-.canvas-toolbar-back {
-    appearance: none;
-    background: transparent;
-    border: none;
-    color: var(--color-text-muted);
-    width: 28px;
-    height: 28px;
-    border-radius: var(--radius-xs);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: 0.5rem;
-    cursor: pointer;
-    transition: background-color 140ms ease, color 140ms ease;
-}
-
-.canvas-toolbar-back:hover,
-.canvas-toolbar-back:focus-visible {
-    background: var(--hover-bg);
-    color: var(--color-text-primary);
-    outline: none;
-}
-
 .canvas-toolbar-trajectory {
     max-width: 260px;
     padding: 0 0.75rem;
@@ -68,12 +45,6 @@
     width: 1px;
     height: 14px;
     background: var(--color-border-soft);
-}
-
-.canvas-menu-separator {
-    height: 1px;
-    background: var(--color-border-soft);
-    margin: 4px 12px;
 }
 
 .canvas-btn-compact.shape-circle {
@@ -132,7 +103,7 @@
      * The workspace tabs (Dashboard / Scene / Raster / Scripting / peers) share the top
      * row with the logo + user menu and overflow on phones. Let them scroll horizontally.
      */
-    .canvas-workspace-tabs {
+    .canvas-toolbar-left .segmented-tabs {
         flex: 1 1 0;
         min-width: 0;
         overflow-x: auto;
@@ -141,11 +112,11 @@
         flex-wrap: nowrap;
     }
 
-    .canvas-workspace-tabs::-webkit-scrollbar {
+    .canvas-toolbar-left .segmented-tabs::-webkit-scrollbar {
         display: none;
     }
 
-    .canvas-workspace-tabs > * {
+    .canvas-toolbar-left .segmented-tabs > * {
         flex-shrink: 0;
     }
 }

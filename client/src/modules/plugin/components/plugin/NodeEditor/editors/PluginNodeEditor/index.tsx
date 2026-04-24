@@ -26,7 +26,7 @@ import type {
 import type { PluginTeamClusterOption } from '@/modules/plugin/api/entities/plugin/team-cluster';
 import type { EditorProps } from '../types';
 import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF';
-import type { SelectOption } from '@/shared/presentation/primitives';
+import type { SelectOption } from '@/shared/presentation/primitives/Select';
 
 const EXECUTION_MODE_OPTIONS = [{
     value: PluginNodeExecutionMode.MANUAL,

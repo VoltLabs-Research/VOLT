@@ -9,8 +9,16 @@ import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluste
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
-import { Box, Stack, Row, Text, Heading, Button, Modal, SelectableCard, StatusDot, closeModal, openModal } from '@/shared/presentation/primitives';
-import type { StatusDotTone } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Button from '@/shared/presentation/primitives/Button';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Modal, { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
+import Row from '@/shared/presentation/primitives/Row';
+import SelectableCard from '@/shared/presentation/primitives/SelectableCard';
+import Stack from '@/shared/presentation/primitives/Stack';
+import StatusDot from '@/shared/presentation/primitives/StatusDot';
+import Text from '@/shared/presentation/primitives/Text';
+import type { StatusDotTone } from '@/shared/presentation/primitives/StatusDot';
 import CopyableField from '@/shared/presentation/components/CopyableField';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { sileo } from 'sileo';

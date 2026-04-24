@@ -1,6 +1,7 @@
 import useAnalysisActivitySummary from '../../hooks/use-analysis-activity-summary';
 import { formatSize } from '@/shared/utils/format';
-import { Row, Box } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Row from '@/shared/presentation/primitives/Row';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { ReactNode } from 'react';
 

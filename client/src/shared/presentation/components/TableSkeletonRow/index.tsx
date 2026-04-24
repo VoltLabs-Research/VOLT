@@ -1,4 +1,4 @@
-import { Skeleton } from '@/shared/presentation/primitives';
+import Skeleton from '@/shared/presentation/primitives/Skeleton';
 import type { CSSProperties } from 'react';
 import type { ColumnConfig } from '../DocumentListingTable';
 
@@ -21,7 +21,6 @@ const TableSkeletonRow = <TRow,>({
                         <Skeleton
                             {...(col.skeleton ?? { variant: 'text', width: 100 })}
                             animation='wave'
-                            className='document-listing-skeleton-bar'
                             style={{
                                 borderRadius: col.skeleton?.variant === 'rounded' ? 12 : 4
                             }}

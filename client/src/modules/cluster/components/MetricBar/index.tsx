@@ -1,4 +1,4 @@
-import { Box } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
 import './MetricBar.css';
 interface MetricBarProps {
     value: number;

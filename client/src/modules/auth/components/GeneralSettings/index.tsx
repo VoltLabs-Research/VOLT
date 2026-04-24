@@ -4,11 +4,11 @@ import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import AvatarUpload from '@/modules/auth/components/AvatarUpload';
 import ProfileForm from '@/modules/auth/components/ProfileForm';
-import DangerZone from '@/shared/presentation/components/DangerZone';
+import Callout from '@/shared/presentation/primitives/Callout';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSection from '@/shared/presentation/components/SettingsSection';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
-import { Stack } from '@/shared/presentation/primitives';
+import Stack from '@/shared/presentation/primitives/Stack';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
@@ -92,12 +92,15 @@ const GeneralSettings = () => {
                 </Stack>
             </SettingsSection>
 
-            <DangerZone
-                title="Delete Account"
-                description="Permanently delete your account and all associated data"
-                actionLabel="Delete Account"
-                actionIcon={<Trash2 size={16} />}
-                onAction={handleDeleteAccount}
+            <Callout
+                tone='danger'
+                title='Delete Account'
+                description='Permanently delete your account and all associated data'
+                action={{
+                    label: 'Delete Account',
+                    icon: <Trash2 size={16} />,
+                    onClick: handleDeleteAccount
+                }}
             />
         </SettingsPage>
     );

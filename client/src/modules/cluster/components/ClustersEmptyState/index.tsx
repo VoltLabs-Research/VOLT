@@ -1,4 +1,7 @@
-import { Stack, Text, Heading, Button } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 const ClustersEmptyState = () => {
     return (
         <Stack align='start' gap='1' p='1-5' radius='lg' className='clusters-empty-state'>

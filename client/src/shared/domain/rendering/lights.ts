@@ -239,8 +239,6 @@ const createLightsState = (darkTheme = isDarkTheme()): LightsState => {
     };
 };
 
-export const LIGHTS_DEFAULT_STATE: LightsState = createLightsState();
-
 /** Resolves a light color against theme defaults while preserving explicit overrides. */
 export const resolveLightsColor = (
     color: string,

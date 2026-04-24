@@ -1,4 +1,5 @@
-import { Heading, Stack } from '@/shared/presentation/primitives';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Stack from '@/shared/presentation/primitives/Stack';
 import './SettingsPage.css';
 import { useId } from 'react';
 import type { ReactNode } from 'react';

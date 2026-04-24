@@ -1,4 +1,8 @@
-import { LiquidToggle, Row, Stack, Heading, Text } from '@/shared/presentation/primitives';
+import Heading from '@/shared/presentation/primitives/Heading';
+import LiquidToggle from '@/shared/presentation/primitives/LiquidToggle';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import { CANVAS_QUERY_KEYS } from '@/modules/canvas/hooks/queries';
 import { TRAJECTORY_QUERY_KEYS, trajectoryQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import { ErrorSurface, reportError } from '@/shared/errors/core';

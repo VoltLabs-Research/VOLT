@@ -12,7 +12,6 @@ import { useMutation } from '@tanstack/react-query';
 import type { Team } from '../../api/entities/team/team';
 import type { CreateTeamInputDTO } from '../../api/dtos/team/create-team';
 import type { UpdateTeamInputDTO } from '../../api/dtos/team/update-team';
-import type { DeleteTeamInputDTO } from '../../api/dtos/team/delete-team';
 import type { LeaveTeamInputDTO } from '../../api/dtos/team/leave-team';
 import type { GenerateInviteCodeInputDTO } from '../../api/dtos/team/generate-invite-code';
 import type { DeleteInviteCodeInputDTO } from '../../api/dtos/team/delete-invite-code';
@@ -96,12 +95,6 @@ const setTeamsQueryData = (updater: (previous?: Team[]) => Team[] | undefined) =
 };
 
 export const invalidateTeamsQuery = () => queryClient.invalidateQueries({ queryKey: TEAM_QUERY_KEYS.teams() });
-
-const invalidateTeamScopedQueries = (teamId: string) => {
-    return queryClient.invalidateQueries({
-        predicate: (query) => matchesTeamScopedQuery(query.queryKey, teamId)
-    });
-};
 
 const removeTeamScopedQueries = (teamId: string) => {
     queryClient.removeQueries({

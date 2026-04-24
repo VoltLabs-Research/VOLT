@@ -1,9 +1,3 @@
-.member-list-item-role {
-    padding: 0.125rem 0.5rem;
-    border-radius: var(--radius-xs);
-    background: var(--color-surface-3);
-}
-
 .member-list-item-button {
     min-height: 3rem;
 }
@@ -11,14 +5,4 @@
 .member-list-item-button:focus-visible {
     outline: none;
     box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
-}
-
-.member-list-item-role.admin {
-    background: var(--accent-blue);
-    color: var(--color-contrast-high);
-}
-
-.member-list-item-role.owner {
-    background: var(--accent-purple);
-    color: var(--color-contrast-high);
 }

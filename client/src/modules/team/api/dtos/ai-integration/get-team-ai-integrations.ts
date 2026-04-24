@@ -9,5 +9,3 @@ export interface ListTeamAIIntegrationsResponse {
 export interface GetTeamAIIntegrationsInputDTO {
     teamId: string;
 };
-
-export type GetTeamAIIntegrationsOutputDTO = ListTeamAIIntegrationsResponse;

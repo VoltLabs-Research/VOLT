@@ -66,33 +66,6 @@
     border-radius: var(--radius-md);
 }
 
-.frame-status-badge {
-    font-size: 0.75rem;
-    padding: 0.2rem 0.5rem;
-    border-radius: var(--radius-xs);
-}
-
-.frame-status-badge.status-queued {
-    color: var(--status-warning);
-    opacity: 0.8;
-}
-
-.frame-status-badge.status-running {
-    color: var(--status-info);
-}
-
-.frame-status-badge.status-completed {
-    color: var(--status-success);
-}
-
-.frame-status-badge.status-failed {
-    color: var(--status-error);
-}
-
-.frame-status-badge.status-partial {
-    color: var(--status-warning);
-}
-
 .job-group-toggle:focus-visible,
 .frame-job-group-toggle:focus-visible {
     outline: none;

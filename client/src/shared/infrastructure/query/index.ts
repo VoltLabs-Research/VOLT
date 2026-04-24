@@ -13,8 +13,7 @@ export { createFolderResourceQueries } from './create-folder-resource-queries';
 
 export type {
     QueryOptions,
-    MutationOptions,
-    InfiniteQueryOptions
+    MutationOptions
 } from './create-paginated-query';
 
 export { default as queryClient } from './query-client';

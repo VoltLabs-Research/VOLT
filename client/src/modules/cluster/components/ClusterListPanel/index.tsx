@@ -4,8 +4,16 @@ import { useRegenerateTeamClusterEnrollmentTokenMutation } from '@/modules/clust
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
 import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluster-waiting';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { Box, Stack, Row, Text, Button, IconButton, StatusDot, Tooltip, openModal } from '@/shared/presentation/primitives';
-import type { StatusDotTone } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Button from '@/shared/presentation/primitives/Button';
+import IconButton from '@/shared/presentation/primitives/IconButton';
+import { openModal } from '@/shared/presentation/primitives/Modal';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import StatusDot from '@/shared/presentation/primitives/StatusDot';
+import Text from '@/shared/presentation/primitives/Text';
+import Tooltip from '@/shared/presentation/primitives/Tooltip';
+import type { StatusDotTone } from '@/shared/presentation/primitives/StatusDot';
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';

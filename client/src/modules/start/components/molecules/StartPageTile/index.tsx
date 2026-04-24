@@ -1,3 +1,4 @@
+import Heading from '@/shared/presentation/primitives/Heading';
 import { useStartPageTile } from '../../../hooks/use-start-page-tile';
 import './StartPageTile.css';
 import { format, formatDistanceToNowStrict } from 'date-fns';
@@ -61,7 +62,7 @@ export default function StartPageTile({ page }: StartPageTileProps) {
                 <div className='metro-tile-shine' />
 
                 <div className='metro-tile-overlay'>
-                    <h3 className='metro-tile-name'>{page.title}</h3>
+                    <Heading level={3} className='metro-tile-name'>{page.title}</Heading>
                     <span className='metro-tile-time'>{timeString}</span>
                 </div>
             </button>

@@ -1,6 +1,6 @@
-import { Button } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
 import { useCallback } from 'react';
-import { CollapsibleSection } from '@/shared/presentation/primitives';
+import CollapsibleSection from '@/shared/presentation/primitives/CollapsibleSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { Plus } from 'lucide-react';
 import useNodeCollectionForm from '@/modules/plugin/hooks/plugin/use-node-collection-form';

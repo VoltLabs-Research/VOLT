@@ -1,4 +1,4 @@
-import { Button } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
 import { useTestSSHConnectionMutation } from '@/modules/ssh/hooks/queries';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { showPromise } from '@/shared/presentation/hooks/toast';

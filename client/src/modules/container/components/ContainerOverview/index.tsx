@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { format, formatDistanceStrict } from 'date-fns';
 import EditableKeyValueCard from '@/shared/presentation/components/EditableKeyValueCard';
-import { Box, Button, Heading, KeyValueList, KeyValueRow, Row, Stack, Text } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Button from '@/shared/presentation/primitives/Button';
+import Divider from '@/shared/presentation/primitives/Divider';
+import Heading from '@/shared/presentation/primitives/Heading';
+import KeyValueList, { KeyValueRow } from '@/shared/presentation/primitives/KeyValueList';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import { formatSize } from '@/shared/utils/format';
 import ContainerMetricTile from '../ContainerMetricTile';
 import ContainerInspectorList from '../ContainerInspectorList';
@@ -182,7 +189,7 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                 />
             </Box>
 
-            <hr className='container-overview-divider' />
+            <Divider className='mt-2 mb-2' />
 
             <Box className='container-overview-inspector'>
                 <ContainerInspectorList title='Information' rows={inspectorRows} />

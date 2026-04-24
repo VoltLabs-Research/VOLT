@@ -5,9 +5,14 @@ import { useTriggerRasterizationMutation } from '@/modules/raster/hooks/queries'
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { trajectoryQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import useTeamJobsStore from '@/modules/jobs/stores/use-team-jobs-store';
-import { IconButton, Loader, Popover, Stack, Row, Text } from '@/shared/presentation/primitives';
-import { PopoverMenu } from '@/shared/presentation/primitives';
-import { PopoverMenuItem } from '@/shared/presentation/primitives';
+import IconButton from '@/shared/presentation/primitives/IconButton';
+import Loader from '@/shared/presentation/primitives/Loader';
+import Popover from '@/shared/presentation/primitives/Popover';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
+import PopoverMenu from '@/shared/presentation/primitives/PopoverMenu';
+import PopoverMenuItem from '@/shared/presentation/primitives/PopoverMenuItem';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { formatDistanceToNow } from 'date-fns';

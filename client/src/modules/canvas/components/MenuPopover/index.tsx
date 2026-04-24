@@ -1,5 +1,7 @@
-import { Button, Popover } from '@/shared/presentation/primitives';
-import { PopoverMenu } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Divider from '@/shared/presentation/primitives/Divider';
+import Popover from '@/shared/presentation/primitives/Popover';
+import PopoverMenu from '@/shared/presentation/primitives/PopoverMenu';
 import type { MenuConfig, MenuItem } from '../TopToolbarMenus';
 
 import { MenuItemType } from '../TopToolbarMenus';
@@ -28,7 +30,7 @@ const renderMenuItemShortcut = (item: MenuItem) => {
 
 const createMenuItemRenderer = (close: () => void) => (item: MenuItem, index: number) => {
     if (item.type === MenuItemType.Separator) {
-        return <div key={index} className="canvas-menu-separator" role="separator" aria-orientation="horizontal" />;
+        return <Divider key={index} />;
     }
 
     const handleClick = () => {

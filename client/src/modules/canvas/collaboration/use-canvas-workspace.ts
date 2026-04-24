@@ -255,11 +255,15 @@ const useCanvasWorkspace = ({
     }, [trajectoryId, currentUserId, navigate]);
 
     const peersInLobby = lobbyUsers.filter((user) => user.id !== currentUserId);
+    const collaborationOwner = !isOwner && effectiveOwnerId
+        ? lobbyUsers.find((user) => user.id === effectiveOwnerId)
+        : undefined;
 
     return {
         lobbyUsers,
         peersInLobby,
         workspaceViewers,
+        collaborationOwner,
         ownerId: effectiveOwnerId,
         isOwner,
         readOnly: !isOwner,

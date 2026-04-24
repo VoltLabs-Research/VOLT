@@ -1,6 +1,6 @@
 import { getModelListingRoute } from './populated-model-routes';
 import { isRecord } from '@/shared/utils/type-guards';
-import { Popover } from '@/shared/presentation/primitives';
+import Popover from '@/shared/presentation/primitives/Popover';
 import './PopulatedCellPopover.css';
 import { useMemo } from 'react';
 import { ArrowUpRight } from 'lucide-react';

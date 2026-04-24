@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
-import { EmptyState } from '@/shared/presentation/primitives';
+import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import MessageListSkeleton from '../MessageListSkeleton';
 import AutoScrollList from '@/shared/presentation/components/AutoScrollList';
-import { Box, Text } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Text from '@/shared/presentation/primitives/Text';
 import type { ChatMessage } from '@/modules/chat/api/entities/message';
 import './MessageList.css';
 

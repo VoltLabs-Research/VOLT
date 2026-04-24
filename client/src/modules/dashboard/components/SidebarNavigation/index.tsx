@@ -7,7 +7,8 @@ import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-
 import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
 import SidebarExpandableSection from '@/shared/presentation/components/SidebarExpandableSection';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
-import { Box, Tooltip } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useMemo } from 'react';

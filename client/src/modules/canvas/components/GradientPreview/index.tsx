@@ -1,5 +1,6 @@
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
-import { Box, Row } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Row from '@/shared/presentation/primitives/Row';
 import { useState, useRef } from 'react';
 
 import './GradientPreview.css';

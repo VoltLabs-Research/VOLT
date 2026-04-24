@@ -18,6 +18,7 @@ import useResizable from '../../hooks/use-resizable';
 import useViewportNarrow from '../../hooks/use-viewport-narrow';
 import useDownloadTrajectoryAnalyses from '@/modules/trajectory/hooks/trajectory/use-download-trajectory-analyses';
 import useDownloadTrajectory from '@/modules/trajectory/hooks/trajectory/use-download-trajectory';
+import CanvasBanners from '../CanvasBanners';
 import PreloadingOverlay from '../PreloadingOverlay';
 import ResizeHandle from '../ResizeHandle';
 import ExposureSettingsWidget from '../ExposureSettingsWidget';
@@ -43,12 +44,19 @@ import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useCanvasAccessStore, useCanvasCanCollaborate } from '@/modules/canvas/api/access';
 import { Download, ExternalLink, PanelRight } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 import ScriptingWorkspace from '@/modules/scripting/components/ScriptingWorkspace';
-import { EmptyState } from '@/shared/presentation/primitives';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
+import NotFoundState from '@/shared/presentation/components/NotFoundState';
+import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import ErrorBoundary from '@/shared/presentation/components/ErrorBoundary';
-import { Button, Tooltip, openModal, Row, Box, Stack } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Button from '@/shared/presentation/primitives/Button';
+import { openModal } from '@/shared/presentation/primitives/Modal';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import useTip from '@/shared/tips/use-tip';
 
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
@@ -79,7 +87,10 @@ const CanvasPage = () => {
         availableTimesteps,
         currentTimestep,
         isLoading: trajectoryLoading,
-        access: canvasAccess
+        error: trajectoryError,
+        access: canvasAccess,
+        accessDenied,
+        accessDeniedMessage
     } = useCanvasCoordinator({ trajectoryId });
 
     const setCanvasAccess = useCanvasAccessStore((state) => state.setAccess);
@@ -113,6 +124,7 @@ const CanvasPage = () => {
     const canCollaborate = useCanvasCanCollaborate();
     const {
         peersInLobby,
+        collaborationOwner,
         ownerId: workspaceOwnerId,
         isOwner: isWorkspaceOwner,
         navigateToWorkspace
@@ -121,6 +133,11 @@ const CanvasPage = () => {
         ownerId: ownerIdParam,
         enabled: !!trajectoryId && canCollaborate
     });
+    const navigate = useNavigate();
+    const leaveCollaboration = useCallback(() => {
+        if (!trajectoryId) return;
+        navigate(`/canvas/${trajectoryId}`, { replace: true });
+    }, [navigate, trajectoryId]);
     const { cursors: workspaceCursors } = useWorkspaceCursors({
         trajectoryId,
         ownerId: workspaceOwnerId,
@@ -144,10 +161,12 @@ const CanvasPage = () => {
         setCurrentScope('canvas');
     }, [setCurrentScope]);
 
-    const { isModelLoading, didPreload, isPlaying } = useEditorStore(useShallow((s) => ({
+    const { isModelLoading, didPreload, isPlaying, isPreloading, preloadProgress } = useEditorStore(useShallow((s) => ({
         isModelLoading: s.isModelLoading,
         didPreload: s.didPreload,
-        isPlaying: s.isPlaying
+        isPlaying: s.isPlaying,
+        isPreloading: s.isPreloading,
+        preloadProgress: s.preloadProgress
     })));
 
     const sceneConfig = useFractalSceneConfig();
@@ -194,7 +213,7 @@ const CanvasPage = () => {
             return;
         }
 
-        setActiveWorkspace(CanvasWorkspace.Modeling, { replace: true });
+        setActiveWorkspace(CanvasWorkspace.Scene, { replace: true });
     }, [isLocalGlbViewer, setActiveWorkspace]);
 
     const wasLocalGlbViewerRef = useRef(isLocalGlbViewer);
@@ -214,12 +233,23 @@ const CanvasPage = () => {
     }, [trajectoryId, isLocalGlbViewer]);
 
     const hasFrames = !!(trajectory?.frames && trajectory.frames.length > 0);
+    const trajectoryMissing = Boolean(!trajectoryLoading && trajectoryError && !trajectory && trajectoryId);
+    const showNoFramesState = Boolean(
+        !isLocalGlbViewer
+        && !isScriptingWorkspace
+        && !isRasterWorkspace
+        && trajectory
+        && !hasFrames
+    );
     const showLoading = useMemo(() =>
         isLocalGlbViewer
             ? false
             : trajectoryLoading || !trajectory || (hasFrames && ((isModelLoading && !(didPreload && isPlaying)) || currentTimestep === undefined)),
         [isLocalGlbViewer, isModelLoading, didPreload, isPlaying, trajectory, hasFrames, currentTimestep, trajectoryLoading]
     );
+    const overlayActive = !isLocalGlbViewer && !showNoFramesState && (showLoading || isPreloading);
+    const overlayTitle = isPreloading ? 'Setting up your scene…' : 'Loading trajectory…';
+    const overlayProgress = isPreloading ? preloadProgress : undefined;
 
     const rightPanel = useResizable({
         direction: ResizeDirection.Horizontal,
@@ -433,10 +463,42 @@ const CanvasPage = () => {
             );
         }
 
+        if (showNoFramesState) {
+            return (
+                <Row justify='center' width='max' height='max' className='canvas-viewport-state'>
+                    <EmptyState
+                        title='No timesteps yet'
+                        description='This trajectory finished uploading but has no timesteps processed yet. Once ingestion completes they will appear here automatically.'
+                    />
+                </Row>
+            );
+        }
+
         return undefined;
     })();
 
     const rightOverlaySize = !isLocalGlbViewer && !isNarrowViewport ? rightPanel.size : 0;
+
+    if (accessDenied) {
+        return (
+            <Box display='flex' height='vh-max' width='vw-max' className='canvas-editor-root'>
+                <AccessDenied
+                    title={accessDeniedMessage ?? 'Access denied'}
+                    description='You do not have permission to view this trajectory. Ask a team administrator to grant you access.'
+                />
+            </Box>
+        );
+    }
+
+    if (trajectoryMissing) {
+        return (
+            <Box display='flex' height='vh-max' width='vw-max' className='canvas-editor-root'>
+                <NotFoundState />
+            </Box>
+        );
+    }
+
+    const isGuest = !isLocalGlbViewer && canvasAccess ? !canvasAccess.hasTeamMembership : false;
 
     return (
         <Box
@@ -448,7 +510,11 @@ const CanvasPage = () => {
             className={`canvas-editor-root${isNarrowViewport ? ' canvas-editor-root--narrow' : ''}`}
             style={{ '--canvas-right-overlay-size': `${rightOverlaySize}px` } as React.CSSProperties}
         >
-            <PreloadingOverlay />
+            <PreloadingOverlay
+                active={Boolean(overlayActive)}
+                title={overlayTitle}
+                progress={overlayProgress}
+            />
 
             {isNarrowViewport && rightDrawerOpen && (
                 <button
@@ -474,6 +540,16 @@ const CanvasPage = () => {
                     contextualActions={toolbarContextualActions}
                 />
 
+                {!isLocalGlbViewer && (
+                    <CanvasBanners
+                        isGuest={isGuest}
+                        isNarrowViewport={isNarrowViewport}
+                        collaborationOwner={collaborationOwner}
+                        isWorkspaceOwner={isWorkspaceOwner}
+                        onLeaveCollaboration={leaveCollaboration}
+                    />
+                )}
+
                 <Stack flex='1' overflow='hidden' position='relative' minH='0' className="canvas-editor-stage">
                     <Box display='flex' direction='column' position='absolute' inset='0' overflow='hidden' className="canvas-center-viewport" ref={viewportContainerRef as React.RefObject<HTMLDivElement>}>
                         <ErrorBoundary
@@ -491,12 +567,11 @@ const CanvasPage = () => {
                                 forcedGlbUrl={forcedGlbUrl}
                                 showGrid={showGrid}
                                 showGizmo={showGizmo}
-                                isLoading={isRasterWorkspace ? false : showLoading}
                                 sceneRef={sceneRef}
                                 bodyContent={viewportBodyContent}
-                                hideGradient={isScriptingWorkspace || isRasterWorkspace}
-                                renderScene={!isScriptingWorkspace && !isRasterWorkspace}
-                                showSceneActions={!isRasterWorkspace}
+                                hideGradient={isScriptingWorkspace || isRasterWorkspace || showNoFramesState}
+                                renderScene={!isScriptingWorkspace && !isRasterWorkspace && !showNoFramesState}
+                                showSceneActions={!isRasterWorkspace && !showNoFramesState}
                             />
                         </ErrorBoundary>
                         <WorkspaceCursorsOverlay

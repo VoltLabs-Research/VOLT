@@ -1,4 +1,4 @@
-import { Button } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
 import { LuPanelRight } from 'react-icons/lu';
 
 interface SidebarHeaderProps {

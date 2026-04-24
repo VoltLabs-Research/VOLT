@@ -1,6 +1,12 @@
 import JsonTree from '@/modules/plugin/components/plugin/JsonTree';
 import DynamicIcon from '@/shared/presentation/components/DynamicIcon';
-import { Box, Row, Stack, Tag, Text } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Button from '@/shared/presentation/primitives/Button';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Tag from '@/shared/presentation/primitives/Tag';
+import Text from '@/shared/presentation/primitives/Text';
 import { DebugNodeStatus, usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import type { DebugTraceNode } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import type { INodeData } from '@/modules/plugin/api/entities/plugin/workflow';
@@ -281,7 +287,7 @@ const BaseNode = ({
                 <Tag
                     size='xs'
                     tone='success'
-                    className='p-absolute top-0 center-x font-weight-6 workflow-node-overhead-badge workflow-node-overhead-badge--completed'
+                    className='p-absolute top-0 center-x font-weight-6 workflow-node-overhead-badge'
                 >
                     {durationLabel}
                 </Tag>
@@ -291,7 +297,7 @@ const BaseNode = ({
                 <Tag
                     size='xs'
                     tone='danger'
-                    className='p-absolute top-0 center-x font-weight-6 workflow-node-overhead-badge workflow-node-overhead-badge--failed'
+                    className='p-absolute top-0 center-x font-weight-6 workflow-node-overhead-badge'
                 >
                     Error
                 </Tag>
@@ -301,7 +307,7 @@ const BaseNode = ({
                 <Tag
                     size='xs'
                     tone='neutral'
-                    className='p-absolute top-0 center-x font-weight-6 workflow-node-overhead-badge workflow-node-overhead-badge--skipped'
+                    className='p-absolute top-0 center-x font-weight-6 workflow-node-overhead-badge'
                 >
                     Skipped
                 </Tag>
@@ -328,7 +334,7 @@ const BaseNode = ({
                         <DynamicIcon iconName={config.icon} />
                     </span>
                     <Stack gap='02' className='f-1'>
-                        <h3>{nodeTitle ?? config.label}</h3>
+                        <Heading level={3}>{nodeTitle ?? config.label}</Heading>
                         {description && (
                             <Text as='p' tone='muted' className='overflow-hidden workflow-node-description'>
                                 {description}
@@ -343,23 +349,29 @@ const BaseNode = ({
             {showDebugActions && (
                 <Box position='absolute' className='center-x items-center workflow-node-btn-group'>
                     {hasInspectableOutput && (
-                        <button
-                            className={`b-soft radius-full cursor-pointer font-weight-6 workflow-node-data-btn ${isExpanded ? 'workflow-node-data-btn--active' : ''}`}
+                        <Button
+                            variant='ghost'
+                            size='sm'
+                            shape='pill'
+                            leftIcon={<Database size={11} />}
+                            className={`b-soft workflow-node-data-btn ${isExpanded ? 'workflow-node-data-btn--active' : ''}`}
                             onClick={handleDataToggle}
                         >
-                            <Database size={11} />
                             Data
-                        </button>
+                        </Button>
                     )}
 
                     {hasLog && (
-                        <button
-                            className={`b-soft radius-full cursor-pointer font-weight-6 workflow-node-data-btn ${showLog ? 'workflow-node-data-btn--active' : ''}`}
+                        <Button
+                            variant='ghost'
+                            size='sm'
+                            shape='pill'
+                            leftIcon={<Terminal size={11} />}
+                            className={`b-soft workflow-node-data-btn ${showLog ? 'workflow-node-data-btn--active' : ''}`}
                             onClick={handleLogToggle}
                         >
-                            <Terminal size={11} />
                             Execution Log
-                        </button>
+                        </Button>
                     )}
                 </Box>
             )}
@@ -437,9 +449,13 @@ const BaseNode = ({
                         <Terminal size={10} />
                         <Text as='p' size='sm' weight='bold'>Execution Log</Text>
                         {exitCode !== undefined && (
-                            <span className={`radius-full font-weight-6 workflow-node-exec-log-exit ${exitCode === 0 ? 'workflow-node-exec-log-exit--ok' : 'workflow-node-exec-log-exit--fail'}`}>
+                            <Tag
+                                size='xs'
+                                tone={exitCode === 0 ? 'success' : 'danger'}
+                                className='font-mono workflow-node-exec-log-exit'
+                            >
                                 exit {exitCode}
-                            </span>
+                            </Tag>
                         )}
                     </Row>
                     <pre className='m-0 p-05 y-auto workflow-node-exec-log-content'>

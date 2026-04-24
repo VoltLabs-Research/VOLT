@@ -1,8 +1,8 @@
-import { Select } from '@/shared/presentation/primitives';
+import Select from '@/shared/presentation/primitives/Select';
 import '@/shared/presentation/components/FormFieldRHF/FormField.css';
-import { Row } from '@/shared/presentation/primitives';
+import Row from '@/shared/presentation/primitives/Row';
 import { useMemo, useCallback } from 'react';
-import type { SelectOption } from '@/shared/presentation/primitives';
+import type { SelectOption } from '@/shared/presentation/primitives/Select';
 
 interface SelectedTimestepsFieldProps {
     availableTimesteps: number[];

@@ -65,5 +65,3 @@ export type SurfaceVariant =
     | 'elevated'  // card-elevated
     | 'danger'    // zone-danger
     | 'warning';  // zone-warning
-
-export type AlertTone = 'info' | 'success' | 'warning' | 'danger';

@@ -141,11 +141,6 @@ export const getDefaultRendererRuntimeSettings = (): RendererRuntimeSettings => 
     ...RENDERER_RUNTIME_DEFAULTS
 });
 
-export const getDefaultRendererSettings = (): RendererSettings => ({
-    create: getDefaultRendererCreateSettings(),
-    runtime: getDefaultRendererRuntimeSettings()
-});
-
 /** Maps a renderer tone-mapping mode to the Three.js runtime constant. */
 export const resolveToneMapping = (mode: ToneMappingMode): ToneMapping => {
     if (mode === ToneMappingMode.ACESFilmic) {

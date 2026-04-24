@@ -1,5 +1,5 @@
 import './ChartContainer.css';
-import { Skeleton } from '@/shared/presentation/primitives';
+import Skeleton from '@/shared/presentation/primitives/Skeleton';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 

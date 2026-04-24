@@ -6,11 +6,6 @@ interface TeamPermissionScopeInput {
     permissions: string[];
 };
 
-interface TeamPermissionAccessInput extends TeamPermissionScopeInput {
-    requiredPermissions?: string[];
-    mode?: PermissionMode;
-};
-
 export const hasPermission = (permissions: string[], permission: string): boolean => {
     return permissions.includes('*') || permissions.includes(permission);
 };
@@ -43,20 +38,4 @@ export const isPermissionScopeReady = ({
 }: Pick<TeamPermissionScopeInput, 'selectedTeamId' | 'permissionsTeamId'>): boolean => {
     if (!selectedTeamId) return false;
     return permissionsTeamId === selectedTeamId;
-};
-
-export const canAccessTeamPermissions = ({
-    selectedTeamId,
-    permissionsTeamId,
-    permissions,
-    requiredPermissions = [],
-    mode = 'any'
-}: TeamPermissionAccessInput): boolean => {
-    const scopedPermissions = getScopedPermissions({
-        selectedTeamId,
-        permissionsTeamId,
-        permissions
-    });
-
-    return canAccessByPermissions(scopedPermissions, requiredPermissions, mode);
 };

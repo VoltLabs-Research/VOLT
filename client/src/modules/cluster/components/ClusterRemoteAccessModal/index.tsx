@@ -1,5 +1,7 @@
 import { getTeamClusterRemoteAccessDescription, getTeamClusterRemoteAccessLabel } from '@/modules/cluster/utilities/team-cluster-remote-access';
-import { Stack, Text, Modal, closeModal } from '@/shared/presentation/primitives';
+import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import { useState } from 'react';

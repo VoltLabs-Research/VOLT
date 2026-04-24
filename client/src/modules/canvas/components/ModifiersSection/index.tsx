@@ -1,6 +1,10 @@
-import { Button, Stack, Row, Text } from '@/shared/presentation/primitives';
-import { ContextMenuPopover } from '@/shared/presentation/primitives';
-import { EmptyState } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
+import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopover';
+import EmptyState from '@/shared/presentation/primitives/EmptyState';
+import Skeleton from '@/shared/presentation/primitives/Skeleton';
 import { Check, ChevronLeft, Play, X } from 'lucide-react';
 
 import { ExecState } from '../../hooks/use-plugin-execution';
@@ -58,10 +62,11 @@ const ModifierPopoverItem = ({
             type='button'
             className='canvas-plugin-popover-trigger collapsible-section-trigger d-flex items-center gap-05 u-select-none'
             aria-label={`${option.title} settings`}
+            title={option.title}
             data-modifier-id={option.modifierId}
         >
-            <Row gap='05' className='collapsible-section-trigger-content'>
-                <Text size='sm' tone='secondary'>{option.title}</Text>
+            <Row gap='05' className='collapsible-section-trigger-content canvas-plugin-popover-title-row'>
+                <Text size='sm' tone='secondary' truncate>{option.title}</Text>
             </Row>
             {hasContent && (
                 <span className='canvas-plugin-popover-indicator d-flex items-center color-muted' aria-hidden='true'>
@@ -135,7 +140,7 @@ const ModifiersSection = ({
                 {Array.from({ length: SKELETON_ROWS }).map((_, i) => (
                     <div key={`mod-skel-${i}`} className="canvas-section">
                         <Row gap='05' p='05'>
-                            <span className="canvas-modifier-skeleton-title" />
+                            <Skeleton variant='text' width='60%' height={12} />
                         </Row>
                     </div>
                 ))}

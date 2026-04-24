@@ -3,6 +3,3 @@ export interface UpdateTrajectoryInputDTO {
     name?: string;
     isPublic?: boolean;
 };
-
-export interface UpdateTrajectoryOutputDTO {
-};

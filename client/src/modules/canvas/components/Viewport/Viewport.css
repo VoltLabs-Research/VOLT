@@ -1,9 +1,3 @@
-.canvas-viewport-divider {
-    width: 1px;
-    height: 16px;
-    background: var(--color-border-soft);
-}
-
 .canvas-viewport-loading {
     background: var(--color-overlay);
     z-index: 2;

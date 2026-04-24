@@ -1,4 +1,6 @@
-import { Avatar, Row, Text } from '@/shared/presentation/primitives';
+import Avatar from '@/shared/presentation/primitives/Avatar';
+import Row from '@/shared/presentation/primitives/Row';
+import Text from '@/shared/presentation/primitives/Text';
 import './AvatarStack.css';
 import type { User } from '@/modules/auth/api/entities/user';
 

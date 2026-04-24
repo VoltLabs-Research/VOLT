@@ -1,6 +1,6 @@
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 
-import type { SelectOption } from '@/shared/presentation/primitives';
+import type { SelectOption } from '@/shared/presentation/primitives/Select';
 
 interface PluginClusterFieldProps {
     fieldKey: string;

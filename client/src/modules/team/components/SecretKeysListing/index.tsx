@@ -1,7 +1,8 @@
-import { Button } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Tag from '@/shared/presentation/primitives/Tag';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
-import { openModal } from '@/shared/presentation/primitives';
+import { openModal } from '@/shared/presentation/primitives/Modal';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import { dateColumn, statusColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
@@ -19,7 +20,6 @@ import { useCallback } from 'react';
 import { sileo } from 'sileo';
 import type { SecretKey } from '@/modules/team/api/entities/secret-key/secret-key';
 import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
-import './SecretKeysListing.css';
 import { useNavigate } from 'react-router-dom';
 const SECRET_KEYS_QUERY_KEY = ['secret-keys'] as const;
 
@@ -49,7 +49,7 @@ const COLUMNS: ColumnConfig<SecretKey>[] = [
     {
         key: 'keyPrefix',
         title: 'Prefix',
-        render: (_value, key) => <span className='secret-keys-listing-prefix-badge'>{key.keyPrefix}...</span>,
+        render: (_value, key) => <Tag tone='neutral' variant='soft' size='xs' shape='square' className='font-mono'>{key.keyPrefix}...</Tag>,
         skeleton: PREFIX_COLUMN_SKELETON
     },
     {

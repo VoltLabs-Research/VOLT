@@ -1,6 +1,7 @@
-import { Area, AreaChart, ResponsiveContainer, YAxis } from 'recharts';
-import { useId, useMemo } from 'react';
-import { Box, Row, StatCard } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Row from '@/shared/presentation/primitives/Row';
+import Sparkline from '@/shared/presentation/primitives/Sparkline';
+import StatCard from '@/shared/presentation/primitives/StatCard';
 import './ContainerMetricTile.css';
 
 export interface MetricSecondaryStat {
@@ -31,21 +32,6 @@ const ContainerMetricTile = ({
     isLoading = false,
     idleHint = 'Idle'
 }: ContainerMetricTileProps) => {
-    const gradientId = useId();
-    const fillId = `${gradientId}-metric-fill`;
-
-    const sparklineData = useMemo(() => {
-        if (!history.length) {
-            return [{ v: 0 }, { v: 0 }];
-        }
-
-        if (history.length === 1) {
-            return [{ v: history[0] }, { v: history[0] }];
-        }
-
-        return history.map((v) => ({ v }));
-    }, [history]);
-
     const hasHistory = history.length > 0;
     const stateClass = isLoading || !hasHistory ? 'container-metric-tile--idle' : '';
     const displayValue = hasHistory ? value : idleHint;
@@ -53,30 +39,17 @@ const ContainerMetricTile = ({
     const footer = (
         <>
             <Box className='container-metric-tile-sparkline' aria-hidden='true'>
-                <ResponsiveContainer width='100%' height={SPARKLINE_HEIGHT}>
-                    <AreaChart
-                        data={sparklineData}
-                        margin={{ top: 2, right: 0, left: 0, bottom: 0 }}
-                    >
-                        <defs>
-                            <linearGradient id={fillId} x1='0' y1='0' x2='0' y2='1'>
-                                <stop offset='0%' stopColor={color} stopOpacity={0.18} />
-                                <stop offset='100%' stopColor={color} stopOpacity={0} />
-                            </linearGradient>
-                        </defs>
-                        <YAxis hide domain={['dataMin', (max: number) => Math.max(max, 1)]} />
-                        <Area
-                            type='monotone'
-                            dataKey='v'
-                            stroke={color}
-                            strokeWidth={1.5}
-                            fill={`url(#${fillId})`}
-                            isAnimationActive={false}
-                            dot={false}
-                            activeDot={false}
-                        />
-                    </AreaChart>
-                </ResponsiveContainer>
+                <Sparkline
+                    color={color}
+                    values={history}
+                    height={SPARKLINE_HEIGHT}
+                    strokeWidth={1.5}
+                    fillOpacityStart={0.18}
+                    fillOpacityEnd={0}
+                    interpolation='monotone'
+                    animate={false}
+                    minDataMax={1}
+                />
             </Box>
 
             {secondary && secondary.length > 0 && (

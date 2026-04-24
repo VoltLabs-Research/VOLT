@@ -3,7 +3,9 @@ import ClustersEmptyState from '@/modules/cluster/components/ClustersEmptyState'
 import MetricsCards from '@/modules/cluster/components/MetricsCards';
 import useClusterMonitoringPage from '@/modules/cluster/hooks/use-cluster-monitoring-page';
 import { getClusterMetricsRecoveryState } from '@/modules/cluster/utilities/cluster-live-metrics-status';
-import { Box, Stack, Loader } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Loader from '@/shared/presentation/primitives/Loader';
+import Stack from '@/shared/presentation/primitives/Stack';
 import RecoveryState from '@/shared/presentation/components/RecoveryState';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';

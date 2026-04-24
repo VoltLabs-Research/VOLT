@@ -1,6 +1,8 @@
 import { profileSchema } from './validation-schema';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import { InlineStatus, Loader, Stack } from '@/shared/presentation/primitives';
+import InlineStatus from '@/shared/presentation/primitives/InlineStatus';
+import Loader from '@/shared/presentation/primitives/Loader';
+import Stack from '@/shared/presentation/primitives/Stack';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';

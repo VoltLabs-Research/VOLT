@@ -1,15 +1,19 @@
 import AIComposer from '@/modules/ai/components/AIComposer';
 import AIConversationThread from '@/modules/ai/components/AIConversationThread';
 import useAIPage from '@/modules/ai/hooks/use-ai-page';
-import { EmptyState } from '@/shared/presentation/primitives';
+import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import { Select } from '@/shared/presentation/primitives';
-import { Box, IconButton, Row, Stack, Tooltip } from '@/shared/presentation/primitives';
+import Select from '@/shared/presentation/primitives/Select';
+import Box from '@/shared/presentation/primitives/Box';
+import IconButton from '@/shared/presentation/primitives/IconButton';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { IoAddOutline, IoCloseOutline, IoExpandOutline } from 'react-icons/io5';
 import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
 import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
-import type { SelectOption } from '@/shared/presentation/primitives';
+import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 interface LatexAIPanelProps {

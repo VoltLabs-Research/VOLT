@@ -1,6 +1,8 @@
-import { Button, IconButton, Popover } from '@/shared/presentation/primitives';
-import { PopoverMenu } from '@/shared/presentation/primitives';
-import { PopoverMenuItem } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import IconButton from '@/shared/presentation/primitives/IconButton';
+import Popover from '@/shared/presentation/primitives/Popover';
+import PopoverMenu from '@/shared/presentation/primitives/PopoverMenu';
+import PopoverMenuItem from '@/shared/presentation/primitives/PopoverMenuItem';
 import { Copy, EllipsisVertical, RefreshCw, Trash2 } from 'lucide-react';
 import './InviteCodeSection.css';
 

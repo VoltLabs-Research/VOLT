@@ -1,6 +1,11 @@
 import CopyableField from '@/shared/presentation/components/CopyableField';
 import TrajectoryVisibilityToggle from '@/modules/trajectory/components/TrajectoryVisibilityToggle';
-import { CloseButton, Stack, Row, Heading, Text, Divider } from '@/shared/presentation/primitives';
+import CloseButton from '@/shared/presentation/primitives/CloseButton';
+import Divider from '@/shared/presentation/primitives/Divider';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import { useMemo } from 'react';
 
 import './TrajectorySharePanel.css';

@@ -1,4 +1,8 @@
-import { AsyncBoundary, Button, Skeleton, StatCard, Tag } from '@/shared/presentation/primitives';
+import AsyncBoundary from '@/shared/presentation/primitives/AsyncBoundary';
+import Button from '@/shared/presentation/primitives/Button';
+import Skeleton from '@/shared/presentation/primitives/Skeleton';
+import StatCard from '@/shared/presentation/primitives/StatCard';
+import Tag from '@/shared/presentation/primitives/Tag';
 import { createTooltipRenderer } from '@/modules/team/components/secret-key/shared/chart-tooltip-renderer';
 import { CHART_COLORS } from '@/modules/team/utilities/secret-key/chart-helpers';
 import useSecretKeyUsage from '@/modules/team/hooks/secret-key/use-secret-key-usage';
@@ -408,7 +412,7 @@ export default function SecretKeyUsage() {
                                                 <Tag
                                                     size='xs'
                                                     shape='square'
-                                                    className='secret-key-usage-method-badge font-mono'
+                                                    className='font-mono font-weight-7'
                                                     style={{
                                                         color: METHOD_COLORS[req.method] || 'var(--color-text-muted)',
                                                         background: `color-mix(in srgb, ${METHOD_COLORS[req.method] || 'var(--color-text-muted)'} 12%, transparent)`

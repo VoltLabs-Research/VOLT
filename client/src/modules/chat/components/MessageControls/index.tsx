@@ -1,9 +1,11 @@
 import { COMMON_REACTIONS } from '@/modules/chat/api/entities/shared/chat-constants';
 import { IoHappyOutline, IoEllipsisVerticalOutline, IoCreateOutline, IoTrashOutline } from 'react-icons/io5';
 import EmojiPicker from '@/shared/presentation/components/EmojiPicker';
-import { Box, IconButton, Popover } from '@/shared/presentation/primitives';
-import { PopoverMenuItem } from '@/shared/presentation/primitives';
-import { PopoverMenu } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import IconButton from '@/shared/presentation/primitives/IconButton';
+import Popover from '@/shared/presentation/primitives/Popover';
+import PopoverMenuItem from '@/shared/presentation/primitives/PopoverMenuItem';
+import PopoverMenu from '@/shared/presentation/primitives/PopoverMenu';
 import './MessageControls.css';
 
 interface MessageControlsProps {

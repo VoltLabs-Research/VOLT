@@ -1,6 +1,12 @@
-import { ContextMenuPopover } from '@/shared/presentation/primitives';
-import WarningZone from '@/shared/presentation/components/WarningZone';
-import { Box, Button, IconButton, Loader, Row, Stack, Text } from '@/shared/presentation/primitives';
+import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopover';
+import Callout from '@/shared/presentation/primitives/Callout';
+import Box from '@/shared/presentation/primitives/Box';
+import Button from '@/shared/presentation/primitives/Button';
+import IconButton from '@/shared/presentation/primitives/IconButton';
+import Loader from '@/shared/presentation/primitives/Loader';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import { applyMonacoTheme, getMonacoThemeName } from '@/shared/presentation/utilities/ensure-monaco';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
 import Editor from '@monaco-editor/react';
@@ -14,7 +20,7 @@ import type { LatexEditorGroupId, LatexFileEntry, LatexWorkspaceSelection, Latex
 import { getAssetDisplayName, isWorkspaceImageFile, isWorkspacePdfFile, isWorkspaceTextLikeFile } from '@/modules/latex/utilities/workspace';
 import LatexPdfViewer from './LatexPdfViewer';
 import type { MenuOption } from '@/shared/presentation/types/menu';
-import { EmptyState } from '@/shared/presentation/primitives';
+import EmptyState from '@/shared/presentation/primitives/EmptyState';
 interface LatexEditorPanelProps {
     groupId: LatexEditorGroupId;
     isGroupActive: boolean;
@@ -548,7 +554,10 @@ const LatexEditorPanel = ({
             )}
             {activeFile && hasPendingRemoteUpdate && (
                 <Row justify='between' gap='1' p='075'>
-                    <WarningZone message={`A collaborator updated ${activeFile.name}. Apply the remote version or keep editing your local draft.`} />
+                    <Callout
+                        tone='warning'
+                        message={`A collaborator updated ${activeFile.name}. Apply the remote version or keep editing your local draft.`}
+                    />
                     <Row gap='05'>
                         <Button variant='ghost' intent='neutral' size='sm' onClick={onDismissRemoteUpdate}>
                             Keep mine

@@ -5,7 +5,10 @@ import useParticleFilter, {
     FilterAction,
     FilterOperator
 } from '../../hooks/use-particle-filter';
-import { Button, Stack, Row, Text } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { ParticleFilterCombinator } from '@/modules/trajectory/api/dtos/particle-filter';
 

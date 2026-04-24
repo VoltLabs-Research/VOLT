@@ -1,6 +1,8 @@
 import './DashboardOverviewSkeleton.css';
 import DashboardCard from '@/modules/dashboard/components/DashboardCard';
-import { Stack, Row, Skeleton } from '@/shared/presentation/primitives';
+import Row from '@/shared/presentation/primitives/Row';
+import Skeleton from '@/shared/presentation/primitives/Skeleton';
+import Stack from '@/shared/presentation/primitives/Stack';
 
 interface DashboardOverviewSkeletonProps {
     count?: number;

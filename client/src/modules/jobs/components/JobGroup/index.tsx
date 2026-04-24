@@ -2,7 +2,7 @@ import { frameGroupStatusClassNames } from '@/modules/jobs/utilities/frame-group
 import useJobGroupActions from '@/modules/jobs/hooks/use-job-group-actions';
 import FrameGroup from '@/modules/jobs/components/FrameGroup';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
-import { Box } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
 import JobGroupHeader from './JobGroupHeader';
 import JobGroupMenu from './JobGroupMenu';
 import '@/modules/jobs/components/JobGroup/JobGroup.css';

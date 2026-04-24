@@ -1,4 +1,4 @@
-import { Button } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
 import './SidebarNavItem.css';
 import { forwardRef } from 'react';
 import type { LucideIcon } from 'lucide-react';

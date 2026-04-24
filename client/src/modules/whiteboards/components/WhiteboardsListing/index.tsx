@@ -1,5 +1,6 @@
-import { Button } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
 import RenameWhiteboardModal from '@/modules/whiteboards/components/RenameWhiteboardModal';
+import Heading from '@/shared/presentation/primitives/Heading';
 import useDashboardHeaderContent from '@/modules/dashboard/hooks/use-dashboard-header-content';
 import useWhiteboardsListing, {
     MOVE_WHITEBOARD_MODAL_ID,
@@ -9,7 +10,7 @@ import useWhiteboardsListing, {
 import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
 import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
 import RenameFolderModal from '@/shared/presentation/components/RenameFolderModal';
-import { openModal } from '@/shared/presentation/primitives';
+import { openModal } from '@/shared/presentation/primitives/Modal';
 import { dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useTip from '@/shared/tips/use-tip';
@@ -108,7 +109,7 @@ const WhiteboardsListing = () => {
         globalSearchBreadcrumb
     });
 
-    const title = <h3 className='font-size-6 font-weight-5 sm:font-size-4 color-primary'>Whiteboards</h3>;
+    const title = <Heading level={3} size='3xl' className='sm:font-size-4'>Whiteboards</Heading>;
 
     const createNew = {
         buttonTitle: 'New Whiteboard',

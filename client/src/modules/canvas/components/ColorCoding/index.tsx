@@ -4,7 +4,8 @@ import GradientPreview from '../GradientPreview';
 
 import { memo } from 'react';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import { Button, Stack } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Stack from '@/shared/presentation/primitives/Stack';
 
 interface SelectOption {
     value: string;

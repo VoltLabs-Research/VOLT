@@ -7,21 +7,6 @@
     color: var(--accent-blue);
 }
 
-.validation-badge {
-    padding: 0.125rem 0.5rem;
-    border-radius: var(--radius-sm);
-}
-
-.validation-badge.validated {
-    background: var(--status-success-bg);
-    color: var(--status-success);
-}
-
-.validation-badge.not-validated {
-    background: var(--status-error-bg);
-    color: var(--status-error);
-}
-
 .exposure-count {
     min-width: 1.5rem;
     padding: 0.125rem 0.375rem;

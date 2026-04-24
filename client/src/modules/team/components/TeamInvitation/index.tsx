@@ -1,4 +1,9 @@
-import { Button } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Tag from '@/shared/presentation/primitives/Tag';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Row from '@/shared/presentation/primitives/Row';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Text from '@/shared/presentation/primitives/Text';
 import { useAcceptInvitationMutation, useInvitationDetailsQuery, useRejectInvitationMutation } from '@/modules/team/hooks/invitation/queries';
 import {
     getOnboardingRedirectPath,
@@ -112,25 +117,25 @@ export default function TeamInvitationTemplate() {
 
     if(loading){
         return (
-            <div className='team-invitation-page w-max vh-max d-flex items-center content-center'>
-                <div className='team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
-                    <p className='color-secondary'>Loading invitation...</p>
-                </div>
-            </div>
+            <Stack align='center' justify='center' width='max' height='vh-max' className='team-invitation-page'>
+                <Stack gap='1-5' align='center' textAlign='center' radius='lg' className='team-invitation-card'>
+                    <Text as='p' tone='secondary'>Loading invitation...</Text>
+                </Stack>
+            </Stack>
         );
     }
 
     if(displayError || !invitation || !invitation.team || !invitation.invitedBy){
         return (
-            <div className='team-invitation-page w-max vh-max d-flex items-center content-center'>
-                <div className='team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
+            <Stack align='center' justify='center' width='max' height='vh-max' className='team-invitation-page'>
+                <Stack gap='1-5' align='center' textAlign='center' radius='lg' className='team-invitation-card'>
                     <div className='team-invitation-icon-error'>
                         <XCircle size={48} />
                     </div>
-                    <h3 className='font-size-4 font-weight-6'>Invalid Invitation</h3>
-                    <p className='color-secondary'>
+                    <Heading level={3} size='xl' weight='bold'>Invalid Invitation</Heading>
+                    <Text as='p' tone='secondary'>
                         {displayError || 'This invitation is not valid or has expired'}
-                    </p>
+                    </Text>
                     <Button
                         variant='solid'
                         intent='brand'
@@ -138,8 +143,8 @@ export default function TeamInvitationTemplate() {
                     >
                         Back to Dashboard
                     </Button>
-                </div>
-            </div>
+                </Stack>
+            </Stack>
         );
     }
 
@@ -148,15 +153,15 @@ export default function TeamInvitationTemplate() {
 
     if(isExpired){
         return (
-            <div className='team-invitation-page w-max vh-max d-flex items-center content-center'>
-                <div className='team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
+            <Stack align='center' justify='center' width='max' height='vh-max' className='team-invitation-page'>
+                <Stack gap='1-5' align='center' textAlign='center' radius='lg' className='team-invitation-card'>
                     <div className='team-invitation-icon-warning'>
                         <Clock size={48} />
                     </div>
-                    <h3 className='font-size-4 font-weight-6'>Invitation Expired</h3>
-                    <p className='color-secondary'>
+                    <Heading level={3} size='xl' weight='bold'>Invitation Expired</Heading>
+                    <Text as='p' tone='secondary'>
                         This invitation expired on {expiresAt.toLocaleString()}
-                    </p>
+                    </Text>
                     <Button
                         variant='solid'
                         intent='brand'
@@ -164,57 +169,56 @@ export default function TeamInvitationTemplate() {
                     >
                         Back to Dashboard
                     </Button>
-                </div>
-            </div>
+                </Stack>
+            </Stack>
         );
     }
 
     return (
-        <div className='team-invitation-page w-max vh-max d-flex items-center content-center'>
-            <div className='team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
-                <div className='team-invitation-badge radius-full d-flex items-center gap-05'>
-                    <CheckCircle size={20} />
-                    <span>You've been invited!</span>
-                </div>
+        <Stack align='center' justify='center' width='max' height='vh-max' className='team-invitation-page'>
+            <Stack gap='1-5' align='center' textAlign='center' radius='lg' className='team-invitation-card'>
+                <Tag tone='success' variant='soft' size='md' leftIcon={<CheckCircle size={20} />}>
+                    You've been invited!
+                </Tag>
 
-                <h3 className='font-size-5 font-weight-6'>{invitation.team.name}</h3>
+                <Heading level={3} size='2xl' weight='bold'>{invitation.team.name}</Heading>
 
-                <p className='color-secondary'>
+                <Text as='p' tone='secondary'>
                     You've been invited to join this team
-                </p>
+                </Text>
 
-                <p className='font-size-2 color-tertiary'>
+                <Text as='p' size='md' className='color-tertiary'>
                     Invited by {invitation.invitedBy.firstName} {invitation.invitedBy.lastName}
-                </p>
+                </Text>
 
-                <div className='team-invitation-details radius-md d-flex gap-1 flex-wrap content-center'>
+                <Row gap='1' wrap justify='center' radius='md' className='team-invitation-details'>
                     <div className='team-invitation-detail text-center'>
-                        <span className='team-invitation-detail-label'>Email</span>
-                        <p className='team-invitation-detail-value d-flex items-center gap-025'>
+                        <Text as='span' className='team-invitation-detail-label'>Email</Text>
+                        <Row as='p' gap='025' className='team-invitation-detail-value'>
                             <Mail size={14} />
                             {invitation.email}
-                        </p>
+                        </Row>
                     </div>
                     <div className='team-invitation-detail text-center'>
-                        <span className='team-invitation-detail-label'>Invited</span>
-                        <p className='team-invitation-detail-value d-flex items-center gap-025'>
+                        <Text as='span' className='team-invitation-detail-label'>Invited</Text>
+                        <Row as='p' gap='025' className='team-invitation-detail-value'>
                             <Clock size={14} />
                             {new Date(invitation.createdAt).toLocaleDateString()}
-                        </p>
+                        </Row>
                     </div>
                     <div className='team-invitation-detail text-center'>
-                        <span className='team-invitation-detail-label'>Expires</span>
-                        <p className='team-invitation-detail-value'>
+                        <Text as='span' className='team-invitation-detail-label'>Expires</Text>
+                        <Text as='p' className='team-invitation-detail-value'>
                             {expiresAt.toLocaleString(undefined, {
                                 month: 'short',
                                 day: 'numeric',
                                 year: 'numeric'
                             })}
-                        </p>
+                        </Text>
                     </div>
-                </div>
+                </Row>
 
-                <div className='team-invitation-actions d-flex gap-1 w-max'>
+                <Row gap='1' width='max' className='team-invitation-actions'>
                     <Button
                         variant='solid'
                         intent='brand'
@@ -236,15 +240,14 @@ export default function TeamInvitationTemplate() {
                     >
                         Reject Invitation
                     </Button>
-                </div>
+                </Row>
 
                 {error && (
-                    <div className='team-invitation-error radius-sm d-flex items-center gap-025'>
-                        <AlertCircle size={16} />
+                    <Tag tone='danger' variant='soft' size='md' leftIcon={<AlertCircle size={16} />}>
                         {error}
-                    </div>
+                    </Tag>
                 )}
-            </div>
-        </div>
+            </Stack>
+        </Stack>
     );
 }

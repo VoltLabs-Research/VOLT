@@ -1,6 +1,6 @@
 import { row, PRESETS, checkbox, colorField, gridPosRows, gridRotRows } from '../../../CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
-import { Box } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
 
 import { useMemo } from 'react';
 import { IoGridOutline } from 'react-icons/io5';

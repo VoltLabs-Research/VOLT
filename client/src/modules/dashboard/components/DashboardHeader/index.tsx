@@ -6,7 +6,10 @@ import AIFloatingAssistantPanel from '@/modules/ai/components/AIFloatingAssistan
 import NotificationsPopover from '@/modules/notification/components/NotificationsPopover';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
-import { Box, Row, IconButton, Tooltip } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import IconButton from '@/shared/presentation/primitives/IconButton';
+import Row from '@/shared/presentation/primitives/Row';
+import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
 import { IoMenuOutline } from 'react-icons/io5';
 import { GoPersonAdd } from 'react-icons/go';

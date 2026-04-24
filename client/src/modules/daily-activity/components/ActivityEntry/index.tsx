@@ -1,6 +1,6 @@
 import './ActivityEntry.css';
 import { ACTIVITY_ICON, ACTIVITY_ACCENT } from '@/modules/daily-activity/utilities/activity-mappings';
-import { Box } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
 import type { ActivityItem } from '@/modules/daily-activity/api/entities/daily-activity';
 import type { FC, ReactNode } from 'react';
 

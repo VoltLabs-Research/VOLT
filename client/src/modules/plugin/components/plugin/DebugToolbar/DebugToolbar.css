@@ -27,21 +27,6 @@
     white-space: nowrap;
 }
 
-.debug-toolbar-status-dot {
-    width: 6px;
-    height: 6px;
-}
-
-.debug-toolbar-status-dot--paused {
-    background: var(--status-warning);
-    animation: animate-pulse 1.5s ease-in-out infinite;
-}
-
-.debug-toolbar-status-dot--running {
-    background: var(--accent-blue);
-    animation: animate-pulse 1s ease-in-out infinite;
-}
-
 .debug-toolbar-status--completed {
     color: var(--status-success);
 }

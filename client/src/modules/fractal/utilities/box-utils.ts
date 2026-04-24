@@ -1,41 +1,10 @@
 import type { BoxBounds } from '@/modules/fractal/types';
-import type { TimestepInfo, Trajectory } from '@/modules/trajectory/api/entities/trajectory';
-
-interface TrajectoryWithFrames {
-    frames?: TimestepInfo[];
-};
 
 export interface BoxTransforms {
     scale: number;
     position: { x: number; y: number; z: number };
     center: { x: number; y: number; z: number };
     maxDimension: number;
-};
-
-export const getTrajectoryBoxBounds = (trajectory: Pick<Trajectory, 'frames'> | TrajectoryWithFrames | null | undefined, currentTimestep?: number): BoxBounds | undefined => {
-    if (!trajectory || currentTimestep === undefined) return undefined;
-    let frame = trajectory.frames?.find((item: TimestepInfo) => item.timestep === currentTimestep);
-
-    if (!frame?.simulationCell) {
-        frame = trajectory.frames?.find((item: TimestepInfo) => item.simulationCell);
-    }
-
-    if (frame?.simulationCell) {
-        const { geometry, boundingBox } = frame.simulationCell;
-        if (geometry?.cell_origin && boundingBox) {
-            const [xlo, ylo, zlo] = geometry.cell_origin;
-            return {
-                xlo,
-                xhi: xlo + boundingBox.width,
-                ylo,
-                yhi: ylo + boundingBox.length,
-                zlo,
-                zhi: zlo + boundingBox.height
-            };
-        }
-    }
-
-    return frame?.boxBounds;
 };
 
 export interface BoxDimensions {

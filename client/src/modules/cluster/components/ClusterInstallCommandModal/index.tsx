@@ -1,5 +1,9 @@
 import CopyableField from '@/shared/presentation/components/CopyableField';
-import { Stack, Row, Text, Modal, StatusDot } from '@/shared/presentation/primitives';
+import Modal from '@/shared/presentation/primitives/Modal';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import StatusDot from '@/shared/presentation/primitives/StatusDot';
+import Text from '@/shared/presentation/primitives/Text';
 import { buildClusterInstallCommand } from '@/modules/cluster/utilities/build-cluster-install-command';
 
 export const CLUSTER_INSTALL_COMMAND_MODAL_ID = 'cluster-install-command-modal';

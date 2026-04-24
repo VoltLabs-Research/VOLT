@@ -1,7 +1,7 @@
 import ContainerProcesses from '../ContainerProcesses';
 import { Activity } from 'lucide-react';
 import useContainerDetailsContext from '../../hooks/use-container-details-context';
-import { EmptyState } from '@/shared/presentation/primitives';
+import EmptyState from '@/shared/presentation/primitives/EmptyState';
 const ContainerProcessesPage = () => {
     const { container, isRunning } = useContainerDetailsContext();
 

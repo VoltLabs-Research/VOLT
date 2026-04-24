@@ -16,8 +16,8 @@ import EmailStep from '../EmailStep';
 import PasswordStep from '../PasswordStep';
 import RegisterStep from '../RegisterStep';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import { Stack } from '@/shared/presentation/primitives';
-import { Stepper } from '@/shared/presentation/primitives';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Stepper from '@/shared/presentation/primitives/Stepper';
 import useStepper from '@/shared/presentation/hooks/use-stepper';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { buildBackendUrl } from '@/app/core/http/utilities/backend-origin';
@@ -26,7 +26,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { FormEvent } from 'react';
 import type { OAuthProviderKey } from '@/modules/auth/api/dtos/oauth-providers';
-import type { StepTitles } from '@/shared/presentation/primitives';
+import type { StepTitles } from '@/shared/presentation/primitives/Stepper';
 import type { SignInForm } from './validation-schema';
 import { useNavigate } from 'react-router-dom';
 enum SignInStep {
@@ -237,12 +237,12 @@ const SignInTemplate = () => {
 
     return (
         <main className='sign-in-page screen-vh'>
-            <section className='sign-in-form-shell screen-vh d-flex column content-center p-1-5' aria-labelledby='sign-in-form-title'>
+            <Stack as='section' justify='center' p='1-5' className='sign-in-form-shell screen-vh' aria-labelledby='sign-in-form-title'>
                 <Stack gap='2' width='max' className='sign-in-form-section'>
-                    <header className='d-flex column gap-05'>
+                    <Stack as='header' gap='05'>
                         <h1 id='sign-in-form-title' className='sign-in-form-title'>{title}</h1>
                         <p>{subtitle}</p>
-                    </header>
+                    </Stack>
 
                     <Stepper
                         steps={signInSteps}
@@ -254,7 +254,7 @@ const SignInTemplate = () => {
                         <span className='sign-in-legal-text'>Privacy Policy</span>.
                     </p>
                 </Stack>
-            </section>
+            </Stack>
         </main>
     );
 };

@@ -31,10 +31,7 @@ import type {
 import type { TeamCluster, TeamClusterLifecycleEvent } from '@/modules/cluster/api/entities/team-cluster';
 import type {
     ProvisionDemoTeamClusterInputDTO,
-    ProvisionDemoTeamClusterOutputDTO,
-    GetDemoTeamClusterStatusOutputDTO,
-    DeleteDemoTeamClusterInputDTO,
-    DeleteDemoTeamClusterOutputDTO
+    ProvisionDemoTeamClusterOutputDTO
 } from '@/modules/cluster/api/dtos/team-cluster/demo-team-cluster';
 
 interface TeamClusterQueryKeyMap {
@@ -235,24 +232,7 @@ export const useUpdateTeamClusterRoleMutation = (
     });
 };
 
-const demoTeamClusterStatusQuery = createQuery(
-    (teamId: string) => ['demo-team-cluster-status', teamId],
-    (teamId: string) => teamClusterService.getDemoStatus({ teamId })
-);
-
-export const useDemoTeamClusterStatusQuery = (
-    teamId: string,
-    options?: QueryOptions<GetDemoTeamClusterStatusOutputDTO>
-) => {
-    return demoTeamClusterStatusQuery(teamId, {
-        enabled: Boolean(teamId),
-        staleTime: 5_000,
-        refetchInterval: 15_000,
-        ...options
-    });
-};
-
-export const invalidateDemoTeamClusterStatusQuery = (teamId: string) => {
+const invalidateDemoTeamClusterStatusQuery = (teamId: string) => {
     return queryClient.invalidateQueries({
         queryKey: ['demo-team-cluster-status', teamId]
     });
@@ -268,22 +248,6 @@ export const useProvisionDemoTeamClusterMutation = (
         onSuccess: withSuccess((data, variables) => {
             upsertTeamClusterQueryData(variables.teamId, data.teamCluster);
             void invalidateDemoTeamClusterStatusQuery(variables.teamId);
-        }, options)
-    });
-};
-
-export const useDeleteDemoTeamClusterMutation = (
-    options?: MutationOptions<DeleteDemoTeamClusterOutputDTO, DeleteDemoTeamClusterInputDTO>
-) => {
-    return createMutation<DeleteDemoTeamClusterOutputDTO, DeleteDemoTeamClusterInputDTO>(
-        teamClusterService.deleteDemo
-    )({
-        ...options,
-        onSuccess: withSuccess((_, variables) => {
-            void invalidateDemoTeamClusterStatusQuery(variables.teamId);
-            void queryClient.invalidateQueries({
-                queryKey: TEAM_CLUSTER_QUERY_KEYS.byTeam(variables.teamId)
-            });
         }, options)
     });
 };

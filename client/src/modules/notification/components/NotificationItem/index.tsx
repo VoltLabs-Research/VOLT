@@ -1,4 +1,6 @@
-import { Row, Text } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Row from '@/shared/presentation/primitives/Row';
+import Text from '@/shared/presentation/primitives/Text';
 import './NotificationItem.css';
 import type { Notification } from '@/modules/notification/api/entities/notification';
 import { useNavigate } from 'react-router-dom';
@@ -20,9 +22,11 @@ const NotificationItem = ({ notification, onClose }: NotificationItemProps) => {
 
     return (
         <li className='notification-row'>
-            <button
-                type='button'
-                className={`notification-item list-item-hoverable p-075 cursor-pointer radius-sm ${notification.read ? 'is-read' : 'is-unread'}`}
+            <Button
+                variant='ghost'
+                block
+                align='start'
+                className={`notification-item list-item-hoverable p-075 radius-sm ${notification.read ? 'is-read' : 'is-unread'}`}
                 onClick={handleClick}
             >
                 <Row as='span' justify='between' gap='05' className='notification-item-header'>
@@ -33,7 +37,7 @@ const NotificationItem = ({ notification, onClose }: NotificationItemProps) => {
                 <Text as='span' size='sm' tone='secondary' className='notification-item-content mt-025'>
                     {notification.content}
                 </Text>
-            </button>
+            </Button>
         </li>
     );
 };

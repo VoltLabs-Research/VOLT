@@ -1,6 +1,11 @@
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
-import { Button } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Button from '@/shared/presentation/primitives/Button';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import { PlugZap, ArrowRight, ChevronRight } from 'lucide-react';
 import { useCallback } from 'react';
 
@@ -12,20 +17,20 @@ const CanvasEmptyState = () => {
     }, [addNode]);
 
     return (
-        <div className='p-absolute inset-0 d-flex flex-center z-10 canvas-empty-state'>
-            <div className='d-flex column items-center gap-1 text-center canvas-empty-state-card glass-bg'>
-                <div className='d-flex flex-center radius-md canvas-empty-state-icon-wrapper'>
+        <Box position='absolute' inset='0' display='flex' zIndex='10' className='flex-center canvas-empty-state'>
+            <Stack align='center' gap='1' textAlign='center' className='canvas-empty-state-card glass-bg'>
+                <Box display='flex' radius='md' className='flex-center canvas-empty-state-icon-wrapper'>
                     <PlugZap size={28} />
-                </div>
+                </Box>
 
-                <div className='d-flex column gap-05 items-center'>
-                    <h3 className='font-size-4 font-weight-6'>
+                <Stack gap='05' align='center'>
+                    <Heading level={3} size='xl' weight='bold'>
                         Start building your plugin
-                    </h3>
-                    <p className='color-secondary font-size-2 line-height-5 canvas-empty-state-description'>
+                    </Heading>
+                    <Text as='p' size='sm' tone='muted' lineHeight='5' className='canvas-empty-state-description'>
                         Drag nodes from the palette on the left, or add a Modifier node to get started with the plugin workflow.
-                    </p>
-                </div>
+                    </Text>
+                </Stack>
 
                 <Button
                     intent='brand'
@@ -37,16 +42,16 @@ const CanvasEmptyState = () => {
                     Add Modifier Node
                 </Button>
 
-                <div className='w-max d-flex items-center content-center flex-wrap gap-025 canvas-empty-state-flow'>
+                <Row wrap justify='center' gap='025' width='max' className='canvas-empty-state-flow'>
                     {['Modifier', 'Arguments', 'Context', 'ForEach', 'Entrypoint', 'Exposure'].map((step, i, arr) => (
-                        <span key={step} className='d-flex items-center gap-025 color-muted font-size-1'>
+                        <Row as='span' key={step} gap='025' className='color-muted font-size-1'>
                             {step}
                             {i < arr.length - 1 && <ChevronRight size={10} />}
-                        </span>
+                        </Row>
                     ))}
-                </div>
-            </div>
-        </div>
+                </Row>
+            </Stack>
+        </Box>
     );
 };
 

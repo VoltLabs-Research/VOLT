@@ -9,6 +9,3 @@ export interface FilterPropertiesData {
     perAtom: Record<string, string[]>;
     exposureNames: Record<string, string>;
 };
-
-export interface GetFilterPropertiesOutputDTO {
-};

@@ -29,13 +29,6 @@ const registerCleanup = (
     };
 };
 
-export const registerAppCleanup = (
-    handler: AppCleanupHandler,
-    reasons: AppCleanupReason[]
-): (() => void) => {
-    return registerCleanup(handler, reasons);
-};
-
 const runCleanup = (context: AppCleanupContext): void => {
     cleanupRegistry[context.reason].forEach((handler) => {
         try {
@@ -43,10 +36,6 @@ const runCleanup = (context: AppCleanupContext): void => {
         } catch {
         }
     });
-};
-
-export const registerRouteCleanup = (handler: AppCleanupHandler): (() => void) => {
-    return registerCleanup(handler, ['route-change']);
 };
 
 export const registerErrorRecoveryCleanup = (handler: AppCleanupHandler): (() => void) => {

@@ -1,11 +1,16 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import { Button, Modal, Row, Stack, Text, closeModal } from '@/shared/presentation/primitives';
-import FolderBreadcrumbs from '@/shared/presentation/components/FolderBreadcrumbs';
+import Button from '@/shared/presentation/primitives/Button';
+import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
+import Breadcrumbs from '@/shared/presentation/primitives/Breadcrumbs';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import useFolderBreadcrumbs from '@/shared/presentation/hooks/use-folder-breadcrumbs';
 import { Folder, FolderOpen, Home } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { BreadcrumbItem } from '@/shared/presentation/primitives/Breadcrumbs';
 import type { ModalFooterAction } from '@/shared/presentation/components/ModalFooterActions';
 import type { FolderBreadcrumbEntity } from '@/shared/presentation/hooks/use-folder-breadcrumbs';
 
@@ -119,6 +124,14 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
         return currentFolder?.title ?? 'Root';
     }, [currentFolder]);
 
+    const breadcrumbItems = useMemo<BreadcrumbItem[]>(() => {
+        return breadcrumbs.map((crumb) => ({
+            id: crumb.id ?? 'root',
+            title: crumb.title,
+            onClick: () => setActiveFolderId(crumb.id)
+        }));
+    }, [breadcrumbs]);
+
     const isCurrentDestination = sourceFolderId === activeFolderId;
 
     const handleRequestClose = useCallback(() => {
@@ -175,7 +188,7 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
             footer={<ModalFooterActions primary={primaryAction} secondary={secondaryAction} />}
         >
             <Stack gap='1' p='1-5'>
-                <FolderBreadcrumbs items={breadcrumbs} onNavigate={setActiveFolderId} />
+                <Breadcrumbs items={breadcrumbItems} ariaLabel='Folder breadcrumbs' />
 
                 <Row gap='075'>
                     {activeFolderId ? <FolderOpen size={16} /> : <Home size={16} />}

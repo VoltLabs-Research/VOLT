@@ -1,13 +1,19 @@
 import { JobStatus } from '@/modules/jobs/api/entities/job';
 import { getJobStatusLabel } from '@/modules/jobs/utilities/job-status-label';
 import useRetryJobAnalysis from '@/modules/jobs/hooks/use-retry-job-analysis';
-import { Box, Button, Heading, Row, Stack, Text } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Button from '@/shared/presentation/primitives/Button';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Loader from '@/shared/presentation/primitives/Loader';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
+import Text from '@/shared/presentation/primitives/Text';
 import '@/modules/jobs/components/JobQueue/JobQueue.css';
 import { formatDistanceToNow } from 'date-fns';
 import { sileo } from 'sileo';
 import { CiRedo } from 'react-icons/ci';
 import { IoCheckmark, IoCloseOutline, IoTimeOutline, IoWarningOutline } from 'react-icons/io5';
-import { Loader2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { Job } from '@/modules/jobs/api/entities/job';
 
@@ -22,7 +28,7 @@ interface StatusConfigEntry {
 
 const statusConfig: Partial<Record<JobStatus, StatusConfigEntry>> = {
     [JobStatus.Completed]: { icon: <IoCheckmark /> },
-    [JobStatus.Running]: { icon: <Loader2 className='job-status-spinner' /> },
+    [JobStatus.Running]: { icon: <Loader scale={0.3} isFixed={false} /> },
     [JobStatus.Queued]: { icon: <IoTimeOutline /> },
     [JobStatus.Retrying]: { icon: <CiRedo /> },
     [JobStatus.QueuedAfterFailure]: { icon: <IoWarningOutline /> },
@@ -87,9 +93,7 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
                     <Heading level={3} size='sm' weight='bold' className='job-name'>
                         {getJobDisplayName(job)}
                     </Heading>
-                    <span className={`job-status-badge ${job.status} p-025 radius-full font-size-1`} aria-label={`Status: ${statusLabel}`}>
-                        {statusLabel}
-                    </span>
+                    <StatusBadge status={job.status} size='compact'>{statusLabel}</StatusBadge>
                 </Row>
                 <Row gap='05' wrap>
                     <Text as='p' size='sm' tone='secondary' className='job-message d-flex items-center gap-05'>

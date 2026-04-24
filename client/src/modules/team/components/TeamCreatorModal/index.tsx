@@ -4,7 +4,7 @@ import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import { Modal, resetModal } from '@/shared/presentation/primitives';
+import Modal, { resetModal } from '@/shared/presentation/primitives/Modal';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { useState } from 'react';

@@ -2,15 +2,22 @@ import './GlobalSearch.css';
 import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 import useDashboardGlobalSearch from '@/modules/dashboard/hooks/use-dashboard-global-search';
 import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
-import { Box, Stack, Row, Text, Loader, SearchInput } from '@/shared/presentation/primitives';
-import { EmptyState } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Breadcrumbs from '@/shared/presentation/primitives/Breadcrumbs';
+import Loader from '@/shared/presentation/primitives/Loader';
+import Row from '@/shared/presentation/primitives/Row';
+import SearchInput from '@/shared/presentation/primitives/SearchInput';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
+import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import useTip from '@/shared/tips/use-tip';
 import { FloatingPortal } from '@floating-ui/react';
 import { useId, useMemo, useState } from 'react';
+import type { BreadcrumbItem } from '@/shared/presentation/primitives/Breadcrumbs';
 import type { ReactNode } from 'react';
 import { CiChat1 } from 'react-icons/ci';
 import { GoWorkflow } from 'react-icons/go';
-import { IoChevronForward, IoCubeOutline, IoPeopleOutline } from 'react-icons/io5';
+import { IoCubeOutline, IoPeopleOutline } from 'react-icons/io5';
 import { TbCube3dSphere, TbObjectScan } from 'react-icons/tb';
 import type { GlobalSearchSectionKey } from '@/modules/dashboard/api/dtos/global-search';
 
@@ -105,25 +112,19 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
             return null;
         }
 
-        return (
-            <Row gap='05' className='global-search-breadcrumb font-size-2'>
-                {contextBreadcrumb.items.map((item, index) => {
-                    const isCurrent = index === contextBreadcrumb.items.length - 1;
+        const items: BreadcrumbItem[] = contextBreadcrumb.items.map((item) => ({
+            id: item.id ?? 'root',
+            title: item.title,
+            onClick: () => contextBreadcrumb.onNavigate(item.id)
+        }));
 
-                    return (
-                        <Row key={item.id ?? 'root'} gap='05'>
-                            {index > 0 && <IoChevronForward size={12} className='color-muted' aria-hidden='true' />}
-                            <button
-                                type='button'
-                                className={`global-search-breadcrumb-item ${isCurrent ? 'is-current' : ''}`}
-                                onClick={() => contextBreadcrumb.onNavigate(item.id)}
-                            >
-                                {item.title}
-                            </button>
-                        </Row>
-                    );
-                })}
-            </Row>
+        return (
+            <Breadcrumbs
+                items={items}
+                variant='pill'
+                ariaLabel='Context breadcrumbs'
+                className='global-search-breadcrumb font-size-2'
+            />
         );
     }, [contextBreadcrumb]);
 

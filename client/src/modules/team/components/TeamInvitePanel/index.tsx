@@ -2,7 +2,7 @@ import { InvitationEmailInput } from '../InvitationEmailInput';
 import { InvitationsList } from '../InvitationsList';
 import { InviteCodeSection } from '../InviteCodeSection';
 import { PanelFooter } from '../PanelFooter';
-import { PanelHeader } from '../PanelHeader';
+import PanelHeader from '@/shared/presentation/components/PanelHeader';
 import useInvitePanel from '@/modules/team/hooks/invitation/use-invite-panel';
 import useInviteCode from '@/modules/team/hooks/invitation/use-invite-code';
 import { useState } from 'react';

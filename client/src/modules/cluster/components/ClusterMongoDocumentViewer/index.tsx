@@ -1,6 +1,10 @@
 import JsonTree from '@/modules/plugin/components/plugin/JsonTree';
 import './ClusterMongoDocumentViewer.css';
-import { Box, Stack, Row, Text, Heading } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import type { TeamClusterMongoDocument } from '@/modules/cluster/api/entities/team-cluster-remote-access';
 
 interface ClusterMongoDocumentViewerProps {
