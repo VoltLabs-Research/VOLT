@@ -8,7 +8,6 @@ import {
 } from './queries';
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import useSocket from '@/modules/socket/core/hooks/use-socket';
 import {
     addUsersToGroupAction,
     createGroupAction,
@@ -21,7 +20,6 @@ import type { CreateGroupChatDTO, UpdateGroupAdminsDTO, UpdateGroupInfoDTO } fro
 import { useNavigate } from 'react-router-dom';
 const useGroupActions = () => {
     const navigate = useNavigate();
-    const socket = useSocket();
     const queryClient = useQueryClient();
 
     const createGroupMutationResult = useCreateGroupMutation();
@@ -33,55 +31,55 @@ const useGroupActions = () => {
 
     const createGroup = useCallback(async (dto: CreateGroupChatDTO) => {
         return createGroupAction(
-            { queryClient, socket, navigate },
+            { queryClient, navigate },
             createGroupMutationResult.mutateAsync,
             dto
         );
-    }, [createGroupMutationResult, queryClient, socket, navigate]);
+    }, [createGroupMutationResult, queryClient, navigate]);
 
     const addUsersToGroup = useCallback(async (chatId: string, userIds: string[]) => {
         return addUsersToGroupAction(
-            { queryClient, socket, navigate },
+            { queryClient, navigate },
             addUsersToGroupMutationResult.mutateAsync,
             chatId,
             userIds
         );
-    }, [addUsersToGroupMutationResult, navigate, queryClient, socket]);
+    }, [addUsersToGroupMutationResult, navigate, queryClient]);
 
     const removeUsersFromGroup = useCallback(async (chatId: string, userIds: string[]) => {
         return removeUsersFromGroupAction(
-            { queryClient, socket, navigate },
+            { queryClient, navigate },
             removeUsersFromGroupMutationResult.mutateAsync,
             chatId,
             userIds
         );
-    }, [navigate, queryClient, removeUsersFromGroupMutationResult, socket]);
+    }, [navigate, queryClient, removeUsersFromGroupMutationResult]);
 
     const updateGroupInfo = useCallback(async (chatId: string, dto: UpdateGroupInfoDTO) => {
         return updateGroupInfoAction(
-            { queryClient, socket, navigate },
+            { queryClient, navigate },
             updateGroupInfoMutationResult.mutateAsync,
             chatId,
             dto
         );
-    }, [navigate, queryClient, socket, updateGroupInfoMutationResult]);
+    }, [navigate, queryClient, updateGroupInfoMutationResult]);
 
     const updateGroupAdmins = useCallback(async (chatId: string, dto: UpdateGroupAdminsDTO) => {
         return updateGroupAdminsAction(
-            { queryClient, socket, navigate },
+            { queryClient, navigate },
             updateGroupAdminsMutationResult.mutateAsync,
             chatId,
             dto
         );
-    }, [navigate, queryClient, socket, updateGroupAdminsMutationResult]);
+    }, [navigate, queryClient, updateGroupAdminsMutationResult]);
 
     const leaveGroup = useCallback(async (chatId: string) => {
         return leaveGroupAction(
-            { queryClient, socket, navigate },
+            { queryClient, navigate },
             leaveGroupMutationResult.mutateAsync,
             chatId
         );
-    }, [leaveGroupMutationResult, queryClient, socket, navigate]);
+    }, [leaveGroupMutationResult, queryClient, navigate]);
 
     return {
         createGroup,

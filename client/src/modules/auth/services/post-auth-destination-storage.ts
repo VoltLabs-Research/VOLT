@@ -1,12 +1,10 @@
 const POST_AUTH_DESTINATION_STORAGE_KEY = 'volt:auth:post-auth-destination';
 export const DEFAULT_POST_AUTH_DESTINATION = '/dashboard';
-const TEAM_INVITATION_PATH_PREFIX = '/team-invitation/';
 const ONBOARDING_PATH = '/onboarding';
 const CLUSTER_ONBOARDING_PATH = '/onboarding/cluster/setup';
 
 interface ResolvePostAuthDestinationInput {
     queryNext?: string | null;
-    stateDestination?: string | null;
 };
 
 interface BuildOnboardingRedirectPathInput {
@@ -79,10 +77,6 @@ const buildOnboardingRedirectPath = ({
     return `${onboardingPath}?next=${encodeURIComponent(safeDestination)}`;
 };
 
-export const isTeamInvitationDestination = (destination: string | null | undefined): destination is string => {
-    return typeof destination === 'string' && destination.startsWith(TEAM_INVITATION_PATH_PREFIX);
-};
-
 export const setPostAuthDestination = (destination: string): void => {
     const storage = getSessionStorage();
     if (!storage) {
@@ -124,17 +118,11 @@ export const clearPostAuthDestination = (): void => {
 };
 
 export const resolvePostAuthDestination = ({
-    queryNext,
-    stateDestination
+    queryNext
 }: ResolvePostAuthDestinationInput): string => {
     const safeQueryNext = sanitizePostAuthDestination(queryNext);
     if (safeQueryNext) {
         return safeQueryNext;
-    }
-
-    const safeStateDestination = sanitizePostAuthDestination(stateDestination);
-    if (safeStateDestination) {
-        return safeStateDestination;
     }
 
     const storedDestination = getPostAuthDestination();
@@ -160,11 +148,9 @@ export const getClusterOnboardingRedirectPath = (destination?: string | null): s
 };
 
 export const getPostAuthRedirectPath = (destination: string): string => {
-    const safeDestination = resolvePostAuthDestination({
-        stateDestination: destination
-    });
+    const safeDestination = sanitizePostAuthDestination(destination) ?? DEFAULT_POST_AUTH_DESTINATION;
 
-    if (isTeamInvitationDestination(safeDestination) || isOnboardingDestination(safeDestination)) {
+    if (isOnboardingDestination(safeDestination)) {
         return safeDestination;
     }
 

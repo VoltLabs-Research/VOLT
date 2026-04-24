@@ -33,10 +33,6 @@ const updateSSHConnectionSchema = z.object({
     password: requiredTextSchema
 }).strict().partial();
 
-const importTrajectoryFromSSHSchema = z.object({
-    remotePath: requiredTextSchema
-}).strict();
-
 export const sshConnectionValidation = createResourceValidation({
     listByTeamId: {
         params: teamIdParamsSchema,
@@ -62,9 +58,5 @@ export const sshConnectionValidation = createResourceValidation({
     },
     testById: {
         params: sshConnectionParamsSchema
-    },
-    importTrajectory: {
-        params: sshConnectionParamsSchema,
-        body: importTrajectoryFromSSHSchema
     }
 });

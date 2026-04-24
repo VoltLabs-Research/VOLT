@@ -20,18 +20,6 @@ const paginationQuerySchema = createPaginationQuerySchema({
 const trajectoryParamsSchema = createTeamScopedParamsSchema('trajectoryId');
 const folderParamsSchema = createTeamScopedParamsSchema('folderId');
 
-const trajectoryGlbParamsSchema = trajectoryParamsSchema.extend({
-    timestep: z.string().trim().min(1),
-    analysisId: trajectoryAnalysisIdSchema
-}).strict();
-
-const getAtomsQuerySchema = z.object({
-    timestep: z.coerce.number().int().min(0),
-    page: paginationPageSchema,
-    limit: createPaginationLimitSchema(100000),
-    analysisId: trajectoryAnalysisIdSchema.optional()
-}).strict();
-
 const sceneArtifactsQuerySchema = z.object({
     analysisId: trajectoryAnalysisIdSchema.optional(),
     sourceType: z.enum(['color-coding', 'particle-filter', 'plugin-exposure']).optional(),
@@ -131,10 +119,6 @@ export const trajectoryValidation = createResourceValidation({
         params: trajectoryParamsSchema,
         query: downloadTrajectoryAnalysesQuerySchema
     },
-    getAtoms: {
-        params: trajectoryParamsSchema,
-        query: getAtomsQuerySchema
-    },
     getSceneArtifacts: {
         params: trajectoryParamsSchema,
         query: sceneArtifactsQuerySchema
@@ -142,9 +126,6 @@ export const trajectoryValidation = createResourceValidation({
     listTeamSceneArtifacts: {
         params: teamParamsSchema,
         query: sceneArtifactsQuerySchema.omit({ projection: true })
-    },
-    getGLB: {
-        params: trajectoryGlbParamsSchema
     },
     getById: {
         params: trajectoryParamsSchema

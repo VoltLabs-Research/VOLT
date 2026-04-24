@@ -34,7 +34,7 @@ class TeamSocketRoomService implements ITeamSocketRoomService {
 
         this.currentTeamId = teamId;
 
-        if (this.isSubscribed(teamId) && isSameTeam && !resolvedPreviousTeamId) {
+        if (this.isCurrentlySubscribed(teamId) && isSameTeam && !resolvedPreviousTeamId) {
             return;
         }
 
@@ -80,20 +80,20 @@ class TeamSocketRoomService implements ITeamSocketRoomService {
         return this.currentTeamId;
     }
 
-    isSubscribed(teamId: string): boolean {
-        return this.subscribedTeamId === teamId && this.socketService.isConnected();
-    }
-
     async waitUntilSubscribed(teamId: string): Promise<void> {
-        if (this.isSubscribed(teamId)) {
+        if (this.isCurrentlySubscribed(teamId)) {
             return;
         }
 
         await this.subscribe(teamId);
 
-        if (!this.isSubscribed(teamId)) {
+        if (!this.isCurrentlySubscribed(teamId)) {
             throw new Error(`Team socket subscription unavailable for team "${teamId}".`);
         }
+    }
+
+    private isCurrentlySubscribed(teamId: string): boolean {
+        return this.subscribedTeamId === teamId && this.socketService.isConnected();
     }
 
     private async subscribeToTeam(teamId: string, previousTeamId?: string): Promise<void> {
@@ -123,6 +123,6 @@ class TeamSocketRoomService implements ITeamSocketRoomService {
     }
 };
 
-export const teamSocketRoomService = new TeamSocketRoomService(socketService);
+const teamSocketRoomService = new TeamSocketRoomService(socketService);
 
 export default teamSocketRoomService;

@@ -10,7 +10,7 @@ export interface SocketErrorEnvelope {
     details?: string;
 }
 
-export const isSocketErrorCode = (value: unknown): value is ErrorCode => {
+const isSocketErrorCode = (value: unknown): value is ErrorCode => {
     if (typeof value !== 'string') {
         return false;
     }
@@ -18,7 +18,7 @@ export const isSocketErrorCode = (value: unknown): value is ErrorCode => {
     return SOCKET_ERROR_CODES.has(value as ErrorCode);
 };
 
-export const resolveSocketErrorCode = (value: unknown): ErrorCode => {
+const resolveSocketErrorCode = (value: unknown): ErrorCode => {
     if (isSocketErrorCode(value)) {
         return value;
     }

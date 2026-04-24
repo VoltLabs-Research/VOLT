@@ -2,10 +2,6 @@ import type { Duplex } from 'node:stream';
 import { WebSocket } from 'ws';
 import type { RawData } from 'ws';
 
-interface WebSocketBridgeOptions {
-    upstreamErrorMessage: string;
-};
-
 interface WebSocketDuplexBridgeOptions {
     duplexCloseMessage: string;
     duplexEndMessage: string;
@@ -87,35 +83,6 @@ export const writeUpgradeError = (socket: Duplex, statusCode: number, message: s
     }
 
     socket.end(`HTTP/1.1 ${statusCode} ${message}\r\nConnection: close\r\n\r\n`);
-};
-
-/** Bridges two websocket endpoints without altering payloads or policies. */
-export const bridgeWebSockets = (
-    clientWebSocket: WebSocket,
-    upstreamWebSocket: WebSocket,
-    options: WebSocketBridgeOptions
-): void => {
-    upstreamWebSocket.on('message', (data, isBinary) => {
-        const payload = normalizeWebSocketPayload(data);
-        safeSendWebSocket(clientWebSocket, payload, isBinary);
-    });
-    upstreamWebSocket.on('close', (code, reason) => {
-        safeCloseWebSocket(clientWebSocket, code, reason.toString() || undefined);
-    });
-    upstreamWebSocket.on('error', () => {
-        safeCloseWebSocket(clientWebSocket, 1011, options.upstreamErrorMessage);
-    });
-
-    clientWebSocket.on('message', (data, isBinary) => {
-        const payload = normalizeWebSocketPayload(data);
-        safeSendWebSocket(upstreamWebSocket, payload, isBinary);
-    });
-    clientWebSocket.on('close', () => {
-        safeCloseWebSocket(upstreamWebSocket);
-    });
-    clientWebSocket.on('error', () => {
-        safeCloseWebSocket(upstreamWebSocket);
-    });
 };
 
 /** Bridges a websocket endpoint to a raw duplex stream. */

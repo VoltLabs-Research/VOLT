@@ -19,7 +19,7 @@ const getChatMessagesQuerySchema = z.object({
 
 const sendMessageSchema = z.object({
     content: z.string().trim().min(1),
-    messageType: z.enum(['text', 'file', 'system'])
+    messageType: z.enum(['text', 'file'])
 }).strict();
 
 const editMessageSchema = z.object({

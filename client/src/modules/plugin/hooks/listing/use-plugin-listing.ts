@@ -8,9 +8,9 @@ import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
 import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
-import type { PluginSubListingParams } from './use-plugin-sub-listing';
+import { buildAtomsViewerPath } from '@/modules/trajectory/utilities/build-atoms-viewer-path';
+import { buildSubListingsPath } from '@/modules/plugin/utilities/listing/build-sub-listings-path';
 import { useNavigate } from 'react-router-dom';
-export const SUB_LISTING_MODAL_ID = 'sub-listing-modal';
 
 interface UsePluginListingParams {
     pluginId: string;
@@ -20,7 +20,6 @@ interface UsePluginListingParams {
     analysisId?: string;
     teamId?: string;
     showTrajectoryColumn?: boolean;
-    openSubListing: (params: PluginSubListingParams) => void;
     onDeleteRows?: (rows: ListingRow[]) => Promise<void> | void;
 }
 
@@ -40,7 +39,6 @@ interface UsePluginListingReturn {
     resolvedExposureName?: string;
     subListingNames: string[];
     fetchData: (params: { page: number; limit: number } & PluginListingContext) => Promise<PaginatedResponse<ListingRow>>;
-    openSubListing: (params: PluginSubListingParams) => void;
     getMenuOptions: (item: ListingRow, selectedItems: ListingRow[]) => MenuOption[];
 };
 
@@ -52,7 +50,6 @@ const usePluginListing = ({
     analysisId,
     teamId,
     showTrajectoryColumn,
-    openSubListing,
     onDeleteRows
 }: UsePluginListingParams): UsePluginListingReturn => {
     const navigate = useNavigate();
@@ -139,15 +136,17 @@ const usePluginListing = ({
     }, [onDeleteRows]);
 
     const handleViewSubListing = useCallback((item: ListingRow, subListingName: string) => {
-        if (!item.analysisId || !item.exposureId || item.timestep === undefined) return;
+        if (!item.trajectoryId || !item.analysisId || !item.exposureId || item.timestep === undefined) return;
 
-        openSubListing({
+        navigate(buildSubListingsPath({
+            trajectoryId: item.trajectoryId,
             analysisId: item.analysisId,
             exposureId: item.exposureId,
             timestep: item.timestep,
-            subListingName
-        });
-    }, [openSubListing]);
+            subListingNames,
+            activeSubListingName: subListingName
+        }));
+    }, [navigate, subListingNames]);
 
     const getMenuOptions = useCallback((item: ListingRow, selectedItems: ListingRow[]): MenuOption[] => {
         const targetRows = selectedItems.includes(item) ? selectedItems : [item];
@@ -158,9 +157,11 @@ const usePluginListing = ({
             options.push({
                 label: 'Inspect Atoms',
                 icon: RiEyeLine,
-                onClick: () => navigate(
-                    `/dashboard/trajectory/${item.trajectoryId}/analysis/${item.analysisId}/atoms?timestep=${item.timestep}`
-                )
+                onClick: () => navigate(buildAtomsViewerPath({
+                    trajectoryId: item.trajectoryId!,
+                    analysisId: item.analysisId,
+                    timestep: item.timestep!
+                }))
             });
 
             for (const name of subListingNames) {
@@ -191,7 +192,6 @@ const usePluginListing = ({
         resolvedExposureName,
         subListingNames,
         fetchData,
-        openSubListing,
         getMenuOptions
     };
 };

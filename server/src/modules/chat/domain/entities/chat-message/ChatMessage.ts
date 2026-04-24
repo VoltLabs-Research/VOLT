@@ -2,8 +2,7 @@ import type { ChatUserReference } from '@modules/chat/domain/entities/chat/Chat'
 
 export enum ChatMessageType {
     Text = 'text',
-    File = 'file',
-    System = 'system'
+    File = 'file'
 };
 
 export interface ChatMessageMetadata {

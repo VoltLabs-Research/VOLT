@@ -6,7 +6,10 @@ import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopo
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import { formatUnknownValue } from '@/shared/utils/format';
+import { inferColumnType, type InferredColumnType } from '@/modules/plugin/components/listing/PluginCompactTable/typeInference';
+import { renderInferredCell } from '@/modules/plugin/components/listing/PluginCompactTable/cellRenderers';
 import '@/modules/plugin/components/listing/PluginExposureTable/PluginExposureTable.css';
+import '@/modules/plugin/components/listing/PluginCompactTable/PluginCompactTable.css';
 
 export interface ColumnConfig {
     key?: string;
@@ -28,21 +31,76 @@ interface TableRowProps {
     columns: ColumnConfig[];
     getMenuOptions?: (row: Record<string, unknown>) => MenuOption[];
     rowId?: string;
+    inferredColumnTypes?: Record<string, InferredColumnType>;
+    onRowClick?: (row: Record<string, unknown>) => void;
+    isSelected?: boolean;
 };
 
-const TableRow = ({ index, style, data: rows, columns, getMenuOptions, rowId }: TableRowProps) => {
+const resolveRowIdentifier = (row: Record<string, unknown>, fallback: number): string => {
+    const candidate = row._id ?? row.id;
+    if(typeof candidate === 'string' || typeof candidate === 'number'){
+        return String(candidate);
+    }
+    return String(fallback);
+};
+
+const TableRow = ({ index, style, data: rows, columns, getMenuOptions, rowId, inferredColumnTypes, onRowClick, isSelected }: TableRowProps) => {
     const row = rows[index];
     if (!row) return null;
 
     const menuOptions = getMenuOptions ? getMenuOptions(row) : [];
-    const resolvedId = rowId || String(row._id ?? row.id ?? index);
+    const resolvedId = rowId || resolveRowIdentifier(row, index);
+    const isClickable = Boolean(onRowClick);
+
+    const handleClick = isClickable
+        ? (event: React.MouseEvent<HTMLDivElement>) => {
+            if(event.defaultPrevented) return;
+            onRowClick?.(row);
+        }
+        : undefined;
+
+    const handleKeyDown = isClickable
+        ? (event: React.KeyboardEvent<HTMLDivElement>) => {
+            if(event.key === 'Enter' || event.key === ' '){
+                event.preventDefault();
+                onRowClick?.(row);
+            }
+        }
+        : undefined;
+
+    const rowClassName = [
+        'plugin-compact-table-row',
+        isClickable ? 'plugin-compact-table-row--interactive' : null,
+        isSelected ? 'plugin-compact-table-row--selected' : null
+    ].filter(Boolean).join(' ');
 
     const content = (
-        <div style={style} className='plugin-compact-table-row'>
+        <div
+            style={style}
+            className={rowClassName}
+            onClick={handleClick}
+            onKeyDown={handleKeyDown}
+            role={isClickable ? 'button' : undefined}
+            tabIndex={isClickable ? 0 : undefined}
+            aria-pressed={isClickable ? isSelected : undefined}
+        >
             {columns.map((col) => {
                 const columnKey = getColumnKey(col);
                 const rawValue = row[columnKey];
-                const fallbackValue = formatUnknownValue(rawValue);
+                const inferred = inferredColumnTypes?.[columnKey];
+
+                let cellContent: React.ReactNode;
+                let titleAttribute: string | undefined;
+
+                if(col.render){
+                    cellContent = col.render(rawValue, row);
+                }else if(inferred){
+                    cellContent = renderInferredCell(rawValue, inferred);
+                }else{
+                    const fallbackValue = formatUnknownValue(rawValue);
+                    cellContent = fallbackValue;
+                    titleAttribute = fallbackValue;
+                }
 
                 return (
                     <div
@@ -52,9 +110,9 @@ const TableRow = ({ index, style, data: rows, columns, getMenuOptions, rowId }: 
                             minWidth: `${getColumnMinWidth(col)}px`,
                             flex: `1 1 ${getColumnMinWidth(col)}px`
                         }}
-                        title={col.render ? undefined : fallbackValue}
+                        title={titleAttribute}
                     >
-                        {col.render ? col.render(rawValue, row) : fallbackValue}
+                        {cellContent}
                     </div>
                 );
             })}
@@ -76,10 +134,28 @@ interface VirtualizedRowExtraProps {
     data: Record<string, unknown>[];
     columns: ColumnConfig[];
     getMenuOptions?: (row: Record<string, unknown>) => MenuOption[];
+    inferredColumnTypes?: Record<string, InferredColumnType>;
+    onRowClick?: (row: Record<string, unknown>) => void;
+    selectedRowId?: string | null;
 }
 
-const VirtualizedRow = ({ index, style, data, columns, getMenuOptions }: VirtualizedRowExtraProps & { index: number; style: React.CSSProperties }) => {
-    return <TableRow index={index} style={style} data={data} columns={columns} getMenuOptions={getMenuOptions} />;
+const VirtualizedRow = ({ index, style, data, columns, getMenuOptions, inferredColumnTypes, onRowClick, selectedRowId }: VirtualizedRowExtraProps & { index: number; style: React.CSSProperties }) => {
+    const row = data[index];
+    const rowId = row ? resolveRowIdentifier(row, index) : undefined;
+    const isSelected = Boolean(selectedRowId && rowId === selectedRowId);
+    return (
+        <TableRow
+            index={index}
+            style={style}
+            data={data}
+            columns={columns}
+            getMenuOptions={getMenuOptions}
+            inferredColumnTypes={inferredColumnTypes}
+            onRowClick={onRowClick}
+            rowId={rowId}
+            isSelected={isSelected}
+        />
+    );
 };
 
 interface PluginCompactTableProps {
@@ -93,6 +169,8 @@ interface PluginCompactTableProps {
     rowHeight?: number;
     onDataReady?: (columns: ColumnConfig[], data: Record<string, unknown>[]) => void;
     getMenuOptions?: (row: Record<string, unknown>) => MenuOption[];
+    onRowClick?: (row: Record<string, unknown>) => void;
+    selectedRowId?: string | null;
 }
 
 const getDisplayErrorMessage = (error: unknown): string => {
@@ -154,7 +232,9 @@ const PluginCompactTable = ({
     onLoadMore,
     error,
     rowHeight = 28,
-    getMenuOptions
+    getMenuOptions,
+    onRowClick,
+    selectedRowId
 }: PluginCompactTableProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const listContainerRef = useRef<HTMLDivElement>(null);
@@ -163,6 +243,20 @@ const PluginCompactTable = ({
     const [containerWidth, setContainerWidth] = useState(0);
     const [isMeasured, setIsMeasured] = useState(false);
     const lastScrollOffset = useRef(0);
+
+    const inferredColumnTypes = useMemo(() => {
+        const result: Record<string, InferredColumnType> = {};
+        const autoColumns = columns.filter((col) => !col.render);
+        if(autoColumns.length === 0) return result;
+
+        for(const col of autoColumns){
+            const key = getColumnKey(col);
+            if(!key) continue;
+            const samples = data.slice(0, 30).map((row) => row[key]);
+            result[key] = inferColumnType(samples);
+        }
+        return result;
+    }, [columns, data]);
 
     const minimumColumnsWidth = columns.reduce((sum, col) => sum + getColumnMinWidth(col), 0);
     const effectiveWidth = Math.max(minimumColumnsWidth, containerWidth);
@@ -313,21 +407,27 @@ const PluginCompactTable = ({
                             overflowX: 'hidden'
                         }}
                     >
-                        {data.map((row, index) => (
-                            <TableRow
-                                key={String(row.id ?? row._id ?? `${index}`)}
-                                index={index}
-                                data={data}
-                                columns={columns}
-                                getMenuOptions={getMenuOptions}
-                                rowId={String(row._id ?? row.id ?? index)}
-                                style={{
-                                    position: 'relative',
-                                    height: rowHeight,
-                                    width: '100%'
-                                }}
-                            />
-                        ))}
+                        {data.map((row, index) => {
+                            const rowId = resolveRowIdentifier(row, index);
+                            return (
+                                <TableRow
+                                    key={String(row.id ?? row._id ?? `${index}`)}
+                                    index={index}
+                                    data={data}
+                                    columns={columns}
+                                    getMenuOptions={getMenuOptions}
+                                    rowId={rowId}
+                                    inferredColumnTypes={inferredColumnTypes}
+                                    onRowClick={onRowClick}
+                                    isSelected={Boolean(selectedRowId && rowId === selectedRowId)}
+                                    style={{
+                                        position: 'relative',
+                                        height: rowHeight,
+                                        width: '100%'
+                                    }}
+                                />
+                            );
+                        })}
                     </div>
                 </div>
                 {isFetchingMore && (
@@ -380,7 +480,10 @@ const PluginCompactTable = ({
                         rowProps={{
                             data,
                             columns,
-                            getMenuOptions
+                            getMenuOptions,
+                            inferredColumnTypes,
+                            onRowClick,
+                            selectedRowId: selectedRowId ?? null
                         }}
                         style={{ height: resolvedHeight, width: '100%', overflowX: 'hidden' }}
                     />

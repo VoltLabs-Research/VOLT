@@ -21,6 +21,5 @@ export default createHttpModule({
             sshConnectionValidation.testById,
             controllers.testById.handle
         );
-        router.post('/:sshConnectionId/imports', sshConnectionValidation.importTrajectory, controllers.importTrajectory.handle);
     }
 });

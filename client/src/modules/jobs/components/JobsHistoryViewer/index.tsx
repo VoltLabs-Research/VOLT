@@ -13,7 +13,6 @@ import type { Variants } from 'framer-motion';
 
 interface JobsHistoryViewerProps {
     trajectoryId?: string;
-    showHeader?: boolean;
     hideAfterComplete?: boolean;
     queueFilter?: string;
     variant?: 'floating' | 'embedded';
@@ -122,7 +121,6 @@ export const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
                     trajectoryId={trajectoryId}
                     queueFilter={queueFilter}
                     groups={groups}
-                    isConnected={isConnected}
                     isLoading={isLoading}
                     displayMode={resolvedDisplayMode}
                     groupStatusPresentation={groupStatusPresentation}
@@ -148,7 +146,6 @@ export const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
                             trajectoryId={trajectoryId}
                             queueFilter={queueFilter}
                             groups={groups}
-                            isConnected={isConnected}
                             isLoading={isLoading}
                             displayMode={resolvedDisplayMode}
                             groupStatusPresentation={groupStatusPresentation}
@@ -176,7 +173,6 @@ export const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
                                 trajectoryId={trajectoryId}
                                 queueFilter={queueFilter}
                                 groups={groups}
-                                isConnected={isConnected}
                                 isLoading={isLoading}
                                 displayMode={resolvedDisplayMode}
                                 groupStatusPresentation={groupStatusPresentation}

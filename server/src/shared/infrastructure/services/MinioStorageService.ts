@@ -26,8 +26,12 @@ export default class MinioStorageService implements IStorageService {
     constructor(client?: Client, config?: MinioClientConfig) {
         const minioConfig = config || getMinioConfig();
         this.client = client || getMinioClient();
-        const protocol = minioConfig.useSSL ? 'https' : 'http';
-        this.urlBase = `${protocol}://${minioConfig.endPoint}:${minioConfig.port}`;
+        if (minioConfig.publicUrl) {
+            this.urlBase = minioConfig.publicUrl.replace(/\/+$/, '');
+        } else {
+            const protocol = minioConfig.useSSL ? 'https' : 'http';
+            this.urlBase = `${protocol}://${minioConfig.endPoint}:${minioConfig.port}`;
+        }
     }
 
     async upload(

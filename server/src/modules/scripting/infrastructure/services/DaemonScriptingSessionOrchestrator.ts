@@ -7,6 +7,7 @@ import type {
 } from '@modules/scripting/domain/port/IScriptingSessionOrchestrator';
 import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
 import { JupyterNotebookService } from '@modules/scripting/infrastructure/services/JupyterNotebookService';
+import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
 import { buildJupyterProxyBasePath, buildJupyterProxyUrl } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
@@ -53,17 +54,20 @@ const getNotebookTeamClusterId = (teamCluster: string | null | undefined): strin
 @Singleton()
 export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrchestrator {
     constructor(
-        
+
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
 
-        
+
         private readonly scriptingNotebookRepository: ScriptingNotebookRepository,
 
-        
+
         private readonly teamClusterSelectionService: TeamClusterSelectionService,
 
-        
-        private readonly notebookService: JupyterNotebookService
+
+        private readonly notebookService: JupyterNotebookService,
+
+
+        private readonly accessTokenService: ScriptingJupyterAccessTokenService
     ) {}
 
     async startSession(input: ScriptingSessionStartInput): Promise<ScriptingSessionStartResult> {
@@ -104,10 +108,16 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
 
         const jupyter = this.requireDaemonJupyterResponse(response);
         const daemonPath = this.resolveDaemonJupyterPath(jupyter);
+        const accessToken = this.accessTokenService.create({
+            teamId: input.teamId,
+            runtimeNotebookId,
+            userId: input.userId
+        });
         const jupyterUrl = buildJupyterProxyUrl({
             teamId: input.teamId,
             runtimeNotebookId,
-            daemonPath
+            daemonPath,
+            accessToken
         });
         return {
             notebookId: input.notebookId,

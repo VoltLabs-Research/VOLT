@@ -199,6 +199,13 @@ export const protectedRoutes: RouteConfig[] = [
         permissionMode: RoutePermissionMode.All
     },
     {
+        path: '/dashboard/trajectory/:trajectoryId/analysis/:analysisId/sub-listings',
+        title: 'Sub-Listings',
+        loader: () => import('@/modules/plugin/components/listing/SubListingsPage'),
+        requiredPermissions: ['plugin:read', 'trajectory:read'],
+        permissionMode: RoutePermissionMode.All
+    },
+    {
         path: '/onboarding',
         title: 'Onboarding',
         loader: () => import('@/modules/onboarding/components/templates/PostAuthOnboarding')

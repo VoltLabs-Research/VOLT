@@ -5,78 +5,88 @@
 
 .theme-preview {
     overflow: hidden;
-    height: 120px;
+    width: 100%;
+    height: 140px;
+    position: relative;
     border-bottom: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+    isolation: isolate;
 }
 
 .theme-preview::before,
 .theme-preview::after {
     content: '';
     position: absolute;
-    inset: 16px;
-    border-radius: var(--radius-md);
     pointer-events: none;
 }
 
 .theme-preview::before {
-    inset: 14px 14px auto;
+    top: 18px;
+    left: 20px;
+    right: 20px;
     height: 18px;
-    border-radius: var(--radius-sm);
-    opacity: 0.9;
+    border-radius: 7px 7px 0 0;
+    background:
+        radial-gradient(circle at 10px 50%, #ff5f57 0 3px, transparent 3.5px),
+        radial-gradient(circle at 22px 50%, #febc2e 0 3px, transparent 3.5px),
+        radial-gradient(circle at 34px 50%, #28c840 0 3px, transparent 3.5px),
+        linear-gradient(180deg, var(--theme-preview-header-start) 0%, var(--theme-preview-header-end) 100%);
+    box-shadow:
+        inset 0 0 0 1px var(--theme-preview-header-border),
+        0 1px 0 0 color-mix(in srgb, var(--theme-preview-header-border) 60%, transparent);
 }
 
 .theme-preview::after {
-    top: 42px;
+    top: 36px;
+    left: 20px;
+    right: 20px;
     bottom: 18px;
-    box-shadow: inset 0 0 0 1px currentColor;
-    opacity: 0.14;
+    border-radius: 0 0 7px 7px;
+    background: linear-gradient(135deg, var(--theme-preview-panel-start) 0%, var(--theme-preview-panel-end) 100%);
+    box-shadow: inset 0 0 0 1px var(--theme-preview-header-border);
 }
 
 .theme-preview svg {
     position: relative;
     z-index: 1;
+    width: 28px;
+    height: 28px;
+    opacity: 0.72;
+    margin-top: 18px;
+    filter: drop-shadow(0 3px 10px color-mix(in srgb, currentColor 30%, transparent));
 }
 
-.theme-preview.light-preview {
-    background: linear-gradient(180deg, var(--theme-preview-bg-start) 0%, var(--theme-preview-bg-end) 100%);
-    color: var(--theme-preview-fg);
-}
-
-.theme-preview.light-preview::before {
-    background: linear-gradient(90deg, var(--theme-preview-header-start) 0%, var(--theme-preview-header-end) 100%);
-    box-shadow: inset 0 0 0 1px var(--theme-preview-header-border);
-}
-
-.theme-preview.light-preview::after {
-    background: linear-gradient(135deg, var(--theme-preview-panel-start) 0%, var(--theme-preview-panel-end) 100%);
-}
-
+.theme-preview.light-preview,
 .theme-preview.dark-preview {
     background: linear-gradient(180deg, var(--theme-preview-bg-start) 0%, var(--theme-preview-bg-end) 100%);
     color: var(--theme-preview-fg);
 }
 
-.theme-preview.dark-preview::before {
-    background: linear-gradient(90deg, var(--theme-preview-header-start) 0%, var(--theme-preview-header-end) 100%);
-    box-shadow: inset 0 0 0 1px var(--theme-preview-header-border);
-}
-
-.theme-preview.dark-preview::after {
-    background: linear-gradient(135deg, var(--theme-preview-panel-start) 0%, var(--theme-preview-panel-end) 100%);
-}
-
 .theme-preview.system-preview {
-    background: linear-gradient(
-        135deg,
-        var(--theme-preview-light-bg) 0%,
-        var(--theme-preview-light-bg) 50%,
-        var(--theme-preview-dark-bg) 50%,
-        var(--theme-preview-dark-bg) 100%
-    );
+    background:
+        linear-gradient(
+            135deg,
+            var(--theme-preview-light-bg) 0%,
+            var(--theme-preview-light-bg) 49.5%,
+            color-mix(in srgb, currentColor 22%, transparent) 49.5%,
+            color-mix(in srgb, currentColor 22%, transparent) 50.5%,
+            var(--theme-preview-dark-bg) 50.5%,
+            var(--theme-preview-dark-bg) 100%
+        );
     color: var(--theme-preview-dark-fg);
 }
 
 .theme-preview.system-preview::before,
 .theme-preview.system-preview::after {
     display: none;
+}
+
+.theme-preview.system-preview svg {
+    width: 34px;
+    height: 34px;
+    margin-top: 0;
+    opacity: 1;
+    color: #a0a0a0;
+    filter:
+        drop-shadow(0 0 14px color-mix(in srgb, var(--theme-preview-dark-bg) 70%, transparent))
+        drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
 }

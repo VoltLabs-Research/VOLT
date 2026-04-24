@@ -87,14 +87,6 @@ UpdateSSHConnectionRequest:
     password:
       type: string
       description: Password used to authenticate with the SSH server.
-ImportTrajectoryFromSSHRequest:
-  type: object
-  required:
-  - remotePath
-  properties:
-    remotePath:
-      type: string
-      description: Path to the trajectory file on the remote SSH server.
 SSHFile:
   type: object
   required:

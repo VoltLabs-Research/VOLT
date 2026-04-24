@@ -58,7 +58,7 @@ const useTypingIndicator = (chatId?: string) => {
         };
     }, [chatId, socket]);
 
-    return { handleTyping, stopTyping };
+    return { handleTyping };
 };
 
 export default useTypingIndicator;

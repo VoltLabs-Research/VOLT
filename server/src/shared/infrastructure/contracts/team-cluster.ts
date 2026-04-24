@@ -37,7 +37,6 @@ export const ChannelCommands = Object.freeze({
     ContainerFilesList: 'container.files.list',
     ContainerFileRead: 'container.file.read',
 
-    JobsList: 'jobs.list',
     JobsRetry: 'jobs.retry',
     JobsRemoveRunning: 'jobs.remove-running',
 
@@ -83,7 +82,6 @@ export const ChannelCommands = Object.freeze({
     TrajectoryNativeParticleFilterModel: 'trajectory.native.particle-filter-model',
 
     TrajectoryPluginPropertyNames: 'trajectory.plugin.property-names',
-    TrajectoryPluginModifierAnalysis: 'trajectory.plugin.modifier-analysis',
     TrajectoryPluginAtomIndex: 'trajectory.plugin.atom-index',
     TrajectoryPluginModifierValues: 'trajectory.plugin.modifier-values',
     TrajectoryPluginModifierStats: 'trajectory.plugin.modifier-stats',
