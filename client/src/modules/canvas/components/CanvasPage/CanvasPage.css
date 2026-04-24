@@ -6,6 +6,8 @@
 
 .canvas-banner-stack {
     z-index: 4;
+    margin-top: var(--canvas-header-height, 55px);
+    margin-right: var(--canvas-right-overlay-size, 0px);
     border-bottom: 1px solid var(--color-border-soft);
 }
 

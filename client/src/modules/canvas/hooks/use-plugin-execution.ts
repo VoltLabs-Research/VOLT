@@ -128,8 +128,6 @@ const usePluginExecution = ({
             if (beforeExecute) {
                 const result = await beforeExecute(option);
                 if (!result.proceed) {
-                    // Clone-and-run flow owns its own toasts; hand off cleanly.
-                    sileo.dismiss(loadingToastId);
                     setExecStates((prev) => new Map(prev).set(modId, ExecState.Success));
                     clearExecStateLater(modId);
                     return;
@@ -189,7 +187,6 @@ const usePluginExecution = ({
             setExecStates((prev) => new Map(prev).set(modId, ExecState.Success));
             clearExecStateLater(modId);
         } catch {
-            sileo.dismiss(loadingToastId);
             sileo.error({ title: `${pluginName} failed to start`, description: 'Please try again.' });
             setExecStates((prev) => new Map(prev).set(modId, ExecState.Error));
             clearExecStateLater(modId);

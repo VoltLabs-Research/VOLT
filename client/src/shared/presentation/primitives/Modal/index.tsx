@@ -26,9 +26,11 @@ interface ModalProps {
     width?: string;
     onClose?: () => void;
     dismissible?: boolean;
+    lazyMount?: boolean;
 };
 
 const COARSE_POINTER_MEDIA_QUERY = '(pointer: coarse)';
+const LAZY_MOUNT_UNMOUNT_DELAY_MS = 250;
 
 const isDialogElement = (element: HTMLElement | null): element is HTMLDialogElement => {
     return element instanceof HTMLDialogElement;
@@ -79,9 +81,11 @@ const Modal = ({
     className = '',
     width,
     onClose,
-    dismissible = true
+    dismissible = true,
+    lazyMount = false
 }: ModalProps) => {
     const [dialogElement, setDialogElement] = useState<HTMLDialogElement | null>(null);
+    const [shouldRenderContents, setShouldRenderContents] = useState(!lazyMount);
     const restoreFocusElementRef = useRef<HTMLElement | null>(null);
     const isCoarsePointer = useMedia(COARSE_POINTER_MEDIA_QUERY);
     const titleId = title ? `${id}-title` : undefined;
@@ -92,8 +96,22 @@ const Modal = ({
             return;
         }
 
+        let unmountTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+        const clearUnmountTimer = () => {
+            if (unmountTimeoutId !== null) {
+                clearTimeout(unmountTimeoutId);
+                unmountTimeoutId = null;
+            }
+        };
+
         const syncDialogState = () => {
             if (dialogElement.open) {
+                if (lazyMount) {
+                    clearUnmountTimer();
+                    setShouldRenderContents(true);
+                }
+
                 if (!restoreFocusElementRef.current && document.activeElement instanceof HTMLElement) {
                     restoreFocusElementRef.current = document.activeElement;
                 }
@@ -110,6 +128,14 @@ const Modal = ({
                 return;
             }
 
+            if (lazyMount) {
+                clearUnmountTimer();
+                unmountTimeoutId = setTimeout(() => {
+                    setShouldRenderContents(false);
+                    unmountTimeoutId = null;
+                }, LAZY_MOUNT_UNMOUNT_DELAY_MS);
+            }
+
             if (restoreFocusElementRef.current?.isConnected) {
                 restoreFocusElementRef.current.focus({ preventScroll: true });
             }
@@ -123,9 +149,10 @@ const Modal = ({
 
         return () => {
             observer.disconnect();
+            clearUnmountTimer();
             restoreFocusElementRef.current = null;
         };
-    }, [dialogElement, isCoarsePointer]);
+    }, [dialogElement, isCoarsePointer, lazyMount]);
 
     const handleBackdropClick = (event: React.MouseEvent<HTMLDialogElement>) => {
         if (!dismissible) {
@@ -179,33 +206,35 @@ const Modal = ({
             >
                 <TopLayerRootContext.Provider value={dialogElement ?? undefined}>
                     <FloatingRootContext.Provider value={dialogElement ?? undefined}>
-                        <div className='d-flex column w-max'>
-                            {(title || description) && (
-                                <div className='d-flex items-start content-between volt-modal-header'>
-                                    <div className='d-flex column gap-025'>
-                                        {title && <h3 id={titleId} className='font-size-4 font-weight-6'>{title}</h3>}
-                                        {description && <p id={descriptionId} className='font-size-2 color-secondary'>{description}</p>}
+                        {shouldRenderContents && (
+                            <div className='d-flex column w-max'>
+                                {(title || description) && (
+                                    <div className='d-flex items-start content-between volt-modal-header'>
+                                        <div className='d-flex column gap-025'>
+                                            {title && <h3 id={titleId} className='font-size-4 font-weight-6'>{title}</h3>}
+                                            {description && <p id={descriptionId} className='font-size-2 color-secondary'>{description}</p>}
+                                        </div>
+                                        {dismissible && (
+                                            <CloseButton
+                                                commandfor={id}
+                                                command='close'
+                                                aria-label='Close modal'
+                                            />
+                                        )}
                                     </div>
-                                    {dismissible && (
-                                        <CloseButton
-                                            commandfor={id}
-                                            command='close'
-                                            aria-label='Close modal'
-                                        />
-                                    )}
-                                </div>
-                            )}
+                                )}
 
-                            <div className='volt-modal-body'>
-                                {children}
+                                <div className='volt-modal-body'>
+                                    {children}
+                                </div>
+
+                                {footer && (
+                                    <div className='d-flex items-center content-end gap-05 volt-modal-footer'>
+                                        {footer}
+                                    </div>
+                                )}
                             </div>
-
-                            {footer && (
-                                <div className='d-flex items-center content-end gap-05 volt-modal-footer'>
-                                    {footer}
-                                </div>
-                            )}
-                        </div>
+                        )}
                     </FloatingRootContext.Provider>
                 </TopLayerRootContext.Provider>
             </dialog>

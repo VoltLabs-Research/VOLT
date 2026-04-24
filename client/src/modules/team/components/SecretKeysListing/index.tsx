@@ -5,6 +5,7 @@ import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { openModal } from '@/shared/presentation/primitives/Modal';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import { dateColumn, statusColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
+import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { SecretKeyCreationModal, SECRET_KEY_CREATION_MODAL_ID } from '../SecretKeyCreationModal';
 import useDeleteSecretKey from '@/modules/team/hooks/secret-key/use-delete-secret-key';
@@ -89,12 +90,10 @@ export default function SecretKeysListing() {
             return;
         }
 
-        try {
-            await navigator.clipboard.writeText(keyPrefix);
-            sileo.success({ title: 'Key prefix copied to clipboard' });
-        } catch {
-            sileo.error({ title: 'Failed to copy key prefix' });
-        }
+        await copyTextToClipboard(keyPrefix, {
+            successMessage: 'Key prefix copied to clipboard',
+            errorMessage: 'Failed to copy key prefix'
+        });
     }, []);
 
     const { getMenuOptions } = useListingActions<SecretKey>({

@@ -63,7 +63,6 @@ const useTrajectoryCloneFlow = () => {
 
         if (nextState === 'completed') {
             if (entry.toastId) {
-                sileo.dismiss(entry.toastId);
                 setToastId(destinationTrajectoryId, undefined);
             }
             sileo.success({
@@ -76,7 +75,6 @@ const useTrajectoryCloneFlow = () => {
 
         if (nextState === 'failed') {
             if (entry.toastId) {
-                sileo.dismiss(entry.toastId);
                 setToastId(destinationTrajectoryId, undefined);
             }
             const errorMessage = typeof event.error === 'string' && event.error.length > 0
@@ -91,9 +89,6 @@ const useTrajectoryCloneFlow = () => {
         }
 
         const nextDescription = formatProgressMessage(copiedFrames, totalFrames);
-        if (entry.toastId) {
-            sileo.dismiss(entry.toastId);
-        }
 
         const nextToastId = sileo.show({
             type: 'loading',
@@ -135,7 +130,6 @@ const useTrajectoryCloneFlow = () => {
                 state: 'queued'
             });
         } catch (error) {
-            sileo.dismiss(toastId);
             const errorMessage = error instanceof Error ? error.message : 'Unable to start clone';
             sileo.error({
                 title: 'Clone failed',

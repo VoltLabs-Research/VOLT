@@ -5,10 +5,10 @@ import Row from '@/shared/presentation/primitives/Row';
 import Stack from '@/shared/presentation/primitives/Stack';
 import Text from '@/shared/presentation/primitives/Text';
 import Tooltip from '@/shared/presentation/primitives/Tooltip';
+import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 import './FileAttachment.css';
 import { IoDocumentOutline, IoDownloadOutline, IoImageOutline } from 'react-icons/io5';
 import { Copy } from 'lucide-react';
-import { sileo } from 'sileo';
 
 type FileAttachmentVariant = 'compact' | 'detailed';
 
@@ -68,13 +68,11 @@ const FileAttachment = ({
     const isImage = isImageAttachment(fileType, fileName, fileUrl);
     const iconSize = variant === 'compact' ? 18 : 20;
 
-    const handleCopyName = async () => {
-        try {
-            await navigator.clipboard.writeText(fileName);
-            sileo.success({ title: 'File name copied to clipboard' });
-        } catch {
-            sileo.error({ title: 'Failed to copy file name' });
-        }
+    const handleCopyName = () => {
+        void copyTextToClipboard(fileName, {
+            successMessage: 'File name copied to clipboard',
+            errorMessage: 'Failed to copy file name'
+        });
     };
     
     return (

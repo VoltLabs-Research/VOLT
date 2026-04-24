@@ -4,7 +4,7 @@ import { ExecState } from '../../hooks/use-plugin-execution';
 import useTrajectoryCloneFlow from '../../hooks/use-trajectory-clone-flow';
 import { useTrajectoryCloneFlowStore } from '../../stores/use-trajectory-clone-flow-store';
 import { useCanvasFocusStore } from '../../stores/use-canvas-focus-store';
-import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
+import { useCanvasAccessStore } from '../../api/access/use-canvas-access-store';
 import ModifierConfig from '../ModifierConfig';
 import ModifiersSection from '../ModifiersSection';
 import ObjectsPanel from '../ObjectsPanel';
@@ -85,7 +85,7 @@ const RightPanel = ({
     onSetActiveRasterContainer,
     onUpdateRasterContainerSelection
 }: RightPanelProps) => {
-    const currentUser = useCurrentUser();
+    const canMutate = useCanvasAccessStore((state) => state.canMutate);
     const selectedTeamId = useSelectedTeamId();
     const executePluginMutation = useExecutePluginMutation();
     const { cloneAndRun } = useTrajectoryCloneFlow();
@@ -372,11 +372,7 @@ const RightPanel = ({
         teamClusterOptions
     ]);
 
-    if (!currentUser) {
-        return null;
-    }
-
-    const pluginsContent = (
+    const pluginsContent = canMutate ? (
         <ModifiersSection
             pluginLoading={pluginLoading}
             modifiers={allModifiers}
@@ -387,7 +383,7 @@ const RightPanel = ({
             onAction={handleAction}
             renderModifierConfig={renderModifierConfig}
         />
-    );
+    ) : undefined;
 
     return (
         <Row height='max' overflow='hidden'>

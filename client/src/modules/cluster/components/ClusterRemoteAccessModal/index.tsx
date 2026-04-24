@@ -78,6 +78,7 @@ const ClusterRemoteAccessModal = ({
     return (
         <Modal
             id={CLUSTER_REMOTE_ACCESS_MODAL_ID}
+            lazyMount
             title={`${actionLabel} · ${clusterName}`}
             description={actionDescription}
             footer={footer}

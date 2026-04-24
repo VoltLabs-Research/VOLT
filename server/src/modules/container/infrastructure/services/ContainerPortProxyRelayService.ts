@@ -174,7 +174,7 @@ export class ContainerPortProxyRelayService {
         res: ServerResponse<IncomingMessage>
     ): Promise<void> {
         const session = this.requireAuthorizedSession(sessionId, req.url || '/', this.readHeaderValue(req.headers.cookie));
-        this.persistAccessTokenCookie(req, res, session);
+        const accessTokenFromUrl = readContainerPortProxyAccessTokenFromUrl(req.url || '/');
 
         const target = this.extractProxyTarget(req.url || '/');
         const tunnel = await this.teamClusterDaemonClient.openTunnel(session.teamClusterId, {
@@ -195,6 +195,23 @@ export class ContainerPortProxyRelayService {
             const location = proxyResponse.headers.location;
             if (typeof location === 'string') {
                 proxyResponse.headers.location = this.rewriteLocationHeader(location, session);
+            }
+
+            // Why: `http-proxy` copies upstream `Set-Cookie` into `res` via
+            // `res.setHeader`, which REPLACES any cookie we had set beforehand.
+            // Merging into `proxyResponse.headers['set-cookie']` here (before
+            // http-proxy writes them out) is the only way to keep our auth
+            // cookie alive alongside the container's own cookies. Without this,
+            // the browser never receives the session cookie, subsequent
+            // requests (including the workbench's WebSocket upgrade) arrive
+            // without credentials, and the relay replies 401 — which surfaces
+            // in the browser as a bare `WebSocket close 1006`.
+            if (accessTokenFromUrl) {
+                proxyResponse.headers['set-cookie'] = this.appendAccessTokenCookie(
+                    proxyResponse.headers['set-cookie'],
+                    accessTokenFromUrl,
+                    session
+                );
             }
 
             proxyResponse.once('close', cleanup);
@@ -295,22 +312,27 @@ export class ContainerPortProxyRelayService {
         return session;
     }
 
-    private persistAccessTokenCookie(
-        req: IncomingMessage,
-        res: ServerResponse<IncomingMessage>,
+    private appendAccessTokenCookie(
+        existing: string | string[] | undefined,
+        accessToken: string,
         session: ContainerPortProxyRelaySession
-    ): void {
-        const accessToken = readContainerPortProxyAccessTokenFromUrl(req.url || '/');
-        if (!accessToken) {
-            return;
-        }
-
-        res.setHeader('set-cookie', serializeCookie(CONTAINER_PORT_PROXY_ACCESS_TOKEN_COOKIE_NAME, accessToken, {
+    ): string[] {
+        const ourCookie = serializeCookie(CONTAINER_PORT_PROXY_ACCESS_TOKEN_COOKIE_NAME, accessToken, {
             path: '/',
             httpOnly: true,
             sameSite: 'lax',
             maxAge: Math.max(1, Math.floor((session.expiresAt - Date.now()) / 1000))
-        }));
+        });
+
+        if (Array.isArray(existing)) {
+            return [...existing, ourCookie];
+        }
+
+        if (typeof existing === 'string' && existing.length > 0) {
+            return [existing, ourCookie];
+        }
+
+        return [ourCookie];
     }
 
     private createSingleUseTunnelHttpAgent(tunnel: Duplex): http.Agent {

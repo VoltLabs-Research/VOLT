@@ -32,6 +32,7 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(({
     overlayVisible = false,
     id,
     title,
+    autoComplete = 'off',
     'aria-label': ariaLabel,
     'aria-labelledby': ariaLabelledBy,
     ...props
@@ -68,6 +69,7 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(({
                     title={resolvedTitle}
                     aria-label={accessibleName}
                     aria-labelledby={resolvedAriaLabelledBy}
+                    autoComplete={autoComplete}
                     placeholder={overlayVisible ? '' : (placeholder || 'Search…')}
                     className={cn('search-input font-size-2 color-primary flex-1', variant === 'small' && 'search-input--small', className, overlayVisible && 'search-input--with-overlay')}
                     {...props}

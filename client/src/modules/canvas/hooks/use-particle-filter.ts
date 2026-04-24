@@ -231,6 +231,14 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
     const [isApplying, setIsApplying] = useState(false);
 
     const pendingEvaluationIdRef = useRef(0);
+    const suggestionsToastIdRef = useRef<string | null>(null);
+
+    const dismissSuggestionsToast = useCallback(() => {
+        if (suggestionsToastIdRef.current) {
+            sileo.dismiss(suggestionsToastIdRef.current);
+            suggestionsToastIdRef.current = null;
+        }
+    }, []);
 
     const resetPreviewState = useCallback(() => {
         setPreviewResult(null);
@@ -291,13 +299,26 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
 
     useEffect(() => {
         if (!uniqueValuesEnabled || !uniqueValuesResult.error) return;
+        dismissSuggestionsToast();
         reportError(uniqueValuesResult.error, {
             surface: ErrorSurface.Toast,
             fallbackTitle: isAccessDeniedError(uniqueValuesResult.error)
                 ? 'You do not have permission to perform this action.'
                 : 'Failed to load suggestions'
         });
-    }, [uniqueValuesEnabled, uniqueValuesResult.error]);
+    }, [dismissSuggestionsToast, uniqueValuesEnabled, uniqueValuesResult.error]);
+
+    useEffect(() => {
+        if (!uniqueValuesEnabled) return;
+        if (uniqueValuesResult.isFetching) return;
+        dismissSuggestionsToast();
+    }, [dismissSuggestionsToast, uniqueValuesEnabled, uniqueValuesResult.isFetching]);
+
+    useEffect(() => {
+        return () => {
+            dismissSuggestionsToast();
+        };
+    }, [dismissSuggestionsToast]);
 
     const updateCondition = useCallback((conditionId: string, updater: (condition: FilterConditionState) => FilterConditionState) => {
         setConditions((currentConditions) => currentConditions.map((condition) => {
@@ -362,8 +383,13 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
         if (!condition || !condition.property) return;
         setSuggestionsConditionId(conditionId);
         setUniqueValuesEnabled(true);
-        sileo.info({ title: 'Loading suggestions...' });
-    }, [conditions]);
+
+        suggestionsToastIdRef.current = sileo.show({
+            type: 'loading',
+            title: 'Loading suggestions...',
+            duration: null
+        });
+    }, [conditions, dismissSuggestionsToast]);
 
     const buildPreviewRequest = useCallback((): PreviewRequest | null => {
         const nextConditions = conditions.map(toConditionDTO);
