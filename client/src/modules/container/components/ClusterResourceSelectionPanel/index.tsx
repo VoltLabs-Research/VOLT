@@ -1,7 +1,11 @@
-import { EmptyState } from '@/shared/presentation/primitives';
+import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
-import { Box, Row, Slider, Stack, Text } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Row from '@/shared/presentation/primitives/Row';
+import Slider from '@/shared/presentation/primitives/Slider';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import './ClusterResourceSelectionPanel.css';
 import { Cpu, HardDrive, ServerCog } from 'lucide-react';
 import { MIN_CLUSTER_CPU, MIN_CLUSTER_MEMORY_MB } from '@/modules/container/utilities/resource-allocation';

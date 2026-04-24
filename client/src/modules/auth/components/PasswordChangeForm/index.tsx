@@ -1,8 +1,9 @@
 import './PasswordChangeForm.css';
 import { passwordChangeSchema } from './validation-schema';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import WarningZone from '@/shared/presentation/components/WarningZone';
-import { Box, Button } from '@/shared/presentation/primitives';
+import Callout from '@/shared/presentation/primitives/Callout';
+import Box from '@/shared/presentation/primitives/Box';
+import Button from '@/shared/presentation/primitives/Button';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, Lock, Key } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -134,10 +135,12 @@ const PasswordChangeForm = ({
             />
 
             {submitError && (
-                <WarningZone
+                <Callout
+                    tone='warning'
                     icon={<AlertCircle size={16} />}
                     message={submitError}
-                    className='password-form-error' />
+                    className='password-form-error'
+                />
             )}
 
             <Box display='flex' gap='075' wrap>

@@ -10,7 +10,16 @@ import { resolveTabularPayload } from '@/modules/ai/utilities/message-artifacts'
 import { isRecord } from '@/shared/utils/type-guards';
 import AutoScrollList from '@/shared/presentation/components/AutoScrollList';
 import RecoveryState from '@/shared/presentation/components/RecoveryState';
-import { Box, Stack, Row, Text, Button, VisuallyHidden, SectionLabel, ThinkingDots, StatusDot } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Button from '@/shared/presentation/primitives/Button';
+import Row from '@/shared/presentation/primitives/Row';
+import SectionLabel from '@/shared/presentation/primitives/SectionLabel';
+import Skeleton from '@/shared/presentation/primitives/Skeleton';
+import Stack from '@/shared/presentation/primitives/Stack';
+import StatusDot from '@/shared/presentation/primitives/StatusDot';
+import Text from '@/shared/presentation/primitives/Text';
+import ThinkingDots from '@/shared/presentation/primitives/ThinkingDots';
+import VisuallyHidden from '@/shared/presentation/primitives/VisuallyHidden';
 import { isToolUIPart } from 'ai';
 import { IoExpandOutline } from 'react-icons/io5';
 import { memo, useMemo } from 'react';
@@ -536,20 +545,22 @@ const AIMessageItem = memo(({
 
                 {isApprovalRequested && addToolApprovalResponse && (
                     <Row gap='025' className='ai-action-request-controls'>
-                        <button
-                            type='button'
-                            className='ai-action-request-btn is-approve'
+                        <Button
+                            variant='solid'
+                            intent='success'
+                            size='sm'
                             onClick={createApproveHandler(approvalResponseId, toolCallId)}
                         >
                             Approve
-                        </button>
-                        <button
-                            type='button'
-                            className='ai-action-request-btn is-reject'
+                        </Button>
+                        <Button
+                            variant='outline'
+                            intent='danger'
+                            size='sm'
                             onClick={createRejectHandler(approvalResponseId, toolCallId)}
                         >
                             Reject
-                        </button>
+                        </Button>
                     </Row>
                 )}
 
@@ -864,7 +875,7 @@ const AIConversationThread = ({
                 autoScrollDependency={autoScrollDependency}
                 autoScrollDependencyEnabled={isResponding || showStandaloneTyping}
                 renderLoading={Array.from({ length: 4 }).map((_, index) => (
-                    <Box key={index} className='ai-message-skeleton animate-pulse' />
+                    <Skeleton key={index} variant='text' width='100%' height='3.5rem' />
                 ))}
                 renderEmpty={renderPromptStarter()}
                 renderAfter={renderAfter}

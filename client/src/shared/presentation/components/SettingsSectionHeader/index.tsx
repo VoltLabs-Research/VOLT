@@ -1,6 +1,7 @@
 import './SettingsSectionHeader.css';
 import { cn } from '@/shared/utils';
-import { Stack, Text } from '@/shared/presentation/primitives';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import type { ReactNode } from 'react';
 
 export interface SettingsSectionHeaderProps {

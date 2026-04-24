@@ -1,4 +1,7 @@
-import { Box, Stack, Row, Skeleton } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Row from '@/shared/presentation/primitives/Row';
+import Skeleton from '@/shared/presentation/primitives/Skeleton';
+import Stack from '@/shared/presentation/primitives/Stack';
 
 const ContainerDetailsSkeleton = () => (
     <Stack className='container-details-layout'>

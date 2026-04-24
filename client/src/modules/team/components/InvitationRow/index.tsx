@@ -1,4 +1,5 @@
-import { Button, ListRow } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import ListRow from '@/shared/presentation/primitives/ListRow';
 import { getInitialsFromEmail, getAvatarColorFromString } from '@/shared/utils/user';
 import { format } from 'date-fns';
 import './InvitationRow.css';

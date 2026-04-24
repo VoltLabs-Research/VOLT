@@ -1,7 +1,7 @@
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import useUpdateTrajectory from '@/modules/trajectory/hooks/trajectory/use-update-trajectory';
 import EditableTag from '@/shared/presentation/components/EditableTag';
-import { Text } from '@/shared/presentation/primitives';
+import Text from '@/shared/presentation/primitives/Text';
 import { useCallback } from 'react';
 
 interface EditableTrajectoryNameProps {

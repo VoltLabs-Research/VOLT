@@ -27,6 +27,3 @@ export interface ListSceneArtifactsInputDTO {
     page?: number;
     limit?: number;
 };
-
-export interface ListSceneArtifactsOutputDTO {
-};

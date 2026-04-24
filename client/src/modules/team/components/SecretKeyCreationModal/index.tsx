@@ -1,4 +1,4 @@
-import { Modal, resetModal } from '@/shared/presentation/primitives';
+import Modal, { resetModal } from '@/shared/presentation/primitives/Modal';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import CopyableField from '@/shared/presentation/components/CopyableField';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';

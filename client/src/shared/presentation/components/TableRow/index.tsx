@@ -1,6 +1,6 @@
-import { ContextMenuPopover } from '@/shared/presentation/primitives';
+import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopover';
 import EditableTag from '@/shared/presentation/components/EditableTag';
-import { Select } from '@/shared/presentation/primitives';
+import Select from '@/shared/presentation/primitives/Select';
 import { EditableType } from '@/shared/presentation/components/DocumentListingTable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDraggable, useDroppable } from '@dnd-kit/core';

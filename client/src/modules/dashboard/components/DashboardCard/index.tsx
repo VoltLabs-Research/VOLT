@@ -1,5 +1,5 @@
 import './DashboardCard.css';
-import { Box } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
 import type { HTMLAttributes, ReactNode } from 'react';
 
 interface DashboardCardProps extends HTMLAttributes<HTMLDivElement> {

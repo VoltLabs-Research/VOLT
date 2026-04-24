@@ -34,13 +34,6 @@
     outline-offset: 2px;
 }
 
-.ai-sheet-toolbar-divider {
-    width: 1px;
-    height: 1.1rem;
-    background: var(--color-border-soft);
-    margin: 0 0.15rem;
-}
-
 .ai-artifact-spreadsheet-body {
     flex: 1;
 }

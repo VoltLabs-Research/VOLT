@@ -318,49 +318,6 @@
     margin-top: 0.1rem;
 }
 
-.ai-action-request-btn {
-    display: inline-flex;
-    align-items: center;
-    height: 1.55rem;
-    padding: 0 0.55rem;
-    border: 1px solid var(--color-border-soft);
-    border-radius: var(--radius-full);
-    background: transparent;
-    font-family: inherit;
-    font-size: 0.72rem;
-    font-weight: 500;
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
-}
-
-.ai-action-request-btn:hover:not(:disabled) {
-    color: var(--color-text-primary);
-    border-color: var(--color-text-secondary);
-}
-
-.ai-action-request-btn.is-approve:hover:not(:disabled) {
-    color: var(--status-success);
-    border-color: var(--status-success);
-}
-
-.ai-action-request-btn.is-reject:hover:not(:disabled) {
-    color: var(--status-error);
-    border-color: var(--status-error);
-}
-
-.ai-action-request-btn:disabled {
-    opacity: 0.4;
-    cursor: default;
-}
-
-.ai-message-skeleton {
-    height: 3.5rem;
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--color-border-soft);
-    background: var(--color-surface-1);
-}
-
 .ai-message-artifact-list {
     width: 100%;
 }
@@ -453,8 +410,7 @@
     border-top: 1px solid var(--color-border-soft) !important;
 }
 
-.ai-open-spreadsheet-btn:focus-visible,
-.ai-action-request-btn:focus-visible {
+.ai-open-spreadsheet-btn:focus-visible {
     outline: 2px solid var(--accent-blue);
     outline-offset: 2px;
 }
@@ -471,9 +427,3 @@
     }
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .ai-message-skeleton {
-        animation: none;
-        opacity: 0.85;
-    }
-}

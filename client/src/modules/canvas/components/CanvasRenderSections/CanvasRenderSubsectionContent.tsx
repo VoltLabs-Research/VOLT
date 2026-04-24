@@ -1,6 +1,9 @@
 import CanvasSlider from '../CanvasSlider';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import { Stack, Row, Box, Text } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import type { Subsection } from './types';
 
 interface CanvasRenderSubsectionContentProps {

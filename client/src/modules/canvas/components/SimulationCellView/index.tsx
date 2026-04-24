@@ -1,6 +1,9 @@
 import useSimulationCell from '@/modules/simulation-cell/hooks/use-simulation-cell';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
-import { Box, Row, Stack, Text } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { ReactNode } from 'react';
 

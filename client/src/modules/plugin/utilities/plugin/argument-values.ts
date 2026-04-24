@@ -302,10 +302,6 @@ export const getSelectArgumentValue = (
     return [];
 };
 
-export const collectDefaultArgumentValues = (definitions: IArgumentDefinition[]): Record<string, unknown> => {
-    return collectVisibleDefaultArgumentValues(definitions, {});
-};
-
 export const collectVisibleDefaultArgumentValues = (
     definitions: IArgumentDefinition[],
     currentValues: Record<string, unknown>

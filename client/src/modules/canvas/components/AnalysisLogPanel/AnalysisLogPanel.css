@@ -25,46 +25,6 @@
     color: color-mix(in srgb, var(--accent-blue) 85%, var(--color-text-primary));
 }
 
-.canvas-analysis-log-status,
-.canvas-analysis-log-live {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.15rem 0.45rem;
-    border-radius: 999px;
-    font-size: 0.62rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-}
-
-.canvas-analysis-log-status--pending {
-    background: color-mix(in srgb, var(--color-border-strong) 12%, transparent);
-    color: var(--color-border-strong);
-}
-
-.canvas-analysis-log-status--queued {
-    background: color-mix(in srgb, var(--status-warning) 12%, transparent);
-    color: var(--status-warning);
-}
-
-.canvas-analysis-log-status--running,
-.canvas-analysis-log-live {
-    background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
-    color: var(--accent-blue);
-}
-
-.canvas-analysis-log-status--completed {
-    background: color-mix(in srgb, var(--status-success) 12%, transparent);
-    color: var(--status-success);
-}
-
-.canvas-analysis-log-status--failed,
-.canvas-analysis-log-status--truncated {
-    background: color-mix(in srgb, var(--status-error) 12%, transparent);
-    color: var(--status-error);
-}
-
 .canvas-analysis-log-empty {
     padding: 1rem;
 }

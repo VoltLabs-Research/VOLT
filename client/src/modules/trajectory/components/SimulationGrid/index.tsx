@@ -9,13 +9,14 @@ import useTrajectoriesListing, {
 } from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
 import { isTrajectoryFolderRow } from '@/modules/trajectory/utilities/listing';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
-import FolderBreadcrumbs from '@/shared/presentation/components/FolderBreadcrumbs';
+import Breadcrumbs from '@/shared/presentation/primitives/Breadcrumbs';
 import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
 import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
-import { Box } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
 import { Download, Upload } from 'lucide-react';
 import { useEffect, useCallback, useMemo, useState } from 'react';
+import type { BreadcrumbItem } from '@/shared/presentation/primitives/Breadcrumbs';
 import type { TrajectoryListingRow } from '@/modules/trajectory/utilities/listing';
 
 export type SimulationGridItem = TrajectoryListingRow;
@@ -146,6 +147,14 @@ export default function SimulationGrid() {
         }
     ]), [queryKey]);
 
+    const breadcrumbItems = useMemo<BreadcrumbItem[]>(() => {
+        return breadcrumbs.map((crumb) => ({
+            id: crumb.id ?? 'root',
+            title: crumb.title,
+            onClick: () => navigateToFolder(crumb.id)
+        }));
+    }, [breadcrumbs, navigateToFolder]);
+
     const shouldShowBreadcrumbs = breadcrumbs.length > 1;
 
     return (
@@ -159,7 +168,7 @@ export default function SimulationGrid() {
             />
             {shouldShowBreadcrumbs && (
                 <Box className='dashboard-simulations-breadcrumbs'>
-                    <FolderBreadcrumbs items={breadcrumbs} onNavigate={navigateToFolder} />
+                    <Breadcrumbs items={breadcrumbItems} ariaLabel='Folder breadcrumbs' />
                 </Box>
             )}
             <DocumentListing<SimulationGridItem, { folderId: string | null }>

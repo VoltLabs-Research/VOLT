@@ -16,31 +16,6 @@
     overflow-x: auto;
 }
 
-.server-table-status {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 10px;
-    border-radius: var(--radius-full);
-}
-
-.server-table-status-healthy {
-    color: var(--status-success);
-    background: var(--status-success-bg);
-    border: 1px solid var(--status-success-border);
-}
-
-.server-table-status-critical {
-    color: var(--status-error);
-    background: var(--status-error-bg);
-    border: 1px solid var(--status-error-border);
-}
-
-.server-table-status-warning {
-    color: var(--status-warning);
-    background: var(--status-warning-bg);
-    border: 1px solid var(--status-warning-border);
-}
-
 .server-table-bar {
     width: 4px;
     height: 1.25rem;

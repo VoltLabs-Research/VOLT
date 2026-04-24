@@ -3,8 +3,8 @@ import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCellPopover';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
-import { Row } from '@/shared/presentation/primitives';
-import './SimulationCellsListing.css';
+import Row from '@/shared/presentation/primitives/Row';
+import Tag from '@/shared/presentation/primitives/Tag';
 import { Box } from 'lucide-react';
 import type { SimulationCell } from '@/modules/simulation-cell/api/entities/simulation-cell';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
@@ -36,12 +36,14 @@ const renderPeriodicBoundary: NonNullable<ColumnConfig<SimulationCell>['render']
     return (
         <Row gap='05' wrap>
             {axes.map((axis) => (
-                <span
+                <Tag
                     key={axis.axis}
-                    className={`simulation-cell-axis-pill font-size-1 ${axis.enabled ? 'is-enabled' : 'is-disabled'}`}
+                    tone={axis.enabled ? 'success' : 'neutral'}
+                    variant='soft'
+                    size='xs'
                 >
                     {axis.axis}: {axis.enabled ? 'Periodic' : 'Open'}
-                </span>
+                </Tag>
             ))}
         </Row>
     );

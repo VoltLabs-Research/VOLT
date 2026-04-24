@@ -11,7 +11,8 @@ import { debugFractal } from '@/modules/fractal/utilities/debug-log';
 import { getFrameBoxBounds, getTrajectoryFrameByTimestep, hasFrameBoxBounds } from '@/modules/fractal/utilities/frame-box-bounds';
 import { getRenderableScenes } from '@/modules/fractal/utilities/scene-utils';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { Loader, Stack, Box, Row } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Stack from '@/shared/presentation/primitives/Stack';
 import { useMemo, useCallback, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -31,7 +32,6 @@ interface ViewportProps {
     forcedGlbUrl?: string | null;
     showGrid: boolean;
     showGizmo: boolean;
-    isLoading: boolean;
     sceneRef: RefObject<FractalSceneRef | null>;
     bodyContent?: ReactNode;
     hideGradient?: boolean;
@@ -77,7 +77,6 @@ const Viewport = ({
     forcedGlbUrl,
     showGrid,
     showGizmo,
-    isLoading,
     sceneRef,
     bodyContent,
     hideGradient = false,
@@ -110,8 +109,6 @@ const Viewport = ({
         setModelLoadingState: s.setModelLoadingState,
         setIsPointCloudScene: s.setIsPointCloudScene
     })));
-    const isPreloading = useEditorStore((s) => s.isPreloading);
-    const preloadProgress = useEditorStore((s) => s.preloadProgress);
 
     const currentFrame = useMemo(() => {
         return getTrajectoryFrameByTimestep(trajectory, currentTimestep);
@@ -196,23 +193,6 @@ const Viewport = ({
     return (
         <Stack flex='1' overflow='hidden' position='relative' minH='0' className="canvas-viewport">
             <Box flex='1' position='relative' minH='0' className="canvas-viewport-body">
-                {!bodyContent && isLoading && (
-                    <Row justify='center' position='absolute' inset='0' className="canvas-viewport-loading">
-                        <Loader scale={0.5} />
-                    </Row>
-                )}
-
-                {!bodyContent && isPreloading && (
-                    <Row justify='center' position='absolute' inset='0' className="canvas-viewport-loading">
-                        <Loader
-                            scale={0.5}
-                            isFixed={false}
-                            announce
-                            label={`Preloading frames ${Math.round((preloadProgress ?? 0) * 100)}%`}
-                        />
-                    </Row>
-                )}
-
                 {bodyContent && (
                     <Box display='flex' flex='1' minH='0' position='relative' width='max' height='max' className="canvas-viewport-body-content">
                         {bodyContent}

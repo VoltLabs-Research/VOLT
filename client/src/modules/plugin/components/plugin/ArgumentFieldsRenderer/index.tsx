@@ -1,4 +1,4 @@
-import { Button } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
 import { ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import {
     coerceArgumentInputValue,
@@ -12,14 +12,14 @@ import {
 } from '@/modules/plugin/utilities/plugin/argument-values';
 import { getVisibleArguments } from '@/modules/plugin/utilities/plugin/argument-visibility';
 import PluginConfigField from '@/modules/plugin/components/plugin/PluginConfigField';
-import { CollapsibleSection } from '@/shared/presentation/primitives';
+import CollapsibleSection from '@/shared/presentation/primitives/CollapsibleSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import { Select } from '@/shared/presentation/primitives';
+import Select from '@/shared/presentation/primitives/Select';
 import { Plus } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF';
-import type { SelectOption } from '@/shared/presentation/primitives';
+import type { SelectOption } from '@/shared/presentation/primitives/Select';
 
 interface ArgumentFieldsRendererProps {
     arguments: IArgumentDefinition[];

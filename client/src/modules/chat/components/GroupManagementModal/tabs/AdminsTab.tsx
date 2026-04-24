@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react';
 import { MemberListItem } from '../../MemberListItem';
-import { Stack, Text, Button } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Tag from '@/shared/presentation/primitives/Tag';
+import Text from '@/shared/presentation/primitives/Text';
 import type { Chat } from '@/modules/chat/api/entities/chat';
 
 interface AdminsTabProps {
@@ -17,7 +20,7 @@ const AdminsTab = ({ chat, isOwner, isLoading, onToggleAdmin }: AdminsTabProps) 
         let action: ReactNode = null;
 
         if (isMemberOwner) {
-            action = <Text as='p' className='member-list-item-role owner'>Owner</Text>;
+            action = <Tag tone='info' variant='solid' size='xs'>Owner</Tag>;
         } else if (isOwner) {
             action = (
                 <Button
@@ -31,7 +34,7 @@ const AdminsTab = ({ chat, isOwner, isLoading, onToggleAdmin }: AdminsTabProps) 
                 </Button>
             );
         } else if (isMemberAdmin) {
-            action = <Text as='p' className='member-list-item-role admin'>Admin</Text>;
+            action = <Tag tone='brand' variant='solid' size='xs'>Admin</Tag>;
         }
 
         return <MemberListItem key={member._id} user={member} action={action} />;

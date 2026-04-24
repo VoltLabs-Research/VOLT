@@ -3,16 +3,7 @@ import { buildKeys, createInvalidatingMutation, createQuery } from '@/shared/inf
 import type { CreateSecretKeyInputDTO, CreateSecretKeyResponse } from '../../api/dtos/secret-key/create-secret-key';
 import type { DeleteSecretKeyInputDTO } from '../../api/dtos/secret-key/delete-secret-key';
 import type { RevokeSecretKeyInputDTO } from '../../api/dtos/secret-key/revoke-secret-key';
-import type { SecretKey } from '../../api/entities/secret-key/secret-key';
 import type { KeyUsageMetrics, TeamUsageMetrics } from '../../api/entities/secret-key/secret-key-metrics';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
-
-interface SecretKeysQueryParams {
-    teamId: string;
-    page?: number;
-    limit?: number;
-    sort?: string;
-};
 
 interface SecretKeyUsageQueryParams {
     teamId: string;
@@ -60,10 +51,6 @@ export const SECRET_KEY_QUERY_KEYS = {
     secretKeyTeamMetricsByParams: secretKeyTeamMetricsKeys.secretKeyTeamMetricsByParams
 };
 
-const getSecretKeysQueryKey = (params: SecretKeysQueryParams) => {
-    return SECRET_KEY_QUERY_KEYS.secretKeysListing(params.teamId);
-};
-
 const getSecretKeyUsageQueryKey = (params: SecretKeyUsageQueryParams) => {
     return SECRET_KEY_QUERY_KEYS.secretKeyUsageByParams({
         teamId: params.teamId,
@@ -78,11 +65,6 @@ const getSecretKeyTeamMetricsQueryKey = (params: SecretKeyTeamMetricsQueryParams
         days: params.days
     });
 };
-
-export const useSecretKeysQuery = createQuery<SecretKeysQueryParams, PaginatedResponse<SecretKey>>(
-    getSecretKeysQueryKey,
-    secretKeyService.listByTeamId
-);
 
 export const useSecretKeyUsageQuery = createQuery<SecretKeyUsageQueryParams, KeyUsageMetrics>(
     getSecretKeyUsageQueryKey,

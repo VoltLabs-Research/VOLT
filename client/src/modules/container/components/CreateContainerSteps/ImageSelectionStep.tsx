@@ -1,7 +1,10 @@
 import TemplateCard from '../TemplateCard';
 import { CONTAINER_TEMPLATES } from '../../services/container-templates';
 import { Server } from 'lucide-react';
-import { Box, Stack, Heading, Text } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 
 interface ImageSelectionStepProps {
     selectedTemplate: string | null;

@@ -1,5 +1,8 @@
 import { cn } from '@/shared/utils';
-import { Button, CloseButton, Row, Text } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import CloseButton from '@/shared/presentation/primitives/CloseButton';
+import Row from '@/shared/presentation/primitives/Row';
+import Text from '@/shared/presentation/primitives/Text';
 import './PanelHeader.css';
 import type { ReactNode } from 'react';
 

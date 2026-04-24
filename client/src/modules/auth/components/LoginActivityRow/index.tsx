@@ -1,5 +1,5 @@
 import SettingsRow from '@/modules/auth/components/SettingsRow';
-import { Button } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
 import { Activity } from 'lucide-react';
 
 interface LoginActivityRowProps {

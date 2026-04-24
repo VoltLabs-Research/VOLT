@@ -1,9 +1,14 @@
-import { Select, VisuallyHidden } from '@/shared/presentation/primitives';
-import { Stack, Row, Text, Tooltip } from '@/shared/presentation/primitives';
+import IconButton from '@/shared/presentation/primitives/IconButton';
+import Select from '@/shared/presentation/primitives/Select';
+import VisuallyHidden from '@/shared/presentation/primitives/VisuallyHidden';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
+import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import { useId } from 'react';
 import { IoAddOutline, IoArrowUpOutline } from 'react-icons/io5';
 import type { KeyboardEvent } from 'react';
-import type { SelectOption } from '@/shared/presentation/primitives';
+import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import './AIComposer.css';
 
 interface AIComposerProps {
@@ -76,15 +81,14 @@ const AIComposer = ({
 
             <Row gap='05' className='ai-composer-input-wrapper'>
                 <Tooltip content='Attachments coming soon'>
-                    <button
-                        type='button'
-                        className='ai-composer-side-icon d-flex flex-center'
+                    <IconButton
+                        className='ai-composer-side-icon'
                         aria-label='Attachments coming soon'
                         title='Attachments coming soon'
                         disabled
                     >
                         <IoAddOutline size={18} />
-                    </button>
+                    </IconButton>
                 </Tooltip>
 
                 <input
@@ -113,16 +117,15 @@ const AIComposer = ({
                 />
 
                 <Tooltip content='Send message'>
-                    <button
-                        type='button'
-                        className='ai-composer-send d-flex flex-center'
+                    <IconButton
+                        className='ai-composer-send'
                         disabled={disabled || isSending || !value.trim()}
                         onClick={onSend}
                         aria-label='Send message'
                         title='Send message'
                     >
                         <IoArrowUpOutline size={18} />
-                    </button>
+                    </IconButton>
                 </Tooltip>
             </Row>
         </Stack>

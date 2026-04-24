@@ -73,12 +73,8 @@ const containerFolderQueries = createFolderResourceQueries<
     listingQueryKeys: [containerQuery.QUERY_KEYS.lists()]
 });
 
-export const containerFoldersQueryKey = containerFolderQueries.foldersQueryKey;
-export const containerFolderQueryKey = containerFolderQueries.folderQueryKey;
 export const containerFoldersQuery = containerFolderQueries.foldersQuery;
 export const containerFolderQuery = containerFolderQueries.folderQuery;
-export const invalidateContainerFoldersQuery = containerFolderQueries.invalidateFoldersQuery;
-export const invalidateContainerFolderQuery = containerFolderQueries.invalidateFolderQuery;
 export const useCreateContainerFolderMutation = containerFolderQueries.useCreateFolderMutation;
 export const useUpdateContainerFolderMutation = containerFolderQueries.useUpdateFolderMutation;
 export const useDeleteContainerFolderMutation = containerFolderQueries.useDeleteFolderMutation;

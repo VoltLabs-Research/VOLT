@@ -1,8 +1,9 @@
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import { Modal, closeModal, openModal } from '@/shared/presentation/primitives';
+import Modal, { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
 import { runAction } from '@/shared/presentation/actions/run-action';
-import WarningZone from '@/shared/presentation/components/WarningZone';
+import Callout from '@/shared/presentation/primitives/Callout';
+import Heading from '@/shared/presentation/primitives/Heading';
 import type { TeamRole } from '@/modules/team/api/entities/role/team-role';
 import type { RBACAction, RBACResource } from '@/modules/system/api/entities/rbac';
 import { IoWarningOutline } from 'react-icons/io5';
@@ -128,7 +129,8 @@ export const RoleEditorModal = ({
         >
             <div className='p-2 d-flex column gap-2'>
                 {isSystemRole && (
-                    <WarningZone
+                    <Callout
+                        tone='warning'
                         icon={<IoWarningOutline size={18} />}
                         message='System roles cannot be modified. You can only view their permissions.'
                     />
@@ -145,7 +147,7 @@ export const RoleEditorModal = ({
 
                 <fieldset className='role-editor-fieldset d-flex column gap-1'>
                     <legend className='role-editor-legend'>
-                        <h3 className='font-size-3 color-secondary font-weight-6'>Permissions</h3>
+                        <Heading level={3} tone='secondary' weight='bold'>Permissions</Heading>
                     </legend>
 
                     <div className='role-editor-permissions-grid'>

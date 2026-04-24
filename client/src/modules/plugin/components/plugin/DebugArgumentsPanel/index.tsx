@@ -1,4 +1,5 @@
-import { Button, IconButton } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import IconButton from '@/shared/presentation/primitives/IconButton';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
@@ -11,7 +12,7 @@ import {
 import { X, Play, Settings2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo } from 'react';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
-import type { SelectOption } from '@/shared/presentation/primitives';
+import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import './DebugArgumentsPanel.css';
 
 interface DebugArgumentsPanelProps {

@@ -1,8 +1,10 @@
 import './NotificationList.css';
 import NotificationItem from '../NotificationItem';
 import { useCallback, useEffect, useRef } from 'react';
-import { Box, Stack, Skeleton } from '@/shared/presentation/primitives';
-import { EmptyState } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Skeleton from '@/shared/presentation/primitives/Skeleton';
+import Stack from '@/shared/presentation/primitives/Stack';
+import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import type { Notification } from '@/modules/notification/api/entities/notification';
 
 interface NotificationListProps {
@@ -46,7 +48,7 @@ const NotificationList = ({
         return (
             <Stack gap='05' p='05'>
                 {Array.from({ length: 5 }).map((_, i) => (
-                    <Box key={`notif-skel-${i}`} className='notification-item notification-item-skeleton list-item-hoverable p-075 radius-sm'>
+                    <Box key={`notif-skel-${i}`} className='notification-item list-item-hoverable p-075 radius-sm'>
                         <Skeleton variant='text' width='60%' height={20} />
                         <Skeleton variant='text' width='90%' height={16} />
                     </Box>
@@ -74,7 +76,7 @@ const NotificationList = ({
             ))}
             {isLoading && (
                 <li className='notification-row'>
-                    <Box className='notification-item notification-item-skeleton list-item-hoverable p-075 radius-sm'>
+                    <Box className='notification-item list-item-hoverable p-075 radius-sm'>
                         <Skeleton variant='text' width='60%' height={20} />
                         <Skeleton variant='text' width='90%' height={16} />
                     </Box>

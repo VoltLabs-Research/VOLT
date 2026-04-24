@@ -3,7 +3,7 @@ import PluginClusterField from '@/modules/canvas/components/PluginClusterField';
 import SelectedTimestepsField from '@/modules/canvas/components/SelectedTimestepsField';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF';
-import type { SelectOption } from '@/shared/presentation/primitives';
+import type { SelectOption } from '@/shared/presentation/primitives/Select';
 
 interface PluginExecutionConfigFieldsProps {
     argumentsDefinitions: IArgumentDefinition[];

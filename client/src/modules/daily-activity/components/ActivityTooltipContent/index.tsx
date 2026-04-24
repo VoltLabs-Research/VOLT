@@ -1,5 +1,6 @@
 import ActivityEntry from '@/modules/daily-activity/components/ActivityEntry';
-import { Stack, Text } from '@/shared/presentation/primitives';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import type { DailyActivityHeatmapDetailEntry } from '@/modules/daily-activity/api/entities/daily-activity';
 import { useMemo } from 'react';
 import type { FC } from 'react';

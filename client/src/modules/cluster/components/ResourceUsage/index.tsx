@@ -1,6 +1,11 @@
 import MetricBar from '../MetricBar';
 import './ResourceUsage.css';
-import { Box, Stack, Row, Text, Heading, Skeleton } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Row from '@/shared/presentation/primitives/Row';
+import Skeleton from '@/shared/presentation/primitives/Skeleton';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
 
 interface ResourceUsageProps {

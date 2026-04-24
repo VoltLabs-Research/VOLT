@@ -1,6 +1,9 @@
 import { getChatDisplayName } from '@/modules/chat/utilities/chat/chat-display';
 import ChatAvatar from '../ChatAvatar';
-import { Stack, Row, Text, ListRow } from '@/shared/presentation/primitives';
+import ListRow from '@/shared/presentation/primitives/ListRow';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import { cn } from '@/shared/utils';
 import { formatDistanceToNow } from 'date-fns';
 import type { Chat } from '@/modules/chat/api/entities/chat';

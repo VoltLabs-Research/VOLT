@@ -6,6 +6,4 @@ export * from './download-trajectory';
 export * from './get-atoms';
 export * from './get-preview';
 export * from './get-trajectories';
-export * from './get-trajectory-by-id';
-export * from './list-samples';
 export * from './update-trajectory';

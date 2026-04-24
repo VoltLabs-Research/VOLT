@@ -5,8 +5,12 @@ import {
     clampScreenshotDimension,
     resolveScreenshotSize
 } from '@/modules/canvas/utilities/screenshot';
-import { Button, Tooltip, Stack, Row, Text } from '@/shared/presentation/primitives';
-import { ContextMenuPopover } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
+import Tooltip from '@/shared/presentation/primitives/Tooltip';
+import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopover';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { Camera, Image } from 'lucide-react';
 import { useMemo, useState } from 'react';

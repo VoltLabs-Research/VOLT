@@ -1,5 +1,8 @@
 import useAnalysisFrameLog from '@/modules/canvas/hooks/use-analysis-frame-log';
-import { Box, Stack, Row, Text } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import { format, isValid } from 'date-fns';
 import { useEffect, useMemo, useRef, useState } from 'react';
 

@@ -1,4 +1,7 @@
-import { Avatar, Tooltip, Row } from '@/shared/presentation/primitives';
+import Avatar from '@/shared/presentation/primitives/Avatar';
+import IconButton from '@/shared/presentation/primitives/IconButton';
+import Row from '@/shared/presentation/primitives/Row';
+import Tooltip from '@/shared/presentation/primitives/Tooltip';
 
 import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
 import type { User } from '@/modules/auth/api/entities/user';
@@ -38,8 +41,9 @@ const renderAvatarButton = (
 
     return (
         <Tooltip key={user.id} content={label} placement='bottom'>
-            <button
-                type='button'
+            <IconButton
+                variant='ghost'
+                size='sm'
                 className={classes.join(' ')}
                 onClick={options.onClick}
                 aria-label={options.isSelf ? 'Go to your workspace' : `Open ${fullName} workspace`}
@@ -54,7 +58,7 @@ const renderAvatarButton = (
                     } as User}
                     size='xs'
                 />
-            </button>
+            </IconButton>
         </Tooltip>
     );
 };

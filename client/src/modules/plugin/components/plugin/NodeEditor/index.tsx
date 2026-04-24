@@ -1,9 +1,9 @@
-import { SegmentedTabs } from '@/shared/presentation/primitives';
+import SegmentedTabs from '@/shared/presentation/primitives/SegmentedTabs';
 import { useState } from 'react';
 import type { FC } from 'react';
 import type { Node } from '@xyflow/react';
 import { Trash2 } from 'lucide-react';
-import DangerZone from '@/shared/presentation/components/DangerZone';
+import Callout from '@/shared/presentation/primitives/Callout';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import ModifierEditor from './editors/ModifierEditor';
@@ -89,12 +89,15 @@ const NodeEditor = ({ node }: NodeEditorProps) => {
             </div>
 
             <div className='floating-node-panel-footer'>
-                <DangerZone
+                <Callout
+                    tone='danger'
                     title='Delete Node'
                     description='Remove this node and its connections'
-                    actionLabel='Delete'
-                    actionIcon={<Trash2 size={14} />}
-                    onAction={handleDelete}
+                    action={{
+                        label: 'Delete',
+                        icon: <Trash2 size={14} />,
+                        onClick: handleDelete
+                    }}
                 />
             </div>
         </>

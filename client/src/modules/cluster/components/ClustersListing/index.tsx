@@ -24,7 +24,11 @@ import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluste
 import { TEAM_CLUSTER_SOCKET_EVENTS } from '@/modules/cluster/api/service/endpoints/team-cluster-socket-events';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import MetricBars from '@/modules/cluster/components/MetricBars';
-import { Stack, Row, Text, StatusBadge, openModal } from '@/shared/presentation/primitives';
+import { openModal } from '@/shared/presentation/primitives/Modal';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
+import Text from '@/shared/presentation/primitives/Text';
 import { ArrowRightLeft, Database, FolderOpen, KeyRound, Monitor, Settings2, TerminalSquare, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';

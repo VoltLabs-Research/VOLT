@@ -87,5 +87,3 @@ export const createNodeEditorForm = <TFormValues extends FieldValues, TDataKey e
         });
     };
 };
-
-export default createNodeEditorForm;

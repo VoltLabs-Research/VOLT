@@ -22,5 +22,3 @@ export interface UpdateTeamAIIntegrationInputDTO {
     enabledModels?: TeamAIModelMetadata[];
     metadata?: Record<string, unknown>;
 };
-
-export type UpdateTeamAIIntegrationOutputDTO = UpdateTeamAIIntegrationResponse;

@@ -1,4 +1,8 @@
-import { Button, Loader, Row, Stack, Text } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Loader from '@/shared/presentation/primitives/Loader';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import { AlertCircle, Download, FileText, ZoomIn, ZoomOut } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';

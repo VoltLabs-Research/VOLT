@@ -1,6 +1,6 @@
 const TOKEN_KEY = 'authToken';
 
-export default class TokenStorage {
+class TokenStorage {
     getToken(): string | null {
         return localStorage.getItem(TOKEN_KEY);
     }

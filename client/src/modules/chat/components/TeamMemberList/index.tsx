@@ -1,6 +1,11 @@
 import { cn } from '@/shared/utils';
 import { IoCheckmark } from 'react-icons/io5';
-import { Box, ListRow, Row, Stack, Text, Avatar } from '@/shared/presentation/primitives';
+import Avatar from '@/shared/presentation/primitives/Avatar';
+import Box from '@/shared/presentation/primitives/Box';
+import ListRow from '@/shared/presentation/primitives/ListRow';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import type { User } from '@/modules/auth/api/entities/user';
 import './TeamMemberList.css';
 

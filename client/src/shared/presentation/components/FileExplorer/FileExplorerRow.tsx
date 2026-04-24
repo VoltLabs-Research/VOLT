@@ -1,5 +1,5 @@
 import { cn } from '@/shared/utils';
-import { Tooltip } from '@/shared/presentation/primitives';
+import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import { Copy } from 'lucide-react';
 import { sileo } from 'sileo';
 import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';

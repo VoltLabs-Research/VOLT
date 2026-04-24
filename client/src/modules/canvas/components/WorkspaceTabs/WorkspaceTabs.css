@@ -5,18 +5,24 @@
 }
 
 .canvas-workspace-tab {
+    -webkit-appearance: none;
+    -moz-appearance: none;
     appearance: none;
     background: transparent;
     border: none;
-    padding: 0.25rem 0.65rem;
-    min-height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.75rem;
+    height: 2rem;
     border-radius: var(--radius-xs);
-    font-size: 0.78rem;
+    font-size: 0.8125rem;
     font-weight: 500;
     line-height: 1;
     color: var(--color-text-muted);
     cursor: pointer;
-    transition: background-color 140ms ease, color 140ms ease;
+    transition: background-color 0.14s ease, color 0.14s ease;
+    -webkit-user-select: none;
     user-select: none;
 }
 
@@ -38,4 +44,27 @@
 .canvas-workspace-tab:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+}
+
+/*
+ * Mobile: workspace tabs share the top row with other toolbar chunks and
+ * overflow on phones. Let them scroll horizontally instead of wrapping.
+ */
+@media (max-width: 768px) {
+    .canvas-workspace-tabs {
+        flex: 1 1 0;
+        min-width: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
+        flex-wrap: nowrap;
+    }
+
+    .canvas-workspace-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .canvas-workspace-tabs > * {
+        flex-shrink: 0;
+    }
 }

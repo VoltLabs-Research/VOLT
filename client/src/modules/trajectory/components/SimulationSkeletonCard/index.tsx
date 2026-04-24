@@ -1,5 +1,7 @@
 import ProcessingLoader from '@/shared/presentation/components/ProcessingLoader';
-import { Skeleton, Box, Row } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Row from '@/shared/presentation/primitives/Row';
+import Skeleton from '@/shared/presentation/primitives/Skeleton';
 
 interface SimulationSkeletonCardProps {
     n?: number;

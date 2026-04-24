@@ -17,16 +17,6 @@
     flex-shrink: 0;
 }
 
-.job-status-spinner {
-    animation: animate-spin 0.8s linear infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .job-status-spinner {
-        animation: none;
-    }
-}
-
 .job-container {
     min-height: 3.25rem;
     padding: 0.75rem;
@@ -44,12 +34,6 @@
 
 .job-count-badge {
     color: var(--status-info);
-}
-
-.job-status-badge {
-    text-transform: capitalize;
-    border: 1px solid var(--color-border-soft);
-    line-height: 1.2;
 }
 
 .job-error {
@@ -81,91 +65,56 @@
     stroke: var(--status-success);
 }
 
-.job-container.completed .job-status-badge,
 .job-container.completed .job-message {
     color: var(--status-success);
-}
-
-.job-container.completed .job-status-badge {
-    background-color: var(--status-success-bg);
 }
 
 .job-container.running path {
     stroke: var(--status-info);
 }
 
-.job-container.running .job-status-badge,
 .job-container.running .job-message {
     color: var(--status-info);
-}
-
-.job-container.running .job-status-badge {
-    background-color: var(--status-info-bg);
 }
 
 .job-container.queued path {
     stroke: var(--status-warning);
 }
 
-.job-container.queued .job-status-badge,
 .job-container.queued .job-message {
     color: var(--status-warning);
-}
-
-.job-container.queued .job-status-badge {
-    background-color: var(--status-warning-bg);
 }
 
 .job-container.retrying path {
     stroke: var(--accent-orange);
 }
 
-.job-container.retrying .job-status-badge,
 .job-container.retrying .job-message {
     color: var(--accent-orange);
-}
-
-.job-container.retrying .job-status-badge {
-    background-color: color-mix(in srgb, var(--accent-orange) 8%, transparent);
 }
 
 .job-container.queued_after_failure path {
     stroke: var(--status-error);
 }
 
-.job-container.queued_after_failure .job-status-badge,
 .job-container.queued_after_failure .job-message {
     color: var(--status-error);
-}
-
-.job-container.queued_after_failure .job-status-badge {
-    background-color: var(--status-error-bg);
 }
 
 .job-container.failed path {
     stroke: var(--status-error);
 }
 
-.job-container.failed .job-status-badge,
 .job-container.failed .job-message {
     color: var(--status-error);
-}
-
-.job-container.failed .job-status-badge {
-    background-color: var(--status-error-bg);
 }
 
 .job-container.unknown path {
     stroke: var(--color-text-muted);
 }
 
-.job-container.unknown .job-status-badge,
 .job-container.unknown .job-message {
     color: var(--color-text-secondary);
-}
-
-.job-container.unknown .job-status-badge {
-    background-color: var(--hover-bg);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Download, FlaskConical, Atom, MousePointerClick, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Download, Atom, MousePointerClick, Trash2 } from 'lucide-react';
 import {
     DEFAULT_DISLOCATION_LINE_WIDTH,
     buildPluginScene,
@@ -8,7 +8,6 @@ import { isSameScene } from '@/modules/canvas/utilities/scene-identity';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import { Exporter } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import {
-    AnalysisStatusDot,
     AnalysisTreeRetryRow,
     CanvasTreeEmptyRow,
     CanvasTreeRow,
@@ -22,12 +21,14 @@ import {
     lineSettingsOption,
     transparencyOption
 } from '../../utilities/tree-menus';
-import { Button, Tooltip } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, normalizeCanvasAnalysisStatus } from '../../utilities/analysis-status';
 import { useMemo } from 'react';
 
 import type { AnalysisSectionData } from '../../hooks/use-canvas-sidebar-scene';
 import type { CanvasAnalysisStatus } from '../../utilities/analysis-status';
+import type { AnalysisActivityTone } from '../../hooks/use-analysis-activity-tone';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { SceneObjectType, SceneRenderMetadata, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
 import type { RasterSelectableScene } from '@/modules/raster/types/container-selection';
@@ -36,6 +37,7 @@ import type { MenuOption } from '@/shared/presentation/types/menu';
 interface AnalysisTreeNodeProps {
     section: AnalysisSectionData;
     status?: CanvasAnalysisStatus;
+    tone?: AnalysisActivityTone;
     isExpanded: boolean;
     onToggle: (id: string) => void;
     onSelectScene: (scene: SceneObjectType, analysis?: Analysis) => void;
@@ -61,13 +63,12 @@ interface AnalysisTreeNodeProps {
     onSelectRasterScene?: (scene: RasterSelectableScene, label: string) => void;
 };
 
-const ANALYSIS_ICON_COLOR = 'var(--color-text-secondary)';
-const ANALYSIS_ICON_ACTIVE_COLOR = 'var(--color-text-primary)';
 const SCENE_ICON_COLOR = 'var(--accent-blue)';
 
 const AnalysisTreeNode = ({
     section,
     status,
+    tone,
     isExpanded,
     onToggle,
     onSelectScene,
@@ -142,8 +143,19 @@ const AnalysisTreeNode = ({
         { label: 'Delete', icon: Trash2, onClick: () => onDeleteAnalysis(analysis._id), destructive: true }
     ];
 
+    const nameClassName = [
+        'canvas-tree-analysis-name',
+        'truncate',
+        isSelectedAnalysis ? 'color-primary' : 'color-secondary',
+        tone ? `canvas-tree-analysis-name--${tone}` : ''
+    ].filter(Boolean).join(' ');
+
     const analysisRow = (
         <div className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary u-select-none canvas-tree-item--indent ${isSelectedAnalysis ? 'selected' : ''} ${isAnalysisInProgress ? 'is-disabled' : 'cursor-pointer'}`} onClick={handleSelectAnalysis} role="treeitem" aria-selected={isSelectedAnalysis} aria-disabled={isAnalysisInProgress} tabIndex={isAnalysisInProgress ? -1 : 0}>
+            <span className={nameClassName} title={pluginDisplayName}>
+                {pluginDisplayName}
+            </span>
+            <span className="flex-1" />
             <Button
                 variant='ghost'
                 intent='neutral'
@@ -163,12 +175,6 @@ const AnalysisTreeNode = ({
                     : <ChevronRight style={{ width: 13, height: 13 }} />
                 }
             </Button>
-            <FlaskConical style={{ width: 13, height: 13, color: isSelectedAnalysis ? ANALYSIS_ICON_ACTIVE_COLOR : ANALYSIS_ICON_COLOR }} />
-            <span className={isSelectedAnalysis ? 'color-primary' : 'color-secondary'}>
-                {pluginDisplayName}
-            </span>
-            <span className="flex-1" />
-            <AnalysisStatusDot status={resolvedStatus} />
         </div>
     );
 

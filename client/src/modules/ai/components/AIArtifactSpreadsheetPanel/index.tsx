@@ -1,6 +1,13 @@
 import { resolveTabularPayload } from '@/modules/ai/utilities/message-artifacts';
 import { base64ToBlob, triggerBrowserDownload } from '@/shared/utils';
-import { Box, Stack, Row, Text, IconButton, Tooltip, VisuallyHidden } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Divider from '@/shared/presentation/primitives/Divider';
+import IconButton from '@/shared/presentation/primitives/IconButton';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
+import Tooltip from '@/shared/presentation/primitives/Tooltip';
+import VisuallyHidden from '@/shared/presentation/primitives/VisuallyHidden';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { IoCheckmarkOutline, IoClipboardOutline } from 'react-icons/io5';
@@ -401,7 +408,7 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                 </IconButton>
             </Tooltip>
 
-            <Box className='ai-sheet-toolbar-divider' />
+            <Divider orientation='vertical' />
         </Row>
     );
 

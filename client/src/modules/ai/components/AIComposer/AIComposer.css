@@ -42,6 +42,8 @@
 .ai-composer-side-icon {
     width: 1.9rem;
     height: 1.9rem;
+    min-width: 1.9rem;
+    min-height: 1.9rem;
     border: none;
     border-radius: var(--radius-full);
     background: transparent;
@@ -89,12 +91,18 @@
     min-width: 2rem;
     max-width: 2rem;
     height: 2rem;
+    min-height: 2rem;
     flex: 0 0 2rem;
     border: none;
     border-radius: var(--radius-full);
     background: var(--color-text-primary);
     color: var(--color-bg);
     transition: opacity 0.2s ease;
+}
+
+.ai-composer-send:hover:not(:disabled) {
+    background: var(--color-text-primary);
+    color: var(--color-bg);
 }
 
 .ai-composer-send:disabled {

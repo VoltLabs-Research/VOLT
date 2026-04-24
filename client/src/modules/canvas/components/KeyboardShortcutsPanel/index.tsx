@@ -1,7 +1,11 @@
 import { useKeyboardShortcutsStore } from '../../stores/use-keyboard-shortcuts-store';
 import formatKeyName from '../../utilities/format-key-name';
 
-import { Modal, closeModal, openModal, Stack, Row, Heading, Text } from '@/shared/presentation/primitives';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Modal, { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import { useMemo, useEffect } from 'react';
 import type { Shortcut } from '../../stores/use-keyboard-shortcuts-store';
 

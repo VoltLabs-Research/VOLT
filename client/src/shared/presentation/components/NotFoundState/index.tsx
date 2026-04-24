@@ -1,4 +1,8 @@
-import { Button, Heading, Row, Stack, Text } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import './NotFoundState.css';
 import { SearchX } from 'lucide-react';

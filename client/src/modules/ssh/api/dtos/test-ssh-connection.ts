@@ -6,5 +6,3 @@ export interface TestSSHConnectionResponse {
 export interface TestSSHConnectionInputDTO {
     sshConnectionId: string;
 };
-
-export type TestSSHConnectionOutputDTO = TestSSHConnectionResponse;

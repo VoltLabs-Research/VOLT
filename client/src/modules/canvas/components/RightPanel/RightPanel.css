@@ -1,5 +1,5 @@
 /** NOTE: little hack **/
-.canvas-objects-panel > :first-child{
+.canvas-objects-panel__top > :first-child{
     margin-top: 8px;
 }
 
@@ -46,13 +46,6 @@
 .canvas-right-dropdown-icon {
     width: 13px;
     height: 13px;
-}
-
-.canvas-modifier-skeleton-title {
-    width: 60%;
-    height: 12px;
-    background: var(--color-surface-2);
-    border-radius: var(--radius-xs);
 }
 
 .canvas-right-dropdown .liquid-toggle {

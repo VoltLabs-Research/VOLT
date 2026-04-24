@@ -1,8 +1,14 @@
 import { matchesQuery } from '@/shared/utils/matches-query';
-import { EmptyState } from '@/shared/presentation/primitives';
+import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
-import { Box, Stack, Row, Text, IconButton, SearchInput, Tooltip } from '@/shared/presentation/primitives';
+import IconButton from '@/shared/presentation/primitives/IconButton';
+import Row from '@/shared/presentation/primitives/Row';
+import SearchInput from '@/shared/presentation/primitives/SearchInput';
+import Skeleton from '@/shared/presentation/primitives/Skeleton';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
+import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import { formatDistanceToNow } from 'date-fns';
 import { useMemo, useState } from 'react';
@@ -193,7 +199,7 @@ const AIConversationSidebar = ({
 
     if (isLoading) {
         listContent = Array.from({ length: 6 }).map((_, index) => (
-            <Box key={index} className='ai-conversation-item-skeleton animate-pulse' />
+            <Skeleton key={index} variant='text' width='100%' height='3rem' />
         ));
     } else if (filteredConversations.length === 0) {
         let title = 'No conversations yet';

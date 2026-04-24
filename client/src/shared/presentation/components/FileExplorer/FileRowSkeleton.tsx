@@ -1,4 +1,4 @@
-import { Skeleton } from '@/shared/presentation/primitives';
+import Skeleton from '@/shared/presentation/primitives/Skeleton';
 interface FileRowSkeletonProps {
     className?: string;
 };

@@ -4,10 +4,12 @@ import SidebarNavigation from '@/modules/dashboard/components/SidebarNavigation'
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import TeamSelector from '@/modules/team/components/TeamSelector';
-import { Box, IconButton, Popover } from '@/shared/presentation/primitives';
-import { openModal } from '@/shared/presentation/primitives';
-import { PopoverMenu } from '@/shared/presentation/primitives';
-import { PopoverMenuItem } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import IconButton from '@/shared/presentation/primitives/IconButton';
+import Popover from '@/shared/presentation/primitives/Popover';
+import { openModal } from '@/shared/presentation/primitives/Modal';
+import PopoverMenu from '@/shared/presentation/primitives/PopoverMenu';
+import PopoverMenuItem from '@/shared/presentation/primitives/PopoverMenuItem';
 import './DashboardSidebar.css';
 import { useState } from 'react';
 import { IoAddOutline, IoCloseOutline } from 'react-icons/io5';

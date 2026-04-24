@@ -2,7 +2,12 @@ import ClusterResourceSelectionPanel from '@/modules/container/components/Cluste
 import EditableKeyValueCard from '@/shared/presentation/components/EditableKeyValueCard';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
-import { Box, Button, Heading, Row, Stack, Text } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Button from '@/shared/presentation/primitives/Button';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import { getCustomFieldValidationError } from '../../hooks/use-create-container-form';
 import { ContainerTemplateCustomFieldType } from '../../api/entities/container-template';
 import type { ContainerConfig } from '../../hooks/use-create-container-form';

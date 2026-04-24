@@ -5,16 +5,16 @@ import {
     getUserConfigurableArguments
 } from '@/modules/plugin/utilities/plugin/argument-values';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
-import { CollapsibleSection } from '@/shared/presentation/primitives';
+import CollapsibleSection from '@/shared/presentation/primitives/CollapsibleSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import { Select } from '@/shared/presentation/primitives';
+import Select from '@/shared/presentation/primitives/Select';
 import { useCallback, useMemo } from 'react';
 import type {
     IArgumentDefinition,
     IPluginReferenceSelection
 } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF';
-import type { SelectOption } from '@/shared/presentation/primitives';
+import type { SelectOption } from '@/shared/presentation/primitives/Select';
 
 interface PluginConfigFieldProps {
     argument: IArgumentDefinition;

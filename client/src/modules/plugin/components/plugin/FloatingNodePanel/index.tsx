@@ -1,4 +1,6 @@
-import { CloseButton } from '@/shared/presentation/primitives';
+import CloseButton from '@/shared/presentation/primitives/CloseButton';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Row from '@/shared/presentation/primitives/Row';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReactFlow, useViewport } from '@xyflow/react';
@@ -107,15 +109,15 @@ const FloatingNodePanel = () => {
                     key={liveSelectedNode.id}
                     onClick={(event) => event.stopPropagation()}
                 >
-                    <div className='d-flex items-center gap-075 floating-node-panel-header p-1'>
+                    <Row gap='075' p='1' className='floating-node-panel-header'>
                         <div className='d-flex flex-center floating-node-panel-icon radius-sm color-secondary'>
                             <DynamicIcon iconName={config.icon} />
                         </div>
-                        <h3 className='font-size-3 font-weight-6 flex-1'>
+                        <Heading level={3} size='lg' weight='bold' className='flex-1'>
                             {config.label}
-                        </h3>
+                        </Heading>
                         <CloseButton onClick={handleClose} />
-                    </div>
+                    </Row>
 
                     <NodeEditor node={liveSelectedNode} />
                 </motion.div>

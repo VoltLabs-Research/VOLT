@@ -10,8 +10,9 @@ import {
 import { useMemo } from 'react';
 import { MdCameraAlt } from 'react-icons/md';
 import { useShallow } from 'zustand/react/shallow';
-import { Select } from '@/shared/presentation/primitives';
-import { Button, Box } from '@/shared/presentation/primitives';
+import Select from '@/shared/presentation/primitives/Select';
+import Box from '@/shared/presentation/primitives/Box';
+import Button from '@/shared/presentation/primitives/Button';
 import { updateVec3Value } from '../../utilities';
 
 import type { RenderGroup } from '../../types';

@@ -1,6 +1,8 @@
-import { ContextMenuPopover } from '@/shared/presentation/primitives';
+import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopover';
 import EditableTag from '@/shared/presentation/components/EditableTag';
-import { Row, Stack, IconButton } from '@/shared/presentation/primitives';
+import IconButton from '@/shared/presentation/primitives/IconButton';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
 import WorkspaceEntryInput from './WorkspaceEntryInput';
 import WorkspaceTreeRow from './WorkspaceTreeRow';
 import {

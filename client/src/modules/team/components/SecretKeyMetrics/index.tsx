@@ -1,4 +1,6 @@
-import { AsyncBoundary, Skeleton, StatCard } from '@/shared/presentation/primitives';
+import AsyncBoundary from '@/shared/presentation/primitives/AsyncBoundary';
+import Skeleton from '@/shared/presentation/primitives/Skeleton';
+import StatCard from '@/shared/presentation/primitives/StatCard';
 import { useMemo } from 'react';
 import {
     AreaChart,

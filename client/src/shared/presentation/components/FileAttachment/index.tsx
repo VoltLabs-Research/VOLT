@@ -1,6 +1,10 @@
 import { cn } from '@/shared/utils/cn';
 import { formatSize } from '@/shared/utils/format';
-import { Button, Row, Stack, Text, Tooltip } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
+import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import './FileAttachment.css';
 import { IoDocumentOutline, IoDownloadOutline, IoImageOutline } from 'react-icons/io5';
 import { Copy } from 'lucide-react';

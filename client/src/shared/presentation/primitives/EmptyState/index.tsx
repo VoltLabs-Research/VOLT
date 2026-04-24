@@ -1,4 +1,7 @@
-import { Button, Heading, Stack, Text } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import './EmptyState.css';
 import { useId } from 'react';
 import type { ReactNode } from 'react';

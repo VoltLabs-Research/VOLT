@@ -6,13 +6,6 @@
     padding: 2rem 2.5rem;
 }
 
-.container-overview-divider {
-    height: 1px;
-    background: var(--color-border-soft);
-    margin: 2rem 0;
-    border: 0;
-}
-
 .container-overview-metrics {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

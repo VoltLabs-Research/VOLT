@@ -1,5 +1,11 @@
-import { Button, FloatingToolbar, SaveStatusIndicator, Tooltip } from '@/shared/presentation/primitives';
-import type { SaveStatus } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Divider from '@/shared/presentation/primitives/Divider';
+import FloatingToolbar from '@/shared/presentation/primitives/FloatingToolbar';
+import Row from '@/shared/presentation/primitives/Row';
+import SaveStatusIndicator from '@/shared/presentation/primitives/SaveStatusIndicator';
+import Text from '@/shared/presentation/primitives/Text';
+import Tooltip from '@/shared/presentation/primitives/Tooltip';
+import type { SaveStatus } from '@/shared/presentation/primitives/SaveStatusIndicator';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { useReactFlow } from '@xyflow/react';
 import { ZoomIn, ZoomOut, Maximize, Save, AlertTriangle } from 'lucide-react';
@@ -30,36 +36,36 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
                     content={validationResult!.errors.join(' · ')}
                     placement='top'
                 >
-                    <div className='d-flex items-center gap-05 canvas-toolbar-status canvas-toolbar-status--error cursor-pointer'>
+                    <Row gap='05' cursor='pointer' className='canvas-toolbar-status canvas-toolbar-status--error'>
                         <AlertTriangle size={14} />
-                        <p className='font-size-2'>
+                        <Text as='p' size='sm'>
                             {validationResult!.errors.length} {validationResult!.errors.length === 1 ? 'issue' : 'issues'}
-                        </p>
-                    </div>
+                        </Text>
+                    </Row>
                 </Tooltip>
             )}
 
-            <div className='d-flex items-center gap-025'>
+            <Row gap='025'>
                 <Tooltip content='Zoom out' placement='top'>
                     <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleZoomOut}>
                         <ZoomOut size={16} />
                     </Button>
                 </Tooltip>
-                <p className='text-center u-select-none canvas-toolbar-zoom-label color-secondary font-size-2 tabular-nums'>
+                <Text as='p' size='sm' tone='secondary' align='center' className='u-select-none canvas-toolbar-zoom-label tabular-nums'>
                     {zoomPercent}%
-                </p>
+                </Text>
                 <Tooltip content='Zoom in' placement='top'>
                     <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleZoomIn}>
                         <ZoomIn size={16} />
                     </Button>
                 </Tooltip>
-                <hr className='volt-divider volt-divider--vertical canvas-toolbar-divider' />
+                <Divider orientation='vertical' className='canvas-toolbar-divider' />
                 <Tooltip content='Fit to view' placement='top'>
                     <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleFitView}>
                         <Maximize size={16} />
                     </Button>
                 </Tooltip>
-            </div>
+            </Row>
 
             <Tooltip content='Save (Ctrl+S)' placement='top'>
                 <Button

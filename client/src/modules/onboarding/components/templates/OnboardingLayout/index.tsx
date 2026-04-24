@@ -5,7 +5,8 @@ import { JoinTeamModal } from '@/modules/team/components/JoinTeamModal';
 import { switchSelectedTeam } from '@/modules/team/stores/team/use-team-store';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import NotificationsPopover from '@/modules/notification/components/NotificationsPopover';
-import { Button, openModal } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import { openModal } from '@/shared/presentation/primitives/Modal';
 import type { ReactNode } from 'react';
 import type { JoinByInviteCodeOutputDTO } from '@/modules/team/api/dtos/team/join-by-invite-code';
 

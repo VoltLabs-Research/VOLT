@@ -1,7 +1,7 @@
-import { Modal, closeModal } from '@/shared/presentation/primitives';
+import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import { Text } from '@/shared/presentation/primitives';
+import Text from '@/shared/presentation/primitives/Text';
 import { RENAME_SCRIPTING_NOTEBOOK_MODAL_ID } from '@/modules/scripting/hooks/use-notebooks-listing';
 import { useCallback, useEffect, useState } from 'react';
 import type { ModalFooterAction } from '@/shared/presentation/components/ModalFooterActions';

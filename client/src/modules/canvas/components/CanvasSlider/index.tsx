@@ -1,4 +1,4 @@
-import './CanvasSlider.css';
+import Slider from '@/shared/presentation/primitives/Slider';
 
 interface CanvasSliderProps {
     ariaLabel: string;
@@ -12,29 +12,20 @@ interface CanvasSliderProps {
 };
 
 const CanvasSlider = ({
-    ariaLabel,
     min,
     max,
     value,
     onChange,
     step = 1,
-    disabled = false,
-    ariaValueText
+    disabled = false
 }: CanvasSliderProps) => (
-    <input
-        className="canvas-slider"
-        type="range"
+    <Slider
         min={min}
         max={max}
         step={step}
         value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
+        onChange={onChange}
         disabled={disabled}
-        aria-label={ariaLabel}
-        aria-valuemin={min}
-        aria-valuemax={max}
-        aria-valuenow={value}
-        aria-valuetext={ariaValueText}
     />
 );
 

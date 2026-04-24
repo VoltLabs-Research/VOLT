@@ -1,4 +1,5 @@
 import FractalScenePipeline from '@/modules/fractal/components/organisms/FractalScenePipeline';
+import VisuallyHidden from '@/shared/presentation/primitives/VisuallyHidden';
 import { resolveCanvasRuntimeProps } from '@/shared/domain/rendering/performance';
 import { debugFractal, warnFractal } from '@/modules/fractal/utilities/debug-log';
 import './FractalScene.css';
@@ -270,13 +271,13 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
 
     return (
         <section className='fractal-scene' role='region' aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={0}>
-            <h2 id={titleId} className='sr-only'>3D model viewer</h2>
-            <p id={descriptionId} className='sr-only'>
+            <VisuallyHidden as='h2' id={titleId}>3D model viewer</VisuallyHidden>
+            <VisuallyHidden as='p' id={descriptionId}>
                 Interactive 3D viewport. Use mouse controls to orbit, pan, and zoom. When a model is selected, extra rotation controls appear in the viewer.
-            </p>
-            <div className='sr-only' aria-live='polite' aria-atomic='true'>
+            </VisuallyHidden>
+            <VisuallyHidden as='div' aria-live='polite' aria-atomic='true'>
                 {screenshotAnnouncement}
-            </div>
+            </VisuallyHidden>
             <Canvas
                 gl={glProps}
                 dpr={canvasRuntimeProps.dpr}

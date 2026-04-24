@@ -5,8 +5,9 @@ import './ContainerProcesses.css';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import RefreshButton from '@/shared/presentation/components/RefreshButton';
-import { Stack, Table } from '@/shared/presentation/primitives';
-import type { Column } from '@/shared/presentation/primitives';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Table from '@/shared/presentation/primitives/Table';
+import type { Column } from '@/shared/presentation/primitives/Table';
 
 interface ContainerProcessesProps {
     containerId: string;

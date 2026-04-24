@@ -1,3 +1,27 @@
+.canvas-objects-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.canvas-objects-panel__top {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow-y: auto;
+    flex: 1 1 auto;
+}
+
+.canvas-objects-panel__bottom {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 auto;
+    border-top: 1px solid var(--color-border-soft);
+}
+
 .canvas-tree-container {
     padding: 6px 8px 10px;
 }
@@ -61,6 +85,61 @@
     color: var(--color-text-muted);
 }
 
+.canvas-tree-analysis-name {
+    min-width: 0;
+    flex: 0 1 auto;
+    transition: color 180ms ease, text-shadow 180ms ease;
+}
+
+.canvas-tree-analysis-name--queued {
+    color: var(--status-warning);
+}
+
+.canvas-tree-analysis-name--running {
+    color: var(--accent-blue);
+}
+
+.canvas-tree-analysis-name--completed {
+    color: var(--status-success);
+    text-shadow: 0 0 10px color-mix(in srgb, var(--status-success) 35%, transparent);
+}
+
+.canvas-tree-analysis-name--failed {
+    color: var(--status-error, var(--accent-red, #ff5c5c));
+}
+
+/*
+ * Light mode overrides. The dark-mode yellow/green/blue tokens are bright on
+ * black but fall below WCAG AA on the white sidebar, so we swap them for
+ * darker, higher-contrast hues while the accent hues stay consistent.
+ */
+:root[data-theme='light'] .canvas-tree-analysis-name--queued {
+    color: #8a5300;
+}
+
+:root[data-theme='light'] .canvas-tree-analysis-name--running {
+    color: #0a5fbf;
+}
+
+:root[data-theme='light'] .canvas-tree-analysis-name--completed {
+    color: #0f7a34;
+    text-shadow: 0 0 10px color-mix(in srgb, #0f7a34 25%, transparent);
+}
+
+:root[data-theme='light'] .canvas-tree-analysis-name--failed {
+    color: #c41e1e;
+}
+
+.canvas-plugin-popover-title-row {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+}
+
+.canvas-plugin-popover-title-row > * {
+    min-width: 0;
+}
+
 .canvas-tree-toggle.button.icon-only {
     background-color: transparent;
     color: var(--color-text-muted);
@@ -74,37 +153,6 @@
 .canvas-tree-spacer {
     width: 13px;
     height: 13px;
-}
-
-.canvas-tree-skeleton {
-    height: 10px;
-    width: 120px;
-    background: var(--color-surface-2);
-    border-radius: var(--radius-xs);
-}
-
-.canvas-tree-skeleton--compact {
-    width: 80px;
-}
-
-.canvas-tree-status-dot {
-    opacity: 0.8;
-}
-
-.canvas-tree-status-dot--running {
-    color: var(--accent-blue);
-}
-
-.canvas-tree-status-dot--completed {
-    color: var(--accent-green);
-}
-
-.canvas-tree-status-dot--pending {
-    color: var(--accent-yellow);
-}
-
-.canvas-tree-status-dot--failed {
-    color: var(--accent-red);
 }
 
 .canvas-tree-group {

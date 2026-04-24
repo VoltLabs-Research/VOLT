@@ -3,8 +3,12 @@ import { getChatDisplayName, getChatStatusText } from '@/modules/chat/utilities/
 import ChatAvatar from '../ChatAvatar';
 import SharedFilesList from '../SharedFilesList';
 import { IoChatbubblesOutline, IoPeopleOutline } from 'react-icons/io5';
-import { Box, Stack, Text, Button, SectionLabel } from '@/shared/presentation/primitives';
-import { EmptyState } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Button from '@/shared/presentation/primitives/Button';
+import SectionLabel from '@/shared/presentation/primitives/SectionLabel';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
+import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
 import type { Chat } from '@/modules/chat/api/entities/chat';
 import type { ChatMessage } from '@/modules/chat/api/entities/message';

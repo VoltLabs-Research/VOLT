@@ -1,4 +1,4 @@
-import { ContextMenuPopover } from '@/shared/presentation/primitives';
+import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopover';
 import { BookOpen, Braces, FileCode, Home, PlugZap } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import type { MouseEvent, ReactNode } from 'react';

@@ -1,8 +1,8 @@
-import { Button } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
 import { useCallback, useMemo } from 'react';
 import type { ChangeEvent } from 'react';
 import type { Node } from '@xyflow/react';
-import { CollapsibleSection } from '@/shared/presentation/primitives';
+import CollapsibleSection from '@/shared/presentation/primitives/CollapsibleSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import usePluginBuilderStore from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import type { INodeData, NodeConnectorSide } from '@/modules/plugin/api/entities/plugin/workflow';

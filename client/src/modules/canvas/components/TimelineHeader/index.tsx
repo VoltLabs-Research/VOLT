@@ -2,9 +2,13 @@ import FrameCombobox from '../FrameCombobox';
 import TransportControls from '../TransportControls';
 
 import { Atom, Box as BoxIcon, Gauge, ZoomIn } from 'lucide-react';
-import { Button, Popover, Row, Text } from '@/shared/presentation/primitives';
-import { PopoverMenu } from '@/shared/presentation/primitives';
-import { PopoverMenuItem } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Divider from '@/shared/presentation/primitives/Divider';
+import Popover from '@/shared/presentation/primitives/Popover';
+import Row from '@/shared/presentation/primitives/Row';
+import Text from '@/shared/presentation/primitives/Text';
+import PopoverMenu from '@/shared/presentation/primitives/PopoverMenu';
+import PopoverMenuItem from '@/shared/presentation/primitives/PopoverMenuItem';
 import type { DownloadPluginListingParams } from '../../hooks/use-download-plugin-listing';
 import type { ReactNode } from 'react';
 
@@ -105,12 +109,12 @@ const TimelineHeader = ({
         {
             value: startFrame,
             onChange: onRangeStartChange,
-            title: 'Start frame'
+            title: 'Start timestep'
         },
         {
             value: endFrame,
             onChange: onRangeEndChange,
-            title: 'End frame'
+            title: 'End timestep'
         }
     ];
 
@@ -253,7 +257,7 @@ const TimelineHeader = ({
                         />
                     ))}
 
-                    <div className="canvas-viewport-divider f-shrink-0" />
+                    <Divider orientation='vertical' className='f-shrink-0' />
 
                     <Popover
                         id="timeline-speed"

@@ -1,4 +1,4 @@
-import { Button } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
 import '@/shared/presentation/components/SidebarSubItems/SidebarSubItems.css';
 import { useEffect, useId, useState } from 'react';
 import { IoChevronDown } from 'react-icons/io5';

@@ -12,7 +12,9 @@ import { ARGUMENT_TYPE_OPTIONS } from '@/modules/plugin/utilities/plugin/node-re
 import ArgumentOptionsEditor from './ArgumentOptionsEditor';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import FormSection from '@/shared/presentation/components/FormSection';
-import { DashedActionBox, Select, Tag } from '@/shared/presentation/primitives';
+import DashedActionBox from '@/shared/presentation/primitives/DashedActionBox';
+import Select from '@/shared/presentation/primitives/Select';
+import Tag from '@/shared/presentation/primitives/Tag';
 import { ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type {
@@ -20,7 +22,7 @@ import type {
     IArgumentOption,
     IArgumentVisibilityCondition
 } from '@/modules/plugin/api/entities/plugin/workflow';
-import type { SelectOption } from '@/shared/presentation/primitives';
+import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import type { ChangeEvent } from 'react';
 
 interface ArgumentDefinitionSectionProps {

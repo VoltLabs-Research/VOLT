@@ -1,7 +1,7 @@
 import sceneArtifactService from '@/modules/trajectory/api/services/scene-artifacts';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
-import { Text } from '@/shared/presentation/primitives';
+import Text from '@/shared/presentation/primitives/Text';
 import { dateColumn, enumColumn, populatedNameColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
 import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
 import type { PaginatedResponse } from '@/shared/domain/pagination';

@@ -2,7 +2,13 @@ import ScriptingNotebookDeploymentModal from '@/modules/scripting/components/Scr
 import useScriptingWorkspace from '@/modules/scripting/hooks/use-scripting-workspace';
 import useTip from '@/shared/tips/use-tip';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
-import { AsyncBoundary, Box, Button, Heading, Loader, Stack, Text } from '@/shared/presentation/primitives';
+import AsyncBoundary from '@/shared/presentation/primitives/AsyncBoundary';
+import Box from '@/shared/presentation/primitives/Box';
+import Button from '@/shared/presentation/primitives/Button';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Loader from '@/shared/presentation/primitives/Loader';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import './ScriptingWorkspace.css';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';

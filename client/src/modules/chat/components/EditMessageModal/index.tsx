@@ -1,4 +1,5 @@
-import { Box, Modal, closeModal } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import type { KeyboardEvent } from 'react';

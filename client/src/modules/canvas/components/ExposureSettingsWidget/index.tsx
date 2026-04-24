@@ -6,7 +6,8 @@ import useSceneInteraction from '../../hooks/use-scene-interaction';
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import { Surface, Stack } from '@/shared/presentation/primitives';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Surface from '@/shared/presentation/primitives/Surface';
 
 import './ExposureSettingsWidget.css';
 

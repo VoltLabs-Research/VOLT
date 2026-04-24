@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { KeyValueRow } from '@/shared/presentation/primitives';
+import { KeyValueRow } from '@/shared/presentation/primitives/KeyValueList';
 
 interface ReviewItemProps {
     label: string;

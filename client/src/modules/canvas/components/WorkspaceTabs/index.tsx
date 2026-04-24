@@ -13,7 +13,7 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
-    { id: CanvasWorkspace.Modeling, label: 'Scene' },
+    { id: CanvasWorkspace.Scene, label: 'Scene' },
     { id: CanvasWorkspace.Raster, label: 'Raster', auxOnly: true },
     { id: CanvasWorkspace.Scripting, label: 'Scripting', auxOnly: true }
 ];

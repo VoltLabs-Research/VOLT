@@ -3,6 +3,9 @@ import type { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enu
 import type { NodeTypeConfig } from '@/modules/plugin/utilities/plugin/node-registry';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import DynamicIcon from '@/shared/presentation/components/DynamicIcon';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 interface PaletteItemProps {
     config: NodeTypeConfig;
     onDragStart: (event: DragEvent, nodeType: NodeType) => void;
@@ -21,15 +24,15 @@ const PaletteItem = ({ config, onDragStart, onAdd }: PaletteItemProps) => {
     };
 
     return (
-        <div className='d-flex gap-1-5 items-center cursor-pointer' draggable={!alreadyExists} onDragStart={alreadyExists ? undefined : (e) => onDragStart(e, config.type)} onClick={handleClick} style={alreadyExists ? { opacity: 0.4, pointerEvents: 'none' } : undefined}>
-            <div >
+        <Row gap='1-5' cursor='pointer' draggable={!alreadyExists} onDragStart={alreadyExists ? undefined : (e) => onDragStart(e, config.type)} onClick={handleClick} style={alreadyExists ? { opacity: 0.4, pointerEvents: 'none' } : undefined}>
+            <div>
                 <DynamicIcon iconName={config.icon} />
             </div>
-            <div className='d-flex column gap-05'>
-                <h3 >{config.label}</h3>
-                <p className='color-muted'>{config.description}</p>
-            </div>
-        </div>
+            <Stack gap='05'>
+                <h3>{config.label}</h3>
+                <Text as='p' tone='muted'>{config.description}</Text>
+            </Stack>
+        </Row>
     );
 };
 

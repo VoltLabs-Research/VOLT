@@ -1,7 +1,11 @@
 import { getFrameGroupStatusLabel } from '@/modules/jobs/utilities/job-status-label';
 import { FrameJobGroupStatus } from '@/modules/jobs/api/entities/job';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
-import { Heading, Row, Stack, StatusBadge, Text } from '@/shared/presentation/primitives';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
+import Text from '@/shared/presentation/primitives/Text';
 import { formatDistanceToNow } from 'date-fns';
 import { motion } from 'framer-motion';
 import { IoChevronForward } from 'react-icons/io5';

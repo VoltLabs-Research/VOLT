@@ -17,16 +17,3 @@
     background: var(--status-success-bg);
 }
 
-.team-invitation-by-code-spinner {
-    animation: team-invitation-by-code-spin 1s linear infinite;
-}
-
-@keyframes team-invitation-by-code-spin {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
-}

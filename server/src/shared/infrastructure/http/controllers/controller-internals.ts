@@ -75,7 +75,7 @@ export const buildControllerParams = (
     ) => Record<string, unknown>
 ): Record<string, unknown> => {
     const bodyPayload = asRecord(validationState.body ?? req.body) ?? {};
-    const baseParams = {
+    const baseParams: Record<string, unknown> = {
         ...(asRecord(validationState.params ?? req.params) ?? {}),
         ...(asRecord(validationState.query ?? req.query) ?? {}),
         ...(asRecord(validationState.request) ?? {}),
@@ -85,9 +85,6 @@ export const buildControllerParams = (
         authenticatedUserId: req.userId,
         token: req.token,
         authType: req.authType,
-        secretKeyId: req.secretKeyId,
-        secretKeyTeamId: req.secretKeyTeamId,
-        secretKeyRoleId: req.secretKeyRoleId,
         ip: req.ip || req.socket.remoteAddress || '',
         userAgent: readUserAgent(req),
         traceId: req.requestContext?.traceId,
@@ -95,6 +92,10 @@ export const buildControllerParams = (
         file: req.file,
         files: req.files
     };
+
+    if (baseParams.secretKeyId === undefined) baseParams.secretKeyId = req.secretKeyId;
+    if (baseParams.secretKeyTeamId === undefined) baseParams.secretKeyTeamId = req.secretKeyTeamId;
+    if (baseParams.secretKeyRoleId === undefined) baseParams.secretKeyRoleId = req.secretKeyRoleId;
 
     if (!extendParams) {
         return baseParams;

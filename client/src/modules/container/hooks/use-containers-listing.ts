@@ -20,7 +20,7 @@ import {
 } from '@/modules/container/utilities/listing';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { closeModal, openModal } from '@/shared/presentation/primitives';
+import { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
 import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
 import useFolderedListing, { type FolderedListingContext } from '@/shared/presentation/hooks/use-foldered-listing';

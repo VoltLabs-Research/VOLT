@@ -9,7 +9,7 @@ import {
 import { isAccessDeniedError } from '@/shared/errors/core';
 import { ScriptingNotebookScope } from '@/modules/scripting/api/entities/scripting-notebook-scope';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { closeModal, openModal } from '@/shared/presentation/primitives';
+import { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import {

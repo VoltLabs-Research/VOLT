@@ -6,10 +6,6 @@ export const registerShortcutAction = (id: string, action: ShortcutAction): void
     actions.set(id, action);
 };
 
-export const unregisterShortcutAction = (id: string): void => {
-    actions.delete(id);
-};
-
 export const clearShortcutActions = (): void => {
     actions.clear();
 };

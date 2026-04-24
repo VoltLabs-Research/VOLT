@@ -1,6 +1,6 @@
 import { formatDistanceToNow } from 'date-fns';
 import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCellPopover';
-import { StatusBadge } from '@/shared/presentation/primitives';
+import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import type { User } from '@/modules/auth/api/entities/user';
 import type { ReactNode } from 'react';

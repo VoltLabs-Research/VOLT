@@ -1,4 +1,4 @@
-import { Stack } from '@/shared/presentation/primitives';
+import Stack from '@/shared/presentation/primitives/Stack';
 import { memo } from 'react';
 import LatexPdfViewer from './LatexPdfViewer';
 

@@ -337,6 +337,23 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         return activeScenes.some((s) => isSameScene(s, scene));
     }, [activeScenes]);
 
+    const prevTimestepRef = useRef(currentTimestep);
+
+    useEffect(() => {
+        const previous = prevTimestepRef.current;
+        prevTimestepRef.current = currentTimestep;
+
+        if (previous === currentTimestep) return;
+        if (currentTimestep === undefined) return;
+        if (!selectedAnalysis) return;
+
+        const scopedTimesteps = getSelectedTimestepsForAnalysis(selectedAnalysis, trajectoryTimesteps);
+        if (!scopedTimesteps || scopedTimesteps.includes(currentTimestep)) return;
+
+        setActiveScene({ sceneType: 'trajectory', source: 'default' });
+        setAnalysisId(undefined, { replace: true });
+    }, [currentTimestep, selectedAnalysis, trajectoryTimesteps, setActiveScene, setAnalysisId]);
+
     const onSelectScene = useCallback((scene: SceneObjectType, analysis?: Analysis) => {
         if (scene.source === 'plugin' && 'analysisId' in scene) {
             manualSelectionRef.current = scene.analysisId;

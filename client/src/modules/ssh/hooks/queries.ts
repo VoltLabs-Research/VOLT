@@ -4,7 +4,6 @@ import {
     createMutation,
     createQuery
 } from '@/shared/infrastructure/query';
-import { batchInvalidateQueries } from '@/shared/infrastructure/query/cache-utils';
 import service from '../api/service';
 import type { SSHConnection } from '../api/entities/ssh-connection';
 import type { CreateSSHConnectionParams } from '../api/dtos/create-ssh-connection';
@@ -28,13 +27,6 @@ export const sshConnectionsQueryKey = KEYS.connections;
 export const sshConnectionsQuery = createQuery(KEYS.connections, service.getConnections);
 export const sshConnectionByIdQuery = createQuery(KEYS.connectionById, service.getById);
 export const sshFilesQuery = createQuery(KEYS.files, service.listFiles);
-
-export const invalidateSSHConnectionQueries = () => {
-    return batchInvalidateQueries([
-        KEYS.connections(),
-        KEYS.connectionById()
-    ]);
-};
 
 export const useCreateSSHConnectionMutation = createInvalidatingMutation<SSHConnection, CreateSSHConnectionParams>(
     service.createConnection,

@@ -3,11 +3,14 @@ import PerformanceMenuPopover from '../PerformanceMenuPopover';
 import RenderMenuPopover from '../RenderMenuPopover';
 import ScreenshotMenuPopover from '../ScreenshotMenuPopover';
 import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
-import { FloatingToolbar } from '@/shared/presentation/primitives';
+import FloatingToolbar from '@/shared/presentation/primitives/FloatingToolbar';
+import useTip from '@/shared/tips/use-tip';
 
 import './ViewportFloatingControls.css';
 
 const ViewportFloatingControls = () => {
+    useTip('canvas-render-settings');
+
     return (
         <FloatingToolbar
             align='end'

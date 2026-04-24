@@ -1,4 +1,4 @@
-import { Row } from '@/shared/presentation/primitives';
+import Row from '@/shared/presentation/primitives/Row';
 import './NotificationBadge.css';
 interface NotificationBadgeProps {
     count: number;
