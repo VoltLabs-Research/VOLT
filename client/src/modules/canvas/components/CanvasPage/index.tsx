@@ -399,37 +399,42 @@ const CanvasPage = () => {
         )
         : null;
 
-    let viewportBodyContent = undefined;
-    if (isLocalGlbViewer && !forcedGlbUrl) {
-        viewportBodyContent = (
-            <Row justify='center' width='max' height='max'>
-                <EmptyState
-                    title='Drop a GLB file to preview'
-                    description='Use the global dashboard dropzone to open a local GLB viewer.'
+    const viewportBodyContent = (() => {
+        if (isRasterWorkspace) {
+            return (
+                <CanvasRasterViewport
+                    trajectoryId={trajectoryId}
+                    trajectory={trajectory}
+                    currentTimestep={currentTimestep}
+                    containerSelections={rasterContainerSelections}
+                    onUpdateContainerSelection={handleUpdateRasterContainerSelection}
                 />
-            </Row>
-        );
-    } else if (isScriptingWorkspace) {
-        viewportBodyContent = (
-            <ScriptingWorkspace
-                trajectoryId={trajectoryId}
-                notebookId={selectedNotebookId}
-                onJupyterUrlChange={setScriptingJupyterUrl}
-            />
-        );
-    }
+            );
+        }
 
-    if (isRasterWorkspace) {
-        viewportBodyContent = (
-            <CanvasRasterViewport
-                trajectoryId={trajectoryId}
-                trajectory={trajectory}
-                currentTimestep={currentTimestep}
-                containerSelections={rasterContainerSelections}
-                onUpdateContainerSelection={handleUpdateRasterContainerSelection}
-            />
-        );
-    }
+        if (isScriptingWorkspace) {
+            return (
+                <ScriptingWorkspace
+                    trajectoryId={trajectoryId}
+                    notebookId={selectedNotebookId}
+                    onJupyterUrlChange={setScriptingJupyterUrl}
+                />
+            );
+        }
+
+        if (isLocalGlbViewer && !forcedGlbUrl) {
+            return (
+                <Row justify='center' width='max' height='max'>
+                    <EmptyState
+                        title='Drop a GLB file to preview'
+                        description='Use the global dashboard dropzone to open a local GLB viewer.'
+                    />
+                </Row>
+            );
+        }
+
+        return undefined;
+    })();
 
     const rightOverlaySize = !isLocalGlbViewer && !isNarrowViewport ? rightPanel.size : 0;
 

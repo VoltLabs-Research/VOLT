@@ -8,6 +8,7 @@ import SocketIOEventRegistry from '@modules/socket/infrastructure/services/Socke
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import { formatSocketValidationError } from '@modules/socket/utilities/socket-validation-error';
+import type TeamCluster from '@modules/team-cluster/domain/entities/TeamCluster';
 import CompleteTeamClusterDeletionUseCase from '@modules/team-cluster/application/use-cases/CompleteTeamClusterDeletionUseCase';
 import ProcessDaemonJobCompletionUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonJobCompletionUseCase';
 import type { ProcessDaemonSceneArtifactUpsertInputDTO } from '@modules/team-cluster/application/use-cases/ProcessDaemonSceneArtifactUpsertUseCase';
@@ -15,10 +16,16 @@ import ProcessDaemonSceneArtifactUpsertUseCase from '@modules/team-cluster/appli
 import ProcessDaemonTrajectoryImportUseCase from '@modules/team-cluster/application/use-cases/ProcessDaemonTrajectoryImportUseCase';
 import RecordTeamClusterHeartbeatUseCase from '@modules/team-cluster/application/use-cases/RecordTeamClusterHeartbeatUseCase';
 import UpdateTeamClusterLifecycleUseCase from '@modules/team-cluster/application/use-cases/UpdateTeamClusterLifecycleUseCase';
+import SystemMetricsRedisRepository from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisRepository';
 import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import TeamClusterHeartbeatMonitor from '@modules/team-cluster/infrastructure/services/TeamClusterHeartbeatMonitor';
 import TeamClusterLifecycleService from '@modules/team-cluster/infrastructure/services/TeamClusterLifecycleService';
 import TeamClusterReverseChannelService from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
+import {
+    TEAM_CLUSTER_METRICS_ALL_EVENT,
+    TEAM_CLUSTER_METRICS_HISTORY_EVENT,
+    toTeamClusterClientMetrics
+} from '@modules/team-cluster/utilities/teamClusterMetricsSocket';
 import {
     ChannelCommands,
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
@@ -40,8 +47,20 @@ interface SubscribeToTeamClusterSocketPayload {
     teamClusterIds: string[];
 };
 
+interface ClusterMetricsHistorySocketPayload {
+    clusterId: string;
+    minutes?: number;
+};
+
+const MAX_CLUSTER_METRICS_HISTORY_MINUTES = 60;
+
 const subscribeToTeamClusterSocketPayloadSchema = z.object({
     teamClusterIds: z.array(z.string().trim().min(1))
+}).strict();
+
+const clusterMetricsHistorySocketPayloadSchema = z.object({
+    clusterId: z.string().trim().min(1),
+    minutes: z.number().int().min(1).max(MAX_CLUSTER_METRICS_HISTORY_MINUTES).optional()
 }).strict();
 
 const daemonRegisterPayloadSchema = z.object({
@@ -91,7 +110,10 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         private readonly analysisExecutionLogService: AnalysisExecutionLogService,
 
         
-        private readonly pluginDebugSessionRegistry: PluginDebugSessionRegistryService
+        private readonly pluginDebugSessionRegistry: PluginDebugSessionRegistryService,
+
+        
+        private readonly systemMetricsRepository: SystemMetricsRedisRepository
     ) {
         super(emitter, roomManager, eventRegistry);
     }
@@ -148,9 +170,55 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
                     const roomName = getTeamClusterRoom(teamClusterId);
                     await this.joinRoom(conn.id, roomName);
                     nextSubscribedIds.push(teamClusterId);
+                    await this.emitLatestMetricsToSocket(conn.id, teamCluster);
                 }
 
                 conn.data.teamClusterIds = nextSubscribedIds;
+            }
+        );
+
+        this.on<ClusterMetricsHistorySocketPayload>(
+            connection.id,
+            TEAM_CLUSTER_METRICS_HISTORY_EVENT,
+            async (conn, payload) => {
+                const parsed = clusterMetricsHistorySocketPayloadSchema.safeParse(payload);
+
+                if (!parsed.success) {
+                    this.emitErrorToSocket(
+                        conn.id,
+                        ErrorCodes.VALIDATION_INVALID_INPUT,
+                        formatSocketValidationError(parsed.error)
+                    );
+                    return;
+                }
+
+                const teamCluster = await this.teamClusterRepository.findById(parsed.data.clusterId);
+                const authorizedTeamIds = new Set(conn.user?.teams ?? []);
+
+                if (!teamCluster || !authorizedTeamIds.has(teamCluster.props.team)) {
+                    this.emitErrorToSocket(
+                        conn.id,
+                        ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN,
+                        'You are not allowed to read metrics for this team cluster'
+                    );
+                    return;
+                }
+
+                const history = await this.systemMetricsRepository.getHistoryByClusterId(
+                    teamCluster.id,
+                    parsed.data.minutes ?? 5
+                );
+                const mappedHistory = history.map((metric) => toTeamClusterClientMetrics(teamCluster, metric));
+
+                this.emitToSocket(conn.id, TEAM_CLUSTER_METRICS_HISTORY_EVENT, {
+                    clusterId: teamCluster.id,
+                    history: mappedHistory
+                });
+
+                const latestMetric = mappedHistory[mappedHistory.length - 1];
+                if (latestMetric) {
+                    this.emitToSocket(conn.id, TEAM_CLUSTER_METRICS_ALL_EVENT, [latestMetric]);
+                }
             }
         );
 
@@ -213,6 +281,17 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
                 }
             }
         });
+    }
+
+    private async emitLatestMetricsToSocket(socketId: string, teamCluster: TeamCluster): Promise<void> {
+        const latestMetric = await this.systemMetricsRepository.getLatestByClusterId(teamCluster.id);
+        if (!latestMetric) {
+            return;
+        }
+
+        this.emitToSocket(socketId, TEAM_CLUSTER_METRICS_ALL_EVENT, [
+            toTeamClusterClientMetrics(teamCluster, latestMetric)
+        ]);
     }
 
     private async handleDaemonServerCommand(socketId: string, payload: TeamClusterDaemonCommandMessage): Promise<void> {

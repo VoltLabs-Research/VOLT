@@ -29,6 +29,23 @@ const trimHistory = (history: ClusterMetrics[]): ClusterMetrics[] => {
     return nextHistory;
 };
 
+const mergeClusterMetrics = (
+    previous: ClusterMetrics[],
+    updates: ClusterMetrics[]
+): ClusterMetrics[] => {
+    const metricsByClusterId = new Map<string, ClusterMetrics>();
+
+    for (const metric of previous) {
+        metricsByClusterId.set(resolveClusterMetricId(metric), metric);
+    }
+
+    for (const metric of updates) {
+        metricsByClusterId.set(resolveClusterMetricId(metric), metric);
+    }
+
+    return [...metricsByClusterId.values()];
+};
+
 export const appendClusterHistoryMetric = (
     history: ClusterMetrics[],
     metric: ClusterMetrics
@@ -54,7 +71,9 @@ export const setClusterMetricsQueryData = (
     _queryClient: QueryClient,
     clusters: ClusterMetrics[]
 ) => {
-    clusterMetricsQuery.set(undefined, clusters);
+    clusterMetricsQuery.update(undefined, (previous = []) => {
+        return mergeClusterMetrics(previous, clusters);
+    });
 
     for (const cluster of clusters) {
         clusterHistoryQuery.update(resolveClusterMetricId(cluster), (previous = []) => {
@@ -68,8 +87,15 @@ export const setClusterHistoryQueryData = (
     history: ClusterHistoryMetric[],
     clusterId: string
 ) => {
-    clusterHistoryQuery.set(clusterId, trimHistory(history));
+    const nextHistory = trimHistory(history);
+    const latestMetric = nextHistory[nextHistory.length - 1];
+
+    clusterHistoryQuery.set(clusterId, nextHistory);
     clusterHistoryLoadedQuery.set(clusterId, true);
+
+    if (latestMetric) {
+        setClusterMetricsQueryData(_queryClient, [latestMetric]);
+    }
 };
 
 export const resetClusterHistoryQuery = (_queryClient: QueryClient, clusterId?: string) => {

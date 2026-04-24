@@ -44,8 +44,8 @@ export default class SocketIOEmitter implements ISocketEmitter, ISocketEmitterRu
     }
 
     emitToRoom(
-        room: string, 
-        event: string, 
+        room: string,
+        event: string,
         data: unknown
     ): void{
         if(!this.io){

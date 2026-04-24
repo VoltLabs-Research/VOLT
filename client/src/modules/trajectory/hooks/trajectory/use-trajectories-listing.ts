@@ -273,7 +273,7 @@ const useTrajectoriesListing = () => {
                 label: 'Inspect Atoms',
                 icon: RiTableLine,
                 handler: ({ item: trajectory }) => {
-                    const firstTimestep = extractTrajectoryTimesteps(trajectory)[0];
+                    const firstTimestep = trajectory.firstTimestep ?? extractTrajectoryTimesteps(trajectory)[0];
                     if (firstTimestep === undefined) {
                         return;
                     }

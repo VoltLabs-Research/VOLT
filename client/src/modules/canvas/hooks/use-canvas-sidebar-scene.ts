@@ -144,18 +144,36 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
             return;
         }
 
+        const analysisId = String(update.analysisId);
+        const isKnown = Boolean(findCachedAnalysisById({
+            analysisId,
+            trajectoryId,
+            fallbackAnalyses: resolvedAnalyses
+        }));
+
+        if (!isKnown) {
+            void queryClient.invalidateQueries({ queryKey: analysisQuery.QUERY_KEYS.lists() });
+            void queryClient.invalidateQueries({
+                predicate: (query) => {
+                    const key = query.queryKey;
+                    return Array.isArray(key) && key.includes('analysis') && key.includes('byTrajectory');
+                }
+            });
+            return;
+        }
+
         const normalizedStatus = normalizeCanvasAnalysisStatus(update.status as string | undefined);
         if (!normalizedStatus) {
             return;
         }
 
         updateAnalysisStatusCaches({
-            analysisId: String(update.analysisId),
+            analysisId,
             status: normalizedStatus,
             completedFrames: typeof update.completedFrames === 'number' ? update.completedFrames : undefined,
             totalFrames: typeof update.totalFrames === 'number' ? update.totalFrames : undefined
         });
-    }, [trajectoryId]);
+    }, [trajectoryId, resolvedAnalyses]);
 
     const handleAnalysisStatusChanged = useCallback((update: Record<string, unknown>) => {
         patchStatusFromSocket(update);
@@ -261,6 +279,16 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
     const trajectoryTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
 
+    const sectionTimestepScopedIds = useMemo(() => {
+        const scoped = new Set<string>();
+        for (const analysis of resolvedAnalyses) {
+            if (getSelectedTimestepsForAnalysis(analysis, trajectoryTimesteps)) {
+                scoped.add(analysis._id);
+            }
+        }
+        return scoped;
+    }, [resolvedAnalyses, trajectoryTimesteps]);
+
     const allAnalysisSections = useMemo((): AnalysisSectionData[] => {
         if (resolvedAnalyses.length === 0) return [];
 
@@ -284,23 +312,17 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         return allAnalysisSections.filter((section) => section.pluginDisplayName.toLowerCase().includes(query));
     }, [allAnalysisSections, searchQuery]);
 
-    const hasSelectedTimestepAnalyses = useMemo(() => {
-        return allAnalysisSections.some((section) => {
-            return Boolean(getSelectedTimestepsForAnalysis(section.analysis, trajectoryTimesteps));
-        });
-    }, [allAnalysisSections, trajectoryTimesteps]);
+    const hasSelectedTimestepAnalyses = sectionTimestepScopedIds.size > 0;
 
-    const sceneCollectionSections = useMemo(() => {
-        return filteredSections.filter((section) => {
-            return !getSelectedTimestepsForAnalysis(section.analysis, trajectoryTimesteps);
-        });
-    }, [filteredSections, trajectoryTimesteps]);
+    const sceneCollectionSections = useMemo(
+        () => filteredSections.filter((section) => !sectionTimestepScopedIds.has(section.analysis._id)),
+        [filteredSections, sectionTimestepScopedIds]
+    );
 
-    const selectedTimestepSections = useMemo(() => {
-        return filteredSections.filter((section) => {
-            return Boolean(getSelectedTimestepsForAnalysis(section.analysis, trajectoryTimesteps));
-        });
-    }, [filteredSections, trajectoryTimesteps]);
+    const selectedTimestepSections = useMemo(
+        () => filteredSections.filter((section) => sectionTimestepScopedIds.has(section.analysis._id)),
+        [filteredSections, sectionTimestepScopedIds]
+    );
 
     const toggleSection = useCallback((analysisId: string) => {
         setExpandedSections(prev => {
