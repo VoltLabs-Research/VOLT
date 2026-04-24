@@ -1,5 +1,12 @@
 import { Queue } from 'bullmq';
 
+const TEAM_ID = '69e8241a6ff90b18c45e25b5';
+const TRAJECTORY_ID = '69e8298ae609eeaa761b0d88';
+const OWNER_CLUSTER_ID = '69e8241a6ff90b18c45e25cd';
+
+const timesteps = process.argv.slice(2).map(Number).filter((n) => Number.isFinite(n));
+if (timesteps.length === 0) timesteps.push(75000);
+
 const queue = new Queue('trajectory_glb_conversion', {
     connection: {
         host: 'compute-redis',
@@ -9,28 +16,25 @@ const queue = new Queue('trajectory_glb_conversion', {
     }
 });
 
-async function main() {
-    const jobId = `trajectory-glb:69e8298ae609eeaa761b0d88:75000`;
-    await queue.remove(jobId).catch(() => {});
-    await queue.add('trajectory_glb_conversion', {
-        jobId,
-        teamId: '69e8241a6ff90b18c45e25b5',
-        trajectoryId: '69e8298ae609eeaa761b0d88',
-        timestep: 75000,
-        objectKey: 'trajectory-69e8298ae609eeaa761b0d88/timestep-75000.dump.zst',
-        ownerClusterId: '69e8241a6ff90b18c45e25cd',
-        status: 'queued',
-        queueType: 'trajectory_glb_conversion',
-        metadata: { trajectoryId: '69e8298ae609eeaa761b0d88', timestep: 75000 },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-    }, {
-        jobId,
-        attempts: 1,
-        removeOnComplete: 100,
-        removeOnFail: 100
-    });
-    console.log(`Enqueued job ${jobId}`);
+(async () => {
+    const now = new Date().toISOString();
+    for (const timestep of timesteps) {
+        const jobId = `trajectory-glb:${TRAJECTORY_ID}:${timestep}`;
+        await queue.remove(jobId).catch(() => {});
+        await queue.add('trajectory_glb_conversion', {
+            jobId,
+            teamId: TEAM_ID,
+            trajectoryId: TRAJECTORY_ID,
+            timestep,
+            objectKey: `trajectory-${TRAJECTORY_ID}/timestep-${timestep}.dump.zst`,
+            ownerClusterId: OWNER_CLUSTER_ID,
+            status: 'queued',
+            queueType: 'trajectory_glb_conversion',
+            metadata: { trajectoryId: TRAJECTORY_ID, timestep },
+            createdAt: now,
+            updatedAt: now
+        }, { jobId, attempts: 1, removeOnComplete: 100, removeOnFail: 100 });
+        console.log(`Enqueued ${jobId}`);
+    }
     await queue.close();
-}
-main().catch((e) => { console.error(e); process.exit(1); });
+})().catch((e) => { console.error(e); process.exit(1); });

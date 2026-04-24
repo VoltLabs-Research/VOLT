@@ -140,29 +140,24 @@ export class ReverseChannelBridge {
         private readonly objectGatewayTelemetry?: ObjectGatewayTelemetry,
         private readonly daemonExposureRegistry?: DaemonExposureRegistry
     ) {
+        const sharedCoordinator = {
+            beginSessionTransition: this.beginSessionTransition.bind(this),
+            cleanupInteractiveSession: this.cleanupInteractiveSession.bind(this),
+            clearSessionActivityIfUntracked: this.clearSessionActivityIfUntracked.bind(this),
+            emitSessionData: this.emitMessage.bind(this),
+            emitSessionEnd: this.emitMessage.bind(this),
+            endSessionTransition: this.endSessionTransition.bind(this),
+            touchSession: this.touchSession.bind(this)
+        };
         this.terminalSessionManager = new TerminalSessionManager({
             dockerRuntime: this.dockerRuntime,
             coordinator: {
-                beginSessionTransition: this.beginSessionTransition.bind(this),
-                cleanupInteractiveSession: this.cleanupInteractiveSession.bind(this),
-                clearSessionActivityIfUntracked: this.clearSessionActivityIfUntracked.bind(this),
-                emitSessionData: this.emitMessage.bind(this),
-                emitSessionEnd: this.emitMessage.bind(this),
-                endSessionTransition: this.endSessionTransition.bind(this),
-                touchSession: this.touchSession.bind(this),
+                ...sharedCoordinator,
                 wasSessionTransitionCancelled: (transition) => this.cancelledSessionTransitions.has(transition.transitionId)
             }
         });
         this.webSocketSessionManager = new WebSocketSessionManager({
-            coordinator: {
-                beginSessionTransition: this.beginSessionTransition.bind(this),
-                cleanupInteractiveSession: this.cleanupInteractiveSession.bind(this),
-                clearSessionActivityIfUntracked: this.clearSessionActivityIfUntracked.bind(this),
-                emitSessionData: this.emitMessage.bind(this),
-                emitSessionEnd: this.emitMessage.bind(this),
-                endSessionTransition: this.endSessionTransition.bind(this),
-                touchSession: this.touchSession.bind(this)
-            }
+            coordinator: sharedCoordinator
         });
     }
 
@@ -376,12 +371,7 @@ export class ReverseChannelBridge {
     private handleTunnelOpen(payload: InboundTunnelOpenPayload): void {
         const sessionTransition = this.beginSessionTransition(payload.sessionId);
         if (!sessionTransition) {
-            this.emitTunnelState({
-                type: 'tunnel-state',
-                sessionId: payload.sessionId,
-                status: REVERSE_CHANNEL.TunnelSessionStatus.Closed,
-                error: 'Tunnel session is already opening'
-            });
+            this.closeTunnelWithError(payload.sessionId, 'Tunnel session is already opening');
             return;
         }
 
@@ -400,24 +390,12 @@ export class ReverseChannelBridge {
             const exposure = this.daemonExposureRegistry?.getExposure(payload.exposureId);
 
             if (!exposure) {
-                this.endSessionTransition(sessionTransition);
-                this.emitTunnelState({
-                    type: 'tunnel-state',
-                    sessionId: payload.sessionId,
-                    status: REVERSE_CHANNEL.TunnelSessionStatus.Closed,
-                    error: 'Exposure not found'
-                });
+                this.closeTunnelWithError(payload.sessionId, 'Exposure not found', sessionTransition);
                 return;
             }
 
             if (!exposure.accessModes.some(mode => mode === payload.accessMode)) {
-                this.endSessionTransition(sessionTransition);
-                this.emitTunnelState({
-                    type: 'tunnel-state',
-                    sessionId: payload.sessionId,
-                    status: REVERSE_CHANNEL.TunnelSessionStatus.Closed,
-                    error: 'Exposure access mode is not supported'
-                });
+                this.closeTunnelWithError(payload.sessionId, 'Exposure access mode is not supported', sessionTransition);
                 return;
             }
 
@@ -450,9 +428,6 @@ export class ReverseChannelBridge {
         };
         const onData = (chunk: Buffer) => {
             this.touchSession(payload.sessionId);
-            // Why: Socket.IO v4 serializes Uint8Array/Buffer fields as native
-            // binary attachments. We wrap in an envelope so the server can
-            // validate opId/kind before forwarding to the tunnel writer.
             const envelope = encodeEnvelope(
                 0,
                 EnvelopeKind.StreamChunk,
@@ -467,24 +442,10 @@ export class ReverseChannelBridge {
             this.emitMessage(dataPayload);
         };
         const onError = (error: Error) => {
-            this.endSessionTransition(sessionTransition);
-            this.emitTunnelState({
-                type: 'tunnel-state',
-                sessionId: payload.sessionId,
-                status: REVERSE_CHANNEL.TunnelSessionStatus.Closed,
-                error: error.message
-            });
-            this.cleanupTunnelSession(payload.sessionId);
+            this.closeTunnelWithError(payload.sessionId, error.message, sessionTransition);
         };
         const onTimeout = () => {
-            this.endSessionTransition(sessionTransition);
-            this.emitTunnelState({
-                type: 'tunnel-state',
-                sessionId: payload.sessionId,
-                status: REVERSE_CHANNEL.TunnelSessionStatus.Closed,
-                error: 'Tunnel session timed out while opening'
-            });
-            this.cleanupTunnelSession(payload.sessionId);
+            this.closeTunnelWithError(payload.sessionId, 'Tunnel session timed out while opening', sessionTransition);
         };
         const onClose = () => {
             this.endSessionTransition(sessionTransition);
@@ -537,24 +498,15 @@ export class ReverseChannelBridge {
         try {
             decoded = decodeEnvelope(envelopeBytes);
         } catch (error) {
-            this.emitTunnelState({
-                type: 'tunnel-state',
-                sessionId: payload.sessionId,
-                status: REVERSE_CHANNEL.TunnelSessionStatus.Closed,
-                error: `Malformed tunnel envelope: ${error instanceof Error ? error.message : String(error)}`
-            });
-            this.cleanupTunnelSession(payload.sessionId);
+            this.closeTunnelWithError(
+                payload.sessionId,
+                `Malformed tunnel envelope: ${error instanceof Error ? error.message : String(error)}`
+            );
             return;
         }
 
         if (decoded.kind !== EnvelopeKind.StreamChunk) {
-            this.emitTunnelState({
-                type: 'tunnel-state',
-                sessionId: payload.sessionId,
-                status: REVERSE_CHANNEL.TunnelSessionStatus.Closed,
-                error: `Unexpected tunnel envelope kind: ${decoded.kind}`
-            });
-            this.cleanupTunnelSession(payload.sessionId);
+            this.closeTunnelWithError(payload.sessionId, `Unexpected tunnel envelope kind: ${decoded.kind}`);
             return;
         }
 
@@ -563,16 +515,22 @@ export class ReverseChannelBridge {
     }
 
     private emitMessage(message: OutboundBridgeMessage): void {
-        // Why: the SDK's OutboundMessage type still declares legacy base64
-        // fields on tunnel-data/session-data. At runtime Socket.IO emits
-        // our replacement `chunk: Uint8Array` as a native binary attachment
-        // regardless of the TypeScript shape. Cast through `unknown` to
-        // bridge the local binary contract to the SDK nominal type.
         this.voltCloudConnection?.emitMessage(message as unknown as Parameters<VoltCloudConnection['emitMessage']>[0]);
     }
 
     private emitTunnelState(payload: TeamClusterDaemonTunnelStatePayload): void {
         this.emitMessage(payload);
+    }
+
+    private closeTunnelWithError(sessionId: string, error: string, transition?: SessionTransition): void {
+        if (transition) this.endSessionTransition(transition);
+        this.emitTunnelState({
+            type: 'tunnel-state',
+            sessionId,
+            status: REVERSE_CHANNEL.TunnelSessionStatus.Closed,
+            error
+        });
+        this.cleanupTunnelSession(sessionId);
     }
 
     private cleanupTunnelSession(sessionId: string): void {

@@ -6,6 +6,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { tmpName } from 'tmp-promise';
 import unzipper from 'unzipper';
+import { safeRemovePath } from '@/support/fs/safe-remove-path';
 
 type CentralDirectory = Awaited<ReturnType<typeof unzipper.Open.file>>;
 
@@ -55,7 +56,7 @@ export class FileExtractor {
                 finalFiles.push(...await this.extractZipViaOpenFile(zipPath, workingDir));
 
                 if (tempZipCreated) {
-                    await fs.unlink(zipPath).catch(() => {});
+                    await safeRemovePath(zipPath);
                 }
 
                 continue;

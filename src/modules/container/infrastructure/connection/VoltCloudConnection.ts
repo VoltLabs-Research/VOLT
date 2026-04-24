@@ -4,7 +4,6 @@ import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import { MetricsService } from '@/core/metrics/application/MetricsService';
 import type { TeamClusterDaemonServerEventMessage } from '@/core/reverse-channel/contracts/server-event';
-import { RuntimeCommands } from '@/core/commands/command-names';
 import { OrchestrationAction } from '@/core/runtime/contracts/http-runtime';
 import type { RuntimeProgressMessage } from '@/core/runtime/contracts/reverse-channel-runtime';
 import http from 'node:http';
@@ -273,7 +272,7 @@ export class VoltCloudConnection {
 
     async getRuntimeConfig(): Promise<TeamClusterDaemonRuntimeConfig> {
         const runtimeConfig = await this.sendServerCommand<TeamClusterDaemonRuntimeConfig>(
-            RuntimeCommands.ConfigGet,
+            'runtime.config.get',
             {}
         );
         if (!runtimeConfig) {

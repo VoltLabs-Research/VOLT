@@ -1,9 +1,3 @@
-interface SerializableObject {
-    [key: string]: SerializableValue | undefined;
-}
-
-type SerializableValue = bigint | boolean | Date | Function | null | number | SerializableObject | SerializableValue[] | string | symbol | undefined;
-
 const CLI_ARGUMENTS_TOKEN_PREFIX = '__volt_cli_args__:';
 
 export const encodeCliArgumentsToken = (argumentsArray: string[]): string => {
@@ -35,7 +29,7 @@ export const decodeCliArgumentsToken = (value: string): string[] | null => {
     }
 };
 
-export const stringifyUnknown = (value: SerializableValue): string => {
+export const stringifyUnknown = (value: unknown): string => {
     if (typeof value === 'string') {
         return value;
     }

@@ -17,9 +17,6 @@ const mergeChunkedRecord = (target: ChunkedRecord, incoming: ChunkedRecord): Chu
     return target;
 };
 
-/**
- * Merges partial data chunks (arrays or objects) into a single structure.
- */
 const mergeChunkedValue = (target: ChunkedValue, incoming: ChunkedValue): ChunkedValue => {
     if (incoming === null) return target;
     if (target === null) return incoming;

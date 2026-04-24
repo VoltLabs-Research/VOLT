@@ -8,6 +8,7 @@ import {
     readWorkflowExposurePayload
 } from '@/modules/analysis/application/workflow/exposure-payload-reader';
 import type { MsgpackObject } from '@/support/serialization/msgpack-value';
+import { isPlainObject } from '@/support/type-guards/is-record';
 import type { PluginListingRepository } from '@/modules/plugin/infrastructure/repositories/plugin-listing-repository-contract';
 import { processExportNode } from '@/modules/plugin/application/exports/ExportNodeProcessor';
 import type { ArtifactUploadBatch } from '@/modules/plugin/contracts/artifact-upload';
@@ -141,7 +142,7 @@ async function precomputeListingRows(
     }
 
     const mainListing = decoded.main_listing;
-    if (typeof mainListing !== 'object' || mainListing === null || Array.isArray(mainListing) || Object.keys(mainListing).length === 0) {
+    if (!isPlainObject(mainListing) || Object.keys(mainListing).length === 0) {
         logger.warn(`Empty or missing main_listing in decoded payload for objectKey=${objectKey}`);
         return;
     }

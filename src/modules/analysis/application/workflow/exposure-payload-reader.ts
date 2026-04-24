@@ -2,7 +2,6 @@ import { decodeMultiStream, mergeSelectiveChunk } from '@/support/serialization/
 import type { MsgpackObject, MsgpackValue } from '@/support/serialization/msgpack-value';
 import { isPlainObject } from '@/support/type-guards/is-record';
 import { createReadStream } from 'node:fs';
-import fs from 'node:fs/promises';
 
 export interface WorkflowExposurePayloadReadResult {
     listing: MsgpackObject | null;
@@ -75,7 +74,6 @@ export const inspectWorkflowExposureOutput = async (
     resultsFileName: string
 ): Promise<WorkflowExposureInspectionResult> => {
     const outputFilePath = createWorkflowExposureOutputFilePath(outputDir, resultsFileName);
-    await fs.access(outputFilePath);
 
     const {
         listing,

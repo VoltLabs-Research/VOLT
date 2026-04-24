@@ -50,25 +50,14 @@ export class TerminalSessionManager {
     constructor(private readonly options: TerminalSessionManagerOptions) {}
 
     async attachSession(payload: TeamClusterDaemonSessionAttachPayload): Promise<CommandResult> {
-        if (!this.options.dockerRuntime) {
-            const message = 'Terminal services are not available';
-            this.options.coordinator.emitSessionEnd({
-                type: 'session-end',
-                sessionId: payload.sessionId,
-                error: message
-            });
-            return this.createSessionAttachFailureResult(503, message);
+        const dockerRuntime = this.options.dockerRuntime;
+        if (!dockerRuntime) {
+            return this.failAttach(payload.sessionId, 503, 'Terminal services are not available');
         }
 
         const sessionTransition = this.options.coordinator.beginSessionTransition(payload.sessionId);
         if (!sessionTransition) {
-            const message = 'Session attach is already in progress';
-            this.options.coordinator.emitSessionEnd({
-                type: 'session-end',
-                sessionId: payload.sessionId,
-                error: message
-            });
-            return this.createSessionAttachFailureResult(409, message);
+            return this.failAttach(payload.sessionId, 409, 'Session attach is already in progress');
         }
 
         try {
@@ -77,18 +66,7 @@ export class TerminalSessionManager {
             this.options.coordinator.cleanupInteractiveSession(payload.sessionId);
             const containerId = payload.containerId;
             if (!containerId) {
-                const message = 'containerId is required for container terminal';
-                this.options.coordinator.emitSessionEnd({
-                    type: 'session-end',
-                    sessionId: payload.sessionId,
-                    error: message
-                });
-                return this.createSessionAttachFailureResult(400, message);
-            }
-
-            const dockerRuntime = this.options.dockerRuntime;
-            if (!dockerRuntime) {
-                return this.createSessionAttachFailureResult(503, 'Terminal services are not available');
+                return this.failAttach(payload.sessionId, 400, 'containerId is required for container terminal');
             }
 
             attachment = await withTimeout(
@@ -105,10 +83,13 @@ export class TerminalSessionManager {
 
             if (this.options.coordinator.wasSessionTransitionCancelled(sessionTransition)) {
                 attachment.stream.destroy();
-                return this.createSessionAttachFailureResult(
-                    409,
-                    'Session attach was cancelled before terminal was established'
-                );
+                return {
+                    status: 409,
+                    data: {
+                        status: 'error',
+                        message: 'Session attach was cancelled before terminal was established'
+                    }
+                };
             }
 
             const onData = (chunk: Buffer) => {
@@ -160,12 +141,7 @@ export class TerminalSessionManager {
             };
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to attach terminal';
-            this.options.coordinator.emitSessionEnd({
-                type: 'session-end',
-                sessionId: payload.sessionId,
-                error: message
-            });
-            return this.createSessionAttachFailureResult(500, message);
+            return this.failAttach(payload.sessionId, 500, message);
         } finally {
             this.options.coordinator.endSessionTransition(sessionTransition);
         }
@@ -228,7 +204,12 @@ export class TerminalSessionManager {
         this.options.coordinator.clearSessionActivityIfUntracked(sessionId);
     }
 
-    private createSessionAttachFailureResult(status: number, message: string): CommandResult {
+    private failAttach(sessionId: string, status: number, message: string): CommandResult {
+        this.options.coordinator.emitSessionEnd({
+            type: 'session-end',
+            sessionId,
+            error: message
+        });
         return {
             status,
             data: {

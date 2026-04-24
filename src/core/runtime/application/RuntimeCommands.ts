@@ -1,5 +1,5 @@
-import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { safeRemovePath } from '@/support/fs/safe-remove-path';
 import type { RuntimeRoleCoordinator } from '@/app/coordination/RuntimeRoleCoordinator';
 import type { DaemonConfig } from '@/core/config';
 import { Command, CommandGroup } from '@/core/commands/decorators';
@@ -72,10 +72,10 @@ export class RuntimeCommands {
                 }
 
                 if (this.config.installRoot) {
-                    await fs.rm(path.join(this.config.installRoot, this.config.teamClusterId), {
-                        recursive: true,
-                        force: true
-                    });
+                    await safeRemovePath(
+                        path.join(this.config.installRoot, this.config.teamClusterId),
+                        { recursive: true }
+                    );
                 }
 
                 process.exit(0);

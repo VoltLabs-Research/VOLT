@@ -15,6 +15,7 @@ import type {
 } from '@/modules/analysis/contracts/workflow.types';
 import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
 import { decodeCliArgumentsToken } from '@/support/serialization/serialization';
+import { isPlainObject } from '@/support/type-guards/is-record';
 import { getSharedWasmRuntime } from '@/modules/plugin/application/runtime/WasmRuntime';
 import type { WasmFrameChunk } from '@/modules/plugin/application/runtime/WasmPluginInstance';
 import type {
@@ -300,8 +301,8 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
         if (!trimmed) return base;
         try {
             const parsed = JSON.parse(trimmed) as unknown;
-            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-                return { ...base, ...(parsed as Record<string, unknown>) };
+            if (isPlainObject(parsed)) {
+                return { ...base, ...parsed };
             }
             return { ...base, config: parsed };
         } catch {
@@ -468,7 +469,7 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
                     exitCode: 0,
                     stdout: '',
                     stderr: '',
-                    wasmResult: WorkflowEntrypointHandler.coerceWasmResultValue(result.value),
+                    wasmResult: WorkflowEntrypointHandler.coerceJsonCompatible(result.value),
                     wasmDurationMs: result.durationMs,
                     wasmStartupMs: result.startupMs,
                     wasmTotalMs: Date.now() - startedAt,
@@ -549,15 +550,6 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
         } catch {
             return { raw: trimmed };
         }
-    }
-
-    private static coerceWasmResultValue(value: unknown): object | string | number | boolean | null {
-        if (value === null || value === undefined) return null;
-        if (typeof value === 'object') return value;
-        if (typeof value === 'string') return value;
-        if (typeof value === 'number') return value;
-        if (typeof value === 'boolean') return value;
-        return String(value);
     }
 
     private parseInlineWorkflowArguments(value: string): string[] {

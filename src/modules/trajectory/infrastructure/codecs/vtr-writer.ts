@@ -44,6 +44,7 @@ import {
     unionBbox
 } from '@/modules/trajectory/infrastructure/codecs/vtr-quantize';
 import { encodeDelta } from '@/modules/trajectory/infrastructure/codecs/vtr-delta';
+import { safeRemovePath } from '@/support/fs/safe-remove-path';
 import type { BlobStore } from '@/core/storage/infrastructure/BlobStore';
 
 export interface VtrWriterFrameInput {
@@ -370,7 +371,7 @@ export class VtrWriter {
             await this.fileHandle.close().catch(() => {});
             this.fileHandle = null;
         }
-        await fs.unlink(this.init.outputPath).catch(() => {});
+        await safeRemovePath(this.init.outputPath);
     }
 
     public createReadableStream(): Readable {
