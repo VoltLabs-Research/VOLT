@@ -8,11 +8,10 @@ import { Box, Stack, Row, Text, Heading, Avatar, Button, Skeleton, AsyncBoundary
 import { EmptyState } from '@/shared/presentation/primitives';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Users } from 'lucide-react';
 import { GoArrowRight } from 'react-icons/go';
 import type { User } from '@/modules/auth/api/entities/user';
-
+import { useNavigate } from 'react-router-dom';
 interface TeamPresenceMember {
     user: User;
     memberId: string;

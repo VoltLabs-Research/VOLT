@@ -2,8 +2,7 @@ import { buildErrorPath, shouldIgnoreError, isErrorPage } from '@/shared/utils';
 import { ErrorSurface, isApiError, reportError } from '@/shared/errors/core';
 import { runErrorRecoveryCleanup } from '@/shared/utils/app-cleanup-registry';
 import { useCallback, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-
+import { useLocation, useNavigate } from 'react-router-dom';
 /**
  * Mounted inside the Router so it can use `useNavigate`.
  * Attaches window `error` and `unhandledrejection` listeners.

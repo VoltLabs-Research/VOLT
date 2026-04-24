@@ -7,12 +7,11 @@ import { Select } from '@/shared/presentation/primitives';
 import { Box, IconButton, Row, Stack, Tooltip } from '@/shared/presentation/primitives';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { IoAddOutline, IoCloseOutline, IoExpandOutline } from 'react-icons/io5';
-import { useNavigate } from 'react-router-dom';
 import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
 import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
 import type { SelectOption } from '@/shared/presentation/primitives';
 import type { ReactNode } from 'react';
-
+import { useNavigate } from 'react-router-dom';
 interface LatexAIPanelProps {
     documentId: string;
     documentTitle: string;

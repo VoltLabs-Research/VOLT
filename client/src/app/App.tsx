@@ -20,7 +20,6 @@ import { useCallback, useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import 'sileo/styles.css';
 import type { ErrorInfo } from 'react';
-
 ensureApplicationStoreCleanupsRegistered();
 
 const TARGET_DESKTOP_VIEWPORT_WIDTH = 1800;

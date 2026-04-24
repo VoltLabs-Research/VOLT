@@ -12,7 +12,6 @@ import { CheckCircle, XCircle } from 'lucide-react';
 import { sileo } from 'sileo';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
 const OAuthCallbackTemplate = () => {
     const navigate = useNavigate();
     const markAuthenticated = useAuthStore((state) => state.markAuthenticated);

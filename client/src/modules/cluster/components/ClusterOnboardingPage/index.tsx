@@ -21,7 +21,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type { FormEvent, ReactNode } from 'react';
-
 enum ClusterType {
     Computer = 'computer',
     Server = 'server'

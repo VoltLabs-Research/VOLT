@@ -14,14 +14,13 @@ import useTip from '@/shared/tips/use-tip';
 import { dateColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import type { GetPluginsInputDTO } from '@/modules/plugin/api/dtos/plugin/get-plugins';
 import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
 import type { BaseEntity } from '@/shared/domain/entities/BaseEntity';
 import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import './PluginsListing.css';
-
+import { useNavigate } from 'react-router-dom';
 interface PluginListingRow extends BaseEntity {
     modifier?: Plugin['modifier'];
     exposures?: Plugin['exposures'];

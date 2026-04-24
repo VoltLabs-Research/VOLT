@@ -9,7 +9,6 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useCallback, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { TeamCluster, TeamClusterCredentialServices } from '@/modules/cluster/api/entities/team-cluster';
-
 interface SidebarClustersResult {
     clusters: TeamCluster[];
     selectedTeamId: string | null;

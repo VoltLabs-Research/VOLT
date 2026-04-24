@@ -12,9 +12,8 @@ import './DashboardSidebar.css';
 import { useState } from 'react';
 import { IoAddOutline, IoCloseOutline } from 'react-icons/io5';
 import { PiUserPlus } from 'react-icons/pi';
-import { useNavigate } from 'react-router-dom';
 import { sileo } from 'sileo';
-
+import { useNavigate } from 'react-router-dom';
 interface DashboardSidebarProps {
     sidebarOpen: boolean;
     setSidebarOpen: (status: boolean) => void;

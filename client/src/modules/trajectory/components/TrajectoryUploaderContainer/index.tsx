@@ -1,10 +1,9 @@
 import useTrajectoryUpload from '@/modules/trajectory/hooks/trajectory/use-trajectory-upload';
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import FileUploaderContainer from '@/shared/presentation/components/FileUploaderContainer';
 import { useLocalGlbStore } from '@/modules/canvas/stores/use-local-glb-store';
 import type { FileWithPath } from '@/shared/utils/file';
-
+import { useNavigate } from 'react-router-dom';
 interface TrajectoryUploaderContainerProps {
     children?: React.ReactNode;
 };

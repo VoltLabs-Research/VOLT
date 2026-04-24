@@ -11,10 +11,9 @@ import { runAction } from '@/shared/presentation/actions/run-action';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { AlertCircle, CheckCircle, Clock, Mail, XCircle } from 'lucide-react';
 import { useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import type { Params } from 'react-router-dom';
 import './TeamInvitation.css';
-
 interface TeamInvitationRouteParams extends Params {
     invitationId: string;
 };

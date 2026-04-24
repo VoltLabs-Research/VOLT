@@ -7,12 +7,11 @@ import PanelHeader from '@/shared/presentation/components/PanelHeader';
 import { Box, Row, Surface, IconButton, Tooltip } from '@/shared/presentation/primitives';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { IoAddOutline, IoExpandOutline, IoSparklesOutline } from 'react-icons/io5';
-import { useNavigate } from 'react-router-dom';
 import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
 import type { SelectOption } from '@/shared/presentation/primitives';
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject } from 'react';
 import './AIFloatingAssistantPanel.css';
-
+import { useNavigate } from 'react-router-dom';
 interface AIFloatingAssistantPanelContentProps {
     onClose: () => void;
     triggerRef: RefObject<HTMLButtonElement | null>;

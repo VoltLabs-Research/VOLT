@@ -14,10 +14,9 @@ import {
 } from '@floating-ui/react';
 import { format, isValid } from 'date-fns';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import type { GlobalSearchOutputDTO, GlobalSearchSectionKey } from '@/modules/dashboard/api/dtos/global-search';
 import type { KeyboardEvent } from 'react';
-
+import { useNavigate } from 'react-router-dom';
 const SEARCH_DEBOUNCE_MS = 500;
 const SEARCH_RESULT_LIMIT = 5;
 const MIN_SEARCH_QUERY_LENGTH = 2;

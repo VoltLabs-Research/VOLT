@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 import { sileo } from 'sileo';
-import { useNavigate } from 'react-router-dom';
 import { SOCKET_TEAM_EVENTS } from '@/modules/socket/team/constants/team-socket-events';
 import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
 import { useCloneTrajectoryMutation } from './queries';
@@ -9,7 +8,7 @@ import {
     type PendingExecutionIntent
 } from '../stores/use-trajectory-clone-flow-store';
 import type { Job } from '@/modules/jobs/api/entities/job';
-
+import { useNavigate } from 'react-router-dom';
 const CLONE_QUEUE_TYPE = 'trajectory_clone';
 
 interface CloneAndRunArgs {

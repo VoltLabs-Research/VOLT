@@ -16,12 +16,11 @@ import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import { PiKeyLight } from 'react-icons/pi';
 import { RiBarChartLine, RiFileCopyLine, RiLineChartLine, RiShieldKeyholeLine } from 'react-icons/ri';
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { sileo } from 'sileo';
 import type { SecretKey } from '@/modules/team/api/entities/secret-key/secret-key';
 import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import './SecretKeysListing.css';
-
+import { useNavigate } from 'react-router-dom';
 const SECRET_KEYS_QUERY_KEY = ['secret-keys'] as const;
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [

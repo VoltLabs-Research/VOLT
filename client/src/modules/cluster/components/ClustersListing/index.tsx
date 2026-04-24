@@ -27,13 +27,12 @@ import MetricBars from '@/modules/cluster/components/MetricBars';
 import { Stack, Row, Text, StatusBadge, openModal } from '@/shared/presentation/primitives';
 import { ArrowRightLeft, Database, FolderOpen, KeyRound, Monitor, Settings2, TerminalSquare, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type { ColumnConfig, MenuOption, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import type { ServerRow } from '@/modules/cluster/utilities/transform-cluster-row';
 import '@/modules/cluster/components/ServerTable/ServerTable.css';
-
+import { useNavigate } from 'react-router-dom';
 const renderMetricValue = (value: number | null): ReactNode => {
     if (value === null) {
         return <Text as='p' size='sm' tone='muted'>--</Text>;

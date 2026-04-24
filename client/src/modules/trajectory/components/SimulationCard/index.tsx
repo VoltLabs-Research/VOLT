@@ -7,12 +7,11 @@ import SimulationCardFooter from '../SimulationCardFooter';
 import SimulationCardUsers from '../SimulationCardUsers';
 import { Row } from '@/shared/presentation/primitives';
 import { PiAtomThin } from 'react-icons/pi';
-import { useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
 import type { KeyboardEvent, MouseEvent } from 'react';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import './SimulationCard.css';
-
+import { useNavigate } from 'react-router-dom';
 const NON_NAVIGABLE_CARD_TARGET_SELECTOR = [
     '.footer-options-btn',
     '[data-popover-trigger^="simulation-card-popover-"]'

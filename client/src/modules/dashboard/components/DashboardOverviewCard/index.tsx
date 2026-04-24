@@ -2,12 +2,11 @@ import './DashboardOverviewCard.css';
 import TinyLineChart from '../TinyLineChart';
 import DashboardCard from '@/modules/dashboard/components/DashboardCard';
 import { Box, Stack, Row, Text, IconFrame } from '@/shared/presentation/primitives';
-import { useNavigate } from 'react-router';
 import { FaArrowDownLong, FaArrowUpLong } from 'react-icons/fa6';
 import { GoArrowRight } from 'react-icons/go';
 import type { DashboardCard as DashboardMetricsCard } from '@/modules/dashboard/api/entities/dashboard';
 import type { ReactNode } from 'react';
-
+import { useNavigate } from 'react-router-dom';
 interface DashboardOverviewCardProps {
     card: DashboardMetricsCard;
     icon: ReactNode;

@@ -11,13 +11,12 @@ import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/componen
 import { Box, Stack, Row } from '@/shared/presentation/primitives';
 import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
 import type { SelectOption } from '@/shared/presentation/primitives';
 import type { ReactNode } from 'react';
 import type { Params } from 'react-router-dom';
 import './AIPage.css';
-
 interface AIPageRouteParams extends Params {
     conversationId?: string;
 };

@@ -15,10 +15,9 @@ import useTip from '@/shared/tips/use-tip';
 import { formatDistanceToNow } from 'date-fns';
 import { LuFile, LuFolder } from 'react-icons/lu';
 import { useEffect } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { sileo } from 'sileo';
 import type { SSHFileEntry } from '@/modules/ssh/api/entities/ssh-connection';
-
 interface SSHFileExplorerPageProps {
     connectionId?: string;
 };

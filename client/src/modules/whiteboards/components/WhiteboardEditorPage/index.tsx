@@ -10,13 +10,12 @@ import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
 import type { ChangeEvent, ClipboardEvent, ComponentProps, CSSProperties, DragEvent, ReactNode } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import type { Excalidraw as ExcalidrawComponent } from '@excalidraw/excalidraw';
 import { ImagePlus } from 'lucide-react';
 import { sileo } from 'sileo';
 import '@excalidraw/excalidraw/index.css';
 import './WhiteboardEditorPage.css';
-
 type ExcalidrawProps = ComponentProps<typeof ExcalidrawComponent>;
 type ExcalidrawAPICallback = NonNullable<ExcalidrawProps['excalidrawAPI']>;
 type ExcalidrawAPI = Parameters<ExcalidrawAPICallback>[0];

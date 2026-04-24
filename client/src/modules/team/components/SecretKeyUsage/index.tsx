@@ -9,7 +9,7 @@ import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { formatDistanceToNow } from 'date-fns';
 import { ArrowLeft, Activity, BarChart3, PieChart as PieChartIcon, List, Clock, Zap, CheckCircle, Hash } from 'lucide-react';
 import { useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
     AreaChart,
     Area,
@@ -30,7 +30,6 @@ import type { TooltipContentProps } from 'recharts';
 import type { ValueType, NameType } from 'recharts/types/component/DefaultTooltipContent';
 import '../secret-key/shared/SecretKeyShared.css';
 import './SecretKeyUsage.css';
-
 interface SecretKeyUsageRouteParams extends Params {
     secretKeyId: string;
 };

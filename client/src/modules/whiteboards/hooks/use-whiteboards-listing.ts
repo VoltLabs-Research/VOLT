@@ -26,7 +26,6 @@ import { createCrudToastOptions } from '@/shared/presentation/toast-options';
 import { FOLDER_LIST_LIMIT, ROOT_FOLDER_ID } from '@/shared/presentation/constants/foldered-listing';
 import { FolderInput, FolderOpen, Pencil, SquarePen, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { createEmptyWhiteboardsResponse, getDeleteConfirmationMessage, getSafeFolderTitle, getSafeWhiteboardTitle } from '../utilities/whiteboards';
 import {
     createWhiteboardFolderRow,
@@ -39,7 +38,7 @@ import {
 import type { WhiteboardFolder } from '@/modules/whiteboards/api/entities/whiteboard-folder';
 import type { Whiteboard } from '@/modules/whiteboards/api/entities/whiteboard';
 import type { WhiteboardListingRow } from '@/modules/whiteboards/utilities/listing';
-
+import { useNavigate } from 'react-router-dom';
 type WhiteboardsListingDragAndDropConfig = DocumentListingDragAndDropConfig<WhiteboardListingRow>;
 
 interface WhiteboardMoveTarget {

@@ -4,7 +4,6 @@ import './NotFoundState.css';
 import { SearchX } from 'lucide-react';
 import { useId } from 'react';
 import { useNavigate } from 'react-router-dom';
-
 const NotFoundState = () => {
     const navigate = useNavigate();
     const headingId = useId();

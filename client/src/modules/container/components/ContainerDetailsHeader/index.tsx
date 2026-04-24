@@ -12,7 +12,6 @@ import type { ReactNode } from 'react';
 import type { Container as ContainerEntity } from '@/modules/container/api/entities/container';
 import type { SegmentedTabOption } from '@/shared/presentation/primitives';
 import './ContainerDetailsHeader.css';
-
 type ContainerDetailsTabId = 'overview' | 'processes' | 'terminal' | 'storage';
 
 interface ContainerDetailsTabOption extends SegmentedTabOption<ContainerDetailsTabId> {

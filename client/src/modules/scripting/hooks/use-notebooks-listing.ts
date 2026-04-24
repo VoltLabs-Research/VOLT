@@ -28,7 +28,6 @@ import { getJupyterStartErrorMessage } from '../utilities/workspace';
 import { SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID } from '../components/ScriptingNotebookDeploymentModal';
 import { FolderOpen, Pencil } from 'lucide-react';
 import { useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { sileo } from 'sileo';
 import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import type {
@@ -40,7 +39,7 @@ import type {
     ScriptingNotebookDeploymentModalRequest,
     ScriptingNotebookDeploymentSelection
 } from '../components/ScriptingNotebookDeploymentModal';
-
+import { useNavigate } from 'react-router-dom';
 export interface NotebooksListingContext {
     scope: ScriptingNotebookScope;
 };

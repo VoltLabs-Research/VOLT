@@ -6,10 +6,9 @@ import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { Button, Heading, Modal, Row, Stack, Stepper, Text, closeModal, openModal } from '@/shared/presentation/primitives';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import type { StepIndicator } from '@/shared/presentation/primitives';
 import './CreateContainer.css';
-
+import { useNavigate } from 'react-router-dom';
 enum StepKey {
     Image = 'image',
     Config = 'config',

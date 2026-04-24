@@ -35,10 +35,9 @@ import {
 import { MdImportExport } from 'react-icons/md';
 import { TbCube3dSphere, TbFileTypePdf } from 'react-icons/tb';
 import { PiPaintBrush, PiPaintBrushFill } from 'react-icons/pi';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import type { IconType } from 'react-icons';
 import type { DashboardNavigationItem } from '@/app/routes/metadata';
-
 interface SidebarNavigationProps {
     setSidebarOpen: (status: boolean) => void;
     collapsed?: boolean;
