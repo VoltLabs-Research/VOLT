@@ -506,6 +506,7 @@ const Timeline = ({
                         teamId={selectedTeamId}
                         showTrajectoryColumn={false}
                         compact
+                        inlineSubListings
                     />
                 </Box>
             )}

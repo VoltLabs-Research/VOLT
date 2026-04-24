@@ -9,6 +9,7 @@ interface PluginExposureListingPanelProps {
     analysisId?: string;
     teamId: string;
     compact?: boolean;
+    inlineSubListings?: boolean;
     showTrajectoryColumn?: boolean;
     headerActions?: ReactNode;
 };
@@ -21,6 +22,7 @@ const PluginExposureListingPanel = ({
     analysisId,
     teamId,
     compact,
+    inlineSubListings,
     showTrajectoryColumn,
     headerActions
 }: PluginExposureListingPanelProps) => {
@@ -33,6 +35,7 @@ const PluginExposureListingPanel = ({
             analysisId={analysisId}
             teamId={teamId}
             compact={compact}
+            inlineSubListings={inlineSubListings}
             showTrajectoryColumn={showTrajectoryColumn}
             headerActions={headerActions}
         />

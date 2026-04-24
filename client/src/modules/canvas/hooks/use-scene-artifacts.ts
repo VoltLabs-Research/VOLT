@@ -1,11 +1,10 @@
 import {
-    sceneArtifactsQuery,
-    SCENE_ARTIFACTS_QUERY_KEYS
+    invalidateSceneArtifacts,
+    sceneArtifactsQuery
 } from '@/modules/trajectory/hooks/scene-artifacts/queries';
 import { toSceneObjectFromArtifact } from '@/modules/canvas/utilities/scene-identity';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { useEffect, useMemo } from 'react';
-import queryClient from '@/shared/infrastructure/query/query-client';
 
 import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
 
@@ -84,7 +83,7 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
         const onArtifactsChanged = (event: Event) => {
             const customEvent = event as CustomEvent<{ trajectoryId?: string }>;
             if (customEvent.detail?.trajectoryId && customEvent.detail.trajectoryId !== trajectoryId) return;
-            void queryClient.invalidateQueries({ queryKey: SCENE_ARTIFACTS_QUERY_KEYS.sceneArtifacts() });
+            void invalidateSceneArtifacts();
         };
 
         window.addEventListener('canvas:scene-artifacts:changed', onArtifactsChanged);
@@ -99,7 +98,7 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
     );
 
     const reload = () => {
-        void queryClient.invalidateQueries({ queryKey: SCENE_ARTIFACTS_QUERY_KEYS.sceneArtifacts() });
+        void invalidateSceneArtifacts();
     };
 
     return {

@@ -14,6 +14,7 @@ import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluste
 import { resolveSelectedClusterId } from '@/modules/cluster/utilities/resolve-selected-cluster-id';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import useRequiredSelectedTeamId from '@/modules/team/hooks/ai-integration/use-required-selected-team-id';
 import { useMemo } from 'react';
 import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
 import type { TeamCluster, TeamClusterCredentialServices } from '@/modules/cluster/api/entities/team-cluster';
@@ -162,6 +163,7 @@ export interface ClusterManagementResult {
 
 const useClusterManagement = (): ClusterManagementResult => {
     const selectedTeamId = useSelectedTeamId();
+    const requireSelectedTeamId = useRequiredSelectedTeamId();
     const selectedClusterId = useClusterStore((state) => state.selectedClusterId);
     const setSelectedClusterId = useClusterStore((state) => state.setSelectedClusterId);
 
@@ -203,12 +205,8 @@ const useClusterManagement = (): ClusterManagementResult => {
     useTeamClusterSocket(allClusterIds);
 
     const createCluster = async (name: string) => {
-        if (!selectedTeamId) {
-            throw new Error('Missing selected team');
-        }
-
         const result = await showPromise(createMutation.mutateAsync({
-            teamId: selectedTeamId,
+            teamId: requireSelectedTeamId(),
             name
         }), CREATE_CLUSTER_TOAST_OPTIONS);
 
@@ -217,12 +215,8 @@ const useClusterManagement = (): ClusterManagementResult => {
     };
 
     const revealCredentials = async (teamClusterId: string, password: string) => {
-        if (!selectedTeamId) {
-            throw new Error('Missing selected team');
-        }
-
         const result = await showPromise(revealCredentialsMutation.mutateAsync({
-            teamId: selectedTeamId,
+            teamId: requireSelectedTeamId(),
             teamClusterId,
             password
         }), REVEAL_CREDENTIALS_TOAST_OPTIONS);
@@ -231,12 +225,8 @@ const useClusterManagement = (): ClusterManagementResult => {
     };
 
     const deleteCluster = async (teamClusterId: string, password: string) => {
-        if (!selectedTeamId) {
-            throw new Error('Missing selected team');
-        }
-
         return showPromise(deleteMutation.mutateAsync({
-            teamId: selectedTeamId,
+            teamId: requireSelectedTeamId(),
             teamClusterId,
             password
         }), DELETE_CLUSTER_TOAST_OPTIONS);
@@ -247,12 +237,8 @@ const useClusterManagement = (): ClusterManagementResult => {
         queueConcurrency: TeamClusterQueueConcurrencyInputDTO,
         queueScopeLimits: TeamClusterQueueScopeLimitsInputDTO
     ) => {
-        if (!selectedTeamId) {
-            throw new Error('Missing selected team');
-        }
-
         return showPromise(updateQueueConcurrencyMutation.mutateAsync({
-            teamId: selectedTeamId,
+            teamId: requireSelectedTeamId(),
             teamClusterId,
             queueConcurrency,
             queueScopeLimits
@@ -263,12 +249,8 @@ const useClusterManagement = (): ClusterManagementResult => {
         teamClusterId: string,
         role: TeamClusterRole
     ) => {
-        if (!selectedTeamId) {
-            throw new Error('Missing selected team');
-        }
-
         return showPromise(updateRoleMutation.mutateAsync({
-            teamId: selectedTeamId,
+            teamId: requireSelectedTeamId(),
             teamClusterId,
             role
         }), UPDATE_CLUSTER_ROLE_TOAST_OPTIONS);
@@ -278,12 +260,8 @@ const useClusterManagement = (): ClusterManagementResult => {
         teamClusterId: string,
         destinationClusterId: string
     ) => {
-        if (!selectedTeamId) {
-            throw new Error('Missing selected team');
-        }
-
         return showPromise(createTransferRequestMutation.mutateAsync({
-            teamId: selectedTeamId,
+            teamId: requireSelectedTeamId(),
             teamClusterId,
             destinationClusterId
         }), CREATE_CLUSTER_TRANSFER_TOAST_OPTIONS);
@@ -294,13 +272,9 @@ const useClusterManagement = (): ClusterManagementResult => {
         password: string,
         target: TeamClusterRemoteAccessTarget
     ) => {
-        if (!selectedTeamId) {
-            throw new Error('Missing selected team');
-        }
-
         const result = await showPromise(
             teamClusterService.createRemoteAccessSession({
-                teamId: selectedTeamId,
+                teamId: requireSelectedTeamId(),
                 teamClusterId,
                 password,
                 target
@@ -317,12 +291,8 @@ const useClusterManagement = (): ClusterManagementResult => {
         target: TeamClusterRemoteAccessTarget,
         path: string
     ) => {
-        if (!selectedTeamId) {
-            throw new Error('Missing selected team');
-        }
-
         const result = await teamClusterService.listRemoteExplorerEntries({
-            teamId: selectedTeamId,
+            teamId: requireSelectedTeamId(),
             teamClusterId,
             sessionId,
             target,
@@ -338,12 +308,8 @@ const useClusterManagement = (): ClusterManagementResult => {
         target: TeamClusterRemoteAccessTarget,
         path: string
     ) => {
-        if (!selectedTeamId) {
-            throw new Error('Missing selected team');
-        }
-
         const result = await teamClusterService.getRemoteExplorerNode({
-            teamId: selectedTeamId,
+            teamId: requireSelectedTeamId(),
             teamClusterId,
             sessionId,
             target,
@@ -359,12 +325,8 @@ const useClusterManagement = (): ClusterManagementResult => {
         target: TeamClusterRemoteAccessTarget,
         path: string
     ) => {
-        if (!selectedTeamId) {
-            throw new Error('Missing selected team');
-        }
-
         return teamClusterService.downloadRemoteExplorerObject({
-            teamId: selectedTeamId,
+            teamId: requireSelectedTeamId(),
             teamClusterId,
             sessionId,
             target,

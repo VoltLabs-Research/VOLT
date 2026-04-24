@@ -101,5 +101,8 @@ export const scriptingValidation = {
     },
     deleteNotebook: {
         params: notebookParamsSchema
+    },
+    sessionStatus: {
+        params: notebookParamsSchema
     }
 };
