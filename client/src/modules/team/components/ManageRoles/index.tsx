@@ -12,7 +12,6 @@ import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import useTip from '@/shared/tips/use-tip';
 import useTeamRolesListing from '@/modules/team/hooks/role/use-team-roles-listing';
-import { IoShieldCheckmarkOutline } from 'react-icons/io5';
 import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
 import { useCallback, useState } from 'react';
 import type { TeamRole } from '@/modules/team/api/entities/role/team-role';
@@ -50,10 +49,7 @@ const COLUMNS: ColumnConfig<TeamRole>[] = [
         key: 'name',
         title: 'Role Name',
         render: (_value, role) => (
-            <div className='d-flex items-center gap-1'>
-                <IoShieldCheckmarkOutline size={18} className='color-secondary' />
-                <span className='font-weight-5 color-secondary'>{role.name}</span>
-            </div>
+            <span className='font-weight-5 color-secondary'>{role.name}</span>
         )
     },
     {

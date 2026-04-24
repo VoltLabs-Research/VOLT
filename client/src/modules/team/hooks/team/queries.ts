@@ -169,17 +169,6 @@ export const useUpdateTeamMutation = createMutation<Team, UpdateTeamInputDTO>(
     }
 );
 
-export const useDeleteTeamMutation = createMutation<void, DeleteTeamInputDTO>(
-    teamService.delete,
-    async (_data, variables) => {
-        setTeamsQueryData((previous) => {
-            if (!previous) return previous;
-            return previous.filter((team) => team._id !== variables.teamId);
-        });
-        await invalidateTeamScopedQueries(variables.teamId);
-    }
-);
-
 export const useLeaveTeamMutation = () => {
     return useMutation<void, Error, LeaveTeamInputDTO, { previousTeams?: Team[] }>({
         mutationFn: teamService.leave,
