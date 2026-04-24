@@ -5,6 +5,7 @@ import type {
     ArtifactStageFileInput,
     ArtifactUploadBatchEnqueueResult
 } from '@/modules/plugin/contracts/artifact-upload';
+import { safeRemovePath } from '@/support/fs/safe-remove-path';
 
 interface DebugArtifactRecord {
     path: string;
@@ -75,7 +76,7 @@ export const createDebugArtifactBatch = (baseDirectory: string): DebugArtifactBa
         },
 
         async cleanup(): Promise<void> {
-            await fs.rm(baseDirectory, { recursive: true, force: true }).catch(() => {});
+            await safeRemovePath(baseDirectory, { recursive: true });
         },
 
         getArtifacts(): DebugArtifactRecord[] {

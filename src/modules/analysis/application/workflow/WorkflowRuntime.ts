@@ -32,7 +32,7 @@ import type { VtrReaderRegistry } from '@/modules/trajectory/application/vtr/Vtr
 import ApplicationError from '@/app/coordination/ApplicationError';
 import { dir as createTempDir } from 'tmp-promise';
 import fs from 'node:fs/promises';
-import os from 'node:os';
+import { getAvailableCpuCount, readPositiveIntegerEnv } from '@/support/policies/runtime-capacity';
 
 interface WorkflowTraceContext {
     currentPluginId: string;
@@ -222,17 +222,7 @@ const readWorkflowTrace = (error: unknown): InlineWorkflowTraceNode[] | undefine
     return Array.isArray(details?.trace) ? details.trace : undefined;
 };
 
-const resolveBatchPluginConcurrency = (): number => {
-    const raw = process.env.PLUGIN_CONCURRENCY;
-    if (raw !== undefined && /^[1-9]\d*$/.test(raw)) {
-        return Number.parseInt(raw, 10);
-    }
-
-    const cpuCount = typeof os.availableParallelism === 'function' ? os.availableParallelism() : os.cpus().length;
-    return Math.max(1, cpuCount - 1);
-};
-
-const MAX_BATCH_PLUGIN_CONCURRENCY = resolveBatchPluginConcurrency();
+const MAX_BATCH_PLUGIN_CONCURRENCY = readPositiveIntegerEnv('PLUGIN_CONCURRENCY') ?? Math.max(1, getAvailableCpuCount() - 1);
 
 @Service('workflowRuntime')
 export class WorkflowRuntime {

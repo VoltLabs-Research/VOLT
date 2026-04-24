@@ -6,6 +6,7 @@ import {
     TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
 } from '@/core/storage/contracts/http-object-store';
 import type { LocalClusterObjectStat, LocalClusterObjectStoreGateway } from '@/core/storage/contracts/cluster-object-store';
+import { isObjectNotFoundError } from '@/core/storage/contracts/cluster-object-store';
 import type { ObjectGatewayDirectAccessClaims, ObjectGatewaySecurity } from '@/core/storage/contracts/object-gateway';
 import { logger } from '@/core/logger';
 import type { DaemonConfig } from '@/core/config';
@@ -522,7 +523,7 @@ export class ObjectGatewayServer {
         try {
             return await this.objectStore.statObject(bucket, objectKey);
         } catch (error) {
-            if (error instanceof Error && 'code' in error && (error.code === 'NotFound' || error.code === 'NoSuchKey')) {
+            if (isObjectNotFoundError(error)) {
                 throw new ApplicationError('ObjectGateway::ObjectNotFound', `Object not found: ${bucket}/${objectKey}`, 404);
             }
 
@@ -542,7 +543,7 @@ export class ObjectGatewayServer {
 
             return await this.objectStore.getObjectStream(bucket, objectKey);
         } catch (error) {
-            if (error instanceof Error && 'code' in error && (error.code === 'NotFound' || error.code === 'NoSuchKey')) {
+            if (isObjectNotFoundError(error)) {
                 throw new ApplicationError('ObjectGateway::ObjectNotFound', `Object not found: ${bucket}/${objectKey}`, 404);
             }
 

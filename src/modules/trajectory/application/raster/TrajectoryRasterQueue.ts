@@ -6,17 +6,12 @@ import type { RasterQueueJobPayload, RasterizeTrajectoryRequest, RasterizeTrajec
 import { isRecord } from '@/support/type-guards/is-record';
 import type { TrajectoryAutoPreviewClaimStore } from '@/modules/trajectory/infrastructure/storage/TrajectoryAutoPreviewClaimStore';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
+import { isObjectNotFoundError } from '@/core/storage/contracts/cluster-object-store';
 import { buildRasterJobPayload, type ParsedRasterModel } from '@/modules/trajectory/domain/raster/raster-job-factory';
 import { toQueuedJobNotification } from '@/support/queue/to-queued-job-notification';
 import { mapLimited } from '@/support/concurrency/map-limited';
 
 const RASTER_JOB_NAME = 'Rasterize trajectory preview';
-
-interface ObjectNotFoundError extends Error {
-    code?: 'NoSuchKey' | 'NotFound';
-    status?: number;
-    statusCode?: number;
-}
 
 interface AutoPreviewRasterizationConfig {
     timestep: number;
@@ -141,13 +136,7 @@ export class TrajectoryRasterQueue {
                 await this.objectStore.head(ownerClusterId, ObjectBucketName.Rasterizer, rasterModel.outputObjectKey);
                 return rasterModel.outputObjectKey;
             } catch (error) {
-                const objectStoreError = error as ObjectNotFoundError;
-                if (
-                    objectStoreError.code === 'NotFound'
-                    || objectStoreError.code === 'NoSuchKey'
-                    || objectStoreError.statusCode === 404
-                    || objectStoreError.status === 404
-                ) {
+                if (isObjectNotFoundError(error)) {
                     return null;
                 }
 

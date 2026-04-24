@@ -3,6 +3,7 @@ import { compressFileWithZstd } from '@/support/serialization/storage-codec';
 import type { ScopedClusterObjectStore } from '@/core/storage/contracts/cluster-object-store';
 import fsPromises from 'node:fs/promises';
 import { tmpName } from 'tmp-promise';
+import { safeRemovePath } from '@/support/fs/safe-remove-path';
 
 export interface UploadBufferToObjectStoreInput {
     objectStore: ScopedClusterObjectStore;
@@ -60,8 +61,8 @@ export const uploadBufferToObjectStore = async (input: UploadBufferToObjectStore
         });
     } finally {
         if (uploadPath !== tmpPath) {
-            await fsPromises.unlink(uploadPath).catch(() => {});
+            await safeRemovePath(uploadPath);
         }
-        await fsPromises.unlink(tmpPath).catch(() => {});
+        await safeRemovePath(tmpPath);
     }
 };

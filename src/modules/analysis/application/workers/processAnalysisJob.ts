@@ -11,7 +11,7 @@ import type {
     AnalysisJobMetadata,
     AnalysisQueueJobPayload
 } from '@/modules/analysis/contracts/http-analysis';
-import type { AnalysisDataStoreContract } from '@/modules/analysis/infrastructure/storage/AnalysisDataStore';
+import type { AnalysisDataStore } from '@/modules/analysis/infrastructure/storage/AnalysisDataStore';
 import type { ArtifactUploadQueue } from '@/modules/plugin/application/artifacts/ArtifactUploadQueue';
 import type { DaemonJobReporter } from '@/modules/jobs/application/reporting/DaemonJobReporter';
 import type { BaseAnalysisEventData } from '@/modules/analysis/domain/events';
@@ -23,7 +23,7 @@ export type AnalysisWorkerJobPayload = AnalysisQueueJobPayload & {
 };
 
 export interface ProcessAnalysisJobDependencies {
-    analysisDataStore: AnalysisDataStoreContract;
+    analysisDataStore: AnalysisDataStore;
     analysisEnvironment: AnalysisEnvironment;
     artifactUploadQueue: ArtifactUploadQueue;
     daemonJobReporter: DaemonJobReporter;

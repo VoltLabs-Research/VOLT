@@ -1,7 +1,5 @@
-import path from 'node:path';
-
 import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
-import { buildArtifactReportInput, YIELD_INTERVAL, yieldToEventLoop } from '@/modules/plugin/application/exports/export-node-processor-shared';
+import { stageExportBufferUpload, YIELD_INTERVAL, yieldToEventLoop } from '@/modules/plugin/application/exports/export-node-processor-shared';
 import type { AtomisticExportData, ExportExecutionInput } from '@/modules/plugin/application/exports/export-node-processor-types';
 import spatialAssembler from '@voltstack/spatial-assembler';
 
@@ -169,20 +167,13 @@ export const exportAtomisticArtifact = async (
         pointCloud.max
     );
 
-    await input.artifactUploadBatch.stageBufferUpload({
-        ownerClusterId,
+    await stageExportBufferUpload(input, {
+        exporter: 'AtomisticExporter',
         bucket: ObjectBucketName.Models,
-        objectKey: objectPath,
         buffer,
         contentType: 'model/gltf-binary',
-        fileName: path.basename(objectPath),
-        reportArtifact: buildArtifactReportInput(
-            input,
-            'AtomisticExporter',
-            input.exposure.export!,
-            objectPath,
-            ObjectBucketName.Models
-        )
+        objectPath,
+        ownerClusterId
     });
 
     return true;

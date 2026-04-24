@@ -1,7 +1,5 @@
-import path from 'node:path';
-
 import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
-import { buildArtifactReportInput, yieldToEventLoop } from '@/modules/plugin/application/exports/export-node-processor-shared';
+import { stageExportBufferUpload, yieldToEventLoop } from '@/modules/plugin/application/exports/export-node-processor-shared';
 import type {
     DislocationExportData,
     DislocationExportOptions,
@@ -362,20 +360,13 @@ export const exportDislocationArtifact = async (
         }
     );
 
-    await input.artifactUploadBatch.stageBufferUpload({
-        ownerClusterId,
+    await stageExportBufferUpload(input, {
+        exporter: 'DislocationExporter',
         bucket: ObjectBucketName.Models,
-        objectKey: objectPath,
         buffer,
         contentType: 'model/gltf-binary',
-        fileName: path.basename(objectPath),
-        reportArtifact: buildArtifactReportInput(
-            input,
-            'DislocationExporter',
-            input.exposure.export!,
-            objectPath,
-            ObjectBucketName.Models
-        )
+        objectPath,
+        ownerClusterId
     });
 
     return true;

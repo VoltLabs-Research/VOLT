@@ -40,7 +40,6 @@ import {
 } from '@/modules/trajectory/infrastructure/codecs/vtr-morton';
 import {
     computeBbox,
-    dequantizePositionsInt16,
     quantizePositionsInt16,
     unionBbox
 } from '@/modules/trajectory/infrastructure/codecs/vtr-quantize';
@@ -478,12 +477,4 @@ const mapSemantic = (name: string, dtype: VtrDtype): VtrColumnSemantic => {
     if (name === 'types' || dtype === VtrDtype.TypesU16) return VtrColumnSemantic.Type;
     if (name === 'ids' || dtype === VtrDtype.IdsU32) return VtrColumnSemantic.Id;
     return VtrColumnSemantic.Custom;
-};
-
-export const previewDequantizedFrame = (
-    quantized: Int16Array,
-    atomCount: number,
-    bbox: readonly [number, number, number, number, number, number]
-): Float32Array => {
-    return dequantizePositionsInt16(quantized, atomCount, bbox);
 };

@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { PluginFrameColumnBinding } from '@/modules/plugin/contracts/plugin-batch';
+import { safeRemovePath } from '@/support/fs/safe-remove-path';
 
 const DEV_SHM_ROOT = '/dev/shm';
 const SHM_FILE_PREFIX = 'volt-plugin-';
@@ -84,9 +85,7 @@ export class SharedMemoryBridge {
                 size: totalBytes,
                 bindings,
                 release: async () => {
-                    await fs.rm(filePath, { force: true }).catch((error) => {
-                        logger.warn({ err: error, filePath }, '@shared-memory-bridge: failed to release shm file');
-                    });
+                    await safeRemovePath(filePath);
                 }
             };
             return handle;

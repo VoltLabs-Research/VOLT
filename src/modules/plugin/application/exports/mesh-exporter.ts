@@ -1,7 +1,5 @@
-import path from 'node:path';
-
 import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
-import { buildArtifactReportInput } from '@/modules/plugin/application/exports/export-node-processor-shared';
+import { stageExportBufferUpload } from '@/modules/plugin/application/exports/export-node-processor-shared';
 import type { ExportExecutionInput, ExportMaterial, MeshExportOptions, MeshInput } from '@/modules/plugin/application/exports/export-node-processor-types';
 import spatialAssembler from '@voltstack/spatial-assembler';
 
@@ -187,20 +185,13 @@ export const exportMeshArtifact = async (
         }
     );
 
-    await input.artifactUploadBatch.stageBufferUpload({
-        ownerClusterId,
+    await stageExportBufferUpload(input, {
+        exporter: 'MeshExporter',
         bucket: ObjectBucketName.Models,
-        objectKey: objectPath,
         buffer,
         contentType: 'model/gltf-binary',
-        fileName: path.basename(objectPath),
-        reportArtifact: buildArtifactReportInput(
-            input,
-            'MeshExporter',
-            input.exposure.export!,
-            objectPath,
-            ObjectBucketName.Models
-        )
+        objectPath,
+        ownerClusterId
     });
 
     return true;

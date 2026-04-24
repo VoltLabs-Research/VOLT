@@ -1,6 +1,5 @@
 import {
     VTR_FRAME_INDEX_ENTRY_SIZE,
-    VTR_KEYFRAME_NONE,
     VTR_MAGIC_FOOTER,
     VTR_MAGIC_HEAD,
     VTR_VERSION,
@@ -121,7 +120,7 @@ export const encodeVtrHeader = (header: VtrHeader): Uint8Array => {
     return buffer;
 };
 
-export interface DecodedVtrHeader {
+interface DecodedVtrHeader {
     header: VtrHeader;
     headerBytes: number;
     frameIndexOffset: number;
@@ -266,6 +265,3 @@ export const encodeFooter = (crc32: number): Uint8Array => {
     return buffer;
 };
 
-export const ensureNotNoneKeyframe = (keyframeIndex: number): number => {
-    return keyframeIndex === VTR_KEYFRAME_NONE ? 0 : keyframeIndex;
-};

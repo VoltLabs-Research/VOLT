@@ -12,6 +12,7 @@ import type {
 } from '@/modules/analysis/contracts/http-analysis';
 import type { WorkflowNodeOutput } from '@/modules/analysis/contracts/workflow.types';
 import { mapLimited } from '@/support/concurrency/map-limited';
+import { safeRemovePath } from '@/support/fs/safe-remove-path';
 
 const BATCH_DUMP_DOWNLOAD_CONCURRENCY = 8;
 
@@ -48,9 +49,9 @@ export class AnalysisEnvironment {
     }
 
     async cleanup(runtime: AnalysisEnvironmentState): Promise<void> {
-        const tasks: Promise<unknown>[] = runtime.dumpLocalPaths.map((dumpPath) => fs.rm(dumpPath, { force: true }).catch(() => {}));
+        const tasks: Promise<unknown>[] = runtime.dumpLocalPaths.map((dumpPath) => safeRemovePath(dumpPath));
         if (runtime.outputDir) {
-            tasks.push(fs.rm(runtime.outputDir, { recursive: true, force: true }).catch(() => {}));
+            tasks.push(safeRemovePath(runtime.outputDir, { recursive: true }));
         }
         await Promise.all(tasks);
     }

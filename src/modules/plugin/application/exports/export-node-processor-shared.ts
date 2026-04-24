@@ -1,7 +1,9 @@
+import path from 'node:path';
 import { logger } from '@/core/logger';
 import type { SceneArtifactUpsertBatchItem as ReportArtifactInput } from '@/modules/plugin/contracts/reverse-channel-plugin';
 import type { ExportExecutionInput, ExporterEntry, ExporterName } from '@/modules/plugin/application/exports/export-node-processor-types';
 import type { MsgpackObject, MsgpackScalar, MsgpackValue } from '@/support/serialization/msgpack-value';
+import type { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
 
 
 
@@ -114,3 +116,30 @@ export const buildArtifactReportInput = (
         }
     };
 };
+
+export const stageExportBufferUpload = (
+    input: ExportExecutionInput,
+    args: {
+        exporter: ExporterName;
+        bucket: ObjectBucketName;
+        buffer: Buffer;
+        contentType: string;
+        objectPath: string;
+        ownerClusterId: string;
+    }
+): Promise<void> =>
+    input.artifactUploadBatch.stageBufferUpload({
+        ownerClusterId: args.ownerClusterId,
+        bucket: args.bucket,
+        objectKey: args.objectPath,
+        buffer: args.buffer,
+        contentType: args.contentType,
+        fileName: path.basename(args.objectPath),
+        reportArtifact: buildArtifactReportInput(
+            input,
+            args.exporter,
+            input.exposure.export!,
+            args.objectPath,
+            args.bucket
+        )
+    });

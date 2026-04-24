@@ -1,10 +1,8 @@
+import { isRecord } from '@/support/type-guards/is-record';
+
 type ChunkedArray = ChunkedValue[];
 interface ChunkedRecord { [key: string]: ChunkedValue }
 type ChunkedValue = boolean | ChunkedArray | ChunkedRecord | null | number | string;
-
-const isChunkedRecord = (value: ChunkedValue): value is ChunkedRecord => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-};
 
 const mergeChunkedArray = (target: ChunkedArray, incoming: ChunkedArray): ChunkedArray => {
     target.push(...incoming);
@@ -30,8 +28,8 @@ const mergeChunkedValue = (target: ChunkedValue, incoming: ChunkedValue): Chunke
         return mergeChunkedArray(target, incoming);
     }
 
-    if (isChunkedRecord(target) && isChunkedRecord(incoming)) {
-        return mergeChunkedRecord(target, incoming);
+    if (isRecord(target) && isRecord(incoming)) {
+        return mergeChunkedRecord(target as ChunkedRecord, incoming as ChunkedRecord);
     }
 
     return incoming;

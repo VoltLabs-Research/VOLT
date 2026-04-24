@@ -2,17 +2,14 @@ import { DelayedError, Job, Worker } from 'bullmq';
 import { logger } from '@/core/logger';
 import type { QueuePayload, QueueService } from '@/core/queues/application/QueueService';
 import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@/core/queues/application/QueueScopeLimitsRegistry';
+import type { JobIdentity } from '@/support/contracts/job-identity';
+import { logAndSwallow } from '@/support/error/errorMessage';
 
 const SCOPE_DEFERRED_RETRY_MS = 500;
 
 export interface BaseWorkerDependencies {
     queueService: QueueService;
     scopeLimitsRegistry?: QueueScopeLimitsRegistry;
-}
-
-export interface JobScope {
-    trajectoryId?: string;
-    teamId?: string;
 }
 
 export abstract class BaseWorker<TPayload extends QueuePayload> {
@@ -47,7 +44,7 @@ export abstract class BaseWorker<TPayload extends QueuePayload> {
     }
 
     setConcurrency(concurrency: number): void {
-        if(!this.worker) return;
+        if (!this.worker) return;
 
         const next = Math.max(1, Math.floor(concurrency));
         if (this.worker.concurrency === next) return;
@@ -58,28 +55,26 @@ export abstract class BaseWorker<TPayload extends QueuePayload> {
         // worker in the background and spin up a fresh one bound to the same queue.
         const draining = this.worker;
         this.worker = null;
-        void draining.close().catch((error) => {
-            logger.warn({ queueName: this.queueName, error }, 'Queue worker drain after concurrency change failed');
-        });
+        void draining.close().catch(
+            logAndSwallow('warn', { queueName: this.queueName }, 'Queue worker drain after concurrency change failed')
+        );
         this.start(next);
     }
-
-    protected getScope?(payload: TPayload): JobScope | undefined;
 
     private async runWithScope(payload: TPayload, bullJob: Job<TPayload>): Promise<void> {
         const registry = this.baseDeps.scopeLimitsRegistry;
         const scopeKey = this.scopeKey;
 
-        if (!registry || !scopeKey || !this.getScope) {
+        if (!registry || !scopeKey) {
             return this.process(payload, bullJob);
         }
 
-        const scope = this.getScope(payload);
-        if (!scope || (!scope.trajectoryId && !scope.teamId)) {
+        const { trajectoryId, teamId } = payload as Partial<JobIdentity>;
+        if (!trajectoryId && !teamId) {
             return this.process(payload, bullJob);
         }
 
-        const release = registry.tryAcquire(scopeKey, scope.trajectoryId, scope.teamId);
+        const release = registry.tryAcquire(scopeKey, trajectoryId, teamId);
         if (!release) {
             await bullJob.moveToDelayed(Date.now() + SCOPE_DEFERRED_RETRY_MS, bullJob.token);
             throw new DelayedError();

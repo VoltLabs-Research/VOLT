@@ -44,9 +44,7 @@ export interface DaemonConfig {
     redis: RedisConnectionOptions;
     jupyter: JupyterConfig;
     allowedBuckets: ObjectBucketName[];
-    isDemo: boolean;
     bucketPrefix: string;
-    redisKeyPrefix: string;
 }
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 10_000;
@@ -180,9 +178,7 @@ export const loadConfig = (): DaemonConfig => {
         redis,
         jupyter,
         allowedBuckets,
-        isDemo: readBooleanWithDefault('IS_DEMO', false),
-        bucketPrefix: readStringWithDefault('BUCKET_PREFIX', ''),
-        redisKeyPrefix
+        bucketPrefix: readStringWithDefault('BUCKET_PREFIX', '')
     };
 
     return config;

@@ -1,7 +1,7 @@
 import { type Job } from 'bullmq';
 
 import { Service } from '@/core/decorators/service';
-import { BaseWorker, type JobScope } from '@/core/queues/application/BaseWorker';
+import { BaseWorker } from '@/core/queues/application/BaseWorker';
 import { createLifecycleStatusReporter } from '@/core/queues/application/create-status-reporter';
 import type { QueueService } from '@/core/queues/application/QueueService';
 import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@/core/queues/application/QueueScopeLimitsRegistry';
@@ -32,13 +32,6 @@ export class TrajectoryGlbWorker extends BaseWorker<GlbConversionQueueJobPayload
             },
             'trajectory GLB'
         );
-    }
-
-    protected getScope(payload: GlbConversionQueueJobPayload): JobScope {
-        return {
-            trajectoryId: payload.trajectoryId,
-            teamId: payload.teamId
-        };
     }
 
     protected async process(payload: GlbConversionQueueJobPayload, bullJob: Job<GlbConversionQueueJobPayload>): Promise<void> {

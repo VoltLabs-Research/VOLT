@@ -3,11 +3,9 @@ import { UnpackrStream } from 'msgpackr';
 import type { Options as MsgpackDecoderOptions } from 'msgpackr';
 import type { MsgpackObject, MsgpackValue } from '@/support/serialization/msgpack-value';
 import mergeChunkedValue from '@/core/reverse-channel/application/merge-chunked-value';
+import { isPlainObject } from '@/support/type-guards/is-record';
 
 type ChunkLike = Uint8Array | Buffer;
-
-const isMsgpackObject = (value: MsgpackValue): value is MsgpackObject =>
-    typeof value === 'object' && value !== null && !(value instanceof Array) && !(value instanceof Uint8Array);
 
 /**
  * Streams msgpack values off an async iterable of byte chunks. Delegates the
@@ -33,7 +31,7 @@ export const mergeSelectiveChunk = (
     incoming: MsgpackValue,
     keyFilter: (key: string) => boolean
 ): MsgpackObject | null => {
-    if (!isMsgpackObject(incoming)) {
+    if (!isPlainObject(incoming)) {
         return target;
     }
 
@@ -49,5 +47,5 @@ export const mergeSelectiveChunk = (
     }
 
     const merged = mergeChunkedValue(target as unknown as Parameters<typeof mergeChunkedValue>[0], filtered as unknown as Parameters<typeof mergeChunkedValue>[1]);
-    return isMsgpackObject(merged as MsgpackValue) ? (merged as MsgpackObject) : target;
+    return isPlainObject(merged as MsgpackValue) ? (merged as MsgpackObject) : target;
 };

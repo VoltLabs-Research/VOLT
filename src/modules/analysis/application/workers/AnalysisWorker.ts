@@ -1,7 +1,7 @@
 import { type Job as BullMQJob } from 'bullmq';
 
 import { Service } from '@/core/decorators/service';
-import { BaseWorker, type JobScope } from '@/core/queues/application/BaseWorker';
+import { BaseWorker } from '@/core/queues/application/BaseWorker';
 import { QueueService } from '@/core/queues/application/QueueService';
 import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@/core/queues/application/QueueScopeLimitsRegistry';
 import { ANALYSIS_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
@@ -28,13 +28,6 @@ export class AnalysisWorker extends BaseWorker<AnalysisQueueJobPayload> {
         private readonly workflowRuntime: WorkflowRuntime
     ) {
         super({ queueService, scopeLimitsRegistry: queueScopeLimitsRegistry });
-    }
-
-    protected getScope(payload: AnalysisQueueJobPayload): JobScope {
-        return {
-            trajectoryId: payload.trajectoryId,
-            teamId: payload.teamId
-        };
     }
 
     protected async process(payload: AnalysisQueueJobPayload, bullJob: BullMQJob<AnalysisQueueJobPayload>): Promise<void> {

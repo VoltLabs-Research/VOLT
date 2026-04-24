@@ -4,10 +4,7 @@ import type { VtrFrameCache } from '@/modules/trajectory/application/vtr/VtrFram
 import type { VtrReaderRegistry } from '@/modules/trajectory/application/vtr/VtrReaderRegistry';
 import type { VtrFrameData } from '@/modules/trajectory/infrastructure/codecs/vtr-reader';
 import type { ParsedSimulationCell } from '@/modules/trajectory/application/parsing/TrajectoryParserFactory';
-
-interface ObjectStoreError extends Error {
-    code?: 'NoSuchKey' | 'NotFound';
-};
+import { isObjectNotFoundError } from '@/core/storage/contracts/cluster-object-store';
 
 export interface ParsedTrajectoryMetadata {
     headers: string[];
@@ -239,8 +236,7 @@ export class TrajectoryParser {
     }
 
     private rethrowNotFound(error: unknown, input: DumpFileInput): Error {
-        const { code } = (error ?? {}) as ObjectStoreError;
-        if (code === 'NoSuchKey' || code === 'NotFound') {
+        if (isObjectNotFoundError(error)) {
             const notFound = new Error(
                 `VTR object not found: trajectoryId=${input.trajectoryId}, timestep=${input.timestep}, ` +
                 `ownerClusterId=${input.ownerClusterId}. The trajectory may not have been ingested yet.`

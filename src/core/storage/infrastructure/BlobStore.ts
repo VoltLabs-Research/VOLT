@@ -20,18 +20,7 @@ const bytesToHex = (bytes: Uint8Array): string => {
     return out;
 };
 
-const hexToBytes = (hex: string): Uint8Array => {
-    if (hex.length !== 64) {
-        throw new Error(`invalid sha256 hex length: ${hex.length}`);
-    }
-    const out = new Uint8Array(32);
-    for (let index = 0; index < 32; index++) {
-        out[index] = parseInt(hex.substring(index * 2, index * 2 + 2), 16);
-    }
-    return out;
-};
-
-export interface BlobPutResult {
+interface BlobPutResult {
     hash: Uint8Array;
     hashHex: string;
     size: number;
@@ -98,11 +87,6 @@ export class BlobStore {
         return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
     }
 
-    public getBlobKey(hash: Uint8Array | string): string {
-        const hashHex = typeof hash === 'string' ? hash : bytesToHex(hash);
-        return buildBlobKey(hashHex);
-    }
-
     public async exists(ownerClusterId: string, hash: Uint8Array | string): Promise<boolean> {
         const hashHex = typeof hash === 'string' ? hash : bytesToHex(hash);
         try {
@@ -112,22 +96,4 @@ export class BlobStore {
             return false;
         }
     }
-
-    public hashHexToBytes(hashHex: string): Uint8Array {
-        return hexToBytes(hashHex);
-    }
-
-    public bytesToHashHex(hash: Uint8Array): string {
-        return bytesToHex(hash);
-    }
-
-    // Why: placeholder hook referenced by the plan's F5.S3 acceptance. Actual
-    // sweep is executed by a separate job (out of this stream's scope).
-    public async garbageCollect(_ownerClusterId: string): Promise<number> {
-        return 0;
-    }
 }
-
-export const buildBlobObjectKey = buildBlobKey;
-export const sha256HexFromBytes = bytesToHex;
-export const sha256BytesFromHex = hexToBytes;

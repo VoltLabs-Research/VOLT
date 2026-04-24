@@ -18,6 +18,7 @@ import { processExportNode } from '@/modules/plugin/application/exports/ExportNo
 import { WorkflowNodeExecutor } from '@/modules/analysis/application/workflow/WorkflowNodeExecutor';
 import { WorkflowSession, type WorkflowOutputsSnapshot } from '@/modules/analysis/application/workflow/WorkflowSession';
 import { createDebugArtifactBatch } from '@/modules/analysis/application/workflow/debug/debug-artifact-batch';
+import { safeRemovePath } from '@/support/fs/safe-remove-path';
 import type { DebugEnvironmentState } from '@/modules/analysis/application/workflow/debug/DebugEnvironment';
 import { WorkflowRuntime } from '@/modules/analysis/application/workflow/WorkflowRuntime';
 import { WorkflowScheduler, type WorkflowExecutionStatus } from '@/modules/analysis/application/workflow/WorkflowScheduler';
@@ -32,7 +33,6 @@ import type {
 import type { PluginBinaryCache } from '@/modules/plugin/application/binaries/PluginBinaryCache';
 import fg from 'fast-glob';
 import path from 'node:path';
-import fs from 'node:fs/promises';
 
 interface DebugExecutionLogReporter {
     reportDebugLogChunk(
@@ -694,9 +694,9 @@ export class DebugSessionManager {
     private async cleanupSessionArtifacts(session: DebugSession): Promise<void> {
         const cleanupDirectorySet = new Set(session.cleanupDirectories);
         const cleanupTasks = [
-            ...session.cleanupPaths.map((filePath) => fs.rm(filePath, { force: true }).catch(() => {})),
+            ...session.cleanupPaths.map((filePath) => safeRemovePath(filePath)),
             ...Array.from(cleanupDirectorySet).map(async (directoryPath) => {
-                await fs.rm(directoryPath, { recursive: true, force: true }).catch(() => {});
+                await safeRemovePath(directoryPath, { recursive: true });
 
                 try {
                     const parentDir = path.dirname(directoryPath);
@@ -708,10 +708,7 @@ export class DebugSessionManager {
                         dot: true,
                         unique: true
                     });
-                    await Promise.all(siblingPaths.map((siblingPath) => fs.rm(siblingPath, {
-                            recursive: true,
-                            force: true
-                        }).catch(() => {})));
+                    await Promise.all(siblingPaths.map((siblingPath) => safeRemovePath(siblingPath, { recursive: true })));
                 } catch {
                 }
             })

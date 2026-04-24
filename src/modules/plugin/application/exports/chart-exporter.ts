@@ -2,10 +2,9 @@ import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 import type { BubbleDataPoint, ChartConfiguration, ChartTypeRegistry, Point } from 'chart.js';
 
 import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
-import { buildArtifactReportInput, getNestedValue } from '@/modules/plugin/application/exports/export-node-processor-shared';
+import { getNestedValue, stageExportBufferUpload } from '@/modules/plugin/application/exports/export-node-processor-shared';
 import type { ChartExportOptions, ExportExecutionInput } from '@/modules/plugin/application/exports/export-node-processor-types';
 import type { MsgpackObject, MsgpackValue } from '@/support/serialization/msgpack-value';
-import path from 'node:path';
 
 interface ChartPoint {
     x: string | number;
@@ -141,20 +140,13 @@ export const exportChartArtifact = async (
     };
     const buffer = await chartCanvas.renderToBuffer(chartConfiguration);
 
-    await input.artifactUploadBatch.stageBufferUpload({
-        ownerClusterId,
+    await stageExportBufferUpload(input, {
+        exporter: 'ChartExporter',
         bucket: ObjectBucketName.Plugins,
-        objectKey: objectPath,
         buffer,
         contentType: 'image/png',
-        fileName: path.basename(objectPath),
-        reportArtifact: buildArtifactReportInput(
-            input,
-            'ChartExporter',
-            input.exposure.export!,
-            objectPath,
-            ObjectBucketName.Plugins
-        )
+        objectPath,
+        ownerClusterId
     });
 
     return true;

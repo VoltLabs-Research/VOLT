@@ -6,7 +6,6 @@ interface ZstdStreamResult {
     completion: Promise<void>;
 }
 
-const DUMP_ZSTD_EXTENSION = '.dump.zst';
 const ZSTD_NOT_INSTALLED_MESSAGE = 'zstd binary is not installed in the runtime image';
 
 const rejectSpawnError = (reject: (error: Error) => void) => {
@@ -75,16 +74,8 @@ export const createZstdDecompressionStream = (input: Readable): ZstdStreamResult
     return createZstdStream(['-d', '-q', '-c'], input);
 };
 
-export const compressFileWithZstd = async (sourcePath: string, outputPath: string): Promise<void> => {
-    const child = spawn('zstd', [
-        '-T0',
-        '-5',
-        '--no-progress',
-        '-f',
-        '-o',
-        outputPath,
-        sourcePath
-    ], {
+export const runZstdCommand = async (args: string[]): Promise<void> => {
+    const child = spawn('zstd', args, {
         stdio: ['ignore', 'ignore', 'pipe']
     });
 
@@ -100,9 +91,8 @@ export const compressFileWithZstd = async (sourcePath: string, outputPath: strin
     });
 };
 
-export const toCompressedDumpObjectKey = (trajectoryId: string, timestep: string | number): string => {
-    return `trajectory-${trajectoryId}/timestep-${timestep}${DUMP_ZSTD_EXTENSION}`;
-};
+export const compressFileWithZstd = (sourcePath: string, outputPath: string): Promise<void> =>
+    runZstdCommand(['-T0', '-5', '--no-progress', '-f', '-o', outputPath, sourcePath]);
 
 export const isZstdObjectKey = (objectKey: string): boolean => objectKey.endsWith('.zst');
 

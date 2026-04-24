@@ -4,8 +4,7 @@ import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjec
 import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
 import { VTR_DICT_BUCKET } from '@/modules/trajectory/contracts/vtr-format';
 import { withNativeProcessingTempDir } from '@/support/native-temp-dir';
-import { toVtrDictObjectKey } from '@/support/serialization/storage-codec';
-import { spawn } from 'node:child_process';
+import { runZstdCommand, toVtrDictObjectKey } from '@/support/serialization/storage-codec';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Readable } from 'node:stream';
@@ -83,7 +82,7 @@ export class DictionaryTrainer {
                 '-o', dictPath
             ];
 
-            await runZstd(args);
+            await runZstdCommand(args);
 
             const payloadBuffer = await fs.readFile(dictPath);
             const payload = new Uint8Array(payloadBuffer.buffer, payloadBuffer.byteOffset, payloadBuffer.byteLength);
@@ -153,31 +152,6 @@ export class DictionaryTrainer {
         return (latest?.version ?? 0) + 1;
     }
 }
-
-const runZstd = (args: string[]): Promise<void> => {
-    return new Promise<void>((resolve, reject) => {
-        const child = spawn('zstd', args, { stdio: ['ignore', 'ignore', 'pipe'] });
-        let stderr = '';
-        child.stderr.setEncoding('utf8');
-        child.stderr.on('data', (chunk) => {
-            stderr += chunk;
-        });
-        child.once('error', (error: NodeJS.ErrnoException) => {
-            if (error.code === 'ENOENT') {
-                reject(new Error('zstd binary is not installed in the runtime image'));
-                return;
-            }
-            reject(error);
-        });
-        child.once('close', (code) => {
-            if (code === 0) {
-                resolve();
-                return;
-            }
-            reject(new Error(stderr.trim() || `zstd --train exited with code ${code ?? 'unknown'}`));
-        });
-    });
-};
 
 const streamToBuffer = async (stream: Readable): Promise<Uint8Array> => {
     const chunks: Buffer[] = [];

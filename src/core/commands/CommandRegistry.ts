@@ -1,10 +1,10 @@
-import type { AwilixContainer } from 'awilix';
+import { asClass, type AwilixContainer } from 'awilix';
 import {
     getCommandGroupMetadata,
     getRegisteredCommandGroups,
+    type CommandGroupClass,
     type CommandMethodMetadata
 } from '@/core/commands/decorators';
-import { registerDecoratedGroupsOnContainer } from '@/core/decorators/register-decorated-groups-on-container';
 import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import ApplicationError from '@/app/coordination/ApplicationError';
@@ -35,30 +35,33 @@ export class CommandRegistry {
     ): Promise<void> {
         logger.info('@command-registry: registering cluster daemon commands');
 
-        registerDecoratedGroupsOnContainer<CommandMethodMetadata>({
-            kind: 'command-group',
-            container,
-            groups: getRegisteredCommandGroups(),
-            getMetadata: (Group) => {
-                const metadata = getCommandGroupMetadata(Group);
-                if (!metadata) {
-                    return null;
-                }
+        const registrationNames = new Set<string>();
 
-                return {
-                    namespace: metadata.namespace,
-                    methods: metadata.commands
-                };
-            },
-            onMethod: ({ namespace, method, resolveInstance }) => {
-                const commandName = `${namespace}.${method.name}`;
+        for (const Group of getRegisteredCommandGroups()) {
+            const metadata = getCommandGroupMetadata(Group);
+            if (!metadata) {
+                continue;
+            }
+
+            const registrationName = `command-group:${metadata.namespace}.${(Group as CommandGroupClass & { name: string }).name}`;
+            if (registrationNames.has(registrationName)) {
+                throw new Error(`Duplicate command group registration: ${registrationName}`);
+            }
+            registrationNames.add(registrationName);
+
+            container.register({
+                [registrationName]: asClass(Group as unknown as new (...args: unknown[]) => Record<string, unknown>).singleton()
+            });
+
+            for (const method of metadata.commands) {
+                const commandName = `${metadata.namespace}.${method.name}`;
                 this.register(commandName, async (payload) => {
-                    const instance = resolveInstance() as Record<string, (payload: CommandPayload) => unknown>;
+                    const instance = container.resolve<Record<string, (payload: CommandPayload) => unknown>>(registrationName);
                     const result = await instance[method.propertyKey](payload);
                     return this.normalizeCommandResult(result, method);
                 });
             }
-        });
+        }
 
         for (const name of this.handlers.keys()) {
             reverseChannelBridge.registerCommand(name, (payload) => this.dispatch(name, payload));

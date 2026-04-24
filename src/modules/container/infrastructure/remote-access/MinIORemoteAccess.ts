@@ -5,10 +5,7 @@ import type { RemoteExplorerEntry, RemoteExplorerNode } from '@/contracts';
 import { MAX_OBJECT_PREVIEW_BYTES, buildAttachmentContentDisposition, joinExplorerPathSegments, normalizeExplorerPath } from '@/modules/container/infrastructure/remote-access/shared';
 import { parseMinioPath, splitExplorerPathSegments, toWebReadableStream } from '@/modules/container/infrastructure/remote-access/shared';
 import BaseRemoteAccess from '@/modules/container/infrastructure/remote-access/BaseRemoteAccess';
-
-interface MinioLikeError {
-    code?: string;
-};
+import { isObjectNotFoundError } from '@/core/storage/contracts/cluster-object-store';
 
 export default class MinioRemoteAccess extends BaseRemoteAccess {
     readonly target = RemoteExplorerTarget.Minio;
@@ -157,8 +154,7 @@ export default class MinioRemoteAccess extends BaseRemoteAccess {
             stat = await this.minioService.statObject(bucket, objectKey);
             nodeStream = await this.minioService.getObjectStream(bucket, objectKey);
         } catch (error) {
-            const code = (error as MinioLikeError).code;
-            if (code === 'NotFound' || code === 'NoSuchKey') {
+            if (isObjectNotFoundError(error)) {
                 throw Object.assign(new Error(`Object not found: ${bucket}/${objectKey}`), {
                     statusCode: 404
                 });

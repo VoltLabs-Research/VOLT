@@ -131,3 +131,10 @@ export interface ClusterObjectStore {
     putObjectStream(input: ClusterObjectPutStreamInput): Promise<void>;
     list(ownerClusterId: string, request: ClusterObjectListRequest): Promise<ClusterObjectListResponse>;
 }
+
+export const isObjectNotFoundError = (error: unknown): boolean => {
+    if (!(error instanceof Error)) return false;
+    const code = (error as { code?: string }).code;
+    const statusCode = (error as { statusCode?: number }).statusCode;
+    return code === 'NotFound' || code === 'NoSuchKey' || statusCode === 404;
+};

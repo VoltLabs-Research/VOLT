@@ -1,12 +1,8 @@
 import { decodeMultiStream, mergeSelectiveChunk } from '@/support/serialization/selective-msgpack';
 import type { MsgpackObject, MsgpackValue } from '@/support/serialization/msgpack-value';
+import { isPlainObject } from '@/support/type-guards/is-record';
 import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
-
-const isPlainObject = (value: MsgpackValue): value is MsgpackObject => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value) && !(value instanceof Uint8Array);
-};
-
 
 export interface WorkflowExposurePayloadReadResult {
     listing: MsgpackObject | null;

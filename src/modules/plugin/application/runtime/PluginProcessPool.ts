@@ -2,7 +2,6 @@ import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { pack, unpack } from 'msgpackr';
-import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
 import { EventEmitter } from 'node:events';
@@ -10,6 +9,7 @@ import type {
     PluginProcessRequest,
     PluginProcessResponse
 } from '@/modules/plugin/contracts/plugin-batch';
+import { getAvailableCpuCount, readPositiveIntegerEnv } from '@/support/policies/runtime-capacity';
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 10 * 60 * 1000;
 const SPAWN_IDLE_POOL_ACQUIRE_TIMEOUT_MS = 60_000;
@@ -92,15 +92,10 @@ export class PluginProcessPool {
     private shuttingDown = false;
 
     constructor() {
-        const cores = typeof os.availableParallelism === 'function' ? os.availableParallelism() : os.cpus().length;
-        const maxEnv = Number.parseInt(process.env.PLUGIN_PROCESS_POOL_MAX ?? '', 10);
-        const minEnv = Number.parseInt(process.env.PLUGIN_PROCESS_POOL_MIN_IDLE ?? '', 10);
-        const timeoutEnv = Number.parseInt(process.env.PLUGIN_PROCESS_POOL_REQUEST_TIMEOUT_MS ?? '', 10);
-
         this.config = {
-            minIdle: Number.isFinite(minEnv) && minEnv > 0 ? minEnv : 1,
-            maxConcurrent: Number.isFinite(maxEnv) && maxEnv > 0 ? maxEnv : Math.max(1, cores - 1),
-            requestTimeoutMs: Number.isFinite(timeoutEnv) && timeoutEnv > 0 ? timeoutEnv : DEFAULT_REQUEST_TIMEOUT_MS
+            minIdle: readPositiveIntegerEnv('PLUGIN_PROCESS_POOL_MIN_IDLE') ?? 1,
+            maxConcurrent: readPositiveIntegerEnv('PLUGIN_PROCESS_POOL_MAX') ?? Math.max(1, getAvailableCpuCount() - 1),
+            requestTimeoutMs: readPositiveIntegerEnv('PLUGIN_PROCESS_POOL_REQUEST_TIMEOUT_MS') ?? DEFAULT_REQUEST_TIMEOUT_MS
         };
     }
 

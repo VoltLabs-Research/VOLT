@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import { DelayedError, type Job } from 'bullmq';
 
 import { Service } from '@/core/decorators/service';
-import { BaseWorker, type JobScope } from '@/core/queues/application/BaseWorker';
+import { BaseWorker } from '@/core/queues/application/BaseWorker';
 import { createLifecycleStatusReporter } from '@/core/queues/application/create-status-reporter';
 import { QueueService } from '@/core/queues/application/QueueService';
 import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@/core/queues/application/QueueScopeLimitsRegistry';
@@ -11,6 +11,7 @@ import { withJobLifecycle } from '@/core/queues/application/with-job-lifecycle';
 import { ARTIFACT_UPLOAD_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
 import { logAndSwallow } from '@/support/error/errorMessage';
+import { safeRemovePath } from '@/support/fs/safe-remove-path';
 import type { ArtifactUploadBatchJobPayload } from '@/modules/plugin/contracts/artifact-upload';
 import type { SceneArtifactUpsertBatchItem as ReportArtifactInput } from '@/modules/plugin/contracts/reverse-channel-plugin';
 import type {
@@ -62,13 +63,6 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
 
     start(concurrency: number = DEFAULT_ARTIFACT_UPLOAD_CONCURRENCY): void {
         super.start(concurrency);
-    }
-
-    protected getScope(payload: ArtifactUploadBatchJobPayload): JobScope {
-        return {
-            trajectoryId: payload.trajectoryId,
-            teamId: payload.teamId
-        };
     }
 
     protected async process(payload: ArtifactUploadBatchJobPayload, bullJob: Job<ArtifactUploadBatchJobPayload>): Promise<void> {
@@ -150,14 +144,13 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
             }
         } finally {
             if (compressed) {
-                await fs.rm(sourcePath, { force: true }).catch(() => {});
+                await safeRemovePath(sourcePath);
             }
         }
     }
 
     private async cleanupBatchDirectory(batchDirectory: string): Promise<void> {
-        await fs.rm(batchDirectory, { recursive: true, force: true })
-            .catch(logAndSwallow('warn', { batchDirectory }, 'Failed to cleanup artifact upload batch directory'));
+        await safeRemovePath(batchDirectory, { recursive: true });
     }
 
     private shouldCompress(contentType: string | undefined): boolean {
