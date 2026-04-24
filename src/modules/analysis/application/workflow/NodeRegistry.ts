@@ -74,10 +74,6 @@ export class WorkflowNodeRegistry {
         return this.createValueResolver(context, currentNodeId).resolveReference(ref);
     }
 
-    resolveTemplate(template: string, context: WorkflowExecutionContext, currentNodeId?: string): string {
-        return this.createValueResolver(context, currentNodeId).resolveTemplate(template);
-    }
-
     shouldResolveExpression(value: WorkflowValue): value is string {
         return WorkflowValueResolver.shouldResolveExpression(value);
     }

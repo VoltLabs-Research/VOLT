@@ -24,11 +24,6 @@ declare module '@voltstack/lammps-io' {
     export const dataParser: {
         parseData(filePath: string, options: Pick<NativeParseOptions, 'includeIds'>): NativeParseResult | null;
     };
-
-    export const statsParser: {
-        getStatsForProperty(filePath: string, propertyIndex: number): { min: number; max: number };
-        getUniqueValuesForProperty(filePath: string, propertyIndex: number, maxValues: number): number[];
-    };
 }
 declare module '@voltstack/spatial-assembler';
 declare module '@voltstack/headless-rasterizer';

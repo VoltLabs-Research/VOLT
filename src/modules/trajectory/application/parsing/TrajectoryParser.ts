@@ -21,11 +21,6 @@ export interface ParsedTrajectory {
     max: [number, number, number];
 }
 
-export interface TrajectoryParseOptions {
-    includeIds?: boolean;
-    properties?: string[];
-}
-
 export interface DumpFileInput {
     trajectoryId: string;
     timestep: number;

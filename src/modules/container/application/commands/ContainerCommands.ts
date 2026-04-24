@@ -19,10 +19,6 @@ interface ContainerFilePayload extends ContainerIdentifierPayload {
     path: string;
 }
 
-interface ContainerFileWritePayload extends ContainerFilePayload {
-    content: string;
-}
-
 @CommandGroup('container')
 export class ContainerCommands {
     constructor(private readonly dockerRuntime: DockerRuntime) {}
@@ -79,11 +75,5 @@ export class ContainerCommands {
         return {
             contents: await this.dockerRuntime.readContainerFile(payload.containerId, payload.path || '')
         };
-    }
-
-    @Command('file.write')
-    async writeFile(payload: ContainerFileWritePayload) {
-        await this.dockerRuntime.writeContainerFile(payload.containerId, payload.path, payload.content);
-        return { written: true };
     }
 }

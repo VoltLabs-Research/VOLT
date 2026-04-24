@@ -267,10 +267,6 @@ export class WorkflowSession {
         return WorkflowSession.snapshotOutputs(this.outputs);
     }
 
-    cloneOutputs(): WorkflowOutputs {
-        return WorkflowSession.cloneOutputs(this.outputs);
-    }
-
     getOutput(nodeId: string): WorkflowNodeOutput | undefined {
         return this.outputs.get(nodeId);
     }
@@ -278,10 +274,6 @@ export class WorkflowSession {
     setOutput(nodeId: string, output: WorkflowNodeOutput): WorkflowNodeOutput {
         this.outputs.set(nodeId, output);
         return output;
-    }
-
-    resolveContextDumps(): TrajectoryDumpDescriptor[] {
-        return WorkflowSession.resolveContextDumps(this.context);
     }
 
     resolveSelectedDump(): WorkflowDumpSelection | null {

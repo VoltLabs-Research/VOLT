@@ -15,12 +15,12 @@ import { pipeline } from 'node:stream/promises';
 // fires this command — the daemon decompresses each frame in a temp dir and
 // hands them to VtrIngestService which writes the .vtr back to MinIO.
 
-export interface VtrIngestCommandFrameInput {
+interface VtrIngestCommandFrameInput {
     timestep: number;
     objectKey: string;
 }
 
-export interface VtrIngestCommandPayload {
+interface VtrIngestCommandPayload {
     trajectoryId: string;
     ownerClusterId: string;
     frames: VtrIngestCommandFrameInput[];
@@ -31,7 +31,7 @@ export interface VtrIngestCommandPayload {
     customProperties?: string[];
 }
 
-export interface VtrIngestCommandResponse {
+interface VtrIngestCommandResponse {
     objectKey: string;
     frameCount: number;
     size: number;

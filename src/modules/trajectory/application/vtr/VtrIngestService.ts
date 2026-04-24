@@ -5,8 +5,7 @@ import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjec
 import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
 import {
     DEFAULT_KEYFRAME_INTERVAL,
-    VTR_DICT_BUCKET,
-    VtrZstdDictRef
+    VTR_DICT_BUCKET
 } from '@/modules/trajectory/contracts/vtr-format';
 import { VtrWriter } from '@/modules/trajectory/infrastructure/codecs/vtr-writer';
 import { withNativeProcessingTempDir } from '@/support/native-temp-dir';
@@ -162,9 +161,3 @@ const toFloat32PropertyMap = (
     return result;
 };
 
-export const vtrIngestResultToReaderSource = (result: VtrIngestResult): { bucket: string; objectKey: string } => ({
-    bucket: result.bucket,
-    objectKey: result.objectKey
-});
-
-export { VtrZstdDictRef };

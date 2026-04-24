@@ -4,7 +4,6 @@ export const TeamClusterStatus = Object.freeze({
     WaitingForConnection: 'waiting-for-connection',
     HealthcheckReceived: 'healthcheck-received',
     PreparingEnvironment: 'preparing-environment',
-    DependencyInstallationFailed: 'dependency-installation-failed',
     OperatingSystemNotSupported: 'operating-system-not-supported',
     Connected: 'connected',
     Disconnected: 'disconnected',

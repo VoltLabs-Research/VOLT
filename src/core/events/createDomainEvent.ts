@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import type { IDomainEvent } from '@/core/events/IDomainEvent';
 
 export interface DomainEventClass<TPayload extends object> {
@@ -13,8 +12,6 @@ export const createDomainEvent = <TPayload extends object>(
 ): DomainEventClass<TPayload> => {
     const EventClass = class implements IDomainEvent<TPayload> {
         static readonly eventName = eventName;
-        readonly eventId = randomUUID();
-        readonly occurredOn = new Date();
         readonly name = eventName;
         constructor(readonly payload: TPayload) {}
     };

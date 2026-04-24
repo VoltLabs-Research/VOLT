@@ -109,7 +109,6 @@ export class DaemonExposureRegistry {
     private exposures = new Map<string, TeamClusterServiceExposure>();
     private readonly daemonExposures = new Map<string, TeamClusterServiceExposure>();
     private lastContainerExposures: TeamClusterServiceExposure[] = [];
-    private lastObservedSnapshotSignature: string | null = null;
     private lastSentSnapshotSignature: string | null = null;
     private lastCloudConnectionState = false;
     private inFlightSync: Promise<void> | null = null;
@@ -218,7 +217,6 @@ export class DaemonExposureRegistry {
         })));
 
         this.exposures = new Map(mergedExposures.map((exposure) => [exposure.id, exposure]));
-        this.lastObservedSnapshotSignature = snapshotSignature;
         this.emitSnapshot(mergedExposures, snapshotSignature);
 
         return mergedExposures;

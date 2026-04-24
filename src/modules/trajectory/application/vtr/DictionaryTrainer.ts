@@ -1,39 +1,13 @@
 import { Service } from '@/core/decorators/service';
-import { logger } from '@/core/logger';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
 import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
 import { VTR_DICT_BUCKET } from '@/modules/trajectory/contracts/vtr-format';
-import { withNativeProcessingTempDir } from '@/support/native-temp-dir';
-import { runZstdCommand, toVtrDictObjectKey } from '@/support/serialization/storage-codec';
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import type { Readable } from 'node:stream';
-
-// Why: zstd dictionary training (F2.S3). Training happens out-of-band: a job
-// pulls ~100 random frames from the cluster, feeds them to `zstd --train`, and
-// uploads the resulting dict to the VTR dict bucket. At write/read time the
-// writer/reader look up the dict once per ingest and cache it in memory.
-
-export interface TrainedDictInfo {
-    key: string;
-    size: number;
-    version: number;
-    payload: Uint8Array;
-}
 
 export interface TrainerResolvedDict {
     ref: { key: string; size: number };
     payload: Uint8Array;
 }
-
-interface TrainDictInput {
-    ownerClusterId: string;
-    sampleFramePaths: string[];
-    maxDictSizeBytes?: number;
-}
-
-const DEFAULT_MAX_DICT_BYTES = 128 * 1024;
-const DICT_SAMPLE_CAP = 100;
 
 @Service('dictionaryTrainer')
 export class DictionaryTrainer {
@@ -65,60 +39,6 @@ export class DictionaryTrainer {
         return resolved;
     }
 
-    public async trainAndUpload(input: TrainDictInput): Promise<TrainedDictInfo> {
-        const samples = input.sampleFramePaths.slice(0, DICT_SAMPLE_CAP);
-        if (samples.length === 0) {
-            throw new Error('dictionary trainer requires at least one sample frame');
-        }
-
-        const maxDictBytes = input.maxDictSizeBytes ?? DEFAULT_MAX_DICT_BYTES;
-
-        return withNativeProcessingTempDir('vtr-dict', async (tempDirectory) => {
-            const dictPath = path.join(tempDirectory, 'trajectory.dict');
-            const args = [
-                '--train',
-                ...samples,
-                '--maxdict', String(maxDictBytes),
-                '-o', dictPath
-            ];
-
-            await runZstdCommand(args);
-
-            const payloadBuffer = await fs.readFile(dictPath);
-            const payload = new Uint8Array(payloadBuffer.buffer, payloadBuffer.byteOffset, payloadBuffer.byteLength);
-            const nextVersion = await this.computeNextVersion(input.ownerClusterId);
-            const objectKey = toVtrDictObjectKey(input.ownerClusterId, nextVersion);
-
-            await this.objectStore.putObject({
-                ownerClusterId: input.ownerClusterId,
-                bucket: ObjectBucketName.VtrDict,
-                objectKey,
-                body: Buffer.from(payload.buffer, payload.byteOffset, payload.byteLength),
-                metadata: {
-                    'Content-Type': 'application/octet-stream',
-                    'x-vtr-dict-version': String(nextVersion)
-                }
-            });
-
-            this.cache.set(input.ownerClusterId, {
-                ref: { key: objectKey, size: payload.byteLength },
-                payload
-            });
-
-            logger.info(`@dictionary-trainer: trained dict for cluster=${input.ownerClusterId} version=${nextVersion} size=${payload.byteLength}`);
-
-            return { key: objectKey, size: payload.byteLength, version: nextVersion, payload };
-        });
-    }
-
-    public invalidateCache(ownerClusterId?: string): void {
-        if (ownerClusterId) {
-            this.cache.delete(ownerClusterId);
-            return;
-        }
-        this.cache.clear();
-    }
-
     private async findLatestDictKey(
         ownerClusterId: string
     ): Promise<{ objectKey: string; version: number } | null> {
@@ -145,11 +65,6 @@ export class DictionaryTrainer {
         } while (cursor);
 
         return latest;
-    }
-
-    private async computeNextVersion(ownerClusterId: string): Promise<number> {
-        const latest = await this.findLatestDictKey(ownerClusterId);
-        return (latest?.version ?? 0) + 1;
     }
 }
 

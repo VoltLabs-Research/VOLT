@@ -187,36 +187,6 @@ export class RedisConnection {
         await pipeline.exec();
     }
 
-    async getTeamJobs(teamId: string): Promise<TeamJobRecord[]> {
-        const setKey = `team:${teamId}:jobs`;
-        const jobIds = await this.client.smembers(setKey);
-        if (jobIds.length === 0) return [];
-
-        const records = await this.client.mget(jobIds.map((jobId) => `${JOB_STATUS_KEY_PREFIX}${jobId}`));
-        const jobs: TeamJobRecord[] = [];
-        const staleJobIds: string[] = [];
-
-        for (let i = 0; i < records.length; i++) {
-            const record = records[i];
-            if (!record) {
-                staleJobIds.push(jobIds[i]);
-                continue;
-            }
-
-            try {
-                jobs.push(JSON.parse(record) as TeamJobRecord);
-            } catch {
-                continue;
-            }
-        }
-
-        if (staleJobIds.length > 0) {
-            this.client.srem(setKey, ...staleJobIds).catch(() => {});
-        }
-
-        return jobs;
-    }
-
     async removeJobs(teamId: string, jobIds: string[]): Promise<number> {
         if (jobIds.length === 0) return 0;
 

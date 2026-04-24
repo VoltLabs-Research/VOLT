@@ -33,6 +33,7 @@ import ApplicationError from '@/app/coordination/ApplicationError';
 import { dir as createTempDir } from 'tmp-promise';
 import fs from 'node:fs/promises';
 import { getAvailableCpuCount, readPositiveIntegerEnv } from '@/support/policies/runtime-capacity';
+import { mapLimited } from '@/support/concurrency/map-limited';
 
 interface WorkflowTraceContext {
     currentPluginId: string;
@@ -424,7 +425,7 @@ export class WorkflowRuntime {
             return execution.output;
         }
 
-        const groups = await this.mapLimited(
+        const groups = await mapLimited(
             input.dumpTargets,
             Math.min(MAX_BATCH_PLUGIN_CONCURRENCY, input.dumpTargets.length),
             async (dumpTarget, index) => {
@@ -527,19 +528,6 @@ export class WorkflowRuntime {
         };
 
         return pluginExecutionInput;
-    }
-
-    private async mapLimited<T, R>(items: T[], limit: number, task: (item: T, index: number) => Promise<R>): Promise<R[]> {
-        const results: R[] = new Array(items.length);
-        let cursor = 0;
-        const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
-            while (cursor < items.length) {
-                const index = cursor++;
-                results[index] = await task(items[index]!, index);
-            }
-        });
-        await Promise.all(workers);
-        return results;
     }
 
     private resolvePluginExecutionsForNode(

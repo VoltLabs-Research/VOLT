@@ -18,12 +18,12 @@ const READER_TTL_MS = 10 * 60 * 1000;
 const READER_MAX_ENTRIES = 32;
 const FRAME_HASH_CACHE_MAX_ENTRIES = 1024;
 
-export interface OpenReaderInput {
+interface OpenReaderInput {
     trajectoryId: string;
     ownerClusterId: string;
 }
 
-export interface FrameHashInput extends OpenReaderInput {
+interface FrameHashInput extends OpenReaderInput {
     timestep: number;
 }
 
@@ -77,19 +77,6 @@ export class VtrReaderRegistry {
         this.readers.set(key, { reader, createdAt: Date.now(), key });
         this.evictStale();
         return reader;
-    }
-
-    public async invalidate(trajectoryId: string, ownerClusterId: string): Promise<void> {
-        const key = this.buildKey({ trajectoryId, ownerClusterId });
-        const cached = this.readers.get(key);
-        if (!cached) return;
-        await cached.reader.close().catch(() => {});
-        this.readers.delete(key);
-        for (const hashKey of [...this.frameHashCache.keys()]) {
-            if (hashKey.startsWith(`${key}::`)) {
-                this.frameHashCache.delete(hashKey);
-            }
-        }
     }
 
     public async getFrameHash(input: FrameHashInput): Promise<string> {

@@ -12,11 +12,6 @@ export class TrajectoryPluginCommands {
         return this.trajectoryPluginParser.discoverPerAtomPropertyNames(payload);
     }
 
-    @Command('modifier-analysis')
-    modifierAnalysis(payload: Parameters<TrajectoryPluginParser['getModifierAnalysisData']>[0]) {
-        return this.trajectoryPluginParser.getModifierAnalysisData(payload);
-    }
-
     @Command('atom-index')
     atomIndex(payload: Parameters<TrajectoryPluginParser['buildPluginIndexForAtomIds']>[0]) {
         return this.trajectoryPluginParser.buildPluginIndexForAtomIds(payload);

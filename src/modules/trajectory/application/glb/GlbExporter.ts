@@ -12,10 +12,6 @@ import { compressFileWithZstd } from '@/support/serialization/storage-codec';
 import { withNativeProcessingTempDir } from '@/support/native-temp-dir';
 import spatialAssembler from '@voltstack/spatial-assembler';
 
-export interface GlbExporter {
-    preprocessTrajectory(input: any): Promise<void>;
-};
-
 const queueAutoPreviewRasterization = async (
     trajectoryRasterQueue: TrajectoryRasterQueue,
     modelObjectKey: string,

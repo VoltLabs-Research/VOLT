@@ -20,12 +20,6 @@ interface CacheEntry {
     lastAccessAt: number;
 }
 
-export interface VtrFrameCacheInit {
-    ttlMs?: number;
-    maxBytes?: number;
-    maxEntries?: number;
-}
-
 const estimateFrameSize = (frame: VtrFrameData): number => {
     let size = frame.positions.byteLength + frame.types.byteLength;
     if (frame.ids) size += frame.ids.byteLength;
@@ -43,7 +37,7 @@ export class VtrFrameCache {
     private readonly store = new Map<string, CacheEntry>();
     private totalBytes = 0;
 
-    public constructor(init: VtrFrameCacheInit = {}) {
+    public constructor(init: { ttlMs?: number; maxBytes?: number; maxEntries?: number } = {}) {
         this.ttlMs = init.ttlMs ?? DEFAULT_TTL_MS;
         this.maxBytes = init.maxBytes ?? DEFAULT_MAX_BYTES;
         this.maxEntries = init.maxEntries ?? DEFAULT_MAX_ENTRIES;
@@ -85,21 +79,6 @@ export class VtrFrameCache {
         });
         this.totalBytes += size;
         this.enforceLimits();
-    }
-
-    public invalidate(trajectoryId: string, timestep?: number): void {
-        if (timestep !== undefined) {
-            this.evict(this.buildKey(trajectoryId, timestep));
-            return;
-        }
-        for (const key of [...this.store.keys()]) {
-            if (key.startsWith(`${trajectoryId}:`)) this.evict(key);
-        }
-    }
-
-    public clear(): void {
-        this.store.clear();
-        this.totalBytes = 0;
     }
 
     private evict(key: string): void {
