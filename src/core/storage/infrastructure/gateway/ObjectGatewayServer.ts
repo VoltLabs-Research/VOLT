@@ -1,6 +1,10 @@
 import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureSourceKind, TeamClusterServiceExposureStatus } from '@/core/runtime/contracts/service-exposure';
 import { Factory } from '@/core/decorators/service';
-import { TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER, TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER } from '@/core/storage/contracts/http-object-store';
+import {
+    TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER,
+    TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
+    TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
+} from '@/core/storage/contracts/http-object-store';
 import type { LocalClusterObjectStat, LocalClusterObjectStoreGateway } from '@/core/storage/contracts/cluster-object-store';
 import type { ObjectGatewayDirectAccessClaims, ObjectGatewaySecurity } from '@/core/storage/contracts/object-gateway';
 import { logger } from '@/core/logger';
@@ -39,7 +43,6 @@ const OBJECT_GATEWAY_EXPOSURE_ID = 'daemon:object-gateway';
 const OBJECT_GATEWAY_EXPOSURE_NAME = 'object-gateway';
 const DEFAULT_LIST_LIMIT = 100;
 const MAX_LIST_LIMIT = 1_000;
-const OBJECT_METADATA_HEADER_PREFIX = 'x-object-meta-';
 const MINIO_METADATA_HEADER_PREFIX = 'x-amz-meta-';
 const LOOPBACK_HOST = '127.0.0.1';
 
@@ -561,11 +564,11 @@ export class ObjectGatewayServer {
         }
 
         for (const headerName of Object.keys(request.headers)) {
-            if (!headerName.toLowerCase().startsWith(OBJECT_METADATA_HEADER_PREFIX)) {
+            if (!headerName.toLowerCase().startsWith(TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX)) {
                 continue;
             }
 
-            const headerSuffix = headerName.slice(OBJECT_METADATA_HEADER_PREFIX.length);
+            const headerSuffix = headerName.slice(TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX.length);
             const singleValue = request.get(headerName);
             if (headerSuffix && singleValue) {
                 metadata[`${MINIO_METADATA_HEADER_PREFIX}${headerSuffix}`] = singleValue;
@@ -607,7 +610,7 @@ export class ObjectGatewayServer {
         for (const [metadataKey, metadataValue] of Object.entries(metadata)) {
             if (metadataKey.startsWith(MINIO_METADATA_HEADER_PREFIX)) {
                 response.setHeader(
-                    `${OBJECT_METADATA_HEADER_PREFIX}${metadataKey.slice(MINIO_METADATA_HEADER_PREFIX.length)}`,
+                    `${TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX}${metadataKey.slice(MINIO_METADATA_HEADER_PREFIX.length)}`,
                     metadataValue
                 );
             }

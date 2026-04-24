@@ -1,9 +1,10 @@
 import { type Job } from 'bullmq';
 
 import { Service } from '@/core/decorators/service';
-import { BaseWorker } from '@/core/queues/application/BaseWorker';
+import { BaseWorker, type JobScope } from '@/core/queues/application/BaseWorker';
 import { createLifecycleStatusReporter } from '@/core/queues/application/create-status-reporter';
 import type { QueueService } from '@/core/queues/application/QueueService';
+import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@/core/queues/application/QueueScopeLimitsRegistry';
 import { withJobLifecycle } from '@/core/queues/application/with-job-lifecycle';
 import { TRAJECTORY_GLB_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import type { GlbConversionQueueJobPayload } from '@/contracts';
@@ -13,14 +14,16 @@ import type { DaemonJobReporter } from '@/modules/jobs/application/reporting/Dae
 @Service('trajectoryGlbWorker')
 export class TrajectoryGlbWorker extends BaseWorker<GlbConversionQueueJobPayload> {
     protected readonly queueName = TRAJECTORY_GLB_QUEUE_NAME;
+    protected readonly scopeKey: QueueScopeKey = 'trajectoryGlbConversion';
     private readonly buildStatusReporter: ReturnType<typeof createLifecycleStatusReporter<GlbConversionQueueJobPayload>>;
 
     constructor(
         queueService: QueueService,
+        queueScopeLimitsRegistry: QueueScopeLimitsRegistry,
         private readonly glbExporter: GlbExporter,
         daemonJobReporter: DaemonJobReporter
     ) {
-        super({ queueService });
+        super({ queueService, scopeLimitsRegistry: queueScopeLimitsRegistry });
         this.buildStatusReporter = createLifecycleStatusReporter<GlbConversionQueueJobPayload>(
             {
                 started: daemonJobReporter.reportGlbStarted,
@@ -29,6 +32,13 @@ export class TrajectoryGlbWorker extends BaseWorker<GlbConversionQueueJobPayload
             },
             'trajectory GLB'
         );
+    }
+
+    protected getScope(payload: GlbConversionQueueJobPayload): JobScope {
+        return {
+            trajectoryId: payload.trajectoryId,
+            teamId: payload.teamId
+        };
     }
 
     protected async process(payload: GlbConversionQueueJobPayload, bullJob: Job<GlbConversionQueueJobPayload>): Promise<void> {

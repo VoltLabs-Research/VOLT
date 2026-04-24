@@ -3,9 +3,10 @@ import fs from 'node:fs/promises';
 import { DelayedError, type Job } from 'bullmq';
 
 import { Service } from '@/core/decorators/service';
-import { BaseWorker } from '@/core/queues/application/BaseWorker';
+import { BaseWorker, type JobScope } from '@/core/queues/application/BaseWorker';
 import { createLifecycleStatusReporter } from '@/core/queues/application/create-status-reporter';
 import { QueueService } from '@/core/queues/application/QueueService';
+import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@/core/queues/application/QueueScopeLimitsRegistry';
 import { withJobLifecycle } from '@/core/queues/application/with-job-lifecycle';
 import { ARTIFACT_UPLOAD_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
@@ -38,15 +39,17 @@ const DEFAULT_ARTIFACT_UPLOAD_CONCURRENCY = readPositiveIntegerEnv('ARTIFACT_UPL
 @Service('artifactUploadWorker')
 export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPayload> {
     protected readonly queueName = ARTIFACT_UPLOAD_QUEUE_NAME;
+    protected readonly scopeKey: QueueScopeKey = 'artifactUpload';
     private readonly buildStatusReporter: ReturnType<typeof createLifecycleStatusReporter<BaseArtifactUploadEventData>>;
 
     constructor(
         queueService: QueueService,
+        queueScopeLimitsRegistry: QueueScopeLimitsRegistry,
         private readonly objectStore: ClusterObjectStore,
         private readonly daemonArtifactReporter: ArtifactUploadReporter,
         daemonJobReporter: ArtifactUploadStatusReporter
     ) {
-        super({ queueService });
+        super({ queueService, scopeLimitsRegistry: queueScopeLimitsRegistry });
         this.buildStatusReporter = createLifecycleStatusReporter<BaseArtifactUploadEventData>(
             {
                 started: daemonJobReporter.reportArtifactUploadStarted,
@@ -59,6 +62,13 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
 
     start(concurrency: number = DEFAULT_ARTIFACT_UPLOAD_CONCURRENCY): void {
         super.start(concurrency);
+    }
+
+    protected getScope(payload: ArtifactUploadBatchJobPayload): JobScope {
+        return {
+            trajectoryId: payload.trajectoryId,
+            teamId: payload.teamId
+        };
     }
 
     protected async process(payload: ArtifactUploadBatchJobPayload, bullJob: Job<ArtifactUploadBatchJobPayload>): Promise<void> {
