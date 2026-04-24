@@ -87,6 +87,7 @@ const SSHConnectionModal = ({ connection, mode, onSuccess }: SSHConnectionModalP
     return (
         <Modal
             id={SSH_CONNECTION_MODAL_ID}
+            lazyMount
             title={mode === 'create' ? 'Add SSH Connection' : 'Edit SSH Connection'}
             width='460px'
             footer={

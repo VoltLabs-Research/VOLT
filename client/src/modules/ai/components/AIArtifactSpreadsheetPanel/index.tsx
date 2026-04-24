@@ -9,10 +9,10 @@ import Text from '@/shared/presentation/primitives/Text';
 import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import VisuallyHidden from '@/shared/presentation/primitives/VisuallyHidden';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
+import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { IoCheckmarkOutline, IoClipboardOutline } from 'react-icons/io5';
 import { PiFileCsv, PiFileXls } from 'react-icons/pi';
-import { sileo } from 'sileo';
 import * as XLSX from 'xlsx';
 import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
@@ -234,26 +234,29 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
     };
 
     const handleCopyToClipboard = async () => {
-        try {
-            const data = getExportData();
-            const worksheet = XLSX.utils.json_to_sheet(data, { header: columns });
-            const tsvContent = XLSX.utils.sheet_to_csv(worksheet, { FS: '\t' });
-            await navigator.clipboard.writeText(tsvContent);
-            setCopyFeedback(true);
-            updateStatusMessage('Copied table to clipboard.');
-            sileo.success({ title: 'Copied to clipboard' });
+        const data = getExportData();
+        const worksheet = XLSX.utils.json_to_sheet(data, { header: columns });
+        const tsvContent = XLSX.utils.sheet_to_csv(worksheet, { FS: '\t' });
+        const copied = await copyTextToClipboard(tsvContent, {
+            successMessage: 'Copied to clipboard',
+            errorMessage: 'Failed to copy to clipboard'
+        });
 
-            if (feedbackTimeoutRef.current !== null) {
-                window.clearTimeout(feedbackTimeoutRef.current);
-            }
-
-            feedbackTimeoutRef.current = window.setTimeout(() => {
-                setCopyFeedback(false);
-            }, 2000);
-        } catch {
+        if (!copied) {
             updateStatusMessage('Failed to copy table to clipboard.');
-            sileo.error({ title: 'Failed to copy to clipboard' });
+            return;
         }
+
+        setCopyFeedback(true);
+        updateStatusMessage('Copied table to clipboard.');
+
+        if (feedbackTimeoutRef.current !== null) {
+            window.clearTimeout(feedbackTimeoutRef.current);
+        }
+
+        feedbackTimeoutRef.current = window.setTimeout(() => {
+            setCopyFeedback(false);
+        }, 2000);
     };
 
     if (!table) return null;

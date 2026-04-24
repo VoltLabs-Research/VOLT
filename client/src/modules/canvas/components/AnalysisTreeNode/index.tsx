@@ -23,6 +23,7 @@ import {
 } from '../../utilities/tree-menus';
 import Button from '@/shared/presentation/primitives/Button';
 import Tooltip from '@/shared/presentation/primitives/Tooltip';
+import ExecutionConfigSummary from './ExecutionConfigSummary';
 import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, normalizeCanvasAnalysisStatus } from '../../utilities/analysis-status';
 import { useMemo } from 'react';
 
@@ -98,28 +99,28 @@ const AnalysisTreeNode = ({
         ? selectedScene?.source === 'plugin' && 'analysisId' in selectedScene && selectedScene.analysisId === analysis._id
         : isCurrentAnalysis;
 
-    const formattedUserConfig = useMemo(() => JSON.stringify(userConfig ?? {}, null, 2), [userConfig]);
+    const hasConfig = useMemo(() => Object.keys(userConfig ?? {}).length > 0, [userConfig]);
 
     const tooltipContent = useMemo(() => {
-        const hasConfig = formattedUserConfig !== '{}';
         if (!isAnalysisInProgress && !hasConfig) return null;
 
         return (
             <div className='canvas-tree-config-tooltip__content'>
-                <div className='canvas-tree-config-tooltip__header'>Execution config</div>
                 {isAnalysisInProgress && (
                     <div className='canvas-tree-config-tooltip__warning'>
                         Analysis still running. Some options will be disabled until it finishes.
                     </div>
                 )}
-                {hasConfig ? (
-                    <pre className='canvas-tree-config-tooltip__json font-mono tabular-nums'>{formattedUserConfig}</pre>
-                ) : (
-                    <div className='canvas-tree-config-tooltip__empty'>No execution config captured for this analysis.</div>
-                )}
+                <div className='canvas-tree-config-tooltip__body'>
+                    {hasConfig ? (
+                        <ExecutionConfigSummary config={userConfig ?? {}} />
+                    ) : (
+                        <div className='canvas-tree-config-tooltip__empty'>No execution config captured for this analysis.</div>
+                    )}
+                </div>
             </div>
         );
-    }, [formattedUserConfig, isAnalysisInProgress]);
+    }, [hasConfig, isAnalysisInProgress, userConfig]);
 
     const handleSelectAnalysis = () => {
         if (isAnalysisInProgress) return;

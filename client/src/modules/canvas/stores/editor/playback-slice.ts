@@ -10,10 +10,14 @@ type PlaybackSliceGet = Parameters<StateCreator<EditorStore, [], [], PlaybackSto
 const DEFAULT_PLAY_SPEED = 1;
 const MIN_PLAY_SPEED = 0.1;
 const MAX_PLAY_SPEED = 10;
-// Why: when the trajectory metadata does not expose a target FPS, default to
-// 30 — the baseline documented in OPTIMIZATION_PLAN §F1.S4 acceptance for the
-// 1M-atoms playback scenario.
-const DEFAULT_TARGET_FPS = 30;
+// Why: 1x baseline is 10 trajectory frames per wall-clock second — a natural
+// observation rate for MD playback (matches OVITO/VMD defaults). Higher preset
+// speeds (2x…10x) multiply from here, so 10x advances 100 frames/second.
+const DEFAULT_TARGET_FPS = 10;
+// Why: if the tab is backgrounded or the main thread stalls, `elapsed` between
+// ticks can spike to seconds. Cap the catch-up so we don't leap across huge
+// portions of the trajectory in a single tick when playback resumes.
+const MAX_CATCHUP_MS = 500;
 
 // Why: `preloadAbortController` cannot live inside zustand state — it is not a
 // serializable value and Zustand's shallow-equal selector would churn. A single
@@ -213,11 +217,22 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
 
         const elapsed = now - _runtime.lastFrameTime;
         const frameDelay = resolveFrameDelayMs(state.playSpeed, state.targetFps);
-        if (elapsed < frameDelay) {
+        if (!Number.isFinite(frameDelay) || frameDelay <= 0) {
             return;
         }
 
-        _runtime.lastFrameTime = now;
+        const effectiveElapsed = Math.min(elapsed, MAX_CATCHUP_MS);
+        const framesToAdvance = Math.floor(effectiveElapsed / frameDelay);
+        if (framesToAdvance <= 0) {
+            return;
+        }
+
+        // Why: preserve the remainder instead of resetting to `now`. Without
+        // this, high play speeds whose frameDelay is shorter than the rAF tick
+        // would only ever advance one frame per tick — capping effective
+        // playback at the display refresh rate and making 2x/4x/8x/10x
+        // indistinguishable on a 60Hz screen.
+        _runtime.lastFrameTime += framesToAdvance * frameDelay;
 
         const ranged = resolveRangedTimesteps(_runtime.timesteps, state.rangeStart, state.rangeEnd);
         if (!ranged.length) {
@@ -236,7 +251,7 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
             return;
         }
 
-        const nextIndex = (index + 1) % ranged.length;
+        const nextIndex = (index + framesToAdvance) % ranged.length;
         updateCurrentTimestep(ranged[nextIndex], set, get);
     },
 
