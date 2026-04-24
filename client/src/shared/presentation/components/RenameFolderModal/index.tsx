@@ -3,6 +3,7 @@ import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Box from '@/shared/presentation/primitives/Box';
 import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
+import useMedia from '@/shared/presentation/hooks/use-media';
 import { useCallback, useEffect, useState } from 'react';
 import type { InputHTMLAttributes } from 'react';
 import type { ModalFooterAction } from '@/shared/presentation/components/ModalFooterActions';
@@ -16,16 +17,6 @@ interface RenameFolderModalProps {
     onClose: () => void;
 };
 
-const COARSE_POINTER_MEDIA_QUERY = '(pointer: coarse)';
-
-const shouldEnableModalAutofocus = () => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-        return true;
-    }
-
-    return !window.matchMedia(COARSE_POINTER_MEDIA_QUERY).matches;
-};
-
 const RenameFolderModal = ({
     id,
     title,
@@ -37,7 +28,7 @@ const RenameFolderModal = ({
     const [nextFolderName, setNextFolderName] = useState('');
     const [error, setError] = useState<string | undefined>();
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const shouldAutoFocus = shouldEnableModalAutofocus();
+    const shouldAutoFocus = !useMedia('(pointer: coarse)');
 
     useEffect(() => {
         setNextFolderName(folderName ?? '');

@@ -19,7 +19,6 @@
 .plugin-sub-listings-page__detail {
     flex: 0 0 clamp(320px, 38%, 520px);
     min-height: 0;
-    border-left: 1px solid var(--color-border-soft);
     overflow: hidden;
     display: flex;
     flex-direction: column;

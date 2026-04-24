@@ -6,6 +6,7 @@ import type { SimulationCellProps } from '@modules/simulation-cell/domain/entiti
 import SimulationCellRepository from '@modules/simulation-cell/infrastructure/persistence/mongo/repositories/SimulationCellRepository';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
+import { TRAJECTORY_POPULATE } from '@shared/application/PopulatePresets';
 import { Result } from '@shared/domain/port/Result';
 import { injectable } from 'tsyringe';
 
@@ -24,15 +25,13 @@ export default class GetSimulationCellByTrajectoryUseCase {
             trajectory: input.trajectoryId
         };
 
-        const populate = { path: 'trajectory', select: ['name'] };
-
         if (input.timestep !== undefined) {
             const exactMatch = await this.repository.findOne(
                 {
                     ...baseFilter,
                     timestep: input.timestep
                 },
-                { populate }
+                { populate: TRAJECTORY_POPULATE }
             );
 
             if (exactMatch) {
@@ -42,7 +41,7 @@ export default class GetSimulationCellByTrajectoryUseCase {
 
         const fallbackResult = await this.repository.findAll({
             filter: baseFilter,
-            populate,
+            populate: TRAJECTORY_POPULATE,
             sort: { timestep: -1 },
             limit: 1,
             page: 1

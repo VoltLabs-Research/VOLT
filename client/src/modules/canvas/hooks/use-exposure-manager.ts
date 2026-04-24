@@ -3,7 +3,7 @@ import { CanvasAnalysisStatusEnum } from '../utilities/analysis-status';
 
 import {
     buildSceneArtifactsQueryOptions,
-    SCENE_ARTIFACTS_QUERY_KEYS,
+    invalidateSceneArtifacts,
     useSceneArtifactsQueries
 } from '@/modules/trajectory/hooks/scene-artifacts/queries';
 import { useQueryClient } from '@tanstack/react-query';
@@ -105,7 +105,7 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
         }
 
         if (hasNewCompletion) {
-            queryClient.invalidateQueries({ queryKey: SCENE_ARTIFACTS_QUERY_KEYS.sceneArtifacts() });
+            void invalidateSceneArtifacts();
         }
         prevStatusesRef.current = next;
     }, [statusMap, trajectoryId, queryClient]);

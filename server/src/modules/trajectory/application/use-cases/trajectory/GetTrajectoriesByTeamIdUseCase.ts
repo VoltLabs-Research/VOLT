@@ -2,6 +2,7 @@ import { GetTrajectoriesByTeamIdInputDTO, GetTrajectoriesByTeamIdOutputDTO } fro
 import { resolveTrajectoryPreviewAvailability } from '@modules/trajectory/utilities/trajectory/resolve-trajectory-preview-availability';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
+import { STORAGE_CLUSTER_POPULATE, USER_POPULATE } from '@shared/application/PopulatePresets';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { Result } from '@shared/domain/port/Result';
 
@@ -38,14 +39,8 @@ export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTraje
         const results = await this.trajectoryRepo.findAll({
             filter,
             populate: [
-                {
-                    path: 'createdBy',
-                    select: ['firstName', 'lastName', 'email', 'avatar']
-                },
-                {
-                    path: 'storageClusterId',
-                    select: ['name']
-                }
+                USER_POPULATE,
+                STORAGE_CLUSTER_POPULATE
             ],
             sort: { updatedAt: -1 },
             page,

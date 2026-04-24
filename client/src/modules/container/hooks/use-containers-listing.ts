@@ -53,14 +53,14 @@ interface ContainerMoveTarget {
     folder: string | null;
 }
 
-const CREATE_FOLDER_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Folder', success: 'Folder created successfully', error: 'Failed to create folder' });
-const RENAME_FOLDER_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Folder', success: 'Folder renamed successfully', error: 'Failed to rename folder' });
-const DELETE_FOLDER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Folder', success: 'Folder deleted successfully', error: 'Failed to delete folder' });
-const MOVE_CONTAINER_TOAST = createCrudToastOptions({ action: 'Moving', subject: 'Container', success: 'Container moved successfully', error: 'Failed to move container' });
-const START_CONTAINER_TOAST = createCrudToastOptions({ action: 'Starting', subject: 'Container', success: 'Container started successfully', error: 'Failed to start container' });
-const STOP_CONTAINER_TOAST = createCrudToastOptions({ action: 'Stopping', subject: 'Container', success: 'Container stopped successfully', error: 'Failed to stop container' });
-const RESTART_CONTAINER_TOAST = createCrudToastOptions({ action: 'Restarting', subject: 'Container', success: 'Container restarted successfully', error: 'Failed to restart container' });
-const DELETE_CONTAINER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Container', success: 'Container deleted successfully', error: 'Failed to delete container' });
+const CREATE_FOLDER_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Folder', success: 'Folder created successfully' });
+const RENAME_FOLDER_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Folder', success: 'Folder renamed successfully' });
+const DELETE_FOLDER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Folder', success: 'Folder deleted successfully' });
+const MOVE_CONTAINER_TOAST = createCrudToastOptions({ action: 'Moving', subject: 'Container', success: 'Container moved successfully' });
+const START_CONTAINER_TOAST = createCrudToastOptions({ action: 'Starting', subject: 'Container', success: 'Container started successfully' });
+const STOP_CONTAINER_TOAST = createCrudToastOptions({ action: 'Stopping', subject: 'Container', success: 'Container stopped successfully' });
+const RESTART_CONTAINER_TOAST = createCrudToastOptions({ action: 'Restarting', subject: 'Container', success: 'Container restarted successfully' });
+const DELETE_CONTAINER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Container', success: 'Container deleted successfully' });
 
 const createEmptyResponse = <T extends { _id: string }>(params: PaginationParams): PaginatedResponse<T> => ({
     status: 'success',

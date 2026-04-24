@@ -2,8 +2,12 @@ import { useExportListingMutation, useExportListingByAnalysisMutation } from '@/
 import { isAccessDeniedError } from '@/shared/errors/core';
 import { ExportType } from '@/shared/domain/export/types';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { createCrudToastOptions } from '@/shared/presentation/toast-options';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback } from 'react';
+
+const DOWNLOAD_LISTING_TOAST = createCrudToastOptions({ action: 'Downloading', subject: 'listing', success: 'Listing downloaded successfully' });
+const DOWNLOAD_ANALYSIS_LISTINGS_TOAST = createCrudToastOptions({ action: 'Downloading', subject: 'analysis listings', success: 'Analysis listings downloaded successfully' });
 
 export interface DownloadPluginListingParams {
     pluginId: string;
@@ -57,11 +61,7 @@ const useDownloadPluginListing = () => {
                     triggerBrowserDownload(blob, filename);
                     return blob;
                 })(),
-                {
-                    loading: { title: 'Downloading listing...' },
-                    success: { title: 'Listing downloaded successfully' },
-                    error: { title: 'Failed to download listing' }
-                }
+                DOWNLOAD_LISTING_TOAST
             );
             return true;
         } catch(error: unknown) {
@@ -100,11 +100,7 @@ const useDownloadPluginListing = () => {
                     triggerBrowserDownload(blob, `AnalysisID-${analysisId}.${extension}`);
                     return blob;
                 })(),
-                {
-                    loading: { title: 'Downloading analysis listings...' },
-                    success: { title: 'Analysis listings downloaded successfully' },
-                    error: { title: 'Failed to download analysis listings' }
-                }
+                DOWNLOAD_ANALYSIS_LISTINGS_TOAST
             );
             return true;
         } catch(error: unknown) {

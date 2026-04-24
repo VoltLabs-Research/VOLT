@@ -4,6 +4,7 @@ import { extractPluginId } from '@modules/analysis/infrastructure/services/Analy
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
+import { TRAJECTORY_POPULATE } from '@shared/application/PopulatePresets';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
@@ -37,7 +38,7 @@ export class ListPublicCanvasAnalysesUseCase implements IUseCase<
                     trajectory: input.trajectoryId
                 },
                 populate: [
-                    { path: 'trajectory', select: ['name'] },
+                    TRAJECTORY_POPULATE,
                     { path: 'plugin' }
                 ],
                 page: input.page,

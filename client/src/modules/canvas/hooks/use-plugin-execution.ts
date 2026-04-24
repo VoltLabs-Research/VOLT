@@ -3,6 +3,7 @@ import { resolveArgumentRuntimeValue } from '@/modules/plugin/utilities/plugin/a
 import { getVisibleArguments } from '@/modules/plugin/utilities/plugin/argument-visibility';
 import { sileo } from 'sileo';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { usePendingPluginExecutionsStore } from '../stores/use-pending-plugin-executions-store';
 
 import type { ModifierOption } from '../utilities/modifier-registry';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
@@ -56,6 +57,10 @@ interface ExecutePluginArgs {
     timestep?: number;
 };
 
+interface ExecutePluginResult {
+    analysisId: string;
+};
+
 interface BeforeExecuteResult {
     proceed: boolean;
 };
@@ -66,7 +71,7 @@ interface UsePluginExecutionArgs {
     getPluginArguments: (pluginId: string) => IArgumentDefinition[];
     getSelectedTeamClusterId: (option: ModifierOption) => string;
     getSelectedTimesteps: (pluginId: string) => number[] | undefined;
-    executePlugin: (args: ExecutePluginArgs) => Promise<unknown>;
+    executePlugin: (args: ExecutePluginArgs) => Promise<ExecutePluginResult>;
     pluginConfigs?: Record<string, Record<string, unknown>>;
     beforeExecute?: (option: ModifierOption) => Promise<BeforeExecuteResult>;
 };
@@ -104,6 +109,7 @@ const usePluginExecution = ({
         if (!option.isPlugin || !option.pluginModifierId || !trajectoryId) return;
 
         const modId = option.modifierId;
+        const pluginName = option.title;
         setExecStates((prev) => new Map(prev).set(modId, ExecState.Loading));
 
         const existing = successTimers.current.get(modId);
@@ -111,10 +117,19 @@ const usePluginExecution = ({
             clearTimeout(existing);
         }
 
+        const loadingToastId = sileo.show({
+            type: 'loading',
+            title: `Starting ${pluginName}`,
+            description: 'Queueing analysis on the cluster…',
+            duration: null
+        });
+
         try {
             if (beforeExecute) {
                 const result = await beforeExecute(option);
                 if (!result.proceed) {
+                    // Clone-and-run flow owns its own toasts; hand off cleanly.
+                    sileo.dismiss(loadingToastId);
                     setExecStates((prev) => new Map(prev).set(modId, ExecState.Success));
                     clearExecStateLater(modId);
                     return;
@@ -150,7 +165,7 @@ const usePluginExecution = ({
                 }
             });
 
-            await executePlugin({
+            const result = await executePlugin({
                 pluginId: option.pluginModifierId,
                 trajectoryId,
                 teamClusterId: selectedTeamClusterId,
@@ -159,10 +174,23 @@ const usePluginExecution = ({
                 timestep: currentTimestep
             });
 
+            // Hand the toast off to the sidebar socket handler via the
+            // pending-executions store. It will update progress and close
+            // the toast when analysis.status.changed lands.
+            usePendingPluginExecutionsStore.getState().register({
+                analysisId: result.analysisId,
+                trajectoryId,
+                pluginName,
+                timestep: currentTimestep,
+                autoSelect: true,
+                toastId: loadingToastId
+            });
+
             setExecStates((prev) => new Map(prev).set(modId, ExecState.Success));
             clearExecStateLater(modId);
         } catch {
-            sileo.error({ title: 'Plugin execution failed' });
+            sileo.dismiss(loadingToastId);
+            sileo.error({ title: `${pluginName} failed to start`, description: 'Please try again.' });
             setExecStates((prev) => new Map(prev).set(modId, ExecState.Error));
             clearExecStateLater(modId);
         }

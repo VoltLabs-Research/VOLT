@@ -1,5 +1,6 @@
 import CloseButton from '../CloseButton';
 import FloatingRootContext, { TopLayerRootContext } from '@/shared/presentation/contexts/FloatingRootContext';
+import useMedia from '@/shared/presentation/hooks/use-media';
 import './Modal.css';
 import React from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -33,14 +34,6 @@ const isDialogElement = (element: HTMLElement | null): element is HTMLDialogElem
     return element instanceof HTMLDialogElement;
 };
 
-const isCoarsePointerDevice = () => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-        return false;
-    }
-
-    return window.matchMedia(COARSE_POINTER_MEDIA_QUERY).matches;
-};
-
 const getFocusableElements = (dialog: HTMLDialogElement) => {
     const selector = [
         'button:not([disabled])',
@@ -58,8 +51,8 @@ const getFocusableElements = (dialog: HTMLDialogElement) => {
     });
 };
 
-const getInitialFocusTarget = (dialog: HTMLDialogElement) => {
-    if (isCoarsePointerDevice()) {
+const getInitialFocusTarget = (dialog: HTMLDialogElement, isCoarsePointer: boolean) => {
+    if (isCoarsePointer) {
         return dialog;
     }
 
@@ -90,6 +83,7 @@ const Modal = ({
 }: ModalProps) => {
     const [dialogElement, setDialogElement] = useState<HTMLDialogElement | null>(null);
     const restoreFocusElementRef = useRef<HTMLElement | null>(null);
+    const isCoarsePointer = useMedia(COARSE_POINTER_MEDIA_QUERY);
     const titleId = title ? `${id}-title` : undefined;
     const descriptionId = description ? `${id}-description` : undefined;
 
@@ -109,7 +103,7 @@ const Modal = ({
                         return;
                     }
 
-                    const focusTarget = getInitialFocusTarget(dialogElement);
+                    const focusTarget = getInitialFocusTarget(dialogElement, isCoarsePointer);
                     focusTarget.focus({ preventScroll: true });
                 });
 
@@ -131,7 +125,7 @@ const Modal = ({
             observer.disconnect();
             restoreFocusElementRef.current = null;
         };
-    }, [dialogElement]);
+    }, [dialogElement, isCoarsePointer]);
 
     const handleBackdropClick = (event: React.MouseEvent<HTMLDialogElement>) => {
         if (!dismissible) {
