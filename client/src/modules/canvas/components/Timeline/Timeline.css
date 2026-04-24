@@ -156,6 +156,20 @@
     box-shadow: 0 0 8px color-mix(in srgb, var(--status-success) 35%, transparent);
 }
 
+/* Darker tones for light mode so the labels stay legible on white. */
+:root[data-theme='light'] .canvas-ruler-tick-label--queued {
+    color: #8a5300;
+}
+
+:root[data-theme='light'] .canvas-ruler-tick-label--running {
+    color: #0a5fbf;
+}
+
+:root[data-theme='light'] .canvas-ruler-tick-label--completed {
+    color: #0f7a34;
+    text-shadow: 0 0 10px color-mix(in srgb, #0f7a34 25%, transparent);
+}
+
 @media (max-width: 900px) {
     .canvas-timeline-header {
         height: auto;

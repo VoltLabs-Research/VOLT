@@ -1,8 +1,3 @@
-export interface CreateSecretKeyParams {
-    name: string;
-    roleId: string;
-};
-
 export interface CreateSecretKeyResponse {
     secretKeyId: string;
     teamId: string;
@@ -19,5 +14,3 @@ export interface CreateSecretKeyInputDTO {
     name: string;
     roleId: string;
 };
-
-export type CreateSecretKeyOutputDTO = CreateSecretKeyResponse;

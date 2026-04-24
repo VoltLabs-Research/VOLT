@@ -1,4 +1,4 @@
-import { Button } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
 import useWhiteboardEditor from '@/modules/whiteboards/hooks/use-whiteboard-editor';
 import useWhiteboardPresence from '@/modules/whiteboards/hooks/use-whiteboard-presence';
 import useWhiteboardSync from '@/modules/whiteboards/hooks/use-whiteboard-sync';

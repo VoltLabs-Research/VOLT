@@ -1,4 +1,4 @@
-import { Modal, closeModal } from '@/shared/presentation/primitives';
+import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import { RENAME_WHITEBOARD_MODAL_ID } from '@/modules/whiteboards/hooks/use-whiteboards-listing';

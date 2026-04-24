@@ -44,16 +44,6 @@ export const hasFrameBoxBounds = (frame: TimestepInfo): boolean => {
     return Boolean(getSimulationCellBoxBounds(frame.simulationCell) || frame.boxBounds);
 };
 
-export const getFirstTrajectoryFrameWithBoxBounds = (
-    trajectory: Pick<Trajectory, 'frames'> | null | undefined
-): TimestepInfo | undefined => {
-    if (!trajectory) {
-        return undefined;
-    }
-
-    return trajectory.frames.find(hasFrameBoxBounds);
-};
-
 export const getTrajectoryFrameByTimestep = (
     trajectory: Pick<Trajectory, 'frames'> | null | undefined,
     currentTimestep: number | undefined

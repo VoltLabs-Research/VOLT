@@ -57,13 +57,6 @@
     color: var(--color-text-primary);
 }
 
-.ai-conversation-item-skeleton {
-    height: 3rem;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--color-border-soft);
-    background: var(--color-surface-1);
-}
-
 @media (max-width: 1024px) {
     .ai-conversation-sidebar {
         width: 270px;

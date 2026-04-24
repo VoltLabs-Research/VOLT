@@ -109,8 +109,3 @@ export const resetClusterHistoryQuery = (_queryClient: QueryClient, clusterId?: 
     _queryClient.removeQueries({ queryKey: ['cluster', 'historyLoaded'] });
 };
 
-export const resetClusterQueries = (_queryClient: QueryClient) => {
-    clusterMetricsQuery.reset(undefined);
-    _queryClient.removeQueries({ queryKey: ['cluster', 'history'] });
-    _queryClient.removeQueries({ queryKey: ['cluster', 'historyLoaded'] });
-};

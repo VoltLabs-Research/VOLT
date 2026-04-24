@@ -1,7 +1,10 @@
 import useActivityHeatmap from '@/modules/daily-activity/hooks/use-activity-heatmap';
 import ActivityTooltipContent from '@/modules/daily-activity/components/ActivityTooltipContent';
-import { CursorTooltip } from '@/shared/presentation/primitives';
-import { Stack, Box, Row, Text } from '@/shared/presentation/primitives';
+import CursorTooltip from '@/shared/presentation/primitives/CursorTooltip';
+import Box from '@/shared/presentation/primitives/Box';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import 'react-calendar-heatmap/dist/styles.css';
 import React from 'react';
 import CalendarHeatmap from 'react-calendar-heatmap';

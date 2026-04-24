@@ -9,7 +9,7 @@ import useCanvasHandlers from '@/modules/plugin/hooks/plugin/use-canvas-handlers
 import usePluginDebugSocket from '@/modules/plugin/hooks/plugin/use-plugin-debug-socket';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import useTip from '@/shared/tips/use-tip';
-import { Box } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
 import { Background, MiniMap, ReactFlow } from '@xyflow/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';

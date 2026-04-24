@@ -1,9 +1,12 @@
 import { useRasterWorkspace } from '@/modules/raster/hooks/use-raster-workspace';
 import { createDefaultRasterContainerSelection, createInitialRasterContainerSelections } from '@/modules/raster/types/container-selection';
-import { EmptyState } from '@/shared/presentation/primitives';
+import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import { Loader, Stack, Row, Text } from '@/shared/presentation/primitives';
+import Loader from '@/shared/presentation/primitives/Loader';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import { ImageOff } from 'lucide-react';
 import { sileo } from 'sileo';
 import { useEffect, useMemo, useRef, useState } from 'react';

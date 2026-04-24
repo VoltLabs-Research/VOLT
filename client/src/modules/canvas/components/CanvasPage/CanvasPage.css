@@ -4,6 +4,88 @@
     color: var(--color-text-primary);
 }
 
+.canvas-banner-stack {
+    z-index: 4;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.canvas-object-panel{
+    height: 100%;
+}
+
+.canvas-banner {
+    width: 100%;
+    padding: 8px 14px;
+    gap: 12px;
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    border-bottom: 1px solid var(--color-border-soft);
+    background: var(--color-bg-subtle, rgba(255, 255, 255, 0.02));
+    color: var(--color-text-secondary);
+}
+
+.canvas-banner:last-child {
+    border-bottom: none;
+}
+
+.canvas-banner--guest {
+    background: color-mix(in srgb, var(--status-warning) 14%, var(--color-bg));
+    color: var(--color-text-primary);
+}
+
+.canvas-banner--collab {
+    background: color-mix(in srgb, var(--accent-blue) 14%, var(--color-bg));
+    color: var(--color-text-primary);
+}
+
+.canvas-banner--mobile {
+    background: color-mix(in srgb, var(--color-accent, var(--accent-blue)) 10%, var(--color-bg));
+    color: var(--color-text-primary);
+}
+
+.canvas-banner__icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.canvas-banner__message {
+    flex: 1;
+    min-width: 0;
+}
+
+.canvas-banner__actions {
+    flex-shrink: 0;
+    display: inline-flex;
+    gap: 6px;
+}
+
+.canvas-banner__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: currentColor;
+    opacity: 0.7;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.canvas-banner__close:hover {
+    opacity: 1;
+    background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.canvas-viewport-state {
+    z-index: 1;
+    padding: 24px;
+}
+
 @media (max-width: 768px) {
     .canvas-editor-root {
         --canvas-header-height: 48px;

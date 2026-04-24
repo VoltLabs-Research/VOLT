@@ -1,4 +1,4 @@
-import { Button } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
 import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle } from 'lucide-react';

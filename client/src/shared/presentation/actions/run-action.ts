@@ -1,4 +1,4 @@
-import { closeModal } from '@/shared/presentation/primitives';
+import { closeModal } from '@/shared/presentation/primitives/Modal';
 import { confirmAction } from '@/shared/presentation/hooks/use-confirm';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import type { ConfirmActionOptions } from '@/shared/presentation/hooks/use-confirm';

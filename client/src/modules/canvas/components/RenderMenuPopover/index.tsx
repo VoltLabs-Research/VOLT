@@ -1,7 +1,8 @@
 import useCanvasRenderGroups from '../CanvasRenderSections/useCanvasRenderGroups';
 import RenderGroupSubmenuContent from './RenderGroupSubmenuContent';
-import { ContextMenuPopover } from '@/shared/presentation/primitives';
-import { Button, Tooltip } from '@/shared/presentation/primitives';
+import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopover';
+import Button from '@/shared/presentation/primitives/Button';
+import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import { Monitor } from 'lucide-react';
 import { useMemo } from 'react';
 import type { MenuOption } from '@/shared/presentation/types/menu';

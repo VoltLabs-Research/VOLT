@@ -1,5 +1,7 @@
 import { SOURCE_LABELS } from '@/shared/utils';
-import { Button, Row, Stack } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
 import './ErrorPage.css';
 import { format, isValid } from 'date-fns';
 import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';

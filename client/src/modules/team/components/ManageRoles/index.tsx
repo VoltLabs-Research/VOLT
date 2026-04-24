@@ -1,4 +1,4 @@
-import { StatusBadge } from '@/shared/presentation/primitives';
+import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useCreateTeamRoleMutation, useDeleteTeamRoleMutation, useUpdateTeamRoleMutation } from '@/modules/team/hooks/role/queries';

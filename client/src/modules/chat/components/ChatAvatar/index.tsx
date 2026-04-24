@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { getOtherParticipant } from '@/modules/chat/utilities/chat/chat-display';
 import { IoPeopleOutline } from 'react-icons/io5';
 import { cn } from '@/shared/utils';
-import { Avatar } from '@/shared/presentation/primitives';
+import Avatar from '@/shared/presentation/primitives/Avatar';
 import type { Chat } from '@/modules/chat/api/entities/chat';
 import './ChatAvatar.css';
 

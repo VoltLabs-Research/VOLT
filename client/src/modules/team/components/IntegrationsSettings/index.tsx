@@ -1,4 +1,6 @@
-import { Button, LiquidToggle, Skeleton } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import LiquidToggle from '@/shared/presentation/primitives/LiquidToggle';
+import Skeleton from '@/shared/presentation/primitives/Skeleton';
 import { invalidateTeamAIIntegrationsQuery, useTeamAIIntegrationsQuery } from '@/modules/team/hooks/ai-integration/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
@@ -7,9 +9,9 @@ import useDeleteTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-
 import useTeamAIIntegrationsSocketSync from '@/modules/team/hooks/ai-integration/use-team-ai-integrations-socket-sync';
 import useUpdateTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-update-team-ai-integration';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import { Modal, openModal } from '@/shared/presentation/primitives';
+import Modal, { openModal } from '@/shared/presentation/primitives/Modal';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import { Select } from '@/shared/presentation/primitives';
+import Select from '@/shared/presentation/primitives/Select';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSection from '@/shared/presentation/components/SettingsSection';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
@@ -29,7 +31,7 @@ import type {
     TeamAIIntegration,
     TeamAIModelMetadata
 } from '@/modules/team/api/entities/ai-integration/team-ai-integration';
-import type { SelectOption } from '@/shared/presentation/primitives';
+import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import type { FormEvent, KeyboardEvent } from 'react';
 import './IntegrationsSettings.css';
 

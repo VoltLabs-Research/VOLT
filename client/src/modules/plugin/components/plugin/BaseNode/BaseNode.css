@@ -17,21 +17,6 @@
     pointer-events: none;
 }
 
-.workflow-node-overhead-badge--completed {
-    background: color-mix(in srgb, var(--status-success) 15%, transparent);
-    color: var(--status-success);
-}
-
-.workflow-node-overhead-badge--failed {
-    background: color-mix(in srgb, var(--status-error) 15%, transparent);
-    color: var(--status-error);
-}
-
-.workflow-node-overhead-badge--skipped {
-    background: color-mix(in srgb, var(--color-border-strong) 20%, transparent);
-    color: var(--color-border-strong);
-}
-
 .workflow-node {
     padding: 1rem 1.5rem;
     max-width: 300px;
@@ -271,18 +256,6 @@
 .workflow-node-exec-log-exit {
     margin-left: auto;
     font-size: 0.55rem;
-    padding: 0.05rem 0.35rem;
-    font-family: monospace;
-}
-
-.workflow-node-exec-log-exit--ok {
-    background: var(--status-success-bg);
-    color: var(--status-success);
-}
-
-.workflow-node-exec-log-exit--fail {
-    background: var(--status-error-bg);
-    color: var(--status-error);
 }
 
 .workflow-node-exec-log-content {

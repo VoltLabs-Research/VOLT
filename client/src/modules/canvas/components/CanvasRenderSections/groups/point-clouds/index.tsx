@@ -1,8 +1,10 @@
 import { valueRow } from '../../../CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import { Select } from '@/shared/presentation/primitives';
-import { Stack, Box, Text } from '@/shared/presentation/primitives';
+import Select from '@/shared/presentation/primitives/Select';
+import Box from '@/shared/presentation/primitives/Box';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 
 import { useMemo } from 'react';
 import { MdGrain } from 'react-icons/md';
@@ -15,7 +17,7 @@ import {
 } from '@/modules/fractal/stores/contracts/editor/scene-types';
 
 import type { RenderGroup } from '../../types';
-import type { SelectOption } from '@/shared/presentation/primitives';
+import type { SelectOption } from '@/shared/presentation/primitives/Select';
 
 const DETAIL_LEVEL_OPTIONS: SelectOption[] = [
     { title: 'Auto', value: 'auto' },

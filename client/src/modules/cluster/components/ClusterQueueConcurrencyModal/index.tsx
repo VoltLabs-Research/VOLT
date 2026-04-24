@@ -1,5 +1,10 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import { Stack, Row, Text, Heading, Button, Modal, closeModal } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import { useEffect, useState } from 'react';

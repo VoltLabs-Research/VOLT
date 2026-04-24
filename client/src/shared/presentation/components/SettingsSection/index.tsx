@@ -1,4 +1,4 @@
-import { Stack } from '@/shared/presentation/primitives';
+import Stack from '@/shared/presentation/primitives/Stack';
 import type { ReactNode } from 'react';
 
 export interface SettingsSectionProps {

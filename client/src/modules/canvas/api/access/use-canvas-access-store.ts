@@ -16,18 +16,6 @@ export const useCanvasAccessStore = create<CanvasAccessStore>((set) => ({
     reset: () => set({ ...DEFAULT_CANVAS_ACCESS_STATE })
 }));
 
-export const useCanvasAccess = (): CanvasAccessState => {
-    return useCanvasAccessStore((state) => ({
-        mode: state.mode,
-        trajectoryId: state.trajectoryId,
-        teamId: state.teamId,
-        canMutate: state.canMutate,
-        canCollaborate: state.canCollaborate,
-        isGuest: state.isGuest,
-        hasTeamMembership: state.hasTeamMembership
-    }));
-};
-
 export const useCanvasAccessMode = () => useCanvasAccessStore((state) => state.mode);
 export const useCanvasCanCollaborate = () => useCanvasAccessStore((state) => state.canCollaborate);
 

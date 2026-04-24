@@ -1,6 +1,9 @@
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import { Box, Stack, Text, Modal, closeModal } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import { useState } from 'react';
 import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';

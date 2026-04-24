@@ -1,7 +1,10 @@
 import useNotificationData from '../../hooks/use-notification-data';
 import NotificationBadge from '../NotificationBadge';
 import NotificationList from '../NotificationList';
-import { Row, IconButton, Popover } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import IconButton from '@/shared/presentation/primitives/IconButton';
+import Popover from '@/shared/presentation/primitives/Popover';
+import Row from '@/shared/presentation/primitives/Row';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
 import useTip from '@/shared/tips/use-tip';
 import { IoNotificationsOutline } from 'react-icons/io5';
@@ -59,14 +62,15 @@ const NotificationsPopover = () => {
 
         return (
             <Row gap='025'>
-                <button
-                    type='button'
+                <Button
+                    variant='ghost'
+                    size='sm'
                     className='notifications-header-action color-muted'
                     onClick={handleMarkAllAsRead}
                     disabled={isMarkingAllAsRead}
                 >
                     {isMarkingAllAsRead ? 'Marking…' : 'Mark all as read'}
-                </button>
+                </Button>
             </Row>
         );
     };

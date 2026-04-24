@@ -1,5 +1,3 @@
-import type { SSHConnection } from '../entities/ssh-connection';
-
 export interface UpdateSSHConnectionParams {
     name?: string;
     host?: string;
@@ -16,5 +14,3 @@ export interface UpdateSSHConnectionInputDTO {
     username?: string;
     password?: string;
 };
-
-export type UpdateSSHConnectionOutputDTO = SSHConnection;

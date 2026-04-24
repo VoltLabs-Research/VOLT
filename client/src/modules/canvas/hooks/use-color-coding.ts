@@ -116,6 +116,13 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
                 startValue: String(startValue),
                 sceneType: 'color-coding'
             } as ColorCodingScene);
+
+            // Why: the right-panel artifact tree listens for this event to
+            // refetch color-coding/particle-filter lists. Without it the user
+            // has to reload the page to see the entry they just created.
+            window.dispatchEvent(new CustomEvent('canvas:scene-artifacts:changed', {
+                detail: { trajectoryId }
+            }));
         } catch (error: unknown) {
             if (isAccessDeniedError(error)) return;
             reportError(error, {

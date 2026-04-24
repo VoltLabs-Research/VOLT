@@ -56,18 +56,6 @@ export interface SSAOEffectSettings {
     worldProximityFalloff: number;
 };
 
-/**
- * Canonical type for user-controlled SSAO settings (toggled and configured via the effects UI).
- * Alias of `SSAOEffectSettings`; use this when the context is user-facing configuration.
- */
-export type UserSsaoConfig = SSAOEffectSettings;
-
-/**
- * Canonical type for scene-driven SSAO settings (automatically applied for defect scenes).
- * Alias of `SSAOEffectSettings`; use this when the context is renderer-driven configuration.
- */
-export type SceneSsaoConfig = SSAOEffectSettings;
-
 export interface EffectsSettings {
     ssao: SSAOEffectSettings;
     bloom: BloomSettings;
@@ -177,18 +165,6 @@ export const DEFECT_SSAO_EFFECT_PRESET: SSAOEffectSettings = {
     worldDistanceFalloff: 0.3,
     worldProximityFalloff: 0.3
 };
-
-/**
- * Canonical default for user-controlled SSAO (starts disabled; user opts in via the effects UI).
- * Mirrors `SSAO_EFFECT_DEFAULTS` under the unified SSAO taxonomy.
- */
-export const USER_SSAO_DEFAULT: UserSsaoConfig = { ...SSAO_EFFECT_DEFAULTS };
-
-/**
- * Canonical default for defect-scene SSAO values.
- * Mirrors `DEFECT_SSAO_EFFECT_PRESET` under the unified SSAO taxonomy.
- */
-export const SCENE_SSAO_DEFAULT: SceneSsaoConfig = { ...DEFECT_SSAO_EFFECT_PRESET };
 
 export const getDefaultSSAOEffectSettings = (): SSAOEffectSettings => ({
     ...SSAO_EFFECT_DEFAULTS

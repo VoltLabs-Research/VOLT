@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react';
-import { Avatar, ListRow, Text } from '@/shared/presentation/primitives';
+import Avatar from '@/shared/presentation/primitives/Avatar';
+import ListRow from '@/shared/presentation/primitives/ListRow';
+import Tag from '@/shared/presentation/primitives/Tag';
+import type { TagProps } from '@/shared/presentation/primitives/Tag';
 import { cn } from '@/shared/utils';
 import type { User } from '@/modules/auth/api/entities/user';
 import './MemberListItem.css';
@@ -14,17 +17,24 @@ interface MemberListItemProps {
     className?: string;
 };
 
+const ROLE_TAG_CONFIG: Record<MemberRole, { tone: TagProps['tone']; variant: TagProps['variant'] }> = {
+    owner: { tone: 'info', variant: 'solid' },
+    admin: { tone: 'brand', variant: 'solid' },
+    member: { tone: 'neutral', variant: 'soft' }
+};
+
 export const MemberListItem = ({ user, role, action, onClick, className }: MemberListItemProps) => {
     const fullName = `${user.firstName} ${user.lastName}`;
 
     let trailing: ReactNode = null;
     if (role || action) {
+        const tagConfig = role ? ROLE_TAG_CONFIG[role] : null;
         trailing = (
             <>
-                {role && (
-                    <Text as='p' size='md' className={cn('member-list-item-role', role)}>
+                {role && tagConfig && (
+                    <Tag tone={tagConfig.tone} variant={tagConfig.variant} size='xs'>
                         {role.charAt(0).toUpperCase() + role.slice(1)}
-                    </Text>
+                    </Tag>
                 )}
                 {action}
             </>
@@ -41,5 +51,3 @@ export const MemberListItem = ({ user, role, action, onClick, className }: Membe
         />
     );
 };
-
-export default MemberListItem;

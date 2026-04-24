@@ -1,5 +1,7 @@
-import { Button, Text } from '@/shared/presentation/primitives';
-import { ContextMenuPopover } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Text from '@/shared/presentation/primitives/Text';
+import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopover';
+import Skeleton from '@/shared/presentation/primitives/Skeleton';
 import { RefreshCw } from 'lucide-react';
 
 import type { ReactNode } from 'react';
@@ -80,7 +82,7 @@ export const CanvasTreeSkeletonRows = ({ count, compact, indent = 'base' }: Canv
             {Array.from({ length: count }).map((_, i) => (
                 <div key={`canvas-tree-skel-${i}`} className={`canvas-tree-item d-flex items-center gap-05 color-secondary ${INDENT_CLASSES[indent]}`}>
                     <span className="canvas-tree-spacer" />
-                    <div className={`canvas-tree-skeleton${compact ? ' canvas-tree-skeleton--compact' : ''}`} />
+                    <Skeleton variant='text' width={compact ? 80 : 120} height={10} />
                 </div>
             ))}
         </>
@@ -97,17 +99,6 @@ export const CanvasTreeEmptyRow = ({ label, indent = 'base' }: CanvasTreeEmptyRo
         <Text size='sm' tone='muted'>{label}</Text>
     </div>
 );
-
-interface AnalysisStatusDotProps {
-    status?: string;
-}
-
-export const AnalysisStatusDot = ({ status }: AnalysisStatusDotProps) => {
-    if (!status) return null;
-    return (
-        <span className={`canvas-tree-status-dot canvas-tree-status-dot--${status} font-size-05`}>●</span>
-    );
-};
 
 interface AnalysisTreeRetryRowProps {
     onRetry: () => void;

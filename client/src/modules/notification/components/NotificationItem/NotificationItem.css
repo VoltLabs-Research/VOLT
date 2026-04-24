@@ -2,10 +2,13 @@
     list-style: none;
 }
 
-.notification-item {
-    width: 100%;
-    background: transparent;
+.notification-item.button {
+    display: flex;
+    flex-direction: column;
+    white-space: normal;
+    line-height: 1.4;
     text-align: left;
+    height: auto;
 }
 
 .notification-item.is-unread {

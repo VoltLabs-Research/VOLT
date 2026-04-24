@@ -1,4 +1,5 @@
-import { Button, Tooltip } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import { LuArrowLeft, LuArrowUp } from 'react-icons/lu';
 
 interface SSHExplorerHeaderLeftProps {

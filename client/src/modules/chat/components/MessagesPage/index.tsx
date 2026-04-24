@@ -4,7 +4,7 @@ import ChatSidebar from '../ChatSidebar';
 import CreateGroupModal from '../CreateGroupModal';
 import GroupManagementModal from '../GroupManagementModal';
 import ChatDetailsPanel from '../ChatDetailsPanel';
-import { Box } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
 import { cn } from '@/shared/utils';
 import { useParams } from 'react-router-dom';
 import useTip from '@/shared/tips/use-tip';

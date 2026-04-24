@@ -1,5 +1,10 @@
-import { Box, Button, Heading, Row, SegmentedTabs, Stack, StatusDot } from '@/shared/presentation/primitives';
-import type { StatusDotTone } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Button from '@/shared/presentation/primitives/Button';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Row from '@/shared/presentation/primitives/Row';
+import SegmentedTabs from '@/shared/presentation/primitives/SegmentedTabs';
+import Stack from '@/shared/presentation/primitives/Stack';
+import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
 import { ArrowLeft, ExternalLink, Play, RefreshCw, Square } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -10,7 +15,7 @@ import { getPrimaryAccessiblePort } from '@/modules/container/utilities/get-prim
 import { ContainerAction } from '@/modules/container/api/dtos/update-container';
 import type { ReactNode } from 'react';
 import type { Container as ContainerEntity } from '@/modules/container/api/entities/container';
-import type { SegmentedTabOption } from '@/shared/presentation/primitives';
+import type { SegmentedTabOption } from '@/shared/presentation/primitives/SegmentedTabs';
 import './ContainerDetailsHeader.css';
 type ContainerDetailsTabId = 'overview' | 'processes' | 'terminal' | 'storage';
 
@@ -62,14 +67,6 @@ const ContainerDetailsHeader = ({
     const primaryAccessiblePort = getPrimaryAccessiblePort(container.accessiblePorts);
     const isRunning = container.status === 'running';
 
-    const statusTone: StatusDotTone = container.status === 'running'
-        ? 'success'
-        : container.status === 'exited'
-            ? 'danger'
-            : container.status === 'created'
-                ? 'info'
-                : 'neutral';
-
     const createdRelative = useMemo(
         () => formatDistanceToNow(new Date(container.createdAt), { addSuffix: true }),
         [container.createdAt]
@@ -102,12 +99,7 @@ const ContainerDetailsHeader = ({
                         <Heading level={1} className='container-details-header-name' size='xl' weight='bold'>
                             {container.name}
                         </Heading>
-                        <span
-                            className={`container-details-status-badge ${container.status} d-flex items-center gap-035 font-size-1 font-weight-5`}
-                        >
-                            <StatusDot tone={statusTone} pulse={isRunning} glow={isRunning} />
-                            {container.status}
-                        </span>
+                        <StatusBadge status={container.status} />
                     </Row>
                     <Row className='container-details-header-meta' wrap>
                         <span className='container-details-header-meta-image'>{container.image}</span>

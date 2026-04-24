@@ -1,5 +1,4 @@
 import { buildCanvasModifierOptions, BUILT_IN_MODIFIERS } from '../../utilities/modifier-registry';
-import useTip from '@/shared/tips/use-tip';
 import usePluginExecution from '../../hooks/use-plugin-execution';
 import { ExecState } from '../../hooks/use-plugin-execution';
 import useTrajectoryCloneFlow from '../../hooks/use-trajectory-clone-flow';
@@ -16,16 +15,15 @@ import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-
 import { getUserConfigurableArguments } from '@/modules/plugin/utilities/plugin/argument-values';
 import { resolvePluginExecutionClusterId, supportsPluginExecutionCluster } from '@/modules/plugin/utilities/plugin-team-clusters';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { Wrench } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
-import { CollapsibleSection } from '@/shared/presentation/primitives';
-import { Box, Row } from '@/shared/presentation/primitives';
-import { extractTrajectoryTimesteps, normalizeSelectedTimesteps } from '../../utilities/selected-timestep-analysis';
+import Box from '@/shared/presentation/primitives/Box';
+import Row from '@/shared/presentation/primitives/Row';
+import { extractTrajectoryTimesteps, getNearestTimestep, normalizeSelectedTimesteps } from '../../utilities/selected-timestep-analysis';
 
 import type { ModifierOption } from '../../utilities/modifier-registry';
 import type { ComponentType, ReactNode } from 'react';
-import type { SelectOption } from '@/shared/presentation/primitives';
+import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { PluginTeamClusterOption } from '@/modules/plugin/api/entities/plugin/team-cluster';
 import type { RasterContainerId, RasterContainerSelection } from '@/modules/raster/types/container-selection';
@@ -87,8 +85,6 @@ const RightPanel = ({
     onSetActiveRasterContainer,
     onUpdateRasterContainerSelection
 }: RightPanelProps) => {
-    useTip('canvas-render-settings');
-
     const currentUser = useCurrentUser();
     const selectedTeamId = useSelectedTeamId();
     const executePluginMutation = useExecutePluginMutation();
@@ -102,17 +98,15 @@ const RightPanel = ({
         enabled: !!selectedTeamId
     });
     useEnsurePluginCatalogLoaded();
-    const [modifiersOpen, setModifiersOpen] = useState(true);
     const focusedModifierId = useCanvasFocusStore((s) => s.focusedModifierId);
     const clearFocusedModifier = useCanvasFocusStore((s) => s.clearFocusedModifier);
 
     useEffect(() => {
         if (!focusedModifierId) return;
-        setModifiersOpen(true);
 
-        // Why: wait for the CollapsibleSection to render its body before
-        // querying the DOM. Two RAFs give React + transition a chance to mount
-        // the trigger we're targeting.
+        // Why: wait for layout so the modifier trigger we are targeting is
+        // mounted before scrolling it into view. Two RAFs give React a chance
+        // to paint the tree.
         const raf1 = window.requestAnimationFrame(() => {
             const raf2 = window.requestAnimationFrame(() => {
                 const trigger = document.querySelector<HTMLButtonElement>(
@@ -217,8 +211,15 @@ const RightPanel = ({
     }, [executionTeamClusters, pluginExecutionClusters]);
 
     const getSelectedTimesteps = useCallback((pluginId: string): number[] | undefined => {
+        if (!(pluginId in pluginSelectedTimesteps)) {
+            const nearest = getNearestTimestep(currentTimestep, availableTimesteps);
+            if (nearest === undefined) {
+                return undefined;
+            }
+            return normalizeSelectedTimesteps([nearest], availableTimesteps);
+        }
         return normalizeSelectedTimesteps(pluginSelectedTimesteps[pluginId], availableTimesteps);
-    }, [availableTimesteps, pluginSelectedTimesteps]);
+    }, [availableTimesteps, currentTimestep, pluginSelectedTimesteps]);
 
     useEffect(() => {
         setPluginSelectedTimesteps((prev) => {
@@ -375,39 +376,22 @@ const RightPanel = ({
         return null;
     }
 
-    const pluginsSection = (
-        <CollapsibleSection
-            title="Plugins"
-            icon={<Wrench size={13} />}
-            expanded={modifiersOpen}
-            onExpandedChange={setModifiersOpen}
-            className="canvas-right-dropdown"
-            headerClassName="canvas-right-dropdown-header d-flex items-center gap-05"
-            titleClassName="canvas-right-dropdown-title font-size-05 color-muted"
-            iconClassName="canvas-right-dropdown-icon"
-            bodyClassName="canvas-right-dropdown-body"
-            contentClassName="d-flex column"
-            noSpacing
-            arrowSize={13}
-            useDefaultHeaderStyles={false}
-            useDefaultTitleStyles={false}
-        >
-            <ModifiersSection
-                pluginLoading={pluginLoading}
-                modifiers={allModifiers}
-                getExecState={getExecState}
-                showAction={shouldShowAction}
-                hasContent={modifierHasContent}
-                isForeignTrajectory={isForeignTrajectory}
-                onAction={handleAction}
-                renderModifierConfig={renderModifierConfig}
-            />
-        </CollapsibleSection>
+    const pluginsContent = (
+        <ModifiersSection
+            pluginLoading={pluginLoading}
+            modifiers={allModifiers}
+            getExecState={getExecState}
+            showAction={shouldShowAction}
+            hasContent={modifierHasContent}
+            isForeignTrajectory={isForeignTrajectory}
+            onAction={handleAction}
+            renderModifierConfig={renderModifierConfig}
+        />
     );
 
     return (
         <Row height='max' overflow='hidden'>
-            <Box width='max' height='max' overflow='auto'>
+            <Box width='max' height='max' overflow='hidden'>
                 <ObjectsPanel
                     trajectory={trajectory}
                     onDownloadAnalysis={onDownloadAnalysis}
@@ -416,7 +400,7 @@ const RightPanel = ({
                     activeRasterContainerId={activeRasterContainerId}
                     onSetActiveRasterContainer={onSetActiveRasterContainer}
                     onUpdateRasterContainerSelection={onUpdateRasterContainerSelection}
-                    afterSceneCollection={pluginsSection}
+                    pluginsContent={pluginsContent}
                 />
             </Box>
         </Row>

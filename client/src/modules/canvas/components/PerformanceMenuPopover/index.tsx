@@ -3,8 +3,10 @@ import {
     getPerformancePresetLabel,
     PERFORMANCE_PRESET_OPTIONS
 } from '@/shared/domain/rendering/performance';
-import { Button, Popover, Tooltip } from '@/shared/presentation/primitives';
-import { PopoverMenu } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Popover from '@/shared/presentation/primitives/Popover';
+import Tooltip from '@/shared/presentation/primitives/Tooltip';
+import PopoverMenu from '@/shared/presentation/primitives/PopoverMenu';
 import { Gauge } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 

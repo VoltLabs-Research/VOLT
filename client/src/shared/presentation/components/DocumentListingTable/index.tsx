@@ -11,7 +11,7 @@ import { useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import React from 'react';
 import type { CSSProperties } from 'react';
 import type { MenuOption } from '@/shared/presentation/types/menu';
-import type { SelectOption } from '@/shared/presentation/primitives';
+import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import type { DragEndEvent } from '@dnd-kit/core';
 
 const DEFAULT_MIN_COLUMN_WIDTH = 140;

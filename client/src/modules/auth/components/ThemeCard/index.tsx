@@ -1,8 +1,8 @@
 import './ThemeCard.css';
-import { cn } from '@/shared/utils';
 import { Theme } from '@/shared/presentation/hooks/use-theme';
 import themeTokensStylesheet from '@/shared/presentation/assets/stylesheets/theme.css?raw';
-import { Heading, Row, Stack } from '@/shared/presentation/primitives';
+import Row from '@/shared/presentation/primitives/Row';
+import SelectableCard from '@/shared/presentation/primitives/SelectableCard';
 import { Check } from 'lucide-react';
 import { forwardRef } from 'react';
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
@@ -117,7 +117,7 @@ interface ThemeCardProps {
     tabIndex: number;
 };
 
-const ThemeCard = forwardRef<HTMLButtonElement, ThemeCardProps>(({ 
+const ThemeCard = forwardRef<HTMLButtonElement, ThemeCardProps>(({
     theme,
     label,
     icon,
@@ -127,26 +127,18 @@ const ThemeCard = forwardRef<HTMLButtonElement, ThemeCardProps>(({
     onKeyDown,
     tabIndex
 }, ref) => {
-    const cardClasses = cn(
-        'theme-card',
-        'transition-normal',
-        'radius-md',
-        'cursor-pointer',
-        'overflow-hidden',
-        isSelected && 'selected'
-    );
-
     const previewStyles = getPreviewStyles(theme);
 
     return (
-        <button
+        <SelectableCard
             ref={ref}
-            type='button'
-            className={cardClasses}
-            onClick={onClick}
+            className='theme-card'
+            selected={isSelected}
+            selectionRole='radio'
+            title={label}
+            badge={isSelected ? <Check size={14} aria-hidden='true' /> : undefined}
+            onSelect={onClick}
             onKeyDown={onKeyDown}
-            role='radio'
-            aria-checked={isSelected}
             aria-label={`${label} theme`}
             data-theme-preview={theme}
             tabIndex={tabIndex}
@@ -154,17 +146,7 @@ const ThemeCard = forwardRef<HTMLButtonElement, ThemeCardProps>(({
             <Row justify='center' position='relative' className={`theme-preview ${previewClassName}`} style={previewStyles}>
                 {icon}
             </Row>
-            <Stack gap='025' p='1'>
-                <Row justify='between'>
-                    <Heading level={3} size='md' weight='bold'>
-                        {label}
-                    </Heading>
-                    {isSelected && (
-                        <Check size={18} className='theme-card-check' aria-hidden='true' />
-                    )}
-                </Row>
-            </Stack>
-        </button>
+        </SelectableCard>
     );
 });
 

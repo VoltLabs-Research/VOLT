@@ -1,4 +1,5 @@
-import { Button, Tooltip } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import PaletteItem from '@/modules/plugin/components/plugin/PaletteItem';
 import PluginBuilderCanvas from '@/modules/plugin/components/plugin/PluginBuilderCanvas';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';

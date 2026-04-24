@@ -2,7 +2,9 @@ import TeamMemberList from '../TeamMemberList';
 import { useState } from 'react';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import { Stack, Text, Modal } from '@/shared/presentation/primitives';
+import Modal from '@/shared/presentation/primitives/Modal';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import { toggleSelection } from '@/shared/utils/selection';
 import type { User } from '@/modules/auth/api/entities/user';
 

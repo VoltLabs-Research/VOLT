@@ -2,7 +2,10 @@ import ClusterRemoteAccessModal, { CLUSTER_REMOTE_ACCESS_MODAL_ID } from '@/modu
 import useClusterRemoteAccessPage from '@/modules/cluster/hooks/use-cluster-remote-access-page';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
 import { TeamClusterRemoteAccessTarget } from '@/modules/cluster/api/entities/team-cluster-remote-access';
-import { Stack, Text, Loader, openModal } from '@/shared/presentation/primitives';
+import Loader from '@/shared/presentation/primitives/Loader';
+import { openModal } from '@/shared/presentation/primitives/Modal';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import { lazy, Suspense, useEffect, useMemo } from 'react';

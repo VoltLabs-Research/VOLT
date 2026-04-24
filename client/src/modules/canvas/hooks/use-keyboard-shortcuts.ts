@@ -59,7 +59,7 @@ const useKeyboardShortcuts = ({
                 useEditorStore.getState().togglePlay({ trajectoryId, timesteps: availableTimesteps });
             },
 
-            'frame-prev': () => {
+            'timestep-prev': () => {
                 if (currentTimestep === undefined) return;
                 const { setCurrentTimestep } = useEditorStore.getState();
                 const timesteps = getVisibleTimesteps();
@@ -73,7 +73,7 @@ const useKeyboardShortcuts = ({
                 }
             },
 
-            'frame-next': () => {
+            'timestep-next': () => {
                 if (currentTimestep === undefined) return;
                 const { setCurrentTimestep } = useEditorStore.getState();
                 const timesteps = getVisibleTimesteps();
@@ -87,7 +87,7 @@ const useKeyboardShortcuts = ({
                 }
             },
 
-            'frame-prev-10': () => {
+            'timestep-prev-10': () => {
                 if (currentTimestep === undefined) return;
                 const { setCurrentTimestep } = useEditorStore.getState();
                 const timesteps = getVisibleTimesteps();
@@ -100,7 +100,7 @@ const useKeyboardShortcuts = ({
                 setCurrentTimestep(timesteps[newIdx]);
             },
 
-            'frame-next-10': () => {
+            'timestep-next-10': () => {
                 if (currentTimestep === undefined) return;
                 const { setCurrentTimestep } = useEditorStore.getState();
                 const timesteps = getVisibleTimesteps();
@@ -113,7 +113,7 @@ const useKeyboardShortcuts = ({
                 setCurrentTimestep(timesteps[newIdx]);
             },
 
-            'frame-first': () => {
+            'timestep-first': () => {
                 const { setCurrentTimestep } = useEditorStore.getState();
                 const timesteps = getVisibleTimesteps();
                 if (timesteps.length > 0) {
@@ -121,7 +121,7 @@ const useKeyboardShortcuts = ({
                 }
             },
 
-            'frame-last': () => {
+            'timestep-last': () => {
                 const { setCurrentTimestep } = useEditorStore.getState();
                 const timesteps = getVisibleTimesteps();
                 if (timesteps.length > 0) {

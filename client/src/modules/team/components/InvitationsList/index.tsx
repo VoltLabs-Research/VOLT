@@ -1,5 +1,5 @@
 import { InvitationRow } from '../InvitationRow';
-import { EmptyState } from '@/shared/presentation/primitives';
+import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import type { TeamInvitation } from '@/modules/team/api/entities/invitation/team-invitation';
 import './InvitationsList.css';
 

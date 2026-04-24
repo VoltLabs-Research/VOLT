@@ -9,7 +9,3 @@ export interface ListSSHFilesResponse {
     cwd: string;
     entries: SSHFileEntry[];
 };
-
-export type ListSSHFilesInputDTO = ListSSHFilesParams;
-
-export type ListSSHFilesOutputDTO = ListSSHFilesResponse;

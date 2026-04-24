@@ -1,4 +1,4 @@
-import { Button } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
 import { RiEditLine, RiFileCopyLine, RiDownloadLine, RiUploadLine, RiCheckLine, RiDraftLine, RiForbidLine } from 'react-icons/ri';
 import { fetchPlugins, PLUGIN_QUERY_KEYS, useClonePluginMutation, useUpdatePluginMutation } from '@/modules/plugin/hooks/plugin/queries';
 import useDeletePlugin from '@/modules/plugin/hooks/plugin/use-delete-plugin';

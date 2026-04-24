@@ -5,8 +5,6 @@ import {
     createPaginatedQuery,
     withSuccess
 } from '@/shared/infrastructure/query';
-import type { InfiniteData } from '@tanstack/react-query';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { MutationOptions } from '@/shared/infrastructure/query';
 import type { Notification } from '../api/entities/notification';
 
@@ -22,8 +20,6 @@ type NotificationDetailKeys = Record<string, unknown> & {
     detail: string;
 };
 
-type NotificationInfiniteData = InfiniteData<PaginatedResponse<Notification>, number>;
-
 const BASE_KEY = 'notifications';
 const DEFAULT_LIMIT = 20;
 
@@ -38,10 +34,6 @@ const notificationQuery = createPaginatedQuery<Notification, NotificationQueryPa
     }
 });
 
-export const getNotificationsInfiniteQueryKey = (params: NotificationQueryParams) => {
-    return notificationQuery.QUERY_KEYS.infiniteList(params);
-};
-
 export const useNotificationsInfiniteQuery = (
     params: NotificationQueryParams,
     options?: NotificationQueryOptions
@@ -49,13 +41,6 @@ export const useNotificationsInfiniteQuery = (
     return notificationQuery.useInfiniteListQuery(params, {
         enabled: options?.enabled
     });
-};
-
-export const setNotificationsInfiniteQueryData = (
-    _params: NotificationQueryParams,
-    updater: (oldData: NotificationInfiniteData | undefined) => NotificationInfiniteData | undefined
-) => {
-    return notificationQuery.cache.patchAllInfiniteLists((current) => updater(current) ?? current);
 };
 
 export const prependNotificationToInfiniteCache = (

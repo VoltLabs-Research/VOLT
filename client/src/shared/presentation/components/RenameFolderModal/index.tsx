@@ -1,6 +1,7 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import { Box, Modal, closeModal } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import { useCallback, useEffect, useState } from 'react';
 import type { InputHTMLAttributes } from 'react';

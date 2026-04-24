@@ -7,14 +7,6 @@
     padding: 2.5rem;
 }
 
-.team-invitation-badge{
-    padding: 0.5rem 1rem;
-    background-color: var(--status-success-bg);
-    color: var(--status-success);
-    font-size: 0.875rem;
-    font-weight: 500;
-}
-
 .team-invitation-icon-error{
     color: var(--status-error);
 }
@@ -49,12 +41,4 @@
 
 .team-invitation-actions{
     margin-top: 1rem;
-}
-
-.team-invitation-error{
-    padding: 0.75rem 1rem;
-    background-color: var(--status-error-bg);
-    color: var(--status-error);
-    font-size: 0.875rem;
-    width: 100%;
 }

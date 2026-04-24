@@ -3,7 +3,7 @@ import {
     useRevealTeamClusterCredentialsMutation
 } from '@/modules/cluster/hooks/team-cluster/queries';
 import { CLUSTER_CREDENTIALS_MODAL_ID } from '@/modules/cluster/components/ClusterCredentialsModal';
-import { openModal } from '@/shared/presentation/primitives';
+import { openModal } from '@/shared/presentation/primitives/Modal';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useCallback, useState } from 'react';

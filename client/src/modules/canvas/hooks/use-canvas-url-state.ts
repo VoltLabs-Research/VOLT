@@ -4,7 +4,7 @@ import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 export enum CanvasWorkspace {
-    Modeling = 'modeling',
+    Scene = 'scene',
     Raster = 'raster',
     Scripting = 'scripting'
 };
@@ -24,7 +24,7 @@ const resolveCanvasWorkspace = (workspace: string | null): CanvasWorkspace => {
         return CanvasWorkspace.Scripting;
     }
 
-    return CanvasWorkspace.Modeling;
+    return CanvasWorkspace.Scene;
 };
 
 const useCanvasUrlState = () => {
@@ -35,7 +35,7 @@ const useCanvasUrlState = () => {
         isSelected
     } = useSelectionParams({ paramName: 'modifiers' });
 
-    const analysisId = searchParams.get('analysisId') || searchParams.get('analysis') || undefined;
+    const analysisId = searchParams.get('analysisId') || undefined;
     const resultsPluginId = searchParams.get('results') || undefined;
     const timelineExposureId = searchParams.get('timelineExposure') || undefined;
     const pluginParam = searchParams.get('plugin') || undefined;
@@ -49,7 +49,7 @@ const useCanvasUrlState = () => {
     const requestedWorkspace = searchParams.get('workspace');
     const activeWorkspace = CANVAS_WORKSPACES.has(requestedWorkspace ?? '')
         ? resolveCanvasWorkspace(requestedWorkspace)
-        : CanvasWorkspace.Modeling;
+        : CanvasWorkspace.Scene;
 
     const updateSearchParams = useCallback((updates: Record<string, string | number | boolean | null | undefined>, options?: UpdateOptions) => {
         setSearchParams((prev) => applySearchParamUpdates(prev, updates), {
@@ -58,7 +58,7 @@ const useCanvasUrlState = () => {
     }, [setSearchParams]);
 
     const setAnalysisId = useCallback((id?: string, options?: UpdateOptions) => {
-        updateSearchParams({ analysisId: id ?? null, analysis: null }, options);
+        updateSearchParams({ analysisId: id ?? null }, options);
     }, [updateSearchParams]);
 
     const setResultsPluginId = useCallback((pluginId?: string, options?: UpdateOptions) => {
@@ -90,7 +90,7 @@ const useCanvasUrlState = () => {
     }, [updateSearchParams]);
 
     const setActiveWorkspace = useCallback((id: CanvasWorkspace, options?: UpdateOptions) => {
-        updateSearchParams({ workspace: id === CanvasWorkspace.Modeling ? null : id }, options);
+        updateSearchParams({ workspace: id === CanvasWorkspace.Scene ? null : id }, options);
     }, [updateSearchParams]);
 
     const setModifiers = useCallback((ids: string[], options?: UpdateOptions) => {

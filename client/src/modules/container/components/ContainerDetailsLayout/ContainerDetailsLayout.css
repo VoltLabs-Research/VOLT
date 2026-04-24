@@ -4,29 +4,6 @@
     min-height: 0;
 }
 
-.container-details-status-badge {
-    padding: 0.25rem 0.625rem;
-    width: fit-content;
-    border-radius: 9999px;
-    text-transform: capitalize;
-    line-height: 1;
-}
-
-.container-details-status-badge.running {
-    color: var(--status-success);
-    border: 1px solid var(--status-success-border);
-}
-
-.container-details-status-badge.exited {
-    color: var(--status-error);
-    border: 1px solid var(--status-error-border);
-}
-
-.container-details-status-badge.created {
-    color: var(--status-info);
-    border: 1px solid var(--status-info-border);
-}
-
 .container-details-content-area {
     background: var(--color-content-bg);
     min-width: 0;

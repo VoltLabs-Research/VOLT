@@ -1,4 +1,4 @@
-import { Row } from '@/shared/presentation/primitives';
+import Row from '@/shared/presentation/primitives/Row';
 import { useCallback, useId, useState } from 'react';
 import type { ReactNode } from 'react';
 

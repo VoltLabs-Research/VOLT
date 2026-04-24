@@ -1,7 +1,11 @@
 import './DashboardOverviewCard.css';
-import TinyLineChart from '../TinyLineChart';
+import Sparkline from '@/shared/presentation/primitives/Sparkline';
 import DashboardCard from '@/modules/dashboard/components/DashboardCard';
-import { Box, Stack, Row, Text, IconFrame } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import IconFrame from '@/shared/presentation/primitives/IconFrame';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import { FaArrowDownLong, FaArrowUpLong } from 'react-icons/fa6';
 import { GoArrowRight } from 'react-icons/go';
 import type { DashboardCard as DashboardMetricsCard } from '@/modules/dashboard/api/entities/dashboard';
@@ -66,10 +70,10 @@ const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
                     </Box>
 
                     <Box position='absolute' bottom='0' right='0' className='dashboard-stat-sparkline'>
-                        <TinyLineChart
-                            lineColor={lineColor || '#30d158'}
-                            pData={card.series}
-                            xLabels={card.labels}
+                        <Sparkline
+                            color={lineColor || '#30d158'}
+                            values={card.series}
+                            labels={card.labels}
                             yDomain={card.yDomain}
                             width={160}
                             height={60}
@@ -98,10 +102,10 @@ const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
                     </Stack>
 
                     <Box position='absolute' bottom='0' right='0' className='dashboard-stat-sparkline'>
-                        <TinyLineChart
-                            lineColor={lineColor || '#30d158'}
-                            pData={card.series}
-                            xLabels={card.labels}
+                        <Sparkline
+                            color={lineColor || '#30d158'}
+                            values={card.series}
+                            labels={card.labels}
                             yDomain={card.yDomain}
                             width={160}
                             height={60}

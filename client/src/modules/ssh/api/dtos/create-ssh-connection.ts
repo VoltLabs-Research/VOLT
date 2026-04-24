@@ -1,5 +1,3 @@
-import type { SSHConnection } from '../entities/ssh-connection';
-
 export interface CreateSSHConnectionParams {
     name: string;
     host: string;
@@ -7,7 +5,3 @@ export interface CreateSSHConnectionParams {
     username: string;
     password: string;
 };
-
-export type CreateSSHConnectionInputDTO = CreateSSHConnectionParams;
-
-export type CreateSSHConnectionOutputDTO = SSHConnection;

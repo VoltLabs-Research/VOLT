@@ -1,9 +1,15 @@
 import './DashboardActivityCard.css';
 import DashboardCard from '@/modules/dashboard/components/DashboardCard';
-import { Box, Stack, Text, SegmentedTabs, Skeleton, AsyncBoundary, Timeline, TimelineItem } from '@/shared/presentation/primitives';
+import AsyncBoundary from '@/shared/presentation/primitives/AsyncBoundary';
+import Box from '@/shared/presentation/primitives/Box';
+import SegmentedTabs from '@/shared/presentation/primitives/SegmentedTabs';
+import Skeleton from '@/shared/presentation/primitives/Skeleton';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
+import Timeline, { TimelineItem } from '@/shared/presentation/primitives/Timeline';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
 import { ACTIVITY_ACCENT, ACTIVITY_ICON } from '@/modules/daily-activity/utilities/activity-mappings';
-import { EmptyState } from '@/shared/presentation/primitives';
+import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import { Activity as ActivityIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';

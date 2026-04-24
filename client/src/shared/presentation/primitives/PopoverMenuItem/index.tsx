@@ -1,4 +1,4 @@
-import { Button } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
 import './PopoverMenuItem.css';
 import { forwardRef } from 'react';
 import type { ReactNode } from 'react';

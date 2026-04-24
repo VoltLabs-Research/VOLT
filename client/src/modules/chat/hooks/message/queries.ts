@@ -38,11 +38,6 @@ interface UseChatMessagesInfiniteQueryOptions {
 
 const KEYS = buildKeys<MessageQueryKeyMap>('chat');
 
-export const MESSAGE_QUERY_KEYS = {
-    messages: KEYS.messages,
-    infiniteMessages: KEYS.infiniteMessages
-};
-
 export const useMarkAsReadMutation = createMutation<void, MarkAsReadParams>(messageService.markAsRead);
 export const useSendMessageMutation = createMutation<ChatMessage, SendMessageInputDTO>(messageService.sendMessage);
 export const useSendFileMutation = createMutation<ChatMessage, SendFileMessageInputDTO>(messageService.sendFileMessage);
@@ -50,27 +45,7 @@ export const useEditMessageMutation = createMutation<ChatMessage, EditMessageInp
 export const useDeleteMessageMutation = createMutation<void, DeleteMessageInputDTO>(messageService.deleteMessage);
 export const useToggleReactionMutation = createMutation<ChatMessage, ToggleReactionInputDTO>(messageService.toggleReaction);
 
-export const getChatMessagesQueryKey = KEYS.messages;
-export const getChatMessagesInfiniteQueryKey = (chatId: string) => KEYS.infiniteMessages({ chatId });
-
-export const buildChatMessagesQueryParams = (
-    chatId: string,
-    page: number,
-    limit: number = DEFAULT_MESSAGES_LIMIT
-): GetChatMessagesInputDTO => ({
-    chatId,
-    page,
-    limit
-});
-
-export const buildChatMessagesQueryOptions = (params: GetChatMessagesInputDTO) => ({
-    queryKey: getChatMessagesQueryKey(params),
-    queryFn: () => messageService.getMessages({
-        chatId: params.chatId,
-        page: params.page,
-        limit: params.limit
-    })
-});
+const getChatMessagesInfiniteQueryKey = (chatId: string) => KEYS.infiniteMessages({ chatId });
 
 const chatMessages = createInfiniteQuery(
     KEYS.infiniteMessages,

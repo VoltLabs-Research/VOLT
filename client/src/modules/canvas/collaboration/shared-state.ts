@@ -127,27 +127,6 @@ export const selectSharedCanvasState = (state: EditorStore): SharedCanvasState =
     return stripNonSerializable(payload);
 };
 
-export const diffSharedCanvasState = (
-    base: SharedCanvasState | null,
-    next: SharedCanvasState
-): SharedCanvasState => {
-    if (!base) {
-        return { ...next };
-    }
-
-    const delta: Plain = {};
-    const nextRecord = next as Plain;
-    const baseRecord = base as Plain;
-
-    for (const key of Object.keys(nextRecord)) {
-        if (!areEqual(baseRecord[key], nextRecord[key])) {
-            delta[key] = nextRecord[key];
-        }
-    }
-
-    return delta as SharedCanvasState;
-};
-
 export const applySharedCanvasPatch = (patch: SharedCanvasState): void => {
     const store = useEditorStore;
 
@@ -243,16 +222,4 @@ const mergeSlice = (
     (next as Record<string, unknown>)[key as string] = merged;
 
     void state;
-};
-
-const areEqual = (left: unknown, right: unknown): boolean => {
-    if (left === right) {
-        return true;
-    }
-
-    try {
-        return JSON.stringify(left) === JSON.stringify(right);
-    } catch {
-        return false;
-    }
 };

@@ -1,6 +1,8 @@
 import type { TrajectoryFolderRow } from '@/modules/trajectory/utilities/listing';
 import { ChevronRight, Folder } from 'lucide-react';
-import { Stack, Heading, Row } from '@/shared/presentation/primitives';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
 import { useCallback, useRef } from 'react';
 import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react';
 import './SimulationFolderCard.css';

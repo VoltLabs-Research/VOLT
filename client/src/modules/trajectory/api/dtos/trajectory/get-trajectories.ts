@@ -4,6 +4,3 @@ export interface GetTrajectoriesInputDTO {
     folderId?: string;
     search?: string;
 };
-
-export interface GetTrajectoriesOutputDTO {
-};

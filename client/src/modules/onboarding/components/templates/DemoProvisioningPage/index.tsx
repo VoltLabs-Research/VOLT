@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
-import { Button, Heading, Loader, Row, Stack, Text } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Loader from '@/shared/presentation/primitives/Loader';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';

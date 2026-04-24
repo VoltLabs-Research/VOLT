@@ -15,10 +15,11 @@ import {
 } from '../../utilities/tree-menus';
 
 import { Atom, Box } from 'lucide-react';
-import { Stack } from '@/shared/presentation/primitives';
+import Stack from '@/shared/presentation/primitives/Stack';
 import type { AnalysisSectionData } from '../../hooks/use-canvas-sidebar-scene';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { CanvasAnalysisStatusEntry } from '../../utilities/analysis-status';
+import type { AnalysisActivityTone } from '../../hooks/use-analysis-activity-tone';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
 import type { RasterSelectableScene } from '@/modules/raster/types/container-selection';
@@ -35,6 +36,7 @@ interface SceneCollectionProps {
     removeScene: (scene: SceneObjectType) => void;
     totalAnalyses: number;
     statusMap: Map<string, CanvasAnalysisStatusEntry>;
+    toneByAnalysisId?: Map<string, AnalysisActivityTone>;
     onDeleteAnalysis: (analysisId: string) => Promise<void>;
     onDownloadAnalysis: (analysisId: string) => void | Promise<void>;
     onDownloadExposureListing?: (params: {
@@ -70,6 +72,7 @@ const SceneCollection = ({
     removeScene,
     totalAnalyses,
     statusMap,
+    toneByAnalysisId,
     onDeleteAnalysis,
     onDownloadAnalysis,
     onDownloadExposureListing,
@@ -161,6 +164,7 @@ const SceneCollection = ({
                     key={section.analysis._id}
                     section={section}
                     status={statusMap.get(section.analysis._id)?.status}
+                    tone={toneByAnalysisId?.get(section.analysis._id)}
                     isExpanded={expandedSections.has(section.analysis._id)}
                     onToggle={toggleSection}
                     onSelectScene={onSelectScene}

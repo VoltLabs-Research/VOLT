@@ -1,7 +1,7 @@
-import { Modal, closeModal } from '@/shared/presentation/primitives';
+import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import { Box } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
 import { RENAME_LATEX_DOCUMENT_MODAL_ID } from '@/modules/latex/hooks/use-latex-documents-listing';
 import { useCallback, useEffect, useState } from 'react';
 import type { ModalFooterAction } from '@/shared/presentation/components/ModalFooterActions';

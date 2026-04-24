@@ -1,6 +1,5 @@
 export {
     useCanvasAccessStore,
-    useCanvasAccess,
     useCanvasAccessMode,
     useCanvasCanCollaborate,
     useCanvasDataAccess,
@@ -9,4 +8,4 @@ export {
 export { buildCanvasDataAccess } from './build-canvas-data-access';
 export type { CanvasDataAccess } from './build-canvas-data-access';
 export { DEFAULT_CANVAS_ACCESS_STATE } from './types';
-export type { CanvasAccessMode, CanvasAccessState } from './types';
+export type { CanvasAccessMode } from './types';

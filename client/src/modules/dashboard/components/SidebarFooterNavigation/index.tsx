@@ -6,7 +6,8 @@ import { useLocation, useNavigate } from 'react-router';
 import { TbBook } from 'react-icons/tb';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import SidebarExpandableSection from '@/shared/presentation/components/SidebarExpandableSection';
-import { Box, Tooltip } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Tooltip from '@/shared/presentation/primitives/Tooltip';
 interface SidebarFooterNavigationProps {
     setSettingsExpanded: (status: boolean) => void;
     settingsExpanded: boolean;

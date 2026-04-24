@@ -1,5 +1,7 @@
-import { Stack, Box, Button } from '@/shared/presentation/primitives';
-import DangerZone from '@/shared/presentation/components/DangerZone';
+import Box from '@/shared/presentation/primitives/Box';
+import Button from '@/shared/presentation/primitives/Button';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Callout from '@/shared/presentation/primitives/Callout';
 import { IoExitOutline } from 'react-icons/io5';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import type { Chat } from '@/modules/chat/api/entities/chat';
@@ -55,12 +57,15 @@ const GeneralTab = ({
             </Box>
         )}
 
-        <DangerZone
+        <Callout
+            tone='danger'
             title='Leave Group'
             description='You will no longer be able to see messages in this group.'
-            actionLabel='Leave Group'
-            actionIcon={<IoExitOutline />}
-            onAction={onLeave}
+            action={{
+                label: 'Leave Group',
+                icon: <IoExitOutline />,
+                onClick: onLeave
+            }}
         />
     </Stack>
 );

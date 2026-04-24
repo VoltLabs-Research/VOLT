@@ -6,7 +6,7 @@ import PasswordChangeForm from '@/modules/auth/components/PasswordChangeForm';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSection from '@/shared/presentation/components/SettingsSection';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
-import { Stack } from '@/shared/presentation/primitives';
+import Stack from '@/shared/presentation/primitives/Stack';
 import { useState } from 'react';
 import type { ChangePasswordInputDTO } from '@/modules/auth/api/dtos/change-password';
 import { useNavigate } from 'react-router-dom';

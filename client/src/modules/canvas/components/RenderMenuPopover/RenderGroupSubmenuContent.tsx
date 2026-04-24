@@ -1,5 +1,6 @@
 import CanvasRenderSubsectionContent from '../CanvasRenderSections/CanvasRenderSubsectionContent';
-import { Stack, SectionLabel } from '@/shared/presentation/primitives';
+import SectionLabel from '@/shared/presentation/primitives/SectionLabel';
+import Stack from '@/shared/presentation/primitives/Stack';
 import type { RenderGroup } from '../CanvasRenderSections/types';
 
 interface RenderGroupSubmenuContentProps {

@@ -4,7 +4,11 @@ import { triggerShortcutAction } from '../../utilities/shortcut-actions';
 import formatKeyName from '../../utilities/format-key-name';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, closeModal, openModal, SearchInput, Stack, Row, Text } from '@/shared/presentation/primitives';
+import Modal, { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
+import Row from '@/shared/presentation/primitives/Row';
+import SearchInput from '@/shared/presentation/primitives/SearchInput';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 
 import type { Shortcut } from '../../stores/use-keyboard-shortcuts-store';
 

@@ -9,11 +9,13 @@ import WorkspaceTabs from '../WorkspaceTabs';
 
 import EditableTrajectoryName from '@/modules/trajectory/components/EditableTrajectoryName';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { memo, useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
 import useShortcutDiscovery from '@/shared/tips/use-shortcut-discovery';
 import { ChevronLeft } from 'lucide-react';
-import { Row } from '@/shared/presentation/primitives';
+import IconButton from '@/shared/presentation/primitives/IconButton';
+import Row from '@/shared/presentation/primitives/Row';
 
 import './TopToolbar.css';
 
@@ -41,6 +43,11 @@ interface TopToolbarProps {
     contextualActions?: ReactNode;
 }
 
+const temporalStore = useEditorStore.temporal;
+
+const subscribeTemporal = (onStoreChange: () => void) => temporalStore.subscribe(onStoreChange);
+const getTemporalSnapshot = () => temporalStore.getState();
+
 const TopToolbar = ({
     trajectory,
     canExport = false,
@@ -61,6 +68,17 @@ const TopToolbar = ({
     const { recordSlowAction: recordScreenshotShortcutTip } = useShortcutDiscovery('canvas-screenshot-shortcut');
     const showStatusBar = searchParams.get('statusBar') !== 'false';
     const setShowStatusBar = (value: boolean) => updateSearchParams({ statusBar: value ? 'true' : 'false' });
+
+    const temporalState = useSyncExternalStore(subscribeTemporal, getTemporalSnapshot, getTemporalSnapshot);
+    const canUndo = temporalState.pastStates.length > 0;
+    const canRedo = temporalState.futureStates.length > 0;
+
+    const handleUndo = useCallback(() => {
+        temporalStore.getState().undo();
+    }, []);
+    const handleRedo = useCallback(() => {
+        temporalStore.getState().redo();
+    }, []);
 
     const navigateToDashboard = useCallback(() => navigate('/dashboard'), [navigate]);
     const { fileInputRef, handlePickerChange, openFilePicker } = useTrajectoryFilePicker(navigateToDashboard);
@@ -99,8 +117,12 @@ const TopToolbar = ({
         onImport: openFilePicker,
         onExport,
         onDownloadAnalyses,
+        onUndo: handleUndo,
+        onRedo: handleRedo,
         canExport,
-        canDownloadAnalyses
+        canDownloadAnalyses,
+        canUndo,
+        canRedo
     });
 
     const canShowPeers = Boolean(onSelectWorkspacePeer && (workspacePeers?.length ?? 0) > 0);
@@ -115,15 +137,15 @@ const TopToolbar = ({
                 onChange={handlePickerChange}
             />
             <Row flex='1' className="canvas-toolbar-left">
-                <button
-                    type="button"
-                    className="canvas-toolbar-back"
-                    aria-label="Back to dashboard"
-                    title="Back to dashboard"
+                <IconButton
+                    variant='ghost'
+                    size='sm'
+                    aria-label='Back to dashboard'
+                    title='Back to dashboard'
                     onClick={() => navigate('/dashboard')}
                 >
-                    <ChevronLeft size={16} aria-hidden="true" />
-                </button>
+                    <ChevronLeft size={16} aria-hidden='true' />
+                </IconButton>
                 {trajectory && (
                     <div
                         className="canvas-toolbar-logo canvas-toolbar-trajectory d-flex items-center"

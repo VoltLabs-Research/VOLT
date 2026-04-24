@@ -3,7 +3,7 @@ import {
     useFloatingOwnerIds,
     useTopLayerRoot
 } from '@/shared/presentation/contexts/FloatingRootContext';
-import { SearchInput } from '@/shared/presentation/primitives';
+import SearchInput from '@/shared/presentation/primitives/SearchInput';
 import './Select.css';
 import { useFloating, useClick, useDismiss, useRole, useListNavigation, useTypeahead, useInteractions, FloatingPortal, FloatingFocusManager, offset, flip, shift, size, autoUpdate } from '@floating-ui/react';
 import { useId, useMemo, useState, useCallback, useEffect, useRef } from 'react';

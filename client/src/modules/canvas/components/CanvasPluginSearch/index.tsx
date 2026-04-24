@@ -1,7 +1,9 @@
 import { buildCanvasModifierOptions } from '../../utilities/modifier-registry';
 import { useCanvasFocusStore } from '../../stores/use-canvas-focus-store';
-import { EmptyState } from '@/shared/presentation/primitives';
-import { SearchInput, Surface, Text } from '@/shared/presentation/primitives';
+import EmptyState from '@/shared/presentation/primitives/EmptyState';
+import SearchInput from '@/shared/presentation/primitives/SearchInput';
+import Surface from '@/shared/presentation/primitives/Surface';
+import Text from '@/shared/presentation/primitives/Text';
 import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { autoUpdate, flip, FloatingPortal, offset, shift, useDismiss, useFloating, useInteractions } from '@floating-ui/react';
@@ -103,6 +105,10 @@ const CanvasPluginSearch = () => {
         document.addEventListener('keydown', handleGlobalKeyDown);
         return () => document.removeEventListener('keydown', handleGlobalKeyDown);
     }, []);
+
+    useEffect(() => {
+        setActiveIndex(-1);
+    }, [query]);
 
     const handleSelect = (index: number) => {
         const option = results[index];

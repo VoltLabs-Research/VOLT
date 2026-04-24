@@ -10,12 +10,10 @@ import type {
     ResolvedCanvasRuntimeProps
 } from '@/shared/domain/rendering/performance';
 
-export { OutputCS, PrecisionType, ShadowType, ToneMappingMode } from '@/shared/domain/rendering/renderer';
 export type {
     RendererCreateState,
     RendererRuntimeState,
     RendererSettingsState,
-    RendererSettingsActions,
     RendererSettingsStore
 } from '@/shared/domain/rendering/renderer';
 

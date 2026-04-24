@@ -1,10 +1,11 @@
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { resolveRangedTimesteps } from '@/modules/canvas/utilities/timeline-range';
 
-import { SkipBack, Rewind, Play, FastForward, SkipForward, Pause } from 'lucide-react';
+import { SkipBack, Rewind, ChevronLeft, Play, ChevronRight, FastForward, SkipForward, Pause } from 'lucide-react';
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { Button, Row } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Row from '@/shared/presentation/primitives/Row';
 import './TransportControls.css';
 
 interface TransportControlsProps {
@@ -43,13 +44,27 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
         setCurrentTimestep(timesteps[timesteps.length - 1]);
     };
 
-    const prevFrame = () => {
+    const jumpBack10 = () => {
+        if (timesteps.length === 0) return;
+        const baseIndex = currentIndex === -1 ? 0 : currentIndex;
+        const nextIndex = Math.max(0, baseIndex - 10);
+        setCurrentTimestep(timesteps[nextIndex]);
+    };
+
+    const jumpForward10 = () => {
+        if (timesteps.length === 0) return;
+        const baseIndex = currentIndex === -1 ? 0 : currentIndex;
+        const nextIndex = Math.min(timesteps.length - 1, baseIndex + 10);
+        setCurrentTimestep(timesteps[nextIndex]);
+    };
+
+    const prevTimestep = () => {
         if (timesteps.length === 0) return;
         const nextIndex = currentIndex <= 0 ? 0 : currentIndex - 1;
         setCurrentTimestep(timesteps[nextIndex]);
     };
 
-    const nextFrame = () => {
+    const nextTimestep = () => {
         if (timesteps.length === 0) return;
         const nextIndex = currentIndex === -1 ? 0 : Math.min(currentIndex + 1, timesteps.length - 1);
         setCurrentTimestep(timesteps[nextIndex]);
@@ -61,11 +76,13 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
 
     const buttons = useMemo(() => ([
         { Icon: SkipBack, label: 'Jump to start', onClick: jumpToStart },
-        { Icon: Rewind, label: 'Previous frame', onClick: prevFrame },
+        { Icon: Rewind, label: 'Back 10 timesteps', onClick: jumpBack10 },
+        { Icon: ChevronLeft, label: 'Previous timestep', onClick: prevTimestep },
         { Icon: isPlaying ? Pause : Play, label: isPlaying ? 'Pause' : 'Play', onClick: handleTogglePlay },
-        { Icon: FastForward, label: 'Next frame', onClick: nextFrame },
+        { Icon: ChevronRight, label: 'Next timestep', onClick: nextTimestep },
+        { Icon: FastForward, label: 'Forward 10 timesteps', onClick: jumpForward10 },
         { Icon: SkipForward, label: 'Jump to end', onClick: jumpToEnd }
-    ]), [isPlaying, handleTogglePlay, jumpToStart, prevFrame, nextFrame, jumpToEnd]);
+    ]), [isPlaying, handleTogglePlay, jumpToStart, jumpBack10, prevTimestep, nextTimestep, jumpForward10, jumpToEnd]);
 
     return (
         <Row className="canvas-transport-controls">

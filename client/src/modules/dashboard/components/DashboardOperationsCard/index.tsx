@@ -1,6 +1,13 @@
 import './DashboardOperationsCard.css';
 import DashboardCard from '@/modules/dashboard/components/DashboardCard';
-import { Box, Stack, Row, Text, SegmentedTabs, Loader, AsyncBoundary } from '@/shared/presentation/primitives';
+import AsyncBoundary from '@/shared/presentation/primitives/AsyncBoundary';
+import Box from '@/shared/presentation/primitives/Box';
+import Loader from '@/shared/presentation/primitives/Loader';
+import Row from '@/shared/presentation/primitives/Row';
+import SegmentedTabs from '@/shared/presentation/primitives/SegmentedTabs';
+import Stack from '@/shared/presentation/primitives/Stack';
+import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
+import Text from '@/shared/presentation/primitives/Text';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
 import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
 import { getClusterLiveMetricsStatus } from '@/modules/cluster/utilities/cluster-live-metrics-status';
@@ -10,7 +17,7 @@ import StatusCounts from '@/modules/canvas/components/StatusCounts';
 import useJobStatusCounts from '@/modules/canvas/hooks/use-job-status-counts';
 import JobsHistoryViewer from '@/modules/jobs/components/JobsHistoryViewer';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { EmptyState } from '@/shared/presentation/primitives';
+import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import { useCallback, useMemo, useState } from 'react';
 import { HiOutlineServerStack } from 'react-icons/hi2';
@@ -71,10 +78,6 @@ const formatClusterLatency = (value: number | null): string | null => {
     }
 
     return `${Math.round(value)} ms`;
-};
-
-const getClusterStatusClassName = (variant: 'success' | 'warning' | 'danger' | 'inactive'): string => {
-    return `dashboard-operations-cluster-status is-${variant}`;
 };
 
 const ClusterProgressMetric = ({ label, percent, detail }: ClusterProgressMetricProps) => {
@@ -256,10 +259,9 @@ const DashboardOperationsCard = () => {
                                     </Text>
                                 </Stack>
 
-                                <span className={getClusterStatusClassName(liveMetricsStatus.variant)}>
-                                    <span className='dashboard-operations-cluster-status-dot' aria-hidden='true' />
+                                <StatusBadge variant={liveMetricsStatus.variant} size='compact'>
                                     {liveMetricsStatus.label}
-                                </span>
+                                </StatusBadge>
                             </Row>
 
                             {liveMetrics

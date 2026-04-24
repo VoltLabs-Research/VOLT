@@ -1,6 +1,6 @@
 import ChartContainer from '@/shared/presentation/components/ChartContainer';
 import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
-import { Box } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
 import { useMemo } from 'react';
 import {
     LineChart,

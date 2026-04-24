@@ -1,4 +1,6 @@
-import { IconButton, Row, Stack } from '@/shared/presentation/primitives';
+import IconButton from '@/shared/presentation/primitives/IconButton';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
 import './CollapsibleSection.css';
 import { ChevronDown, Trash2, Plus } from 'lucide-react';
 import { useState, useEffect, memo, useId } from 'react';

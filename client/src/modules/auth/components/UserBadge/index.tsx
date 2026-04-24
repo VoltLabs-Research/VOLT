@@ -1,5 +1,8 @@
 import './UserBadge.css';
-import { Button, Row, Stack, Text } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import { CheckCircle2 } from 'lucide-react';
 
 interface UserBadgeProps{

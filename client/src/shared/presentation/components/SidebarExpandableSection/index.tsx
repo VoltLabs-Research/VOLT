@@ -1,4 +1,4 @@
-import { Button } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
 import './SidebarExpandableSection.css';
 import '@/shared/presentation/components/SidebarSubItems/SidebarSubItems.css';
 import NestedSubItems from './NestedSubItems';

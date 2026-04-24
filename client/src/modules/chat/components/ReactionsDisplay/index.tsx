@@ -1,4 +1,5 @@
-import { Box } from '@/shared/presentation/primitives';
+import Box from '@/shared/presentation/primitives/Box';
+import Button from '@/shared/presentation/primitives/Button';
 import { cn } from '@/shared/utils';
 import type { ChatReaction } from '@/modules/chat/api/entities/message';
 import './ReactionsDisplay.css';
@@ -30,11 +31,13 @@ const ReactionsDisplay = ({ reactions = [], currentUserId, onToggle }: Reactions
     return (
         <Box display='flex' wrap gap='025' className='chat-reactions-display'>
             {validReactions.map((reaction) => (
-                <button
+                <Button
                     key={reaction.emoji}
-                    type='button'
+                    variant='outline'
+                    size='sm'
+                    shape='pill'
                     className={cn(
-                        'd-flex items-center gap-025 font-size-2 cursor-pointer chat-reaction transition-normal',
+                        'font-size-2 chat-reaction',
                         hasUserReacted(reaction) && 'user-reacted'
                     )}
                     onClick={() => onToggle(reaction.emoji)}
@@ -42,7 +45,7 @@ const ReactionsDisplay = ({ reactions = [], currentUserId, onToggle }: Reactions
                     aria-label={`${reaction.emoji} reaction, ${reaction.users.length} ${reaction.users.length === 1 ? 'person' : 'people'}`}
                 >
                     {reaction.emoji} {reaction.users.length}
-                </button>
+                </Button>
             ))}
         </Box>
     );

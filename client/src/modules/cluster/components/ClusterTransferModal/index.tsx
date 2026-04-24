@@ -1,8 +1,13 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { useTeamClusterTransferJobsQuery } from '@/modules/cluster/hooks/team-cluster/queries';
-import { Stack, Row, Text, Heading, Modal, StatusBadge, closeModal } from '@/shared/presentation/primitives';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
+import Text from '@/shared/presentation/primitives/Text';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import { Select } from '@/shared/presentation/primitives';
+import Select from '@/shared/presentation/primitives/Select';
 import { formatClusterTimestamp } from '@/modules/cluster/utilities/format-cluster-timestamp';
 import {
     getClusterTransferJobStateBadgeVariant,

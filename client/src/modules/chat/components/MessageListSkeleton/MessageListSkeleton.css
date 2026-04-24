@@ -9,10 +9,3 @@
 .message-skeleton.received {
     margin-right: auto;
 }
-
-.message-skeleton-line {
-    height: 1rem;
-    border-radius: var(--radius-sm);
-    background: var(--color-surface-3);
-    animation: animate-skeleton 1.5s ease-in-out infinite;
-}

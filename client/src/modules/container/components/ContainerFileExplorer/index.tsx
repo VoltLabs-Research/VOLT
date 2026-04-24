@@ -5,7 +5,11 @@ import { IoFolderOutline, IoDocumentOutline, IoArrowBack } from 'react-icons/io5
 import FileExplorer from '@/shared/presentation/components/FileExplorer';
 import FileExplorerRow from '@/shared/presentation/components/FileExplorer/FileExplorerRow';
 import RefreshButton from '@/shared/presentation/components/RefreshButton';
-import { Button, Row, Stack, Text, Tooltip } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
+import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { ContainerFile } from '@/modules/container/api/entities/container-file';

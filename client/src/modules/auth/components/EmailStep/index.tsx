@@ -1,7 +1,9 @@
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import GoogleIcon from '@/shared/presentation/components/icons/GoogleIcon';
-import MicrosoftIcon from '@/shared/presentation/components/icons/MicrosoftIcon';
-import { Button, Row, Stack } from '@/shared/presentation/primitives';
+import GoogleIcon from '@/modules/auth/components/icons/GoogleIcon';
+import MicrosoftIcon from '@/modules/auth/components/icons/MicrosoftIcon';
+import Button from '@/shared/presentation/primitives/Button';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
 import { Github, Mail } from 'lucide-react';
 import type { FormEventHandler, ReactNode } from 'react';
 import type { Control } from 'react-hook-form';

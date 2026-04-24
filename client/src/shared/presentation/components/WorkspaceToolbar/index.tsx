@@ -1,5 +1,5 @@
 import { cn } from '@/shared/utils';
-import { Row } from '@/shared/presentation/primitives';
+import Row from '@/shared/presentation/primitives/Row';
 import type { ReactNode } from 'react';
 
 interface WorkspaceToolbarProps {

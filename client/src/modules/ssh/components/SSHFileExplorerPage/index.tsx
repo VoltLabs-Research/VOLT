@@ -6,11 +6,12 @@ import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { FileEntryType } from '@/modules/ssh/api/entities/ssh-connection';
 import { formatSize } from '@/shared/utils/format';
 import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-params';
-import SSHBreadcrumbs from '@/modules/ssh/components/SSHBreadcrumbs';
+import Breadcrumbs from '@/shared/presentation/primitives/Breadcrumbs';
 import SSHExplorerHeaderLeft from '@/modules/ssh/components/SSHExplorerHeaderLeft';
 import SSHExplorerHeaderRight from '@/modules/ssh/components/SSHExplorerHeaderRight';
 import FileExplorer from '@/shared/presentation/components/FileExplorer';
 import FileExplorerRow from '@/shared/presentation/components/FileExplorer/FileExplorerRow';
+import type { BreadcrumbItem } from '@/shared/presentation/primitives/Breadcrumbs';
 import useTip from '@/shared/tips/use-tip';
 import { formatDistanceToNow } from 'date-fns';
 import { LuFile, LuFolder } from 'react-icons/lu';
@@ -23,6 +24,33 @@ interface SSHFileExplorerPageProps {
 };
 
 type SSHFileExplorerRouteParams = Record<'connectionId', string>;
+
+const buildSSHBreadcrumbItems = (
+    cwd: string,
+    onNavigate: (path: string) => void
+): BreadcrumbItem[] => {
+    if (!cwd) {
+        return [];
+    }
+
+    const parts = cwd.split('/').filter(Boolean);
+    const items: BreadcrumbItem[] = [
+        { id: '.', title: '~', onClick: () => onNavigate('.') }
+    ];
+
+    let accumulated = '';
+    for (const part of parts) {
+        accumulated = accumulated ? `${accumulated}/${part}` : part;
+        const path = accumulated;
+        items.push({
+            id: `${items.length}-${path}`,
+            title: part,
+            onClick: () => onNavigate(path)
+        });
+    }
+
+    return items;
+};
 
 const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorerPageProps) => {
     const params = useParams<SSHFileExplorerRouteParams>();
@@ -169,7 +197,14 @@ const SSHFileExplorerPage = ({ connectionId: propConnectionId }: SSHFileExplorer
         />
     );
 
-    const breadcrumb = <SSHBreadcrumbs cwd={explorer.cwd} onNavigate={explorer.navigateTo} />;
+    const breadcrumb = (
+        <Breadcrumbs
+            items={buildSSHBreadcrumbItems(explorer.cwd, explorer.navigateTo)}
+            variant='compact'
+            ariaLabel='Current directory path'
+            title={explorer.cwd}
+        />
+    );
     const headerRight = <SSHExplorerHeaderRight onRefresh={explorer.refresh} isRefreshing={filesQuery.isRefetching} />;
     const helperCopy = explorer.selectedPath
         ? `Selected: ${explorer.selectedPath}`

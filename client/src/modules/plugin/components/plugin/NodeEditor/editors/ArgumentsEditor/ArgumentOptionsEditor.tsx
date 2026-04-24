@@ -1,5 +1,6 @@
-import { Button, IconButton } from '@/shared/presentation/primitives';
-import { EmptyState } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import IconButton from '@/shared/presentation/primitives/IconButton';
+import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import { Plus, Trash2 } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 

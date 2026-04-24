@@ -1,6 +1,8 @@
 import './CopyableField.css';
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
-import { Button, Row, Text } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Row from '@/shared/presentation/primitives/Row';
+import Text from '@/shared/presentation/primitives/Text';
 import { MdCheck, MdContentCopy } from 'react-icons/md';
 import { useState } from 'react';
 

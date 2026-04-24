@@ -4,14 +4,14 @@ import {
     useTopLayerRoot
 } from '@/shared/presentation/contexts/FloatingRootContext';
 import { cn } from '@/shared/utils';
-import { LiquidToggle } from '@/shared/presentation/primitives';
-import { Select } from '@/shared/presentation/primitives';
+import LiquidToggle from '@/shared/presentation/primitives/LiquidToggle';
+import Select from '@/shared/presentation/primitives/Select';
 import './FormField.css';
 import { useFloating, useDismiss, useInteractions, FloatingPortal, offset, flip, shift, size, autoUpdate } from '@floating-ui/react';
 import { AlertCircle } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, useCallback, useId } from 'react';
 import { Controller } from 'react-hook-form';
-import type { SelectOption } from '@/shared/presentation/primitives';
+import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import type { ChangeEvent, InputHTMLAttributes, KeyboardEvent, ReactNode, RefCallback } from 'react';
 import type { Control, FieldValues, Path } from 'react-hook-form';
 

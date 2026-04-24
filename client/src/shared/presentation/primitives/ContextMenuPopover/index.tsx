@@ -1,4 +1,6 @@
-import { Popover, Stack, Text } from '@/shared/presentation/primitives';
+import Popover from '@/shared/presentation/primitives/Popover';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import PopoverMenu from '../PopoverMenu';
 import AsyncContextMenuItem from './AsyncContextMenuItem';
 import SubmenuItemWrapper from './SubmenuItemWrapper';

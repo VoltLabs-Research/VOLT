@@ -1,4 +1,4 @@
-import { Modal } from '@/shared/presentation/primitives';
+import Modal from '@/shared/presentation/primitives/Modal';
 import { useMemo, useCallback } from 'react';
 import { useSubListingInfiniteQuery } from '@/modules/plugin/hooks/listing/queries';
 import PluginCompactTable, { type ColumnConfig } from '@/modules/plugin/components/listing/PluginCompactTable';

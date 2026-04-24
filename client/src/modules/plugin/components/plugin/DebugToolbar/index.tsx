@@ -1,4 +1,11 @@
-import { Button, Loader, Tooltip } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import Divider from '@/shared/presentation/primitives/Divider';
+import Loader from '@/shared/presentation/primitives/Loader';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import StatusDot from '@/shared/presentation/primitives/StatusDot';
+import Text from '@/shared/presentation/primitives/Text';
+import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import DebugArgumentsPanel from '@/modules/plugin/components/plugin/DebugArgumentsPanel';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
@@ -7,7 +14,7 @@ import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin
 import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import { isUserConfigurableArgument } from '@/modules/plugin/utilities/plugin/argument-values';
 import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
-import { Select } from '@/shared/presentation/primitives';
+import Select from '@/shared/presentation/primitives/Select';
 import { Bug, FastForward, Play, Square, StepForward } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
@@ -119,14 +126,14 @@ const DebugToolbar = () => {
     const completedCount = Object.values(nodeStates).filter((s) => s.status === 'completed').length;
 
     return (
-        <div className='p-absolute z-10 d-flex column items-center top-1 center-x debug-toolbar-wrapper'>
-            <div className='d-flex items-center gap-05 panel-floating radius-full debug-toolbar glass-bg'>
-                <div className='d-flex items-center gap-05'>
+        <Stack align='center' position='absolute' zIndex='10' top='1' className='center-x debug-toolbar-wrapper'>
+            <Row gap='05' className='panel-floating radius-full debug-toolbar glass-bg'>
+                <Row gap='05'>
                     <Bug size={14} className='color-secondary' />
-                    <p className='font-size-2 color-secondary font-weight-6'>Debug</p>
-                </div>
+                    <Text as='p' size='sm' tone='muted' weight='bold'>Debug</Text>
+                </Row>
 
-                <hr className='volt-divider volt-divider--vertical debug-toolbar-divider' />
+                <Divider orientation='vertical' className='debug-toolbar-divider' />
 
                 <Select
                     options={trajectoryOptions}
@@ -147,9 +154,9 @@ const DebugToolbar = () => {
                     className='debug-toolbar-select'
                 />
 
-                <hr className='volt-divider volt-divider--vertical debug-toolbar-divider' />
+                <Divider orientation='vertical' className='debug-toolbar-divider' />
 
-                <div className='d-flex items-center gap-025'>
+                <Row gap='025'>
                     <Tooltip content={canStart ? (hasConfigurableArgs ? 'Configure arguments & start' : 'Start debug (single frame)') : 'Select trajectory & frame first'} placement='bottom'>
                         <Button
                             variant='ghost'
@@ -201,50 +208,50 @@ const DebugToolbar = () => {
                             <Square size={14} />
                         </Button>
                     </Tooltip>
-                </div>
-            </div>
+                </Row>
+            </Row>
 
             {isDebugging && (
                 <>
-                    <hr className='volt-divider volt-divider--vertical debug-toolbar-divider' />
-                    <div className='d-flex items-center gap-05 debug-toolbar-status'>
+                    <Divider orientation='vertical' className='debug-toolbar-divider' />
+                    <Row gap='05' className='debug-toolbar-status'>
                         {isPaused && currentNodeLabel && (
                             <>
-                                <span className='debug-toolbar-status-dot debug-toolbar-status-dot--paused radius-full f-shrink-0' />
-                                <p className='font-size-2'>
+                                <StatusDot tone='warning' pulse />
+                                <Text as='p' size='sm'>
                                     Paused at: {currentNodeLabel} ({currentNodeIndex + 1}/{totalNodes})
-                                </p>
+                                </Text>
                             </>
                         )}
                         {!isPaused && (
                             <>
-                                <span className='debug-toolbar-status-dot debug-toolbar-status-dot--running radius-full f-shrink-0' />
-                                <p className='font-size-2 color-secondary'>
+                                <StatusDot tone='info' pulse />
+                                <Text as='p' size='sm' tone='muted'>
                                     Running... {completedCount}/{totalNodes}
-                                </p>
+                                </Text>
                             </>
                         )}
-                    </div>
+                    </Row>
                 </>
             )}
 
             <DebugArgumentsPanel onStart={handleStartFromPanel} canStart={canStart} />
 
             {!isDebugging && (totalDuration !== null || sessionError) && (
-                <div className='text-center mt-1 debug-toolbar-below-status'>
+                <Stack mt='1' textAlign='center' className='debug-toolbar-below-status'>
                     {totalDuration !== null && totalDuration >= 0 && (
-                        <p className='font-size-2 debug-toolbar-status--completed'>
+                        <Text as='p' size='sm' className='debug-toolbar-status--completed'>
                             Completed in {totalDuration < 1000 ? `${totalDuration}ms` : `${(totalDuration / 1000).toFixed(1)}s`}
-                        </p>
+                        </Text>
                     )}
                     {sessionError && (
-                        <p className='font-size-2 debug-toolbar-status--error'>
+                        <Text as='p' size='sm' className='debug-toolbar-status--error'>
                             {sessionError}
-                        </p>
+                        </Text>
                     )}
-                </div>
+                </Stack>
             )}
-        </div>
+        </Stack>
     );
 };
 

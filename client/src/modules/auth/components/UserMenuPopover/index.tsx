@@ -1,8 +1,11 @@
 import './UserMenuPopover.css';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import UserInfo from '@/modules/auth/components/UserInfo';
-import { PopoverMenuItem } from '@/shared/presentation/primitives';
-import { Avatar, Popover } from '@/shared/presentation/primitives';
+import Button from '@/shared/presentation/primitives/Button';
+import IconButton from '@/shared/presentation/primitives/IconButton';
+import PopoverMenuItem from '@/shared/presentation/primitives/PopoverMenuItem';
+import Avatar from '@/shared/presentation/primitives/Avatar';
+import Popover from '@/shared/presentation/primitives/Popover';
 import { HiOutlineDotsVertical } from 'react-icons/hi';
 import { IoCloseOutline, IoSettingsOutline } from 'react-icons/io5';
 import type { ReactNode } from 'react';
@@ -19,18 +22,26 @@ const UserMenuPopover = ({ onSettingsClick, onSignOut, isSigningOut = false, tri
     const user = useCurrentUser();
 
     const collapsedTrigger = (
-        <button className='user-menu-trigger user-menu-trigger-collapsed cursor-pointer'>
+        <IconButton
+            variant='ghost'
+            aria-label='Open user menu'
+            className='user-menu-trigger user-menu-trigger-collapsed'
+        >
             <Avatar user={user} size='sm' />
-        </button>
+        </IconButton>
     );
 
     const defaultTrigger = (
-        <button className='user-menu-trigger cursor-pointer'>
+        <Button
+            variant='ghost'
+            block
+            align='start'
+            className='user-menu-trigger'
+            rightIcon={<HiOutlineDotsVertical size={16} />}
+            aria-label='Open user menu'
+        >
             <UserInfo user={user} className='f-grow-1' />
-            <div className='f-shrink-0 color-muted'>
-                <HiOutlineDotsVertical size={16} />
-            </div>
-        </button>
+        </Button>
     );
 
     const activeTrigger = trigger ?? (collapsed ? collapsedTrigger : defaultTrigger);

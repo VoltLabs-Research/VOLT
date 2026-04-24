@@ -441,6 +441,13 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
             });
             setActiveScene(toScene(analysisId, action, previewResult.request));
             setPreviewResult(null);
+
+            // Why: the right-panel artifact tree listens for this event to
+            // refetch color-coding/particle-filter lists. Without it the user
+            // has to reload the page to see the entry they just created.
+            window.dispatchEvent(new CustomEvent('canvas:scene-artifacts:changed', {
+                detail: { trajectoryId }
+            }));
         } catch (applyError: unknown) {
             setError(reportError(applyError, {
                 surface: ErrorSurface.Silent,
