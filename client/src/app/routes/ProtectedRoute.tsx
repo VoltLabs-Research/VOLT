@@ -52,7 +52,7 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
 
     const selectedTeamId = useSelectedTeamId();
 
-    const shouldLoadTeamData = mode === RouteMode.Protected && hasToken;
+    const shouldLoadTeamData = (mode === RouteMode.Protected || mode === RouteMode.OptionalAuth) && hasToken;
     const { teams, isTeamsLoading } = useTeamData({ enabled: shouldLoadTeamData });
     const previousSelectedTeamIdRef = useRef<string | null>(selectedTeamId);
     const refreshedOnboardingTeamIdRef = useRef<string | null>(null);

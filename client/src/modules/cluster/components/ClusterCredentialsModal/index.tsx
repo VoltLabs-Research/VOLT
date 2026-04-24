@@ -6,8 +6,8 @@ import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
 import Row from '@/shared/presentation/primitives/Row';
 import Stack from '@/shared/presentation/primitives/Stack';
 import Text from '@/shared/presentation/primitives/Text';
+import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 import { useEffect, useState } from 'react';
-import { sileo } from 'sileo';
 import './ClusterCredentialsModal.css';
 import type { TeamCluster, TeamClusterCredentialServices } from '@/modules/cluster/api/entities/team-cluster';
 
@@ -62,9 +62,11 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
         }
     };
 
-    const handleCopyPassword = async (value: string) => {
-        await navigator.clipboard.writeText(value);
-        sileo.success({ title: 'Password copied' });
+    const handleCopyPassword = (value: string) => {
+        void copyTextToClipboard(value, {
+            successMessage: 'Password copied',
+            errorMessage: 'Failed to copy password'
+        });
     };
 
     const services: ClusterCredentialCard[] = credentials
@@ -79,6 +81,7 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
     return (
         <Modal
             id={CLUSTER_CREDENTIALS_MODAL_ID}
+            lazyMount
             title={credentials ? `${teamCluster?.name} Credentials` : 'Reveal Cluster Credentials'}
             description={credentials
                 ? 'These credentials are sensitive. Rotate them if they are exposed outside your team.'

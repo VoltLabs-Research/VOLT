@@ -157,6 +157,14 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
         setIsWaitingForJupyter(true);
         setContainerStage(null);
 
+        const loadingToastId = sileo.show({
+            type: 'loading',
+            title: 'Starting Jupyter session...',
+            description: 'Provisioning the notebook container on the cluster.',
+            duration: null
+        });
+        const triggerRetry = () => setStartAttempt((value) => value + 1);
+
         try {
             const isRequestCancelled = (): boolean => {
                 return !isMountedRef.current || activeStartRequestRef.current !== requestId;
@@ -180,10 +188,9 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
             };
             await deleteExistingSession();
             if (isRequestCancelled()) {
+                sileo.dismiss(loadingToastId);
                 return;
             }
-
-            sileo.info({ title: 'Starting Jupyter session...' });
 
             const result: WaitForReadyScriptingSessionResult = await startAndWaitForReadyScriptingSession({
                 createSession: async () => {
@@ -202,8 +209,11 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
             }, waitForReadyOptions);
 
             if (isRequestCancelled()) {
+                sileo.dismiss(loadingToastId);
                 return;
             }
+
+            sileo.dismiss(loadingToastId);
 
             if (!result.timedOut && result.session.jupyter.ready) {
                 setContainerStage('ready');
@@ -213,18 +223,34 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
             }
 
             setJupyterError(JUPYTER_SESSION_TIMEOUT_MESSAGE);
-            sileo.error({
+            sileo.warning({
                 title: 'Jupyter is still starting',
-                description: JUPYTER_SESSION_TIMEOUT_MESSAGE
+                description: JUPYTER_SESSION_TIMEOUT_MESSAGE,
+                duration: 8000,
+                button: {
+                    title: 'Retry',
+                    onClick: triggerRetry
+                }
             });
         } catch (error: unknown) {
             if (!isMountedRef.current || activeStartRequestRef.current !== requestId) {
+                sileo.dismiss(loadingToastId);
                 return;
             }
 
+            sileo.dismiss(loadingToastId);
+
             if (!checkAccessDeniedError(error)) {
                 setJupyterError(getJupyterStartErrorMessage(error));
-                sileo.error({ title: 'Failed to start Jupyter session' });
+                sileo.error({
+                    title: 'Failed to start Jupyter session',
+                    description: getJupyterStartErrorMessage(error),
+                    duration: 8000,
+                    button: {
+                        title: 'Retry',
+                        onClick: triggerRetry
+                    }
+                });
             }
         } finally {
             if (isMountedRef.current && activeStartRequestRef.current === requestId) {

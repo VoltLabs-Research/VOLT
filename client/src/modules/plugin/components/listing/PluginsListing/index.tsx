@@ -233,7 +233,7 @@ const PluginsListing = () => {
                     style={{ display: 'none' }}
                 />
                 <Button
-                    variant='ghost'
+                    variant='toggle'
                     intent='neutral'
                     className='import-plugin-btn transition-fast'
                     onClick={triggerImportFileSelect}

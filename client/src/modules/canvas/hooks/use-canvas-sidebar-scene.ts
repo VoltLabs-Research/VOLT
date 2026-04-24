@@ -232,10 +232,6 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
                 return;
             }
 
-            if (pending.toastId) {
-                sileo.dismiss(pending.toastId);
-            }
-
             const description = formatFrameProgress(completedFrames, totalFrames) ?? 'Running on the cluster…';
             const nextToastId = sileo.show({
                 type: 'loading',
@@ -255,9 +251,6 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         if (status === AnalysisStatus.Completed) {
             if (pending) {
                 const entry = pendingStore.remove(analysisId);
-                if (entry?.toastId) {
-                    sileo.dismiss(entry.toastId);
-                }
 
                 const currentSelectedAnalysisId = analysisConfigIdRef.current;
                 const canAutoSelect = Boolean(entry?.autoSelect)
@@ -299,10 +292,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         }
 
         if (status === AnalysisStatus.Failed) {
-            const entry = pendingStore.remove(analysisId);
-            if (entry?.toastId) {
-                sileo.dismiss(entry.toastId);
-            }
+            pendingStore.remove(analysisId);
 
             const description = typeof failedFrames === 'number' && failedFrames > 0
                 ? `${failedFrames} frame${failedFrames === 1 ? '' : 's'} failed. Retry to re-run the failed frames.`

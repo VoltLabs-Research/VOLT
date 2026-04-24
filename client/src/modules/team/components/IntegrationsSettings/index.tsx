@@ -483,6 +483,7 @@ export default function IntegrationsSettings() {
 
             <Modal
                 id={TEAM_AI_INTEGRATION_MODAL_ID}
+                lazyMount
                 title={editingProvider ? 'Configure provider' : 'Add provider'}
                 description='Set the API key and default model for this provider.'
                 width='480px'

@@ -1,7 +1,7 @@
 import { useMarkAllReadMutation, useNotificationsInfiniteQuery } from './queries';
 import useNotificationSocket from './use-notification-socket';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useCallback, useMemo } from 'react';
-import { sileo } from 'sileo';
 import type { Notification } from '../api/entities/notification';
 
 const DEFAULT_LIMIT = 20;
@@ -40,11 +40,16 @@ const useNotificationData = () => {
     }, [infiniteQuery]);
 
     const markAllAsRead = useCallback(async () => {
+        // showPromise rethrows so callers can chain; swallow here because
+        // the toast already informs the user and callers do not await.
         try {
-            await markAllReadMutation.mutateAsync();
-            sileo.success({ title: 'All notifications marked as read' });
+            await showPromise(markAllReadMutation.mutateAsync(), {
+                loading: { title: 'Marking notifications as read...' },
+                success: { title: 'All notifications marked as read' },
+                error: { title: 'Failed to mark notifications as read' }
+            });
         } catch {
-            sileo.error({ title: 'Failed to mark notifications as read' });
+            // intentional no-op
         }
     }, [markAllReadMutation]);
 

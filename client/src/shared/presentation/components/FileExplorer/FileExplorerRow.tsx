@@ -1,7 +1,7 @@
 import { cn } from '@/shared/utils';
 import Tooltip from '@/shared/presentation/primitives/Tooltip';
+import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 import { Copy } from 'lucide-react';
-import { sileo } from 'sileo';
 import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
 
 export interface FileExplorerRowProps {
@@ -46,15 +46,12 @@ const FileExplorerRow = ({
         onClick?.();
     };
 
-    const handleCopyName = async (e: MouseEvent<HTMLButtonElement>) => {
+    const handleCopyName = (e: MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
-
-        try {
-            await navigator.clipboard.writeText(name);
-            sileo.success({ title: 'File name copied to clipboard' });
-        } catch {
-            sileo.error({ title: 'Failed to copy file name' });
-        }
+        void copyTextToClipboard(name, {
+            successMessage: 'File name copied to clipboard',
+            errorMessage: 'Failed to copy file name'
+        });
     };
 
     const rowClassName = cn('file-explorer-row', isInteractive && 'is-interactive', isSelected && 'is-selected');
