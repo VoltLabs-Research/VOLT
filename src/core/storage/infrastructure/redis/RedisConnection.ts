@@ -53,9 +53,7 @@ export class RedisConnection {
     private readonly client: Redis;
     private readonly connectionOptions: RedisConnectionOptions;
 
-    constructor(
-        private readonly config: DaemonConfig
-    ) {
+    constructor(config: DaemonConfig) {
         this.connectionOptions = {
             host: config.redis.host,
             port: config.redis.port,

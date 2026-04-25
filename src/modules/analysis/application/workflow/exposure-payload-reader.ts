@@ -1,5 +1,5 @@
 import { decodeMultiStream, mergeSelectiveChunk } from '@/support/serialization/selective-msgpack';
-import type { MsgpackObject, MsgpackValue } from '@/support/serialization/msgpack-value';
+import type { MsgpackObject } from '@/support/serialization/msgpack-value';
 import { isPlainObject } from '@/support/type-guards/is-record';
 import { createReadStream } from 'node:fs';
 

@@ -103,10 +103,6 @@ export class AnalysisDispatcher {
             await this.storeCachedPlan(planCacheKey, plan);
         }
 
-        const queuePayloadBytesBefore = Buffer.byteLength(JSON.stringify({
-            ...jobs[0],
-            executionData
-        }));
         let storedExecutionData: StoredExecutionDataResult = {};
 
         try {
@@ -133,14 +129,6 @@ export class AnalysisDispatcher {
         }
 
         const { executionDataCompressed, executionDataReference } = storedExecutionData;
-
-        const queuePayloadBytesAfter = executionDataReference
-            ? Buffer.byteLength(JSON.stringify({
-                ...jobs[0],
-                executionDataCompressed,
-                executionDataReference
-            }))
-            : queuePayloadBytesBefore;
 
         const queuedPayloads = jobs.map((job) => executionDataReference
             ? { ...job, executionDataCompressed, executionDataReference }

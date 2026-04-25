@@ -86,9 +86,7 @@ const createBatchPlan = (
 export class WorkflowEngine {
     private readonly nodeExecutor: WorkflowNodeExecutor;
 
-    constructor(
-        private readonly registry: WorkflowNodeRegistry
-    ) {
+    constructor(registry: WorkflowNodeRegistry) {
         this.nodeExecutor = new WorkflowNodeExecutor(registry);
     }
 

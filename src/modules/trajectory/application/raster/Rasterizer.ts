@@ -1,6 +1,5 @@
 import { ObjectBucketName } from '@/contracts';
 import { Service } from '@/core/decorators/service';
-import { logger } from '@/core/logger';
 import { withNativeProcessingTempDir } from '@/support/native-temp-dir';
 import { createReadStream, createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';

@@ -1,6 +1,5 @@
 import { DockerRuntime } from '@/core/runtime/infrastructure/DockerRuntime';
 import { withTimeout } from '@/core/observability/infrastructure/daemon-instrumentation';
-import { REVERSE_CHANNEL } from '@/contracts';
 import { SESSION_ATTACH_TIMEOUT_MS } from '@/core/reverse-channel/contracts/reverse-channel-constants';
 import {
     EnvelopeKind,

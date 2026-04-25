@@ -4,7 +4,6 @@ import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import { MetricsService } from '@/core/metrics/application/MetricsService';
 import type { TeamClusterDaemonServerEventMessage } from '@/core/reverse-channel/contracts/server-event';
-import { OrchestrationAction } from '@/core/runtime/contracts/http-runtime';
 import type { RuntimeProgressMessage } from '@/core/runtime/contracts/reverse-channel-runtime';
 import http from 'node:http';
 import https from 'node:https';
@@ -49,7 +48,6 @@ export class VoltCloudConnection {
     private connectedToCloud = false;
     private lastCloudLatencyMs: number | null = null;
     private heartbeatFailureCount = 0;
-    private lastHeartbeatFailureAt: string | null = null;
     private readonly backgroundCommandConcurrency = 2;
     private readonly backgroundCommandMaxQueueSize = 2048;
     private readonly backgroundCommandLimiter: Bottleneck;
@@ -110,7 +108,6 @@ export class VoltCloudConnection {
             .onConnected(() => {
                 this.connectedToCloud = true;
                 this.heartbeatFailureCount = 0;
-                this.lastHeartbeatFailureAt = null;
                 this.drainBufferedEvents();
                 logger.info('Connected to VoltCloud');
             })
@@ -122,7 +119,6 @@ export class VoltCloudConnection {
             .onError((err: DaemonClientError) => {
                 if (err.message.includes('heartbeat')) {
                     this.heartbeatFailureCount += 1;
-                    this.lastHeartbeatFailureAt = new Date().toISOString();
                     logger.warn(`Heartbeat failed: ${err.message} (heartbeatFailureCount=${this.heartbeatFailureCount}, socketReady=${this.client.isReady()})`);
                     return;
                 }

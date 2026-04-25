@@ -2,7 +2,6 @@ import type { WorkflowNodeHandler } from '@/modules/analysis/application/workflo
 import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput } from '@/modules/analysis/contracts/workflow.types';
 import { WorkflowSession } from '@/modules/analysis/application/workflow/WorkflowSession';
 import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
-import { logger } from '@/core/logger';
 
 interface WorkflowContextOutput extends WorkflowNodeOutput {
     trajectory_dumps: ReturnType<typeof WorkflowSession.resolveContextDumps>;

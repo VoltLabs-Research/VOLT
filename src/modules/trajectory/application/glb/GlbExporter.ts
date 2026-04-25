@@ -14,7 +14,6 @@ import spatialAssembler from '@voltstack/spatial-assembler';
 
 const queueAutoPreviewRasterization = async (
     trajectoryRasterQueue: TrajectoryRasterQueue,
-    modelObjectKey: string,
     input: any
 ): Promise<void> => {
     const { ownerClusterId, teamId } = input;
@@ -83,7 +82,7 @@ export class GlbExporter {
             });
 
             try {
-                await queueAutoPreviewRasterization(this.trajectoryRasterQueue, modelObjectKey, input);
+                await queueAutoPreviewRasterization(this.trajectoryRasterQueue, input);
             } catch (error) {
                 logger.warn('Failed to enqueue auto-preview rasterization for generated GLB');
             }

@@ -26,7 +26,8 @@ import type {
 } from '@/modules/trajectory/contracts/ssh-import-trajectory';
 import type { DaemonJobReporter } from '@/modules/jobs/application/reporting/DaemonJobReporter';
 import type { VoltCloudConnection } from '@/modules/container/infrastructure/connection/VoltCloudConnection';
-import { errorMessage, logAndSwallow } from '@/support/error/errorMessage';
+import { errorMessage } from '@/support/error/errorMessage';
+import { sanitizeFileName } from '@/support/fs/sanitize-file-name';
 import type { JobIdentity } from '@/support/contracts/job-identity';
 import { mapLimited } from '@/support/concurrency/map-limited';
 
@@ -72,7 +73,7 @@ export class SSHImportWorker extends BaseWorker<SSHImportJobPayload> {
         await fs.mkdir(DAEMON_PATHS.sshImport, { recursive: true });
         const workdirHandle = await createTempDir({
             tmpdir: DAEMON_PATHS.sshImport,
-            prefix: `${this.sanitizeTempPrefix(payload.trajectoryId)}-`,
+            prefix: `${sanitizeFileName(payload.trajectoryId, '')}-`,
             unsafeCleanup: true
         });
         const workdir = workdirHandle.path;
@@ -232,9 +233,5 @@ export class SSHImportWorker extends BaseWorker<SSHImportJobPayload> {
 
         const direct = await this.voltCloudConnection.sendServerCommand('trajectory.import-complete', payload);
         return direct !== undefined;
-    }
-
-    private sanitizeTempPrefix(value: string): string {
-        return value.replace(/[^a-zA-Z0-9._-]+/g, '-');
     }
 }

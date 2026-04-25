@@ -6,6 +6,7 @@ import { Service } from '@/core/decorators/service';
 import { DAEMON_PATHS } from '@/core/paths';
 import { ARTIFACT_UPLOAD_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import { QueueService } from '@/core/queues/application/QueueService';
+import { sanitizeFileName } from '@/support/fs/sanitize-file-name';
 import type {
     ArtifactUploadBatch,
     ArtifactUploadBatchContext,
@@ -60,9 +61,7 @@ class DefaultArtifactUploadBatch implements ArtifactUploadBatch {
     }
 
     async enqueue(): Promise<ArtifactUploadBatchEnqueueResult> {
-        if (this.enqueued) {
-            throw new Error(`Artifact upload batch for analysis ${this.context.analysisId} has already been enqueued`);
-        }
+        this.assertNotEnqueued();
 
         if (this.uploads.length === 0) {
             await this.cleanup();
@@ -73,7 +72,7 @@ class DefaultArtifactUploadBatch implements ArtifactUploadBatch {
         }
 
         const payload: ArtifactUploadBatchJobPayload = {
-            jobId: `artifact-upload-${this.sanitizeFileName(this.context.analysisJobId)}`,
+            jobId: `artifact-upload-${sanitizeFileName(this.context.analysisJobId)}`,
             analysisId: this.context.analysisId,
             teamId: this.context.teamId,
             trajectoryId: this.context.trajectoryId,
@@ -115,7 +114,7 @@ class DefaultArtifactUploadBatch implements ArtifactUploadBatch {
         await fs.mkdir(DAEMON_PATHS.artifactUploads, { recursive: true });
         const tempDirectory = await createTempDir({
             tmpdir: DAEMON_PATHS.artifactUploads,
-            prefix: `${this.sanitizeFileName(this.context.analysisId)}-${this.sanitizeFileName(this.context.analysisJobId)}-`,
+            prefix: `${sanitizeFileName(this.context.analysisId)}-${sanitizeFileName(this.context.analysisJobId)}-`,
             unsafeCleanup: true
         });
         this.batchDirectory = tempDirectory.path;
@@ -123,13 +122,17 @@ class DefaultArtifactUploadBatch implements ArtifactUploadBatch {
         return this.batchDirectory;
     }
 
+    private assertNotEnqueued(): void {
+        if (this.enqueued) {
+            throw new Error(`Artifact upload batch for analysis ${this.context.analysisId} has already been enqueued`);
+        }
+    }
+
     private async stageUpload(
         input: ArtifactUploadStageInput,
         writer: (stagedPath: string) => Promise<void>
     ): Promise<void> {
-        if (this.enqueued) {
-            throw new Error(`Artifact upload batch for analysis ${this.context.analysisId} has already been enqueued`);
-        }
+        this.assertNotEnqueued();
 
         const batchDirectoryPath = await this.ensureBatchDirectory();
         const fileName = this.resolveFileName(input, `artifact-${this.nextSequence}`);
@@ -150,22 +153,17 @@ class DefaultArtifactUploadBatch implements ArtifactUploadBatch {
         });
     }
 
-    private sanitizeFileName(value: string): string {
-        const sanitized = value.replace(/[^a-zA-Z0-9._-]+/g, '-');
-        return sanitized.length > 0 ? sanitized : 'artifact';
-    }
-
     private resolveFileName(input: ArtifactUploadStageInput, fallbackName: string): string {
         if (input.fileName) {
-            return this.sanitizeFileName(input.fileName);
+            return sanitizeFileName(input.fileName);
         }
 
         const objectBaseName = path.basename(input.objectKey);
         if (objectBaseName.length > 0) {
-            return this.sanitizeFileName(objectBaseName);
+            return sanitizeFileName(objectBaseName);
         }
 
-        return this.sanitizeFileName(fallbackName);
+        return sanitizeFileName(fallbackName);
     }
 }
 

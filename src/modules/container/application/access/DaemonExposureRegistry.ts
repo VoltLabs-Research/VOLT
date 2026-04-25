@@ -177,7 +177,7 @@ export class DaemonExposureRegistry {
 
         const startedAt = Date.now();
         this.inFlightSyncStartedAt = startedAt;
-        this.inFlightSync = this.runSync(startedAt).finally(() => {
+        this.inFlightSync = this.runSync().finally(() => {
             this.inFlightSync = null;
             this.inFlightSyncStartedAt = null;
         });
@@ -185,7 +185,7 @@ export class DaemonExposureRegistry {
         return this.inFlightSync;
     }
 
-    private async runSync(startedAt: number): Promise<void> {
+    private async runSync(): Promise<void> {
         const includeStoppedContainers = true;
         const containers = await this.dockerRuntime.listContainers(includeStoppedContainers, {
             label: [`${VOLT_MANAGED_CONTAINER_LABEL_KEY}=${VOLT_MANAGED_CONTAINER_LABEL_VALUE}`]

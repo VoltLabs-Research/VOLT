@@ -2,7 +2,7 @@ import { Service } from '@/core/decorators/service';
 import { TRAJECTORY_RASTER_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import type { QueueService } from '@/core/queues/application/QueueService';
 import { ObjectBucketName } from '@/contracts';
-import type { RasterQueueJobPayload, RasterizeTrajectoryRequest, RasterizeTrajectoryResponse } from '@/contracts';
+import type { RasterizeTrajectoryRequest, RasterizeTrajectoryResponse } from '@/contracts';
 import { isRecord } from '@/support/type-guards/is-record';
 import type { TrajectoryAutoPreviewClaimStore } from '@/modules/trajectory/infrastructure/storage/TrajectoryAutoPreviewClaimStore';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';

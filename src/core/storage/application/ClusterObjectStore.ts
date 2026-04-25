@@ -2,7 +2,6 @@ import type { DaemonConfig } from '@/core/config';
 import { Factory } from '@/core/decorators/service';
 import type {
     ClusterObjectHeadResponse,
-    ClusterObjectListEntry,
     ClusterObjectListRequest,
     ClusterObjectListResponse,
     ClusterObjectPutInput,
@@ -12,11 +11,7 @@ import type {
     ClusterObjectStreamResponse,
     LocalClusterObjectStat,
     LocalClusterObjectStoreGateway,
-    RemoteClusterObjectPutBufferRequest,
-    RemoteClusterObjectPutStreamRequest,
     RemoteClusterObjectStoreGateway,
-    ScopedClusterObjectPutInput,
-    ScopedClusterObjectPutStreamInput,
     ScopedClusterObjectStore
 } from '@/core/storage/contracts/cluster-object-store';
 

@@ -2,7 +2,7 @@ import path from 'node:path';
 import { logger } from '@/core/logger';
 import type { SceneArtifactUpsertBatchItem as ReportArtifactInput } from '@/modules/plugin/contracts/reverse-channel-plugin';
 import type { ExportExecutionInput, ExporterEntry, ExporterName } from '@/modules/plugin/application/exports/export-node-processor-types';
-import type { MsgpackObject, MsgpackScalar, MsgpackValue } from '@/support/serialization/msgpack-value';
+import type { MsgpackObject, MsgpackValue } from '@/support/serialization/msgpack-value';
 import type { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
 
 
