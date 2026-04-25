@@ -49,3 +49,35 @@ export const createTeamScopedParamsSchema = <TKey extends string>(key: TKey) => 
     const shape = createObjectIdParamsSchema([key]).shape;
     return teamParamsSchema.extend(shape).strict();
 };
+
+export const createFolderValidationSchemas = () => {
+    const folderParamsSchema = createTeamScopedParamsSchema('folderId');
+    const titleBodySchema = z.object({
+        title: z.string().trim().min(1).max(255)
+    }).strict();
+
+    return {
+        createFolder: {
+            params: teamParamsSchema,
+            body: titleBodySchema.extend({
+                parentId: objectIdSchema.nullable().optional()
+            }).strict()
+        },
+        listFolders: {
+            params: teamParamsSchema,
+            query: createPaginationQuerySchema({ maxLimit: 500 }).extend({
+                parentId: z.string().optional()
+            })
+        },
+        getFolder: {
+            params: folderParamsSchema
+        },
+        updateFolder: {
+            params: folderParamsSchema,
+            body: titleBodySchema
+        },
+        deleteFolder: {
+            params: folderParamsSchema
+        }
+    };
+};

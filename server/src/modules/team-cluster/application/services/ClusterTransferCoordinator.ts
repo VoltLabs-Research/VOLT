@@ -17,7 +17,6 @@ import StoragePlacement from '@modules/team-cluster/domain/entities/StoragePlace
 import type TeamCluster from '@modules/team-cluster/domain/entities/TeamCluster';
 import { TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
 import ClusterTransferJobRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/ClusterTransferJobRepository';
-import StoragePlacementRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/StoragePlacementRepository';
 import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
@@ -206,9 +205,6 @@ export default class ClusterTransferCoordinator {
     constructor(
         
         private readonly storagePlacementService: StoragePlacementService,
-
-        
-        private readonly storagePlacementRepository: StoragePlacementRepository,
 
         
         private readonly clusterTransferJobRepository: ClusterTransferJobRepository,

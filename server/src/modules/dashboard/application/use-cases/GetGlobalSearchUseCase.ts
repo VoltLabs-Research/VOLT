@@ -1,4 +1,5 @@
 import { extractPluginId } from '@modules/analysis/infrastructure/services/AnalysisPluginDisplayNameService';
+import type { Analysis } from '@modules/analysis/domain/entities/Analysis';
 import {
     EMPTY_GLOBAL_SEARCH_RESULTS,
     GetGlobalSearchInputDTO,
@@ -167,7 +168,7 @@ implements IUseCase<GetGlobalSearchInputDTO, GetGlobalSearchOutputDTO> {
         ]);
 
         return Result.ok({
-            analyses: analysesResult.data.map((analysis) => ({
+            analyses: analysesResult.data.map((analysis: Analysis) => ({
                 ...analysis.props,
                 _id: analysis._id,
                 plugin: extractPluginId(analysis.props.plugin),

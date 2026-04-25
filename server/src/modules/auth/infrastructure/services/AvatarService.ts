@@ -10,12 +10,6 @@ import crypto from 'node:crypto';
 import sharp from 'sharp';
 import { inject } from 'tsyringe';
 
-interface LoggerErrorContext {
-    err: unknown;
-    operation: string;
-    id: string;
-}
-
 @Singleton()
 export default class AvatarService implements IAvatarService {
     private readonly AVATAR_SIZE_PX = 420;

@@ -1,8 +1,6 @@
-import { ErrorCodes } from '@core/constants/error-codes';
-import { Action } from '@core/constants/permissions';
-import { Resource } from '@core/constants/resources';
 import { GenerateTeamInviteCodeInputDTO, GenerateTeamInviteCodeOutputDTO } from '@modules/team/application/dtos/team/GenerateTeamInviteCodeDTO';
-import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/team-member/TeamMember';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { getInviteCodePermissionError } from '@modules/team/application/use-cases/team/invite-code-helpers';
 import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import TeamRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team/TeamRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -36,27 +34,9 @@ export default class GenerateTeamInviteCodeUseCase implements IUseCase<GenerateT
     async execute(input: GenerateTeamInviteCodeInputDTO): Promise<Result<GenerateTeamInviteCodeOutputDTO, ApplicationError>> {
         const { teamId, userId } = input;
 
-        const member = await this.teamMemberRepository.findOne(
-            { team: teamId, user: userId },
-            { populate: ['role'] }
-        );
-
-        if (!member) {
-            return Result.fail(ApplicationError.forbidden(
-                ErrorCodes.RBAC_INSUFFICIENT_PERMISSIONS,
-                'You do not have permission to manage invite codes'
-            ));
-        }
-
-        const permissions = getTeamMemberRolePermissions(member.props.role);
-        const requiredPermission = `${Resource.TEAM_INVITATION}:${Action.CREATE}`;
-        const canManage = permissions.includes('*') || permissions.includes(requiredPermission);
-
-        if (!canManage) {
-            return Result.fail(ApplicationError.forbidden(
-                ErrorCodes.RBAC_INSUFFICIENT_PERMISSIONS,
-                'You do not have permission to manage invite codes'
-            ));
+        const permissionError = await getInviteCodePermissionError(this.teamMemberRepository, teamId, userId);
+        if (permissionError) {
+            return Result.fail(permissionError);
         }
 
         const team = await this.teamRepository.findById(teamId);

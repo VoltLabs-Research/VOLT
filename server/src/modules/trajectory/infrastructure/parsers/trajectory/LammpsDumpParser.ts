@@ -1,4 +1,8 @@
 import { FrameMetadata } from '@modules/trajectory/domain/contracts/trajectory';
+import {
+    applySimulationCellBounds,
+    createSimulationCell
+} from '@modules/trajectory/infrastructure/parsers/trajectory/lammps-simulation-cell';
 
 /**
  * LAMMPS dump header parser (metadata-only, pure JS).
@@ -13,14 +17,7 @@ export default class LammpsDumpParser {
         let timestep = 0;
         let natoms = 0;
         let headers: string[] = [];
-        let simulationCell: any = {
-            boundingBox: { width: 0, height: 0, length: 0 },
-            geometry: {
-                cell_vectors: [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
-                cell_origin: [0, 0, 0],
-                periodic_boundary_conditions: { x: false, y: false, z: false }
-            }
-        };
+        const simulationCell = createSimulationCell({ x: false, y: false, z: false });
 
         for (let i = 0; i < headerLines.length; i++) {
             const line = headerLines[i].trim();
@@ -45,52 +42,29 @@ export default class LammpsDumpParser {
                 const row2 = headerLines[i + 2].trim().split(/\s+/).map(Number);
                 const row3 = headerLines[i + 3].trim().split(/\s+/).map(Number);
 
-                if (pbcStartIdx === 6) { // Triclinic
-                    const xy = row1[2] || 0;
-                    const xz = row2[2] || 0;
-                    const yz = row3[2] || 0;
-
-                    const xlo_bound = row1[0] || 0;
-                    const xhi_bound = row1[1] || 0;
-                    const ylo_bound = row2[0] || 0;
-                    const yhi_bound = row2[1] || 0;
-                    const zlo_bound = row3[0] || 0;
-                    const zhi_bound = row3[1] || 0;
-
-                    const xlo = xlo_bound - Math.min(0.0, xy, xz, xy + xz);
-                    const xhi = xhi_bound - Math.max(0.0, xy, xz, xy + xz);
-                    const ylo = ylo_bound - Math.min(0.0, yz);
-                    const yhi = yhi_bound - Math.max(0.0, yz);
-                    const zlo = zlo_bound;
-                    const zhi = zhi_bound;
-
-                    simulationCell.geometry.cell_vectors = [
-                        [xhi - xlo, 0, 0],
-                        [xy, yhi - ylo, 0],
-                        [xz, yz, zhi - zlo]
-                    ];
-                    simulationCell.geometry.cell_origin = [xlo, ylo, zlo];
-                    simulationCell.boundingBox.width = xhi - xlo;
-                    simulationCell.boundingBox.length = yhi - ylo;
-                    simulationCell.boundingBox.height = zhi - zlo;
-
-                } else { // Orthogonal
-
-                    const lx = row1[1] - row1[0];
-                    const ly = row2[1] - row2[0];
-                    const lz = row3[1] - row3[0];
-
-                    simulationCell.geometry.cell_vectors = [
-                        [lx, 0, 0],
-                        [0, ly, 0],
-                        [0, 0, lz]
-                    ];
-                    simulationCell.geometry.cell_origin = [row1[0], row2[0], row3[0]];
-
-                    simulationCell.boundingBox.width = lx;
-                    simulationCell.boundingBox.length = ly;
-                    simulationCell.boundingBox.height = lz;
-                }
+                applySimulationCellBounds(
+                    simulationCell,
+                    pbcStartIdx === 6
+                        ? {
+                            xlo: row1[0] || 0,
+                            xhi: row1[1] || 0,
+                            ylo: row2[0] || 0,
+                            yhi: row2[1] || 0,
+                            zlo: row3[0] || 0,
+                            zhi: row3[1] || 0,
+                            xy: row1[2] || 0,
+                            xz: row2[2] || 0,
+                            yz: row3[2] || 0
+                        }
+                        : {
+                            xlo: row1[0],
+                            xhi: row1[1],
+                            ylo: row2[0],
+                            yhi: row2[1],
+                            zlo: row3[0],
+                            zhi: row3[1]
+                        }
+                );
 
             } else if (line.includes('ITEM: ATOMS')) {
                 // Format: ITEM: ATOMS id type x y z ...

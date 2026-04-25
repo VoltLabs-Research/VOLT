@@ -30,7 +30,7 @@ export default class ChatMessageRepository
         super(ChatMessageModel, chatMessageMapper);
     }
 
-    async create(data: ChatMessageProps): Promise<ChatMessage> {
+    async create(data: Partial<ChatMessageProps>): Promise<ChatMessage> {
         const persistenceData = this.mapper.toPersistence(data);
         const doc = await this.model.create(persistenceData);
 

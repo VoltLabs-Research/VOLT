@@ -6,6 +6,8 @@ interface EntityConstructor<TDomain, TProps> {
     new (_id: string, props: TProps): TDomain;
 };
 
+type EntityFactory<TDomain, TProps> = (_id: string, props: TProps) => TDomain;
+
 interface IdentifierValue {
     toString(): string;
 };
@@ -43,9 +45,16 @@ export class BaseMapper<
 > implements IMapper<TDomain, TProps, HydratedDocument<TDocument>> {
 
     constructor(
-        private readonly entityClass: EntityConstructor<TDomain, TProps>,
-        private readonly relationKeys: Array<Extract<keyof TProps, string>> = []
+        private readonly entityCreator: EntityConstructor<TDomain, TProps> | EntityFactory<TDomain, TProps>,
+        private readonly relationKeys: Array<Extract<keyof TProps, string>> = [],
+        private readonly useFactory = false
     ){}
+
+    private createEntity(_id: string, props: TProps): TDomain {
+        return this.useFactory
+            ? (this.entityCreator as EntityFactory<TDomain, TProps>)(_id, props)
+            : new (this.entityCreator as EntityConstructor<TDomain, TProps>)(_id, props);
+    }
 
     toDomain(doc: HydratedDocument<TDocument>): TDomain {
         const documentProps = doc.toObject({ flattenMaps: true }) as Record<string, unknown>;
@@ -68,7 +77,7 @@ export class BaseMapper<
             }
         });
 
-        return new this.entityClass(_id, props as TProps);
+        return this.createEntity(_id, props as TProps);
     }
 
     private getPersistenceSource(domainOrProps: TDomain | TProps | Partial<TProps>): Record<string, unknown> {

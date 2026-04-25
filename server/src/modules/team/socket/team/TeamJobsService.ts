@@ -115,7 +115,7 @@ export default class TeamJobsService {
         }
 
         if (staleJobIds.length > 0) {
-            this.redis.srem(this.projectedTeamJobsKey(teamId), ...staleJobIds).catch((error) => {
+            this.redis.srem(this.projectedTeamJobsKey(teamId), ...staleJobIds).catch(() => {
                 logger.warn(`Failed to prune stale projected team jobs staleJobCount=${staleJobIds.length} teamId=${teamId}`);
             });
         }

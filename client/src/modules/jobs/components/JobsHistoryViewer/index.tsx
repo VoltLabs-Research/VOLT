@@ -29,7 +29,7 @@ type ExitEase = [number, number, number, number];
 const SPRING_TRANSITION_TYPE: SpringTransitionType = 'spring';
 const PANEL_EXIT_EASE: ExitEase = [0.4, 0, 0.2, 1];
 
-export const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
+const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
     const {
         trajectoryId,
         hideAfterComplete = true,

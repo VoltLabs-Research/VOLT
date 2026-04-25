@@ -15,7 +15,7 @@ export default class SimulationCellRepository
         super(SimulationCellModel, simulationCellMapper);
     }
 
-    async createMany(items: SimulationCellProps[]): Promise<SimulationCell[]> {
+    async createMany(items: Array<Partial<SimulationCellProps>>): Promise<SimulationCell[]> {
         if (items.length === 0) return [];
 
         const persistenceDocs = items.map((item) => this.mapper.toPersistence(item));

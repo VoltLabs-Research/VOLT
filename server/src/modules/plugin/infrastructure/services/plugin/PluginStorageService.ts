@@ -116,7 +116,7 @@ export default class PluginStorageService implements IPluginStorageService {
         logger.info(`@plugin-storage-service: binary deleted: ${pathToDelete}`);
     }
 
-    async uploadBinary(pluginId: string, teamId: string, file: any): Promise<BinaryUploadResult> {
+    async uploadBinary(pluginId: string, _teamId: string, file: any): Promise<BinaryUploadResult> {
         const plugin = await this.pluginRepo.findById(pluginId);
         if (!plugin) {
             throw ApplicationError.notFound(

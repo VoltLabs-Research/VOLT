@@ -6,7 +6,7 @@ import { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/sce
 import { IColorCodingService } from '@modules/trajectory/domain/port/color-coding/IColorCodingService';
 import TrajectoryNativeDaemonService from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
 import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
-import { resolveSceneArtifactStorageCluster } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-storage-cluster';
+import { resolveSceneArtifactExecutionContext } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-execution-context';
 import { getLocalGlbStream } from '@modules/trajectory/utilities/storage/glb-stream-resolution';
 import { resolveTrajectoryNativeClusterContext } from '@modules/trajectory/utilities/team-cluster/resolve-trajectory-native-cluster-context';
 import { buildColorCodingObjectName } from '@modules/trajectory/utilities/trajectory/minio-path-builder';
@@ -213,35 +213,19 @@ export default class ColorCodingService implements IColorCodingService {
             endValue,
             gradient
         );
-        const storageClusterId = await resolveSceneArtifactStorageCluster({
+        const {
+            computeClusterId,
+            storageClusterId
+        } = await resolveSceneArtifactExecutionContext({
             trajectoryId: String(trajectoryId),
+            timestep: String(timestep),
             analysisId: resolvedAnalysisId,
             analysisRepository: this.analysisRepository,
-            trajectoryRepository: this.trajectoryRepository
+            trajectoryRepository: this.trajectoryRepository,
+            teamClusterSelectionService: this.teamClusterSelectionService,
+            dumpStorage: this.dumpStorage,
+            buildClusterRequiredError
         });
-
-        const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
-        if (!trajectory || !storageClusterId) {
-            throw buildClusterRequiredError();
-        }
-
-        const computeClusterId = await this.teamClusterSelectionService.resolveComputeClusterId(
-            trajectory.props.team,
-            undefined,
-            storageClusterId
-        );
-
-        const dumpExists = await this.dumpStorage.existsDump(
-            String(trajectoryId),
-            String(timestep)
-        );
-
-        if (!dumpExists) {
-            throw ApplicationError.notFound(
-                ErrorCodes.TRAJECTORY_DUMP_NOT_FOUND,
-                `Trajectory dump for timestep ${timestep} not found`
-            );
-        }
 
         const modifierSource = exposureId && resolvedAnalysisId
             ? await this.resolveRemoteModifierSource(

@@ -160,7 +160,7 @@ export abstract class MongooseBaseRepository<TDomain, TProps, TDocument extends 
         return docs.map((doc) => this.toDomainEntity(doc));
     }
 
-    async create(data: TProps): Promise<TDomain> {
+    async create(data: Partial<TProps>): Promise<TDomain> {
         const persistenceData = this.mapper.toPersistence(data);
         const doc = await this.model.create(persistenceData);
         return this.mapper.toDomain(doc);

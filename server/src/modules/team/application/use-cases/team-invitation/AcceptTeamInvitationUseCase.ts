@@ -6,11 +6,9 @@ import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo
 import TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-role/TeamRoleRepository';
 import TeamRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team/TeamRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { inject, injectable } from 'tsyringe';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamInvitationInputDTO, AcceptTeamInvitationOutputDTO, ApplicationError> {
@@ -25,10 +23,7 @@ export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamI
         private readonly teamRepository: TeamRepository,
 
         
-        private readonly teamRoleRepository: TeamRoleRepository,
-
-        @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus
+        private readonly teamRoleRepository: TeamRoleRepository
     ){}
 
     async execute(input: AcceptTeamInvitationInputDTO): Promise<Result<AcceptTeamInvitationOutputDTO, ApplicationError>> {

@@ -13,7 +13,7 @@ import type { EntrypointEditorFormValues } from './schema';
 const UPLOAD_ACCESS_DENIED_MESSAGE = 'You do not have permission to upload binaries';
 const DELETE_ACCESS_DENIED_MESSAGE = 'You do not have permission to delete binaries';
 
-export const useEntrypointBinaryActions = (
+const useEntrypointBinaryActions = (
     nodeId: string,
     form: UseFormReturn<EntrypointEditorFormValues>
 ) => {

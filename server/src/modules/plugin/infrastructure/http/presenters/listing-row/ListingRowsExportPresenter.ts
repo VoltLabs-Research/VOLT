@@ -38,7 +38,7 @@ export class ListingRowsExportPresenter {
         return `AnalysisID-${analysisId}`;
     }
 
-    private getEmptyListing(analysisId: string): AnalysisListingExportData {
+    private getEmptyListing(): AnalysisListingExportData {
         return {
             listingId: 'listing',
             listingName: 'listing',
@@ -100,7 +100,7 @@ export class ListingRowsExportPresenter {
         const hasConfig = this.hasConfig(payload.config);
 
         if (payload.listings.length <= 1 && payload.subListings.length === 0 && !hasConfig) {
-            const listing = payload.listings[0] || this.getEmptyListing(payload.analysisId);
+            const listing = payload.listings[0] || this.getEmptyListing();
             const listingName = sanitizeDownloadName(listing.listingName, 'listing');
 
             return createSerializedDownloadResponse({

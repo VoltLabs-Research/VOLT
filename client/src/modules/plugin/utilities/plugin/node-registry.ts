@@ -90,7 +90,7 @@ export const EXPORT_TYPE_OPTIONS: NodeOption<ExportType>[] = [{
     label: 'Chart (PNG Image)'
 }];
 
-export const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
+const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
     [NodeType.MODIFIER]: {
         type: NodeType.MODIFIER,
         label: 'Modifier',

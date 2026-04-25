@@ -127,7 +127,7 @@ const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSec
     ];
 };
 
-export const useDashboardGlobalSearch = () => {
+const useDashboardGlobalSearch = () => {
     const navigate = useNavigate();
     const setSelectedTeamId = useTeamStore((state) => state.setSelectedTeamId);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);

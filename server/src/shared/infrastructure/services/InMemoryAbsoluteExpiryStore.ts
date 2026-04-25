@@ -1,4 +1,4 @@
-interface InMemoryAbsoluteExpiryStoreOptions<TKey, TValue> {
+interface InMemoryAbsoluteExpiryStoreOptions<TValue> {
     getExpiresAt: (value: TValue) => number;
     sweepIntervalMs: number;
 };
@@ -10,7 +10,7 @@ export class InMemoryAbsoluteExpiryStore<TKey, TValue> {
     private readonly entriesByKey = new Map<TKey, TValue>();
     private readonly sweepTimer: ReturnType<typeof setInterval>;
 
-    constructor(private readonly options: InMemoryAbsoluteExpiryStoreOptions<TKey, TValue>) {
+    constructor(private readonly options: InMemoryAbsoluteExpiryStoreOptions<TValue>) {
         this.sweepTimer = setInterval(() => this.sweepExpired(), this.options.sweepIntervalMs);
         this.sweepTimer.unref();
     }

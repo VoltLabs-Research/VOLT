@@ -16,9 +16,62 @@ interface DashboardOverviewCardProps {
     icon: ReactNode;
 };
 
+interface DashboardStatContentProps extends DashboardOverviewCardProps {
+    isPositiveTrend: boolean;
+    className?: string;
+};
+
+interface DashboardSparklineProps {
+    card: DashboardMetricsCard;
+    color: string;
+};
+
+const getTrendColor = (isPositiveTrend: boolean): string => {
+    const colorVariable = isPositiveTrend ? '--accent-green' : '--accent-red';
+    return getComputedStyle(document.documentElement).getPropertyValue(colorVariable).trim() || '#30d158';
+};
+
+const DashboardStatContent = ({ card, icon, isPositiveTrend, className }: DashboardStatContentProps) => {
+    const TrendIcon = isPositiveTrend ? FaArrowUpLong : FaArrowDownLong;
+
+    return (
+        <Stack gap='1' position='relative' zIndex='5' className={className}>
+            <Row gap='075'>
+                <IconFrame size='md' className='dashboard-stat-card-icon'>
+                    {icon}
+                </IconFrame>
+                <Text size='md' weight='medium'>{card.name}</Text>
+            </Row>
+
+            <Row align='end' gap='075'>
+                <span className='dashboard-stat-value'>{card.count}</span>
+                <Row gap='025' className={`dashboard-stat-trend ${isPositiveTrend ? 'up' : 'down'}`} style={{ marginBottom: '0.3rem' }}>
+                    <TrendIcon size={10} />
+                    <span>{Math.abs(card.lastMonthStatus ?? 0)}%</span>
+                </Row>
+            </Row>
+
+            <Text size='sm' tone='muted'>vs last month</Text>
+        </Stack>
+    );
+};
+
+const DashboardSparkline = ({ card, color }: DashboardSparklineProps) => (
+    <Box position='absolute' bottom='0' right='0' className='dashboard-stat-sparkline'>
+        <Sparkline
+            color={color}
+            values={card.series}
+            labels={card.labels}
+            yDomain={card.yDomain}
+            width={160}
+            height={60}
+        />
+    </Box>
+);
+
 const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
     const navigate = useNavigate();
-    const up = (card.lastMonthStatus ?? 0) >= 0;
+    const isPositiveTrend = (card.lastMonthStatus ?? 0) >= 0;
     const isClickable = Boolean(card.listingUrl && !card.listingUrl.includes(':trajectoryId'));
 
     const handleClick = () => {
@@ -27,15 +80,7 @@ const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
         }
     };
 
-    let lineColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim();
-    if (up) {
-        lineColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-green').trim();
-    }
-
-    let trendIcon = <FaArrowDownLong size={10} />;
-    if (up) {
-        trendIcon = <FaArrowUpLong size={10} />;
-    }
+    const lineColor = getTrendColor(isPositiveTrend);
 
     return (
         <DashboardCard className='dashboard-stat-card' isRelative={true} overflowHidden={true}>
@@ -46,71 +91,18 @@ const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
                     onClick={handleClick}
                     aria-label={`Open ${card.name}`}
                 >
-                    <Stack gap='1' position='relative' zIndex='5'>
-                        <Row gap='075'>
-                            <IconFrame size='md' className='dashboard-stat-card-icon'>
-                                {icon}
-                            </IconFrame>
-                            <Text size='md' weight='medium'>{card.name}</Text>
-                        </Row>
-
-                        <Row align='end' gap='075'>
-                            <span className='dashboard-stat-value'>{card.count}</span>
-                            <Row gap='025' className={`dashboard-stat-trend ${up ? 'up' : 'down'}`} style={{ marginBottom: '0.3rem' }}>
-                                {trendIcon}
-                                <span>{Math.abs(card.lastMonthStatus ?? 0)}%</span>
-                            </Row>
-                        </Row>
-
-                        <Text size='sm' tone='muted'>vs last month</Text>
-                    </Stack>
+                    <DashboardStatContent card={card} icon={icon} isPositiveTrend={isPositiveTrend} />
 
                     <Box position='absolute' top='1' right='1' className='dashboard-stat-navigate'>
                         <GoArrowRight />
                     </Box>
 
-                    <Box position='absolute' bottom='0' right='0' className='dashboard-stat-sparkline'>
-                        <Sparkline
-                            color={lineColor || '#30d158'}
-                            values={card.series}
-                            labels={card.labels}
-                            yDomain={card.yDomain}
-                            width={160}
-                            height={60}
-                        />
-                    </Box>
+                    <DashboardSparkline card={card} color={lineColor} />
                 </button>
             ) : (
                 <>
-                    <Stack gap='1' position='relative' zIndex='5' className='dashboard-stat-card-content'>
-                        <Row gap='075'>
-                            <IconFrame size='md' className='dashboard-stat-card-icon'>
-                                {icon}
-                            </IconFrame>
-                            <Text size='md' weight='medium'>{card.name}</Text>
-                        </Row>
-
-                        <Row align='end' gap='075'>
-                            <span className='dashboard-stat-value'>{card.count}</span>
-                            <Row gap='025' className={`dashboard-stat-trend ${up ? 'up' : 'down'}`} style={{ marginBottom: '0.3rem' }}>
-                                {trendIcon}
-                                <span>{Math.abs(card.lastMonthStatus ?? 0)}%</span>
-                            </Row>
-                        </Row>
-
-                        <Text size='sm' tone='muted'>vs last month</Text>
-                    </Stack>
-
-                    <Box position='absolute' bottom='0' right='0' className='dashboard-stat-sparkline'>
-                        <Sparkline
-                            color={lineColor || '#30d158'}
-                            values={card.series}
-                            labels={card.labels}
-                            yDomain={card.yDomain}
-                            width={160}
-                            height={60}
-                        />
-                    </Box>
+                    <DashboardStatContent card={card} icon={icon} isPositiveTrend={isPositiveTrend} className='dashboard-stat-card-content' />
+                    <DashboardSparkline card={card} color={lineColor} />
                 </>
             )}
         </DashboardCard>

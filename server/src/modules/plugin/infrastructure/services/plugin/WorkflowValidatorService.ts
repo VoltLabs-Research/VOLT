@@ -490,35 +490,6 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
         return false;
     }
 
-    private hasDescendantOfType(nodeId: string, workflow: WorkflowProps, allowedTypes: Set<WorkflowNodeType>): boolean {
-        const visited = new Set<string>();
-        const queue = [nodeId];
-
-        while (queue.length > 0) {
-            const currentNodeId = queue.shift() as string;
-            if (visited.has(currentNodeId)) {
-                continue;
-            }
-
-            visited.add(currentNodeId);
-            const childEdges = workflow.edges.filter((edge) => edge.source === currentNodeId);
-            for (const edge of childEdges) {
-                const childNode = workflow.nodes.find((candidate) => candidate.id === edge.target);
-                if (!childNode) {
-                    continue;
-                }
-
-                if (allowedTypes.has(childNode.type)) {
-                    return true;
-                }
-
-                queue.push(childNode.id);
-            }
-        }
-
-        return false;
-    }
-
     private isAllowedEdge(
         sourceType: WorkflowNodeType,
         targetType: WorkflowNodeType,

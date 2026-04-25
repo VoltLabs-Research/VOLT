@@ -5,7 +5,6 @@ import zlib from 'node:zlib';
 import type TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 import {
-    buildTrajectoryGlbObjectName,
     isZstdObjectName,
     stripTrailingZstdExtension
 } from './trajectory-storage-codec';
@@ -32,19 +31,6 @@ interface GlbStreamRequestContext {
      */
     acceptEncoding: string | undefined;
 }
-
-const resolveTrajectoryGlbObjectName = async (
-    trajectoryId: string,
-    timestep: string | number,
-    checker: (objectName: string) => Promise<boolean>
-): Promise<string> => {
-    const compressed = buildTrajectoryGlbObjectName(trajectoryId, timestep);
-    if (await checker(compressed)) {
-        return compressed;
-    }
-
-    throw new Error(`GLB model not found for trajectory=${trajectoryId} timestep=${timestep}`);
-};
 
 const supportsEncoding = (acceptEncoding: string | undefined, token: 'zstd' | 'br' | 'gzip'): boolean => {
     if (!acceptEncoding) return false;
