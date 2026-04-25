@@ -4,7 +4,7 @@ import type { ChangeEvent } from 'react';
 import type { Node } from '@xyflow/react';
 import CollapsibleSection from '@/shared/presentation/primitives/CollapsibleSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import usePluginBuilderStore from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
+import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import type { INodeData, NodeConnectorSide } from '@/modules/plugin/api/entities/plugin/workflow';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import {

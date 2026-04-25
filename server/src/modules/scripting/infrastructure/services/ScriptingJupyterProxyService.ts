@@ -161,7 +161,6 @@ export class ScriptingJupyterProxyService {
     private readonly authorizedProxyContextCache = new Map<string, AuthorizedProxyCacheEntry>();
     private readonly notebookRuntimeCache = new Map<string, NotebookRuntimeCacheEntry>();
     private readonly httpProxySessions = new Map<string, HttpProxySessionEntry[]>();
-    private readonly httpProxySessionSweepTimer = this.startHttpProxySessionSweep();
 
     constructor(
         
@@ -175,7 +174,9 @@ export class ScriptingJupyterProxyService {
 
         
         private readonly accessTokenService: ScriptingJupyterAccessTokenService
-    ) {}
+    ) {
+        this.startHttpProxySessionSweep();
+    }
 
     public proxyHttpRequest = async (req: Request, res: Response): Promise<void> => {
         let httpProxySession: HttpProxySessionEntry | null = null;
@@ -288,8 +289,7 @@ export class ScriptingJupyterProxyService {
                 head,
                 context,
                 upstreamWebSocketUrl,
-                requestedProtocols,
-                logContext
+                requestedProtocols
             );
         } catch (error: unknown) {
             const mappedError = this.mapNotebookProxyError(error);
@@ -308,8 +308,7 @@ export class ScriptingJupyterProxyService {
         head: Buffer,
         context: AuthorizedProxyContext,
         upstreamWebSocketUrl: string,
-        requestedProtocols: string[] | undefined,
-        logContext: Record<string, unknown>
+        requestedProtocols: string[] | undefined
     ): Promise<void> {
         const upstreamWebSocket = await this.teamClusterDaemonClient.attachWebSocket(
             context.teamClusterId,
@@ -370,7 +369,7 @@ export class ScriptingJupyterProxyService {
             }
 
             logger.info(`Completed client Jupyter websocket upgrade upstreamMode=${'reverse-websocket'} negotiatedProtocol=${negotiatedProtocol}`);
-            this.bindReverseChannelWebSocketProxy(webSocket, upstreamWebSocket, logContext);
+            this.bindReverseChannelWebSocketProxy(webSocket, upstreamWebSocket);
         }, negotiatedProtocol);
     }
 
@@ -572,8 +571,7 @@ export class ScriptingJupyterProxyService {
 
     private bindReverseChannelWebSocketProxy(
         webSocket: WebSocket,
-        upstreamWebSocket: TeamClusterReverseWebSocketStream,
-        logContext: Record<string, unknown>
+        upstreamWebSocket: TeamClusterReverseWebSocketStream
     ): void {
         upstreamWebSocket.on('data', ({ data, isBinary }) => {
             if (webSocket.readyState !== WebSocket.OPEN) {

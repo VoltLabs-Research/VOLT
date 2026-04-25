@@ -217,7 +217,7 @@ export default class TeamClusterDaemonClient {
             ? response.data.message
             : (response.message || `Daemon command "${command}" failed with status ${response.status}`);
 
-        logger.warn(`logLabel command=${command} status=${response.status} code=${errorCode} message=${errorMessage}`);
+        logger.warn(`${logLabel} command=${command} status=${response.status} code=${errorCode} message=${errorMessage}`);
 
         throw mapDaemonStatusToApplicationError(response.status, errorCode, errorMessage);
     }

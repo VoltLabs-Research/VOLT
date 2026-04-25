@@ -1,5 +1,5 @@
 import { usePluginByIdQuery } from './queries';
-import usePluginBuilderStore from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
+import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { useEffect } from 'react';

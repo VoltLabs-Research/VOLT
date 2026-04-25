@@ -102,7 +102,7 @@ export default class TempStorageLifecycleService implements ITempStorageLifecycl
         await this.runCleanupCycle();
 
         this.cleanupTimer = setInterval(() => {
-            this.runCleanupCycle().catch((error: unknown) => {
+            this.runCleanupCycle().catch(() => {
                 logger.warn(`@temp-storage-lifecycle-service: periodic cleanup failed`);
             });
         }, TEMP_STORAGE_CLEANUP_INTERVAL_MS);

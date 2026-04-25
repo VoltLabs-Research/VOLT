@@ -1,14 +1,10 @@
 import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
 import { resolveScreenshotScale, resolveScreenshotSize } from '@/modules/canvas/utilities/screenshot';
 import {
-    getAngleDirection,
-    getAngleUpVector,
+    applyCameraAnglePreset,
     getBoxCorners,
     getCaptureBounds,
-    getFallbackBoxFromModelWorldBounds,
-    resolveOrthographicFraming,
-    resolvePerspectiveDistance,
-    resolveViewBasis
+    getFallbackBoxFromModelWorldBounds
 } from '@/modules/fractal/utilities/camera-framing';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useEffect, useRef, useCallback } from 'react';
@@ -263,11 +259,6 @@ const ScreenshotCapture = ({
     }, [camera, orbitRef]);
 
     const applyAnglePreset = useCallback((request: ScreenshotRequest) => {
-        const direction = getAngleDirection(request.anglePreset);
-        if (!direction) {
-            return;
-        }
-
         const controls = orbitRef?.current;
         const captureBounds = getCaptureBounds(
             scene,
@@ -275,34 +266,14 @@ const ScreenshotCapture = ({
             screenshotComposition?.framingBoundsWorld
         );
         const target = captureBounds?.center.clone() ?? controls?.target.clone() ?? new Vector3(0, 0, 0);
-        const basis = resolveViewBasis(direction, getAngleUpVector(request.anglePreset, scene.up));
-
-        let distance = Math.max(controls?.minDistance ?? 0.1, 1);
-
-        if (captureBounds && camera instanceof PerspectiveCamera) {
-            distance = resolvePerspectiveDistance(captureBounds, basis, camera, controls?.minDistance ?? 0.1);
-        } else if (captureBounds && camera instanceof OrthographicCamera) {
-            const orthographicFraming = resolveOrthographicFraming(captureBounds, basis, camera, controls?.minDistance ?? 0.1);
-            distance = orthographicFraming.distance;
-            camera.zoom = orthographicFraming.zoom;
-        } else {
-            distance = Math.max(controls?.minDistance ?? 0.1, 8);
-        }
-
-        camera.position.copy(target.clone().addScaledVector(direction, distance));
-        camera.up.copy(basis.up);
-
-        if ('updateProjectionMatrix' in camera && typeof camera.updateProjectionMatrix === 'function') {
-            camera.updateProjectionMatrix();
-        }
-
-        if (controls) {
-            controls.target.copy(target);
-            controls.update();
-            return;
-        }
-
-        camera.lookAt(target);
+        applyCameraAnglePreset({
+            anglePreset: request.anglePreset,
+            camera,
+            sceneUp: scene.up,
+            target,
+            captureBounds,
+            controls
+        });
     }, [camera, modelWorldBounds, orbitRef, scene, screenshotComposition?.framingBoundsWorld]);
 
     const finishCapture = useCallback(async (pending: PendingCapture) => {

@@ -11,7 +11,7 @@ import {
     registerSharedAppCleanup
 } from '@/shared/utils/app-cleanup-registry';
 import useTeamJobsStore from '@/modules/jobs/stores/use-team-jobs-store';
-import usePluginBuilderStore from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
+import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 
 import queryClient from '@/shared/infrastructure/query/query-client';
 

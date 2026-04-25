@@ -1,4 +1,5 @@
 import { GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysesByTeamIdDTO';
+import type { Analysis } from '@modules/analysis/domain/entities/Analysis';
 import type { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
 import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import { extractPluginId } from '@modules/analysis/infrastructure/services/AnalysisPluginDisplayNameService';
@@ -70,7 +71,7 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
                 page: input.page
             });
 
-        const mappedData = results.data.map((analysis) => {
+        const mappedData = results.data.map((analysis: Analysis) => {
             const props = { ...analysis.props };
             const pluginValue = props.plugin;
             const pluginId = extractPluginId(pluginValue);

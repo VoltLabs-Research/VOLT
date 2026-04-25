@@ -2,7 +2,7 @@ import { BaseController } from '@shared/infrastructure/http/controllers/BaseCont
 import logger from '@shared/infrastructure/logger';
 import type { Response } from 'express';
 import type { Readable } from 'node:stream';
-import type { IUseCase, UseCaseOutput } from '@shared/application/IUseCase';
+import type { IUseCase } from '@shared/application/IUseCase';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 
 export interface StreamableOutput {

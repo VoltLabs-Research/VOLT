@@ -1,16 +1,14 @@
 import {
+    createFolderValidationSchemas,
     createPaginationQuerySchema,
     objectIdSchema,
-    teamParamsSchema,
-    createTeamScopedParamsSchema
+    teamParamsSchema
 } from '@shared/infrastructure/http/validation/shared-schemas';
 import { z } from 'zod/v4';
 
 const documentParamsSchema = teamParamsSchema.extend({
     documentId: objectIdSchema
 }).strict();
-
-const folderParamsSchema = createTeamScopedParamsSchema('folderId');
 
 const assetParamsSchema = documentParamsSchema.extend({
     assetId: objectIdSchema
@@ -47,6 +45,8 @@ const updateFileBodySchema = z.object({
     (data) => data.name !== undefined || data.path !== undefined || data.content !== undefined,
     { message: 'At least one of name, path or content must be provided' }
 );
+
+const folderValidation = createFolderValidationSchemas();
 
 export const latexValidation = {
     listDocuments: {
@@ -116,31 +116,7 @@ export const latexValidation = {
     setFileEntrypoint: {
         params: fileParamsSchema
     },
-    createFolder: {
-        params: teamParamsSchema,
-        body: z.object({
-            title: z.string().trim().min(1).max(255),
-            parentId: objectIdSchema.nullable().optional()
-        }).strict()
-    },
-    listFolders: {
-        params: teamParamsSchema,
-        query: createPaginationQuerySchema({ maxLimit: 500 }).extend({
-            parentId: z.string().optional()
-        })
-    },
-    getFolder: {
-        params: folderParamsSchema
-    },
-    updateFolder: {
-        params: folderParamsSchema,
-        body: z.object({
-            title: z.string().trim().min(1).max(255)
-        }).strict()
-    },
-    deleteFolder: {
-        params: folderParamsSchema
-    },
+    ...folderValidation,
     moveDocument: {
         params: documentParamsSchema,
         body: z.object({

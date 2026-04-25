@@ -9,6 +9,7 @@ import {
 } from 'three';
 
 import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
+import type { Camera } from 'three';
 
 export type CameraAnglePreset =
     | 'current'
@@ -31,6 +32,22 @@ export interface ViewBasis {
     forward: Vector3;
     right: Vector3;
     up: Vector3;
+}
+
+interface CameraControlsTarget {
+    target: Vector3;
+    minDistance?: number;
+    update: () => void;
+}
+
+interface ApplyCameraAnglePresetOptions {
+    anglePreset: CameraAnglePreset;
+    camera: Camera;
+    sceneUp: Vector3;
+    target: Vector3;
+    captureBounds?: CaptureBounds | null;
+    controls?: CameraControlsTarget | null;
+    fallbackDistance?: number;
 }
 
 export const FRAMING_CAPTURE_TARGET_KEY = 'isScreenshotCaptureTarget';
@@ -239,4 +256,49 @@ export const resolveOrthographicFraming = (
     );
 
     return { distance, zoom };
+};
+
+export const applyCameraAnglePreset = ({
+    anglePreset,
+    camera,
+    sceneUp,
+    target,
+    captureBounds,
+    controls,
+    fallbackDistance = 8
+}: ApplyCameraAnglePresetOptions): boolean => {
+    const direction = getAngleDirection(anglePreset);
+    if (!direction) {
+        return false;
+    }
+
+    const minDistance = controls?.minDistance ?? 0.1;
+    const basis = resolveViewBasis(direction, getAngleUpVector(anglePreset, sceneUp));
+    let distance = Math.max(minDistance, 1);
+
+    if (captureBounds && camera instanceof PerspectiveCamera) {
+        distance = resolvePerspectiveDistance(captureBounds, basis, camera, minDistance);
+    } else if (captureBounds && camera instanceof OrthographicCamera) {
+        const orthographicFraming = resolveOrthographicFraming(captureBounds, basis, camera, minDistance);
+        distance = orthographicFraming.distance;
+        camera.zoom = orthographicFraming.zoom;
+    } else {
+        distance = Math.max(minDistance, fallbackDistance);
+    }
+
+    camera.position.copy(target.clone().addScaledVector(direction, distance));
+    camera.up.copy(basis.up);
+
+    if ('updateProjectionMatrix' in camera && typeof camera.updateProjectionMatrix === 'function') {
+        camera.updateProjectionMatrix();
+    }
+
+    if (controls) {
+        controls.target.copy(target);
+        controls.update();
+    } else {
+        camera.lookAt(target);
+    }
+
+    return true;
 };

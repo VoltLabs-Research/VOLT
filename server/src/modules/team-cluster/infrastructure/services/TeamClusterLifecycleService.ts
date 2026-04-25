@@ -1,6 +1,7 @@
 import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
 import type { SystemMetrics } from '@modules/system/domain/value-objects/SystemMetrics';
 import SystemMetricsRedisRepository from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisRepository';
+import type { TeamClusterHeartbeatMetricsDTO } from '@modules/team-cluster/application/dtos/RecordTeamClusterHeartbeatDTO';
 import { TeamClusterDTO, toTeamClusterDTO } from '@modules/team-cluster/application/dtos/TeamClusterDTO';
 import TeamCluster, {
     TeamClusterRuntimeRoleConfigProps,
@@ -101,43 +102,6 @@ const HEARTBEAT_LOCKED_STATUSES = new Set<TeamClusterStatus>([
     TeamClusterStatus.UpdateFailed
 ]);
 
-interface DaemonMetricsSnapshot {
-    timestamp: string;
-    hostname: string;
-    uptimeSeconds: number;
-    cpuUsagePercent: number;
-    cpuLoadAverage: number[];
-    cpuPerCoreUsagePercent: number[];
-    memory: {
-        totalBytes: number;
-        freeBytes: number;
-        usedBytes: number;
-        usagePercent: number;
-    };
-    disk: {
-        totalBytes: number;
-        freeBytes: number;
-        usedBytes: number;
-        usagePercent: number;
-    };
-    diskOperations: {
-        readMegabytesPerSecond: number;
-        writeMegabytesPerSecond: number;
-        readIOPS: number;
-        writeIOPS: number;
-        totalIOPS: number;
-    };
-    network: {
-        incomingKilobytesPerSecond: number;
-        outgoingKilobytesPerSecond: number;
-        totalKilobytesPerSecond: number;
-        receivedBytes: number;
-        sentBytes: number;
-    };
-    cloudLatencyMs: number | null;
-    connectedToCloud: boolean;
-};
-
 interface TeamClusterLifecycleUpdate {
     status: TeamClusterStatus;
     installedVersion?: string;
@@ -232,7 +196,7 @@ export default class TeamClusterLifecycleService {
         runtime?: {
             roleConfig: TeamClusterRuntimeRoleConfigProps;
         },
-        metrics?: DaemonMetricsSnapshot
+        metrics?: TeamClusterHeartbeatMetricsDTO
     ): Promise<TeamClusterDTO> {
         const teamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
         const nextStatus = HEARTBEAT_LOCKED_STATUSES.has(teamCluster.props.status)
@@ -262,7 +226,7 @@ export default class TeamClusterLifecycleService {
         if (metrics) {
             const systemMetrics = this.toSystemMetrics(updatedTeamCluster.id, metrics);
 
-            void this.systemMetricsRepository.save(systemMetrics).catch((error: unknown) => {
+            void this.systemMetricsRepository.save(systemMetrics).catch(() => {
                 logger.warn(`Failed to persist system metrics snapshot after heartbeat acknowledgement teamClusterId=${updatedTeamCluster.id}`);
             });
 
@@ -311,7 +275,7 @@ export default class TeamClusterLifecycleService {
         return toTeamClusterDTO(updatedTeamCluster);
     }
 
-    private toSystemMetrics(teamClusterId: string, metrics: DaemonMetricsSnapshot): SystemMetrics {
+    private toSystemMetrics(teamClusterId: string, metrics: TeamClusterHeartbeatMetricsDTO): SystemMetrics {
         const timestamp = new Date(metrics.timestamp);
         const safeTimestamp = Number.isNaN(timestamp.getTime()) ? new Date() : timestamp;
 

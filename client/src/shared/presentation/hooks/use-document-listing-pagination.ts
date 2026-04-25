@@ -39,7 +39,7 @@ interface UseDocumentListingPaginationReturn<T extends { _id: string }> {
  * Uses TanStack Query's useInfiniteQuery to manage server state.
  * URL search params are still used for search and limit via usePaginationParams.
  */
-export function useDocumentListingPagination<T extends { _id: string }, TContext = Record<string, never>>(
+function useDocumentListingPagination<T extends { _id: string }, TContext = Record<string, never>>(
     props: UseDocumentListingPaginationProps<T, TContext>
 ): UseDocumentListingPaginationReturn<T> {
     const {

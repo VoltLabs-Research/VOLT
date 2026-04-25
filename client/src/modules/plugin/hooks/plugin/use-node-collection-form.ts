@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import type { Node } from '@xyflow/react';
-import usePluginBuilderStore from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
+import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import type { INodeData } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { ChangeEvent } from 'react';
 
@@ -8,7 +8,7 @@ import type { ChangeEvent } from 'react';
  * Hook for managing array/collection data within node editors.
  * Provides CRUD operations for items in arrays without fallbacks.
  */
-export const useNodeCollectionForm = <T extends object>(
+const useNodeCollectionForm = <T extends object>(
     node: Node<INodeData>,
     dataKey: keyof INodeData,
     itemsKey: string,

@@ -1,4 +1,3 @@
-import { ErrorCodes } from '@core/constants/error-codes';
 import {
     createController,
     createPaginatedController,
@@ -6,7 +5,6 @@ import {
     createStreamController
 } from '@shared/infrastructure/http/controllers/createController';
 import { AuthenticationType } from '@shared/infrastructure/http/middleware/authentication';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import { canvasValidationSchemas } from '@modules/trajectory/infrastructure/http/validation/canvas';
 import { GetPublicCanvasBootstrapUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasBootstrapUseCase';
 import { GetPublicCanvasDumpUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasDumpUseCase';
@@ -31,6 +29,10 @@ import { GetPublicCanvasPluginExposureGLBUseCase } from '@modules/trajectory/app
 import { GetPublicCanvasAnalysisFrameLogUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasAnalysisFrameLogUseCase';
 import { GetPublicCanvasRasterMetadataUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasRasterMetadataUseCase';
 import GetPublicCanvasAtomsBinaryController from './GetPublicCanvasAtomsBinaryController';
+import {
+    sendTrajectoryPreview,
+    sendTrajectoryPreviewError
+} from '@modules/trajectory/infrastructure/http/controllers/trajectory-preview-response';
 import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
@@ -79,20 +81,9 @@ const GetPublicCanvasPreviewController = createController(GetPublicCanvasPreview
     validationSchema: canvasValidationSchemas.getPreview,
     extendParams: withOptionalUserId,
     handleSuccess: (_req, res, value: GetPublicCanvasPreviewOutput) => {
-        const request = res.req;
-
-        if (request?.headers['if-none-match'] === value.etag) {
-            res.status(304).send();
-            return;
-        }
-
-        res.setHeader('Cache-Control', 'public, max-age=86400');
-        res.setHeader('ETag', value.etag);
-        BaseResponse.success(res, value.base64);
+        sendTrajectoryPreview(res, value);
     },
-    handleUnexpectedError: (res) => {
-        BaseResponse.error(res, 'Failed to retrieve trajectory preview', 500, ErrorCodes.INTERNAL_SERVER_ERROR);
-    }
+    handleUnexpectedError: sendTrajectoryPreviewError
 });
 
 const GetPublicCanvasRasterFrameController = createPreparedDownloadStreamController(GetPublicCanvasRasterFrameUseCase, {

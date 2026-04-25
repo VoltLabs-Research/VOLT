@@ -407,5 +407,3 @@ export const usePluginBuilderStore = create<PluginBuilderStore>()(
         }
     )
 );
-
-export default usePluginBuilderStore;

@@ -1,14 +1,9 @@
 import { useThree } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
-import { OrthographicCamera, PerspectiveCamera } from 'three';
 
 import {
-    getAngleDirection,
-    getAngleUpVector,
-    getCaptureBounds,
-    resolveOrthographicFraming,
-    resolvePerspectiveDistance,
-    resolveViewBasis
+    applyCameraAnglePreset,
+    getCaptureBounds
 } from '@/modules/fractal/utilities/camera-framing';
 
 import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
@@ -28,41 +23,19 @@ const InitialCameraPose = ({ orbitRef, modelWorldBounds }: InitialCameraPoseProp
         if (hasAppliedRef.current) return;
         if (!modelWorldBounds) return;
 
-        const controls = orbitRef?.current;
-        const direction = getAngleDirection('front');
-        if (!direction) return;
-
         const captureBounds = getCaptureBounds(scene, modelWorldBounds);
         if (!captureBounds) return;
 
+        const controls = orbitRef?.current;
         const target = captureBounds.center.clone();
-        const basis = resolveViewBasis(direction, getAngleUpVector('front', scene.up));
-
-        let distance = Math.max(controls?.minDistance ?? 0.1, 1);
-
-        if (camera instanceof PerspectiveCamera) {
-            distance = resolvePerspectiveDistance(captureBounds, basis, camera, controls?.minDistance ?? 0.1);
-        } else if (camera instanceof OrthographicCamera) {
-            const orthographicFraming = resolveOrthographicFraming(captureBounds, basis, camera, controls?.minDistance ?? 0.1);
-            distance = orthographicFraming.distance;
-            camera.zoom = orthographicFraming.zoom;
-        } else {
-            distance = Math.max(controls?.minDistance ?? 0.1, 8);
-        }
-
-        camera.position.copy(target.clone().addScaledVector(direction, distance));
-        camera.up.copy(basis.up);
-
-        if ('updateProjectionMatrix' in camera && typeof camera.updateProjectionMatrix === 'function') {
-            camera.updateProjectionMatrix();
-        }
-
-        if (controls) {
-            controls.target.copy(target);
-            controls.update();
-        } else {
-            camera.lookAt(target);
-        }
+        applyCameraAnglePreset({
+            anglePreset: 'front',
+            camera,
+            sceneUp: scene.up,
+            target,
+            captureBounds,
+            controls
+        });
 
         hasAppliedRef.current = true;
         invalidate();

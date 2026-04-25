@@ -13,7 +13,7 @@ export class GetColorCodingStatsUseCase extends ValidatedServiceUseCase<
 > {
     constructor(
         
-        private readonly colorCodingService: ColorCodingService
+        colorCodingService: ColorCodingService
     ) {
         super(
             colorCodingService,
