@@ -81,7 +81,7 @@ export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, L
             accessiblePorts: container.accessiblePorts?.map((port) => ({ ...port }))
         })) as Container[];
 
-        void this.syncRuntimeStatus(containersSnapshot).catch((error: unknown) => {
+        void this.syncRuntimeStatus(containersSnapshot).catch(() => {
             logger.warn(`Background container runtime sync failed containerCount=${containers.length}`);
         });
     }

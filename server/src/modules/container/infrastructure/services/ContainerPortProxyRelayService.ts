@@ -129,7 +129,7 @@ export class ContainerPortProxyRelayService {
         await this.portAllocator.listen(server, relayPort, this.bindHost);
 
         const cleanupTimer = setTimeout(() => {
-            this.closeSession(sessionId).catch((error: unknown) => {
+            this.closeSession(sessionId).catch(() => {
                 logger.error(`Failed to close expired container port proxy session sessionId=${sessionId}`);
             });
         }, this.sessionTtlMs);
@@ -284,7 +284,7 @@ export class ContainerPortProxyRelayService {
         }
 
         if (Date.now() >= session.expiresAt) {
-            this.closeSession(session.sessionId).catch((error: unknown) => {
+            this.closeSession(session.sessionId).catch(() => {
                 logger.error(`Failed to close expired container port proxy session sessionId=${session.sessionId}`);
             });
             throw ApplicationError.unauthorized(ErrorCodes.AUTHENTICATION_UNAUTHORIZED, 'Container proxy session expired');

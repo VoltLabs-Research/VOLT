@@ -8,7 +8,6 @@ import logger from '@shared/infrastructure/logger';
 import { createWorkerFailureEnvelope, getWorkerFailureErrorMessage } from '@shared/infrastructure/workers/WorkerFailureEnvelope';
 import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
-import { Readable } from 'node:stream';
 
 interface CloudUploadTask {
     trajectoryId: string;
@@ -20,18 +19,6 @@ interface CloudUploadTask {
     objectKey: string;
     contentType?: string;
     contentEncoding?: string;
-}
-
-interface TeamClusterObjectStoreClient {
-    putStream(teamClusterId: string, request: {
-        bucket: string;
-        objectKey: string;
-        stream: Readable;
-        contentLength: number;
-        contentType?: string;
-        contentEncoding?: string;
-        metadata?: Record<string, string>;
-    }): Promise<void>;
 }
 
 @Singleton()

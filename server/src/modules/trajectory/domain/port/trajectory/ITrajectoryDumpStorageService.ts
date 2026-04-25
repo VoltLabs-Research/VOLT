@@ -1,11 +1,5 @@
 import { Readable } from 'node:stream';
 
-interface PreviewStream{
-    stream: NodeJS.ReadableStream;
-    size: number;
-    filename: string;
-};
-
 export interface ITrajectoryDumpStorageService{
     getObjectName(
         trajectoryId: string,

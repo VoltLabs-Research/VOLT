@@ -1,4 +1,3 @@
-import Button from '@/shared/presentation/primitives/Button';
 import RenameWhiteboardModal from '@/modules/whiteboards/components/RenameWhiteboardModal';
 import Heading from '@/shared/presentation/primitives/Heading';
 import useDashboardHeaderContent from '@/modules/dashboard/hooks/use-dashboard-header-content';
@@ -10,12 +9,12 @@ import useWhiteboardsListing, {
 import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
 import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
 import RenameFolderModal from '@/shared/presentation/components/RenameFolderModal';
-import { openModal } from '@/shared/presentation/primitives/Modal';
+import { NewFolderHeaderAction, getFolderHeaderMenuOptions } from '@/shared/presentation/components/FolderedListingHeaderControls';
 import { dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useTip from '@/shared/tips/use-tip';
 import './WhiteboardsListing.css';
-import { Folder, Pencil, SquarePen, Trash2 } from 'lucide-react';
+import { Folder, SquarePen } from 'lucide-react';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import type { MenuOption } from '@/shared/presentation/components/DocumentListing';
 import type { WhiteboardListingRow } from '@/modules/whiteboards/utilities/listing';
@@ -116,41 +115,14 @@ const WhiteboardsListing = () => {
         onCreate: handleCreate
     };
 
-    const headerActions = (
-        <Button
-            variant='ghost'
-            intent='neutral'
-            size='sm'
-            shape='rounded'
-            onClick={() => openModal(NEW_WHITEBOARD_FOLDER_MODAL_ID)}
-            title='Create folder'
-        >
-            <Folder size={14} />
-            New Folder
-        </Button>
-    );
+    const headerActions = <NewFolderHeaderAction modalId={NEW_WHITEBOARD_FOLDER_MODAL_ID} />;
 
     const headerMenuOptions = useMemo<MenuOption[]>(() => {
-        const options: MenuOption[] = [];
-
-        if (currentFolder) {
-            options.push(
-                {
-                    label: 'Rename Folder',
-                    icon: Pencil,
-                    onClick: () => handleRenameFolderOpen(currentFolder)
-                },
-                {
-                    label: 'Delete Folder',
-                    icon: Trash2,
-                    onClick: () => handleDeleteCurrentFolder?.(),
-                    destructive: true,
-                    disabled: !handleDeleteCurrentFolder
-                }
-            );
-        }
-
-        return options;
+        return getFolderHeaderMenuOptions({
+            currentFolder,
+            onRenameFolderOpen: handleRenameFolderOpen,
+            onDeleteCurrentFolder: handleDeleteCurrentFolder
+        });
     }, [currentFolder, handleDeleteCurrentFolder, handleRenameFolderOpen]);
 
     return (

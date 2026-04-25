@@ -542,7 +542,7 @@ export default class TeamClusterReverseChannelService {
                 return;
 
             case 'runtime-progress':
-                this.handleRuntimeProgressPayload(socketId, payload).catch((error: Error) => {
+                this.handleRuntimeProgressPayload(socketId, payload).catch(() => {
                     logger.error(`[ReverseChannel] Runtime progress handling failed socketId=${socketId}`);
                 });
                 return;

@@ -35,7 +35,7 @@ const isContainerTerminalSocketError = (value: unknown): value is ContainerTermi
     return typeof value === 'object' && value !== null && 'message' in value && 'code' in value;
 };
 
-export const ContainerTerminal = ({ container, onClose, embedded = false, appendOutput = null }: ContainerTerminalProps) => {
+const ContainerTerminal = ({ container, onClose, embedded = false, appendOutput = null }: ContainerTerminalProps) => {
     const terminalRef = useRef<TerminalHandle>(null);
     const socketService = useSocket();
     const attachPayload = useMemo(() => ({ containerId: container._id }), [container._id]);

@@ -202,10 +202,9 @@ export default class StoragePlacementService {
             }
         });
 
-        const trajectoryMap = await this.buildTrajectoryMapForAnalyses(analyses, trajectories);
+        await this.buildTrajectoryMapForAnalyses(analyses, trajectories);
 
         for (const analysis of analyses) {
-            const trajectory = trajectoryMap.get(analysis.props.trajectory);
             const resolvedStorageClusterId = resolveAnalysisStorageClusterId(analysis.props);
 
             if (resolvedStorageClusterId !== primaryClusterId) {
@@ -258,7 +257,7 @@ export default class StoragePlacementService {
                 throw ApplicationError.notFound('Analysis::NotFound', 'Analysis not found for storage placement');
             }
 
-            const trajectory = await this.trajectoryRepository.findById(analysis.props.trajectory);
+            await this.trajectoryRepository.findById(analysis.props.trajectory);
             const storageClusterId = resolveAnalysisStorageClusterId(analysis.props);
             if (!storageClusterId) {
                 throw ApplicationError.conflict(

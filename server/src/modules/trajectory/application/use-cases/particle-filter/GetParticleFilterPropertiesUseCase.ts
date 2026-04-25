@@ -13,7 +13,7 @@ export class GetParticleFilterPropertiesUseCase extends ValidatedServiceUseCase<
 > {
     constructor(
         
-        private readonly particleFilterService: ParticleFilterService
+        particleFilterService: ParticleFilterService
     ) {
         super(
             particleFilterService,

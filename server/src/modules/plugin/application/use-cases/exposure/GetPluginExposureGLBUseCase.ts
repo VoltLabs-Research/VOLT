@@ -5,7 +5,6 @@ import {
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 
-import { SYS_BUCKETS } from '@core/config/minio';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { resolveSceneArtifactStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
 import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
@@ -79,7 +78,6 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
         }
 
         const objectName = artifact.props.objectName;
-        const bucket = artifact.props.storageBucket || SYS_BUCKETS.MODELS;
         const teamClusterId = resolveSceneArtifactStorageClusterId(artifact.props);
         const requestContext = { acceptEncoding: input.acceptEncoding };
 

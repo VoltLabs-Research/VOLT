@@ -1,7 +1,5 @@
-import AIComposer from '@/modules/ai/components/AIComposer';
-import AIConversationThread from '@/modules/ai/components/AIConversationThread';
+import AIConversationPanelContent from '@/modules/ai/components/AIConversationPanelContent';
 import useAIPage from '@/modules/ai/hooks/use-ai-page';
-import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import VisuallyHidden from '@/shared/presentation/primitives/VisuallyHidden';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
@@ -130,8 +128,6 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
         }
     };
 
-    const shouldRenderStarterInput = !isMessagesLoading && messages.length === 0;
-
     const handleOpenTabularArtifact = (artifact: AIMessageArtifact) => {
         if (!conversationId) {
             return;
@@ -190,84 +186,32 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
         }
     }, [onClose]);
 
-    let starterInput: ReactNode = null;
-    if (shouldRenderStarterInput) {
-        starterInput = (
-            <AIComposer
-                value={messageDraft}
-                modelOptions={modelOptions}
-                selectedModel={selectedModel}
-                onChange={setMessageDraft}
-                onModelChange={setSelectedModel}
-                onSend={handleSend}
-                disabled={!canSendMessage || isProviderCatalogLoading || noProviderConfigured}
-                isSending={isSendingMessage}
-                error={sendMessageError}
-            />
-        );
-    }
-
-    let content: ReactNode = (
-        <>
-            <AIConversationThread
-                conversationId={conversationId}
-                messages={messages}
-                isLoading={isMessagesLoading}
-                isResponding={isSendingMessage}
-                error={messagesError}
-                onOpenTableArtifact={handleOpenTabularArtifact}
-                addToolApprovalResponse={addToolApprovalResponse}
-                starterInput={starterInput}
-                onRetry={handleRetry}
-            />
-
-            {!shouldRenderStarterInput && (
-                <AIComposer
-                    value={messageDraft}
-                    modelOptions={modelOptions}
-                    selectedModel={selectedModel}
-                    onChange={setMessageDraft}
-                    onModelChange={setSelectedModel}
-                    onSend={handleSend}
-                    disabled={!canSendMessage || isProviderCatalogLoading || noProviderConfigured}
-                    isSending={isSendingMessage}
-                    error={sendMessageError}
-                />
-            )}
-        </>
+    const content = (
+        <AIConversationPanelContent
+            conversationId={conversationId}
+            messages={messages}
+            isMessagesLoading={isMessagesLoading}
+            isSendingMessage={isSendingMessage}
+            messagesError={messagesError}
+            messageDraft={messageDraft}
+            modelOptions={modelOptions}
+            selectedModel={selectedModel}
+            canSendMessage={canSendMessage}
+            isProviderCatalogLoading={isProviderCatalogLoading}
+            noProviderConfigured={noProviderConfigured}
+            sendMessageError={sendMessageError}
+            selectedTeamId={selectedTeam?._id}
+            accessDenied={accessDenied}
+            accessDeniedMessage={accessDeniedMessage}
+            addToolApprovalResponse={addToolApprovalResponse}
+            onMessageDraftChange={setMessageDraft}
+            onModelChange={setSelectedModel}
+            onSend={handleSend}
+            onOpenTableArtifact={handleOpenTabularArtifact}
+            onRetry={handleRetry}
+            onOpenIntegrations={() => navigate('/dashboard/settings/integrations')}
+        />
     );
-
-    if (accessDenied) {
-        content = (
-            <Box display='flex' flex='1' className='flex-center'>
-                <RecoveryState
-                    title='Access denied'
-                    description={accessDeniedMessage ?? 'You do not have permission to use the AI assistant.'}
-                    tone={RecoveryStateTone.AccessDenied}
-                />
-            </Box>
-        );
-    } else if (!selectedTeam?._id) {
-        content = (
-            <Box display='flex' flex='1' className='flex-center'>
-                <EmptyState
-                    title='No team selected'
-                    description='Select a team to use the AI assistant.'
-                />
-            </Box>
-        );
-    } else if (noProviderConfigured) {
-        content = (
-            <Box display='flex' flex='1' className='flex-center'>
-                <EmptyState
-                    title='No AI provider configured'
-                    description='Enable at least one provider with a valid API key in team integrations.'
-                    buttonText='Open integrations'
-                    buttonOnClick={() => navigate('/dashboard/settings/integrations')}
-                />
-            </Box>
-        );
-    }
 
     const headerActions = (
         <Row gap='025'>

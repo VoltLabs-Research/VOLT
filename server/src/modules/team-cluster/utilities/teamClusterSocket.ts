@@ -37,10 +37,6 @@ export interface TeamClusterDaemonRegisterPayload {
     daemonPassword: string;
 };
 
-interface TeamClusterDaemonRegisteredPayload {
-    teamClusterId: string;
-};
-
 export interface TeamClusterDaemonSessionAttachPayload {
     sessionId: string;
     kind: TeamClusterDaemonSessionKind;

@@ -1,8 +1,8 @@
-import { ErrorCodes } from '@core/constants/error-codes';
 import {
     PreviewJoinTeamByInviteCodeInputDTO,
     PreviewJoinTeamByInviteCodeOutputDTO
 } from '@modules/team/application/dtos/team/PreviewJoinTeamByInviteCodeDTO';
+import { invalidInviteCodeError, normalizeInviteCode } from '@modules/team/application/use-cases/team/invite-code-helpers';
 import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import TeamRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team/TeamRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -28,14 +28,10 @@ export default class PreviewJoinTeamByInviteCodeUseCase implements IUseCase<Prev
     ) {}
 
     async execute(input: PreviewJoinTeamByInviteCodeInputDTO): Promise<Result<PreviewJoinTeamByInviteCodeOutputDTO, ApplicationError>> {
-        const normalizedCode = input.code.trim().toUpperCase();
-        const team = await this.teamRepository.findByInviteCode(normalizedCode);
+        const team = await this.teamRepository.findByInviteCode(normalizeInviteCode(input.code));
 
         if (!team) {
-            return Result.fail(ApplicationError.notFound(
-                ErrorCodes.TEAM_INVITE_CODE_NOT_FOUND,
-                'Invalid invite code'
-            ));
+            return Result.fail(invalidInviteCodeError());
         }
 
         const existingMember = await this.teamMemberRepository.findOne({

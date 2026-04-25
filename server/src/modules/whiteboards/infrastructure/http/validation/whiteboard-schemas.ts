@@ -1,8 +1,8 @@
 import {
+    createFolderValidationSchemas,
     createPaginationQuerySchema,
     objectIdSchema,
-    teamParamsSchema,
-    createTeamScopedParamsSchema
+    teamParamsSchema
 } from '@shared/infrastructure/http/validation/shared-schemas';
 import { z } from 'zod/v4';
 
@@ -11,8 +11,6 @@ const paginationQuerySchema = createPaginationQuerySchema({ maxLimit: 500 });
 const whiteboardParamsSchema = teamParamsSchema.extend({
     whiteboardId: objectIdSchema
 }).strict();
-
-const folderParamsSchema = createTeamScopedParamsSchema('folderId');
 
 const assetParamsSchema = whiteboardParamsSchema.extend({
     assetId: z.string().trim().min(1)
@@ -30,6 +28,8 @@ const updateWhiteboardBodySchema = z.object({
 const listWhiteboardsParamsSchema = z.object({
     teamId: objectIdSchema
 }).strict();
+
+const folderValidation = createFolderValidationSchemas();
 
 export const whiteboardValidation = {
     createWhiteboard: {
@@ -64,31 +64,7 @@ export const whiteboardValidation = {
     getWhiteboardAsset: {
         params: assetParamsSchema
     },
-    createFolder: {
-        params: teamParamsSchema,
-        body: z.object({
-            title: z.string().trim().min(1).max(255),
-            parentId: objectIdSchema.nullable().optional()
-        }).strict()
-    },
-    listFolders: {
-        params: teamParamsSchema,
-        query: createPaginationQuerySchema({ maxLimit: 500 }).extend({
-            parentId: z.string().optional()
-        })
-    },
-    getFolder: {
-        params: folderParamsSchema
-    },
-    updateFolder: {
-        params: folderParamsSchema,
-        body: z.object({
-            title: z.string().trim().min(1).max(255)
-        }).strict()
-    },
-    deleteFolder: {
-        params: folderParamsSchema
-    },
+    ...folderValidation,
     moveWhiteboard: {
         params: whiteboardParamsSchema,
         body: z.object({

@@ -9,15 +9,14 @@ import useLatexDocumentsListing, {
 import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
 import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
 import RenameFolderModal from '@/shared/presentation/components/RenameFolderModal';
+import { NewFolderHeaderAction, getFolderHeaderMenuOptions } from '@/shared/presentation/components/FolderedListingHeaderControls';
 import { dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
-import { openModal } from '@/shared/presentation/primitives/Modal';
 import Box from '@/shared/presentation/primitives/Box';
-import Button from '@/shared/presentation/primitives/Button';
 import Heading from '@/shared/presentation/primitives/Heading';
 import Row from '@/shared/presentation/primitives/Row';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useTip from '@/shared/tips/use-tip';
-import { Folder, Pencil, Trash2, Upload } from 'lucide-react';
+import { Folder, Upload } from 'lucide-react';
 import { useMemo } from 'react';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import type { MenuOption } from '@/shared/presentation/components/DocumentListing';
@@ -112,47 +111,19 @@ const LatexDocumentsListing = () => {
         onCreate: handleCreate
     };
 
-    const headerActions = (
-        <Button
-            variant='ghost'
-            intent='neutral'
-            size='sm'
-            shape='rounded'
-            onClick={() => openModal(NEW_LATEX_FOLDER_MODAL_ID)}
-            title='Create folder'
-        >
-            <Folder size={14} />
-            New Folder
-        </Button>
-    );
+    const headerActions = <NewFolderHeaderAction modalId={NEW_LATEX_FOLDER_MODAL_ID} />;
 
     const headerMenuOptions = useMemo<MenuOption[]>(() => {
-        const options: MenuOption[] = [];
-
-        if (currentFolder) {
-            options.push(
-                {
-                    label: 'Rename Folder',
-                    icon: Pencil,
-                    onClick: () => handleRenameFolderOpen(currentFolder)
-                },
-                {
-                    label: 'Delete Folder',
-                    icon: Trash2,
-                    onClick: () => handleDeleteCurrentFolder?.(),
-                    destructive: true,
-                    disabled: !handleDeleteCurrentFolder
-                }
-            );
-        }
-
-        options.push({
-            label: 'Import',
-            icon: Upload,
-            onClick: openFilePicker
+        return getFolderHeaderMenuOptions({
+            currentFolder,
+            onRenameFolderOpen: handleRenameFolderOpen,
+            onDeleteCurrentFolder: handleDeleteCurrentFolder,
+            extraOptions: [{
+                label: 'Import',
+                icon: Upload,
+                onClick: openFilePicker
+            }]
         });
-
-        return options;
     }, [currentFolder, handleDeleteCurrentFolder, handleRenameFolderOpen, openFilePicker]);
 
     return (

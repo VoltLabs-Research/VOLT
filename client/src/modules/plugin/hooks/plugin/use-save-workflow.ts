@@ -1,4 +1,4 @@
-import usePluginBuilderStore from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
+import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { useSavePluginMutation } from './queries';
 import { isAccessDeniedError, reportError, ErrorSurface } from '@/shared/errors/core';
 import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-params';

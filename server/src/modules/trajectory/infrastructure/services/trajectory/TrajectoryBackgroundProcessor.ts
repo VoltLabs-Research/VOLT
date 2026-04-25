@@ -44,15 +44,6 @@ type ParsedFrame = {
     [key: string]: unknown;
 };
 
-interface TeamClusterCommandClient {
-    command<T = unknown>(
-        teamClusterId: string,
-        command: string,
-        payload?: Record<string, unknown>,
-        options?: { timeoutMs?: number; timeoutClass?: string; }
-    ): Promise<T>;
-};
-
 interface GlbPreprocessingEnqueueResult {
     queuedJobs: number;
     duplicateJobs: number;
@@ -188,7 +179,7 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         this.drainCallbackRegistered = true;
 
         this.cloudUploadQueueService.onSessionDrain(
-            async (trajectoryId, teamId, teamClusterId, _trajectoryName, failedCount, successfulTimesteps) => {
+            async (trajectoryId, teamId, _teamClusterId, _trajectoryName, failedCount, successfulTimesteps) => {
                 const trajectory = await this.trajectoryRepo.findById(trajectoryId);
                 if (!trajectory) {
                     logger.warn(`@trajectory-background-processor: drain callback — trajectory not found, skipping GLB enqueue trajectoryId=${trajectoryId}`);

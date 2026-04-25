@@ -11,7 +11,7 @@ import {
 } from '@modules/trajectory/domain/port/particle-filter/IParticleFilterService';
 import TrajectoryNativeDaemonService from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
 import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
-import { resolveSceneArtifactStorageCluster } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-storage-cluster';
+import { resolveSceneArtifactExecutionContext } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-execution-context';
 import { getLocalGlbStream } from '@modules/trajectory/utilities/storage/glb-stream-resolution';
 import { resolveTrajectoryNativeClusterContext } from '@modules/trajectory/utilities/team-cluster/resolve-trajectory-native-cluster-context';
 import { buildParticleFilterObjectName } from '@modules/trajectory/utilities/trajectory/minio-path-builder';
@@ -222,35 +222,19 @@ export default class ParticleFilterService implements IParticleFilterService {
     ): Promise<{ fileId: string; atomsResult: number; action: string }> {
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const objectName = this.buildObjectName(trajectoryId, resolvedAnalysisId, timestep, request, action);
-        const storageClusterId = await resolveSceneArtifactStorageCluster({
+        const {
+            computeClusterId,
+            storageClusterId
+        } = await resolveSceneArtifactExecutionContext({
             trajectoryId: String(trajectoryId),
+            timestep: String(timestep),
             analysisId: resolvedAnalysisId,
             analysisRepository: this.analysisRepository,
-            trajectoryRepository: this.trajectoryRepository
+            trajectoryRepository: this.trajectoryRepository,
+            teamClusterSelectionService: this.teamClusterSelectionService,
+            dumpStorage: this.dumpStorage,
+            buildClusterRequiredError
         });
-
-        const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
-        if (!trajectory || !storageClusterId) {
-            throw buildClusterRequiredError();
-        }
-
-        const computeClusterId = await this.teamClusterSelectionService.resolveComputeClusterId(
-            trajectory.props.team,
-            undefined,
-            storageClusterId
-        );
-
-        const dumpExists = await this.dumpStorage.existsDump(
-            String(trajectoryId),
-            String(timestep)
-        );
-
-        if (!dumpExists) {
-            throw ApplicationError.notFound(
-                ErrorCodes.TRAJECTORY_DUMP_NOT_FOUND,
-                `Trajectory dump for timestep ${timestep} not found`
-            );
-        }
 
         const filterResult = await this.getCombinedFilterResult(
             computeClusterId,
