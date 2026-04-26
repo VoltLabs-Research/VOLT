@@ -1,8 +1,8 @@
 import type {
     TeamClusterQueueScopeLimitProps,
     TeamClusterQueueScopeLimitsProps
-} from '@modules/team-cluster/domain/entities/TeamCluster';
-import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
+} from '@modules/cluster/domain/entities/TeamCluster';
+import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 export type TeamClusterScopedQueueLimitKey =

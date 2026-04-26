@@ -1,4 +1,4 @@
-import secretKeyService from '../../api/services/secret-key';
+import secretKeyService from '../../api/services/secret-key-service';
 import { SECRET_KEY_QUERY_KEYS } from '@/modules/team/hooks/secret-key/queries';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { useCallback, useMemo } from 'react';

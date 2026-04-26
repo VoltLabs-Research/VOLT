@@ -1,4 +1,4 @@
-import aiIntegrationService from '../../api/services/ai-integration';
+import aiIntegrationService from '../../api/services/ai-integration-service';
 import { buildKeys, createMutation, createQuery, queryClient } from '@/shared/infrastructure/query';
 import type { CreateTeamAIIntegrationInputDTO, CreateTeamAIIntegrationResponse } from '../../api/dtos/ai-integration/create-team-ai-integration';
 import type { DeleteTeamAIIntegrationInputDTO } from '../../api/dtos/ai-integration/delete-team-ai-integration';

@@ -1,6 +1,6 @@
 import { analysisQuery } from '@/modules/analysis/hooks/queries';
-import { SOCKET_ANALYSIS_EVENTS } from '@/modules/socket/analysis/constants/analysis-socket-events';
-import { SOCKET_TEAM_EVENTS } from '@/modules/socket/team/constants/team-socket-events';
+import { SOCKET_ANALYSIS_EVENTS } from '@/modules/socket/events/analysis';
+import { SOCKET_TEAM_EVENTS } from '@/modules/socket/events/team';
 import { dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import useRetryFailedFrames from '@/modules/analysis/hooks/use-retry-failed-frames';
@@ -138,7 +138,7 @@ const AnalysesListing = () => {
             socketInvalidation={[
                 { event: SOCKET_ANALYSIS_EVENTS.CREATED, queryKeys: [analysisQuery.QUERY_KEYS.lists()] },
                 { event: SOCKET_TEAM_EVENTS.JOB_UPDATED, queryKeys: [analysisQuery.QUERY_KEYS.lists()] },
-                { event: 'analysis.deleted', queryKeys: [analysisQuery.QUERY_KEYS.lists()] }
+                { event: SOCKET_ANALYSIS_EVENTS.DELETED, queryKeys: [analysisQuery.QUERY_KEYS.lists()] }
             ]}
         />
     );

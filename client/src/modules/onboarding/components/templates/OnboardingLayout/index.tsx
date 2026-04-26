@@ -1,6 +1,6 @@
 import './OnboardingLayout.css';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
-import { refreshSocketSession } from '@/modules/socket/core/services/socket-auth-session';
+import { refreshSocketSession } from '@/modules/socket/services/socket-auth-session';
 import { JoinTeamModal } from '@/modules/team/components/JoinTeamModal';
 import { switchSelectedTeam } from '@/modules/team/stores/team/use-team-store';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';

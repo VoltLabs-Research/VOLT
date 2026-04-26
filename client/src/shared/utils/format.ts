@@ -18,6 +18,28 @@ export const formatNumber = (num: number): string => {
 };
 
 /**
+ * Format a duration in minutes as "Dd Hh", "Hh Mm", "Mm", or "<1m" for fractional values.
+ */
+export const formatDuration = (minutes: number): string => {
+    if(minutes <= 0) return '0m';
+    if(minutes < 1) return '<1m';
+
+    const totalMinutes = Math.floor(minutes);
+    const hours = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
+
+    if(hours >= 24){
+        const days = Math.floor(hours / 24);
+        const remainingHours = hours % 24;
+        return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`;
+    }
+    if(hours > 0){
+        return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    }
+    return `${mins}m`;
+};
+
+/**
  * Format bytes to human-readable size string
  */
 export const formatSize = (bytes: number): string => {

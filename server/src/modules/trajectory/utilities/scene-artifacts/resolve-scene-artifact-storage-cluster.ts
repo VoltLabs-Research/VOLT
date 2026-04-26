@@ -1,7 +1,7 @@
 import {
     resolveAnalysisStorageClusterId,
     resolveTrajectoryStorageClusterId
-} from '@modules/team-cluster/application/utilities/cluster-location';
+} from '@modules/cluster/application/utilities/cluster-location';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 

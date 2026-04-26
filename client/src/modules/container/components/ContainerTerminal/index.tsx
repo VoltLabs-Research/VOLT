@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { IoClose } from 'react-icons/io5';
-import useSocket from '@/modules/socket/core/hooks/use-socket';
-import { useSocketTerminalSession } from '@/modules/socket/core/hooks/use-socket-terminal-session';
+import { useSocketTerminalSession } from '@/modules/socket/hooks/use-socket-terminal-session';
+import { SOCKET_CONTAINER_TERMINAL_EVENTS } from '@/modules/socket/events/container';
 import Box from '@/shared/presentation/primitives/Box';
 import Button from '@/shared/presentation/primitives/Button';
 import Row from '@/shared/presentation/primitives/Row';
@@ -37,7 +37,6 @@ const isContainerTerminalSocketError = (value: unknown): value is ContainerTermi
 
 const ContainerTerminal = ({ container, onClose, embedded = false, appendOutput = null }: ContainerTerminalProps) => {
     const terminalRef = useRef<TerminalHandle>(null);
-    const socketService = useSocket();
     const attachPayload = useMemo(() => ({ containerId: container._id }), [container._id]);
     const resolveErrorMessage = useMemo(() => {
         return (error: unknown): string => {
@@ -53,16 +52,15 @@ const ContainerTerminal = ({ container, onClose, embedded = false, appendOutput 
         };
     }, []);
     const { handleTerminalData } = useSocketTerminalSession({
-        socketService,
         sessionKey: container._id,
         terminalRef,
-        attachEvent: 'container:terminal:attach',
+        attachEvent: SOCKET_CONTAINER_TERMINAL_EVENTS.ATTACH,
         attachPayload,
-        detachEvent: 'container:terminal:detach',
+        detachEvent: SOCKET_CONTAINER_TERMINAL_EVENTS.DETACH,
         detachDelayMs: 100,
-        dataEvent: 'container:terminal:data',
-        errorEvent: 'container:error',
-        inputEvent: 'container:terminal:input',
+        dataEvent: SOCKET_CONTAINER_TERMINAL_EVENTS.DATA,
+        errorEvent: SOCKET_CONTAINER_TERMINAL_EVENTS.ERROR,
+        inputEvent: SOCKET_CONTAINER_TERMINAL_EVENTS.INPUT,
         resolveErrorMessage
     });
 

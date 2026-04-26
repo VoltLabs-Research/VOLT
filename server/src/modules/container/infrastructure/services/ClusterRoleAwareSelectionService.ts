@@ -2,18 +2,18 @@ import {
     HARD_STORAGE_LIMIT_PCT,
     SOFT_STORAGE_ASSIGNMENT_PENALTY,
     SOFT_STORAGE_LIMIT_PCT
-} from '@modules/team-cluster/application/services/cluster-storage-policy';
+} from '@modules/cluster/application/services/cluster-storage-policy';
 import {
     resolveEffectiveCapabilitiesFromRoleConfig,
     TeamClusterStatus
-} from '@modules/team-cluster/domain/entities/TeamCluster';
+} from '@modules/cluster/domain/entities/TeamCluster';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { injectable } from 'tsyringe';
 
 import type { SystemMetrics } from '@modules/system/domain/value-objects/SystemMetrics';
 import SystemMetricsRedisRepository from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisRepository';
-import type TeamCluster from '@modules/team-cluster/domain/entities/TeamCluster';
-import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
+import type TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
+import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 
 type SelectionCapability = 'compute' | 'storage';
 

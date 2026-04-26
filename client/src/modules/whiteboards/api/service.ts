@@ -1,7 +1,7 @@
 import { buildFileFormData } from '@/shared/utils/file';
 import { createFolderCrudEndpoints } from '@/shared/api/folder-endpoints';
-import { defineServiceModule } from '@/shared/api/service-module';
-import { del, download, get, paginated, patch, post, request } from '@/app/core/http/utilities/create-service';
+
+import { createService, del, download, get, paginated, patch, post, request } from '@/app/core/http/utilities/create-service';
 import type { CreateWhiteboardFolderParams } from './dtos/create-whiteboard-folder-params';
 import type { CreateWhiteboardParams } from './dtos/create-whiteboard-params';
 import type { DeleteWhiteboardFolderParams } from './dtos/delete-whiteboard-folder-params';
@@ -74,12 +74,11 @@ const endpoints = {
     deleteWhiteboardFolder: folderEndpoints.deleteFolder
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/whiteboards',
             useRBAC: true
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

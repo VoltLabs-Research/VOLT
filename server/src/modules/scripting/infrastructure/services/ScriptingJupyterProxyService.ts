@@ -11,10 +11,10 @@ import {
     matchJupyterProxyPath,
     setJupyterProxyAccessCookie
 } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
-import type { TeamClusterReverseWebSocketStream } from '@modules/team-cluster/utilities/teamClusterReverseWebSocket';
+import type { TeamClusterReverseWebSocketStream } from '@modules/cluster/utilities/teamClusterReverseWebSocket';
 import {
     TeamClusterServiceExposureAccessMode
-} from '@modules/team-cluster/utilities/teamClusterSocket';
+} from '@modules/cluster/utilities/teamClusterSocket';
 import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/team-member/TeamMember';
 import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';

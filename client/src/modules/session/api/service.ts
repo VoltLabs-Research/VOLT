@@ -1,5 +1,5 @@
-import { defineServiceModule } from '@/shared/api/service-module';
-import { del, get } from '@/app/core/http/utilities/create-service';
+
+import { createService, del, get } from '@/app/core/http/utilities/create-service';
 import type { ActiveSession } from './entities/session';
 import type { EmptyParams } from '@/app/core/http/utilities/create-service';
 import type { GetLoginActivityInputDTO, GetLoginActivityOutputDTO } from './dtos/get-login-activity';
@@ -17,11 +17,10 @@ const endpoints = {
     })
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/sessions'
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

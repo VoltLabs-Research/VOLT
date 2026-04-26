@@ -1,6 +1,6 @@
 import { createEntityCacheResource } from '@/shared/api/query-resources';
 import { buildKeys, createMutation, createQuery } from '@/shared/infrastructure/query';
-import chatService from '../../api/services/chat';
+import chatService from '../../api/services/chat-service';
 import type { QueryClient } from '@tanstack/react-query';
 import type { Chat } from '../../api/entities/chat';
 import type { GetOrCreateChatInputDTO } from '../../api/dtos/chat';

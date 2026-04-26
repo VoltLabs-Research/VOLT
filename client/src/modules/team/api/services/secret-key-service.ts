@@ -1,5 +1,5 @@
-import { get, paginated, post, patch, del } from '@/app/core/http/utilities/create-service';
-import { defineServiceModule } from '@/shared/api/service-module';
+import { createService, get, paginated, post, patch, del } from '@/app/core/http/utilities/create-service';
+
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { SecretKey } from '@/modules/team/api/entities/secret-key/secret-key';
 import type { TeamUsageMetrics, KeyUsageMetrics } from '@/modules/team/api/entities/secret-key/secret-key-metrics';
@@ -25,11 +25,10 @@ const endpoints = {
     )
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/teams'
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

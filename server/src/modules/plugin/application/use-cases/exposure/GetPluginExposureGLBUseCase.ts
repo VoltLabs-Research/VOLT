@@ -6,8 +6,8 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 
 import { ErrorCodes } from '@core/constants/error-codes';
-import { resolveSceneArtifactStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
-import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import { resolveSceneArtifactStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
+import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';

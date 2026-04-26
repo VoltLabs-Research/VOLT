@@ -4,7 +4,7 @@ import {
     SubListingColumn
 } from '@modules/plugin/application/dtos/listing-row/GetSubListingDTO';
 import { resolveListingPagination } from '@modules/plugin/application/use-cases/listing-row/listing-row-pagination';
-import { resolveAnalysisComputeClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
+import { resolveAnalysisComputeClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 
 import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';

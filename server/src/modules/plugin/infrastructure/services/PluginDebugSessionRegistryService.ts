@@ -1,5 +1,5 @@
 import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
-import type { TeamClusterDaemonExecutionLogSegment } from '@modules/team-cluster/utilities/teamClusterSocket';
+import type { TeamClusterDaemonExecutionLogSegment } from '@modules/cluster/utilities/teamClusterSocket';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 export interface PluginDebugSessionRegistryEntry {

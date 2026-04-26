@@ -1,16 +1,16 @@
-import { updateSocketAuthToken } from '@/modules/socket/core/services/socket-auth-session';
+import { updateSocketAuthToken } from '@/modules/socket/services/socket-auth-session';
 import { buildKeys, createMutation, createQuery } from '@/shared/infrastructure/query';
 import { registerPreservedQueryKey } from '@/shared/utils/app-cleanup-registry';
 import service from '../api/service';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { tokenStorage } from '@/shared/auth/token-storage';
-import type { ChangePasswordInputDTO, ChangePasswordOutputDTO } from '../api/dtos/change-password';
-import type { CheckEmailInputDTO, CheckEmailOutputDTO } from '../api/dtos/check-email';
-import type { GetAvailableOAuthProvidersOutputDTO } from '../api/dtos/oauth-providers';
-import type { SignInInputDTO, SignInOutputDTO } from '../api/dtos/sign-in';
-import type { SignUpInputDTO, SignUpOutputDTO } from '../api/dtos/sign-up';
-import type { UpdateAvatarInputDTO } from '../api/dtos/update-avatar';
-import type { UpdateProfileInputDTO } from '../api/dtos/update-profile';
+import type { ChangePasswordInputDTO, ChangePasswordOutputDTO } from '../api/dtos';
+import type { CheckEmailInputDTO, CheckEmailOutputDTO } from '../api/dtos';
+import type { GetAvailableOAuthProvidersOutputDTO } from '../api/dtos';
+import type { SignInInputDTO, SignInOutputDTO } from '../api/dtos';
+import type { SignUpInputDTO, SignUpOutputDTO } from '../api/dtos';
+import type { UpdateAvatarInputDTO } from '../api/dtos';
+import type { UpdateProfileInputDTO } from '../api/dtos';
 import type { User } from '../api/entities/user';
 import type { QueryOptions } from '@/shared/infrastructure/query';
 

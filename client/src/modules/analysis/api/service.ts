@@ -1,5 +1,5 @@
-import { paginated, get, post, del } from '@/app/core/http/utilities/create-service';
-import { defineServiceModule } from '@/shared/api/service-module';
+import { createService, paginated, get, post, del } from '@/app/core/http/utilities/create-service';
+
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { Analysis } from './entities/analysis';
 import type { GetAnalysesParams } from './dtos/get-analyses';
@@ -24,12 +24,11 @@ const endpoints = {
     getFrameLog: get<GetAnalysisFrameLogParams, GetAnalysisFrameLogResponse>('/:analysisId/logs/:timestep')
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/analyses',
             useRBAC: true
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

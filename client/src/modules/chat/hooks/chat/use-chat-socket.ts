@@ -1,10 +1,10 @@
-import { CHAT_SOCKET_EVENTS } from '../../api/entities/shared/chat-constants';
+import { SOCKET_CHAT_EVENTS } from '@/modules/socket/events/chat';
 import { PresenceStatus } from '../../api/entities/shared/chat-events';
 import { CHAT_QUERY_KEYS, invalidateChatsQuery } from './queries';
 import { updateChatInCache } from './queries';
 import { useChatPresenceStore } from '../../stores/chat/use-chat-presence-store';
 import { useQueryClient } from '@tanstack/react-query';
-import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
+import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import type { ChatLastMessage } from '../../api/entities/chat';
 import type { ChatMessage } from '../../api/entities/message';
 import type { TypingUser } from '../../api/entities/shared/chat-events';
@@ -50,7 +50,7 @@ const useChatSocket = ({ currentChatId, addMessage, updateMessage }: UseChatSock
         createdAt: message.createdAt
     });
 
-    useSocketEvent<NewMessageEvent>(CHAT_SOCKET_EVENTS.NEW_MESSAGE, ({ chatId, message }) => {
+    useSocketEvent<NewMessageEvent>(SOCKET_CHAT_EVENTS.NEW_MESSAGE, ({ chatId, message }) => {
         if (chatId === currentChatId) {
             addMessage(message);
         }
@@ -60,57 +60,57 @@ const useChatSocket = ({ currentChatId, addMessage, updateMessage }: UseChatSock
         });
     });
 
-    useSocketEvent<MessageEditedEvent>(CHAT_SOCKET_EVENTS.MESSAGE_EDITED, ({ chatId, message }) => {
+    useSocketEvent<MessageEditedEvent>(SOCKET_CHAT_EVENTS.MESSAGE_EDITED, ({ chatId, message }) => {
         if (chatId === currentChatId) {
             updateMessage(message._id, message);
         }
     });
 
-    useSocketEvent<MessageDeletedEvent>(CHAT_SOCKET_EVENTS.MESSAGE_DELETED, ({ chatId, messageId }) => {
+    useSocketEvent<MessageDeletedEvent>(SOCKET_CHAT_EVENTS.MESSAGE_DELETED, ({ chatId, messageId }) => {
         if (chatId === currentChatId) {
             updateMessage(messageId, { deleted: true });
         }
     });
 
-    useSocketEvent<ReactionUpdatedEvent>(CHAT_SOCKET_EVENTS.REACTION_UPDATED, ({ chatId, message }) => {
+    useSocketEvent<ReactionUpdatedEvent>(SOCKET_CHAT_EVENTS.REACTION_UPDATED, ({ chatId, message }) => {
         if (chatId === currentChatId) {
             updateMessage(message._id, { reactions: message.reactions });
         }
     });
 
-    useSocketEvent<TypingUser>(CHAT_SOCKET_EVENTS.USER_TYPING, (typing) => {
+    useSocketEvent<TypingUser>(SOCKET_CHAT_EVENTS.USER_TYPING, (typing) => {
         if (typing.chatId === currentChatId) {
             setTypingUser(typing);
         }
     });
 
     useSocketEvent<Record<string, PresenceStatus.Online | PresenceStatus.Offline>>(
-        CHAT_SOCKET_EVENTS.USERS_PRESENCE_INFO,
+        SOCKET_CHAT_EVENTS.USERS_PRESENCE_INFO,
         (presenceMap) => {
             setUsersPresence(presenceMap);
         }
     );
 
-    useSocketEvent<GroupChatEvent>(CHAT_SOCKET_EVENTS.GROUP_CREATED, () => {
+    useSocketEvent<GroupChatEvent>(SOCKET_CHAT_EVENTS.GROUP_CREATED, () => {
         invalidateChatsQuery(queryClient).catch(() => undefined);
     });
 
-    useSocketEvent<GroupChatEvent>(CHAT_SOCKET_EVENTS.USERS_ADDED_TO_GROUP, ({ chatId }) => {
-        invalidateChatsQuery(queryClient).catch(() => undefined);
-        queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.detail(chatId) }).catch(() => undefined);
-    });
-
-    useSocketEvent<GroupChatEvent>(CHAT_SOCKET_EVENTS.USERS_REMOVED_FROM_GROUP, ({ chatId }) => {
+    useSocketEvent<GroupChatEvent>(SOCKET_CHAT_EVENTS.USERS_ADDED_TO_GROUP, ({ chatId }) => {
         invalidateChatsQuery(queryClient).catch(() => undefined);
         queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.detail(chatId) }).catch(() => undefined);
     });
 
-    useSocketEvent<GroupChatEvent>(CHAT_SOCKET_EVENTS.GROUP_INFO_UPDATED, ({ chatId }) => {
+    useSocketEvent<GroupChatEvent>(SOCKET_CHAT_EVENTS.USERS_REMOVED_FROM_GROUP, ({ chatId }) => {
         invalidateChatsQuery(queryClient).catch(() => undefined);
         queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.detail(chatId) }).catch(() => undefined);
     });
 
-    useSocketEvent<GroupChatEvent>(CHAT_SOCKET_EVENTS.USER_LEFT_GROUP, ({ chatId }) => {
+    useSocketEvent<GroupChatEvent>(SOCKET_CHAT_EVENTS.GROUP_INFO_UPDATED, ({ chatId }) => {
+        invalidateChatsQuery(queryClient).catch(() => undefined);
+        queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.detail(chatId) }).catch(() => undefined);
+    });
+
+    useSocketEvent<GroupChatEvent>(SOCKET_CHAT_EVENTS.USER_LEFT_GROUP, ({ chatId }) => {
         invalidateChatsQuery(queryClient).catch(() => undefined);
         queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.detail(chatId) }).catch(() => undefined);
     });

@@ -1,6 +1,5 @@
 import { EMPTY_GLOBAL_SEARCH_RESULTS } from './dtos/global-search';
-import { custom, get } from '@/app/core/http/utilities/create-service';
-import { defineServiceModule } from '@/shared/api/service-module';
+import { createService, custom, get } from '@/app/core/http/utilities/create-service';
 import type { DashboardMetrics } from './entities/dashboard';
 import type { EmptyParams } from '@/app/core/http/utilities/create-service';
 import type { GlobalSearchInputDTO, GlobalSearchOutputDTO } from './dtos/global-search';
@@ -38,7 +37,7 @@ const endpoints = {
     )
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         dashboard: {
             basePath: '/dashboard',
@@ -72,6 +71,5 @@ export default defineServiceModule({
             basePath: '/trajectories',
             useRBAC: true
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

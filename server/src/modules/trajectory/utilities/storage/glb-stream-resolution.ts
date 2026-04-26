@@ -2,7 +2,7 @@ import { SYS_BUCKETS } from '@core/config/minio';
 import { PassThrough, Transform } from 'node:stream';
 import { Decompress as ZstdDecompress } from 'fzstd';
 import zlib from 'node:zlib';
-import type TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 import {
     isZstdObjectName,

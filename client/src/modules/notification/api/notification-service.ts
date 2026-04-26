@@ -1,5 +1,5 @@
-import { paginated, patch } from '@/app/core/http/utilities/create-service';
-import { defineServiceModule } from '@/shared/api/service-module';
+import { createService, paginated, patch } from '@/app/core/http/utilities/create-service';
+
 import type { EmptyParams } from '@/app/core/http/utilities/create-service';
 import type { ListNotificationsInputDTO } from './dtos/list-notifications';
 import type { Notification } from './entities/notification';
@@ -10,11 +10,10 @@ const endpoints = {
     markAllAsRead: patch<EmptyParams, void>('/read-status', { unwrap: 'void' })
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/notifications'
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

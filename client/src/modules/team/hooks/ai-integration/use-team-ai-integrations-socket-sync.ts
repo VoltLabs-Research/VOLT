@@ -1,7 +1,8 @@
-import { SOCKET_TEAM_AI_INTEGRATION_EVENTS } from '@/modules/socket/team/constants/team-socket-events';
-import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
-import { invalidateTeamAIIntegrationsQuery } from './queries';
-import { useCallback } from 'react';
+import { SOCKET_TEAM_AI_INTEGRATION_EVENTS } from '@/modules/socket/events/team';
+import useSocketQueryInvalidation from '@/modules/socket/hooks/use-socket-query-invalidation';
+import type { SocketInvalidationRule } from '@/modules/socket/hooks/use-socket-query-invalidation';
+import { AI_INTEGRATION_QUERY_KEYS } from './queries';
+import { useMemo } from 'react';
 
 interface TeamScopedPayload {
     teamId?: string;
@@ -9,21 +10,26 @@ interface TeamScopedPayload {
 }
 
 export default function useTeamAIIntegrationsSocketSync(teamId: string | null | undefined): void {
-    const handleSync = useCallback((payload: TeamScopedPayload | undefined) => {
-        if (!teamId) {
-            return;
-        }
+    const rules = useMemo<SocketInvalidationRule[]>(() => {
+        if (!teamId) return [];
 
-        const payloadTeamId = payload?._teamId ?? payload?.teamId;
+        const matches = (payload: unknown): boolean => {
+            const scopedPayload = payload as TeamScopedPayload | undefined;
+            const payloadTeamId = scopedPayload?._teamId ?? scopedPayload?.teamId;
+            return payloadTeamId === teamId;
+        };
 
-        if (payloadTeamId !== teamId) {
-            return;
-        }
+        const queryKeys = [
+            AI_INTEGRATION_QUERY_KEYS.teamAIIntegrations(teamId),
+            AI_INTEGRATION_QUERY_KEYS.teamAIIntegrationModels(teamId)
+        ];
 
-        invalidateTeamAIIntegrationsQuery(teamId).catch(() => undefined);
+        return [
+            { event: SOCKET_TEAM_AI_INTEGRATION_EVENTS.CREATED, queryKeys, matches },
+            { event: SOCKET_TEAM_AI_INTEGRATION_EVENTS.UPDATED, queryKeys, matches },
+            { event: SOCKET_TEAM_AI_INTEGRATION_EVENTS.DELETED, queryKeys, matches }
+        ];
     }, [teamId]);
 
-    useSocketEvent<TeamScopedPayload>(SOCKET_TEAM_AI_INTEGRATION_EVENTS.CREATED, handleSync, { enabled: !!teamId });
-    useSocketEvent<TeamScopedPayload>(SOCKET_TEAM_AI_INTEGRATION_EVENTS.UPDATED, handleSync, { enabled: !!teamId });
-    useSocketEvent<TeamScopedPayload>(SOCKET_TEAM_AI_INTEGRATION_EVENTS.DELETED, handleSync, { enabled: !!teamId });
+    useSocketQueryInvalidation(rules, { enabled: !!teamId });
 }

@@ -1,7 +1,7 @@
 import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
 import { JobStatus } from '@/modules/jobs/api/entities/job';
-import { SOCKET_TEAM_EVENTS } from '@/modules/socket/team/constants/team-socket-events';
-import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
+import { SOCKET_TEAM_EVENTS } from '@/modules/socket/events/team';
+import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { Job } from '@/modules/jobs/api/entities/job';

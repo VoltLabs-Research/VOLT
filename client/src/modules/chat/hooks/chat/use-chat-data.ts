@@ -1,4 +1,4 @@
-import { CHAT_SOCKET_EVENTS } from '../../api/entities/shared/chat-constants';
+import { SOCKET_CHAT_EVENTS } from '@/modules/socket/events/chat';
 import {
     addMessageToCache,
     removeChatMessagesFromCache,
@@ -15,13 +15,12 @@ import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/
 import { useCallback, useRef, useEffect, useState, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { sileo } from 'sileo';
-import useSocket from '@/modules/socket/core/hooks/use-socket';
+import { emitOrReport, emitOrSwallow, emitWithReport } from '@/modules/socket/services/socket-emit-helpers';
 import type { ChatMessage } from '../../api/entities/message';
 
 const MAX_CACHED_CHAT_ROOMS = 4;
 
 const useChatData = () => {
-    const socket = useSocket();
     const queryClient = useQueryClient();
 
     const [currentChatId, setCurrentChatId] = useState<string | null>(null);
@@ -101,27 +100,27 @@ const useChatData = () => {
 
     const resetState = useCallback(() => {
         if (currentChatIdRef.current) {
-            socket.emit(CHAT_SOCKET_EVENTS.LEAVE_CHAT, currentChatIdRef.current).catch(() => undefined);
+            emitOrSwallow(SOCKET_CHAT_EVENTS.LEAVE_CHAT, currentChatIdRef.current);
         }
 
         cachedChatIdsRef.current = [];
         currentChatIdRef.current = null;
         setCurrentChatId(null);
         resetChatQueries(queryClient);
-    }, [queryClient, socket]);
+    }, [queryClient]);
 
     const selectChat = useCallback(async (chatId: string) => {
         if (currentChatIdRef.current === chatId) return;
 
         if (currentChatIdRef.current) {
-            socket.emit(CHAT_SOCKET_EVENTS.LEAVE_CHAT, currentChatIdRef.current).catch(() => undefined);
+            emitOrSwallow(SOCKET_CHAT_EVENTS.LEAVE_CHAT, currentChatIdRef.current);
         }
 
         retainChatMessageCache(chatId);
         currentChatIdRef.current = chatId;
         setCurrentChatId(chatId);
 
-        await socket.emit(CHAT_SOCKET_EVENTS.JOIN_CHAT, chatId);
+        await emitWithReport(SOCKET_CHAT_EVENTS.JOIN_CHAT, chatId);
 
         markAsReadMutationResult.mutateAsync({ chatId }).catch((error: unknown) => {
             if (isAccessDeniedError(error)) {
@@ -135,9 +134,9 @@ const useChatData = () => {
         const chat = chatsRef.current.find((c) => c._id === chatId);
         if (chat) {
             const userIds = chat.participants.map((p) => p._id);
-            socket.emit(CHAT_SOCKET_EVENTS.GET_USERS_PRESENCE, { userIds }).catch(() => undefined);
+            emitOrReport(SOCKET_CHAT_EVENTS.GET_USERS_PRESENCE, { userIds });
         }
-    }, [socket, markAsReadMutationResult, retainChatMessageCache]);
+    }, [markAsReadMutationResult, retainChatMessageCache]);
 
     return {
         chats,

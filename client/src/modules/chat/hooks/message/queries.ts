@@ -1,5 +1,5 @@
 import { buildKeys, createInfiniteQuery, createMutation } from '@/shared/infrastructure/query';
-import messageService from '../../api/services/message';
+import messageService from '../../api/services/message-service';
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { ChatMessage } from '../../api/entities/message';

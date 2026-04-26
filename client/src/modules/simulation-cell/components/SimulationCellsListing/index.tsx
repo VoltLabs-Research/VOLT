@@ -8,7 +8,7 @@ import Tag from '@/shared/presentation/primitives/Tag';
 import { Box } from 'lucide-react';
 import type { SimulationCell } from '@/modules/simulation-cell/api/entities/simulation-cell';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
-import { formatNumber } from '@/modules/simulation-cell/utilities/format-number';
+import { formatNumber } from '@/shared/utils/format';
 
 interface PeriodicAxisStatus {
     axis: 'X' | 'Y' | 'Z';

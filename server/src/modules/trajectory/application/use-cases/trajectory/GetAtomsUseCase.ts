@@ -3,7 +3,7 @@ import { TeamClusterSelectionService } from '@modules/container/infrastructure/s
 import {
     resolveAnalysisComputeClusterId,
     resolveTrajectoryStorageClusterId
-} from '@modules/team-cluster/application/utilities/cluster-location';
+} from '@modules/cluster/application/utilities/cluster-location';
 import { resolveTrajectoryNativeClusterContext } from '@modules/trajectory/utilities/team-cluster/resolve-trajectory-native-cluster-context';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';

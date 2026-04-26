@@ -1,5 +1,5 @@
-import { get, post } from '@/app/core/http/utilities/create-service';
-import { defineServiceModule } from '@/shared/api/service-module';
+import { createService, get, post } from '@/app/core/http/utilities/create-service';
+
 import type {
     ApplyColorCodingInputDTO,
     ColorCodingProperties,
@@ -32,12 +32,11 @@ const endpoints = {
     )
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/color-codings',
             useRBAC: true
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

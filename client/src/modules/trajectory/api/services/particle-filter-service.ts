@@ -1,5 +1,5 @@
-import { get, post } from '@/app/core/http/utilities/create-service';
-import { defineServiceModule } from '@/shared/api/service-module';
+import { createService, get, post } from '@/app/core/http/utilities/create-service';
+
 import type {
     ApplyFilterInputDTO,
     ApplyFilterOutputDTO,
@@ -81,12 +81,11 @@ const endpoints = {
     )
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/particle-filters',
             useRBAC: true
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

@@ -7,6 +7,7 @@ import {
     useUpdateScriptingNotebookMutation
 } from '@/modules/scripting/hooks/queries';
 import { isAccessDeniedError } from '@/shared/errors/core';
+import { SOCKET_NOTEBOOK_EVENTS } from '@/modules/socket/events/scripting';
 import { ScriptingNotebookScope } from '@/modules/scripting/api/entities/scripting-notebook-scope';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
@@ -55,10 +56,10 @@ const DEFAULT_NOTEBOOK_SCOPE = ScriptingNotebookScope.General;
 const NEW_TAB_BLOCKED_ERROR = 'Unable to open a new tab. Please allow pop-ups for this site.';
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: 'notebook.deleted', queryKeys: [scriptingNotebooksQueryKey()] }
+    { event: SOCKET_NOTEBOOK_EVENTS.DELETED, queryKeys: [scriptingNotebooksQueryKey()] }
 ];
 
-const DELETE_NOTEBOOK_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Notebook', success: 'Notebook deleted successfully' });
+const DELETE_NOTEBOOK_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Notebook' });
 
 const CREATE_NOTEBOOK_TOAST = {
     loading: { title: 'Creating notebook...' },
@@ -69,7 +70,7 @@ const CREATE_NOTEBOOK_TOAST = {
     error: { title: 'Failed to create notebook' }
 };
 
-const RENAME_NOTEBOOK_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Notebook', success: 'Notebook renamed successfully' });
+const RENAME_NOTEBOOK_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Notebook' });
 
 const SAVE_NOTEBOOK_DEPLOYMENT_TOAST = createCrudToastOptions({ action: 'Saving', subject: 'notebook deployment', success: 'Notebook deployment saved successfully' });
 

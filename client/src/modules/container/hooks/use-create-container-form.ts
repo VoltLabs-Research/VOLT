@@ -1,7 +1,8 @@
 import { CONTAINER_TEMPLATES } from '../services/container-templates';
 import { containerQuery } from './queries';
 import useTeamClusterResourceSelection from './use-team-cluster-resource-selection';
-import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
+import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
+import { SOCKET_CONTAINER_EVENTS } from '@/modules/socket/events/container';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTeamsQuery } from '@/modules/team/hooks/team/queries';
@@ -289,7 +290,7 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
         'container-ready': 'Container is ready.'
     }), []);
 
-    useSocketEvent<ContainerDeployProgressEvent>('container.deploy.progress', (event) => {
+    useSocketEvent<ContainerDeployProgressEvent>(SOCKET_CONTAINER_EVENTS.DEPLOY_PROGRESS, (event) => {
         if (!activeCreateOperationId || event.operationId !== activeCreateOperationId) {
             return;
         }

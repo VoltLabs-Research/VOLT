@@ -1,8 +1,8 @@
 import {
     DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
     DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS
-} from '@modules/team-cluster/domain/entities/TeamCluster';
-import TeamClusterModel from '@modules/team-cluster/infrastructure/persistence/mongo/models/TeamClusterModel';
+} from '@modules/cluster/domain/entities/TeamCluster';
+import TeamClusterModel from '@modules/cluster/infrastructure/persistence/mongo/models/TeamClusterModel';
 import logger from '@shared/infrastructure/logger';
 
 const LEGACY_TEAM_CLUSTER_QUEUE_CONCURRENCY = {

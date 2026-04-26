@@ -1,12 +1,10 @@
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
 
-export type JobStatusChangedValue = JobStatus | 'retrying';
-
 export interface JobStatusChangedEventPayload {
     jobId: string;
     teamId: string;
-    status: JobStatusChangedValue;
+    status: JobStatus;
     queueType: string;
     name?: string;
     analysisId?: string;

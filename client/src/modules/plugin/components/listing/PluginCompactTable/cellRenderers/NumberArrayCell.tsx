@@ -1,4 +1,4 @@
-import { formatNumber, safeJsonStringify } from '@/modules/plugin/components/listing/PluginCompactTable/formatters';
+import { formatScientific, safeJsonStringify } from '@/modules/plugin/components/listing/PluginCompactTable/formatters';
 
 interface NumberArrayCellProps {
     value: unknown;
@@ -28,7 +28,7 @@ const NumberArrayCell = ({ value }: NumberArrayCellProps) => {
         <span className='plugin-cell-array tabular-nums' title={safeJsonStringify(value)}>
             <span className='plugin-cell-array__count'>[{value.length}]</span>
             <span className='plugin-cell-array__range'>
-                {formatNumber(min, 3).short} … {formatNumber(max, 3).short}
+                {formatScientific(min, 3).short} … {formatScientific(max, 3).short}
             </span>
         </span>
     );

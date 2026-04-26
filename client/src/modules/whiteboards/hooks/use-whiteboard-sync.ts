@@ -4,7 +4,11 @@ import {
     mergeWhiteboardAppState,
     mergeWhiteboardElements
 } from '@/modules/whiteboards/utilities/whiteboards';
-import useSocket from '@/modules/socket/core/hooks/use-socket';
+import useSocket from '@/modules/socket/hooks/use-socket';
+import useSocketConnectionEffect from '@/modules/socket/hooks/use-socket-connection-effect';
+import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
+import useSocketRoom from '@/modules/socket/hooks/use-socket-room';
+import { SOCKET_WHITEBOARD_EVENTS } from '@/modules/socket/events/whiteboards';
 import { useCallback, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -62,8 +66,6 @@ const useWhiteboardSync = ({
     const socketService = useSocket();
     const clientIdRef = useRef(uuidv4());
     const revisionRef = useRef(0);
-    const isConnectedRef = useRef(socketService.isConnected());
-    const isSubscribedRef = useRef(false);
     const hasSnapshotRef = useRef(false);
     const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const queuedStateRef = useRef<QueuedWhiteboardState | null>(null);
@@ -73,9 +75,20 @@ const useWhiteboardSync = ({
         appState: {}
     });
 
+    const subscriptionEnabled = enabled && !!whiteboardId;
+
+    useSocketRoom({
+        joinEvent: SOCKET_WHITEBOARD_EVENTS.SUBSCRIBE,
+        leaveEvent: SOCKET_WHITEBOARD_EVENTS.UNSUBSCRIBE,
+        roomKey: subscriptionEnabled ? whiteboardId ?? null : null,
+        buildJoinPayload: () => whiteboardId ? { whiteboardId } : null,
+        enabled: subscriptionEnabled,
+        fireAndForget: true
+    });
+
     const flushQueuedState = useCallback(() => {
         const queuedState = queuedStateRef.current;
-        if (!queuedState || !enabled || !whiteboardId || !isConnectedRef.current || !isSubscribedRef.current || !hasSnapshotRef.current) {
+        if (!queuedState || !enabled || !whiteboardId || !socketService.isConnected() || !hasSnapshotRef.current) {
             return;
         }
 
@@ -102,20 +115,8 @@ const useWhiteboardSync = ({
             elementOrder: delta.elementOrder
         };
 
-        socketService.emit('whiteboard_patch', payload).catch(() => {
+        socketService.emit(SOCKET_WHITEBOARD_EVENTS.PATCH, payload).catch(() => {
             queuedStateRef.current = queuedState;
-        });
-    }, [enabled, whiteboardId, socketService]);
-
-    const subscribeToWhiteboard = useCallback(() => {
-        if (!enabled || !whiteboardId || !isConnectedRef.current || isSubscribedRef.current) {
-            return;
-        }
-
-        isSubscribedRef.current = true;
-        hasSnapshotRef.current = false;
-        socketService.emit('subscribe_to_whiteboard', { whiteboardId }).catch(() => {
-            isSubscribedRef.current = false;
         });
     }, [enabled, whiteboardId, socketService]);
 
@@ -139,127 +140,94 @@ const useWhiteboardSync = ({
         }, DELTA_DEBOUNCE_MS);
     }, [enabled, flushQueuedState, whiteboardId]);
 
-    useEffect(() => {
-        if (!enabled || !whiteboardId) {
+    useSocketConnectionEffect((connected) => {
+        if (!connected) hasSnapshotRef.current = false;
+    });
+
+    const applyRemoteState = useCallback((
+        payload: WhiteboardStatePayload | undefined,
+        mode: 'snapshot' | 'delta'
+    ) => {
+        if (!payload || payload.whiteboardId !== whiteboardId) {
             return;
         }
 
-        const unsubscribeConnection = socketService.onConnectionChange((connected) => {
-            isConnectedRef.current = connected;
-            if (connected) {
-                isSubscribedRef.current = false;
-                subscribeToWhiteboard();
-                return;
-            }
+        const isStalePayload = mode === 'snapshot'
+            ? payload.revision < revisionRef.current
+            : payload.revision <= revisionRef.current;
 
-            hasSnapshotRef.current = false;
-        });
-
-        socketService.connect().catch(() => undefined);
-
-        return () => {
-            unsubscribeConnection();
-        };
-    }, [enabled, subscribeToWhiteboard, whiteboardId, socketService]);
-
-    useEffect(() => {
-        if (!enabled || !whiteboardId) {
+        if (isStalePayload) {
             return;
         }
 
-        const applyRemoteState = (
-            payload: WhiteboardStatePayload,
-            mode: 'snapshot' | 'delta'
-        ) => {
-            if (!payload || payload.whiteboardId !== whiteboardId) {
-                return;
-            }
+        revisionRef.current = payload.revision;
+        hasSnapshotRef.current = true;
 
-            const isStalePayload = mode === 'snapshot'
-                ? payload.revision < revisionRef.current
-                : payload.revision <= revisionRef.current;
+        if (mode === 'snapshot') {
+            syncedSceneRef.current = {
+                elements: payload.elements,
+                appState: filterPersistableAppState(payload.appState)
+            };
+        } else {
+            syncedSceneRef.current = {
+                elements: mergeWhiteboardElements(
+                    syncedSceneRef.current.elements,
+                    payload.elements,
+                    payload.elementOrder
+                ),
+                appState: mergeWhiteboardAppState(
+                    syncedSceneRef.current.appState,
+                    payload.appState
+                )
+            };
+        }
 
-            if (isStalePayload) {
-                return;
-            }
+        remoteApplyChainRef.current = remoteApplyChainRef.current
+            .catch(() => undefined)
+            .then(async () => {
+                if (payload.clientId === clientIdRef.current && mode === 'delta') {
+                    return;
+                }
 
-            revisionRef.current = payload.revision;
-            hasSnapshotRef.current = true;
+                const resolvedElementOrder = mode === 'snapshot'
+                    ? payload.elements
+                        .map((element) => element.id)
+                        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+                    : payload.elementOrder;
 
-            if (mode === 'snapshot') {
-                syncedSceneRef.current = {
-                    elements: payload.elements,
-                    appState: filterPersistableAppState(payload.appState)
-                };
-            } else {
-                syncedSceneRef.current = {
-                    elements: mergeWhiteboardElements(
-                        syncedSceneRef.current.elements,
-                        payload.elements,
-                        payload.elementOrder
-                    ),
-                    appState: mergeWhiteboardAppState(
-                        syncedSceneRef.current.appState,
-                        payload.appState
-                    )
-                };
-            }
+                await onRemoteState?.(
+                    payload.elements,
+                    payload.appState,
+                    payload.revision,
+                    resolvedElementOrder
+                );
+            })
+            .finally(() => {
+                flushQueuedState();
+            });
+    }, [whiteboardId, onRemoteState, flushQueuedState]);
 
-            remoteApplyChainRef.current = remoteApplyChainRef.current
-                .catch(() => undefined)
-                .then(async () => {
-                    if (payload.clientId === clientIdRef.current && mode === 'delta') {
-                        return;
-                    }
+    useSocketEvent<WhiteboardStatePayload | undefined>(
+        SOCKET_WHITEBOARD_EVENTS.SYNC_STATE,
+        (payload) => applyRemoteState(payload, 'snapshot'),
+        { enabled: subscriptionEnabled }
+    );
 
-                    const resolvedElementOrder = mode === 'snapshot'
-                        ? payload.elements
-                            .map((element) => element.id)
-                            .filter((id): id is string => typeof id === 'string' && id.length > 0)
-                        : payload.elementOrder;
+    useSocketEvent<WhiteboardStatePayload | undefined>(
+        SOCKET_WHITEBOARD_EVENTS.APPLY_DELTA,
+        (payload) => applyRemoteState(payload, 'delta'),
+        { enabled: subscriptionEnabled }
+    );
 
-                    await onRemoteState?.(
-                        payload.elements,
-                        payload.appState,
-                        payload.revision,
-                        resolvedElementOrder
-                    );
-                })
-                .finally(() => {
-                    flushQueuedState();
-                });
-        };
-
-        const unsubscribeState = socketService.on<[WhiteboardStatePayload]>(
-            'whiteboard_sync_state',
-            (payload) => {
-                applyRemoteState(payload, 'snapshot');
-            }
-        );
-
-        const unsubscribeDelta = socketService.on<[WhiteboardStatePayload]>(
-            'whiteboard_apply_delta',
-            (payload) => {
-                applyRemoteState(payload, 'delta');
-            }
-        );
-
-        subscribeToWhiteboard();
+    useEffect(() => {
+        if (!subscriptionEnabled) return;
 
         return () => {
-            unsubscribeState();
-            unsubscribeDelta();
-
             if (debounceTimerRef.current) {
                 clearTimeout(debounceTimerRef.current);
             }
 
-            if (isConnectedRef.current && isSubscribedRef.current) {
-                socketService.emit('unsubscribe_from_whiteboard', { whiteboardId }).catch(() => undefined);
-            }
-
             revisionRef.current = 0;
-            isSubscribedRef.current = false;
             hasSnapshotRef.current = false;
             queuedStateRef.current = null;
             syncedSceneRef.current = {
@@ -267,7 +235,7 @@ const useWhiteboardSync = ({
                 appState: {}
             };
         };
-    }, [enabled, flushQueuedState, onRemoteState, subscribeToWhiteboard, whiteboardId, socketService]);
+    }, [subscriptionEnabled, whiteboardId]);
 
     return {
         sendDelta,

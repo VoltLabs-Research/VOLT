@@ -1,5 +1,5 @@
-import { defineServiceModule } from '@/shared/api/service-module';
-import { del, get, paginated, patch, post } from '@/app/core/http/utilities/create-service';
+
+import { createService, del, get, paginated, patch, post } from '@/app/core/http/utilities/create-service';
 import type { CreateSSHConnectionParams } from './dtos/create-ssh-connection';
 import type { DeleteSSHConnectionInputDTO } from './dtos/delete-ssh-connection';
 import type { GetSSHConnectionByIdInputDTO } from './dtos/get-ssh-connection-by-id';
@@ -22,12 +22,11 @@ const endpoints = {
     testConnection: post<TestSSHConnectionInputDTO, TestSSHConnectionResponse>('/:sshConnectionId/connection-tests')
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/ssh/connections',
             useRBAC: true
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

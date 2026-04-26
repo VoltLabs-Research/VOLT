@@ -1,4 +1,4 @@
-import teamService from '../../api/services/team';
+import teamService from '../../api/services/team-service';
 import {
     buildKeys,
     createMutation,

@@ -4,7 +4,8 @@ export {
     isAccessDeniedCode,
     isAccessDeniedError,
     isApiError,
-    markApiErrorHandled
+    markApiErrorHandled,
+    resolveErrorTitle
 } from '@/shared/errors/core/report-error';
 export {
     ErrorSurface

@@ -10,7 +10,7 @@ import { parseAnalysisRasterFrameKey, parseRasterTimestep } from '@modules/raste
 import {
     resolveAnalysisStorageClusterId,
     resolveTrajectoryStorageClusterId
-} from '@modules/team-cluster/application/utilities/cluster-location';
+} from '@modules/cluster/application/utilities/cluster-location';
 import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';

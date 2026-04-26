@@ -1,5 +1,5 @@
 import { clearCurrentUserQueryData, fetchCurrentUser } from '@/modules/auth/hooks/queries';
-import { clearSocketSession, updateSocketAuthToken } from '@/modules/socket/core/services/socket-auth-session';
+import { clearSocketSession, updateSocketAuthToken } from '@/modules/socket/services/socket-auth-session';
 import { resetTeamSessionState } from '@/modules/team/stores/team/use-team-store';
 import { tokenStorage } from '@/shared/auth/token-storage';
 import { create } from 'zustand';

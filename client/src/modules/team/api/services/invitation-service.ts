@@ -1,5 +1,4 @@
-import { get, post, patch, del } from '@/app/core/http/utilities/create-service';
-import { defineServiceModule } from '@/shared/api/service-module';
+import { createService, get, post, patch, del } from '@/app/core/http/utilities/create-service';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { TeamInvitation } from '../entities/invitation/team-invitation';
 import type { GetInvitationDetailsInputDTO } from '../dtos/invitation/get-invitation-details';
@@ -51,7 +50,7 @@ const endpoints = {
     )
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         team: {
             basePath: '/teams',
@@ -61,6 +60,5 @@ export default defineServiceModule({
             basePath: '/teams/invitations',
             useRBAC: false
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

@@ -1,59 +1,20 @@
 import { containerQuery } from '@/modules/container/hooks/queries';
-import useSocket from '@/modules/socket/core/hooks/use-socket';
+import useSocketQueryInvalidation from '@/modules/socket/hooks/use-socket-query-invalidation';
+import type { SocketInvalidationRule } from '@/modules/socket/hooks/use-socket-query-invalidation';
+import { SOCKET_CONTAINER_EVENTS } from '@/modules/socket/events/container';
+import { SOCKET_TEAM_EVENTS } from '@/modules/socket/events/team';
 import { TEAM_QUERY_KEYS } from '@/modules/team/hooks/team/queries';
-import queryClient from '@/shared/infrastructure/query/query-client';
-import { useEffect, useRef } from 'react';
-import type { QueryKey } from '@tanstack/react-query';
 
-interface SocketCacheSyncEvent {
-    event: string;
-    queryKeys: QueryKey[];
-};
-
-const GLOBAL_SOCKET_CACHE_SYNC_EVENTS: SocketCacheSyncEvent[] = [
-    { event: 'team.created', queryKeys: [TEAM_QUERY_KEYS.teams()] },
-    { event: 'team.deleted', queryKeys: [TEAM_QUERY_KEYS.teams()] },
-    { event: 'container.created', queryKeys: [containerQuery.QUERY_KEYS.lists()] },
-    { event: 'container.updated', queryKeys: [containerQuery.QUERY_KEYS.lists()] },
-    { event: 'container.deleted', queryKeys: [containerQuery.QUERY_KEYS.lists()] }
+const GLOBAL_SOCKET_CACHE_SYNC_RULES: SocketInvalidationRule[] = [
+    { event: SOCKET_TEAM_EVENTS.CREATED, queryKeys: [TEAM_QUERY_KEYS.teams()] },
+    { event: SOCKET_TEAM_EVENTS.DELETED, queryKeys: [TEAM_QUERY_KEYS.teams()] },
+    { event: SOCKET_CONTAINER_EVENTS.CREATED, queryKeys: [containerQuery.QUERY_KEYS.lists()] },
+    { event: SOCKET_CONTAINER_EVENTS.UPDATED, queryKeys: [containerQuery.QUERY_KEYS.lists()] },
+    { event: SOCKET_CONTAINER_EVENTS.DELETED, queryKeys: [containerQuery.QUERY_KEYS.lists()] }
 ];
 
 const useGlobalSocketCacheSync = (): void => {
-    const socketService = useSocket();
-    const pendingQueryKeysRef = useRef(new Map<string, QueryKey>());
-    const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    useEffect(() => {
-        const scheduleInvalidation = (queryKey: QueryKey) => {
-            pendingQueryKeysRef.current.set(JSON.stringify(queryKey), queryKey);
-
-            if (flushTimerRef.current) {
-                return;
-            }
-
-            flushTimerRef.current = setTimeout(() => {
-                const queryKeys = Array.from(pendingQueryKeysRef.current.values());
-                pendingQueryKeysRef.current.clear();
-                flushTimerRef.current = null;
-                Promise.allSettled(queryKeys.map((currentQueryKey) => queryClient.invalidateQueries({ queryKey: currentQueryKey })));
-            }, 150);
-        };
-
-        const unsubscribers = GLOBAL_SOCKET_CACHE_SYNC_EVENTS.map(({ event, queryKeys }) => {
-            return socketService.on(event, () => {
-                queryKeys.forEach(scheduleInvalidation);
-            });
-        });
-
-        return () => {
-            if (flushTimerRef.current) {
-                clearTimeout(flushTimerRef.current);
-                flushTimerRef.current = null;
-            }
-            pendingQueryKeysRef.current.clear();
-            unsubscribers.forEach((unsubscribe) => unsubscribe());
-        };
-    }, [socketService]);
+    useSocketQueryInvalidation(GLOBAL_SOCKET_CACHE_SYNC_RULES);
 };
 
 export default useGlobalSocketCacheSync;

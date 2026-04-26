@@ -32,7 +32,7 @@ export const markApiErrorHandled = (error: unknown): void => {
     }
 };
 
-const resolveErrorTitle = (error: unknown, fallbackTitle?: string): string => {
+export const resolveErrorTitle = (error: unknown, fallbackTitle?: string): string => {
     if (isApiError(error)) {
         return getErrorMessage(error.code, fallbackTitle ?? DEFAULT_ERROR_TITLE);
     }

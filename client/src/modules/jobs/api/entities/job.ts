@@ -49,7 +49,6 @@ export enum JobStatus{
     Completed = 'completed',
     Failed = 'failed',
     Retrying = 'retrying',
-    Unknown = 'unknown',
     QueuedAfterFailure = 'queued_after_failure'
 };
 
