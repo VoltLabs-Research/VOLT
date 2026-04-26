@@ -1,5 +1,5 @@
-import { del, paginated, patch, post } from '@/app/core/http/utilities/create-service';
-import { defineServiceModule } from '@/shared/api/service-module';
+import { createService, del, paginated, patch, post } from '@/app/core/http/utilities/create-service';
+
 import type { AIConversation, AIConversationMessage } from './entities/ai-conversation';
 import type { CreateAIConversationParams, CreateAIConversationResult } from './dtos/create-ai-conversation';
 import type { ListAIConversationMessagesParams } from './dtos/list-ai-conversation-messages';
@@ -23,12 +23,11 @@ const endpoints = {
     listMessages: paginated<ListMessagesInput, PaginatedResponse<AIConversationMessage>>('/:conversationId/messages')
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/ai/conversations',
             useRBAC: true
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

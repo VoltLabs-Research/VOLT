@@ -23,7 +23,7 @@ const TOMBSTONE_TTL_SECONDS = 600;
 const REMOVABLE_STATUSES = new Set<string>([
     JobStatus.Queued,
     JobStatus.Running,
-    'retrying'
+    JobStatus.Retrying
 ]);
 
 interface ClusterActionResponse {
@@ -406,7 +406,7 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
             ...job,
             jobId: job.jobId,
             teamId: job.teamId,
-            status: 'retrying',
+            status: JobStatus.Retrying,
             queueType: job.queueType,
             source: 'projected',
             backingSource: 'daemon',

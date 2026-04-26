@@ -4,8 +4,8 @@ import { getValueByPath } from '@/shared/utils/format';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { SortConfig } from '@/shared/domain/sorting/types';
 import { sortData } from '@/shared/utils/sort';
-import useSocket from '@/modules/socket/core/hooks/use-socket';
-import queryClient from '@/shared/infrastructure/query/query-client';
+import useSocketQueryInvalidation from '@/modules/socket/hooks/use-socket-query-invalidation';
+import type { SocketInvalidationRule } from '@/modules/socket/hooks/use-socket-query-invalidation';
 import Button from '@/shared/presentation/primitives/Button';
 import Heading from '@/shared/presentation/primitives/Heading';
 import Popover from '@/shared/presentation/primitives/Popover';
@@ -26,8 +26,8 @@ import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-cli
 
 import './DocumentListing.css';
 import { motion } from 'framer-motion';
-import { ArrowDown, ArrowUp, ArrowUpDown, Check, Columns3, ExternalLink, Plus } from 'lucide-react';
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, Columns3, Plus } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RiFileCopyLine } from 'react-icons/ri';
 import { RxDotsHorizontal } from 'react-icons/rx';
 import React from 'react';
@@ -55,7 +55,6 @@ type ViewMode = 'table' | 'grid';
 interface DocumentListingProps<T extends { _id: string }, TContext = Record<string, never>> {
     title: string | React.ReactNode;
     description?: React.ReactNode;
-    docLink?: string;
     queryKey: QueryKey;
     fetchData: (params: PaginationParams & TContext) => Promise<PaginatedResponse<T>>;
     transformData?: (data: T[]) => T[];
@@ -66,7 +65,6 @@ interface DocumentListingProps<T extends { _id: string }, TContext = Record<stri
     createNew?: { buttonTitle: string; onCreate: () => void };
     headerActions?: React.ReactNode;
     headerMenuOptions?: MenuOption[];
-    gap?: string;
     columns?: ColumnConfig<T>[];
     getMenuOptions?: (item: T, selectedItems: T[]) => MenuOption[];
     onItemClick?: (item: T, event: React.MouseEvent) => boolean;
@@ -86,7 +84,6 @@ interface DocumentListingProps<T extends { _id: string }, TContext = Record<stri
     defaultTabId?: string;
     onTabChange?: (tabId: string) => void;
     socketInvalidation?: SocketInvalidationConfig[];
-    compact?: boolean;
 };
 
 const DEFAULT_TABS: DocumentListingTab[] = [
@@ -139,7 +136,6 @@ const resolvePersistenceKey = (queryKey: QueryKey): string => {
 const DocumentListing = <T extends { _id: string }, TContext = Record<string, never>>({
     title,
     description,
-    docLink,
     queryKey,
     fetchData,
     transformData,
@@ -154,7 +150,6 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     createNew,
     headerActions,
     headerMenuOptions = [],
-    gap = 'gap-3',
     view = 'table',
     renderGridItem,
     renderGridSkeleton,
@@ -169,10 +164,8 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     tabs,
     defaultTabId,
     onTabChange,
-    socketInvalidation,
-    compact = false
+    socketInvalidation
 }: DocumentListingProps<T, TContext>) => {
-    const socketService = useSocket();
     const prefersReducedMotion = usePrefersReducedMotion();
     const [searchParams, setSearchParams] = useSearchParams();
     const resolvedTabs = useMemo(() => tabs?.length ? tabs : DEFAULT_TABS, [tabs]);
@@ -283,52 +276,12 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         defaultLimit,
         enabled
     });
-    const deferredData = useDeferredValue(data);
-    const socketInvalidationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const pendingQueryKeysRef = useRef<Map<string, QueryKey>>(new Map());
-    const socketInvalidationRef = useRef<SocketInvalidationConfig[] | undefined>(socketInvalidation);
+    const invalidationRules = useMemo<SocketInvalidationRule[]>(
+        () => (socketInvalidation ?? []).map(({ event, queryKeys }) => ({ event, queryKeys })),
+        [socketInvalidation]
+    );
 
-    useEffect(() => {
-        socketInvalidationRef.current = socketInvalidation;
-    }, [socketInvalidation]);
-
-    useEffect(() => {
-        if (!socketInvalidation?.length) {
-            return;
-        }
-
-        const flushInvalidations = () => {
-            const queryKeys = Array.from(pendingQueryKeysRef.current.values());
-            pendingQueryKeysRef.current.clear();
-            socketInvalidationTimerRef.current = null;
-            Promise.allSettled(
-                queryKeys.map((currentQueryKey) => queryClient.invalidateQueries({ queryKey: currentQueryKey }))
-            );
-        };
-
-        const events = new Set<string>();
-        for (const { event } of socketInvalidation) events.add(event);
-
-        const unsubscribers = Array.from(events).map((event) => {
-            return socketService.on(event, () => {
-                const current = socketInvalidationRef.current ?? [];
-                for (const entry of current) {
-                    if (entry.event !== event) continue;
-                    for (const key of entry.queryKeys) {
-                        pendingQueryKeysRef.current.set(JSON.stringify(key), key);
-                    }
-                }
-
-                if (socketInvalidationTimerRef.current) return;
-                socketInvalidationTimerRef.current = setTimeout(flushInvalidations, 150);
-            });
-        });
-
-        return () => {
-            unsubscribers.forEach((unsubscribe) => unsubscribe());
-        };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- read latest via ref to avoid tearing down listeners
-    }, [socketService, socketInvalidation?.map((entry) => entry.event).sort().join(',')]);
+    useSocketQueryInvalidation(invalidationRules, { enabled: invalidationRules.length > 0 });
 
     const wrappedGetMenuOptions = useCallback((item: T, selectedItems: T[]) => {
         const menuOptions = getMenuOptions ? getMenuOptions(item, selectedItems) : [];
@@ -354,12 +307,12 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     }, [getMenuOptions]);
 
     const sortedData = useMemo(() => {
-        if (!sortConfig || deferredData.length < 2) {
-            return deferredData;
+        if (!sortConfig || data.length < 2) {
+            return data;
         }
 
-        return sortData(deferredData, sortConfig, getValueByPath);
-    }, [deferredData, sortConfig]);
+        return sortData(data, sortConfig, getValueByPath);
+    }, [data, sortConfig]);
 
     const handleSort = useCallback((col: ColumnConfig<T>) => {
         if (!col.sortable) {
@@ -470,25 +423,6 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         );
     }, [shouldShowColumnPicker]);
 
-    const headerDocLink = useMemo(() => {
-        if (!docLink) {
-            return null;
-        }
-
-        return (
-            <a
-                href={docLink}
-                target='_blank'
-                rel='noreferrer'
-                className='document-listing-doc-link d-flex items-center content-center'
-                aria-label='Open documentation'
-                title='Open documentation'
-            >
-                <ExternalLink size={14} aria-hidden='true' />
-            </a>
-        );
-    }, [docLink]);
-
     const handleTabChange = useCallback((tabId: string) => {
         const targetTab = resolvedTabs.find((tab) => tab.id === tabId);
         if (!targetTab) {
@@ -561,7 +495,6 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                         onRetry={refresh}
                         retryButtonText='Try again'
                         scrollContainerRef={scrollContainerRef}
-                        compact={compact}
                     />
                 </motion.div>
             </div>
@@ -569,12 +502,12 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     };
 
     return (
-        <Stack height='max' gap='1' className={`document-listing-container color-secondary ${compact ? 'is-compact' : ''}`}>
+        <Stack height='max' gap='1' className='document-listing-container color-secondary'>
             <span style={VISUALLY_HIDDEN_STYLES} aria-live='polite' aria-atomic='true'>
                 {sortAnnouncement}
             </span>
             {!hideHeader && (
-                <div className={`d-flex column ${gap}`}>
+                <div className='d-flex column gap-3'>
                     <Stack gap='1-5' p='2' className='document-listing-header-top-container'>
                         <Row justify='between' align='start' gap='1-5' className='document-listing-header-row'>
                             <Row gap='1' align='start' className='document-listing-header-main'>
@@ -597,9 +530,8 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                                         ) : null}
                                     </Stack>
                                 )}
-                                {(headerDocLink || headerMenuTrigger || columnPickerTrigger) && (
+                                {(headerMenuTrigger || columnPickerTrigger) && (
                                     <Row gap='05'>
-                                        {headerDocLink}
                                         {columnPickerTrigger && (
                                             <Popover
                                                 id='document-listing-column-picker'

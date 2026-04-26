@@ -4,7 +4,7 @@ import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflo
 import { BinaryUploadResult, IPluginStorageService, PluginImportResult } from '@modules/plugin/domain/port/plugin/IPluginStorageService';
 import { WorkflowValidationMode } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
-import StoragePlacementService from '@modules/team-cluster/application/services/StoragePlacementService';
+import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { SYS_BUCKETS } from '@core/config/minio';

@@ -1,4 +1,11 @@
-import useSocket from '@/modules/socket/core/hooks/use-socket';
+import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
+import useSocketRoom from '@/modules/socket/hooks/use-socket-room';
+import useThrottledSocketEmit from '@/modules/socket/hooks/use-throttled-socket-emit';
+import { emitOrReport } from '@/modules/socket/services/socket-emit-helpers';
+import {
+    SOCKET_CANVAS_LOBBY_EVENTS,
+    SOCKET_CANVAS_WORKSPACE_EVENTS
+} from '@/modules/socket/events/canvas';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import {
@@ -49,6 +56,12 @@ interface WorkspaceClosedPayload {
     ownerId: string;
 }
 
+interface WorkspacePatchEmitPayload {
+    trajectoryId: string;
+    ownerId: string;
+    patch: SharedCanvasState;
+}
+
 interface UseCanvasWorkspaceOptions {
     trajectoryId?: string;
     ownerId?: string;
@@ -62,7 +75,6 @@ const useCanvasWorkspace = ({
     ownerId: requestedOwnerId,
     enabled = true
 }: UseCanvasWorkspaceOptions) => {
-    const socketService = useSocket();
     const currentUser = useCurrentUser();
     const navigate = useNavigate();
 
@@ -75,107 +87,88 @@ const useCanvasWorkspace = ({
 
     const suppressBroadcastRef = useRef(false);
     const publishedStateRef = useRef<SharedCanvasState | null>(null);
-    const publishTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const ownerIdRef = useRef(effectiveOwnerId);
-    const trajectoryIdRef = useRef(trajectoryId);
-    const isOwnerRef = useRef(isOwner);
 
-    ownerIdRef.current = effectiveOwnerId;
-    trajectoryIdRef.current = trajectoryId;
-    isOwnerRef.current = isOwner;
+    const lobbyEnabled = enabled && !!trajectoryId && !!currentUserId;
+    const visitOwner = effectiveOwnerId ?? currentUserId;
+    const visitEnabled = enabled && !!trajectoryId && !!currentUserId;
+
+    useSocketRoom({
+        joinEvent: SOCKET_CANVAS_LOBBY_EVENTS.JOIN,
+        leaveEvent: SOCKET_CANVAS_LOBBY_EVENTS.LEAVE,
+        roomKey: lobbyEnabled ? trajectoryId ?? null : null,
+        buildJoinPayload: () => trajectoryId ? { trajectoryId } : null,
+        enabled: lobbyEnabled,
+        fireAndForget: true
+    });
+
+    useSocketRoom({
+        joinEvent: SOCKET_CANVAS_WORKSPACE_EVENTS.VISIT,
+        leaveEvent: SOCKET_CANVAS_WORKSPACE_EVENTS.LEAVE,
+        roomKey: visitEnabled && trajectoryId && visitOwner ? `${trajectoryId}:${visitOwner}` : null,
+        buildJoinPayload: () => (trajectoryId && visitOwner) ? { trajectoryId, ownerId: visitOwner } : null,
+        enabled: visitEnabled,
+        fireAndForget: true
+    });
 
     useEffect(() => {
-        if (!enabled || !trajectoryId || !currentUserId) {
-            return;
-        }
-
-        socketService.connect().catch(() => undefined);
-        socketService.emit('canvas.lobby.join', { trajectoryId }).catch(() => undefined);
-
+        if (!lobbyEnabled) return;
         return () => {
-            socketService.emit('canvas.lobby.leave', { trajectoryId }).catch(() => undefined);
             usePresenceStore.setState({ lobbyUsers: [], workspaceViewers: [] });
         };
-    }, [enabled, trajectoryId, currentUserId, socketService]);
+    }, [lobbyEnabled, trajectoryId, currentUserId]);
 
-    useEffect(() => {
-        if (!enabled || !trajectoryId || !currentUserId) {
-            return;
+    useSocketEvent<WorkspacePresenceUser[] | undefined>(SOCKET_CANVAS_LOBBY_EVENTS.UPDATE, (users) => {
+        usePresenceStore.setState({ lobbyUsers: users ?? [] });
+    });
+
+    useSocketEvent<WorkspacePresenceUser[] | undefined>(SOCKET_CANVAS_WORKSPACE_EVENTS.VIEWERS, (users) => {
+        usePresenceStore.setState({ workspaceViewers: users ?? [] });
+    });
+
+    const isMatchingPayload = (payload: { trajectoryId?: string; ownerId?: string } | undefined): boolean => {
+        return !!payload
+            && payload.trajectoryId === trajectoryId
+            && payload.ownerId === effectiveOwnerId;
+    };
+
+    useSocketEvent<WorkspaceSyncPayload | undefined>(SOCKET_CANVAS_WORKSPACE_EVENTS.SYNC_STATE, (payload) => {
+        if (!isMatchingPayload(payload)) return;
+
+        suppressBroadcastRef.current = true;
+        try {
+            applySharedCanvasPatch(payload!.state ?? {});
+        } finally {
+            suppressBroadcastRef.current = false;
         }
 
-        const visitOwner = effectiveOwnerId ?? currentUserId;
-        socketService.emit('canvas.workspace.visit', { trajectoryId, ownerId: visitOwner }).catch(() => undefined);
-
-        return () => {
-            socketService.emit('canvas.workspace.leave', { trajectoryId, ownerId: visitOwner }).catch(() => undefined);
+        publishedStateRef.current = {
+            ...(publishedStateRef.current ?? {}),
+            ...(payload!.state ?? {})
         };
-    }, [enabled, trajectoryId, effectiveOwnerId, currentUserId, socketService]);
+    });
 
-    useEffect(() => {
-        const unsubLobby = socketService.on('canvas.lobby.update', (users) => {
-            usePresenceStore.setState({ lobbyUsers: (users ?? []) as WorkspacePresenceUser[] });
-        });
+    useSocketEvent<WorkspacePatchPayload | undefined>(SOCKET_CANVAS_WORKSPACE_EVENTS.APPLY_PATCH, (payload) => {
+        if (!isMatchingPayload(payload)) return;
 
-        const unsubViewers = socketService.on('canvas.workspace.viewers', (users) => {
-            usePresenceStore.setState({ workspaceViewers: (users ?? []) as WorkspacePresenceUser[] });
-        });
+        suppressBroadcastRef.current = true;
+        try {
+            applySharedCanvasPatch(payload!.patch ?? {});
+        } finally {
+            suppressBroadcastRef.current = false;
+        }
 
-        const unsubSync = socketService.on('canvas.workspace.sync_state', (data) => {
-            const payload = data as WorkspaceSyncPayload | undefined;
-            if (!payload) return;
-            if (payload.trajectoryId !== trajectoryIdRef.current) return;
-            if (payload.ownerId !== ownerIdRef.current) return;
-
-            suppressBroadcastRef.current = true;
-            try {
-                applySharedCanvasPatch(payload.state ?? {});
-            } finally {
-                suppressBroadcastRef.current = false;
-            }
-
-            publishedStateRef.current = {
-                ...(publishedStateRef.current ?? {}),
-                ...(payload.state ?? {})
-            };
-        });
-
-        const unsubPatch = socketService.on('canvas.workspace.apply_patch', (data) => {
-            const payload = data as WorkspacePatchPayload | undefined;
-            if (!payload) return;
-            if (payload.trajectoryId !== trajectoryIdRef.current) return;
-            if (payload.ownerId !== ownerIdRef.current) return;
-
-            suppressBroadcastRef.current = true;
-            try {
-                applySharedCanvasPatch(payload.patch ?? {});
-            } finally {
-                suppressBroadcastRef.current = false;
-            }
-
-            publishedStateRef.current = {
-                ...(publishedStateRef.current ?? {}),
-                ...(payload.patch ?? {})
-            };
-        });
-
-        const unsubClosed = socketService.on('canvas.workspace.closed', (data) => {
-            const payload = data as WorkspaceClosedPayload | undefined;
-            if (!payload) return;
-            if (payload.trajectoryId !== trajectoryIdRef.current) return;
-            if (payload.ownerId !== ownerIdRef.current) return;
-            if (payload.ownerId === currentUserId) return;
-
-            navigate(`/canvas/${payload.trajectoryId}`, { replace: true });
-        });
-
-        return () => {
-            unsubLobby();
-            unsubViewers();
-            unsubSync();
-            unsubPatch();
-            unsubClosed();
+        publishedStateRef.current = {
+            ...(publishedStateRef.current ?? {}),
+            ...(payload!.patch ?? {})
         };
-    }, [socketService, currentUserId, navigate]);
+    });
+
+    useSocketEvent<WorkspaceClosedPayload | undefined>(SOCKET_CANVAS_WORKSPACE_EVENTS.CLOSED, (payload) => {
+        if (!isMatchingPayload(payload)) return;
+        if (payload!.ownerId === currentUserId) return;
+
+        navigate(`/canvas/${payload!.trajectoryId}`, { replace: true });
+    });
 
     useEffect(() => {
         if (!enabled || !trajectoryId || !currentUserId || !isOwner) {
@@ -184,64 +177,43 @@ const useCanvasWorkspace = ({
 
         publishedStateRef.current = selectSharedCanvasState(useEditorStore.getState());
 
-        socketService.emit('canvas.workspace.publish_snapshot', {
+        emitOrReport(SOCKET_CANVAS_WORKSPACE_EVENTS.PUBLISH_SNAPSHOT, {
             trajectoryId,
             ownerId: currentUserId,
             state: publishedStateRef.current
-        }).catch(() => undefined);
-    }, [enabled, trajectoryId, currentUserId, isOwner, socketService]);
+        });
+    }, [enabled, trajectoryId, currentUserId, isOwner]);
+
+    const patchEmitter = useThrottledSocketEmit<WorkspacePatchEmitPayload>(SOCKET_CANVAS_WORKSPACE_EVENTS.PATCH, {
+        intervalMs: PUBLISH_THROTTLE_MS,
+        mode: 'trailing-throttle',
+        enabled: enabled && !!trajectoryId && !!currentUserId,
+        fireAndForget: false,
+        flushOnUnmount: true
+    });
 
     useEffect(() => {
         if (!enabled || !trajectoryId || !currentUserId) {
             return;
         }
 
-        const publishPatchIfOwner = () => {
-            if (!isOwnerRef.current) {
-                return;
-            }
+        if (!isOwner) return;
 
-            const activeTrajectoryId = trajectoryIdRef.current;
-            if (!activeTrajectoryId) {
-                return;
-            }
+        const unsubscribe = useEditorStore.subscribe(() => {
+            if (suppressBroadcastRef.current) return;
 
             const full = selectSharedCanvasState(useEditorStore.getState());
             publishedStateRef.current = full;
 
-            socketService.emit('canvas.workspace.patch', {
-                trajectoryId: activeTrajectoryId,
+            patchEmitter.emit({
+                trajectoryId,
                 ownerId: currentUserId,
                 patch: full
-            }).catch(() => undefined);
-        };
-
-        const schedulePublish = () => {
-            if (publishTimeoutRef.current) {
-                return;
-            }
-
-            publishTimeoutRef.current = setTimeout(() => {
-                publishTimeoutRef.current = null;
-                publishPatchIfOwner();
-            }, PUBLISH_THROTTLE_MS);
-        };
-
-        const unsubscribe = useEditorStore.subscribe(() => {
-            if (suppressBroadcastRef.current) return;
-            if (!isOwnerRef.current) return;
-
-            schedulePublish();
+            });
         });
 
-        return () => {
-            unsubscribe();
-            if (publishTimeoutRef.current) {
-                clearTimeout(publishTimeoutRef.current);
-                publishTimeoutRef.current = null;
-            }
-        };
-    }, [enabled, trajectoryId, currentUserId, socketService]);
+        return unsubscribe;
+    }, [enabled, trajectoryId, currentUserId, isOwner, patchEmitter]);
 
     const navigateToWorkspace = useCallback((peerId: string) => {
         if (!trajectoryId) return;

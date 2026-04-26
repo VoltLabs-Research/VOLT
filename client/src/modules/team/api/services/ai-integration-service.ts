@@ -1,5 +1,5 @@
-import { get, post, patch, del } from '@/app/core/http/utilities/create-service';
-import { defineServiceModule } from '@/shared/api/service-module';
+import { createService, get, post, patch, del } from '@/app/core/http/utilities/create-service';
+
 import type { GetTeamAIIntegrationsInputDTO, ListTeamAIIntegrationsResponse } from '../dtos/ai-integration/get-team-ai-integrations';
 import type { CreateTeamAIIntegrationInputDTO, CreateTeamAIIntegrationResponse } from '../dtos/ai-integration/create-team-ai-integration';
 import type { UpdateTeamAIIntegrationInputDTO, UpdateTeamAIIntegrationResponse } from '../dtos/ai-integration/update-team-ai-integration';
@@ -24,11 +24,10 @@ const endpoints = {
     )
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/teams'
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

@@ -1,5 +1,5 @@
-import { get, paginated } from '@/app/core/http/utilities/create-service';
-import { defineServiceModule } from '@/shared/api/service-module';
+import { createService, get, paginated } from '@/app/core/http/utilities/create-service';
+
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { SceneArtifact } from '../entities/scene-artifacts';
 import type {
@@ -50,12 +50,11 @@ const endpoints = {
     })
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/trajectories',
             useRBAC: true
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

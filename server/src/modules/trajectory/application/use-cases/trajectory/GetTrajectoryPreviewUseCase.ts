@@ -3,8 +3,8 @@ import { createHash } from 'node:crypto';
 import sharp from 'sharp';
 
 import { ErrorCodes } from '@core/constants/error-codes';
-import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
-import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
+import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { GetTrajectoryPreviewInputDTO, GetTrajectoryPreviewOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryPreviewDTO';
 import { readTrajectoryPreview } from '@modules/trajectory/utilities/trajectory/read-trajectory-preview';
 import ApplicationError from '@shared/application/errors/ApplicationError';

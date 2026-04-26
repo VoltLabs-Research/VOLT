@@ -21,7 +21,7 @@ import {
 } from '@/modules/cluster/utilities/team-cluster-role';
 import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluster-waiting';
-import { TEAM_CLUSTER_SOCKET_EVENTS } from '@/modules/cluster/api/service/endpoints/team-cluster-socket-events';
+import { SOCKET_TEAM_CLUSTER_EVENTS } from '@/modules/socket/events/cluster';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import MetricBars from '@/modules/cluster/components/MetricBars';
 import { openModal } from '@/shared/presentation/primitives/Modal';
@@ -124,7 +124,7 @@ const ClustersListing = () => {
 
         return [
             {
-                event: TEAM_CLUSTER_SOCKET_EVENTS.lifecycleUpdated,
+                event: SOCKET_TEAM_CLUSTER_EVENTS.LIFECYCLE_UPDATED,
                 queryKeys: [TEAM_CLUSTER_QUERY_KEYS.byTeam(vm.selectedTeamId)]
             }
         ];

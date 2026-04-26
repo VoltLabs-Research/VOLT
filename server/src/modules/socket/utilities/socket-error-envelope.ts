@@ -1,8 +1,6 @@
-import { ErrorCodes } from '@core/constants/error-codes';
+import { ErrorCodes, isErrorCode } from '@core/constants/error-codes';
 import type { ErrorCode } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-
-const SOCKET_ERROR_CODES = new Set<ErrorCode>(Object.values(ErrorCodes));
 
 export interface SocketErrorEnvelope {
     code: ErrorCode;
@@ -10,16 +8,8 @@ export interface SocketErrorEnvelope {
     details?: string;
 }
 
-const isSocketErrorCode = (value: unknown): value is ErrorCode => {
-    if (typeof value !== 'string') {
-        return false;
-    }
-
-    return SOCKET_ERROR_CODES.has(value as ErrorCode);
-};
-
 const resolveSocketErrorCode = (value: unknown): ErrorCode => {
-    if (isSocketErrorCode(value)) {
+    if (isErrorCode(value)) {
         return value;
     }
 

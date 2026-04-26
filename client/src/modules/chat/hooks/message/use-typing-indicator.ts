@@ -1,20 +1,19 @@
-import { CHAT_SOCKET_EVENTS } from '../../api/entities/shared/chat-constants';
+import { SOCKET_CHAT_EVENTS } from '@/modules/socket/events/chat';
+import { emitOrSwallow } from '@/modules/socket/services/socket-emit-helpers';
 import { useCallback, useEffect, useRef } from 'react';
-import useSocket from '@/modules/socket/core/hooks/use-socket';
 
 const TYPING_TIMEOUT = 1000;
 
 const useTypingIndicator = (chatId?: string) => {
-    const socket = useSocket();
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isTypingRef = useRef(false);
 
     const startTyping = useCallback(() => {
         if (!chatId || isTypingRef.current) return;
-        
+
         isTypingRef.current = true;
-        socket.emit(CHAT_SOCKET_EVENTS.TYPING_START, { chatId });
-    }, [chatId, socket]);
+        emitOrSwallow(SOCKET_CHAT_EVENTS.TYPING_START, { chatId });
+    }, [chatId]);
 
     const stopTyping = useCallback(() => {
         if (!chatId || !isTypingRef.current) return;
@@ -25,8 +24,8 @@ const useTypingIndicator = (chatId?: string) => {
         }
 
         isTypingRef.current = false;
-        socket.emit(CHAT_SOCKET_EVENTS.TYPING_STOP, { chatId });
-    }, [chatId, socket]);
+        emitOrSwallow(SOCKET_CHAT_EVENTS.TYPING_STOP, { chatId });
+    }, [chatId]);
 
     const handleTyping = useCallback(() => {
         if (!chatId) return;
@@ -54,9 +53,9 @@ const useTypingIndicator = (chatId?: string) => {
             }
 
             isTypingRef.current = false;
-            socket.emit(CHAT_SOCKET_EVENTS.TYPING_STOP, { chatId });
+            emitOrSwallow(SOCKET_CHAT_EVENTS.TYPING_STOP, { chatId });
         };
-    }, [chatId, socket]);
+    }, [chatId]);
 
     return { handleTyping };
 };

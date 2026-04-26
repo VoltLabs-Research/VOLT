@@ -1,5 +1,5 @@
-import { post, patch, del } from '@/app/core/http/utilities/create-service';
-import { defineServiceModule } from '@/shared/api/service-module';
+import { createService, post, patch, del } from '@/app/core/http/utilities/create-service';
+
 import type { Chat } from '../entities/chat';
 import type {
     AddUsersToGroupInputDTO,
@@ -22,11 +22,10 @@ const endpoints = {
     leaveGroup: del<LeaveGroupParams, void>('/:chatId/participants/self', { unwrap: 'void' })
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/chats'
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

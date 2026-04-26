@@ -5,7 +5,7 @@ import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflo
 import {
     resolveAnalysisComputeClusterId,
     resolveAnalysisStorageClusterId
-} from '@modules/team-cluster/application/utilities/cluster-location';
+} from '@modules/cluster/application/utilities/cluster-location';
 import { AnalysisAllAtomsResult, ExposureAtomConfig, IAtomPropertiesService } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';

@@ -1,13 +1,26 @@
-import useCollaborativeDocumentSocket from '@/modules/socket/core/hooks/use-collaborative-document-socket';
-import { useCallback } from 'react';
+import useSocketRoom from '@/modules/socket/hooks/use-socket-room';
+import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
+import useThrottledSocketEmit from '@/modules/socket/hooks/use-throttled-socket-emit';
+import { SOCKET_LATEX_EVENTS } from '@/modules/socket/events/latex';
+import { useCallback, useState } from 'react';
+import type { PresenceUser } from '@/modules/socket/types/presence-user';
+
+const CONTENT_DEBOUNCE_MS = 500;
 
 interface LatexContentUpdatedPayload {
     documentId: string;
-    /** ID of the LatexFile that was updated. */
     fileId: string;
     content: string;
     timestamp: number;
     senderId: string;
+};
+
+interface LatexContentUpdatePayload {
+    documentId: string;
+    teamId: string;
+    fileId: string;
+    content: string;
+    timestamp: number;
 };
 
 interface UseLatexDocumentSocketProps {
@@ -17,82 +30,69 @@ interface UseLatexDocumentSocketProps {
     onRemoteContentUpdate?: (content: string, timestamp: number, fileId: string) => void;
 };
 
-/**
- * Manages real-time collaboration for a LaTeX document:
- * joining/leaving the document room, broadcasting content changes,
- * and receiving presence updates.
- */
+const isLatexContentUpdatedPayload = (
+    value: unknown,
+    documentId?: string
+): value is LatexContentUpdatedPayload => {
+    if (!value || typeof value !== 'object') {
+        return false;
+    }
+
+    const candidate = value as Partial<LatexContentUpdatedPayload>;
+    return candidate.documentId === documentId
+        && typeof candidate.fileId === 'string'
+        && typeof candidate.content === 'string'
+        && typeof candidate.timestamp === 'number';
+};
+
 const useLatexDocumentSocket = ({
     documentId,
     teamId,
     enabled = true,
     onRemoteContentUpdate
 }: UseLatexDocumentSocketProps) => {
-    const { collaborators, sendContentUpdate: scheduleContentUpdate } = useCollaborativeDocumentSocket<
-        { documentId: string; teamId: string },
-        { documentId: string },
-        LatexContentUpdatedPayload,
-        {
-            eventName: 'latex_update_content';
-            documentId: string;
-            teamId: string;
-            fileId: string;
-            content: string;
-            timestamp: number;
-        }
-    >({
-        enabled: enabled && Boolean(documentId) && Boolean(teamId),
-        openEvent: 'latex_open_document',
-        closeEvent: 'latex_close_document',
-        contentUpdatedEvent: 'latex_content_updated',
-        presenceUpdatedEvent: 'latex_users_update',
-        buildOpenPayload: () => {
-            if (!documentId || !teamId) {
-                return null;
-            }
+    const isActive = enabled && !!documentId && !!teamId;
+    const [collaborators, setCollaborators] = useState<PresenceUser[]>([]);
 
-            return {
-                documentId,
-                teamId
-            };
-        },
-        buildClosePayload: () => {
-            if (!documentId) {
-                return null;
-            }
+    useSocketRoom({
+        joinEvent: SOCKET_LATEX_EVENTS.OPEN,
+        leaveEvent: SOCKET_LATEX_EVENTS.CLOSE,
+        roomKey: isActive ? documentId ?? null : null,
+        buildJoinPayload: () => (documentId && teamId) ? { documentId, teamId } : null,
+        buildLeavePayload: () => documentId ? { documentId } : null,
+        enabled: isActive,
+        fireAndForget: false
+    });
 
-            return { documentId };
-        },
-        matchesContentPayload: (payload): payload is LatexContentUpdatedPayload => {
-            if (!payload || typeof payload !== 'object') {
-                return false;
-            }
+    useSocketEvent<unknown>(SOCKET_LATEX_EVENTS.CONTENT_UPDATED, (payload) => {
+        if (!isLatexContentUpdatedPayload(payload, documentId)) return;
+        onRemoteContentUpdate?.(payload.content, payload.timestamp, payload.fileId);
+    }, { enabled: isActive });
 
-            const value = payload as Partial<LatexContentUpdatedPayload>;
-            return value.documentId === documentId
-                && typeof value.fileId === 'string'
-                && typeof value.content === 'string'
-                && typeof value.timestamp === 'number';
-        },
-        onRemoteContentUpdate: (payload) => {
-            onRemoteContentUpdate?.(payload.content, payload.timestamp, payload.fileId);
-        }
+    useSocketEvent<unknown>(SOCKET_LATEX_EVENTS.USERS_UPDATE, (users) => {
+        setCollaborators(Array.isArray(users) ? users as PresenceUser[] : []);
+    }, { enabled: isActive });
+
+    const contentEmitter = useThrottledSocketEmit<LatexContentUpdatePayload>(SOCKET_LATEX_EVENTS.UPDATE_CONTENT, {
+        intervalMs: CONTENT_DEBOUNCE_MS,
+        mode: 'debounce',
+        enabled: isActive,
+        fireAndForget: false
     });
 
     const sendContentUpdate = useCallback((content: string, fileId: string): void => {
-        if (!enabled || !documentId || !teamId) {
+        if (!isActive || !documentId || !teamId) {
             return;
         }
 
-        scheduleContentUpdate({
-            eventName: 'latex_update_content',
+        contentEmitter.emit({
             documentId,
             teamId,
             fileId,
             content,
             timestamp: Date.now()
         });
-    }, [documentId, enabled, scheduleContentUpdate, teamId]);
+    }, [contentEmitter, documentId, isActive, teamId]);
 
     return {
         collaborators,

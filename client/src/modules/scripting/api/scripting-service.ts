@@ -1,5 +1,5 @@
-import { del, get, paginated, patch, post } from '@/app/core/http/utilities/create-service';
-import { defineServiceModule } from '@/shared/api/service-module';
+import { createService, del, get, paginated, patch, post } from '@/app/core/http/utilities/create-service';
+
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { CreateScriptingNotebookParams } from './dtos/create-scripting-notebook';
 import type { CreateScriptingNotebookSessionParams, CreateScriptingSessionParams } from './dtos/create-scripting-session';
@@ -39,12 +39,11 @@ const endpoints = {
     deleteNotebookSession: del<DeleteNotebookSessionParams>('/sessions/:notebookId')
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/scripting',
             useRBAC: true
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

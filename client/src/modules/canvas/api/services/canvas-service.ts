@@ -1,6 +1,6 @@
-import { custom, download, get, paginated } from '@/app/core/http/utilities/create-service';
+import { createService, custom, download, get, paginated } from '@/app/core/http/utilities/create-service';
 import { decodeAtomsBinary } from '@/modules/trajectory/utilities/decode-atoms-binary';
-import { defineServiceModule } from '@/shared/api/service-module';
+
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
@@ -246,12 +246,11 @@ const endpoints = {
     getRasterMetadata: get<GetRasterMetadataParams, GetRasterMetadataResponse>('/:trajectoryId/raster-metadata')
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/canvas',
             useRBAC: false
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

@@ -1,8 +1,9 @@
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { SOCKET_TEAM_EVENTS } from '@/modules/socket/team/constants/team-socket-events';
+import { SOCKET_TEAM_EVENTS } from '@/modules/socket/events/team';
 import { TRAJECTORY_QUERY_KEYS } from '@/modules/trajectory/hooks/trajectory/queries';
-import useSocket from '@/modules/socket/core/hooks/use-socket';
-import teamSocketRoomService from '@/modules/socket/team/services/team-socket-room-service';
+import useSocket from '@/modules/socket/hooks/use-socket';
+import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
+import teamSocketRoomService from '@/modules/socket/services/team-room-service';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef } from 'react';
 import { JobStatus } from '../api/entities/job';
@@ -213,14 +214,15 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
         reset();
     }, [clearJobsLoadingTimeout, queryClient, reset]);
 
+    useSocketEvent<TeamJobsEventPayload>(SOCKET_TEAM_EVENTS.JOBS_INITIAL, handleInitialJobsEvent, { enabled: subscribe });
+    useSocketEvent<Job>(SOCKET_TEAM_EVENTS.JOB_UPDATED, handleJobUpdateEvent, { enabled: subscribe });
+
     useEffect(() => {
         if (!subscribe) {
             return;
         }
 
         const unsubscribeFromConnectionChanges = socketService.onConnectionChange(handleConnect);
-        const unsubscribeFromInitialJobs = socketService.on(SOCKET_TEAM_EVENTS.JOBS_INITIAL, handleInitialJobsEvent);
-        const unsubscribeFromJobUpdates = socketService.on(SOCKET_TEAM_EVENTS.JOB_UPDATED, handleJobUpdateEvent);
 
         handleConnect(socketService.isConnected());
 
@@ -230,13 +232,11 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
 
         return () => {
             unsubscribeFromConnectionChanges();
-            unsubscribeFromInitialJobs();
-            unsubscribeFromJobUpdates();
             clearTimeout(trajectoryInvalidationTimer.current);
             clearJobsLoadingTimeout();
             clearTeamJobs();
         };
-    }, [clearJobsLoadingTimeout, clearTeamJobs, handleConnect, handleInitialJobsEvent, handleJobUpdateEvent, setLoading, socketService, subscribe]);
+    }, [clearJobsLoadingTimeout, clearTeamJobs, handleConnect, setLoading, socketService, subscribe]);
 
     useEffect(() => {
         if (!subscribe) {

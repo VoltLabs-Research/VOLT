@@ -17,8 +17,6 @@ import IORedis from 'ioredis';
 import { inject } from 'tsyringe';
 import { v4 as uuid } from 'uuid';
 
-import type { JobStatusChangedValue } from '@modules/jobs/domain/events/JobStatusChangedEvent';
-
 const QUEUE_NAME = 'cloud_upload';
 const QUEUE_TYPE = 'cloud_upload';
 const SESSION_TTL_SECONDS = 86400;
@@ -344,7 +342,7 @@ export default class CloudUploadQueueService {
     private async publishStatus(
         jobId: string,
         teamId: string,
-        status: JobStatusChangedValue,
+        status: JobStatus,
         details: Record<string, unknown>
     ): Promise<void> {
         await this.eventBus.publish(

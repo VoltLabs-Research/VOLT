@@ -1,5 +1,5 @@
-import { get, post } from '@/app/core/http/utilities/create-service';
-import { defineServiceModule } from '@/shared/api/service-module';
+import { createService, get, post } from '@/app/core/http/utilities/create-service';
+
 import type { EmptyParams } from '@/app/core/http/utilities/create-service';
 import type { Chat } from '../entities/chat';
 import type { GetOrCreateChatInputDTO } from '../dtos/chat';
@@ -11,11 +11,10 @@ const endpoints = {
     )
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/chats'
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

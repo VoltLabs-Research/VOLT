@@ -22,19 +22,21 @@ import Select from '@/shared/presentation/primitives/Select';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
+import { formatDuration } from '@/shared/utils/format';
 import { formatDistanceToNow } from 'date-fns';
 import { IoChatbubbleOutline, IoExitOutline, IoPersonRemoveOutline } from 'react-icons/io5';
 import { useCallback, useMemo } from 'react';
 import type { TeamMemberStats } from '@/modules/team/api/entities/member/team-member';
 import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import { SOCKET_TEAM_MEMBER_EVENTS } from '@/modules/socket/events/team';
 import './MyTeam.css';
 
 const TEAM_MEMBERS_QUERY_KEY = ['team-members'] as const;
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: 'team-member.created', queryKeys: [TEAM_MEMBERS_QUERY_KEY] },
-    { event: 'team-member.deleted', queryKeys: [TEAM_MEMBERS_QUERY_KEY] },
-    { event: 'team-member.left', queryKeys: [TEAM_MEMBERS_QUERY_KEY] }
+    { event: SOCKET_TEAM_MEMBER_EVENTS.CREATED, queryKeys: [TEAM_MEMBERS_QUERY_KEY] },
+    { event: SOCKET_TEAM_MEMBER_EVENTS.DELETED, queryKeys: [TEAM_MEMBERS_QUERY_KEY] },
+    { event: SOCKET_TEAM_MEMBER_EVENTS.LEFT, queryKeys: [TEAM_MEMBERS_QUERY_KEY] }
 ];
 
 const updateTeamNameToastOptions = createPromiseToastOptions({
@@ -60,23 +62,6 @@ const leaveTeamToastOptions = createPromiseToastOptions({
     success: 'Left team successfully',
     error: 'Failed to leave team'
 });
-
-const formatTrackedMinutes = (minutes: number): string => {
-    const totalSeconds = Math.max(0, Math.round(minutes * 60));
-    const totalMinutes = Math.floor(totalSeconds / 60);
-    const hours = Math.floor(totalMinutes / 60);
-    const mins = totalMinutes % 60;
-
-    if (hours > 0) {
-        return `${hours}h ${mins}m`;
-    }
-
-    if (totalSeconds > 0 && totalMinutes === 0) {
-        return '<1m';
-    }
-
-    return `${mins}m`;
-};
 
 export default function MyTeamTemplate() {
     const chatActions = useChatActions();
@@ -252,7 +237,7 @@ export default function MyTeamTemplate() {
             render: (_value, member) => {
                 return (
                     <span className='color-secondary font-size-2'>
-                        {formatTrackedMinutes(member.timeSpentLast7Days)}
+                        {formatDuration(member.timeSpentLast7Days)}
                     </span>
                 );
             }
@@ -319,7 +304,6 @@ export default function MyTeamTemplate() {
                 getMenuOptions={getTeamMemberMenuOptions}
                 emptyMessage='No members found in this team.'
                 headerActions={<ActivityHeatmap data={activityData} />}
-                gap=''
                 socketInvalidation={SOCKET_INVALIDATION}
             />
         </div>

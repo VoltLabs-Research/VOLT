@@ -1,5 +1,5 @@
-import { defineServiceModule } from '@/shared/api/service-module';
-import { del, post } from '@/app/core/http/utilities/create-service';
+
+import { createService, del, post } from '@/app/core/http/utilities/create-service';
 import type { RemoveRunningJobsOutputDTO, RemoveRunningJobsParams } from './dtos/remove-running-jobs';
 import type { RetryFailedJobsOutputDTO, RetryFailedJobsParams } from './dtos/retry-failed-jobs';
 
@@ -10,12 +10,11 @@ const endpoints = {
     retryFailedJobs: post<RetryFailedJobsParams, RetryFailedJobsOutputDTO>('/:trajectoryId/failed/retries')
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/jobs',
             useRBAC: true
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

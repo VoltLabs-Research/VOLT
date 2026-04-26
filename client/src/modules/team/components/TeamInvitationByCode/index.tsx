@@ -12,7 +12,7 @@ import {
     getOnboardingRedirectPath,
     resolvePostAuthDestination
 } from '@/modules/auth/services/post-auth-destination-storage';
-import { refreshSocketSession } from '@/modules/socket/core/services/socket-auth-session';
+import { refreshSocketSession } from '@/modules/socket/services/socket-auth-session';
 import { useJoinByCodeMutation, usePreviewJoinByCodeQuery } from '@/modules/team/hooks/team/queries';
 import { switchSelectedTeam } from '@/modules/team/stores/team/use-team-store';
 import { ErrorSurface, reportError } from '@/shared/errors/core';

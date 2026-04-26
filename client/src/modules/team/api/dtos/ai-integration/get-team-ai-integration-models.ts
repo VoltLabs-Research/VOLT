@@ -1,4 +1,4 @@
-import type { TeamAIProviderModelsCatalog, TeamAIModelListItem } from '../../entities/ai-integration';
+import type { TeamAIProviderModelsCatalog, TeamAIModelListItem } from '../../entities/ai-integration/team-ai-integration';
 
 export interface ListTeamAIIntegrationModelsResponse {
     teamId: string;

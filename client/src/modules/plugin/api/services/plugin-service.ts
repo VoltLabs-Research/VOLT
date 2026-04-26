@@ -1,5 +1,4 @@
-import { paginated, get, post, patch, del, download, request } from '@/app/core/http/utilities/create-service';
-import { defineServiceModule } from '@/shared/api/service-module';
+import { createService, paginated, get, post, patch, del, download, request } from '@/app/core/http/utilities/create-service';
 import { buildFileFormData } from '@/shared/utils/file';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { Plugin } from '../entities/plugin';
@@ -72,7 +71,7 @@ const endpoints = {
     })
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/plugins',
@@ -82,6 +81,5 @@ export default defineServiceModule({
             basePath: '/teams',
             useRBAC: false
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

@@ -21,12 +21,13 @@ import { useCallback } from 'react';
 import { sileo } from 'sileo';
 import type { SecretKey } from '@/modules/team/api/entities/secret-key/secret-key';
 import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import { SOCKET_SECRET_KEY_EVENTS } from '@/modules/socket/events/team';
 import { useNavigate } from 'react-router-dom';
 const SECRET_KEYS_QUERY_KEY = ['secret-keys'] as const;
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: 'secret-key.created', queryKeys: [SECRET_KEYS_QUERY_KEY] },
-    { event: 'secret-key.deleted', queryKeys: [SECRET_KEYS_QUERY_KEY] }
+    { event: SOCKET_SECRET_KEY_EVENTS.CREATED, queryKeys: [SECRET_KEYS_QUERY_KEY] },
+    { event: SOCKET_SECRET_KEY_EVENTS.DELETED, queryKeys: [SECRET_KEYS_QUERY_KEY] }
 ];
 
 type SecretKeyColumnSkeleton = NonNullable<ColumnConfig<SecretKey>['skeleton']>;

@@ -70,7 +70,7 @@ const resolveProjectedStatus = (
         };
     }
 
-    if (incomingStatus === 'retrying') {
+    if (incomingStatus === JobStatus.Retrying) {
         return {
             status: incomingStatus,
             shouldAdvanceTimestamps: true
@@ -94,7 +94,7 @@ const resolveProjectedStatus = (
         };
     }
 
-    if (previousStatus === 'retrying' && incomingStatus === JobStatus.Queued) {
+    if (previousStatus === JobStatus.Retrying && incomingStatus === JobStatus.Queued) {
         return {
             status: previousStatus,
             shouldAdvanceTimestamps: false

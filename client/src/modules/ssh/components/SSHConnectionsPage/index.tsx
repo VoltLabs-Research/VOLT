@@ -18,10 +18,11 @@ import type { SSHConnection } from '@/modules/ssh/api/entities/ssh-connection';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
+import { SOCKET_SSH_CONNECTION_EVENTS } from '@/modules/socket/events/ssh';
 import { useNavigate } from 'react-router-dom';
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: 'ssh-connection.created', queryKeys: [sshConnectionsQueryKey()] },
-    { event: 'ssh-connection.deleted', queryKeys: [sshConnectionsQueryKey()] }
+    { event: SOCKET_SSH_CONNECTION_EVENTS.CREATED, queryKeys: [sshConnectionsQueryKey()] },
+    { event: SOCKET_SSH_CONNECTION_EVENTS.DELETED, queryKeys: [sshConnectionsQueryKey()] }
 ];
 
 const SSHConnectionsPage = () => {

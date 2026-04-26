@@ -14,7 +14,7 @@ import {
 } from '@modules/plugin/application/dtos/listing-row/GetListingRowsByAnalysisIdDTO';
 import { enrichDaemonListingRows } from '@modules/plugin/application/use-cases/listing-row/listing-row-enrichment';
 import { Exporter } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ExportNode';
-import { resolveAnalysisComputeClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
+import { resolveAnalysisComputeClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 

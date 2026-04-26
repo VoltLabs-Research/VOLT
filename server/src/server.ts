@@ -17,7 +17,7 @@ import { ScriptingJupyterProxyService } from './modules/scripting/infrastructure
 import type { ISocketModule } from './modules/socket/domain/port/ISocketModule';
 import { SOCKET_TOKENS } from './modules/socket/infrastructure/di/SocketTokens';
 import SocketGateway from './modules/socket/socket/SocketGateway';
-import ClusterTransferRunner from './modules/team-cluster/infrastructure/services/ClusterTransferRunner';
+import ClusterTransferRunner from './modules/cluster/infrastructure/services/ClusterTransferRunner';
 import TrajectoryCloneRunner from './modules/trajectory/infrastructure/services/trajectory/TrajectoryCloneRunner';
 import { flushPendingSubscriptions } from './shared/infrastructure/events/Subscribe';
 import { httpErrorMiddleware } from './shared/infrastructure/http/middleware/error';

@@ -1,4 +1,4 @@
-import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import type { FrameMetadata } from '@modules/trajectory/domain/contracts/trajectory';
 import { createZstdDecompressionStream } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';

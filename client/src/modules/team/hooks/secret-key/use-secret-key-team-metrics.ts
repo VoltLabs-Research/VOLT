@@ -1,7 +1,6 @@
 import { useSecretKeyTeamMetricsQuery } from '@/modules/team/hooks/secret-key/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-
-const POLL_INTERVAL = 60_000;
+import { SECRET_KEY_METRICS_POLL_INTERVAL } from '@/modules/team/hooks/secret-key/constants';
 
 export default function useSecretKeyTeamMetrics(days: number = 30) {
     const selectedTeamId = useSelectedTeamId();
@@ -15,7 +14,7 @@ export default function useSecretKeyTeamMetrics(days: number = 30) {
         },
         {
             enabled: isEnabled,
-            refetchInterval: POLL_INTERVAL
+            refetchInterval: SECRET_KEY_METRICS_POLL_INTERVAL
         }
     );
 

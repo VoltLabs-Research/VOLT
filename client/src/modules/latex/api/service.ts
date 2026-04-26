@@ -1,7 +1,7 @@
-import { paginated, get, post, patch, del, download, request } from '@/app/core/http/utilities/create-service';
+import { createService, paginated, get, post, patch, del, download, request } from '@/app/core/http/utilities/create-service';
 import { buildFileFormData } from '@/shared/utils/file';
 import { createFolderCrudEndpoints } from '@/shared/api/folder-endpoints';
-import { defineServiceModule } from '@/shared/api/service-module';
+
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { CompileLatexDocumentParams } from './dtos/compile-latex-document';
 import type { CreateLatexDocumentParams } from './dtos/create-latex-document';
@@ -123,14 +123,13 @@ const endpoints = {
     >()
 };
 
-const service: LatexService = defineServiceModule({
+const service: LatexService = createService({
     clients: {
         default: {
             basePath: '/latex',
             useRBAC: true
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);
 
 export default service;

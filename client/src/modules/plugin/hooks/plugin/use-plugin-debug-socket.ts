@@ -1,11 +1,11 @@
 import { useEffect, useCallback } from 'react';
-import useSocket from '@/modules/socket/core/hooks/use-socket';
-import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
+import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
+import { emitOrReport } from '@/modules/socket/services/socket-emit-helpers';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
 import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { sanitizeVisibleArgumentConfig } from '@/modules/plugin/utilities/plugin/argument-visibility';
-import { PLUGIN_DEBUG_SOCKET_EVENTS } from '@/modules/plugin/api/entities/plugin/plugin-constants';
+import { SOCKET_PLUGIN_DEBUG_EVENTS } from '@/modules/socket/events/plugin';
 import { sileo } from 'sileo';
 import { useSearchParams } from 'react-router-dom';
 import type { IWorkflow } from '@/modules/plugin/api/entities/plugin/workflow';
@@ -87,7 +87,6 @@ interface UsePluginDebugSocketOptions {
 }
 
 const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions = {}) => {
-    const socket = useSocket();
     const {
         sessionId,
         isDebugging,
@@ -108,7 +107,7 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
         return activeSessionId === eventSessionId;
     }, []);
 
-    useSocketEvent<DebugSessionCreatedEvent>(PLUGIN_DEBUG_SOCKET_EVENTS.SESSION_CREATED, (event) => {
+    useSocketEvent<DebugSessionCreatedEvent>(SOCKET_PLUGIN_DEBUG_EVENTS.SESSION_CREATED, (event) => {
         usePluginDebugStore.getState().onSessionCreated(
             event.sessionId,
             event.executionOrder,
@@ -117,7 +116,7 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
         );
     }, { enabled: subscribe });
 
-    useSocketEvent<DebugNodeStartedEvent>(PLUGIN_DEBUG_SOCKET_EVENTS.NODE_STARTED, (event) => {
+    useSocketEvent<DebugNodeStartedEvent>(SOCKET_PLUGIN_DEBUG_EVENTS.NODE_STARTED, (event) => {
         if (!isCurrentSessionEvent(event.sessionId)) {
             return;
         }
@@ -125,7 +124,7 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
         usePluginDebugStore.getState().onNodeStarted(event.nodeId, event.index, event.total);
     }, { enabled: subscribe && !!sessionId });
 
-    useSocketEvent<DebugNodeCompletedEvent>(PLUGIN_DEBUG_SOCKET_EVENTS.NODE_COMPLETED, (event) => {
+    useSocketEvent<DebugNodeCompletedEvent>(SOCKET_PLUGIN_DEBUG_EVENTS.NODE_COMPLETED, (event) => {
         if (!isCurrentSessionEvent(event.sessionId)) {
             return;
         }
@@ -139,7 +138,7 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
         );
     }, { enabled: subscribe && !!sessionId });
 
-    useSocketEvent<DebugNodeSkippedEvent>(PLUGIN_DEBUG_SOCKET_EVENTS.NODE_SKIPPED, (event) => {
+    useSocketEvent<DebugNodeSkippedEvent>(SOCKET_PLUGIN_DEBUG_EVENTS.NODE_SKIPPED, (event) => {
         if (!isCurrentSessionEvent(event.sessionId)) {
             return;
         }
@@ -147,7 +146,7 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
         usePluginDebugStore.getState().onNodeSkipped(event.nodeId, event.reason, event.nestedTrace);
     }, { enabled: subscribe && !!sessionId });
 
-    useSocketEvent<DebugNodeErrorEvent>(PLUGIN_DEBUG_SOCKET_EVENTS.NODE_ERROR, (event) => {
+    useSocketEvent<DebugNodeErrorEvent>(SOCKET_PLUGIN_DEBUG_EVENTS.NODE_ERROR, (event) => {
         if (!isCurrentSessionEvent(event.sessionId)) {
             return;
         }
@@ -156,7 +155,7 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
         sileo.error({ title: 'Node execution failed', description: event.error });
     }, { enabled: subscribe && !!sessionId });
 
-    useSocketEvent<DebugNodeLogChunkEvent>(PLUGIN_DEBUG_SOCKET_EVENTS.NODE_LOG_CHUNK, (event) => {
+    useSocketEvent<DebugNodeLogChunkEvent>(SOCKET_PLUGIN_DEBUG_EVENTS.NODE_LOG_CHUNK, (event) => {
         if (!isCurrentSessionEvent(event.sessionId)) {
             return;
         }
@@ -164,7 +163,7 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
         usePluginDebugStore.getState().onNodeLogChunk(event.nodeId, event.segments);
     }, { enabled: subscribe && !!sessionId });
 
-    useSocketEvent<DebugSessionCompletedEvent>(PLUGIN_DEBUG_SOCKET_EVENTS.SESSION_COMPLETED, (event) => {
+    useSocketEvent<DebugSessionCompletedEvent>(SOCKET_PLUGIN_DEBUG_EVENTS.SESSION_COMPLETED, (event) => {
         if (!isCurrentSessionEvent(event.sessionId)) {
             return;
         }
@@ -172,7 +171,7 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
         usePluginDebugStore.getState().onSessionCompleted(event.totalDuration);
     }, { enabled: subscribe && !!sessionId });
 
-    useSocketEvent<DebugSessionErrorEvent>(PLUGIN_DEBUG_SOCKET_EVENTS.SESSION_ERROR, (event) => {
+    useSocketEvent<DebugSessionErrorEvent>(SOCKET_PLUGIN_DEBUG_EVENTS.SESSION_ERROR, (event) => {
         if (event.sessionId && !isCurrentSessionEvent(event.sessionId)) {
             return;
         }
@@ -204,33 +203,33 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
             : [];
         const sanitizedConfig = sanitizeVisibleArgumentConfig(argumentDefinitions, debugConfig);
         setStarting();
-        void socket.emit<DebugStartPayload>(PLUGIN_DEBUG_SOCKET_EVENTS.START, {
+        void emitOrReport(SOCKET_PLUGIN_DEBUG_EVENTS.START, {
             pluginId: currentPluginId,
             trajectoryId: selectedTrajectoryId,
             timestep: selectedTimestep,
             config: sanitizedConfig,
             workflow
-        }).catch(() => undefined);
-    }, [socket, currentPluginId, selectedTrajectoryId, selectedTimestep, setStarting]);
+        } satisfies DebugStartPayload);
+    }, [currentPluginId, selectedTrajectoryId, selectedTimestep, setStarting]);
 
     const step = useCallback(() => {
         const sid = usePluginDebugStore.getState().sessionId;
         if (!sid) return;
-        void socket.emit(PLUGIN_DEBUG_SOCKET_EVENTS.STEP, { sessionId: sid }).catch(() => undefined);
-    }, [socket]);
+        void emitOrReport(SOCKET_PLUGIN_DEBUG_EVENTS.STEP, { sessionId: sid });
+    }, []);
 
     const continueAll = useCallback(() => {
         const sid = usePluginDebugStore.getState().sessionId;
         if (!sid) return;
-        void socket.emit(PLUGIN_DEBUG_SOCKET_EVENTS.CONTINUE, { sessionId: sid }).catch(() => undefined);
-    }, [socket]);
+        void emitOrReport(SOCKET_PLUGIN_DEBUG_EVENTS.CONTINUE, { sessionId: sid });
+    }, []);
 
     const stop = useCallback(() => {
         const sid = usePluginDebugStore.getState().sessionId;
         if (!sid) return;
-        void socket.emit(PLUGIN_DEBUG_SOCKET_EVENTS.STOP, { sessionId: sid }).catch(() => undefined);
+        void emitOrReport(SOCKET_PLUGIN_DEBUG_EVENTS.STOP, { sessionId: sid });
         reset();
-    }, [socket, reset]);
+    }, [reset]);
 
     return {
         startDebug,

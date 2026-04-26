@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import { RasterStorageService } from '@modules/raster/infrastructure/services/RasterStorageService';
-import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
+import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import type {
     GetPublicCanvasRasterFrameInputDTO,
     GetPublicCanvasRasterFrameOutputDTO

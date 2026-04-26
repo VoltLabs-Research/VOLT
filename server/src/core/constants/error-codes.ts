@@ -174,6 +174,8 @@ export const ErrorCodes = createErrorCodes({
     LATEX_FILE_NOT_FOUND: 'Latex::File::NotFound'
 });
 
-export const isErrorCode = (value: string): value is ErrorCode => {
-    return Object.values(ErrorCodes).some((errorCode) => errorCode === value);
+const ERROR_CODE_SET = new Set<string>(Object.values(ErrorCodes));
+
+export const isErrorCode = (value: unknown): value is ErrorCode => {
+    return typeof value === 'string' && ERROR_CODE_SET.has(value);
 };

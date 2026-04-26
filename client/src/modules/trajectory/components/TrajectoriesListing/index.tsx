@@ -18,6 +18,7 @@ import Row from '@/shared/presentation/primitives/Row';
 import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
 import Text from '@/shared/presentation/primitives/Text';
 import { clusterColumn, dateColumn } from '@/shared/presentation/utilities/column-presets';
+import { SOCKET_TRAJECTORY_EVENTS } from '@/modules/socket/events/trajectory';
 import useTip from '@/shared/tips/use-tip';
 import { formatNumber, formatSize } from '@/shared/utils/format';
 import { Folder, Pencil, Trash2 } from 'lucide-react';
@@ -179,18 +180,9 @@ export default function TrajectoriesListing() {
                 } : undefined}
                 emptyButtonIsLoading={isUploading}
                 socketInvalidation={[
-                    {
-                        event: 'trajectory.created',
-                        queryKeys: [queryKey]
-                    },
-                    {
-                        event: 'trajectory.updated',
-                        queryKeys: [queryKey]
-                    },
-                    {
-                        event: 'trajectory.deleted',
-                        queryKeys: [queryKey]
-                    }
+                    { event: SOCKET_TRAJECTORY_EVENTS.CREATED, queryKeys: [queryKey] },
+                    { event: SOCKET_TRAJECTORY_EVENTS.UPDATED, queryKeys: [queryKey] },
+                    { event: SOCKET_TRAJECTORY_EVENTS.DELETED, queryKeys: [queryKey] }
                 ]}
             />
 

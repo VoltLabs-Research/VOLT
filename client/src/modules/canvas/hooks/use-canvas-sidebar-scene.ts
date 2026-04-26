@@ -16,10 +16,10 @@ import { findCachedAnalysisById, updateAnalysisStatusCaches, upsertAnalysisFromS
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { invalidateSceneArtifacts } from '@/modules/trajectory/hooks/scene-artifacts/queries';
-import { SOCKET_ANALYSIS_EVENTS } from '@/modules/socket/analysis/constants/analysis-socket-events';
-import { SOCKET_SCENE_ARTIFACT_EVENTS } from '@/modules/socket/trajectory/constants/scene-artifact-socket-events';
-import { SOCKET_TEAM_EVENTS } from '@/modules/socket/team/constants/team-socket-events';
-import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
+import { SOCKET_ANALYSIS_EVENTS } from '@/modules/socket/events/analysis';
+import { SOCKET_SCENE_ARTIFACT_EVENTS } from '@/modules/socket/events/trajectory';
+import { SOCKET_TEAM_EVENTS } from '@/modules/socket/events/team';
+import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import { useCanvasCanCollaborate } from '@/modules/canvas/api/access';
 import useRetryFailedFrames from '@/modules/analysis/hooks/use-retry-failed-frames';
 import { showPromise } from '@/shared/presentation/hooks/toast';

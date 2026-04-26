@@ -1,4 +1,4 @@
-import secretKeyService from '../../api/services/secret-key';
+import secretKeyService from '../../api/services/secret-key-service';
 import { buildKeys, createInvalidatingMutation, createQuery } from '@/shared/infrastructure/query';
 import type { CreateSecretKeyInputDTO, CreateSecretKeyResponse } from '../../api/dtos/secret-key/create-secret-key';
 import type { DeleteSecretKeyInputDTO } from '../../api/dtos/secret-key/delete-secret-key';

@@ -1,4 +1,4 @@
-import memberService from '../../api/services/member';
+import memberService from '../../api/services/member-service';
 import { createInvalidatingMutation, createQuery } from '@/shared/infrastructure/query';
 import { createTeamScopedPaginatedResource } from '../shared/team-scoped-paginated-resource';
 import type { TeamMember, TeamMemberStats } from '../../api/entities/member/team-member';

@@ -1,6 +1,5 @@
-import { paginated, get, post, patch, del } from '@/app/core/http/utilities/create-service';
+import { createService, paginated, get, post, patch, del } from '@/app/core/http/utilities/create-service';
 import { createFolderCrudEndpoints } from '@/shared/api/folder-endpoints';
-import { defineServiceModule } from '@/shared/api/service-module';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { ContainerRouteParams } from './dtos/container-route-params';
 import type { CreateContainerFolderParams } from './dtos/create-container-folder';
@@ -95,7 +94,7 @@ const endpoints = {
     getStats: get<ContainerRouteParams, ContainerStatsResponse>('/:containerId/stats')
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/containers',
@@ -106,6 +105,5 @@ export default defineServiceModule({
             useRBAC: true,
             getTeamId: (params: CreateContainerParams) => params.teamId
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

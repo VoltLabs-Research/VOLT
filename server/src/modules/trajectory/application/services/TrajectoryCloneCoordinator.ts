@@ -1,8 +1,8 @@
 import { SYS_BUCKETS } from '@core/config/minio';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
-import JobStatusChangedEvent, { type JobStatusChangedValue } from '@modules/jobs/domain/events/JobStatusChangedEvent';
-import StoragePlacementService from '@modules/team-cluster/application/services/StoragePlacementService';
-import TeamClusterObjectGatewayClient from '@modules/team-cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
+import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
+import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryCloneJob, { TrajectoryCloneJobProps, TrajectoryCloneJobState } from '@modules/trajectory/domain/entities/trajectory/TrajectoryCloneJob';
 import TrajectoryCloneJobRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryCloneJobRepository';
@@ -37,7 +37,7 @@ const OPEN_CLONE_JOB_STATES: TrajectoryCloneJobState[] = [
     'copying'
 ];
 
-const mapCloneStateToJobStatus = (state: TrajectoryCloneJobState): JobStatusChangedValue => {
+const mapCloneStateToJobStatus = (state: TrajectoryCloneJobState): JobStatus => {
     switch (state) {
         case 'completed':
             return JobStatus.Completed;

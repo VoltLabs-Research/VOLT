@@ -32,8 +32,7 @@ const statusConfig: Partial<Record<JobStatus, StatusConfigEntry>> = {
     [JobStatus.Queued]: { icon: <IoTimeOutline /> },
     [JobStatus.Retrying]: { icon: <CiRedo /> },
     [JobStatus.QueuedAfterFailure]: { icon: <IoWarningOutline /> },
-    [JobStatus.Failed]: { icon: <IoCloseOutline /> },
-    [JobStatus.Unknown]: { icon: <IoWarningOutline /> }
+    [JobStatus.Failed]: { icon: <IoCloseOutline /> }
 };
 
 const queueTypeNames: Record<string, string> = {

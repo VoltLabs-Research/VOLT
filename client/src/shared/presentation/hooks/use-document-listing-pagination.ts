@@ -1,6 +1,6 @@
 import { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import usePaginationParams from './use-pagination-params';
-import { ErrorSurface, isApiError, reportError } from '@/shared/errors/core';
+import { isApiError, resolveErrorTitle } from '@/shared/errors/core';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useCallback, useRef, useEffect, useMemo } from 'react';
@@ -124,13 +124,9 @@ function useDocumentListingPagination<T extends { _id: string }, TContext = Reco
         return transformData ? transformData(deduplicated) : deduplicated;
     }, [infiniteData, transformData]);
 
-    // Extract error info
     const error = useMemo<string | null>(() => {
         if (!queryError) return null;
-        return reportError(queryError, {
-            surface: ErrorSurface.Silent,
-            fallbackTitle: 'Failed to fetch data'
-        }).title;
+        return resolveErrorTitle(queryError, 'Failed to fetch data');
     }, [queryError]);
 
     const errorCode = useMemo<string | null>(() => {
