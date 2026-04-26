@@ -1,6 +1,6 @@
-import useSocket from '@/modules/socket/core/hooks/use-socket';
-import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
-import { SOCKET_ANALYSIS_EVENTS } from '@/modules/socket/analysis/constants/analysis-socket-events';
+import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
+import useSocketRoom from '@/modules/socket/hooks/use-socket-room';
+import { SOCKET_ANALYSIS_EVENTS } from '@/modules/socket/events/analysis';
 import { useCanvasAccessStore, useCanvasCanCollaborate, useCanvasDataAccess } from '@/modules/canvas/api/access';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -53,7 +53,6 @@ const useAnalysisFrameLog = ({
     active = true,
     live = false
 }: UseAnalysisFrameLogOptions): UseAnalysisFrameLogResult => {
-    const socket = useSocket();
     const dataAccess = useCanvasDataAccess();
     const canCollaborate = useCanvasCanCollaborate();
     const effectiveLive = live && canCollaborate;
@@ -147,34 +146,24 @@ const useAnalysisFrameLog = ({
         enabled: active && canCollaborate && hasLoadedInitial && !!analysisId && typeof timestep === 'number'
     });
 
-    useEffect(() => {
-        if (!active || !effectiveLive || !hasLoadedInitial || !analysisId || typeof timestep !== 'number') {
-            return;
-        }
+    const liveSubscribeEnabled = active && effectiveLive && hasLoadedInitial && !!analysisId && typeof timestep === 'number';
+    const liveRoomKey = liveSubscribeEnabled && analysisId && typeof timestep === 'number'
+        ? `${analysisId}:${timestep}`
+        : null;
 
-        const subscribe = () => {
-            socket.emitWithoutAck(SOCKET_ANALYSIS_EVENTS.LOG_SUBSCRIBE, {
-                analysisId,
-                timestep,
-                afterCursor: cursorRef.current ?? undefined
-            });
-        };
-
-        subscribe();
-        const unsubscribeConnectionChange = socket.onConnectionChange((connected) => {
-            if (connected) {
-                subscribe();
-            }
-        });
-
-        return () => {
-            unsubscribeConnectionChange();
-            socket.emitWithoutAck(SOCKET_ANALYSIS_EVENTS.LOG_UNSUBSCRIBE, {
-                analysisId,
-                timestep
-            });
-        };
-    }, [socket, active, effectiveLive, hasLoadedInitial, analysisId, timestep]);
+    useSocketRoom({
+        joinEvent: SOCKET_ANALYSIS_EVENTS.LOG_SUBSCRIBE,
+        leaveEvent: SOCKET_ANALYSIS_EVENTS.LOG_UNSUBSCRIBE,
+        roomKey: liveRoomKey,
+        buildJoinPayload: () => (analysisId && typeof timestep === 'number')
+            ? { analysisId, timestep, afterCursor: cursorRef.current ?? undefined }
+            : null,
+        buildLeavePayload: () => (analysisId && typeof timestep === 'number')
+            ? { analysisId, timestep }
+            : null,
+        enabled: liveSubscribeEnabled,
+        fireAndForget: true
+    });
 
     return useMemo(() => state, [state]);
 };

@@ -1,7 +1,7 @@
 import PluginPublishedEvent from '@modules/plugin/domain/events/PluginPublishedEvent';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
+import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
 import { ChannelCommands, VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@shared/infrastructure/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';

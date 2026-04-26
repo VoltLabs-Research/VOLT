@@ -1,6 +1,6 @@
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import { DefaultPluginBootstrapService } from '@modules/plugin/infrastructure/services/plugin/DefaultPluginBootstrapService';
-import FirstTeamClusterConnectedEvent from '@modules/team-cluster/domain/events/FirstTeamClusterConnectedEvent';
+import FirstTeamClusterConnectedEvent from '@modules/cluster/domain/events/FirstTeamClusterConnectedEvent';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 import logger from '@shared/infrastructure/logger';

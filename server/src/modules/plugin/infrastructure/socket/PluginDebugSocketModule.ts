@@ -17,7 +17,7 @@ import SocketIOEventRegistry from '@modules/socket/infrastructure/services/Socke
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
-import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
+import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import { ChannelCommands, VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@shared/infrastructure/contracts/team-cluster';

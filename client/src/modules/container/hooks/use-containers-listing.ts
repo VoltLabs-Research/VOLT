@@ -22,6 +22,7 @@ import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
 import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import { SOCKET_CONTAINER_EVENTS } from '@/modules/socket/events/container';
 import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
 import useFolderedListing, { type FolderedListingContext } from '@/shared/presentation/hooks/use-foldered-listing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
@@ -42,9 +43,9 @@ export const RENAME_CONTAINER_FOLDER_MODAL_ID = 'rename-container-folder-modal';
 export const MOVE_CONTAINER_MODAL_ID = 'move-container-modal';
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: 'container.created', queryKeys: [containerQuery.QUERY_KEYS.lists()] },
-    { event: 'container.updated', queryKeys: [containerQuery.QUERY_KEYS.lists()] },
-    { event: 'container.deleted', queryKeys: [containerQuery.QUERY_KEYS.lists()] }
+    { event: SOCKET_CONTAINER_EVENTS.CREATED, queryKeys: [containerQuery.QUERY_KEYS.lists()] },
+    { event: SOCKET_CONTAINER_EVENTS.UPDATED, queryKeys: [containerQuery.QUERY_KEYS.lists()] },
+    { event: SOCKET_CONTAINER_EVENTS.DELETED, queryKeys: [containerQuery.QUERY_KEYS.lists()] }
 ];
 
 interface ContainerMoveTarget {
@@ -53,14 +54,14 @@ interface ContainerMoveTarget {
     folder: string | null;
 }
 
-const CREATE_FOLDER_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Folder', success: 'Folder created successfully' });
-const RENAME_FOLDER_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Folder', success: 'Folder renamed successfully' });
-const DELETE_FOLDER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Folder', success: 'Folder deleted successfully' });
-const MOVE_CONTAINER_TOAST = createCrudToastOptions({ action: 'Moving', subject: 'Container', success: 'Container moved successfully' });
-const START_CONTAINER_TOAST = createCrudToastOptions({ action: 'Starting', subject: 'Container', success: 'Container started successfully' });
-const STOP_CONTAINER_TOAST = createCrudToastOptions({ action: 'Stopping', subject: 'Container', success: 'Container stopped successfully' });
-const RESTART_CONTAINER_TOAST = createCrudToastOptions({ action: 'Restarting', subject: 'Container', success: 'Container restarted successfully' });
-const DELETE_CONTAINER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Container', success: 'Container deleted successfully' });
+const CREATE_FOLDER_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Folder' });
+const RENAME_FOLDER_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Folder' });
+const DELETE_FOLDER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Folder' });
+const MOVE_CONTAINER_TOAST = createCrudToastOptions({ action: 'Moving', subject: 'Container' });
+const START_CONTAINER_TOAST = createCrudToastOptions({ action: 'Starting', subject: 'Container' });
+const STOP_CONTAINER_TOAST = createCrudToastOptions({ action: 'Stopping', subject: 'Container' });
+const RESTART_CONTAINER_TOAST = createCrudToastOptions({ action: 'Restarting', subject: 'Container' });
+const DELETE_CONTAINER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Container' });
 
 const createEmptyResponse = <T extends { _id: string }>(params: PaginationParams): PaginatedResponse<T> => ({
     status: 'success',

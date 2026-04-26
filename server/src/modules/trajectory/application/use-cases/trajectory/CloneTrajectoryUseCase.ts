@@ -1,8 +1,8 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { ClusterRoleAwareSelectionService } from '@modules/container/infrastructure/services/ClusterRoleAwareSelectionService';
-import StoragePlacementService from '@modules/team-cluster/application/services/StoragePlacementService';
-import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
-import { resolveEffectiveCapabilitiesFromRoleConfig, TeamClusterStatus } from '@modules/team-cluster/domain/entities/TeamCluster';
+import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
+import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
+import { resolveEffectiveCapabilitiesFromRoleConfig, TeamClusterStatus } from '@modules/cluster/domain/entities/TeamCluster';
 import {
     CloneTrajectoryInputDTO,
     CloneTrajectoryOutputDTO
@@ -20,7 +20,7 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 
-import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
+import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import TrajectoryCloneJobRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryCloneJobRepository';
 import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';

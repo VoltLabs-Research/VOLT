@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { create } from 'zustand';
-import useSocket from '@/modules/socket/core/hooks/use-socket';
-import type { PresenceUser } from '@/modules/socket/trajectory/api/entities/presence-user';
+import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
+import { SOCKET_WHITEBOARD_EVENTS } from '@/modules/socket/events/whiteboards';
+import type { PresenceUser } from '@/modules/socket/types/presence-user';
 
 interface WhiteboardPresenceAnnouncement {
     message: string;
@@ -41,56 +42,50 @@ const isPresencePayload = (value: unknown): value is PresenceUser[] => {
 };
 
 const useWhiteboardPresence = ({ whiteboardId, enabled = true }: UseWhiteboardPresenceProps) => {
-    const socketService = useSocket();
     const previousUsersRef = useRef<PresenceUser[]>([]);
 
     const users = usePresenceStore((state) => state.users);
     const announcement = usePresenceStore((state) => state.announcement);
+
+    useSocketEvent<unknown>(SOCKET_WHITEBOARD_EVENTS.USERS_UPDATE, (incomingUsers) => {
+        if (!isPresencePayload(incomingUsers)) {
+            return;
+        }
+
+        const nextUsers = incomingUsers;
+        const previousUsers = previousUsersRef.current;
+        const previousIds = new Set(previousUsers.map((user) => user.id));
+        const nextIds = new Set(nextUsers.map((user) => user.id));
+        const joinedUser = nextUsers.find((user) => !previousIds.has(user.id));
+        const leftUser = previousUsers.find((user) => !nextIds.has(user.id));
+
+        if (joinedUser) {
+            setAnnouncement({
+                message: `${getPresenceUserName(joinedUser)} joined the whiteboard.`,
+                timestamp: Date.now()
+            });
+        } else if (leftUser) {
+            setAnnouncement({
+                message: `${getPresenceUserName(leftUser)} left the whiteboard.`,
+                timestamp: Date.now()
+            });
+        }
+
+        previousUsersRef.current = nextUsers;
+        setUsers(nextUsers);
+    }, { enabled: enabled && !!whiteboardId });
 
     useEffect(() => {
         if (!enabled || !whiteboardId) {
             return;
         }
 
-        const unsubscribePresence = socketService.on(
-            'whiteboard_users_update',
-            (incomingUsers) => {
-                if (!isPresencePayload(incomingUsers)) {
-                    return;
-                }
-
-                const nextUsers = incomingUsers;
-                const previousUsers = previousUsersRef.current;
-                const previousIds = new Set(previousUsers.map((user) => user.id));
-                const nextIds = new Set(nextUsers.map((user) => user.id));
-                const joinedUser = nextUsers.find((user) => !previousIds.has(user.id));
-                const leftUser = previousUsers.find((user) => !nextIds.has(user.id));
-
-                if (joinedUser) {
-                    setAnnouncement({
-                        message: `${getPresenceUserName(joinedUser)} joined the whiteboard.`,
-                        timestamp: Date.now()
-                    });
-                } else if (leftUser) {
-                    setAnnouncement({
-                        message: `${getPresenceUserName(leftUser)} left the whiteboard.`,
-                        timestamp: Date.now()
-                    });
-                }
-
-                previousUsersRef.current = nextUsers;
-                setUsers(nextUsers);
-            }
-        );
-
         return () => {
-            unsubscribePresence();
-
             setUsers([]);
             setAnnouncement(null);
             previousUsersRef.current = [];
         };
-    }, [whiteboardId, enabled, socketService]);
+    }, [whiteboardId, enabled]);
 
     return { users, announcement };
 };

@@ -7,6 +7,7 @@ import useImportPlugin from '@/modules/plugin/hooks/plugin/use-import-plugin';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { PluginStatus } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { SOCKET_PLUGIN_EVENTS } from '@/modules/socket/events/plugin';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
@@ -27,8 +28,8 @@ interface PluginListingRow extends BaseEntity {
 };
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: 'plugin.created', queryKeys: [PLUGIN_QUERY_KEYS.catalog(), PLUGIN_QUERY_KEYS.all(), PLUGIN_QUERY_KEYS.byId()] },
-    { event: 'plugin.deleted', queryKeys: [PLUGIN_QUERY_KEYS.catalog(), PLUGIN_QUERY_KEYS.all(), PLUGIN_QUERY_KEYS.byId()] }
+    { event: SOCKET_PLUGIN_EVENTS.CREATED, queryKeys: [PLUGIN_QUERY_KEYS.catalog(), PLUGIN_QUERY_KEYS.all(), PLUGIN_QUERY_KEYS.byId()] },
+    { event: SOCKET_PLUGIN_EVENTS.DELETED, queryKeys: [PLUGIN_QUERY_KEYS.catalog(), PLUGIN_QUERY_KEYS.all(), PLUGIN_QUERY_KEYS.byId()] }
 ];
 
 const CLONE_PLUGIN_TOAST_OPTIONS = createPromiseToastOptions({

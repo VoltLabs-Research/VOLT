@@ -1,4 +1,4 @@
-import { ErrorCodes } from '@core/constants/error-codes';
+import { ErrorCodes, isErrorCode } from '@core/constants/error-codes';
 import type { ErrorCode } from '@core/constants/error-codes';
 import type { SafeSSHConnectionDTO } from '@modules/ssh/application/dtos/CreateSSHConnectionDTO';
 import type SSHConnection from '@modules/ssh/domain/entities/SSHConnection';
@@ -9,28 +9,18 @@ import {
     isRecord
 } from '@shared/infrastructure/utilities/type-guards';
 
-const CANONICAL_ERROR_CODES = new Set<ErrorCode>(Object.values(ErrorCodes));
-
 interface SSHServiceFailure {
     code: ErrorCode;
     message: string;
     statusCode: number;
 }
 
-const isCanonicalErrorCode = (value: unknown): value is ErrorCode => {
-    if (typeof value !== 'string') {
-        return false;
-    }
-
-    return CANONICAL_ERROR_CODES.has(value as ErrorCode);
-};
-
 const isSSHServiceFailure = (value: unknown): value is SSHServiceFailure => {
     if (!isRecord(value)) {
         return false;
     }
 
-    if (!hasStringProperty(value, 'code') || !isCanonicalErrorCode(value.code)) {
+    if (!hasStringProperty(value, 'code') || !isErrorCode(value.code)) {
         return false;
     }
 
@@ -139,7 +129,7 @@ export const resolveSSHServiceError = (
 
     const errorMessage = getErrorMessage(error);
 
-    if (isCanonicalErrorCode(errorMessage)) {
+    if (isErrorCode(errorMessage)) {
         return new ApplicationError(
             errorMessage,
             errorMessage,

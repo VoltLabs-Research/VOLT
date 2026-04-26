@@ -1,5 +1,5 @@
-import { defineServiceModule } from '@/shared/api/service-module';
-import { get } from '@/app/core/http/utilities/create-service';
+
+import { createService, get } from '@/app/core/http/utilities/create-service';
 import type { DailyActivity } from './entities/daily-activity';
 import type { GetDailyActivityParams } from './dtos/get-daily-activity';
 
@@ -17,12 +17,11 @@ const endpoints = {
     })
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/daily-activities',
             useRBAC: true
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

@@ -11,6 +11,7 @@ import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activ
 import { ACTIVITY_ACCENT, ACTIVITY_ICON } from '@/modules/daily-activity/utilities/activity-mappings';
 import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import { formatDuration } from '@/shared/utils/format';
 import { Activity as ActivityIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import {
@@ -81,20 +82,6 @@ const formatRelativeTime = (iso: string): string => {
         month: 'short',
         day: 'numeric'
     });
-};
-
-const formatMinutes = (minutes: number): string => {
-    if (minutes < 60) return `${Math.round(minutes)}m`;
-
-    const hours = Math.floor(minutes / 60);
-    const mins = Math.round(minutes % 60);
-    if (hours < 24) {
-        return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
-    }
-
-    const days = Math.floor(hours / 24);
-    const remainingHours = hours % 24;
-    return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`;
 };
 
 const getUserName = (user: string | PopulatedUser): string => {
@@ -225,7 +212,7 @@ const DashboardActivityCard = () => {
                     }
 
                     const formattedValue = entry.dataKey === 'minutes' && typeof entry.value === 'number'
-                        ? formatMinutes(entry.value)
+                        ? formatDuration(entry.value)
                         : entry.value;
 
                     return (
@@ -368,7 +355,7 @@ const DashboardActivityCard = () => {
 
                 <Box className='dashboard-activity-summary'>
                     <Box className='dashboard-activity-summary-item'>
-                        <Text size='lg' tone='primary' weight='bold'>{formatMinutes(inAppActivity.totalMinutes)}</Text>
+                        <Text size='lg' tone='primary' weight='bold'>{formatDuration(inAppActivity.totalMinutes)}</Text>
                         <Text size='sm' tone='muted'>Total time</Text>
                     </Box>
                     <Box className='dashboard-activity-summary-item'>

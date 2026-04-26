@@ -1,4 +1,3 @@
-export interface RevokeSecretKeyInputDTO {
-    teamId: string;
-    secretKeyId: string;
-};
+import type { DeleteSecretKeyInputDTO } from './delete-secret-key';
+
+export type RevokeSecretKeyInputDTO = DeleteSecretKeyInputDTO;

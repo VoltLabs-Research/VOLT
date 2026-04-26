@@ -1,4 +1,4 @@
-import teamSocketRoomService from '@/modules/socket/team/services/team-socket-room-service';
+import teamSocketRoomService from '@/modules/socket/services/team-room-service';
 import { useSelectedTeamId } from './use-selected-team';
 import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
 import { useEffect, useRef } from 'react';

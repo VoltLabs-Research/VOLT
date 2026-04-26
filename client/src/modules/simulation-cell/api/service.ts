@@ -1,5 +1,5 @@
-import { paginated, get } from '@/app/core/http/utilities/create-service';
-import { defineServiceModule } from '@/shared/api/service-module';
+import { createService, paginated, get } from '@/app/core/http/utilities/create-service';
+
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { SimulationCell } from './entities/simulation-cell';
 import type { GetSimulationCellsParams } from './dtos/get-simulation-cells';
@@ -14,12 +14,11 @@ const endpoints = {
     )
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/simulation-cells',
             useRBAC: true
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

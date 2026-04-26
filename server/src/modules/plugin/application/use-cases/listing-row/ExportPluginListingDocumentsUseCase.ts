@@ -2,7 +2,7 @@ import {
     ExportPluginListingDocumentsInputDTO
 } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
 import { buildListingExportColumns, enrichDaemonListingRows } from '@modules/plugin/application/use-cases/listing-row/listing-row-enrichment';
-import { resolveAnalysisComputeClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
+import { resolveAnalysisComputeClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { createSerializedDownloadResponse } from '@shared/infrastructure/http/responses/download-response';

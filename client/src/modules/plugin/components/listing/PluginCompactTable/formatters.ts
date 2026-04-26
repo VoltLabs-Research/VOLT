@@ -1,9 +1,9 @@
-export interface FormattedNumber {
+export interface FormattedScientific {
     short: string;
     long: string;
 }
 
-export const formatNumber = (value: number, sigFigs = 4): FormattedNumber => {
+export const formatScientific = (value: number, sigFigs = 4): FormattedScientific => {
     if(!Number.isFinite(value)){
         const text = String(value);
         return { short: text, long: text };
@@ -39,7 +39,7 @@ export const vectorMagnitude = (components: number[]): number => {
 export const summarizeScalar = (value: unknown): string => {
     if(value === null || value === undefined) return '-';
     if(typeof value === 'boolean') return value ? 'true' : 'false';
-    if(typeof value === 'number') return formatNumber(value, 3).short;
+    if(typeof value === 'number') return formatScientific(value, 3).short;
     if(typeof value === 'bigint') return value.toString();
     if(typeof value === 'string'){
         return value.length > 14 ? `${value.slice(0, 13)}…` : value;
@@ -50,7 +50,7 @@ export const summarizeScalar = (value: unknown): string => {
         if(value.length === 0) return '[]';
         if(value.every((entry) => typeof entry === 'number')){
             const nums = value as number[];
-            const sample = nums.slice(0, 3).map((n) => formatNumber(n, 3).short).join(', ');
+            const sample = nums.slice(0, 3).map((n) => formatScientific(n, 3).short).join(', ');
             return nums.length > 3 ? `[${sample}, …]` : `[${sample}]`;
         }
         return `[${value.length}]`;

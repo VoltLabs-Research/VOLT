@@ -6,7 +6,6 @@ const JOB_STATUS_LABELS: Record<JobStatus, string> = {
     [JobStatus.Completed]: 'Completed',
     [JobStatus.Failed]: 'Failed',
     [JobStatus.Retrying]: 'Retrying',
-    [JobStatus.Unknown]: 'Unknown',
     [JobStatus.QueuedAfterFailure]: 'Queued after failure'
 };
 

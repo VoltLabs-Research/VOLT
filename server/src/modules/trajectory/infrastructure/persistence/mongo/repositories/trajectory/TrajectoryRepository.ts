@@ -1,4 +1,4 @@
-import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
+import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import Trajectory, { TrajectoryFrame, TrajectoryProps } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryDeletedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryDeletedEvent';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';

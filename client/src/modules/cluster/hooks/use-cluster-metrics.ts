@@ -1,7 +1,10 @@
 import { useClusterStore } from '../stores/use-cluster-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
-import teamSocketRoomService from '@/modules/socket/team/services/team-socket-room-service';
+import teamSocketRoomService from '@/modules/socket/services/team-room-service';
+import useSocketConnectionEffect from '@/modules/socket/hooks/use-socket-connection-effect';
+import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
+import { SOCKET_CLUSTER_METRICS_EVENTS } from '@/modules/socket/events/cluster';
 import {
     clusterHistoryLoadedQuery,
     clusterHistoryQuery,
@@ -10,13 +13,19 @@ import {
     setClusterHistoryQueryData,
     setClusterMetricsQueryData
 } from './queries';
-import { observeClusterMetrics, requestClusterHistory } from '../api/service';
+import { requestClusterHistory } from '../api/service';
 import { resolveClusterMetricId } from '../utilities/resolve-cluster-metric-id';
 import { useQueryClient } from '@tanstack/react-query';
-import { useMemo, useCallback, useEffect } from 'react';
+import { useMemo, useCallback } from 'react';
+import type { ClusterMetrics, ClusterHistoryMetric } from '../api/entities/cluster-metrics';
 
 interface UseClusterMetricsOptions {
     clusterId?: string | null;
+};
+
+interface ClusterMetricsHistoryEvent {
+    clusterId: string;
+    history: ClusterHistoryMetric[];
 };
 
 const useClusterMetrics = (options: UseClusterMetricsOptions = {}) => {
@@ -29,27 +38,20 @@ const useClusterMetrics = (options: UseClusterMetricsOptions = {}) => {
     const setConnected = useClusterStore((state) => state.setConnected);
     const targetClusterId = options.clusterId ?? selectedClusterId;
 
-    useEffect(() => {
-        return observeClusterMetrics({
-            onConnectionChange: (connected) => {
-                setConnected(connected);
+    useSocketConnectionEffect((connected) => {
+        setConnected(connected);
+        if (!connected) {
+            resetClusterHistoryQuery(queryClient);
+        }
+    }, { runOnMount: true });
 
-                if (!connected) {
-                    resetClusterHistoryQuery(queryClient);
-                }
-            },
-            onMetricsAll: (clusters) => {
-                setClusterMetricsQueryData(queryClient, clusters);
-            },
-            onMetricsHistory: ({ clusterId, history }) => {
-                setClusterHistoryQueryData(
-                    queryClient,
-                    history,
-                    clusterId
-                );
-            }
-        });
-    }, [queryClient, setConnected]);
+    useSocketEvent<ClusterMetrics[]>(SOCKET_CLUSTER_METRICS_EVENTS.METRICS_ALL, (clusters) => {
+        setClusterMetricsQueryData(queryClient, clusters);
+    });
+
+    useSocketEvent<ClusterMetricsHistoryEvent>(SOCKET_CLUSTER_METRICS_EVENTS.METRICS_HISTORY, ({ clusterId, history }) => {
+        setClusterHistoryQueryData(queryClient, history, clusterId);
+    });
 
     const { data: clusters = [] } = clusterMetricsQuery(undefined);
     const historyClusterId = targetClusterId ?? '';

@@ -1,5 +1,5 @@
-import { get, post, patch, del } from '@/app/core/http/utilities/create-service';
-import { defineServiceModule } from '@/shared/api/service-module';
+import { createService, get, post, patch, del } from '@/app/core/http/utilities/create-service';
+
 import type { EmptyParams, UnwrapMode } from '@/app/core/http/utilities/create-service';
 import type { Team } from '../entities/team/team';
 import type { CreateTeamInputDTO } from '../dtos/team/create-team';
@@ -34,11 +34,10 @@ const endpoints = {
     )
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/teams'
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

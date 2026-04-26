@@ -1,9 +1,9 @@
 import type { ContainerTerminalAttachment } from '@modules/container/domain/port/IContainerService';
-import type { TeamClusterReverseChannelStreamAttachment, TeamClusterTunnelOpenRequest } from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
-import TeamClusterReverseChannelService from '@modules/team-cluster/infrastructure/services/TeamClusterReverseChannelService';
-import type { TeamClusterTunnelStream } from '@modules/team-cluster/utilities/TeamClusterReverseTunnelStream';
-import { TeamClusterReverseWebSocketStream } from '@modules/team-cluster/utilities/teamClusterReverseWebSocket';
-import { TeamClusterDaemonResponseType, TeamClusterServiceExposureAccessMode } from '@modules/team-cluster/utilities/teamClusterSocket';
+import type { TeamClusterReverseChannelStreamAttachment, TeamClusterTunnelOpenRequest } from '@modules/cluster/infrastructure/services/TeamClusterReverseChannelService';
+import TeamClusterReverseChannelService from '@modules/cluster/infrastructure/services/TeamClusterReverseChannelService';
+import type { TeamClusterTunnelStream } from '@modules/cluster/utilities/TeamClusterReverseTunnelStream';
+import { TeamClusterReverseWebSocketStream } from '@modules/cluster/utilities/teamClusterReverseWebSocket';
+import { TeamClusterDaemonResponseType, TeamClusterServiceExposureAccessMode } from '@modules/cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';

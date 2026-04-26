@@ -1,8 +1,8 @@
-import TeamCluster from '@modules/team-cluster/domain/entities/TeamCluster';
-import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
-import TeamClusterCredentialsCipher from '@modules/team-cluster/infrastructure/services/TeamClusterCredentialsCipher';
-import { hashEnrollmentToken } from '@modules/team-cluster/utilities/enrollmentToken';
-import { secureCompare } from '@modules/team-cluster/utilities/secureCompare';
+import TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
+import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
+import TeamClusterCredentialsCipher from '@modules/cluster/infrastructure/services/TeamClusterCredentialsCipher';
+import { hashEnrollmentToken } from '@modules/cluster/utilities/enrollmentToken';
+import { secureCompare } from '@modules/cluster/utilities/secureCompare';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 

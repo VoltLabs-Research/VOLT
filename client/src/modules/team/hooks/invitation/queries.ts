@@ -1,4 +1,4 @@
-import invitationService from '../../api/services/invitation';
+import invitationService from '../../api/services/invitation-service';
 import { invalidateTeamsQuery } from '../team/queries';
 import { buildKeys, createMutation, createQuery, queryClient } from '@/shared/infrastructure/query';
 import type { AcceptInvitationInputDTO } from '../../api/dtos/invitation/accept-invitation';

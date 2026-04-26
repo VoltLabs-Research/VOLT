@@ -16,14 +16,15 @@ import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
 import { useCallback, useState } from 'react';
 import type { TeamRole } from '@/modules/team/api/entities/role/team-role';
 import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import { SOCKET_TEAM_ROLE_EVENTS } from '@/modules/socket/events/team';
 import type { RoleEditorPayload } from '../RoleEditorModal';
 
 const TEAM_ROLES_QUERY_KEY = ['team-roles'] as const;
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: 'team-role.created', queryKeys: [TEAM_ROLES_QUERY_KEY] },
-    { event: 'team-role.deleted', queryKeys: [TEAM_ROLES_QUERY_KEY] },
-    { event: 'team-role.updated', queryKeys: [TEAM_ROLES_QUERY_KEY] }
+    { event: SOCKET_TEAM_ROLE_EVENTS.CREATED, queryKeys: [TEAM_ROLES_QUERY_KEY] },
+    { event: SOCKET_TEAM_ROLE_EVENTS.DELETED, queryKeys: [TEAM_ROLES_QUERY_KEY] },
+    { event: SOCKET_TEAM_ROLE_EVENTS.UPDATED, queryKeys: [TEAM_ROLES_QUERY_KEY] }
 ];
 
 const createRoleToastOptions = createPromiseToastOptions({

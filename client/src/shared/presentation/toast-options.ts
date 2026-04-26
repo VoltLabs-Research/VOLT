@@ -80,7 +80,7 @@ export const createCrudToastOptions = ({
 
     return createPromiseToastOptions({
         loading: `${action} ${lowerSubject}...`,
-        success: success ?? `${normalizedSubject} ${past}`,
+        success: success ?? `${normalizedSubject} ${past} successfully`,
         error: error ?? `Failed to ${base} ${lowerSubject}`
     });
 };

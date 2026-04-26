@@ -1,4 +1,4 @@
-import { COMMON_REACTIONS } from '@/modules/chat/api/entities/shared/chat-constants';
+import { COMMON_REACTIONS } from '@/modules/chat/api/entities/shared/chat-reactions';
 import { IoHappyOutline, IoEllipsisVerticalOutline, IoCreateOutline, IoTrashOutline } from 'react-icons/io5';
 import EmojiPicker from '@/shared/presentation/components/EmojiPicker';
 import Box from '@/shared/presentation/primitives/Box';

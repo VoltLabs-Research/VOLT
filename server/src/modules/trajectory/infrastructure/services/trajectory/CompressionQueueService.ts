@@ -13,7 +13,6 @@ import {
 import CompressionProcessor from './CompressionProcessor';
 import TeamClusterQueueScopeLimitsService from './TeamClusterQueueScopeLimitsService';
 
-import type { JobStatusChangedValue } from '@modules/jobs/domain/events/JobStatusChangedEvent';
 import IORedis from 'ioredis';
 import { inject } from 'tsyringe';
 import { v4 as uuid } from 'uuid';
@@ -281,7 +280,7 @@ export default class CompressionQueueService {
     private async publishStatus(
         jobId: string,
         teamId: string,
-        status: JobStatusChangedValue,
+        status: JobStatus,
         details: Record<string, unknown>
     ): Promise<void> {
         await this.eventBus.publish(new JobStatusChangedEvent({

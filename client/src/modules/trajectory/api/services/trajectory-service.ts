@@ -1,5 +1,5 @@
-import { custom, paginated, get, patch, del, download } from '@/app/core/http/utilities/create-service';
-import { defineServiceModule } from '@/shared/api/service-module';
+import { createService, custom, paginated, get, patch, del, download } from '@/app/core/http/utilities/create-service';
+
 import { createFolderCrudEndpoints } from '@/shared/api/folder-endpoints';
 import { base64ToBlob } from '@/shared/utils/file';
 import { decodeAtomsBinary } from '@/modules/trajectory/utilities/decode-atoms-binary';
@@ -139,12 +139,11 @@ const endpoints = {
     downloadSample: download<DownloadSampleInputDTO>('GET', '/samples/:filename')
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/trajectories',
             useRBAC: true
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

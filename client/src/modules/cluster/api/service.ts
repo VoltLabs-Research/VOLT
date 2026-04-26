@@ -1,7 +1,7 @@
-import { defineServiceModule } from '@/shared/api/service-module';
-import { download, get, paginated, patch, post, del } from '@/app/core/http/utilities/create-service';
-import socketService from '@/modules/socket/core/services/socket-service';
-import type { ClusterHistoryMetric, ClusterMetrics } from './entities/cluster-metrics';
+import { createService, download, get, paginated, patch, post, del } from '@/app/core/http/utilities/create-service';
+import { emitWithReport } from '@/modules/socket/services/socket-emit-helpers';
+import { SOCKET_CLUSTER_METRICS_EVENTS } from '@/modules/socket/events/cluster';
+import type { ClusterHistoryMetric } from './entities/cluster-metrics';
 import type {
     CreateTeamClusterInputDTO,
     CreateTeamClusterOutputDTO
@@ -58,53 +58,13 @@ import type {
     DeleteDemoTeamClusterOutputDTO
 } from './dtos/team-cluster/demo-team-cluster';
 
-export const CLUSTER_SOCKET_EVENTS = {
-    metricsAll: 'metrics:all',
-    metricsHistory: 'metrics:history'
-};
-
-export const TEAM_CLUSTER_SOCKET_EVENTS = {
-    lifecycleUpdated: 'team-cluster.updated',
-    subscribe: 'subscribe_to_team_cluster'
-};
-
 export interface ClusterMetricsHistoryResponse {
     clusterId: string;
     history: ClusterHistoryMetric[];
 };
 
-interface ObserveClusterMetricsHandlers {
-    onConnectionChange?: (connected: boolean) => void;
-    onMetricsAll?: (clusters: ClusterMetrics[]) => void;
-    onMetricsHistory?: (payload: ClusterMetricsHistoryResponse) => void;
-};
-
-export const observeClusterMetrics = (handlers: ObserveClusterMetricsHandlers = {}): (() => void) => {
-    const cleanups: Array<() => void> = [];
-
-    if (handlers.onConnectionChange) {
-        cleanups.push(socketService.onConnectionChange(handlers.onConnectionChange));
-    }
-
-    if (handlers.onMetricsAll) {
-        cleanups.push(socketService.on(CLUSTER_SOCKET_EVENTS.metricsAll, handlers.onMetricsAll));
-    }
-
-    if (handlers.onMetricsHistory) {
-        cleanups.push(socketService.on(CLUSTER_SOCKET_EVENTS.metricsHistory, handlers.onMetricsHistory));
-    }
-
-    if (handlers.onConnectionChange) {
-        handlers.onConnectionChange(socketService.isConnected());
-    }
-
-    return () => {
-        cleanups.forEach((cleanup) => cleanup());
-    };
-};
-
 export const requestClusterHistory = async (minutes: number | undefined, clusterId: string): Promise<void> => {
-    await socketService.emit(CLUSTER_SOCKET_EVENTS.metricsHistory, {
+    await emitWithReport(SOCKET_CLUSTER_METRICS_EVENTS.METRICS_HISTORY, {
         minutes: minutes ?? 5,
         clusterId
     });
@@ -158,11 +118,10 @@ const teamClusterEndpoints = {
     )
 };
 
-export const teamClusterService = defineServiceModule({
+export const teamClusterService = createService({
     clients: {
         default: {
             basePath: '/teams'
         }
-    },
-    endpoints: teamClusterEndpoints
-});
+    }
+}, teamClusterEndpoints);

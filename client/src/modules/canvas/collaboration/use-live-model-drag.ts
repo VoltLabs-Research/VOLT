@@ -1,5 +1,7 @@
-import useSocket from '@/modules/socket/core/hooks/use-socket';
-import { useEffect, useRef } from 'react';
+import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
+import useThrottledSocketEmit from '@/modules/socket/hooks/use-throttled-socket-emit';
+import { SOCKET_CANVAS_WORKSPACE_EVENTS } from '@/modules/socket/events/canvas';
+import { useEffect } from 'react';
 import { localModelDragBus, remoteModelDragBus } from './live-drag-bus';
 
 interface UseLiveModelDragOptions {
@@ -26,8 +28,12 @@ const useLiveModelDrag = ({
     isOwner,
     enabled = true
 }: UseLiveModelDragOptions) => {
-    const socketService = useSocket();
-    const lastEmitRef = useRef(0);
+    const dragEmitter = useThrottledSocketEmit<LiveDragPayload>(SOCKET_CANVAS_WORKSPACE_EVENTS.MODEL_DRAG, {
+        intervalMs: EMIT_THROTTLE_MS,
+        mode: 'leading-throttle',
+        enabled: enabled && !!trajectoryId && !!ownerId && isOwner,
+        fireAndForget: true
+    });
 
     useEffect(() => {
         if (!enabled || !trajectoryId || !ownerId || !isOwner) {
@@ -35,43 +41,32 @@ const useLiveModelDrag = ({
         }
 
         return localModelDragBus.on(({ sceneKey, offset }) => {
-            const now = Date.now();
-            if (now - lastEmitRef.current < EMIT_THROTTLE_MS) return;
-            lastEmitRef.current = now;
-
-            socketService.emit('canvas.workspace.model_drag', {
+            dragEmitter.emit({
                 trajectoryId,
                 ownerId,
                 sceneKey,
                 x: offset.x,
                 y: offset.y,
                 z: offset.z
-            }).catch(() => undefined);
-        });
-    }, [enabled, trajectoryId, ownerId, isOwner, socketService]);
-
-    useEffect(() => {
-        if (!enabled || !trajectoryId || !ownerId) {
-            return;
-        }
-
-        return socketService.on('canvas.workspace.model_drag', (data) => {
-            const payload = data as LiveDragPayload | undefined;
-            if (!payload) return;
-            if (payload.trajectoryId !== trajectoryId) return;
-            if (payload.ownerId !== ownerId) return;
-            if (!payload.sceneKey) return;
-
-            remoteModelDragBus.emit({
-                sceneKey: payload.sceneKey,
-                offset: {
-                    x: payload.x,
-                    y: payload.y,
-                    z: payload.z
-                }
             });
         });
-    }, [enabled, trajectoryId, ownerId, socketService]);
+    }, [enabled, trajectoryId, ownerId, isOwner, dragEmitter]);
+
+    useSocketEvent<LiveDragPayload>(SOCKET_CANVAS_WORKSPACE_EVENTS.MODEL_DRAG, (payload) => {
+        if (!payload) return;
+        if (payload.trajectoryId !== trajectoryId) return;
+        if (payload.ownerId !== ownerId) return;
+        if (!payload.sceneKey) return;
+
+        remoteModelDragBus.emit({
+            sceneKey: payload.sceneKey,
+            offset: {
+                x: payload.x,
+                y: payload.y,
+                z: payload.z
+            }
+        });
+    }, { enabled: enabled && !!trajectoryId && !!ownerId });
 };
 
 export default useLiveModelDrag;

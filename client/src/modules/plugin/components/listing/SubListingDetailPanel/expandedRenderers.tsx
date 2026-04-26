@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from 'react';
 import { inferCellKind } from '@/modules/plugin/components/listing/PluginCompactTable/typeInference';
-import { formatNumber, vectorMagnitude, safeJsonStringify } from '@/modules/plugin/components/listing/PluginCompactTable/formatters';
+import { formatScientific, vectorMagnitude, safeJsonStringify } from '@/modules/plugin/components/listing/PluginCompactTable/formatters';
 
 const NUMERIC_PRECISION = 8;
 const MAX_ARRAY_ROWS = 500;
@@ -40,7 +40,7 @@ const renderPrimitive = (value: unknown): ReactNode => {
     }
     if(typeof value === 'number'){
         if(!Number.isFinite(value)) return <span className='plugin-detail-empty'>{String(value)}</span>;
-        const { short, long } = formatNumber(value, NUMERIC_PRECISION);
+        const { short, long } = formatScientific(value, NUMERIC_PRECISION);
         return <span className='plugin-detail-number tabular-nums' title={short === long ? undefined : long}>{long}</span>;
     }
     if(typeof value === 'bigint'){
@@ -64,14 +64,14 @@ const renderVector = (vector: number[]): ReactNode => {
                 {vector.map((component, index) => (
                     <Fragment key={index}>
                         {index > 0 && <span className='plugin-detail-vector__sep'>,</span>}
-                        <span className='plugin-detail-vector__component tabular-nums'>{formatNumber(component, NUMERIC_PRECISION).long}</span>
+                        <span className='plugin-detail-vector__component tabular-nums'>{formatScientific(component, NUMERIC_PRECISION).long}</span>
                     </Fragment>
                 ))}
                 <span className='plugin-detail-vector__bracket'>⟩</span>
             </div>
             <div className='plugin-detail-vector__meta'>
                 <span className='plugin-detail-vector__label'>‖v‖</span>
-                <span className='tabular-nums'>{formatNumber(magnitude, NUMERIC_PRECISION).long}</span>
+                <span className='tabular-nums'>{formatScientific(magnitude, NUMERIC_PRECISION).long}</span>
             </div>
         </div>
     );
@@ -91,7 +91,7 @@ const renderNumberArray = (values: number[]): ReactNode => {
             <div className='plugin-detail-array__list tabular-nums'>
                 {capped.map((value, index) => (
                     <span key={index} className='plugin-detail-array__item'>
-                        {formatNumber(value, NUMERIC_PRECISION).long}
+                        {formatScientific(value, NUMERIC_PRECISION).long}
                     </span>
                 ))}
             </div>
@@ -132,7 +132,7 @@ const renderPoints = (points: number[][]): ReactNode => {
                             <span className='plugin-detail-points__index-cell tabular-nums'>{rowIndex}</span>
                             {point.map((component, colIndex) => (
                                 <span key={colIndex} className='plugin-detail-points__cell tabular-nums'>
-                                    {formatNumber(component, NUMERIC_PRECISION).long}
+                                    {formatScientific(component, NUMERIC_PRECISION).long}
                                 </span>
                             ))}
                         </div>
@@ -163,7 +163,7 @@ const renderMatrix = (matrix: number[][]): ReactNode => {
                     <div key={rowIndex} className='plugin-detail-matrix__row'>
                         {row.map((cell, colIndex) => (
                             <span key={colIndex} className='plugin-detail-matrix__cell'>
-                                {formatNumber(cell, NUMERIC_PRECISION).long}
+                                {formatScientific(cell, NUMERIC_PRECISION).long}
                             </span>
                         ))}
                     </div>

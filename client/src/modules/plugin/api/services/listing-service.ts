@@ -1,5 +1,5 @@
-import { download, get } from '@/app/core/http/utilities/create-service';
-import { defineServiceModule } from '@/shared/api/service-module';
+import { createService, download, get } from '@/app/core/http/utilities/create-service';
+
 import type { PaginationMeta } from '@/shared/domain/pagination';
 import type { ListingRow } from '../entities/listing/listing-row';
 import type { GetPluginListingInputDTO, GetPluginListingOutputDTO } from '../dtos/listing/get-plugin-listing';
@@ -112,12 +112,11 @@ const endpoints = {
     )
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/plugins',
             useRBAC: true
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

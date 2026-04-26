@@ -1,5 +1,5 @@
-import { paginated, patch, del } from '@/app/core/http/utilities/create-service';
-import { defineServiceModule } from '@/shared/api/service-module';
+import { createService, paginated, patch, del } from '@/app/core/http/utilities/create-service';
+
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { TeamMember, TeamMemberStats } from '@/modules/team/api/entities/member/team-member';
 import type { GetTeamMembersInputDTO } from '../dtos/member/get-team-members';
@@ -12,11 +12,10 @@ const endpoints = {
     remove: del<RemoveTeamMemberInputDTO>('/:teamId/members/:memberId', { unwrap: 'void' })
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/teams'
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

@@ -1,5 +1,5 @@
 import { createMutation } from '@/shared/infrastructure/query';
-import groupService from '../../api/services/group';
+import groupService from '../../api/services/group-service';
 import type { Chat } from '../../api/entities/chat';
 import type {
     AddUsersToGroupInputDTO,

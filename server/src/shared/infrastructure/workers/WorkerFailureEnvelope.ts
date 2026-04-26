@@ -1,9 +1,7 @@
-import { ErrorCodes } from '@core/constants/error-codes';
+import { ErrorCodes, isErrorCode } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import type { ErrorCode } from '@core/constants/error-codes';
-
-const AVAILABLE_ERROR_CODES = new Set<ErrorCode>(Object.values(ErrorCodes));
 
 export interface WorkerFailureEnvelope {
     code: ErrorCode;
@@ -26,14 +24,6 @@ interface NormalizeWorkerFailureEnvelopeOptions {
     error?: unknown;
     fallbackCode?: ErrorCode;
     fallbackDetails?: string;
-};
-
-const isErrorCode = (value: unknown): value is ErrorCode => {
-    if (typeof value !== 'string') {
-        return false;
-    }
-
-    return AVAILABLE_ERROR_CODES.has(value);
 };
 
 interface WorkerFailureEnvelopeInput {

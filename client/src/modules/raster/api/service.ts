@@ -1,5 +1,4 @@
-import { defineServiceModule } from '@/shared/api/service-module';
-import { get, post } from '@/app/core/http/utilities/create-service';
+import { createService, get, post } from '@/app/core/http/utilities/create-service';
 import type {
     GetRasterMetadataParams,
     GetRasterMetadataResponse
@@ -24,7 +23,7 @@ const endpoints = {
     getMetadata: get<GetRasterMetadataParams, GetRasterMetadataResponse>('/:trajectoryId/metadata')
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/rasters',
@@ -35,6 +34,5 @@ export default defineServiceModule({
             useRBAC: true,
             getTeamId: (params: TriggerRasterizationParams) => params.teamId
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

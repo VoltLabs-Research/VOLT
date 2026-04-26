@@ -1,5 +1,5 @@
 import type { AIProvider } from '@/modules/ai/api/entities/ai-provider';
-import type { TeamAIIntegration, TeamAIModelMetadata } from '../../entities/ai-integration';
+import type { TeamAIIntegration, TeamAIModelMetadata } from '../../entities/ai-integration/team-ai-integration';
 
 export interface UpdateTeamAIIntegrationParams {
     apiKey?: string;

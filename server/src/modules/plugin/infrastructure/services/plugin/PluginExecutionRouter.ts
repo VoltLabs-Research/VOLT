@@ -7,7 +7,7 @@ import type {
     PluginReferenceExecutionRequest,
     RoutePluginExecutionInput
 } from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
-import DaemonAnalysisCompletionService from '@modules/team-cluster/infrastructure/services/DaemonAnalysisCompletionService';
+import DaemonAnalysisCompletionService from '@modules/cluster/infrastructure/services/DaemonAnalysisCompletionService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 import {

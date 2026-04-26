@@ -284,7 +284,7 @@ export default class TeamJobsService {
 
     private computeFrameStatus(jobs: TeamJobSummary[]): TeamJobStatus {
         const hasRunning = jobs.some((job) => job.status === JobStatus.Running);
-        const hasQueued = jobs.some((job) => job.status === JobStatus.Queued || job.status === 'retrying');
+        const hasQueued = jobs.some((job) => job.status === JobStatus.Queued || job.status === JobStatus.Retrying);
         const hasFailed = jobs.some((job) => job.status === JobStatus.Failed);
         const allCompleted = jobs.every((job) => job.status === JobStatus.Completed);
 

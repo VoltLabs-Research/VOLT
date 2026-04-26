@@ -1,5 +1,5 @@
 import { Fragment } from 'react';
-import { formatNumber, vectorMagnitude, safeJsonStringify } from '@/modules/plugin/components/listing/PluginCompactTable/formatters';
+import { formatScientific, vectorMagnitude, safeJsonStringify } from '@/modules/plugin/components/listing/PluginCompactTable/formatters';
 
 interface VectorCellProps {
     value: unknown;
@@ -18,7 +18,7 @@ const VectorCell = ({ value }: VectorCellProps) => {
         return <span className='plugin-cell-empty'>[]</span>;
     }
 
-    const formatted = value.map((component) => formatNumber(component, 3).short);
+    const formatted = value.map((component) => formatScientific(component, 3).short);
     const magnitude = vectorMagnitude(value);
     const title = `${safeJsonStringify(value)}  |v|=${magnitude.toPrecision(6)}`;
 

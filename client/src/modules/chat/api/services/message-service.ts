@@ -1,5 +1,5 @@
-import { paginated, request, post, patch, del } from '@/app/core/http/utilities/create-service';
-import { defineServiceModule } from '@/shared/api/service-module';
+import { createService, paginated, request, post, patch, del } from '@/app/core/http/utilities/create-service';
+
 import { buildFileFormData } from '@/shared/utils/file';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { ChatMessage } from '../entities/message';
@@ -29,11 +29,10 @@ const endpoints = {
     toggleReaction: patch<ToggleReactionInputDTO, ChatMessage>('/:chatId/messages/:messageId/reactions')
 };
 
-export default defineServiceModule({
+export default createService({
     clients: {
         default: {
             basePath: '/chat-messages'
         }
-    },
-    endpoints
-});
+    }
+}, endpoints);

@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { sileo } from 'sileo';
-import { SOCKET_TEAM_EVENTS } from '@/modules/socket/team/constants/team-socket-events';
-import useSocketEvent from '@/modules/socket/core/hooks/use-socket-event';
+import { SOCKET_TEAM_EVENTS } from '@/modules/socket/events/team';
+import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import { useCloneTrajectoryMutation } from './queries';
 import {
     useTrajectoryCloneFlowStore,

@@ -35,9 +35,9 @@ import TeamSecretKeySelfHttpModule from '@modules/team/infrastructure/http/route
 import TeamSecretKeyHttpModule from '@modules/team/infrastructure/http/routes/secret-key';
 import TeamSelfHttpModule from '@modules/team/infrastructure/http/routes/team/self';
 import TeamHttpModule from '@modules/team/infrastructure/http/routes/team';
-import TeamClusterHttpModule from '@modules/team-cluster/infrastructure/http/routes/team-cluster-routes';
-import TeamClusterObjectStoreProxyHttpModule from '@modules/team-cluster/infrastructure/http/routes/team-cluster-object-store-proxy-routes';
-import TeamClusterLifecycleHttpModule from '@modules/team-cluster/infrastructure/http/routes/team-cluster-lifecycle-routes';
+import TeamClusterHttpModule from '@modules/cluster/infrastructure/http/routes/team-cluster-routes';
+import TeamClusterObjectStoreProxyHttpModule from '@modules/cluster/infrastructure/http/routes/team-cluster-object-store-proxy-routes';
+import TeamClusterLifecycleHttpModule from '@modules/cluster/infrastructure/http/routes/team-cluster-lifecycle-routes';
 import ColorCodingHttpModule from '@modules/trajectory/infrastructure/http/routes/color-coding';
 import CanvasHttpModule from '@modules/trajectory/infrastructure/http/routes/canvas';
 import ParticleFilterHttpModule from '@modules/trajectory/infrastructure/http/routes/particle-filter';

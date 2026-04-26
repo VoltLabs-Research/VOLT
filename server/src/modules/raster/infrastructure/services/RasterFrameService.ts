@@ -1,7 +1,7 @@
 import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import type { IRasterFrameReader, RasterFrameResult } from '@modules/raster/domain/port/IRasterFrameReader';
 import { RasterStorageService } from '@modules/raster/infrastructure/services/RasterStorageService';
-import { resolveTrajectoryStorageClusterId } from '@modules/team-cluster/application/utilities/cluster-location';
+import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import { resolveSceneArtifactStorageCluster } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-storage-cluster';
 import ApplicationError from '@shared/application/errors/ApplicationError';

@@ -1,4 +1,4 @@
-import roleService from '../../api/services/role';
+import roleService from '../../api/services/role-service';
 import { createInvalidatingMutation, createQuery } from '@/shared/infrastructure/query';
 import { createTeamScopedPaginatedResource } from '../shared/team-scoped-paginated-resource';
 import type { TeamRole } from '../../api/entities/role/team-role';

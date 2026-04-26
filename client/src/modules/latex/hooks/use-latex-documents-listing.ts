@@ -16,6 +16,7 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
 import { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
 import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import { SOCKET_LATEX_DOCUMENT_EVENTS } from '@/modules/socket/events/latex';
 import useFolderedListing, { type FolderedListingContext } from '@/shared/presentation/hooks/use-foldered-listing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
@@ -53,16 +54,16 @@ export const RENAME_LATEX_FOLDER_MODAL_ID = 'rename-latex-folder-modal';
 export const MOVE_LATEX_DOCUMENT_MODAL_ID = 'move-latex-document-modal';
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: 'latex-document.deleted', queryKeys: [latexDocumentsQueryKey()] }
+    { event: SOCKET_LATEX_DOCUMENT_EVENTS.DELETED, queryKeys: [latexDocumentsQueryKey()] }
 ];
 
-const DELETE_DOCUMENT_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Document', success: 'Document deleted successfully' });
-const CREATE_DOCUMENT_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Document', success: 'Document created successfully' });
-const CREATE_FOLDER_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Folder', success: 'Folder created successfully' });
-const RENAME_DOCUMENT_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Document', success: 'Document renamed successfully' });
-const RENAME_FOLDER_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Folder', success: 'Folder renamed successfully' });
-const DELETE_FOLDER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Folder', success: 'Folder deleted successfully' });
-const MOVE_DOCUMENT_TOAST = createCrudToastOptions({ action: 'Moving', subject: 'Document', success: 'Document moved successfully' });
+const DELETE_DOCUMENT_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Document' });
+const CREATE_DOCUMENT_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Document' });
+const CREATE_FOLDER_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Folder' });
+const RENAME_DOCUMENT_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Document' });
+const RENAME_FOLDER_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Folder' });
+const DELETE_FOLDER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Folder' });
+const MOVE_DOCUMENT_TOAST = createCrudToastOptions({ action: 'Moving', subject: 'Document' });
 
 const fetchDocuments = (params: PaginationParams & FolderedListingContext): Promise<PaginatedResponse<LatexDocument>> => {
     return latexDocumentsQuery.fetch({

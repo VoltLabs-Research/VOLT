@@ -1,4 +1,4 @@
-import { formatNumber } from '@/modules/plugin/components/listing/PluginCompactTable/formatters';
+import { formatScientific } from '@/modules/plugin/components/listing/PluginCompactTable/formatters';
 
 interface NumberCellProps {
     value: unknown;
@@ -17,7 +17,7 @@ const NumberCell = ({ value }: NumberCellProps) => {
         return <span className='plugin-cell-empty tabular-nums'>{String(value)}</span>;
     }
 
-    const { short, long } = formatNumber(value, 4);
+    const { short, long } = formatScientific(value, 4);
     const title = short === long ? undefined : long;
     return <span className='plugin-cell-number tabular-nums' title={title}>{short}</span>;
 };

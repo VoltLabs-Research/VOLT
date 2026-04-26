@@ -1,5 +1,5 @@
 import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
-import TeamClusterRepository from '@modules/team-cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
+import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import { injectable } from 'tsyringe';
 
 export interface ContainerDeploymentProgressPayload {
