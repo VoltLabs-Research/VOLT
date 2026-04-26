@@ -27,6 +27,14 @@ const ModifierEditor = ({ node }: EditorProps) => {
                 />
                 <FormFieldRHF<ModifierEditorFormValues>
                     variant='inline'
+                    label='Key'
+                    fieldType='input'
+                    name='key'
+                    control={form.control}
+                    placeholder='my-plugin'
+                />
+                <FormFieldRHF<ModifierEditorFormValues>
+                    variant='inline'
                     label='Version'
                     fieldType='input'
                     name='version'

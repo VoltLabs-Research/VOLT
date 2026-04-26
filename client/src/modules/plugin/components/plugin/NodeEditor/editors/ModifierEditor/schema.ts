@@ -1,6 +1,7 @@
 import { z } from 'zod/v4';
 
 export const modifierEditorSchema = z.object({
+    key: z.string().default(''),
     name: z.string().default(''),
     author: z.string().default(''),
     license: z.string().default(''),
@@ -12,6 +13,7 @@ export const modifierEditorSchema = z.object({
 export type ModifierEditorFormValues = z.infer<typeof modifierEditorSchema>;
 
 export const MODIFIER_EDITOR_DEFAULT_VALUES = {
+    key: '',
     name: '',
     author: '',
     license: '',

@@ -50,6 +50,11 @@ export enum PluginNodeExecutionMode {
     ARGUMENT_REFERENCE = 'argumentReference'
 };
 
+export enum PluginNodeOutputPathMode {
+    ISOLATED = 'isolated',
+    PARENT = 'parent'
+};
+
 export enum Exporter {
     ATOMISTIC = 'AtomisticExporter',
     MESH = 'MeshExporter',

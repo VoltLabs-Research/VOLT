@@ -23,6 +23,17 @@ interface PluginReferenceExecutionRequest {
     config: Record<string, unknown>;
 };
 
+interface PluginReferenceValidationTarget extends PluginReferenceExecutionRequest {
+    allowedPluginIds: string[];
+    allowedPluginKeys: string[];
+}
+
+interface PluginReferenceValidationResult {
+    executions: PluginReferenceExecutionRequest[];
+    plugins: Plugin[];
+    errors: string[];
+}
+
 const resolveArgumentExecutionValue = (
     definition: ArgumentDefinition,
     value: unknown
@@ -43,19 +54,37 @@ interface PluginReferenceSelectionValue {
     config?: Record<string, unknown>;
 }
 
-interface PluginReferenceValue {
-    selections?: PluginReferenceSelectionValue[];
-}
-
 const readPluginReferenceSelections = (
     value: unknown
 ): PluginReferenceSelectionValue[] => {
-    return ((value as PluginReferenceValue | undefined)?.selections ?? [])
-        .filter((entry) => entry.pluginId.trim().length > 0)
+    const selections = isRecord(value) ? value.selections : undefined;
+    if (!Array.isArray(selections)) {
+        return [];
+    }
+
+    return selections
+        .filter((entry) => isRecord(entry) && typeof entry.pluginId === 'string' && entry.pluginId.trim().length > 0)
         .map((entry) => ({
             pluginId: entry.pluginId.trim(),
-            config: entry.config ?? {}
+            config: isRecord(entry.config) ? entry.config : {}
         }));
+};
+
+const normalizeStringList = (value: string[] | undefined): string[] => {
+    return Array.from(new Set((value ?? [])
+        .map((entry) => entry.trim())
+        .filter(Boolean)));
+};
+
+const getPluginModifierKey = (plugin: Plugin): string => {
+    const modifierKey = plugin.props.modifier?.key;
+    if (typeof modifierKey === 'string') {
+        return modifierKey.trim();
+    }
+
+    const modifierNode = plugin.props.workflow.props.nodes.find((node) => node.type === WorkflowNodeType.Modifier);
+    const workflowModifierKey = modifierNode?.data.modifier?.key;
+    return typeof workflowModifierKey === 'string' ? workflowModifierKey.trim() : '';
 };
 
 const collectArgumentPluginReferenceExecutions = (
@@ -104,10 +133,70 @@ const collectArgumentPluginReferenceExecutions = (
     }
 };
 
+const collectArgumentPluginReferenceValidationTargets = (
+    definitions: ArgumentDefinition[],
+    definition: ArgumentDefinition,
+    value: unknown,
+    scopeValues: Record<string, unknown>,
+    currentPath: string,
+    results: PluginReferenceValidationTarget[],
+    errors: string[]
+): void => {
+    if (!isArgumentVisible(definition, definitions, scopeValues)) {
+        return;
+    }
+
+    const resolvedValue = resolveArgumentExecutionValue(definition, value);
+
+    if (definition.type === ArgumentType.PluginReference) {
+        const selections = readPluginReferenceSelections(resolvedValue);
+        if (definition.required === true && selections.length === 0) {
+            errors.push(`Plugin reference argument "${currentPath}" requires a plugin selection`);
+            return;
+        }
+
+        if (definition.multipleSelection !== true && selections.length > 1) {
+            errors.push(`Plugin reference argument "${currentPath}" only allows one selected plugin`);
+            return;
+        }
+
+        for (const selection of selections) {
+            results.push({
+                referencePath: currentPath,
+                pluginId: selection.pluginId,
+                config: selection.config ?? {},
+                allowedPluginIds: normalizeStringList(definition.pluginReferenceFilter),
+                allowedPluginKeys: normalizeStringList(definition.pluginReferenceFilterKeys)
+            });
+        }
+        return;
+    }
+
+    if (definition.type === ArgumentType.List && Array.isArray(resolvedValue)) {
+        const nestedDefinitions = definition.listArguments ?? [];
+        resolvedValue.forEach((entry, index) => {
+            if (!isRecord(entry)) {
+                return;
+            }
+
+            for (const nestedDefinition of nestedDefinitions) {
+                collectArgumentPluginReferenceValidationTargets(
+                    nestedDefinitions,
+                    nestedDefinition,
+                    entry[nestedDefinition.argument],
+                    entry,
+                    `${currentPath}[${index}].${nestedDefinition.argument}`,
+                    results,
+                    errors
+                );
+            }
+        });
+    }
+};
+
 @Singleton()
 export class PluginDependencyResolverService {
     constructor(
-        
         private readonly pluginRepository: PluginRepository
     ) {}
 
@@ -179,6 +268,85 @@ export class PluginDependencyResolverService {
         }
 
         return results;
+    }
+
+    async validateArgumentPluginReferenceExecutions(
+        plugin: Plugin,
+        config: Record<string, unknown>
+    ): Promise<PluginReferenceValidationResult> {
+        const argumentsNode = plugin.props.workflow.props.nodes.find((node) => node.type === WorkflowNodeType.Arguments);
+        const definitions = Array.isArray(argumentsNode?.data.arguments?.arguments)
+            ? argumentsNode.data.arguments.arguments as ArgumentDefinition[]
+            : [];
+        const targets: PluginReferenceValidationTarget[] = [];
+        const errors: string[] = [];
+
+        for (const definition of definitions) {
+            collectArgumentPluginReferenceValidationTargets(
+                definitions,
+                definition,
+                config[definition.argument],
+                config,
+                definition.argument,
+                targets,
+                errors
+            );
+        }
+
+        const pluginIds = Array.from(new Set(targets.map((target) => target.pluginId)));
+        const plugins = pluginIds.length > 0
+            ? await this.pluginRepository.findByIds(pluginIds)
+            : [];
+        const pluginsById = new Map(plugins.map((candidate) => [candidate.id, candidate]));
+
+        for (const target of targets) {
+            const referencedPlugin = pluginsById.get(target.pluginId);
+            if (!referencedPlugin) {
+                errors.push(`Plugin reference argument "${target.referencePath}" selected unknown plugin ${target.pluginId}`);
+                continue;
+            }
+
+            if (referencedPlugin.props.status !== PluginStatus.Published) {
+                errors.push(`Plugin reference argument "${target.referencePath}" selected unpublished plugin ${target.pluginId}`);
+                continue;
+            }
+
+            const hasIdFilter = target.allowedPluginIds.length > 0;
+            const hasKeyFilter = target.allowedPluginKeys.length > 0;
+            if (!hasIdFilter && !hasKeyFilter) {
+                continue;
+            }
+
+            const modifierKey = getPluginModifierKey(referencedPlugin);
+            const matchesId = hasIdFilter && target.allowedPluginIds.includes(referencedPlugin.id);
+            const matchesKey = hasKeyFilter && modifierKey.length > 0 && target.allowedPluginKeys.includes(modifierKey);
+            if (!matchesId && !matchesKey) {
+                const allowedDescription = [
+                    hasIdFilter ? `ids: ${target.allowedPluginIds.join(', ')}` : '',
+                    hasKeyFilter ? `keys: ${target.allowedPluginKeys.join(', ')}` : ''
+                ].filter(Boolean).join('; ');
+                errors.push(
+                    `Plugin reference argument "${target.referencePath}" selected plugin ${target.pluginId}`
+                    + ` (${modifierKey || 'no modifier key'}) which is not allowed by ${allowedDescription}`
+                );
+            }
+        }
+
+        const validPlugins = Array.from(new Map(targets
+            .map((target) => pluginsById.get(target.pluginId))
+            .filter((candidate): candidate is Plugin => Boolean(candidate))
+            .map((candidate) => [candidate.id, candidate])
+        ).values());
+
+        return {
+            executions: targets.map((target) => ({
+                referencePath: target.referencePath,
+                pluginId: target.pluginId,
+                config: target.config
+            })),
+            plugins: validPlugins,
+            errors
+        };
     }
 
     private async visitPluginDependencies(

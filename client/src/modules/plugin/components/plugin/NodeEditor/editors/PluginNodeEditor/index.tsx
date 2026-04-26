@@ -2,6 +2,7 @@ import {
     ArgumentType,
     NodeType,
     PluginNodeExecutionMode,
+    PluginNodeOutputPathMode,
     PluginStatus
 } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
@@ -36,6 +37,14 @@ const EXECUTION_MODE_OPTIONS = [{
     title: 'Run from arguments reference'
 }];
 
+const OUTPUT_PATH_MODE_OPTIONS = [{
+    value: PluginNodeOutputPathMode.ISOLATED,
+    title: 'Isolated output'
+}, {
+    value: PluginNodeOutputPathMode.PARENT,
+    title: 'Parent output'
+}];
+
 const PluginNodeEditor = ({ node }: EditorProps) => {
     const selectedTeamId = useSelectedTeamId();
     const [searchParams] = useSearchParams();
@@ -55,6 +64,7 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
 
     const pluginNodeData = (node.data.pluginNode ?? {}) as IPluginNodeData;
     const executionMode = pluginNodeData.executionMode ?? PluginNodeExecutionMode.MANUAL;
+    const outputPathMode = pluginNodeData.outputPathMode ?? PluginNodeOutputPathMode.ISOLATED;
     const availableTimesteps = useMemo(() => {
         return frames.map((frame) => frame.timestep);
     }, [frames]);
@@ -124,12 +134,32 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
             return [];
         }
 
-        if (selectedArgumentDefinition.pluginReferenceFilter?.length) {
-            return selectedArgumentDefinition.pluginReferenceFilter;
+        const referencedPluginIds = new Set<string>();
+        for (const pluginId of selectedArgumentDefinition.pluginReferenceFilter ?? []) {
+            referencedPluginIds.add(pluginId);
+        }
+
+        const allowedPluginKeys = new Set(selectedArgumentDefinition.pluginReferenceFilterKeys ?? []);
+        if (allowedPluginKeys.size > 0) {
+            for (const plugin of publishedPlugins) {
+                const pluginKey = plugin.modifier?.key?.trim();
+                if (
+                    plugin.status === PluginStatus.PUBLISHED
+                    && plugin._id !== currentPluginId
+                    && pluginKey
+                    && allowedPluginKeys.has(pluginKey)
+                ) {
+                    referencedPluginIds.add(plugin._id);
+                }
+            }
+        }
+
+        if (referencedPluginIds.size > 0) {
+            return Array.from(referencedPluginIds);
         }
 
         return pluginOptions.map((option) => option.value);
-    }, [pluginOptions, selectedArgumentDefinition]);
+    }, [currentPluginId, pluginOptions, publishedPlugins, selectedArgumentDefinition]);
 
     const referencedPluginConfigDefinitions = useMemo(() => {
         return Object.fromEntries(referencedCandidatePluginIds.map((pluginId) => [
@@ -158,6 +188,7 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
     const buildPluginNodeData = useCallback((overrides: Partial<IPluginNodeData> = {}): IPluginNodeData => {
         return {
             executionMode,
+            outputPathMode,
             pluginId: selectedPluginId,
             argumentReference: selectedArgumentReference,
             selectedTeamClusterId,
@@ -169,6 +200,7 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
     }, [
         executionMode,
         normalizedSelectedTimesteps,
+        outputPathMode,
         pluginNodeData.config,
         pluginNodeData.configByPluginId,
         selectedArgumentReference,
@@ -192,6 +224,14 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
                 executionMode: nextExecutionMode
             })
         });
+    }, [buildPluginNodeData, updatePluginNodeData]);
+
+    const handleOutputPathModeChange = useCallback((_: string, value: string | number | boolean) => {
+        updatePluginNodeData(buildPluginNodeData({
+            outputPathMode: value === PluginNodeOutputPathMode.PARENT
+                ? PluginNodeOutputPathMode.PARENT
+                : PluginNodeOutputPathMode.ISOLATED
+        }));
     }, [buildPluginNodeData, updatePluginNodeData]);
 
     const handlePluginChange = useCallback((_: string, value: string | number | boolean) => {
@@ -381,6 +421,15 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
                         )}
                     </>
                 )}
+                <FormFieldRHF
+                    variant='inline'
+                    label='Output'
+                    fieldType='select'
+                    fieldKey={`plugin-node-output-${node.id}`}
+                    fieldValue={outputPathMode}
+                    options={OUTPUT_PATH_MODE_OPTIONS}
+                    onFieldChange={handleOutputPathModeChange}
+                />
             </FormSection>
 
             <FormSection title='Runtime Configuration'>
