@@ -37,8 +37,10 @@ export interface ArgumentDefinition{
     value?: unknown;
     options?: ArgumentOption[];
     listArguments?: ArgumentDefinition[];
+    required?: boolean;
     multipleSelection?: boolean;
     pluginReferenceFilter?: string[];
+    pluginReferenceFilterKeys?: string[];
     showPluginConfiguration?: boolean;
     min?: number;
     max?: number;

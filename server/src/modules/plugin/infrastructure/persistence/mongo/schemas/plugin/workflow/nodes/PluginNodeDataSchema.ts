@@ -1,4 +1,7 @@
-import { PluginNodeExecutionMode } from '@modules/plugin/domain/entities/plugin/workflow/nodes/PluginNode';
+import {
+    PluginNodeExecutionMode,
+    PluginNodeOutputPathMode
+} from '@modules/plugin/domain/entities/plugin/workflow/nodes/PluginNode';
 import { Schema } from 'mongoose';
 
 export const PluginNodeDataSchema = new Schema({
@@ -6,6 +9,11 @@ export const PluginNodeDataSchema = new Schema({
         type: String,
         enum: Object.values(PluginNodeExecutionMode),
         default: PluginNodeExecutionMode.Manual
+    },
+    outputPathMode: {
+        type: String,
+        enum: Object.values(PluginNodeOutputPathMode),
+        default: PluginNodeOutputPathMode.Isolated
     },
     pluginId: {
         type: String

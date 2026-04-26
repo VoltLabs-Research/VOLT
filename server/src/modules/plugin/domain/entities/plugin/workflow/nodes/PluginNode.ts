@@ -3,8 +3,14 @@ export enum PluginNodeExecutionMode {
     ArgumentReference = 'argumentReference'
 }
 
+export enum PluginNodeOutputPathMode {
+    Isolated = 'isolated',
+    Parent = 'parent'
+}
+
 export interface PluginNodeData {
     executionMode?: PluginNodeExecutionMode;
+    outputPathMode?: PluginNodeOutputPathMode;
     pluginId?: string;
     argumentReference?: string;
     selectedTeamClusterId?: string;

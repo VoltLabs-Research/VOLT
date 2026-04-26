@@ -8,7 +8,8 @@ import type {
     ExportType_,
     ConditionType,
     ConditionHandler,
-    PluginNodeExecutionMode
+    PluginNodeExecutionMode,
+    PluginNodeOutputPathMode
 } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 
 export interface IWorkflow {
@@ -74,8 +75,10 @@ export interface IArgumentDefinition {
     value?: unknown;
     options?: IArgumentOption[];
     listArguments?: IArgumentDefinition[];
+    required?: boolean;
     multipleSelection?: boolean;
     pluginReferenceFilter?: string[];
+    pluginReferenceFilterKeys?: string[];
     showPluginConfiguration?: boolean;
     min?: number;
     max?: number;
@@ -93,6 +96,7 @@ export interface IPluginReferenceValue {
 };
 
 export interface IModifierData {
+    key?: string;
     name: string;
     author?: string;
     license?: string;
@@ -128,6 +132,7 @@ export interface IEntrypointData {
 
 export interface IPluginNodeData {
     executionMode?: PluginNodeExecutionMode;
+    outputPathMode?: PluginNodeOutputPathMode;
     pluginId?: string;
     argumentReference?: string;
     selectedTeamClusterId?: string;

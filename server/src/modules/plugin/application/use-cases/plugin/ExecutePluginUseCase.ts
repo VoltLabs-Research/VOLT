@@ -218,10 +218,17 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             selectedTimesteps,
             !hasSelectedTimestepsCollision
         );
-        const pluginReferenceExecutions = this.pluginDependencyResolverService.getArgumentPluginReferenceExecutions(
+        const pluginReferenceValidation = await this.pluginDependencyResolverService.validateArgumentPluginReferenceExecutions(
             plugin,
             analysisConfig
         );
+        if (pluginReferenceValidation.errors.length > 0) {
+            return Result.fail(ApplicationError.badRequest(
+                ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
+                pluginReferenceValidation.errors.join('; ')
+            ));
+        }
+        const pluginReferenceExecutions = pluginReferenceValidation.executions;
         const dependencyResolution = await this.pluginDependencyResolverService.collectTransitivePublishedDependencies(plugin);
         if (dependencyResolution.errors.length) {
             return Result.fail(ApplicationError.badRequest(
@@ -229,10 +236,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
                 dependencyResolution.errors.join('; ')
             ));
         }
-        const runtimePluginIds = Array.from(new Set(pluginReferenceExecutions.map((reference) => reference.pluginId)));
-        const runtimePlugins = runtimePluginIds.length > 0
-            ? await this.pluginRepo.findByIds(runtimePluginIds)
-            : [];
+        const runtimePlugins = pluginReferenceValidation.plugins;
         const runtimeDependencyResolution = await this.pluginDependencyResolverService.collectTransitivePublishedDependenciesForPlugins(
             runtimePlugins
         );
