@@ -11,6 +11,69 @@ interface PluginReferencePlanningItem {
     config: WorkflowNodeOutput;
 }
 
+const isPluginReferenceSelectionRecord = (value: unknown): value is {
+    pluginId: string;
+    config?: unknown;
+} => {
+    return typeof value === 'object'
+        && value !== null
+        && !Array.isArray(value)
+        && typeof (value as { pluginId?: unknown }).pluginId === 'string';
+};
+
+const isWorkflowNodeOutputRecord = (value: unknown): value is WorkflowNodeOutput => {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+};
+
+const readPluginReferenceSelections = (
+    value: unknown
+): WorkflowPluginReferenceValueWithSelections['selections'] => {
+    const selections = (typeof value === 'object' && value !== null && !Array.isArray(value))
+        ? (value as { selections?: unknown }).selections
+        : undefined;
+
+    if (!Array.isArray(selections)) {
+        return [];
+    }
+
+    return selections.flatMap((selection) => {
+        if (!isPluginReferenceSelectionRecord(selection)) {
+            return [];
+        }
+
+        const pluginId = selection.pluginId.trim();
+        if (!pluginId) {
+            return [];
+        }
+
+        return [{
+            pluginId,
+            config: isWorkflowNodeOutputRecord(selection.config) ? selection.config : {}
+        }];
+    });
+};
+
+const normalizePluginReferenceValue = (value: unknown): WorkflowPluginReferenceValueWithSelections => {
+    return {
+        selections: readPluginReferenceSelections(value)
+    };
+};
+
+const isRequiredValueMissing = (
+    definition: WorkflowArgumentDefinition,
+    value: WorkflowNodeOutput[string]
+): boolean => {
+    if (definition.type === 'pluginReference') {
+        return readPluginReferenceSelections(value).length === 0;
+    }
+
+    if (Array.isArray(value)) {
+        return value.length === 0;
+    }
+
+    return value === undefined || value === null || value === '';
+};
+
 export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
     readonly type = WorkflowNodeType.Arguments;
     private static readonly RESERVED_RUNTIME_ARGUMENTS = {
@@ -56,7 +119,22 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
                 );
             }
 
+            if (definition.type === 'pluginReference') {
+                value = normalizePluginReferenceValue(value) as unknown as WorkflowNodeOutput[string];
+            }
+
             values[argumentKey] = value as WorkflowNodeOutput[string];
+        }
+
+        for (const definition of definitions) {
+            const argumentKey = definition.argument;
+            if (!argumentKey || !this.isArgumentVisible(definition, definitions, values)) {
+                continue;
+            }
+
+            if (definition.required === true && isRequiredValueMissing(definition, values[argumentKey])) {
+                throw new Error(`Required argument "${argumentKey}" is missing`);
+            }
         }
 
         for (const definition of definitions) {
@@ -197,7 +275,7 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
         const resolvedValue = value !== undefined ? value : definition.value !== undefined ? definition.value : definition.default;
 
         if (definition.type === 'pluginReference') {
-            for (const selection of (resolvedValue as WorkflowPluginReferenceValueWithSelections).selections) {
+            for (const selection of readPluginReferenceSelections(resolvedValue)) {
                 results.push({
                     referencePath: currentPath,
                     pluginId: selection.pluginId,

@@ -37,8 +37,10 @@ export interface WorkflowArgumentDefinition {
     optionsFromArguments?: WorkflowArgumentOptionSource[];
     listArguments?: WorkflowArgumentDefinition[];
     listItemLabelArgument?: string;
+    required?: boolean;
     multipleSelection?: boolean;
     pluginReferenceFilter?: string[];
+    pluginReferenceFilterKeys?: string[];
     showPluginConfiguration?: boolean;
     min?: number;
     max?: number;
@@ -100,6 +102,7 @@ interface WorkflowPluginConfigById {
 
 export interface WorkflowPluginNodeData {
     executionMode?: string;
+    outputPathMode?: 'isolated' | 'parent';
     pluginId?: string;
     argumentReference?: string;
     config?: JsonObject;

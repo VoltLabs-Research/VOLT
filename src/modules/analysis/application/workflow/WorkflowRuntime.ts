@@ -150,6 +150,7 @@ interface ResolvedPluginExecution {
     pluginId: string;
     config: WorkflowNodeOutput;
     selectedTimesteps: number[];
+    outputPathMode: 'isolated' | 'parent';
 }
 
 type InlineWorkflowTraceStatus = 'completed' | 'skipped' | 'error';
@@ -547,6 +548,9 @@ export class WorkflowRuntime {
         const selectedTimesteps = pluginNodeData.selectedTimesteps
             ? pluginNodeData.selectedTimesteps
             : [];
+        const outputPathMode = pluginNodeData.outputPathMode === 'parent'
+            ? 'parent'
+            : 'isolated';
         if (executionMode === 'argumentReference') {
             if (!workflow || !pluginNodeData.argumentReference) {
                 return [];
@@ -562,7 +566,10 @@ export class WorkflowRuntime {
                 return [];
             }
             const argumentValue = argumentsOutput[pluginNodeData.argumentReference];
-            const selections = (argumentValue as WorkflowPluginReferenceValueWithSelections).selections;
+            const selectionsValue = (
+                argumentValue as WorkflowPluginReferenceValueWithSelections | undefined
+            )?.selections;
+            const selections = Array.isArray(selectionsValue) ? selectionsValue : [];
             if (!selections.length) {
                 return [];
             }
@@ -577,7 +584,8 @@ export class WorkflowRuntime {
                 config: shouldUseSelectionConfig
                     ? selection.config
                     : (pluginNodeData.configByPluginId?.[selection.pluginId] as WorkflowNodeOutput | undefined) ?? config,
-                selectedTimesteps
+                selectedTimesteps,
+                outputPathMode
             }));
         }
 
@@ -589,7 +597,8 @@ export class WorkflowRuntime {
         return [{
             pluginId,
             config,
-            selectedTimesteps
+            selectedTimesteps,
+            outputPathMode
         }];
     }
 
@@ -611,11 +620,13 @@ export class WorkflowRuntime {
         }
 
         await fs.mkdir(parentOutputDir, { recursive: true });
-        const nestedOutputDir = (await createTempDir({
-            tmpdir: parentOutputDir,
-            prefix: `inline-${pluginId}-`,
-            unsafeCleanup: true
-        })).path;
+        const nestedOutputDir = pluginNodeData.outputPathMode === 'parent'
+            ? parentOutputDir
+            : (await createTempDir({
+                tmpdir: parentOutputDir,
+                prefix: `inline-${pluginId}-`,
+                unsafeCleanup: true
+            })).path;
         const nestedOutputs = WorkflowSession.cloneOutputs(parentOutputs);
         const nestedSession = WorkflowSession.createFromDefinition({
             outputs: nestedOutputs,
