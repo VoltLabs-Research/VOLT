@@ -142,6 +142,24 @@ const ArgumentDefinitionSection = ({
         }));
     }, [publishedPlugins]);
 
+    const allowedPluginKeyOptions = useMemo<SelectOption[]>(() => {
+        const optionsByKey = new Map<string, SelectOption>();
+
+        for (const plugin of publishedPlugins) {
+            const key = plugin.modifier?.key?.trim();
+            if (!key || optionsByKey.has(key)) {
+                continue;
+            }
+
+            optionsByKey.set(key, {
+                value: key,
+                title: `${plugin.modifier?.name?.trim() || plugin._id} (${key})`
+            });
+        }
+
+        return Array.from(optionsByKey.values());
+    }, [publishedPlugins]);
+
     const handleAddArgument = useCallback(() => {
         onAddArgument();
         setExpandedIndex(argumentDefinitions.length);
@@ -220,6 +238,7 @@ const ArgumentDefinitionSection = ({
 
                 if (!isPluginReferenceArgumentType(nextType)) {
                     delete nextArgument.pluginReferenceFilter;
+                    delete nextArgument.pluginReferenceFilterKeys;
                     delete nextArgument.showPluginConfiguration;
                 }
 
@@ -241,7 +260,7 @@ const ArgumentDefinitionSection = ({
                 return;
             }
 
-            if (field === 'multipleSelection' || field === 'showPluginConfiguration') {
+            if (field === 'multipleSelection' || field === 'showPluginConfiguration' || field === 'required') {
                 handleArgumentChange(argumentIndex, {
                     ...currentArgument,
                     [field]: nextValue === 'true'
@@ -725,9 +744,45 @@ const ArgumentDefinitionSection = ({
                                                         return `${selectedCount} selected`;
                                                     }}
                                                 />
+                                                <Select
+                                                    id={`plugin-reference-filter-keys-${level}-${index}`}
+                                                    options={allowedPluginKeyOptions}
+                                                    isMulti
+                                                    selectedValues={argument.pluginReferenceFilterKeys ?? []}
+                                                    onMultiChange={(pluginReferenceFilterKeys) => {
+                                                        handleArgumentChange(index, {
+                                                            ...argument,
+                                                            pluginReferenceFilterKeys: pluginReferenceFilterKeys.length > 0
+                                                                ? pluginReferenceFilterKeys
+                                                                : undefined
+                                                        });
+                                                    }}
+                                                    hasSearch
+                                                    placeholder='Select portable keys'
+                                                    renderTriggerLabel={(selectedCount) => {
+                                                        if (selectedCount === 0) {
+                                                            return 'Select portable keys';
+                                                        }
+
+                                                        if (selectedCount === 1) {
+                                                            const selectedPluginKey = argument.pluginReferenceFilterKeys?.[0];
+                                                            return allowedPluginKeyOptions.find((option) => option.value === selectedPluginKey)?.title ?? '1 selected';
+                                                        }
+
+                                                        return `${selectedCount} keys selected`;
+                                                    }}
+                                                />
                                             </div>
                                         </div>
                                         <FormSection title='Plugin Reference'>
+                                            <FormFieldRHF
+                                                variant='inline'
+                                                label='Required'
+                                                name={`plugin-reference-required-${level}-${index}`}
+                                                fieldType='checkbox'
+                                                value={Boolean(argument.required)}
+                                                onChange={createArgumentFieldHandler(index, 'required')}
+                                            />
                                             <FormFieldRHF
                                                 variant='inline'
                                                 label='Show config'

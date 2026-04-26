@@ -2,6 +2,9 @@ import { ValidationCodes } from '@core/constants/validation-codes';
 import { Schema } from 'mongoose';
 
 export const ModifierDataSchema = new Schema({
+    key: {
+        type: String
+    },
     name: {
         type: String,
         required: [true, ValidationCodes.PLUGIN_MODIFIER_NAME_REQUIRED]
@@ -24,4 +27,3 @@ export const ModifierDataSchema = new Schema({
         type: String
     }
 }, { _id: false });
-

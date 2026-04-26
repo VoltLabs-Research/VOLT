@@ -227,10 +227,17 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                 }
                 const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props)
                     ?? VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID;
-                const pluginReferenceExecutions = this.pluginDependencyResolverService.getArgumentPluginReferenceExecutions(
+                const pluginReferenceValidation = await this.pluginDependencyResolverService.validateArgumentPluginReferenceExecutions(
                     runtimePlugin,
                     sanitizedConfig
                 );
+                if (pluginReferenceValidation.errors.length > 0) {
+                    this.emitToSocket(conn.id, 'debug:session:error', {
+                        error: pluginReferenceValidation.errors.join('; ')
+                    });
+                    return;
+                }
+                const pluginReferenceExecutions = pluginReferenceValidation.executions;
                 const dependencyResolution = await this.pluginDependencyResolverService.collectTransitivePublishedDependencies(runtimePlugin);
                 if (dependencyResolution.errors.length > 0) {
                     this.emitToSocket(conn.id, 'debug:session:error', {
@@ -239,10 +246,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                     return;
                 }
 
-                const runtimePluginIds = Array.from(new Set(pluginReferenceExecutions.map((reference) => reference.pluginId)));
-                const runtimePlugins = runtimePluginIds.length > 0
-                    ? await this.pluginRepository.findByIds(runtimePluginIds)
-                    : [];
+                const runtimePlugins = pluginReferenceValidation.plugins;
                 const runtimeDependencyResolution = await this.pluginDependencyResolverService.collectTransitivePublishedDependenciesForPlugins(
                     runtimePlugins
                 );

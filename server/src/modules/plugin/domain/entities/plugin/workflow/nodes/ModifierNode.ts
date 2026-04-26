@@ -1,4 +1,5 @@
 export interface ModifierNodeData{
+    key?: string;
     name: string;
     author?: string;
     license?: string;

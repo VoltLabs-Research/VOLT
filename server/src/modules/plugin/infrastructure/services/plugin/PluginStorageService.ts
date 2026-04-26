@@ -266,7 +266,11 @@ export default class PluginStorageService implements IPluginStorageService {
 
         let binaryImported = false;
         let persistedPlugin = newPlugin;
-        const binaryFile = directory.files.find((file) => file.path.startsWith('binary/'));
+        const binaryFile = directory.files.find((file) => {
+            return file.path.startsWith('binary/')
+                && file.path !== 'binary/'
+                && file.type !== 'Directory';
+        });
         if (binaryFile) {
             const binaryBuffer = await binaryFile.buffer();
             const binaryFileName = path.basename(binaryFile.path);

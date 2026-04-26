@@ -2560,41 +2560,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /api/trajectories/{teamId}/{trajectoryId}/atoms:
-    get:
-      operationId: getTrajectoryAtoms
-      tags:
-        - Trajectories
-      summary: Get atom data for a trajectory
-      description: Returns the atom data for all frames in the trajectory, including positions and element types.
-      parameters:
-        - $ref: '#/components/parameters/TeamId'
-        - name: trajectoryId
-          in: path
-          required: true
-          description: Unique identifier of the trajectory
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/TrajectoryAtoms'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
   /api/trajectories/{teamId}/{trajectoryId}/scene-artifacts:
     get:
       operationId: getTrajectorySceneArtifacts
@@ -2624,50 +2589,6 @@ paths:
                         type: array
                         items:
                           $ref: '#/components/schemas/SceneArtifact'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /api/trajectories/{teamId}/{trajectoryId}/glb/{timestep}/{analysisId}:
-    get:
-      operationId: getTrajectoryGLB
-      tags:
-        - Trajectories
-      summary: Get GLB 3D model for a specific frame
-      description: Returns a binary GLB (glTF Binary) 3D model representing the molecular structure at a specific timestep and analysis configuration.
-      parameters:
-        - $ref: '#/components/parameters/TeamId'
-        - name: trajectoryId
-          in: path
-          required: true
-          description: Unique identifier of the trajectory
-          schema:
-            type: string
-        - name: timestep
-          in: path
-          required: true
-          description: The timestep (frame index) to render
-          schema:
-            type: integer
-            minimum: 0
-        - name: analysisId
-          in: path
-          required: true
-          description: Unique identifier of the analysis configuration
-          schema:
-            type: string
-      responses:
-        '200':
-          description: GLB binary content
-          content:
-            model/gltf-binary:
-              schema:
-                type: string
-                format: binary
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -5488,50 +5409,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /api/ssh/connections/{teamId}/{sshConnectionId}/imports:
-    post:
-      operationId: importTrajectoryFromSSH
-      tags:
-        - SSH
-      summary: Import trajectory from SSH
-      description: Imports a trajectory file from the remote SSH server into the platform.
-      parameters:
-        - name: teamId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: sshConnectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ImportTrajectoryFromSSHRequest'
-      responses:
-        '201':
-          description: Successfully initiated import
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Job'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
   /api/latex/{teamId}/documents:
     get:
       operationId: listLatexDocuments
@@ -7353,31 +7230,6 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /api/system/stats:
-    get:
-      operationId: getSystemStats
-      tags:
-        - System
-      summary: Get system statistics
-      description: Returns platform-wide statistics including user, team, and storage metrics.
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/SystemStats'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
   /api/system/rbac:
     get:
       operationId: getRbacConfig
@@ -10864,14 +10716,6 @@ components:
         password:
           type: string
           description: Password used to authenticate with the SSH server.
-    ImportTrajectoryFromSSHRequest:
-      type: object
-      required:
-        - remotePath
-      properties:
-        remotePath:
-          type: string
-          description: Path to the trajectory file on the remote SSH server.
     SSHFile:
       type: object
       required:

@@ -6,7 +6,6 @@ import {
 } from '@/modules/plugin/utilities/plugin/argument-values';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
 import CollapsibleSection from '@/shared/presentation/primitives/CollapsibleSection';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Select from '@/shared/presentation/primitives/Select';
 import { useCallback, useMemo } from 'react';
 import type {
@@ -42,6 +41,7 @@ const PluginConfigField = ({
 
     const pluginOptions = useMemo<SelectOption[]>(() => {
         const allowedPluginIds = new Set(argument.pluginReferenceFilter ?? []);
+        const allowedPluginKeys = new Set(argument.pluginReferenceFilterKeys ?? []);
 
         return publishedPlugins
             .filter((plugin) => {
@@ -49,17 +49,19 @@ const PluginConfigField = ({
                     return false;
                 }
 
-                if (allowedPluginIds.size === 0) {
+                if (allowedPluginIds.size === 0 && allowedPluginKeys.size === 0) {
                     return true;
                 }
 
-                return allowedPluginIds.has(plugin._id);
+                const pluginKey = plugin.modifier?.key?.trim();
+                return allowedPluginIds.has(plugin._id)
+                    || (pluginKey ? allowedPluginKeys.has(pluginKey) : false);
             })
             .map((plugin) => ({
                 value: plugin._id,
                 title: plugin.modifier?.name?.trim() || plugin._id
             }));
-    }, [argument.pluginReferenceFilter, publishedPlugins]);
+    }, [argument.pluginReferenceFilter, argument.pluginReferenceFilterKeys, publishedPlugins]);
 
     const selectedPluginIds = useMemo(() => {
         return pluginReferenceValue.selections.map((selection) => selection.pluginId);
@@ -116,45 +118,48 @@ const PluginConfigField = ({
 
     return (
         <div className='d-flex column gap-05'>
-            <p className='canvas-form-label'>
-                {argument.label || argument.argument}
-            </p>
-            {argument.multipleSelection ? (
-                <div className='d-flex column gap-05'>
-                    <p className='canvas-form-label'>Referenced Plugins</p>
-                    <Select
-                        id={`${fieldKey}-plugins-select`}
-                        options={pluginOptions}
-                        isMulti
-                        selectedValues={selectedPluginIds}
-                        onMultiChange={handleMultiPluginChange}
-                        hasSearch
-                        placeholder='Select plugins'
-                        renderTriggerLabel={(selectedCount) => {
-                            if (selectedCount === 0) {
-                                return 'Select plugins';
-                            }
+            <div className='form-field-canvas d-flex content-between items-center gap-1'>
+                <p className='canvas-form-label'>
+                    {argument.label || argument.argument}
+                </p>
+                <div className='d-flex items-center render-input-container w-max content-end p-relative'>
+                    {argument.multipleSelection ? (
+                        <Select
+                            id={`${fieldKey}-plugins-select`}
+                            options={pluginOptions}
+                            isMulti
+                            selectedValues={selectedPluginIds}
+                            onMultiChange={handleMultiPluginChange}
+                            hasSearch
+                            placeholder='Select plugins'
+                            className='form-field-canvas-select labeled-input'
+                            aria-label={argument.label || argument.argument}
+                            renderTriggerLabel={(selectedCount) => {
+                                if (selectedCount === 0) {
+                                    return 'Select plugins';
+                                }
 
-                            if (selectedCount === 1) {
-                                const selectedPluginId = selectedPluginIds[0];
-                                return pluginOptions.find((option) => option.value === selectedPluginId)?.title ?? '1 selected';
-                            }
+                                if (selectedCount === 1) {
+                                    const selectedPluginId = selectedPluginIds[0];
+                                    return pluginOptions.find((option) => option.value === selectedPluginId)?.title ?? '1 selected';
+                                }
 
-                            return `${selectedCount} plugins selected`;
-                        }}
-                    />
+                                return `${selectedCount} plugins selected`;
+                            }}
+                        />
+                    ) : (
+                        <Select
+                            id={`${fieldKey}-plugin-select`}
+                            options={pluginOptions}
+                            value={selectedPluginIds[0] ?? ''}
+                            onChange={(nextPluginId) => handleSinglePluginChange(argument.argument, nextPluginId)}
+                            placeholder='Select…'
+                            className='form-field-canvas-select labeled-input'
+                            aria-label={argument.label || argument.argument}
+                        />
+                    )}
                 </div>
-            ) : (
-                <FormFieldRHF
-                    label='Referenced Plugin'
-                    fieldKey={`${fieldKey}-plugin-select`}
-                    fieldType='select'
-                    fieldValue={selectedPluginIds[0] ?? ''}
-                    options={pluginOptions}
-                    onFieldChange={handleSinglePluginChange}
-                    variant='canvas'
-                />
-            )}
+            </div>
 
             {argument.showPluginConfiguration && pluginReferenceValue.selections.map((selection, index) => {
                 const selectedPluginArguments = selectionArguments[selection.pluginId] ?? [];
@@ -190,11 +195,6 @@ const PluginConfigField = ({
             {selectedPluginIds.length > 0 && !argument.showPluginConfiguration && (
                 <p className='font-size-1 color-muted'>
                     Plugin configuration will be resolved later by the plugin node or workflow runtime.
-                </p>
-            )}
-            {selectedPluginIds.length === 0 && (
-                <p className='font-size-1 color-muted'>
-                    Select {argument.multipleSelection ? 'one or more plugins' : 'a plugin'} to continue.
                 </p>
             )}
         </div>

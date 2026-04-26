@@ -5,7 +5,8 @@ import {
     ExportType_ as ExportType,
     ArgumentType,
     EntrypointType,
-    PluginNodeExecutionMode
+    PluginNodeExecutionMode,
+    PluginNodeOutputPathMode
 } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import type { INodeData } from '@/modules/plugin/api/entities/plugin/workflow';
 import { v4 } from 'uuid';
@@ -199,6 +200,7 @@ const NODE_REGISTRY: Record<NodeType, PluginNodeRegistryEntry> = {
         createDefaultData: () => ({
             pluginNode: {
                 executionMode: PluginNodeExecutionMode.MANUAL,
+                outputPathMode: PluginNodeOutputPathMode.ISOLATED,
                 pluginId: '',
                 argumentReference: '',
                 selectedTeamClusterId: '',
