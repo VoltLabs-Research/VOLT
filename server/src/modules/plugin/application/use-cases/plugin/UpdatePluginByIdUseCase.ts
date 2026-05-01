@@ -67,12 +67,13 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
                     .find((n) => n.type === WorkflowNodeType.Entrypoint);
 
                 if(currentEntrypoint?.data?.entrypoint && incomingEntrypoint?.data?.entrypoint){
-                    const { binary, binaryObjectPath, binaryFileName } = currentEntrypoint.data.entrypoint;
+                    const { binary, binaryObjectPath, binaryFileName, binaryHash } = currentEntrypoint.data.entrypoint;
                     incomingEntrypoint.data.entrypoint = {
                         ...incomingEntrypoint.data.entrypoint,
                         binary,
                         binaryObjectPath,
-                        binaryFileName
+                        binaryFileName,
+                        binaryHash
                     };
                 }
             }

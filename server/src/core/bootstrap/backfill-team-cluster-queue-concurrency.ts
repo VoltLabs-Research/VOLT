@@ -9,6 +9,7 @@ const LEGACY_TEAM_CLUSTER_QUEUE_CONCURRENCY = {
     analysis: 5,
     rasterizer: 3,
     glbPreprocessing: 5,
+    artifactUpload: 8,
     sshImport: 1
 };
 
@@ -18,6 +19,10 @@ const LEGACY_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS = {
         maxRunningPerTeam: 0
     },
     artifactUpload: {
+        maxRunningPerTrajectory: 1,
+        maxRunningPerTeam: 0
+    },
+    trajectoryRasterization: {
         maxRunningPerTrajectory: 1,
         maxRunningPerTeam: 0
     },
@@ -42,11 +47,13 @@ export const backfillTeamClusterQueueConcurrency = async (): Promise<void> => {
             { 'queueConcurrency.analysis': { $exists: false } },
             { 'queueConcurrency.rasterizer': { $exists: false } },
             { 'queueConcurrency.glbPreprocessing': { $exists: false } },
+            { 'queueConcurrency.artifactUpload': { $exists: false } },
             { 'queueConcurrency.sshImport': { $exists: false } },
             {
                 'queueConcurrency.analysis': LEGACY_TEAM_CLUSTER_QUEUE_CONCURRENCY.analysis,
                 'queueConcurrency.rasterizer': LEGACY_TEAM_CLUSTER_QUEUE_CONCURRENCY.rasterizer,
                 'queueConcurrency.glbPreprocessing': LEGACY_TEAM_CLUSTER_QUEUE_CONCURRENCY.glbPreprocessing,
+                'queueConcurrency.artifactUpload': LEGACY_TEAM_CLUSTER_QUEUE_CONCURRENCY.artifactUpload,
                 'queueConcurrency.sshImport': LEGACY_TEAM_CLUSTER_QUEUE_CONCURRENCY.sshImport
             }
         ]
@@ -61,6 +68,7 @@ export const backfillTeamClusterQueueConcurrency = async (): Promise<void> => {
             { queueScopeLimits: { $exists: false } },
             { 'queueScopeLimits.analysisProcessing': { $exists: false } },
             { 'queueScopeLimits.artifactUpload': { $exists: false } },
+            { 'queueScopeLimits.trajectoryRasterization': { $exists: false } },
             { 'queueScopeLimits.trajectoryGlbConversion': { $exists: false } },
             { 'queueScopeLimits.cloudUpload': { $exists: false } },
             { 'queueScopeLimits.trajectoryCompression': { $exists: false } },
@@ -69,6 +77,8 @@ export const backfillTeamClusterQueueConcurrency = async (): Promise<void> => {
                 'queueScopeLimits.analysisProcessing.maxRunningPerTeam': LEGACY_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.analysisProcessing.maxRunningPerTeam,
                 'queueScopeLimits.artifactUpload.maxRunningPerTrajectory': LEGACY_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.artifactUpload.maxRunningPerTrajectory,
                 'queueScopeLimits.artifactUpload.maxRunningPerTeam': LEGACY_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.artifactUpload.maxRunningPerTeam,
+                'queueScopeLimits.trajectoryRasterization.maxRunningPerTrajectory': LEGACY_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.trajectoryRasterization.maxRunningPerTrajectory,
+                'queueScopeLimits.trajectoryRasterization.maxRunningPerTeam': LEGACY_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.trajectoryRasterization.maxRunningPerTeam,
                 'queueScopeLimits.trajectoryGlbConversion.maxRunningPerTrajectory': LEGACY_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.trajectoryGlbConversion.maxRunningPerTrajectory,
                 'queueScopeLimits.trajectoryGlbConversion.maxRunningPerTeam': LEGACY_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.trajectoryGlbConversion.maxRunningPerTeam,
                 'queueScopeLimits.cloudUpload.maxRunningPerTrajectory': LEGACY_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.cloudUpload.maxRunningPerTrajectory,

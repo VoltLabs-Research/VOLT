@@ -22,6 +22,7 @@ const RASTER_QUEUE_TYPE = 'trajectory_rasterization';
 const GLB_QUEUE_TYPE = 'trajectory_glb_conversion';
 const ARTIFACT_UPLOAD_QUEUE_TYPE = 'artifact_upload';
 const SESSION_TTL_SECONDS = 86400;
+const JOB_STATUS_PUBLISH_BATCH_SIZE = 50;
 
 const swallow = (message: string, context: Record<string, unknown>) =>
     (err: unknown) => logger.warn({ ...context, err }, `[DaemonAnalysisCompletion] ${message}`);
@@ -242,14 +243,14 @@ export default class DaemonAnalysisCompletionService {
      * team module can notify connected clients.
      */
     async handleJobsQueued(jobs: QueuedJobNotification[], teamId: string, teamClusterId: string): Promise<void> {
-        await Promise.all(jobs.map((job) => {
+        const events = jobs.map((job): ProjectedJobStatusInput => {
             const trajectoryContext: JobTrajectoryContext = {
                 trajectoryId: job.trajectoryId,
                 trajectoryName: job.trajectoryName,
                 timestep: job.timestep
             };
 
-            return this.publishJobStatusChanged({
+            return {
                 jobId: job.jobId,
                 teamId,
                 teamClusterId,
@@ -259,8 +260,10 @@ export default class DaemonAnalysisCompletionService {
                 name: job.name,
                 analysisId: job.analysisId,
                 trajectoryContext
-            });
-        }));
+            };
+        });
+
+        await this.publishJobStatusChangedBatch(events);
     }
 
     async handleQueuedJobs(
@@ -268,8 +271,8 @@ export default class DaemonAnalysisCompletionService {
         cleanupScope: string,
         teamClusterId: string
     ): Promise<void> {
-        await Promise.all(jobs.map((job) => {
-            return this.publishJobStatusChanged({
+        const events = jobs.map((job): ProjectedJobStatusInput => {
+            return {
                 jobId: job.jobId,
                 teamId: job.teamId,
                 teamClusterId,
@@ -283,8 +286,10 @@ export default class DaemonAnalysisCompletionService {
                     trajectoryName: job.trajectoryName,
                     timestep: job.timestep
                 }
-            });
-        }));
+            };
+        });
+
+        await this.publishJobStatusChangedBatch(events);
     }
 
     /**
@@ -546,6 +551,13 @@ export default class DaemonAnalysisCompletionService {
         });
 
         await this.eventBus.publish(event);
+    }
+
+    private async publishJobStatusChangedBatch(events: ProjectedJobStatusInput[]): Promise<void> {
+        for (let index = 0; index < events.length; index += JOB_STATUS_PUBLISH_BATCH_SIZE) {
+            const chunk = events.slice(index, index + JOB_STATUS_PUBLISH_BATCH_SIZE);
+            await Promise.all(chunk.map((event) => this.publishJobStatusChanged(event)));
+        }
     }
 
     private requireRasterJobId(jobId: string): string {

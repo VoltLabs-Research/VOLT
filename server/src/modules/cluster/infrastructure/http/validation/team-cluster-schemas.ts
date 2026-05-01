@@ -162,11 +162,13 @@ const updateQueueConcurrencySchema = z.object({
         analysis: queueConcurrencyValueSchema,
         rasterizer: queueConcurrencyValueSchema,
         glbPreprocessing: queueConcurrencyValueSchema,
+        artifactUpload: queueConcurrencyValueSchema,
         sshImport: queueConcurrencyValueSchema
     }).strict(),
     queueScopeLimits: z.object({
         analysisProcessing: queueScopeLimitSchema,
         artifactUpload: queueScopeLimitSchema,
+        trajectoryRasterization: queueScopeLimitSchema,
         trajectoryGlbConversion: queueScopeLimitSchema,
         cloudUpload: queueScopeLimitSchema,
         trajectoryCompression: queueScopeLimitSchema
