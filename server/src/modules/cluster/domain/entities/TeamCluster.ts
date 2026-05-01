@@ -34,6 +34,7 @@ export interface TeamClusterQueueConcurrencyProps {
     analysis: number;
     rasterizer: number;
     glbPreprocessing: number;
+    artifactUpload: number;
     sshImport: number;
 };
 
@@ -45,6 +46,7 @@ export interface TeamClusterQueueScopeLimitProps {
 export interface TeamClusterQueueScopeLimitsProps {
     analysisProcessing: TeamClusterQueueScopeLimitProps;
     artifactUpload: TeamClusterQueueScopeLimitProps;
+    trajectoryRasterization: TeamClusterQueueScopeLimitProps;
     trajectoryGlbConversion: TeamClusterQueueScopeLimitProps;
     cloudUpload: TeamClusterQueueScopeLimitProps;
     trajectoryCompression: TeamClusterQueueScopeLimitProps;
@@ -81,28 +83,33 @@ export const DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY: TeamClusterQueueConcurrency
     analysis: 8,
     rasterizer: 5,
     glbPreprocessing: 8,
+    artifactUpload: 8,
     sshImport: 2
 };
 
 export const DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS: TeamClusterQueueScopeLimitsProps = {
     analysisProcessing: {
-        maxRunningPerTrajectory: 4,
+        maxRunningPerTrajectory: 0,
         maxRunningPerTeam: 0
     },
     artifactUpload: {
-        maxRunningPerTrajectory: 4,
+        maxRunningPerTrajectory: 0,
+        maxRunningPerTeam: 0
+    },
+    trajectoryRasterization: {
+        maxRunningPerTrajectory: 0,
         maxRunningPerTeam: 0
     },
     trajectoryGlbConversion: {
-        maxRunningPerTrajectory: 4,
+        maxRunningPerTrajectory: 0,
         maxRunningPerTeam: 0
     },
     cloudUpload: {
-        maxRunningPerTrajectory: 4,
+        maxRunningPerTrajectory: 0,
         maxRunningPerTeam: 0
     },
     trajectoryCompression: {
-        maxRunningPerTrajectory: 4,
+        maxRunningPerTrajectory: 0,
         maxRunningPerTeam: 0
     }
 };

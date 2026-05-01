@@ -4,6 +4,7 @@ export interface TeamClusterQueueConcurrencyInputDTO {
     analysis: number;
     rasterizer: number;
     glbPreprocessing: number;
+    artifactUpload: number;
     sshImport: number;
 };
 
@@ -15,6 +16,7 @@ export interface TeamClusterQueueScopeLimitInputDTO {
 export interface TeamClusterQueueScopeLimitsInputDTO {
     analysisProcessing: TeamClusterQueueScopeLimitInputDTO;
     artifactUpload: TeamClusterQueueScopeLimitInputDTO;
+    trajectoryRasterization: TeamClusterQueueScopeLimitInputDTO;
     trajectoryGlbConversion: TeamClusterQueueScopeLimitInputDTO;
     cloudUpload: TeamClusterQueueScopeLimitInputDTO;
     trajectoryCompression: TeamClusterQueueScopeLimitInputDTO;

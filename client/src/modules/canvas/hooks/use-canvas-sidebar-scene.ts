@@ -34,14 +34,6 @@ import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 
-const formatFrameProgress = (completed?: number, total?: number): string | undefined => {
-    if (typeof total !== 'number' || total <= 0) {
-        return undefined;
-    }
-    const safeCompleted = typeof completed === 'number' && completed >= 0 ? completed : 0;
-    return `${safeCompleted} of ${total} frames`;
-};
-
 export interface AnalysisSectionData {
     analysis: Analysis;
     pluginId: string;
@@ -232,16 +224,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
                 return;
             }
 
-            const description = formatFrameProgress(completedFrames, totalFrames) ?? 'Running on the cluster…';
-            const nextToastId = sileo.show({
-                type: 'loading',
-                title: `${pluginName} running`,
-                description,
-                duration: null
-            });
-
             pendingStore.update(analysisId, {
-                toastId: nextToastId,
                 completedFrames,
                 totalFrames
             });

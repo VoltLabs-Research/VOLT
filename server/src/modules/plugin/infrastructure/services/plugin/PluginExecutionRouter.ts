@@ -246,6 +246,7 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
     ){}
 
     private readonly inflightEncodes = new Map<string, Promise<EncodedDispatchSection<unknown>>>();
+    private readonly inflightPluginSyncs = new Map<string, Promise<void>>();
 
     private async cachedEncode<T>(cacheKey: string, value: T): Promise<EncodedDispatchSection<T>> {
         try {
@@ -337,17 +338,28 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             selectedTimesteps: input.selectedTimesteps,
             timestep: input.timestep
         };
-        // Why: single serialization — `payloadBytes` and the downstream transport
-        // layer both consume the same buffer. This was historically serialized
-        // once for logging and again when Socket.IO encoded the message for the
-        // wire; now the bytes are computed exactly once.
-        const dispatchPayloadBuffer = Buffer.from(JSON.stringify(dispatchPayload), 'utf8');
+        const payloadBytesEstimate =
+            encodedTrajectoryFrames.storedBytes
+            + encodedWorkflow.storedBytes
+            + encodedNestedPlugins.storedBytes
+            + encodedPluginReferenceExecutions.storedBytes
+            + Buffer.byteLength(JSON.stringify({
+                analysisId: input.analysisId,
+                pluginId: input.plugin.id,
+                teamId: input.teamId,
+                trajectoryId: input.trajectoryId,
+                teamClusterId: input.teamClusterId,
+                config: input.config,
+                selectedFrameOnly: input.selectedFrameOnly,
+                selectedTimesteps: input.selectedTimesteps,
+                timestep: input.timestep
+            }), 'utf8');
         const cleanupSummary: DispatchCleanupSummary = {
             duplicateDependencyCount: input.pluginDependencies.length - uniqueDependencyPlugins.length,
             duplicateNestedPluginCount: input.pluginDependencies.length - nestedPlugins.length,
             duplicatePluginReferenceExecutionCount: input.pluginReferenceExecutions.length - pluginReferenceExecutions.length,
             uniquePluginSyncCount: uniquePluginsToSync.length,
-            payloadBytes: dispatchPayloadBuffer.byteLength
+            payloadBytes: payloadBytesEstimate
         };
         const payloadCompressionSavingsBytes =
             (encodedTrajectoryFrames.rawBytes - encodedTrajectoryFrames.storedBytes)
@@ -405,19 +417,37 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
 
         const expectedHash = entrypoint?.binaryHash ?? await this.readObjectSha256(objectKey);
 
-        const syncResponse = await this.teamClusterDaemonClient.command<DaemonPluginSyncResponse>(teamClusterId, ChannelCommands.PluginSync, {
-            pluginId: plugin.id,
-            objectKey,
-            ownerClusterId: VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID,
-            expectedHash
+        const syncKey = `${teamClusterId}:${plugin.id}:${objectKey}:${expectedHash ?? 'unknown-hash'}`;
+        const existingSync = this.inflightPluginSyncs.get(syncKey);
+        if (existingSync) {
+            return existingSync;
+        }
+
+        const pendingSync = (async () => {
+            const syncResponse = await this.teamClusterDaemonClient.command<DaemonPluginSyncResponse>(
+                teamClusterId,
+                ChannelCommands.PluginSync,
+                {
+                    pluginId: plugin.id,
+                    objectKey,
+                    ownerClusterId: VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID,
+                    expectedHash
+                },
+                { timeoutClass: 'long-running-control-plane' }
+            );
+
+            if (!syncResponse.synced) {
+                throw ApplicationError.conflict(
+                    ErrorCodes.PLUGIN_EXECUTOR_BINARY_NOT_ACCESSIBLE,
+                    `Plugin binary is not reachable from compute cluster: ${objectKey}`
+                );
+            }
+        })().finally(() => {
+            this.inflightPluginSyncs.delete(syncKey);
         });
 
-        if (!syncResponse.synced) {
-            throw ApplicationError.conflict(
-                ErrorCodes.PLUGIN_EXECUTOR_BINARY_NOT_ACCESSIBLE,
-                `Plugin binary is not reachable from compute cluster: ${objectKey}`
-            );
-        }
+        this.inflightPluginSyncs.set(syncKey, pendingSync);
+        return pendingSync;
     }
 
     private async readObjectSha256(objectKey: string): Promise<string | undefined> {

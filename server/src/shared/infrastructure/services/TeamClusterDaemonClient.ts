@@ -183,7 +183,7 @@ export default class TeamClusterDaemonClient {
             teamClusterId,
             command,
             responseType,
-            payloadBytes: readPayloadBytes(payload),
+            payloadBytes: command === ChannelCommands.AnalysisStart ? undefined : readPayloadBytes(payload),
             timeoutMs
         };
     }

@@ -65,6 +65,9 @@ export default class UpdateTeamClusterQueueConcurrencyUseCase
                         artifactUpload: {
                             ...updatedTeamCluster.props.queueScopeLimits.artifactUpload
                         },
+                        trajectoryRasterization: {
+                            ...updatedTeamCluster.props.queueScopeLimits.trajectoryRasterization
+                        },
                         trajectoryGlbConversion: {
                             ...updatedTeamCluster.props.queueScopeLimits.trajectoryGlbConversion
                         },
