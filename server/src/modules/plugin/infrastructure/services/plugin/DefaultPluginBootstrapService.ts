@@ -19,7 +19,8 @@ const DEFAULT_PLUGIN_IMPORT_ORDER = [
     'Polyhedral Template Matching.zip',
     'Adaptive Common Neighbor Analysis.zip',
     'Common Neighbor Analysis.zip',
-    'OpenDXA.zip'
+    'Dislocation Analysis.zip',
+    'Elastic Strain.zip'
 ];
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {

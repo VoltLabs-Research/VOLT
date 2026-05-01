@@ -137,6 +137,7 @@ const AnalysesListing = () => {
             onEmptyButtonClick={() => navigate('/dashboard/trajectories/list')}
             socketInvalidation={[
                 { event: SOCKET_ANALYSIS_EVENTS.CREATED, queryKeys: [analysisQuery.QUERY_KEYS.lists()] },
+                { event: SOCKET_ANALYSIS_EVENTS.STATUS_CHANGED, queryKeys: [analysisQuery.QUERY_KEYS.lists()] },
                 { event: SOCKET_TEAM_EVENTS.JOB_UPDATED, queryKeys: [analysisQuery.QUERY_KEYS.lists()] },
                 { event: SOCKET_ANALYSIS_EVENTS.DELETED, queryKeys: [analysisQuery.QUERY_KEYS.lists()] }
             ]}

@@ -13,6 +13,12 @@ interface UseAnalysisStatusProps {
     enabled?: boolean;
 };
 
+const ARTIFACT_UPLOAD_QUEUE_TYPE = 'artifact_upload';
+
+const isTerminalAnalysisStatus = (status?: string): boolean => {
+    return status === AnalysisStatus.Completed || status === AnalysisStatus.Failed;
+};
+
 const resolveAnalysisId = (job: Job): string | undefined => {
     if (typeof job.analysisId === 'string' && job.analysisId.trim().length > 0) {
         return job.analysisId;
@@ -89,11 +95,13 @@ const useAnalysisStatus = ({ trajectoryId, enabled = true }: UseAnalysisStatusPr
         const next = new Map<string, CanvasAnalysisStatusEntry>();
 
         for (const analysis of analyses) {
-            const jobs = jobsByAnalysisId.get(analysis._id) ?? [];
+            const persistedStatus = analysis.status as AnalysisStatus;
+            const jobs = (jobsByAnalysisId.get(analysis._id) ?? [])
+                .filter((job) => job.queueType !== ARTIFACT_UPLOAD_QUEUE_TYPE);
             const derived = deriveAnalysisStatusFromJobs(jobs);
 
             next.set(analysis._id, {
-                status: derived ?? (analysis.status as AnalysisStatus),
+                status: isTerminalAnalysisStatus(persistedStatus) ? persistedStatus : (derived ?? persistedStatus),
                 trajectoryId: analysis.trajectory?._id ?? trajectoryId
             });
         }

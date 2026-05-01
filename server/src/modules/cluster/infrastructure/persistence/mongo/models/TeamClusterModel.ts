@@ -68,6 +68,11 @@ const queueConcurrencySchema = new Schema({
         required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
         min: [1, TEAM_CLUSTER_VALIDATION_ERROR]
     },
+    artifactUpload: {
+        type: Number,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
+        min: [1, TEAM_CLUSTER_VALIDATION_ERROR]
+    },
     sshImport: {
         type: Number,
         required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
@@ -98,6 +103,10 @@ const queueScopeLimitsSchema = new Schema({
         required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
     },
     artifactUpload: {
+        type: queueScopeLimitSchema,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
+    },
+    trajectoryRasterization: {
         type: queueScopeLimitSchema,
         required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
     },

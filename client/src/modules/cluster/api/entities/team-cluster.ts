@@ -47,6 +47,7 @@ export interface TeamClusterQueueConcurrency {
     analysis: number;
     rasterizer: number;
     glbPreprocessing: number;
+    artifactUpload: number;
     sshImport: number;
 };
 
@@ -58,6 +59,7 @@ export interface TeamClusterQueueScopeLimit {
 export interface TeamClusterQueueScopeLimits {
     analysisProcessing: TeamClusterQueueScopeLimit;
     artifactUpload: TeamClusterQueueScopeLimit;
+    trajectoryRasterization: TeamClusterQueueScopeLimit;
     trajectoryGlbConversion: TeamClusterQueueScopeLimit;
     cloudUpload: TeamClusterQueueScopeLimit;
     trajectoryCompression: TeamClusterQueueScopeLimit;

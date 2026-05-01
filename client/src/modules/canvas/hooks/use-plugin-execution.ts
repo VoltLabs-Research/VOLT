@@ -117,13 +117,6 @@ const usePluginExecution = ({
             clearTimeout(existing);
         }
 
-        const loadingToastId = sileo.show({
-            type: 'loading',
-            title: `Starting ${pluginName}`,
-            description: 'Queueing analysis on the cluster…',
-            duration: null
-        });
-
         try {
             if (beforeExecute) {
                 const result = await beforeExecute(option);
@@ -172,16 +165,16 @@ const usePluginExecution = ({
                 timestep: currentTimestep
             });
 
-            // Hand the toast off to the sidebar socket handler via the
-            // pending-executions store. It will update progress and close
-            // the toast when analysis.status.changed lands.
             usePendingPluginExecutionsStore.getState().register({
                 analysisId: result.analysisId,
                 trajectoryId,
                 pluginName,
                 timestep: currentTimestep,
-                autoSelect: true,
-                toastId: loadingToastId
+                autoSelect: true
+            });
+
+            sileo.success({
+                title: `${pluginName} is being computed`
             });
 
             setExecStates((prev) => new Map(prev).set(modId, ExecState.Success));

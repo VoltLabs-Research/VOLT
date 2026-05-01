@@ -8,6 +8,7 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 export type TeamClusterScopedQueueLimitKey =
     | 'analysisProcessing'
     | 'artifactUpload'
+    | 'trajectoryRasterization'
     | 'trajectoryGlbConversion'
     | 'cloudUpload'
     | 'trajectoryCompression';
@@ -45,6 +46,9 @@ export default class TeamClusterQueueScopeLimitsService {
             },
             artifactUpload: {
                 ...teamCluster.props.queueScopeLimits.artifactUpload
+            },
+            trajectoryRasterization: {
+                ...teamCluster.props.queueScopeLimits.trajectoryRasterization
             },
             trajectoryGlbConversion: {
                 ...teamCluster.props.queueScopeLimits.trajectoryGlbConversion

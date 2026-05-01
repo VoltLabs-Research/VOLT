@@ -43,27 +43,32 @@ const RECOMMENDED_QUEUE_CONCURRENCY: TeamClusterQueueConcurrencyInputDTO = {
     analysis: 8,
     rasterizer: 5,
     glbPreprocessing: 8,
+    artifactUpload: 8,
     sshImport: 2
 };
 const RECOMMENDED_QUEUE_SCOPE_LIMITS: TeamClusterQueueScopeLimitsInputDTO = {
     analysisProcessing: {
-        maxRunningPerTrajectory: 4,
+        maxRunningPerTrajectory: 0,
         maxRunningPerTeam: 0
     },
     artifactUpload: {
-        maxRunningPerTrajectory: 4,
+        maxRunningPerTrajectory: 0,
+        maxRunningPerTeam: 0
+    },
+    trajectoryRasterization: {
+        maxRunningPerTrajectory: 0,
         maxRunningPerTeam: 0
     },
     trajectoryGlbConversion: {
-        maxRunningPerTrajectory: 4,
+        maxRunningPerTrajectory: 0,
         maxRunningPerTeam: 0
     },
     cloudUpload: {
-        maxRunningPerTrajectory: 4,
+        maxRunningPerTrajectory: 0,
         maxRunningPerTeam: 0
     },
     trajectoryCompression: {
-        maxRunningPerTrajectory: 4,
+        maxRunningPerTrajectory: 0,
         maxRunningPerTeam: 0
     }
 };
@@ -85,6 +90,11 @@ const QUEUE_FIELDS: QueueFieldDefinition[] = [
         description: 'Trajectory model preprocessing'
     },
     {
+        key: 'artifactUpload',
+        label: 'Artifact upload',
+        description: 'Analysis artifact upload jobs'
+    },
+    {
         key: 'sshImport',
         label: 'SSH import',
         description: 'Remote trajectory imports'
@@ -101,6 +111,11 @@ const QUEUE_SCOPE_FIELDS: QueueScopeFieldDefinition[] = [
         key: 'artifactUpload',
         label: 'Artifact upload',
         description: 'Artifact transfer jobs produced by analyses'
+    },
+    {
+        key: 'trajectoryRasterization',
+        label: 'Rasterization',
+        description: 'Trajectory preview generation jobs'
     },
     {
         key: 'trajectoryGlbConversion',
@@ -126,6 +141,7 @@ const createInitialValues = (teamCluster: TeamCluster | null): Record<keyof Team
         analysis: String(teamCluster?.queueConcurrency.analysis ?? ''),
         rasterizer: String(teamCluster?.queueConcurrency.rasterizer ?? ''),
         glbPreprocessing: String(teamCluster?.queueConcurrency.glbPreprocessing ?? ''),
+        artifactUpload: String(teamCluster?.queueConcurrency.artifactUpload ?? ''),
         sshImport: String(teamCluster?.queueConcurrency.sshImport ?? '')
     };
 };
@@ -135,6 +151,7 @@ const createRecommendedValues = (): Record<keyof TeamClusterQueueConcurrencyInpu
         analysis: String(RECOMMENDED_QUEUE_CONCURRENCY.analysis),
         rasterizer: String(RECOMMENDED_QUEUE_CONCURRENCY.rasterizer),
         glbPreprocessing: String(RECOMMENDED_QUEUE_CONCURRENCY.glbPreprocessing),
+        artifactUpload: String(RECOMMENDED_QUEUE_CONCURRENCY.artifactUpload),
         sshImport: String(RECOMMENDED_QUEUE_CONCURRENCY.sshImport)
     };
 };
@@ -150,6 +167,10 @@ const createInitialScopeValues = (
         artifactUpload: {
             maxRunningPerTrajectory: String(teamCluster?.queueScopeLimits.artifactUpload.maxRunningPerTrajectory ?? ''),
             maxRunningPerTeam: String(teamCluster?.queueScopeLimits.artifactUpload.maxRunningPerTeam ?? '')
+        },
+        trajectoryRasterization: {
+            maxRunningPerTrajectory: String(teamCluster?.queueScopeLimits.trajectoryRasterization?.maxRunningPerTrajectory ?? ''),
+            maxRunningPerTeam: String(teamCluster?.queueScopeLimits.trajectoryRasterization?.maxRunningPerTeam ?? '')
         },
         trajectoryGlbConversion: {
             maxRunningPerTrajectory: String(teamCluster?.queueScopeLimits.trajectoryGlbConversion.maxRunningPerTrajectory ?? ''),
@@ -178,6 +199,10 @@ const createRecommendedScopeValues = (): Record<
         artifactUpload: {
             maxRunningPerTrajectory: String(RECOMMENDED_QUEUE_SCOPE_LIMITS.artifactUpload.maxRunningPerTrajectory),
             maxRunningPerTeam: String(RECOMMENDED_QUEUE_SCOPE_LIMITS.artifactUpload.maxRunningPerTeam)
+        },
+        trajectoryRasterization: {
+            maxRunningPerTrajectory: String(RECOMMENDED_QUEUE_SCOPE_LIMITS.trajectoryRasterization.maxRunningPerTrajectory),
+            maxRunningPerTeam: String(RECOMMENDED_QUEUE_SCOPE_LIMITS.trajectoryRasterization.maxRunningPerTeam)
         },
         trajectoryGlbConversion: {
             maxRunningPerTrajectory: String(RECOMMENDED_QUEUE_SCOPE_LIMITS.trajectoryGlbConversion.maxRunningPerTrajectory),
@@ -258,6 +283,7 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
             analysis: 0,
             rasterizer: 0,
             glbPreprocessing: 0,
+            artifactUpload: 0,
             sshImport: 0
         };
 
@@ -364,7 +390,7 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
                 <Stack gap='05'>
                     <Heading level={3} size='md' weight='medium' tone='secondary'>Worker concurrency</Heading>
                     <Row gap='075' wrap>
-                        <Text as='p' size='sm' tone='muted'>Use the recommended preset to auto-fill balanced high-throughput limits.</Text>
+                        <Text as='p' size='sm' tone='muted'>Use the recommended preset to auto-fill balanced high-throughput limits for this cluster.</Text>
                         <Button
                             variant='outline'
                             intent='brand'
@@ -396,6 +422,7 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
                 </Stack>
                 <Stack gap='05' mt='05'>
                     <Heading level={3} size='md' weight='medium' tone='secondary'>Execution scope limits</Heading>
+                    <Text as='p' size='sm' tone='muted'>Limits are enforced per cluster. Use 0 for no limit.</Text>
                 </Stack>
                 <Stack gap='1'>
                     {QUEUE_SCOPE_FIELDS.map((field) => (
