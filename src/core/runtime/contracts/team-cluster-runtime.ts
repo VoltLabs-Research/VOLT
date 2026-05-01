@@ -21,6 +21,7 @@ export interface TeamClusterQueueScopeLimit {
 export interface TeamClusterDaemonQueueScopeLimits {
     analysisProcessing: TeamClusterQueueScopeLimit;
     artifactUpload: TeamClusterQueueScopeLimit;
+    trajectoryRasterization: TeamClusterQueueScopeLimit;
     trajectoryGlbConversion: TeamClusterQueueScopeLimit;
     cloudUpload: TeamClusterQueueScopeLimit;
     trajectoryCompression: TeamClusterQueueScopeLimit;
@@ -40,6 +41,7 @@ export interface TeamClusterDaemonQueueConcurrency {
     analysis: number;
     rasterizer: number;
     glbPreprocessing: number;
+    artifactUpload: number;
     sshImport: number;
 }
 
@@ -56,23 +58,27 @@ export interface TeamClusterDaemonRuntimeConfig {
 
 export const DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS: TeamClusterDaemonQueueScopeLimits = {
     analysisProcessing: {
-        maxRunningPerTrajectory: 4,
+        maxRunningPerTrajectory: 0,
         maxRunningPerTeam: 0
     },
     artifactUpload: {
-        maxRunningPerTrajectory: 4,
+        maxRunningPerTrajectory: 0,
+        maxRunningPerTeam: 0
+    },
+    trajectoryRasterization: {
+        maxRunningPerTrajectory: 0,
         maxRunningPerTeam: 0
     },
     trajectoryGlbConversion: {
-        maxRunningPerTrajectory: 4,
+        maxRunningPerTrajectory: 0,
         maxRunningPerTeam: 0
     },
     cloudUpload: {
-        maxRunningPerTrajectory: 4,
+        maxRunningPerTrajectory: 0,
         maxRunningPerTeam: 0
     },
     trajectoryCompression: {
-        maxRunningPerTrajectory: 4,
+        maxRunningPerTrajectory: 0,
         maxRunningPerTeam: 0
     }
 };

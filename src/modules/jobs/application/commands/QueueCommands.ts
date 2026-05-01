@@ -29,14 +29,14 @@ export class QueueCommands {
         await this.queueService.enqueue(
             payload.queueName,
             payload.queueName === ANALYSIS_QUEUE_NAME
-                ? this.normalizeAnalysisQueuePayload(payload.payload)
+                ? await this.normalizeAnalysisQueuePayload(payload.payload)
                 : payload.payload
         );
 
         return { queued: true };
     }
 
-    private normalizeAnalysisQueuePayload(payload: Record<string, unknown>): Record<string, unknown> {
+    private async normalizeAnalysisQueuePayload(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
         const executionDataCompressed = payload.executionDataCompressed;
         const normalizedPayload = {
             ...payload,
@@ -44,7 +44,7 @@ export class QueueCommands {
         } as unknown as AnalysisQueueJobPayload;
 
         if (typeof executionDataCompressed === 'string' && !normalizedPayload.executionData) {
-            normalizedPayload.executionData = inflateAnalysisExecutionData(executionDataCompressed);
+            normalizedPayload.executionData = await inflateAnalysisExecutionData(executionDataCompressed);
         }
 
         return normalizedPayload as unknown as Record<string, unknown>;

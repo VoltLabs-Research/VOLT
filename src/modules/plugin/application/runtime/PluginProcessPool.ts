@@ -1,6 +1,7 @@
 import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { pack, unpack } from 'msgpackr';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -37,6 +38,7 @@ export interface PooledRequestOptions {
 
 interface PooledProcessInternals {
     child: ChildProcessWithoutNullStreams;
+    poolKey: string;
     pluginId: string;
     stderrBytes: number;
     stderrBuffer: string;
@@ -104,7 +106,9 @@ export class PluginProcessPool {
             throw new Error('PluginProcessPool is shutting down');
         }
 
-        const group = this.resolveGroup(input.pluginId, input);
+        const poolKey = this.buildPoolKey(input);
+        this.retireSupersededIdleGroups(input.pluginId, poolKey);
+        const group = this.resolveGroup(poolKey, input);
         const idleInternals = this.popIdle(group);
         if (idleInternals) {
             idleInternals.busy = true;
@@ -152,20 +156,21 @@ export class PluginProcessPool {
 
     release(internals: PooledProcessInternals): void {
         internals.busy = false;
-        const group = this.pools.get(internals.pluginId);
+        const group = this.pools.get(internals.poolKey);
         if (!group) return;
 
         group.waiters.splice(0).forEach((resolve) => resolve());
 
-        if (this.shuttingDown || internals.closed) {
+        if (this.shuttingDown || internals.closed || group.retired) {
             group.active.delete(internals);
-            this.destroyInternals(internals);
+            void this.destroyInternals(internals);
+            this.deleteGroupIfDrained(group);
             return;
         }
 
         if (group.idle.length >= this.config.minIdle && group.active.size > this.config.minIdle) {
             group.active.delete(internals);
-            this.destroyInternals(internals);
+            void this.destroyInternals(internals);
             return;
         }
 
@@ -222,21 +227,23 @@ export class PluginProcessPool {
         this.pools.clear();
     }
 
-    private resolveGroup(pluginId: string, input: PooledProcessSpawnInput): PluginProcessInternalsGroup {
-        const existing = this.pools.get(pluginId);
+    private resolveGroup(poolKey: string, input: PooledProcessSpawnInput): PluginProcessInternalsGroup {
+        const existing = this.pools.get(poolKey);
         if (existing) {
             existing.spawnInput = input;
             return existing;
         }
 
         const group: PluginProcessInternalsGroup = {
-            pluginId,
+            poolKey,
+            pluginId: input.pluginId,
             spawnInput: input,
             idle: [],
             active: new Set<PooledProcessInternals>(),
-            waiters: []
+            waiters: [],
+            retired: false
         };
-        this.pools.set(pluginId, group);
+        this.pools.set(poolKey, group);
         return group;
     }
 
@@ -271,6 +278,7 @@ export class PluginProcessPool {
 
         const internals: PooledProcessInternals = {
             child,
+            poolKey: group.poolKey,
             pluginId: input.pluginId,
             stderrBytes: 0,
             stderrBuffer: '',
@@ -476,6 +484,7 @@ export class PluginProcessPool {
         if (idleIndex >= 0) {
             group.idle.splice(idleIndex, 1);
         }
+        this.deleteGroupIfDrained(group);
 
         for (const resolve of group.waiters.splice(0)) {
             resolve();
@@ -520,14 +529,54 @@ export class PluginProcessPool {
             group.waiters.push(resolve);
         });
     }
+
+    private buildPoolKey(input: PooledProcessSpawnInput): string {
+        const digest = createHash('sha256')
+            .update(input.pluginId)
+            .update('\0')
+            .update(input.commandPath)
+            .update('\0')
+            .update(input.stubPath)
+            .update('\0')
+            .update(input.pluginRoot)
+            .update('\0')
+            .update(input.entrypointScript);
+
+        return `${input.pluginId}:${digest.digest('hex')}`;
+    }
+
+    private retireSupersededIdleGroups(pluginId: string, activePoolKey: string): void {
+        for (const [poolKey, group] of this.pools.entries()) {
+            if (poolKey === activePoolKey || group.pluginId !== pluginId) {
+                continue;
+            }
+
+            group.retired = true;
+            const idle = group.idle.splice(0);
+            for (const internals of idle) {
+                group.active.delete(internals);
+                void this.destroyInternals(internals);
+            }
+            group.waiters.splice(0).forEach((resolve) => resolve());
+            this.deleteGroupIfDrained(group);
+        }
+    }
+
+    private deleteGroupIfDrained(group: PluginProcessInternalsGroup): void {
+        if (group.active.size === 0 && group.idle.length === 0) {
+            this.pools.delete(group.poolKey);
+        }
+    }
 }
 
 interface PluginProcessInternalsGroup {
+    poolKey: string;
     pluginId: string;
     spawnInput: PooledProcessSpawnInput;
     idle: PooledProcessInternals[];
     active: Set<PooledProcessInternals>;
     waiters: Array<() => void>;
+    retired: boolean;
 }
 
 export const resolvePythonStubPath = (): string => {

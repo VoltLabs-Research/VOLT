@@ -29,7 +29,7 @@ import {
     encodeVtrHeader
 } from '@/modules/trajectory/infrastructure/codecs/vtr-header';
 import { encodeFrameChunkBody } from '@/modules/trajectory/infrastructure/codecs/vtr-chunk';
-import { zstdEncode } from '@/modules/trajectory/infrastructure/codecs/vtr-zstd';
+import { zstdEncodeAsync } from '@/modules/trajectory/infrastructure/codecs/vtr-zstd';
 import { crc32, crc32Combine } from '@/modules/trajectory/infrastructure/codecs/vtr-crc32';
 import {
     buildMortonOrder,
@@ -268,7 +268,7 @@ export class VtrWriter {
         const bodyBytes = encodeFrameChunkBody(body);
 
         const dictPayload = this.init.zstdDict?.payload;
-        const compressed = zstdEncode(bodyBytes, { level: this.zstdLevel, dict: dictPayload });
+        const compressed = await zstdEncodeAsync(bodyBytes, { level: this.zstdLevel, dict: dictPayload });
         const codecId = dictPayload ? VtrChunkCodec.ZstdDict : VtrChunkCodec.ZstdPlain;
 
         let payloadToWrite = compressed;

@@ -159,6 +159,28 @@ const DEFAULT_MESH_MATERIAL: ExportMaterial = {
     emissive: [0, 0, 0]
 };
 
+const generateEmptyMeshGLB = (material: ExportMaterial): Buffer => (
+    spatialAssembler.generateMeshGLB(
+        new Float32Array(0),
+        new Float32Array(0),
+        new Uint32Array(0),
+        false,
+        undefined,
+        {
+            minX: 0,
+            minY: 0,
+            minZ: 0,
+            maxX: 0,
+            maxY: 0,
+            maxZ: 0
+        },
+        {
+            ...material,
+            doubleSided: true
+        }
+    )
+);
+
 export const exportMeshArtifact = async (
     input: ExportExecutionInput,
     exportData: MeshInput,
@@ -166,12 +188,20 @@ export const exportMeshArtifact = async (
     ownerClusterId: string,
     options: MeshExportOptions
 ): Promise<boolean> => {
+    const material: ExportMaterial = { ...DEFAULT_MESH_MATERIAL, ...options.material };
     const processed = processMesh(exportData, options.smoothIterations);
     if (!processed) {
-        return false;
+        await stageExportBufferUpload(input, {
+            exporter: 'MeshExporter',
+            bucket: ObjectBucketName.Models,
+            buffer: generateEmptyMeshGLB(material),
+            contentType: 'model/gltf-binary',
+            objectPath,
+            ownerClusterId
+        });
+        return true;
     }
 
-    const material: ExportMaterial = { ...DEFAULT_MESH_MATERIAL, ...options.material };
     const buffer = spatialAssembler.generateMeshGLB(
         processed.positions,
         processed.normals,

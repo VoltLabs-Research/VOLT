@@ -8,7 +8,7 @@ import { extractDaemonTraceContext } from '@/core/observability/infrastructure/d
 import { inflateBase64GzipJson } from '@/support/serialization/gzip-base64-json';
 import type { AnalysisDispatcher } from '@/modules/analysis/application/analysis/AnalysisDispatcher';
 
-const readMaybeCompressed = <T>(compressed: unknown, fallback: T): T =>
+const readMaybeCompressed = async <T>(compressed: unknown, fallback: T): Promise<T> =>
     typeof compressed === 'string' ? inflateBase64GzipJson<T>(compressed) : fallback;
 
 @CommandGroup('analysis')
@@ -19,19 +19,19 @@ export class AnalysisCommands {
 
     @Command('start')
     async start(payload: AnalysisStartTransportPayload) {
-        return this.analysisDispatcher.startAnalysis(this.readAnalysisStartRequest(payload));
+        return this.analysisDispatcher.startAnalysis(await this.readAnalysisStartRequest(payload));
     }
 
-    private readAnalysisStartRequest(payload: AnalysisStartTransportPayload): AnalysisStartRequestWithTrace {
+    private async readAnalysisStartRequest(payload: AnalysisStartTransportPayload): Promise<AnalysisStartRequestWithTrace> {
         const request = { ...payload } as AnalysisStartRequestWithTrace;
 
-        request.trajectoryFrames = readMaybeCompressed<AnalysisStartRequest['trajectoryFrames']>(
+        request.trajectoryFrames = await readMaybeCompressed<AnalysisStartRequest['trajectoryFrames']>(
             payload.trajectoryFramesCompressed, payload.trajectoryFrames ?? []);
-        request.workflow = readMaybeCompressed<AnalysisStartRequest['workflow']>(
+        request.workflow = await readMaybeCompressed<AnalysisStartRequest['workflow']>(
             payload.workflowCompressed, payload.workflow as AnalysisStartRequest['workflow']);
-        request.nestedPlugins = readMaybeCompressed<AnalysisStartRequest['nestedPlugins']>(
+        request.nestedPlugins = await readMaybeCompressed<AnalysisStartRequest['nestedPlugins']>(
             payload.nestedPluginsCompressed, payload.nestedPlugins ?? []);
-        request.pluginReferenceExecutions = readMaybeCompressed<AnalysisStartRequest['pluginReferenceExecutions']>(
+        request.pluginReferenceExecutions = await readMaybeCompressed<AnalysisStartRequest['pluginReferenceExecutions']>(
             payload.pluginReferenceExecutionsCompressed, payload.pluginReferenceExecutions ?? []);
 
         const traceContext = extractDaemonTraceContext(payload as unknown as Record<string, unknown>);

@@ -21,7 +21,7 @@ import {
     decodeVtrHeader
 } from '@/modules/trajectory/infrastructure/codecs/vtr-header';
 import { decodeFrameChunkBody } from '@/modules/trajectory/infrastructure/codecs/vtr-chunk';
-import { zstdDecode } from '@/modules/trajectory/infrastructure/codecs/vtr-zstd';
+import { zstdDecodeAsync } from '@/modules/trajectory/infrastructure/codecs/vtr-zstd';
 import { dequantizePositionsInt16 } from '@/modules/trajectory/infrastructure/codecs/vtr-quantize';
 import { applyDeltaInt16 } from '@/modules/trajectory/infrastructure/codecs/vtr-delta';
 import type { BlobStore } from '@/core/storage/infrastructure/BlobStore';
@@ -204,14 +204,14 @@ export class VtrReader {
         return this.decompressAndDecodeChunk(envelope, entry);
     }
 
-    private decompressAndDecodeChunk(
+    private async decompressAndDecodeChunk(
         compressed: Uint8Array,
         entry: VtrFrameIndexEntry
-    ): VtrFrameChunkBody {
+    ): Promise<VtrFrameChunkBody> {
         if (entry.chunkCodecId === VtrChunkCodec.ZstdDict && !this.zstdDictPayload) {
             throw new Error('vtr chunk requires zstd dict but no dict is loaded');
         }
-        const decompressed = zstdDecode(compressed, {
+        const decompressed = await zstdDecodeAsync(compressed, {
             dict: entry.chunkCodecId === VtrChunkCodec.ZstdDict ? this.zstdDictPayload ?? undefined : undefined
         });
         return decodeFrameChunkBody(decompressed);

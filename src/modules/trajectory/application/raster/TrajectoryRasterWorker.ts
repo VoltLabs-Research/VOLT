@@ -4,6 +4,7 @@ import { Service } from '@/core/decorators/service';
 import { BaseWorker } from '@/core/queues/application/BaseWorker';
 import { createLifecycleStatusReporter } from '@/core/queues/application/create-status-reporter';
 import type { QueueService } from '@/core/queues/application/QueueService';
+import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@/core/queues/application/QueueScopeLimitsRegistry';
 import { withJobLifecycle } from '@/core/queues/application/with-job-lifecycle';
 import { TRAJECTORY_RASTER_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import { ObjectBucketName, type RasterQueueJobPayload } from '@/contracts';
@@ -16,15 +17,17 @@ import type { DaemonJobReporter } from '@/modules/jobs/application/reporting/Dae
 @Service('trajectoryRasterWorker')
 export class TrajectoryRasterWorker extends BaseWorker<RasterQueueJobPayload> {
     protected readonly queueName = TRAJECTORY_RASTER_QUEUE_NAME;
+    protected readonly scopeKey: QueueScopeKey = 'trajectoryRasterization';
     private readonly buildStatusReporter: ReturnType<typeof createLifecycleStatusReporter<RasterQueueJobPayload>>;
 
     constructor(
         queueService: QueueService,
+        queueScopeLimitsRegistry: QueueScopeLimitsRegistry,
         private readonly trajectoryAutoPreviewClaimStore: TrajectoryAutoPreviewClaimStore,
         private readonly rasterizer: Rasterizer,
         daemonJobReporter: DaemonJobReporter
     ) {
-        super({ queueService });
+        super({ queueService, scopeLimitsRegistry: queueScopeLimitsRegistry });
         this.buildStatusReporter = createLifecycleStatusReporter<RasterQueueJobPayload>(
             {
                 started: daemonJobReporter.reportRasterStarted,

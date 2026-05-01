@@ -99,6 +99,35 @@ const colorForType = (typeName: string, typeIndex: number): [number, number, num
     return generateColor(typeIndex);
 };
 
+const normalizeExplicitColor = (value: unknown): [number, number, number] | null => {
+    if (!Array.isArray(value) || value.length < 3) {
+        return null;
+    }
+
+    const rgb = value.slice(0, 3).map((component) => Number(component));
+    if (rgb.some((component) => !Number.isFinite(component))) {
+        return null;
+    }
+
+    const scale = rgb.some((component) => component > 1) ? 255 : 1;
+    return [
+        Math.min(1, Math.max(0, rgb[0] / scale)),
+        Math.min(1, Math.max(0, rgb[1] / scale)),
+        Math.min(1, Math.max(0, rgb[2] / scale))
+    ];
+};
+
+const colorForAtom = (
+    atom: AtomisticExportData[string][number],
+    fallback: [number, number, number]
+): [number, number, number] => {
+    return normalizeExplicitColor(atom.color)
+        ?? normalizeExplicitColor(atom.structure_color)
+        ?? normalizeExplicitColor(atom.rgb)
+        ?? normalizeExplicitColor(atom.base_color)
+        ?? fallback;
+};
+
 const buildPointCloudDataDirect = async (exportData: AtomisticExportData): Promise<{
     positions: Float32Array;
     colors: Float32Array;
@@ -120,11 +149,12 @@ const buildPointCloudDataDirect = async (exportData: AtomisticExportData): Promi
 
     for (let entryIndex = 0; entryIndex < entries.length; entryIndex += 1) {
         const [typeName, atoms] = entries[entryIndex];
-        const color = colorForType(typeName, entryIndex);
+        const fallbackColor = colorForType(typeName, entryIndex);
 
         for (const atom of atoms) {
             const [x, y, z] = atom.pos;
             const base = offset * 3;
+            const color = colorForAtom(atom, fallbackColor);
             positions[base] = x;
             positions[base + 1] = y;
             positions[base + 2] = z;

@@ -66,7 +66,7 @@ export class AnalysisDataStore {
         const storedAt = new Date().toISOString();
         const key = this.createAnalysisExecutionDataKey(executionData.identity.analysisId);
         const serializedPayload = payload?.serializedPayload ?? serializeAnalysisExecutionData(executionData);
-        const compressedPayload = payload?.compressedPayload ?? compressSerializedAnalysisExecutionData(serializedPayload);
+        const compressedPayload = payload?.compressedPayload ?? (await compressSerializedAnalysisExecutionData(serializedPayload));
 
         await this.client.set(key, compressedPayload, 'EX', ANALYSIS_EXECUTION_DATA_TTL_SECONDS);
 
@@ -108,7 +108,7 @@ export class AnalysisDataStore {
         this.client.expire(reference.key, ANALYSIS_EXECUTION_DATA_TTL_SECONDS).catch(() => {});
 
         try {
-            const parsedPayload = parseStoredAnalysisExecutionData(payload);
+            const parsedPayload = await parseStoredAnalysisExecutionData(payload);
 
             return parsedPayload;
         } catch (error: unknown) {

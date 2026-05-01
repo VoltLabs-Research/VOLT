@@ -5,6 +5,35 @@ export type QueueScopeKey = keyof TeamClusterDaemonQueueScopeLimits;
 
 export type ScopeRelease = () => void;
 
+const normalizeQueueScopeLimits = (
+    queueScopeLimits: Partial<TeamClusterDaemonQueueScopeLimits>
+): TeamClusterDaemonQueueScopeLimits => ({
+    analysisProcessing: {
+        ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.analysisProcessing,
+        ...queueScopeLimits.analysisProcessing
+    },
+    artifactUpload: {
+        ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.artifactUpload,
+        ...queueScopeLimits.artifactUpload
+    },
+    trajectoryRasterization: {
+        ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.trajectoryRasterization,
+        ...queueScopeLimits.trajectoryRasterization
+    },
+    trajectoryGlbConversion: {
+        ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.trajectoryGlbConversion,
+        ...queueScopeLimits.trajectoryGlbConversion
+    },
+    cloudUpload: {
+        ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.cloudUpload,
+        ...queueScopeLimits.cloudUpload
+    },
+    trajectoryCompression: {
+        ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.trajectoryCompression,
+        ...queueScopeLimits.trajectoryCompression
+    }
+});
+
 export class QueueScopeLimitsRegistry {
     private queueScopeLimits: TeamClusterDaemonQueueScopeLimits = DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS;
 
@@ -12,7 +41,7 @@ export class QueueScopeLimitsRegistry {
     private readonly byTeam = new Map<string, number>();
 
     readonly apply = (queueScopeLimits: TeamClusterDaemonQueueScopeLimits): void => {
-        this.queueScopeLimits = queueScopeLimits;
+        this.queueScopeLimits = normalizeQueueScopeLimits(queueScopeLimits);
     };
 
     readonly getSnapshot = (): TeamClusterDaemonQueueScopeLimits => {

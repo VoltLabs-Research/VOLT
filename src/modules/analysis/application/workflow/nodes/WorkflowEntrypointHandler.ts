@@ -232,7 +232,7 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
             timestep
         });
 
-        const config = WorkflowEntrypointHandler.buildPluginConfig(preparedArgs);
+        const config = WorkflowEntrypointHandler.buildPluginConfig(preparedArgs, context);
         const frameDescriptor: PluginFrameDescriptor = {
             timestep: frame.timestep,
             natoms: frame.atomCount,
@@ -293,11 +293,17 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
         throw new Error('Persistent plugin invocation requires an entrypointScript');
     }
 
-    private static buildPluginConfig(preparedArgs: ResolvedWorkflowEntrypointArgs): Record<string, unknown> {
+    private static buildPluginConfig(
+        preparedArgs: ResolvedWorkflowEntrypointArgs,
+        context?: WorkflowExecutionContext
+    ): Record<string, unknown> {
         const trimmed = preparedArgs.resolvedArguments.trim();
         const base: Record<string, unknown> = {
             args: preparedArgs.args
         };
+        if (context?.userConfig && Object.keys(context.userConfig).length > 0) {
+            base.workflowConfig = context.userConfig;
+        }
         if (!trimmed) return base;
         try {
             const parsed = JSON.parse(trimmed) as unknown;

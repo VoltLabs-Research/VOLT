@@ -7,15 +7,15 @@ import {
 export const serializeAnalysisExecutionData = (executionData: AnalysisJobExecutionData): string =>
     JSON.stringify(executionData);
 
-export const compressSerializedAnalysisExecutionData = (serializedValue: string): string =>
+export const compressSerializedAnalysisExecutionData = (serializedValue: string): Promise<string> =>
     deflateJsonToBase64Gzip(serializedValue);
 
-export const inflateAnalysisExecutionData = (compressedValue: string): AnalysisJobExecutionData =>
+export const inflateAnalysisExecutionData = (compressedValue: string): Promise<AnalysisJobExecutionData> =>
     inflateBase64GzipJson<AnalysisJobExecutionData>(compressedValue);
 
-export const parseStoredAnalysisExecutionData = (storedValue: string): AnalysisJobExecutionData => {
+export const parseStoredAnalysisExecutionData = async (storedValue: string): Promise<AnalysisJobExecutionData> => {
     try {
-        return inflateAnalysisExecutionData(storedValue);
+        return await inflateAnalysisExecutionData(storedValue);
     } catch {
         return JSON.parse(storedValue) as AnalysisJobExecutionData;
     }

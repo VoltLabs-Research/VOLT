@@ -5,7 +5,11 @@ import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@/core/queues/appl
 import type { JobIdentity } from '@/support/contracts/job-identity';
 import { logAndSwallow } from '@/support/error/errorMessage';
 
-const SCOPE_DEFERRED_RETRY_MS = 500;
+const SCOPE_DEFERRED_RETRY_MS = 1_000;
+const SCOPE_DEFERRED_RETRY_JITTER_MS = 1_500;
+
+const nextScopeDeferredRetryMs = (): number =>
+    SCOPE_DEFERRED_RETRY_MS + Math.floor(Math.random() * SCOPE_DEFERRED_RETRY_JITTER_MS);
 
 export interface BaseWorkerDependencies {
     queueService: QueueService;
@@ -29,6 +33,9 @@ export abstract class BaseWorker<TPayload extends QueuePayload> {
         );
 
         this.worker.on('failed', (job, error) => {
+            if (error instanceof DelayedError) {
+                return;
+            }
             logger.error({ job, error }, 'Queue worker job failed');
         });
 
@@ -76,7 +83,7 @@ export abstract class BaseWorker<TPayload extends QueuePayload> {
 
         const release = registry.tryAcquire(scopeKey, trajectoryId, teamId);
         if (!release) {
-            await bullJob.moveToDelayed(Date.now() + SCOPE_DEFERRED_RETRY_MS, bullJob.token);
+            await bullJob.moveToDelayed(Date.now() + nextScopeDeferredRetryMs(), bullJob.token);
             throw new DelayedError();
         }
 

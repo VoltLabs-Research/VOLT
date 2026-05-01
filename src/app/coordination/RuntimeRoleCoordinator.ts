@@ -25,8 +25,45 @@ const DEFAULT_QUEUE_CONCURRENCY: TeamClusterDaemonQueueConcurrency = {
     analysis: 8,
     rasterizer: 5,
     glbPreprocessing: 8,
+    artifactUpload: 8,
     sshImport: 2
 };
+
+const normalizeQueueConcurrency = (
+    queueConcurrency: Partial<TeamClusterDaemonQueueConcurrency> | undefined
+): TeamClusterDaemonQueueConcurrency => ({
+    ...DEFAULT_QUEUE_CONCURRENCY,
+    ...queueConcurrency
+});
+
+const normalizeQueueScopeLimits = (
+    queueScopeLimits: Partial<TeamClusterDaemonQueueScopeLimits> | undefined
+): TeamClusterDaemonQueueScopeLimits => ({
+    analysisProcessing: {
+        ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.analysisProcessing,
+        ...queueScopeLimits?.analysisProcessing
+    },
+    artifactUpload: {
+        ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.artifactUpload,
+        ...queueScopeLimits?.artifactUpload
+    },
+    trajectoryRasterization: {
+        ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.trajectoryRasterization,
+        ...queueScopeLimits?.trajectoryRasterization
+    },
+    trajectoryGlbConversion: {
+        ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.trajectoryGlbConversion,
+        ...queueScopeLimits?.trajectoryGlbConversion
+    },
+    cloudUpload: {
+        ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.cloudUpload,
+        ...queueScopeLimits?.cloudUpload
+    },
+    trajectoryCompression: {
+        ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.trajectoryCompression,
+        ...queueScopeLimits?.trajectoryCompression
+    }
+});
 
 @Service('runtimeRoleCoordinator')
 export class RuntimeRoleCoordinator {
@@ -52,8 +89,8 @@ export class RuntimeRoleCoordinator {
     async initialize(runtimeConfig: TeamClusterDaemonRuntimeConfig): Promise<TeamClusterDaemonRuntimeConfig> {
         return this.runRoleOperation(async () => {
             this.snapshot = {
-                queueConcurrency: structuredClone(runtimeConfig.queueConcurrency),
-                queueScopeLimits: structuredClone(runtimeConfig.queueScopeLimits),
+                queueConcurrency: normalizeQueueConcurrency(runtimeConfig.queueConcurrency),
+                queueScopeLimits: normalizeQueueScopeLimits(runtimeConfig.queueScopeLimits),
                 roleConfig: structuredClone(runtimeConfig.roleConfig)
             };
 
@@ -73,8 +110,8 @@ export class RuntimeRoleCoordinator {
         queueConcurrency: TeamClusterDaemonQueueConcurrency,
         queueScopeLimits: TeamClusterDaemonQueueScopeLimits
     ): QueueSettingsSnapshot {
-        this.snapshot.queueConcurrency = structuredClone(queueConcurrency);
-        this.snapshot.queueScopeLimits = structuredClone(queueScopeLimits);
+        this.snapshot.queueConcurrency = normalizeQueueConcurrency(queueConcurrency);
+        this.snapshot.queueScopeLimits = normalizeQueueScopeLimits(queueScopeLimits);
         this.queueScopeLimitsRegistry.apply(this.snapshot.queueScopeLimits);
 
         if (this.computeWorkersRunning) {
@@ -132,10 +169,10 @@ export class RuntimeRoleCoordinator {
             return;
         }
 
-        const { analysis, rasterizer, glbPreprocessing, sshImport } = this.snapshot.queueConcurrency;
+        const { analysis, rasterizer, glbPreprocessing, artifactUpload, sshImport } = this.snapshot.queueConcurrency;
 
         this.analysisWorker.start(analysis);
-        this.artifactUploadWorker.start();
+        this.artifactUploadWorker.start(artifactUpload);
         this.pluginWarmupWorker.start();
         this.trajectoryRasterWorker.start(rasterizer);
         this.trajectoryGlbWorker.start(glbPreprocessing);

@@ -35,6 +35,10 @@ export interface DislocationExportData {
 
 export interface AtomisticAtom {
     pos: [number, number, number];
+    color?: [number, number, number] | [number, number, number, number];
+    structure_color?: [number, number, number] | [number, number, number, number];
+    rgb?: [number, number, number] | [number, number, number, number];
+    base_color?: [number, number, number] | [number, number, number, number];
 }
 
 export type AtomisticExportData = Record<string, AtomisticAtom[]>;

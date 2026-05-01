@@ -317,6 +317,31 @@ const DEFAULT_DISLOCATION_OPTIONS: Required<DislocationExportOptions> = {
     typeColors: {}
 };
 
+const generateEmptyDislocationGLB = (material: Required<DislocationExportOptions>['material']): Buffer => (
+    spatialAssembler.generateMeshGLB(
+        new Float32Array(0),
+        new Float32Array(0),
+        new Uint32Array(0),
+        false,
+        undefined,
+        {
+            minX: 0,
+            minY: 0,
+            minZ: 0,
+            maxX: 0,
+            maxY: 0,
+            maxZ: 0
+        },
+        {
+            baseColor: material.baseColor,
+            metallic: material.metallic,
+            roughness: material.roughness,
+            emissive: material.emissive,
+            doubleSided: true
+        }
+    )
+);
+
 export const exportDislocationArtifact = async (
     input: ExportExecutionInput,
     exportData: DislocationExportData,
@@ -331,7 +356,15 @@ export const exportDislocationArtifact = async (
     };
     const geometry = await processDislocations(exportData, resolvedOptions);
     if (!geometry) {
-        return false;
+        await stageExportBufferUpload(input, {
+            exporter: 'DislocationExporter',
+            bucket: ObjectBucketName.Models,
+            buffer: generateEmptyDislocationGLB(resolvedOptions.material),
+            contentType: 'model/gltf-binary',
+            objectPath,
+            ownerClusterId
+        });
+        return true;
     }
 
     const indexBuffer = geometry.vertexCount > 0 && geometry.vertexCount <= 65535

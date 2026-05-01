@@ -39,18 +39,24 @@ export class AnalysisDispatcher {
     ) {}
 
     private buildPlanCacheKey(request: WorkflowExecutionRequest): string {
-        const keyInput = JSON.stringify({
-            workflow: request.workflow,
-            userConfig: request.userConfig,
-            trajectoryFrames: request.trajectoryFrames,
-            nestedPlugins: request.nestedPlugins,
-            selectedFrameOnly: request.selectedFrameOnly,
-            selectedTimesteps: request.selectedTimesteps,
-            timestep: request.timestep,
-            trajectoryId: request.trajectoryId
-        });
-        const hash = createHash('sha1').update(keyInput).digest('hex');
-        return `analysis-plan:${request.pluginId}:${hash}`;
+        const hash = createHash('sha1');
+        const addSection = (name: string, value: unknown): void => {
+            hash.update(name);
+            hash.update('\0');
+            hash.update(JSON.stringify(value) ?? 'undefined');
+            hash.update('\0');
+        };
+
+        addSection('workflow', request.workflow);
+        addSection('userConfig', request.userConfig);
+        addSection('trajectoryFrames', request.trajectoryFrames);
+        addSection('nestedPlugins', request.nestedPlugins);
+        addSection('selectedFrameOnly', request.selectedFrameOnly);
+        addSection('selectedTimesteps', request.selectedTimesteps);
+        addSection('timestep', request.timestep);
+        addSection('trajectoryId', request.trajectoryId);
+
+        return `analysis-plan:${request.pluginId}:${hash.digest('hex')}`;
     }
 
     private async loadCachedPlan(cacheKey: string): Promise<WorkflowPlanResult | null> {
@@ -107,7 +113,7 @@ export class AnalysisDispatcher {
 
         try {
             const serializedExecutionData = serializeAnalysisExecutionData(executionData);
-            const executionDataCompressed = compressSerializedAnalysisExecutionData(serializedExecutionData);
+            const executionDataCompressed = await compressSerializedAnalysisExecutionData(serializedExecutionData);
             const executionDataReference = await this.analysisDataStore.store(executionData, {
                 serializedPayload: serializedExecutionData,
                 compressedPayload: executionDataCompressed
