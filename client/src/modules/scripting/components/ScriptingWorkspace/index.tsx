@@ -18,6 +18,7 @@ interface ScriptingWorkspaceProps {
     trajectoryId: string;
     notebookId?: string;
     onJupyterUrlChange?: (url: string | null) => void;
+    onNotebookIdChange?: (notebookId: string) => void;
 };
 
 interface WorkspaceStateProps {
@@ -77,7 +78,7 @@ const getContainerStagePendingDescription = (stage: NotebookContainerStage | nul
     }
 };
 
-const ScriptingWorkspace = ({ trajectoryId, notebookId, onJupyterUrlChange }: ScriptingWorkspaceProps) => {
+const ScriptingWorkspace = ({ trajectoryId, notebookId, onJupyterUrlChange, onNotebookIdChange }: ScriptingWorkspaceProps) => {
     useTip('notebook-workspace');
 
     const {
@@ -93,7 +94,7 @@ const ScriptingWorkspace = ({ trajectoryId, notebookId, onJupyterUrlChange }: Sc
         containerStage,
         handleDeploymentModalClose,
         retryStartJupyter
-    } = useScriptingWorkspace({ trajectoryId, notebookId });
+    } = useScriptingWorkspace({ trajectoryId, notebookId, onNotebookIdChange });
 
     useEffect(() => {
         onJupyterUrlChange?.(jupyterUrl);
