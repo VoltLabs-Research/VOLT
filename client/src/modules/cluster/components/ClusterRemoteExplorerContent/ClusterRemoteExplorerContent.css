@@ -26,7 +26,7 @@
     flex-direction: column;
     gap: 0.75rem;
     width: min(34rem, calc(100vw - 3rem));
-    max-height: min(32rem, calc(100vh - 3rem));
+    max-height: min(32rem, calc(100dvh - 3rem));
     padding: 0.75rem;
     overflow: hidden;
     background: var(--glass-bg);
@@ -102,7 +102,7 @@
         right: 0.5rem;
         bottom: 0.5rem;
         max-width: calc(100vw - 1rem);
-        max-height: calc(100vh - 1rem);
+        max-height: calc(100dvh - 1rem);
     }
 
     .cluster-remote-explorer-detail-actions > button {

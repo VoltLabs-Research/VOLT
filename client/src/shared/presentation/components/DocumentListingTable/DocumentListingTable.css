@@ -129,7 +129,7 @@
 }
 
 .document-listing-overlay-blur {
-    height: calc(100vh - 320px);
+    height: calc(100dvh - 320px);
     z-index: 100;
     background-color: var(--color-overlay);
 }
