@@ -91,7 +91,7 @@ const renderNotebookStartupTab = (notebookTab: Window, state: NotebookStartupWin
 
     document.body.replaceChildren();
     document.body.style.margin = '0';
-    document.body.style.minHeight = '100vh';
+    document.body.style.minHeight = '100dvh';
     document.body.style.display = 'flex';
     document.body.style.alignItems = 'center';
     document.body.style.justifyContent = 'center';

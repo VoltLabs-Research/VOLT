@@ -32,7 +32,7 @@ interface IdleCallbackHandle {
 const loadingShellStyles = {
     root: {
         width: 'min(1200px, calc(100vw - 2rem))',
-        height: 'min(780px, calc(100vh - 2rem))',
+        height: 'min(780px, calc(100dvh - 2rem))',
         padding: '1rem',
         borderRadius: '1.25rem',
         border: '1px solid var(--color-border-primary)',

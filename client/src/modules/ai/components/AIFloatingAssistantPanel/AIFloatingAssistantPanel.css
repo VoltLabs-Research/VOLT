@@ -5,7 +5,7 @@
 
 .ai-floating-assistant {
     width: min(420px, calc(100vw - 2rem));
-    height: min(640px, calc(100vh - 6rem));
+    height: min(640px, calc(100dvh - 6rem));
     border-radius: var(--radius-lg);
     overflow: hidden;
     z-index: 80;
@@ -71,7 +71,7 @@
         width: calc(100vw - max(1rem, env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px)));
         right: max(0.5rem, env(safe-area-inset-right, 0px));
         bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
-        height: min(72vh, calc(100vh - 5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+        height: min(72vh, calc(100dvh - 5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
     }
 }
 

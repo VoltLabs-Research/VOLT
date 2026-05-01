@@ -6,7 +6,7 @@
     --start-page-avatar-border: color-mix(in srgb, var(--color-contrast-high) 20%, transparent);
 
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     background: var(--color-bg);
     color: var(--start-page-foreground);
     display: flex;
