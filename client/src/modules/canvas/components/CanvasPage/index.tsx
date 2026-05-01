@@ -180,7 +180,8 @@ const CanvasPage = () => {
         searchParams,
         activeWorkspace,
         selectedNotebookId,
-        setActiveWorkspace
+        setActiveWorkspace,
+        setSelectedNotebookId
     } = useCanvasUrlState();
     const localGlbUrl = useLocalGlbStore((s) => s.localGlbUrl);
     const clearLocalGlb = useLocalGlbStore((s) => s.clearLocalGlb);
@@ -201,6 +202,14 @@ const CanvasPage = () => {
     const [downloadAnalysisModalTargetId, setDownloadAnalysisModalTargetId] = useState<string | null>(null);
     const isNarrowViewport = useViewportNarrow();
     const [rightDrawerOpen, setRightDrawerOpen] = useState(false);
+
+    const handleScriptingNotebookIdChange = useCallback((resolvedNotebookId: string) => {
+        if (!resolvedNotebookId || selectedNotebookId === resolvedNotebookId) {
+            return;
+        }
+
+        setSelectedNotebookId(resolvedNotebookId, { replace: true });
+    }, [selectedNotebookId, setSelectedNotebookId]);
 
     useEffect(() => {
         if (!isNarrowViewport || isScriptingWorkspace) {
@@ -448,6 +457,7 @@ const CanvasPage = () => {
                     trajectoryId={trajectoryId}
                     notebookId={selectedNotebookId}
                     onJupyterUrlChange={setScriptingJupyterUrl}
+                    onNotebookIdChange={handleScriptingNotebookIdChange}
                 />
             );
         }
