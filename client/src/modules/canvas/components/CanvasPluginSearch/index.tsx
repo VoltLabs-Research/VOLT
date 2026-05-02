@@ -6,7 +6,7 @@ import Surface from '@/shared/presentation/primitives/Surface';
 import Text from '@/shared/presentation/primitives/Text';
 import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
-import { autoUpdate, flip, FloatingPortal, offset, shift, useDismiss, useFloating, useInteractions } from '@floating-ui/react';
+import { autoUpdate, flip, FloatingPortal, offset, shift, size, useDismiss, useFloating, useInteractions } from '@floating-ui/react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 
@@ -46,7 +46,16 @@ const CanvasPluginSearch = () => {
         open: isOpen,
         onOpenChange: setIsOpen,
         whileElementsMounted: autoUpdate,
-        middleware: [offset(8), flip({ padding: 8 }), shift({ padding: 8 })]
+        middleware: [
+            offset(8),
+            flip({ padding: 8 }),
+            shift({ padding: 8 }),
+            size({
+                apply: ({ rects, elements }) => {
+                    elements.floating.style.width = `${rects.reference.width}px`;
+                }
+            })
+        ]
     });
 
     const dismiss = useDismiss(context);
@@ -196,10 +205,14 @@ const CanvasPluginSearch = () => {
                         {...getFloatingProps()}
                     >
                         {results.length === 0 ? (
-                            <EmptyState
-                                title={query ? 'No plugins match' : 'No plugins available'}
-                                description=''
-                            />
+                            <div className='canvas-plugin-search-empty d-flex items-center content-center'>
+                                <EmptyState
+                                    title={query ? 'No plugins match' : 'No plugins available'}
+                                    description={query
+                                        ? `Nothing matches “${query.trim()}”. Try a different name.`
+                                        : 'Install or publish a plugin to see it listed here.'}
+                                />
+                            </div>
                         ) : (
                             <div
                                 id={resultsListId}
