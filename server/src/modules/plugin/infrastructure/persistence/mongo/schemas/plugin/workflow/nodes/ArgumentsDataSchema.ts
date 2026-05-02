@@ -35,6 +35,26 @@ export const ArgumentVisibilityConditionSchema = new Schema({
     }]
 }, { _id: false });
 
+export const PluginReferenceArgumentMappingSchema = new Schema({
+    sourceArgument: {
+        type: String,
+        required: true
+    },
+    targetArgument: {
+        type: String,
+        required: true
+    },
+    targetPluginId: {
+        type: String
+    },
+    targetPluginKey: {
+        type: String
+    },
+    valueMap: {
+        type: Schema.Types.Mixed
+    }
+}, { _id: false });
+
 export const ArgumentDefinitionSchema = new Schema({
     argument: {
         type: String,
@@ -74,6 +94,7 @@ export const ArgumentDefinitionSchema = new Schema({
         type: Boolean,
         default: false
     },
+    pluginReferenceMappings: [PluginReferenceArgumentMappingSchema],
     min: {
         type: Number
     },

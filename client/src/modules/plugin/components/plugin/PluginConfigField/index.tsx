@@ -28,6 +28,32 @@ const getSelectionTitle = (selection: IPluginReferenceSelection, pluginOptions: 
     return pluginOptions.find((option) => option.value === selection.pluginId)?.title ?? selection.pluginId;
 };
 
+const getMappedTargetArguments = (
+    argument: IArgumentDefinition,
+    pluginId: string,
+    pluginKey: string
+): Set<string> => {
+    const mappedArguments = new Set<string>();
+
+    for (const mapping of argument.pluginReferenceMappings ?? []) {
+        const targetArgument = mapping.targetArgument?.trim();
+        if (!targetArgument) {
+            continue;
+        }
+
+        const targetPluginId = mapping.targetPluginId?.trim();
+        const targetPluginKey = mapping.targetPluginKey?.trim();
+        const matchesPluginId = targetPluginId ? targetPluginId === pluginId : true;
+        const matchesPluginKey = targetPluginKey ? targetPluginKey === pluginKey : true;
+
+        if (matchesPluginId && matchesPluginKey) {
+            mappedArguments.add(targetArgument);
+        }
+    }
+
+    return mappedArguments;
+};
+
 const PluginConfigField = ({
     argument,
     value,
@@ -70,9 +96,12 @@ const PluginConfigField = ({
     const selectionArguments = useMemo(() => {
         return Object.fromEntries(pluginReferenceValue.selections.map((selection) => [
             selection.pluginId,
-            getUserConfigurableArguments(getPluginArguments(selection.pluginId))
+            getUserConfigurableArguments(getPluginArguments(selection.pluginId)).filter((definition) => {
+                const pluginKey = publishedPlugins.find((plugin) => plugin._id === selection.pluginId)?.modifier?.key?.trim() ?? '';
+                return !getMappedTargetArguments(argument, selection.pluginId, pluginKey).has(definition.argument);
+            })
         ]));
-    }, [getPluginArguments, pluginReferenceValue.selections]);
+    }, [argument, getPluginArguments, pluginReferenceValue.selections, publishedPlugins]);
 
     const updateSelections = useCallback((nextSelections: IPluginReferenceSelection[]) => {
         onChange(argument.argument, {

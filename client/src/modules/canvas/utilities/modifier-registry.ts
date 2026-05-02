@@ -58,5 +58,7 @@ export const buildCanvasModifierOptions = (pluginModifiers: ResolvedModifier[]):
         pluginModifierId: modifier.pluginId
     }));
 
-    return [...builtInOptions, ...pluginOptions];
+    return [...builtInOptions, ...pluginOptions].sort((a, b) => (
+        a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
+    ));
 };
