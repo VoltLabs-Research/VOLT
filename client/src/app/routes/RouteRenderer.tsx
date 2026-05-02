@@ -50,13 +50,14 @@ const RoutePermissionGuard = ({ route, children }: RoutePermissionGuardProps) =>
     const { scopedPermissions, isScopeReady, isLoading: isPermissionsLoading } = useTeamPermissions();
     const permissions = route.requiredPermissions ?? [];
     const mode = route.permissionMode ?? RoutePermissionMode.Any;
+    const isDashboardRoute = route.path.startsWith(DASHBOARD_ROUTE_PREFIX);
 
     if (permissions.length === 0) {
         return <>{children}</>;
     }
 
     if (!hasHydratedSelection) {
-        return <Loader scale={0.6} label='Loading teams…' announce />;
+        return <Loader scale={0.6} label='Loading teams…' announce fillParent={isDashboardRoute} />;
     }
 
     if (!selectedTeamId) {
@@ -70,7 +71,7 @@ const RoutePermissionGuard = ({ route, children }: RoutePermissionGuardProps) =>
     }
 
     if (isPermissionsLoading) {
-        return <Loader scale={0.6} label='Checking access…' announce />;
+        return <Loader scale={0.6} label='Checking access…' announce fillParent={isDashboardRoute} />;
     }
 
     if (!isScopeReady) {
@@ -94,10 +95,11 @@ const RoutePermissionGuard = ({ route, children }: RoutePermissionGuardProps) =>
 
 const renderRouteElement = (route: RouteConfig) => {
     const Component = resolveRouteComponent(route);
+    const isDashboardRoute = route.path.startsWith(DASHBOARD_ROUTE_PREFIX);
 
     return (
         <RoutePermissionGuard route={route}>
-            <Suspense fallback={<Loader scale={0.6} label='Loading workspace…' announce />}>
+            <Suspense fallback={<Loader scale={0.6} label='Loading workspace…' announce fillParent={isDashboardRoute} />}>
                 <Component />
             </Suspense>
         </RoutePermissionGuard>
