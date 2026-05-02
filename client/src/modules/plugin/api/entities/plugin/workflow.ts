@@ -67,6 +67,14 @@ export interface IArgumentVisibilityCondition {
     values?: Array<string | number | boolean>;
 };
 
+export interface IPluginReferenceArgumentMapping {
+    sourceArgument: string;
+    targetArgument: string;
+    targetPluginId?: string;
+    targetPluginKey?: string;
+    valueMap?: Record<string, unknown>;
+};
+
 export interface IArgumentDefinition {
     argument: string;
     type: ArgumentType;
@@ -80,6 +88,7 @@ export interface IArgumentDefinition {
     pluginReferenceFilter?: string[];
     pluginReferenceFilterKeys?: string[];
     showPluginConfiguration?: boolean;
+    pluginReferenceMappings?: IPluginReferenceArgumentMapping[];
     min?: number;
     max?: number;
     step?: number;

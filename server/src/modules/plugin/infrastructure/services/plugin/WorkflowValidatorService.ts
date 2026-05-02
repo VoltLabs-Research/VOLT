@@ -455,6 +455,35 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
                 }
             }
 
+            if (definition.type === ArgumentType.PluginReference && definition.pluginReferenceMappings !== undefined) {
+                if (!Array.isArray(definition.pluginReferenceMappings)) {
+                    errors.push(`${argumentScope} pluginReferenceMappings must be an array`);
+                } else {
+                    definition.pluginReferenceMappings.forEach((mapping, mappingIndex) => {
+                        const mappingScope = `${argumentScope}.pluginReferenceMappings[${mappingIndex}]`;
+                        const sourceArgument = typeof mapping.sourceArgument === 'string'
+                            ? mapping.sourceArgument.trim()
+                            : '';
+                        const targetArgument = typeof mapping.targetArgument === 'string'
+                            ? mapping.targetArgument.trim()
+                            : '';
+                        if (!sourceArgument) {
+                            errors.push(`${mappingScope} sourceArgument is required`);
+                        } else if (!definitions.some((candidate) => candidate.argument === sourceArgument)) {
+                            errors.push(`${mappingScope} references unknown source argument "${sourceArgument}"`);
+                        }
+
+                        if (!targetArgument) {
+                            errors.push(`${mappingScope} targetArgument is required`);
+                        }
+
+                        if (mapping.valueMap !== undefined && (typeof mapping.valueMap !== 'object' || mapping.valueMap === null || Array.isArray(mapping.valueMap))) {
+                            errors.push(`${mappingScope} valueMap must be an object`);
+                        }
+                    });
+                }
+            }
+
             if (definition.listArguments?.length) {
                 this.validateArgumentDefinitions(definition.listArguments, errors, argumentScope);
             }

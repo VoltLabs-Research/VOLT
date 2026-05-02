@@ -1,6 +1,8 @@
 import * as THREE from 'three';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { getSlicePlaneVisualizationQuaternion, getSlicePlaneVisualizationSize, resolveSlicePlaneDefinition } from '@/modules/fractal/utilities/slice-plane';
+import { Theme } from '@/shared/presentation/hooks/use-theme';
+import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
 import type { SlicePlaneConfig, ModelWorldBounds } from '@/modules/fractal/types/configuration';
 import type { FC } from 'react';
 
@@ -11,6 +13,25 @@ interface SlicePlaneHelperProps {
 
 const SlicePlaneHelper: FC<SlicePlaneHelperProps> = ({ config, modelWorldBounds }) => {
     const slicePlane = useMemo(() => resolveSlicePlaneDefinition(config), [config]);
+    const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
+
+    useEffect(() => subscribeToAppTheme(setTheme), []);
+
+    const planeStyle = useMemo(() => {
+        if (theme === Theme.Light) {
+            return {
+                color: '#121212',
+                fillOpacity: 0.08,
+                edgeOpacity: 0.32
+            };
+        }
+
+        return {
+            color: '#ffffff',
+            fillOpacity: 0.06,
+            edgeOpacity: 0.2
+        };
+    }, [theme]);
 
     const planeQuaternion = useMemo(() => {
         if (!slicePlane) {
@@ -32,9 +53,9 @@ const SlicePlaneHelper: FC<SlicePlaneHelperProps> = ({ config, modelWorldBounds 
         <group position={slicePlane.point} quaternion={planeQuaternion}>
             <mesh geometry={planeGeometry}>
                 <meshBasicMaterial
-                    color="#ffffff"
+                    color={planeStyle.color}
                     transparent
-                    opacity={0.06}
+                    opacity={planeStyle.fillOpacity}
                     side={THREE.DoubleSide}
                     depthWrite={false}
                     toneMapped={false}
@@ -42,9 +63,9 @@ const SlicePlaneHelper: FC<SlicePlaneHelperProps> = ({ config, modelWorldBounds 
             </mesh>
             <lineSegments geometry={planeEdgesGeometry}>
                 <lineBasicMaterial
-                    color="#ffffff"
+                    color={planeStyle.color}
                     transparent
-                    opacity={0.2}
+                    opacity={planeStyle.edgeOpacity}
                     depthWrite={false}
                     toneMapped={false}
                 />
