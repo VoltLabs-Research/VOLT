@@ -1,5 +1,8 @@
 import type { ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
-import type { IArgumentVisibilityCondition } from '@/modules/plugin/api/entities/plugin/workflow';
+import type {
+    IArgumentVisibilityCondition,
+    IPluginReferenceArgumentMapping
+} from '@/modules/plugin/api/entities/plugin/workflow';
 
 export interface IComputedArgumentOption {
     key: string;
@@ -34,6 +37,7 @@ export interface IComputedArgumentDefinition {
     pluginReferenceFilter?: string[];
     pluginReferenceFilterKeys?: string[];
     showPluginConfiguration?: boolean;
+    pluginReferenceMappings?: IPluginReferenceArgumentMapping[];
     min?: number;
     max?: number;
     step?: number;

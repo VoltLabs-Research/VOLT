@@ -29,6 +29,14 @@ export interface ArgumentVisibilityCondition{
     values?: Array<string | number | boolean>;
 };
 
+export interface PluginReferenceArgumentMapping{
+    sourceArgument: string;
+    targetArgument: string;
+    targetPluginId?: string;
+    targetPluginKey?: string;
+    valueMap?: Record<string, unknown>;
+};
+
 export interface ArgumentDefinition{
     argument: string;
     type: ArgumentType;
@@ -42,6 +50,7 @@ export interface ArgumentDefinition{
     pluginReferenceFilter?: string[];
     pluginReferenceFilterKeys?: string[];
     showPluginConfiguration?: boolean;
+    pluginReferenceMappings?: PluginReferenceArgumentMapping[];
     min?: number;
     max?: number;
     step?: number;

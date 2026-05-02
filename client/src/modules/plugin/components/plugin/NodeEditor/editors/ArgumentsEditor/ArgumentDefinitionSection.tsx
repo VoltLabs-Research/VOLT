@@ -20,6 +20,7 @@ import { useCallback, useMemo, useState } from 'react';
 import type {
     IArgumentDefinition,
     IArgumentOption,
+    IPluginReferenceArgumentMapping,
     IArgumentVisibilityCondition
 } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { SelectOption } from '@/shared/presentation/primitives/Select';
@@ -121,6 +122,36 @@ const getVisibilityValueInput = (condition?: IArgumentVisibilityCondition): stri
     return String(condition.value);
 };
 
+const formatValueMapInput = (valueMap?: Record<string, unknown>): string => {
+    if (!valueMap) {
+        return '';
+    }
+
+    try {
+        return JSON.stringify(valueMap);
+    } catch {
+        return '';
+    }
+};
+
+const parseValueMapInput = (rawValue: string): Record<string, unknown> | undefined => {
+    const trimmedValue = rawValue.trim();
+    if (!trimmedValue) {
+        return undefined;
+    }
+
+    try {
+        const parsedValue = JSON.parse(trimmedValue) as unknown;
+        if (typeof parsedValue === 'object' && parsedValue !== null && !Array.isArray(parsedValue)) {
+            return parsedValue as Record<string, unknown>;
+        }
+    } catch {
+        return undefined;
+    }
+
+    return undefined;
+};
+
 const ArgumentDefinitionSection = ({
     arguments: argumentDefinitions,
     onAddArgument,
@@ -128,7 +159,7 @@ const ArgumentDefinitionSection = ({
     onUpdateArgument,
     level = 0
 }: ArgumentDefinitionSectionProps) => {
-    const { publishedPlugins } = usePluginSelectors();
+    const { publishedPlugins, getPluginArguments } = usePluginSelectors();
     const [expandedIndex, setExpandedIndex] = useState<number>(-1);
 
     const handleArgumentChange = useCallback((index: number, nextArgument: IArgumentDefinition) => {
@@ -240,6 +271,7 @@ const ArgumentDefinitionSection = ({
                     delete nextArgument.pluginReferenceFilter;
                     delete nextArgument.pluginReferenceFilterKeys;
                     delete nextArgument.showPluginConfiguration;
+                    delete nextArgument.pluginReferenceMappings;
                 }
 
                 if (nextType !== ArgumentType.NUMBER) {
@@ -458,6 +490,113 @@ const ArgumentDefinitionSection = ({
             listArguments: nextNestedArguments
         });
     }, [argumentDefinitions, handleArgumentChange]);
+
+    const createDefaultPluginReferenceMapping = useCallback((argumentIndex: number): IPluginReferenceArgumentMapping => {
+        const sourceArgument = argumentDefinitions.find((candidate, index) => {
+            return index !== argumentIndex && candidate.argument.trim().length > 0;
+        })?.argument ?? '';
+
+        return {
+            sourceArgument,
+            targetArgument: ''
+        };
+    }, [argumentDefinitions]);
+
+    const handlePluginReferenceMappingAdd = useCallback((argumentIndex: number) => {
+        const currentArgument = argumentDefinitions[argumentIndex];
+        const currentMappings = currentArgument.pluginReferenceMappings ?? [];
+
+        handleArgumentChange(argumentIndex, {
+            ...currentArgument,
+            pluginReferenceMappings: [
+                ...currentMappings,
+                createDefaultPluginReferenceMapping(argumentIndex)
+            ]
+        });
+    }, [argumentDefinitions, createDefaultPluginReferenceMapping, handleArgumentChange]);
+
+    const handlePluginReferenceMappingRemove = useCallback((argumentIndex: number, mappingIndex: number) => {
+        const currentArgument = argumentDefinitions[argumentIndex];
+        const nextMappings = (currentArgument.pluginReferenceMappings ?? [])
+            .filter((_, index) => index !== mappingIndex);
+
+        handleArgumentChange(argumentIndex, {
+            ...currentArgument,
+            pluginReferenceMappings: nextMappings.length > 0 ? nextMappings : undefined
+        });
+    }, [argumentDefinitions, handleArgumentChange]);
+
+    const handlePluginReferenceMappingUpdate = useCallback((
+        argumentIndex: number,
+        mappingIndex: number,
+        patch: Partial<IPluginReferenceArgumentMapping>
+    ) => {
+        const currentArgument = argumentDefinitions[argumentIndex];
+        const nextMappings = (currentArgument.pluginReferenceMappings ?? [])
+            .map((mapping, index) => {
+                if (index !== mappingIndex) {
+                    return mapping;
+                }
+
+                const nextMapping: IPluginReferenceArgumentMapping = {
+                    ...mapping,
+                    ...patch
+                };
+
+                if (!nextMapping.targetPluginId) {
+                    delete nextMapping.targetPluginId;
+                }
+                if (!nextMapping.targetPluginKey) {
+                    delete nextMapping.targetPluginKey;
+                }
+                if (!nextMapping.valueMap) {
+                    delete nextMapping.valueMap;
+                }
+
+                return nextMapping;
+            });
+
+        handleArgumentChange(argumentIndex, {
+            ...currentArgument,
+            pluginReferenceMappings: nextMappings
+        });
+    }, [argumentDefinitions, handleArgumentChange]);
+
+    const getTargetArgumentOptions = useCallback((mapping: IPluginReferenceArgumentMapping): SelectOption[] => {
+        const targetPluginIds = new Set<string>();
+        const targetPluginId = mapping.targetPluginId?.trim();
+        const targetPluginKey = mapping.targetPluginKey?.trim();
+
+        if (targetPluginId) {
+            targetPluginIds.add(targetPluginId);
+        }
+
+        if (targetPluginKey) {
+            for (const plugin of publishedPlugins) {
+                if (plugin.modifier?.key?.trim() === targetPluginKey) {
+                    targetPluginIds.add(plugin._id);
+                }
+            }
+        }
+
+        const optionsByArgument = new Map<string, SelectOption>();
+        for (const pluginId of targetPluginIds) {
+            for (const definition of getPluginArguments(pluginId)) {
+                if (!definition.argument?.trim() || optionsByArgument.has(definition.argument)) {
+                    continue;
+                }
+
+                optionsByArgument.set(definition.argument, {
+                    value: definition.argument,
+                    title: definition.label?.trim()
+                        ? `${definition.label} (${definition.argument})`
+                        : definition.argument
+                });
+            }
+        }
+
+        return Array.from(optionsByArgument.values());
+    }, [getPluginArguments, publishedPlugins]);
 
     return (
         <div className='argument-definition-list'>
@@ -792,6 +931,124 @@ const ArgumentDefinitionSection = ({
                                                 onChange={createArgumentFieldHandler(index, 'showPluginConfiguration')}
                                             />
                                         </FormSection>
+                                        <h4 className='argument-row-subheading text-eyebrow'>Argument Mappings</h4>
+                                        <div className='argument-row-subblock'>
+                                            <div className='d-flex column gap-05'>
+                                                {(argument.pluginReferenceMappings ?? []).map((mapping, mappingIndex) => {
+                                                    const targetArgumentOptions = getTargetArgumentOptions(mapping);
+                                                    const hasCurrentTargetArgument = targetArgumentOptions.some((option) => option.value === mapping.targetArgument);
+                                                    const targetOptions = hasCurrentTargetArgument || !mapping.targetArgument?.trim()
+                                                        ? targetArgumentOptions
+                                                        : [{
+                                                            value: mapping.targetArgument,
+                                                            title: mapping.targetArgument
+                                                        }, ...targetArgumentOptions];
+
+                                                    return (
+                                                        <div key={`${level}-${index}-mapping-${mappingIndex}`} className='argument-row-subblock argument-row-nested'>
+                                                            <div className='d-flex content-between items-center gap-05 mb-05'>
+                                                                <span className='font-size-1 color-muted'>Mapping {mappingIndex + 1}</span>
+                                                                <button
+                                                                    type='button'
+                                                                    className='argument-row-delete'
+                                                                    onClick={() => handlePluginReferenceMappingRemove(index, mappingIndex)}
+                                                                    aria-label={`Delete mapping ${mappingIndex + 1}`}
+                                                                    title='Delete mapping'
+                                                                >
+                                                                    <Trash2 size={14} aria-hidden='true' />
+                                                                </button>
+                                                            </div>
+                                                            <FormFieldRHF
+                                                                variant='inline'
+                                                                label='Source'
+                                                                name={`plugin-reference-mapping-source-${level}-${index}-${mappingIndex}`}
+                                                                fieldType='select'
+                                                                value={mapping.sourceArgument}
+                                                                onChange={(event) => handlePluginReferenceMappingUpdate(index, mappingIndex, {
+                                                                    sourceArgument: event.target.value
+                                                                })}
+                                                                options={visibilityReferenceOptions}
+                                                            />
+                                                            <FormFieldRHF
+                                                                variant='inline'
+                                                                label='Target plugin'
+                                                                name={`plugin-reference-mapping-plugin-${level}-${index}-${mappingIndex}`}
+                                                                fieldType='select'
+                                                                value={mapping.targetPluginId ?? ''}
+                                                                onChange={(event) => handlePluginReferenceMappingUpdate(index, mappingIndex, {
+                                                                    targetPluginId: event.target.value || undefined
+                                                                })}
+                                                                options={[{
+                                                                    value: '',
+                                                                    title: 'Any plugin'
+                                                                }, ...allowedPluginOptions]}
+                                                            />
+                                                            <FormFieldRHF
+                                                                variant='inline'
+                                                                label='Target key'
+                                                                name={`plugin-reference-mapping-key-${level}-${index}-${mappingIndex}`}
+                                                                fieldType='select'
+                                                                value={mapping.targetPluginKey ?? ''}
+                                                                onChange={(event) => handlePluginReferenceMappingUpdate(index, mappingIndex, {
+                                                                    targetPluginKey: event.target.value || undefined
+                                                                })}
+                                                                options={[{
+                                                                    value: '',
+                                                                    title: 'Any key'
+                                                                }, ...allowedPluginKeyOptions]}
+                                                            />
+                                                            {targetOptions.length > 0 ? (
+                                                                <FormFieldRHF
+                                                                    variant='inline'
+                                                                    label='Target argument'
+                                                                    name={`plugin-reference-mapping-target-${level}-${index}-${mappingIndex}`}
+                                                                    fieldType='select'
+                                                                    value={mapping.targetArgument}
+                                                                    onChange={(event) => handlePluginReferenceMappingUpdate(index, mappingIndex, {
+                                                                        targetArgument: event.target.value
+                                                                    })}
+                                                                    options={targetOptions}
+                                                                />
+                                                            ) : (
+                                                                <FormFieldRHF
+                                                                    variant='inline'
+                                                                    label='Target argument'
+                                                                    name={`plugin-reference-mapping-target-${level}-${index}-${mappingIndex}`}
+                                                                    fieldType='input'
+                                                                    value={mapping.targetArgument}
+                                                                    onChange={(event) => handlePluginReferenceMappingUpdate(index, mappingIndex, {
+                                                                        targetArgument: event.target.value
+                                                                    })}
+                                                                    placeholder='crystalStructure'
+                                                                />
+                                                            )}
+                                                            <FormFieldRHF
+                                                                variant='inline'
+                                                                label='Value map'
+                                                                name={`plugin-reference-mapping-value-map-${level}-${index}-${mappingIndex}`}
+                                                                fieldType='textarea'
+                                                                value={formatValueMapInput(mapping.valueMap)}
+                                                                onChange={(event) => {
+                                                                    const parsedValueMap = parseValueMapInput(event.target.value);
+                                                                    handlePluginReferenceMappingUpdate(index, mappingIndex, {
+                                                                        valueMap: parsedValueMap
+                                                                    });
+                                                                }}
+                                                                placeholder='{"fcc":"FCC"}'
+                                                                rows={2}
+                                                            />
+                                                        </div>
+                                                    );
+                                                })}
+                                                <DashedActionBox
+                                                    icon={<Plus size={14} aria-hidden='true' />}
+                                                    label='Add Mapping'
+                                                    size='sm'
+                                                    block
+                                                    onClick={() => handlePluginReferenceMappingAdd(index)}
+                                                />
+                                            </div>
+                                        </div>
                                     </>
                                 )}
                             </div>

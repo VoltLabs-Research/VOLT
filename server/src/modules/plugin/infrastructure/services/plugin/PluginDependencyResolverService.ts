@@ -1,5 +1,8 @@
 import Plugin, { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
-import type { ArgumentDefinition } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
+import type {
+    ArgumentDefinition,
+    PluginReferenceArgumentMapping
+} from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
 import { ArgumentType } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
@@ -26,6 +29,9 @@ interface PluginReferenceExecutionRequest {
 interface PluginReferenceValidationTarget extends PluginReferenceExecutionRequest {
     allowedPluginIds: string[];
     allowedPluginKeys: string[];
+    definition: ArgumentDefinition;
+    definitions: ArgumentDefinition[];
+    scopeValues: Record<string, unknown>;
 }
 
 interface PluginReferenceValidationResult {
@@ -76,6 +82,46 @@ const normalizeStringList = (value: string[] | undefined): string[] => {
         .filter(Boolean)));
 };
 
+const normalizePluginReferenceMappings = (
+    mappings: PluginReferenceArgumentMapping[] | undefined
+): PluginReferenceArgumentMapping[] => {
+    if (!Array.isArray(mappings)) {
+        return [];
+    }
+
+    return mappings.flatMap((mapping) => {
+        if (!mapping || typeof mapping !== 'object') {
+            return [];
+        }
+
+        const sourceArgument = typeof mapping.sourceArgument === 'string'
+            ? mapping.sourceArgument.trim()
+            : '';
+        const targetArgument = typeof mapping.targetArgument === 'string'
+            ? mapping.targetArgument.trim()
+            : '';
+
+        if (!sourceArgument || !targetArgument) {
+            return [];
+        }
+
+        const targetPluginId = typeof mapping.targetPluginId === 'string'
+            ? mapping.targetPluginId.trim()
+            : '';
+        const targetPluginKey = typeof mapping.targetPluginKey === 'string'
+            ? mapping.targetPluginKey.trim()
+            : '';
+
+        return [{
+            sourceArgument,
+            targetArgument,
+            ...(targetPluginId ? { targetPluginId } : {}),
+            ...(targetPluginKey ? { targetPluginKey } : {}),
+            ...(isRecord(mapping.valueMap) ? { valueMap: mapping.valueMap } : {})
+        }];
+    });
+};
+
 const getPluginModifierKey = (plugin: Plugin): string => {
     const modifierKey = plugin.props.modifier?.key;
     if (typeof modifierKey === 'string') {
@@ -85,6 +131,68 @@ const getPluginModifierKey = (plugin: Plugin): string => {
     const modifierNode = plugin.props.workflow.props.nodes.find((node) => node.type === WorkflowNodeType.Modifier);
     const workflowModifierKey = modifierNode?.data.modifier?.key;
     return typeof workflowModifierKey === 'string' ? workflowModifierKey.trim() : '';
+};
+
+const resolveMappingSourceValue = (
+    mapping: PluginReferenceArgumentMapping,
+    definitions: ArgumentDefinition[],
+    scopeValues: Record<string, unknown>
+): unknown => {
+    const sourceDefinition = definitions.find((definition) => definition.argument === mapping.sourceArgument);
+    const value = sourceDefinition
+        ? resolveArgumentExecutionValue(sourceDefinition, scopeValues[mapping.sourceArgument])
+        : scopeValues[mapping.sourceArgument];
+
+    if (!isRecord(mapping.valueMap)) {
+        return value;
+    }
+
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+        const valueMapKey = String(value);
+        if (Object.prototype.hasOwnProperty.call(mapping.valueMap, valueMapKey)) {
+            return mapping.valueMap[valueMapKey];
+        }
+    }
+
+    return value;
+};
+
+const applyPluginReferenceMappings = (
+    target: {
+        pluginId: string;
+        config: Record<string, unknown>;
+        definition: ArgumentDefinition;
+        definitions: ArgumentDefinition[];
+        scopeValues: Record<string, unknown>;
+    },
+    referencedPlugin?: Plugin
+): Record<string, unknown> => {
+    const mappings = normalizePluginReferenceMappings(target.definition.pluginReferenceMappings);
+    if (mappings.length === 0) {
+        return target.config;
+    }
+
+    const pluginKey = referencedPlugin ? getPluginModifierKey(referencedPlugin) : '';
+    const config = { ...target.config };
+
+    for (const mapping of mappings) {
+        if (mapping.targetPluginId && mapping.targetPluginId !== target.pluginId) {
+            continue;
+        }
+
+        if (mapping.targetPluginKey && mapping.targetPluginKey !== pluginKey) {
+            continue;
+        }
+
+        const mappedValue = resolveMappingSourceValue(mapping, target.definitions, target.scopeValues);
+        if (mappedValue === undefined) {
+            continue;
+        }
+
+        config[mapping.targetArgument] = mappedValue;
+    }
+
+    return config;
 };
 
 const collectArgumentPluginReferenceExecutions = (
@@ -106,7 +214,13 @@ const collectArgumentPluginReferenceExecutions = (
             results.push({
                 referencePath: currentPath,
                 pluginId: selection.pluginId,
-                config: selection.config ?? {}
+                config: applyPluginReferenceMappings({
+                    pluginId: selection.pluginId,
+                    config: selection.config ?? {},
+                    definition,
+                    definitions,
+                    scopeValues
+                })
             });
         }
         return;
@@ -166,7 +280,10 @@ const collectArgumentPluginReferenceValidationTargets = (
                 pluginId: selection.pluginId,
                 config: selection.config ?? {},
                 allowedPluginIds: normalizeStringList(definition.pluginReferenceFilter),
-                allowedPluginKeys: normalizeStringList(definition.pluginReferenceFilterKeys)
+                allowedPluginKeys: normalizeStringList(definition.pluginReferenceFilterKeys),
+                definition,
+                definitions,
+                scopeValues
             });
         }
         return;
@@ -342,7 +459,7 @@ export class PluginDependencyResolverService {
             executions: targets.map((target) => ({
                 referencePath: target.referencePath,
                 pluginId: target.pluginId,
-                config: target.config
+                config: applyPluginReferenceMappings(target, pluginsById.get(target.pluginId))
             })),
             plugins: validPlugins,
             errors
