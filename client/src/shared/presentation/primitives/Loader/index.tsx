@@ -4,6 +4,7 @@ import { useId } from 'react';
 interface LoaderProps {
     scale: number;
     isFixed?: boolean;
+    fillParent?: boolean;
     className?: string;
     label?: string;
     announce?: boolean;
@@ -13,6 +14,7 @@ interface LoaderProps {
 const Loader = ({
     scale,
     isFixed = true,
+    fillParent = false,
     className = '',
     label,
     announce = false,
@@ -33,8 +35,14 @@ const Loader = ({
         };
     }
 
+    const positioningClass = fillParent
+        ? 'loader-fill-parent'
+        : isFixed
+            ? 'p-fixed inset-0'
+            : '';
+
     return (
-        <div className={`d-flex flex-center ${isFixed ? 'p-fixed inset-0' : ''} ${className}`} {...accessibilityProps}>
+        <div className={`d-flex flex-center ${positioningClass} ${className}`} {...accessibilityProps}>
             <div className='d-flex column items-center gap-2 loader-content'>
                 <div className='p-relative loader-visual' style={{ transform: `scale(${scale})` }}>
                     {loaderItems.map((item) => (
