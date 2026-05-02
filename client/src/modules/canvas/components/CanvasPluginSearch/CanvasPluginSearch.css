@@ -38,9 +38,14 @@
 }
 
 .canvas-plugin-search-results {
-    width: min(360px, calc(100vw - 1rem));
     max-height: 60vh;
+    min-height: 9rem;
     z-index: var(--z-floating);
+}
+
+.canvas-plugin-search-empty {
+    min-height: 9rem;
+    padding: 1rem;
 }
 
 .canvas-plugin-search-item {
