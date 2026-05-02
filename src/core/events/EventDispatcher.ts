@@ -9,16 +9,17 @@ export class EventDispatcher {
 
     async publish(event: IDomainEvent): Promise<void> {
         const handlers = this.handlers.get(event.name);
-        if (!handlers || handlers.size === 0) {
-            return;
-        }
+        if (!handlers || handlers.size === 0) return;
 
         await Promise.all([...handlers].map((handler) => Promise.resolve(handler(event))));
     }
 
     subscribe(eventName: string, handler: EventHandler): void {
-        const handlers = this.handlers.get(eventName) ?? new Set<EventHandler>();
+        let handlers = this.handlers.get(eventName);
+        if (!handlers) {
+            handlers = new Set<EventHandler>();
+            this.handlers.set(eventName, handlers);
+        }
         handlers.add(handler);
-        this.handlers.set(eventName, handlers);
     }
 }

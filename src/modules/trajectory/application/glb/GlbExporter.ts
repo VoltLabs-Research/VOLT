@@ -83,7 +83,7 @@ export class GlbExporter {
 
             try {
                 await queueAutoPreviewRasterization(this.trajectoryRasterQueue, input);
-            } catch (error) {
+            } catch {
                 logger.warn('Failed to enqueue auto-preview rasterization for generated GLB');
             }
         });

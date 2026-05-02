@@ -12,7 +12,7 @@ export interface TeamClusterServiceExposure {
     containerId?: string;
     containerName?: string;
     containerPort?: number;
-};
+}
 
 export const TeamClusterServiceExposureAccessMode = Object.freeze({
     Http: 'http',

@@ -407,8 +407,12 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
     }
 
     private static serializePluginResult(result: unknown): string {
-        if (result === undefined || result === null) return '';
-        if (typeof result === 'string') return result;
+        if (result === undefined || result === null) {
+            return '';
+        }
+        if (typeof result === 'string') {
+            return result;
+        }
         try {
             return JSON.stringify(result);
         } catch {
@@ -417,11 +421,15 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
     }
 
     private static coerceJsonCompatible(value: unknown): object | string | number | boolean | null {
-        if (value === null || value === undefined) return null;
-        if (typeof value === 'object') return value;
-        if (typeof value === 'string') return value;
-        if (typeof value === 'number') return value;
-        if (typeof value === 'boolean') return value;
+        if (value === null || value === undefined) {
+            return null;
+        }
+        if (typeof value === 'object'
+            || typeof value === 'string'
+            || typeof value === 'number'
+            || typeof value === 'boolean') {
+            return value;
+        }
         return String(value);
     }
 

@@ -11,10 +11,6 @@ import { RuntimeEventBroker } from '@/core/reverse-channel/application/RuntimeEv
 import { RedisConnection } from '@/core/storage/infrastructure/redis/RedisConnection';
 import { planAnalysisWorkflow } from '@/modules/analysis/application/analysis/plan-analysis-workflow';
 import { createHash } from 'node:crypto';
-
-const PLAN_CACHE_TTL_SECONDS = 600;
-
-type WorkflowPlanResult = NonNullable<Awaited<ReturnType<WorkflowEngine['planExecutionStrategy']>>>;
 import type {
     AnalysisExecutionDataReference,
     AnalysisStartRequestWithTrace,
@@ -22,6 +18,10 @@ import type {
     QueuedJobNotification
 } from '@/modules/analysis/contracts/http-analysis';
 import type { AnalysisDataStore } from '@/modules/analysis/infrastructure/storage/AnalysisDataStore';
+
+const PLAN_CACHE_TTL_SECONDS = 600;
+
+type WorkflowPlanResult = NonNullable<Awaited<ReturnType<WorkflowEngine['planExecutionStrategy']>>>;
 
 interface StoredExecutionDataResult {
     executionDataCompressed?: string;

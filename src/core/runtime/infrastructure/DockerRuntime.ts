@@ -80,9 +80,6 @@ export class DockerRuntime {
         private readonly eventBroker: RuntimeEventBroker,
         private readonly config: DaemonConfig
     ) {
-        const socketPath = process.env.DOCKER_HOST
-            ? undefined
-            : '/var/run/docker.sock';
         const dockerHost = process.env.DOCKER_HOST;
 
         if (dockerHost && dockerHost.startsWith('tcp://')) {
@@ -94,7 +91,7 @@ export class DockerRuntime {
             });
         } else {
             this.docker = new Docker({
-                socketPath: socketPath ?? '/var/run/docker.sock',
+                socketPath: '/var/run/docker.sock',
                 timeout: 60_000
             });
         }
@@ -143,12 +140,8 @@ export class DockerRuntime {
         return { exposedPorts, portBindings };
     }
 
-    private getEnvFromRequest(input: CreateContainerRequest){
-        const env: string[] = [];
-        for(const entry of input.env ?? []){
-            env.push(`${entry.key}=${entry.value}`);
-        }
-        return env;
+    private getEnvFromRequest(input: CreateContainerRequest): string[] {
+        return (input.env ?? []).map((entry) => `${entry.key}=${entry.value}`);
     }
 
     async createContainer(input: CreateContainerRequest): Promise<Docker.ContainerInspectInfo> {
@@ -232,13 +225,9 @@ export class DockerRuntime {
 
         if (action === 'start') {
             await container.start();
-        }
-
-        if (action === 'stop') {
+        } else if (action === 'stop') {
             await container.stop();
-        }
-
-        if (action === 'restart') {
+        } else if (action === 'restart') {
             await container.restart();
         }
 
@@ -587,7 +576,7 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
         }
     };
 
-    private execute(
+    private async execute(
         containerId: string,
         command: string[],
         stdin?: string,
@@ -600,19 +589,19 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
         } = options;
         const hasStdin = stdin !== undefined;
 
-        return withTimeout(() => this.runExec(containerId, command, stdin, hasStdin), {
-            operation: operationName,
-            timeoutMs,
-            payload: {
-                command: command.join(' '),
-                containerId
-            },
-            traceContext
-        }).then((output) => {
-            return output;
-        }).catch((error: Error) => {
+        try {
+            return await withTimeout(() => this.runExec(containerId, command, stdin, hasStdin), {
+                operation: operationName,
+                timeoutMs,
+                payload: {
+                    command: command.join(' '),
+                    containerId
+                },
+                traceContext
+            });
+        } catch (error) {
             logger.warn('Docker exec operation failed');
             throw error;
-        });
+        }
     }
-};
+}

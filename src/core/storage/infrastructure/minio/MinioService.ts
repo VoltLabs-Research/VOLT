@@ -120,10 +120,7 @@ export class MinioService implements LocalClusterObjectStoreGateway {
         const maxKeys = requestedLimit + 1;
         const collectedObjects: ClusterObjectListEntry[] = [];
         let continuationToken = '';
-        let startAfter = input.cursor;
-        if (startAfter === undefined) {
-            startAfter = '';
-        }
+        let startAfter = input.cursor ?? '';
 
         while (collectedObjects.length < maxKeys) {
             const result = await this.client.listObjectsV2Query(
@@ -190,7 +187,7 @@ export class MinioService implements LocalClusterObjectStoreGateway {
 
         do {
             const result = await this.client.listObjectsV2Query(
-                this.resolveBucket(bucket),
+                resolvedBucket,
                 prefix,
                 continuationToken,
                 '',
@@ -238,4 +235,4 @@ export class MinioService implements LocalClusterObjectStoreGateway {
             lastModified: item.lastModified
         };
     }
-};
+}

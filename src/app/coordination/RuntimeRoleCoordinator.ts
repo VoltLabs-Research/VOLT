@@ -136,7 +136,9 @@ export class RuntimeRoleCoordinator {
             && this.roleRunsComputeWorkers(previousEffectiveRole)
             && !this.roleRunsComputeWorkers(nextRoleConfig.desiredRole);
 
-        if (isComputeDrain) await this.stopComputeWorkers();
+        if (isComputeDrain) {
+            await this.stopComputeWorkers();
+        }
 
         if (this.roleRunsComputeWorkers(nextRoleConfig.desiredRole)) {
             this.startComputeWorkers();
@@ -182,9 +184,7 @@ export class RuntimeRoleCoordinator {
     }
 
     async stopComputeWorkers(): Promise<void> {
-        if (!this.computeWorkersRunning) {
-            return;
-        }
+        if (!this.computeWorkersRunning) return;
 
         await Promise.all([
             this.analysisWorker.stop(),

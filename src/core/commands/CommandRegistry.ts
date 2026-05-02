@@ -83,10 +83,7 @@ export class CommandRegistry {
 
         const handler = this.handlers.get(commandName);
         if (!handler) {
-            throw ApplicationError.notFound(
-                'COMMAND_NOT_REGISTERED',
-                `Command not registered: ${commandName}`
-            );
+            throw ApplicationError.notFound('COMMAND_NOT_REGISTERED', `Command not registered: ${commandName}`);
         }
 
         return handler(payload);

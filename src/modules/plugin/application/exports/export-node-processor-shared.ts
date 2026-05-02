@@ -5,8 +5,6 @@ import type { ExportExecutionInput, ExporterEntry, ExporterName } from '@/module
 import type { MsgpackObject, MsgpackValue } from '@/support/serialization/msgpack-value';
 import type { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
 
-
-
 export const YIELD_INTERVAL = 50_000;
 
 export const yieldToEventLoop = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));

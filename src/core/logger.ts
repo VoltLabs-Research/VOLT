@@ -13,9 +13,9 @@ const supportedLogLevels = new Set<pino.LevelWithSilent>([
 ]);
 
 function resolveLogLevel(value: string | undefined): pino.LevelWithSilent {
-    const normalized = value?.trim().toLowerCase();
-    if (normalized && supportedLogLevels.has(normalized as pino.LevelWithSilent)) {
-        return normalized as pino.LevelWithSilent;
+    const normalized = value?.trim().toLowerCase() as pino.LevelWithSilent | undefined;
+    if (normalized && supportedLogLevels.has(normalized)) {
+        return normalized;
     }
 
     return DEFAULT_LOG_LEVEL;

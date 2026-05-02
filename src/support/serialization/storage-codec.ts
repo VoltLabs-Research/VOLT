@@ -8,30 +8,26 @@ interface ZstdStreamResult {
 
 const ZSTD_NOT_INSTALLED_MESSAGE = 'zstd binary is not installed in the runtime image';
 
-const rejectSpawnError = (reject: (error: Error) => void) => {
-    return (error: NodeJS.ErrnoException): void => {
-        if (error.code === 'ENOENT') {
-            reject(new Error(ZSTD_NOT_INSTALLED_MESSAGE));
-            return;
-        }
+const rejectSpawnError = (reject: (error: Error) => void) => (error: NodeJS.ErrnoException): void => {
+    if (error.code === 'ENOENT') {
+        reject(new Error(ZSTD_NOT_INSTALLED_MESSAGE));
+        return;
+    }
 
-        reject(error);
-    };
+    reject(error);
 };
 
 const resolveZstdExit = (
     resolve: () => void,
     reject: (error: Error) => void,
     stderr: string
-) => {
-    return (code: number | null): void => {
-        if (code === 0) {
-            resolve();
-            return;
-        }
+) => (code: number | null): void => {
+    if (code === 0) {
+        resolve();
+        return;
+    }
 
-        reject(new Error(stderr || `zstd exited with code ${code}`));
-    };
+    reject(new Error(stderr || `zstd exited with code ${code}`));
 };
 
 const createZstdStream = (args: string[], input: Readable | null = null): ZstdStreamResult => {
@@ -96,10 +92,8 @@ export const compressFileWithZstd = (sourcePath: string, outputPath: string): Pr
 
 export const isZstdObjectKey = (objectKey: string): boolean => objectKey.endsWith('.zst');
 
-export const toVtrObjectKey = (trajectoryId: string): string => {
-    return `trajectory-${trajectoryId}/trajectory.vtr`;
-};
+export const toVtrObjectKey = (trajectoryId: string): string =>
+    `trajectory-${trajectoryId}/trajectory.vtr`;
 
-export const toVtrDictObjectKey = (clusterId: string, version: number): string => {
-    return `${clusterId}/v${version}.dict`;
-};
+export const toVtrDictObjectKey = (clusterId: string, version: number): string =>
+    `${clusterId}/v${version}.dict`;

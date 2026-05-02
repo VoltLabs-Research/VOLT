@@ -46,7 +46,7 @@ export class MetricsService {
             totalIOPS: Math.round(rIO_sec ?? 0) + Math.round(wIO_sec ?? 0)
         };
 
-        const snapshot: MetricsSnapshot = {
+        return {
             timestamp: new Date().toISOString(),
             hostname: os.hostname(),
             uptimeSeconds: os.uptime(),
@@ -60,8 +60,6 @@ export class MetricsService {
             cloudLatencyMs: cloudMetrics.cloudLatencyMs,
             connectedToCloud: cloudMetrics.connectedToCloud
         };
-
-        return snapshot;
     }
 
     private async collectDiskUsage(): Promise<DiskUsageSnapshot> {

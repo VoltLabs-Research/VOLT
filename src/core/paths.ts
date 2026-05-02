@@ -1,8 +1,7 @@
 import os from 'node:os';
 import path from 'node:path';
 
-const DEFAULT_DATA_DIR = path.join(os.homedir(), '.volt-daemon', 'data');
-const dataDir = process.env.DAEMON_DATA_DIR || DEFAULT_DATA_DIR;
+const dataDir = process.env.DAEMON_DATA_DIR || path.join(os.homedir(), '.volt-daemon', 'data');
 
 export const DAEMON_PATHS = Object.freeze({
     analysisOutput: path.join(dataDir, 'analysis-output'),

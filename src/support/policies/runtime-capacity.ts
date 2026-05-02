@@ -2,11 +2,7 @@ import os from 'node:os';
 
 export const readPositiveIntegerEnv = (name: string): number | undefined => {
     const rawValue = process.env[name];
-    if (rawValue === undefined || rawValue === '') {
-        return undefined;
-    }
-
-    if (!/^[1-9]\d*$/.test(rawValue)) {
+    if (!rawValue || !/^[1-9]\d*$/.test(rawValue)) {
         return undefined;
     }
 

@@ -49,7 +49,7 @@ export class QueueService {
         private readonly redisConnection: RedisConnection
     ) {}
 
-    async close(): Promise<void>{
+    async close(): Promise<void> {
         await Promise.all([...this.queues.values()].map((queue) => queue.close()));
         this.queues.clear();
     };
@@ -147,7 +147,7 @@ export class QueueService {
 
     async retryJobById(jobId: string): Promise<boolean> {
         const job = await this.findJob(jobId);
-        if(!job) return false;
+        if (!job) return false;
 
         const state = await job.getState();
         if (state !== 'failed') {
@@ -160,7 +160,7 @@ export class QueueService {
 
     async removeJobById(jobId: string): Promise<boolean> {
         const job = await this.findJob(jobId);
-        if(!job) return false;
+        if (!job) return false;
 
         await job.remove();
         return true;
@@ -189,4 +189,4 @@ export class QueueService {
         this.queues.set(queueName, queue);
         return queue;
     }
-};
+}

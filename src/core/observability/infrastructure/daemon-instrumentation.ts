@@ -24,9 +24,7 @@ export interface DaemonTraceContext {
 }
 
 export const extractDaemonTraceContext = (payload?: DaemonTracePayload): DaemonTraceContext | undefined => {
-    if (!payload) {
-        return undefined;
-    }
+    if (!payload) return undefined;
 
     const traceSources = [
         payload,
@@ -40,9 +38,7 @@ export const extractDaemonTraceContext = (payload?: DaemonTracePayload): DaemonT
     const traceContext: DaemonTraceContext = {};
 
     for (const source of traceSources) {
-        if (!source) {
-            continue;
-        }
+        if (!source) continue;
 
         traceContext.correlationId ??= source.correlationId;
         traceContext.parentSpanId ??= source.parentSpanId;
@@ -58,23 +54,14 @@ export const extractDaemonTraceContext = (payload?: DaemonTracePayload): DaemonT
 export const serializeDaemonTraceContext = (
     traceContext?: DaemonTraceContext
 ): Record<string, string> | undefined => {
-    if (!traceContext) {
-        return undefined;
-    }
+    if (!traceContext) return undefined;
 
     const serializedTraceContext = createTraceLogContext(traceContext);
-
-    if (Object.keys(serializedTraceContext).length === 0) {
-        return undefined;
-    }
-
-    return serializedTraceContext;
+    return Object.keys(serializedTraceContext).length === 0 ? undefined : serializedTraceContext;
 };
 
 export const createTraceLogContext = (traceContext?: DaemonTraceContext): Record<string, string> => {
-    if (!traceContext) {
-        return {};
-    }
+    if (!traceContext) return {};
 
     const serializedTraceContext: Record<string, string> = {};
 

@@ -44,9 +44,7 @@ export class QueueScopeLimitsRegistry {
         this.queueScopeLimits = normalizeQueueScopeLimits(queueScopeLimits);
     };
 
-    readonly getSnapshot = (): TeamClusterDaemonQueueScopeLimits => {
-        return this.queueScopeLimits;
-    };
+    readonly getSnapshot = (): TeamClusterDaemonQueueScopeLimits => this.queueScopeLimits;
 
     tryAcquire(
         scope: QueueScopeKey,
@@ -78,16 +76,18 @@ export class QueueScopeLimitsRegistry {
         return () => {
             if (released) return;
             released = true;
-            if (trajectoryKey) {
-                const next = (this.byTrajectory.get(trajectoryKey) ?? 1) - 1;
-                if (next <= 0) this.byTrajectory.delete(trajectoryKey);
-                else this.byTrajectory.set(trajectoryKey, next);
-            }
-            if (teamKey) {
-                const next = (this.byTeam.get(teamKey) ?? 1) - 1;
-                if (next <= 0) this.byTeam.delete(teamKey);
-                else this.byTeam.set(teamKey, next);
-            }
+            this.decrement(this.byTrajectory, trajectoryKey);
+            this.decrement(this.byTeam, teamKey);
         };
+    }
+
+    private decrement(map: Map<string, number>, key: string | null): void {
+        if (!key) return;
+        const next = (map.get(key) ?? 1) - 1;
+        if (next <= 0) {
+            map.delete(key);
+        } else {
+            map.set(key, next);
+        }
     }
 }

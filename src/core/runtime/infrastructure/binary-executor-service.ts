@@ -8,7 +8,6 @@ import { registerProcess, unregisterProcess } from '@/core/runtime/infrastructur
 import {
     PluginProcessPool,
     resolvePythonStubPath,
-    type PooledProcess,
     type PooledProcessSpawnInput
 } from '@/modules/plugin/application/runtime/PluginProcessPool';
 import { SharedMemoryBridge, type SharedFramePublishInput } from '@/modules/plugin/application/runtime/SharedMemoryBridge';
@@ -85,7 +84,6 @@ export class BinaryExecutorService {
     }: ProcessExecutionInput): Promise<ProcessExecutionResult> {
         return new Promise((resolve, reject) => {
             const startedAt = Date.now();
-            const enforceTimeout = timeoutMs > 0;
             const child = spawn(commandPath, args, {
                 cwd,
                 stdio: ['ignore', 'pipe', 'pipe'],
@@ -100,7 +98,7 @@ export class BinaryExecutorService {
             let timedOut = false;
             let forceKillTimeout: NodeJS.Timeout | undefined;
 
-            const executionTimeout = enforceTimeout
+            const executionTimeout = timeoutMs > 0
                 ? setTimeout(() => {
                     timedOut = true;
                     logger.warn('Plugin process exceeded execution timeout');
@@ -187,7 +185,7 @@ export class BinaryExecutorService {
             env: input.env
         };
 
-        const pooled: PooledProcess = await this.pluginProcessPool.acquire(spawnInput);
+        const pooled = await this.pluginProcessPool.acquire(spawnInput);
         const releaseables: Array<() => Promise<void>> = [];
 
         try {
@@ -202,7 +200,7 @@ export class BinaryExecutorService {
                     logger.warn({ err: error, pluginId: input.pluginId }, '@binary-executor-service: cache store failed');
                     return undefined;
                 });
-                return { response, cacheHit: false, cacheKey: cacheKey ?? undefined };
+                return { response, cacheHit: false, cacheKey };
             }
 
             return { response, cacheHit: false };
@@ -230,8 +228,7 @@ export class BinaryExecutorService {
                 for (let index = 0; index < input.shmFramePublishes.length; index += 1) {
                     const publish = input.shmFramePublishes[index]!;
                     const baseFrame = input.frames?.[index] ?? { timestep: index, natoms: 0 };
-                    const descriptor = await this.attachPublishedFrame(baseFrame, publish, releaseables);
-                    frames.push(descriptor);
+                    frames.push(await this.attachPublishedFrame(baseFrame, publish, releaseables));
                 }
             } else if (input.frames?.length) {
                 frames.push(...input.frames);
@@ -315,9 +312,7 @@ export class BinaryExecutorService {
         stream: ProcessExecutionLogStream,
         chunkText: string
     ): void {
-        if (!logSink || chunkText.length === 0) {
-            return;
-        }
+        if (!logSink || chunkText.length === 0) return;
 
         Promise.resolve(logSink.handleChunk({
             stream,
@@ -329,9 +324,7 @@ export class BinaryExecutorService {
     }
 
     private async flushLogSink(logSink: ProcessExecutionLogSink | undefined): Promise<void> {
-        if (!logSink?.flush) {
-            return;
-        }
+        if (!logSink?.flush) return;
 
         try {
             await logSink.flush();

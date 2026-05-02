@@ -26,7 +26,7 @@ const mergeChunkedValue = (target: ChunkedValue, incoming: ChunkedValue): Chunke
     }
 
     if (isRecord(target) && isRecord(incoming)) {
-        return mergeChunkedRecord(target as ChunkedRecord, incoming as ChunkedRecord);
+        return mergeChunkedRecord(target as ChunkedRecord, incoming);
     }
 
     return incoming;

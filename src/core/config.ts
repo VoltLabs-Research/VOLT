@@ -62,29 +62,25 @@ const readRequiredString = (name: string): string => {
 };
 
 const readOptionalString = (name: string): string | undefined => {
-    const value = process.env[name];
-    return value ? value : undefined;
+    return process.env[name] || undefined;
 };
 
 const readStringWithDefault = (name: string, fallback: string): string => {
-    const value = process.env[name];
-    return value ? value : fallback;
+    return process.env[name] || fallback;
 };
 
 const readNumberWithDefault = (name: string, fallback: number): number => {
     const value = process.env[name];
-    if (!value) {
-        return fallback;
-    }
+    if (!value) return fallback;
+
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : fallback;
 };
 
 const readOptionalNumber = (name: string): number | undefined => {
     const value = process.env[name];
-    if (!value) {
-        return undefined;
-    }
+    if (!value) return undefined;
+
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : undefined;
 };
@@ -95,9 +91,8 @@ const readBooleanWithDefault = (name: string, fallback: boolean): boolean => {
 };
 
 const normalizePath = (value: string): string => {
-    if (value === '/') {
-        return '/';
-    }
+    if (value === '/') return '/';
+
     return `/${value.replace(/^\/+|\/+$/g, '')}`;
 };
 

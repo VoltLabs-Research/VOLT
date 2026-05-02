@@ -51,10 +51,11 @@ class DefaultClusterObjectStore implements ClusterObjectStore {
         bucket: string,
         objectKey: string
     ): Promise<ClusterObjectHeadResponse> => {
-        if (this.isLocalOwner(ownerClusterId)) {
-            return toHeadResponse(await this.deps.minioService.statObject(bucket, objectKey));
+        if (!this.isLocalOwner(ownerClusterId)) {
+            return this.deps.remoteClient.head(ownerClusterId, bucket, objectKey);
         }
-        return this.deps.remoteClient.head(ownerClusterId, bucket, objectKey);
+
+        return toHeadResponse(await this.deps.minioService.statObject(bucket, objectKey));
     };
 
     public readonly getStream = async (
@@ -189,12 +190,7 @@ const splitObjectMetadata = (metadata?: Record<string, string>): SplitObjectMeta
     let contentEncoding: string | undefined;
 
     if (!metadata) {
-        return {
-            contentType,
-            contentEncoding,
-            localMetadata,
-            remoteMetadata
-        };
+        return { contentType, contentEncoding, localMetadata, remoteMetadata };
     }
 
     for (const [key, value] of Object.entries(metadata)) {
@@ -226,9 +222,8 @@ const splitObjectMetadata = (metadata?: Record<string, string>): SplitObjectMeta
     };
 };
 
-export const createClusterObjectStore = (deps: ClusterObjectStoreDeps): ClusterObjectStore => {
-    return new DefaultClusterObjectStore(deps);
-};
+export const createClusterObjectStore = (deps: ClusterObjectStoreDeps): ClusterObjectStore =>
+    new DefaultClusterObjectStore(deps);
 
 export const provideClusterObjectStore = Factory('objectStore')((
     config: DaemonConfig,
@@ -239,15 +234,7 @@ export const provideClusterObjectStore = Factory('objectStore')((
 export const createScopedClusterObjectStore = (
     objectStore: ClusterObjectStore,
     ownerClusterId: string
-): ScopedClusterObjectStore => {
-    return {
-        putObject: (input) => objectStore.putObject({
-            ...input,
-            ownerClusterId
-        }),
-        putObjectStream: (input) => objectStore.putObjectStream({
-            ...input,
-            ownerClusterId
-        })
-    };
-};
+): ScopedClusterObjectStore => ({
+    putObject: (input) => objectStore.putObject({ ...input, ownerClusterId }),
+    putObjectStream: (input) => objectStore.putObjectStream({ ...input, ownerClusterId })
+});

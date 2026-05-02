@@ -442,11 +442,7 @@ export class WorkflowRuntime {
             }
         );
 
-        const aggregated: WorkflowExposureArtifact[] = [];
-        for (const group of groups) {
-            aggregated.push(...group);
-        }
-        return this.createNestedExecutionResult(aggregated);
+        return this.createNestedExecutionResult(groups.flat());
     }
 
     private buildRuntimeExecutionOptions(input: WorkflowExecuteInput): WorkflowExecutionOptions {
@@ -510,7 +506,7 @@ export class WorkflowRuntime {
     ): ExecutePluginNodeInput {
         const { identity } = ctx.input.executionData;
 
-        const pluginExecutionInput: ExecutePluginNodeInput = {
+        return {
             node: ctx.node,
             workflow: ctx.input.executionData.workflow.definition,
             nestedPlugins: ctx.input.executionData.workflow.nestedPlugins,
@@ -527,8 +523,6 @@ export class WorkflowRuntime {
             executionPath: ctx.executionPath,
             logSinkFactory: ctx.input.logSinkFactory
         };
-
-        return pluginExecutionInput;
     }
 
     private resolvePluginExecutionsForNode(
@@ -540,17 +534,16 @@ export class WorkflowRuntime {
             return [];
         }
 
-        const executionMode = pluginNodeData.executionMode
-            ?? (!pluginNodeData.pluginId && pluginNodeData.argumentReference ? 'argumentReference' : pluginNodeData.pluginId ? 'manual' : undefined);
-        const config = pluginNodeData.config
-            ? pluginNodeData.config as WorkflowNodeOutput
-            : {};
-        const selectedTimesteps = pluginNodeData.selectedTimesteps
-            ? pluginNodeData.selectedTimesteps
-            : [];
-        const outputPathMode = pluginNodeData.outputPathMode === 'parent'
-            ? 'parent'
-            : 'isolated';
+        let inferredMode: 'argumentReference' | 'manual' | undefined;
+        if (!pluginNodeData.pluginId && pluginNodeData.argumentReference) {
+            inferredMode = 'argumentReference';
+        } else if (pluginNodeData.pluginId) {
+            inferredMode = 'manual';
+        }
+        const executionMode = pluginNodeData.executionMode ?? inferredMode;
+        const config = (pluginNodeData.config ?? {}) as WorkflowNodeOutput;
+        const selectedTimesteps = pluginNodeData.selectedTimesteps ?? [];
+        const outputPathMode = pluginNodeData.outputPathMode === 'parent' ? 'parent' : 'isolated';
         if (executionMode === 'argumentReference') {
             if (!workflow || !pluginNodeData.argumentReference) {
                 return [];
@@ -808,7 +801,7 @@ export class WorkflowRuntime {
         const { nestedPlugins, dumpTarget, trajectoryId, analysisId, teamId, ownerClusterId } = params.input;
         const { analysis, trajectoryFrames } = params.session.context;
 
-        const pluginExecutionInput: ExecutePluginNodeInput = {
+        return {
             nestedPlugins,
             outputs: params.session.outputs,
             dumpTarget,
@@ -826,8 +819,6 @@ export class WorkflowRuntime {
             executionPath,
             logSinkFactory: params.logSinkFactory
         };
-
-        return pluginExecutionInput;
     }
 
     private collectNestedExposureArtifacts(session: WorkflowSession): WorkflowExposureArtifact[] {
@@ -1037,11 +1028,7 @@ export class WorkflowRuntime {
     }
 
     private toError(error: Error | undefined, fallbackMessage: string): Error {
-        if (error) {
-            return error;
-        }
-
-        return new Error(fallbackMessage);
+        return error ?? new Error(fallbackMessage);
     }
 
     private buildAggregatedPluginOutput(executions: PluginExecutionOutput[]): WorkflowNodeOutput {

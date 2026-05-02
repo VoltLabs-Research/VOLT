@@ -31,7 +31,11 @@ export const stopProcess = (jobId: string): boolean => {
 
     setTimeout(() => {
         if (child.exitCode === null && child.signalCode === null) {
-            try { child.kill('SIGKILL'); } catch { /* ignore */ }
+            try {
+                child.kill('SIGKILL');
+            } catch {
+                // ignore
+            }
         }
     }, SIGKILL_GRACE_PERIOD_MS).unref();
 

@@ -20,28 +20,28 @@ export interface BinaryTunnelDataPayload {
     sessionId: string;
     chunk: Uint8Array;
     isBinary: boolean;
-};
+}
 
 export interface BinarySessionDataPayload {
     type: 'session-data';
     sessionId: string;
     chunk: Uint8Array;
     isBinary: boolean;
-};
+}
 
 export interface BinarySessionInputPayload {
     type: 'session-input';
     sessionId: string;
     chunk: Uint8Array;
     isBinary: boolean;
-};
+}
 
 export interface BinaryCommandMessage {
     type: 'command-binary';
     requestId: string;
     command: string;
     envelope: Uint8Array;
-};
+}
 
 export interface BinaryResponsePayload {
     type: 'response-binary';
@@ -51,7 +51,7 @@ export interface BinaryResponsePayload {
     envelope: Uint8Array;
     headers?: TeamClusterDaemonSocketHeaders;
     message?: string;
-};
+}
 
 export interface BinaryTunnelStatePayload {
     type: 'tunnel-state';
@@ -59,4 +59,4 @@ export interface BinaryTunnelStatePayload {
     status: TeamClusterTunnelSessionStatus;
     message?: string;
     error?: string;
-};
+}

@@ -27,11 +27,10 @@ interface BlobPutResult {
     stored: boolean;
 }
 
-const buildBlobKey = (hashHex: string): string => {
-    // Why: shard by two hex bytes to avoid a single "hot" prefix in MinIO's
-    // listing path; keeps GC sweeps cheap.
-    return `${VTR_BLOB_PREFIX}${hashHex.substring(0, 2)}/${hashHex.substring(2, 4)}/${hashHex}`;
-};
+// Why: shard by two hex bytes to avoid a single "hot" prefix in MinIO's
+// listing path; keeps GC sweeps cheap.
+const buildBlobKey = (hashHex: string): string =>
+    `${VTR_BLOB_PREFIX}${hashHex.substring(0, 2)}/${hashHex.substring(2, 4)}/${hashHex}`;
 
 const computeSha256 = (data: Uint8Array): Uint8Array => {
     const hasher = createHash('sha256');

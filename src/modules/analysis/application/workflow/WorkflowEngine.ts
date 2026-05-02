@@ -56,10 +56,8 @@ const createRuntimeArguments = (request: WorkflowExecutionRequest): WorkflowNode
 };
 
 const createPlanningSession = (request: WorkflowExecutionRequest): WorkflowSession => {
-    const { ...sessionParams } = request;
-
     return WorkflowSession.createFromDefinition({
-        ...sessionParams,
+        ...request,
         runtimeArguments: createRuntimeArguments(request)
     });
 };

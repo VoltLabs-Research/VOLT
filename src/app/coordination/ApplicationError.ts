@@ -37,11 +37,11 @@ export default class ApplicationError extends Error {
         input: ApplicationErrorInput = 500
     ) {
         super(message);
-        const options = resolveApplicationErrorOptions(input);
+        const { statusCode, details, cause } = resolveApplicationErrorOptions(input);
         this.name = 'ApplicationError';
-        this.statusCode = options.statusCode;
-        this.details = options.details;
-        this.cause = options.cause;
+        this.statusCode = statusCode;
+        this.details = details;
+        this.cause = cause;
         Object.setPrototypeOf(this, ApplicationError.prototype);
         Error.captureStackTrace?.(this, this.constructor);
     }

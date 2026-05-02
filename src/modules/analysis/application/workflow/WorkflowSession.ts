@@ -130,7 +130,11 @@ export class WorkflowSession {
     }
 
     static cloneOutputs(outputs: WorkflowOutputs): WorkflowOutputs {
-        return new Map(Object.entries(WorkflowSession.snapshotOutputs(outputs)));
+        const cloned: WorkflowOutputs = new Map();
+        for (const [nodeId, nodeOutput] of outputs.entries()) {
+            cloned.set(nodeId, structuredClone(nodeOutput));
+        }
+        return cloned;
     }
 
     static resolveContextDumps(context: WorkflowExecutionContext): TrajectoryDumpDescriptor[] {
@@ -146,11 +150,14 @@ export class WorkflowSession {
             ? new Set(context.selectedTimesteps)
             : null;
 
-        const selectedFrames = context.selectedFrameOnly && typeof context.selectedTimestep === 'number'
-            ? context.trajectoryFrames.filter((frame) => frame.timestep === context.selectedTimestep)
-            : selectedTimesteps
-                ? context.trajectoryFrames.filter((frame) => selectedTimesteps.has(frame.timestep))
-                : context.trajectoryFrames;
+        let selectedFrames: typeof context.trajectoryFrames;
+        if (context.selectedFrameOnly && typeof context.selectedTimestep === 'number') {
+            selectedFrames = context.trajectoryFrames.filter((frame) => frame.timestep === context.selectedTimestep);
+        } else if (selectedTimesteps) {
+            selectedFrames = context.trajectoryFrames.filter((frame) => selectedTimesteps.has(frame.timestep));
+        } else {
+            selectedFrames = context.trajectoryFrames;
+        }
 
         return selectedFrames.map((frame) => ({
             ...frame,

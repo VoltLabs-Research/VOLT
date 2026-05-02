@@ -44,7 +44,7 @@ export class DaemonLifecycle {
         void this.domainEventBridge;
     }
 
-    private async connectInfrastructure(){
+    private async connectInfrastructure(): Promise<void> {
         const mongoConnectionPromise = mongoose.connection.readyState === 1
             ? Promise.resolve()
             : mongoose.connect(this.config.mongodbUri).then(() => undefined);
@@ -58,7 +58,7 @@ export class DaemonLifecycle {
         ]);
     }
 
-    private async disconnectInfrastructure(){
+    private async disconnectInfrastructure(): Promise<void> {
         const mongoDisconnectPromise = mongoose.connection.readyState === 0
             ? Promise.resolve()
             : mongoose.disconnect();

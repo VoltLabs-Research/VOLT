@@ -119,9 +119,7 @@ export class ObjectGatewayServer {
     }
 
     async start(): Promise<void> {
-        if (this.server && this.bindHost && this.bindPort) {
-            return;
-        }
+        if (this.server && this.bindHost && this.bindPort) return;
 
         this.server = await new Promise<Server>((resolve, reject) => {
             const server = this.app.listen(this.config.port, this.config.host, () => {
@@ -138,9 +136,8 @@ export class ObjectGatewayServer {
 
         this.bindHost = address.address;
         this.bindPort = address.port;
-        this.localTargetHost = address.address === '0.0.0.0' || address.address === '::' || address.address === '[::]'
-            ? LOOPBACK_HOST
-            : address.address;
+        const isWildcardHost = address.address === '0.0.0.0' || address.address === '::' || address.address === '[::]';
+        this.localTargetHost = isWildcardHost ? LOOPBACK_HOST : address.address;
         this.exposure = {
             id: OBJECT_GATEWAY_EXPOSURE_ID,
             teamClusterId: this.config.teamClusterId,
@@ -162,9 +159,7 @@ export class ObjectGatewayServer {
     }
 
     async stop(): Promise<void> {
-        if (!this.server) {
-            return;
-        }
+        if (!this.server) return;
 
         const server = this.server;
         this.server = null;

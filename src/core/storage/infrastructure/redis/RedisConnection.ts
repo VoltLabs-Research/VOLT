@@ -188,7 +188,7 @@ export class RedisConnection {
     async removeJobs(teamId: string, jobIds: string[]): Promise<number> {
         if (jobIds.length === 0) return 0;
 
-        const distinctJobIds = Array.from(new Set(jobIds));
+        const distinctJobIds = [...new Set(jobIds)];
         const pipeline = this.client.pipeline();
 
         for (const jobId of distinctJobIds) {
@@ -210,4 +210,4 @@ export class RedisConnection {
 
         return deletedKeys;
     }
-};
+}

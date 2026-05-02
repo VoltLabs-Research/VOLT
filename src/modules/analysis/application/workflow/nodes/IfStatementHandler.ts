@@ -19,7 +19,7 @@ export class WorkflowIfStatementHandler implements WorkflowNodeHandler {
         const conditions = ifStatement?.conditions ?? [];
 
         if (conditions.length === 0) {
-            return Promise.resolve({ result: true, branch: 'true' });
+            return { result: true, branch: 'true' };
         }
 
         let finalResult = WorkflowIfStatementHandler.INITIAL_CONDITION_RESULT;

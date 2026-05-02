@@ -96,8 +96,7 @@ export const decodeEnvelope = (buf: Uint8Array): DecodedEnvelope => {
  * command metadata that must travel alongside binary attachments.
  */
 export const encodeJsonEnvelope = (opId: number, value: unknown): Uint8Array => {
-    const json = JSON.stringify(value);
-    const payload = Buffer.from(json, 'utf8');
+    const payload = Buffer.from(JSON.stringify(value), 'utf8');
     return encodeEnvelope(opId, EnvelopeKind.CommandJson, payload);
 };
 
@@ -132,7 +131,7 @@ export const encodeCommandPayload = (metadata: unknown, binary: Uint8Array): Uin
 export interface DecodedCommandPayload<T> {
     metadata: T;
     binary: Uint8Array;
-};
+}
 
 export const decodeCommandPayload = <T>(payload: Uint8Array): DecodedCommandPayload<T> => {
     if (payload.byteLength < 4) {

@@ -50,9 +50,7 @@ export class ObjectGatewayTelemetry {
             this.flushSummary();
         }, TELEMETRY_LOG_INTERVAL_MS);
 
-        if (typeof timer.unref === 'function') {
-            timer.unref();
-        }
+        timer.unref?.();
     }
 
     beginRequest(operation: ObjectGatewayOperationName): ObjectGatewayRequestTracker {

@@ -188,11 +188,14 @@ export class JupyterRuntime {
         }
 
         const readinessUrl = new URL(runtimeState.readinessOrigin);
-        const port = readinessUrl.port
-            ? Number(readinessUrl.port)
-            : readinessUrl.protocol === 'https:'
-                ? 443
-                : 80;
+        let port: number;
+        if (readinessUrl.port) {
+            port = Number(readinessUrl.port);
+        } else if (readinessUrl.protocol === 'https:') {
+            port = 443;
+        } else {
+            port = 80;
+        }
 
         return {
             host: readinessUrl.hostname,
@@ -571,15 +574,7 @@ export class JupyterRuntime {
         }
 
         const normalizedPath = path.posix.normalize(value);
-        if (normalizedPath === '.') {
-            throw new Error('Notebook path must stay within notebook root');
-        }
-
-        if (normalizedPath === '..') {
-            throw new Error('Notebook path must stay within notebook root');
-        }
-
-        if (normalizedPath.startsWith('../')) {
+        if (normalizedPath === '.' || normalizedPath === '..' || normalizedPath.startsWith('../')) {
             throw new Error('Notebook path must stay within notebook root');
         }
 

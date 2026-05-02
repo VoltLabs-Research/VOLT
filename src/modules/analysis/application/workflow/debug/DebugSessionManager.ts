@@ -122,6 +122,17 @@ const SESSION_IDLE_TTL_MS = 5 * 60 * 1000;
 
 let sessionCounter = 0;
 
+const extractWorkflowTraceFromError = (error: unknown): DebugNodeResult['nestedTrace'] => {
+    if (!(error instanceof ApplicationError) || error.code !== 'Workflow::Trace') {
+        return undefined;
+    }
+    if (typeof error.details !== 'object' || error.details === null) {
+        return undefined;
+    }
+    const trace = (error.details as { trace?: unknown }).trace;
+    return Array.isArray(trace) ? trace as DebugNodeResult['nestedTrace'] : undefined;
+};
+
 @Service('debugSessionManager')
 export class DebugSessionManager {
     private readonly sessions = new TTLCache<string, DebugSession>({
@@ -289,13 +300,7 @@ export class DebugSessionManager {
                 status: 'error',
                 error: message,
                 stack,
-                nestedTrace: error instanceof ApplicationError
-                    && error.code === 'Workflow::Trace'
-                    && typeof error.details === 'object'
-                    && error.details !== null
-                    && Array.isArray((error.details as { trace?: unknown }).trace)
-                    ? (error.details as { trace: DebugNodeResult['nestedTrace'] }).trace
-                    : undefined,
+                nestedTrace: extractWorkflowTraceFromError(error),
                 durationMs,
                 contextSnapshot: WorkflowSession.snapshotOutputs(session.context.outputs)
             };

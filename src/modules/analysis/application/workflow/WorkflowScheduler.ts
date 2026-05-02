@@ -57,11 +57,7 @@ export class WorkflowScheduler {
         const nodeStatus = this.params.getNodeExecutionStatus(nodeId);
 
         if (parentEdges.length === 0) {
-            const rootState: WorkflowRuntimeNodeState = nodeStatus === 'executed'
-                ? 'active'
-                : nodeStatus === 'failed' || nodeStatus === 'skipped'
-                    ? 'failed'
-                    : 'unresolved';
+            const rootState = WorkflowScheduler.deriveActiveNodeState(nodeStatus);
             state.nodeStateCache.set(nodeId, rootState);
             state.resolvingNodeIds.delete(nodeId);
             return rootState;
@@ -91,21 +87,32 @@ export class WorkflowScheduler {
             hasActiveParent = true;
         }
 
-        const nodeState: WorkflowRuntimeNodeState = hasActiveParent
-            ? nodeStatus === 'executed'
-                ? 'active'
-                : nodeStatus === 'failed' || nodeStatus === 'skipped'
-                    ? 'failed'
-                    : 'unresolved'
-            : hasUnresolvedParent
-                ? 'unresolved'
-                : hasFailedParent
-                    ? 'failed'
-                    : 'inactive';
+        let nodeState: WorkflowRuntimeNodeState;
+        if (hasActiveParent) {
+            nodeState = WorkflowScheduler.deriveActiveNodeState(nodeStatus);
+        } else if (hasUnresolvedParent) {
+            nodeState = 'unresolved';
+        } else if (hasFailedParent) {
+            nodeState = 'failed';
+        } else {
+            nodeState = 'inactive';
+        }
         state.nodeStateCache.set(nodeId, nodeState);
         state.resolvingNodeIds.delete(nodeId);
 
         return nodeState;
+    }
+
+    private static deriveActiveNodeState(nodeStatus: WorkflowExecutionStatus): WorkflowRuntimeNodeState {
+        if (nodeStatus === 'executed') {
+            return 'active';
+        }
+
+        if (nodeStatus === 'failed' || nodeStatus === 'skipped') {
+            return 'failed';
+        }
+
+        return 'unresolved';
     }
 
     resolveParentEdgeState(
@@ -254,22 +261,22 @@ export class WorkflowScheduler {
         const parentOutput = this.params.outputs.get(parentNode.id) ?? {};
 
         if (parentNode.type === WorkflowNodeType.ForEach) {
-            const itemCount = typeof parentOutput.count === 'number'
-                ? parentOutput.count
-                : Array.isArray(parentOutput.items)
-                    ? parentOutput.items.length
-                    : 0;
+            let itemCount = 0;
+            if (typeof parentOutput.count === 'number') {
+                itemCount = parentOutput.count;
+            } else if (Array.isArray(parentOutput.items)) {
+                itemCount = parentOutput.items.length;
+            }
 
-            return itemCount > 0
-                ? {
-                    resolved: true,
-                    active: true
-                }
-                : {
-                    resolved: true,
-                    active: false,
-                    reason: `ForEach node "${parentNode.id}" produced no items`
-                };
+            if (itemCount > 0) {
+                return { resolved: true, active: true };
+            }
+
+            return {
+                resolved: true,
+                active: false,
+                reason: `ForEach node "${parentNode.id}" produced no items`
+            };
         }
 
         if (parentNode.type === WorkflowNodeType.IfStatement) {

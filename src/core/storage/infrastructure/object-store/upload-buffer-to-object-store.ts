@@ -16,7 +16,7 @@ export interface UploadBufferToObjectStoreInput {
     tempFileSuffix: string;
     contentEncoding?: string;
     compressionCodec?: 'zstd';
-};
+}
 
 const STREAM_UPLOAD_THRESHOLD = 10 * 1024 * 1024;
 
