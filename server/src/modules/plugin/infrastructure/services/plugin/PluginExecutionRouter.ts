@@ -27,6 +27,12 @@ import { inject } from 'tsyringe';
 const gzipAsync = promisify(zlib.gzip);
 
 const DISPATCH_SECTION_CACHE_TTL_SECONDS = 600;
+// Plugin binaries are immutable per hash, so the daemon's local cache only
+// needs to be re-validated occasionally. 10 minutes is short enough to recover
+// from the daemon evicting the binary, long enough to skip the round-trip on
+// the realistic case of the same user repeatedly running the same plugin.
+const PLUGIN_SYNC_CACHE_TTL_SECONDS = 600;
+const PLUGIN_SYNC_CACHE_PREFIX = 'plugin-sync:';
 
 interface DaemonPluginSyncResponse {
     synced: boolean;
@@ -413,6 +419,17 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
         const expectedHash = entrypoint?.binaryHash ?? await this.readObjectSha256(objectKey);
 
         const syncKey = `${teamClusterId}:${plugin.id}:${objectKey}:${expectedHash ?? 'unknown-hash'}`;
+        const redisKey = `${PLUGIN_SYNC_CACHE_PREFIX}${syncKey}`;
+
+        try {
+            const cached = await this.redis.get(redisKey);
+            if (cached === '1') {
+                return;
+            }
+        } catch (error: unknown) {
+            logger.warn({ err: error, syncKey }, '@plugin-execution-router: plugin sync cache read failed');
+        }
+
         const existingSync = this.inflightPluginSyncs.get(syncKey);
         if (existingSync) {
             return existingSync;
@@ -436,6 +453,12 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
                     ErrorCodes.PLUGIN_EXECUTOR_BINARY_NOT_ACCESSIBLE,
                     `Plugin binary is not reachable from compute cluster: ${objectKey}`
                 );
+            }
+
+            try {
+                await this.redis.setex(redisKey, PLUGIN_SYNC_CACHE_TTL_SECONDS, '1');
+            } catch (error: unknown) {
+                logger.warn({ err: error, syncKey }, '@plugin-execution-router: plugin sync cache write failed');
             }
         })().finally(() => {
             this.inflightPluginSyncs.delete(syncKey);

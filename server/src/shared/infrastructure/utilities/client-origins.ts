@@ -54,20 +54,29 @@ export const normalizeOrigin = (value: string): string | null => {
 export const collectAllowedClientOrigins = (origins: Array<string | null | undefined>): string[] => {
     const allowedOrigins = new Set<string>();
 
-    for (const origin of origins) {
-        if (!origin?.trim()) {
+    for (const rawOrigin of origins) {
+        if (!rawOrigin?.trim()) {
             continue;
         }
 
-        const normalizedOrigin = normalizeOrigin(origin);
-        if (!normalizedOrigin) {
-            continue;
-        }
+        // Split on whitespace and commas so a single env var can carry several
+        // origins (e.g. CLIENT_HOST="http://localhost:5273,http://1.2.3.4:5273").
+        const tokens = rawOrigin
+            .split(/[,\s]+/)
+            .map((token) => token.trim())
+            .filter(Boolean);
 
-        allowedOrigins.add(normalizedOrigin);
+        for (const token of tokens) {
+            const normalizedOrigin = normalizeOrigin(token);
+            if (!normalizedOrigin) {
+                continue;
+            }
 
-        for (const alias of expandLoopbackAliases(normalizedOrigin)) {
-            allowedOrigins.add(alias);
+            allowedOrigins.add(normalizedOrigin);
+
+            for (const alias of expandLoopbackAliases(normalizedOrigin)) {
+                allowedOrigins.add(alias);
+            }
         }
     }
 
