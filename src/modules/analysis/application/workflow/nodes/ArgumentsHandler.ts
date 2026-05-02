@@ -1,4 +1,9 @@
-import type { WorkflowArgumentDefinition, WorkflowArgumentVisibilityCondition } from '@/contracts';
+import type {
+    WorkflowArgumentDefinition,
+    WorkflowArgumentVisibilityCondition,
+    WorkflowDefinition,
+    WorkflowPluginReferenceArgumentMapping
+} from '@/contracts';
 import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput } from '@/modules/analysis/contracts/workflow.types';
 import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '@/modules/analysis/application/workflow/NodeRegistry';
 import type { WorkflowPluginReferenceValueWithSelections } from '@/modules/analysis/application/workflow/WorkflowRuntime';
@@ -56,6 +61,121 @@ const readPluginReferenceSelections = (
 const normalizePluginReferenceValue = (value: unknown): WorkflowPluginReferenceValueWithSelections => {
     return {
         selections: readPluginReferenceSelections(value)
+    };
+};
+
+const normalizePluginReferenceMappings = (
+    mappings: WorkflowPluginReferenceArgumentMapping[] | undefined
+): WorkflowPluginReferenceArgumentMapping[] => {
+    if (!Array.isArray(mappings)) {
+        return [];
+    }
+
+    return mappings.flatMap((mapping) => {
+        if (!mapping || typeof mapping !== 'object') {
+            return [];
+        }
+
+        const sourceArgument = typeof mapping.sourceArgument === 'string'
+            ? mapping.sourceArgument.trim()
+            : '';
+        const targetArgument = typeof mapping.targetArgument === 'string'
+            ? mapping.targetArgument.trim()
+            : '';
+
+        if (!sourceArgument || !targetArgument) {
+            return [];
+        }
+
+        const targetPluginId = typeof mapping.targetPluginId === 'string'
+            ? mapping.targetPluginId.trim()
+            : '';
+        const targetPluginKey = typeof mapping.targetPluginKey === 'string'
+            ? mapping.targetPluginKey.trim()
+            : '';
+
+        return [{
+            sourceArgument,
+            targetArgument,
+            ...(targetPluginId ? { targetPluginId } : {}),
+            ...(targetPluginKey ? { targetPluginKey } : {}),
+            ...(isWorkflowNodeOutputRecord(mapping.valueMap) ? { valueMap: mapping.valueMap } : {})
+        }];
+    });
+};
+
+const getWorkflowModifierKey = (workflow: WorkflowDefinition | undefined): string => {
+    const modifierNode = workflow?.nodes.find((node) => node.type === WorkflowNodeType.Modifier);
+    const modifierKey = modifierNode?.data.modifier?.key;
+    return typeof modifierKey === 'string' ? modifierKey.trim() : '';
+};
+
+const resolveMappingSourceValue = (
+    mapping: WorkflowPluginReferenceArgumentMapping,
+    definitions: WorkflowArgumentDefinition[],
+    values: WorkflowNodeOutput
+): WorkflowNodeOutput[string] => {
+    const sourceDefinition = definitions.find((definition) => definition.argument === mapping.sourceArgument);
+    const value = values[mapping.sourceArgument ?? ''] !== undefined
+        ? values[mapping.sourceArgument ?? '']
+        : sourceDefinition?.value !== undefined
+            ? sourceDefinition.value as WorkflowNodeOutput[string]
+            : sourceDefinition?.default as WorkflowNodeOutput[string] | undefined;
+
+    if (!isWorkflowNodeOutputRecord(mapping.valueMap)) {
+        return value;
+    }
+
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+        const valueMapKey = String(value);
+        if (Object.prototype.hasOwnProperty.call(mapping.valueMap, valueMapKey)) {
+            return mapping.valueMap[valueMapKey];
+        }
+    }
+
+    return value;
+};
+
+const applyPluginReferenceMappings = (
+    definition: WorkflowArgumentDefinition,
+    value: WorkflowNodeOutput[string],
+    definitions: WorkflowArgumentDefinition[],
+    values: WorkflowNodeOutput,
+    nestedWorkflows: Map<string, WorkflowDefinition>
+): WorkflowPluginReferenceValueWithSelections => {
+    const pluginReferenceValue = normalizePluginReferenceValue(value);
+    const mappings = normalizePluginReferenceMappings(definition.pluginReferenceMappings);
+    if (mappings.length === 0) {
+        return pluginReferenceValue;
+    }
+
+    return {
+        selections: pluginReferenceValue.selections.map((selection) => {
+            const pluginKey = getWorkflowModifierKey(nestedWorkflows.get(selection.pluginId));
+            const config = { ...(selection.config ?? {}) };
+
+            for (const mapping of mappings) {
+                if (mapping.targetPluginId && mapping.targetPluginId !== selection.pluginId) {
+                    continue;
+                }
+
+                if (mapping.targetPluginKey && mapping.targetPluginKey !== pluginKey) {
+                    continue;
+                }
+
+                const mappedValue = resolveMappingSourceValue(mapping, definitions, values);
+                if (mappedValue === undefined) {
+                    continue;
+                }
+
+                config[mapping.targetArgument as string] = mappedValue;
+            }
+
+            return {
+                pluginId: selection.pluginId,
+                config
+            };
+        })
     };
 };
 
@@ -124,6 +244,21 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
             }
 
             values[argumentKey] = value as WorkflowNodeOutput[string];
+        }
+
+        for (const definition of definitions) {
+            const argumentKey = definition.argument;
+            if (!argumentKey || definition.type !== 'pluginReference') {
+                continue;
+            }
+
+            values[argumentKey] = applyPluginReferenceMappings(
+                definition,
+                values[argumentKey],
+                definitions,
+                values,
+                context.nestedWorkflows
+            ) as unknown as WorkflowNodeOutput[string];
         }
 
         for (const definition of definitions) {

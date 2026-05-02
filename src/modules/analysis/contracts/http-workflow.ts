@@ -27,6 +27,14 @@ export interface WorkflowArgumentVisibilityCondition {
     values?: Array<string | number | boolean>;
 }
 
+export interface WorkflowPluginReferenceArgumentMapping {
+    sourceArgument?: string;
+    targetArgument?: string;
+    targetPluginId?: string;
+    targetPluginKey?: string;
+    valueMap?: Record<string, JsonValue>;
+}
+
 export interface WorkflowArgumentDefinition {
     argument?: string;
     type?: string;
@@ -42,6 +50,7 @@ export interface WorkflowArgumentDefinition {
     pluginReferenceFilter?: string[];
     pluginReferenceFilterKeys?: string[];
     showPluginConfiguration?: boolean;
+    pluginReferenceMappings?: WorkflowPluginReferenceArgumentMapping[];
     min?: number;
     max?: number;
     step?: number;
